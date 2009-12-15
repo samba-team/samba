@@ -3541,3 +3541,63 @@ bool torture_samba3_regconfig(struct torture_context *torture)
 	talloc_free(cli);
 	return ret;
 }
+
+/*
+ * Test that even with a result of 0 rids the array is returned as a
+ * non-NULL pointer. Yes, XP does notice.
+ */
+
+bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
+{
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	bool ret;
+	struct samr_Connect2 c;
+	struct samr_OpenDomain o;
+	struct dom_sid sid;
+	struct lsa_SidPtr ptr;
+	struct lsa_SidArray sids;
+	struct samr_GetAliasMembership g;
+	struct samr_Ids rids;
+	struct policy_handle samr, domain;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	c.in.system_name = NULL;
+	c.in.access_mask = SAMR_ACCESS_LOOKUP_DOMAIN;
+	c.out.connect_handle = &samr;
+	status = dcerpc_samr_Connect2(p, torture, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	dom_sid_parse("S-1-5-32", &sid);
+	o.in.connect_handle = &samr;
+	o.in.access_mask = SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS;
+	o.in.sid = &sid;
+	o.out.domain_handle = &domain;
+	status = dcerpc_samr_OpenDomain(p, torture, &o);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	dom_sid_parse("S-1-2-3-4-5", &sid);
+	ptr.sid = &sid;
+	sids.num_sids = 1;
+	sids.sids = &ptr;
+	g.in.domain_handle = &domain;
+	g.in.sids = &sids;
+	g.out.rids = &rids;
+	status = dcerpc_samr_GetAliasMembership(p, torture, &g);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	if (rids.ids == NULL) {
+		/* This is the piece to test here */
+		torture_warning(torture,
+				"torture_samba3_getaliasmembership_0: "
+				"Server returns NULL rids array\n");
+		return false;
+	}
+	return true;
+}
