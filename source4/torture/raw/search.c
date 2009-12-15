@@ -1376,7 +1376,81 @@ static bool test_ea_list(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ Test the behavior of max count parameter in TRANS2_FIND_FIRST2 and
+ TRANS2_FIND_NEXT2 queries
+*/
+static bool test_max_count(struct torture_context *tctx,
+			   struct smbcli_state *cli)
+{
+	const int num_files = 2;
+	int i, fnum;
+	char *fname;
+	bool ret = true;
+	NTSTATUS status;
+	struct multiple_result result;
+	union smb_search_first io;
+	union smb_search_next io2;
 
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	torture_comment(tctx, "Creating %d files\n", num_files);
+
+	for (i=num_files-1;i>=0;i--) {
+		fname = talloc_asprintf(cli, BASEDIR "\\t%03d-%d.txt", i, i);
+		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		if (fnum == -1) {
+			torture_comment(tctx,
+				"Failed to create %s - %s\n",
+				fname, smbcli_errstr(cli->tree));
+			ret = false;
+			goto done;
+		}
+		talloc_free(fname);
+		smbcli_close(cli->tree, fnum);
+	}
+
+	torture_comment(tctx, "Set max_count parameter to 0. "
+			"This should return 1 entry\n");
+	ZERO_STRUCT(result);
+	result.tctx = talloc_new(tctx);
+
+	io.t2ffirst.level = RAW_SEARCH_TRANS2;
+	io.t2ffirst.data_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
+	io.t2ffirst.in.search_attrib = 0;
+	io.t2ffirst.in.max_count = 0;
+	io.t2ffirst.in.flags = 0;
+	io.t2ffirst.in.storage_type = 0;
+	io.t2ffirst.in.pattern = BASEDIR "\\*.*";
+
+	status = smb_raw_search_first(cli->tree, tctx,
+				      &io, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, 1);
+
+	torture_comment(tctx, "Set max_count to 1. This should also "
+			"return 1 entry\n");
+	io2.t2fnext.level = RAW_SEARCH_TRANS2;
+	io2.t2fnext.data_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
+	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
+	io2.t2fnext.in.max_count = 1;
+	io2.t2fnext.in.resume_key = 0;
+	io2.t2fnext.in.flags = 0;
+	io2.t2fnext.in.last_name =
+		result.list[result.count-1].both_directory_info.name.s;
+
+	status = smb_raw_search_next(cli->tree, tctx,
+				     &io2, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, 2);
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
 
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
@@ -1392,6 +1466,7 @@ struct torture_suite *torture_raw_search(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "many dirs", test_many_dirs);
 	torture_suite_add_1smb_test(suite, "os2 delete", test_os2_delete);
 	torture_suite_add_1smb_test(suite, "ea list", test_ea_list);
+	torture_suite_add_1smb_test(suite, "max count", test_max_count);
 
 	return suite;
 }
