@@ -205,3 +205,44 @@ int dsdb_module_search(struct ldb_module *module,
 	return ret;
 }
 
+/*
+  find a DN given a GUID. This searches across all partitions
+ */
+int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+			   const struct GUID *guid, struct ldb_dn **dn)
+{
+	struct ldb_result *res;
+	const char *attrs[] = { NULL };
+	char *expression;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int ret;
+
+	expression = talloc_asprintf(tmp_ctx, "objectGUID=%s", GUID_string(tmp_ctx, guid));
+	if (!expression) {
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				 attrs, DSDB_SEARCH_SHOW_DELETED | DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 expression);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	if (ret->count == 0) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	if (res->count != 1) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching %s\n",
+				       expression);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*dn = talloc_steal(mem_ctx, res->msgs[0].dn);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
