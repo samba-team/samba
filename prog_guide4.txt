@@ -405,20 +405,6 @@ calls this function when it is ready. Also notice that reply_getatr()
 only does the parsing of the request, and does not do the reply
 generation. That is done by the _send() function.
 
-The only missing piece in the Samba4 right now that prevents it being
-fully async is that it currently does the low level socket calls (read
-and write on sockets) in a blocking fashion. It does use select() to
-make it somewhat async, but if a client were to send a partial packet
-then delay before sending the rest then smbd would be stuck waiting
-for the second half of the packet.
-
-To fix this I plan on making the socket calls async as well, which
-luckily will not involve any API changes in the core of smbd or the
-library. It just involves a little bit of extra code in clitransport.c
-and smbd/request.c. As a side effect I hope that this will also reduce
-the average number of system calls required to answer a request, so we
-may see a performance improvement.
-
 
 NTVFS
 -----
