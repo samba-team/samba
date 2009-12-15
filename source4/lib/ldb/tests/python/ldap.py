@@ -1719,6 +1719,36 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(self.base_dn, expression="objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
         self.assertTrue(len(res) > 0)
 
+        print "Testing creating a user with the posixAccount objectClass"
+        self.ldb.add_ldif("""dn: cn=posixuser,CN=Users,%s
+objectClass: top
+objectClass: person
+objectClass: posixAccount
+objectClass: user
+objectClass: organizationalPerson
+cn: posixuser
+uid: posixuser
+sn: posixuser
+uidNumber: 10126
+gidNumber: 10126
+homeDirectory: /home/posixuser
+loginShell: /bin/bash
+gecos: Posix User;;;
+description: A POSIX user"""% (self.base_dn))
+
+        print "Testing removing the posixAccount objectClass from an existing user"
+        self.ldb.modify_ldif("""dn: cn=posixuser,CN=Users,%s
+changetype: modify
+delete: objectClass
+objectClass: posixAccount"""% (self.base_dn))
+
+        print "Testing adding the posixAccount objectClass to an existing user"
+        self.ldb.modify_ldif("""dn: cn=posixuser,CN=Users,%s
+changetype: modify
+add: objectClass
+objectClass: posixAccount"""% (self.base_dn))
+
+        self.delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
