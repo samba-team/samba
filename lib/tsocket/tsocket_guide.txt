@@ -433,12 +433,11 @@ int tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 				      socklen_t sa_socklen,
 				      struct tsocket_address **addr);
 
-In some situations it's needed to get a 'struct  a tsocket_address from
-a given 'struct sockaddr'. You can use tsocket_address_bsd_from_sockaddr()
-for that. This should only be used if really needed, because of
-already existing fixed APIs. Only AF_INET, AF_INET6 and AF_UNIX
-sockets are allowed. The function returns -1 and set errno on error.
-Otherwise it returns 0.
+In some situations it's needed to get a 'struct sockaddr' from a
+given tsocket_address . You can use tsocket_address_bsd_sockaddr()
+for that. This should only be used if really needed. Only AF_INET,
+AF_INET6 and AF_UNIX are supported. It returns the size of '*sa' on
+success, otherwise it returns -1 and sets 'errno'.
 
 int tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 				 struct sockaddr *sa,
