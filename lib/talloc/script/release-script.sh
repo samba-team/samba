@@ -23,7 +23,7 @@ fi
 git clean -f -x -d lib/talloc
 git clean -f -x -d lib/replace
 
-curbranch=`git-branch |grep "^*" | tr -d "* "`
+curbranch=`git branch |grep "^*" | tr -d "* "`
 
 version=$1
 strver=`echo ${version} | tr "." "-"`
