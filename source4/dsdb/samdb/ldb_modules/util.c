@@ -25,6 +25,7 @@
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
+#include "util.h"
 
 /*
   add a set of controls to a ldb_request structure based on a set of
@@ -336,4 +337,31 @@ int dsdb_module_rename(struct ldb_module *module,
 
 	talloc_free(tmp_ctx);
 	return ret;
+}
+
+const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element)
+{
+	const struct dsdb_class *last_class = NULL;
+	int i;
+
+	for (i = 0; i < element->num_values; i++){
+		const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
+
+		if(tmp_class == NULL) {
+			continue;
+		}
+
+		if(tmp_class->objectClassCategory == 3) {
+			continue;
+		}
+
+		if (!last_class) {
+			last_class = tmp_class;
+		} else {
+			if (tmp_class->subClass_order > last_class->subClass_order)
+				last_class = tmp_class;
+		}
+	}
+
+	return last_class;
 }

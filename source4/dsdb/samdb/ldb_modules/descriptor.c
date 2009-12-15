@@ -41,6 +41,7 @@
 #include "libcli/security/security.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "util.h"
 
 struct descriptor_data {
 	int _dummy;
@@ -55,22 +56,6 @@ struct descriptor_context {
 	struct ldb_val *sd_val;
 	int (*step_fn)(struct descriptor_context *);
 };
-
-static const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema, struct ldb_message_element *element)
-{
-	const struct dsdb_class *last_class = NULL;
-	int i;
-	for (i = 0; i < element->num_values; i++){
-		if (!last_class) {
-			last_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
-		} else {
-			const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
-			if (tmp_class->subClass_order > last_class->subClass_order)
-				last_class = tmp_class;
-		}
-	}
-	return last_class;
-}
 
 struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			       struct ldb_dn *dn,
