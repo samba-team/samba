@@ -203,7 +203,7 @@ Interface Structures
 --------------------
 
 One of the biggest changes in Samba4 is the universal use of interface
-structures. Go take a look through include/smb_interfaces.h now to get
+structures. Go take a look through libcli/raw/interfaces.h now to get
 an idea of what I am talking about.
 
 In Samba3 many of the core wire structures in the SMB protocol were
@@ -321,11 +321,11 @@ is always called smb_raw_XXXX_send(), constructs and sends a SMB
 request and returns a "struct cli_request" which acts as a handle for
 the request. The caller is then free to do lots of other calls if it
 wants to, then when it is ready it can call the smb_raw_XXX_recv()
-function to receive the reply. 
+function to receive the reply.
 
 If all you want is a synchronous call then call the 3rd interface, the
 one called smb_raw_XXXX(). That just calls the first two in order, and
-blocks waiting for the reply. 
+blocks waiting for the reply.
 
 But what if you want to be called when the reply comes in? Yes, thats
 possible. You can do things like this::
@@ -397,20 +397,20 @@ function, so smbd has a _send() function and the parse function for
 each SMB.
 
 As an example go and have a look at reply_getatr_send() and
-reply_getatr() in smb_server/reply.c. Read them? Good.
+reply_getatr() in smb_server/smb/reply.c. Read them? Good.
 
 Notice that reply_getatr() sets up the req->async structure to contain
 the send function. Thats how the backend gets to do an async reply, it
 calls this function when it is ready. Also notice that reply_getatr()
 only does the parsing of the request, and does not do the reply
-generation. That is done by the _send() function. 
+generation. That is done by the _send() function.
 
 The only missing piece in the Samba4 right now that prevents it being
 fully async is that it currently does the low level socket calls (read
 and write on sockets) in a blocking fashion. It does use select() to
 make it somewhat async, but if a client were to send a partial packet
 then delay before sending the rest then smbd would be stuck waiting
-for the second half of the packet. 
+for the second half of the packet.
 
 To fix this I plan on making the socket calls async as well, which
 luckily will not involve any API changes in the core of smbd or the
@@ -445,7 +445,7 @@ client.
 
 Lets have a look at one of those request structures. Go and read the
 definition of "union smb_write" and "enum write_level" in
-include/smb_interfaces.h. (no, don't just skip reading it, really go
+libcli/raw/interfaces.h. (no, don't just skip reading it, really go
 and read it. Yes, that means you!).
 
 Notice the union? That's how Samba4 allows a single NTVFS backend
@@ -455,21 +455,20 @@ union::
 
 	/* SMBwriteX interface */
 	struct {
-		enum write_level level;
-
+		enum smb_write_level level;
 		struct {
-			uint16 fnum;
-			SMB_BIG_UINT offset;
-			uint16 wmode;
-			uint16 remaining;
-			uint32 count;
-			const char *data;
+			union smb_handle file;
+			uint64_t offset;
+			uint16_t wmode;
+			uint16_t remaining;
+			uint32_t count;
+			const uint8_t *data;
 		} in;
 		struct {
-			uint32 nwritten;
-			uint16 remaining;
+			uint32_t nwritten;
+			uint16_t remaining;
 		} out;
-	} writex;
+	} writex, generic;
 
 see the "in" and "out" sections? The "in" section is for parameters
 that the SMB client sends on the wire as part of the request. The smbd
@@ -492,7 +491,7 @@ the same variable.
 
 Notice also that some levels (such as splwrite) don't have an "out"
 section. This happens because there is no return value apart from a
-status code from those SMB calls. 
+status code from those SMB calls.
 
 So what about status codes? The status code is returned directly by
 the backend NTVFS interface when the call is performed
@@ -517,14 +516,14 @@ the process model that Samba3 supported is the "right" one for most
 users, but there are situations where this model wasn't ideal.
 
 In Samba4 you can choose the smbd process model on the smbd command
-line. 
+line.
 
 
 DCERPC binding strings
 ----------------------
 
 When connecting to a dcerpc service you need to specify a binding
-string. 
+string.
 
 The format is:
 
@@ -532,8 +531,8 @@ The format is:
 
 where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP
 
-"host" is an IP or hostname or netbios name. If the binding string 
-identifies the server side of an endpoint, "host" may be an empty 
+"host" is an IP or hostname or netbios name. If the binding string
+identifies the server side of an endpoint, "host" may be an empty
 string.
 
 "flags" can include a SMB pipe name if using the ncacn_np transport or
@@ -578,11 +577,11 @@ IDEA: Maybe extend UNC names like this?
 
 DCERPC Handles
 --------------
-The various handles that are used in the RPC servers should be created and 
+The various handles that are used in the RPC servers should be created and
 fetch using the dcesrv_handle_* functions.
 
-Use dcesrv_handle_new(struct dcesrv_connection \*, uint8 handle_type) to obtain 
-a new handle of the specified type. Handle types are unique within each 
+Use dcesrv_handle_new(struct dcesrv_connection \*, uint8 handle_type) to obtain
+a new handle of the specified type. Handle types are unique within each
 pipe.
 
 The handle can later be fetched again using::
