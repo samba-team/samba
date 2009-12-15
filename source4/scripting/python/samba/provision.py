@@ -359,12 +359,16 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
     if dnsdomain is None:
         dnsdomain = lp.get("realm")
-    assert dnsdomain is not None
+        if dnsdomain is None or dnsdomain == "":
+            raise ProvisioningError("guess_names: 'realm' not specified in supplied smb.conf!")
+
     dnsdomain = dnsdomain.lower()
 
     if serverrole is None:
         serverrole = lp.get("server role")
-    assert serverrole is not None
+        if serverrole is None:
+            raise ProvisioningError("guess_names: 'server role' not specified in supplied smb.conf!")
+
     serverrole = serverrole.lower()
 
     realm = dnsdomain.upper()
@@ -372,10 +376,14 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if lp.get("realm").upper() != realm:
         raise ProvisioningError("guess_names: Realm '%s' in smb.conf must match chosen realm '%s'!", lp.get("realm").upper(), realm)
 
+    if lp.get("server role").lower() != serverrole:
+        raise ProvisioningError("guess_names: server role '%s' in smb.conf must match chosen server role '%s'!", lp.get("server role").upper(), serverrole)
+
     if serverrole == "domain controller":
         if domain is None:
             domain = lp.get("workgroup")
-        assert domain is not None
+        if domain is None:
+            raise ProvisioningError("guess_names: 'workgroup' not specified in supplied smb.conf!")
         domain = domain.upper()
 
         if lp.get("workgroup").upper() != domain:
