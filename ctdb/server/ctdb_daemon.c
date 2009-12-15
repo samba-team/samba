@@ -75,9 +75,6 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 	/* start periodic update of tcp tickle lists */
        	ctdb_start_tcp_tickle_update(ctdb);
 
-	/* start periodic cleanup of holdback cleanup */
-	ctdb_start_holdback_cleanup(ctdb);
-
 	/* start listening for recovery daemon pings */
 	ctdb_control_recd_ping(ctdb);
 }
