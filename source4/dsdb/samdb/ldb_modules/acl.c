@@ -431,7 +431,9 @@ static int acl_allowedAttributes(struct ldb_module *module,
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			/* remove constructed attributes */
-			if (attr->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED) {
+			if (attr->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED
+			    || attr->systemOnly
+			    || (attr->linkID != 0 && attr->linkID % 2 != 0 )) {
 				continue;
 			}
 			ret = acl_check_access_on_attribute(module,

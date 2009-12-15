@@ -350,6 +350,14 @@ static const char **dsdb_full_attribute_list_internal_el(TALLOC_CTX *mem_ctx,
 	return attr_list;
 }
 
+static int qsort_string(const void *v1,
+			const void *v2)
+{
+	char * const *s1 = v1;
+	char * const *s2 = v2;
+	return strcasecmp(*s1, *s2);
+}
+
 /* Helper function to remove duplicates from the attribute list to be returned */
 static const char **dedup_attr_list(const char **attr_list) 
 {
@@ -359,13 +367,14 @@ static const char **dedup_attr_list(const char **attr_list)
 		int i;
 		qsort(attr_list, new_len,
 		      sizeof(*attr_list),
-		      (comparison_fn_t)strcasecmp);
+		      (comparison_fn_t)qsort_string);
 		
 		for (i=1 ; i < new_len; i++) {
 			const char **val1 = &attr_list[i-1];
 			const char **val2 = &attr_list[i];
 			if (ldb_attr_cmp(*val1, *val2) == 0) {
 				memmove(val1, val2, (new_len - i) * sizeof( *attr_list)); 
+				attr_list[new_len-1] = NULL;
 				new_len--;
 				i--;
 			}
