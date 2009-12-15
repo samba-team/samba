@@ -331,6 +331,49 @@ static int net_registry_getvalueraw(struct net_context *c, int argc,
 	return net_registry_getvalue_internal(c, argc, argv, true);
 }
 
+static int net_registry_getvaluesraw(struct net_context *c, int argc,
+				     const char **argv)
+{
+	WERROR werr;
+	int ret = -1;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	uint32_t idx;
+
+	if (argc != 1 || c->display_usage) {
+		d_fprintf(stderr, "usage: net rpc registry getvaluesraw "
+			  "<key>\n");
+		goto done;
+	}
+
+	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
+		goto done;
+	}
+
+	idx = 0;
+	while (true) {
+		struct registry_value *val;
+
+		werr = reg_enumvalue(talloc_tos(), key, idx, NULL, &val);
+
+		if (W_ERROR_EQUAL(werr, WERR_NO_MORE_ITEMS)) {
+			ret = 0;
+			break;
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			break;
+		}
+		print_registry_value(val, true);
+		TALLOC_FREE(val);
+		idx += 1;
+	}
+done:
+	TALLOC_FREE(ctx);
+	return ret;
+}
+
 static int net_registry_setvalue(struct net_context *c, int argc,
 				 const char **argv)
 {
@@ -785,6 +828,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Print a registry value (raw format)"),
 			N_("net registry getvalueraw\n"
 			   "    Print a registry value (raw format)")
+		},
+		{
+			"getvaluesraw",
+			net_registry_getvaluesraw,
+			NET_TRANSPORT_LOCAL,
+			"Print all values of a key in raw format",
+			"net registry getvaluesraw <key>\n"
+			"    Print a registry value (raw format)"
 		},
 		{
 			"setvalue",
