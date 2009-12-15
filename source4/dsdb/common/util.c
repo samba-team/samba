@@ -2736,3 +2736,17 @@ NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid)
 
 	return GUID_from_ndr_blob(v, guid);
 }
+
+/*
+  return true if a ldb_val containing a DN in storage form is deleted
+ */
+bool dsdb_dn_is_deleted_val(struct ldb_val *val)
+{
+	/* this relies on the sort order and exact format of
+	   linearized extended DNs */
+	if (val->length >= 12 &&
+	    strncmp((const char *)val->data, "<DELETED=1>;", 12) == 0) {
+		return true;
+	}
+	return false;
+}
