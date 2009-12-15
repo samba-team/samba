@@ -30,6 +30,8 @@ static const struct {
 	{ "TraverseTimeout",     20, offsetof(struct ctdb_tunable, traverse_timeout) },
 	{ "KeepaliveInterval",    5,  offsetof(struct ctdb_tunable, keepalive_interval) },
 	{ "KeepaliveLimit",       5,  offsetof(struct ctdb_tunable, keepalive_limit) },
+	{ "HoldbackCleanupInterval", 1000,
+	  offsetof(struct ctdb_tunable, holdback_cleanup_interval) },
 	{ "MaxLACount",           7,  offsetof(struct ctdb_tunable, max_lacount) },
 	{ "RecoverTimeout",      20,  offsetof(struct ctdb_tunable, recover_timeout) },
 	{ "RecoverInterval",      1,  offsetof(struct ctdb_tunable, recover_interval) },

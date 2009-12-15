@@ -95,6 +95,7 @@ struct ctdb_tunable {
 	uint32_t traverse_timeout;
 	uint32_t keepalive_interval;
 	uint32_t keepalive_limit;
+	uint32_t holdback_cleanup_interval;
 	uint32_t max_lacount;
 	uint32_t recover_timeout;
 	uint32_t recover_interval;
@@ -395,6 +396,7 @@ struct ctdb_context {
 	uint32_t recovery_mode;
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;
+	struct timed_event *holdback_cleanup_te;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode[NUM_DB_PRIORITIES+1];
 	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];
@@ -472,10 +474,21 @@ struct ctdb_db_context {
 	struct tdb_wrap *ltdb;
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
-	struct timed_event *te;
+	struct timed_event *seqnum_update;
 	struct ctdb_traverse_local_handle *traverse;
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
+
+	/*
+	 * The keys to hold back until CTDB_CONTROL_GOTIT is being
+	 * sent by a client having forced a migration to us.
+	 */
+	uint8_t **holdback_keys;
+
+	/*
+	 * The CTDB_REQ_CALLs held back according to "holdback_keys"
+	 */
+	struct ctdb_req_header **held_back;
 };
 
 
@@ -623,6 +636,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANS2_ACTIVE           = 116,
 		    CTDB_CONTROL_GET_LOG		 = 117,
 		    CTDB_CONTROL_CLEAR_LOG		 = 118,
+		    CTDB_CONTROL_TRANS3_COMMIT           = 119,
+		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
+		    CTDB_CONTROL_GOTIT			 = 121,
 };	
 
 /*
@@ -1166,6 +1182,11 @@ struct ctdb_control_wipe_database {
 	uint32_t transaction_id;
 };
 
+struct ctdb_control_gotit {
+	uint32_t db_id;
+	uint8_t key[1];
+};
+
 /*
   state of a in-progress ctdb call in client
 */
@@ -1233,6 +1254,10 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 void ctdb_start_keepalive(struct ctdb_context *ctdb);
 void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
+
+void ctdb_start_holdback_cleanup(struct ctdb_context *ctdb);
+void ctdb_stop_holdback_cleanup(struct ctdb_context *ctdb);
+int32_t ctdb_control_gotit(struct ctdb_context *ctdb, TDB_DATA indata);
 
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
@@ -1424,6 +1449,10 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c, 
 				   TDB_DATA recdata, bool *async_reply);
 
+int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   TDB_DATA recdata, bool *async_reply);
+
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
@@ -1529,5 +1558,9 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
+
+int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata);
 
 #endif

@@ -281,6 +281,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_SHUTDOWN:
 		ctdb_stop_recoverd(ctdb);
 		ctdb_stop_keepalive(ctdb);
+		ctdb_stop_holdback_cleanup(ctdb);
 		ctdb_stop_monitoring(ctdb);
 		ctdb_release_all_ips(ctdb);
 		if (ctdb->methods != NULL) {
@@ -428,6 +429,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_trans2_active(ctdb, c, *(uint32_t *)indata.dptr);
 
+	case CTDB_CONTROL_TRANS3_COMMIT:
+		return ctdb_control_trans3_commit(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_RECD_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_recd_ping(ctdb);
@@ -552,6 +556,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_CLEAR_LOG:
 		return ctdb_control_clear_log(ctdb);
+
+	case CTDB_CONTROL_GET_DB_SEQNUM:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint64_t));
+		return ctdb_control_get_db_seqnum(ctdb, indata, outdata);
+
+	case CTDB_CONTROL_GOTIT:
+		return ctdb_control_gotit(ctdb, indata);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

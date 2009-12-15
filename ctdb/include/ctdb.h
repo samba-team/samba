@@ -127,6 +127,9 @@ struct ctdb_call_info {
 /* the key used for transaction locking on persistent databases */
 #define CTDB_TRANSACTION_LOCK_KEY "__transaction_lock__"
 
+/* the key used to store persistent db sequence number */
+#define CTDB_DB_SEQNUM_KEY "__db_sequence_number__"
+
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
 struct ctdb_client_control_state {

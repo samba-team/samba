@@ -242,6 +242,91 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 }
 
 
+/*
+ * Store a set of persistent records.
+ * This is used to roll out a transaction to all nodes.
+ */
+int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   TDB_DATA recdata, bool *async_reply)
+{
+	struct ctdb_client *client;
+	struct ctdb_persistent_state *state;
+	int i;
+	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
+	struct ctdb_db_context *ctdb_db;
+
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_INFO,("rejecting ctdb_control_trans3_commit when recovery active\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, m->db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control_trans3_commit: "
+				 "Unknown database db_id[0x%08x]\n", m->db_id));
+		return -1;
+	}
+
+	client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store "
+				 "to a client. Returning error\n"));
+		return -1;
+	}
+
+	state = talloc_zero(ctdb, struct ctdb_persistent_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->ctdb = ctdb;
+	state->c    = c;
+
+	for (i = 0; i < ctdb->vnn_map->size; i++) {
+		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+		int ret;
+
+		/* only send to active nodes */
+		if (node->flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		ret = ctdb_daemon_send_control(ctdb, node->pnn, 0,
+					       CTDB_CONTROL_UPDATE_RECORD,
+					       c->client_id, 0, recdata,
+					       ctdb_persistent_callback,
+					       state);
+		if (ret == -1) {
+			DEBUG(DEBUG_ERR,("Unable to send "
+					 "CTDB_CONTROL_UPDATE_RECORD "
+					 "to pnn %u\n", node->pnn));
+			talloc_free(state);
+			return -1;
+		}
+
+		state->num_pending++;
+		state->num_sent++;
+	}
+
+	if (state->num_pending == 0) {
+		talloc_free(state);
+		return 0;
+	}
+
+	/* we need to wait for the replies */
+	*async_reply = true;
+
+	/* need to keep the control structure around */
+	talloc_steal(state, c);
+
+	/* but we won't wait forever */
+	event_add_timed(ctdb->ev, state,
+			timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			ctdb_persistent_store_timeout, state);
+
+	return 0;
+}
+
+
 struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_marshall_buffer *m;
@@ -730,4 +815,70 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	return ctdb_control_trans2_commit(ctdb, c, ctdb_marshall_finish(m), async_reply);
 }
 
+static int32_t ctdb_get_db_seqnum(struct ctdb_context *ctdb,
+				  uint32_t db_id,
+				  uint64_t *seqnum)
+{
+	int32_t ret;
+	struct ctdb_db_context *ctdb_db;
+	const char *keyname = CTDB_DB_SEQNUM_KEY;
+	TDB_DATA key;
+	TDB_DATA data;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", db_id));
+		ret = -1;
+		goto done;
+	}
+
+	key.dptr = (uint8_t *)discard_const(keyname);
+	key.dsize = strlen(keyname) + 1;
+
+	ret = (int32_t)ctdb_ltdb_fetch(ctdb_db, key, NULL, mem_ctx, &data);
+	if (ret != 0) {
+		goto done;
+	}
+
+	if (data.dsize != sizeof(uint64_t)) {
+		*seqnum = 0;
+		goto done;
+	}
+
+	*seqnum = *(uint64_t *)data.dptr;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/**
+ * Get the sequence number of a persistent database.
+ */
+int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata)
+{
+	uint32_t db_id;
+	int32_t ret;
+	uint64_t seqnum;
+
+	db_id = *(uint32_t *)indata.dptr;
+	ret = ctdb_get_db_seqnum(ctdb, db_id, &seqnum);
+	if (ret != 0) {
+		goto done;
+	}
+
+	outdata->dsize = sizeof(uint64_t);
+	outdata->dptr = (uint8_t *)talloc_zero(outdata, uint64_t);
+	if (outdata->dptr == NULL) {
+		ret = -1;
+		goto done;
+	}
+
+	*(outdata->dptr) = seqnum;
+
+done:
+	return ret;
+}
