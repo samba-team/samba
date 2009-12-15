@@ -102,9 +102,9 @@ static void pvfs_wait_timeout(struct tevent_context *ev,
 
 	pwait->reason = PVFS_WAIT_TIMEOUT;
 
-	talloc_increase_ref_count(req);
+	talloc_reference(ev, req);
 	ntvfs_async_setup(pwait->req, pwait);
-	talloc_free(req);
+	talloc_unlink(ev, req);
 }
 
 
