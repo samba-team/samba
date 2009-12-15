@@ -760,7 +760,11 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		NULL
 	};
 
-	DEBUG(10, ("ldb:acl_modify: %s\n", req->op.mod.message->elements[0].name));
+	/* Don't print this debug statement if elements[0].name is going to be NULL */
+	if(req->op.mod.message->num_elements > 0)
+	{
+		DEBUG(10, ("ldb:acl_modify: %s\n", req->op.mod.message->elements[0].name));
+	}
 	if (what_is_user(module) == SECURITY_SYSTEM) {
 		return ldb_next_request(module, req);
 	}
