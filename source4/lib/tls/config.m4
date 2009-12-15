@@ -41,5 +41,8 @@ if test x$use_gnutls = xyes; then
 	AC_DEFINE(ENABLE_GNUTLS,1,[Whether we have gnutls support (SSL)])
 	AC_CHECK_HEADERS(gcrypt.h)
 	AC_CHECK_LIB_EXT(gcrypt, GCRYPT_LIBS, gcry_control)
+	# On Solaris libgcrypt.so has a bug and seems to be not linked
+	# to libgpg-error.so, so we need to manually add them...
+	AC_CHECK_LIB_EXT(gpg-error, GCRYPT_LIBS, gpg_err_code_from_errno)
 	SMB_EXT_LIB(GCRYPT, $GCRYPT_LIBS)
 fi
