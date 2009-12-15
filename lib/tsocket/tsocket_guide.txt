@@ -32,15 +32,15 @@ endpoint for debugging. Callers should not try to parse
 the string! The should use additional methods of the specific
 tsocket_address implemention to get more details.
 
-   char *tsocket_address_string(const struct tsocket_address *addr,
-                                TALLOC_CTX *mem_ctx);
+  char *tsocket_address_string(const struct tsocket_address *addr,
+      TALLOC_CTX *mem_ctx);
 
 There's a function to create a copy of the tsocket_address.
 This is useful when before doing modifications to a socket
 via additional methods of the specific tsocket_address implementation.
 
-   struct tsocket_address *tsocket_address_copy(const struct tsocket_address *addr,
-                                                TALLOC_CTX *mem_ctx);
+  struct tsocket_address *tsocket_address_copy(const struct tsocket_address *addr,
+      TALLOC_CTX *mem_ctx);
 
 The tdgram_context abstraction
 ==============================
@@ -58,23 +58,24 @@ when a datagram is available or an error happened.
 
 The callback is then supposed to get the result by calling
 tdgram_recvfrom_recv() on the 'tevent_req'. It returns -1
-and sets *perrno to the actual 'errno' on failure.
+and sets '*perrno' to the actual 'errno' on failure.
 Otherwise it returns the length of the datagram
-(0 is never returned!). *buf will contain the buffer of the
-datagram and *src the abstracted tsocket_address of the sender
+(0 is never returned!). '*buf' will contain the buffer of the
+datagram and '*src' the abstracted tsocket_address of the sender
 of the received datagram.
 
 The caller can only have one outstanding tdgram_recvfrom_send()
-at a time otherwise the caller will get *perrno = EBUSY.
+at a time otherwise the caller will get '*perrno = EBUSY'.
 
-struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					struct tdgram_context *dgram);
-ssize_t tdgram_recvfrom_recv(struct tevent_req *req,
-			     int *perrno,
-			     TALLOC_CTX *mem_ctx,
-			     uint8_t **buf,
-			     struct tsocket_address **src);
+  struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tdgram_context *dgram);
+
+  ssize_t tdgram_recvfrom_recv(struct tevent_req *req,
+      int *perrno,
+      TALLOC_CTX *mem_ctx,
+      uint8_t **buf,
+      struct tsocket_address **src);
 
 The tdgram_sendto_send() method can be called to send a
 datagram (specified by a buf/len) to a destination endpoint
@@ -86,35 +87,37 @@ has delivered the datagram to the "wire".
 
 The callback is then supposed to get the result by calling
 tdgram_sendto_recv() on the 'tevent_req'. It returns -1
-and sets *perrno to the actual 'errno' on failure.
+and sets '*perrno' to the actual 'errno' on failure.
 Otherwise it returns the length of the datagram
 (0 is never returned!).
 
 The caller can only have one outstanding tdgram_sendto_send()
-at a time otherwise the caller will get *perrno = EBUSY.
+at a time otherwise the caller will get '*perrno = EBUSY'.
 
-struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct tdgram_context *dgram,
-				      const uint8_t *buf, size_t len,
-				      const struct tsocket_address *dst);
-ssize_t tdgram_sendto_recv(struct tevent_req *req,
-			   int *perrno);
+  struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tdgram_context *dgram,
+      const uint8_t *buf, size_t len,
+      const struct tsocket_address *dst);
+
+  ssize_t tdgram_sendto_recv(struct tevent_req *req,
+      int *perrno);
 
 The tdgram_disconnect_send() method should be used to normally
 shutdown/close the abstracted socket.
 
 The caller should make sure there're no outstanding tdgram_recvfrom_send()
-and tdgram_sendto_send() calls otherwise the caller will get *perrno = EBUSY.
+and tdgram_sendto_send() calls otherwise the caller will get '*perrno = EBUSY'.
 
 Note: you can always use talloc_free(tdgram) to cleanup the resources
 of the tdgram_context on a fatal error.
 
-struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
-					  struct tevent_context *ev,
-					  struct tdgram_context *dgram);
-int tdgram_disconnect_recv(struct tevent_req *req,
-			   int *perrno);
+  struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tdgram_context *dgram);
+
+  int tdgram_disconnect_recv(struct tevent_req *req,
+      int *perrno);
 
 The tstream_context abstraction
 ===============================
@@ -130,7 +133,7 @@ but not consumed yet. It returns -1 and sets 'errno' on failure.
 Otherwise it returns the number of uncomsumed bytes
 (it can return 0!).
 
-ssize_t tstream_pending_bytes(struct tstream_context *stream);
+  ssize_t tstream_pending_bytes(struct tstream_context *stream);
 
 The tstream_readv_send() method can be called to read for a
 specific amount of bytes from the stream into the buffers
@@ -144,20 +147,21 @@ filled with bytes from the socket or an error happened.
 
 The callback is then supposed to get the result by calling
 tstream_readv_recv() on the 'tevent_req'. It returns -1
-and sets *perrno to the actual 'errno' on failure.
+and sets '*perrno' to the actual 'errno' on failure.
 Otherwise it returns the length of the datagram
 (0 is never returned!).
 
 The caller can only have one outstanding tstream_readv_send()
 at a time otherwise the caller will get *perrno = EBUSY.
 
-struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct tstream_context *stream,
-				      struct iovec *vector,
-				      size_t count);
-int tstream_readv_recv(struct tevent_req *req,
-		       int *perrno);
+  struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tstream_context *stream,
+      struct iovec *vector,
+      size_t count);
+
+  int tstream_readv_recv(struct tevent_req *req,
+      int *perrno);
 
 The tstream_writev_send() method can be called to write
 buffers in the given iovec vector into the stream socket.
@@ -169,35 +173,37 @@ has delivered the all buffers to the "wire".
 
 The callback is then supposed to get the result by calling
 tstream_writev_recv() on the 'tevent_req'. It returns -1
-and sets *perrno to the actual 'errno' on failure.
+and sets '*perrno' to the actual 'errno' on failure.
 Otherwise it returns the total amount of bytes sent.
 (0 is never returned!).
 
 The caller can only have one outstanding tstream_writev_send()
-at a time otherwise the caller will get *perrno = EBUSY.
+at a time otherwise the caller will get '*perrno = EBUSY'.
 
-struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
-				       struct tstream_context *stream,
-				       const struct iovec *vector,
-				       size_t count);
-int tstream_writev_recv(struct tevent_req *req,
-			int *perrno);
+  struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tstream_context *stream,
+      const struct iovec *vector,
+      size_t count);
+
+  int tstream_writev_recv(struct tevent_req *req,
+      int *perrno);
 
 The tstream_disconnect_send() method should be used to normally
 shutdown/close the abstracted socket.
 
 The caller should make sure there're no outstanding tstream_readv_send()
-and tstream_writev_send() calls otherwise the caller will get *perrno = EBUSY.
+and tstream_writev_send() calls otherwise the caller will get '*perrno = EBUSY'.
 
 Note: you can always use talloc_free(tstream) to cleanup the resources
 of the tstream_context on a fatal error.
 
-struct tevent_req *tstream_disconnect_send(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev,
-					   struct tstream_context *stream);
-int tstream_disconnect_recv(struct tevent_req *req,
-			    int *perrno);
+  struct tevent_req *tstream_disconnect_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tstream_context *stream);
+
+  int tstream_disconnect_recv(struct tevent_req *req,
+      int *perrno);
 
 PDU receive helper functions
 ============================
@@ -221,17 +227,19 @@ and it's private state.
 See the 'dcerpc_read_ncacn_packet_send/recv' functions in Samba as an
 example.
 
-typedef int (*tstream_readv_pdu_next_vector_t)(struct tstream_context *stream,
-					       void *private_data,
-					       TALLOC_CTX *mem_ctx,
-					       struct iovec **vector,
-					       size_t *count);
-struct tevent_req *tstream_readv_pdu_send(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
-				struct tstream_context *stream,
-				tstream_readv_pdu_next_vector_t next_vector_fn,
-				void *next_vector_private);
-int tstream_readv_pdu_recv(struct tevent_req *req, int *perrno);
+  typedef int (*tstream_readv_pdu_next_vector_t)(struct tstream_context *stream,
+      void *private_data,
+      TALLOC_CTX *mem_ctx,
+      struct iovec **vector,
+      size_t *count);
+
+  struct tevent_req *tstream_readv_pdu_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tstream_context *stream,
+      tstream_readv_pdu_next_vector_t next_vector_fn,
+      void *next_vector_private);
+
+  int tstream_readv_pdu_recv(struct tevent_req *req, int *perrno);
 
 Async 'tevent_queue' based helper functions
 ===========================================
@@ -245,30 +253,33 @@ There're some helpers using 'tevent_queue' to make it easier
 for callers. The functions just get a 'queue' argument
 and serialize the operations.
 
-struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct tdgram_context *dgram,
-					    struct tevent_queue *queue,
-					    const uint8_t *buf,
-					    size_t len,
-					    struct tsocket_address *dst);
-ssize_t tdgram_sendto_queue_recv(struct tevent_req *req, int *perrno);
+  struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tdgram_context *dgram,
+      struct tevent_queue *queue,
+      const uint8_t *buf,
+      size_t len,
+      struct tsocket_address *dst);
 
-struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
-				struct tstream_context *stream,
-				struct tevent_queue *queue,
-				tstream_readv_pdu_next_vector_t next_vector_fn,
-				void *next_vector_private);
-int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
+  ssize_t tdgram_sendto_queue_recv(struct tevent_req *req, int *perrno);
 
-struct tevent_req *tstream_writev_queue_send(TALLOC_CTX *mem_ctx,
-					     struct tevent_context *ev,
-					     struct tstream_context *stream,
-					     struct tevent_queue *queue,
-					     const struct iovec *vector,
-					     size_t count);
-int tstream_writev_queue_recv(struct tevent_req *req, int *perrno);
+  struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tstream_context *stream,
+      struct tevent_queue *queue,
+      tstream_readv_pdu_next_vector_t next_vector_fn,
+      void *next_vector_private);
+
+  int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
+
+  struct tevent_req *tstream_writev_queue_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      struct tstream_context *stream,
+      struct tevent_queue *queue,
+      const struct iovec *vector,
+      size_t count);
+
+  int tstream_writev_queue_recv(struct tevent_req *req, int *perrno);
 
 BSD sockets: ipv4, ipv6 and unix
 ================================
@@ -286,26 +297,26 @@ ip address string based on the selected family
 which gets mapped to "0.0.0.0" or "::".
 It return -1 and set errno on error. Otherwise it returns 0.
 
-int tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
-				      const char *family,
-				      const char *addr_string,
-				      uint16_t port,
-				      struct tsocket_address **addr);
+  int tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
+      const char *family,
+      const char *addr_string,
+      uint16_t port,
+      struct tsocket_address **addr);
 
 To get the ip address string of an existing 'inet' tsocket_address
 you can use the tsocket_address_inet_addr_string() function.
 It will return NULL and set errno to EINVAL if the tsocket_address
 doesn't represent an ipv4 or ipv6 endpoint address.
 
-char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
-				       TALLOC_CTX *mem_ctx);
+  char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
+      TALLOC_CTX *mem_ctx);
 
 To get the port number of an existing 'inet' tsocket_address
 you can use the tsocket_address_inet_port() function.
 It will return 0 and set errno to EINVAL if the tsocket_address
 doesn't represent an ipv4 or ipv6 endpoint address.
 
-uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
+  uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
 
 To set the port number of an existing 'inet' tsocket_address
 you can use the tsocket_address_inet_set_port() function.
@@ -313,8 +324,8 @@ It will return -1 and set errno to EINVAL if the tsocket_address
 doesn't represent an ipv4 or ipv6 endpoint address.
 It returns 0 on success.
 
-int tsocket_address_inet_set_port(struct tsocket_address *addr,
-				  uint16_t port);
+  int tsocket_address_inet_set_port(struct tsocket_address *addr,
+      uint16_t port);
 
 You can use the tsocket_address_unix_from_path()
 function to create a tsocket_address for unix domain
@@ -324,17 +335,17 @@ the low level kernel supports the function will
 return -1 and set errno to ENAMETOOLONG.
 On success it returns 0.
 
-int tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
-				   const char *path,
-				   struct tsocket_address **addr);
+  int tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
+      const char *path,
+      struct tsocket_address **addr);
 
 To get the path of an 'unix' tsocket_address
 you can use the tsocket_address_unix_path() function.
 It will return NULL and set errno to EINVAL if the tsocket_address
 doesn't represent an unix domain endpoint path.
 
-char *tsocket_address_unix_path(const struct tsocket_address *addr,
-				TALLOC_CTX *mem_ctx);
+  char *tsocket_address_unix_path(const struct tsocket_address *addr,
+      TALLOC_CTX *mem_ctx);
 
 You can use tdgram_inet_udp_socket() to create a tdgram_context
 for ipv4 or ipv6 UDP communication. "local_address" has to be
@@ -343,10 +354,10 @@ endpoint. "remote_address" can be NULL or an 'inet' tsocket_address
 presenting a remote endpoint. It returns -1 ans sets errno on error
 and it returns 0 on success.
 
-int tdgram_inet_udp_socket(const struct tsocket_address *local_address,
-			   const struct tsocket_address *remote_address,
-			   TALLOC_CTX *mem_ctx,
-			   struct tdgram_context **dgram);
+  int tdgram_inet_udp_socket(const struct tsocket_address *local_address,
+      const struct tsocket_address *remote_address,
+      TALLOC_CTX *mem_ctx,
+      struct tdgram_context **dgram);
 
 You can use tdgram_unix_socket() to create a tdgram_context
 for unix domain datagram communication. "local_address" has to be
@@ -355,10 +366,10 @@ endpoint. "remote_address" can be NULL or an 'unix' tsocket_address
 presenting a remote endpoint. It returns -1 ans sets errno on error
 and it returns 0 on success.
 
-int tdgram_unix_socket(const struct tsocket_address *local,
-		       const struct tsocket_address *remote,
-		       TALLOC_CTX *mem_ctx,
-		       struct tdgram_context **dgram);
+  int tdgram_unix_socket(const struct tsocket_address *local,
+      const struct tsocket_address *remote,
+      TALLOC_CTX *mem_ctx,
+      struct tdgram_context **dgram);
 
 You can use tstream_inet_tcp_connect_send to async
 connect to a remote ipv4 or ipv6 TCP endpoint and create a
@@ -372,18 +383,19 @@ or an error happened.
 
 The callback is then supposed to get the result by calling
 tstream_inet_tcp_connect_recv() on the 'tevent_req'. It returns -1
-and sets *perrno to the actual 'errno' on failure.
+and sets '*perrno' to the actual 'errno' on failure.
 It returns 0 on success and returns the new tstream_context
-in *stream.
+in '*stream'.
 
-struct tevent_req *tstream_inet_tcp_connect_send(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
-				const struct tsocket_address *local_address,
-				const struct tsocket_address *remote_address);
-int tstream_inet_tcp_connect_recv(struct tevent_req *req,
-				  int *perrno,
-				  TALLOC_CTX *mem_ctx,
-				  struct tstream_context **stream);
+  struct tevent_req *tstream_inet_tcp_connect_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      const struct tsocket_address *local_address,
+      const struct tsocket_address *remote_address);
+
+  int tstream_inet_tcp_connect_recv(struct tevent_req *req,
+      int *perrno,
+      TALLOC_CTX *mem_ctx,
+      struct tstream_context **stream);
 
 You can use tstream_unix_connect_send to async
 connect to a unix domain endpoint and create a
@@ -398,28 +410,29 @@ or an error happened.
 
 The callback is then supposed to get the result by calling
 tstream_unix_connect_recv() on the 'tevent_req'. It returns -1
-and sets *perrno to the actual 'errno' on failure.
+and sets '*perrno' to the actual 'errno' on failure.
 It returns 0 on success and returns the new tstream_context
-in *stream.
+in '*stream'.
 
-struct tevent_req *tstream_unix_connect_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const struct tsocket_address *local,
-					const struct tsocket_address *remote);
-int _tstream_unix_connect_recv(struct tevent_req *req,
-			       int *perrno,
-			       TALLOC_CTX *mem_ctx,
-			       struct tstream_context **stream);
+  struct tevent_req *tstream_unix_connect_send(TALLOC_CTX *mem_ctx,
+      struct tevent_context *ev,
+      const struct tsocket_address *local,
+      const struct tsocket_address *remote);
+
+  int _tstream_unix_connect_recv(struct tevent_req *req,
+      int *perrno,
+      TALLOC_CTX *mem_ctx,
+      struct tstream_context **stream);
 
 You can use tstream_unix_socketpair to create two connected
 'unix' tsocket_contexts for the stream based communication.
 It returns -1 and sets errno on error and it returns 0 on
 success.
 
-int tstream_unix_socketpair(TALLOC_CTX *mem_ctx1,
-			    struct tstream_context **stream1,
-			    TALLOC_CTX *mem_ctx2,
-			    struct tstream_context **stream2);
+  int tstream_unix_socketpair(TALLOC_CTX *mem_ctx1,
+      struct tstream_context **stream1,
+      TALLOC_CTX *mem_ctx2,
+      struct tstream_context **stream2);
 
 In some situations it's needed to create a tsocket_address from
 a given 'struct sockaddr'. You can use tsocket_address_bsd_from_sockaddr()
@@ -428,10 +441,10 @@ already existing fixed APIs. Only AF_INET, AF_INET6 and AF_UNIX
 sockets are allowed. The function returns -1 and set errno on error.
 Otherwise it returns 0.
 
-int tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
-				      struct sockaddr *sa,
-				      socklen_t sa_socklen,
-				      struct tsocket_address **addr);
+  int tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
+      struct sockaddr *sa,
+      socklen_t sa_socklen,
+      struct tsocket_address **addr);
 
 In some situations it's needed to get a 'struct sockaddr' from a
 given tsocket_address . You can use tsocket_address_bsd_sockaddr()
@@ -439,20 +452,20 @@ for that. This should only be used if really needed. Only AF_INET,
 AF_INET6 and AF_UNIX are supported. It returns the size of '*sa' on
 success, otherwise it returns -1 and sets 'errno'.
 
-int tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
-				 struct sockaddr *sa,
-				 socklen_t *sa_socklen);
+  ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
+      struct sockaddr *sa,
+      socklen_t sa_socklen);
 
 In some situations it's needed to wrap existing file descriptors
 into the tstream abstraction. You can use tstream_bsd_existing_socket()
 for that. But you should read the tsocket_bsd.c code and unterstand it
 in order use this function. E.g. the fd has to be non blocking already.
 It will return -1 and set errno on error. Otherwise it returns 0
-and sets *stream to point to the new tstream_context.
+and sets '*stream' to point to the new tstream_context.
 
-int tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
-				int fd,
-				struct tstream_context **stream);
+  int tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
+      int fd,
+      struct tstream_context **stream);
 
 Virtual Sockets
 ===============
