@@ -56,17 +56,6 @@
 #define SYSLOG_FACILITY LOG_DAEMON
 #endif
 
-/* 
- * Default number of maximum open files per smbd. This is
- * also limited by the maximum available file descriptors
- * per process and can also be set in smb.conf as "max open files"
- * in the [global] section.
- */
-
-#ifndef MAX_OPEN_FILES
-#define MAX_OPEN_FILES 10000
-#endif
-
 /*
  * Fudgefactor required for open tdb's, etc.
  */
@@ -82,7 +71,18 @@
  */
 
 #ifndef MIN_OPEN_FILES_WINDOWS
-#define MIN_OPEN_FILES_WINDOWS 1050
+#define MIN_OPEN_FILES_WINDOWS 16384
+#endif
+
+/*
+ * Default number of maximum open files per smbd. This is
+ * also limited by the maximum available file descriptors
+ * per process and can also be set in smb.conf as "max open files"
+ * in the [global] section.
+ */
+
+#ifndef MAX_OPEN_FILES
+#define MAX_OPEN_FILES (MIN_OPEN_FILES_WINDOWS + MAX_OPEN_FUDGEFACTOR)
 #endif
 
 #define WORDMAX 0xFFFF
