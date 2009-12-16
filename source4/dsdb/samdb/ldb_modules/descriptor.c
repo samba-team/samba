@@ -536,6 +536,11 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 		sd_flags = sdctr->secinfo_flags;
 		/* we only care for the last 4 bits */
 		sd_flags = sd_flags & 0x0000000F;
+		if (sd_flags == 0) {
+			/* MS-ADTS 3.1.1.3.4.1.11 says that no bits
+			   equals all 4 bits */
+			sd_flags = 0xF;
+		}
 	}
 
 	switch (ares->type) {
@@ -589,7 +594,6 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	struct ldb_message *msg;
 	struct ldb_control *sd_control;
 	struct ldb_control *sd_control2;
-	struct ldb_control **saved_controls;
 	int flags = 0;
 	uint32_t sd_flags = 0;
 
@@ -646,13 +650,10 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	/* save it locally and remove it from the list */
-	/* we do not need to replace them later as we
-	 * are keeping the original req intact */
+	/* mark it non-critical, so we don't get an error from the
+	   backend, but mark that we've handled it */
 	if (sd_control) {
-		if (!save_controls(sd_control, mod_req, &saved_controls)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+		sd_control->critical = 0;
 	}
 
 	return ldb_next_request(ac->module, mod_req);
@@ -836,7 +837,6 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	struct ldb_context *ldb;
 	struct ldb_control *sd_control;
-	struct ldb_control **saved_controls;
 	struct ldb_request *down_req;
 	struct descriptor_context *ac;
 
@@ -862,13 +862,9 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	/* save it locally and remove it from the list */
-	/* we do not need to replace them later as we
-	 * are keeping the original req intact */
+	/* mark it as handled */
 	if (sd_control) {
-		if (!save_controls(sd_control, down_req, &saved_controls)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+		sd_control->critical = 0;
 	}
 
 	return ldb_next_request(ac->module, down_req);
