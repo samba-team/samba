@@ -2782,3 +2782,67 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
+
+
+/*
+  find a NC root given a DN within the NC
+ */
+int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
+		      struct ldb_dn **nc_root)
+{
+	const char *root_attrs[] = { "namingContexts", NULL };
+	TALLOC_CTX *tmp_ctx;
+	int ret;
+	struct ldb_message_element *el;
+	struct ldb_result *root_res;
+	int i;
+	struct ldb_dn **nc_dns;
+
+	tmp_ctx = talloc_new(samdb);
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(samdb, tmp_ctx, &root_res,
+			 ldb_dn_new(tmp_ctx, samdb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
+	if (ret) {
+		DEBUG(1,("Searching for namingContexts in rootDSE failed: %s\n", ldb_errstring(samdb)));
+		talloc_free(tmp_ctx);
+		return ret;
+       }
+
+       el = ldb_msg_find_element(root_res->msgs[0], "namingContexts");
+       if (!el) {
+               DEBUG(1,("Finding namingContexts element in root_res failed: %s\n",
+			ldb_errstring(samdb)));
+	       talloc_free(tmp_ctx);
+	       return LDB_ERR_NO_SUCH_ATTRIBUTE;
+       }
+
+       nc_dns = talloc_array(tmp_ctx, struct ldb_dn *, el->num_values);
+       if (!nc_dns) {
+	       talloc_free(tmp_ctx);
+	       return LDB_ERR_OPERATIONS_ERROR;
+       }
+
+       for (i=0; i<el->num_values; i++) {
+	       nc_dns[i] = ldb_dn_from_ldb_val(nc_dns, samdb, &el->values[i]);
+	       if (nc_dns[i] == NULL) {
+		       talloc_free(tmp_ctx);
+		       return LDB_ERR_OPERATIONS_ERROR;
+	       }
+       }
+
+       qsort(nc_dns, el->num_values, sizeof(nc_dns[0]), (comparison_fn_t)ldb_dn_compare);
+
+       for (i=0; i<el->num_values; i++) {
+               if (ldb_dn_compare_base(nc_dns[i], dn) == 0) {
+		       (*nc_root) = talloc_steal(mem_ctx, nc_dns[i]);
+                       talloc_free(tmp_ctx);
+                       return LDB_SUCCESS;
+               }
+       }
+
+       talloc_free(tmp_ctx);
+       return LDB_ERR_NO_SUCH_OBJECT;
+}
