@@ -1289,17 +1289,6 @@ _PUBLIC_ NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, 
 	return NT_STATUS_OK;
 }
 
-struct socket_address *gensec_get_my_addr(struct gensec_security *gensec_security) 
-{
-	if (gensec_security->my_addr) {
-		return gensec_security->my_addr;
-	}
-
-	/* We could add a 'set sockaddr' call, and do a lookup.  This
-	 * would avoid needing to do system calls if nothing asks. */
-	return NULL;
-}
-
 _PUBLIC_ struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security) 
 {
 	if (gensec_security->peer_addr) {

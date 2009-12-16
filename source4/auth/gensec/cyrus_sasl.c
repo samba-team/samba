@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/tsocket/tsocket.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
@@ -117,8 +118,8 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 	struct gensec_sasl_state *gensec_sasl_state;
 	const char *service = gensec_get_target_service(gensec_security);
 	const char *target_name = gensec_get_target_hostname(gensec_security);
-	struct socket_address *local_socket_addr = gensec_get_my_addr(gensec_security);
 	struct socket_address *remote_socket_addr = gensec_get_peer_addr(gensec_security);
+	const struct tsocket_address *tlocal_addr = gensec_get_local_address(gensec_security);
 	char *local_addr = NULL;
 	char *remote_addr = NULL;
 	int sasl_ret;
@@ -153,11 +154,11 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 
 	gensec_security->private_data = gensec_sasl_state;
 
-	if (local_socket_addr) {
-		local_addr = talloc_asprintf(gensec_sasl_state, 
-					     "%s;%d",
-					     local_socket_addr->addr, 
-					     local_socket_addr->port);
+	if (tlocal_addr) {
+		local_addr = talloc_asprintf(gensec_sasl_state,
+				"%s;%d",
+				tsocket_address_inet_addr_string(tlocal_addr, gensec_sasl_state),
+				tsocket_address_inet_port(tlocal_addr));
 	}
 
 	if (remote_socket_addr) {
