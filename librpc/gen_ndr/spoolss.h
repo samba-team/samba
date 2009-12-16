@@ -1425,6 +1425,14 @@ struct spoolss_DriverInfo6 {
 	const char * provider;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 }/* [gensize,public] */;
 
+struct spoolss_DriverInfo7 {
+	uint32_t size;
+	enum spoolss_DriverOSVersion version;
+	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * inf_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * install_source_root;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [gensize,public] */;
+
 struct spoolss_DriverInfo8 {
 	enum spoolss_DriverOSVersion version;
 	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -1502,6 +1510,7 @@ union spoolss_DriverInfo {
 	struct spoolss_DriverInfo4 info4;/* [case(4)] */
 	struct spoolss_DriverInfo5 info5;/* [case(5)] */
 	struct spoolss_DriverInfo6 info6;/* [case(6)] */
+	struct spoolss_DriverInfo7 info7;/* [case(7)] */
 	struct spoolss_DriverInfo8 info8;/* [case(8)] */
 	struct spoolss_DriverInfo101 info101;/* [case(101)] */
 }/* [relative_base,gensize,public,nodiscriminant] */;
