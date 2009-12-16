@@ -1017,7 +1017,7 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 	unlink(name);
 
 	tdb_flags = TDB_NOLOCK;
-	if (!ctdb->do_setsched) {
+	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
 

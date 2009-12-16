@@ -1683,7 +1683,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	}
 
 	tdb_flags = persistent?TDB_DEFAULT:TDB_NOSYNC;
-	if (!ctdb->do_setsched) {
+	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
 

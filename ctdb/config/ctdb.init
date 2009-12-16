@@ -153,7 +153,7 @@ start() {
     case $init_style in
 	valgrind)
 	    valgrind -q --log-file=/var/log/ctdb_valgrind \
-		$ctdbd --nosetsched $CTDB_OPTIONS 
+		$ctdbd --valgrinding $CTDB_OPTIONS
 	    RETVAL=$?
 	    echo
 	    ;;

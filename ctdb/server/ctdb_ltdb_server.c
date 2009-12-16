@@ -248,7 +248,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 					   db_name, ctdb->pnn);
 
 	tdb_flags = persistent? TDB_DEFAULT : TDB_CLEAR_IF_FIRST | TDB_NOSYNC;
-	if (!ctdb->do_setsched) {
+	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
 

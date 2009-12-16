@@ -514,6 +514,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 	struct vacuum_tuning_data tdata;
 	struct vacuum_tuning_data *tptr;
 	char *vac_dbname;
+	int flags;
 
 	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u",
 					ctdb_db->ctdb->db_directory, 
@@ -524,7 +525,8 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 		return -1;
 	}
 
-	tune_tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
+	flags = ctdb_db->ctdb->valgrinding ? TDB_NOMMAP : 0;
+	tune_tdb = tdb_open(vac_dbname, 0, flags, O_RDWR|O_CREAT, 0644);
 	if (tune_tdb == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
 		talloc_free(tmp_ctx);
@@ -677,6 +679,7 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 	char *vac_dbname;
 	uint interval = ctdb_db->ctdb->tunable.vacuum_default_interval;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	int flags;
 
 	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u", ctdb->db_directory, TUNINGDBNAME, ctdb->pnn);
 	if (vac_dbname == NULL) {
@@ -685,7 +688,8 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 		return interval;
 	}
 
-	tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
+	flags = ctdb_db->ctdb->valgrinding ? TDB_NOMMAP : 0;
+	tdb = tdb_open(vac_dbname, 0, flags, O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
 		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval\n", vac_dbname));
 		talloc_free(tmp_ctx);
