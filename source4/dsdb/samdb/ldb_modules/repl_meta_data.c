@@ -572,6 +572,59 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 		  discard_const_p(void, schema), (ldb_qsort_cmp_fn_t)replmd_ldb_message_element_attid_sort);
 }
 
+static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+			       const struct GUID *invocation_id, uint64_t seq_num, time_t t);
+
+/*
+  fix up linked attributes in replmd_add.
+  This involves setting up the right meta-data in extended DN
+  components, and creating backlinks to the object
+ */
+static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_element *el,
+			     uint64_t seq_num, const struct GUID *invocationId, time_t t,
+			     struct GUID *guid, const struct dsdb_attribute *sa)
+{
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(el->values);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+
+	for (i=0; i<el->num_values; i++) {
+		struct ldb_val *v = &el->values[i];
+		struct dsdb_dn *dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, v, sa->syntax->ldap_oid);
+		struct GUID target_guid;
+		NTSTATUS status;
+		int ret;
+
+		ret = replmd_build_la_val(el->values, v, dsdb_dn, invocationId, seq_num, t);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		/* note that the DN already has the extended
+		   components from the extended_dn_store module */
+		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &target_guid);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
+/*
+  intercept add requests
+ */
 static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -727,6 +780,19 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			 */
 			continue;
 		}
+
+#if W2K3_LINKED_ATTRIBUTES
+		if (sa->linkID != 0 && dsdb_functional_level(ldb) > DS_DOMAIN_FUNCTION_2000) {
+			ret = replmd_add_fix_la(module, e, ac->seq_num, our_invocation_id, t, &guid, sa);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(ac);
+				return ret;
+			}
+			/* linked attributes are not stored in
+			   replPropertyMetaData in FL above w2k */
+			continue;
+		}
+#endif
 
 		m->attid			= sa->attributeID_id;
 		m->version			= 1;
@@ -1106,10 +1172,10 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
   RMD_USN        = originating_usn
   RMD_VERSION    = version
  */
-static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct parsed_dn *p,
+static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num, time_t t)
 {
-	struct ldb_dn *dn = p->dsdb_dn->dn;
+	struct ldb_dn *dn = dsdb_dn->dn;
 	NTTIME now;
 	const char *tstring, *usn_string;
 	struct ldb_val tval;
@@ -1153,7 +1219,7 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct pa
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
 	if (ret != LDB_SUCCESS) return ret;
 
-	dnstring = dsdb_dn_get_extended_linearized(mem_ctx, p->dsdb_dn, 1);
+	dnstring = dsdb_dn_get_extended_linearized(mem_ctx, dsdb_dn, 1);
 	if (dnstring == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1168,11 +1234,11 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct pa
 
   see replmd_build_la_val for value names
  */
-static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct parsed_dn *p,
-				struct parsed_dn *old_p, const struct GUID *invocation_id,
+static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
 				uint64_t seq_num, time_t t, bool deleted)
 {
-	struct ldb_dn *dn = p->dsdb_dn->dn;
+	struct ldb_dn *dn = dsdb_dn->dn;
 	NTTIME now;
 	const char *tstring, *usn_string;
 	struct ldb_val tval;
@@ -1212,11 +1278,11 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct p
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* get the ADDTIME from the original */
-	old_addtime = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "RMD_ADDTIME");
+	old_addtime = ldb_dn_get_extended_component(old_dsdb_dn->dn, "RMD_ADDTIME");
 	if (old_addtime == NULL) {
 		old_addtime = &tval;
 	}
-	if (p != old_p) {
+	if (dsdb_dn != old_dsdb_dn) {
 		ret = ldb_dn_set_extended_component(dn, "RMD_ADDTIME", old_addtime);
 		if (ret != LDB_SUCCESS) return ret;
 	}
@@ -1234,7 +1300,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct p
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* increase the version by 1 */
-	old_version = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "RMD_VERSION");
+	old_version = ldb_dn_get_extended_component(old_dsdb_dn->dn, "RMD_VERSION");
 	if (old_version == NULL) {
 		vers = data_blob_string_const("0");
 	} else {
@@ -1250,7 +1316,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct p
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
 	if (ret != LDB_SUCCESS) return ret;
 
-	dnstring = dsdb_dn_get_extended_linearized(mem_ctx, p->dsdb_dn, 1);
+	dnstring = dsdb_dn_get_extended_linearized(mem_ctx, dsdb_dn, 1);
 	if (dnstring == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1310,7 +1376,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				talloc_free(tmp_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			ret = replmd_build_la_val(new_values, &new_values[num_new_values], &dns[i],
+			ret = replmd_build_la_val(new_values, &new_values[num_new_values], dns[i].dsdb_dn,
 						  invocation_id, seq_num, t);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
@@ -1328,7 +1394,8 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				talloc_free(tmp_ctx);
 				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 			}
-			ret = replmd_update_la_val(old_el->values, p->v, &dns[i], p, invocation_id, seq_num, t, false);
+			ret = replmd_update_la_val(old_el->values, p->v, dns[i].dsdb_dn, p->dsdb_dn,
+						   invocation_id, seq_num, t, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -1451,7 +1518,8 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		v = ldb_dn_get_extended_component(p->dsdb_dn->dn, "DELETED");
 		if (v != NULL) continue;
 
-		ret = replmd_update_la_val(old_el->values, p->v, p, p, invocation_id, seq_num, t, true);
+		ret = replmd_update_la_val(old_el->values, p->v, p->dsdb_dn, p->dsdb_dn,
+					   invocation_id, seq_num, t, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1543,7 +1611,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 			continue;
 		}
 
-		ret = replmd_update_la_val(old_el->values, old_p->v, old_p, old_p,
+		ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn, old_p->dsdb_dn,
 					   invocation_id, seq_num, t, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
@@ -1561,8 +1629,8 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		    (old_p = parsed_dn_find(old_dns,
 					    old_num_values, p->guid)) != NULL) {
 			/* update in place */
-			ret = replmd_update_la_val(old_el->values, old_p->v, old_p,
-						   old_p, invocation_id,
+			ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn,
+						   old_p->dsdb_dn, invocation_id,
 						   seq_num, t, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
@@ -1577,7 +1645,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 				talloc_free(tmp_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			ret = replmd_build_la_val(new_values, &new_values[num_new_values], &dns[i],
+			ret = replmd_build_la_val(new_values, &new_values[num_new_values], dns[i].dsdb_dn,
 						  invocation_id, seq_num, t);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
@@ -1928,7 +1996,6 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 
 	for (i=0; i<el->num_values; i++) {
 		struct dsdb_dn *dsdb_dn;
-		const struct ldb_val *v;
 		NTSTATUS status;
 		int ret;
 		struct GUID guid2;
@@ -1947,12 +2014,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		v = ldb_dn_get_extended_component(dsdb_dn->dn, "GUID");
-		if (!v) {
-			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		status = GUID_from_ndr_blob(v, &guid2);
+		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid2);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
