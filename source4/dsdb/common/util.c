@@ -2846,3 +2846,25 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
        talloc_free(tmp_ctx);
        return LDB_ERR_NO_SUCH_OBJECT;
 }
+
+
+/*
+  find the deleted objects DN for any object, by looking for the NC
+  root, then looking up the wellknown GUID
+ */
+int dsdb_get_deleted_objects_dn(struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx, struct ldb_dn *obj_dn,
+				struct ldb_dn **do_dn)
+{
+	struct ldb_dn *nc_root;
+	int ret;
+
+	ret = dsdb_find_nc_root(ldb, mem_ctx, obj_dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_wellknown_dn(ldb, mem_ctx, nc_root, DS_GUID_DELETED_OBJECTS_CONTAINER, do_dn);
+	talloc_free(nc_root);
+	return ret;
+}
