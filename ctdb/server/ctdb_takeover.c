@@ -169,6 +169,31 @@ static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
 	}
 }
 
+static bool ctdb_vnn_available(struct ctdb_context *ctdb,
+			       struct ctdb_vnn *vnn)
+{
+	int i;
+
+	if (vnn->iface && vnn->iface->link_up) {
+		return true;
+	}
+
+	for (i=0; vnn->ifaces[i]; i++) {
+		struct ctdb_iface *cur;
+
+		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
+		if (cur == NULL) {
+			continue;
+		}
+
+		if (cur->link_up) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 struct ctdb_takeover_arp {
 	struct ctdb_context *ctdb;
 	uint32_t count;
@@ -1627,6 +1652,11 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 	int i, num, len;
 	struct ctdb_all_public_ips *ips;
 	struct ctdb_vnn *vnn;
+	bool only_available = false;
+
+	if (c->flags & CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE) {
+		only_available = true;
+	}
 
 	/* count how many public ip structures we have */
 	num = 0;
@@ -1639,16 +1669,21 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 	ips = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, ips);
 
-	outdata->dsize = len;
-	outdata->dptr  = (uint8_t *)ips;
-
-	ips->num = num;
 	i = 0;
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
+		if (only_available && !ctdb_vnn_available(ctdb, vnn)) {
+			continue;
+		}
 		ips->ips[i].pnn  = vnn->pnn;
 		ips->ips[i].addr = vnn->public_address;
 		i++;
 	}
+	ips->num = i;
+	len = offsetof(struct ctdb_all_public_ips, ips) +
+		i*sizeof(struct ctdb_public_ip);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)ips;
 
 	return 0;
 }
