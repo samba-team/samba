@@ -1722,6 +1722,55 @@ static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+
+/*
+  set link status of an interface
+ */
+static int control_setifacelink(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_control_iface_info info;
+
+	ZERO_STRUCT(info);
+
+	if (argc != 2) {
+		usage();
+	}
+
+	if (strlen(argv[0]) > CTDB_IFACE_SIZE) {
+		DEBUG(DEBUG_ERR, ("interfaces name '%s' too long\n",
+				  argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	strcpy(info.name, argv[0]);
+
+	if (strcmp(argv[1], "up") == 0) {
+		info.link_state = 1;
+	} else if (strcmp(argv[1], "down") == 0) {
+		info.link_state = 0;
+	} else {
+		DEBUG(DEBUG_ERR, ("link state invalid '%s' should be 'up' or 'down'\n",
+				  argv[1]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	/* read the public ip list from this node */
+	ret = ctdb_ctrl_set_iface_link(ctdb, TIMELIMIT(), options.pnn,
+				   tmp_ctx, &info);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to set link state for interfaces %s node %u\n",
+				  argv[0], options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
 /*
   display pid of a ctdb daemon
  */
@@ -4048,6 +4097,7 @@ static const struct {
 	{ "statisticsreset", control_statistics_reset,  true,	false,  "reset statistics"},
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
 	{ "ifaces",          control_ifaces,            true,	false,  "show which interfaces that ctdb manages" },
+	{ "setifacelink",    control_setifacelink,      true,	false,  "set interface link status", "<iface> <status>" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
 	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
