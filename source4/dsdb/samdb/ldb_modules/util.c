@@ -96,7 +96,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 			  struct ldb_result **_res,
 			  struct ldb_dn *basedn,
 			  const char * const *attrs,
-			  int dsdb_flags)
+			  uint32_t dsdb_flags)
 {
 	int ret;
 	struct ldb_request *req;
