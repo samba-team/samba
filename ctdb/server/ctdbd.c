@@ -127,7 +127,7 @@ int main(int argc, const char *argv[])
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
 		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
-		{ "valgrinding", 0, POPT_ARG_NONE, &options.valgrinding, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
+		{ "valgrinding", 0, POPT_ARG_NONE, &options.valgrinding, 0, "make valgrind more effective", NULL },
 		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
 		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
@@ -312,7 +312,6 @@ int main(int argc, const char *argv[])
 	}
 
 	ctdb->valgrinding = options.valgrinding;
-	ctdb->do_setsched = !ctdb->valgrinding;
 
 	ctdb->do_checkpublicip = !options.no_publicipcheck;
 

@@ -3627,11 +3627,6 @@ int switch_from_server_to_client(struct ctdb_context *ctdb)
 	close(ctdb->daemon.sd);
 	ctdb->daemon.sd = -1;
 
-	/* the client does not need to be realtime */
-	if (ctdb->do_setsched) {
-		ctdb_restore_scheduler(ctdb);
-	}
-
 	/* initialise ctdb */
 	ret = ctdb_socket_connect(ctdb);
 	if (ret != 0) {

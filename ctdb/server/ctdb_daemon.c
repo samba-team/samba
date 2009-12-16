@@ -720,10 +720,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
-	if (ctdb->do_setsched) {
-		/* try to set us up as realtime */
-		ctdb_set_scheduler(ctdb);
-	}
+	ctdb_high_priority(ctdb);
 
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
