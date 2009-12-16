@@ -1254,7 +1254,6 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	char *nameptr;
 	char *last_entry_ptr;
 	bool was_8_3;
-	uint32 nt_extmode; /* Used for NT connections instead of mode */
 	bool needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 	bool check_mangled_names = lp_manglednames(conn->params);
 	char mangled_name[13]; /* mangled 8.3 name. */
@@ -1456,8 +1455,6 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	p = pdata;
 	last_entry_ptr = p;
 
-	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
-
 	switch (info_level) {
 		case SMB_FIND_INFO_STANDARD:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_INFO_STANDARD\n"));
@@ -1604,7 +1601,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
-			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,mode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length. */
 			{
 				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
@@ -1655,7 +1652,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
-			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,mode); p += 4;
 			len = srvstr_push(base_data, flags2,
 					  p + 4, fname, PTR_DIFF(end_data, p+4),
 					  STR_TERMINATE_ASCII);
@@ -1678,7 +1675,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
-			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,mode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length. */
 			{
 				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
@@ -1727,7 +1724,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
-			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,mode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length. */
 			{
 				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
@@ -1760,7 +1757,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			put_long_date_timespec(conn->ts_res, p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
-			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,mode); p += 4;
 			q = p; p += 4; /* q is placeholder for name length */
 			{
 				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
@@ -4083,8 +4080,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	} else {
 		mode = dos_mode(conn,fname,&sbuf);
 	}
-	if (!mode)
-		mode = FILE_ATTRIBUTE_NORMAL;
 
 	nlink = sbuf.st_nlink;
 
