@@ -133,78 +133,8 @@ struct la_backlink {
 };
 
 /*
-  add a backlink to the list of backlinks to add/delete in the prepare
-  commit
- */
-static int replmd_add_backlink(struct ldb_module *module, const struct dsdb_schema *schema,
-			       struct GUID *forward_guid, struct GUID *target_guid,
-			       bool active, const struct dsdb_attribute *schema_attr)
-{
-	const struct dsdb_attribute *target_attr;
-	struct la_backlink *bl;
-	struct replmd_private *replmd_private =
-		talloc_get_type_abort(ldb_module_get_private(module), struct replmd_private);
-
-	target_attr = dsdb_attribute_by_linkID(schema, schema_attr->linkID + 1);
-	if (!target_attr) {
-		/*
-		 * windows 2003 has a broken schema where the
-		 * definition of msDS-IsDomainFor is missing (which is
-		 * supposed to be the backlink of the
-		 * msDS-HasDomainNCs attribute
-		 */
-		return LDB_SUCCESS;
-	}
-
-	/* see if its already in the list */
-	for (bl=replmd_private->la_backlinks; bl; bl=bl->next) {
-		if (GUID_equal(forward_guid, &bl->forward_guid) &&
-		    GUID_equal(target_guid, &bl->target_guid) &&
-		    (target_attr->lDAPDisplayName == bl->attr_name ||
-		     strcmp(target_attr->lDAPDisplayName, bl->attr_name) == 0)) {
-			break;
-		}
-	}
-
-	if (bl) {
-		/* we found an existing one */
-		if (bl->active == active) {
-			return LDB_SUCCESS;
-		}
-		DLIST_REMOVE(replmd_private->la_backlinks, bl);
-		talloc_free(bl);
-		return LDB_SUCCESS;
-	}
-
-	if (replmd_private->bl_ctx == NULL) {
-		replmd_private->bl_ctx = talloc_new(replmd_private);
-		if (replmd_private->bl_ctx == NULL) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}
-
-	/* its a new one */
-	bl = talloc(replmd_private->bl_ctx, struct la_backlink);
-	if (bl == NULL) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	bl->attr_name = target_attr->lDAPDisplayName;
-	bl->forward_guid = *forward_guid;
-	bl->target_guid = *target_guid;
-	bl->active = active;
-
-	DLIST_ADD(replmd_private->la_backlinks, bl);
-
-	return LDB_SUCCESS;
-}
-
-/*
-  process the list of backlinks we accumulated during
-  a transaction, adding and deleting the backlinks
-  from the target objects
+  process a backlinks we accumulated during a transaction, adding and
+  deleting the backlinks from the target objects
  */
 static int replmd_process_backlink(struct ldb_module *module, struct la_backlink *bl)
 {
@@ -271,6 +201,83 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	}
 	talloc_free(tmp_ctx);
 	return ret;
+}
+
+/*
+  add a backlink to the list of backlinks to add/delete in the prepare
+  commit
+ */
+static int replmd_add_backlink(struct ldb_module *module, const struct dsdb_schema *schema,
+			       struct GUID *forward_guid, struct GUID *target_guid,
+			       bool active, const struct dsdb_attribute *schema_attr, bool immediate)
+{
+	const struct dsdb_attribute *target_attr;
+	struct la_backlink *bl;
+	struct replmd_private *replmd_private =
+		talloc_get_type_abort(ldb_module_get_private(module), struct replmd_private);
+
+	target_attr = dsdb_attribute_by_linkID(schema, schema_attr->linkID + 1);
+	if (!target_attr) {
+		/*
+		 * windows 2003 has a broken schema where the
+		 * definition of msDS-IsDomainFor is missing (which is
+		 * supposed to be the backlink of the
+		 * msDS-HasDomainNCs attribute
+		 */
+		return LDB_SUCCESS;
+	}
+
+	/* see if its already in the list */
+	for (bl=replmd_private->la_backlinks; bl; bl=bl->next) {
+		if (GUID_equal(forward_guid, &bl->forward_guid) &&
+		    GUID_equal(target_guid, &bl->target_guid) &&
+		    (target_attr->lDAPDisplayName == bl->attr_name ||
+		     strcmp(target_attr->lDAPDisplayName, bl->attr_name) == 0)) {
+			break;
+		}
+	}
+
+	if (bl) {
+		/* we found an existing one */
+		if (bl->active == active) {
+			return LDB_SUCCESS;
+		}
+		DLIST_REMOVE(replmd_private->la_backlinks, bl);
+		talloc_free(bl);
+		return LDB_SUCCESS;
+	}
+
+	if (replmd_private->bl_ctx == NULL) {
+		replmd_private->bl_ctx = talloc_new(replmd_private);
+		if (replmd_private->bl_ctx == NULL) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	/* its a new one */
+	bl = talloc(replmd_private->bl_ctx, struct la_backlink);
+	if (bl == NULL) {
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	bl->attr_name = target_attr->lDAPDisplayName;
+	bl->forward_guid = *forward_guid;
+	bl->target_guid = *target_guid;
+	bl->active = active;
+
+	/* the caller may ask for this backlink to be processed
+	   immediately */
+	if (immediate) {
+		int ret = replmd_process_backlink(module, bl);
+		talloc_free(bl);
+		return ret;
+	}
+
+	DLIST_ADD(replmd_private->la_backlinks, bl);
+
+	return LDB_SUCCESS;
 }
 
 
@@ -610,7 +617,7 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa);
+		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1402,7 +1409,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 			}
 		}
 
-		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr);
+		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1525,7 +1532,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			return ret;
 		}
 
-		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr);
+		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1599,7 +1606,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		v = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "DELETED");
 		if (v) continue;
 
-		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr);
+		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1654,7 +1661,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 			num_new_values++;
 		}
 
-		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr);
+		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
