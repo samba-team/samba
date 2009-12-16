@@ -2393,9 +2393,68 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 				 struct timeval timeout, uint32_t destnode,
 				 TALLOC_CTX *mem_ctx,
 				 const ctdb_sock_addr *addr,
-				 struct ctdb_control_public_ip_info **info)
+				 struct ctdb_control_public_ip_info **_info)
 {
-	return -1;
+	int ret;
+	TDB_DATA indata;
+	TDB_DATA outdata;
+	int32_t res;
+	struct ctdb_control_public_ip_info *info;
+	uint32_t len;
+	uint32_t i;
+
+	indata.dptr = discard_const_p(uint8_t, addr);
+	indata.dsize = sizeof(*addr);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_GET_PUBLIC_IP_INFO, 0, indata,
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"failed ret:%d res:%d\n",
+				ret, res));
+		return -1;
+	}
+
+	len = offsetof(struct ctdb_control_public_ip_info, ifaces);
+	if (len > outdata.dsize) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"returned invalid data with size %u > %u\n",
+				(unsigned int)outdata.dsize,
+				(unsigned int)len));
+		dump_data(DEBUG_DEBUG, outdata.dptr, outdata.dsize);
+		return -1;
+	}
+
+	info = (struct ctdb_control_public_ip_info *)outdata.dptr;
+	len += info->num*sizeof(struct ctdb_control_iface_info);
+
+	if (len > outdata.dsize) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"returned invalid data with size %u > %u\n",
+				(unsigned int)outdata.dsize,
+				(unsigned int)len));
+		dump_data(DEBUG_DEBUG, outdata.dptr, outdata.dsize);
+		return -1;
+	}
+
+	/* make sure we null terminate the returned strings */
+	for (i=0; i < info->num; i++) {
+		info->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
+	}
+
+	*_info = (struct ctdb_control_public_ip_info *)talloc_memdup(mem_ctx,
+								outdata.dptr,
+								outdata.dsize);
+	talloc_free(outdata.dptr);
+	if (*_info == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"talloc_memdup size %u failed\n",
+				(unsigned int)outdata.dsize));
+		return -1;
+	}
+
+	return 0;
 }
 
 int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
