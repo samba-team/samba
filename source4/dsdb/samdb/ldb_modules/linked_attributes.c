@@ -409,57 +409,6 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 
 
 
-/* delete */
-static int linked_attributes_del(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_context *ldb;
-	struct ldb_request *search_req;
-	struct la_context *ac;
-	const char **attrs;
-	WERROR werr;
-	int ret;
-
-	/* This gets complex:  We need to:
-	   - Do a search for the entry
-	   - Wait for these result to appear
-	   - In the callback for the result, issue a modify
-		request based on the linked attributes found
-	   - Wait for each modify result
-	   - Regain our sainity
-	*/
-
-	ldb = ldb_module_get_ctx(module);
-
-	ac = linked_attributes_init(module, req);
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (!ac->schema) {
-		/* without schema, this doesn't make any sense */
-		return ldb_next_request(module, req);
-	}
-
-	werr = dsdb_linked_attribute_lDAPDisplayName_list(ac->schema, ac, &attrs);
-	if (!W_ERROR_IS_OK(werr)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&search_req, ldb, req,
-				   req->op.del.dn, LDB_SCOPE_BASE,
-				   "(objectClass=*)", attrs,
-				   NULL,
-				   ac, la_op_search_callback,
-				   req);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	talloc_steal(search_req, attrs);
-
-	return ldb_next_request(module, search_req);
-}
 
 /* rename */
 static int linked_attributes_rename(struct ldb_module *module, struct ldb_request *req)
@@ -1068,8 +1017,6 @@ static int linked_attributes_del_transaction(struct ldb_module *module)
 _PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.name		   = "linked_attributes",
 	.add               = linked_attributes_add,
-	.del               = linked_attributes_del,
-	.rename            = linked_attributes_rename,
 	.start_transaction = linked_attributes_start_transaction,
 	.prepare_commit    = linked_attributes_prepare_commit,
 	.del_transaction   = linked_attributes_del_transaction,
