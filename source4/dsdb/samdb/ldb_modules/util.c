@@ -254,3 +254,43 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
+
+/*
+  a ldb_modify request operating on modules below the
+  current module
+ */
+int dsdb_module_modify(struct ldb_module *module,
+		       const struct ldb_message *message,
+		       uint32_t dsdb_flags)
+{
+	struct ldb_request *mod_req;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+
+	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
+				message,
+				NULL,
+				NULL,
+				ldb_op_default_callback,
+				NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(module, mod_req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* Run the new request */
+	ret = ldb_next_request(module, mod_req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
