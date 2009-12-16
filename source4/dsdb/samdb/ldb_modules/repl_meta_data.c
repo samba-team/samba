@@ -1914,6 +1914,300 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	return ldb_next_request(ac->module, down_req);
 }
 
+/* remove forwards and backlinks as needed when an object
+   is deleted */
+static int replmd_delete_remove_link(struct ldb_module *module,
+				     struct dsdb_schema *schema,
+				     struct ldb_dn *dn,
+				     struct ldb_message_element *el,
+				     const struct dsdb_attribute *sa)
+{
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	for (i=0; i<el->num_values; i++) {
+		struct dsdb_dn *dsdb_dn;
+		const struct ldb_val *v;
+		NTSTATUS status;
+		int ret;
+		struct GUID guid2;
+		struct ldb_message *msg;
+		const struct dsdb_attribute *target_attr;
+		struct ldb_message_element *el2;
+		struct ldb_val dn_val;
+
+		if (dsdb_dn_is_deleted_val(&el->values[i])) {
+			continue;
+		}
+
+		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i], sa->syntax->ldap_oid);
+		if (!dsdb_dn) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		v = ldb_dn_get_extended_component(dsdb_dn->dn, "GUID");
+		if (!v) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		status = GUID_from_ndr_blob(v, &guid2);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* remove the link */
+		msg = ldb_msg_new(tmp_ctx);
+		if (!msg) {
+			ldb_module_oom(module);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+
+		msg->dn = dsdb_dn->dn;
+
+		if (sa->linkID & 1) {
+			target_attr = dsdb_attribute_by_linkID(schema, sa->linkID - 1);
+		} else {
+			target_attr = dsdb_attribute_by_linkID(schema, sa->linkID + 1);
+		}
+
+		ret = ldb_msg_add_empty(msg, target_attr->lDAPDisplayName, LDB_FLAG_MOD_DELETE, &el2);
+		if (ret != LDB_SUCCESS) {
+			ldb_module_oom(module);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		dn_val = data_blob_string_const(ldb_dn_get_linearized(dn));
+		el2->values = &dn_val;
+		el2->num_values = 1;
+
+		ret = dsdb_module_modify(module, msg, 0);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
+/*
+  handle update of replication meta data for deletion of objects
+
+  This also handles the mapping of delete to a rename operation
+  to allow deletes to be replicated.
+ */
+static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
+{
+	int ret = LDB_ERR_OTHER;
+	bool retb;
+	struct ldb_dn *old_dn, *new_dn;
+	const char *rdn_name;
+	const struct ldb_val *rdn_value, *new_rdn_value;
+	struct GUID guid;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct ldb_message *msg, *old_msg;
+	struct ldb_message_element *el;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res, *parent_res;
+	const char *preserved_attrs[] = {
+		/* yes, this really is a hard coded list. See MS-ADTS
+		   section 3.1.1.5.5.1.1 */
+		"nTSecurityDescriptor", "attributeID", "attributeSyntax", "dNReferenceUpdate", "dNSHostName",
+		"flatName", "governsID", "groupType", "instanceType", "lDAPDisplayName", "legacyExchangeDN",
+		"isDeleted", "isRecycled", "lastKnownParent", "msDS-LastKnownRDN", "mS-DS-CreatorSID",
+		"mSMQOwnerID", "nCName", "objectClass", "distinguishedName", "objectGUID", "objectSid",
+		"oMSyntax", "proxiedObjectName", "name", "replPropertyMetaData", "sAMAccountName",
+		"securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
+		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreate",
+		NULL};
+	uint32_t el_count = 0;
+	int i;
+
+	tmp_ctx = talloc_new(ldb);
+
+	old_dn = ldb_dn_copy(tmp_ctx, req->op.del.dn);
+
+	/* we need the complete msg off disk, so we can work out which
+	   attributes need to be removed */
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, NULL,
+				    DSDB_SEARCH_SHOW_DELETED |
+				    DSDB_SEARCH_REVEAL_INTERNALS |
+				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	old_msg = res->msgs[0];
+
+	/* work out where we will be renaming this object to */
+	ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn, &new_dn);
+	if (ret != LDB_SUCCESS) {
+		/* this is probably an attempted delete on a partition
+		 * that doesn't allow delete operations, such as the
+		 * schema partition */
+		ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
+				       ldb_dn_get_linearized(old_dn));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	rdn_name = ldb_dn_get_rdn_name(old_dn);
+	rdn_value = ldb_dn_get_rdn_val(old_dn);
+
+	/* get the objects GUID from the search we just did */
+	guid = samdb_result_guid(old_msg, "objectGUID");
+
+	/* Add a formatted child */
+	retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
+				    rdn_name,
+				    rdn_value->data,
+				    GUID_string(tmp_ctx, &guid));
+	if (!retb) {
+		DEBUG(0,(__location__ ": Unable to add a formatted child to dn: %s",
+				ldb_dn_get_linearized(new_dn)));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* New DN name generated, renaming the original DN */
+	ret = dsdb_module_rename(module, old_dn, new_dn, 0);
+	if (ret != LDB_SUCCESS){
+		DEBUG(0,(__location__ ": Failed to rename object from '%s' to '%s'\n",
+				ldb_dn_get_linearized(old_dn),
+				ldb_dn_get_linearized(new_dn)));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	  now we need to modify the object in the following ways:
+
+	  - add isDeleted=TRUE
+	  - update rDN and name, with new rDN
+	  - remove linked attributes
+	  - remove objectCategory and sAMAccountType
+	  - remove attribs not on the preserved list
+	     - preserved if in above list, or is rDN
+	  - remove all linked attribs from this object
+	  - remove all links from other objects to this object
+	  - add lastKnownParent
+	  - update replPropertyMetaData?
+
+	  see MS-ADTS "Tombstone Requirements" section 3.1.1.5.5.1.1
+	 */
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = new_dn;
+
+	ret = ldb_msg_add_string(msg, "isDeleted", "TRUE");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to add isDeleted string to the msg\n"));
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+
+	/* we need the storage form of the parent GUID */
+	ret = dsdb_module_search_dn(module, tmp_ctx, &parent_res,
+				    ldb_dn_get_parent(tmp_ctx, old_dn), NULL,
+				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_msg_add_steal_string(msg, "lastKnownParent",
+				       ldb_dn_get_extended_linearized(tmp_ctx, parent_res->msgs[0]->dn, 1));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to add lastKnownParent string to the msg\n"));
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+
+	/* work out which of the old attributes we will be removing */
+	for (i=0; i<old_msg->num_elements; i++) {
+		const struct dsdb_attribute *sa;
+		el = &old_msg->elements[i];
+		sa = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+		if (!sa) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		if (ldb_attr_cmp(el->name, rdn_name) == 0) {
+			/* don't remove the rDN */
+			continue;
+		}
+
+		if (sa->linkID) {
+			ret = replmd_delete_remove_link(module, schema, old_dn, el, sa);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
+
+		if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
+			continue;
+		}
+
+		ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			ldb_module_oom(module);
+			return ret;
+		}
+	}
+
+	/* work out what the new rdn value is, for updating the
+	   rDN and name fields */
+	new_rdn_value = ldb_dn_get_rdn_val(new_dn);
+	ret = ldb_msg_add_value(msg, rdn_name, new_rdn_value, &el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	el = ldb_msg_find_element(old_msg, "name");
+	if (el) {
+		ret = ldb_msg_add_value(msg, "name", new_rdn_value, &el);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		el->flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = dsdb_module_modify(module, msg, 0);
+	if (ret != LDB_SUCCESS){
+		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
+				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
+
 
 static int replmd_replicated_request_error(struct replmd_replicated_request *ar, int ret)
 {
@@ -3157,6 +3451,7 @@ _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.add               = replmd_add,
 	.modify            = replmd_modify,
 	.rename            = replmd_rename,
+	.del	           = replmd_delete,
 	.extended          = replmd_extended,
 	.start_transaction = replmd_start_transaction,
 	.prepare_commit    = replmd_prepare_commit,
