@@ -50,9 +50,10 @@
 #define BIT_BADPWRESET	0x08000000
 #define BIT_LOGONHOURS	0x10000000
 #define BIT_KICKOFFTIME	0x20000000
+#define BIT_DESCRIPTION 0x40000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x20405FE0
+#define MASK_USER_GOOD		0x60405FE0
 
 static int get_sid_from_cli_string(DOM_SID *sid, const char *str_sid)
 {
@@ -1106,7 +1107,8 @@ int main (int argc, char **argv)
 			(backend_out ? BIT_EXPORT : 0) +
 			(badpw_reset ? BIT_BADPWRESET : 0) +
 			(hours_reset ? BIT_LOGONHOURS : 0) +
-			(kickoff_time ? BIT_KICKOFFTIME : 0);
+			(kickoff_time ? BIT_KICKOFFTIME : 0) +
+			(acct_desc ? BIT_DESCRIPTION : 0);
 
 	if (setparms & BIT_BACKEND) {
 		/* HACK: set the global passdb backend by overwriting globals.
