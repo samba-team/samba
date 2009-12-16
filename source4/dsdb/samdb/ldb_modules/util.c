@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ldb.h"
 #include "ldb_module.h"
+#include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -228,13 +229,16 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	}
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				 attrs, DSDB_SEARCH_SHOW_DELETED | DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 attrs,
+				 DSDB_SEARCH_SHOW_DELETED |
+				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
 				 expression);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	if (ret->count == 0) {
+	if (res->count == 0) {
 		talloc_free(tmp_ctx);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
@@ -245,7 +249,7 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*dn = talloc_steal(mem_ctx, res->msgs[0].dn);
+	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
