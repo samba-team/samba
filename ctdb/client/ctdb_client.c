@@ -2525,7 +2525,24 @@ int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
 			     TALLOC_CTX *mem_ctx,
 			     const struct ctdb_control_iface_info *info)
 {
-	return -1;
+	int ret;
+	TDB_DATA indata;
+	int32_t res;
+
+	indata.dptr = discard_const_p(uint8_t, info);
+	indata.dsize = sizeof(*info);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_SET_IFACE_LINK_STATE, 0, indata,
+			   mem_ctx, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set iface link "
+				"failed ret:%d res:%d\n",
+				ret, res));
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
