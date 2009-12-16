@@ -250,7 +250,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 					 CTDB_EVENT_TAKE_IP,
 					 "%s %s %u",
 					 ctdb_vnn_iface_string(vnn),
-					 talloc_strdup(state, ctdb_addr_to_str(&pip->addr)),
+					 ctdb_addr_to_str(&pip->addr),
 					 vnn->public_netmask_bits);
 
 	if (ret != 0) {
@@ -411,7 +411,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 CTDB_EVENT_RELEASE_IP,
 					 "%s %s %u",
 					 ctdb_vnn_iface_string(vnn),
-					 talloc_strdup(state, ctdb_addr_to_str(&pip->addr)),
+					 ctdb_addr_to_str(&pip->addr),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to release IP %s on interface %s\n",
@@ -1443,7 +1443,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		}
 		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
 				  ctdb_vnn_iface_string(vnn),
-				  talloc_strdup(ctdb, ctdb_addr_to_str(&vnn->public_address)),
+				  ctdb_addr_to_str(&vnn->public_address),
 				  vnn->public_netmask_bits);
 		release_kill_clients(ctdb, &vnn->public_address);
 	}
@@ -2190,7 +2190,7 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 					 CTDB_EVENT_RELEASE_IP,
 					 "%s %s %u",
 					 ctdb_vnn_iface_string(vnn),
-					 talloc_strdup(mem_ctx, ctdb_addr_to_str(&vnn->public_address)),
+					 ctdb_addr_to_str(&vnn->public_address),
 					 vnn->public_netmask_bits);
 			talloc_free(vnn);
 			if (ret != 0) {
