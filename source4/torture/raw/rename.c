@@ -305,7 +305,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 	
-	smb_raw_exit(cli->session);
+	smbcli_close(cli->tree, fnum);
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
