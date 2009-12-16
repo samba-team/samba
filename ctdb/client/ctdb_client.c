@@ -2318,16 +2318,18 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 }
 
 
-int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
-			struct timeval timeout, uint32_t destnode, 
-			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips)
+int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
+				   struct timeval timeout, uint32_t destnode,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t flags,
+				   struct ctdb_all_public_ips **ips)
 {
 	int ret;
 	TDB_DATA outdata;
 	int32_t res;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_PUBLIC_IPS, 0, tdb_null, 
+			   CTDB_CONTROL_GET_PUBLIC_IPS, flags, tdb_null,
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret == 0 && res == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control to get public ips failed, falling back to ipv4-only version\n"));
@@ -2342,6 +2344,16 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 	talloc_free(outdata.dptr);
 		    
 	return 0;
+}
+
+int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_all_public_ips **ips)
+{
+	return ctdb_ctrl_get_public_ips_flags(ctdb, timeout,
+					      destnode, mem_ctx,
+					      0, ips);
 }
 
 int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb, 

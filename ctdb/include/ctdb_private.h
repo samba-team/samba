@@ -1305,8 +1305,16 @@ struct ctdb_all_public_ips {
 int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
-			struct timeval timeout, uint32_t destnode, 
-			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
+			     struct timeval timeout,
+			     uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_all_public_ips **ips);
+#define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
+int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
+				   struct timeval timeout, uint32_t destnode,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t flags,
+				   struct ctdb_all_public_ips **ips);
 int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb, 
 			struct timeval timeout, uint32_t destnode, 
 			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
