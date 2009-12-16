@@ -572,6 +572,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 	NDR_ERR_HAVE_NO_MEMORY(subndr);
 	subndr->flags	= ndr->flags;
 
+	if (size_is > 0) {
+		NDR_CHECK(ndr_push_zero(subndr, size_is));
+		subndr->offset = 0;
+	}
+
 	*_subndr = subndr;
 	return NDR_ERR_SUCCESS;
 }
@@ -588,12 +593,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 
 	if (size_is >= 0) {
 		padding_len = size_is - subndr->offset;
-		if (padding_len > 0) {
-			NDR_CHECK(ndr_push_zero(subndr, padding_len));
-		} else if (padding_len < 0) {
+		if (padding_len < 0) {
 			return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PUSH) content_size %d is larger than size_is(%d)",
 					      (int)subndr->offset, (int)size_is);
 		}
+		subndr->offset = size_is;
 	}
 
 	switch (header_size) {
