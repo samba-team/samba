@@ -607,9 +607,13 @@ static bool test_stream_delete(struct torture_context *tctx,
 
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	/* w2k and w2k3 return 0 and w2k8 returns 1
-	CHECK_VALUE(finfo.all_info.out.delete_pending, 0);
-	*/
+
+	/* w2k and w2k3 return 0 and w2k8 returns 1 */
+	if (TARGET_IS_WINXP(tctx) || TARGET_IS_W2K3(tctx)) {
+		CHECK_VALUE(finfo.all_info.out.delete_pending, 0);
+	} else {
+		CHECK_VALUE(finfo.all_info.out.delete_pending, 1);
+	}
 
 	smbcli_close(cli->tree, fnum);
 
