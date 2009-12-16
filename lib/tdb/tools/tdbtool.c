@@ -538,9 +538,9 @@ static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 		print_rec(the_tdb, *pkey, dbuf, NULL);
 }
 
-static int count(TDB_DATA key, TDB_DATA data, void *private)
+static int count(TDB_DATA key, TDB_DATA data, void *private_data)
 {
-	(*(unsigned int *)private)++;
+	(*(unsigned int *)private_data)++;
 	return 0;
 }
 
