@@ -102,14 +102,22 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 				access_mask,
 				access_granted);
 
-	TALLOC_FREE(sd);
-
 	DEBUG(10,("smbd_check_open_rights: file %s requesting "
 		"0x%x returning 0x%x (%s)\n",
 		smb_fname_str_dbg(smb_fname),
 		(unsigned int)access_mask,
 		(unsigned int)*access_granted,
 		nt_errstr(status) ));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("smbd_check_open_rights: acl for %s is:\n",
+				smb_fname_str_dbg(smb_fname) ));
+			NDR_PRINT_DEBUG(security_descriptor, sd);
+		}
+	}
+
+	TALLOC_FREE(sd);
 
 	return status;
 }
