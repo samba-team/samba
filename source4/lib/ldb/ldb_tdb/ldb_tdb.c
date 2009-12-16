@@ -1237,12 +1237,17 @@ static int ltdb_handle_request(struct ldb_module *module,
 	struct ltdb_context *ac;
 	struct tevent_timer *te;
 	struct timeval tv;
-
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
+	int i;
 
 	ldb = ldb_module_get_ctx(module);
+
+	for (i = 0; req->controls && req->controls[i]; i++) {
+		if (req->controls[i]->critical) {
+			ldb_asprintf_errstring(ldb, "Unsupported critical extension %s",
+					       req->controls[i]->oid);
+			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+		}
+	}
 
 	if (req->starttime == 0 || req->timeout == 0) {
 		ldb_set_errstring(ldb, "Invalid timeout settings");
