@@ -891,12 +891,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[string,charset(UTF16)] uint16 *drivername;
 		[string,charset(UTF16)] uint16 *comment;
 		[string,charset(UTF16)] uint16 *location;
-		[subcontext(0)] spoolss_DeviceMode *devmode;
+		uint32 devmode_ptr;
 		[string,charset(UTF16)] uint16 *sepfile;
 		[string,charset(UTF16)] uint16 *printprocessor;
 		[string,charset(UTF16)] uint16 *datatype;
 		[string,charset(UTF16)] uint16 *parameters;
-		[subcontext(0)] security_descriptor *secdesc;
+		uint32 secdesc_ptr;
 		spoolss_PrinterAttributes attributes;
 		[range(0,99)] uint32 priority;
 		uint32 defaultpriority;
@@ -934,6 +934,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_DsPrintAction action;
 	} spoolss_SetPrinterInfo7;
 
+	typedef struct {
+		uint32 devmode_ptr;
+	} spoolss_SetPrinterInfo8;
+
+	typedef struct {
+		uint32 devmode_ptr;
+	} spoolss_SetPrinterInfo9;
+
 	typedef [switch_type(uint32)] union {
 		[case(0)] spoolss_SetPrinterInfo0 *info0;
 		[case(1)] spoolss_SetPrinterInfo1 *info1;
@@ -943,8 +951,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[case(5)] spoolss_SetPrinterInfo5 *info5;
 		[case(6)] spoolss_SetPrinterInfo6 *info6;
 		[case(7)] spoolss_SetPrinterInfo7 *info7;
-		[case(8)] spoolss_DeviceModeInfo *info8;
-		[case(9)] spoolss_DeviceModeInfo *info9;
+		[case(8)] spoolss_SetPrinterInfo8 *info8;
+		[case(9)] spoolss_SetPrinterInfo9 *info9;
 		[default];
 	} spoolss_SetPrinterInfo;
 
