@@ -436,9 +436,6 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	DATA_BLOB kpasswd_req, kpasswd_rep;
 	struct cli_credentials *server_credentials;
 	struct gensec_security *gensec_security;
-	struct sockaddr_storage ss;
-	ssize_t socklen;
-	struct socket_address *socket_address;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	char *keytab_name;
@@ -534,20 +531,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	}
 #endif
 
-	socklen = tsocket_address_bsd_sockaddr(my_addr, (struct sockaddr *) &ss,
-				sizeof(struct sockaddr_storage));
-	if (socklen < 0) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-	socket_address = socket_address_from_sockaddr(tmp_ctx,
-			(struct sockaddr *) &ss, socklen);
-	if (socket_address == NULL) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-
-	nt_status = gensec_set_my_addr(gensec_security, socket_address);
+	nt_status = gensec_set_local_address(gensec_security, my_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return false;
