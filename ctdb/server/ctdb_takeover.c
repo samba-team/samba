@@ -33,6 +33,11 @@
 #define CTDB_ARP_INTERVAL 1
 #define CTDB_ARP_REPEAT   3
 
+static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
+{
+	return vnn->iface;
+}
+
 struct ctdb_takeover_arp {
 	struct ctdb_context *ctdb;
 	uint32_t count;
@@ -71,10 +76,12 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 							struct ctdb_takeover_arp);
 	int i, ret;
 	struct ctdb_tcp_array *tcparray;
+	const char *iface = ctdb_vnn_iface_string(arp->vnn);
 
-	ret = ctdb_sys_send_arp(&arp->addr, arp->vnn->iface);
+	ret = ctdb_sys_send_arp(&arp->addr, iface);
 	if (ret != 0) {
-		DEBUG(DEBUG_CRIT,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_CRIT,(__location__ " sending of arp failed on iface '%s' (%s)\n",
+				  iface, strerror(errno)));
 	}
 
 	tcparray = arp->tcparray;
@@ -133,7 +140,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 		}
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
 			ctdb_addr_to_str(state->addr),
-			state->vnn->iface));
+			ctdb_vnn_iface_string(state->vnn)));
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 		talloc_free(state);
 		return;
@@ -235,21 +242,21 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n", 
 		ctdb_addr_to_str(&pip->addr),
 		vnn->public_netmask_bits, 
-		vnn->iface));
+		ctdb_vnn_iface_string(vnn)));
 
 	ret = ctdb_event_script_callback(ctdb, 
 					 state, takeover_ip_callback, state,
 					 false,
 					 CTDB_EVENT_TAKE_IP,
 					 "%s %s %u",
-					 vnn->iface, 
+					 ctdb_vnn_iface_string(vnn),
 					 talloc_strdup(state, ctdb_addr_to_str(&pip->addr)),
 					 vnn->public_netmask_bits);
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
 			ctdb_addr_to_str(&pip->addr),
-			vnn->iface));
+			ctdb_vnn_iface_string(vnn)));
 		talloc_free(state);
 		return -1;
 	}
@@ -379,14 +386,14 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_NOTICE,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
 			ctdb_addr_to_str(&pip->addr),
 			vnn->public_netmask_bits, 
-			vnn->iface));
+			ctdb_vnn_iface_string(vnn)));
 		return 0;
 	}
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%u\n", 
 		ctdb_addr_to_str(&pip->addr),
 		vnn->public_netmask_bits, 
-		vnn->iface,
+		ctdb_vnn_iface_string(vnn),
 		pip->pnn));
 
 	state = talloc(ctdb, struct takeover_callback_state);
@@ -403,13 +410,13 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 false,
 					 CTDB_EVENT_RELEASE_IP,
 					 "%s %s %u",
-					 vnn->iface, 
+					 ctdb_vnn_iface_string(vnn),
 					 talloc_strdup(state, ctdb_addr_to_str(&pip->addr)),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to release IP %s on interface %s\n",
 			ctdb_addr_to_str(&pip->addr),
-			vnn->iface));
+			ctdb_vnn_iface_string(vnn)));
 		talloc_free(state);
 		return -1;
 	}
@@ -1412,7 +1419,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 			vnn->pnn = -1;
 		}
 		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
-				  vnn->iface, 
+				  ctdb_vnn_iface_string(vnn),
 				  talloc_strdup(ctdb, ctdb_addr_to_str(&vnn->public_address)),
 				  vnn->public_netmask_bits);
 		release_kill_clients(ctdb, &vnn->public_address);
@@ -1756,9 +1763,12 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   If we dont have a socket to listen on yet we must create it
 	 */
 	if (killtcp->capture_fd == -1) {
-		killtcp->capture_fd = ctdb_sys_open_capture_socket(vnn->iface, &killtcp->private_data);
+		const char *iface = ctdb_vnn_iface_string(vnn);
+		killtcp->capture_fd = ctdb_sys_open_capture_socket(iface, &killtcp->private_data);
 		if (killtcp->capture_fd == -1) {
-			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing socket for killtcp\n"));
+			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing "
+					  "socket on iface '%s' for killtcp (%s)\n",
+					  iface, strerror(errno)));
 			goto failed;
 		}
 	}
@@ -2023,7 +2033,8 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
 
 	ret = ctdb_sys_send_arp(&arp->addr, arp->iface);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " sending of gratious arp failed (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_ERR,(__location__ " sending of gratious arp on iface '%s' failed (%s)\n",
+				 arp->iface, strerror(errno)));
 	}
 
 
@@ -2155,7 +2166,7 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 					 false,
 					 CTDB_EVENT_RELEASE_IP,
 					 "%s %s %u",
-					 vnn->iface, 
+					 ctdb_vnn_iface_string(vnn),
 					 talloc_strdup(mem_ctx, ctdb_addr_to_str(&vnn->public_address)),
 					 vnn->public_netmask_bits);
 			talloc_free(vnn);
