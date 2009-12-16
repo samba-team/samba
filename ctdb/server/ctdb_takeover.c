@@ -1735,7 +1735,68 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 					TDB_DATA indata,
 					TDB_DATA *outdata)
 {
-	return -1;
+	int i, num, len;
+	ctdb_sock_addr *addr;
+	struct ctdb_control_public_ip_info *info;
+	struct ctdb_vnn *vnn;
+
+	addr = (ctdb_sock_addr *)indata.dptr;
+
+	vnn = find_public_ip_vnn(ctdb, addr);
+	if (vnn == NULL) {
+		/* if it is not a public ip   it could be our 'single ip' */
+		if (ctdb->single_ip_vnn) {
+			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, addr)) {
+				vnn = ctdb->single_ip_vnn;
+			}
+		}
+	}
+	if (vnn == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Could not get public ip info, "
+				 "'%s'not a public address\n",
+				 ctdb_addr_to_str(addr)));
+		return -1;
+	}
+
+	/* count how many public ip structures we have */
+	num = 0;
+	for (;vnn->ifaces[num];) {
+		num++;
+	}
+
+	len = offsetof(struct ctdb_control_public_ip_info, ifaces) +
+		num*sizeof(struct ctdb_control_iface_info);
+	info = talloc_zero_size(outdata, len);
+	CTDB_NO_MEMORY(ctdb, info);
+
+	info->ip.addr = vnn->public_address;
+	info->ip.pnn = vnn->pnn;
+	info->active_idx = 0xFFFFFFFF;
+
+	for (i=0; vnn->ifaces[i]; i++) {
+		struct ctdb_iface *cur;
+
+		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
+		if (cur == NULL) {
+			DEBUG(DEBUG_CRIT, (__location__ " internal error iface[%s] unknown\n",
+					   vnn->ifaces[i]));
+			return -1;
+		}
+		if (vnn->iface == cur) {
+			info->active_idx = i;
+		}
+		strcpy(info->ifaces[i].name, cur->name);
+		info->ifaces[i].link_state = cur->link_up;
+		info->ifaces[i].references = cur->references;
+	}
+	info->num = i;
+	len = offsetof(struct ctdb_control_public_ip_info, ifaces) +
+		i*sizeof(struct ctdb_control_iface_info);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)info;
+
+	return 0;
 }
 
 int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
