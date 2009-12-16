@@ -170,6 +170,7 @@ struct gensec_security {
 	uint32_t want_features;
 	struct tevent_context *event_ctx;
 	struct socket_address *my_addr, *peer_addr;
+	struct tsocket_address *local_addr, *remote_addr;
 	struct gensec_settings *settings;
 	
 	/* When we are a server, this may be filled in to provide an
@@ -288,6 +289,15 @@ struct netlogon_creds_CredentialState;
 NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 			       TALLOC_CTX *mem_ctx,
 			       struct netlogon_creds_CredentialState **creds);
+
+
+NTSTATUS gensec_set_local_address(struct gensec_security *gensec_security,
+		const struct tsocket_address *local);
+NTSTATUS gensec_set_remote_address(struct gensec_security *gensec_security,
+		const struct tsocket_address *remote);
+const struct tsocket_address *gensec_get_local_address(struct gensec_security *gensec_security);
+const struct tsocket_address *gensec_get_remote_address(struct gensec_security *gensec_security);
+
 NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr);
 NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct socket_address *my_addr);
 

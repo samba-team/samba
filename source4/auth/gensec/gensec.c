@@ -21,7 +21,10 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include "lib/events/events.h"
+#include "lib/socket/socket.h"
+#include "lib/tsocket/tsocket.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -518,6 +521,8 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
 	(*gensec_security)->ops = NULL;
+	(*gensec_security)->local_addr = NULL;
+	(*gensec_security)->remote_addr = NULL;
 	(*gensec_security)->private_data = NULL;
 
 	ZERO_STRUCT((*gensec_security)->target);
@@ -1159,12 +1164,121 @@ _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_s
 	return NULL;
 }
 
-/** 
- * Set (and talloc_reference) local and peer socket addresses onto a socket context on the GENSEC context 
+/**
+ * Set (and talloc_reference) local and peer socket addresses onto a socket
+ * context on the GENSEC context.
  *
  * This is so that kerberos can include these addresses in
  * cryptographic tokens, to avoid certain attacks.
  */
+
+/**
+ * @brief Set the local gensec address.
+ *
+ * @param  gensec_security   The gensec security context to use.
+ *
+ * @param  remote       The local address to set.
+ *
+ * @return              On success NT_STATUS_OK is returned or an NT_STATUS
+ *                      error.
+ */
+_PUBLIC_ NTSTATUS gensec_set_local_address(struct gensec_security *gensec_security,
+		const struct tsocket_address *local)
+{
+	ssize_t socklen;
+	struct sockaddr_storage ss;
+
+	/* set my_addr */
+	socklen = tsocket_address_bsd_sockaddr(local, (struct sockaddr *) &ss,
+				sizeof(struct sockaddr_storage));
+	if (socklen < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	gensec_security->my_addr = socket_address_from_sockaddr(gensec_security,
+			(struct sockaddr *) &ss, socklen);
+	if (gensec_security->my_addr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* set local */
+	TALLOC_FREE(gensec_security->local_addr);
+	gensec_security->local_addr = tsocket_address_copy(local, gensec_security);
+	if (gensec_security->local_addr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Set the remote gensec address.
+ *
+ * @param  gensec_security   The gensec security context to use.
+ *
+ * @param  remote       The remote address to set.
+ *
+ * @return              On success NT_STATUS_OK is returned or an NT_STATUS
+ *                      error.
+ */
+_PUBLIC_ NTSTATUS gensec_set_remote_address(struct gensec_security *gensec_security,
+		const struct tsocket_address *remote)
+{
+	ssize_t socklen;
+	struct sockaddr_storage ss;
+
+	/* set my_addr */
+	socklen = tsocket_address_bsd_sockaddr(remote, (struct sockaddr *) &ss,
+				sizeof(struct sockaddr_storage));
+	if (socklen < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	gensec_security->peer_addr = socket_address_from_sockaddr(gensec_security,
+			(struct sockaddr *) &ss, socklen);
+	if (gensec_security->peer_addr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* set remote */
+	TALLOC_FREE(gensec_security->remote_addr);
+	gensec_security->remote_addr = tsocket_address_copy(remote, gensec_security);
+	if (gensec_security->remote_addr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Get the local address from a gensec security context.
+ *
+ * @param  gensec_security   The security context to get the address from.
+ *
+ * @return              The address as tsocket_address which could be NULL if
+ *                      no address is set.
+ */
+_PUBLIC_ const struct tsocket_address *gensec_get_local_address(struct gensec_security *gensec_security)
+{
+	if (gensec_security == NULL) {
+		return NULL;
+	}
+	return gensec_security->local_addr;
+}
+
+/**
+ * @brief Get the remote address from a gensec security context.
+ *
+ * @param  gensec_security   The security context to get the address from.
+ *
+ * @return              The address as tsocket_address which could be NULL if
+ *                      no address is set.
+ */
+_PUBLIC_ const struct tsocket_address *gensec_get_remote_address(struct gensec_security *gensec_security)
+{
+	if (gensec_security == NULL) {
+		return NULL;
+	}
+	return gensec_security->remote_addr;
+}
 
 _PUBLIC_ NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct socket_address *my_addr) 
 {
@@ -1207,7 +1321,6 @@ _PUBLIC_ struct socket_address *gensec_get_peer_addr(struct gensec_security *gen
 	 * datagram sockets */
 	return NULL;
 }
-
 
 
 /** 
