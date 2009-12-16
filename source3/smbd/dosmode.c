@@ -21,6 +21,18 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
+static uint32_t filter_mode_by_protocol(uint32_t mode)
+{
+	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+		DEBUG(10,("filter_mode_by_protocol: "
+			"filtering result 0x%x to 0x%x\n",
+			(unsigned int)mode,
+			(unsigned int)(mode & 0x3f) ));
+		mode &= 0x3f;
+	}
+	return mode;
+}
+
 static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 {
 #if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
@@ -459,11 +471,11 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 		result |= aHIDDEN;
 	}
 
-	if (get_Protocol() <= PROTOCOL_LANMAN2) {
-		DEBUG(10,("dos_mode_msdfs : filtering result 0x%x\n",
-			(unsigned int)result ));
-		result &= 0xff;
+	if (result == 0) {
+		result = FILE_ATTRIBUTE_NORMAL;
 	}
+
+	result = filter_mode_by_protocol(result);
 
 	DEBUG(8,("dos_mode_msdfs returning "));
 
@@ -645,11 +657,11 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		result |= aHIDDEN;
 	}
 
-	if (get_Protocol() <= PROTOCOL_LANMAN2) {
-		DEBUG(10,("dos_mode : filtering result 0x%x\n",
-			(unsigned int)result ));
-		result &= 0xff;
+	if (result == 0) {
+		result = FILE_ATTRIBUTE_NORMAL;
 	}
+
+	result = filter_mode_by_protocol(result);
 
 	DEBUG(8,("dos_mode returning "));
 
