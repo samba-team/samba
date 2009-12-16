@@ -405,7 +405,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
         struct ldb_control *control;
-        struct ldb_control **saved_controls;
 	struct replmd_replicated_request *ac;
 	enum ndr_err_code ndr_err;
 	struct ldb_request *down_req;
@@ -639,10 +638,9 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-       	/* if a control is there remove if from the modified request */
-	if (control && !save_controls(control, down_req, &saved_controls)) {
-		talloc_free(ac);
-		return LDB_ERR_OPERATIONS_ERROR;
+	/* mark the control done */
+	if (control) {
+		control->critical = 0;
 	}
 
 	/* go on with the call chain */
