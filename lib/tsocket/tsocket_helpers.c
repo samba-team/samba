@@ -42,24 +42,6 @@ static void tdgram_sendto_queue_trigger(struct tevent_req *req,
 					 void *private_data);
 static void tdgram_sendto_queue_done(struct tevent_req *subreq);
 
-/**
- * @brief Queue a dgram blob for sending through the socket
- * @param[in] mem_ctx	The memory context for the result
- * @param[in] ev	The event context the operation should work on
- * @param[in] dgram	The tdgram_context to send the message buffer
- * @param[in] queue	The existing dgram queue
- * @param[in] buf	The message buffer
- * @param[in] len	The message length
- * @param[in] dst	The destination socket address
- * @retval		The async request handle
- *
- * This function queues a blob for sending to destination through an existing
- * dgram socket. The async callback is triggered when the whole blob is
- * delivered to the underlying system socket.
- *
- * The caller needs to make sure that all non-scalar input parameters hang
- * arround for the whole lifetime of the request.
- */
 struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct tdgram_context *dgram,
@@ -335,23 +317,6 @@ static void tstream_readv_pdu_queue_trigger(struct tevent_req *req,
 					 void *private_data);
 static void tstream_readv_pdu_queue_done(struct tevent_req *subreq);
 
-/**
- * @brief Queue a dgram blob for sending through the socket
- * @param[in] mem_ctx	The memory context for the result
- * @param[in] ev	The tevent_context to run on
- * @param[in] stream	The stream to send data through
- * @param[in] queue	The existing send queue
- * @param[in] next_vector_fn	The next vector function
- * @param[in] next_vector_private	The private_data of the next vector function
- * @retval		The async request handle
- *
- * This function queues a blob for sending to destination through an existing
- * dgram socket. The async callback is triggered when the whole blob is
- * delivered to the underlying system socket.
- *
- * The caller needs to make sure that all non-scalar input parameters hang
- * arround for the whole lifetime of the request.
- */
 struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct tstream_context *stream,
@@ -459,23 +424,6 @@ static void tstream_writev_queue_trigger(struct tevent_req *req,
 					 void *private_data);
 static void tstream_writev_queue_done(struct tevent_req *subreq);
 
-/**
- * @brief Queue a dgram blob for sending through the socket
- * @param[in] mem_ctx	The memory context for the result
- * @param[in] ev	The tevent_context to run on
- * @param[in] stream	The stream to send data through
- * @param[in] queue	The existing send queue
- * @param[in] vector	The iovec vector so write
- * @param[in] count	The size of the vector
- * @retval		The async request handle
- *
- * This function queues a blob for sending to destination through an existing
- * dgram socket. The async callback is triggered when the whole blob is
- * delivered to the underlying system socket.
- *
- * The caller needs to make sure that all non-scalar input parameters hang
- * arround for the whole lifetime of the request.
- */
 struct tevent_req *tstream_writev_queue_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     struct tstream_context *stream,
