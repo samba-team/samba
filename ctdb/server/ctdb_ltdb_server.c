@@ -361,6 +361,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	outdata->dptr  = (uint8_t *)&db->db_id;
 	outdata->dsize = sizeof(db->db_id);
 
+	/* Try to ensure it's locked in mem */
+	ctdb_lockdown_memory(ctdb);
+
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
 				 persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:

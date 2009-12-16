@@ -1442,7 +1442,7 @@ void ctdb_block_signal(int signum);
 void ctdb_unblock_signal(int signum);
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
-
+void ctdb_lockdown_memory(struct ctdb_context *ctdb);
 
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 

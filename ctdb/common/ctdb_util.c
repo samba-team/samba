@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "system/shmem.h"
 #include "../include/ctdb_private.h"
 
 int LogLevel = DEBUG_NOTICE;
@@ -627,6 +628,28 @@ int32_t get_debug_by_desc(const char *desc)
 	}
 
 	return DEBUG_ERR;
+}
+
+/* we don't lock future pages here; it would increase the chance that
+ * we'd fail to mmap later on. */
+void ctdb_lockdown_memory(struct ctdb_context *ctdb)
+{
+#ifdef HAVE_MLOCKALL
+	/* Extra stack, please! */
+	char dummy[10000];
+	memset(dummy, 0, sizeof(dummy));
+
+	if (ctdb->valgrinding) {
+		return;
+	}
+
+	/* Avoid compiler optimizing out dummy. */
+	mlock(dummy, sizeof(dummy));
+	if (mlockall(MCL_CURRENT) != 0) {
+		DEBUG(DEBUG_WARNING,("Failed to lock memory: %s'\n",
+				     strerror(errno)));
+	}
+#endif
 }
 
 const char *ctdb_eventscript_call_names[] = {
