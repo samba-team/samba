@@ -33,9 +33,140 @@
 #define CTDB_ARP_INTERVAL 1
 #define CTDB_ARP_REPEAT   3
 
+struct ctdb_iface {
+	struct ctdb_iface *prev, *next;
+	const char *name;
+	bool link_up;
+	uint32_t references;
+};
+
 static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
 {
-	return vnn->iface;
+	if (vnn->iface) {
+		return vnn->iface->name;
+	}
+
+	return "__none__";
+}
+
+static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
+{
+	struct ctdb_iface *i;
+
+	/* Verify that we dont have an entry for this ip yet */
+	for (i=ctdb->ifaces;i;i=i->next) {
+		if (strcmp(i->name, iface) == 0) {
+			return 0;
+		}
+	}
+
+	/* create a new structure for this interface */
+	i = talloc_zero(ctdb, struct ctdb_iface);
+	CTDB_NO_MEMORY_FATAL(ctdb, i);
+	i->name = talloc_strdup(i, iface);
+	CTDB_NO_MEMORY(ctdb, i->name);
+	i->link_up = true;
+
+	DLIST_ADD(ctdb->ifaces, i);
+
+	return 0;
+}
+
+static struct ctdb_iface *ctdb_find_iface(struct ctdb_context *ctdb,
+					  const char *iface)
+{
+	struct ctdb_iface *i;
+
+	/* Verify that we dont have an entry for this ip yet */
+	for (i=ctdb->ifaces;i;i=i->next) {
+		if (strcmp(i->name, iface) == 0) {
+			return i;
+		}
+	}
+
+	return NULL;
+}
+
+static struct ctdb_iface *ctdb_vnn_best_iface(struct ctdb_context *ctdb,
+					      struct ctdb_vnn *vnn)
+{
+	int i;
+	struct ctdb_iface *cur = NULL;
+	struct ctdb_iface *best = NULL;
+
+	for (i=0; vnn->ifaces[i]; i++) {
+
+		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
+		if (cur == NULL) {
+			continue;
+		}
+
+		if (!cur->link_up) {
+			continue;
+		}
+
+		if (best == NULL) {
+			best = cur;
+			continue;
+		}
+
+		if (cur->references < best->references) {
+			best = cur;
+			continue;
+		}
+	}
+
+	return best;
+}
+
+static int32_t ctdb_vnn_assign_iface(struct ctdb_context *ctdb,
+				     struct ctdb_vnn *vnn)
+{
+	struct ctdb_iface *best = NULL;
+
+	if (vnn->iface) {
+		DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
+				   "still assigned to iface '%s'\n",
+				   ctdb_addr_to_str(&vnn->public_address),
+				   ctdb_vnn_iface_string(vnn)));
+		return 0;
+	}
+
+	best = ctdb_vnn_best_iface(ctdb, vnn);
+	if (best == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " public address '%s' "
+				  "cannot assign to iface any iface\n",
+				  ctdb_addr_to_str(&vnn->public_address)));
+		return -1;
+	}
+
+	vnn->iface = best;
+	best->references++;
+	vnn->pnn = ctdb->pnn;
+
+	DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
+			   "now assigned to iface '%s' refs[%d]\n",
+			   ctdb_addr_to_str(&vnn->public_address),
+			   ctdb_vnn_iface_string(vnn),
+			   best->references));
+	return 0;
+}
+
+static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
+				    struct ctdb_vnn *vnn)
+{
+	DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
+			   "now unassigned (old iface '%s' refs[%d])\n",
+			   ctdb_addr_to_str(&vnn->public_address),
+			   ctdb_vnn_iface_string(vnn),
+			   vnn->iface?vnn->iface->references:0));
+	if (vnn->iface) {
+		vnn->iface->references--;
+	}
+	vnn->iface = NULL;
+	if (vnn->pnn == ctdb->pnn) {
+		vnn->pnn = -1;
+	}
 }
 
 struct ctdb_takeover_arp {
@@ -201,7 +332,6 @@ static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, ctdb_sock_
 	return NULL;
 }
 
-
 /*
   take over an ip address
  */
@@ -227,6 +357,15 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	/* if our kernel already has this IP, do nothing */
 	if (ctdb_sys_have_ip(&pip->addr)) {
 		return 0;
+	}
+
+	ret = ctdb_vnn_assign_iface(ctdb, vnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Takeover of IP %s/%u failed to "
+				 "assin a usable interface\n",
+				 ctdb_addr_to_str(&pip->addr),
+				 vnn->public_netmask_bits));
+		return -1;
 	}
 
 	state = talloc(vnn, struct takeover_callback_state);
@@ -350,7 +489,9 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 
 	/* kill clients that have registered with this IP */
 	release_kill_clients(ctdb, state->addr);
-	
+
+	ctdb_vnn_unassign_iface(ctdb, state->vnn);
+
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
@@ -387,6 +528,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 			ctdb_addr_to_str(&pip->addr),
 			vnn->public_netmask_bits, 
 			ctdb_vnn_iface_string(vnn)));
+		ctdb_vnn_unassign_iface(ctdb, vnn);
 		return 0;
 	}
 
@@ -480,16 +622,25 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	}
 	talloc_free(tmp);
 	vnn->ifaces[num] = NULL;
-	vnn->iface = vnn->ifaces[0];
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
-	
+
+	for (i=0; vnn->ifaces[i]; i++) {
+		ret = ctdb_add_local_iface(ctdb, vnn->ifaces[i]);
+		if (ret != 0) {
+			DEBUG(DEBUG_CRIT, (__location__ " failed to add iface[%s] "
+					   "for public_address[%s]\n",
+					   vnn->ifaces[i], ctdb_addr_to_str(addr)));
+			talloc_free(vnn);
+			return -1;
+		}
+	}
+
 	DLIST_ADD(ctdb->vnn, vnn);
 
 	return 0;
 }
-
 
 /*
   setup the event script directory
@@ -573,6 +724,7 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 {
 	struct ctdb_vnn *svnn;
 	bool ok;
+	int ret;
 
 	svnn = talloc_zero(ctdb, struct ctdb_vnn);
 	CTDB_NO_MEMORY(ctdb, svnn);
@@ -583,10 +735,24 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, svnn->ifaces[0]);
 	svnn->ifaces[1] = NULL;
 
-	svnn->iface = svnn->ifaces[0];
-
 	ok = parse_ip(ip, iface, 0, &svnn->public_address);
 	if (!ok) {
+		talloc_free(svnn);
+		return -1;
+	}
+
+	ret = ctdb_add_local_iface(ctdb, svnn->ifaces[0]);
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT, (__location__ " failed to add iface[%s] "
+				   "for single_ip[%s]\n",
+				   svnn->ifaces[0],
+				   ctdb_addr_to_str(&svnn->public_address)));
+		talloc_free(svnn);
+		return -1;
+	}
+
+	ret = ctdb_vnn_assign_iface(ctdb, svnn);
+	if (ret != 0) {
 		talloc_free(svnn);
 		return -1;
 	}
@@ -1436,16 +1602,18 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (!ctdb_sys_have_ip(&vnn->public_address)) {
+			ctdb_vnn_unassign_iface(ctdb, vnn);
 			continue;
 		}
-		if (vnn->pnn == ctdb->pnn) {
-			vnn->pnn = -1;
+		if (!vnn->iface) {
+			continue;
 		}
 		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
 				  ctdb_vnn_iface_string(vnn),
 				  ctdb_addr_to_str(&vnn->public_address),
 				  vnn->public_netmask_bits);
 		release_kill_clients(ctdb, &vnn->public_address);
+		ctdb_vnn_unassign_iface(ctdb, vnn);
 	}
 }
 
@@ -2180,10 +2348,15 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	/* walk over all public addresses until we find a match */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (ctdb_same_ip(&vnn->public_address, &pub->addr)) {
-			TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+			TALLOC_CTX *mem_ctx;
 
 			DLIST_REMOVE(ctdb->vnn, vnn);
+			if (vnn->iface == NULL) {
+				talloc_free(vnn);
+				return 0;
+			}
 
+			mem_ctx = talloc_new(ctdb);
 			ret = ctdb_event_script_callback(ctdb, 
 					 mem_ctx, delete_ip_callback, mem_ctx,
 					 false,
@@ -2192,6 +2365,7 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 					 ctdb_vnn_iface_string(vnn),
 					 ctdb_addr_to_str(&vnn->public_address),
 					 vnn->public_netmask_bits);
+			ctdb_vnn_unassign_iface(ctdb, vnn);
 			talloc_free(vnn);
 			if (ret != 0) {
 				return -1;

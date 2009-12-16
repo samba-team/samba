@@ -181,12 +181,13 @@ struct ctdb_client {
 	struct ctdb_client_notify_list *notify;
 };
 
+struct ctdb_iface;
 
 /* state associated with a public ip address */
 struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
 
-	const char *iface;
+	struct ctdb_iface *iface;
 	const char **ifaces;
 	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
@@ -425,6 +426,7 @@ struct ctdb_context {
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
 	struct ctdb_vnn *single_ip_vnn; /* a structure for the single ip */
+	struct ctdb_iface *ifaces; /* list of local interfaces */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
