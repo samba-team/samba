@@ -1007,6 +1007,8 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
+	fstring dc_name;
+	struct sockaddr_storage dcip;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -1014,6 +1016,8 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 	}
 
 	net_use_krb_machine_account(c);
+
+	get_dc_name(lp_workgroup(), lp_realm(), dc_name, &dcip);
 
 	status = ads_startup(c, true, &ads);
 	if (!ADS_ERR_OK(status)) {
