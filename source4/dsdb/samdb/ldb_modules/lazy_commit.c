@@ -33,7 +33,6 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
 	struct ldb_request *new_req;
-	struct ldb_control **saved_controls;
 	struct ldb_control *control = ldb_request_get_control(req, LDB_CONTROL_SERVER_LAZY_COMMIT);
 	if (!control) {
 		return ldb_next_request(module, req);
@@ -99,7 +98,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	save_controls(control, req, &saved_controls);
+	control->critical = 0;
 	return ldb_next_request(module, new_req);
 }
 

@@ -553,7 +553,6 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	struct ldb_control *control;
 	struct ldb_control *storage_format_control;
 	struct ldb_extended_dn_control *extended_ctrl = NULL;
-	struct ldb_control **saved_controls;
 	struct extended_search_context *ac;
 	struct ldb_request *down_req;
 	char **new_attrs;
@@ -652,24 +651,13 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 		return ret;
 	}
 
-	/* Remove extended DN and storage format controls */
-
+	/* mark extended DN and storage format controls as done */
 	if (control) {
-		/* save it locally and remove it from the list */
-		/* we do not need to replace them later as we
-		 * are keeping the original req intact */
-		if (!save_controls(control, down_req, &saved_controls)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+		control->critical = 0;
 	}
 
 	if (storage_format_control) {
-		/* save it locally and remove it from the list */
-		/* we do not need to replace them later as we
-		 * are keeping the original req intact */
-		if (!save_controls(storage_format_control, down_req, &saved_controls)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+		storage_format_control->critical = 0;
 	}
 
 	/* Add in dereference control, if we were asked to, we are

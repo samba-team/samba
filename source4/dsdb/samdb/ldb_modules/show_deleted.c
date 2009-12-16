@@ -38,7 +38,6 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 {
 	struct ldb_context *ldb;
 	struct ldb_control *control;
-	struct ldb_control **saved_controls;
 	struct ldb_request *down_req;
 	struct ldb_parse_tree *new_tree = req->op.search.tree;
 	int ret;
@@ -90,9 +89,9 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 		return ret;
 	}
 
-	/* if a control is there remove if from the modified request */
-	if (control && !save_controls(control, down_req, &saved_controls)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	/* mark the control as done */
+	if (control) {
+		control->critical = 0;
 	}
 
 	/* perform the search */
