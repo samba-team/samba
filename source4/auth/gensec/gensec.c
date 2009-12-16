@@ -1184,6 +1184,11 @@ _PUBLIC_ NTSTATUS gensec_set_local_address(struct gensec_security *gensec_securi
 		const struct tsocket_address *local)
 {
 	TALLOC_FREE(gensec_security->local_addr);
+
+	if (local == NULL) {
+		return NT_STATUS_OK;
+	}
+
 	gensec_security->local_addr = tsocket_address_copy(local, gensec_security);
 	if (gensec_security->local_addr == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1206,6 +1211,11 @@ _PUBLIC_ NTSTATUS gensec_set_remote_address(struct gensec_security *gensec_secur
 		const struct tsocket_address *remote)
 {
 	TALLOC_FREE(gensec_security->remote_addr);
+
+	if (remote == NULL) {
+		return NT_STATUS_OK;
+	}
+
 	gensec_security->remote_addr = tsocket_address_copy(remote, gensec_security);
 	if (gensec_security->remote_addr == NULL) {
 		return NT_STATUS_NO_MEMORY;
