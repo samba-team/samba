@@ -452,7 +452,10 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 	/* valgrind gets overloaded if we run next script as it's still doing
 	 * post-execution analysis, so kill finished child here. */
-	kill(state->child, SIGKILL);
+	if (ctdb->valgrinding) {
+		kill(state->child, SIGKILL);
+	}
+
 	state->child = 0;
 
 	/* Aborted or finished all scripts?  We're done. */

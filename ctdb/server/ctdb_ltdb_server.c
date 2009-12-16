@@ -589,7 +589,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 					   db_name, ctdb->pnn);
 
 	tdb_flags = persistent? TDB_DEFAULT : TDB_CLEAR_IF_FIRST | TDB_NOSYNC;
-	if (!ctdb->do_setsched) {
+	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
 	tdb_flags |= TDB_DISALLOW_NESTING;
@@ -789,6 +789,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 
 	outdata->dptr  = (uint8_t *)&db->db_id;
 	outdata->dsize = sizeof(db->db_id);
+
+	/* Try to ensure it's locked in mem */
+	ctdb_lockdown_memory(ctdb);
 
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,

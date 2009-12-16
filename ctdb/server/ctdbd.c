@@ -42,7 +42,7 @@ static struct {
 	const char *public_interface;
 	const char *single_public_ip;
 	const char *node_ip;
-	int         no_setsched;
+	int         valgrinding;
 	int         use_syslog;
 	int         start_as_disabled;
 	int         start_as_stopped;
@@ -131,7 +131,7 @@ int main(int argc, const char *argv[])
 		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
 		{ "dbdir-state", 0, POPT_ARG_STRING, &options.db_dir_state, 0, "directory for internal state tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
-		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
+		{ "valgrinding", 0, POPT_ARG_NONE, &options.valgrinding, 0, "make valgrind more effective", NULL },
 		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
 		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
@@ -325,7 +325,7 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	ctdb->do_setsched = !options.no_setsched;
+	ctdb->valgrinding = options.valgrinding;
 
 	ctdb->do_checkpublicip = !options.no_publicipcheck;
 

@@ -1721,7 +1721,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	}
 
 	tdb_flags = persistent?TDB_DEFAULT:TDB_NOSYNC;
-	if (!ctdb->do_setsched) {
+	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
 	tdb_flags |= TDB_DISALLOW_NESTING;
@@ -3665,11 +3665,6 @@ int switch_from_server_to_client(struct ctdb_context *ctdb)
 
 	close(ctdb->daemon.sd);
 	ctdb->daemon.sd = -1;
-
-	/* the client does not need to be realtime */
-	if (ctdb->do_setsched) {
-		ctdb_restore_scheduler(ctdb);
-	}
 
 	/* initialise ctdb */
 	ret = ctdb_socket_connect(ctdb);

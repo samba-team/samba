@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "system/shmem.h"
 #include "../include/ctdb_private.h"
 
 int LogLevel = DEBUG_NOTICE;
@@ -323,52 +324,19 @@ struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, st
 	return r;
 }
 
-
-#if HAVE_SCHED_H
-#include <sched.h>
-#endif
-
 /*
-  if possible, make this task real time
+  if possible, make this task very high priority
  */
-void ctdb_set_scheduler(struct ctdb_context *ctdb)
+void ctdb_high_priority(struct ctdb_context *ctdb)
 {
-#if HAVE_SCHED_SETSCHEDULER	
-	struct sched_param p;
-	if (ctdb->saved_scheduler_param == NULL) {
-		ctdb->saved_scheduler_param = talloc_size(ctdb, sizeof(p));
-	}
-	
-	if (sched_getparam(0, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
-		DEBUG(DEBUG_ERR,("Unable to get old scheduler params\n"));
-		return;
-	}
-
-	p = *(struct sched_param *)ctdb->saved_scheduler_param;
-	p.sched_priority = 1;
-
-	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to set scheduler to SCHED_FIFO (%s)\n", 
-			 strerror(errno)));
+	errno = 0;
+	if (nice(-20) == -1 && errno != 0) {
+		DEBUG(DEBUG_WARNING,("Unable to renice self: %s\n",
+				     strerror(errno)));
 	} else {
-		DEBUG(DEBUG_NOTICE,("Set scheduler to SCHED_FIFO\n"));
+		DEBUG(DEBUG_NOTICE,("Scheduler says I'm nice: %i\n",
+				    getpriority(PRIO_PROCESS, getpid())));
 	}
-#endif
-}
-
-/*
-  restore previous scheduler parameters
- */
-void ctdb_restore_scheduler(struct ctdb_context *ctdb)
-{
-#if HAVE_SCHED_SETSCHEDULER	
-	if (ctdb->saved_scheduler_param == NULL) {
-		ctdb_fatal(ctdb, "No saved scheduler parameters\n");
-	}
-	if (sched_setscheduler(0, SCHED_OTHER, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
-		ctdb_fatal(ctdb, "Unable to restore old scheduler parameters\n");
-	}
-#endif
 }
 
 void set_nonblocking(int fd)
@@ -660,6 +628,28 @@ int32_t get_debug_by_desc(const char *desc)
 	}
 
 	return DEBUG_ERR;
+}
+
+/* we don't lock future pages here; it would increase the chance that
+ * we'd fail to mmap later on. */
+void ctdb_lockdown_memory(struct ctdb_context *ctdb)
+{
+#ifdef HAVE_MLOCKALL
+	/* Extra stack, please! */
+	char dummy[10000];
+	memset(dummy, 0, sizeof(dummy));
+
+	if (ctdb->valgrinding) {
+		return;
+	}
+
+	/* Avoid compiler optimizing out dummy. */
+	mlock(dummy, sizeof(dummy));
+	if (mlockall(MCL_CURRENT) != 0) {
+		DEBUG(DEBUG_WARNING,("Failed to lock memory: %s'\n",
+				     strerror(errno)));
+	}
+#endif
 }
 
 const char *ctdb_eventscript_call_names[] = {

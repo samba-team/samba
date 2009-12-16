@@ -437,9 +437,7 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
-	bool do_setsched;
 	bool do_checkpublicip;
-	void *saved_scheduler_param;
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
 	const char *notification_script;
@@ -453,6 +451,7 @@ struct ctdb_context {
 	struct ctdb_log_state *log;
 	int start_as_disabled;
 	int start_as_stopped;
+	bool valgrinding;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
@@ -1252,8 +1251,7 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
-void ctdb_set_scheduler(struct ctdb_context *ctdb);
-void ctdb_restore_scheduler(struct ctdb_context *ctdb);
+void ctdb_high_priority(struct ctdb_context *ctdb);
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
@@ -1457,7 +1455,7 @@ void ctdb_block_signal(int signum);
 void ctdb_unblock_signal(int signum);
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
-
+void ctdb_lockdown_memory(struct ctdb_context *ctdb);
 
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
