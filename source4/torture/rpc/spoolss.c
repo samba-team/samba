@@ -953,8 +953,8 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 		struct spoolss_SetPrinterInfo5 info5;
 		struct spoolss_SetPrinterInfo6 info6;
 		struct spoolss_SetPrinterInfo7 info7;
-		struct spoolss_DeviceModeInfo info8;
-		struct spoolss_DeviceModeInfo info9;
+		struct spoolss_SetPrinterInfo8 info8;
+		struct spoolss_SetPrinterInfo9 info9;
 
 
 		info_ctr.level = levels[i];
@@ -1075,8 +1075,8 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 static void clear_info2(struct spoolss_SetPrinterInfoCtr *r)
 {
 	if ((r->level == 2) && (r->info.info2)) {
-		r->info.info2->secdesc = NULL;
-		r->info.info2->devmode = NULL;
+		r->info.info2->secdesc_ptr = 0;
+		r->info.info2->devmode_ptr = 0;
 	}
 }
 
