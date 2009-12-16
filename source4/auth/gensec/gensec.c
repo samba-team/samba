@@ -526,8 +526,6 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->private_data = NULL;
 
 	ZERO_STRUCT((*gensec_security)->target);
-	ZERO_STRUCT((*gensec_security)->peer_addr);
-	ZERO_STRUCT((*gensec_security)->my_addr);
 
 	(*gensec_security)->subcontext = false;
 	(*gensec_security)->want_features = 0;
@@ -1185,22 +1183,6 @@ _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_s
 _PUBLIC_ NTSTATUS gensec_set_local_address(struct gensec_security *gensec_security,
 		const struct tsocket_address *local)
 {
-	ssize_t socklen;
-	struct sockaddr_storage ss;
-
-	/* set my_addr */
-	socklen = tsocket_address_bsd_sockaddr(local, (struct sockaddr *) &ss,
-				sizeof(struct sockaddr_storage));
-	if (socklen < 0) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	gensec_security->my_addr = socket_address_from_sockaddr(gensec_security,
-			(struct sockaddr *) &ss, socklen);
-	if (gensec_security->my_addr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* set local */
 	TALLOC_FREE(gensec_security->local_addr);
 	gensec_security->local_addr = tsocket_address_copy(local, gensec_security);
 	if (gensec_security->local_addr == NULL) {
@@ -1223,22 +1205,6 @@ _PUBLIC_ NTSTATUS gensec_set_local_address(struct gensec_security *gensec_securi
 _PUBLIC_ NTSTATUS gensec_set_remote_address(struct gensec_security *gensec_security,
 		const struct tsocket_address *remote)
 {
-	ssize_t socklen;
-	struct sockaddr_storage ss;
-
-	/* set my_addr */
-	socklen = tsocket_address_bsd_sockaddr(remote, (struct sockaddr *) &ss,
-				sizeof(struct sockaddr_storage));
-	if (socklen < 0) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	gensec_security->peer_addr = socket_address_from_sockaddr(gensec_security,
-			(struct sockaddr *) &ss, socklen);
-	if (gensec_security->peer_addr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* set remote */
 	TALLOC_FREE(gensec_security->remote_addr);
 	gensec_security->remote_addr = tsocket_address_copy(remote, gensec_security);
 	if (gensec_security->remote_addr == NULL) {

@@ -169,7 +169,6 @@ struct gensec_security {
 	bool subcontext;
 	uint32_t want_features;
 	struct tevent_context *event_ctx;
-	struct socket_address *my_addr, *peer_addr;
 	struct tsocket_address *local_addr, *remote_addr;
 	struct gensec_settings *settings;
 	
