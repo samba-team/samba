@@ -298,8 +298,6 @@ NTSTATUS gensec_set_remote_address(struct gensec_security *gensec_security,
 const struct tsocket_address *gensec_get_local_address(struct gensec_security *gensec_security);
 const struct tsocket_address *gensec_get_remote_address(struct gensec_security *gensec_security);
 
-NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr);
-
 NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
 					const char *name);
 

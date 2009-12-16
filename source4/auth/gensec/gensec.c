@@ -1280,15 +1280,6 @@ _PUBLIC_ const struct tsocket_address *gensec_get_remote_address(struct gensec_s
 	return gensec_security->remote_addr;
 }
 
-_PUBLIC_ NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr) 
-{
-	gensec_security->peer_addr = peer_addr;
-	if (peer_addr && !talloc_reference(gensec_security, peer_addr)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 _PUBLIC_ struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security) 
 {
 	if (gensec_security->peer_addr) {

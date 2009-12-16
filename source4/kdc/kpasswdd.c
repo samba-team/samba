@@ -524,7 +524,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	 * older MIT clients need this, we might have to insert more
 	 * complex code */
 
-	nt_status = gensec_set_peer_addr(gensec_security, peer_addr);
+	nt_status = gensec_set_local_address(gensec_security, peer_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return false;
