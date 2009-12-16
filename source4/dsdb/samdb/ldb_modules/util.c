@@ -294,3 +294,46 @@ int dsdb_module_modify(struct ldb_module *module,
 	talloc_free(tmp_ctx);
 	return ret;
 }
+
+
+
+/*
+  a ldb_rename request operating on modules below the
+  current module
+ */
+int dsdb_module_rename(struct ldb_module *module,
+                      struct ldb_dn *olddn, struct ldb_dn *newdn,
+                      uint32_t dsdb_flags)
+{
+	struct ldb_request *req;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+
+	ret = ldb_build_rename_req(&req, ldb, tmp_ctx,
+				   olddn,
+				   newdn,
+				   NULL,
+				   NULL,
+				   ldb_op_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(module, req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* Run the new request */
+	ret = ldb_next_request(module, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
