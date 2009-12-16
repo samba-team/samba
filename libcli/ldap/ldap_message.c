@@ -668,6 +668,8 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 			if (!ldap_encode_control(mem_ctx, data,
 						 control_handlers,
 						 msg->controls[i])) {
+				DEBUG(1,("Unable to encode control %s\n",
+					 msg->controls[i]->oid));
 				return false;
 			}
 		}
