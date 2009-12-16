@@ -246,7 +246,8 @@ struct ctdb_node {
 	   across the nodes.  it needs to know which public ip's can be handled
 	   by each node.
 	*/
-	struct ctdb_all_public_ips *public_ips;
+	struct ctdb_all_public_ips *known_public_ips;
+	struct ctdb_all_public_ips *available_public_ips;
 	/* used by the recovery dameon to track when a node should be banned */
 	struct ctdb_banning_state *ban_state; 
 };

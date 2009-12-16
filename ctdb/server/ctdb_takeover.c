@@ -820,7 +820,7 @@ static int can_node_serve_ip(struct ctdb_context *ctdb, int32_t pnn,
 	struct ctdb_all_public_ips *public_ips;
 	int i;
 
-	public_ips = ctdb->nodes[pnn]->public_ips;
+	public_ips = ctdb->nodes[pnn]->available_public_ips;
 
 	if (public_ips == NULL) {
 		return -1;
@@ -937,7 +937,7 @@ create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 	ip_tree = trbt_create(tmp_ctx, 0);
 
 	for (i=0;i<ctdb->num_nodes;i++) {
-		public_ips = ctdb->nodes[i]->public_ips;
+		public_ips = ctdb->nodes[i]->known_public_ips;
 
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;

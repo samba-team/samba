@@ -3010,9 +3010,13 @@ again:
 	}
 	for (j=0; j<nodemap->num; j++) {
 		/* release any existing data */
-		if (ctdb->nodes[j]->public_ips) {
-			talloc_free(ctdb->nodes[j]->public_ips);
-			ctdb->nodes[j]->public_ips = NULL;
+		if (ctdb->nodes[j]->known_public_ips) {
+			talloc_free(ctdb->nodes[j]->known_public_ips);
+			ctdb->nodes[j]->known_public_ips = NULL;
+		}
+		if (ctdb->nodes[j]->available_public_ips) {
+			talloc_free(ctdb->nodes[j]->available_public_ips);
+			ctdb->nodes[j]->available_public_ips = NULL;
 		}
 
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
@@ -3020,11 +3024,27 @@ again:
 		}
 
 		/* grab a new shiny list of public ips from the node */
-		if (ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(),
-			ctdb->nodes[j]->pnn, 
-			ctdb->nodes,
-			&ctdb->nodes[j]->public_ips)) {
-			DEBUG(DEBUG_ERR,("Failed to read public ips from node : %u\n", 
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
+					CONTROL_TIMEOUT(),
+					ctdb->nodes[j]->pnn,
+					ctdb->nodes,
+					0,
+					&ctdb->nodes[j]->known_public_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read known public ips from node : %u\n",
+				ctdb->nodes[j]->pnn));
+			goto again;
+		}
+
+		/* grab a new shiny list of public ips from the node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
+					CONTROL_TIMEOUT(),
+					ctdb->nodes[j]->pnn,
+					ctdb->nodes,
+					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
+					&ctdb->nodes[j]->available_public_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read available public ips from node : %u\n",
 				ctdb->nodes[j]->pnn));
 			goto again;
 		}
