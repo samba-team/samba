@@ -25,7 +25,11 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 
-int dsdb_module_search_handle_flags(struct ldb_module *module, struct ldb_request *req, int dsdb_flags) 
+/*
+  add a set of controls to a ldb_request structure based on a set of
+  flags. See util.h for a list of available flags
+ */
+int dsdb_request_add_controls(struct ldb_module *module, struct ldb_request *req, uint32_t dsdb_flags)
 {
 	int ret;
 	if (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) {
@@ -120,7 +124,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_module_search_handle_flags(module, req, dsdb_flags);
+	ret = dsdb_request_add_controls(module, req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -186,7 +190,7 @@ int dsdb_module_search(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_module_search_handle_flags(module, req, dsdb_flags);
+	ret = dsdb_request_add_controls(module, req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
