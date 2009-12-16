@@ -382,8 +382,8 @@ int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		/* if a module fails the prepare then we need
 		   to call the end transaction for everyone */
-		FIRST_OP(ldb, end_transaction);
-		module->ops->end_transaction(module);
+		FIRST_OP(ldb, del_transaction);
+		module->ops->del_transaction(module);
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_asprintf_errstring(ldb,
