@@ -129,6 +129,7 @@ struct ctdb_tunable {
 	uint32_t vacuum_max_interval;
 	uint32_t max_queue_depth_drop_msg;
 	uint32_t use_status_events_for_monitoring;
+	uint32_t allow_unhealthy_db_read;
 };
 
 /*
@@ -405,6 +406,11 @@ struct ctdb_context {
 	const char *name;
 	const char *db_directory;
 	const char *db_directory_persistent;
+	const char *db_directory_state;
+	struct tdb_wrap *db_persistent_health;
+	uint32_t db_persistent_startup_generation;
+	uint64_t db_persistent_check_errors;
+	uint64_t max_persistent_check_errors;
 	const char *transport;
 	char *recovery_lock_file;
 	int recovery_lock_fd;
@@ -477,6 +483,7 @@ struct ctdb_db_context {
 	struct ctdb_traverse_local_handle *traverse;
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
+	char *unhealthy_reason;
 };
 
 
@@ -626,6 +633,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_CLEAR_LOG		 = 118,
 		    CTDB_CONTROL_TRANS3_COMMIT           = 119,
 		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
+		    CTDB_CONTROL_DB_SET_HEALTHY		 = 121,
+		    CTDB_CONTROL_DB_GET_HEALTH		 = 122,
 };	
 
 /*
@@ -1415,7 +1424,7 @@ int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb,
 int32_t ctdb_control_uptime(struct ctdb_context *ctdb, 
 		      TDB_DATA *outdata);
 
-int ctdb_attach_persistent(struct ctdb_context *ctdb);
+int ctdb_attach_databases(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
 				      struct ctdb_req_control *c, 
@@ -1435,6 +1444,10 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
+				   TDB_DATA indata,
+				   TDB_DATA *outdata);
 
 
 int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv);
@@ -1540,5 +1553,13 @@ struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
 				   TDB_DATA *outdata);
+
+int ctdb_load_persistent_health(struct ctdb_context *ctdb,
+				struct ctdb_db_context *ctdb_db);
+int ctdb_update_persistent_health(struct ctdb_context *ctdb,
+				  struct ctdb_db_context *ctdb_db,
+				  const char *reason,/* NULL means healthy */
+				  int num_healthy_nodes);
+int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 
 #endif

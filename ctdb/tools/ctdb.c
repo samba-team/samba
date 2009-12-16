@@ -2438,6 +2438,9 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	ret = ctdb_dump_db(ctdb_db, stdout);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to dump database\n"));
+		DEBUG(DEBUG_ERR, ("Maybe try 'ctdb getdbstatus %s'"
+				  " and 'ctdb getvar AllowUnhealthyDBRead'\n",
+				  db_name));
 		return -1;
 	}
 	talloc_free(ctdb_db);
@@ -2555,19 +2558,91 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		return ret;
 	}
 
+	if(options.machinereadable){
+		printf(":ID:Name:Path:Persistent:Unhealthy:\n");
+		for(i=0;i<dbmap->num;i++){
+			const char *path;
+			const char *name;
+			const char *health;
+			bool persistent;
+
+			ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn,
+					    dbmap->dbs[i].dbid, ctdb, &path);
+			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn,
+					    dbmap->dbs[i].dbid, ctdb, &name);
+			ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
+					      dbmap->dbs[i].dbid, ctdb, &health);
+			persistent = dbmap->dbs[i].persistent;
+			printf(":0x%08X:%s:%s:%d:%d:\n",
+			       dbmap->dbs[i].dbid, name, path,
+			       !!(persistent), !!(health));
+		}
+		return 0;
+	}
+
 	printf("Number of databases:%d\n", dbmap->num);
 	for(i=0;i<dbmap->num;i++){
 		const char *path;
 		const char *name;
+		const char *health;
 		bool persistent;
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
+		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
 		persistent = dbmap->dbs[i].persistent;
-		printf("dbid:0x%08x name:%s path:%s %s\n", dbmap->dbs[i].dbid, name, 
-		       path, persistent?"PERSISTENT":"");
+		printf("dbid:0x%08x name:%s path:%s%s%s\n",
+		       dbmap->dbs[i].dbid, name, path,
+		       persistent?" PERSISTENT":"",
+		       health?" UNHEALTHY":"");
 	}
 
+	return 0;
+}
+
+/*
+  display the status of a database on a remote ctdb
+ */
+static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_dbid_map *dbmap=NULL;
+	const char *db_name;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_name = argv[0];
+
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+		return ret;
+	}
+
+	for(i=0;i<dbmap->num;i++){
+		const char *path;
+		const char *name;
+		const char *health;
+		bool persistent;
+
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
+		if (strcmp(name, db_name) != 0) {
+			continue;
+		}
+
+		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
+		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
+		persistent = dbmap->dbs[i].persistent;
+		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nHEALTH: %s\n",
+		       dbmap->dbs[i].dbid, name, path,
+		       persistent?"yes":"no",
+		       health?health:"OK");
+		return 0;
+	}
+
+	DEBUG(DEBUG_ERR, ("db %s doesn't exist on node %u\n", db_name, options.pnn));
 	return 0;
 }
 
@@ -3104,6 +3179,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	struct backup_data *bd;
 	int fh = -1;
 	int status = -1;
+	const char *reason = NULL;
 
 	if (argc != 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -3132,6 +3208,37 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
+	ret = ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
+				    dbmap->dbs[i].dbid, tmp_ctx, &reason);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to get dbhealth for database '%s'\n",
+				 argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (reason) {
+		uint32_t allow_unhealthy = 0;
+
+		ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), options.pnn,
+				      "AllowUnhealthyDBRead",
+				      &allow_unhealthy);
+
+		if (allow_unhealthy != 1) {
+			DEBUG(DEBUG_ERR,("database '%s' is unhealthy: %s\n",
+					 argv[0], reason));
+
+			DEBUG(DEBUG_ERR,("disallow backup : tunnable AllowUnhealthyDBRead = %u\n",
+					 allow_unhealthy));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		DEBUG(DEBUG_WARNING,("WARNING database '%s' is unhealthy - see 'ctdb getdbstatus %s'\n",
+				     argv[0], argv[0]));
+		DEBUG(DEBUG_WARNING,("WARNING! allow backup of unhealthy database: "
+				     "tunnable AllowUnhealthyDBRead = %u\n",
+				     allow_unhealthy));
+	}
 
 	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
 	if (ctdb_db == NULL) {
@@ -3357,6 +3464,22 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		return -1;
 	}
 
+	data.dptr = (void *)&ctdb_db->db_id;
+	data.dsize = sizeof(ctdb_db->db_id);
+
+	/* mark the database as healthy */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_DB_SET_HEALTHY,
+					nodes, 0,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to mark database as healthy.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	data.dptr = (void *)&generation;
 	data.dsize = sizeof(generation);
 
@@ -3388,6 +3511,72 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+ * dump a database backup from a file
+ */
+static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA outdata;
+	struct db_file_header dbhdr;
+	int i, fh;
+	struct tm *tm;
+	char tbuf[100];
+	struct ctdb_rec_data *rec = NULL;
+	struct ctdb_marshall_buffer *m;
+
+	if (argc != 1) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		return -1;
+	}
+
+	fh = open(argv[0], O_RDONLY);
+	if (fh == -1) {
+		DEBUG(DEBUG_ERR,("Failed to open file '%s'\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	read(fh, &dbhdr, sizeof(dbhdr));
+	if (dbhdr.version != DB_VERSION) {
+		DEBUG(DEBUG_ERR,("Invalid version of database dump. File is version %lu but expected version was %u\n", dbhdr.version, DB_VERSION));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	outdata.dsize = dbhdr.size;
+	outdata.dptr = talloc_size(tmp_ctx, outdata.dsize);
+	if (outdata.dptr == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate data of size '%lu'\n", dbhdr.size));
+		close(fh);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	read(fh, outdata.dptr, outdata.dsize);
+	close(fh);
+	m = (struct ctdb_marshall_buffer *)outdata.dptr;
+
+	tm = localtime(&dbhdr.timestamp);
+	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
+	printf("Backup of database name:'%s' dbid:0x%x08x from @ %s\n",
+		dbhdr.name, m->db_id, tbuf);
+
+	for (i=0; i < m->count; i++) {
+		uint32_t reqid = 0;
+		TDB_DATA key, data;
+
+		/* we do not want the header splitted, so we pass NULL*/
+		rec = ctdb_marshall_loop_next(m, rec, &reqid,
+					      NULL, &key, &data);
+
+		ctdb_dumpdb_record(ctdb, key, data, stdout);
+	}
+
+	printf("Dumped %d records\n", i);
 	talloc_free(tmp_ctx);
 	return 0;
 }
@@ -3516,6 +3705,22 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 					NULL, NULL,
 					NULL) != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to wipe database.\n"));
+		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	data.dptr = (void *)&ctdb_db->db_id;
+	data.dsize = sizeof(ctdb_db->db_id);
+
+	/* mark the database as healthy */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_DB_SET_HEALTHY,
+					nodes, 0,
+					TIMELIMIT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to mark database as healthy.\n"));
 		ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
 		talloc_free(tmp_ctx);
 		return -1;
@@ -3799,6 +4004,7 @@ static const struct {
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
+	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
 	{ "catdb",           control_catdb,             true,	false,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
@@ -3847,6 +4053,7 @@ static const struct {
 	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
 	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<database> <file>"},
 	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file>"},
+	{ "dumpdbbackup",    control_dumpdbbackup,      false,	true,  "dump database backup from a file.", "<file>"},
 	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
 	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
 	{ "setflags",        control_setflags,          false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},

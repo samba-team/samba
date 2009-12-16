@@ -69,11 +69,15 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
     TDB_NOLOCK - don't do any locking
     TDB_NOMMAP - don't use mmap
     TDB_NOSYNC - don't synchronise transactions to disk
+    TDB_SEQNUM - maintain a sequence number
+    TDB_VOLATILE - activate the per-hashchain freelist, default 5
+    TDB_ALLOW_NESTING - allow transactions to nest
+    TDB_DISALLOW_NESTING - disallow transactions to nest
 
 ----------------------------------------------------------------------
 TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		         int open_flags, mode_t mode,
-			 tdb_log_func log_fn,
+			 const struct tdb_logging_context *log_ctx,
 			 tdb_hash_func hash_fn)
 
 This is like tdb_open(), but allows you to pass an initial logging and
@@ -91,13 +95,6 @@ char *tdb_error(TDB_CONTEXT *tdb);
 int tdb_close(TDB_CONTEXT *tdb);
 
    close a database
-
-----------------------------------------------------------------------
-int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
-
-   update an entry in place - this only works if the new data size
-   is <= the old data size and the key exists.
-   on failure return -1
 
 ----------------------------------------------------------------------
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
@@ -244,3 +241,14 @@ int tdb_transaction_prepare_commit(TDB_CONTEXT *tdb)
    tdb_transaction_commit() or tdb_transaction_cancel(). Preparing
    allocates disk space for the pending updates, so a subsequent
    commit should succeed (barring any hardware failures).
+
+----------------------------------------------------------------------
+int tdb_check(TDB_CONTEXT *tdb,
+	      int (*check)(TDB_DATA key, TDB_DATA data, void *private_data),
+	      void *private_data);)
+
+   check the consistency of the database, calling back the check function
+   (if non-NULL) with each record.  If some consistency check fails, or
+   the supplied check function returns -1, tdb_check returns -1, otherwise
+   0.  Note that logging function (if set) will be called with additional
+   information on the corruption found.

@@ -518,8 +518,8 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 	char *vac_dbname;
 
 	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u",
-					ctdb_db->ctdb->db_directory, 
-					TUNINGDBNAME, ctdb_db->ctdb->pnn);
+				     ctdb_db->ctdb->db_directory_state,
+				     TUNINGDBNAME, ctdb_db->ctdb->pnn);
 	if (vac_dbname == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory error while allocating '%s'\n", vac_dbname));
 		talloc_free(tmp_ctx);
@@ -528,7 +528,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 
 	tune_tdb = tdb_open(vac_dbname, 0,
 			    TDB_DISALLOW_NESTING,
-			    O_RDWR|O_CREAT, 0644);
+			    O_RDWR|O_CREAT, 0600);
 	if (tune_tdb == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
 		talloc_free(tmp_ctx);

@@ -103,6 +103,18 @@ int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir)
 }
 
 /*
+  set the directory for internal state databases
+*/
+int ctdb_set_tdb_dir_state(struct ctdb_context *ctdb, const char *dir)
+{
+	ctdb->db_directory_state = talloc_strdup(ctdb, dir);
+	if (ctdb->db_directory_state == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+/*
   add a node to the list of nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)

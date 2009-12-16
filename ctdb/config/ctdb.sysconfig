@@ -200,6 +200,14 @@ CTDB_DEBUGLEVEL=ERR
 # The default is "no".
 # CTDB_RUN_TIMEOUT_MONITOR=no
 
+# Should ctdbd start with corrupted/unhealthy persistent databases?
+# This parameter specifies the max error count for persistent health
+# checks before the "startup" event. The value must be a positive
+# interger value, "0" or "-1".
+# The default is "0", which means ctdbd will not start.
+# "-1" means wait forever.
+# CTDB_MAX_PERSISTENT_CHECK_ERRORS=0
+
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning
 # variable

@@ -46,7 +46,7 @@ static int seen_insert(struct tdb_context *mem_tdb, tdb_off_t rec_ptr)
 int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
 {
 	struct tdb_context *mem_tdb = NULL;
-	struct list_struct rec;
+	struct tdb_record rec;
 	tdb_off_t rec_ptr, last_ptr;
 	int ret = -1;
 
@@ -67,7 +67,8 @@ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
 
 	/* Store the FREELIST_TOP record. */
 	if (seen_insert(mem_tdb, last_ptr) == -1) {
-		ret = TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
+		tdb->ecode = TDB_ERR_CORRUPT;
+		ret = -1;
 		goto fail;
 	}
 
@@ -83,7 +84,8 @@ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
 		   be corrupt. */
 
 		if (seen_insert(mem_tdb, rec_ptr)) {
-			ret = TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
+			tdb->ecode = TDB_ERR_CORRUPT;
+			ret = -1;
 			goto fail;
 		}
 

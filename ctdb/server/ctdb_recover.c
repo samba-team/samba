@@ -386,6 +386,12 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
 
+	if (ctdb_db->unhealthy_reason) {
+		/* this is just a warning, as the tdb should be empty anyway */
+		DEBUG(DEBUG_WARNING,("db(%s) unhealty in ctdb_control_pull_db: %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
+	}
+
 	if (ctdb_lock_all_databases_mark(ctdb, ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;

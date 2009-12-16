@@ -5,6 +5,8 @@
 <refmeta>
 	<refentrytitle>ctdb</refentrytitle>
 	<manvolnum>1</manvolnum>
+	<refmiscinfo class="source"> </refmiscinfo>
+	<refmiscinfo class="manual"> </refmiscinfo>
 </refmeta>
 
 
@@ -417,21 +419,48 @@ MaxRedirectCount    = 3
 	Example output:
       </para>
       <screen format="linespecific">
-MaxRedirectCount    = 5
-SeqnumFrequency     = 1
+MaxRedirectCount    = 3
+SeqnumInterval      = 1000
 ControlTimeout      = 60
 TraverseTimeout     = 20
-KeepaliveInterval   = 2
-KeepaliveLimit      = 3
+KeepaliveInterval   = 5
+KeepaliveLimit      = 5
 MaxLACount          = 7
-RecoverTimeout      = 5
+RecoverTimeout      = 20
 RecoverInterval     = 1
 ElectionTimeout     = 3
 TakeoverTimeout     = 5
 MonitorInterval     = 15
-EventScriptTimeout  = 20
-RecoveryGracePeriod = 60
+TickleUpdateInterval = 20
+EventScriptTimeout  = 30
+EventScriptBanCount = 10
+EventScriptUnhealthyOnTimeout = 0
+RecoveryGracePeriod = 120
 RecoveryBanPeriod   = 300
+DatabaseHashSize    = 10000
+DatabaseMaxDead     = 5
+RerecoveryTimeout   = 10
+EnableBans          = 1
+DeterministicIPs    = 1
+DisableWhenUnhealthy = 0
+ReclockPingPeriod   = 60
+NoIPFailback        = 0
+VerboseMemoryNames  = 0
+RecdPingTimeout     = 60
+RecdFailCount       = 10
+LogLatencyMs        = 0
+RecLockLatencyMs    = 1000
+RecoveryDropAllIPs  = 60
+VerifyRecoveryLock  = 1
+VacuumDefaultInterval = 300
+VacuumMaxRunTime    = 30
+RepackLimit         = 10000
+VacuumLimit         = 5000
+VacuumMinInterval   = 60
+VacuumMaxInterval   = 600
+MaxQueueDropMsg     = 1000
+UseStatusEvents     = 0
+AllowUnhealthyDBRead = 0
       </screen>
     </refsect2>
 
@@ -900,7 +929,7 @@ Reclock file:/gpfs/.ctdb/shared
       </para>
     </refsect2>
 
-    <refsect2><title>backupdb &lt;database&gt; &lt;file&gt;</title>
+    <refsect2><title>backupdb &lt;dbname&gt; &lt;file&gt;</title>
       <para>
         This command can be used to copy the entire content of a database out to a file. This file can later be read back into ctdb using the restoredb command.
 This is mainly useful for backing up persistent databases such as secrets.tdb and similar.
@@ -913,6 +942,11 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
       </para>
     </refsect2>
 
+    <refsect2><title>wipedb &lt;dbname&gt;</title>
+      <para>
+        This command can be used to remove all content of a database.
+      </para>
+    </refsect2>
   </refsect1>
 
 
@@ -930,6 +964,18 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
     <refsect2><title>getdbmap</title>
       <para>
         This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
+      </para>
+      <para>
+	If a PERSISTENT database is not in a healthy state the database is
+	flagged as UNHEALTHY. If there's at least one completely healthy node running in
+	the cluster, it's possible that the content is restored by a recovery
+	run automaticly. Otherwise an administrator needs to analyze the
+	problem.
+      </para>
+      <para>
+	See also "ctdb getdbstatus", "ctdb backupdb", "ctdb restoredb",
+	"ctdb dumpbackup", "ctdb wipedb", "ctdb setvar AllowUnhealthyDBRead 1"
+	and (if samba or tdb-utils are installed) "tdbtool check".
 	</para>
 	<para>
 	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
@@ -952,11 +998,65 @@ dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSIST
 dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
 dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
       </screen>
+      <para>
+	Example output for an unhealthy database:
+      </para>
+      <screen format="linespecific">
+Number of databases:1
+dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
+      </screen>
+
+      <para>
+	Example output for a healthy database as machinereadable output -Y:
+      </para>
+      <screen format="linespecific">
+:ID:Name:Path:Persistent:Unhealthy:
+:0x7bbbd26c:passdb.tdb:/var/ctdb/persistent/passdb.tdb.0:1:0:
+      </screen>
+    </refsect2>
+
+    <refsect2><title>getdbstatus &lt;dbname&gt;</title>
+      <para>
+	This command displays more details about a database.
+      </para>
+      <para>
+	Example: ctdb getdbstatus test.tdb.0
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+dbid: 0x122224da
+name: test.tdb
+path: /var/ctdb/test.tdb.0
+PERSISTENT: no
+HEALTH: OK
+      </screen>
+      <para>
+	Example: ctdb getdbstatus registry.tdb (with a corrupted TDB)
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+dbid: 0xf2a58948
+name: registry.tdb
+path: /var/ctdb/persistent/registry.tdb.0
+PERSISTENT: yes
+HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persistent/registry.tdb.0.corrupted.20091208091949.0Z'
+      </screen>
     </refsect2>
 
     <refsect2><title>catdb &lt;dbname&gt;</title>
       <para>
         This command will dump a clustered TDB database to the screen. This is a debugging command.
+      </para>
+    </refsect2>
+
+    <refsect2><title>dumpdbbackup &lt;backup-file&gt;</title>
+      <para>
+	This command will dump the content of database backup to the screen
+	(similar to ctdb catdb). This is a debugging command.
       </para>
     </refsect2>
 

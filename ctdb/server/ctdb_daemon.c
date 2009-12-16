@@ -354,6 +354,16 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		return;
 	}
 
+	if (ctdb_db->unhealthy_reason) {
+		/*
+		 * this is just a warning, as the tdb should be empty anyway,
+		 * and only persistent databases can be unhealthy, which doesn't
+		 * use this code patch
+		 */
+		DEBUG(DEBUG_WARNING,("warn: db(%s) unhealty in daemon_request_call_from_client(): %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
+	}
+
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 
@@ -764,9 +774,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 
-	/* attach to any existing persistent databases */
-	if (ctdb_attach_persistent(ctdb) != 0) {
-		ctdb_fatal(ctdb, "Failed to attach to persistent databases\n");		
+	/* attach to existing databases */
+	if (ctdb_attach_databases(ctdb) != 0) {
+		ctdb_fatal(ctdb, "Failed to attach to databases\n");
 	}
 
 	/* start frozen, then let the first election sort things out */

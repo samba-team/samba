@@ -10,6 +10,7 @@
 }
 
 . $CTDB_BASE/functions
+loadconfig ctdb
 loadconfig nfs
 
 [ -z "$STATD_SHARED_DIRECTORY" ] && {
