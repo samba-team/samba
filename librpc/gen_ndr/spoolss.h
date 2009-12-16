@@ -1144,12 +1144,12 @@ struct spoolss_SetPrinterInfo2 {
 	const char *drivername;/* [unique,charset(UTF16)] */
 	const char *comment;/* [unique,charset(UTF16)] */
 	const char *location;/* [unique,charset(UTF16)] */
-	struct spoolss_DeviceMode *devmode;/* [unique,subcontext(0)] */
+	uint32_t devmode_ptr;
 	const char *sepfile;/* [unique,charset(UTF16)] */
 	const char *printprocessor;/* [unique,charset(UTF16)] */
 	const char *datatype;/* [unique,charset(UTF16)] */
 	const char *parameters;/* [unique,charset(UTF16)] */
-	struct security_descriptor *secdesc;/* [unique,subcontext(0)] */
+	uint32_t secdesc_ptr;
 	uint32_t attributes;
 	uint32_t priority;/* [range(0,99)] */
 	uint32_t defaultpriority;
@@ -1187,6 +1187,14 @@ struct spoolss_SetPrinterInfo7 {
 	uint32_t action;
 };
 
+struct spoolss_SetPrinterInfo8 {
+	uint32_t devmode_ptr;
+};
+
+struct spoolss_SetPrinterInfo9 {
+	uint32_t devmode_ptr;
+};
+
 union spoolss_SetPrinterInfo {
 	struct spoolss_SetPrinterInfo0 *info0;/* [unique,case(0)] */
 	struct spoolss_SetPrinterInfo1 *info1;/* [unique,case] */
@@ -1196,8 +1204,8 @@ union spoolss_SetPrinterInfo {
 	struct spoolss_SetPrinterInfo5 *info5;/* [unique,case(5)] */
 	struct spoolss_SetPrinterInfo6 *info6;/* [unique,case(6)] */
 	struct spoolss_SetPrinterInfo7 *info7;/* [unique,case(7)] */
-	struct spoolss_DeviceModeInfo *info8;/* [unique,case(8)] */
-	struct spoolss_DeviceModeInfo *info9;/* [unique,case(9)] */
+	struct spoolss_SetPrinterInfo8 *info8;/* [unique,case(8)] */
+	struct spoolss_SetPrinterInfo9 *info9;/* [unique,case(9)] */
 }/* [switch_type(uint32)] */;
 
 struct spoolss_SetPrinterInfoCtr {
