@@ -53,6 +53,8 @@
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
+	TALLOC_CTX *bl_ctx;
+	struct la_backlink *la_backlinks;
 	struct nc_entry {
 		struct nc_entry *prev, *next;
 		struct ldb_dn *dn;
@@ -87,6 +89,7 @@ struct replmd_replicated_request {
 
 static int replmd_replicated_apply_next(struct replmd_replicated_request *ar);
 
+
 /*
   initialise the module
   allocate the private structure and build the list
@@ -105,6 +108,169 @@ static int replmd_init(struct ldb_module *module)
 	ldb_module_set_private(module, replmd_private);
 
 	return ldb_next_init(module);
+}
+
+/*
+  cleanup our per-transaction contexts
+ */
+static void replmd_txn_cleanup(struct replmd_private *replmd_private)
+{
+	talloc_free(replmd_private->la_ctx);
+	replmd_private->la_list = NULL;
+	replmd_private->la_ctx = NULL;
+
+	talloc_free(replmd_private->bl_ctx);
+	replmd_private->la_backlinks = NULL;
+	replmd_private->bl_ctx = NULL;
+}
+
+
+struct la_backlink {
+	struct la_backlink *next, *prev;
+	const char *attr_name;
+	struct GUID forward_guid, target_guid;
+	bool active;
+};
+
+/*
+  add a backlink to the list of backlinks to add/delete in the prepare
+  commit
+ */
+static int replmd_add_backlink(struct ldb_module *module, const struct dsdb_schema *schema,
+			       struct GUID *forward_guid, struct GUID *target_guid,
+			       bool active, const struct dsdb_attribute *schema_attr)
+{
+	const struct dsdb_attribute *target_attr;
+	struct la_backlink *bl;
+	struct replmd_private *replmd_private =
+		talloc_get_type_abort(ldb_module_get_private(module), struct replmd_private);
+
+	target_attr = dsdb_attribute_by_linkID(schema, schema_attr->linkID + 1);
+	if (!target_attr) {
+		/*
+		 * windows 2003 has a broken schema where the
+		 * definition of msDS-IsDomainFor is missing (which is
+		 * supposed to be the backlink of the
+		 * msDS-HasDomainNCs attribute
+		 */
+		return LDB_SUCCESS;
+	}
+
+	/* see if its already in the list */
+	for (bl=replmd_private->la_backlinks; bl; bl=bl->next) {
+		if (GUID_equal(forward_guid, &bl->forward_guid) &&
+		    GUID_equal(target_guid, &bl->target_guid) &&
+		    (target_attr->lDAPDisplayName == bl->attr_name ||
+		     strcmp(target_attr->lDAPDisplayName, bl->attr_name) == 0)) {
+			break;
+		}
+	}
+
+	if (bl) {
+		/* we found an existing one */
+		if (bl->active == active) {
+			return LDB_SUCCESS;
+		}
+		DLIST_REMOVE(replmd_private->la_backlinks, bl);
+		talloc_free(bl);
+		return LDB_SUCCESS;
+	}
+
+	if (replmd_private->bl_ctx == NULL) {
+		replmd_private->bl_ctx = talloc_new(replmd_private);
+		if (replmd_private->bl_ctx == NULL) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	/* its a new one */
+	bl = talloc(replmd_private->bl_ctx, struct la_backlink);
+	if (bl == NULL) {
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	bl->attr_name = target_attr->lDAPDisplayName;
+	bl->forward_guid = *forward_guid;
+	bl->target_guid = *target_guid;
+	bl->active = active;
+
+	DLIST_ADD(replmd_private->la_backlinks, bl);
+
+	return LDB_SUCCESS;
+}
+
+/*
+  process the list of backlinks we accumulated during
+  a transaction, adding and deleting the backlinks
+  from the target objects
+ */
+static int replmd_process_backlink(struct ldb_module *module, struct la_backlink *bl)
+{
+	struct ldb_dn *target_dn, *source_dn;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_message *msg;
+	TALLOC_CTX *tmp_ctx = talloc_new(bl);
+	char *dn_string;
+
+	/*
+	  - find DN of target
+	  - find DN of source
+	  - construct ldb_message
+              - either an add or a delete
+	 */
+	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &bl->target_guid, &target_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find target DN for linked attribute with GUID %s\n",
+				       GUID_string(bl, &bl->target_guid));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &bl->forward_guid, &source_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find source DN for linked attribute with GUID %s\n",
+				       GUID_string(bl, &bl->forward_guid));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* construct a ldb_message for adding/deleting the backlink */
+	msg->dn = target_dn;
+	dn_string = ldb_dn_get_extended_linearized(tmp_ctx, source_dn, 1);
+	if (!dn_string) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = ldb_msg_add_steal_string(msg, bl->attr_name, dn_string);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	msg->elements[0].flags = bl->active?LDB_FLAG_MOD_ADD:LDB_FLAG_MOD_DELETE;
+
+	ret = dsdb_module_modify(module, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to %s backlink from %s to %s - %s",
+				       bl->active?"add":"remove",
+				       ldb_dn_get_linearized(source_dn),
+				       ldb_dn_get_linearized(target_dn),
+				       ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 
@@ -1097,12 +1263,14 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct p
   handle adding a linked attribute
  */
 static int replmd_modify_la_add(struct ldb_module *module,
+				struct dsdb_schema *schema,
 				struct ldb_message *msg,
 				struct ldb_message_element *el,
 				struct ldb_message_element *old_el,
 				const struct dsdb_attribute *schema_attr,
 				uint64_t seq_num,
-				time_t t)
+				time_t t,
+				struct GUID *msg_guid)
 {
 	int i;
 	struct parsed_dn *dns, *old_dns;
@@ -1166,6 +1334,12 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				return ret;
 			}
 		}
+
+		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	/* add the new ones on to the end of the old values, constructing a new el->values */
@@ -1197,12 +1371,14 @@ static int replmd_modify_la_add(struct ldb_module *module,
   handle deleting all active linked attributes
  */
 static int replmd_modify_la_delete(struct ldb_module *module,
+				   struct dsdb_schema *schema,
 				   struct ldb_message *msg,
 				   struct ldb_message_element *el,
 				   struct ldb_message_element *old_el,
 				   const struct dsdb_attribute *schema_attr,
 				   uint64_t seq_num,
-				   time_t t)
+				   time_t t,
+				   struct GUID *msg_guid)
 {
 	int i;
 	struct parsed_dn *dns, *old_dns;
@@ -1280,6 +1456,12 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			talloc_free(tmp_ctx);
 			return ret;
 		}
+
+		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	el->values = talloc_steal(msg->elements, old_el->values);
@@ -1298,12 +1480,14 @@ static int replmd_modify_la_delete(struct ldb_module *module,
   handle replacing a linked attribute
  */
 static int replmd_modify_la_replace(struct ldb_module *module,
+				    struct dsdb_schema *schema,
 				    struct ldb_message *msg,
 				    struct ldb_message_element *el,
 				    struct ldb_message_element *old_el,
 				    const struct dsdb_attribute *schema_attr,
 				    uint64_t seq_num,
-				    time_t t)
+				    time_t t,
+				    struct GUID *msg_guid)
 {
 	int i;
 	struct parsed_dn *dns, *old_dns;
@@ -1344,13 +1528,20 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		struct parsed_dn *p;
 		const struct ldb_val *v;
 
+		v = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "DELETED");
+		if (v) continue;
+
+		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
 		p = parsed_dn_find(dns, el->num_values, old_p->guid);
 		if (p) {
 			/* we don't delete it if we are re-adding it */
 			continue;
 		}
-		v = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "DELETED");
-		if (v) continue;
 
 		ret = replmd_update_la_val(old_el->values, old_p->v, old_p, old_p,
 					   invocation_id, seq_num, t, true);
@@ -1394,6 +1585,12 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 			}
 			num_new_values++;
 		}
+
+		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	/* add the new values to the end of old_el */
@@ -1436,6 +1633,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *old_msg;
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct GUID old_guid;
 
 	if (seq_num == 0) {
 		/* there the replmd_update_rpmd code has already
@@ -1462,6 +1660,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	}
 	old_msg = res->msgs[0];
 
+	old_guid = samdb_result_guid(old_msg, "objectGUID");
+
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *old_el, *new_el;
@@ -1484,13 +1684,13 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		old_el = ldb_msg_find_element(old_msg, el->name);
 		switch (el->flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_REPLACE:
-			ret = replmd_modify_la_replace(module, msg, el, old_el, schema_attr, seq_num, t);
+			ret = replmd_modify_la_replace(module, schema, msg, el, old_el, schema_attr, seq_num, t, &old_guid);
 			break;
 		case LDB_FLAG_MOD_DELETE:
-			ret = replmd_modify_la_delete(module, msg, el, old_el, schema_attr, seq_num, t);
+			ret = replmd_modify_la_delete(module, schema, msg, el, old_el, schema_attr, seq_num, t, &old_guid);
 			break;
 		case LDB_FLAG_MOD_ADD:
-			ret = replmd_modify_la_add(module, msg, el, old_el, schema_attr, seq_num, t);
+			ret = replmd_modify_la_add(module, schema, msg, el, old_el, schema_attr, seq_num, t, &old_guid);
 			break;
 		default:
 			ldb_asprintf_errstring(ldb,
@@ -2877,9 +3077,7 @@ static int replmd_start_transaction(struct ldb_module *module)
 	/* create our private structure for this transaction */
 	struct replmd_private *replmd_private = talloc_get_type(ldb_module_get_private(module),
 								struct replmd_private);
-	talloc_free(replmd_private->la_ctx);
-	replmd_private->la_list = NULL;
-	replmd_private->la_ctx = NULL;
+	replmd_txn_cleanup(replmd_private);
 
 	/* free any leftover mod_usn records from cancelled
 	   transactions */
@@ -2901,6 +3099,7 @@ static int replmd_prepare_commit(struct ldb_module *module)
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 	struct la_entry *la, *prev;
+	struct la_backlink *bl;
 	int ret;
 
 	/* walk the list backwards, to do the first entry first, as we
@@ -2913,16 +3112,22 @@ static int replmd_prepare_commit(struct ldb_module *module)
 		DLIST_REMOVE(replmd_private->la_list, la);
 		ret = replmd_process_linked_attribute(module, la);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(replmd_private->la_ctx);
-			replmd_private->la_list = NULL;
-			replmd_private->la_ctx = NULL;
+			replmd_txn_cleanup(replmd_private);
 			return ret;
 		}
 	}
 
-	talloc_free(replmd_private->la_ctx);
-	replmd_private->la_list = NULL;
-	replmd_private->la_ctx = NULL;
+	/* process our backlink list, creating and deleting backlinks
+	   as necessary */
+	for (bl=replmd_private->la_backlinks; bl; bl=bl->next) {
+		ret = replmd_process_backlink(module, bl);
+		if (ret != LDB_SUCCESS) {
+			replmd_txn_cleanup(replmd_private);
+			return ret;
+		}
+	}
+
+	replmd_txn_cleanup(replmd_private);
 
 	/* possibly change @REPLCHANGED */
 	ret = replmd_notify_store(module);
@@ -2937,9 +3142,8 @@ static int replmd_del_transaction(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	talloc_free(replmd_private->la_ctx);
-	replmd_private->la_list = NULL;
-	replmd_private->la_ctx = NULL;
+	replmd_txn_cleanup(replmd_private);
+
 	return ldb_next_del_trans(module);
 }
 
