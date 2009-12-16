@@ -23,7 +23,8 @@
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "system/passwd.h" /* needed by some systems for struct passwd */
-#include "lib/socket/socket.h" 
+#include "lib/socket/socket.h"
+#include "lib/tsocket/tsocket.h"
 #include "auth/ntlm/pam_errors.h"
 #include "param/param.h"
 
@@ -458,7 +459,8 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 	 * if true set up a crack name routine.
 	 */
 
-	nt_status = smb_pam_start(&pamh, user_info->mapped.account_name, user_info->remote_host ? user_info->remote_host->addr : NULL, pamconv);
+	nt_status = smb_pam_start(&pamh, user_info->mapped.account_name,
+			user_info->remote_host ? tsocket_address_inet_addr_string(user_info->remote_host, ctx) : NULL, pamconv);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

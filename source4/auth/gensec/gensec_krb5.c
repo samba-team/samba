@@ -90,8 +90,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 	krb5_error_code ret;
 	struct gensec_krb5_state *gensec_krb5_state;
 	struct cli_credentials *creds;
-	const struct socket_address *peer_addr;
-	const struct tsocket_address *tlocal_addr;
+	const struct tsocket_address *tlocal_addr, *tremote_addr;
 	krb5_address my_krb5_addr, peer_krb5_addr;
 	
 	creds = gensec_get_credentials(gensec_security);
@@ -165,10 +164,19 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 		}
 	}
 
-	peer_addr = gensec_get_peer_addr(gensec_security);
-	if (peer_addr && peer_addr->sockaddr) {
-		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					    peer_addr->sockaddr, &peer_krb5_addr);
+	tremote_addr = gensec_get_remote_address(gensec_security);
+	if (tremote_addr) {
+		ssize_t socklen;
+		struct sockaddr_storage ss;
+
+		socklen = tsocket_address_bsd_sockaddr(tremote_addr,
+				(struct sockaddr *) &ss,
+				sizeof(struct sockaddr_storage));
+		if (socklen < 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context,
+				(const struct sockaddr *) &ss, &peer_krb5_addr);
 		if (ret) {
 			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
 				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
@@ -181,7 +189,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 	ret = krb5_auth_con_setaddrs(gensec_krb5_state->smb_krb5_context->krb5_context, 
 				     gensec_krb5_state->auth_context,
 				     tlocal_addr ? &my_krb5_addr : NULL,
-				     peer_addr ? &peer_krb5_addr : NULL);
+				     tremote_addr ? &peer_krb5_addr : NULL);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_auth_con_setaddrs failed (%s)\n", 
 			 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 

@@ -1280,19 +1280,6 @@ _PUBLIC_ const struct tsocket_address *gensec_get_remote_address(struct gensec_s
 	return gensec_security->remote_addr;
 }
 
-_PUBLIC_ struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security) 
-{
-	if (gensec_security->peer_addr) {
-		return gensec_security->peer_addr;
-	}
-
-	/* We could add a 'set sockaddr' call, and do a lookup.  This
-	 * would avoid needing to do system calls if nothing asks.
-	 * However, this is not appropriate for the peer addres on
-	 * datagram sockets */
-	return NULL;
-}
-
 
 /** 
  * Set the target principal (assuming it it known, say from the SPNEGO reply)

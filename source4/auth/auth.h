@@ -57,7 +57,7 @@ enum auth_password_state {
 struct auth_usersupplied_info
 {
 	const char *workstation_name;
-	struct socket_address *remote_host;
+	const struct tsocket_address *remote_host;
 
 	uint32_t logon_parameters;
 
