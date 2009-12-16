@@ -214,7 +214,8 @@ static const struct {
 
 enum op_remove {
 	OPERATIONAL_REMOVE_ALWAYS, /* remove always */
-	OPERATIONAL_REMOVE_UNASKED /* remove if not requested */
+	OPERATIONAL_REMOVE_UNASKED,/* remove if not requested */
+	OPERATIONAL_SD_FLAGS	   /* show if SD_FLAGS_OID set, or asked for */
 };
 
 /*
@@ -225,7 +226,7 @@ static const struct {
 	const char *attr;
 	enum op_remove op;
 } operational_remove[] = {
-	{ "nTSecurityDescriptor",    OPERATIONAL_REMOVE_UNASKED },
+	{ "nTSecurityDescriptor",    OPERATIONAL_SD_FLAGS },
 	{ "parentGUID",              OPERATIONAL_REMOVE_ALWAYS  },
 	{ "replPropertyMetaData",    OPERATIONAL_REMOVE_UNASKED },
 	{ "unicodePwd",              OPERATIONAL_REMOVE_UNASKED },
@@ -244,7 +245,8 @@ static const struct {
 */
 static int operational_search_post_process(struct ldb_module *module,
 					   struct ldb_message *msg,
-					   const char * const *attrs)
+					   const char * const *attrs,
+					   bool sd_flags_set)
 {
 	struct ldb_context *ldb;
 	int i, a=0;
@@ -253,18 +255,20 @@ static int operational_search_post_process(struct ldb_module *module,
 
 	/* removed any attrs that should not be shown to the user */
 	for (i=0; i<ARRAY_SIZE(operational_remove); i++) {
-		struct ldb_message_element *el;
-
 		switch (operational_remove[i].op) {
 		case OPERATIONAL_REMOVE_UNASKED:
 			if (ldb_attr_in_list(attrs, operational_remove[i].attr)) {
 				continue;
 			}
 		case OPERATIONAL_REMOVE_ALWAYS:
-			el = ldb_msg_find_element(msg, operational_remove[i].attr);
-			if (el) {
-				ldb_msg_remove_element(msg, el);
+			ldb_msg_remove_attr(msg, operational_remove[i].attr);
+			break;
+		case OPERATIONAL_SD_FLAGS:
+			if (sd_flags_set ||
+			    ldb_attr_in_list(attrs, operational_remove[i].attr)) {
+				continue;
 			}
+			ldb_msg_remove_attr(msg, operational_remove[i].attr);
 			break;
 		}
 	}
@@ -321,6 +325,7 @@ struct operational_context {
 	struct ldb_request *req;
 
 	const char * const *attrs;
+	bool sd_flags_set;
 };
 
 static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -344,8 +349,9 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 		/* for each record returned post-process to add any derived
 		   attributes that have been asked for */
 		ret = operational_search_post_process(ac->module,
-							ares->message,
-							ac->attrs);
+						      ares->message,
+						      ac->attrs,
+						      ac->sd_flags_set);
 		if (ret != 0) {
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -431,6 +437,9 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 			}
 		}
 	}
+
+	/* remember if the SD_FLAGS_OID was set */
+	ac->sd_flags_set = (ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID) != NULL);
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 					req->op.search.base,
