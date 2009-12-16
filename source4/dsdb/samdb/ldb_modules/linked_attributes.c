@@ -196,91 +196,6 @@ static int la_down_req(struct la_context *ac);
 
 
 
-/* add */
-static int linked_attributes_add(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_context *ldb;
-	const struct dsdb_attribute *target_attr;
-	struct la_context *ac;
-	const char *attr_name;
-	int ret;
-	int i, j;
-
-	ldb = ldb_module_get_ctx(module);
-
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		/* do not manipulate our control entries */
-		return ldb_next_request(module, req);
-	}
-
-	ac = linked_attributes_init(module, req);
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (!ac->schema) {
-		/* without schema, this doesn't make any sense */
-		talloc_free(ac);
-		return ldb_next_request(module, req);
-	}
-
-	/* Need to ensure we only have forward links being specified */
-	for (i=0; i < req->op.add.message->num_elements; i++) {
-		const struct ldb_message_element *el = &req->op.add.message->elements[i];
-		const struct dsdb_attribute *schema_attr
-			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
-		if (!schema_attr) {
-			ldb_asprintf_errstring(ldb, 
-					       "attribute %s is not a valid attribute in schema", el->name);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
-		}
-		/* We have a valid attribute, now find out if it is linked */
-		if (schema_attr->linkID == 0) {
-			continue;
-		}
-		
-		if ((schema_attr->linkID & 1) == 1) {
-			/* Odd is for the target.  Illegal to modify */
-			ldb_asprintf_errstring(ldb, 
-					       "attribute %s must not be modified directly, it is a linked attribute", el->name);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-		
-		/* Even link IDs are for the originating attribute */
-		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
-		if (!target_attr) {
-			/*
-			 * windows 2003 has a broken schema where
-			 * the definition of msDS-IsDomainFor
-			 * is missing (which is supposed to be
-			 * the backlink of the msDS-HasDomainNCs
-			 * attribute
-			 */
-			continue;
-		}
-
-		attr_name = target_attr->lDAPDisplayName;
-
-		for (j = 0; j < el->num_values; j++) {
-			ret = la_store_op(ac, LA_OP_ADD,
-					  &el->values[j],
-					  attr_name);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-	}
-
-	/* if no linked attributes are present continue */
-	if (ac->ops == NULL) {
-		/* nothing to do for this module, proceed */
-		talloc_free(ac);
-		return ldb_next_request(module, req);
-	}
-
-	/* start with the original request */
-	return la_down_req(ac);
-}
 
 /* For a delete or rename, we need to find out what linked attributes
  * are currently on this DN, and then deal with them.  This is the
@@ -1016,7 +931,6 @@ static int linked_attributes_del_transaction(struct ldb_module *module)
 
 _PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.name		   = "linked_attributes",
-	.add               = linked_attributes_add,
 	.start_transaction = linked_attributes_start_transaction,
 	.prepare_commit    = linked_attributes_prepare_commit,
 	.del_transaction   = linked_attributes_del_transaction,
