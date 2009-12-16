@@ -307,14 +307,15 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
-	const char *attrs[] = { "*", "distinguishedName", 
-				"ntSecurityDescriptor", 
-				"replPropertyMetaData", 
-				"lmPwdHistory", 
-				"ntPwdHistory", 
-				"supplementalCredentials", 
-				"unicodePwd", 
+	const char *attrs[] = { "*", "distinguishedName",
+				"nTSecurityDescriptor",
 				"parentGUID",
+				"replPropertyMetaData",
+				"unicodePwd",
+				"dBCSPwd",
+				"ntPwdHistory",
+				"lmPwdHistory",
+				"supplementalCredentials",
 				NULL };
 	WERROR werr;
 	struct dcesrv_handle *h;
