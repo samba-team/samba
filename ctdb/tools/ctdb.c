@@ -1680,6 +1680,49 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 /*
+  display interfaces status
+ */
+static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_control_get_ifaces *ifaces;
+
+	/* read the public ip list from this node */
+	ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(), options.pnn,
+				   tmp_ctx, &ifaces);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get interfaces from node %u\n",
+				  options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (options.machinereadable){
+		printf(":Name:LinkStatus:References:\n");
+	} else {
+		printf("Interfaces on node %u\n", options.pnn);
+	}
+
+	for (i=0; i<ifaces->num; i++) {
+		if (options.machinereadable){
+			printf(":%s:%s:%u\n",
+			       ifaces->ifaces[i].name,
+			       ifaces->ifaces[i].link_state?"1":"0",
+			       (unsigned int)ifaces->ifaces[i].references);
+		} else {
+			printf("name:%s link:%s references:%u\n",
+			       ifaces->ifaces[i].name,
+			       ifaces->ifaces[i].link_state?"up":"down",
+			       (unsigned int)ifaces->ifaces[i].references);
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
   display pid of a ctdb daemon
  */
 static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -4004,6 +4047,7 @@ static const struct {
 	{ "statistics",      control_statistics,        false,	false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,	false,  "reset statistics"},
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
+	{ "ifaces",          control_ifaces,            true,	false,  "show which interfaces that ctdb manages" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
 	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
