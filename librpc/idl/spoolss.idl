@@ -1192,6 +1192,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_DriverInfo6;
 
 	typedef [public,gensize] struct {
+		uint32 size;
+		spoolss_DriverOSVersion version;
+		[relative] nstring *driver_name;
+		[relative] nstring *inf_name;
+		[relative] nstring *install_source_root;
+	} spoolss_DriverInfo7;
+
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -1257,6 +1265,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[case(4)] spoolss_DriverInfo4 info4;
 		[case(5)] spoolss_DriverInfo5 info5;
 		[case(6)] spoolss_DriverInfo6 info6;
+		[case(7)] spoolss_DriverInfo7 info7;
 		[case(8)] spoolss_DriverInfo8 info8;
 		[case(101)] spoolss_DriverInfo101 info101;
 		[default];
