@@ -638,6 +638,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
 		    CTDB_CONTROL_DB_SET_HEALTHY		 = 121,
 		    CTDB_CONTROL_DB_GET_HEALTH		 = 122,
+		    CTDB_CONTROL_GET_PUBLIC_IP_INFO	 = 123,
+		    CTDB_CONTROL_GET_IFACES		 = 124,
+		    CTDB_CONTROL_SET_IFACE_LINK_STATE	 = 125,
 };	
 
 /*
@@ -1320,6 +1323,53 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 			struct timeval timeout, uint32_t destnode, 
 			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
 
+#ifdef IFNAMSIZ
+#define CTDB_IFACE_SIZE IFNAMSIZ
+#else
+#define CTDB_IFACE_SIZE 16
+#endif
+
+struct ctdb_control_iface_info {
+	char name[CTDB_IFACE_SIZE+2];
+	uint16_t link_state;
+	uint32_t references;
+};
+
+struct ctdb_control_public_ip_info {
+	struct ctdb_public_ip ip;
+	uint32_t active_idx;
+	uint32_t num;
+	struct ctdb_control_iface_info ifaces[1];
+};
+
+struct ctdb_control_get_ifaces {
+	uint32_t num;
+	struct ctdb_control_iface_info ifaces[1];
+};
+
+int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA indata,
+					TDB_DATA *outdata);
+int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				TDB_DATA *outdata);
+int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
+				    struct ctdb_req_control *c,
+				    TDB_DATA indata);
+int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
+				 struct timeval timeout, uint32_t destnode,
+				 TALLOC_CTX *mem_ctx,
+				 const ctdb_sock_addr *addr,
+				 struct ctdb_control_public_ip_info **info);
+int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_control_get_ifaces **ifaces);
+int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ctdb_control_iface_info *info);
 
 /* from takeover/system.c */
 uint32_t uint16_checksum(uint16_t *data, size_t n);

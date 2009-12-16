@@ -568,6 +568,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_db_get_health(ctdb, indata, outdata);
 
+	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
+		CHECK_CONTROL_DATA_SIZE(sizeof(ctdb_sock_addr));
+		return ctdb_control_get_public_ip_info(ctdb, c, indata, outdata);
+
+	case CTDB_CONTROL_GET_IFACES:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_get_ifaces(ctdb, c, outdata);
+
+	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_iface_info));
+		return ctdb_control_set_iface_link(ctdb, c, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

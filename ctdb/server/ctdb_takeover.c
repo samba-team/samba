@@ -1730,6 +1730,28 @@ int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb,
 	return 0;
 }
 
+int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA indata,
+					TDB_DATA *outdata)
+{
+	return -1;
+}
+
+int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				TDB_DATA *outdata)
+{
+	return -1;
+}
+
+int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
+				    struct ctdb_req_control *c,
+				    TDB_DATA indata)
+{
+	return -1;
+}
+
 
 /* 
    structure containing the listening socket and the list of tcp connections

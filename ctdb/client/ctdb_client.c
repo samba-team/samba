@@ -2389,6 +2389,31 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 	return 0;
 }
 
+int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
+				 struct timeval timeout, uint32_t destnode,
+				 TALLOC_CTX *mem_ctx,
+				 const ctdb_sock_addr *addr,
+				 struct ctdb_control_public_ip_info **info)
+{
+	return -1;
+}
+
+int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_control_get_ifaces **ifaces)
+{
+	return -1;
+}
+
+int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ctdb_control_iface_info *info)
+{
+	return -1;
+}
+
 /*
   set/clear the permanent disabled bit on a remote node
  */
