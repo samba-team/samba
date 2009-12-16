@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include "error.h"
+#include "printlib_proto.h"
 
 #if 0
 #include "lib/talloc/talloc.h"

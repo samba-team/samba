@@ -104,6 +104,10 @@ static BOOL test_EnumPrinters(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_printer_info_bylevel(levels[i], buffer, returned);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}

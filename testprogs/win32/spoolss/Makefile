@@ -22,6 +22,8 @@ cleantmp:
 # helpers
 ###############################
 
+printlib.obj: printlib.c
+
 error.obj: error.c
 
 torture.obj: torture.c
@@ -32,7 +34,7 @@ torture.obj: torture.c
 
 spoolss.obj: spoolss.c
 
-spoolss.exe: spoolss.obj error.obj torture.obj
-	cl $(CFLAGS) /Fe$@ spoolss.obj error.obj torture.obj \
+spoolss.exe: spoolss.obj printlib.obj error.obj torture.obj
+	cl $(CFLAGS) /Fe$@ spoolss.obj printlib.obj error.obj torture.obj \
 	/link /incremental:no /subsystem:console $(LIBS) $(WINSPOOL_LIBS)
 
