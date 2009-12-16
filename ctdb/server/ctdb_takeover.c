@@ -1803,7 +1803,36 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 				struct ctdb_req_control *c,
 				TDB_DATA *outdata)
 {
-	return -1;
+	int i, num, len;
+	struct ctdb_control_get_ifaces *ifaces;
+	struct ctdb_iface *cur;
+
+	/* count how many public ip structures we have */
+	num = 0;
+	for (cur=ctdb->ifaces;cur;cur=cur->next) {
+		num++;
+	}
+
+	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
+		num*sizeof(struct ctdb_control_iface_info);
+	ifaces = talloc_zero_size(outdata, len);
+	CTDB_NO_MEMORY(ctdb, ifaces);
+
+	i = 0;
+	for (cur=ctdb->ifaces;cur;cur=cur->next) {
+		strcpy(ifaces->ifaces[i].name, cur->name);
+		ifaces->ifaces[i].link_state = cur->link_up;
+		ifaces->ifaces[i].references = cur->references;
+		i++;
+	}
+	ifaces->num = i;
+	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
+		i*sizeof(struct ctdb_control_iface_info);
+
+	outdata->dsize = len;
+	outdata->dptr  = (uint8_t *)ifaces;
+
+	return 0;
 }
 
 int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
