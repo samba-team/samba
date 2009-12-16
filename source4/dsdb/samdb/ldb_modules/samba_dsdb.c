@@ -234,16 +234,11 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "instancetype",
 					     NULL };
 
-	const char *objectguid_module;
-	/* if serverrole == "domain controller": */
-	const char *repl_meta_data = "repl_meta_data";
-	/*    else: */
-        const char *objectguid = "objectguid";
-
 	const char **link_modules;
 	static const char *tdb_modules_list[] = {
-		"subtree_rename",
 		"subtree_delete",
+		"repl_meta_data",
+		"subtree_rename",
 		"linked_attributes",
 		NULL};
 
@@ -328,15 +323,9 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 	backend_modules = NULL;
 	if (strcasecmp(backendType, "ldb") == 0) {
-		if (strcasecmp(serverRole, "dc") == 0 || strcasecmp(serverRole, "domain controller") == 0) {
-			objectguid_module = repl_meta_data;
-		} else {
-			objectguid_module = objectguid;
-		}
 		extended_dn_module = extended_dn_module_ldb;
 		link_modules = tdb_modules_list;
 	} else {
-		objectguid_module = NULL;
 		link_modules = NULL;
 		if (strcasecmp(backendType, "fedora-ds") == 0) {
 			backend_modules = fedora_ds_backend_modules;
@@ -357,9 +346,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 	} while (0)
 
 	final_module_list = str_list_copy_const(tmp_ctx, modules_list);
-	CHECK_MODULE_LIST;
-
-	final_module_list = str_list_add_const(final_module_list, objectguid_module);
 	CHECK_MODULE_LIST;
 
 	final_module_list = str_list_append_const(final_module_list, link_modules);
