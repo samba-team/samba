@@ -2750,3 +2750,35 @@ bool dsdb_dn_is_deleted_val(struct ldb_val *val)
 	}
 	return false;
 }
+
+/*
+  return a DN for a wellknown GUID
+ */
+int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
+		      struct ldb_dn *nc_root, const char *wk_guid,
+		      struct ldb_dn **wkguid_dn)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *attrs[] = { NULL };
+	int ret;
+	struct ldb_dn *dn;
+	struct ldb_result *res;
+
+	/* construct the magic WKGUID DN */
+	dn = ldb_dn_new_fmt(tmp_ctx, samdb, "<WKGUID=%s,%s>",
+			    wk_guid, ldb_dn_get_linearized(nc_root));
+	if (!wkguid_dn) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_search_dn_with_deleted(samdb, tmp_ctx, &res, dn, attrs);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	(*wkguid_dn) = talloc_steal(mem_ctx, res->msgs[0]->dn);
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
