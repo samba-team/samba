@@ -64,6 +64,7 @@ struct ctdb_event_script_state {
 	pid_t child;
 	/* Warning: this can free us! */
 	void (*callback)(struct ctdb_context *, int, void *);
+	int cb_status;
 	int fd[2];
 	void *private_data;
 	bool from_user;
@@ -422,31 +423,6 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	return 0;
 }
 
-/*
- Summarize status of this run of scripts.
- */
-static int script_status(struct ctdb_scripts_wire *scripts)
-{
-	unsigned int i;
-
-	for (i = 0; i < scripts->num_scripts; i++) {
-		switch (scripts->scripts[i].status) {
-		case -ENOENT:
-		case -ENOEXEC:
-			/* Disabled or missing; that's OK. */
-			break;
-		case 0:
-			/* No problem. */
-			break;
-		default:
-			return scripts->scripts[i].status;
-		}
-	}
-
-	/* All OK! */
-	return 0;
-}
-
 /* called when child is finished */
 static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde, 
 				      uint16_t flags, void *p)
@@ -455,7 +431,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_script_wire *current = get_current_script(state);
 	struct ctdb_context *ctdb = state->ctdb;
-	int r, status;
+	int r;
 
 	r = read(state->fd[0], &current->status, sizeof(current->status));
 	if (r < 0) {
@@ -465,6 +441,15 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	}
 
 	current->finished = timeval_current();
+
+	/* update overall status based on this script. */
+	state->cb_status = current->status;
+
+	/* don't stop just because it vanished or was disabled. */
+	if (current->status == -ENOENT || current->status == -ENOEXEC) {
+		state->cb_status = 0;
+	}
+
 	/* valgrind gets overloaded if we run next script as it's still doing
 	 * post-execution analysis, so kill finished child here. */
 	if (ctdb->valgrinding) {
@@ -473,12 +458,10 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 	state->child = 0;
 
-	status = script_status(state->scripts);
-
 	/* Aborted or finished all scripts?  We're done. */
-	if (status != 0 || state->current+1 == state->scripts->num_scripts) {
+	if (state->cb_status != 0 || state->current+1 == state->scripts->num_scripts) {
 		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
-				  ctdb_eventscript_call_names[state->call], state->options, status));
+				  ctdb_eventscript_call_names[state->call], state->options, state->cb_status));
 
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
@@ -490,9 +473,8 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 	/* Next script! */
 	state->current++;
-	current++;
-	current->status = fork_child_for_script(ctdb, state);
-	if (current->status != 0) {
+	state->cb_status = fork_child_for_script(ctdb, state);
+	if (state->cb_status != 0) {
 		/* This calls the callback. */
 		talloc_free(state);
 	}
@@ -504,17 +486,18 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 {
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_context *ctdb = state->ctdb;
-	struct ctdb_script_wire *current = get_current_script(state);
 
-	DEBUG(DEBUG_ERR,("Event script timed out : %s %s %s count : %u  pid : %d\n",
-			 current->name, ctdb_eventscript_call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
+	DEBUG(DEBUG_ERR,("Event script timed out : %s %s count : %u  pid : %d\n",
+			 ctdb_eventscript_call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
 
-	state->scripts->scripts[state->current].status = -ETIME;
+	state->cb_status = -ETIME;
 
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
 		state->child = 0;
 	}
+
+	state->scripts->scripts[state->current].status = state->cb_status;
 
 	talloc_free(state);
 }
@@ -524,8 +507,6 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
-	int status;
-
 	if (state->child) {
 		DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 
@@ -539,8 +520,7 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 		state->ctdb->current_monitor = NULL;
 	}
 
-	/* Save our scripts as the last executed status, if we have them.
-	 * See ctdb_event_script_callback_v where we abort monitor event. */
+	/* Save our scripts as the last executed status, if we have them. */
 	if (state->scripts) {
 		talloc_free(state->ctdb->last_status[state->call]);
 		state->ctdb->last_status[state->call] = state->scripts;
@@ -549,17 +529,10 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 		}
 	}
 
-	/* Use last status as result, or "OK" if none. */
-	if (state->ctdb->last_status[state->call]) {
-		status = script_status(state->ctdb->last_status[state->call]);
-	} else {
-		status = 0;
-	}
-
 	/* This is allowed to free us; talloc will prevent double free anyway,
 	 * but beware if you call this outside the destructor! */
 	if (state->callback) {
-		state->callback(state->ctdb, status, state->private_data);
+		state->callback(state->ctdb, state->cb_status, state->private_data);
 	}
 
 	return 0;
@@ -614,6 +587,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 					const char *fmt, va_list ap)
 {
 	struct ctdb_event_script_state *state;
+	int ret;
 
 	state = talloc(ctdb->event_script_ctx, struct ctdb_event_script_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -679,21 +653,22 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 	state->current = 0;
-	talloc_set_destructor(state, event_script_destructor);
 
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
+		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
 		return 0;
 	}
 
-	state->scripts->scripts[0].status = fork_child_for_script(ctdb, state);
-	if (state->scripts->scripts[0].status != 0) {
-		/* Callback is called from destructor, with fail result. */
+	ret = fork_child_for_script(ctdb, state);
+	if (ret != 0) {
+		talloc_free(state->scripts);
 		talloc_free(state);
-		return 0;
+		return -1;
 	}
 
+	talloc_set_destructor(state, event_script_destructor);
 	if (!timeval_is_zero(&state->timeout)) {
 		event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
 	} else {
