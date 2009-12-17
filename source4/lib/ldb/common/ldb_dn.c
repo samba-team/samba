@@ -2001,3 +2001,26 @@ bool ldb_dn_is_null(struct ldb_dn *dn)
 	return false;
 }
 
+/*
+  this updates dn->components, taking the components from ref_dn.
+  This is used by code that wants to update the DN path of a DN
+  while not impacting on the extended DN components
+ */
+int ldb_dn_update_components(struct ldb_dn *dn, const struct ldb_dn *ref_dn)
+{
+	dn->components = talloc_realloc(dn, dn->components,
+					struct ldb_dn_component, ref_dn->comp_num);
+	if (!dn->components) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	memcpy(dn->components, ref_dn->components,
+	       sizeof(struct ldb_dn_component)*ref_dn->comp_num);
+	dn->comp_num = ref_dn->comp_num;
+
+	talloc_free(dn->linearized);
+	talloc_free(dn->ext_linearized);
+	dn->ext_linearized = NULL;
+	dn->linearized = NULL;
+
+	return LDB_SUCCESS;
+}
