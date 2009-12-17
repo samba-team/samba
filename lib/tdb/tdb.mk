@@ -91,6 +91,10 @@ installheaders:: installdirs
 installlibs:: all installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp $(TDB_STLIB) $(TDB_SOLIB) $(DESTDIR)$(libdir)
+	rm -f $(DESTDIR)$(libdir)/libtdb.$(SHLIBEXT)
+	ln -s $(TDB_SOLIB) $(DESTDIR)$(libdir)/libtdb.$(SHLIBEXT)
+	rm -f $(DESTDIR)$(libdir)/$(TDB_SONAME)
+	ln -s $(TDB_SOLIB) $(DESTDIR)$(libdir)/$(TDB_SONAME)
 
 $(TDB_STLIB): $(TDB_OBJ)
 	ar -rv $(TDB_STLIB) $(TDB_OBJ)
