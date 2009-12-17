@@ -1713,6 +1713,11 @@ NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
 				  struct pvfs_state);
 	struct pvfs_file *f, *next;
 
+	/* If pvfs is NULL, we never logged on, and no files are open. */
+	if(pvfs == NULL) {
+		return NT_STATUS_OK;
+	}
+
 	for (f=pvfs->files.list;f;f=next) {
 		next = f->next;
 		if (f->ntvfs->session_info == req->session_info) {
