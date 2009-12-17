@@ -426,7 +426,8 @@ struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, const struct ldb_me
 /*
   pull a NTTIME in a result set. 
 */
-NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME default_value)
+NTTIME samdb_result_nttime(const struct ldb_message *msg, const char *attr,
+			   NTTIME default_value)
 {
 	return ldb_msg_find_attr_as_uint64(msg, attr, default_value);
 }
@@ -437,7 +438,7 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME def
  * it returns 0x7FFFFFFFFFFFFFFF, not returning this value in this case
  * cause windows 2008 and newer version to fail for SMB requests
  */
-NTTIME samdb_result_last_logoff(struct ldb_message *msg)
+NTTIME samdb_result_last_logoff(const struct ldb_message *msg)
 {
 	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "lastLogoff",0);
 
@@ -459,7 +460,7 @@ NTTIME samdb_result_last_logoff(struct ldb_message *msg)
  * Consolidate that logic here to allow clearer logic for account expiry in
  * the rest of the code.
  */
-NTTIME samdb_result_account_expires(struct ldb_message *msg)
+NTTIME samdb_result_account_expires(const struct ldb_message *msg)
 {
 	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "accountExpires",
 						 0);
@@ -473,7 +474,8 @@ NTTIME samdb_result_account_expires(struct ldb_message *msg)
 /*
   pull a uint64_t from a result set. 
 */
-uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t default_value)
+uint64_t samdb_result_uint64(const struct ldb_message *msg, const char *attr,
+			     uint64_t default_value)
 {
 	return ldb_msg_find_attr_as_uint64(msg, attr, default_value);
 }
