@@ -1683,6 +1683,7 @@ bool ldb_dn_is_valid(struct ldb_dn *dn);
 bool ldb_dn_is_special(struct ldb_dn *dn);
 bool ldb_dn_check_special(struct ldb_dn *dn, const char *check);
 bool ldb_dn_is_null(struct ldb_dn *dn);
+int ldb_dn_update_components(struct ldb_dn *dn, const struct ldb_dn *ref_dn);
 
 
 /**
