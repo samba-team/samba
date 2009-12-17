@@ -43,6 +43,7 @@ from samba import ATYPE_SECURITY_UNIVERSAL_GROUP
 from samba import ATYPE_DISTRIBUTION_GLOBAL_GROUP
 from samba import ATYPE_DISTRIBUTION_LOCAL_GROUP
 from samba import ATYPE_DISTRIBUTION_UNIVERSAL_GROUP
+from samba import DS_DC_FUNCTION_2003
 
 from subunit import SubunitTestRunner
 import unittest
@@ -109,7 +110,6 @@ class SchemaTests(unittest.TestCase):
         self.assertFalse("dITContentRules" in res[0])
         self.assertFalse("objectClasses" in res[0])
         self.assertFalse("attributeTypes" in res[0])
-
 
     def test_schemaUpdateNow(self):
         """Testing schemaUpdateNow"""
@@ -201,13 +201,290 @@ name: """ + object_name + """
         # Delete the object
         self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
+
+class SchemaTests_msDS_IntId(unittest.TestCase):
+
+    def setUp(self):
+        self.ldb = ldb
+        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.schema_dn = res[0]["schemaNamingContext"][0]
+        self.base_dn = res[0]["defaultNamingContext"][0]
+        self.forest_level = int(res[0]["forestFunctionality"][0])
+
+    def _ldap_schemaUpdateNow(self):
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+
+    def _make_obj_names(self, prefix):
+        class_name = prefix + time.strftime("%s", time.gmtime())
+        class_ldap_name = class_name.replace("-", "")
+        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
+        return (class_name, class_ldap_name, class_dn)
+
+    def _is_schema_base_object(self, ldb_msg):
+        """Test systemFlags for SYSTEM_FLAG_SCHEMA_BASE_OBJECT (16)"""
+        systemFlags = 0
+        if "systemFlags" in ldb_msg:
+            systemFlags = int(ldb_msg["systemFlags"][0])
+        return (systemFlags & 16) != 0
+
+    def _make_attr_ldif(self, attr_name, attr_dn):
+        ldif = """
+dn: """ + attr_dn + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        return ldif
+
+    def test_msDS_IntId_on_attr(self):
+        """Testing msDs-IntId creation for Attributes.
+        See MS-ADTS - 3.1.1.Attributes
+
+        This test should verify that:
+        - Creating attribute with 'msDS-IntId' fails with ERR_UNWILLING_TO_PERFORM
+        - Adding 'msDS-IntId' on existing attribute fails with ERR_CONSTRAINT_VIOLATION
+        - Creating attribute with 'msDS-IntId' set and FLAG_SCHEMA_BASE_OBJECT flag
+          set fails with ERR_UNWILLING_TO_PERFORM
+        - Attributes created with FLAG_SCHEMA_BASE_OBJECT not set have
+          'msDS-IntId' attribute added internally
+        """
+
+        # 1. Create attribute without systemFlags
+        # msDS-IntId should be created if forest functional
+        # level is >= DS_DC_FUNCTION_2003
+        # and missing otherwise
+        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("msDS-IntId-Attr-1-")
+        ldif = self._make_attr_ldif(attr_name, attr_dn)
+
+        # try to add msDS-IntId during Attribute creation
+        ldif_fail = ldif + "msDS-IntId: -1993108831\n"
+        try:
+            self.ldb.add_ldif(ldif_fail)
+            self.fail("Adding attribute with preset msDS-IntId should fail")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # add the new attribute and update schema
+        self.ldb.add_ldif(ldif)
+        self._ldap_schemaUpdateNow()
+
+        # Search for created attribute
+        res = []
+        res = self.ldb.search(attr_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_name)
+        if self.forest_level >= DS_DC_FUNCTION_2003:
+            if self._is_schema_base_object(res[0]):
+                self.assertTrue("msDS-IntId" not in res[0])
+            else:
+                self.assertTrue("msDS-IntId" in res[0])
+        else:
+            self.assertTrue("msDS-IntId" not in res[0])
+
+        msg = Message()
+        msg.dn = Dn(self.ldb, attr_dn)
+        msg["msDS-IntId"] = MessageElement("-1993108831", FLAG_MOD_REPLACE, "msDS-IntId")
+        try:
+            self.ldb.modify(msg)
+            self.fail("Modifying msDS-IntId should return error")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        # 2. Create attribute with systemFlags = FLAG_SCHEMA_BASE_OBJECT
+        # msDS-IntId should be created if forest functional
+        # level is >= DS_DC_FUNCTION_2003
+        # and missing otherwise
+        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("msDS-IntId-Attr-2-")
+        ldif = self._make_attr_ldif(attr_name, attr_dn)
+        ldif += "systemFlags: 16\n"
+
+        # try to add msDS-IntId during Attribute creation
+        ldif_fail = ldif + "msDS-IntId: -1993108831\n"
+        try:
+            self.ldb.add_ldif(ldif_fail)
+            self.fail("Adding attribute with preset msDS-IntId should fail")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # add the new attribute and update schema
+        self.ldb.add_ldif(ldif)
+        self._ldap_schemaUpdateNow()
+
+        # Search for created attribute
+        res = []
+        res = self.ldb.search(attr_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_name)
+        if self.forest_level >= DS_DC_FUNCTION_2003:
+            if self._is_schema_base_object(res[0]):
+                self.assertTrue("msDS-IntId" not in res[0])
+            else:
+                self.assertTrue("msDS-IntId" in res[0])
+        else:
+            self.assertTrue("msDS-IntId" not in res[0])
+
+        msg = Message()
+        msg.dn = Dn(self.ldb, attr_dn)
+        msg["msDS-IntId"] = MessageElement("-1993108831", FLAG_MOD_REPLACE, "msDS-IntId")
+        try:
+            self.ldb.modify(msg)
+            self.fail("Modifying msDS-IntId should return error")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+
+    def _make_class_ldif(self, class_dn, class_name):
+        ldif = """
+dn: """ + class_dn + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalPerson
+rDNAttID: cn
+systemMustContain: cn
+systemOnly: FALSE
+"""
+        return ldif
+
+    def test_msDS_IntId_on_class(self):
+        """Testing msDs-IntId creation for Class
+           Reference: MS-ADTS - 3.1.1.2.4.8 Class classSchema"""
+
+        # 1. Create Class without systemFlags
+        # msDS-IntId should be created if forest functional
+        # level is >= DS_DC_FUNCTION_2003
+        # and missing otherwise
+        (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-1-")
+        ldif = self._make_class_ldif(class_dn, class_name)
+
+        # try to add msDS-IntId during Class creation
+        ldif_add = ldif + "msDS-IntId: -1993108831\n"
+        self.ldb.add_ldif(ldif_add)
+        self._ldap_schemaUpdateNow()
+
+        res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["msDS-IntId"][0], "-1993108831")
+
+        # add a new Class and update schema
+        (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-2-")
+        ldif = self._make_class_ldif(class_dn, class_name)
+
+        self.ldb.add_ldif(ldif)
+        self._ldap_schemaUpdateNow()
+
+        # Search for created Class
+        res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertFalse("msDS-IntId" in res[0])
+
+        msg = Message()
+        msg.dn = Dn(self.ldb, class_dn)
+        msg["msDS-IntId"] = MessageElement("-1993108831", FLAG_MOD_REPLACE, "msDS-IntId")
+        try:
+            self.ldb.modify(msg)
+            self.fail("Modifying msDS-IntId should return error")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        # 2. Create Class with systemFlags = FLAG_SCHEMA_BASE_OBJECT
+        # msDS-IntId should be created if forest functional
+        # level is >= DS_DC_FUNCTION_2003
+        # and missing otherwise
+        (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-3-")
+        ldif = self._make_class_ldif(class_dn, class_name)
+        ldif += "systemFlags: 16\n"
+
+        # try to add msDS-IntId during Class creation
+        ldif_add = ldif + "msDS-IntId: -1993108831\n"
+        self.ldb.add_ldif(ldif_add)
+
+        res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["msDS-IntId"][0], "-1993108831")
+
+        # add the new Class and update schema
+        (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-4-")
+        ldif = self._make_class_ldif(class_dn, class_name)
+        ldif += "systemFlags: 16\n"
+
+        self.ldb.add_ldif(ldif)
+        self._ldap_schemaUpdateNow()
+
+        # Search for created Class
+        res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertFalse("msDS-IntId" in res[0])
+
+        msg = Message()
+        msg.dn = Dn(self.ldb, class_dn)
+        msg["msDS-IntId"] = MessageElement("-1993108831", FLAG_MOD_REPLACE, "msDS-IntId")
+        try:
+            self.ldb.modify(msg)
+            self.fail("Modifying msDS-IntId should return error")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        res = self.ldb.search(class_dn, scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertFalse("msDS-IntId" in res[0])
+
+
+    def test_verify_msDS_IntId(self):
+        """Verify msDS-IntId exists only on attributes without FLAG_SCHEMA_BASE_OBJECT flag set"""
+        count = 0
+        res = self.ldb.search(self.schema_dn, scope=SCOPE_ONELEVEL,
+                              expression="objectClass=attributeSchema",
+                              attrs=["systemFlags", "msDS-IntId", "attributeID", "cn"])
+        self.assertTrue(len(res) > 1)
+        for ldb_msg in res:
+            if self.forest_level >= DS_DC_FUNCTION_2003:
+                if self._is_schema_base_object(ldb_msg):
+                    self.assertTrue("msDS-IntId" not in ldb_msg)
+                else:
+                    # don't assert here as there are plenty of
+                    # attributes under w2k8 that are not part of
+                    # Base Schema (SYSTEM_FLAG_SCHEMA_BASE_OBJECT flag not set)
+                    # has not msDS-IntId attribute set
+                    #self.assertTrue("msDS-IntId" in ldb_msg, "msDS-IntId expected on: %s" % ldb_msg.dn)
+                    if "msDS-IntId" not in ldb_msg:
+                        count = count + 1
+                        print "%3d warning: msDS-IntId expected on: %-30s %s" % (count, ldb_msg["attributeID"], ldb_msg["cn"])
+            else:
+                self.assertTrue("msDS-IntId" not in ldb_msg)
+
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
     else:
         host = "ldap://%s" % host
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
+ldb_options = []
+if host.startswith("ldap://"):
+    # user 'paged_search' module when connecting remotely
+    ldb_options = ["modules:paged_searches"]
+
+ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
 if not "tdb://" in host:
     gc_ldb = Ldb("%s:3268" % host, credentials=creds,
                  session_info=system_session(), lp=lp)
@@ -217,5 +494,7 @@ else:
 runner = SubunitTestRunner()
 rc = 0
 if not runner.run(unittest.makeSuite(SchemaTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(SchemaTests_msDS_IntId)).wasSuccessful():
     rc = 1
 sys.exit(rc)
