@@ -1194,7 +1194,7 @@ AC_DEFINE(HAVE_PRCTL, 1, [Whether prctl is available]),[])
 case "$host_os" in
     *linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
        # glibc <= 2.3.2 has a broken getgrouplist
-       AC_TRY_RUN([
+       AC_CACHE_CHECK([for good getgrouplist],samba_cv_linux_getgrouplist_ok,[AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/utsname.h>
 main() {
@@ -1210,8 +1210,8 @@ main() {
 #endif
        exit(0);
 }
-], [linux_getgrouplist_ok=yes], [linux_getgrouplist_ok=no])
-       if test x"$linux_getgrouplist_ok" = x"yes"; then
+], [samba_cv_linux_getgrouplist_ok=yes], [samba_cv_linux_getgrouplist_ok=no])])
+       if test x"$samba_cv_linux_getgrouplist_ok" = x"yes"; then
           AC_DEFINE(HAVE_GETGROUPLIST, 1, [Have good getgrouplist])
        fi
        ;;
