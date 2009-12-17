@@ -1331,6 +1331,97 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+  test stream renames
+*/
+static bool test_stream_rename3(struct torture_context *tctx,
+				   struct smbcli_state *cli)
+{
+	NTSTATUS status, status2;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_rename.txt";
+	const char *sname1, *sname2;
+	union smb_fileinfo finfo1;
+	union smb_setfileinfo sfinfo;
+	bool ret = true;
+	int fnum = -1;
+	int fnum2 = -1;
+	bool check_fnum;
+	const char *call_name;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "MStream Two:$DATA");
+	sname2 = talloc_asprintf(tctx, "%s:%s:$DaTa", fname, "Second Stream");
+
+	printf("(%s) testing stream renames\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE |
+				      SEC_FILE_WRITE_ATTRIBUTE |
+				    SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	    NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = sname1;
+
+	/* Create two streams. */
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	if (fnum != -1) smbcli_close(cli->tree, fnum);
+
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	if (fnum != -1) smbcli_close(cli->tree, fnum);
+
+	/* open the second stream. */
+	io.ntcreatex.in.access_mask = SEC_STD_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Keep a handle to the first stream open. */
+	io.ntcreatex.in.fname = sname1;
+	io.ntcreatex.in.access_mask = SEC_STD_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+
+	ZERO_STRUCT(sfinfo);
+	sfinfo.rename_information.in.overwrite = 1;
+	sfinfo.rename_information.in.root_fid  = 0;
+	sfinfo.rename_information.in.new_name  = ":MStream Two:$DATA";
+	if (torture_setting_bool(tctx, "samba4", false) ||
+	    torture_setting_bool(tctx, "samba3", false)) {
+		CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	} else {
+		CHECK_CALL_FNUM(RENAME_INFORMATION,
+		    NT_STATUS_INVALID_PARAMETER);
+	}
+
+
+done:
+	if (fnum != -1) smbcli_close(cli->tree, fnum);
+	if (fnum2 != -1) smbcli_close(cli->tree, fnum2);
+	status = smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
 static bool create_file_with_stream(struct torture_context *tctx,
 				    struct smbcli_state *cli,
 				    const char *stream)
@@ -1795,6 +1886,7 @@ struct torture_suite *torture_raw_streams(TALLOC_CTX *tctx)
 	torture_suite_add_1smb_test(suite, "NAMES2", test_stream_names2);
 	torture_suite_add_1smb_test(suite, "RENAME", test_stream_rename);
 	torture_suite_add_1smb_test(suite, "RENAME2", test_stream_rename2);
+	torture_suite_add_1smb_test(suite, "RENAME3", test_stream_rename3);
 	torture_suite_add_1smb_test(suite, "CREATEDISP",
 	    test_stream_create_disposition);
 	torture_suite_add_1smb_test(suite, "ATTR", test_stream_attributes);
