@@ -169,6 +169,11 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	governsID = ldb_msg_find_ldb_val(req->op.add.message, "governsID");
 
 	if (attributeID) {
+		/* Sanity check for not allowed attributes */
+		if (ldb_msg_find_ldb_val(req->op.add.message, "msDS-IntId")) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
 		oid_attr = "attributeID";
 		oid = talloc_strndup(req, (const char *)attributeID->data, attributeID->length);
 	} else if (governsID) {
@@ -201,6 +206,27 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
+	return ldb_next_request(module, req);
+}
+
+static int schema_data_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	/* special objects should always go through */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* msDS-IntId is not allowed to be modified */
+	if (ldb_msg_find_ldb_val(req->op.mod.message, "msDS-IntId")) {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* go on with the call chain */
 	return ldb_next_request(module, req);
 }
 
@@ -459,5 +485,6 @@ _PUBLIC_ const struct ldb_module_ops ldb_schema_data_module_ops = {
 	.name		= "schema_data",
 	.init_context	= schema_data_init,
 	.add		= schema_data_add,
+	.modify		= schema_data_modify,
 	.search         = schema_data_search
 };
