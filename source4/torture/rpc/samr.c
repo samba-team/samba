@@ -2593,6 +2593,52 @@ static bool test_AddMultipleMembersToAlias(struct dcerpc_pipe *p, struct torture
 	return true;
 }
 
+static bool test_GetAliasMembership(struct dcerpc_pipe *p,
+				    struct torture_context *tctx,
+				    struct policy_handle *domain_handle)
+{
+	struct samr_GetAliasMembership r;
+	struct lsa_SidArray sids;
+	struct samr_Ids rids;
+	NTSTATUS status;
+
+	torture_comment(tctx, "Testing GetAliasMembership\n");
+
+	r.in.domain_handle	= domain_handle;
+	r.in.sids		= &sids;
+	r.out.rids		= &rids;
+
+	sids.num_sids = 0;
+	sids.sids = talloc_zero_array(tctx, struct lsa_SidPtr, sids.num_sids);
+
+	status = dcerpc_samr_GetAliasMembership(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+		"samr_GetAliasMembership failed");
+
+	torture_assert_int_equal(tctx, sids.num_sids, rids.count,
+		"protocol misbehaviour");
+
+	sids.num_sids = 1;
+	sids.sids = talloc_zero_array(tctx, struct lsa_SidPtr, sids.num_sids);
+	sids.sids[0].sid = dom_sid_parse_talloc(tctx, "S-1-5-32-1-2-3-1");
+
+	status = dcerpc_samr_GetAliasMembership(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+		"samr_GetAliasMembership failed");
+
+#if 0
+	/* only true for w2k8 it seems
+	 * win7, xp, w2k3 will return a 0 length array pointer */
+
+	torture_assert(tctx, (rids.ids && !rids.count),
+		"samr_GetAliasMembership protocol misbehaviour");
+#endif
+	torture_assert(tctx, (!rids.ids && rids.count),
+		"samr_GetAliasMembership protocol misbehaviour");
+
+	return true;
+}
+
 static bool test_TestPrivateFunctionsUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 					    struct policy_handle *user_handle)
 {
@@ -6504,6 +6550,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		ret &= test_RemoveMemberFromForeignDomain(p, tctx, &domain_handle);
 		ret &= test_CreateAlias(p, tctx, &domain_handle, TEST_ALIASNAME, &alias_handle, sid, true);
 		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, TEST_GROUPNAME, &group_handle, sid, true);
+		ret &= test_GetAliasMembership(p, tctx, &domain_handle);
 		ret &= test_QueryDomainInfo(p, tctx, &domain_handle);
 		ret &= test_QueryDomainInfo2(p, tctx, &domain_handle);
 		ret &= test_EnumDomainUsers_all(p, tctx, &domain_handle);
