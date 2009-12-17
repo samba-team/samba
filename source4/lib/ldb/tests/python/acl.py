@@ -393,8 +393,6 @@ userAccountControl: %s""" % userAccountControl
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s,%s)" \
                 % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn) )
         self.assertEqual( res, [])
- 
-# ace is not inherited - filered out...
 
     def test_add_granted_user(self):
         """ 3 Testing OU with the rights of regular user granted the right 'Create User child objects' """
@@ -748,6 +746,47 @@ url: www.samba.org"""
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
+
+
+    def test_modify_u4(self):
+        """11 Grant WP to PRINCIPAL_SELF and test modify"""
+        # Creating acluser1
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_user_dn("acluser3"))
+            self.create_user(self.ldb_admin, self.get_user_dn("acluser3"))
+            self.enable_account(self.get_user_dn("acluser3"))
+        # Test if we have any additional groups for user than default
+        if self.WIN:
+            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                    % self.get_user_dn("acluser3") )
+            try:
+                self.assertEqual( res[0]["memberOf"][0], "" )
+            except KeyError:
+                pass
+            else:
+                self.fail()
+        # Create user connection that we will test with
+        ldb_user = self.get_ldb_connection("acluser3", "samba123@")
+        ldif = """
+dn: """ + self.get_user_dn("acluser3") + """
+changetype: modify
+add: adminDescription
+adminDescription: blah blah blah"""
+        try:
+            ldb_user.modify_ldif(ldif)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
+            self.fail()
+
+        mod = "(OA;;WP;bf967919-0de6-11d0-a285-00aa003049e2;;PS)"
+        self.dacl_add_ace(self.get_user_dn("acluser3"), mod)
+        # Modify on attribute you have rights for
+        ldb_user.modify_ldif(ldif)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                                    % self.get_user_dn("acluser3"), attrs=["adminDescription"] )
+        self.assertEqual(res[0]["adminDescription"][0], "blah blah blah")
 
 #enable these when we have search implemented
     def _test_search_u1(self):

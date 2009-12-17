@@ -180,12 +180,14 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			     const struct security_token *token,
 			     uint32_t access_desired,
 			     uint32_t *access_granted,
-			     struct object_tree *tree)
+			     struct object_tree *tree,
+			     struct dom_sid *replace_sid)
 {
         int i;
         uint32_t bits_remaining;
         struct object_tree *node;
         const struct GUID *type;
+	struct dom_sid *ps_sid = dom_sid_parse_talloc(NULL, SID_NT_SELF);
 
         *access_granted = access_desired;
         bits_remaining = access_desired;
@@ -228,13 +230,20 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 
         /* check each ace in turn. */
         for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
+		struct dom_sid *trustee;
 		struct security_ace *ace = &sd->dacl->aces[i];
 
                 if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
                         continue;
                 }
-
-                if (!security_token_has_sid(token, &ace->trustee)) {
+		if (dom_sid_equal(&ace->trustee, ps_sid) && replace_sid) {
+			trustee = replace_sid;
+		}
+		else
+		{
+			trustee = &ace->trustee;
+		}
+                if (!security_token_has_sid(token, trustee)) {
                         continue;
                 }
 
