@@ -1863,20 +1863,15 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		 * hashes */
 		CHECK_RET(ldb_msg_add_value(mod, "clearTextPassword", new_password, NULL));
 	} else {
-		/* We don't have the cleartext, so delete the old one
-		 * and set what we have of the hashes */
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "clearTextPassword"));
+		/* we don't have the cleartext, so set what we have of the
+		 * hashes */
 
 		if (lmNewHash) {
 			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "dBCSPwd", lmNewHash));
-		} else {
-			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "dBCSPwd"));
 		}
 
 		if (ntNewHash) {
 			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "unicodePwd", ntNewHash));
-		} else {
-			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "unicodePwd"));
 		}
 	}
 
