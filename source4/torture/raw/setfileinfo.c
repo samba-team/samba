@@ -970,6 +970,158 @@ done:
 	return ret;
 }
 
+static bool
+torture_raw_sfileinfo_archive(struct torture_context *tctx,
+    struct smbcli_state *cli)
+{
+	const char *fname = BASEDIR "\\test_archive.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	union smb_setfileinfo sfinfo;
+	union smb_fileinfo finfo;
+	uint16_t fnum=0;
+	uint32_t access_mask = 0;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli->tree, fname);
+
+	/*
+	 * create a normal file, verify archive bit
+	 */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.flags = 0;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "open failed");
+	fnum = io.ntcreatex.out.file.fnum;
+
+	torture_assert_int_equal(tctx,
+	    io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
+	    FILE_ATTRIBUTE_ARCHIVE,
+	    "archive bit not set");
+
+	/*
+	 * try to turn off archive bit
+	 */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFO;
+	sfinfo.generic.in.file.fnum = fnum;
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "setfileinfo failed");
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.file.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "fileinfo failed");
+
+	torture_assert_int_equal(tctx,
+	    finfo.all_info.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
+	    FILE_ATTRIBUTE_NORMAL,
+	    "archive bit set");
+
+	status = smbcli_close(cli->tree, fnum);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "close failed");
+
+	status = smbcli_unlink(cli->tree, fname);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "unlink failed");
+
+	/*
+	 * create a directory, verify no archive bit
+	 */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_DIR_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.flags = 0;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "directory open failed");
+	fnum = io.ntcreatex.out.file.fnum;
+
+	torture_assert_int_equal(tctx,
+	    io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
+	    FILE_ATTRIBUTE_DIRECTORY,
+	    "archive bit set");
+
+	/*
+	 * verify you can turn on archive bit
+	 */
+	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFO;
+	sfinfo.generic.in.file.fnum = fnum;
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "setfileinfo failed");
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.file.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "fileinfo failed");
+
+	torture_assert_int_equal(tctx,
+	    finfo.all_info.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
+	    FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE,
+	    "archive bit not set");
+
+	/*
+	 * and try to turn it back off
+	 */
+	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFO;
+	sfinfo.generic.in.file.fnum = fnum;
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "setfileinfo failed");
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.file.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "fileinfo failed");
+
+	torture_assert_int_equal(tctx,
+	    finfo.all_info.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
+	    FILE_ATTRIBUTE_DIRECTORY,
+	    "archive bit set");
+
+	status = smbcli_close(cli->tree, fnum);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK,
+	    ret, done, "close failed");
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
 struct torture_suite *torture_raw_sfileinfo(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx,
@@ -983,6 +1135,7 @@ struct torture_suite *torture_raw_sfileinfo(TALLOC_CTX *mem_ctx)
 	    torture_raw_sfileinfo_eof);
 	torture_suite_add_2smb_test(suite, "END-OF-FILE-ACCESS",
 	    torture_raw_sfileinfo_eof_access);
+	torture_suite_add_1smb_test(suite, "ARCHIVE", torture_raw_sfileinfo_archive);
 
 	return suite;
 }
