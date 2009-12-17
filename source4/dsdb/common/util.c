@@ -2781,6 +2781,11 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 }
 
 
+static int dsdb_dn_compare_ptrs(struct ldb_dn **dn1, struct ldb_dn **dn2)
+{
+	return ldb_dn_compare(*dn1, *dn2);
+}
+
 /*
   find a NC root given a DN within the NC
  */
@@ -2830,7 +2835,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 	       }
        }
 
-       qsort(nc_dns, el->num_values, sizeof(nc_dns[0]), (comparison_fn_t)ldb_dn_compare);
+       qsort(nc_dns, el->num_values, sizeof(nc_dns[0]), (comparison_fn_t)dsdb_dn_compare_ptrs);
 
        for (i=0; i<el->num_values; i++) {
                if (ldb_dn_compare_base(nc_dns[i], dn) == 0) {
