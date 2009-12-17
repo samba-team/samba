@@ -1680,6 +1680,58 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 /*
+  public ip info
+ */
+static int control_ipinfo(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	ctdb_sock_addr addr;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_control_public_ip_info *info;
+
+	if (argc != 1) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+	/* read the public ip info from this node */
+	ret = ctdb_ctrl_get_public_ip_info(ctdb, TIMELIMIT(), options.pnn,
+					   tmp_ctx, &addr, &info);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ip[%s]info from node %u\n",
+				  argv[0], options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	printf("Public IP[%s] info on node %u\n",
+	       ctdb_addr_to_str(&info->ip.addr),
+	       options.pnn);
+
+	printf("IP:%s\nCurrentNode:%d\nNumInterfaces:%u\n",
+	       ctdb_addr_to_str(&info->ip.addr),
+	       info->ip.pnn, info->num);
+
+	for (i=0; i<info->num; i++) {
+		info->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
+
+		printf("Interface[%u]: Name:%s Link:%s References:%u%s\n",
+		       i+1, info->ifaces[i].name,
+		       info->ifaces[i].link_state?"up":"down",
+		       (unsigned int)info->ifaces[i].references,
+		       (i==info->active_idx)?" (active)":"");
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
   display interfaces status
  */
 static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -4096,6 +4148,7 @@ static const struct {
 	{ "statistics",      control_statistics,        false,	false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,	false,  "reset statistics"},
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
+	{ "ipinfo",          control_ipinfo,            true,	false,  "show details about a public ip that ctdb manages", "<ip>" },
 	{ "ifaces",          control_ifaces,            true,	false,  "show which interfaces that ctdb manages" },
 	{ "setifacelink",    control_setifacelink,      true,	false,  "set interface link status", "<iface> <status>" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
