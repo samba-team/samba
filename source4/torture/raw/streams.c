@@ -715,6 +715,30 @@ static bool test_stream_names(struct torture_context *tctx,
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * Make sure the create time of the streams are different from the
+	 * base file.
+	 */
+	sleep(2);
+	smbcli_close(cli->tree, fnum1);
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = sname1;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
