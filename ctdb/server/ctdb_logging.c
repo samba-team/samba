@@ -479,8 +479,10 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 	}
 
 	log->pfd = p[0];
+	set_close_on_exec(log->pfd);
 	talloc_set_destructor(log, log_context_destructor);
-	event_add_fd(ctdb->ev, log, log->pfd, EVENT_FD_READ,
+	event_add_fd(ctdb->ev, log, log->pfd,
+		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
 		     ctdb_log_handler, log);
 	return log;
 
@@ -511,7 +513,8 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	event_add_fd(ctdb->ev, ctdb->log, p[0], EVENT_FD_READ, 
+	event_add_fd(ctdb->ev, ctdb->log, p[0],
+		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
 		     ctdb_log_handler, ctdb->log);
 	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];
