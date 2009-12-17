@@ -26,6 +26,10 @@ installheaders:: installdirs
 installlibs:: installdirs
 	cp tevent.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp $(TEVENT_STLIB) $(TEVENT_SOLIB) $(DESTDIR)$(libdir)
+	rm -f $(DESTDIR)$(libdir)/$(TEVENT_SONAME)
+	ln -s $(TEVENT_SOLIB) $(DESTDIR)$(libdir)/$(TEVENT_SONAME)
+	rm -f $(DESTDIR)$(libdir)/$(TEVENT_SOBASE)
+	ln -s $(TEVENT_SOLIB) $(DESTDIR)$(libdir)/$(TEVENT_SOBASE)
 
 install:: all installdirs installheaders installlibs $(PYTHON_INSTALL_TARGET)
 
