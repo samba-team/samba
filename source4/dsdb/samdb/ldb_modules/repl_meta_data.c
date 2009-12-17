@@ -2038,10 +2038,9 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 
 		msg->dn = dsdb_dn->dn;
 
-		if (sa->linkID & 1) {
-			target_attr = dsdb_attribute_by_linkID(schema, sa->linkID - 1);
-		} else {
-			target_attr = dsdb_attribute_by_linkID(schema, sa->linkID + 1);
+		target_attr = dsdb_attribute_by_linkID(schema, sa->linkID ^ 1);
+		if (target_attr == NULL) {
+			continue;
 		}
 
 		ret = ldb_msg_add_empty(msg, target_attr->lDAPDisplayName, LDB_FLAG_MOD_DELETE, &el2);
