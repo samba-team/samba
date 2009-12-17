@@ -1839,7 +1839,57 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
 				    struct ctdb_req_control *c,
 				    TDB_DATA indata)
 {
-	return -1;
+	struct ctdb_control_iface_info *info;
+	struct ctdb_iface *iface;
+	bool link_up = false;
+
+	info = (struct ctdb_control_iface_info *)indata.dptr;
+
+	if (info->name[CTDB_IFACE_SIZE] != '\0') {
+		int len = strnlen(info->name, CTDB_IFACE_SIZE);
+		DEBUG(DEBUG_ERR, (__location__ " name[%*.*s] not terminated\n",
+				  len, len, info->name));
+		return -1;
+	}
+
+	switch (info->link_state) {
+	case 0:
+		link_up = false;
+		break;
+	case 1:
+		link_up = true;
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " link_state[%u] invalid\n",
+				  (unsigned int)info->link_state));
+		return -1;
+	}
+
+	if (info->references != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " references[%u] should be 0\n",
+				  (unsigned int)info->references));
+		return -1;
+	}
+
+	iface = ctdb_find_iface(ctdb, info->name);
+	if (iface == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ "iface[%s] is unknown\n",
+				  info->name));
+		return -1;
+	}
+
+	if (link_up == iface->link_up) {
+		return 0;
+	}
+
+	DEBUG(iface->link_up?DEBUG_ERR:DEBUG_NOTICE,
+	      ("iface[%s] has changed it's link status %s => %s\n",
+	       iface->name,
+	       iface->link_up?"up":"down",
+	       link_up?"up":"down"));
+
+	iface->link_up = link_up;
+	return 0;
 }
 
 
