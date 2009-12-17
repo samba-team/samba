@@ -2604,6 +2604,10 @@ static bool test_GetAliasMembership(struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "Testing GetAliasMembership\n");
 
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "skipping GetAliasMembership against s4");
+	}
+
 	r.in.domain_handle	= domain_handle;
 	r.in.sids		= &sids;
 	r.out.rids		= &rids;
