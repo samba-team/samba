@@ -1487,7 +1487,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 
 	io.openx.level = RAW_OPEN_OPENX;
 	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
-	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPEN_FLAGS_DENY_NONE;
 	io.openx.in.search_attrs = 0;
 	io.openx.in.file_attrs = 0;
 	io.openx.in.write_time = 0;
