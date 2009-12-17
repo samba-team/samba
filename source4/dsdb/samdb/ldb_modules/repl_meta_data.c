@@ -617,7 +617,7 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa, true);
+		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2145,16 +2145,6 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* New DN name generated, renaming the original DN */
-	ret = dsdb_module_rename(module, old_dn, new_dn, 0);
-	if (ret != LDB_SUCCESS){
-		DEBUG(0,(__location__ ": Failed to rename object from '%s' to '%s'\n",
-				ldb_dn_get_linearized(old_dn),
-				ldb_dn_get_linearized(new_dn)));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
 	/*
 	  now we need to modify the object in the following ways:
 
@@ -2179,7 +2169,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	msg->dn = new_dn;
+	msg->dn = old_dn;
 
 	ret = ldb_msg_add_string(msg, "isDeleted", "TRUE");
 	if (ret != LDB_SUCCESS) {
@@ -2267,6 +2257,17 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS){
 		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
 				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* now rename onto the new DN */
+	ret = dsdb_module_rename(module, old_dn, new_dn, 0);
+	if (ret != LDB_SUCCESS){
+		DEBUG(0,(__location__ ": Failed to rename object from '%s' to '%s' - %s\n",
+			 ldb_dn_get_linearized(old_dn),
+			 ldb_dn_get_linearized(new_dn),
+			 ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
