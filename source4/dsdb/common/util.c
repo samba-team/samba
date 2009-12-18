@@ -1023,6 +1023,55 @@ static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
 }
 
 /*
+ * replace elements in a record using LDB_CONTROL_AS_SYSTEM
+ * used to skip access checks on operations
+ * that are performed by the system
+ */
+int samdb_replace_as_system(struct ldb_context *sam_ldb,
+			    TALLOC_CTX *mem_ctx,
+			    struct ldb_message *msg)
+{
+	int i;
+	int ldb_ret;
+	struct ldb_request *req = NULL;
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+
+	ldb_ret = ldb_msg_sanity_check(sam_ldb, msg);
+	if (ldb_ret != LDB_SUCCESS) {
+		return ldb_ret;
+	}
+
+	ldb_ret = ldb_build_mod_req(&req, sam_ldb, mem_ctx,
+	                            msg,
+	                            NULL,
+	                            NULL,
+	                            ldb_op_default_callback,
+	                            NULL);
+
+	if (ldb_ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ldb_ret;
+	}
+
+	ldb_ret = ldb_request_add_control(req, LDB_CONTROL_AS_SYSTEM_OID, false, NULL);
+	if (ldb_ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ldb_ret;
+	}
+
+	/* do request and auto start a transaction */
+	ldb_ret = dsdb_autotransaction_request(sam_ldb, req);
+
+	talloc_free(req);
+	return ldb_ret;
+}
+
+/*
   return a default security descriptor
 */
 struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ctx)
