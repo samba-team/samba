@@ -447,8 +447,10 @@ static int acl_allowedAttributes(struct ldb_module *module,
 	if (ac->allowedAttributesEffective) {
 		struct security_descriptor *sd;
 		struct dom_sid *sid = NULL;
+		struct ldb_control *as_system = ldb_request_get_control(ac->req,
+									LDB_CONTROL_AS_SYSTEM_OID);
 		ldb_msg_remove_attr(msg, "allowedAttributesEffective");
-		if (ac->user_type == SECURITY_SYSTEM) {
+		if (ac->user_type == SECURITY_SYSTEM || as_system) {
 			for (i=0; attr_list && attr_list[i]; i++) {
 				ldb_msg_add_string(msg, "allowedAttributesEffective", attr_list[i]);
 			}
@@ -559,10 +561,12 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	const struct dsdb_class *sclass;
 	struct security_descriptor *sd;
+	struct ldb_control *as_system = ldb_request_get_control(ac->req,
+								LDB_CONTROL_AS_SYSTEM_OID);
 	struct dom_sid *sid = NULL;
 	int i, j, ret;
 
-	if (ac->user_type == SECURITY_SYSTEM) {
+	if (ac->user_type == SECURITY_SYSTEM || as_system) {
 		return acl_childClasses(module, sd_msg, msg, "allowedChildClassesEffective");
 	}
 
@@ -635,6 +639,8 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	struct ldb_message_element *rightsEffective;
 	int ret;
 	struct security_descriptor *sd;
+	struct ldb_control *as_system = ldb_request_get_control(ac->req,
+								LDB_CONTROL_AS_SYSTEM_OID);
 	struct dom_sid *sid = NULL;
 	uint32_t flags = 0;
 
@@ -644,7 +650,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	if (ac->user_type == SECURITY_SYSTEM) {
+	if (ac->user_type == SECURITY_SYSTEM || as_system) {
 		flags = SECINFO_OWNER | SECINFO_GROUP |  SECINFO_SACL |  SECINFO_DACL;
 	}
 	else {
@@ -699,8 +705,9 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	const struct GUID *guid;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
+	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
-	if (what_is_user(module) == SECURITY_SYSTEM) {
+	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
 		return ldb_next_request(module, req);
 	}
 
@@ -752,6 +759,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *acl_res;
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
+	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
@@ -765,7 +773,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	{
 		DEBUG(10, ("ldb:acl_modify: %s\n", req->op.mod.message->elements[0].name));
 	}
-	if (what_is_user(module) == SECURITY_SYSTEM) {
+	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
 		return ldb_next_request(module, req);
 	}
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -890,9 +898,10 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	struct ldb_dn *parent = ldb_dn_get_parent(req, req->op.del.dn);
 	struct ldb_context *ldb;
+	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
 	DEBUG(10, ("ldb:acl_delete: %s\n", ldb_dn_get_linearized(req->op.del.dn)));
-	if (what_is_user(module) == SECURITY_SYSTEM) {
+	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
 		return ldb_next_request(module, req);
 	}
 
@@ -934,6 +943,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	const struct GUID *guid;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
+	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	NTSTATUS status;
 	uint32_t access_granted;
@@ -945,7 +955,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	};
 
 	DEBUG(10, ("ldb:acl_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn)));
-	if (what_is_user(module) == SECURITY_SYSTEM) {
+	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
 		return ldb_next_request(module, req);
 	}
 	if (ldb_dn_is_special(req->op.rename.olddn)) {
