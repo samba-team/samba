@@ -428,6 +428,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_trans2_active(ctdb, c, *(uint32_t *)indata.dptr);
 
+	case CTDB_CONTROL_TRANS3_COMMIT:
+		return ctdb_control_trans3_commit(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_RECD_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_recd_ping(ctdb);
@@ -552,6 +555,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_CLEAR_LOG:
 		return ctdb_control_clear_log(ctdb);
+
+	case CTDB_CONTROL_GET_DB_SEQNUM:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint64_t));
+		return ctdb_control_get_db_seqnum(ctdb, indata, outdata);
+
+	case CTDB_CONTROL_DB_SET_HEALTHY:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_set_healthy(ctdb, indata);
+
+	case CTDB_CONTROL_DB_GET_HEALTH:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_get_health(ctdb, indata, outdata);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

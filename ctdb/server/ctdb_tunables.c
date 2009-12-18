@@ -39,6 +39,7 @@ static const struct {
 	{ "TickleUpdateInterval",20,  offsetof(struct ctdb_tunable, tickle_update_interval) },
 	{ "EventScriptTimeout",  30,  offsetof(struct ctdb_tunable, script_timeout) },
 	{ "EventScriptTimeoutCount", 1,  offsetof(struct ctdb_tunable, script_timeout_count) },
+	{ "EventScriptUnhealthyOnTimeout", 0, offsetof(struct ctdb_tunable, script_unhealthy_on_timeout) },/* OBSOLETE */
 	{ "RecoveryGracePeriod", 120,  offsetof(struct ctdb_tunable, recovery_grace_period) },
 	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable, recovery_ban_period) },
 	{ "DatabaseHashSize", 10000,  offsetof(struct ctdb_tunable, database_hash_size) },
@@ -62,7 +63,8 @@ static const struct {
 	{ "VacuumMinInterval",   60,  offsetof(struct ctdb_tunable, vacuum_min_interval) },
 	{ "VacuumMaxInterval",  600,  offsetof(struct ctdb_tunable, vacuum_max_interval) },
 	{ "MaxQueueDropMsg",  1000,  offsetof(struct ctdb_tunable, max_queue_depth_drop_msg) },
-	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring) }
+	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring) },
+	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read) }
 };
 
 /*

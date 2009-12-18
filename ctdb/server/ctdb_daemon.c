@@ -354,6 +354,16 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		return;
 	}
 
+	if (ctdb_db->unhealthy_reason) {
+		/*
+		 * this is just a warning, as the tdb should be empty anyway,
+		 * and only persistent databases can be unhealthy, which doesn't
+		 * use this code patch
+		 */
+		DEBUG(DEBUG_WARNING,("warn: db(%s) unhealty in daemon_request_call_from_client(): %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
+	}
+
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 
@@ -720,10 +730,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
-	if (ctdb->do_setsched) {
-		/* try to set us up as realtime */
-		ctdb_set_scheduler(ctdb);
-	}
+	ctdb_high_priority(ctdb);
 
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
@@ -764,9 +771,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 
-	/* attach to any existing persistent databases */
-	if (ctdb_attach_persistent(ctdb) != 0) {
-		ctdb_fatal(ctdb, "Failed to attach to persistent databases\n");		
+	/* attach to existing databases */
+	if (ctdb_attach_databases(ctdb) != 0) {
+		ctdb_fatal(ctdb, "Failed to attach to databases\n");
 	}
 
 	/* start frozen, then let the first election sort things out */
@@ -808,6 +815,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 		}
 	}
 
+	ctdb_lockdown_memory(ctdb);
 	  
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);

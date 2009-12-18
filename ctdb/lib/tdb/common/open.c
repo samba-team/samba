@@ -55,8 +55,10 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 
 	/* We make it up in memory, then write it out if not internal */
 	size = sizeof(struct tdb_header) + (hash_size+1)*sizeof(tdb_off_t);
-	if (!(newdb = (struct tdb_header *)calloc(size, 1)))
-		return TDB_ERRCODE(TDB_ERR_OOM, -1);
+	if (!(newdb = (struct tdb_header *)calloc(size, 1))) {
+		tdb->ecode = TDB_ERR_OOM;
+		return -1;
+	}
 
 	/* Fill in the header */
 	newdb->version = TDB_VERSION;
@@ -161,6 +163,9 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 	tdb_io_init(tdb);
 	tdb->fd = -1;
+#ifdef TDB_TRACE
+	tdb->tracefd = -1;
+#endif
 	tdb->name = NULL;
 	tdb->map_ptr = NULL;
 	tdb->flags = tdb_flags;
@@ -195,6 +200,23 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		/* read only databases don't do locking or clear if first */
 		tdb->flags |= TDB_NOLOCK;
 		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+	}
+
+	if ((tdb->flags & TDB_ALLOW_NESTING) &&
+	    (tdb->flags & TDB_DISALLOW_NESTING)) {
+		tdb->ecode = TDB_ERR_NESTING;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+			"allow_nesting and disallow_nesting are not allowed together!"));
+		errno = EINVAL;
+		goto fail;
+	}
+
+	/*
+	 * TDB_ALLOW_NESTING is the default behavior.
+	 * Note: this may change in future versions!
+	 */
+	if (!(tdb->flags & TDB_DISALLOW_NESTING)) {
+		tdb->flags |= TDB_ALLOW_NESTING;
 	}
 
 	/* internal databases don't mmap or lock, and start off cleared */
@@ -240,17 +262,19 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	errno = 0;
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
-	    || strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0
-	    || (tdb->header.version != TDB_VERSION
-		&& !(rev = (tdb->header.version==TDB_BYTEREV(TDB_VERSION))))) {
-		/* its not a valid database - possibly initialise it */
+	    || strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0) {
 		if (!(open_flags & O_CREAT) || tdb_new_database(tdb, hash_size) == -1) {
 			if (errno == 0) {
-			errno = EIO; /* ie bad format or something */
+				errno = EIO; /* ie bad format or something */
 			}
 			goto fail;
 		}
 		rev = (tdb->flags & TDB_CONVERT);
+	} else if (tdb->header.version != TDB_VERSION
+		   && !(rev = (tdb->header.version==TDB_BYTEREV(TDB_VERSION)))) {
+		/* wrong version */
+		errno = EIO;
+		goto fail;
 	}
 	vp = (unsigned char *)&tdb->header.version;
 	vertest = (((uint32_t)vp[0]) << 24) | (((uint32_t)vp[1]) << 16) |
@@ -313,6 +337,22 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		goto fail;
 	}
 
+#ifdef TDB_TRACE
+	{
+		char tracefile[strlen(name) + 32];
+
+		snprintf(tracefile, sizeof(tracefile),
+			 "%s.trace.%li", name, (long)getpid());
+		tdb->tracefd = open(tracefile, O_WRONLY|O_CREAT|O_EXCL, 0600);
+		if (tdb->tracefd >= 0) {
+			tdb_enable_seqnum(tdb);
+			tdb_trace_open(tdb, "tdb_open", hash_size, tdb_flags,
+				       open_flags);
+		} else
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to open trace file %s!\n", tracefile));
+	}
+#endif
+
  internal:
 	/* Internal (memory-only) databases skip all the code above to
 	 * do with disk files, and resume here by releasing their
@@ -328,7 +368,10 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (!tdb)
 		return NULL;
-	
+
+#ifdef TDB_TRACE
+	close(tdb->tracefd);
+#endif
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL)
 			SAFE_FREE(tdb->map_ptr);
@@ -364,8 +407,9 @@ int tdb_close(struct tdb_context *tdb)
 	struct tdb_context **i;
 	int ret = 0;
 
+	tdb_trace(tdb, "tdb_close");
 	if (tdb->transaction) {
-		tdb_transaction_cancel(tdb);
+		_tdb_transaction_cancel(tdb);
 	}
 
 	if (tdb->map_ptr) {
@@ -375,8 +419,10 @@ int tdb_close(struct tdb_context *tdb)
 			tdb_munmap(tdb);
 	}
 	SAFE_FREE(tdb->name);
-	if (tdb->fd != -1)
+	if (tdb->fd != -1) {
 		ret = close(tdb->fd);
+		tdb->fd = -1;
+	}
 	SAFE_FREE(tdb->lockrecs);
 
 	/* Remove from contexts list */
@@ -387,6 +433,9 @@ int tdb_close(struct tdb_context *tdb)
 		}
 	}
 
+#ifdef TDB_TRACE
+	close(tdb->tracefd);
+#endif
 	memset(tdb, 0, sizeof(*tdb));
 	SAFE_FREE(tdb);
 
@@ -407,7 +456,10 @@ void *tdb_get_logging_private(struct tdb_context *tdb)
 
 static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 {
+#if !defined(LIBREPLACE_PREAD_NOT_REPLACED) || \
+	!defined(LIBREPLACE_PWRITE_NOT_REPLACED)
 	struct stat st;
+#endif
 
 	if (tdb->flags & TDB_INTERNAL) {
 		return 0; /* Nothing to do. */

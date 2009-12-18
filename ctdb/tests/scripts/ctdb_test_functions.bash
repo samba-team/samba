@@ -679,7 +679,7 @@ daemons_start_1 ()
 	echo "Node $no_public_ips will have no public IPs."
     fi
 
-    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent"
+    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent --dbdir-state=$var_dir/test.db/state"
 
     if [ $(id -u) -eq 0 ]; then
         ctdb_options="$ctdb_options --public-interface=lo"

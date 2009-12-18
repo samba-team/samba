@@ -127,6 +127,9 @@ struct ctdb_call_info {
 /* the key used for transaction locking on persistent databases */
 #define CTDB_TRANSACTION_LOCK_KEY "__transaction_lock__"
 
+/* the key used to store persistent db sequence number */
+#define CTDB_DB_SEQNUM_KEY "__db_sequence_number__"
+
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
 struct ctdb_client_control_state {
@@ -175,6 +178,7 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir);
 int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir);
+int ctdb_set_tdb_dir_state(struct ctdb_context *ctdb, const char *dir);
 
 /*
   set some flags
@@ -381,6 +385,11 @@ int ctdb_ctrl_copydb(struct ctdb_context *ctdb,
 
 int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **name);
+int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
+			  struct timeval timeout,
+			  uint32_t destnode,
+			  uint32_t dbid, TALLOC_CTX *mem_ctx,
+			  const char **reason);
 int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, const char *name, bool persistent);
 
 int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t pid);
@@ -465,6 +474,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 typedef int (*ctdb_traverse_func)(struct ctdb_context *, TDB_DATA, TDB_DATA, void *);
 int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data);
 
+int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p);
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
 
 /*

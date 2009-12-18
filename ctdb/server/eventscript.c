@@ -450,6 +450,12 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 		state->cb_status = 0;
 	}
 
+	/* valgrind gets overloaded if we run next script as it's still doing
+	 * post-execution analysis, so kill finished child here. */
+	if (ctdb->valgrinding) {
+		kill(state->child, SIGKILL);
+	}
+
 	state->child = 0;
 
 	/* Aborted or finished all scripts?  We're done. */
@@ -632,10 +638,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		ctdb->current_monitor = NULL;
 	}
 
-	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
-		ctdb->current_monitor = state;
-	}
-
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
 			  ctdb_eventscript_call_names[state->call],
 			  state->options));
@@ -651,6 +653,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
 		ctdb->event_script_timeouts = 0;
+		talloc_free(state->scripts);
 		talloc_free(state);
 		return 0;
 	}
@@ -660,6 +663,10 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		talloc_free(state->scripts);
 		talloc_free(state);
 		return -1;
+	}
+
+	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
+		ctdb->current_monitor = state;
 	}
 
 	talloc_set_destructor(state, event_script_destructor);

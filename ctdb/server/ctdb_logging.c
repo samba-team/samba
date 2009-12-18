@@ -121,6 +121,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	syslog(LOG_ERR, "Starting SYSLOG daemon with pid:%d", (int)getpid());
 
 	close(state->fd[0]);
+	set_close_on_exec(state->fd[1]);
 	event_add_fd(ctdb->ev, state, state->fd[1], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 		     ctdb_syslog_terminate_handler, state);
 
@@ -129,6 +130,8 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		printf("Failed to create syslog socket\n");
 		return -1;
 	}
+
+	set_close_on_exec(state->syslog_fd);
 
 	syslog_sin.sin_family = AF_INET;
 	syslog_sin.sin_port   = htons(CTDB_PORT);
@@ -382,7 +385,9 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 	if (n > 0) {
 		log->buf_used += n;
 	} else if (n == 0) {
-		talloc_free(log);
+		if (log != log_state) {
+			talloc_free(log);
+		}
 		return;
 	}
 
@@ -477,8 +482,10 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 	}
 
 	log->pfd = p[0];
+	set_close_on_exec(log->pfd);
 	talloc_set_destructor(log, log_context_destructor);
-	event_add_fd(ctdb->ev, log, log->pfd, EVENT_FD_READ,
+	event_add_fd(ctdb->ev, log, log->pfd,
+		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
 		     ctdb_log_handler, log);
 	return log;
 
@@ -509,7 +516,8 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	event_add_fd(ctdb->ev, ctdb->log, p[0], EVENT_FD_READ, 
+	event_add_fd(ctdb->ev, ctdb->log, p[0],
+		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
 		     ctdb_log_handler, ctdb->log);
 	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];

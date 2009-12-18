@@ -529,7 +529,6 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 	struct ctdb_marshall_buffer *reply;
 	struct ctdb_rec_data *rec;
 	int i;
-	int32_t transaction_active = 0;
 	TALLOC_CTX *tmp_ctx = talloc_new(recdb);
 
 	ret = ctdb_ctrl_pulldb(ctdb, srcnode, dbid, CTDB_LMASTER_ANY, tmp_ctx,
@@ -549,18 +548,6 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 	}
 	
 	rec = (struct ctdb_rec_data *)&reply->data[0];
-
-	if (persistent) {
-		transaction_active = ctdb_ctrl_transaction_active(ctdb, srcnode,
-								  dbid);
-		if (transaction_active == -1) {
-			DEBUG(DEBUG_ERR, (__location__ " error calling "
-					  "ctdb_ctrl_transaction_active to node"
-					  " %u\n", srcnode));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
-	}
 	
 	for (i=0;
 	     i<reply->count;
@@ -596,42 +583,12 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 			}
 			header = *(struct ctdb_ltdb_header *)existing.dptr;
 			free(existing.dptr);
-			if (!persistent) {
-				if (!(header.rsn < hdr->rsn ||
-				    (header.dmaster != ctdb->recovery_master && header.rsn == hdr->rsn)))
-				{
-					continue;
-				}
-			} else {
-				if (header.lacount == (uint32_t)-1) {
-					/*
-					 * skip record if the stored copy came
-					 * from a node with active transaction
-					 */
-					continue;
-				}
-
-				if ((header.rsn >= hdr->rsn) &&
-				    !transaction_active)
-				{
-					continue;
-				}
+			if (!(header.rsn < hdr->rsn ||
+			      (header.dmaster != ctdb->recovery_master && header.rsn == hdr->rsn))) {
+				continue;
 			}
 		}
-
-		if (persistent) {
-			/*
-			 * Misuse the lacount field to signal
-			 * that we got the record from a node
-			 * that has a transaction running.
-			 */
-			if (transaction_active) {
-				hdr->lacount = (uint32_t)-1;
-			} else {
-				hdr->lacount = 0;
-			}
-		}
-
+		
 		if (tdb_store(recdb->tdb, key, data, TDB_REPLACE) != 0) {
 			DEBUG(DEBUG_CRIT,(__location__ " Failed to store record\n"));
 			talloc_free(tmp_ctx);
@@ -1053,16 +1010,19 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 	unsigned tdb_flags;
 
 	/* open up the temporary recovery database */
-	name = talloc_asprintf(mem_ctx, "%s/recdb.tdb", ctdb->db_directory);
+	name = talloc_asprintf(mem_ctx, "%s/recdb.tdb.%u",
+			       ctdb->db_directory_state,
+			       ctdb->pnn);
 	if (name == NULL) {
 		return NULL;
 	}
 	unlink(name);
 
 	tdb_flags = TDB_NOLOCK;
-	if (!ctdb->do_setsched) {
+	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
+	tdb_flags |= TDB_DISALLOW_NESTING;
 
 	recdb = tdb_wrap_open(mem_ctx, name, ctdb->tunable.database_hash_size, 
 			      tdb_flags, O_RDWR|O_CREAT|O_EXCL, 0600);
@@ -1102,13 +1062,6 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 	if (!params->persistent) {
 		hdr->dmaster = params->ctdb->pnn;
-	} else {
-		/*
-		 * Clear the lacount field that had been misused
-		 * when pulling the db in order to keep track of
-		 * whether the node had a transaction running.
-		 */
-		hdr->lacount = 0;
 	}
 
 	/* add the record to the blob ready to send to the nodes */
@@ -1372,6 +1325,23 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
 		return -1;
 	}
+
+	/*
+	  update all nodes to have the same flags that we have
+	 */
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+			return -1;
+		}
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
 	/* pick a new generation number */
 	generation = new_generation();

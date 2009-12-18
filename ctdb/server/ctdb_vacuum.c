@@ -435,7 +435,9 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 		return -1;
 	}
 
-	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb), TDB_INTERNAL, O_RDWR|O_CREAT, 0);
+	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb),
+			  TDB_INTERNAL|TDB_DISALLOW_NESTING,
+			  O_RDWR|O_CREAT, 0);
 	if (tmp_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create tmp_db\n"));
 		tdb_transaction_cancel(tdb);
@@ -514,17 +516,22 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 	struct vacuum_tuning_data tdata;
 	struct vacuum_tuning_data *tptr;
 	char *vac_dbname;
+	int flags;
 
 	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u",
-					ctdb_db->ctdb->db_directory, 
-					TUNINGDBNAME, ctdb_db->ctdb->pnn);
+				     ctdb_db->ctdb->db_directory_state,
+				     TUNINGDBNAME, ctdb_db->ctdb->pnn);
 	if (vac_dbname == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory error while allocating '%s'\n", vac_dbname));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	tune_tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
+	flags  = ctdb_db->ctdb->valgrinding ? TDB_NOMMAP : 0;
+	flags |= TDB_DISALLOW_NESTING;
+	tune_tdb = tdb_open(vac_dbname, 0,
+			    flags,
+			    O_RDWR|O_CREAT, 0600);
 	if (tune_tdb == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
 		talloc_free(tmp_ctx);
@@ -677,6 +684,7 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 	char *vac_dbname;
 	uint interval = ctdb_db->ctdb->tunable.vacuum_default_interval;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	int flags;
 
 	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u", ctdb->db_directory, TUNINGDBNAME, ctdb->pnn);
 	if (vac_dbname == NULL) {
@@ -685,7 +693,11 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 		return interval;
 	}
 
-	tdb = tdb_open(vac_dbname, 0, 0, O_RDWR|O_CREAT, 0644);
+	flags  = ctdb_db->ctdb->valgrinding ? TDB_NOMMAP : 0;
+	flags |= TDB_DISALLOW_NESTING;
+	tdb = tdb_open(vac_dbname, 0,
+		       flags,
+		       O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval\n", vac_dbname));
 		talloc_free(tmp_ctx);

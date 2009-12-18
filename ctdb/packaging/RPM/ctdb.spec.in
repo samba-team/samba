@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.108
+Version: 1.0.110
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -123,6 +123,22 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
 
 %changelog
+* Fri Dec 18 2009 : Version 1.0.110
+ - Metxe: fix for filedescriptor leak in the new eventscript code.
+ - Rusty: fix for a crash bug in the eventscript code.
+* Thu Dec 17 2009 : Version 1.0.109
+ - Massive eventscript updates. (bz58828)
+ - Nice the daemon instead of using realtime scheduler, also use mlockall() to
+   reduce the risk of blockign due to paging.
+ - Workarounds for valgrind when forking once for each script. Valgrind consumes
+   massive cpu when terminating the scripts on virtual systems.
+ - Sync the tdb library with upstream, and use the new TDB_DISALLOW_NESTING flag.
+ - Add new command "ctdb dumpdbbackup"
+ - Start using the new tdb check framework to validate tdb files upon startup.
+ - A new framework where we can control health for individual tdb databases.
+ - Fix a crash bug in the logging code.
+ - New transaction code for persistent databases.
+ - Various other smaller fixes.
 * Mon Dec 7 2009 : Version 1.0.108
  - Transaction updates from Michael Adam.
  - Use the new wbinfo --ping-dc instead of -p in the eventscript for samba
