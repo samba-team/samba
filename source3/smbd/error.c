@@ -132,6 +132,10 @@ void reply_openerror(struct smb_request *req, NTSTATUS status)
 		 */
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_COLLISION,
 			ERRDOS, ERRfilexists);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_TOO_MANY_OPENED_FILES)) {
+		/* EMFILE always seems to be returned as a DOS error.
+		 * See bug 6837. */
+		reply_doserror(req, ERRDOS, ERRnofids);
 	} else {
 		reply_nterror(req, status);
 	}
