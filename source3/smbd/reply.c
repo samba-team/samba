@@ -3338,7 +3338,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS,ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBread);
 		return;
 	}
@@ -3420,7 +3420,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return;
 	}
 
@@ -3618,7 +3618,7 @@ void reply_read_and_X(struct smb_request *req)
 	}
 
 	if (!CHECK_READ(fsp,req)) {
-		reply_doserror(req, ERRDOS,ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBreadX);
 		return;
 	}
@@ -3786,7 +3786,7 @@ void reply_writebraw(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
 		return;
@@ -3983,7 +3983,7 @@ void reply_writeunlock(struct smb_request *req)
 		    &lock);
 
 		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-			reply_doserror(req, ERRDOS, ERRlock);
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwriteunlock);
 			return;
 		}
@@ -4103,7 +4103,7 @@ void reply_write(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBwrite);
 		return;
 	}
@@ -4334,7 +4334,7 @@ void reply_write_and_X(struct smb_request *req)
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
@@ -4371,7 +4371,7 @@ void reply_write_and_X(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
@@ -4611,7 +4611,7 @@ void reply_close(struct smb_request *req)
 	 */
 
 	if(!fsp || (fsp->conn != conn) || (fsp->vuid != req->vuid)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		END_PROFILE(SMBclose);
 		return;
 	}
@@ -4706,7 +4706,7 @@ void reply_writeclose(struct smb_request *req)
 		    &lock);
 
 		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-			reply_doserror(req, ERRDOS,ERRlock);
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwriteclose);
 			return;
 		}
