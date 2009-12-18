@@ -87,8 +87,15 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 {
 	struct ctdb_event_script_state *state
 		= talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script_wire *current = get_current_script(state);
+	struct ctdb_script_wire *current;
 	unsigned int slen, min;
+
+	/* We may have been aborted to run something else.  Discard */
+	if (state->scripts == NULL) {
+		return;
+	}
+
+	current = get_current_script(state);
 
 	/* Append, but don't overfill buffer.  It starts zero-filled. */
 	slen = strlen(current->output);
