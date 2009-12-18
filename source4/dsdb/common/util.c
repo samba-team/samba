@@ -997,6 +997,32 @@ int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_m
 }
 
 /*
+ * Handle ldb_request in transaction
+ */
+static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
+				 struct ldb_request *req)
+{
+	int ret;
+
+	ret = ldb_transaction_start(sam_ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(sam_ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		return ldb_transaction_commit(sam_ldb);
+	}
+	ldb_transaction_cancel(sam_ldb);
+
+	return ret;
+}
+
+/*
   return a default security descriptor
 */
 struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ctx)
