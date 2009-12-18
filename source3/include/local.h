@@ -56,7 +56,25 @@
 #define SYSLOG_FACILITY LOG_DAEMON
 #endif
 
-/* 
+/*
+ * Fudgefactor required for open tdb's, etc.
+ */
+
+#ifndef MAX_OPEN_FUDGEFACTOR
+#define MAX_OPEN_FUDGEFACTOR 20
+#endif
+
+/*
+ * Minimum number of open files needed for Windows7 to
+ * work correctly. A little conservative but better that
+ * than run out of fd's.
+ */
+
+#ifndef MIN_OPEN_FILES_WINDOWS
+#define MIN_OPEN_FILES_WINDOWS 16384
+#endif
+
+/*
  * Default number of maximum open files per smbd. This is
  * also limited by the maximum available file descriptors
  * per process and can also be set in smb.conf as "max open files"
@@ -64,9 +82,9 @@
  */
 
 #ifndef MAX_OPEN_FILES
-#define MAX_OPEN_FILES 10000
+#define MAX_OPEN_FILES (MIN_OPEN_FILES_WINDOWS + MAX_OPEN_FUDGEFACTOR)
 #endif
- 
+
 #define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */
