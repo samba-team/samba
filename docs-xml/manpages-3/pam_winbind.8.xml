@@ -62,7 +62,9 @@
 		file situated at
 		<filename>/etc/security/pam_winbind.conf</filename>. Options
 		from the PAM configuration file take precedence to those from
-		the configuration file.
+		the configuration file. See
+		<citerefentry><refentrytitle>pam_winbind.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		for further details.
 
 		<variablelist>
 
@@ -231,6 +233,8 @@
 <refsect1>
 	<title>SEE ALSO</title>
 	<para><citerefentry>
+	<refentrytitle>pam_winbind.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry>
 	<refentrytitle>wbinfo</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, <citerefentry>
 	<refentrytitle>winbindd</refentrytitle>
