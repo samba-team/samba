@@ -894,6 +894,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         samdb.set_domain_sid(str(domainsid))
         if serverrole == "domain controller":
             samdb.set_invocation_id(invocationid)
+        # NOTE: the invocationid for standalone and member server
+        # cases is setup in the sambd_dsdb module init function
 
         message("Adding DomainDN: %s" % names.domaindn)
 
