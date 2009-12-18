@@ -7,7 +7,6 @@
 #include "tdb.h"
 #include "idtree.h"
 #include "ctdb.h"
-#include "lib/util/debug.h"
 
 typedef bool BOOL;
 
@@ -33,6 +32,8 @@ enum debug_level {
 #define DEBUGADD(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug_add x; }} while (0)
 
 #define _PUBLIC_
+#define _NORETURN_
+#define _PURE_
 
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
@@ -55,3 +56,5 @@ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_
 _PUBLIC_ const char **str_list_add(const char **list, const char *s);
 _PUBLIC_ int set_blocking(int fd, BOOL set);
 
+#include "lib/util/debug.h"
+#include "lib/util/util.h"
