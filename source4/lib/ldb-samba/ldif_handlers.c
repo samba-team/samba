@@ -892,6 +892,7 @@ static const struct {
 	{ "fRSVersionGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "fRSReplicaSetGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "msDS-OptionalFeatureGUID",	LDB_SYNTAX_SAMBA_GUID },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP },
 	{ "repsFrom",                   LDB_SYNTAX_SAMBA_REPSFROMTO },
