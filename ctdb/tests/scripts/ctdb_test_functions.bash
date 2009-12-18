@@ -937,6 +937,17 @@ ctdb_test_eventscript_unhealthy_detected ()
     ctdb_test_eventscript_file_${cmd} "$pnn" "unhealthy-detected"
 }
 
+# Handle a trigger that causes 99.ctdb_test to timeout it's monitor
+# event.  This should cause the node to be banned.
+ctdb_test_eventscript_timeout_trigger ()
+{
+    local cmd="$1"
+    local pnn="$2"
+    local event="$3"
+
+    ctdb_test_eventscript_file_${cmd} "$pnn" "${event}-timeout"
+}
+
 # Note that the eventscript can't use the above functions!
 ctdb_test_eventscript_install ()
 {
@@ -949,16 +960,28 @@ rm -vf "/tmp/ctdb-test-flag-${1}.${pnn}"
 
 trigger="/tmp/ctdb-test-unhealthy-trigger.${pnn}"
 detected="/tmp/ctdb-test-unhealthy-detected.${pnn}"
-if [ "$1" = "monitor" ] ; then
-    if [ -e "$trigger" ] ; then
-        echo "${0}: Unhealthy because \"$trigger\" detected"
-        touch "$detected"
-        exit 1
-    elif [ -e "$detected" -a ! -e "$trigger" ] ; then
-        echo "${0}: Healthy again, \"$trigger\" no longer detected"
-        rm "$detected"
-    fi
-fi
+timeout_trigger="/tmp/ctdb-test-${1}-timeout.${pnn}"
+case "$1" in
+    monitor)
+        if [ -e "$trigger" ] ; then
+            echo "${0}: Unhealthy because \"$trigger\" detected"
+            touch "$detected"
+            exit 1
+        elif [ -e "$detected" -a ! -e "$trigger" ] ; then
+            echo "${0}: Healthy again, \"$trigger\" no longer detected"
+            rm "$detected"
+        fi
+	
+	;;
+    *)
+        if [ -e "$timeout_trigger" ] ; then
+            echo "${0}: Sleeping for a long time because \"$timeout_trigger\" detected"
+            sleep 9999
+        fi
+	;;
+	*)
+	
+esac
 
 exit 0
 '
@@ -976,7 +999,7 @@ wait_for_monitor_event ()
 {
     local pnn="$1"
 
-    echo "Waiting for a monitor event on node $pnn to complete..."
+    echo "Waiting for a monitor event on node ${pnn}..."
     ctdb_test_eventscript_flag create $pnn "monitor"
 
     wait_until 120 ! ctdb_test_eventscript_flag exists $pnn "monitor"
