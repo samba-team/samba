@@ -17,6 +17,58 @@ loadconfig
 	exit 0
 }
 
+add_ip_to_iface()
+{
+	local _iface=$1
+	local _ip=$2
+	local _maskbits=$3
+
+	# we make sure the interface is up first
+	/sbin/ip link set $_iface up || {
+		echo "Failed to bringup interface $_iface"
+		return 1;
+	}
+	/sbin/ip addr add $_ip/$_maskbits brd + dev $_iface || {
+		echo "Failed to add $_ip/$_maskbits on dev $_iface"
+		return 1;
+	}
+
+	return 0;
+}
+
+delete_ip_from_iface()
+{
+	local _iface=$1
+	local _ip=$2
+	local _maskbits=$3
+
+	# the ip tool will delete all secondary IPs if this is the primary. To work around
+	# this _very_ annoying behaviour we have to keep a record of the secondaries and re-add
+	# them afterwards. yuck
+	local _secondaries=""
+	if /sbin/ip addr list dev $_iface primary | grep -q "inet $_ip/$_maskbits " ; then
+	    _secondaries=`/sbin/ip addr list dev $_iface secondary | grep " inet " | awk '{print $2}'`
+	fi
+	local _failed=0
+	/sbin/ip addr del $_ip/$_maskbits dev $_iface || _failed=1
+	[ -z "$_secondaries" ] || {
+	    local _i=""
+	    for _i in $_secondaries; do
+		if /sbin/ip addr list dev $_iface | grep -q "inet $_i" ; then
+		    echo "kept secondary $_i on dev $_iface"
+		else
+		    echo "re-adding secondary address $_i to dev $_iface"
+		    /sbin/ip addr add $_i dev $_iface || _failed=1
+		fi
+	    done
+	}
+	[ $_failed = 0 ] || {
+		echo "Failed to del $_ip on dev $_iface"
+		return 1;
+	}
+	return 0;
+}
+
 case "$1" in 
      #############################
      # called when ctdbd starts up
@@ -49,14 +101,10 @@ case "$1" in
 	ip=$3
 	maskbits=$4
 
-	# we make sure the interface is up first
-	/sbin/ip link set $iface up || {
-		 echo "Failed to bringup interface $iface"
-		 exit 1
+	add_ip_to_iface $iface $ip $maskbits || {
+		exit 1;
 	}
-	/sbin/ip addr add $ip/$maskbits brd + dev $iface || {
-		 echo "Failed to add $ip/$maskbits on dev $iface"
-	}
+
 	# cope with the script being killed while we have the interface blocked
 	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
@@ -93,29 +141,12 @@ case "$1" in
 	iptables -I INPUT -i $iface -d $ip -j DROP
 	kill_tcp_connections $ip
 
-	# the ip tool will delete all secondary IPs if this is the primary. To work around
-	# this _very_ annoying behaviour we have to keep a record of the secondaries and re-add
-	# them afterwards. yuck
-	secondaries=""
-	if /sbin/ip addr list dev $iface primary | grep -q "inet $ip/$maskbits " ; then
-	    secondaries=`/sbin/ip addr list dev $iface secondary | grep " inet " | awk '{print $2}'`
-	fi
-	/sbin/ip addr del $ip/$maskbits dev $iface || failed=1
-	[ -z "$secondaries" ] || {
-	    for i in $secondaries; do
-		if /sbin/ip addr list dev $iface | grep -q "inet $i" ; then
-		    echo "kept secondary $i on dev $iface"
-		else 
-		    echo "re-adding secondary address $i to dev $iface"
-		    /sbin/ip addr add $i dev $iface || failed=1		
-		fi
-	    done
+	delete_ip_from_iface $iface $ip $maskbits || {
+		iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+		exit 1;
 	}
+
 	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
-	[ $failed = 0 ] || {
-		 echo "Failed to del $ip on dev $iface"
-		 exit 1
-	}
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
