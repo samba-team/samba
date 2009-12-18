@@ -861,7 +861,12 @@ static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy
 	},{
-		.name		  = "RMD_USN",
+		.name		  = "RMD_LOCAL_USN",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_ORIGINATING_USN",
 		.read_fn          = ldb_handler_copy,
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy

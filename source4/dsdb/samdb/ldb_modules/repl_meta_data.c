@@ -1172,12 +1172,13 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 /*
   build a new extended DN, including all meta data fields
 
-  DELETED        = 1 or missing
-  RMD_ADDTIME    = originating_add_time
-  RMD_INVOCID    = originating_invocation_id
-  RMD_CHANGETIME = originating_change_time
-  RMD_USN        = originating_usn
-  RMD_VERSION    = version
+  DELETED             = 1 or missing
+  RMD_ADDTIME         = originating_add_time
+  RMD_INVOCID         = originating_invocation_id
+  RMD_CHANGETIME      = originating_change_time
+  RMD_ORIGINATING_USN = originating_usn
+  RMD_LOCAL_USN       = local_usn
+  RMD_VERSION         = version
  */
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num, time_t t)
@@ -1221,7 +1222,9 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	if (ret != LDB_SUCCESS) return ret;
 	ret = ldb_dn_set_extended_component(dn, "RMD_CHANGETIME", &tval);
 	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_USN", &usnv);
+	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &usnv);
+	if (ret != LDB_SUCCESS) return ret;
+	ret = ldb_dn_set_extended_component(dn, "RMD_ORIGINATING_USN", &usnv);
 	if (ret != LDB_SUCCESS) return ret;
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
 	if (ret != LDB_SUCCESS) return ret;
@@ -1303,7 +1306,10 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* update the USN */
-	ret = ldb_dn_set_extended_component(dn, "RMD_USN", &usnv);
+	ret = ldb_dn_set_extended_component(dn, "RMD_ORIGINATING_USN", &usnv);
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &usnv);
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* increase the version by 1 */
