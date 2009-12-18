@@ -206,9 +206,11 @@ static int ldb_mod_req_with_controls(struct ldb_context *ldb,
 	}
 
 	if (ret == LDB_SUCCESS) {
-		return ldb_transaction_commit(ldb);
+		ret = ldb_transaction_commit(ldb);
 	}
-	ldb_transaction_cancel(ldb);
+	else {
+		ldb_transaction_cancel(ldb);
+	}
 
 	talloc_free(req);
 	return ret;
