@@ -128,15 +128,6 @@ static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		}
 
 		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, a, msg->elements, e);
-		if (!NT_STATUS_IS_OK(status) && a->value_ctr.num_values == 0) {
-			/* w2k8-r2 occasionally sends bogus empty
-			   attributes with rubbish attribute IDs. The
-			   only think we can do is discard these */
-			DEBUG(0,(__location__ ": Discarding bogus empty DsReplicaAttribute with attid 0x%x\n",
-				 a->attid));
-			ZERO_STRUCTP(e);
-			continue;
-		}
 		W_ERROR_NOT_OK_RETURN(status);
 
 		m->attid			= a->attid;
@@ -154,14 +145,6 @@ static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			name_a = a;
 			name_d = d;
 			rdn_m = &md->ctr.ctr1.array[md->ctr.ctr1.count];
-		}
-	}
-
-	/* delete any empty elements */
-	for (i=0; i < msg->num_elements; i++) {
-		if (msg->elements[i].name == NULL) {
-			ldb_msg_remove_element(msg, &msg->elements[i]);
-			i--;
 		}
 	}
 
