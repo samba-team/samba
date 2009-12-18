@@ -30,9 +30,35 @@ bool use_nt_status(void)
 
 /****************************************************************************
  Create an error packet. Normally called using the ERROR() macro.
- Setting eclass and ecode only and status to NT_STATUS_OK forces DOS errors.
- Setting status only and eclass and ecode to zero forces NT errors.
- If the override errors are set they take precedence over any passed in values.
+
+ Setting eclass and ecode to zero and status to a valid NT error will
+ reply with an NT error if the client supports CAP_STATUS32, otherwise
+ it maps to and returns a DOS error if the client doesn't support CAP_STATUS32.
+ This is the normal mode of calling this function via reply_nterror(req, status).
+
+ Setting eclass and ecode to non-zero and status to NT_STATUS_OK (0) will map
+ from a DOS error to an NT error and reply with an NT error if the client
+ supports CAP_STATUS32, otherwise it replies with the given DOS error.
+ This is the path taken by calling reply_doserror(req, eclass, ecode).
+
+ Setting both eclass, ecode and status to non-zero values allows a non-default
+ mapping from NT error codes to DOS error codes, and will return one or the
+ other depending on the client supporting CAP_STATUS32 or not. This is the
+ path taken by calling reply_botherror(req, eclass, ecode, status);
+
+ Setting status to NT_STATUS_DOS(eclass, ecode) forces DOS errors even if the
+ client supports CAP_STATUS32. This is the path taken to force a DOS error
+ reply by calling reply_nterror(req, NT_STATUS_DOS(eclass, ecode)).
+ This is *very* unintuitive and the code should be changed so all
+ current callers of reply_doserror() which don't care if they return NTSTATUS
+ or DOS errors are changed to call reply_nterror() instead.
+ reply_doserror() should then be changed to return DOS errors only and
+ replace all current callers of reply_nterror(req, NT_STATUS_DOS(eclass, ecode)).
+ I'll update this comment once the conversion is done. JRA.
+
+ Setting status only and eclass to -1 forces NT errors even if the client
+ doesn't support CAP_STATUS32. This mode is currently never used in the
+ server.
 ****************************************************************************/
 
 void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
@@ -95,21 +121,22 @@ void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 	error_packet_set((char *)req->outbuf, 0, 0, ntstatus, line, file);
 }
 
-void reply_force_nt_error(struct smb_request *req, NTSTATUS ntstatus,
-			  int line, const char *file)
-{
-	TALLOC_FREE(req->outbuf);
-	reply_outbuf(req, 0, 0);
-	error_packet_set((char *)req->outbuf, -1, -1, ntstatus, line, file);
-}
+/****************************************************************************
+ NB. This DOES NOT FORCE A DOS ERROR on the wire (although it
+ probably should, I'm moving the rest of the Samba code towards that
+ meaning. JRA.
+****************************************************************************/
 
 void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		    int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);
 	reply_outbuf(req, 0, 0);
-	error_packet_set((char *)req->outbuf, eclass, ecode, NT_STATUS_OK, line,
-			 file);
+	error_packet_set((char *)req->outbuf,
+			eclass, ecode,
+			NT_STATUS_OK,
+			line,
+			file);
 }
 
 void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
@@ -134,8 +161,9 @@ void reply_openerror(struct smb_request *req, NTSTATUS status)
 			ERRDOS, ERRfilexists);
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_TOO_MANY_OPENED_FILES)) {
 		/* EMFILE always seems to be returned as a DOS error.
-		 * See bug 6837. */
-		reply_doserror(req, ERRDOS, ERRnofids);
+		 * See bug 6837. NOTE this forces a DOS error on the wire
+		 * even though it's calling reply_nterror(). */
+		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnofids));
 	} else {
 		reply_nterror(req, status);
 	}
