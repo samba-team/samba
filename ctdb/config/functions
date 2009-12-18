@@ -307,6 +307,36 @@ kill_tcp_connections_local_only() {
     echo "killed $_killcount TCP connections to released IP $_IP"
 }
 
+##################################################################
+# tickle any TCP connections with the given IP
+##################################################################
+tickle_tcp_connections() {
+    _IP="$1"
+    _failed=0
+
+    _killcount=0
+    connfile="$CTDB_BASE/state/connections.$_IP"
+    netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
+    netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
+
+    while read dest src; do
+	srcip=`echo $src | sed -e "s/:[^:]*$//"`
+	srcport=`echo $src | sed -e "s/^.*://"`
+	destip=`echo $dest | sed -e "s/:[^:]*$//"`
+	destport=`echo $dest | sed -e "s/^.*://"`
+	echo "Tickle TCP connection $srcip:$srcport $destip:$destport"
+	ctdb tickle $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
+	echo "Tickle TCP connection $destip:$destport $srcip:$srcport"
+	ctdb tickle $destip:$destport $srcip:$srcport >/dev/null 2>&1 || _failed=1
+     done < $connfile
+    /bin/rm -f $connfile
+
+    [ $_failed = 0 ] || {
+	echo "Failed to send tickle control"
+	return;
+    }
+}
+
 ########################################################
 # start/stop the nfs service on different platforms
 ########################################################
