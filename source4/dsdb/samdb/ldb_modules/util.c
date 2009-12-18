@@ -164,14 +164,20 @@ int dsdb_module_search(struct ldb_module *module,
 		       struct ldb_dn *basedn, enum ldb_scope scope, 
 		       const char * const *attrs,
 		       int dsdb_flags, 
-		       const char *expression)
+		       const char *format, ...) _PRINTF_ATTRIBUTE(8, 9)
 {
 	int ret;
 	struct ldb_request *req;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
+	va_list ap;
+	char *expression;
 
 	tmp_ctx = talloc_new(mem_ctx);
+
+	va_start(ap, format);
+	expression = talloc_vasprintf(tmp_ctx, format, ap);
+	va_end(ap);
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
