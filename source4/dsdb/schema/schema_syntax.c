@@ -1183,7 +1183,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		ZERO_STRUCT(id3);
 
-		status = dsdb_get_extended_dn_guid(dn, &id3.guid);
+		status = dsdb_get_extended_dn_guid(dn, &id3.guid, "GUID");
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			talloc_free(tmp_ctx);
@@ -1367,7 +1367,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		ZERO_STRUCT(id3);
 
-		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &id3.guid);
+		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &id3.guid, "GUID");
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			talloc_free(tmp_ctx);

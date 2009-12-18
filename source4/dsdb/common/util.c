@@ -2797,11 +2797,11 @@ int dsdb_functional_level(struct ldb_context *ldb)
 /*
   return a GUID from a extended DN structure
  */
-NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid)
+NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid, const char *component_name)
 {
 	const struct ldb_val *v;
 
-	v = ldb_dn_get_extended_component(dn, "GUID");
+	v = ldb_dn_get_extended_component(dn, component_name);
 	if (v == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
