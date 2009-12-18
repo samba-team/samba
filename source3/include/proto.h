@@ -6277,8 +6277,6 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file);
 void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 		    int line, const char *file);
-void reply_force_nt_error(struct smb_request *req, NTSTATUS ntstatus,
-			  int line, const char *file);
 void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		    int line, const char *file);
 void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
