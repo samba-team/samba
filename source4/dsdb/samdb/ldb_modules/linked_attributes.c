@@ -72,7 +72,8 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		ret = dsdb_module_search_dn(module, tmp_ctx, &res, dsdb_dn->dn,
 					    attrs,
 					    DSDB_SEARCH_SHOW_DELETED |
-					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
+					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+					    DSDB_SEARCH_REVEAL_INTERNALS);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - remote not found - %s",
 					       el->name, target->lDAPDisplayName,
