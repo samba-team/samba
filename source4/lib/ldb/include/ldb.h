@@ -477,6 +477,12 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_REVEAL_INTERNALS "1.3.6.1.4.1.7165.4.3.6"
 
+/**
+   LDB_CONTROL_AS_SYSTEM is used to skip access checks on operations
+   that are performed by the system, but with a user's credentials, e.g.
+   updating prefix map
+*/
+#define LDB_CONTROL_AS_SYSTEM_OID "1.3.6.1.4.1.7165.4.3.7"
 
 /**
    OID for the paged results control. This control is included in the
