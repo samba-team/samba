@@ -354,6 +354,8 @@ static void start_test_index(struct ldb_context **ldb)
 	}
 
 	basedn = ldb_dn_new(*ldb, *ldb, options->basedn);
+	msg->dn = basedn;
+	ldb_dn_add_child_fmt(msg->dn, "cn=test");
 
 	ret = ldb_search(*ldb, *ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, "uid=test");
 	if (ret != LDB_SUCCESS) { 
