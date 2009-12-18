@@ -155,8 +155,6 @@ void file_close_pid(uint16 smbpid, int vuid)
  Initialise file structures.
 ****************************************************************************/
 
-#define MAX_OPEN_FUDGEFACTOR 20
-
 void file_init(void)
 {
 	int request_max_open_files = lp_max_open_files();

@@ -4692,6 +4692,22 @@ static int max_open_files(void)
 #endif
 #endif
 
+	if (sysctl_max < MIN_OPEN_FILES_WINDOWS) {
+		DEBUG(2,("max_open_files: sysctl_max (%d) below "
+			"minimum Windows limit (%d)\n",
+			sysctl_max,
+			MIN_OPEN_FILES_WINDOWS));
+		sysctl_max = MIN_OPEN_FILES_WINDOWS;
+	}
+
+	if (rlimit_max < MIN_OPEN_FILES_WINDOWS) {
+		DEBUG(2,("rlimit_max: rlimit_max (%d) below "
+			"minimum Windows limit (%d)\n",
+			rlimit_max,
+			MIN_OPEN_FILES_WINDOWS));
+		rlimit_max = MIN_OPEN_FILES_WINDOWS;
+	}
+
 	return MIN(sysctl_max, rlimit_max);
 }
 
