@@ -612,7 +612,10 @@ static bool must_mangle(const char *name,
 	}
 	status = is_valid_name(name_ucs2, False, False);
 	SAFE_FREE(name_ucs2);
-	return NT_STATUS_IS_OK(status);
+	/* We return true if we *must* mangle, so if it's
+	 * a valid name (status == OK) then we must return
+	 * false. Bug #6939. */
+	return !NT_STATUS_IS_OK(status);
 }
 
 /*****************************************************************************
