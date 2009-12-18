@@ -643,6 +643,7 @@ static bool test_async(struct torture_context *tctx,
 	/* cleanup the second lock */
 	io.lockx.in.ulock_cnt = 1;
 	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.locks = &lock[1];
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
