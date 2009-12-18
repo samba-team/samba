@@ -73,7 +73,7 @@ smb.conf changes
 New configure options
 ---------------------
 
---enable-external-libtalloc	Enable external tdb
+--enable-external-libtdb	Enable external tdb
 --enable-netapi			Turn on netapi support
 --enable-pthreadpool		Enable pthreads pool helper support
 --with-cifsumount		Include umount.cifs (Linux only) support
