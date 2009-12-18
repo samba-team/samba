@@ -42,7 +42,7 @@ echo "$out" |
 while read var x val ; do
     try_command_on_node 0 "$CTDB getvar $var"
 
-    val2=$(echo $out | sed -e 's@.*[[:space:]]@@')
+    val2="${out#*= }"
 
     if [ "$val" != "$val2" ] ; then
 	echo "MISMATCH on $var: $val != $val2"
