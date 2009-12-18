@@ -310,7 +310,7 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 		return WERR_NOMEM;
  	}
  
-	ldb_ret = samdb_replace( ldb, msg, msg );
+	ldb_ret = samdb_replace_as_system(ldb, temp_ctx, msg);
 
 	talloc_free(temp_ctx);
 
