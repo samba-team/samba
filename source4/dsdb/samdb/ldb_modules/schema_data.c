@@ -92,6 +92,37 @@ struct schema_data_search_data {
 	const struct dsdb_schema *schema;
 };
 
+/* context to be used during async operations */
+struct schema_data_context {
+	struct ldb_module *module;
+	struct ldb_request *req;
+
+	const struct dsdb_schema *schema;
+};
+
+/* Create new context using
+ * ldb_request as memory context */
+static int _schema_data_context_new(struct ldb_module *module,
+				    struct ldb_request *req,
+				    struct schema_data_context **pac)
+{
+	struct schema_data_context *ac;
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
+
+	*pac = ac = talloc_zero(req, struct schema_data_context);
+	if (ac == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ac->module = module;
+	ac->req = req;
+	ac->schema = dsdb_get_schema(ldb);
+
+	return LDB_SUCCESS;
+}
+
 static int schema_data_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
@@ -130,6 +161,57 @@ static int schema_data_init(struct ldb_module *module)
 
 	ldb_module_set_private(module, data);
 	return LDB_SUCCESS;
+}
+
+
+/* Generate new value for msDs-IntId
+ * Value should be in 0x80000000..0xBFFFFFFF range
+ * Generated value is added ldb_msg */
+static int _schema_data_gen_msds_intid(struct schema_data_context *ac,
+				       struct ldb_message *ldb_msg)
+{
+	uint32_t id;
+
+	/* generate random num in 0x80000000..0xBFFFFFFF */
+	id = generate_random() % 0X3FFFFFFF;
+	id += 0x80000000;
+
+	/* make sure id is unique and adjust if not */
+	while (dsdb_attribute_by_attributeID_id(ac->schema, id)) {
+		id++;
+		if (id > 0xBFFFFFFF) {
+			id = 0x80000001;
+		}
+	}
+
+	/* add generated msDS-IntId value to ldb_msg */
+	return ldb_msg_add_fmt(ldb_msg, "msDS-IntId", "%d", id);
+}
+
+static int _schema_data_add_callback(struct ldb_request *req,
+				     struct ldb_reply *ares)
+{
+	struct schema_data_context *ac;
+
+	ac = talloc_get_type(req->context, struct schema_data_context);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	return ldb_module_done(ac->req, ares->controls,
+				ares->response, ares->error);
 }
 
 static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
@@ -187,23 +269,60 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-		
+
 	status = dsdb_schema_pfm_find_oid(schema->prefixmap, oid, NULL);
-	if (W_ERROR_IS_OK(status)) {
-		return ldb_next_request(module, req);
-	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			  "schema_data_add: failed to map %s[%s]: %s\n",
-			  oid_attr, oid, win_errstr(status));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+	if (!W_ERROR_IS_OK(status)) {
+		/* check for internal errors */
+		if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			              "schema_data_add: failed to map %s[%s]: %s\n",
+			              oid_attr, oid, win_errstr(status));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		/* Update prefixMap and save it */
+		status = dsdb_create_prefix_mapping(ldb, schema, oid);
+		if (!W_ERROR_IS_OK(status)) {
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+				  "schema_data_add: failed to create prefix mapping for %s[%s]: %s\n",
+				  oid_attr, oid, win_errstr(status));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 
-	status = dsdb_create_prefix_mapping(ldb, schema, oid);
-	if (!W_ERROR_IS_OK(status)) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			  "schema_data_add: failed to create prefix mapping for %s[%s]: %s\n",
-			  oid_attr, oid, win_errstr(status));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+	/* generate and add msDS-IntId attr value */
+	if (attributeID
+	    && (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2003)
+	    && !(ldb_msg_find_attr_as_uint(req->op.add.message, "systemFlags", 0) & SYSTEM_FLAG_SCHEMA_BASE_OBJECT)) {
+		struct ldb_message *msg;
+		struct schema_data_context *ac;
+		struct ldb_request *add_req;
+
+		if (_schema_data_context_new(module, req, &ac) != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* we have to copy the message as the caller might have it as a const */
+		msg = ldb_msg_copy_shallow(ac, req->op.add.message);
+		if (msg == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* generate unique value for msDS-IntId attr value */
+		if (_schema_data_gen_msds_intid(ac, msg) != LDB_SUCCESS) {
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			              "_schema_data_gen_msds_intid() failed to generate msDS-IntId value\n");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ldb_build_add_req(&add_req, ldb, ac,
+				  msg,
+				  req->controls,
+				  ac, _schema_data_add_callback,
+				  req);
+
+		return ldb_next_request(module, add_req);
 	}
 
 	return ldb_next_request(module, req);
