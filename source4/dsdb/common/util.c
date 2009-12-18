@@ -2735,6 +2735,49 @@ NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid)
 }
 
 /*
+  return a NTTIME from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_nttime(struct ldb_dn *dn, NTTIME *nttime, const char *component_name)
+{
+	const struct ldb_val *v;
+	char *s;
+
+	v = ldb_dn_get_extended_component(dn, component_name);
+	if (v == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	s = talloc_strndup(dn, (const char *)v->data, v->length);
+	NT_STATUS_HAVE_NO_MEMORY(s);
+
+	*nttime = strtoull(s, NULL, 0);
+
+	talloc_free(s);
+	return NT_STATUS_OK;
+}
+
+/*
+  return a uint32_t from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const char *component_name)
+{
+	const struct ldb_val *v;
+	char *s;
+
+	v = ldb_dn_get_extended_component(dn, component_name);
+	if (v == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	s = talloc_strndup(dn, (const char *)v->data, v->length);
+	NT_STATUS_HAVE_NO_MEMORY(s);
+
+	*val = strtoul(s, NULL, 0);
+
+	talloc_free(s);
+	return NT_STATUS_OK;
+}
+
+/*
   return true if a ldb_val containing a DN in storage form is deleted
  */
 bool dsdb_dn_is_deleted_val(struct ldb_val *val)
