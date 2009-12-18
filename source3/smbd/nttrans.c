@@ -580,12 +580,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			/* We have re-scheduled this call, no error. */
 			goto out;
 		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			reply_botherror(req, status, ERRDOS, ERRfilexists);
-		}
-		else {
-			reply_nterror(req, status);
-		}
+		reply_openerror(req, status);
 		goto out;
 	}
 
