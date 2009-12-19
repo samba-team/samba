@@ -87,6 +87,13 @@ int dsdb_request_add_controls(struct ldb_module *module, struct ldb_request *req
 		}
 	}
 
+	if (dsdb_flags & DSDB_MODIFY_RELAX) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_RELAX_OID, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
