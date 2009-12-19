@@ -447,6 +447,7 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	NTTIME now;
 	time_t t = time(NULL);
 	struct replUpToDateVectorBlob ouv;
+	int i;
 
 	werr = load_udv(sam_ctx, udv, ncRoot_dn, &ouv);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -459,13 +460,24 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	unix_to_nt_time(&now, t);
 	tmp_cursor->last_sync_success = now;
 
-	udv->count = ouv.ctr.ctr2.count + 1;
+	udv->count = ouv.ctr.ctr2.count;
 	udv->cursors = talloc_steal(udv, ouv.ctr.ctr2.cursors);
-	udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count);
-	if (!udv->cursors) {
-		return WERR_DS_DRA_INTERNAL_ERROR;
+
+	for (i=0; i<udv->count; i++) {
+		if (GUID_equal(&tmp_cursor->source_dsa_invocation_id,
+			       &udv->cursors[i].source_dsa_invocation_id)) {
+			udv->cursors[i] = *tmp_cursor;
+			break;
+		}
 	}
-	udv->cursors[udv->count - 1] = *tmp_cursor;
+	if (i == udv->count) {
+		udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count+1);
+		if (!udv->cursors) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		udv->cursors[udv->count] = *tmp_cursor;
+		udv->count++;
+	}
 	
 	qsort(udv->cursors, udv->count,
 	      sizeof(struct drsuapi_DsReplicaCursor2),
