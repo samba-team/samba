@@ -504,6 +504,7 @@ static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in
 				break;
 			case 'p':
 				cnk->type = CNK_PTR;
+				cnk->flags |= DP_F_UNSIGNED;
 				break;
 			case 'n':
 				cnk->type = CNK_NUM;
