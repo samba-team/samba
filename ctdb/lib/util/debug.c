@@ -89,10 +89,6 @@ void do_debug_add(const char *format, ...)
 	va_end(ap);
 }
 
-#define DEBUGLVL(lvl) ((lvl) <= LogLevel)
-#define DEBUG(lvl, x) do { this_log_level = (lvl); if ((lvl) < DEBUG_DEBUG) { log_ringbuffer x; } if ((lvl) <= LogLevel) { do_debug x; }} while (0)
-#define DEBUGADD(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug_add x; }} while (0)
-
 static void print_asc(int level, const uint8_t *buf, size_t len)
 {
 	int i;
