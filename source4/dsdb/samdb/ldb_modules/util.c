@@ -232,22 +232,15 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 {
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
-	char *expression;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
-
-	expression = talloc_asprintf(tmp_ctx, "objectGUID=%s", GUID_string(tmp_ctx, guid));
-	if (!expression) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 attrs,
 				 DSDB_SEARCH_SHOW_DELETED |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
-				 expression);
+				 "objectGUID=%s", GUID_string(tmp_ctx, guid));
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -257,8 +250,8 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	if (res->count != 1) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching %s\n",
-				       expression);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching objectGUID %s\n",
+				       GUID_string(tmp_ctx, guid));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
