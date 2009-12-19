@@ -251,21 +251,15 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		goto process_result;
 	}
 
-	initial = data_blob(state->request->extra_data.data, initial_blob_len);
-	challenge = data_blob(state->request->extra_data.data + initial_blob_len,
-				state->request->data.ccache_ntlm_auth.challenge_blob_len);
+	initial = data_blob_const(state->request->extra_data.data,
+				  initial_blob_len);
+	challenge = data_blob_const(
+		state->request->extra_data.data + initial_blob_len,
+		state->request->data.ccache_ntlm_auth.challenge_blob_len);
 
-	if (!initial.data || !challenge.data) {
-		result = NT_STATUS_NO_MEMORY;
-	} else {
-		result = do_ntlm_auth_with_hashes(name_user, name_domain,
-						entry->lm_hash, entry->nt_hash,
-						initial, challenge, &auth);
-	}
-
-	data_blob_free(&initial);
-	data_blob_free(&challenge);
-
+	result = do_ntlm_auth_with_hashes(name_user, name_domain,
+					  entry->lm_hash, entry->nt_hash,
+					  initial, challenge, &auth);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto process_result;
 	}
