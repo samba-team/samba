@@ -2378,14 +2378,15 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	/* remove any message elements that have zero values */
 	for (i=0; i<msg->num_elements; i++) {
-		if (msg->elements[i].num_values == 0) {
+		struct ldb_message_element *el = &msg->elements[i];
+
+		if (el->num_values == 0) {
 			DEBUG(4,(__location__ ": Removing attribute %s with num_values==0\n",
-				 msg->elements[i].name));
-			memmove(&msg->elements[i], 
-				&msg->elements[i+1], 
-				sizeof(msg->elements[i])*(msg->num_elements - (i+1)));
+				 el->name));
+			memmove(el, el+1, sizeof(*el)*(msg->num_elements - (i+1)));
 			msg->num_elements--;
 			i--;
+			continue;
 		}
 	}
 	
