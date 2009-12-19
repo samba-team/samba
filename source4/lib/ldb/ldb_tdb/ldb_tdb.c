@@ -592,9 +592,12 @@ static int msg_delete_element(struct ldb_module *module,
   yuck - this is O(n^2). Luckily n is usually small so we probably
   get away with it, but if we ever have really large attribute lists
   then we'll need to look at this again
+
+  'req' is optional, and is used to specify controls if supplied
 */
 int ltdb_modify_internal(struct ldb_module *module,
-			 const struct ldb_message *msg)
+			 const struct ldb_message *msg,
+			 struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	void *data = ldb_module_get_private(module);
@@ -731,7 +734,15 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		case LDB_FLAG_MOD_REPLACE:
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				if (el->num_values > 1) {
+				/* the RELAX control overrides this
+				   check for replace. This is needed as
+				   DRS replication can produce multiple
+				   values here for a single valued
+				   attribute when the values are deleted
+				   links
+				*/
+				if (el->num_values > 1 &&
+				    (!req || !ldb_request_get_control(req, LDB_CONTROL_RELAX_OID))) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -852,7 +863,7 @@ static int ltdb_modify(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_modify_internal(module, req->op.mod.message);
+	ret = ltdb_modify_internal(module, req->op.mod.message, req);
 
 	return ret;
 }
