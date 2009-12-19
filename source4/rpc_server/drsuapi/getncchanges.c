@@ -136,6 +136,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
+		const struct dsdb_attribute *sa;
 		/* if the attribute has not changed, and it is not the
 		   instanceType then don't include it */
 		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
@@ -143,6 +144,16 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 		/* don't include the rDN */
 		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
+
+		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+		if (sa->linkID) {
+			struct ldb_message_element *el;
+			el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
+			if (el && el->num_values && dsdb_dn_is_upgraded_link_val(&el->values[0])) {
+				/* don't send upgraded links inline */
+				continue;
+			}
+		}
 
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
@@ -323,6 +334,12 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 
 		if (!sa || sa->linkID == 0 || (sa->linkID & 1)) {
 			/* we only want forward links */
+			continue;
+		}
+
+		if (el->num_values && !dsdb_dn_is_upgraded_link_val(&el->values[0])) {
+			/* its an old style link, it will have been
+			 * sent in the main replication data */
 			continue;
 		}
 
