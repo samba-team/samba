@@ -3566,9 +3566,15 @@ linked_attributes[0]:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_check_single_valued_link(attr, old_el);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s' %s\n",
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_modify(module, msg, DSDB_MODIFY_RELAX);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
 			  ldb_ldif_message_string(ldb, tmp_ctx, LDB_CHANGETYPE_MODIFY, msg));
 		talloc_free(tmp_ctx);

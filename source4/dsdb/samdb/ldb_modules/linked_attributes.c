@@ -116,7 +116,13 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				dsdb_dn_get_extended_linearized(el2->values, dsdb_dn2, 1));
 		}
 
-		ret = dsdb_module_modify(module, msg, 0);
+		ret = dsdb_check_single_valued_link(target, el2);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		ret = dsdb_module_modify(module, msg, DSDB_MODIFY_RELAX);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - update failed - %s",
 					       el->name, target->lDAPDisplayName,
