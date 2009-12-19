@@ -581,7 +581,7 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num,
-			       uint64_t local_usn, NTTIME nttime, bool deleted);
+			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted);
 
 
 /*
@@ -609,7 +609,7 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 		int ret;
 
 		ret = replmd_build_la_val(el->values, v, dsdb_dn, invocationId,
-					  seq_num, seq_num, now, false);
+					  seq_num, seq_num, now, 0, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1188,7 +1188,7 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
  */
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num,
-			       uint64_t local_usn, NTTIME nttime, bool deleted)
+			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
 	const char *tstring, *usn_string;
@@ -1199,6 +1199,7 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
+	char *vstring;
 
 	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
 	if (!tstring) {
@@ -1218,7 +1219,8 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	}
 	local_usnv = data_blob_string_const(usn_string);
 
-	vers = data_blob_string_const("0");
+	vstring = talloc_asprintf(mem_ctx, "%lu", (unsigned long)version);
+	vers = data_blob_string_const(vstring);
 
 	status = GUID_to_ndr_blob(invocation_id, dn, &iid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1257,7 +1259,8 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
-				uint64_t seq_num, uint64_t local_usn, NTTIME nttime, bool deleted);
+				uint64_t seq_num, uint64_t local_usn, NTTIME nttime,
+				uint32_t version, bool deleted);
 
 /*
   check if any links need upgrading from w2k format
@@ -1277,7 +1280,7 @@ static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, con
 
 		/* it's an old one that needs upgrading */
 		ret = replmd_update_la_val(dns, dns[i].v, dns[i].dsdb_dn, dns[i].dsdb_dn, invocation_id,
-					   1, 1, 0, false);
+					   1, 1, 0, 0, false);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1292,7 +1295,8 @@ static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, con
  */
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
-				uint64_t seq_num, uint64_t local_usn, NTTIME nttime, bool deleted)
+				uint64_t seq_num, uint64_t local_usn, NTTIME nttime,
+				uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
 	const char *tstring, *usn_string;
@@ -1300,10 +1304,12 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	struct ldb_val iid;
 	struct ldb_val usnv, local_usnv;
 	struct ldb_val vers;
-	const struct ldb_val *old_addtime, *old_version;
+	const struct ldb_val *old_addtime;
+	uint32_t old_version;
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
+	char *vstring;
 
 	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
 	if (!tstring) {
@@ -1363,19 +1369,12 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* increase the version by 1 */
-	old_version = ldb_dn_get_extended_component(old_dsdb_dn->dn, "RMD_VERSION");
-	if (old_version == NULL) {
-		vers = data_blob_string_const("0");
-	} else {
-		char *vstring;
-		vstring = talloc_strndup(dn, (const char *)old_version->data, old_version->length);
-		if (!vstring) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		vstring = talloc_asprintf(dn, "%lu",
-					  (unsigned long)strtoul(vstring, NULL, 0)+1);
-		vers = data_blob_string_const(vstring);
+	status = dsdb_get_extended_dn_uint32(old_dsdb_dn->dn, &old_version, "RMD_VERSION");
+	if (NT_STATUS_IS_OK(status) && old_version >= version) {
+		version = old_version+1;
 	}
+	vstring = talloc_asprintf(dn, "%lu", (unsigned long)version);
+	vers = data_blob_string_const(vstring);
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
 	if (ret != LDB_SUCCESS) return ret;
 
@@ -1450,7 +1449,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ret = replmd_build_la_val(new_values, &new_values[num_new_values], dns[i].dsdb_dn,
-						  invocation_id, seq_num, seq_num, now, false);
+						  invocation_id, seq_num, seq_num, now, 0, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -1468,7 +1467,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 			}
 			ret = replmd_update_la_val(old_el->values, p->v, dns[i].dsdb_dn, p->dsdb_dn,
-						   invocation_id, seq_num, seq_num, now, false);
+						   invocation_id, seq_num, seq_num, now, 0, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -1601,7 +1600,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		if (v != NULL) continue;
 
 		ret = replmd_update_la_val(old_el->values, p->v, p->dsdb_dn, p->dsdb_dn,
-					   invocation_id, seq_num, seq_num, now, true);
+					   invocation_id, seq_num, seq_num, now, 0, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1703,7 +1702,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		}
 
 		ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn, old_p->dsdb_dn,
-					   invocation_id, seq_num, seq_num, now, true);
+					   invocation_id, seq_num, seq_num, now, 0, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1722,7 +1721,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 			/* update in place */
 			ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn,
 						   old_p->dsdb_dn, invocation_id,
-						   seq_num, seq_num, now, false);
+						   seq_num, seq_num, now, 0, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -1737,7 +1736,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ret = replmd_build_la_val(new_values, &new_values[num_new_values], dns[i].dsdb_dn,
-						  invocation_id, seq_num, seq_num, now, false);
+						  invocation_id, seq_num, seq_num, now, 0, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -3504,6 +3503,7 @@ linked_attributes[0]:
 					   &la->meta_data.originating_invocation_id,
 					   la->meta_data.originating_usn, seq_num,
 					   la->meta_data.originating_change_time,
+					   la->meta_data.version,
 					   !active);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
@@ -3538,6 +3538,7 @@ linked_attributes[0]:
 					  &la->meta_data.originating_invocation_id,
 					  la->meta_data.originating_usn, seq_num,
 					  la->meta_data.originating_change_time,
+					  la->meta_data.version,
 					  (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?false:true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
