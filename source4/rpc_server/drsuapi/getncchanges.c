@@ -25,6 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "rpc_server/dcerpc_server_proto.h"
 #include "../libcli/drsuapi/drsuapi.h"
@@ -324,6 +325,7 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 {
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	uint64_t uSNChanged = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
 
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
@@ -363,6 +365,13 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				   given to us with old style meta
 				   data */
 				continue;
+			}
+
+			if (local_usn > uSNChanged) {
+				DEBUG(1,(__location__ ": uSNChanged less than RMD_LOCAL_USN for %s on %s\n",
+					 el->name, ldb_dn_get_linearized(msg->dn)));
+				talloc_free(tmp_ctx);
+				return WERR_DS_DRA_INTERNAL_ERROR;
 			}
 
 			if (local_usn < highest_usn) {
@@ -472,6 +481,7 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *ncRoot_dn;
 	uint64_t min_usn;
 	uint64_t highest_usn;
+	struct ldb_dn *last_dn;
 };
 
 /* 
@@ -506,6 +516,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_getncchanges_state *getnc_state;
 	struct drsuapi_DsGetNCChangesRequest8 *req8;
 	uint32_t options;
+	uint32_t max_objects;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -572,9 +583,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (getnc_state) {
 		struct ldb_dn *new_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
-			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s\n",
+			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s (last_dn %s)\n",
 				 ldb_dn_get_linearized(new_dn),
-				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
+				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
+				 ldb_dn_get_linearized(getnc_state->last_dn)));
 			talloc_free(getnc_state);
 			getnc_state = NULL;
 		}
@@ -616,6 +628,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (getnc_state->site_res == NULL) {
 		char* search_filter;
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+		const char *extra_filter;
+
+		extra_filter = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req8->highwatermark.highest_usn;
 
@@ -624,6 +639,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						"(uSNChanged>=%llu)",
 						(unsigned long long)(getnc_state->min_usn+1));
 	
+		if (extra_filter) {
+			search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
+		}
+
 		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_CRITICAL_ONLY) {
 			search_filter = talloc_asprintf(mem_ctx,
 							"(&%s(isCriticalSystemObject=TRUE))",
@@ -677,16 +696,17 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.first_object = NULL;
 	currentObject = &r->out.ctr->ctr6.first_object;
 
-#if 0
 	/* use this to force single objects at a time, which is useful
 	 * for working out what object is giving problems
 	 */
-	req8->max_object_count = 1;
-#endif
+	max_objects = lp_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
+	if (req8->max_object_count < max_objects) {
+		max_objects = req8->max_object_count;
+	}
 
 	for(i=getnc_state->num_sent; 
 	    i<getnc_state->site_res->count && 
-		    (r->out.ctr->ctr6.object_count < req8->max_object_count);
+		    (r->out.ctr->ctr6.object_count < max_objects);
 	    i++) {
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
@@ -733,6 +753,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		
 		*currentObject = obj;
 		currentObject = &obj->next_object;
+
+		talloc_free(getnc_state->last_dn);
+		getnc_state->last_dn = ldb_dn_copy(getnc_state, msg->dn);
 
 		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
 	}
@@ -785,11 +808,19 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		b_state->getncchanges_state = NULL;
 	}
 
-	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %d/%d)\n",
-		 (unsigned long long)(req8->highwatermark.highest_usn+1),
-		 req8->replica_flags,
-		 ncRoot->dn, r->out.ctr->ctr6.object_count,
-		 i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i));
+	DEBUG(r->out.ctr->ctr6.more_data?2:1,
+	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %d/%d la=%d)\n",
+	       (unsigned long long)(req8->highwatermark.highest_usn+1),
+	       req8->replica_flags,
+	       ncRoot->dn, r->out.ctr->ctr6.object_count,
+	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
+	       r->out.ctr->ctr6.linked_attributes_count));
+
+#if 0
+	if (!r->out.ctr->ctr6.more_data) {
+		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
+	}
+#endif
 
 	return WERR_OK;
 }
