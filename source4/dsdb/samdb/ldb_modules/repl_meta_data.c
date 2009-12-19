@@ -336,7 +336,7 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 		return -1;
 	}
 
-	return m1->attid - m2->attid;
+	return m1->attid > m2->attid ? 1 : -1;
 }
 
 static int replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 *ctr1,
@@ -390,8 +390,10 @@ static int replmd_ldb_message_element_attid_sort(const struct ldb_message_elemen
 	if (!a1 || !a2) {
 		return strcasecmp(e1->name, e2->name);
 	}
-
-	return a1->attributeID_id - a2->attributeID_id;
+	if (a1->attributeID_id == a2->attributeID_id) {
+		return 0;
+	}
+	return a1->attributeID_id > a2->attributeID_id ? 1 : -1;
 }
 
 static void replmd_ldb_message_sort(struct ldb_message *msg,
