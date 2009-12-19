@@ -1255,6 +1255,35 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	return LDB_SUCCESS;
 }
 
+static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+				uint64_t seq_num, uint64_t local_usn, NTTIME nttime, bool deleted);
+
+/*
+  check if any links need upgrading from w2k format
+ */
+static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, const struct GUID *invocation_id)
+{
+	int i;
+	for (i=0; i<count; i++) {
+		NTSTATUS status;
+		uint32_t version;
+		int ret;
+
+		status = dsdb_get_extended_dn_uint32(dns[i].dsdb_dn->dn, &version, "RMD_VERSION");
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			continue;
+		}
+
+		/* it's an old one that needs upgrading */
+		ret = replmd_update_la_val(dns, dns[i].v, dns[i].dsdb_dn, dns[i].dsdb_dn, invocation_id,
+					   1, 1, 0, false);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
 
 /*
   update an extended DN, including all meta data fields
@@ -1399,7 +1428,14 @@ static int replmd_modify_la_add(struct ldb_module *module,
 
 	invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!invocation_id) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = replmd_check_upgrade_links(old_dns, old_num_values, invocation_id);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	/* for each new value, see if it exists already with the same GUID */
@@ -1521,6 +1557,12 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	ret = replmd_check_upgrade_links(old_dns, old_el->num_values, invocation_id);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	el->values = NULL;
 
 	/* see if we are being asked to delete any links that
@@ -1631,6 +1673,12 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 	invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!invocation_id) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = replmd_check_upgrade_links(old_dns, old_num_values, invocation_id);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	/* mark all the old ones as deleted */
@@ -3277,6 +3325,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct GUID guid;
 	NTSTATUS ntstatus;
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
+	const struct GUID *our_invocation_id;
 
 	drs.value_ctr.num_values = 1;
 	drs.value_ctr.values = &val;
@@ -3363,6 +3412,20 @@ linked_attributes[0]:
 
 	/* parse the existing links */
 	ret = get_parsed_dns(module, tmp_ctx, old_el, &pdn_list, attr->syntax->ldap_oid);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* get our invocationId */
+	our_invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!our_invocation_id) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR, __location__ ": unable to find invocationId\n");
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = replmd_check_upgrade_links(pdn_list, old_el->num_values, our_invocation_id);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
