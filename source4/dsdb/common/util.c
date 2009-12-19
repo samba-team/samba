@@ -2875,6 +2875,15 @@ bool dsdb_dn_is_deleted_val(struct ldb_val *val)
 }
 
 /*
+  return true if a ldb_val containing a DN in storage form is
+  in the upgraded w2k3 linked attribute format
+ */
+bool dsdb_dn_is_upgraded_link_val(struct ldb_val *val)
+{
+	return memmem(val->data, val->length, "<RMD_ADDTIME=", 13) != NULL;
+}
+
+/*
   return a DN for a wellknown GUID
  */
 int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
