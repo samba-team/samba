@@ -2735,9 +2735,9 @@ NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid)
 }
 
 /*
-  return a NTTIME from a extended DN structure
+  return a uint64_t from a extended DN structure
  */
-NTSTATUS dsdb_get_extended_dn_nttime(struct ldb_dn *dn, NTTIME *nttime, const char *component_name)
+NTSTATUS dsdb_get_extended_dn_uint64(struct ldb_dn *dn, uint64_t *val, const char *component_name)
 {
 	const struct ldb_val *v;
 	char *s;
@@ -2749,10 +2749,18 @@ NTSTATUS dsdb_get_extended_dn_nttime(struct ldb_dn *dn, NTTIME *nttime, const ch
 	s = talloc_strndup(dn, (const char *)v->data, v->length);
 	NT_STATUS_HAVE_NO_MEMORY(s);
 
-	*nttime = strtoull(s, NULL, 0);
+	*val = strtoull(s, NULL, 0);
 
 	talloc_free(s);
 	return NT_STATUS_OK;
+}
+
+/*
+  return a NTTIME from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_nttime(struct ldb_dn *dn, NTTIME *nttime, const char *component_name)
+{
+	return dsdb_get_extended_dn_uint64(dn, nttime, component_name);
 }
 
 /*
