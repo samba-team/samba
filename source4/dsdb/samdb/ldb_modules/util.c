@@ -371,3 +371,32 @@ const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *sc
 
 	return last_class;
 }
+
+/*
+  check if a single valued link has multiple non-deleted values
+
+  This is needed when we will be using the RELAX control to stop
+  ldb_tdb from checking single valued links
+ */
+int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
+				  const struct ldb_message_element *el)
+{
+	bool found_active = false;
+	int i;
+
+	if (!(attr->ldb_schema_attribute->flags & LDB_ATTR_FLAG_SINGLE_VALUE) ||
+	    el->num_values < 2) {
+		return LDB_SUCCESS;
+	}
+
+	for (i=0; i<el->num_values; i++) {
+		if (!dsdb_dn_is_deleted_val(&el->values[i])) {
+			if (found_active) {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+			found_active = true;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
