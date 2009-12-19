@@ -86,6 +86,11 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 		return ret;
 	}
 
+	ret = ldb_request_add_control(req, LDB_CONTROL_REVEAL_INTERNALS, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (sort_attrib) {
 		struct ldb_server_sort_control **sort_control;
 		sort_control = talloc_array(req, struct ldb_server_sort_control *, 2);
