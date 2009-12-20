@@ -216,7 +216,7 @@ static int replmd_add_backlink(struct ldb_module *module, const struct dsdb_sche
 	struct replmd_private *replmd_private =
 		talloc_get_type_abort(ldb_module_get_private(module), struct replmd_private);
 
-	target_attr = dsdb_attribute_by_linkID(schema, schema_attr->linkID + 1);
+	target_attr = dsdb_attribute_by_linkID(schema, schema_attr->linkID ^ 1);
 	if (!target_attr) {
 		/*
 		 * windows 2003 has a broken schema where the
