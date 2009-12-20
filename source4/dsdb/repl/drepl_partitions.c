@@ -39,16 +39,15 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	struct ldb_dn *basedn;
 	struct ldb_result *r;
 	struct ldb_message_element *el;
-	static const char *attrs[] = { "namingContexts", NULL };
+	static const char *attrs[] = { "hasMasterNCs", NULL };
 	uint32_t i;
 	int ret;
 
-	basedn = ldb_dn_new(s, s->samdb, NULL);
+	basedn = samdb_ntds_settings_dn(s->samdb);
 	W_ERROR_HAVE_NO_MEMORY(basedn);
 
 	ret = ldb_search(s->samdb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
 			 "(objectClass=*)");
-	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		return WERR_FOOBAR;
 	} else if (r->count != 1) {
@@ -56,7 +55,7 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 		return WERR_FOOBAR;
 	}
 
-	el = ldb_msg_find_element(r->msgs[0], "namingContexts");
+	el = ldb_msg_find_element(r->msgs[0], "hasMasterNCs");
 	if (!el) {
 		return WERR_FOOBAR;
 	}
