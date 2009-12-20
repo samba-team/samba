@@ -38,6 +38,13 @@ AC_ARG_ENABLE(python,
 		  fi
 		])
 
+AC_PATH_PROG(XSLTPROC,xsltproc)
+DOC_TARGET=""
+if test -n "$XSLTPROC"; then
+	DOC_TARGET=doc
+fi
+AC_SUBST(DOC_TARGET)
+
 m4_include(build_macros.m4)
 BUILD_WITH_SHARED_BUILD_DIR
 

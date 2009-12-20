@@ -51,7 +51,20 @@ tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) pytdb.o
 	$(SHLD) $(SHLD_FLAGS) -o $@ pytdb.o -L. -ltdb `$(PYTHON_CONFIG) --ldflags`
 
 install:: installdirs installbin installheaders installlibs \
-		  $(PYTHON_INSTALL_TARGET)
+		  $(PYTHON_INSTALL_TARGET) installdocs
+
+doc:: manpages/tdbbackup.8 manpages/tdbdump.8 manpages/tdbtool.8
+
+.SUFFIXES: .8.xml .8
+
+.8.xml.8:
+	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+
+installdocs::
+	${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1
+	for I in manpages/*.1; do \
+		${INSTALLCMD} -m 644 $$I $(DESTDIR)$(mandir)/man1 \
+	done
 
 install-python:: build-python
 	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`

@@ -143,7 +143,7 @@ void tdb_remove_flags(struct tdb_context *tdb, unsigned flag);
 void tdb_enable_seqnum(struct tdb_context *tdb);
 void tdb_increment_seqnum_nonblock(struct tdb_context *tdb);
 int tdb_check(struct tdb_context *tdb,
-	      int (*check)(TDB_DATA key, TDB_DATA data, void *private_data),
+	      int (*check) (TDB_DATA key, TDB_DATA data, void *private_data),
 	      void *private_data);
 
 /* Low level locking functions: use with care */
