@@ -34,7 +34,7 @@
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
-#include "dlinklist.h"
+#include "../lib/util/dlinklist.h"
 #include "../tdb/include/tdb.h"
 
 /*
