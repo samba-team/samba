@@ -1671,6 +1671,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	status = cli_smb_recv(subreq, 1, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
