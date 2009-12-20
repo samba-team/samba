@@ -61,6 +61,8 @@ PyAPI_DATA(PyTypeObject) PyLdb;
 PyAPI_DATA(PyTypeObject) PyLdbMessageElement;
 PyAPI_DATA(PyTypeObject) PyLdbTree;
 
+static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
+
 static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx, 
 							   struct ldb_message_element *el, 
 							   struct ldb_val *val)
@@ -1357,7 +1359,7 @@ static PySequenceMethods py_ldb_seq = {
 	.sq_contains = (objobjproc)py_ldb_contains,
 };
 
-PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
+static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 {
 	PyLdbObject *ret;
 
