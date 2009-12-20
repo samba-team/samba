@@ -31,18 +31,22 @@ PYTHON_CHECK_TARGET = @PYTHON_CHECK_TARGET@
 LIB_PATH_VAR = @LIB_PATH_VAR@
 tdbdir = @tdbdir@
 
+EXTRA_TARGETS = @DOC_TARGET@
+
 TDB_OBJ = @TDB_OBJ@ @LIBREPLACEOBJ@
 
 SONAMEFLAG = @SONAMEFLAG@
 VERSIONSCRIPT = @VERSIONSCRIPT@
 EXPORTSFILE = @EXPORTSFILE@
 
+XSLTPROC = @XSLTPROC@
+
 default: all
 
 include $(tdbdir)/tdb.mk
 include $(tdbdir)/rules.mk
 
-all:: showflags dirs $(PROGS) $(TDB_SOLIB) libtdb.a $(PYTHON_BUILD_TARGET)
+all:: showflags dirs $(PROGS) $(TDB_SOLIB) libtdb.a $(PYTHON_BUILD_TARGET) $(EXTRA_TARGETS)
 
 install:: all
 $(TDB_SOLIB): $(TDB_OBJ)
