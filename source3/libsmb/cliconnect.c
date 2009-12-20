@@ -701,11 +701,6 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 	return blob2;
 }
 
-#ifdef HAVE_KRB5
-/****************************************************************************
- Send a extended security session setup blob, returning a reply blob.
-****************************************************************************/
-
 /* The following is calculated from :
  * (smb_size-4) = 35
  * (smb_wcnt * 2) = 24 (smb_wcnt == 12 in cli_session_setup_blob_send() )
@@ -715,62 +710,202 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 
 #define BASE_SESSSETUP_BLOB_PACKET_SIZE (35 + 24 + 22)
 
-static bool cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
+struct cli_sesssetup_blob_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	DATA_BLOB blob;
+	uint16_t max_blob_size;
+	uint16_t vwv[12];
+	uint8_t *buf;
+
+	NTSTATUS status;
+	char *inbuf;
+	DATA_BLOB ret_blob;
+};
+
+static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
+				    struct tevent_req **psubreq);
+static void cli_sesssetup_blob_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct cli_state *cli,
+						  DATA_BLOB blob)
 {
-	int32 remaining = blob.length;
-	int32 cur = 0;
-	DATA_BLOB send_blob = data_blob_null;
-	int32 max_blob_size = 0;
-	DATA_BLOB receive_blob = data_blob_null;
+	struct tevent_req *req, *subreq;
+	struct cli_sesssetup_blob_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_sesssetup_blob_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->blob = blob;
+	state->cli = cli;
 
 	if (cli->max_xmit < BASE_SESSSETUP_BLOB_PACKET_SIZE + 1) {
-		DEBUG(0,("cli_session_setup_blob: cli->max_xmit too small "
-			"(was %u, need minimum %u)\n",
-			(unsigned int)cli->max_xmit,
-			BASE_SESSSETUP_BLOB_PACKET_SIZE));
-		cli_set_nt_error(cli, NT_STATUS_INVALID_PARAMETER);
-		return False;
+		DEBUG(1, ("cli_session_setup_blob: cli->max_xmit too small "
+			  "(was %u, need minimum %u)\n",
+			  (unsigned int)cli->max_xmit,
+			  BASE_SESSSETUP_BLOB_PACKET_SIZE));
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
+	state->max_blob_size =
+		MIN(cli->max_xmit - BASE_SESSSETUP_BLOB_PACKET_SIZE, 0xFFFF);
 
-	max_blob_size = cli->max_xmit - BASE_SESSSETUP_BLOB_PACKET_SIZE;
-
-	while ( remaining > 0) {
-		if (remaining >= max_blob_size) {
-			send_blob.length = max_blob_size;
-			remaining -= max_blob_size;
-		} else {
-			send_blob.length = remaining; 
-                        remaining = 0;
-		}
-
-		send_blob.data =  &blob.data[cur];
-		cur += send_blob.length;
-
-		DEBUG(10, ("cli_session_setup_blob: Remaining (%u) sending (%u) current (%u)\n", 
-			(unsigned int)remaining,
-			(unsigned int)send_blob.length,
-			(unsigned int)cur ));
-
-		if (!cli_session_setup_blob_send(cli, send_blob)) {
-			DEBUG(0, ("cli_session_setup_blob: send failed\n"));
-			return False;
-		}
-
-		receive_blob = cli_session_setup_blob_receive(cli);
-		data_blob_free(&receive_blob);
-
-		if (cli_is_error(cli) &&
-				!NT_STATUS_EQUAL( cli_get_nt_error(cli), 
-					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(0, ("cli_session_setup_blob: receive failed "
-				  "(%s)\n", nt_errstr(cli_get_nt_error(cli))));
-			cli->vuid = 0;
-			return False;
-		}
+	if (!cli_sesssetup_blob_next(state, &subreq)) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
 	}
-
-	return True;
+	tevent_req_set_callback(subreq, cli_sesssetup_blob_done, req);
+	return req;
 }
+
+static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
+				    struct tevent_req **psubreq)
+{
+	struct tevent_req *subreq;
+	uint16_t thistime;
+
+	SCVAL(state->vwv+0, 0, 0xFF);
+	SCVAL(state->vwv+0, 1, 0);
+	SSVAL(state->vwv+1, 0, 0);
+	SSVAL(state->vwv+2, 0, CLI_BUFFER_SIZE);
+	SSVAL(state->vwv+3, 0, 2);
+	SSVAL(state->vwv+4, 0, 1);
+	SIVAL(state->vwv+5, 0, 0);
+
+	thistime = MIN(state->blob.length, state->max_blob_size);
+	SSVAL(state->vwv+7, 0, thistime);
+
+	SSVAL(state->vwv+8, 0, 0);
+	SSVAL(state->vwv+9, 0, 0);
+	SIVAL(state->vwv+10, 0,
+	      cli_session_setup_capabilities(state->cli)
+	      | CAP_EXTENDED_SECURITY);
+
+	state->buf = (uint8_t *)talloc_memdup(state, state->blob.data,
+					      thistime);
+	if (state->buf == NULL) {
+		return false;
+	}
+	state->blob.data += thistime;
+	state->blob.length -= thistime;
+
+	state->buf = smb_bytes_push_str(state->buf, cli_ucs2(state->cli),
+					"Unix", 5, NULL);
+	state->buf = smb_bytes_push_str(state->buf, cli_ucs2(state->cli),
+					"Samba", 6, NULL);
+	if (state->buf == NULL) {
+		return false;
+	}
+	subreq = cli_smb_send(state, state->ev, state->cli, SMBsesssetupX, 0,
+			      12, state->vwv,
+			      talloc_get_size(state->buf), state->buf);
+	if (subreq == NULL) {
+		return false;
+	}
+	*psubreq = subreq;
+	return true;
+}
+
+static void cli_sesssetup_blob_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_sesssetup_blob_state *state = tevent_req_data(
+		req, struct cli_sesssetup_blob_state);
+	struct cli_state *cli = state->cli;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint32_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+	uint8_t *p;
+	uint16_t blob_length;
+
+	status = cli_smb_recv(subreq, 1, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->status = status;
+	TALLOC_FREE(state->buf);
+
+	state->inbuf = (char *)cli_smb_inbuf(subreq);
+	cli->vuid = SVAL(state->inbuf, smb_uid);
+
+	blob_length = SVAL(vwv+3, 0);
+	if (blob_length > num_bytes) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	state->ret_blob = data_blob_const(bytes, blob_length);
+
+	p = bytes + blob_length;
+
+	p += clistr_pull(state->inbuf, cli->server_os,
+			 (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(state->inbuf, cli->server_type,
+			 (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(state->inbuf, cli->server_domain,
+			 (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+
+	if (strstr(cli->server_type, "Samba")) {
+		cli->is_samba = True;
+	}
+
+	if (state->blob.length != 0) {
+		TALLOC_FREE(subreq);
+		/*
+		 * More to send
+		 */
+		if (!cli_sesssetup_blob_next(state, &subreq)) {
+			tevent_req_nomem(NULL, req);
+			return;
+		}
+		tevent_req_set_callback(subreq, cli_sesssetup_blob_done, req);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_sesssetup_blob_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *pblob,
+					char **pinbuf)
+{
+	struct cli_sesssetup_blob_state *state = tevent_req_data(
+		req, struct cli_sesssetup_blob_state);
+	NTSTATUS status;
+	char *inbuf;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->vuid = 0;
+		return status;
+	}
+
+	inbuf = talloc_move(mem_ctx, &state->inbuf);
+	if (pblob != NULL) {
+		*pblob = state->ret_blob;
+	}
+	if (pinbuf != NULL) {
+		*pinbuf = inbuf;
+	}
+        /* could be NT_STATUS_MORE_PROCESSING_REQUIRED */
+	return state->status;
+}
+
+#ifdef HAVE_KRB5
 
 /****************************************************************************
  Use in-memory credentials cache
@@ -784,67 +919,134 @@ static void use_in_memory_ccache(void) {
  Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
 
-static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
-{
+struct cli_session_setup_kerberos_state {
+	struct cli_state *cli;
 	DATA_BLOB negTokenTarg;
 	DATA_BLOB session_key_krb5;
-	NTSTATUS nt_status;
-	int rc;
+	ADS_STATUS ads_status;
+};
 
-	cli_temp_set_signing(cli);
+static void cli_session_setup_kerberos_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_session_setup_kerberos_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	const char *principal, const char *workgroup)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_session_setup_kerberos_state *state;
+	int rc;
 
 	DEBUG(2,("Doing kerberos session setup\n"));
 
-	/* generate the encapsulated kerberos5 ticket */
-	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5, 0, NULL);
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_session_setup_kerberos_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	state->ads_status = ADS_SUCCESS;
 
+	cli_temp_set_signing(cli);
+
+	/*
+	 * Ok, this is cheated: spnego_gen_negTokenTarg can block if
+	 * we have to acquire a ticket. To be fixed later :-)
+	 */
+	rc = spnego_gen_negTokenTarg(principal, 0, &state->negTokenTarg,
+				     &state->session_key_krb5, 0, NULL);
 	if (rc) {
-		DEBUG(1, ("cli_session_setup_kerberos: spnego_gen_negTokenTarg failed: %s\n",
-			error_message(rc)));
-		return ADS_ERROR_KRB5(rc);
+		DEBUG(1, ("cli_session_setup_kerberos: "
+			  "spnego_gen_negTokenTarg failed: %s\n",
+			  error_message(rc)));
+		state->ads_status = ADS_ERROR_KRB5(rc);
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return tevent_req_post(req, ev);
 	}
 
 #if 0
-	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
+	file_save("negTokenTarg.dat", state->negTokenTarg.data,
+		  state->negTokenTarg.length);
 #endif
 
-	if (!cli_session_setup_blob(cli, negTokenTarg)) {
-		nt_status = cli_nt_error(cli);
-		goto nt_error;
+	subreq = cli_sesssetup_blob_send(state, ev, cli, state->negTokenTarg);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_kerberos_done, req);
+	return req;
+}
+
+static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_kerberos_state *state = tevent_req_data(
+		req, struct cli_session_setup_kerberos_state);
+	char *inbuf = NULL;
+	NTSTATUS status;
+
+	status = cli_sesssetup_blob_recv(subreq, talloc_tos(), NULL, &inbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
 	}
 
-	if (cli_is_error(cli)) {
-		nt_status = cli_nt_error(cli);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			nt_status = NT_STATUS_UNSUCCESSFUL;
-		}
-		goto nt_error;
+	cli_set_session_key(state->cli, state->session_key_krb5);
+
+	if (cli_simple_set_signing(state->cli, state->session_key_krb5,
+				   data_blob_null)
+	    && !cli_check_sign_mac(state->cli, inbuf, 1)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
 	}
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
 
-	cli_set_session_key(cli, session_key_krb5);
+static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
+{
+	struct cli_session_setup_kerberos_state *state = tevent_req_data(
+		req, struct cli_session_setup_kerberos_state);
+	NTSTATUS status;
 
-	if (cli_simple_set_signing(
-		    cli, session_key_krb5, data_blob_null)) {
-
-		if (!cli_check_sign_mac(cli, cli->inbuf, 1)) {
-			nt_status = NT_STATUS_ACCESS_DENIED;
-			goto nt_error;
-		}
+	if (tevent_req_is_nterror(req, &status)) {
+		return ADS_ERROR_NT(status);
 	}
+	return state->ads_status;
+}
 
-	data_blob_free(&negTokenTarg);
-	data_blob_free(&session_key_krb5);
+static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli,
+					     const char *principal,
+					     const char *workgroup)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	ADS_STATUS status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 
-	return ADS_ERROR_NT(NT_STATUS_OK);
-
-nt_error:
-	data_blob_free(&negTokenTarg);
-	data_blob_free(&session_key_krb5);
-	cli->vuid = 0;
-	return ADS_ERROR_NT(nt_status);
+	if (cli_has_async_calls(cli)) {
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_session_setup_kerberos_send(ev, ev, cli, principal,
+					      workgroup);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		status = ADS_ERROR_SYSTEM(errno);
+		goto fail;
+	}
+	status = cli_session_setup_kerberos_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 #endif	/* HAVE_KRB5 */
-
 
 /****************************************************************************
  Do a spnego/NTLMSSP encrypted session setup.
