@@ -211,7 +211,12 @@ int dsdb_module_search(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = ldb_next_request(module, req);
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->search(module, req);
+	} else {
+		ret = ldb_next_request(module, req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -263,6 +268,37 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 }
 
 /*
+  find a GUID given a DN.
+ */
+int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct GUID *guid)
+{
+	const char *attrs[] = { NULL };
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	int ret;
+	NTSTATUS status;
+
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, dn, attrs,
+				    DSDB_SEARCH_SHOW_DELETED|
+				    DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to find GUID for %s",
+				       ldb_dn_get_linearized(dn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	status = dsdb_get_extended_dn_guid(res->msgs[0]->dn, guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
   a ldb_modify request operating on modules below the
   current module
  */
@@ -293,7 +329,12 @@ int dsdb_module_modify(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	ret = ldb_next_request(module, mod_req);
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->modify(module, mod_req);
+	} else {
+		ret = ldb_next_request(module, mod_req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
 	}
@@ -336,7 +377,12 @@ int dsdb_module_rename(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	ret = ldb_next_request(module, req);
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->rename(module, req);
+	} else {
+		ret = ldb_next_request(module, req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
