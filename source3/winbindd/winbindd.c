@@ -532,6 +532,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_list_groups_send, winbindd_list_groups_recv },
 	{ WINBINDD_CHECK_MACHACC, "CHECK_MACHACC",
 	  winbindd_check_machine_acct_send, winbindd_check_machine_acct_recv },
+	{ WINBINDD_PING_DC, "PING_DC",
+	  winbindd_ping_dc_send, winbindd_ping_dc_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

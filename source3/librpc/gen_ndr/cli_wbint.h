@@ -248,6 +248,14 @@ NTSTATUS rpccli_wbint_ChangeMachineAccount_recv(struct tevent_req *req,
 						NTSTATUS *result);
 NTSTATUS rpccli_wbint_ChangeMachineAccount(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx);
+struct tevent_req *rpccli_wbint_PingDc_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct rpc_pipe_client *cli);
+NTSTATUS rpccli_wbint_PingDc_recv(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  NTSTATUS *result);
+NTSTATUS rpccli_wbint_PingDc(struct rpc_pipe_client *cli,
+			     TALLOC_CTX *mem_ctx);
 struct tevent_req *rpccli_wbint_SetMapping_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct rpc_pipe_client *cli,

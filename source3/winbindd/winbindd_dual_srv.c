@@ -510,6 +510,54 @@ again:
 	return status;
 }
 
+NTSTATUS _wbint_PingDc(pipes_struct *p, struct wbint_PingDc *r)
+{
+	NTSTATUS status;
+	struct winbindd_domain *domain;
+	struct rpc_pipe_client *netlogon_pipe;
+	union netr_CONTROL_QUERY_INFORMATION info;
+	WERROR werr;
+	fstring logon_server;
+
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+        if (!NT_STATUS_IS_OK(status)) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+		return status;
+        }
+
+	fstr_sprintf(logon_server, "\\\\%s", domain->dcname);
+
+	/*
+	 * This provokes a WERR_NOT_SUPPORTED error message. This is
+	 * documented in the wspp docs. I could not get a successful
+	 * call to work, but the main point here is testing that the
+	 * netlogon pipe works.
+	 */
+	status = rpccli_netr_LogonControl(netlogon_pipe, p->mem_ctx,
+					  logon_server, NETLOGON_CONTROL_QUERY,
+					  2, &info, &werr);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		DEBUG(2, ("rpccli_netr_LogonControl timed out\n"));
+		invalidate_cm_connection(&domain->conn);
+		return status;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_CTL_FILE_NOT_SUPPORTED)) {
+		DEBUG(2, ("rpccli_netr_LogonControl returned %s, expected "
+			  "NT_STATUS_CTL_FILE_NOT_SUPPORTED\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	DEBUG(5, ("winbindd_dual_ping_dc succeeded\n"));
+	return NT_STATUS_OK;
+}
 
 NTSTATUS _wbint_SetMapping(pipes_struct *p, struct wbint_SetMapping *r)
 {
