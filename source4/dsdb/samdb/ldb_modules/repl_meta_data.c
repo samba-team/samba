@@ -318,6 +318,7 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (!partition_ctrl) {
+		ldb_set_errstring(ldb_module_get_ctx(ac->module),"No partition control on reply");
 		return ldb_module_done(ac->req, NULL,
 				       NULL, LDB_ERR_OPERATIONS_ERROR);
 	}
