@@ -401,9 +401,6 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state);
-void winbindd_uid2sid_async(TALLOC_CTX *mem_ctx, uid_t uid,
-			    void (*cont)(void *private_data, bool success, const char *sid),
-			    void *private_data);
 enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state);
 void winbindd_gid2sid_async(TALLOC_CTX *mem_ctx, gid_t gid,
