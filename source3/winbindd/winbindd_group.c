@@ -221,52 +221,6 @@ struct getgroups_state {
 	size_t num_token_gids;
 };
 
-enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *domain,
-						    struct winbindd_cli_state *state)
-{
-	DOM_SID user_sid;
-	NTSTATUS status;
-
-	char *sidstring;
-	ssize_t len;
-	DOM_SID *groups;
-	uint32 num_groups;
-
-	/* Ensure null termination */
-	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
-
-	if (!string_to_sid(&user_sid, state->request->data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request->data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	status = domain->methods->lookup_usergroups(domain, state->mem_ctx,
-						    &user_sid, &num_groups,
-						    &groups);
-	if (!NT_STATUS_IS_OK(status))
-		return WINBINDD_ERROR;
-
-	if (num_groups == 0) {
-		state->response->data.num_entries = 0;
-		state->response->extra_data.data = NULL;
-		return WINBINDD_OK;
-	}
-
-	if (!print_sidlist(state->mem_ctx,
-			   groups, num_groups,
-			   &sidstring, &len)) {
-		DEBUG(0, ("talloc failed\n"));
-		return WINBINDD_ERROR;
-	}
-
-	state->response->extra_data.data = sidstring;
-	state->response->length += len+1;
-	state->response->data.num_entries = num_groups;
-
-	return WINBINDD_OK;
-}
-
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state)
 {
