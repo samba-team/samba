@@ -199,7 +199,8 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	ret = ldb_transaction_commit(b_state->sam_ctx);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": DsAddEntry commit failed\n"));
+		DEBUG(0,(__location__ ": DsAddEntry commit failed: %s\n",
+			 ldb_errstring(b_state->sam_ctx)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
