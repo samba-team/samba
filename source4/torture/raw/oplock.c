@@ -2178,9 +2178,8 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname3);
 
-	smbcli_close(cli1->tree, fnum);
-
 done:
+	smbcli_close(cli1->tree, fnum);
 	smb_raw_exit(cli1->session);
 	smb_raw_exit(cli2->session);
 	smbcli_deltree(cli1->tree, BASEDIR);
@@ -2284,9 +2283,8 @@ bool test_trans2rename(struct torture_context *tctx, struct smbcli_state *cli1, 
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname3);
 
-	smbcli_close(cli1->tree, fnum);
-
 done:
+	smbcli_close(cli1->tree, fnum);
 	smb_raw_exit(cli1->session);
 	smb_raw_exit(cli2->session);
 	smbcli_deltree(cli1->tree, BASEDIR);
@@ -2542,9 +2540,10 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname3);
 
-	smbcli_close(cli1->tree, fnum);
 
 done:
+	smbcli_close(cli1->tree, fnum);
+	smbcli_close(cli2->tree, fnum2);
 	smb_raw_exit(cli1->session);
 	smb_raw_exit(cli2->session);
 	smbcli_deltree(cli1->tree, BASEDIR);
