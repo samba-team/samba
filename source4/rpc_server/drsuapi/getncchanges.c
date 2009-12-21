@@ -486,6 +486,35 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	return WERR_OK;
 }
 
+/*
+  sort the objects we send by tree order
+ */
+static int site_res_cmp_parent_order(const struct ldb_message **m1, const struct ldb_message **m2)
+{
+	return ldb_dn_compare((*m2)->dn, (*m1)->dn);
+}
+
+/*
+  sort the objects we send first by uSNChanged
+ */
+static int site_res_cmp_usn_order(const struct ldb_message **m1, const struct ldb_message **m2)
+{
+	unsigned usnchanged1, usnchanged2;
+	unsigned cn1, cn2;
+	cn1 = ldb_dn_get_comp_num((*m1)->dn);
+	cn2 = ldb_dn_get_comp_num((*m2)->dn);
+	if (cn1 != cn2) {
+		return cn1 > cn2 ? 1 : -1;
+	}
+	usnchanged1 = ldb_msg_find_attr_as_uint(*m1, "uSNChanged", 0);
+	usnchanged2 = ldb_msg_find_attr_as_uint(*m2, "uSNChanged", 0);
+	if (usnchanged1 == usnchanged2) {
+		return 0;
+	}
+	return usnchanged1 > usnchanged2 ? 1 : -1;
+}
+
+
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
 	struct ldb_result *site_res;
@@ -665,15 +694,27 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			scope = LDB_SCOPE_BASE;
 		}
 		
-		DEBUG(6,(__location__ ": getncchanges on %s using filter %s\n",
+		DEBUG(1,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
 		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, &getnc_state->site_res,
 						      getnc_state->ncRoot_dn, scope, attrs,
-						      "uSNChanged",
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
+
+		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS) {
+			qsort(getnc_state->site_res->msgs,
+			      getnc_state->site_res->count,
+			      sizeof(getnc_state->site_res->msgs[0]),
+			      (comparison_fn_t)site_res_cmp_parent_order);
+		} else {
+			qsort(getnc_state->site_res->msgs,
+			      getnc_state->site_res->count,
+			      sizeof(getnc_state->site_res->msgs[0]),
+			      (comparison_fn_t)site_res_cmp_usn_order);
+		}
+
 	}
 
 	/* Prefix mapping */
