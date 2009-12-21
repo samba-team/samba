@@ -145,7 +145,7 @@ void reply_sends(struct smb_request *req)
 	START_PROFILE(SMBsends);
 
 	if (!(*lp_msg_command())) {
-		reply_doserror(req, ERRSRV, ERRmsgoff);
+		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsends);
 		return;
 	}
@@ -193,7 +193,7 @@ void reply_sendstrt(struct smb_request *req)
 	START_PROFILE(SMBsendstrt);
 
 	if (!(*lp_msg_command())) {
-		reply_doserror(req, ERRSRV, ERRmsgoff);
+		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendstrt);
 		return;
 	}
@@ -240,7 +240,7 @@ void reply_sendtxt(struct smb_request *req)
 	START_PROFILE(SMBsendtxt);
 
 	if (! (*lp_msg_command())) {
-		reply_doserror(req, ERRSRV, ERRmsgoff);
+		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendtxt);
 		return;
 	}
@@ -288,7 +288,7 @@ void reply_sendend(struct smb_request *req)
 	START_PROFILE(SMBsendend);
 
 	if (! (*lp_msg_command())) {
-		reply_doserror(req, ERRSRV, ERRmsgoff);
+		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendend);
 		return;
 	}

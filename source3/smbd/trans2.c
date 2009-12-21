@@ -1012,7 +1012,7 @@ static void call_trans2open(connection_struct *conn,
 	pname = &params[28];
 
 	if (IS_IPC(conn)) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_NETWORK_ACCESS_DENIED);
 		goto out;
 	}
 
@@ -1055,7 +1055,7 @@ static void call_trans2open(connection_struct *conn,
 					 &access_mask, &share_mode,
 					 &create_disposition,
 					 &create_options)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
 
@@ -1121,7 +1121,7 @@ static void call_trans2open(connection_struct *conn,
 	inode = smb_fname->st.st_ex_ino;
 	if (fattr & aDIR) {
 		close_file(req, fsp, ERROR_CLOSE);
-		reply_doserror(req, ERRDOS,ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
 
@@ -2334,7 +2334,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 
 		if (!lp_ea_support(SNUM(conn))) {
-			reply_doserror(req, ERRDOS, ERReasnotsupported);
+			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
 			goto out;
 		}
 
@@ -2462,7 +2462,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(numentries == 0) {
 		dptr_close(sconn, &dptr_num);
 		if (get_Protocol() < PROTOCOL_NT1) {
-			reply_doserror(req, ERRDOS, ERRnofiles);
+			reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnofiles));
 			goto out;
 		} else {
 			reply_botherror(req, NT_STATUS_NO_SUCH_FILE,
@@ -2649,7 +2649,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 
 		if (!lp_ea_support(SNUM(conn))) {
-			reply_doserror(req, ERRDOS, ERReasnotsupported);
+			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
 			return;
 		}
 
@@ -2682,7 +2682,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	/* Check that the dptr is valid */
 	if(!(dirptr = dptr_fetch_lanman2(sconn, dptr_num))) {
-		reply_doserror(req, ERRDOS, ERRnofiles);
+		reply_nterror(req, STATUS_NO_MORE_FILES);
 		return;
 	}
 
@@ -2691,7 +2691,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Get the wildcard mask from the dptr */
 	if((p = dptr_wcard(sconn, dptr_num))== NULL) {
 		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
-		reply_doserror(req, ERRDOS, ERRnofiles);
+		reply_nterror(req, STATUS_NO_MORE_FILES);
 		return;
 	}
 
@@ -5231,8 +5231,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 
 			if (!lp_ea_support(SNUM(conn))) {
-				reply_doserror(req, ERRDOS,
-					       ERReasnotsupported);
+				reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
 				return;
 			}
 
@@ -7664,7 +7663,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 						    max_data_bytes);
 				return;
 			} else {
-				reply_doserror(req, ERRDOS, ERRbadpath);
+				reply_nterror(req,
+					NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				return;
 			}
 		} else {
@@ -7804,7 +7804,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!CAN_WRITE(conn)) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
@@ -8023,7 +8023,7 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 	max_referral_level = SVAL(params,0);
 
 	if(!lp_host_msdfs()) {
-		reply_doserror(req, ERRDOS, ERRbadfunc);
+		reply_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
 		return;
 	}
 
@@ -8065,7 +8065,7 @@ static void call_trans2ioctl(connection_struct *conn,
 	/* check for an invalid fid before proceeding */
 
 	if (!fsp) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
@@ -8094,7 +8094,7 @@ static void call_trans2ioctl(connection_struct *conn,
 	}
 
 	DEBUG(2,("Unknown TRANS2_IOCTL\n"));
-	reply_doserror(req, ERRSRV, ERRerror);
+	reply_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
 }
 
 /****************************************************************************
@@ -8320,7 +8320,7 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 	default:
 		/* Error in request */
 		DEBUG(2,("Unknown request %d in trans2 call\n", state->call));
-		reply_doserror(req, ERRSRV,ERRerror);
+		reply_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
 	}
 }
 
@@ -8372,7 +8372,7 @@ void reply_trans2(struct smb_request *req)
 		case TRANSACT2_SETFSINFO:
 			break;
 		default:
-			reply_doserror(req, ERRSRV, ERRaccess);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			END_PROFILE(SMBtrans2);
 			return;
 		}
