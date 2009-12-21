@@ -105,14 +105,6 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len);
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   DOM_SID **sids, size_t *num_sids);
-void winbindd_getsidaliases_async(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *sids, size_t num_sids,
-			 	  void (*cont)(void *private_data,
-				 	       bool success,
-					       const DOM_SID *aliases,
-					       size_t num_aliases),
-				  void *private_data);
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state);
 void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
