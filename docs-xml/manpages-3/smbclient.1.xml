@@ -144,7 +144,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-R &lt;name resolve order&gt;</term> 
+		<term>-R|--name-resolve &lt;name resolve order&gt;</term>
 		<listitem><para>This option is used by the programs in the Samba 
 		suite to determine what naming services and in what order to resolve 
 		host names to IP addresses. The option takes a space-separated 
@@ -201,7 +201,7 @@
 		
 		
 		<varlistentry>
-		<term>-M NetBIOS name</term>
+		<term>-M|--message NetBIOS name</term>
 		<listitem><para>This options allows you to send messages, using 
 		the "WinPopup" protocol, to another computer. Once a connection is 
 		established you then type your message, pressing ^D (control-D) to 
@@ -237,7 +237,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-p port</term>
+		<term>-p|--port port</term>
 		<listitem><para>This number is the TCP port number that will be used 
 		when making connections to the server. The standard (well-known)
 		TCP port number for an SMB/CIFS server is 139, which is the 
@@ -245,10 +245,16 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-g</term>
+		<term>-g|--grepable</term>
 		<listitem><para>This parameter provides combined with
 		<parameter>-L</parameter> easy parseable output	that allows processing
 		with utilities such as grep and cut.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-m|--max-protocol protocol</term>
+		<listitem><para>This parameter sets the maximum protocol version announced by the client.
 		</para></listitem>
 		</varlistentry>
 
@@ -262,7 +268,7 @@
 		&stdarg.help;
 
 		<varlistentry>
-		<term>-I IP-address</term>
+		<term>-I|--ip-address IP-address</term>
 		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to.
 		It should be specified in standard "a.b.c.d" notation. </para>
 
@@ -280,7 +286,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-E</term>
+		<term>-E|--stderr</term>
 		<listitem><para>This parameter causes the client to write messages 
 		to the standard error stream (stderr) rather than to the standard 
 		output stream. </para>
@@ -290,7 +296,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-L</term>
+		<term>-L|--list</term>
 		<listitem><para>This option allows you to look at what services 
 		are available on a server. You use it as <command>smbclient -L 
 		host</command> and a list should appear.  The <parameter>-I
@@ -300,7 +306,7 @@
 		</varlistentry>
 		
 		<varlistentry>	
-		<term>-b buffersize</term>
+		<term>-b|--send-buffer buffersize</term>
 		<listitem><para>This option changes the transmit/send buffer 
 		size when getting or putting a file from/to the server. The default 
 		is 65520 bytes. Setting this value smaller (to 1200 bytes) has been 
@@ -326,7 +332,7 @@
 		&popt.common.connection;
 		
 		<varlistentry>
-		<term>-T tar options</term>
+		<term>-T|--tar tar options</term>
 		<listitem><para>smbclient may be used to create <command>tar(1)
 		</command> compatible backups of all the files on an SMB/CIFS
 		share. The secondary tar flags that can be given to this option 
@@ -455,13 +461,13 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-D initial directory</term>
+		<term>-D|--directory initial directory</term>
 		<listitem><para>Change to initial directory before starting. Probably 
 		only of any use with the tar -T option. </para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-c command string</term>
+		<term>-c|--comand command string</term>
 		<listitem><para>command string is a semicolon-separated list of 
 		commands to be executed instead of prompting from stdin. <parameter>
 		-N</parameter> is implied by <parameter>-c</parameter>.</para>
