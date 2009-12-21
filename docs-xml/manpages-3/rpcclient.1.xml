@@ -29,7 +29,6 @@
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-U username[%password]</arg>
 		<arg choice="opt">-W workgroup</arg>
-		<arg choice="opt">-N</arg>
 		<arg choice="opt">-I destinationIP</arg>
 		<arg choice="req">server</arg>
 	</cmdsynopsis>
@@ -70,7 +69,7 @@
 
 		
 		<varlistentry>
-		<term>-I IP-address</term>
+		<term>-I|--dest-ip IP-address</term>
 		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to. 
 		It should be specified in standard "a.b.c.d" notation. </para>
 
@@ -85,6 +84,14 @@
 		<para>There is no default for this parameter. If not supplied, 
 		it will be determined automatically by the client as described 
 		above. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-p|--port port</term>
+		<listitem><para>This number is the TCP port number that will be used
+		when making connections to the server. The standard (well-known)
+		TCP port number for an SMB/CIFS server is 139, which is the
+		default. </para></listitem>
 		</varlistentry>
 
 		&stdarg.server.debug;
