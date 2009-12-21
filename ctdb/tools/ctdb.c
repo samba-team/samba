@@ -502,19 +502,40 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:\n");
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:PartiallyOnline:\n");
 		for(i=0;i<nodemap->num;i++){
+			int partially_online = 0;
+			int j;
+
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			if (nodemap->nodes[i].flags == 0) {
+				struct ctdb_control_get_ifaces *ifaces;
+
+				ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(),
+							   nodemap->nodes[i].pnn,
+							   ctdb, &ifaces);
+				if (ret == 0) {
+					for (j=0; j < ifaces->num; j++) {
+						if (ifaces->ifaces[j].link_state != 0) {
+							continue;
+						}
+						partially_online = 1;
+						break;
+					}
+					talloc_free(ifaces);
+				}
+			}
+			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE));
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
+			       partially_online);
 		}
 		return 0;
 	}
@@ -538,6 +559,23 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
+		}
+		if (nodemap->nodes[i].flags == 0) {
+			struct ctdb_control_get_ifaces *ifaces;
+
+			ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(),
+						   nodemap->nodes[i].pnn,
+						   ctdb, &ifaces);
+			if (ret == 0) {
+				for (j=0; j < ifaces->num; j++) {
+					if (ifaces->ifaces[j].link_state != 0) {
+						continue;
+					}
+					flags_str = talloc_strdup(ctdb, "PARTIALLYONLINE");
+					break;
+				}
+				talloc_free(ifaces);
+			}
 		}
 		for (j=0;j<ARRAY_SIZE(flag_names);j++) {
 			if (nodemap->nodes[i].flags & flag_names[j].flag) {
