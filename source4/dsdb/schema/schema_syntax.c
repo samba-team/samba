@@ -735,7 +735,10 @@ static WERROR _dsdb_syntax_OID_obj_ldb_to_drsuapi(struct ldb_context *ldb,
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		obj_class = dsdb_class_by_lDAPDisplayName(schema, (const char *)in->values[i].data);
+		/* in DRS windows puts the classes in the opposite
+		   order to the order used in ldap */
+		obj_class = dsdb_class_by_lDAPDisplayName(schema,
+							  (const char *)in->values[(in->num_values-1)-i].data);
 		if (!obj_class) {
 			return WERR_FOOBAR;
 		}
