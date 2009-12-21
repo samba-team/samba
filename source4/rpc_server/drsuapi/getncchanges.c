@@ -768,14 +768,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 
-		uSN = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
-		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
-			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
-		}
-		if (uSN > getnc_state->highest_usn) {
-			getnc_state->highest_usn = uSN;
-		}
-
 		werr = get_nc_changes_build_object(obj, msg,
 						   b_state->sam_ctx, getnc_state->ncRoot_dn, 
 						   schema, &session_key, getnc_state->min_usn,
@@ -793,6 +785,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						&getnc_state->la_count);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
+		}
+
+		uSN = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
+		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
+			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
+		}
+		if (uSN > getnc_state->highest_usn) {
+			getnc_state->highest_usn = uSN;
 		}
 
 		if (obj->meta_data_ctr == NULL) {
