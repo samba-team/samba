@@ -42,7 +42,7 @@ struct tevent_req *winbindd_check_machine_acct_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (request->domain_name[0] == '0') {
+	if (request->domain_name[0] == '\0') {
 		/* preserve old behavior, when no domain name is given */
 		domain = find_our_domain();
 	} else {
