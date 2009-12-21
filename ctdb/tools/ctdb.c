@@ -502,18 +502,19 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:\n");
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:\n");
 		for(i=0;i<nodemap->num;i++){
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			printf(":%d:%s:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED));
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE));
 		}
 		return 0;
 	}
@@ -530,6 +531,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
 			{ NODE_FLAGS_DELETED,               "DELETED" },
 			{ NODE_FLAGS_STOPPED,               "STOPPED" },
+			{ NODE_FLAGS_INACTIVE,              "INACTIVE" },
 		};
 		char *flags_str = NULL;
 		int j;
