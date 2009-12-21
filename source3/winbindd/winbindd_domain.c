@@ -39,10 +39,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_INIT_CONNECTION,
 		.struct_fn	= winbindd_dual_init_connection,
 	},{
-		.name		= "GETDCNAME",
-		.struct_cmd	= WINBINDD_GETDCNAME,
-		.struct_fn	= winbindd_dual_getdcname,
-	},{
 		.name		= "SHOW_SEQUENCE",
 		.struct_cmd	= WINBINDD_SHOW_SEQUENCE,
 		.struct_fn	= winbindd_dual_show_sequence,
