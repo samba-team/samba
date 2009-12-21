@@ -7,17 +7,6 @@
    Copyright (C) Gerald Carter 2006
    Copyright (C) Simo Sorce 2007
 
-   The helpers always consist of three functions:
-
-   * A request setup function that takes the necessary parameters together
-     with a continuation function that is to be called upon completion
-
-   * A private continuation function that is internal only. This is to be
-     called by the lower-level functions in do_async(). Its only task is to
-     properly call the continuation function named above.
-
-   * A worker function that is called inside the appropriate child process.
-
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or

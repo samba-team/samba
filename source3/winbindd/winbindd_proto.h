@@ -82,12 +82,6 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from winbindd/winbindd_async.c  */
 
-void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
-	      const struct winbindd_request *request,
-	      void (*cont)(TALLOC_CTX *mem_ctx, bool success,
-			   struct winbindd_response *response,
-			   void *c, void *private_data),
-	      void *c, void *private_data);
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
