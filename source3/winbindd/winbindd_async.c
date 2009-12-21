@@ -251,55 +251,6 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 	return True;
 }
 
-static void query_user_recv(TALLOC_CTX *mem_ctx, bool success,
-			    struct winbindd_response *response,
-			    void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ, const char *acct_name,
-		     const char *full_name, const char *homedir, 
-		     const char *shell, uint32 gid, uint32 group_rid) =
-		(void (*)(void *, bool, const char *, const char *,
-			  const char *, const char *, uint32, uint32))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger query_user\n"));
-		cont(private_data, False, NULL, NULL, NULL, NULL, -1, -1);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-                DEBUG(5, ("query_user returned an error\n"));
-		cont(private_data, False, NULL, NULL, NULL, NULL, -1, -1);
-		return;
-	}
-
-	cont(private_data, True, response->data.user_info.acct_name,
-	     response->data.user_info.full_name,
-	     response->data.user_info.homedir,
-	     response->data.user_info.shell,
-	     response->data.user_info.primary_gid,
-	     response->data.user_info.group_rid);
-}
-
-void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-		      const DOM_SID *sid,
-		      void (*cont)(void *private_data, bool success,
-				   const char *acct_name,
-				   const char *full_name,
-				   const char *homedir,
-				   const char *shell,
-				   gid_t gid,
-				   uint32 group_rid),
-		      void *private_data)
-{
-	struct winbindd_request request;
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_USERINFO;
-	sid_to_fstring(request.data.sid, sid);
-	do_async_domain(mem_ctx, domain, &request, query_user_recv,
-			(void *)cont, private_data);
-}
-
 enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
 					struct winbindd_cli_state *state)
 {
