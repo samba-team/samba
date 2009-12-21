@@ -105,7 +105,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	/* at a mailslot or something we really, really don't understand, */
 	/* not just something we really don't understand. */
 	if ( strncmp(pipe_name,PIPE,PIPELEN) != 0 ) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
@@ -119,7 +119,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	 * Hack for NT printers... JRA.
 	 */
 	if(should_fail_next_srvsvc_open(fname)) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 #endif
@@ -171,7 +171,7 @@ void reply_pipe_write(struct smb_request *req)
 	struct tevent_req *subreq;
 
 	if (!fsp_is_np(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
@@ -223,7 +223,7 @@ static void pipe_write_done(struct tevent_req *subreq)
 
 	/* Looks bogus to me now. Needs to be removed ? JRA. */
 	if ((nwritten == 0 && state->numtowrite != 0)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto send;
 	}
 
@@ -266,7 +266,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 	struct tevent_req *subreq;
 
 	if (!fsp_is_np(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
@@ -340,7 +340,7 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 
 	/* Looks bogus to me now. Is this error message correct ? JRA. */
 	if (nwritten != state->numtowrite) {
-		reply_doserror(req, ERRDOS,ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto done;
 	}
 
@@ -384,7 +384,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 #endif
 
 	if (!fsp_is_np(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
