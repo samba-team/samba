@@ -330,6 +330,66 @@ case "$1" in
 
 	;;
 
+     ################################################
+     # called when ctdbd wants to claim an IP address
+     updateip)
+	if [ $# != 5 ]; then
+	   echo "must supply old interface, new interface, IP and maskbits"
+	   exit 1
+	fi
+	oiface=$2
+	niface=$3
+	ip=$4
+	maskbits=$5
+
+	ipv4_is_valid_addr $ip || {
+		echo "$0: $1 not an ipv4 address skipping IP:$ip"
+		exit 0;
+	}
+
+	[ ! -d "$CTDB_PER_IP_ROUTING_STATE" ] && {
+		echo "$0: $1 No state directory found, waiting for startup."
+		exit 0;
+	}
+
+	generate_per_ip_routing $ip $maskbits $niface "no" || {
+		echo "$0: $1: generate_per_ip_routing $ip $maskbits $niface no - failed"
+		exit 1;
+	}
+
+	config=`cat $CTDB_PER_IP_ROUTING_CONF`
+	lines=`echo -n "$config" | grep -n "^$ip " | cut -d ':' -f1 | xargs`
+
+	pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
+
+	test -n "$lines" && {
+		echo "ip rule del from $ip pref $pref table $table_id" >> $release_script
+		echo "ip route flush table $table_id 2>/dev/null" >> $release_script
+
+		ip rule del from $ip pref $pref 2>/dev/null
+		ip rule add from $ip pref $pref table $table_id
+		ip route flush table $table_id 2>/dev/null
+	}
+	for l in $lines; do
+		line=`echo -n "$config" | head -n $l | tail -n 1`
+		dest=`echo -n "$line" | cut -d ' ' -f 2`
+		gw=`echo -n "$line" | cut -d ' ' -f 3`
+
+		via=""
+		test -n "$gw" && {
+			via="via $gw"
+		}
+
+		ip route add $dest $via dev $niface table $table_id
+	done
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+
+	ctdb gratiousarp $ip $niface
+	tickle_tcp_connections $ip
+
+	;;
 
      ##################################################
      # called when ctdbd wants to release an IP address
