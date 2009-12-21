@@ -319,7 +319,8 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 
 	ret = ldb_transaction_prepare_commit(ldb);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ " Failed to prepare commit of transaction\n"));
+		DEBUG(0,(__location__ " Failed to prepare commit of transaction: %s\n",
+			 ldb_errstring(ldb)));
 		return WERR_FOOBAR;
 	}
 
