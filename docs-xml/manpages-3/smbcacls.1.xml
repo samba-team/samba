@@ -55,7 +55,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-a acls</term>
+		<term>-a|--add acls</term>
 		<listitem><para>Add the ACLs specified to the ACL list.  Existing 
 		access control entries are unchanged. </para></listitem>
 		</varlistentry>
@@ -63,7 +63,7 @@
 		
 		
 		<varlistentry>
-		<term>-M acls</term>
+		<term>-M|--modify acls</term>
 		<listitem><para>Modify the mask value (permissions) for the ACLs 
 		specified on the command line.  An error will be printed for each 
 		ACL specified that was not already present in the ACL list
@@ -73,7 +73,7 @@
 		
 		
 		<varlistentry>
-		<term>-D acls</term>
+		<term>-D|--delete acls</term>
 		<listitem><para>Delete any ACLs specified on the command line.  
 		An error will be printed for each ACL specified that was not 
 		already present in the ACL list. </para></listitem>
@@ -82,7 +82,7 @@
 		
 		
 		<varlistentry>
-		<term>-S acls</term>
+		<term>-S|--set acls</term>
 		<listitem><para>This command sets the ACLs on the file with 
 		only the ones specified on the command line.  All other ACLs are 
 		erased. Note that the ACL specified must contain at least a revision,
@@ -92,20 +92,7 @@
 		
 		
 		<varlistentry>
-		<term>-U username</term>
-		<listitem><para>Specifies a username used to connect to the 
-		specified service.  The username may be of the form "username" in 
-		which case the user is prompted to enter in a password and the 
-		workgroup specified in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> file is 
-		used, or "username%password"  or "DOMAIN\username%password" and the 
-		password and workgroup names are used as provided. </para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-C name</term>
+		<term>-C|--chown name</term>
 		<listitem><para>The owner of a file or directory can be changed 
 		to the name given using the <parameter>-C</parameter> option.  
 		The name can be a sid in the form S-1-x-y-z or a name resolved 
@@ -118,7 +105,7 @@
 		
 		
 		<varlistentry>
-		<term>-G name</term>
+		<term>-G|--chgrp name</term>
 		<listitem><para>The group owner of a file or directory can 
 		be changed to the name given using the <parameter>-G</parameter> 
 		option.  The name can be a sid in the form S-1-x-y-z or a name 
@@ -138,7 +125,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-t</term>
+		<term>-t|--test-args</term>
 		<listitem><para>
 		Don't actually do anything, only validate the correctness of 
 		the arguments.
@@ -148,6 +135,7 @@
 		&stdarg.help;
 		&stdarg.server.debug;
 		&popt.common.samba;
+		&popt.common.credentials;
 	</variablelist>
 </refsect1>
 
