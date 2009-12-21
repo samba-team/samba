@@ -228,6 +228,16 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=250
 # CTDB_PER_IP_ROUTING_RULE_PREF=10000
 
+# Make offline interfaces not a reason for being UNHEALTHY.
+# The CTDB_PARTIALLY_ONLINE_INTERFACES option changes
+# the behavior of the 10.interface monitor event.
+# In some setups it's desired that interfaces without
+# an active link don't change the node to unhealthy.
+# ctdbd is just informed about the interface status
+# and "ctdb status" dislays the node as "PARTIALLYONLINE".
+#
+# CTDB_PARTIALLY_ONLINE_INTERFACES="yes"
+
 # where to log messages
 # the default is /var/log/log.ctdb
 # CTDB_LOGFILE=/var/log/log.ctdb
