@@ -527,6 +527,11 @@ struct ldb_context *ldb_module_get_ctx(struct ldb_module *module)
 	return module->ldb;
 }
 
+const struct ldb_module_ops *ldb_module_get_ops(struct ldb_module *module)
+{
+	return module->ops;
+}
+
 void *ldb_module_get_private(struct ldb_module *module)
 {
 	return module->private_data;
