@@ -5,17 +5,17 @@
 
    Copyright (C) Tim Potter      2000
    Copyright (C) Andrew Bartlett 2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -93,7 +93,7 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 	int extra_data_len = 0;
 	char *extra_data = NULL;
 	int i = 0;
-	
+
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
 
@@ -137,7 +137,7 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 						     is_online ? "Online" : "Offline" );
 		}
 	}
-	
+
 	extra_data_len = 0;
 	if (extra_data != NULL) {
 		extra_data_len = strlen(extra_data);
@@ -193,7 +193,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 			sid_string_talloc(state->mem_ctx, &sids[i]));
 
 	/* add our primary domain */
-	
+
 	for (i=0; i<num_domains; i++) {
 		if (strequal(names[i], domain->name)) {
 			have_own_domain = True;
@@ -368,7 +368,7 @@ void winbindd_interface_version(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request interface version\n",
 		  (unsigned long)state->pid));
-	
+
 	state->response->data.interface_version = WINBIND_INTERFACE_VERSION;
 	request_ok(state);
 }
@@ -378,7 +378,7 @@ void winbindd_interface_version(struct winbindd_cli_state *state)
 void winbindd_domain_name(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request domain name\n", (unsigned long)state->pid));
-	
+
 	fstrcpy(state->response->data.domain_name, lp_workgroup());
 	request_ok(state);
 }
@@ -389,7 +389,7 @@ void winbindd_netbios_name(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request netbios name\n",
 		  (unsigned long)state->pid));
-	
+
 	fstrcpy(state->response->data.netbios_name, global_myname());
 	request_ok(state);
 }
@@ -401,7 +401,7 @@ void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 	char *priv_dir;
 	DEBUG(3, ("[%5lu]: request location of privileged pipe\n",
 		  (unsigned long)state->pid));
-	
+
 	priv_dir = get_winbind_priv_pipe_dir();
 	state->response->extra_data.data = talloc_move(state->mem_ctx,
 						      &priv_dir);
