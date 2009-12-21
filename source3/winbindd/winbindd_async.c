@@ -6,17 +6,6 @@
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Gerald Carter 2006
 
-   The helpers always consist of three functions: 
-
-   * A request setup function that takes the necessary parameters together
-     with a continuation function that is to be called upon completion
-
-   * A private continuation function that is internal only. This is to be
-     called by the lower-level functions in do_async(). Its only task is to
-     properly call the continuation function named above.
-
-   * A worker function that is called inside the appropriate child process.
-
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -36,53 +25,6 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
-
-struct do_async_state {
-	TALLOC_CTX *mem_ctx;
-	struct winbindd_request request;
-	struct winbindd_response response;
-	void (*cont)(TALLOC_CTX *mem_ctx,
-		     bool success,
-		     struct winbindd_response *response,
-		     void *c, void *private_data);
-	void *c, *private_data;
-};
-
-static void do_async_recv(void *private_data, bool success)
-{
-	struct do_async_state *state =
-		talloc_get_type_abort(private_data, struct do_async_state);
-
-	state->cont(state->mem_ctx, success, &state->response,
-		    state->c, state->private_data);
-}
-
-void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
-	      const struct winbindd_request *request,
-	      void (*cont)(TALLOC_CTX *mem_ctx, bool success,
-			   struct winbindd_response *response,
-			   void *c, void *private_data),
-	      void *c, void *private_data)
-{
-	struct do_async_state *state;
-
-	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
-	if (state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		cont(mem_ctx, False, NULL, c, private_data);
-		return;
-	}
-
-	state->mem_ctx = mem_ctx;
-	state->request = *request;
-	state->request.length = sizeof(state->request);
-	state->cont = cont;
-	state->c = c;
-	state->private_data = private_data;
-
-	async_request(mem_ctx, child, &state->request,
-		      &state->response, do_async_recv, state);
-}
 
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
