@@ -2327,12 +2327,13 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 			continue;
 		}
 
-		if (sa->linkID) {
+		if (sa->linkID && sa->linkID & 1) {
 			ret = replmd_delete_remove_link(module, schema, old_dn, el, sa);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
+			continue;
 		}
 
 		if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
