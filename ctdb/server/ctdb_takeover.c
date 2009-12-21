@@ -65,7 +65,7 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	CTDB_NO_MEMORY_FATAL(ctdb, i);
 	i->name = talloc_strdup(i, iface);
 	CTDB_NO_MEMORY(ctdb, i->name);
-	i->link_up = true;
+	i->link_up = false;
 
 	DLIST_ADD(ctdb->ifaces, i);
 
