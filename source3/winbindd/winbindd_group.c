@@ -201,26 +201,6 @@ bool get_sam_group_entries(struct getent_state *ent)
 	return result;
 }
 
-/* Get user supplementary groups.  This is much quicker than trying to
-   invert the groups database.  We merge the groups from the gids and
-   other_sids info3 fields as trusted domain, universal group
-   memberships, and nested groups (win2k native mode only) are not
-   returned by the getgroups RPC call but are present in the info3. */
-
-struct getgroups_state {
-	struct winbindd_cli_state *state;
-	struct winbindd_domain *domain;
-	char *domname;
-	char *username;
-	DOM_SID user_sid;
-
-	const DOM_SID *token_sids;
-	size_t i, num_token_sids;
-
-	gid_t *token_gids;
-	size_t num_token_gids;
-};
-
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state)
 {
