@@ -50,8 +50,8 @@
 <!ENTITY person.gd '
 <firstname>Guenther</firstname><surname>Deschner</surname>
 <affiliation>
-	<orgname>SuSE</orgname>
-	<address><email>gd@suse.de</email></address>
+	<orgname>Samba Team</orgname>
+	<address><email>gd@samba.org</email></address>
 </affiliation>'>
 
 <!ENTITY author.gd '<author>&person.gd;</author>'>
