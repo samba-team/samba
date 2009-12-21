@@ -2280,6 +2280,19 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
+	/* we also mark it as recycled, meaning this object can't be
+	   recovered (we are stripping its attributes) */
+	if (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008_R2) {
+		ret = ldb_msg_add_string(msg, "isRecycled", "TRUE");
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to add isRecycled string to the msg\n"));
+			ldb_module_oom(module);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+	}
+
 	/* we need the storage form of the parent GUID */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &parent_res,
 				    ldb_dn_get_parent(tmp_ctx, old_dn), NULL,
