@@ -1,9 +1,9 @@
-                   =================================
-                   Release Notes for Samba 3.5.0pre2
-			   December 15, 2009
-                   =================================
+                   ================================
+                   Release Notes for Samba 3.5.0rc1
+			   January 7, 2010
+                   ================================
 
-This is the second preview release of Samba 3.5.  This is *not*
+This is the first release candidate of Samba 3.5.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -95,6 +95,61 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * Implement the new SMB2 protocol (experimental).
+
+
+Changes since 3.5.0pre2
+-----------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6837: Fix "Too many open files" when trying to access large number of
+      files with Windows 7.
+    * BUG 6939: Fix long filenames when "mangling method" is set to "hash".
+    * Ensure dos_mode can return FILE_ATTRIBUTE_NORMAL, then filter the returned
+      attributes by protocol level.
+    * Vector correctly through reply_openerror() (which uses the same logic).
+
+
+o   Günther Deschner <gd@samba.org>
+    * Allow to call "pdbedit -N description -u user" without specifiyng "-r".
+    * Add spoolss_DriverInfo7.
+    * Fix rpcclient after setprinter IDL fixes.
+
+
+o   Jonas Gorski <jonas.gorski+samba@gmail.com>
+    * BUG 6992: make test for getgrouplist cacheable.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix _samr_GetAliasMembership for results with 0 rids.
+    * Fix an error case in cli_negprot.
+
+
+o   Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
+    * Fix write behind memory block in libtalloc.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Change the way mksysms work in libtalloc.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Add tsocket_address_bsd_sockaddr() and tsocket_address_bsd_from_sockaddr()
+      to tsocket.
+    * Always set tdb->tracefd to -1 to be safe on goto fail in libtdb.
+    * Add TDB_DISALLOW_NESTING and make TDB_ALLOW_NESTING the default behavior.
+
+
+o   Peter Rosin <peda@lysator.liu.se>
+    * Output %p as unsigned in snprintf replacement.
+
+
+o   Ronnie Sahlberg <ronniesahlberg@gmail.com>
+    * New attempt at TDB transaction nesting allow/disallow.
+
+
+o   Kirill Smelkov <kirr@mns.spb.ru>
+    * Remove swig stuff from libtdb.
+    * Reset tdb->fd to -1 in tdb_close() in libtdb.
 
 
 Changes since 3.5.0pre1
