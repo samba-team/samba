@@ -2192,7 +2192,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		"mSMQOwnerID", "nCName", "objectClass", "distinguishedName", "objectGUID", "objectSid",
 		"oMSyntax", "proxiedObjectName", "name", "replPropertyMetaData", "sAMAccountName",
 		"securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
-		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreate",
+		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated",
 		NULL};
 	uint32_t el_count = 0;
 	int i;
