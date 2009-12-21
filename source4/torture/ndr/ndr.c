@@ -233,12 +233,21 @@ static bool test_compare_uuid(struct torture_context *tctx)
 							 "GUID diff invalid");
 
 	g1.time_low = 10;
-	torture_assert_int_equal(tctx, 10, GUID_compare(&g1, &g2), 
+	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
 							 "GUID diff invalid");
 
 	g1.time_low = 0;
 	g1.clock_seq[1] = 20;
-	torture_assert_int_equal(tctx, 20, GUID_compare(&g1, &g2), 
+	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
+							 "GUID diff invalid");
+
+	g1.time_low = ~0;
+	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
+							 "GUID diff invalid");
+
+	g1.time_low = 0;
+	g2.time_low = ~0;
+	torture_assert_int_equal(tctx, -1, GUID_compare(&g1, &g2),
 							 "GUID diff invalid");
 	return true;
 }
