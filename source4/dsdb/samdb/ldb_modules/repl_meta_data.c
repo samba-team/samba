@@ -1107,9 +1107,21 @@ static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 	return GUID_compare(pdn1->guid, pdn2->guid);
 }
 
-static struct parsed_dn *parsed_dn_find(struct parsed_dn *pdn, int count, struct GUID *guid)
+static struct parsed_dn *parsed_dn_find(struct parsed_dn *pdn, int count, struct GUID *guid, struct ldb_dn *dn)
 {
 	struct parsed_dn *ret;
+	if (dn && GUID_all_zero(guid)) {
+		/* when updating a link using DRS, we sometimes get a
+		   NULL GUID. We then need to try and match by DN */
+		int i;
+		for (i=0; i<count; i++) {
+			if (ldb_dn_compare(pdn[i].dsdb_dn->dn, dn) == 0) {
+				dsdb_get_extended_dn_guid(pdn[i].dsdb_dn->dn, guid, "GUID");
+				return &pdn[i];
+			}
+		}
+		return NULL;
+	}
 	BINARY_ARRAY_SEARCH(pdn, count, guid, guid, GUID_compare, ret);
 	return ret;
 }
@@ -1443,7 +1455,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 
 	/* for each new value, see if it exists already with the same GUID */
 	for (i=0; i<el->num_values; i++) {
-		struct parsed_dn *p = parsed_dn_find(old_dns, old_num_values, dns[i].guid);
+		struct parsed_dn *p = parsed_dn_find(old_dns, old_num_values, dns[i].guid, NULL);
 		if (p == NULL) {
 			/* this is a new linked attribute value */
 			new_values = talloc_realloc(tmp_ctx, new_values, struct ldb_val, num_new_values+1);
@@ -1575,7 +1587,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		struct parsed_dn *p2;
 		const struct ldb_val *v;
 
-		p2 = parsed_dn_find(old_dns, old_el->num_values, p->guid);
+		p2 = parsed_dn_find(old_dns, old_el->num_values, p->guid, NULL);
 		if (!p2) {
 			ldb_asprintf_errstring(ldb, "Attribute %s doesn't exist for target GUID %s",
 					       el->name, GUID_string(tmp_ctx, p->guid));
@@ -1596,7 +1608,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		struct parsed_dn *p = &old_dns[i];
 		const struct ldb_val *v;
 
-		if (dns && parsed_dn_find(dns, el->num_values, p->guid) == NULL) {
+		if (el->num_values && parsed_dn_find(dns, el->num_values, p->guid, NULL) == NULL) {
 			continue;
 		}
 
@@ -1699,7 +1711,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 			return ret;
 		}
 
-		p = parsed_dn_find(dns, el->num_values, old_p->guid);
+		p = parsed_dn_find(dns, el->num_values, old_p->guid, NULL);
 		if (p) {
 			/* we don't delete it if we are re-adding it */
 			continue;
@@ -1721,7 +1733,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 
 		if (old_dns &&
 		    (old_p = parsed_dn_find(old_dns,
-					    old_num_values, p->guid)) != NULL) {
+					    old_num_values, p->guid, NULL)) != NULL) {
 			/* update in place */
 			ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn,
 						   old_p->dsdb_dn, invocation_id,
@@ -3325,7 +3337,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct ldb_result *res;
 	const char *attrs[2];
 	struct parsed_dn *pdn_list, *pdn;
-	struct GUID guid;
+	struct GUID guid = GUID_zero();
 	NTSTATUS ntstatus;
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	const struct GUID *our_invocation_id;
@@ -3455,14 +3467,16 @@ linked_attributes[0]:
 	}
 
 	ntstatus = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid, "GUID");
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		ldb_asprintf_errstring(ldb, "Failed to find GUID in linked attribute blob for %s on %s\n",
-				       old_el->name, ldb_dn_get_linearized(msg->dn));
+	if (!NT_STATUS_IS_OK(ntstatus) && active) {
+		ldb_asprintf_errstring(ldb, "Failed to find GUID in linked attribute blob for %s on %s from %s",
+				       old_el->name,
+				       ldb_dn_get_linearized(dsdb_dn->dn),
+				       ldb_dn_get_linearized(msg->dn));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* see if this link already exists */
-	pdn = parsed_dn_find(pdn_list, old_el->num_values, &guid);
+	pdn = parsed_dn_find(pdn_list, old_el->num_values, &guid, dsdb_dn->dn);
 	if (pdn != NULL) {
 		/* see if this update is newer than what we have already */
 		struct GUID invocation_id = GUID_zero();
