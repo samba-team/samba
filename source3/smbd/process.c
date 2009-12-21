@@ -1335,7 +1335,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 			if (type == SMBntcreateX) {
 				reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 			} else {
-				reply_doserror(req, ERRSRV, ERRinvnid);
+				reply_nterror(req, NT_STATUS_NETWORK_NAME_DELETED);
 			}
 			return NULL;
 		}
@@ -1357,7 +1357,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		/* IPC services are limited */
 		if (IS_IPC(conn) && !(flags & CAN_IPC)) {
-			reply_doserror(req, ERRSRV,ERRaccess);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
 		}
 	} else {
@@ -1382,7 +1382,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		if (!set_current_service(conn,SVAL(req->inbuf,smb_flg),
 					 (flags & (AS_USER|DO_CHDIR)
 					  ?True:False))) {
-			reply_doserror(req, ERRSRV, ERRaccess);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
 		}
 		conn->num_smb_operations++;
@@ -1393,7 +1393,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	    && (!change_to_guest() ||
 		!check_access(smbd_server_fd(), lp_hostsallow(-1),
 			      lp_hostsdeny(-1)))) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return conn;
 	}
 

@@ -512,7 +512,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			do_ntcreate_pipe_open(conn, req);
 			goto out;
 		}
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
 
@@ -752,7 +752,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 
 	if(parameter_count < 54) {
 		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)parameter_count));
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -782,7 +782,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 	}
 	params = nttrans_realloc(ppparams, param_len);
 	if(params == NULL) {
-		reply_doserror(req, ERRDOS, ERRnomem);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -957,7 +957,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				ppdata, data_count);
 			goto out;
 		}
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
 
@@ -1159,7 +1159,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 	params = nttrans_realloc(ppparams, param_len);
 	if(params == NULL) {
-		reply_doserror(req, ERRDOS, ERRnomem);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto out;
 	}
 
@@ -1595,7 +1595,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 	bool recursive;
 
 	if(setup_count < 6) {
-		reply_doserror(req, ERRDOS, ERRbadfunc);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -1606,7 +1606,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 	DEBUG(3,("call_nt_transact_notify_change\n"));
 
 	if(!fsp) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
@@ -1700,7 +1700,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	TALLOC_CTX *ctx = talloc_tos();
 
         if(parameter_count < 5) {
-		reply_doserror(req, ERRDOS, ERRbadfunc);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -1769,13 +1769,13 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	DATA_BLOB blob;
 
         if(parameter_count < 8) {
-		reply_doserror(req, ERRDOS, ERRbadfunc);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	fsp = file_fsp(req, SVAL(params,0));
 	if(!fsp) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
@@ -1787,7 +1787,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL) {
-		reply_doserror(req, ERRDOS, ERRnomem);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -1839,7 +1839,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	data = nttrans_realloc(ppdata, sd_size);
 	if(data == NULL) {
-		reply_doserror(req, ERRDOS, ERRnomem);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -1880,12 +1880,12 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 	NTSTATUS status;
 
 	if(parameter_count < 8) {
-		reply_doserror(req, ERRDOS, ERRbadfunc);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	if((fsp = file_fsp(req, SVAL(params,0))) == NULL) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
@@ -1899,7 +1899,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		 fsp_str_dbg(fsp), (unsigned int)security_info_sent));
 
 	if (data_count == 0) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2243,7 +2243,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 		DEBUG(1,("get_user_quota: access_denied service [%s] user "
 			 "[%s]\n", lp_servicename(SNUM(conn)),
 			 conn->server_info->unix_name));
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
@@ -2253,7 +2253,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 	if (parameter_count < 4) {
 		DEBUG(0,("TRANSACT_GET_USER_QUOTA: requires %d >= 4 bytes parameters\n",parameter_count));
-		reply_doserror(req, ERRDOS, ERRinvalidparam);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2288,7 +2288,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 				param_len = 4;
 				params = nttrans_realloc(ppparams, param_len);
 				if(params == NULL) {
-					reply_doserror(req, ERRDOS, ERRnomem);
+					reply_nterror(req, NT_STATUS_NO_MEMORY);
 					return;
 				}
 
@@ -2308,7 +2308,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			}
 
 			if (start_enum && vfs_get_user_ntquota_list(fsp,&(qt_handle->quota_list))!=0) {
-				reply_doserror(req, ERRSRV, ERRerror);
+				reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
 				return;
 			}
 
@@ -2316,7 +2316,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			param_len = 4;
 			params = nttrans_realloc(ppparams, param_len);
 			if(params == NULL) {
-				reply_doserror(req, ERRDOS, ERRnomem);
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
 
@@ -2325,7 +2325,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 			pdata = nttrans_realloc(ppdata, max_data_count);/* should be max data count from client*/
 			if(pdata == NULL) {
-				reply_doserror(req, ERRDOS, ERRnomem);
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
 
@@ -2388,20 +2388,20 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 			if (data_count < 8) {
 				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8));
-				reply_doserror(req, ERRDOS, ERRunknownlevel);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
 
 			sid_len = IVAL(pdata,4);
 			/* Ensure this is less than 1mb. */
 			if (sid_len > (1024*1024)) {
-				reply_doserror(req, ERRDOS, ERRnomem);
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
 
 			if (data_count < 8+sid_len) {
 				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long)(8+sid_len)));
-				reply_doserror(req, ERRDOS, ERRunknownlevel);
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
 
@@ -2432,13 +2432,13 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			param_len = 4;
 			params = nttrans_realloc(ppparams, param_len);
 			if(params == NULL) {
-				reply_doserror(req, ERRDOS, ERRnomem);
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
 
 			pdata = nttrans_realloc(ppdata, data_len);
 			if(pdata == NULL) {
-				reply_doserror(req, ERRDOS, ERRnomem);
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
 
@@ -2472,7 +2472,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 		default:
 			DEBUG(0,("do_nt_transact_get_user_quota: fnum %d unknown level 0x%04hX\n",fsp->fnum,level));
-			reply_doserror(req, ERRSRV, ERRerror);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 			return;
 			break;
 	}
@@ -2510,7 +2510,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		DEBUG(1,("set_user_quota: access_denied service [%s] user "
 			 "[%s]\n", lp_servicename(SNUM(conn)),
 			 conn->server_info->unix_name));
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
@@ -2520,7 +2520,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	if (parameter_count < 2) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= 2 bytes parameters\n",parameter_count));
-		reply_doserror(req, ERRDOS, ERRinvalidparam);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2534,7 +2534,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	if (data_count < 40) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40));
-		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
 	}
 
@@ -2548,7 +2548,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	if (data_count < 40+sid_len) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %lu bytes data\n",data_count,(unsigned long)40+sid_len));
-		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
 	}
 
@@ -2565,7 +2565,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		((qt.usedspace != 0xFFFFFFFF)||
 		(IVAL(pdata,20)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
-		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
 	}
 #endif /* LARGE_SMB_OFF_T */
@@ -2579,7 +2579,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		((qt.softlim != 0xFFFFFFFF)||
 		(IVAL(pdata,28)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
-		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
 	}
 #endif /* LARGE_SMB_OFF_T */
@@ -2593,7 +2593,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		((qt.hardlim != 0xFFFFFFFF)||
 		(IVAL(pdata,36)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
-		reply_doserror(req, ERRDOS, ERRunknownlevel);
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
 	}
 #endif /* LARGE_SMB_OFF_T */
@@ -2604,7 +2604,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	/* 44 unknown bytes left... */
 
 	if (vfs_set_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
-		reply_doserror(req, ERRSRV, ERRerror);
+		reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -2738,7 +2738,7 @@ static void handle_nttrans(connection_struct *conn,
 			/* Error in request */
 			DEBUG(0,("handle_nttrans: Unknown request %d in "
 				 "nttrans call\n", state->call));
-			reply_doserror(req, ERRSRV, ERRerror);
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 			return;
 	}
 	return;
@@ -2774,7 +2774,7 @@ void reply_nttrans(struct smb_request *req)
 	function_code = SVAL(req->vwv+18, 0);
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBnttrans);
 		return;
 	}
@@ -2788,7 +2788,7 @@ void reply_nttrans(struct smb_request *req)
 	}
 
 	if ((state = TALLOC_P(conn, struct trans_state)) == NULL) {
-		reply_doserror(req, ERRSRV, ERRaccess);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBnttrans);
 		return;
 	}
@@ -2834,7 +2834,7 @@ void reply_nttrans(struct smb_request *req)
 	/* Don't allow more than 128mb for each value. */
 	if ((state->total_data > (1024*1024*128)) ||
 	    (state->total_param > (1024*1024*128))) {
-		reply_doserror(req, ERRDOS, ERRnomem);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBnttrans);
 		return;
 	}
@@ -2855,7 +2855,7 @@ void reply_nttrans(struct smb_request *req)
 			DEBUG(0,("reply_nttrans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
-			reply_doserror(req, ERRDOS, ERRnomem);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnttrans);
 			return;
 		}
@@ -2877,7 +2877,7 @@ void reply_nttrans(struct smb_request *req)
 				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
-			reply_doserror(req, ERRDOS, ERRnomem);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnttrans);
 			return;
 		}
@@ -2910,7 +2910,7 @@ void reply_nttrans(struct smb_request *req)
 			SAFE_FREE(state->data);
 			SAFE_FREE(state->param);
 			TALLOC_FREE(state);
-			reply_doserror(req, ERRDOS, ERRnomem);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnttrans);
 			return;
 		}
