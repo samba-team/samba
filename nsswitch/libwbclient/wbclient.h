@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Volker Lendecke 2009
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -1202,6 +1203,19 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
  **/
 wbcErr wbcChangeTrustCredentials(const char *domain,
 				 struct wbcAuthErrorInfo **error);
+
+/**
+ * @brief Trigger a no-op call through the NETLOGON pipe. Low-cost
+ *        version of wbcCheckTrustCredentials
+ *
+ * @param *domain      The name of the domain, only NULL for the default domain is
+ *                     supported yet. Other values than NULL will result in
+ *                     WBC_ERR_NOT_IMPLEMENTED.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error);
 
 /**********************************************************
  * Helper functions

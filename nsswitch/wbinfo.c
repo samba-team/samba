@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett 2002-2007
+   Copyright (C) Volker Lendecke 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -766,6 +767,30 @@ static bool wbinfo_change_secret(const char *domain)
 	d_printf("changing the trust secret for domain %s via RPC calls %s\n",
 		domain_name,
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
+		d_fprintf(stderr, "error code was %s (0x%x)\n",
+			  error->nt_string, error->nt_status);
+		wbcFreeMemory(error);
+	}
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	return true;
+}
+
+/* Check DC connection */
+
+static bool wbinfo_ping_dc(void)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcAuthErrorInfo *error = NULL;
+
+	wbc_status = wbcPingDc(NULL, &error);
+
+	d_printf("checking the NETLOGON dc connection %s\n",
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr, "error code was %s (0x%x)\n",
@@ -1710,6 +1735,7 @@ enum {
 	OPT_VERBOSE,
 	OPT_ONLINESTATUS,
 	OPT_CHANGE_USER_PASSWORD,
+	OPT_PING_DC,
 	OPT_SID_TO_FULLNAME,
 	OPT_NTLMV2,
 	OPT_LANMAN
@@ -1759,6 +1785,8 @@ int main(int argc, char **argv, char **envp)
 		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "change-secret", 'c', POPT_ARG_NONE, 0, 'c', "Change shared secret" },
+		{ "ping-dc", 0, POPT_ARG_NONE, 0, OPT_PING_DC,
+		  "Check the NETLOGON connection" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "own-domain", 0, POPT_ARG_NONE, 0, OPT_LIST_OWN_DOMAIN, "List own domain" },
@@ -1992,6 +2020,12 @@ int main(int argc, char **argv, char **envp)
 		case 'c':
 			if (!wbinfo_change_secret(opt_domain_name)) {
 				d_fprintf(stderr, "Could not change secret\n");
+				goto done;
+			}
+			break;
+		case OPT_PING_DC:
+			if (!wbinfo_ping_dc()) {
+				d_fprintf(stderr, "Could not ping our DC\n");
 				goto done;
 			}
 			break;

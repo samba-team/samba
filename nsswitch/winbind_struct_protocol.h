@@ -47,8 +47,9 @@ typedef char fstring[FSTRING_LEN];
 /* Update this when you change the interface.
  * 21: added WINBINDD_GETPWSID
  *     added WINBINDD_GETSIDALIASES
+ * 22: added WINBINDD_PING_DC
  */
-#define WINBIND_INTERFACE_VERSION 21
+#define WINBIND_INTERFACE_VERSION 22
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -119,6 +120,7 @@ enum winbindd_cmd {
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_CHANGE_MACHACC,    /* Change machine account pw */
+	WINBINDD_PING_DC,     	    /* Ping the DC through NETLOGON */
 	WINBINDD_PING,              /* Just tell me winbind is running */
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
 	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
