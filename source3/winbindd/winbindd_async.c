@@ -26,46 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
-					      struct winbindd_cli_state *state)
-{
-	enum lsa_SidType type;
-	char *name_domain, *name_user;
-	DOM_SID sid;
-	char *p;
-
-	/* Ensure null termination */
-	state->request->data.name.dom_name[sizeof(state->request->data.name.dom_name)-1]='\0';
-
-	/* Ensure null termination */
-	state->request->data.name.name[sizeof(state->request->data.name.name)-1]='\0';
-
-	/* cope with the name being a fully qualified name */
-	p = strstr(state->request->data.name.name, lp_winbind_separator());
-	if (p) {
-		*p = 0;
-		name_domain = state->request->data.name.name;
-		name_user = p+1;
-	} else {
-		name_domain = state->request->data.name.dom_name;
-		name_user = state->request->data.name.name;
-	}
-
-	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
-		  name_domain, lp_winbind_separator(), name_user));
-
-	/* Lookup name from DC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(state->mem_ctx, state->request->original_cmd, domain, name_domain,
-					 name_user, &sid, &type)) {
-		return WINBINDD_ERROR;
-	}
-
-	sid_to_fstring(state->response->data.sid.sid, &sid);
-	state->response->data.sid.type = type;
-
-	return WINBINDD_OK;
-}
-
 bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len)
 {
