@@ -5,6 +5,7 @@
 
    Copyright (C) Gerald (Jerry) Carter 2007
    Copyright (C) Guenther Deschner 2008
+   Copyright (C) Volker Lendecke 2009
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -551,6 +552,50 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
 	/* Send request */
 
 	wbc_status = wbcRequestResponse(WINBINDD_CHANGE_MACHACC,
+					&request,
+					&response);
+	if (response.data.auth.nt_status != 0) {
+		if (error) {
+			wbc_status = wbc_create_error_info(NULL,
+							   &response,
+							   error);
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		wbc_status = WBC_ERR_AUTH_ERROR;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/*
+ * Trigger a no-op NETLOGON call. Lightweight version of
+ * wbcCheckTrustCredentials
+ */
+wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	if (domain) {
+		/*
+		 * the current protocol doesn't support
+		 * specifying a domain
+		 */
+		wbc_status = WBC_ERR_NOT_IMPLEMENTED;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_PING_DC,
 					&request,
 					&response);
 	if (response.data.auth.nt_status != 0) {
