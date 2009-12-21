@@ -46,21 +46,21 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-b</term>
+		<term>-b|--broadcast</term>
 		<listitem><para>Query network nodes by sending requests 
 		as broadcasts instead of querying the local master browser.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-D</term>
+		<term>-D|--domains</term>
 		<listitem><para>Only print a list of all 
 		the domains known on broadcast or by the 
 		master browser</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-S</term>
+		<term>-S|--servers</term>
 		<listitem><para>Only print a list of 
 		all the domains and servers responding on broadcast or 
 		known by the master browser. 
