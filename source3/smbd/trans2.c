@@ -2462,7 +2462,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(numentries == 0) {
 		dptr_close(sconn, &dptr_num);
 		if (get_Protocol() < PROTOCOL_NT1) {
-			reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnofiles));
+			reply_force_doserror(req, ERRDOS, ERRnofiles);
 			goto out;
 		} else {
 			reply_botherror(req, NT_STATUS_NO_SUCH_FILE,
