@@ -47,7 +47,6 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    struct ldb_dn *basedn,
 				    enum ldb_scope scope,
 				    const char * const *attrs,
-				    const char *sort_attrib,
 				    const char *filter)
 {
 	int ret;
@@ -90,26 +89,6 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
-	if (sort_attrib) {
-		struct ldb_server_sort_control **sort_control;
-		sort_control = talloc_array(req, struct ldb_server_sort_control *, 2);
-		if (sort_control == NULL) {
-			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		sort_control[0] = talloc(req, struct ldb_server_sort_control);
-		sort_control[0]->attributeName = sort_attrib;
-		sort_control[0]->orderingRule = NULL;
-		sort_control[0]->reverse = 0;
-		sort_control[1] = NULL;
-
-		ret = ldb_request_add_control(req, LDB_CONTROL_SERVER_SORT_OID, true, sort_control);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
 
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {
