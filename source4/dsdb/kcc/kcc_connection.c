@@ -133,7 +133,7 @@ void kccsrv_apply_connections(struct kccsrv_service *s,
 {
 	int i, j, deleted = 0, added = 0, ret;
 
-	for (i = 0; i < ntds_list->count; i++) {
+	for (i = 0; ntds_list && i < ntds_list->count; i++) {
 		struct kcc_connection *ntds = &ntds_list->servers[i];
 		for (j = 0; j < dsa_list->count; j++) {
 			struct kcc_connection *dsa = &dsa_list->servers[j];
@@ -152,13 +152,13 @@ void kccsrv_apply_connections(struct kccsrv_service *s,
 
 	for (i = 0; i < dsa_list->count; i++) {
 		struct kcc_connection *dsa = &dsa_list->servers[i];
-		for (j = 0; j < ntds_list->count; j++) {
+		for (j = 0; ntds_list && j < ntds_list->count; j++) {
 			struct kcc_connection *ntds = &ntds_list->servers[j];
 			if (GUID_equal(&dsa->dsa_guid, &ntds->dsa_guid)) {
 				break;
 			}
 		}
-		if (j == ntds_list->count) {
+		if (ntds_list == NULL || j == ntds_list->count) {
 			ret = kccsrv_add_connection(s, dsa);
 			if (ret == LDB_SUCCESS) {
 				added++;
