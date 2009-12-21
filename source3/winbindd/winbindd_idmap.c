@@ -70,52 +70,6 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-static void winbindd_sid2gid_recv(TALLOC_CTX *mem_ctx, bool success,
-			       struct winbindd_response *response,
-			       void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ, gid_t gid) =
-		(void (*)(void *, bool, gid_t))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger sid2gid\n"));
-		cont(private_data, False, 0);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("sid2gid returned an error\n"));
-		cont(private_data, False, 0);
-		return;
-	}
-
-	cont(private_data, True, response->data.gid);
-}
-
-void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			 void (*cont)(void *private_data, bool success, gid_t gid),
-			 void *private_data)
-{
-	struct winbindd_request request;
-	struct winbindd_domain *domain;
-
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_SID2GID;
-
-	domain = find_domain_from_sid(sid);
-	if ((domain != NULL) && (domain->have_idmap_config)) {
-		fstrcpy(request.domain_name, domain->name);
-	}
-
-	sid_to_fstring(request.data.dual_sid2id.sid, sid);
-
-	DEBUG(7,("winbindd_sid2gid_async: Resolving %s to a gid\n",
-		request.data.dual_sid2id.sid));
-
-	do_async(mem_ctx, idmap_child(), &request, winbindd_sid2gid_recv,
-		 (void *)cont, private_data);
-}
-
 enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state)
 {
