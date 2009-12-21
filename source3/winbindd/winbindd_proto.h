@@ -351,7 +351,6 @@ void winbindd_getgroups(struct winbindd_cli_state *state);
 void winbindd_getusersids(struct winbindd_cli_state *state);
 void winbindd_getuserdomgroups(struct winbindd_cli_state *state);
 void winbindd_getsidaliases(struct winbindd_cli_state *state);
-bool get_sam_group_entries(struct getent_state *ent);
 bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 		const char *dom_name, const char *gr_name, gid_t unix_gid);
 NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
