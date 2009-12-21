@@ -2154,7 +2154,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		el2->values = &dn_val;
 		el2->num_values = 1;
 
-		ret = dsdb_module_modify(module, msg, 0);
+		ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2354,8 +2354,8 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	ret = dsdb_module_modify(module, msg, 0);
-	if (ret != LDB_SUCCESS){
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
+	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
 				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
