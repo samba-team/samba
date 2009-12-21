@@ -45,60 +45,6 @@ struct winbindd_child *idmap_child(void)
 	return &static_idmap_child;
 }
 
-static void winbindd_sid2uid_recv(TALLOC_CTX *mem_ctx, bool success,
-			       struct winbindd_response *response,
-			       void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ, uid_t uid) =
-		(void (*)(void *, bool, uid_t))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger sid2uid\n"));
-		cont(private_data, False, 0);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("sid2uid returned an error\n"));
-		cont(private_data, False, 0);
-		return;
-	}
-
-	cont(private_data, True, response->data.uid);
-}
-
-void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			 void (*cont)(void *private_data, bool success, uid_t uid),
-			 void *private_data)
-{
-	struct winbindd_request request;
-	struct winbindd_domain *domain;
-
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_SID2UID;
-
-	domain = find_domain_from_sid(sid);
-
-	if (domain != NULL) {
-		DEBUG(10, ("winbindd_sid2uid_async found domain %s, "
-			   "have_idmap_config = %d\n", domain->name,
-			   (int)domain->have_idmap_config));
-
-	}
-	else {
-		DEBUG(10, ("winbindd_sid2uid_async did not find a domain for "
-			   "%s\n", sid_string_dbg(sid)));
-	}
-
-	if ((domain != NULL) && (domain->have_idmap_config)) {
-		fstrcpy(request.domain_name, domain->name);
-	}
-
-	sid_to_fstring(request.data.dual_sid2id.sid, sid);
-	do_async(mem_ctx, idmap_child(), &request, winbindd_sid2uid_recv,
-		 (void *)cont, private_data);
-}
-
 enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state)
 {
