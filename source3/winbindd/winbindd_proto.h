@@ -107,16 +107,6 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   DOM_SID **sids, size_t *num_sids);
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state);
-void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-		      const DOM_SID *sid,
-		      void (*cont)(void *private_data, bool success,
-				   const char *acct_name,
-				   const char *full_name,
-				   const char *homedir,
-				   const char *shell,
-				   gid_t gid,
-				   uint32 group_rid),
-		      void *private_data);
 
 /* The following definitions come from winbindd/winbindd_cache.c  */
 
