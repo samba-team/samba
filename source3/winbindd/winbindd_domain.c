@@ -31,10 +31,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_PING,
 		.struct_fn	= winbindd_dual_ping,
 	},{
-		.name		= "LOOKUPNAME",
-		.struct_cmd	= WINBINDD_LOOKUPNAME,
-		.struct_fn	= winbindd_dual_lookupname,
-	},{
 		.name		= "LIST_TRUSTDOM",
 		.struct_cmd	= WINBINDD_LIST_TRUSTDOM,
 		.struct_fn	= winbindd_dual_list_trusted_domains,
