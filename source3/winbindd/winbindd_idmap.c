@@ -97,54 +97,6 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-/* The following uid2sid/gid2sid functions has been contributed by
- * Keith Reynolds <Keith.Reynolds@centrify.com> */
-
-static void winbindd_uid2sid_recv(TALLOC_CTX *mem_ctx, bool success,
-				  struct winbindd_response *response,
-				  void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ, const char *sid) =
-		(void (*)(void *, bool, const char *))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger uid2sid\n"));
-		cont(private_data, False, NULL);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("uid2sid returned an error\n"));
-		cont(private_data, False, NULL);
-		return;
-	}
-
-	cont(private_data, True, response->data.sid.sid);
-}
-
-void winbindd_uid2sid_async(TALLOC_CTX *mem_ctx, uid_t uid,
-			    void (*cont)(void *private_data, bool success, const char *sid),
-			    void *private_data)
-{
-	struct winbindd_domain *domain;
-	struct winbindd_request request;
-
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_UID2SID;
-	request.data.uid = uid;
-
-	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (domain->have_idmap_config
-		    && (uid >= domain->id_range_low)
-		    && (uid <= domain->id_range_high)) {
-			fstrcpy(request.domain_name, domain->name);
-		}
-	}
-
-	do_async(mem_ctx, idmap_child(), &request, winbindd_uid2sid_recv,
-		 (void *)cont, private_data);
-}
-
 enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state)
 {
