@@ -88,12 +88,6 @@ void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 			   struct winbindd_response *response,
 			   void *c, void *private_data),
 	      void *c, void *private_data);
-void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			      void (*cont)(void *private_data, bool success,
-					   const char *dom_name,
-					   const char *name,
-					   enum lsa_SidType type),
-			      void *private_data);
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state);
 void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
