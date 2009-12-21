@@ -704,7 +704,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= req->buflen)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbuftoosmall));
+		reply_force_doserror(req, ERRDOS, ERRbuftoosmall);
 		END_PROFILE(SMBtconX);
 		return;
 	}
@@ -864,7 +864,7 @@ void reply_unknown_new(struct smb_request *req, uint8 type)
 {
 	DEBUG(0, ("unknown command type (%s): type=%d (0x%X)\n",
 		  smb_fn_name(type), type, type));
-	reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRunknownsmb));
+	reply_force_doserror(req, ERRSRV, ERRunknownsmb);
 	return;
 }
 
@@ -901,7 +901,7 @@ void reply_ioctl(struct smb_request *req)
 		    replysize = 32;
 		    break;
 	    default:
-		    reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRnosupport));
+		    reply_force_doserror(req, ERRSRV, ERRnosupport);
 		    END_PROFILE(SMBioctl);
 		    return;
 	}
@@ -1652,7 +1652,7 @@ void reply_fclose(struct smb_request *req)
 	p += 2;
 
 	if (status_len == 0) {
-		reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRsrverror));
+		reply_force_doserror(req, ERRSRV, ERRsrverror);
 		END_PROFILE(SMBfclose);
 		return;
 	}
@@ -1738,7 +1738,7 @@ void reply_open(struct smb_request *req)
 					 OPENX_FILE_EXISTS_OPEN, &access_mask,
 					 &share_mode, &create_disposition,
 					 &create_options)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
 
@@ -1911,7 +1911,7 @@ void reply_open_and_X(struct smb_request *req)
 					 &access_mask, &share_mode,
 					 &create_disposition,
 					 &create_options)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
 
@@ -5041,7 +5041,7 @@ void reply_printclose(struct smb_request *req)
         }
 
 	if (!CAN_PRINT(conn)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRerror));
+		reply_force_doserror(req, ERRSRV, ERRerror);
 		END_PROFILE(SMBsplclose);
 		return;
 	}
@@ -7240,7 +7240,7 @@ void reply_lockingX(struct smb_request *req)
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
+		reply_force_doserror(req, ERRDOS, ERRnoatomiclocks);
 		END_PROFILE(SMBlockingX);
 		return;
 	}
@@ -7428,7 +7428,7 @@ void reply_lockingX(struct smb_request *req)
 void reply_readbmpx(struct smb_request *req)
 {
 	START_PROFILE(SMBreadBmpx);
-	reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBreadBmpx);
 	return;
 }
@@ -7442,7 +7442,7 @@ void reply_readbmpx(struct smb_request *req)
 void reply_readbs(struct smb_request *req)
 {
 	START_PROFILE(SMBreadBs);
-	reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBreadBs);
 	return;
 }
@@ -7528,7 +7528,7 @@ void reply_setattrE(struct smb_request *req)
 void reply_writebmpx(struct smb_request *req)
 {
 	START_PROFILE(SMBwriteBmpx);
-	reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBwriteBmpx);
 	return;
 }
@@ -7542,7 +7542,7 @@ void reply_writebmpx(struct smb_request *req)
 void reply_writebs(struct smb_request *req)
 {
 	START_PROFILE(SMBwriteBs);
-	reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBwriteBs);
 	return;
 }

@@ -39,7 +39,7 @@ bool use_nt_status(void)
  Setting eclass and ecode to non-zero and status to NT_STATUS_OK (0) will map
  from a DOS error to an NT error and reply with an NT error if the client
  supports CAP_STATUS32, otherwise it replies with the given DOS error.
- This is the path taken by calling reply_doserror(req, eclass, ecode).
+ This mode is currently not used in the server.
 
  Setting both eclass, ecode and status to non-zero values allows a non-default
  mapping from NT error codes to DOS error codes, and will return one or the
@@ -48,13 +48,7 @@ bool use_nt_status(void)
 
  Setting status to NT_STATUS_DOS(eclass, ecode) forces DOS errors even if the
  client supports CAP_STATUS32. This is the path taken to force a DOS error
- reply by calling reply_nterror(req, NT_STATUS_DOS(eclass, ecode)).
- This is *very* unintuitive and the code should be changed so all
- current callers of reply_doserror() which don't care if they return NTSTATUS
- or DOS errors are changed to call reply_nterror() instead.
- reply_doserror() should then be changed to return DOS errors only and
- replace all current callers of reply_nterror(req, NT_STATUS_DOS(eclass, ecode)).
- I'll update this comment once the conversion is done. JRA.
+ reply by calling reply_force_doserror(req, eclass, ecode).
 
  Setting status only and eclass to -1 forces NT errors even if the client
  doesn't support CAP_STATUS32. This mode is currently never used in the
@@ -122,19 +116,17 @@ void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 }
 
 /****************************************************************************
- NB. This DOES NOT FORCE A DOS ERROR on the wire (although it
- probably should, I'm moving the rest of the Samba code towards that
- meaning. JRA.
+ Forces a DOS error on the wire.
 ****************************************************************************/
 
-void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
+void reply_force_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		    int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);
 	reply_outbuf(req, 0, 0);
 	error_packet_set((char *)req->outbuf,
 			eclass, ecode,
-			NT_STATUS_OK,
+			NT_STATUS_DOS(eclass, ecode),
 			line,
 			file);
 }
@@ -163,7 +155,7 @@ void reply_openerror(struct smb_request *req, NTSTATUS status)
 		/* EMFILE always seems to be returned as a DOS error.
 		 * See bug 6837. NOTE this forces a DOS error on the wire
 		 * even though it's calling reply_nterror(). */
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnofids));
+		reply_force_doserror(req, ERRDOS, ERRnofids);
 	} else {
 		reply_nterror(req, status);
 	}
