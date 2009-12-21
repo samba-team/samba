@@ -114,6 +114,14 @@ releaseip
 
 	Example: 60.nfs
 
+updateip
+	This event is triggered everytime the node moves a public ip
+	address between interfaces
+	This event takes four additional arguments :
+	'old-interface' 'new-interface' 'ipaddress' and 'netmask'
+
+	Example: 10.interface
+
 startrecovery
 	This event is triggered everytime we start a recovery process
 	or before we start changing ip address allocations.

@@ -604,6 +604,9 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	case CTDB_EVENT_RELEASE_IP:
 		return count_words(options) == 3;
 
+	case CTDB_EVENT_UPDATE_IP: /* old interface, new interface, IP address, netmask bits. */
+		return count_words(options) == 4;
+
 	default:
 		DEBUG(DEBUG_ERR,(__location__ "Unknown ctdb_eventscript_call %u\n", call));
 		return false;
