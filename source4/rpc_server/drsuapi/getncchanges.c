@@ -522,6 +522,8 @@ struct drsuapi_getncchanges_state {
 	uint64_t min_usn;
 	uint64_t highest_usn;
 	struct ldb_dn *last_dn;
+	struct drsuapi_DsReplicaLinkedAttribute *la_list;
+	uint32_t la_count;
 };
 
 /* 
@@ -782,13 +784,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return werr;
 		}
 
-		werr = get_nc_changes_add_links(b_state->sam_ctx, mem_ctx,
+		werr = get_nc_changes_add_links(b_state->sam_ctx, getnc_state,
 						getnc_state->ncRoot_dn,
 						schema, getnc_state->min_usn,
 						req8->replica_flags,
 						msg,
-						&r->out.ctr->ctr6.linked_attributes,
-						&r->out.ctr->ctr6.linked_attributes_count);
+						&getnc_state->la_list,
+						&getnc_state->la_count);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -842,6 +844,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (i < getnc_state->site_res->count) {
 		r->out.ctr->ctr6.more_data = true;
 	} else {
+		r->out.ctr->ctr6.linked_attributes_count = getnc_state->la_count;
+		r->out.ctr->ctr6.linked_attributes = talloc_steal(mem_ctx, getnc_state->la_list);
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.uptodateness_vector->version = 2;
 		r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
