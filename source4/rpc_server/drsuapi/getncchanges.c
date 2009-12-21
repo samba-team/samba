@@ -239,7 +239,6 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 				    const struct dsdb_schema *schema,
 				    const struct dsdb_attribute *sa,
 				    struct ldb_message *msg,
-				    struct ldb_message_element *el,
 				    struct dsdb_dn *dsdb_dn,
 				    struct drsuapi_DsReplicaLinkedAttribute **la_list,
 				    uint32_t *la_count)
@@ -287,9 +286,9 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 	}
 
 	/* we need a message_element with just one value in it */
-	v = data_blob_string_const(dsdb_dn_get_linearized(*la_list, dsdb_dn));
+	v = data_blob_string_const(dsdb_dn_get_extended_linearized(*la_list, dsdb_dn, 1));
 
-	val_el = *el;
+	val_el.name = sa->lDAPDisplayName;
 	val_el.values = &v;
 	val_el.num_values = 1;
 
@@ -298,7 +297,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 
 	if (drs.value_ctr.num_values != 1) {
 		DEBUG(1,(__location__ ": Failed to build DRS blob for linked attribute %s in %s\n",
-			 el->name, ldb_dn_get_linearized(msg->dn)));
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
@@ -379,7 +378,7 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 			}
 
 			werr = get_nc_changes_add_la(mem_ctx, sam_ctx, schema, sa, msg,
-						     el, dsdb_dn, la_list, la_count);
+						     dsdb_dn, la_list, la_count);
 			if (!W_ERROR_IS_OK(werr)) {
 				talloc_free(tmp_ctx);
 				return werr;
