@@ -2088,8 +2088,10 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	return ldb_next_request(ac->module, down_req);
 }
 
-/* remove forwards and backlinks as needed when an object
-   is deleted */
+/*
+   remove links from objects that point at this object when an object
+   is deleted
+ */
 static int replmd_delete_remove_link(struct ldb_module *module,
 				     struct dsdb_schema *schema,
 				     struct ldb_dn *dn,
