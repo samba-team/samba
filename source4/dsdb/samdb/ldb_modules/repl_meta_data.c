@@ -618,9 +618,12 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 		/* note that the DN already has the extended
 		   components from the extended_dn_store module */
 		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &target_guid, "GUID");
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+		if (!NT_STATUS_IS_OK(status) || GUID_all_zero(&target_guid)) {
+			ret = dsdb_module_guid_by_dn(module, dsdb_dn->dn, &target_guid);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
 		}
 
 		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa, false);
