@@ -844,6 +844,7 @@ struct ctdb_req_control {
 	uint64_t srvid;
 	uint32_t client_id;
 #define CTDB_CTRL_FLAG_NOREPLY   1
+#define CTDB_CTRL_FLAG_OPCODE_SPECIFIC   0xFFFF0000
 	uint32_t flags;
 	uint32_t datalen;
 	uint8_t data[1];
