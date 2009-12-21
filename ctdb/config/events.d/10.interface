@@ -113,7 +113,7 @@ case "$1" in
 
      monitor)
 	INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES | 
-		sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//"`
+		sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//"`
 
 	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
 	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && INTERFACES="$CTDB_NATGW_PUBLIC_IFACE $INTERFACES"
