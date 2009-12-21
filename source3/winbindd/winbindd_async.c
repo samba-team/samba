@@ -84,33 +84,6 @@ void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		      &state->response, do_async_recv, state);
 }
 
-static void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-			    const struct winbindd_request *request,
-			    void (*cont)(TALLOC_CTX *mem_ctx, bool success,
-					 struct winbindd_response *response,
-					 void *c, void *private_data),
-			    void *c, void *private_data)
-{
-	struct do_async_state *state;
-
-	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
-	if (state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		cont(mem_ctx, False, NULL, c, private_data);
-		return;
-	}
-
-	state->mem_ctx = mem_ctx;
-	state->request = *request;
-	state->request.length = sizeof(state->request);
-	state->cont = cont;
-	state->c = c;
-	state->private_data = private_data;
-
-	async_domain_request(mem_ctx, domain, &state->request,
-			     &state->response, do_async_recv, state);
-}
-
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
 {
