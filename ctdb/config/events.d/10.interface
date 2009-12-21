@@ -212,6 +212,63 @@ case "$1" in
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
+     ##################################################
+     # called when ctdbd wants to update an IP address
+     updateip)
+	if [ $# != 5 ]; then
+	   echo "must supply old interface, new interface, IP and maskbits"
+	   exit 1
+	fi
+
+	# moving an IP is a bit more complex than it seems.
+	# First we drop all traffic on the old interface.
+	# Then we try to add the ip to the new interface and before
+	# we finally remove it from the old interface.
+	#
+	# 1) firewall this IP, so no new external packets arrive for it
+	# 2) add the IP to the new interface
+	# 3) remove the IP from the old interface
+	# 4) remove the firewall rule
+	# 5) use ctdb gratiousarp to propagate the new mac address
+	# 6) use netstat -tn to find existing connections, and tickle them
+	oiface=$2
+	niface=$3
+	ip=$4
+	maskbits=$5
+
+	failed=0
+	# we do an extra delete to cope with the script being killed
+	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+	iptables -I INPUT -i $oiface -d $ip -j DROP
+
+	# we make sure the interface is up first
+	add_ip_to_iface $niface $ip $maskbits || {
+		iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+		exit 1;
+	}
+
+	delete_ip_from_iface $oiface $ip $maskbits || {
+		delete_ip_from_iface $niface $ip $maskbits
+		iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+		exit 1;
+	}
+
+	# cope with the script being killed while we have the interface blocked
+	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
+
+	# propagate the new mac address
+	ctdb gratiousarp $ip $niface
+
+	# tickle all existing connections, so that dropped packets
+	# are retransmited and the tcp streams work
+
+	tickle_tcp_connections $ip
+
+	;;
+
 
      ###########################################
      # called when ctdbd has finished a recovery
