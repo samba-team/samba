@@ -391,14 +391,6 @@ void winbindd_sids2xids_async(TALLOC_CTX *mem_ctx, void *sids, int size,
 			 void *private_data);
 enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 					   struct winbindd_cli_state *state);
-enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state);
-enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state);
-enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state);
-enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state);
 
 /* The following definitions come from winbindd/winbindd_locator.c  */
 
