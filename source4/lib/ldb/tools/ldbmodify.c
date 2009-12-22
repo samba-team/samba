@@ -33,6 +33,7 @@
 
 #include "ldb.h"
 #include "tools/cmdline.h"
+#include "ldbutil.h"
 
 static int failures;
 static struct ldb_cmdline *options;
@@ -52,18 +53,23 @@ static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 {
 	struct ldb_ldif *ldif;
 	int ret = LDB_SUCCESS;
-	
+	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+	if (options->controls != NULL &&  req_ctrls== NULL) {
+		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
+		return -1;
+	}
+
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
 		switch (ldif->changetype) {
 		case LDB_CHANGETYPE_NONE:
 		case LDB_CHANGETYPE_ADD:
-			ret = ldb_add(ldb, ldif->msg);
+			ret = ldb_add_ctrl(ldb, ldif->msg,req_ctrls);
 			break;
 		case LDB_CHANGETYPE_DELETE:
-			ret = ldb_delete(ldb, ldif->msg->dn);
+			ret = ldb_delete_ctrl(ldb, ldif->msg->dn,req_ctrls);
 			break;
 		case LDB_CHANGETYPE_MODIFY:
-			ret = ldb_modify(ldb, ldif->msg);
+			ret = ldb_modify_ctrl(ldb, ldif->msg,req_ctrls);
 			break;
 		}
 		if (ret != LDB_SUCCESS) {
