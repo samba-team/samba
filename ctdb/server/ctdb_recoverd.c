@@ -64,6 +64,7 @@ struct ctdb_recoverd {
 	TALLOC_CTX *ip_reallocate_ctx;
 	struct ip_reallocate_list *reallocate_callers;
 	TALLOC_CTX *ip_check_disable_ctx;
+	struct ctdb_control_get_ifaces *ifaces;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -2326,10 +2327,12 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 static int verify_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct ctdb_control_get_ifaces *ifaces = NULL;
 	struct ctdb_all_public_ips *ips = NULL;
 	struct ctdb_uptime *uptime1 = NULL;
 	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
+	bool need_iface_check = false;
 	bool need_takeover_run = false;
 
 	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
@@ -2338,6 +2341,30 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd 
 		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
 		talloc_free(mem_ctx);
 		return -1;
+	}
+
+
+	/* read the interfaces from the local node */
+	ret = ctdb_ctrl_get_ifaces(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ifaces);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get interfaces from local node %u\n", pnn));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	if (!rec->ifaces) {
+		need_iface_check = true;
+	} else if (rec->ifaces->num != ifaces->num) {
+		need_iface_check = true;
+	} else if (memcmp(rec->ifaces, ifaces, talloc_get_size(ifaces)) != 0) {
+		need_iface_check = true;
+	}
+
+	if (need_iface_check) {
+		DEBUG(DEBUG_NOTICE, ("The interfaces status has changed on "
+				     "local node %u - force takeover run\n",
+				     pnn));
+		need_takeover_run = true;
 	}
 
 	/* read the ip allocation from the local node */
@@ -2380,6 +2407,9 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd 
 
 		return 0;
 	}
+
+	talloc_free(rec->ifaces);
+	rec->ifaces = talloc_steal(rec, ifaces);
 
 	/* verify that we have the ip addresses we should have
 	   and we dont have ones we shouldnt have.
