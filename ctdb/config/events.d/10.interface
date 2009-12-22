@@ -141,6 +141,14 @@ case "$1" in
 	done
 	;;
 
+     #############################
+     # called after ctdbd has done its initial recovery
+     # and we start the services to become healthy
+     startup)
+	monitor_interfaces
+
+	;;
+
 
      ################################################
      # called when ctdbd wants to claim an IP address
