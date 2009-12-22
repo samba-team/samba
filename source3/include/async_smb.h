@@ -22,11 +22,6 @@
 
 #include "includes.h"
 
-bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
-		      uint8_t wct, const uint16_t *vwv,
-		      size_t bytes_alignment,
-		      uint32_t num_bytes, const uint8_t *bytes);
-
 /*
  * Fetch an error out of a NBT packet
  */
