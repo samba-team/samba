@@ -1880,7 +1880,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		}
 		ldb_msg_add_empty(old_msg, el->name, 0, &new_el);
 		new_el->num_values = el->num_values;
-		new_el->values = el->values;
+		new_el->values = talloc_steal(msg->elements, el->values);
 
 		/* TODO: this relises a bit too heavily on the exact
 		   behaviour of ldb_msg_find_element and
