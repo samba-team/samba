@@ -432,6 +432,13 @@ static void cache_mangled_name( const char mangled_name[13],
 		if( !s1[i] && !s2[i] ) {
 			/* Truncate at the '.' */
 			*s1 = '\0';
+			/*
+			 * DANGER WILL ROBINSON - this
+			 * is changing a const string via
+			 * an aliased pointer ! Remember to
+			 * put it back once we've used it.
+			 * JRA
+			 */
 			*s2 = '\0';
 		}
 	}
@@ -443,6 +450,8 @@ static void cache_mangled_name( const char mangled_name[13],
 	} else {
 		DEBUG(5,("cache_mangled_name: Stored entry %s -> %s\n", mangled_name_key, raw_name));
 	}
+	/* Restore the change we made to the const string. */
+	*s2 = '.';
 }
 
 /* ************************************************************************** **
