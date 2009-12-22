@@ -46,7 +46,7 @@ typedef struct ntlmssp_state
 	unsigned int ref_count;
 	enum ntlmssp_role role;
 	enum server_types server_role;
-	uint32 expected_state;
+	uint32_t expected_state;
 
 	bool unicode;
 	bool use_ntlmv2;
@@ -64,7 +64,7 @@ typedef struct ntlmssp_state
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 
-	uint32 neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
 	void *auth_context;
 
@@ -126,12 +126,12 @@ typedef struct ntlmssp_state
 	struct arcfour_state send_seal_arc4_state;
 	struct arcfour_state recv_seal_arc4_state;
 
-	uint32 ntlm2_send_seq_num;
-	uint32 ntlm2_recv_seq_num;
+	uint32_t ntlm2_send_seq_num;
+	uint32_t ntlm2_recv_seq_num;
 
 	/* ntlmv1 */
 	struct arcfour_state ntlmv1_arc4_state;
-	uint32 ntlmv1_seq_num;
+	uint32_t ntlmv1_seq_num;
 
 	/* it turns out that we don't always get the
 	   response in at the time we want to process it.
