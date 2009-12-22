@@ -25,12 +25,28 @@ monitor_interfaces()
 	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
 	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && INTERFACES="$CTDB_NATGW_PUBLIC_IFACE $INTERFACES"
 
+	local IFACES=`ctdb ifaces -Y | grep -v '^:Name:LinkStatus:References:'`
+
+	local I
 	local IFACE
+
+	for I in $IFACES; do
+		IFACE=`echo -n "$I" | cut -d ':' -f2`
+		INTERFACES="$IFACE $INTERFACES"
+	done
 
 	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
 
 	local fail=0
+	local force_fail=0
+	local ok=0
 	for IFACE in $INTERFACES ; do
+
+	    local OLDLINK=`echo -n "$IFACES" | grep "^:$IFACE:" | cut -d ':' -f3 | xargs`
+	    test -z "$OLDLINK" && {
+		force_fail=1
+	    }
+
 	    # These interfaces are sometimes bond devices
 	    # When we use VLANs for bond interfaces, there will only
 	    # be an entry in /proc for the underlying real interface
@@ -39,12 +55,22 @@ monitor_interfaces()
 		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
 			fail=1
+			test -n "$OLDLINK" && {
+				ctdb setifacelink $IFACE down
+			}
 			continue;
 		}
 		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
 			echo "ERROR: public network interface $REALIFACE is down"
 			fail=1
+			test -n "$OLDLINK" && {
+				ctdb setifacelink $IFACE down
+			}
 			continue;
+		}
+		test -n "$OLDLINK" && {
+			ok=1 # we only set ok for interfaces known to ctdbd
+			ctdb setifacelink $IFACE up
 		}
 		return 0;
 	    }
@@ -64,8 +90,15 @@ monitor_interfaces()
 			/usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
 			    echo "ERROR: No link on the public network interface $IFACE"
 			    fail=1
+			    test -n "$OLDLINK" && {
+				ctdb setifacelink $IFACE down
+			    }
 			    continue
 			}
+		    }
+		    test -n "$OLDLINK" && {
+			ok=1 # we only set ok for interfaces known to ctdbd
+			ctdb setifacelink $IFACE up
 		    }
 		}
 		;;
@@ -73,7 +106,19 @@ monitor_interfaces()
 
 	done
 
-	return $fail;
+	test x"$fail" = x"0" && {
+		return 0;
+	}
+
+	test x"$force_fail" != x"0" && {
+		return 1;
+	}
+
+	test x"$ok" = x"1" && {
+		return 2;
+	}
+
+	return 1;
 }
 
 case "$1" in 
