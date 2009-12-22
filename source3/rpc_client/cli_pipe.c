@@ -23,6 +23,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
+#include "ntlmssp.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI

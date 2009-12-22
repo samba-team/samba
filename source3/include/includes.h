@@ -659,7 +659,9 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/crc32.h"
 #include "../lib/crypto/hmacmd5.h"
-#include "ntlmssp.h"
+
+struct ntlmssp_state;
+
 #include "auth.h"
 #include "ntdomain.h"
 #include "reg_objects.h"

@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"

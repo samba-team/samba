@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "ntlmssp.h"
 
 /******************************************************************************
  Pull out the encryption context for this packet. 0 means global context.

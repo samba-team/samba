@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 #include "../libcli/auth/ntlmssp_ndr.h"

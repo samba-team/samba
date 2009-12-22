@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "ntlmssp.h"
 
 /**
  * Return the challenge as determined by the authentication subsystem 

@@ -22,6 +22,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
+#include "ntlmssp.h"
 
 static const struct {
 	int prot;

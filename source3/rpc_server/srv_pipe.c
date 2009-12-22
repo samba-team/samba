@@ -31,6 +31,7 @@
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
+#include "ntlmssp.h"
 
 extern struct current_user current_user;
 
