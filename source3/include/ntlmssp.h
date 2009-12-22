@@ -20,7 +20,7 @@
 */
 
 /* NTLMSSP mode */
-enum NTLMSSP_ROLE
+enum ntlmssp_role
 {
 	NTLMSSP_SERVER,
 	NTLMSSP_CLIENT
@@ -44,7 +44,7 @@ enum NTLM_MESSAGE_TYPE
 typedef struct ntlmssp_state
 {
 	unsigned int ref_count;
-	enum NTLMSSP_ROLE role;
+	enum ntlmssp_role role;
 	enum server_types server_role;
 	uint32 expected_state;
 

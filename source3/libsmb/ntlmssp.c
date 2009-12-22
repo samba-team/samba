@@ -41,7 +41,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
  */
 
 static const struct ntlmssp_callbacks {
-	enum NTLMSSP_ROLE role;
+	enum ntlmssp_role role;
 	enum NTLM_MESSAGE_TYPE ntlmssp_command;
 	NTSTATUS (*fn)(struct ntlmssp_state *ntlmssp_state,
 		       DATA_BLOB in, DATA_BLOB *out);
