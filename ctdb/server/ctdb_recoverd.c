@@ -2330,6 +2330,7 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd 
 	struct ctdb_uptime *uptime1 = NULL;
 	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
+	bool need_takeover_run = false;
 
 	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
 				CTDB_CURRENT_NODE, &uptime1);
@@ -2389,43 +2390,35 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd 
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == pnn) {
 			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				struct takeover_run_reply rd;
-				TDB_DATA data;
-
 				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
 					ctdb_addr_to_str(&ips->ips[j].addr)));
-
-				rd.pnn   = ctdb->pnn;
-				rd.srvid = 0;
-				data.dptr = (uint8_t *)&rd;
-				data.dsize = sizeof(rd);
-
-			        ret = ctdb_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
-				}
+				need_takeover_run = true;
 			}
 		} else {
 			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				struct takeover_run_reply rd;
-				TDB_DATA data;
-
 				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
 					ctdb_addr_to_str(&ips->ips[j].addr)));
-
-				rd.pnn   = ctdb->pnn;
-				rd.srvid = 0;
-				data.dptr = (uint8_t *)&rd;
-				data.dsize = sizeof(rd);
-
-			        ret = ctdb_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
-				}
+				need_takeover_run = true;
 			}
 		}
 	}
 
+	if (need_takeover_run) {
+		struct takeover_run_reply rd;
+		TDB_DATA data;
+
+		DEBUG(DEBUG_CRIT,("Trigger takeoverrun\n"));
+
+		rd.pnn = ctdb->pnn;
+		rd.srvid = 0;
+		data.dptr = (uint8_t *)&rd;
+		data.dsize = sizeof(rd);
+
+		ret = ctdb_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
+		}
+	}
 	talloc_free(mem_ctx);
 	return 0;
 }
