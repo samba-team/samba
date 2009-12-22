@@ -382,6 +382,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *result;
 	struct cli_smb_state *state;
+	struct timeval endtime;
 
 	if (iov_count > MAX_SMB_IOV) {
 		/*
@@ -422,6 +423,10 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	}
 	state->iov_count = iov_count + 3;
 
+	endtime = timeval_current_ofs(0, cli->timeout * 1000);
+	if (!tevent_req_set_endtime(result, ev, endtime)) {
+		tevent_req_nomem(NULL, result);
+	}
 	return result;
 }
 
