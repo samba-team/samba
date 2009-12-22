@@ -69,18 +69,7 @@ struct auth_session_info;
 struct cli_credentials;
 struct gensec_settings;
 struct tevent_context;
-
-struct gensec_update_request {
-	struct gensec_security *gensec_security;
-	void *private_data;
-	DATA_BLOB in;
-	DATA_BLOB out;
-	NTSTATUS status;
-	struct {
-		void (*fn)(struct gensec_update_request *req, void *private_data);
-		void *private_data;
-	} callback;
-};
+struct tevent_req;
 
 struct gensec_settings {
 	struct loadparm_context *lp_ctx;
@@ -231,10 +220,11 @@ NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security,
 						 const char **sasl_names);
 NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 		       const DATA_BLOB in, DATA_BLOB *out);
-void gensec_update_send(struct gensec_security *gensec_security, const DATA_BLOB in,
-				 void (*callback)(struct gensec_update_request *req, void *private_data),
-				 void *private_data);
-NTSTATUS gensec_update_recv(struct gensec_update_request *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out);
+struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct gensec_security *gensec_security,
+				      const DATA_BLOB in);
+NTSTATUS gensec_update_recv(struct tevent_req *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out);
 void gensec_want_feature(struct gensec_security *gensec_security,
 			 uint32_t feature);
 bool gensec_have_feature(struct gensec_security *gensec_security,

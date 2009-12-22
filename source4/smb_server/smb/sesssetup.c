@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "version.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
@@ -289,9 +290,9 @@ struct sesssetup_spnego_state {
 	struct smbsrv_session *smb_sess;
 };
 
-static void sesssetup_spnego_send(struct gensec_update_request *greq, void *private_data)
+static void sesssetup_spnego_send(struct tevent_req *subreq)
 {
-	struct sesssetup_spnego_state *s = talloc_get_type(private_data,
+	struct sesssetup_spnego_state *s = tevent_req_callback_data(subreq,
 					   struct sesssetup_spnego_state);
 	struct smbsrv_request *req = s->req;
 	union smb_sesssetup *sess = s->sess;
@@ -301,7 +302,8 @@ static void sesssetup_spnego_send(struct gensec_update_request *greq, void *priv
 	NTSTATUS skey_status;
 	DATA_BLOB session_key;
 
-	status = gensec_update_recv(greq, req, &sess->spnego.out.secblob);
+	status = gensec_update_recv(subreq, req, &sess->spnego.out.secblob);
+	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -343,6 +345,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	struct smbsrv_session *smb_sess = NULL;
 	struct sesssetup_spnego_state *s = NULL;
 	uint16_t vuid;
+	struct tevent_req *subreq;
 
 	sess->spnego.out.vuid = 0;
 	sess->spnego.out.action = 0;
@@ -410,8 +413,15 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	s->sess		= sess;
 	s->smb_sess	= smb_sess;
 
-	gensec_update_send(smb_sess->gensec_ctx, sess->spnego.in.secblob,
-			   sesssetup_spnego_send, s);
+	subreq = gensec_update_send(s,
+				    req->smb_conn->connection->event.ctx,
+				    smb_sess->gensec_ctx,
+				    sess->spnego.in.secblob);
+	if (!subreq) {
+		goto nomem;
+	}
+	tevent_req_set_callback(subreq, sesssetup_spnego_send, s);
+
 	return;
 
 nomem:
