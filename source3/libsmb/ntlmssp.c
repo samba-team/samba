@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
-#include "libsmb/ntlmssp_ndr.h"
+#include "../libcli/auth/ntlmssp_ndr.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       DATA_BLOB reply, DATA_BLOB *next_request);

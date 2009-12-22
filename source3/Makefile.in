@@ -482,7 +482,7 @@ LIBSMB_OBJ0 = \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_sign.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \
-	       libsmb/ntlmssp_ndr.o
+	       ../libcli/auth/ntlmssp_ndr.o
 
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)
