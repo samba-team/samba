@@ -3213,43 +3213,43 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status);
 /* The following definitions come from libsmb/ntlmssp.c  */
 
 void debug_ntlmssp_flags(uint32 neg_flags);
-NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user) ;
-NTSTATUS ntlmssp_set_hashes(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
+NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 		const unsigned char lm_hash[16],
 		const unsigned char nt_hash[16]) ;
-NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password) ;
-NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain) ;
-NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *workstation) ;
-NTSTATUS ntlmssp_store_response(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
+NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
+NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) ;
+NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
 				DATA_BLOB response) ;
-void ntlmssp_want_feature_list(NTLMSSP_STATE *ntlmssp_state, char *feature_list);
-void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature);
-NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state, 
+void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);
+void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature);
+NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
-void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state);
-DATA_BLOB ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state, TALLOC_CTX *mem_ctx);
-NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state);
-NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state);
+void ntlmssp_end(struct ntlmssp_state **ntlmssp_state);
+DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx);
+NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state);
+NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state);
 
 /* The following definitions come from libsmb/ntlmssp_sign.c  */
 
-NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 				    const uchar *data, size_t length, 
 				    const uchar *whole_pdu, size_t pdu_length, 
 				    DATA_BLOB *sig) ;
-NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 				const uchar *data, size_t length, 
 				const uchar *whole_pdu, size_t pdu_length, 
 				const DATA_BLOB *sig) ;
-NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     uchar *data, size_t length,
 			     uchar *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig);
-NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 				uchar *data, size_t length,
 				uchar *whole_pdu, size_t pdu_length,
 				DATA_BLOB *sig);
-NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state);
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
 
 /* The following definitions come from libsmb/passchange.c  */
 
@@ -3270,8 +3270,8 @@ bool netsamlogon_cache_have(const DOM_SID *user_sid);
 
 NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num);
 bool common_encryption_on(struct smb_trans_enc_state *es);
-NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf);
-NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS common_ntlm_decrypt_buffer(struct ntlmssp_state *ntlmssp_state, char *buf);
+NTSTATUS common_ntlm_encrypt_buffer(struct ntlmssp_state *ntlmssp_state,
 				uint16 enc_ctx_num,
 				char *buf,
 				char **ppbuf_out);

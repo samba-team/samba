@@ -635,7 +635,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 	return nt_status;
 }
 
-static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_state) 
+static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntlmssp_state)
 {
 	NTSTATUS status;
 	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
@@ -685,7 +685,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_st
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state) 
+static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_state)
 {
 	NTSTATUS status = ntlmssp_server_start(ntlmssp_state);
 	
@@ -1172,7 +1172,7 @@ static void offer_gss_spnego_mechs(void) {
 static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					char *buf, int length)
 {
-	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	static struct ntlmssp_state *ntlmssp_state = NULL;
 	struct spnego_data request, response;
 	DATA_BLOB token;
 	NTSTATUS status;
@@ -1415,7 +1415,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	return;
 }
 
-static NTLMSSP_STATE *client_ntlmssp_state = NULL;
+static struct ntlmssp_state *client_ntlmssp_state = NULL;
 
 static bool manage_client_ntlmssp_init(struct spnego_data spnego)
 {

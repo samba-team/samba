@@ -58,7 +58,7 @@ enum ntlmssp_direction {
 	NTLMSSP_RECEIVE
 };
 
-static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
+static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_state,
 						const uchar *data, size_t length,
 						const uchar *whole_pdu, size_t pdu_length,
 						enum ntlmssp_direction direction,
@@ -137,7 +137,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 				    const uchar *data, size_t length,
 				    const uchar *whole_pdu, size_t pdu_length,
 				    DATA_BLOB *sig)
@@ -168,7 +168,7 @@ NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 				const uchar *data, size_t length,
 				const uchar *whole_pdu, size_t pdu_length,
 				const DATA_BLOB *sig)
@@ -236,7 +236,7 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     uchar *data, size_t length,
 			     uchar *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
@@ -302,7 +302,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 				uchar *data, size_t length,
 				uchar *whole_pdu, size_t pdu_length,
 				DATA_BLOB *sig)
@@ -329,7 +329,7 @@ NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 /**
    Initialise the state for NTLMSSP signing.
 */
-NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 {
 	unsigned char p24[24];
 	TALLOC_CTX *mem_ctx;

@@ -49,7 +49,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 					DATA_BLOB *auth_msg)
 {
 	NTSTATUS status;
-	NTLMSSP_STATE *ntlmssp_state = NULL;
+	struct ntlmssp_state *ntlmssp_state = NULL;
 	DATA_BLOB dummy_msg, reply;
 
 	status = ntlmssp_client_start(&ntlmssp_state);

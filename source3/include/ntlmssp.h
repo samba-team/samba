@@ -41,7 +41,7 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_FEATURE_SIGN               0x00000002
 #define NTLMSSP_FEATURE_SEAL               0x00000004
 
-typedef struct ntlmssp_state
+struct ntlmssp_state
 {
 	unsigned int ref_count;
 	enum ntlmssp_role role;
@@ -137,4 +137,4 @@ typedef struct ntlmssp_state
 	   response in at the time we want to process it.
 	   Store it here, until we need it */
 	DATA_BLOB stored_response;
-} NTLMSSP_STATE;
+};
