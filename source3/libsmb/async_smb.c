@@ -505,12 +505,10 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		}
 		iov[0].iov_base = (void *)buf;
 		iov[0].iov_len = talloc_get_size(buf);
-		subreq = writev_send(state, state->ev, state->cli->outgoing,
-				     state->cli->fd, false, iov, 1);
-	} else {
-		subreq = writev_send(state, state->ev, state->cli->outgoing,
-				     state->cli->fd, false, iov, iov_count);
+		iov_count = 1;
 	}
+	subreq = writev_send(state, state->ev, state->cli->outgoing,
+			     state->cli->fd, false, iov, iov_count);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
