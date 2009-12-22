@@ -1052,121 +1052,225 @@ fail:
  Do a spnego/NTLMSSP encrypted session setup.
 ****************************************************************************/
 
-static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *user, 
-					  const char *pass, const char *domain)
-{
+struct cli_session_setup_ntlmssp_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
 	struct ntlmssp_state *ntlmssp_state;
-	NTSTATUS nt_status;
-	int turn = 1;
-	DATA_BLOB msg1;
-	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB blob_in = data_blob_null;
-	DATA_BLOB blob_out = data_blob_null;
+	int turn;
+	DATA_BLOB blob_out;
+};
+
+static int cli_session_setup_ntlmssp_state_destructor(
+	struct cli_session_setup_ntlmssp_state *state)
+{
+	if (state->ntlmssp_state != NULL) {
+		ntlmssp_end(&state->ntlmssp_state);
+	}
+	return 0;
+}
+
+static void cli_session_setup_ntlmssp_done(struct tevent_req *req);
+
+static struct tevent_req *cli_session_setup_ntlmssp_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	const char *user, const char *pass, const char *domain)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_session_setup_ntlmssp_state *state;
+	NTSTATUS status;
+	DATA_BLOB blob_out;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_session_setup_ntlmssp_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->turn = 1;
+
+	state->ntlmssp_state = NULL;
+	talloc_set_destructor(
+		state, cli_session_setup_ntlmssp_state_destructor);
 
 	cli_temp_set_signing(cli);
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
-		return nt_status;
+	status = ntlmssp_client_start(&state->ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
-	ntlmssp_want_feature(ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
-
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
-		return nt_status;
+	ntlmssp_want_feature(state->ntlmssp_state,
+			     NTLMSSP_FEATURE_SESSION_KEY);
+	status = ntlmssp_set_username(state->ntlmssp_state, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
-		return nt_status;
+	status = ntlmssp_set_domain(state->ntlmssp_state, domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, pass))) {
-		return nt_status;
+	status = ntlmssp_set_password(state->ntlmssp_state, pass);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = ntlmssp_update(state->ntlmssp_state, data_blob_null,
+				&blob_out);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto fail;
 	}
 
-	do {
-		nt_status = ntlmssp_update(ntlmssp_state, 
-						  blob_in, &blob_out);
-		data_blob_free(&blob_in);
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(nt_status)) {
-			if (turn == 1) {
-				/* and wrap it in a SPNEGO wrapper */
-				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
-			} else {
-				/* wrap it in SPNEGO */
-				msg1 = spnego_gen_auth(blob_out);
-			}
+	state->blob_out = gen_negTokenInit(OID_NTLMSSP, blob_out);
+	data_blob_free(&blob_out);
 
-			/* now send that blob on its way */
-			if (!cli_session_setup_blob_send(cli, msg1)) {
-				DEBUG(3, ("Failed to send NTLMSSP/SPNEGO blob to server!\n"));
-				nt_status = NT_STATUS_UNSUCCESSFUL;
-			} else {
-				blob = cli_session_setup_blob_receive(cli);
+	subreq = cli_sesssetup_blob_send(state, ev, cli, state->blob_out);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_done, req);
+	return req;
+fail:
+	tevent_req_nterror(req, status);
+	return tevent_req_post(req, ev);
+}
 
-				nt_status = cli_nt_error(cli);
-				if (cli_is_error(cli) && NT_STATUS_IS_OK(nt_status)) {
-					if (cli->smb_rw_error == SMB_READ_BAD_SIG) {
-						nt_status = NT_STATUS_ACCESS_DENIED;
-					} else {
-						nt_status = NT_STATUS_UNSUCCESSFUL;
-					}
-				}
-			}
-			data_blob_free(&msg1);
+static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
+		req, struct cli_session_setup_ntlmssp_state);
+	DATA_BLOB blob_in, msg_in, blob_out;
+	char *inbuf = NULL;
+	bool parse_ret;
+	NTSTATUS status;
+
+	status = cli_sesssetup_blob_recv(subreq, talloc_tos(), &blob_in,
+					 &inbuf);
+	TALLOC_FREE(subreq);
+	data_blob_free(&state->blob_out);
+
+	if (NT_STATUS_IS_OK(status)) {
+		if (state->cli->server_domain[0] == '\0') {
+			fstrcpy(state->cli->server_domain,
+				state->ntlmssp_state->server_domain);
 		}
-
-		if (!blob.length) {
-			if (NT_STATUS_IS_OK(nt_status)) {
-				nt_status = NT_STATUS_UNSUCCESSFUL;
-			}
-		} else if ((turn == 1) && 
-			   NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DATA_BLOB tmp_blob = data_blob_null;
-			/* the server might give us back two challenges */
-			if (!spnego_parse_challenge(blob, &blob_in, 
-						    &tmp_blob)) {
-				DEBUG(3,("Failed to parse challenges\n"));
-				nt_status = NT_STATUS_INVALID_PARAMETER;
-			}
-			data_blob_free(&tmp_blob);
-		} else {
-			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
-							&blob_in)) {
-				DEBUG(3,("Failed to parse auth response\n"));
-				if (NT_STATUS_IS_OK(nt_status) 
-				    || NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) 
-					nt_status = NT_STATUS_INVALID_PARAMETER;
-			}
-		}
-		data_blob_free(&blob);
-		data_blob_free(&blob_out);
-		turn++;
-	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
-
-	data_blob_free(&blob_in);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-
-		if (cli->server_domain[0] == '\0') {
-			fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
-		}
-		cli_set_session_key(cli, ntlmssp_state->session_key);
+		cli_set_session_key(
+			state->cli, state->ntlmssp_state->session_key);
 
 		if (cli_simple_set_signing(
-			    cli, ntlmssp_state->session_key, data_blob_null)) {
+			    state->cli, state->ntlmssp_state->session_key,
+			    data_blob_null)
+		    && !cli_check_sign_mac(state->cli, inbuf, 1)) {
+			TALLOC_FREE(subreq);
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+		TALLOC_FREE(subreq);
+		ntlmssp_end(&state->ntlmssp_state);
+		tevent_req_done(req);
+		return;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
 
-			if (!cli_check_sign_mac(cli, cli->inbuf, 1)) {
-				nt_status = NT_STATUS_ACCESS_DENIED;
-			}
+	if (blob_in.length == 0) {
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	if ((state->turn == 1)
+	    && NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DATA_BLOB tmp_blob = data_blob_null;
+		/* the server might give us back two challenges */
+		parse_ret = spnego_parse_challenge(blob_in, &msg_in,
+						   &tmp_blob);
+		data_blob_free(&tmp_blob);
+	} else {
+		parse_ret = spnego_parse_auth_response(blob_in, status,
+						       OID_NTLMSSP, &msg_in);
+	}
+	state->turn += 1;
+
+	if (!parse_ret) {
+		DEBUG(3,("Failed to parse auth response\n"));
+		if (NT_STATUS_IS_OK(status)
+		    || NT_STATUS_EQUAL(status,
+				       NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			tevent_req_nterror(
+				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
 		}
 	}
 
-	/* we have a reference conter on ntlmssp_state, if we are signing
-	   then the state will be kept by the signing engine */
+	status = ntlmssp_update(state->ntlmssp_state, msg_in, &blob_out);
 
-	ntlmssp_end(&ntlmssp_state);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		cli->vuid = 0;
+	if (!NT_STATUS_IS_OK(status)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		TALLOC_FREE(subreq);
+		ntlmssp_end(&state->ntlmssp_state);
+		tevent_req_nterror(req, status);
+		return;
 	}
-	return nt_status;
+
+	state->blob_out = spnego_gen_auth(blob_out);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nomem(state->blob_out.data, req)) {
+		return;
+	}
+
+	subreq = cli_sesssetup_blob_send(state, state->ev, state->cli,
+					 state->blob_out);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_done, req);
+}
+
+static NTSTATUS cli_session_setup_ntlmssp_recv(struct tevent_req *req)
+{
+	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
+		req, struct cli_session_setup_ntlmssp_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->vuid = 0;
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli,
+					  const char *user,
+					  const char *pass,
+					  const char *domain)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_session_setup_ntlmssp_send(ev, ev, cli, user, pass, domain);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_session_setup_ntlmssp_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
