@@ -744,7 +744,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	TALLOC_CTX *mem_ctx;
 	const char *message;
 	struct server_id *sender;
-	
+
 	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
 
 	if (!data->data) {
@@ -757,7 +757,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	if (mem_ctx == NULL) {
 		return;
 	}
-	
+
 	message = collect_onlinestatus(mem_ctx);
 	if (message == NULL) {
 		talloc_destroy(mem_ctx);
