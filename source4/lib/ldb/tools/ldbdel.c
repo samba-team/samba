@@ -84,9 +84,10 @@ static void usage(void)
 
 int main(int argc, const char **argv)
 {
+	struct ldb_control **req_ctrls;
+	struct ldb_cmdline *options;
 	struct ldb_context *ldb;
 	int ret = 0, i;
-	struct ldb_cmdline *options;
 
 	ldb = ldb_init(NULL, NULL);
 
@@ -96,7 +97,8 @@ int main(int argc, const char **argv)
 		usage();
 		exit(1);
 	}
-        struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+
+	req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
 		return -1;
