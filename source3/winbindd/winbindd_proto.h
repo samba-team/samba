@@ -287,8 +287,6 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 			  struct winbindd_response *response,
 			  void (*continuation)(void *private_data_data, bool success),
 			  void *private_data_data);
-void sendto_child(struct winbindd_cli_state *state,
-		  struct winbindd_child *child);
 void sendto_domain(struct winbindd_cli_state *state,
 		   struct winbindd_domain *domain);
 void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
