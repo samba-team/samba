@@ -210,12 +210,13 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 	struct tsocket_address *addr;
 	struct tsocket_address_bsd *bsda;
 
+	if (sa_socklen < sizeof(sa->sa_family)) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	switch (sa->sa_family) {
 	case AF_UNIX:
-		if (sa_socklen < sizeof(struct sockaddr_un)) {
-			errno = EINVAL;
-			return -1;
-		}
 		break;
 	case AF_INET:
 		if (sa_socklen < sizeof(struct sockaddr_in)) {
