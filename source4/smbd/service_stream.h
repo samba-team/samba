@@ -50,6 +50,9 @@ struct stream_connection {
 	struct messaging_context *msg_ctx;
 	struct loadparm_context *lp_ctx;
 
+	struct tsocket_address *local_address;
+	struct tsocket_address *remote_address;
+
 	/*
 	 * this transport layer session info, normally NULL
 	 * which means the same as an anonymous session info

@@ -26,6 +26,7 @@
 #include "lib/messaging/irpc.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
 
 /* the range of ports to try for dcerpc over tcp endpoints */
 #define SERVER_TCP_LOW_PORT  1024
@@ -164,7 +165,6 @@ static void stream_new_connection(struct tevent_context *ev,
 {
 	struct stream_socket *stream_socket = talloc_get_type(private_data, struct stream_socket);
 	struct stream_connection *srv_conn;
-	struct socket_address *c, *s;
 
 	srv_conn = talloc_zero(ev, struct stream_connection);
 	if (!srv_conn) {
@@ -205,20 +205,34 @@ static void stream_new_connection(struct tevent_context *ev,
 		return;
 	}
 
-	c = socket_get_peer_addr(sock, ev);
-	s = socket_get_my_addr(sock, ev);
-	if (s && c) {
+	srv_conn->remote_address = socket_get_remote_addr(srv_conn->socket, srv_conn);
+	if (!srv_conn->remote_address) {
+		stream_terminate_connection(srv_conn, "socket_get_remote_addr() failed");
+		return;
+	}
+
+	srv_conn->local_address = socket_get_local_addr(srv_conn->socket, srv_conn);
+	if (!srv_conn->local_address) {
+		stream_terminate_connection(srv_conn, "socket_get_local_addr() failed");
+		return;
+	}
+
+	{
+		TALLOC_CTX *tmp_ctx;
 		const char *title;
-		title = talloc_asprintf(s, "conn[%s] c[%s:%u] s[%s:%u] server_id[%s]",
+
+		tmp_ctx = talloc_new(srv_conn);
+
+		title = talloc_asprintf(tmp_ctx, "conn[%s] c[%s] s[%s] server_id[%s]",
 					stream_socket->ops->name, 
-					c->addr, c->port, s->addr, s->port,
-					cluster_id_string(s, server_id));
+					tsocket_address_string(srv_conn->remote_address, tmp_ctx),
+					tsocket_address_string(srv_conn->local_address, tmp_ctx),
+					cluster_id_string(tmp_ctx, server_id));
 		if (title) {
 			stream_connection_set_title(srv_conn, title);
 		}
+		talloc_free(tmp_ctx);
 	}
-	talloc_free(c);
-	talloc_free(s);
 
 	/* we're now ready to start receiving events on this stream */
 	TEVENT_FD_READABLE(srv_conn->event.fde);
