@@ -34,10 +34,9 @@
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 struct dreplsrv_out_drsuapi_state {
-	struct composite_context *creq;
-
 	struct dreplsrv_out_connection *conn;
 
 	struct dreplsrv_drsuapi_connection *drsuapi;
@@ -46,139 +45,160 @@ struct dreplsrv_out_drsuapi_state {
 	struct drsuapi_DsBind bind_r;
 };
 
-static void dreplsrv_out_drsuapi_connect_recv(struct composite_context *creq);
+static void dreplsrv_out_drsuapi_connect_done(struct composite_context *creq);
 
-struct composite_context *dreplsrv_out_drsuapi_send(struct dreplsrv_out_connection *conn)
+struct tevent_req *dreplsrv_out_drsuapi_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct dreplsrv_out_connection *conn)
 {
-	struct composite_context *c;
+	struct tevent_req *req;
+	struct dreplsrv_out_drsuapi_state *state;
 	struct composite_context *creq;
-	struct dreplsrv_out_drsuapi_state *st;
 
-	c = composite_create(conn, conn->service->task->event_ctx);
-	if (c == NULL) return NULL;
+	req = tevent_req_create(mem_ctx, &state,
+				struct dreplsrv_out_drsuapi_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
-	st = talloc_zero(c, struct dreplsrv_out_drsuapi_state);
-	if (composite_nomem(st, c)) return c;
+	state->conn	= conn;
+	state->drsuapi	= conn->drsuapi;
 
-	c->private_data	= st;
+	if (state->drsuapi && !state->drsuapi->pipe->conn->dead) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
-	st->creq	= c;
-	st->conn	= conn;
-	st->drsuapi	= conn->drsuapi;
-
-	if (st->drsuapi && !st->drsuapi->pipe->conn->dead) {
-		composite_done(c);
-		return c;
-	} else if (st->drsuapi && st->drsuapi->pipe->conn->dead) {
-		talloc_free(st->drsuapi);
+	if (state->drsuapi && state->drsuapi->pipe->conn->dead) {
+		talloc_free(state->drsuapi);
 		conn->drsuapi = NULL;
 	}
 
-	st->drsuapi	= talloc_zero(st, struct dreplsrv_drsuapi_connection);
-	if (composite_nomem(st->drsuapi, c)) return c;
+	state->drsuapi = talloc_zero(state, struct dreplsrv_drsuapi_connection);
+	if (tevent_req_nomem(state->drsuapi, req)) {
+		return tevent_req_post(req, ev);
+	}
 
-	creq = dcerpc_pipe_connect_b_send(st, conn->binding, &ndr_table_drsuapi,
+	creq = dcerpc_pipe_connect_b_send(state, conn->binding, &ndr_table_drsuapi,
 					  conn->service->system_session_info->credentials,
-					  c->event_ctx, conn->service->task->lp_ctx);
-	composite_continue(c, creq, dreplsrv_out_drsuapi_connect_recv, st);
+					  ev, conn->service->task->lp_ctx);
+	if (tevent_req_nomem(creq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	composite_continue(NULL, creq, dreplsrv_out_drsuapi_connect_done, req);
 
-	return c;
+	return req;
 }
 
-static void dreplsrv_out_drsuapi_bind_send(struct dreplsrv_out_drsuapi_state *st);
+static void dreplsrv_out_drsuapi_bind_done(struct rpc_request *rreq);
 
-static void dreplsrv_out_drsuapi_connect_recv(struct composite_context *creq)
+static void dreplsrv_out_drsuapi_connect_done(struct composite_context *creq)
 {
-	struct dreplsrv_out_drsuapi_state *st = talloc_get_type(creq->async.private_data,
-						struct dreplsrv_out_drsuapi_state);
-	struct composite_context *c = st->creq;
+	struct tevent_req *req = talloc_get_type(creq->async.private_data,
+						 struct tevent_req);
+	struct dreplsrv_out_drsuapi_state *state = tevent_req_data(req,
+						   struct dreplsrv_out_drsuapi_state);
+	NTSTATUS status;
+	struct rpc_request *rreq;
 
-	c->status = dcerpc_pipe_connect_b_recv(creq, st->drsuapi, &st->drsuapi->pipe);
-	if (!composite_is_ok(c)) return;
-
-	c->status = gensec_session_key(st->drsuapi->pipe->conn->security_state.generic_state,
-				       &st->drsuapi->gensec_skey);
-	if (!composite_is_ok(c)) return;
-
-	dreplsrv_out_drsuapi_bind_send(st);
-}
-
-static void dreplsrv_out_drsuapi_bind_recv(struct rpc_request *req);
-
-static void dreplsrv_out_drsuapi_bind_send(struct dreplsrv_out_drsuapi_state *st)
-{
-	struct composite_context *c = st->creq;
-	struct rpc_request *req;
-
-	st->bind_info_ctr.length	= 28;
-	st->bind_info_ctr.info.info28	= st->conn->service->bind_info28;
-
-	st->bind_r.in.bind_guid = &st->conn->service->ntds_guid;
-	st->bind_r.in.bind_info = &st->bind_info_ctr;
-	st->bind_r.out.bind_handle = &st->drsuapi->bind_handle;
-
-	req = dcerpc_drsuapi_DsBind_send(st->drsuapi->pipe, st, &st->bind_r);
-	composite_continue_rpc(c, req, dreplsrv_out_drsuapi_bind_recv, st);
-}
-
-static void dreplsrv_out_drsuapi_bind_recv(struct rpc_request *req)
-{
-	struct dreplsrv_out_drsuapi_state *st = talloc_get_type(req->async.private_data,
-						struct dreplsrv_out_drsuapi_state);
-	struct composite_context *c = st->creq;
-
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	if (!W_ERROR_IS_OK(st->bind_r.out.result)) {
-		composite_error(c, werror_to_ntstatus(st->bind_r.out.result));
+	status = dcerpc_pipe_connect_b_recv(creq,
+					    state->drsuapi,
+					    &state->drsuapi->pipe);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	ZERO_STRUCT(st->drsuapi->remote_info28);
-	if (st->bind_r.out.bind_info) {
-		switch (st->bind_r.out.bind_info->length) {
+	status = gensec_session_key(state->drsuapi->pipe->conn->security_state.generic_state,
+				    &state->drsuapi->gensec_skey);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->bind_info_ctr.length		= 28;
+	state->bind_info_ctr.info.info28	= state->conn->service->bind_info28;
+
+	state->bind_r.in.bind_guid = &state->conn->service->ntds_guid;
+	state->bind_r.in.bind_info = &state->bind_info_ctr;
+	state->bind_r.out.bind_handle = &state->drsuapi->bind_handle;
+
+	rreq = dcerpc_drsuapi_DsBind_send(state->drsuapi->pipe,
+					  state,
+					  &state->bind_r);
+	if (tevent_req_nomem(rreq, req)) {
+		return;
+	}
+	composite_continue_rpc(NULL, rreq, dreplsrv_out_drsuapi_bind_done, req);
+}
+
+static void dreplsrv_out_drsuapi_bind_done(struct rpc_request *rreq)
+{
+	struct tevent_req *req = talloc_get_type(rreq->async.private_data,
+						 struct tevent_req);
+	struct dreplsrv_out_drsuapi_state *state = tevent_req_data(req,
+						   struct dreplsrv_out_drsuapi_state);
+	NTSTATUS status;
+
+	status = dcerpc_ndr_request_recv(rreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (!W_ERROR_IS_OK(state->bind_r.out.result)) {
+		status = werror_to_ntstatus(state->bind_r.out.result);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	ZERO_STRUCT(state->drsuapi->remote_info28);
+	if (state->bind_r.out.bind_info) {
+		struct drsuapi_DsBindInfo28 *info28;
+		info28 = &state->drsuapi->remote_info28;
+
+		switch (state->bind_r.out.bind_info->length) {
 		case 24: {
 			struct drsuapi_DsBindInfo24 *info24;
-			info24 = &st->bind_r.out.bind_info->info.info24;
-			st->drsuapi->remote_info28.supported_extensions	= info24->supported_extensions;
-			st->drsuapi->remote_info28.site_guid		= info24->site_guid;
-			st->drsuapi->remote_info28.pid			= info24->pid;
-			st->drsuapi->remote_info28.repl_epoch		= 0;
+			info24 = &state->bind_r.out.bind_info->info.info24;
+
+			info28->supported_extensions	= info24->supported_extensions;
+			info28->site_guid		= info24->site_guid;
+			info28->pid			= info24->pid;
+			info28->repl_epoch		= 0;
 			break;
 		}
 		case 48: {
 			struct drsuapi_DsBindInfo48 *info48;
-			info48 = &st->bind_r.out.bind_info->info.info48;
-			st->drsuapi->remote_info28.supported_extensions	= info48->supported_extensions;
-			st->drsuapi->remote_info28.site_guid		= info48->site_guid;
-			st->drsuapi->remote_info28.pid			= info48->pid;
-			st->drsuapi->remote_info28.repl_epoch		= info48->repl_epoch;
+			info48 = &state->bind_r.out.bind_info->info.info48;
+
+			info28->supported_extensions	= info48->supported_extensions;
+			info28->site_guid		= info48->site_guid;
+			info28->pid			= info48->pid;
+			info28->repl_epoch		= info48->repl_epoch;
 			break;
 		}
 		case 28:
-			st->drsuapi->remote_info28 = st->bind_r.out.bind_info->info.info28;
+			*info28 = state->bind_r.out.bind_info->info.info28;
 			break;
 		}
 	}
 
-	composite_done(c);
+	tevent_req_done(req);
 }
 
-NTSTATUS dreplsrv_out_drsuapi_recv(struct composite_context *c)
+NTSTATUS dreplsrv_out_drsuapi_recv(struct tevent_req *req)
 {
+	struct dreplsrv_out_drsuapi_state *state = tevent_req_data(req,
+						   struct dreplsrv_out_drsuapi_state);
 	NTSTATUS status;
-	struct dreplsrv_out_drsuapi_state *st = talloc_get_type(c->private_data,
-						struct dreplsrv_out_drsuapi_state);
 
-	status = composite_wait(c);
-
-	if (NT_STATUS_IS_OK(status)) {
-		st->conn->drsuapi = talloc_steal(st->conn, st->drsuapi);
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
 	}
 
-	talloc_free(c);
-	return status;
+	state->conn->drsuapi = talloc_move(state->conn, &state->drsuapi);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 struct dreplsrv_op_pull_source_state {
@@ -195,13 +215,13 @@ struct dreplsrv_op_pull_source_state {
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6;
 };
 
-static void dreplsrv_op_pull_source_connect_recv(struct composite_context *creq);
+static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq);
 
 struct composite_context *dreplsrv_op_pull_source_send(struct dreplsrv_out_operation *op)
 {
 	struct composite_context *c;
-	struct composite_context *creq;
 	struct dreplsrv_op_pull_source_state *st;
+	struct tevent_req *subreq;
 
 	c = composite_create(op, op->service->task->event_ctx);
 	if (c == NULL) return NULL;
@@ -212,21 +232,25 @@ struct composite_context *dreplsrv_op_pull_source_send(struct dreplsrv_out_opera
 	st->creq	= c;
 	st->op		= op;
 
-	creq = dreplsrv_out_drsuapi_send(op->source_dsa->conn);
-	composite_continue(c, creq, dreplsrv_op_pull_source_connect_recv, st);
+	subreq = dreplsrv_out_drsuapi_send(st,
+					   op->service->task->event_ctx,
+					   op->source_dsa->conn);
+	if (composite_nomem(subreq, c)) return c;
+	tevent_req_set_callback(subreq, dreplsrv_op_pull_source_connect_done, st);
 
 	return c;
 }
 
 static void dreplsrv_op_pull_source_get_changes_send(struct dreplsrv_op_pull_source_state *st);
 
-static void dreplsrv_op_pull_source_connect_recv(struct composite_context *creq)
+static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq)
 {
-	struct dreplsrv_op_pull_source_state *st = talloc_get_type(creq->async.private_data,
+	struct dreplsrv_op_pull_source_state *st = tevent_req_callback_data(subreq,
 						   struct dreplsrv_op_pull_source_state);
 	struct composite_context *c = st->creq;
 
-	c->status = dreplsrv_out_drsuapi_recv(creq);
+	c->status = dreplsrv_out_drsuapi_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	dreplsrv_op_pull_source_get_changes_send(st);
