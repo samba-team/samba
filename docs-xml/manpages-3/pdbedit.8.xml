@@ -29,12 +29,12 @@
 		<arg choice="opt">-f fullname</arg>
 		<arg choice="opt">--force-initialized-passwords</arg>
 		<arg choice="opt">-g</arg>
-		<arg choice="opt">-G SID|RID</arg>
 		<arg choice="opt">-h homedir</arg>
 		<arg choice="opt">-i passdb-backend</arg>
 		<arg choice="opt">-I domain</arg>
 		<arg choice="opt">-L </arg>
 		<arg choice="opt">-m</arg>
+		<arg choice="opt">-M SID|RID</arg>
 		<arg choice="opt">-N description</arg>
 		<arg choice="opt">-P account-policy</arg>
 		<arg choice="opt">-p profile</arg>
@@ -215,13 +215,13 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		</varlistentry>
 
 		<varlistentry>
-		<term>-G|'--group SID' SID|rid</term>
+		<term>-M|'--machine SID' SID|rid</term>
 		<listitem><para>
-		This option can be used while adding or modifying a user account. It 
-		will specify the users' new primary group SID (Security Identifier) or 
+		This option can be used while adding or modifying a machine account. It
+		will specify the machines' new primary group SID (Security Identifier) or
 		rid. </para>
 
-		<para>Example: <command>-G S-1-5-21-2447931902-1787058256-3961074038-1201</command></para>
+		<para>Example: <command>-M S-1-5-21-2447931902-1787058256-3961074038-1201</command></para>
 		</listitem>
 		</varlistentry>
 
