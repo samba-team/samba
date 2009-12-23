@@ -4361,6 +4361,7 @@ static bool wcache_opnum_cacheable(uint32_t opnum)
 	case NDR_WBINT_ALLOCATEGID:
 	case NDR_WBINT_CHECKMACHINEACCOUNT:
 	case NDR_WBINT_CHANGEMACHINEACCOUNT:
+	case NDR_WBINT_PINGDC:
 		return false;
 	}
 	return true;
