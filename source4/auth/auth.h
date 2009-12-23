@@ -275,14 +275,16 @@ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   const char *nt4_username,
 					   const char *password,
 					   struct auth_session_info **session_info);
-NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
+
+struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct auth_context *auth_ctx,
+					    const struct auth_usersupplied_info *user_info);
+NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info **server_info);
 
-void auth_check_password_send(struct auth_context *auth_ctx,
-			      const struct auth_usersupplied_info *user_info,
-			      void (*callback)(struct auth_check_password_request *req, void *private_data),
-			      void *private_data);
+
 NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
 NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
