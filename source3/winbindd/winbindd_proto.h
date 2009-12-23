@@ -276,11 +276,6 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct winbindd_response **presponse, int *err);
 
-void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
-		   struct winbindd_request *request,
-		   struct winbindd_response *response,
-		   void (*continuation)(void *private_data, bool success),
-		   void *private_data);
 void async_domain_request(TALLOC_CTX *mem_ctx,
 			  struct winbindd_domain *domain,
 			  struct winbindd_request *request,
@@ -433,18 +428,6 @@ struct winbindd_domain *find_root_domain(void);
 struct winbindd_domain *find_builtin_domain(void);
 struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid);
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
-bool winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
-				 enum winbindd_cmd orig_cmd,
-				 struct winbindd_domain *domain, 
-				 const char *domain_name,
-				 const char *name, DOM_SID *sid, 
-				 enum lsa_SidType *type);
-bool winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
-				 struct winbindd_domain *domain,
-				 DOM_SID *sid,
-				 char **dom_name,
-				 char **name,
-				 enum lsa_SidType *type);
 void free_getent_state(struct getent_state *state);
 bool parse_domain_user(const char *domuser, fstring domain, fstring user);
 bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
