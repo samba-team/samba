@@ -122,6 +122,8 @@ o   Jonas Gorski <jonas.gorski+samba@gmail.com>
 o   Volker Lendecke <vl@samba.org>
     * Fix _samr_GetAliasMembership for results with 0 rids.
     * Fix an error case in cli_negprot.
+    * Add a lower-cost alternative to wbinfo -t: wbinfo --ping-dc.
+    * Restore correct timeouts for SMB requests.
 
 
 o   Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
