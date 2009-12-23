@@ -477,9 +477,32 @@ permissions in memory that can't be stored on the server. This information can d
 
         <varlistentry>
                 <term>noserverino</term>
-                <listitem><para>client generates inode numbers (rather than using the actual one
-                from the server) by default.
+		<listitem>
+		<para>
+			Client generates inode numbers (rather than
+		using the actual one from the server) by default.
+		</para>
+		<para>
+			See section <emphasis>INODE NUMBERS</emphasis> for
+		more information.
 		</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+		<term>nounix</term>
+		<listitem>
+		<para>
+			Disable the CIFS Unix Extensions for this mount. This
+		can be useful in order to turn off multiple settings at once.
+		This includes POSIX acls, POSIX locks, POSIX paths, symlink
+		support and retrieving uids/gids/mode from the server. This
+		can also be useful to work around a bug in a server that
+		supports Unix Extensions.
+		</para>
+		<para>
+		See section <emphasis>INODE NUMBERS</emphasis> for
+		more information.
+		</para> </listitem>
         </varlistentry>
 
         <varlistentry>
@@ -529,6 +552,33 @@ permissions in memory that can't be stored on the server. This information can d
 	</para>
 	<para>
 		mount.cifs will attempt to convert backslashes to forward slashes where it's able to do so, but it cannot do so in any path component following the sharename.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>INODE NUMBERS</title>
+	<para>
+		When Unix Extensions are enabled, we use the actual inode
+	number provided by the server in response to the POSIX calls as an
+	inode number.
+	</para>
+	<para>
+		When Unix Extensions are disabled and "serverino" mount option
+	is enabled there is no way to get the server inode number. The
+	client typically maps the server-assigned "UniqueID" onto an inode
+	number.
+	</para>
+	<para>
+		Note that the UniqueID is a different value from the server
+	inode number. The UniqueID value is unique over the scope of the entire
+	server and is often greater than 2 power 32. This value often makes
+	programs that are not compiled with LFS (Large File Support), to
+	trigger a glibc EOVERFLOW error as this won't fit in the target
+	structure field. It is strongly recommended to compile your programs
+	with LFS support (i.e. with -D_FILE_OFFSET_BITS=64) to prevent this
+	problem. You can also use "noserverino" mount option to generate inode
+	numbers smaller than 2 power 32 on the client. But you may not be able
+	to detect hardlinks properly.
 	</para>
 </refsect1>
 
