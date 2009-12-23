@@ -117,7 +117,7 @@ PRIVATE_DEPENDENCIES = \
 
 torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 		join.o lsa.o lsa_lookup.o session_key.o echo.o dfs.o drsuapi.o \
-		drsuapi_cracknames.o dssync.o spoolss.o spoolss_notify.o spoolss_win.o \
+		drsuapi_cracknames.o dssync.o dsgetinfo.o spoolss.o spoolss_notify.o spoolss_win.o \
 		unixinfo.o samr.o samr_accessmask.o wkssvc.o srvsvc.o svcctl.o atsvc.o \
 		eventlog.o epmapper.o winreg.o initshutdown.o oxidresolve.o remact.o mgmt.o \
 		scanner.o autoidl.o countcalls.o testjoin.o schannel.o netlogon.o remote_pac.o samlogon.o \

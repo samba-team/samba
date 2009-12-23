@@ -499,6 +499,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
 	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);
 	torture_drs_rpc_dssync_tcase(suite);
+	torture_drs_rpc_dsgetinfo_tcase(suite);
 	torture_suite_add_simple_test(suite, "BENCH-RPC", torture_bench_rpc);
 	torture_suite_add_simple_test(suite, "ASYNCBIND", torture_async_bind);
 	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
