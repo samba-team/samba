@@ -121,8 +121,6 @@ struct winbindd_cm_conn {
 	struct rpc_pipe_client *netlogon_pipe;
 };
 
-struct winbindd_async_request;
-
 /* Async child */
 
 struct winbindd_domain;
