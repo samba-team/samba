@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    KDC Server startup
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -42,15 +42,15 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 
 
-/* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when 
+/* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when
  * used as a keytab */
 TALLOC_CTX *hdb_samba4_mem_ctx;
 struct tevent_context *hdb_samba4_ev_ctx;
 struct loadparm_context *hdb_samba4_lp_ctx;
 
 typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
-				 TALLOC_CTX *mem_ctx, 
-				 DATA_BLOB *input, 
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *input,
 				 DATA_BLOB *reply,
 				 struct tsocket_address *peer_addr,
 				 struct tsocket_address *my_addr,
@@ -98,7 +98,7 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 	talloc_steal(tmp_ctx, blob.data);
 
 	/* Call krb5 */
-	input = data_blob_const(blob.data + 4, blob.length - 4); 
+	input = data_blob_const(blob.data + 4, blob.length - 4);
 
 	ret = kdcconn->kdc_socket->process(kdcconn->kdc_socket->kdc,
 					   tmp_ctx,
@@ -120,7 +120,7 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 	}
 
 	RSIVAL(blob.data, 0, reply.length);
-	memcpy(blob.data + 4, reply.data, reply.length);	
+	memcpy(blob.data + 4, reply.data, reply.length);
 
 	status = packet_send(kdcconn->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -169,8 +169,8 @@ static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
 */
 
 static bool kdc_process(struct kdc_server *kdc,
-			TALLOC_CTX *mem_ctx, 
-			DATA_BLOB *input, 
+			TALLOC_CTX *mem_ctx,
+			DATA_BLOB *input,
 			DATA_BLOB *reply,
 			struct tsocket_address *peer_addr,
 			struct tsocket_address *my_addr,
@@ -197,7 +197,7 @@ static bool kdc_process(struct kdc_server *kdc,
 	DEBUG(10,("Received KDC packet of length %lu from %s\n",
 				(long)input->length - 4, pa));
 
-	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context, 
+	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context,
 					    kdc->config,
 					    input->data, input->length,
 					    &k5_reply,
@@ -212,7 +212,7 @@ static bool kdc_process(struct kdc_server *kdc,
 		*reply = data_blob_talloc(mem_ctx, k5_reply.data, k5_reply.length);
 		krb5_data_free(&k5_reply);
 	} else {
-		*reply = data_blob(NULL, 0);	
+		*reply = data_blob(NULL, 0);
 	}
 	return true;
 }
@@ -421,12 +421,12 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 		return status;
 	}
 
-	status = stream_setup_socket(kdc->task->event_ctx, 
+	status = stream_setup_socket(kdc->task->event_ctx,
 				     kdc->task->lp_ctx,
-				     model_ops, 
-				     &kdc_tcp_stream_ops, 
-				     "ip", address, &port, 
-				     lp_socket_options(kdc->task->lp_ctx), 
+				     model_ops,
+				     &kdc_tcp_stream_ops,
+				     "ip", address, &port,
+				     lp_socket_options(kdc->task->lp_ctx),
 				     kdc_socket);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
@@ -487,7 +487,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	}
 
 	num_interfaces = iface_count(ifaces);
-	
+
 	for (i=0; i<num_interfaces; i++) {
 		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
 		uint16_t kdc_port = lp_krb5_port(lp_ctx);
@@ -514,7 +514,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 }
 
 
-static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg, 
+static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 				 struct kdc_check_generic_kerberos *r)
 {
 	struct PAC_Validate pac_validate;
@@ -532,14 +532,14 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	/* There is no reply to this request */
 	r->out.generic_reply = data_blob(NULL, 0);
 
-	ndr_err = ndr_pull_struct_blob(&r->in.generic_request, msg, 
-				       lp_iconv_convenience(kdc->task->lp_ctx), 
+	ndr_err = ndr_pull_struct_blob(&r->in.generic_request, msg,
+				       lp_iconv_convenience(kdc->task->lp_ctx),
 				       &pac_validate,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_Validate);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	if (pac_validate.MessageType != 3) {
 		/* We don't implement any other message types - such as certificate validation - yet */
 		return NT_STATUS_INVALID_PARAMETER;
@@ -550,10 +550,10 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	    || pac_validate.ChecksumAndSignature.length < pac_validate.SignatureLength ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
-	srv_sig = data_blob_const(pac_validate.ChecksumAndSignature.data, 
+
+	srv_sig = data_blob_const(pac_validate.ChecksumAndSignature.data,
 				  pac_validate.ChecksumLength);
-	
+
 	if (pac_validate.SignatureType == CKSUMTYPE_HMAC_MD5) {
 		etype = ETYPE_ARCFOUR_HMAC_MD5;
 	} else {
@@ -564,16 +564,16 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		}
 	}
 
-	ret = krb5_make_principal(kdc->smb_krb5_context->krb5_context, &principal, 
+	ret = krb5_make_principal(kdc->smb_krb5_context->krb5_context, &principal,
 				  lp_realm(kdc->task->lp_ctx),
-				  "krbtgt", lp_realm(kdc->task->lp_ctx), 
+				  "krbtgt", lp_realm(kdc->task->lp_ctx),
 				  NULL);
 
 	if (ret != 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = kdc->config->db[0]->hdb_fetch(kdc->smb_krb5_context->krb5_context, 
+	ret = kdc->config->db[0]->hdb_fetch(kdc->smb_krb5_context->krb5_context,
 					    kdc->config->db[0],
 					    principal,
 					    HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
@@ -582,10 +582,10 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	if (ret != 0) {
 		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
 		krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
-	
+
 		return NT_STATUS_LOGON_FAILURE;
 	}
-	
+
 	ret = hdb_enctype2key(kdc->smb_krb5_context->krb5_context, &ent.entry, etype, &key);
 
 	if (ret != 0) {
@@ -595,11 +595,11 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	}
 
 	keyblock = key->key;
-	
+
 	kdc_sig.type = pac_validate.SignatureType;
 	kdc_sig.signature = data_blob_const(&pac_validate.ChecksumAndSignature.data[pac_validate.ChecksumLength],
 					    pac_validate.SignatureLength);
-	ret = check_pac_checksum(msg, srv_sig, &kdc_sig, 
+	ret = check_pac_checksum(msg, srv_sig, &kdc_sig,
 			   kdc->smb_krb5_context->krb5_context, &keyblock);
 
 	hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
@@ -608,7 +608,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	if (ret != 0) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -656,21 +656,21 @@ static void kdc_task_init(struct task_server *task)
 
 	ret = smb_krb5_init_context(kdc, task->event_ctx, task->lp_ctx, &kdc->smb_krb5_context);
 	if (ret) {
-		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n", 
+		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n",
 			 error_message(ret)));
 		task_server_terminate(task, "kdc: krb5_init_context failed", true);
-		return; 
+		return;
 	}
 
 	krb5_add_et_list(kdc->smb_krb5_context->krb5_context, initialize_hdb_error_table_r);
 
-	ret = krb5_kdc_get_config(kdc->smb_krb5_context->krb5_context, 
+	ret = krb5_kdc_get_config(kdc->smb_krb5_context->krb5_context,
 				  &kdc->config);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to get KDC configuration", true);
 		return;
 	}
- 
+
 	kdc->config->logf = kdc->smb_krb5_context->logf;
 	kdc->config->db = talloc(kdc, struct HDB *);
 	if (!kdc->config->db) {
@@ -678,13 +678,13 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 	kdc->config->num_db = 1;
-		
-	status = hdb_samba4_create_kdc(kdc, task->event_ctx, task->lp_ctx, 
-				       kdc->smb_krb5_context->krb5_context, 
+
+	status = hdb_samba4_create_kdc(kdc, task->event_ctx, task->lp_ctx,
+				       kdc->smb_krb5_context->krb5_context,
 				       &kdc->config->db[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_samba4_create_kdc (setup KDC database) failed", true);
-		return; 
+		return;
 	}
 
 	/* Register hdb-samba4 hooks for use as a keytab */
@@ -692,13 +692,13 @@ static void kdc_task_init(struct task_server *task)
 	kdc->hdb_samba4_context = talloc(kdc, struct hdb_samba4_context);
 	if (!kdc->hdb_samba4_context) {
 		task_server_terminate(task, "kdc: out of memory", true);
-		return; 
+		return;
 	}
 
 	kdc->hdb_samba4_context->ev_ctx = task->event_ctx;
 	kdc->hdb_samba4_context->lp_ctx = task->lp_ctx;
 
-	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
 				   PLUGIN_TYPE_DATA, "hdb",
 				   &hdb_samba4);
 	if(ret) {
@@ -713,7 +713,7 @@ static void kdc_task_init(struct task_server *task)
 	}
 
 	/* Registar WinDC hooks */
-	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
 				   PLUGIN_TYPE_DATA, "windc",
 				   &windc_plugin_table);
 	if(ret) {
@@ -730,7 +730,7 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 
-	status = IRPC_REGISTER(task->msg_ctx, irpc, KDC_CHECK_GENERIC_KERBEROS, 
+	status = IRPC_REGISTER(task->msg_ctx, irpc, KDC_CHECK_GENERIC_KERBEROS,
 			       kdc_check_generic_kerberos, kdc);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup monitoring", true);
