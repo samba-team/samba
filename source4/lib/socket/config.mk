@@ -34,7 +34,7 @@ socket_unix_OBJ_FILES = $(libsocketsrcdir)/socket_unix.o
 ################################################
 # Start SUBSYSTEM SOCKET
 [SUBSYSTEM::samba_socket]
-PUBLIC_DEPENDENCIES = LIBTALLOC
+PUBLIC_DEPENDENCIES = LIBTALLOC LIBTSOCKET
 PRIVATE_DEPENDENCIES = SOCKET_WRAPPER LIBCLI_COMPOSITE LIBCLI_RESOLVE
 # End SUBSYSTEM SOCKET
 ################################################
