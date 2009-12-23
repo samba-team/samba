@@ -527,13 +527,6 @@ static void recvfrom_child(void *private_data_data, bool success)
 	request_ok(state);
 }
 
-void sendto_child(struct winbindd_cli_state *state,
-		  struct winbindd_child *child)
-{
-	async_request(state->mem_ctx, child, state->request,
-		      state->response, recvfrom_child, state);
-}
-
 void sendto_domain(struct winbindd_cli_state *state,
 		   struct winbindd_domain *domain)
 {
