@@ -163,6 +163,8 @@ struct tsocket_address *socket_address_to_tsocket_address(TALLOC_CTX *mem_ctx,
 							  const struct socket_address *a);
 struct socket_address *tsocket_address_to_socket_address(TALLOC_CTX *mem_ctx,
 							 const struct tsocket_address *a);
+struct tsocket_address *socket_get_remote_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+struct tsocket_address *socket_get_local_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx);
 int socket_get_fd(struct socket_context *sock);
 NTSTATUS socket_dup(struct socket_context *sock);
 struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,

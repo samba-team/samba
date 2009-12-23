@@ -386,6 +386,36 @@ _PUBLIC_ struct socket_address *tsocket_address_to_socket_address(TALLOC_CTX *me
 	return socket_address_from_sockaddr(mem_ctx, (struct sockaddr *)(void *)&ss, ret);
 }
 
+_PUBLIC_ struct tsocket_address *socket_get_remote_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct socket_address *a;
+	struct tsocket_address *r;
+
+	a = socket_get_peer_addr(sock, mem_ctx);
+	if (a == NULL) {
+		return NULL;
+	}
+
+	r = socket_address_to_tsocket_address(mem_ctx, a);
+	talloc_free(a);
+	return r;
+}
+
+_PUBLIC_ struct tsocket_address *socket_get_local_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct socket_address *a;
+	struct tsocket_address *r;
+
+	a = socket_get_my_addr(sock, mem_ctx);
+	if (a == NULL) {
+		return NULL;
+	}
+
+	r = socket_address_to_tsocket_address(mem_ctx, a);
+	talloc_free(a);
+	return r;
+}
+
 _PUBLIC_ int socket_get_fd(struct socket_context *sock)
 {
 	if (!sock->ops->fn_get_fd) {
