@@ -29,6 +29,7 @@
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*
   setup the OS, Lanman and domain portions of a session setup reply
@@ -100,7 +101,7 @@ failed:
 static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	struct auth_usersupplied_info *user_info = NULL;
-	struct socket_address *remote_address;
+	struct tsocket_address *remote_address;
 	const char *remote_machine = NULL;
 
 	sess->old.out.vuid = 0;
@@ -119,11 +120,12 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 	
-	remote_address = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+	remote_address = socket_get_remote_addr(req->smb_conn->connection->socket, req);
 	if (!remote_address) goto nomem;
 
 	if (!remote_machine) {
-		remote_machine = remote_address->addr;
+		remote_machine = tsocket_address_inet_addr_string(remote_address, req);
+		if (!remote_machine) goto nomem;
 	}
 
 	user_info = talloc(req, struct auth_usersupplied_info);
@@ -206,7 +208,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	NTSTATUS status;
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info = NULL;
-	struct socket_address *remote_address;
+	struct tsocket_address *remote_address;
 	const char *remote_machine = NULL;
 	
 	sess->nt1.out.vuid = 0;
@@ -245,11 +247,12 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 
-	remote_address = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+	remote_address = socket_get_remote_addr(req->smb_conn->connection->socket, req);
 	if (!remote_address) goto nomem;
 
 	if (!remote_machine) {
-		remote_machine = remote_address->addr;
+		remote_machine = tsocket_address_inet_addr_string(remote_address, req);
+		if (!remote_machine) goto nomem;
 	}
 
 	user_info = talloc(req, struct auth_usersupplied_info);
