@@ -359,14 +359,10 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 
 void ntlmssp_end(struct ntlmssp_state **ntlmssp_state)
 {
-	(*ntlmssp_state)->ref_count--;
-
-	if ((*ntlmssp_state)->ref_count == 0) {
-		data_blob_free(&(*ntlmssp_state)->chal);
-		data_blob_free(&(*ntlmssp_state)->lm_resp);
-		data_blob_free(&(*ntlmssp_state)->nt_resp);
-		TALLOC_FREE(*ntlmssp_state);
-	}
+	data_blob_free(&(*ntlmssp_state)->chal);
+	data_blob_free(&(*ntlmssp_state)->lm_resp);
+	data_blob_free(&(*ntlmssp_state)->nt_resp);
+	TALLOC_FREE(*ntlmssp_state);
 
 	*ntlmssp_state = NULL;
 	return;
@@ -924,8 +920,6 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 
 	(*ntlmssp_state)->expected_state = NTLMSSP_NEGOTIATE;
 
-	(*ntlmssp_state)->ref_count = 1;
-
 	(*ntlmssp_state)->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_56 |
@@ -1259,8 +1253,6 @@ NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 	(*ntlmssp_state)->use_ntlmv2 = lp_client_ntlmv2_auth();
 
 	(*ntlmssp_state)->expected_state = NTLMSSP_INITIAL;
-
-	(*ntlmssp_state)->ref_count = 1;
 
 	(*ntlmssp_state)->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |

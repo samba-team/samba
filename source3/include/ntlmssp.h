@@ -43,7 +43,6 @@ enum ntlmssp_message_type
 
 struct ntlmssp_state
 {
-	unsigned int ref_count;
 	enum ntlmssp_role role;
 	enum server_types server_role;
 	uint32_t expected_state;
