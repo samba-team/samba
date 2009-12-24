@@ -1253,7 +1253,7 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
-	unsigned int orig_timeout;
+	unsigned int orig_timeout = 0;
 	lookup_names_fn_t lookup_names_fn = rpccli_lsa_lookup_names;
 
 	if (domain->can_do_ncacn_ip_tcp) {
