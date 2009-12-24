@@ -154,29 +154,6 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
 }
 
 /**
- * Delete any negative cache entry for the given domain/server
- *
- * @param[in] domain
- * @param[in] server may be either a FQDN or an IP address
- */
-void delete_negative_conn_cache(const char *domain, const char *server)
-{
-	char *key = NULL;
-
-	key = negative_conn_cache_keystr(domain, server);
-	if (key == NULL)
-		goto done;
-
-	gencache_del(key);
-	DEBUG(9,("delete_negative_conn_cache removing domain %s server %s\n",
-		  domain, server));
- done:
-	TALLOC_FREE(key);
-	return;
-}
-
-
-/**
  * Add an entry to the failed connection cache
  *
  * @param[in] domain
