@@ -143,7 +143,7 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
 	if (key == NULL)
 		goto done;
 
-	if (gencache_get(key, &value, (time_t *) NULL))
+	if (gencache_get(key, &value, NULL))
 		result = negative_conn_cache_valuedecode(value);
  done:
 	DEBUG(9,("check_negative_conn_cache returning result %d for domain %s "
@@ -204,8 +204,7 @@ void add_failed_connection_entry(const char *domain, const char *server,
 	}
 
 	if (gencache_set(key, value,
-			 time((time_t *) NULL)
-			 + FAILED_CONNECTION_CACHE_TIMEOUT))
+			 time(NULL) + FAILED_CONNECTION_CACHE_TIMEOUT))
 		DEBUG(9,("add_failed_connection_entry: added domain %s (%s) "
 			  "to failed conn cache\n", domain, server ));
 	else
@@ -246,10 +245,10 @@ void flush_negative_conn_cache_for_domain(const char *domain)
 		goto done;
 	}
 
-	gencache_iterate(delete_matches, (void *) NULL, key_pattern);
+	gencache_iterate(delete_matches, NULL, key_pattern);
 	DEBUG(8, ("flush_negative_conn_cache_for_domain: flushed domain %s\n",
 		  domain));
-	
+
  done:
 	TALLOC_FREE(key_pattern);
 	return;
