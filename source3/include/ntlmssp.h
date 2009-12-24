@@ -60,7 +60,7 @@ struct ntlmssp_state
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
 
 	DATA_BLOB chal; /* Random challenge as input into the actual NTLM (or NTLM2) authentication */
- 	DATA_BLOB lm_resp;
+	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 
