@@ -835,10 +835,6 @@ static void remove_client(struct winbindd_cli_state *state)
 		state->sock = -1;
 	}
 
-	/* Free any getent state */
-
-	free_getent_state(state->getgrent_state);
-
 	TALLOC_FREE(state->mem_ctx);
 
 	/* Remove from list and free */

@@ -868,29 +868,6 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 	return find_our_domain();
 }
 
-/* Free state information held for {set,get,end}{pw,gr}ent() functions */
-
-void free_getent_state(struct getent_state *state)
-{
-	struct getent_state *temp;
-
-	/* Iterate over state list */
-
-	temp = state;
-
-	while(temp != NULL) {
-		struct getent_state *next = temp->next;
-
-		/* Free sam entries then list entry */
-
-		SAFE_FREE(state->sam_entries);
-		DLIST_REMOVE(state, state);
-
-		SAFE_FREE(temp);
-		temp = next;
-	}
-}
-
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
 
 static bool assume_domain(const char *domain)
