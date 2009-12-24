@@ -7,7 +7,8 @@
    Copyright (C) Andrew Bartlett 	2002
    Copyright (C) Gerald (Jerry) Carter 	2003
    Copyright (C) Marc VanHeyningen      2008
-   
+   Copyright (C) Volker Lendecke	2009
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -37,11 +38,6 @@
 
 
 /**
- * prefix used for all entries put into the general cache
- */
-static const char NEGATIVE_CONN_CACHE_PREFIX[] = "NEG_CONN_CACHE";
-
-/**
  * Marshalls the domain and server name into the key for the gencache
  * record
  *
@@ -53,7 +49,6 @@ static const char NEGATIVE_CONN_CACHE_PREFIX[] = "NEG_CONN_CACHE";
  */
 static char *negative_conn_cache_keystr(const char *domain, const char *server)
 {
-	const char NEGATIVE_CONN_CACHE_KEY_FMT[] = "%s/%s,%s";
 	char *keystr = NULL;
 
 	if (domain == NULL) {
@@ -62,8 +57,8 @@ static char *negative_conn_cache_keystr(const char *domain, const char *server)
 	if (server == NULL)
 		server = "";
 
-	keystr = talloc_asprintf(talloc_tos(),NEGATIVE_CONN_CACHE_KEY_FMT,
-				 NEGATIVE_CONN_CACHE_PREFIX, domain, server);
+	keystr = talloc_asprintf(talloc_tos(), "NEG_CONN_CACHE/%s,%s",
+				 domain, server);
 	if (keystr == NULL) {
 		DEBUG(0, ("negative_conn_cache_keystr: malloc error\n"));
 	}
