@@ -77,27 +77,27 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		}
 
 		switch (direction) {
-			case NTLMSSP_SEND:
-	                        DEBUG(100,("ntlmssp_make_packet_signature: SEND seq = %u, len = %u, pdu_len = %u\n",
-					ntlmssp_state->ntlm2_send_seq_num,
-					(unsigned int)length,
-					(unsigned int)pdu_length));
+		case NTLMSSP_SEND:
+			DEBUG(100,("ntlmssp_make_packet_signature: SEND seq = %u, len = %u, pdu_len = %u\n",
+				ntlmssp_state->ntlm2_send_seq_num,
+				(unsigned int)length,
+				(unsigned int)pdu_length));
 
-				SIVAL(seq_num, 0, ntlmssp_state->ntlm2_send_seq_num);
-				ntlmssp_state->ntlm2_send_seq_num++;
-				hmac_md5_init_limK_to_64(ntlmssp_state->send_sign_key, 16, &ctx);
-				break;
-			case NTLMSSP_RECEIVE:
+			SIVAL(seq_num, 0, ntlmssp_state->ntlm2_send_seq_num);
+			ntlmssp_state->ntlm2_send_seq_num++;
+			hmac_md5_init_limK_to_64(ntlmssp_state->send_sign_key, 16, &ctx);
+			break;
+		case NTLMSSP_RECEIVE:
 
-				DEBUG(100,("ntlmssp_make_packet_signature: RECV seq = %u, len = %u, pdu_len = %u\n",
-					ntlmssp_state->ntlm2_recv_seq_num,
-					(unsigned int)length,
-					(unsigned int)pdu_length));
+			DEBUG(100,("ntlmssp_make_packet_signature: RECV seq = %u, len = %u, pdu_len = %u\n",
+				ntlmssp_state->ntlm2_recv_seq_num,
+				(unsigned int)length,
+				(unsigned int)pdu_length));
 
-				SIVAL(seq_num, 0, ntlmssp_state->ntlm2_recv_seq_num);
-				ntlmssp_state->ntlm2_recv_seq_num++;
-				hmac_md5_init_limK_to_64(ntlmssp_state->recv_sign_key, 16, &ctx);
-				break;
+			SIVAL(seq_num, 0, ntlmssp_state->ntlm2_recv_seq_num);
+			ntlmssp_state->ntlm2_recv_seq_num++;
+			hmac_md5_init_limK_to_64(ntlmssp_state->recv_sign_key, 16, &ctx);
+			break;
                 }
 
 		dump_data_pw("pdu data ", whole_pdu, pdu_length);
