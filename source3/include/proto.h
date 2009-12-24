@@ -6735,6 +6735,10 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 void create_file_sids(const SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid);
 bool nt4_compatible_acls(void);
+uint32_t map_canon_ace_perms(int snum,
+                                enum security_ace_type *pacl_type,
+                                mode_t perms,
+                                bool directory_ace);
 NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
