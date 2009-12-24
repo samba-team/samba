@@ -102,15 +102,16 @@ static char *negative_conn_cache_valuestr(NTSTATUS status)
  */
 static NTSTATUS negative_conn_cache_valuedecode(const char *value)
 {
-	NTSTATUS result = NT_STATUS_OK;
+	unsigned int v = NT_STATUS_V(NT_STATUS_INTERNAL_ERROR);;
 
-	if (value == NULL) {
+	if (value != NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (sscanf(value, "%x", &(NT_STATUS_V(result))) != 1)
+	if (sscanf(value, "%x", &v) != 1) {
 		DEBUG(0, ("negative_conn_cache_valuestr: unable to parse "
 			  "value field '%s'\n", value));
-	return result;
+	}
+	return NT_STATUS(v);
 }
 
 /**
