@@ -27,7 +27,7 @@ enum ntlmssp_role
 };
 
 /* NTLMSSP message types */
-enum NTLM_MESSAGE_TYPE
+enum ntlmssp_message_type
 {
 	NTLMSSP_INITIAL = 0 /* samba internal state */,
 	NTLMSSP_NEGOTIATE = 1,
