@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -37,7 +37,7 @@ enum ntlmssp_message_type
 	NTLMSSP_CHALLENGE = 2,
 	NTLMSSP_AUTH      = 3,
 	NTLMSSP_UNKNOWN   = 4,
-	NTLMSSP_DONE   = 5 /* samba final state */
+	NTLMSSP_DONE      = 5 /* samba final state */
 };
 
 struct gensec_ntlmssp_state
@@ -65,17 +65,17 @@ struct gensec_ntlmssp_state
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
 
 	DATA_BLOB chal; /* Random challenge as input into the actual NTLM (or NTLM2) authentication */
- 	DATA_BLOB lm_resp;
+	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
-	
+
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
 	DATA_BLOB encrypted_session_key;
 	
 	/**
-	 * Callback to get the 'challenge' used for NTLM authentication.  
+	 * Callback to get the 'challenge' used for NTLM authentication.
 	 *
 	 * @param ntlmssp_state This structure
 	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
@@ -84,10 +84,10 @@ struct gensec_ntlmssp_state
 	const uint8_t *(*get_challenge)(const struct gensec_ntlmssp_state *);
 
 	/**
-	 * Callback to find if the challenge used by NTLM authentication may be modified 
+	 * Callback to find if the challenge used by NTLM authentication may be modified
 	 *
 	 * The NTLM2 authentication scheme modifies the effective challenge, but this is not compatiable with the
-	 * current 'security=server' implementation..  
+	 * current 'security=server' implementation..
 	 *
 	 * @param ntlmssp_state This structure
 	 * @return Can the challenge be set to arbitary values?
@@ -96,7 +96,7 @@ struct gensec_ntlmssp_state
 	bool (*may_set_challenge)(const struct gensec_ntlmssp_state *);
 
 	/**
-	 * Callback to set the 'challenge' used for NTLM authentication.  
+	 * Callback to set the 'challenge' used for NTLM authentication.
 	 *
 	 * The callback may use the void *auth_context to store state information, but the same value is always available
 	 * from the DATA_BLOB chal on this structure.
@@ -108,21 +108,21 @@ struct gensec_ntlmssp_state
 	NTSTATUS (*set_challenge)(struct gensec_ntlmssp_state *, DATA_BLOB *challenge);
 
 	/**
-	 * Callback to check the user's password.  
+	 * Callback to check the user's password.
 	 *
-	 * The callback must reads the feilds of this structure for the information it needs on the user 
+	 * The callback must reads the feilds of this structure for the information it needs on the user
 	 * @param ntlmssp_state This structure
 	 * @param nt_session_key If an NT session key is returned by the authentication process, return it here
 	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
 	 *
 	 */
-	NTSTATUS (*check_password)(struct gensec_ntlmssp_state *, 
-				   TALLOC_CTX *mem_ctx, 
+	NTSTATUS (*check_password)(struct gensec_ntlmssp_state *,
+				   TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	const char *server_name;
 
-	bool doing_ntlm2; 
+	bool doing_ntlm2;
 
 	union {
 		/* NTLM */
