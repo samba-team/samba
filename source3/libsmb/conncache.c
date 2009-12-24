@@ -56,7 +56,9 @@ static char *negative_conn_cache_keystr(const char *domain, const char *server)
 	const char NEGATIVE_CONN_CACHE_KEY_FMT[] = "%s/%s,%s";
 	char *keystr = NULL;
 
-	SMB_ASSERT(domain != NULL);
+	if (domain == NULL) {
+		return NULL;
+	}
 	if (server == NULL)
 		server = "";
 
@@ -102,7 +104,9 @@ static NTSTATUS negative_conn_cache_valuedecode(const char *value)
 {
 	NTSTATUS result = NT_STATUS_OK;
 
-	SMB_ASSERT(value != NULL);
+	if (value == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 	if (sscanf(value, "%x", &(NT_STATUS_V(result))) != 1)
 		DEBUG(0, ("negative_conn_cache_valuestr: unable to parse "
 			  "value field '%s'\n", value));
@@ -189,7 +193,10 @@ void add_failed_connection_entry(const char *domain, const char *server,
 	char *key = NULL;
 	char *value = NULL;
 
-	SMB_ASSERT(!NT_STATUS_IS_OK(result));
+	if (NT_STATUS_IS_OK(result)) {
+		/* Nothing failed here */
+		return;
+	}
 
 	key = negative_conn_cache_keystr(domain, server);
 	if (key == NULL) {
