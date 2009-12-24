@@ -1068,7 +1068,7 @@ bool nt4_compatible_acls(void)
  not get. Deny entries are implicit on get with ace->perms = 0.
 ****************************************************************************/
 
-static uint32_t map_canon_ace_perms(int snum,
+uint32_t map_canon_ace_perms(int snum,
 				enum security_ace_type *pacl_type,
 				mode_t perms,
 				bool directory_ace)
@@ -1570,7 +1570,7 @@ static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
 ****************************************************************************/
 
 static bool create_canon_ace_lists(files_struct *fsp,
-					SMB_STRUCT_STAT *pst,
+					const SMB_STRUCT_STAT *pst,
 					DOM_SID *pfile_owner_sid,
 					DOM_SID *pfile_grp_sid,
 					canon_ace **ppfile_ace,
@@ -2305,7 +2305,7 @@ static mode_t create_default_mode(files_struct *fsp, bool interitable_mode)
 ****************************************************************************/
 
 static bool unpack_canon_ace(files_struct *fsp,
-				SMB_STRUCT_STAT *pst,
+				const SMB_STRUCT_STAT *pst,
 				DOM_SID *pfile_owner_sid,
 				DOM_SID *pfile_grp_sid,
 				canon_ace **ppfile_ace,
@@ -2313,6 +2313,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 				uint32 security_info_sent,
 				const SEC_DESC *psd)
 {
+	SMB_STRUCT_STAT st;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 
@@ -2376,14 +2377,17 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "file ace - before valid", file_ace);
 
+	st = *pst;
+
 	/*
 	 * A default 3 element mode entry for a file should be r-- --- ---.
 	 * A default 3 element mode entry for a directory should be rwx --- ---.
 	 */
 
-	pst->st_ex_mode = create_default_mode(fsp, False);
+	st.st_ex_mode = create_default_mode(fsp, False);
 
-	if (!ensure_canon_entry_valid(&file_ace, fsp->conn->params, fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	if (!ensure_canon_entry_valid(&file_ace, fsp->conn->params,
+			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, &st, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -2397,9 +2401,10 @@ static bool unpack_canon_ace(files_struct *fsp,
 	 * it's a directory.
 	 */
 
-	pst->st_ex_mode = create_default_mode(fsp, True);
+	st.st_ex_mode = create_default_mode(fsp, True);
 
-	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp->conn->params, fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp->conn->params,
+			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, &st, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -4085,6 +4090,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 
 	free_canon_ace_list(file_ace_list);
 	free_canon_ace_list(dir_ace_list);
+
+	/* Ensure the stat struct in the fsp is correct. */
+	status = vfs_stat_fsp(fsp);
 
 	return NT_STATUS_OK;
 }
