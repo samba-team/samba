@@ -222,15 +222,6 @@ void add_failed_connection_entry(const char *domain, const char *server,
 }
 
 /**
- * Deletes all records from the negative connection cache in all domains
- */
-void flush_negative_conn_cache( void )
-{
-	flush_negative_conn_cache_for_domain("*");
-}
-
-
-/**
  * Deletes all records for a specified domain from the negative connection
  * cache
  *
