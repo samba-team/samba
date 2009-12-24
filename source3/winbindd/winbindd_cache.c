@@ -514,7 +514,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	time_t t = time(NULL);
 	unsigned cache_time = lp_winbind_cache_time();
 
-	if ( IS_DOMAIN_OFFLINE(domain) ) {
+	if (is_domain_offline(domain)) {
 		return;
 	}
 
@@ -4394,7 +4394,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		goto fail;
 	}
 
-	if (IS_DOMAIN_ONLINE(domain)) {
+	if (is_domain_offline(domain)) {
 		uint32_t entry_seqnum, dom_seqnum, last_check;
 
 		if (!wcache_fetch_seqnum(domain->name, &dom_seqnum,

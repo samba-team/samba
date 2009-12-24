@@ -387,9 +387,4 @@ struct WINBINDD_CCACHE_ENTRY {
 #define WINBINDD_PAM_AUTH_KRB5_RENEW_TIME 2592000 /* one month */
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
-#define IS_DOMAIN_OFFLINE(x) ( lp_winbind_offline_logon() && \
-			       ( get_global_winbindd_state_offline() \
-				 || !(x)->online ) )
-#define IS_DOMAIN_ONLINE(x) (!IS_DOMAIN_OFFLINE(x))
-
 #endif /* _WINBINDD_H */
