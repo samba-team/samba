@@ -332,9 +332,7 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 */
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 {
-	unsigned char p24[24];
 	TALLOC_CTX *mem_ctx;
-	ZERO_STRUCT(p24);
 
 	mem_ctx = talloc_init("weak_keys");
 	if (!mem_ctx) {
