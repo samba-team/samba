@@ -223,20 +223,6 @@ NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char
 }
 
 /**
- *  Store a DATA_BLOB containing an NTLMSSP response, for use later.
- *  This copies the data blob
- */
-
-NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
-				DATA_BLOB response)
-{
-	ntlmssp_state->stored_response = data_blob_talloc(ntlmssp_state,
-							  response.data,
-							  response.length);
-	return NT_STATUS_OK;
-}
-
-/**
  * Request features for the NTLMSSP negotiation
  *
  * @param ntlmssp_state NTLMSSP state
@@ -290,9 +276,8 @@ void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature)
  */
 
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
-			const DATA_BLOB in, DATA_BLOB *out)
+			const DATA_BLOB input, DATA_BLOB *out)
 {
-	DATA_BLOB input;
 	uint32 ntlmssp_command;
 	int i;
 
@@ -303,15 +288,6 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	*out = data_blob_null;
-
-	if (!in.length && ntlmssp_state->stored_response.length) {
-		input = ntlmssp_state->stored_response;
-
-		/* we only want to read the stored response once - overwrite it */
-		ntlmssp_state->stored_response = data_blob_null;
-	} else {
-		input = in;
-	}
 
 	if (!input.length) {
 		switch (ntlmssp_state->role) {

@@ -131,9 +131,4 @@ struct ntlmssp_state
 	/* ntlmv1 */
 	struct arcfour_state ntlmv1_arc4_state;
 	uint32_t ntlmv1_seq_num;
-
-	/* it turns out that we don't always get the
-	   response in at the time we want to process it.
-	   Store it here, until we need it */
-	DATA_BLOB stored_response;
 };

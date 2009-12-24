@@ -3218,8 +3218,6 @@ NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
 NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
 NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) ;
-NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
-				DATA_BLOB response) ;
 void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);
 void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature);
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
