@@ -53,7 +53,7 @@ struct tevent_req *wb_sid2uid_send(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("idmap_cache_find_sid2uid found %d%s\n",
 			   (int)state->uid, expired ? " (expired)": ""));
 
-		if (!expired || IS_DOMAIN_OFFLINE(find_our_domain())) {
+		if (!expired || is_domain_offline(find_our_domain())) {
 			if (state->uid == -1) {
 				tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 			} else {

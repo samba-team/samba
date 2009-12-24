@@ -1461,3 +1461,14 @@ void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
 			get_friendly_nt_error_msg(result));
 	resp->data.auth.pam_error = nt_status_to_pam(result);
 }
+
+bool is_domain_offline(const struct winbindd_domain *domain)
+{
+	if (!lp_winbind_offline_logon()) {
+		return false;
+	}
+	if (get_global_winbindd_state_offline()) {
+		return true;
+	}
+	return !domain->online;
+}
