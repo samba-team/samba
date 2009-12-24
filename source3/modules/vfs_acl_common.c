@@ -157,6 +157,85 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 }
 
 /*******************************************************************
+ Add in 3 inheritable components for a non-inheritable directory ACL.
+ CREATOR_OWNER/CREATOR_GROUP/WORLD.
+*******************************************************************/
+
+static void add_directory_inheritable_components(vfs_handle_struct *handle,
+                                const char *name,
+				SMB_STRUCT_STAT *psbuf,
+				struct security_descriptor *psd)
+{
+	struct connection_struct *conn = handle->conn;
+	int num_aces = (psd->dacl ? psd->dacl->num_aces : 0);
+	struct smb_filename smb_fname;
+	enum security_ace_type acl_type;
+	uint32_t access_mask;
+	mode_t dir_mode;
+	mode_t file_mode;
+	mode_t mode;
+	struct security_ace *new_ace_list = TALLOC_ZERO_ARRAY(talloc_tos(),
+						struct security_ace,
+						num_aces + 3);
+
+	if (new_ace_list == NULL) {
+		return;
+	}
+
+	/* Fake a quick smb_filename. */
+	ZERO_STRUCT(smb_fname);
+	smb_fname.st = *psbuf;
+	smb_fname.base_name = CONST_DISCARD(char *, name);
+
+	dir_mode = unix_mode(conn,
+			FILE_ATTRIBUTE_DIRECTORY, &smb_fname, NULL);
+	file_mode = unix_mode(conn,
+			FILE_ATTRIBUTE_ARCHIVE, &smb_fname, NULL);
+
+	mode = dir_mode | file_mode;
+
+	DEBUG(10, ("add_directory_inheritable_components: directory %s, "
+		"mode = 0%o\n",
+		name,
+		(unsigned int)mode ));
+
+	if (num_aces) {
+		memcpy(new_ace_list, psd->dacl->aces,
+			num_aces * sizeof(struct security_ace));
+	}
+	access_mask = map_canon_ace_perms(SNUM(conn), &acl_type,
+				mode & 0700, false);
+
+	init_sec_ace(&new_ace_list[num_aces],
+			&global_sid_Creator_Owner,
+			acl_type,
+			access_mask,
+			SEC_ACE_FLAG_CONTAINER_INHERIT|
+				SEC_ACE_FLAG_OBJECT_INHERIT|
+				SEC_ACE_FLAG_INHERIT_ONLY);
+	access_mask = map_canon_ace_perms(SNUM(conn), &acl_type,
+				(mode << 3) & 0700, false);
+	init_sec_ace(&new_ace_list[num_aces+1],
+			&global_sid_Creator_Group,
+			acl_type,
+			access_mask,
+			SEC_ACE_FLAG_CONTAINER_INHERIT|
+				SEC_ACE_FLAG_OBJECT_INHERIT|
+				SEC_ACE_FLAG_INHERIT_ONLY);
+	access_mask = map_canon_ace_perms(SNUM(conn), &acl_type,
+				(mode << 6) & 0700, false);
+	init_sec_ace(&new_ace_list[num_aces+2],
+			&global_sid_World,
+			acl_type,
+			access_mask,
+			SEC_ACE_FLAG_CONTAINER_INHERIT|
+				SEC_ACE_FLAG_OBJECT_INHERIT|
+				SEC_ACE_FLAG_INHERIT_ONLY);
+	psd->dacl->aces = new_ace_list;
+	psd->dacl->num_aces += 3;
+}
+
+/*******************************************************************
  Pull a DATA_BLOB from an xattr given a pathname.
  If the hash doesn't match, or doesn't exist - return the underlying
  filesystem sd.
@@ -261,6 +340,33 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		/* We're returning the blob, throw
  		 * away the filesystem SD. */
 		TALLOC_FREE(pdesc_next);
+	} else {
+		SMB_STRUCT_STAT sbuf;
+		SMB_STRUCT_STAT *psbuf = &sbuf;
+		bool is_directory = false;
+		/*
+		 * We're returning the underlying ACL from the
+		 * filesystem. If it's a directory, and has no
+		 * inheritable ACE entries we have to fake them.
+		 */
+		if (fsp) {
+			is_directory = fsp->is_directory;
+			psbuf = &fsp->fsp_name->st;
+		} else {
+			if (vfs_stat_smb_fname(handle->conn,
+						name,
+						&sbuf) == 0) {
+				is_directory = S_ISDIR(sbuf.st_ex_mode);
+			}
+		}
+		if (is_directory &&
+				!sd_has_inheritable_components(psd,
+							true)) {
+			add_directory_inheritable_components(handle,
+							name,
+							psbuf,
+							psd);
+		}
 	}
 
 	if (!(security_info & OWNER_SECURITY_INFORMATION)) {
