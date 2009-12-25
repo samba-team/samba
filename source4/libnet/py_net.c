@@ -66,10 +66,16 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 	creds = cli_credentials_from_py_object(py_creds);
 	if (creds == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	libnet_ctx = py_net_ctx(cls, ev, creds);
+	if (libnet_ctx == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Unable to initialize libnet");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	status = libnet_Join(libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -109,8 +115,8 @@ static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kw
 		return NULL;
 	}
 
-	// FIXME: we really need to get a context from the caller or we may end
-	// up with 2 event contexts
+	/* FIXME: we really need to get a context from the caller or we may end
+	 * up with 2 event contexts */
 	ev = s4_event_context_init(NULL);
 	mem_ctx = talloc_new(ev);
 
@@ -119,8 +125,6 @@ static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kw
 		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
 		return NULL;
 	}
-
-	dcerpc_init(py_default_loadparm_context(NULL));
 
 	libnet_ctx = py_net_ctx(cls, ev, creds);
 
@@ -158,6 +162,6 @@ static struct PyMethodDef net_methods[] = {
 
 void initnet(void)
 {
-	Py_InitModule("net", net_methods);
+	Py_InitModule3("net", net_methods, NULL);
 }
 
