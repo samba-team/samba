@@ -798,10 +798,15 @@ static void winbind_client_request_read(struct tevent_req *req)
 	ret = wb_req_read_recv(req, state, &state->request, &err);
 	TALLOC_FREE(req);
 	if (ret == -1) {
+		if (err == EPIPE) {
+			DEBUG(6, ("closing socket %d, client exited\n",
+				  state->sock));
+		} else {
+			DEBUG(2, ("Could not read client request from fd %d: "
+				  "%s\n", state->sock, strerror(err)));
+		}
 		close(state->sock);
 		state->sock = -1;
-		DEBUG(2, ("Could not read client request: %s\n",
-			  strerror(err)));
 		remove_client(state);
 		return;
 	}
