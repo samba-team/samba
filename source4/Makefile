@@ -243,7 +243,7 @@ installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 installmisc:: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(setupdir) $(DESTDIR)$(bindir) $(DESTDIR)$(sbindir) $(pythondir)
+	@$(SHELL) $(srcdir)/script/installmisc.sh "$(DESTDIR)" $(srcdir) $(DESTDIR)$(setupdir) $(DESTDIR)$(bindir) $(DESTDIR)$(sbindir) $(pythondir) $(PYTHON)
 
 installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(pkgconfigdir) $(PC_FILES)

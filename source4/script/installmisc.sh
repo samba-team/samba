@@ -1,28 +1,42 @@
 #!/bin/sh
 # install miscellaneous files
 
-[ $# -eq 5 ] || {
-    echo "Usage: installmisc.sh SRCDIR SETUPDIR BINDDIR SBINDDIR PYTHONDIR"
+[ $# -eq 7 ] || {
+    echo "Usage: installmisc.sh DESTDIR SRCDIR SETUPDIR BINDDIR SBINDDIR PYTHONDIR PYTHON"
     exit 1
 }
 
-SRCDIR="$1"
-SETUPDIR="$2"
-BINDIR="$3"
-SBINDIR="$4"
-PYTHONDIR="$5"
+DESTDIR="$1"
+SRCDIR="$2"
+SETUPDIR="$3"
+BINDIR="$4"
+SBINDIR="$5"
+PYTHONDIR="$6"
+PYTHON="$7"
 
 cd $SRCDIR || exit 1
+
+if $PYTHON -c "import sys; sys.exit('$PYTHONDIR' in sys.path)"; then
+	PYTHON_PATH_NEEDS_FIXING=yes
+	echo "sys.path in python scripts will be updated to include $PYTHONDIR"
+else
+	PYTHON_PATH_NEEDS_FIXING=no
+fi
 
 # fixup a python script to use the right path
 fix_python_path() {
     f="$1"
-    egrep 'sys.path.insert.*bin/python' $f > /dev/null && {
-	# old systems don't have sed -i :-(
-	sed "s|\(sys.path.insert.*\)bin/python\(.*\)$|\1$PYTHONDIR\2|g" < $f > $f.$$ || exit 1
-	mv -f $f.$$ $f || exit 1
-	chmod +x $f
-    }
+    if egrep 'sys.path.insert.*bin/python' $f > /dev/null; then
+        if [ "$PYTHON_PATH_NEEDS_FIXING" = "yes" ]; then
+            # old systems don't have sed -i :-(
+            sed "s|\(sys.path.insert.*\)bin/python\(.*\)$|\1$PYTHONDIR\2|g" < $f > $f.$$ || exit 1
+        else
+            # old systems don't have sed -i :-(
+            sed "s|\(sys.path.insert.*\)bin/python\(.*\)$||g" < $f > $f.$$ || exit 1
+        fi
+        mv -f $f.$$ $f || exit 1
+        chmod +x $f
+    fi
 }
 
 echo "Installing setup templates"
