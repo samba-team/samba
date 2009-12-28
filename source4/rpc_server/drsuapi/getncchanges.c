@@ -467,6 +467,74 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	return WERR_OK;
 }
 
+
+/* comparison function for linked attributes - see CompareLinks() in
+ * MS-DRSR section 4.1.10.5.17 */
+static int linked_attribute_compare(const struct drsuapi_DsReplicaLinkedAttribute *la1,
+				    const struct drsuapi_DsReplicaLinkedAttribute *la2,
+				    struct ldb_context *sam_ctx)
+{
+	int c;
+	WERROR werr;
+	TALLOC_CTX *tmp_ctx;
+	const struct dsdb_schema *schema;
+	const struct dsdb_attribute *schema_attrib;
+	struct dsdb_dn *dn1, *dn2;
+	struct GUID guid1, guid2;
+	NTSTATUS status;
+
+	c = GUID_compare(&la1->identifier->guid,
+			 &la2->identifier->guid);
+	if (c != 0) return c;
+
+	if (la1->attid != la2->attid) {
+		return la1->attid < la2->attid? -1:1;
+	}
+
+	if ((la1->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) !=
+	    (la2->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)) {
+		return (la1->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)? 1:-1;
+	}
+
+	/* we need to get the target GUIDs to compare */
+	tmp_ctx = talloc_new(sam_ctx);
+
+	schema = dsdb_get_schema(sam_ctx);
+	schema_attrib = dsdb_attribute_by_attributeID_id(schema, la1->attid);
+
+	werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, tmp_ctx, la1->value.blob, &dn1);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": Bad la1 blob in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, tmp_ctx, la2->value.blob, &dn2);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": Bad la2 blob in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	status = dsdb_get_extended_dn_guid(dn1->dn, &guid1, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Bad la1 guid in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+	status = dsdb_get_extended_dn_guid(dn2->dn, &guid2, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Bad la2 guid in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return GUID_compare(&guid1, &guid2);
+}
+
+
 /*
   sort the objects we send by tree order
  */
@@ -828,6 +896,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	} else {
 		r->out.ctr->ctr6.linked_attributes_count = getnc_state->la_count;
 		r->out.ctr->ctr6.linked_attributes = talloc_steal(mem_ctx, getnc_state->la_list);
+
+		ldb_qsort(r->out.ctr->ctr6.linked_attributes, r->out.ctr->ctr6.linked_attributes_count,
+			  sizeof(r->out.ctr->ctr6.linked_attributes[0]),
+			  b_state->sam_ctx, (ldb_qsort_cmp_fn_t)linked_attribute_compare);
+
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.uptodateness_vector->version = 2;
 		r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
