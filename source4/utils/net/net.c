@@ -346,10 +346,10 @@ static int binary_net(int argc, const char **argv)
 		return 1;
 	}
 
-	py_cmd = PyDict_GetItemString(py_cmds, argv[1]);
+	py_cmd = PyDict_GetItemString(py_cmds, argv_new[1]);
 	if (py_cmd != NULL) {
 		rc = py_call_with_string_args(py_cmd, "_run", 
-			argc-2, argv+2);
+			argc-1, argv+1);
 		talloc_free(ev);
 		return rc;
 	}

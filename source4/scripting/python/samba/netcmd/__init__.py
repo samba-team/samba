@@ -75,12 +75,13 @@ class Command(object):
         parser, optiongroups = self._create_parser()
         opts, args = parser.parse_args(list(argv))
         # Filter out options from option groups
+        args = args[1:]
         kwargs = dict(opts.__dict__)
         for option_group in parser.option_groups:
             for option in option_group.option_list:
                 del kwargs[option.dest]
         kwargs.update(optiongroups)
-        if len(args) < len(self.takes_args):
+        if len(args) != len(self.takes_args):
             self.usage(args)
             return -1
         try:
