@@ -52,6 +52,51 @@
 #include <Python.h>
 #include "scripting/python/modules.h"
 
+static PyObject *py_tuple_from_argv(int argc, const char *argv[])
+{
+	PyObject *l;
+	Py_ssize_t i;
+
+	l = PyTuple_New(argc);
+	if (l == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < argc; i++) {
+		PyTuple_SetItem(l, i, PyString_FromString(argv[i]));
+	}
+
+	return l;
+}
+
+static int py_call_with_string_args(PyObject *self, const char *method, int argc, const char *argv[])
+{
+	PyObject *ret, *args, *py_method;
+
+	args = py_tuple_from_argv(argc, argv);
+	if (args == NULL) {
+		PyErr_Print();
+		return 1;
+	}
+
+	py_method = PyObject_GetAttrString(self, method);
+	if (py_method == NULL) {
+		PyErr_Print();
+		return 1;
+	}	
+
+	ret = PyObject_CallObject(py_method, args);
+
+	Py_DECREF(args);
+
+	if (ret == NULL) {
+		PyErr_Print();
+		return 1;
+	}
+
+	return PyInt_AsLong(ret);
+}
+
 static PyObject *py_commands(void)
 {
 	PyObject *netcmd_module, *py_cmds;
@@ -106,12 +151,8 @@ int net_run_function(struct net_context *ctx,
 
 	py_cmd = PyDict_GetItemString(py_cmds, argv[0]);
 	if (py_cmd != NULL) {
-		PyObject *ret = PyObject_CallMethod(py_cmd, "run", "");
-		if (ret == NULL) {
-			PyErr_Print();
-			return 1;
-		}
-		return PyInt_AsLong(ret);
+		return py_call_with_string_args(py_cmd, "_run", 
+			argc-1, argv+1);
 	}
 
 	d_printf("No command: %s\n", argv[0]);
@@ -142,12 +183,8 @@ int net_run_usage(struct net_context *ctx,
 
 	py_cmd = PyDict_GetItemString(py_cmds, argv[0]);
 	if (py_cmd != NULL) {
-		PyObject *ret = PyObject_CallMethod(py_cmd, "usage", "");
-		if (ret == NULL) {
-			PyErr_Print();
-			return 1;
-		}
-		return PyInt_AsLong(ret);
+		return py_call_with_string_args(py_cmd, "usage", argc-1, 
+                                                argv+1);
 	}
 
 	d_printf("No usage information for command: %s\n", argv[0]);
@@ -218,9 +255,9 @@ static int net_help_python(void)
 		}
 		desc = PyString_AsString(py_desc);
 		if (strlen(name) > 7) {
-			d_printf("\t%s\t%s", name, desc);
+			d_printf("\t%s\t%s\n", name, desc);
 		} else {
-			d_printf("\t%s\t\t%s", name, desc);
+			d_printf("\t%s\t\t%s\n", name, desc);
 		}
 	}
 	return 0;
