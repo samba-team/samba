@@ -23,6 +23,9 @@ class Command(object):
     def _get_description(self):
         return self.__doc__
 
+    def usage(self):
+        raise NotImplementedError
+
     description = property(_get_description)
 
     def run(self):
@@ -31,3 +34,4 @@ class Command(object):
 
 
 commands = {}
+commands["foo"] = Command()

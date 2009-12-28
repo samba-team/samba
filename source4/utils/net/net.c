@@ -52,6 +52,29 @@
 #include <Python.h>
 #include "scripting/python/modules.h"
 
+static PyObject *py_commands(void)
+{
+	PyObject *netcmd_module, *py_cmds;
+	netcmd_module = PyImport_ImportModule("samba.netcmd");
+	if (netcmd_module == NULL) {
+		PyErr_Print();
+		return NULL;
+	}	
+
+	py_cmds = PyObject_GetAttrString(netcmd_module, "commands");
+	if (py_cmds == NULL) {
+		PyErr_Print();
+		return NULL;
+	}
+
+	if (!PyDict_Check(py_cmds)) {
+		fprintf(stderr, "Python net commands is not a dictionary\n");
+		return NULL;
+	}
+
+	return py_cmds;
+}
+
 /*
   run a function from a function table. If not found then
   call the specified usage function 
@@ -62,6 +85,7 @@ int net_run_function(struct net_context *ctx,
 			int (*usage_fn)(struct net_context *ctx, int argc, const char **argv))
 {
 	int i;
+	PyObject *py_cmds, *py_cmd;
 
 	if (argc == 0) {
 		return usage_fn(ctx, argc, argv);
@@ -73,6 +97,21 @@ int net_run_function(struct net_context *ctx,
 	for (i=0; functable[i].name; i++) {
 		if (strcasecmp_m(argv[0], functable[i].name) == 0)
 			return functable[i].fn(ctx, argc-1, argv+1);
+	}
+
+	py_cmds = py_commands();
+	if (py_cmds == NULL) {
+		return 1;
+	}
+
+	py_cmd = PyDict_GetItemString(py_cmds, argv[0]);
+	if (py_cmd != NULL) {
+		PyObject *ret = PyObject_CallMethod(py_cmd, "run", "");
+		if (ret == NULL) {
+			PyErr_Print();
+			return 1;
+		}
+		return PyInt_AsLong(ret);
 	}
 
 	d_printf("No command: %s\n", argv[0]);
@@ -87,12 +126,28 @@ int net_run_usage(struct net_context *ctx,
 			const struct net_functable *functable)
 {
 	int i;
+	PyObject *py_cmds, *py_cmd;
 
 	for (i=0; functable[i].name; i++) {
 		if (strcasecmp_m(argv[0], functable[i].name) == 0)
 			if (functable[i].usage) {
 				return functable[i].usage(ctx, argc-1, argv+1);
 			}
+	}
+
+	py_cmds = py_commands();
+	if (py_cmds == NULL) {
+		return 1;
+	}
+
+	py_cmd = PyDict_GetItemString(py_cmds, argv[0]);
+	if (py_cmd != NULL) {
+		PyObject *ret = PyObject_CallMethod(py_cmd, "usage", "");
+		if (ret == NULL) {
+			PyErr_Print();
+			return 1;
+		}
+		return PyInt_AsLong(ret);
 	}
 
 	d_printf("No usage information for command: %s\n", argv[0]);
@@ -135,25 +190,12 @@ static int net_help_builtin(const struct net_functable *ftable)
 
 static int net_help_python(void)
 {
-	PyObject *netcmd_module;
 	PyObject *py_cmds;
 	PyObject *key, *value;
 	Py_ssize_t pos = 0;
 
-	netcmd_module = PyImport_ImportModule("samba.netcmd");
-	if (netcmd_module == NULL) {
-		PyErr_Print();
-		return 1;
-	}	
-
-	py_cmds = PyObject_GetAttrString(netcmd_module, "commands");
+	py_cmds = py_commands();
 	if (py_cmds == NULL) {
-		PyErr_Print();
-		return 1;
-	}
-
-	if (!PyDict_Check(py_cmds)) {
-		fprintf(stderr, "Python net commands is not a dictionary\n");
 		return 1;
 	}
 
