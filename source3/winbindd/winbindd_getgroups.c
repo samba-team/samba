@@ -45,7 +45,6 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_getgroups_state *state;
 	char *domuser, *mapped_user;
-	struct winbindd_domain *domain;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -73,29 +72,6 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 	if (!parse_domain_user(domuser, state->domname, state->username)) {
 		DEBUG(5, ("Could not parse domain user: %s\n", domuser));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
-	domain = find_domain_from_name_noinit(state->domname);
-	if (domain == NULL) {
-		/* Retry with DNS name */
-		char *p = strchr(domuser, '@');
-		if (p != NULL) {
-			domain = find_domain_from_name_noinit(p+1);
-		}
-	}
-	if (domain == NULL) {
-		DEBUG(7, ("could not find domain entry for domain %s\n",
-			  state->domname));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
-		return tevent_req_post(req, ev);
-	}
-
-	if (lp_winbind_trusted_domains_only() && domain->primary) {
-		DEBUG(7,("winbindd_getgroups: My domain -- "
-			 "rejecting getgroups() for %s\\%s.\n",
-			 state->domname, state->username));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
 
