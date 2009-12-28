@@ -2571,10 +2571,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_request rename %s => %s\n",
 			  ldb_dn_get_linearized(ar->search_msg->dn),
 			  ldb_dn_get_linearized(msg->dn));
-		/* we can't use dsdb_module_rename() here as we need
-		   the rename call to be intercepted by this module, to
-		   allow it to process linked attribute changes */
-		if (ldb_rename(ldb, ar->search_msg->dn, msg->dn) != LDB_SUCCESS) {
+		if (dsdb_module_rename(ar->module,
+				       ar->search_msg->dn, msg->dn,
+				       DSDB_FLAG_OWN_MODULE) != LDB_SUCCESS) {
 			ldb_debug(ldb, LDB_DEBUG_FATAL, "replmd_replicated_request rename %s => %s failed - %s\n",
 				  ldb_dn_get_linearized(ar->search_msg->dn),
 				  ldb_dn_get_linearized(msg->dn),
