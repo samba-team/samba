@@ -80,6 +80,4 @@ void setup_domain_child(struct winbindd_domain *domain,
 {
 	setup_child(domain, child, domain_dispatch_table,
 		    "log.wb", domain->name);
-
-	child->domain = domain;
 }
