@@ -450,6 +450,7 @@ plantest "samba.python" none $SUBUNITRUN samba.tests
 plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
 plantest "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
+plantest "netcmd.python" none $SUBUNITRUN samba.tests.netcmd
 plantest "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
 plantest "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
