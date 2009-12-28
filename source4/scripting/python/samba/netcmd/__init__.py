@@ -29,7 +29,7 @@ class Command(object):
     """A net command."""
 
     def _get_description(self):
-        return self.__doc__.splitlines()[-1].rstrip("\n")
+        return self.__doc__.splitlines()[0].rstrip("\n")
 
     def _get_name(self):
         name = self.__class__.__name__
@@ -44,15 +44,26 @@ class Command(object):
 
     description = property(_get_description)
 
+    def _get_synopsis(self):
+        ret = self.name
+        if self.takes_args:
+            ret += " " + " ".join(self.takes_args)
+        return ret
+
+    synopsis = property(_get_synopsis)
+
     takes_args = []
     takes_options = []
+    takes_optiongroups = []
 
     def __init__(self):
-        synopsis = self.name
-        if self.takes_args:
-            synopsis += " " + " ".join(self.takes_args)
-        self.parser = optparse.OptionParser(synopsis)
+        self.parser = optparse.OptionParser(self.synopsis)
         self.parser.add_options(self.takes_options)
+        for optiongroup in self.takes_optiongroups:
+            self.parser.add_option_group(optiongroup(self.parser))
+
+    def message(self, text):
+        print text
 
     def _run(self, *argv):
         opts, args = self.parser.parse_args(list(argv))
@@ -70,8 +81,12 @@ class SuperCommand(Command):
 
     def run(self, subcommand, *args, **kwargs):
         if not subcommand in subcommands:
-            print >>sys.stderr, "No such subcommand '%s'" % subcommand
-        return subcommands[subcommand].run(*args, **kwargs)
+            print >>sys.stderr, "ERROR: No such subcommand '%s'" % subcommand
+        try:
+            return subcommands[subcommand].run(*args, **kwargs)
+        except CommandError, e:
+            print >>sys.stderr, "ERROR: %s" % e.message
+            return -1
 
     def usage(self, subcommand=None, *args, **kwargs):
         if subcommand is None:
@@ -81,15 +96,14 @@ class SuperCommand(Command):
             return 0
         else:
             if not subcommand in subcommands:
-                print >>sys.stderr, "No such subcommand '%s'" % subcommand
+                print >>sys.stderr, "ERROR: No such subcommand '%s'" % subcommand
             return subcommands[subcommand].usage(*args, **kwargs)
 
 
-class FooCommand(Command):
+class CommandError(Exception):
+    pass
 
-    def run(self, bar):
-        print "LALALA" + bar
-        return 0
 
 commands = {}
-commands["foo"] = FooCommand()
+from samba.netcmd.pwsettings import cmd_pwsettings
+commands["pwsettings"] = cmd_pwsettings()
