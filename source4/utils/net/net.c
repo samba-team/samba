@@ -113,7 +113,7 @@ static PyObject *py_commands(void)
 	}
 
 	if (!PyDict_Check(py_cmds)) {
-		fprintf(stderr, "Python net commands is not a dictionary\n");
+		d_printf("Python net commands is not a dictionary\n");
 		return NULL;
 	}
 
@@ -240,7 +240,7 @@ static int net_help_python(void)
 		char *name, *desc;
 		PyObject *py_desc;
 		if (!PyString_Check(key)) {
-			fprintf(stderr, "Command name not a string\n");
+			d_printf("Command name not a string\n");
 			return 1;
 		}
 		name = PyString_AsString(key);
@@ -250,7 +250,8 @@ static int net_help_python(void)
 			return 1;
 		}
 		if (!PyString_Check(py_desc)) {
-			fprintf(stderr, "Command description for %s not a string\n", name);
+			d_printf("Command description for %s not a string\n", 
+				name);
 			return 1;
 		}
 		desc = PyString_AsString(py_desc);
