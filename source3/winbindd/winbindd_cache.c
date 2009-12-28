@@ -2451,53 +2451,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***alt_names,
 				DOM_SID **dom_sids)
 {
- 	struct winbind_cache *cache = get_cache(domain);
- 	struct cache_entry *centry = NULL;
  	NTSTATUS status;
-	int i;
 
-	if (!cache->tdb)
-		goto do_query;
-
-	centry = wcache_fetch(cache, domain, "TRUSTDOMS/%s", domain->name);
-
-	if (!centry) {
- 		goto do_query;
-	}
-
-	*num_domains = centry_uint32(centry);
-
-	if (*num_domains) {
-		(*names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-		(*alt_names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-		(*dom_sids) 	= TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
-
-		if (! (*dom_sids) || ! (*names) || ! (*alt_names)) {
-			smb_panic_fn("trusted_domains out of memory");
- 		}
-	} else {
-		(*names) = NULL;
-		(*alt_names) = NULL;
-		(*dom_sids) = NULL;
-	}
-
-	for (i=0; i<(*num_domains); i++) {
-		(*names)[i] = centry_string(centry, mem_ctx);
-		(*alt_names)[i] = centry_string(centry, mem_ctx);
-		if (!centry_sid(centry, &(*dom_sids)[i])) {
-			sid_copy(&(*dom_sids)[i], &global_sid_NULL);
-		}
-	}
-
- 	status = centry->status;
-
-	DEBUG(10,("trusted_domains: [Cached] - cached info for domain %s (%d trusts) status: %s\n",
-		domain->name, *num_domains, nt_errstr(status) ));
-
- 	centry_free(centry);
- 	return status;
-
-do_query:
 	(*num_domains) = 0;
 	(*dom_sids) = NULL;
 	(*names) = NULL;
@@ -2521,33 +2476,6 @@ do_query:
 	if (!NT_STATUS_IS_ERR(status)) {
 		status = NT_STATUS_OK;
 	}
-
-
-#if 0    /* Disabled as we want the trust dom list to be managed by
-	    the main parent and always to make the query.  --jerry */
-
-	/* and save it */
-	refresh_sequence_number(domain, false);
-
- 	centry = centry_start(domain, status);
-	if (!centry)
-		goto skip_save;
-
-	centry_put_uint32(centry, *num_domains);
-
-	for (i=0; i<(*num_domains); i++) {
-		centry_put_string(centry, (*names)[i]);
-		centry_put_string(centry, (*alt_names)[i]);
-		centry_put_sid(centry, &(*dom_sids)[i]);
- 	}
-
-	centry_end(centry, "TRUSTDOMS/%s", domain->name);
-
- 	centry_free(centry);
-
-skip_save:
-#endif
-
  	return status;
 }	
 
@@ -3557,34 +3485,6 @@ static int validate_nss_na(TALLOC_CTX *mem_ctx, const char *keystr,
 	return 0;
 }
 
-static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
-			      struct tdb_validation_status *state)
-{
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-	int32 num_domains, i;
-
-	if (!centry) {
-		return 1;
-	}
-
-	num_domains = centry_uint32(centry);
-
-	for (i=0; i< num_domains; i++) {
-		DOM_SID sid;
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_sid(centry, &sid);
-	}
-
-	centry_free(centry);
-
-	if (!(state->success)) {
-		return 1;
-	}
-	DEBUG(10,("validate_trustdoms: %s ok\n", keystr));
-	return 0;
-}
-
 static int validate_trustdomcache(TALLOC_CTX *mem_ctx, const char *keystr, 
 				  TDB_DATA dbuf,
 				  struct tdb_validation_status *state)
@@ -3666,7 +3566,6 @@ struct key_val_struct {
 	{"DR/", validate_dr},
 	{"DE/", validate_de},
 	{"NSS/PWINFO/", validate_pwinfo},
-	{"TRUSTDOMS/", validate_trustdoms},
 	{"TRUSTDOMCACHE/", validate_trustdomcache},
 	{"NSS/NA/", validate_nss_na},
 	{"NSS/AN/", validate_nss_an},
