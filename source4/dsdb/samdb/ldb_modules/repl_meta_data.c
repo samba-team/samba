@@ -3345,9 +3345,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	const struct dsdb_attribute *attr;
 	struct dsdb_dn *dsdb_dn;
 	uint64_t seq_num = 0;
-	struct drsuapi_DsReplicaAttribute drs;
-	struct drsuapi_DsAttributeValue val;
-	struct ldb_message_element new_el, *old_el;
+	struct ldb_message_element *old_el;
 	WERROR status;
 	time_t t = time(NULL);
 	struct ldb_result *res;
@@ -3357,10 +3355,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	NTSTATUS ntstatus;
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	const struct GUID *our_invocation_id;
-
-	drs.value_ctr.num_values = 1;
-	drs.value_ctr.values = &val;
-	val.blob = la->value.blob;
 
 /*
 linked_attributes[0]:                                                     
@@ -3462,23 +3456,10 @@ linked_attributes[0]:
 		return ret;
 	}
 
-	status = attr->syntax->drsuapi_to_ldb(ldb, schema, attr, &drs, tmp_ctx, &new_el);
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx, la->value.blob, &dsdb_dn);
 	if (!W_ERROR_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s\n",
-				       old_el->name, ldb_dn_get_linearized(msg->dn));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (new_el.num_values != 1) {
-		ldb_asprintf_errstring(ldb, "Failed to find value in linked attribute blob for %s on %s\n",
-				       old_el->name, ldb_dn_get_linearized(msg->dn));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &new_el.values[0], attr->syntax->ldap_oid);
-	if (!dsdb_dn) {
-		ldb_asprintf_errstring(ldb, "Failed to parse DN in linked attribute blob for %s on %s\n",
-				       old_el->name, ldb_dn_get_linearized(msg->dn));
+		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
+				       old_el->name, ldb_dn_get_linearized(msg->dn), win_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
