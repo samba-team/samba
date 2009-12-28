@@ -313,10 +313,7 @@ struct winbindd_methods {
 	/* enumerate trusted domains */
 	NTSTATUS (*trusted_domains)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32 *num_domains,
-				    char ***names,
-				    char ***alt_names,
-				    DOM_SID **dom_sids);
+				    struct netr_DomainTrustList *trusts);
 };
 
 /* Filled out by IDMAP backends */
