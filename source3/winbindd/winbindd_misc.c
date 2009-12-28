@@ -102,6 +102,12 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 		goto done;
 	}
 
+	extra_data = talloc_strdup(state->mem_ctx, "");
+	if (extra_data == NULL) {
+		request_error(state);
+		goto done;
+	}
+
 	for ( i = 0; i < num_domains; i++ ) {
 		struct winbindd_domain *domain;
 		bool is_online = true;		
@@ -111,41 +117,27 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 		if (domain) {
 			is_online = domain->online;
 		}
-
-		if ( !extra_data ) {
-			extra_data = talloc_asprintf(state->mem_ctx, 
-						     "%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s",
-						     d->domain_name,
-						     d->dns_name ? d->dns_name : d->domain_name,
-						     sid_string_talloc(state->mem_ctx, &d->sid),
-						     get_trust_type_string(d),
-						     trust_is_transitive(d) ? "Yes" : "No",
-						     trust_is_inbound(d) ? "Yes" : "No",
-						     trust_is_outbound(d) ? "Yes" : "No",
-						     is_online ? "Online" : "Offline" );
-		} else {
-			extra_data = talloc_asprintf(state->mem_ctx, 
-						     "%s\n%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s",
-						     extra_data,
-						     d->domain_name,
-						     d->dns_name ? d->dns_name : d->domain_name,
-						     sid_string_talloc(state->mem_ctx, &d->sid),
-						     get_trust_type_string(d),
-						     trust_is_transitive(d) ? "Yes" : "No",
-						     trust_is_inbound(d) ? "Yes" : "No",
-						     trust_is_outbound(d) ? "Yes" : "No",
-						     is_online ? "Online" : "Offline" );
-		}
+		extra_data = talloc_asprintf_append_buffer(
+			extra_data,
+			"%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s\n",
+			d->domain_name,
+			d->dns_name ? d->dns_name : d->domain_name,
+			sid_string_talloc(state->mem_ctx, &d->sid),
+			get_trust_type_string(d),
+			trust_is_transitive(d) ? "Yes" : "No",
+			trust_is_inbound(d) ? "Yes" : "No",
+			trust_is_outbound(d) ? "Yes" : "No",
+			is_online ? "Online" : "Offline" );
 	}
 
-	extra_data_len = 0;
-	if (extra_data != NULL) {
-		extra_data_len = strlen(extra_data);
-	}
-
+	extra_data_len = strlen(extra_data);
 	if (extra_data_len > 0) {
+
+		/* Strip the last \n */
+		extra_data[extra_data_len-1] = '\0';
+
 		state->response->extra_data.data = extra_data;
-		state->response->length += extra_data_len+1;
+		state->response->length += extra_data_len;
 	}
 
 	request_ok(state);	
