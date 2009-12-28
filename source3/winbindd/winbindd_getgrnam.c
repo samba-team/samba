@@ -40,7 +40,6 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_getgrnam_state *state;
-	struct winbindd_domain *domain;
 	char *tmp;
 	NTSTATUS nt_status;
 
@@ -77,27 +76,7 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 		fstrcpy(state->name_domain, get_global_sam_name());
 	}
 
-	/* Get info for the domain */
-
-	domain = find_domain_from_name_noinit(state->name_domain);
-	if (domain == NULL) {
-		DEBUG(3, ("could not get domain sid for domain %s\n",
-			  state->name_domain));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
-		return tevent_req_post(req, ev);
-	}
-
-	/* should we deal with users for our domain? */
-
-	if ( lp_winbind_trusted_domains_only() && domain->primary) {
-		DEBUG(7,("winbindd_getgrnam: My domain -- rejecting "
-			 "getgrnam() for %s\\%s.\n", state->name_domain,
-			 state->name_group));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = wb_lookupname_send(state, ev, domain->name, state->name_group,
+	subreq = wb_lookupname_send(state, ev, state->name_domain, state->name_group,
 				    0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
