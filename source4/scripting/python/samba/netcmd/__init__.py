@@ -19,6 +19,7 @@
 
 import optparse
 from samba import getopt as options, Ldb
+import sys
 
 
 class Option(optparse.Option):
@@ -82,7 +83,11 @@ class Command(object):
         if len(args) < len(self.takes_args):
             self.usage(args)
             return -1
-        return self.run(*args, **kwargs)
+        try:
+            return self.run(*args, **kwargs)
+        except CommandError, e:
+            print >>sys.stderr, "ERROR: %s" % e
+            return -1
 
     def run(self):
         """Run the command. This should be overriden by all subclasses."""
@@ -97,11 +102,7 @@ class SuperCommand(Command):
     def run(self, subcommand, *args, **kwargs):
         if not subcommand in subcommands:
             print >>sys.stderr, "ERROR: No such subcommand '%s'" % subcommand
-        try:
             return subcommands[subcommand].run(*args, **kwargs)
-        except CommandError, e:
-            print >>sys.stderr, "ERROR: %s" % e.message
-            return -1
 
     def usage(self, subcommand=None, *args, **kwargs):
         if subcommand is None:

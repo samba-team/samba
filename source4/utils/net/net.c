@@ -130,7 +130,6 @@ int net_run_function(struct net_context *ctx,
 			int (*usage_fn)(struct net_context *ctx, int argc, const char **argv))
 {
 	int i;
-	PyObject *py_cmds, *py_cmd;
 
 	if (argc == 0) {
 		return usage_fn(ctx, argc, argv);
@@ -142,17 +141,6 @@ int net_run_function(struct net_context *ctx,
 	for (i=0; functable[i].name; i++) {
 		if (strcasecmp_m(argv[0], functable[i].name) == 0)
 			return functable[i].fn(ctx, argc-1, argv+1);
-	}
-
-	py_cmds = py_commands();
-	if (py_cmds == NULL) {
-		return 1;
-	}
-
-	py_cmd = PyDict_GetItemString(py_cmds, argv[0]);
-	if (py_cmd != NULL) {
-		return py_call_with_string_args(py_cmd, "_run", 
-			argc-1, argv+1);
 	}
 
 	d_printf("No command: %s\n", argv[0]);
@@ -288,6 +276,7 @@ static int binary_net(int argc, const char **argv)
 	int opt,i;
 	int rc;
 	int argc_new;
+	PyObject *py_cmds, *py_cmd;
 	const char **argv_new;
 	struct tevent_context *ev;
 	struct net_context *ctx = NULL;
@@ -351,6 +340,19 @@ static int binary_net(int argc, const char **argv)
 	py_load_samba_modules();
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+
+	py_cmds = py_commands();
+	if (py_cmds == NULL) {
+		return 1;
+	}
+
+	py_cmd = PyDict_GetItemString(py_cmds, argv[1]);
+	if (py_cmd != NULL) {
+		rc = py_call_with_string_args(py_cmd, "_run", 
+			argc-2, argv+2);
+		talloc_free(ev);
+		return rc;
+	}
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable,
 			      net_usage);
