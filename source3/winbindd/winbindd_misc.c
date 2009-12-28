@@ -148,20 +148,18 @@ done:
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
 							struct winbindd_cli_state *state)
 {
-	uint32 i, num_domains;
-	char **names, **alt_names;
-	DOM_SID *sids;
+	int i;
 	int extra_data_len = 0;
 	char *extra_data;
 	NTSTATUS result;
 	bool have_own_domain = False;
+	struct netr_DomainTrustList trusts;
 
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
 
 	result = domain->methods->trusted_domains(domain, state->mem_ctx,
-						  &num_domains, &names,
-						  &alt_names, &sids);
+						  &trusts);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("winbindd_dual_list_trusted_domains: trusted_domains returned %s\n",
@@ -171,45 +169,37 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 
 	extra_data = talloc_strdup(state->mem_ctx, "");
 
-	if (num_domains > 0)
-		extra_data = talloc_asprintf(
-			state->mem_ctx, "%s\\%s\\%s",
-			names[0], alt_names[0] ? alt_names[0] : names[0],
-			sid_string_talloc(state->mem_ctx, &sids[0]));
-
-	for (i=1; i<num_domains; i++)
-		extra_data = talloc_asprintf(
-			state->mem_ctx, "%s\n%s\\%s\\%s",
-			extra_data, names[i],
-			alt_names[i] ? alt_names[i] : names[i],
-			sid_string_talloc(state->mem_ctx, &sids[i]));
+	for (i=0; i<trusts.count; i++) {
+		extra_data = talloc_asprintf_append_buffer(
+			extra_data, "%s\\%s\\%s\n",
+			trusts.array[i].netbios_name,
+			trusts.array[i].dns_name,
+			sid_string_talloc(state->mem_ctx,
+					  trusts.array[i].sid));
+	}
 
 	/* add our primary domain */
 
-	for (i=0; i<num_domains; i++) {
-		if (strequal(names[i], domain->name)) {
+	for (i=0; i<trusts.count; i++) {
+		if (strequal(trusts.array[i].netbios_name, domain->name)) {
 			have_own_domain = True;
 			break;
 		}
 	}
 
 	if (state->request->data.list_all_domains && !have_own_domain) {
-		extra_data = talloc_asprintf(
-			state->mem_ctx, "%s\n%s\\%s\\%s",
-			extra_data, domain->name,
+		extra_data = talloc_asprintf_append_buffer(
+			extra_data, "%s\\%s\\%s\n", domain->name,
 			domain->alt_name ? domain->alt_name : domain->name,
 			sid_string_talloc(state->mem_ctx, &domain->sid));
 	}
 
-	/* This is a bit excessive, but the extra data sooner or later will be
-	   talloc'ed */
-
-	extra_data_len = 0;
-	if (extra_data != NULL) {
-		extra_data_len = strlen(extra_data);
-	}
-
+	extra_data_len = strlen(extra_data);
 	if (extra_data_len > 0) {
+
+		/* Strip the last \n */
+		extra_data[extra_data_len-1] = '\0';
+
 		state->response->extra_data.data = extra_data;
 		state->response->length += extra_data_len+1;
 	}
