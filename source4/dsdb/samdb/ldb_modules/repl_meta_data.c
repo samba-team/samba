@@ -3471,6 +3471,16 @@ linked_attributes[0]:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* re-resolve the DN by GUID, as the DRS server may give us an
+	   old DN value */
+	ret = dsdb_module_dn_by_guid(module, dsdb_dn, &guid, &dsdb_dn->dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, __location__ ": Failed to re-resolve GUID %s",
+				       GUID_string(tmp_ctx, &guid));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	/* see if this link already exists */
 	pdn = parsed_dn_find(pdn_list, old_el->num_values, &guid, dsdb_dn->dn);
 	if (pdn != NULL) {
