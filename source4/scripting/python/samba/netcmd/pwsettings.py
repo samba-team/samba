@@ -42,11 +42,11 @@ class cmd_pwsettings(Command):
 
     synopsis = "(show | set <options>)"
 
-    takes_optiongroups = [
-        options.SambaOptions,
-        options.VersionOptions,
-        options.CredentialsOptions,
-        ]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+        }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -63,10 +63,12 @@ class cmd_pwsettings(Command):
           help="The maximum password age (<integer in days> | default).  Default is 43.", type=str),
           ]
 
-    def run(self, H=None, min_pwd_age=None, max_pwd_age=None, quiet=False,
-            complexity=None, history_length=None, min_pwd_length=None,
-            username=None, simple_bind_dn=None, no_pass=None, workgroup=None,
-            kerberos=None, configfile=None, password=None):
+    takes_args = ["subcommand"]
+
+    def run(self, subcommand, H=None, min_pwd_age=None, max_pwd_age=None,
+            quiet=False, complexity=None, history_length=None,
+            min_pwd_length=None, credopts=None, sambaopts=None,
+            versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
@@ -75,12 +77,13 @@ class cmd_pwsettings(Command):
         else:
             url = lp.get("sam database")
 
-        samdb = SamDB(url=url, session_info=system_session(), credentials=creds, lp=lp)
+        samdb = SamDB(url=url, session_info=system_session(),
+            credentials=creds, lp=lp)
 
         domain_dn = SamDB.domain_dn(samdb)
         res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
-          attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength", "minPwdAge",
-          "maxPwdAge"])
+          attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
+                 "minPwdAge", "maxPwdAge"])
         assert(len(res) == 1)
         try:
             pwd_props = int(res[0]["pwdProperties"][0])
@@ -92,7 +95,7 @@ class cmd_pwsettings(Command):
         except KeyError:
             raise CommandError("Could not retrieve password properties!")
 
-        if args[0] == "show":
+        if subcommand == "show":
             self.message("Password informations for domain '%s'" % domain_dn)
             self.message("")
             if pwd_props & DOMAIN_PASSWORD_COMPLEX != 0:
@@ -103,7 +106,7 @@ class cmd_pwsettings(Command):
             self.message("Minimum password length: %d" % min_pwd_len)
             self.message("Minimum password age (days): %d" % min_pwd_age)
             self.message("Maximum password age (days): %d" % max_pwd_age)
-        elif args[0] == "set":
+        elif subcommand == "set":
             msgs = []
             m = ldb.Message()
             m.dn = ldb.Dn(samdb, domain_dn)
@@ -184,4 +187,4 @@ class cmd_pwsettings(Command):
             msgs.append("All changes applied successfully!")
             self.message("\n".join(msgs))
         else:
-            raise CommandError("Wrong argument '" + args[0] + "'!")
+            raise CommandError("Wrong argument '%s'!" % subcommand)

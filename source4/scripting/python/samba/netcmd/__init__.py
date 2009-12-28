@@ -39,8 +39,9 @@ class Command(object):
 
     name = property(_get_name)
 
-    def usage(self):
-        self.parser.print_usage()
+    def usage(self, args):
+        parser, _ = self._create_parser()
+        parser.print_usage()
 
     description = property(_get_description)
 
@@ -54,20 +55,34 @@ class Command(object):
 
     takes_args = []
     takes_options = []
-    takes_optiongroups = []
+    takes_optiongroups = {}
 
-    def __init__(self):
-        self.parser = optparse.OptionParser(self.synopsis)
-        self.parser.add_options(self.takes_options)
-        for optiongroup in self.takes_optiongroups:
-            self.parser.add_option_group(optiongroup(self.parser))
+    def _create_parser(self):
+        parser = optparse.OptionParser(self.synopsis)
+        parser.prog = "net"
+        parser.add_options(self.takes_options)
+        optiongroups = {}
+        for name, optiongroup in self.takes_optiongroups.iteritems():
+            optiongroups[name] = optiongroup(parser)
+            parser.add_option_group(optiongroups[name])
+        return parser, optiongroups
 
     def message(self, text):
         print text
 
     def _run(self, *argv):
-        opts, args = self.parser.parse_args(list(argv))
-        return self.run(*args, **opts.__dict__)
+        parser, optiongroups = self._create_parser()
+        opts, args = parser.parse_args(list(argv))
+        # Filter out options from option groups
+        kwargs = dict(opts.__dict__)
+        for option_group in parser.option_groups:
+            for option in option_group.option_list:
+                del kwargs[option.dest]
+        kwargs.update(optiongroups)
+        if len(args) < len(self.takes_args):
+            self.usage(args)
+            return -1
+        return self.run(*args, **kwargs)
 
     def run(self):
         """Run the command. This should be overriden by all subclasses."""
@@ -107,3 +122,5 @@ class CommandError(Exception):
 commands = {}
 from samba.netcmd.pwsettings import cmd_pwsettings
 commands["pwsettings"] = cmd_pwsettings()
+from samba.netcmd.domainlevel import cmd_domainlevel
+commands["domainlevel"] = cmd_domainlevel()
