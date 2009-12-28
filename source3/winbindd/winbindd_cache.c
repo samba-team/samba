@@ -2446,17 +2446,9 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
  * Guenther */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+				struct netr_DomainTrustList *trusts)
 {
  	NTSTATUS status;
-
-	(*num_domains) = 0;
-	(*dom_sids) = NULL;
-	(*names) = NULL;
-	(*alt_names) = NULL;
 
 	/* Return status value returned by seq number check */
 
@@ -2466,8 +2458,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	DEBUG(10,("trusted_domains: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
-	status = domain->backend->trusted_domains(domain, mem_ctx, num_domains,
-						names, alt_names, dom_sids);
+	status = domain->backend->trusted_domains(domain, mem_ctx, trusts);
 
 	/* no trusts gives NT_STATUS_NO_MORE_ENTRIES resetting to NT_STATUS_OK
 	 * so that the generic centry handling still applies correctly -

@@ -1257,13 +1257,9 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 /* get a list of trusted domains */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+				struct netr_DomainTrustList *trusts)
 {
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
-	struct netr_DomainTrustList trusts;
 	int			i;
 	uint32			flags;	
 	struct rpc_pipe_client *cli;
@@ -1272,10 +1268,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
-	*num_domains = 0;
-	*alt_names   = NULL;
-	*names       = NULL;
-	*dom_sids    = NULL;
+	ZERO_STRUCTP(trusts);
 
 	/* If this is our primary domain or a root in our forest,
 	   query for all trusts.  If not, then just look for domain
@@ -1303,36 +1296,20 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
 						      cli->desthost,
 						      flags,
-						      &trusts,
+						      trusts,
 						      NULL);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
-	if (trusts.count == 0) {
+	if (trusts->count == 0) {
 		return NT_STATUS_OK;
-	}
-
-	/* Allocate memory for trusted domain names and sids */
-
-	if ( !(*names = TALLOC_ARRAY(mem_ctx, char *, trusts.count)) ) {
-		DEBUG(0, ("trusted_domains: out of memory\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if ( !(*alt_names = TALLOC_ARRAY(mem_ctx, char *, trusts.count)) ) {
-		DEBUG(0, ("trusted_domains: out of memory\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if ( !(*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, trusts.count)) ) {
-		DEBUG(0, ("trusted_domains: out of memory\n"));
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Copy across names and sids */
 
 	ret_count = 0;
-	for (i = 0; i < trusts.count; i++) {
+	for (i = 0; i < trusts->count; i++) {
+		struct netr_DomainTrust *trust = &trusts->array[i];
 		struct winbindd_domain d;
 
 		ZERO_STRUCT(d);
@@ -1344,39 +1321,23 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		 * by the DC.
 		 */
 
-		if ((trusts.array[i].trust_attributes
+		if ((trust->trust_attributes
 		     == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) &&
 		    !domain->primary )
 		{
 			DEBUG(10,("trusted_domains: Skipping external trusted "
 				  "domain %s because it is outside of our "
 				  "primary domain\n",
-				  trusts.array[i].netbios_name));
+				  trust->netbios_name));
 			continue;
-		}
-
-		/*
-		 * We must check that the SID of each trusted domain
-		 * was returned to work around a bug in Windows:
-		 * http://support.microsoft.com/kb/922832
-		 */
-
-		(*names)[ret_count] = CONST_DISCARD(
-			char *, trusts.array[i].netbios_name);
-		(*alt_names)[ret_count] = CONST_DISCARD(
-			char *, trusts.array[i].dns_name);
-		if (trusts.array[i].sid) {
-			sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
-		} else {
-			sid_copy(&(*dom_sids)[ret_count], &global_sid_NULL);
 		}
 
 		/* add to the trusted domain cache */
 
-		fstrcpy( d.name,  trusts.array[i].netbios_name);
-		fstrcpy( d.alt_name, trusts.array[i].dns_name);
-		if (trusts.array[i].sid) {
-			sid_copy( &d.sid, trusts.array[i].sid);
+		fstrcpy(d.name, trust->netbios_name);
+		fstrcpy(d.alt_name, trust->dns_name);
+		if (trust->sid) {
+			sid_copy(&d.sid, trust->sid);
 		} else {
 			sid_copy(&d.sid, &global_sid_NULL);
 		}
@@ -1387,10 +1348,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				  "trust flags for domain %s\n",
 				  domain->name, d.alt_name));
 
-			d.domain_flags = trusts.array[i].trust_flags;
-			d.domain_type = trusts.array[i].trust_type;
-			d.domain_trust_attribs =
-				trusts.array[i].trust_attributes;
+			d.domain_flags = trust->trust_flags;
+			d.domain_type = trust->trust_type;
+			d.domain_trust_attribs = trust->trust_attributes;
 
 			wcache_tdc_add_domain( &d );
 			ret_count++;
@@ -1403,16 +1363,16 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			struct winbindd_tdc_domain *exist = NULL;
 
 			exist = wcache_tdc_fetch_domain(
-				NULL, trusts.array[i].netbios_name);
+				talloc_tos(), trust->netbios_name);
 			if (!exist) {
 				DEBUG(10,("trusted_domains(ads):  Searching "
 					  "trusted domain list of %s and "
 					  "storing trust flags for domain "
 					  "%s\n", domain->name, d.alt_name));
-				d.domain_flags = trusts.array[i].trust_flags;
-				d.domain_type = trusts.array[i].trust_type;
+				d.domain_flags = trust->trust_flags;
+				d.domain_type = trust->trust_type;
 				d.domain_trust_attribs =
-					trusts.array[i].trust_attributes;
+					trust->trust_attributes;
 
 				wcache_tdc_add_domain( &d );
 				ret_count++;
@@ -1433,7 +1393,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				  "trust flags for domain %s\n",
 				  domain->name, d.alt_name));
 
-			parent = wcache_tdc_fetch_domain(NULL, domain->name);
+			parent = wcache_tdc_fetch_domain(talloc_tos(),
+							 domain->name);
 			if (parent) {
 				d.domain_flags = parent->trust_flags;
 				d.domain_type  = parent->trust_type;
@@ -1450,8 +1411,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			ret_count++;
 		}
 	}
-	*num_domains = ret_count;
-
 	return result;
 }
 
