@@ -6,6 +6,7 @@
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) 2004 Stefan Metzmacher (metze@samba.org)
+   Copyright (C) 2009 Jelmer Vernooij (jelmer@samba.org)
 
    Largely rewritten by metze in August 2004
 
@@ -48,6 +49,8 @@
 #include "param/param.h"
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
+#include <Python.h>
+#include "scripting/python/modules.h"
 
 /*
   run a function from a function table. If not found then
@@ -112,13 +115,12 @@ static const struct net_functable net_functable[] = {
 	{NULL, NULL, NULL, NULL}
 };
 
-int net_help(struct net_context *ctx, const struct net_functable *ftable)
+static int net_help_builtin(const struct net_functable *ftable)
 {
 	int i = 0;
 	const char *name = ftable[i].name;
 	const char *desc = ftable[i].desc;
 
-	d_printf("Available commands:\n");
 	while (name && desc) {
 		if (strlen(name) > 7) {
 			d_printf("\t%s\t%s", name, desc);
@@ -128,7 +130,65 @@ int net_help(struct net_context *ctx, const struct net_functable *ftable)
 		name = ftable[++i].name;
 		desc = ftable[i].desc;
 	}
+	return 0;
+}
 
+static int net_help_python(void)
+{
+	PyObject *netcmd_module;
+	PyObject *py_cmds;
+	PyObject *key, *value;
+	Py_ssize_t pos = 0;
+
+	netcmd_module = PyImport_ImportModule("samba.netcmd");
+	if (netcmd_module == NULL) {
+		PyErr_Print();
+		return 1;
+	}	
+
+	py_cmds = PyObject_GetAttrString(netcmd_module, "commands");
+	if (py_cmds == NULL) {
+		PyErr_Print();
+		return 1;
+	}
+
+	if (!PyDict_Check(py_cmds)) {
+		fprintf(stderr, "Python net commands is not a dictionary\n");
+		return 1;
+	}
+
+	while (PyDict_Next(py_cmds, &pos, &key, &value)) {
+		char *name, *desc;
+		PyObject *py_desc;
+		if (!PyString_Check(key)) {
+			fprintf(stderr, "Command name not a string\n");
+			return 1;
+		}
+		name = PyString_AsString(key);
+		py_desc = PyObject_GetAttrString(value, "description");
+		if (py_desc == NULL) {
+			PyErr_Print();
+			return 1;
+		}
+		if (!PyString_Check(py_desc)) {
+			fprintf(stderr, "Command description for %s not a string\n", name);
+			return 1;
+		}
+		desc = PyString_AsString(py_desc);
+		if (strlen(name) > 7) {
+			d_printf("\t%s\t%s", name, desc);
+		} else {
+			d_printf("\t%s\t\t%s", name, desc);
+		}
+	}
+	return 0;
+}
+
+int net_help(struct net_context *ctx, const struct net_functable *ftable)
+{
+	d_printf("Available commands:\n");
+	net_help_builtin(ftable);
+	net_help_python();
 	return 0;
 }
 
@@ -208,7 +268,12 @@ static int binary_net(int argc, const char **argv)
 	ctx->credentials = cmdline_credentials;
 	ctx->event_ctx = ev;
 
-	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
+	py_load_samba_modules();
+	Py_Initialize();
+	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+
+	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable,
+			      net_usage);
 
 	if (rc != 0) {
 		DEBUG(0,("return code = %d\n", rc));
