@@ -143,13 +143,14 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		}
 	}
 
-	/* See if we found a match.  Check if we need to update the
-	   SID. */
-
-	if ( domain && sid) {
-		if ( sid_equal( &domain->sid, &global_sid_NULL ) )
+	if (domain != NULL) {
+		/*
+		 * We found a match. Possibly update the SID
+		 */
+		if ((sid != NULL)
+		    && sid_equal(&domain->sid, &global_sid_NULL)) {
 			sid_copy( &domain->sid, sid );
-
+		}
 		return domain;
 	}
 
