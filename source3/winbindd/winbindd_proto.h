@@ -412,7 +412,6 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 /* The following definitions come from winbindd/winbindd_util.c  */
 
 struct winbindd_domain *domain_list(void);
-void free_domain_list(void);
 bool domain_is_forest_root(const struct winbindd_domain *domain);
 void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 			    struct timeval now, void *private_data);

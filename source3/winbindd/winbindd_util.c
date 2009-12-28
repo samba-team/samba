@@ -58,7 +58,7 @@ struct winbindd_domain *domain_list(void)
 
 /* Free all entries in the trusted domain list */
 
-void free_domain_list(void)
+static void free_domain_list(void)
 {
 	struct winbindd_domain *domain = _domain_list;
 
