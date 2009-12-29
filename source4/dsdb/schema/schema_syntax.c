@@ -488,13 +488,17 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		NTTIME v;
 		time_t t;
+		int ret;
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		t = ldb_string_to_time((const char *)in->values[i].data);
+		ret = ldb_val_to_time(&in->values[i], &t);
+		if (ret != LDB_SUCCESS) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
 		unix_to_nt_time(&v, t);
 		v /= 10000000;
 
