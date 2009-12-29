@@ -73,7 +73,8 @@ static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 			break;
 		}
 		if (ret != LDB_SUCCESS) {
-			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
+			fprintf(stderr, "ERR: (%s) \"%s\" on DN %s\n",
+				ldb_strerror(ret),
 				ldb_errstring(ldb), ldb_dn_get_linearized(ldif->msg->dn));
 			failures++;
 		} else {
