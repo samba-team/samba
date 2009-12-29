@@ -1951,6 +1951,12 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t);
 time_t ldb_string_to_time(const char *s);
 
 /**
+  convert a LDAP GeneralizedTime string in ldb_val format to a
+  time_t.
+*/
+int ldb_val_to_time(const struct ldb_val *v, time_t *t);
+
+/**
    Convert a time structure to a string
 
    This function converts a time_t structure to an LDAP formatted
