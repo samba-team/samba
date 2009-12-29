@@ -263,6 +263,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 	}
 
 	/* zero these out */
+	data_blob_free(&gensec_ntlmssp_state->session_key);
 	data_blob_free(&gensec_ntlmssp_state->lm_resp);
 	data_blob_free(&gensec_ntlmssp_state->nt_resp);
 	data_blob_free(&gensec_ntlmssp_state->encrypted_session_key);
@@ -575,15 +576,12 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 		return nt_status;
 	}
 
-	gensec_ntlmssp_state->session_key = data_blob_null;
-
 	if (gensec_security->want_features
 	    & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY)) {
 		nt_status = ntlmssp_server_postauth(gensec_security, &user_session_key, &lm_session_key);
 		talloc_free(mem_ctx);
 		return nt_status;
 	} else {
-		gensec_ntlmssp_state->session_key = data_blob(NULL, 0);
 		talloc_free(mem_ctx);
 		return NT_STATUS_OK;
 	}
