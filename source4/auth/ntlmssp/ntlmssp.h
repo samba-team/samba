@@ -156,7 +156,7 @@ struct gensec_ntlmssp_state
 
 struct gensec_ntlmssp_context {
 	struct gensec_security *gensec_security;
-	struct ntlmssp_state *ntlmssp_state;
+	struct gensec_ntlmssp_state *ntlmssp_state;
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 };
