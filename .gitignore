@@ -119,7 +119,7 @@ source3/samba4-data.mk
 source3/samba4-config.mk
 source3/torture.tdb
 source4/apidocs
-source4/auth/auth_proto.h
+source4/auth/ntlm/auth_proto.h
 source4/auth/auth_sam.h
 source4/auth/auth_sam_reply.h
 source4/auth/credentials/credentials_krb5_proto.h
