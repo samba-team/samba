@@ -40,6 +40,11 @@ enum ntlmssp_message_type
 	NTLMSSP_DONE      = 5 /* samba final state */
 };
 
+#define NTLMSSP_FEATURE_SESSION_KEY        0x00000001
+#define NTLMSSP_FEATURE_SIGN               0x00000002
+#define NTLMSSP_FEATURE_SEAL               0x00000004
+#define NTLMSSP_FEATURE_CCACHE		   0x00000008
+
 struct gensec_ntlmssp_state
 {
 	enum ntlmssp_role role;
@@ -48,6 +53,7 @@ struct gensec_ntlmssp_state
 
 	bool unicode;
 	bool use_ntlmv2;
+	bool use_ccache;
 	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
 	bool allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
 				  very secure anyway */
