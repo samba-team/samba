@@ -287,6 +287,11 @@ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 bool auth_challenge_may_be_modified(struct auth_context *auth_ctx);
 NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
+NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
+					struct auth_context *auth_ctx,
+					const char *principal,
+					struct auth_serversupplied_info **server_info);
+
 NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *event_ctx,
 				   struct messaging_context *msg_ctx,
