@@ -651,7 +651,9 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	NTSTATUS nt_status;
-	struct auth_usersupplied_info *user_info = talloc(mem_ctx, struct auth_usersupplied_info);
+	struct auth_usersupplied_info *user_info;
+
+	user_info = talloc(gensec_ntlmssp_state, struct auth_usersupplied_info);
 	if (!user_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -670,31 +672,21 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 	user_info->password.response.nt = gensec_ntlmssp_state->nt_resp;
 	user_info->password.response.nt.data = talloc_steal(user_info, gensec_ntlmssp_state->nt_resp.data);
 
-	nt_status = gensec_ntlmssp_state->auth_context->check_password(gensec_ntlmssp_state->auth_context, 
-								       mem_ctx,
-								       user_info, 
+	nt_status = gensec_ntlmssp_state->auth_context->check_password(gensec_ntlmssp_state->auth_context,
+								       gensec_ntlmssp_state,
+								       user_info,
 								       &gensec_ntlmssp_state->server_info);
 	talloc_free(user_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	talloc_steal(gensec_ntlmssp_state, gensec_ntlmssp_state->server_info);
-
 	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
-		DEBUG(10, ("Got NT session key of length %u\n", 
+		DEBUG(10, ("Got NT session key of length %u\n",
 			   (unsigned)gensec_ntlmssp_state->server_info->user_session_key.length));
-		if (!talloc_reference(mem_ctx, gensec_ntlmssp_state->server_info->user_session_key.data)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		*user_session_key = gensec_ntlmssp_state->server_info->user_session_key;
 	}
 	if (gensec_ntlmssp_state->server_info->lm_session_key.length) {
-		DEBUG(10, ("Got LM session key of length %u\n", 
+		DEBUG(10, ("Got LM session key of length %u\n",
 			   (unsigned)gensec_ntlmssp_state->server_info->lm_session_key.length));
-		if (!talloc_reference(mem_ctx, gensec_ntlmssp_state->server_info->lm_session_key.data)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		*lm_session_key = gensec_ntlmssp_state->server_info->lm_session_key;
 	}
 	return nt_status;
