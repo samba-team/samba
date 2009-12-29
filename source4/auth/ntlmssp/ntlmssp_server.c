@@ -548,16 +548,11 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 	DATA_BLOB lm_session_key = data_blob_null;
 	NTSTATUS nt_status;
 
-	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* zero the outbound NTLMSSP packet */
 	*out = data_blob_null;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_preauth(gensec_ntlmssp_state, in))) {
-		talloc_free(mem_ctx);
+	nt_status = ntlmssp_server_preauth(gensec_ntlmssp_state, in);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
@@ -569,20 +564,19 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 	 */
 
 	/* Finally, actually ask if the password is OK */
-
-	if (!NT_STATUS_IS_OK(nt_status = gensec_ntlmssp_state->check_password(gensec_ntlmssp_state, mem_ctx,
-									      &user_session_key, &lm_session_key))) {
-		talloc_free(mem_ctx);
+	nt_status = gensec_ntlmssp_state->check_password(gensec_ntlmssp_state,
+							 NULL,
+							 &user_session_key,
+							 &lm_session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
 	if (gensec_security->want_features
 	    & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY)) {
 		nt_status = ntlmssp_server_postauth(gensec_security, &user_session_key, &lm_session_key);
-		talloc_free(mem_ctx);
 		return nt_status;
 	} else {
-		talloc_free(mem_ctx);
 		return NT_STATUS_OK;
 	}
 }
