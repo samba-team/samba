@@ -43,7 +43,7 @@ _PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, cons
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-bool auth_challenge_may_be_modified(struct auth_context *auth_ctx) 
+_PUBLIC_ bool auth_challenge_may_be_modified(struct auth_context *auth_ctx)
 {
 	return auth_ctx->challenge.may_be_modified;
 }

@@ -284,7 +284,7 @@ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info **server_info);
 
-
+bool auth_challenge_may_be_modified(struct auth_context *auth_ctx);
 NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
 NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
