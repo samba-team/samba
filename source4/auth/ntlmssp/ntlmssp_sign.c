@@ -59,9 +59,9 @@ enum ntlmssp_direction {
 };
 
 static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
-					      TALLOC_CTX *sig_mem_ctx, 
-					      const uint8_t *data, size_t length, 
-					      const uint8_t *whole_pdu, size_t pdu_length, 
+					      TALLOC_CTX *sig_mem_ctx,
+					      const uint8_t *data, size_t length,
+					      const uint8_t *whole_pdu, size_t pdu_length,
 					      enum ntlmssp_direction direction,
 					      DATA_BLOB *sig, bool encrypt_sig)
 {
@@ -75,18 +75,18 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 		if (!sig->data) {
 			return NT_STATUS_NO_MEMORY;
 		}
-			
+
 		switch (direction) {
 		case NTLMSSP_SEND:
 			SIVAL(seq_num, 0, gensec_ntlmssp_state->crypt.ntlm2.send_seq_num);
 			gensec_ntlmssp_state->crypt.ntlm2.send_seq_num++;
-			hmac_md5_init_limK_to_64(gensec_ntlmssp_state->crypt.ntlm2.send_sign_key.data, 
+			hmac_md5_init_limK_to_64(gensec_ntlmssp_state->crypt.ntlm2.send_sign_key.data,
 						 gensec_ntlmssp_state->crypt.ntlm2.send_sign_key.length, &ctx);
 			break;
 		case NTLMSSP_RECEIVE:
 			SIVAL(seq_num, 0, gensec_ntlmssp_state->crypt.ntlm2.recv_seq_num);
 			gensec_ntlmssp_state->crypt.ntlm2.recv_seq_num++;
-			hmac_md5_init_limK_to_64(gensec_ntlmssp_state->crypt.ntlm2.recv_sign_key.data, 
+			hmac_md5_init_limK_to_64(gensec_ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
 						 gensec_ntlmssp_state->crypt.ntlm2.recv_sign_key.length, &ctx);
 			break;
 		}
@@ -130,10 +130,10 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 }
 
 /* TODO: make this non-public */
-NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *sig_mem_ctx, 
-				    const uint8_t *data, size_t length, 
-				    const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
+				    TALLOC_CTX *sig_mem_ctx,
+				    const uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
 				    DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -141,9 +141,9 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 				      struct gensec_ntlmssp_context);
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
-	return ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
-					     data, length, 
-					     whole_pdu, pdu_length, 
+	return ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx,
+					     data, length,
+					     whole_pdu, pdu_length,
 					     NTLMSSP_SEND, sig, true);
 }
 
@@ -152,10 +152,10 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security, 
-				     TALLOC_CTX *sig_mem_ctx, 
-				     const uint8_t *data, size_t length, 
-				     const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
+				     TALLOC_CTX *sig_mem_ctx,
+				     const uint8_t *data, size_t length,
+				     const uint8_t *whole_pdu, size_t pdu_length,
 				     const DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -171,9 +171,9 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
-						  data, length, 
-						  whole_pdu, pdu_length, 
+	nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx,
+						  data, length,
+						  whole_pdu, pdu_length,
 						  NTLMSSP_RECEIVE, &local_sig, true);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -218,10 +218,10 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *sig_mem_ctx, 
-				    uint8_t *data, size_t length, 
-				    const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
+				    TALLOC_CTX *sig_mem_ctx,
+				    uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
 				    DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -240,9 +240,9 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 		/* The order of these two operations matters - we must first seal the packet,
 		   then seal the sequence number - this is because the send_seal_hash is not
 		   constant, but is is rather updated with each iteration */
-		nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
-							  data, length, 
-							  whole_pdu, pdu_length, 
+		nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx,
+							  data, length,
+							  whole_pdu, pdu_length,
 							  NTLMSSP_SEND, sig, false);
 		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state, data, length);
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
@@ -251,7 +251,7 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 	} else {
 		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(sig_mem_ctx, 
+		if (!msrpc_gen(sig_mem_ctx,
 			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -283,10 +283,10 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 /*
   wrappers for the ntlmssp_*() functions
 */
-NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security, 
-				      TALLOC_CTX *sig_mem_ctx, 
-				      uint8_t *data, size_t length, 
-				      const uint8_t *whole_pdu, size_t pdu_length, 
+NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
+				      TALLOC_CTX *sig_mem_ctx,
+				      uint8_t *data, size_t length,
+				      const uint8_t *whole_pdu, size_t pdu_length,
 				      const DATA_BLOB *sig)
 {
 	NTSTATUS status;
