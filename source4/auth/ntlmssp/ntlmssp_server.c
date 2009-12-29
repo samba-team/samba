@@ -594,9 +594,13 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 static NTSTATUS auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 					   uint8_t chal[8])
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+				      struct gensec_ntlmssp_context);
+	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS status;
 
-	status = gensec_ntlmssp_state->auth_context->get_challenge(gensec_ntlmssp_state->auth_context, chal);
+	status = auth_context->get_challenge(auth_context, chal);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
 			nt_errstr(status)));
@@ -613,7 +617,12 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *ge
  */
 static bool auth_ntlmssp_may_set_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 {
-	return gensec_ntlmssp_state->auth_context->challenge_may_be_modified(gensec_ntlmssp_state->auth_context);
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+				      struct gensec_ntlmssp_context);
+	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+
+	return auth_context->challenge_may_be_modified(auth_context);
 }
 
 /**
@@ -622,8 +631,11 @@ static bool auth_ntlmssp_may_set_challenge(const struct gensec_ntlmssp_state *ge
  */
 static NTSTATUS auth_ntlmssp_set_challenge(struct gensec_ntlmssp_state *gensec_ntlmssp_state, DATA_BLOB *challenge)
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+				      struct gensec_ntlmssp_context);
+	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS nt_status;
-	struct auth_context *auth_context = gensec_ntlmssp_state->auth_context;
 	const uint8_t *chal;
 
 	if (challenge->length != 8) {
@@ -632,9 +644,9 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct gensec_ntlmssp_state *gensec_n
 
 	chal = challenge->data;
 
-	nt_status = gensec_ntlmssp_state->auth_context->set_challenge(auth_context, 
-								      chal, 
-								      "NTLMSSP callback (NTLM2)");
+	nt_status = auth_context->set_challenge(auth_context,
+						chal,
+						"NTLMSSP callback (NTLM2)");
 
 	return nt_status;
 }
@@ -648,6 +660,10 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct gensec_ntlmssp_state *gensec_n
 static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+				      struct gensec_ntlmssp_context);
+	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info;
 
@@ -670,22 +686,22 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 	user_info->password.response.nt = gensec_ntlmssp_state->nt_resp;
 	user_info->password.response.nt.data = talloc_steal(user_info, gensec_ntlmssp_state->nt_resp.data);
 
-	nt_status = gensec_ntlmssp_state->auth_context->check_password(gensec_ntlmssp_state->auth_context,
-								       gensec_ntlmssp_state,
-								       user_info,
-								       &gensec_ntlmssp_state->server_info);
+	nt_status = auth_context->check_password(auth_context,
+						 gensec_ntlmssp,
+						 user_info,
+						 &gensec_ntlmssp->server_info);
 	talloc_free(user_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
+	if (gensec_ntlmssp->server_info->user_session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n",
-			   (unsigned)gensec_ntlmssp_state->server_info->user_session_key.length));
-		*user_session_key = gensec_ntlmssp_state->server_info->user_session_key;
+			   (unsigned)gensec_ntlmssp->server_info->user_session_key.length));
+		*user_session_key = gensec_ntlmssp->server_info->user_session_key;
 	}
-	if (gensec_ntlmssp_state->server_info->lm_session_key.length) {
+	if (gensec_ntlmssp->server_info->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n",
-			   (unsigned)gensec_ntlmssp_state->server_info->lm_session_key.length));
-		*lm_session_key = gensec_ntlmssp_state->server_info->lm_session_key;
+			   (unsigned)gensec_ntlmssp->server_info->lm_session_key.length));
+		*lm_session_key = gensec_ntlmssp->server_info->lm_session_key;
 	}
 	return nt_status;
 }
@@ -705,8 +721,15 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 {
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+				      struct gensec_ntlmssp_context);
 
-	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_security->event_ctx, gensec_security->settings->lp_ctx, gensec_ntlmssp_state->server_info, session_info);
+	nt_status = auth_generate_session_info(gensec_ntlmssp_state,
+					       gensec_security->event_ctx,
+					       gensec_security->settings->lp_ctx,
+					       gensec_ntlmssp->server_info,
+					       session_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	(*session_info)->session_key = data_blob_talloc(*session_info, 
@@ -724,11 +747,15 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+	struct gensec_ntlmssp_context *gensec_ntlmssp;
 
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+
+	gensec_ntlmssp = talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+					       struct gensec_ntlmssp_context);
 
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
@@ -778,7 +805,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	gensec_ntlmssp_state->auth_context = gensec_security->auth_context;
+	gensec_ntlmssp->auth_context = gensec_security->auth_context;
 
 	gensec_ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
 	gensec_ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;

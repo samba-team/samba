@@ -149,9 +149,6 @@ struct gensec_ntlmssp_state
 			uint8_t session_nonce[16];
 		} ntlm2;
 	} crypt;
-
-	struct auth_context *auth_context;
-	struct auth_serversupplied_info *server_info;
 };
 
 struct gensec_ntlmssp_context {
