@@ -570,7 +570,6 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 
 	/* Finally, actually ask if the password is OK */
 	nt_status = gensec_ntlmssp_state->check_password(gensec_ntlmssp_state,
-							 NULL,
 							 &user_session_key,
 							 &lm_session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -646,9 +645,8 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct gensec_ntlmssp_state *gensec_n
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_ntlmssp_state, 
-					    TALLOC_CTX *mem_ctx, 
-					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info;
