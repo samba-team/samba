@@ -402,6 +402,11 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	NTSTATUS nt_status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
+	if (!(gensec_security->want_features
+	      & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY))) {
+		return NT_STATUS_OK;
+	}
+
 	if (user_session_key)
 		dump_data_pw("USER session key:\n", user_session_key->data, user_session_key->length);
 
@@ -572,13 +577,14 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 		return nt_status;
 	}
 
-	if (gensec_security->want_features
-	    & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY)) {
-		nt_status = ntlmssp_server_postauth(gensec_security, &user_session_key, &lm_session_key);
+	nt_status = ntlmssp_server_postauth(gensec_security,
+					    &user_session_key,
+					    &lm_session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
-	} else {
-		return NT_STATUS_OK;
 	}
+
+	return NT_STATUS_OK;
 }
 
 /**
