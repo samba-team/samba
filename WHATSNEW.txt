@@ -107,6 +107,7 @@ o   Jeremy Allison <jra@samba.org>
     * Ensure dos_mode can return FILE_ATTRIBUTE_NORMAL, then filter the returned
       attributes by protocol level.
     * Vector correctly through reply_openerror() (which uses the same logic).
+    * Fix bugs with the full Windows ACL support.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -119,11 +120,18 @@ o   Jonas Gorski <jonas.gorski+samba@gmail.com>
     * BUG 6992: make test for getgrouplist cacheable.
 
 
+o   Suresh Jayaraman <sjayaraman@suse.de>
+    * Update mount.cifs man page with nounix option.
+
+
 o   Volker Lendecke <vl@samba.org>
     * Fix _samr_GetAliasMembership for results with 0 rids.
     * Fix an error case in cli_negprot.
     * Add a lower-cost alternative to wbinfo -t: wbinfo --ping-dc.
     * Restore correct timeouts for SMB requests.
+    * Fix a 64-bit error in libsmb.
+    * Replace IS_DOMAIN_OFFLINE by a function in Winbind.
+    * Simplify/cleanup Winbind code.
 
 
 o   Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
