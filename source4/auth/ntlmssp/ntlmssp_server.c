@@ -182,7 +182,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
-		const char *target_name_dns = "";
 
 		/* Find out the DNS domain name */
 		dnsdomname[0] = '\0';
@@ -195,12 +194,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 			safe_strcat(dnsname, dnsdomname, sizeof(dnsname) - 1);
 		}
 		strlower_m(dnsname);
-
-		if (chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN) {
-			target_name_dns = dnsdomname;
-		} else if (chal_flags |= NTLMSSP_TARGET_TYPE_SERVER) {
-			target_name_dns = dnsname;
-		}
 
 		msrpc_gen(out_mem_ctx, 
 			  &struct_blob, "aaaaa",
