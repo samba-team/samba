@@ -609,13 +609,6 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 		NTSTATUS status;
 		int ret;
 
-		ret = replmd_build_la_val(el->values, v, dsdb_dn, invocationId,
-					  seq_num, seq_num, now, 0, false);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-
 		/* note that the DN already has the extended
 		   components from the extended_dn_store module */
 		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &target_guid, "GUID");
@@ -625,6 +618,18 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 				talloc_free(tmp_ctx);
 				return ret;
 			}
+			ret = dsdb_set_extended_dn_guid(dsdb_dn->dn, &target_guid, "GUID");
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+		}
+
+		ret = replmd_build_la_val(el->values, v, dsdb_dn, invocationId,
+					  seq_num, seq_num, now, 0, false);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
 		}
 
 		ret = replmd_add_backlink(module, schema, guid, &target_guid, true, sa, false);
@@ -1176,6 +1181,10 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb, "Unable to find GUID for DN %s\n",
 						       ldb_dn_get_linearized(dn));
+				return ret;
+			}
+			ret = dsdb_set_extended_dn_guid(dn, p->guid, "GUID");
+			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 		} else if (!NT_STATUS_IS_OK(status)) {
