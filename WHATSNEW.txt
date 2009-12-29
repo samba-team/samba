@@ -37,6 +37,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6880: Fix listing of workgroup servers in libsmbclient.
     * BUG 6898: Samba duplicates file content on appending.
     * BUG 6939: Fix long filenames with "mangling method = hash".
+    * BUG 7005: Fix "mangle method = hash" truncates files with dot "."
+      character.
 
 
 o   Kai Blin <kai@samba.org>
