@@ -43,14 +43,14 @@ static void dump_arc4_state(const char *description,
 	dump_data_pw(description, state->sbox, sizeof(state->sbox));
 }
 
-static void calc_ntlmv2_key(unsigned char subkey[16],
-				DATA_BLOB session_key,
-				const char *constant)
+static void calc_ntlmv2_key(uint8_t subkey[16],
+			    DATA_BLOB session_key,
+			    const char *constant)
 {
 	struct MD5Context ctx3;
 	MD5Init(&ctx3);
 	MD5Update(&ctx3, session_key.data, session_key.length);
-	MD5Update(&ctx3, (const unsigned char *)constant, strlen(constant)+1);
+	MD5Update(&ctx3, (const uint8_t *)constant, strlen(constant)+1);
 	MD5Final(subkey, &ctx3);
 }
 
