@@ -2795,6 +2795,25 @@ int dsdb_functional_level(struct ldb_context *ldb)
 }
 
 /*
+  set a GUID in an extended DN structure
+ */
+int dsdb_set_extended_dn_guid(struct ldb_dn *dn, const struct GUID *guid, const char *component_name)
+{
+	struct ldb_val v;
+	NTSTATUS status;
+	int ret;
+
+	status = GUID_to_ndr_blob(guid, dn, &v);
+	if (!NT_STATUS_IS_OK(status)) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	ret = ldb_dn_set_extended_component(dn, component_name, &v);
+	data_blob_free(&v);
+	return ret;
+}
+
+/*
   return a GUID from a extended DN structure
  */
 NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid, const char *component_name)
