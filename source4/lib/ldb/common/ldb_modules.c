@@ -606,7 +606,7 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		 * all our modules, and leaves us one less sharp
 		 * corner for module developers to cut themselves on
 		 */
-		ldb_module_done(request, NULL, NULL, ret);
+		ret = ldb_module_done(request, NULL, NULL, ret);
 	}
 	return ret;
 }
@@ -830,7 +830,9 @@ int ldb_module_done(struct ldb_request *req,
 	}
 
 	req->callback(req, ares);
-	return error;
+	/* returning ares->error here allows the callback routines in
+	   modules to override the error code */
+	return ares->error;
 }
 
 /* to be used *only* in modules init functions.
