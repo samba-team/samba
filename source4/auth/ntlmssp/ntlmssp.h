@@ -73,7 +73,12 @@ struct gensec_ntlmssp_state
 
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
 	DATA_BLOB encrypted_session_key;
-	
+
+	/**
+	 * Private data for the callback functions
+	 */
+	void *callback_private;
+
 	/**
 	 * Callback to get the 'challenge' used for NTLM authentication.
 	 *
