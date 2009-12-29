@@ -832,6 +832,33 @@ time_t ldb_string_to_time(const char *s)
 }
 
 /*
+  convert a LDAP GeneralizedTime string in ldb_val format to a
+  time_t.
+*/
+int ldb_val_to_time(const struct ldb_val *v, time_t *t)
+{
+	struct tm tm;
+
+	if (v == NULL || !v->data || v->length < 14) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	memset(&tm, 0, sizeof(tm));
+
+	if (sscanf((char *)v->data, "%04u%02u%02u%02u%02u%02u",
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+
+	*t = timegm(&tm);
+
+	return LDB_SUCCESS;
+}
+
+/*
   return a LDAP formatted UTCTime string
 */
 char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t)
