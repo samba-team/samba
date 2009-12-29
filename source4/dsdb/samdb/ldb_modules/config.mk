@@ -1,7 +1,7 @@
 ################################################
 # Start SUBSYSTEM DSDB_MODULE_HELPERS
 [SUBSYSTEM::DSDB_MODULE_HELPERS]
-PRIVATE_DEPENDENCIES = LIBLDB
+PRIVATE_DEPENDENCIES = LIBLDB LIBNDR SAMDB_SCHEMA
 
 DSDB_MODULE_HELPERS_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/util.o
 
@@ -12,7 +12,7 @@ $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/util_proto.h
 # Start MODULE ldb_samba_dsdb
 [MODULE::ldb_samba_dsdb]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS LIBNDR
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS LIBNDR DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(samba_dsdb)
 # End MODULE ldb_samba_dsdb
 ################################################
@@ -119,7 +119,7 @@ ldb_pdc_fsmo_OBJ_FILES = \
 # Start MODULE ldb_samldb
 [MODULE::ldb_samldb]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LDAP_ENCODE SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LDAP_ENCODE SAMDB DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(samldb)
 #
 # End MODULE ldb_samldb
@@ -242,7 +242,7 @@ ldb_extended_dn_out_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_out.
 # Start MODULE ldb_extended_dn_store
 [MODULE::ldb_extended_dn_store]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL SAMDB DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(extended_dn_store)
 # End MODULE ldb_extended_dn_store
 ################################################
@@ -301,7 +301,7 @@ ldb_update_keytab_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/update_keytab.o
 [MODULE::ldb_objectclass]
 INIT_FUNCTION = LDB_MODULE(objectclass)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_objectclass
 ################################################
@@ -325,7 +325,7 @@ ldb_subtree_rename_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_rename.o
 [MODULE::ldb_subtree_delete]
 INIT_FUNCTION = LDB_MODULE(subtree_delete)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL DSDB_MODULE_HELPERS
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
@@ -385,7 +385,7 @@ ldb_instancetype_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/instancetype.o
 [MODULE::ldb_operational]
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS
 INIT_FUNCTION = LDB_MODULE(operational)
 # End MODULE ldb_operational
 ################################################
@@ -397,7 +397,8 @@ ldb_operational_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/operational.o
 [MODULE::ldb_descriptor]
 INIT_FUNCTION = LDB_MODULE(descriptor)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB \
+	DSDB_MODULE_HELPERS
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_descriptor
 ################################################

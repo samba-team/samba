@@ -22,7 +22,7 @@ $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OB
 # PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
-PRIVATE_DEPENDENCIES = LIBLDB
+PRIVATE_DEPENDENCIES = LIBLDB NDR_DRSBLOBS LIBCLI_LDAP_NDR UTIL_LDB LIBCLI_AUTH
 
 SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 		util.o \
@@ -31,7 +31,7 @@ SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 $(eval $(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::SAMDB_SCHEMA]
-PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
+PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS LDBSAMBA
 
 SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_init.o \

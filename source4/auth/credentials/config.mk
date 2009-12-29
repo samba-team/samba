@@ -4,7 +4,7 @@
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_AUTH SECRETS LIBCRYPTO KERBEROS UTIL_LDB HEIMDAL_GSSAPI 
 PRIVATE_DEPENDENCIES = \
-		SECRETS
+		SECRETS SAMDB
 
 
 CREDENTIALS_OBJ_FILES = $(addprefix $(authsrcdir)/credentials/, credentials.o credentials_files.o credentials_ntlm.o credentials_krb5.o ../kerberos/kerberos_util.o)
