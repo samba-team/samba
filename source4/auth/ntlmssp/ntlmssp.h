@@ -81,7 +81,8 @@ struct gensec_ntlmssp_state
 	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
 	 *
 	 */
-	const uint8_t *(*get_challenge)(const struct gensec_ntlmssp_state *);
+	NTSTATUS (*get_challenge)(const struct gensec_ntlmssp_state *,
+				  uint8_t challenge[8]);
 
 	/**
 	 * Callback to find if the challenge used by NTLM authentication may be modified

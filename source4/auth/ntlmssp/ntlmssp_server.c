@@ -124,8 +124,9 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	DATA_BLOB struct_blob;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
-	const uint8_t *cryptkey;
+	uint8_t cryptkey[8];
 	const char *target_name;
+	NTSTATUS status;
 
 	/* parse the NTLMSSP packet */
 #if 0
@@ -150,10 +151,11 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	ntlmssp_handle_neg_flags(gensec_ntlmssp_state, neg_flags, gensec_ntlmssp_state->allow_lm_key);
 
 	/* Ask our caller what challenge they would like in the packet */
-	cryptkey = gensec_ntlmssp_state->get_challenge(gensec_ntlmssp_state);
-	if (!cryptkey) {
-		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+	status = gensec_ntlmssp_state->get_challenge(gensec_ntlmssp_state, cryptkey);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* Check if we may set the challenge */
@@ -597,22 +599,19 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
  * @return an 8 byte random challenge
  */
 
-static const uint8_t *auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
+static NTSTATUS auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+					   uint8_t chal[8])
 {
 	NTSTATUS status;
-	uint8_t *chal = talloc_array(gensec_ntlmssp_state, uint8_t, 8);
-	if (!chal) {
-		return NULL;
-	}
 
 	status = gensec_ntlmssp_state->auth_context->get_challenge(gensec_ntlmssp_state->auth_context, chal);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
 			nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 
-	return chal;
+	return NT_STATUS_OK;
 }
 
 /**
