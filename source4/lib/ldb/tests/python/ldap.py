@@ -704,7 +704,8 @@ objectClass: container
         # Make group 1 secondary
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_REPLACE, "member")
         ldb.modify(m)
 
         # Make group 1 primary
