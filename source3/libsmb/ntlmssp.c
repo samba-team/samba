@@ -112,10 +112,11 @@ void debug_ntlmssp_flags(uint32 neg_flags)
  *
  */
 
-static void get_challenge(const struct ntlmssp_state *ntlmssp_state,
-			  uint8_t chal[8])
+static NTSTATUS get_challenge(const struct ntlmssp_state *ntlmssp_state,
+			      uint8_t chal[8])
 {
 	generate_random_buffer(chal, 8);
+	return NT_STATUS_OK;
 }
 
 /**
@@ -493,6 +494,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	const char *target_name;
 	struct NEGOTIATE_MESSAGE negotiate;
 	struct CHALLENGE_MESSAGE challenge;
+	NTSTATUS status;
 
 	/* parse the NTLMSSP packet */
 #if 0
@@ -525,7 +527,10 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
 
 	/* Ask our caller what challenge they would like in the packet */
-	ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
+	status = ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* Check if we may set the challenge */
 	if (!ntlmssp_state->may_set_challenge(ntlmssp_state)) {
