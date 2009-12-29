@@ -339,6 +339,7 @@ static int binary_net(int argc, const char **argv)
 
 	py_load_samba_modules();
 	Py_Initialize();
+	PySys_SetArgv(argc, argv);
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
 	py_cmds = py_commands();
