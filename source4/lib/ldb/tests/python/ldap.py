@@ -725,7 +725,8 @@ objectClass: container
         # Try to add group 1 also as secondary - should be denied
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
         try:
             ldb.modify(m)
             self.fail()
@@ -747,7 +748,8 @@ objectClass: container
         # Make group 2 secondary
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
-        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
         ldb.modify(m)
 
         # Swap the groups
