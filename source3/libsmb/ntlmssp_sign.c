@@ -60,16 +60,15 @@ enum ntlmssp_direction {
 };
 
 static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_state,
-						const uchar *data, size_t length,
-						const uchar *whole_pdu, size_t pdu_length,
-						enum ntlmssp_direction direction,
-						DATA_BLOB *sig,
-						bool encrypt_sig)
+					      const uint8_t *data, size_t length,
+					      const uint8_t *whole_pdu, size_t pdu_length,
+					      enum ntlmssp_direction direction,
+					      DATA_BLOB *sig, bool encrypt_sig)
 {
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		HMACMD5Context ctx;
-		uchar seq_num[4];
-		uchar digest[16];
+		uint8_t digest[16];
+		uint8_t seq_num[4];
 
 		*sig = data_blob(NULL, NTLMSSP_SIG_SIZE);
 		if (!sig->data) {
@@ -102,7 +101,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 
 		dump_data_pw("pdu data ", whole_pdu, pdu_length);
 
-		hmac_md5_update(seq_num, 4, &ctx);
+		hmac_md5_update(seq_num, sizeof(seq_num), &ctx);
 		hmac_md5_update(whole_pdu, pdu_length, &ctx);
 		hmac_md5_final(digest, &ctx);
 
@@ -124,7 +123,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		dump_data_pw("ntlmssp v2 sig ", sig->data, sig->length);
 
 	} else {
-		uint32 crc;
+		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(ntlmssp_state, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
@@ -139,8 +138,8 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 }
 
 NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
-				    const uchar *data, size_t length,
-				    const uchar *whole_pdu, size_t pdu_length,
+				    const uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
 				    DATA_BLOB *sig)
 {
 	NTSTATUS nt_status;
@@ -170,8 +169,8 @@ NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
  */
 
 NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
-				const uchar *data, size_t length,
-				const uchar *whole_pdu, size_t pdu_length,
+				const uint8_t *data, size_t length,
+				const uint8_t *whole_pdu, size_t pdu_length,
 				const DATA_BLOB *sig)
 {
 	DATA_BLOB local_sig;
@@ -238,8 +237,8 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
  */
 
 NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
-			     uchar *data, size_t length,
-			     uchar *whole_pdu, size_t pdu_length,
+			     uint8_t *data, size_t length,
+			     uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
 {
 	if (!(ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
@@ -271,7 +270,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			arcfour_crypt_sbox(&ntlmssp_state->send_seal_arc4_state, sig->data+4, 8);
 		}
 	} else {
-		uint32 crc;
+		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(ntlmssp_state, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
@@ -304,8 +303,8 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
  */
 
 NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
-				uchar *data, size_t length,
-				uchar *whole_pdu, size_t pdu_length,
+				uint8_t *data, size_t length,
+				uint8_t *whole_pdu, size_t pdu_length,
 				DATA_BLOB *sig)
 {
 	if (!ntlmssp_state->session_key.length) {
