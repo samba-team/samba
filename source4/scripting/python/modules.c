@@ -61,10 +61,47 @@ void py_load_samba_modules(void)
 	}
 }
 
-void py_update_path(const char *bindir)
+static bool PySys_PathPrepend(PyObject *list, const char *path)
+{
+	PyObject *py_path = PyString_FromString(path);
+	if (py_path == NULL)
+		return false;
+
+	return (PyList_Insert(list, 0, py_path) == 0);
+}
+
+bool py_update_path(const char *bindir)
 {
 	char *newpath;
-	asprintf(&newpath, "%s/python:%s/../scripting/python:%s", bindir, bindir, Py_GetPath());
-	PySys_SetPath(newpath);
+	PyObject *mod_sys, *py_path;
+
+	mod_sys = PyImport_ImportModule("sys");
+	if (mod_sys == NULL) {
+		return false;
+	}
+
+	py_path = PyObject_GetAttrString(mod_sys, "path");
+	if (py_path == NULL) {
+		return false;
+	}	
+
+	if (!PyList_Check(py_path)) {
+		return false;
+	}
+
+	asprintf(&newpath, "%s/../scripting/python", bindir);
+	if (!PySys_PathPrepend(py_path, newpath)) {
+		free(newpath);
+		return false;
+	}
 	free(newpath);
+
+	asprintf(&newpath, "%s/python", bindir);
+	if (!PySys_PathPrepend(py_path, newpath)) {
+		free(newpath);
+		return false;
+	}
+	free(newpath);
+
+	return true;
 }
