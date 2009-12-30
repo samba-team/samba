@@ -305,7 +305,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	/* the returned struct gets kept on the server_info, by means
 	   of a steal further down */
 
-	if ( !(sampass = samu_new( mem_ctx )) ) {
+	sampass = samu_new(mem_ctx);
+	if (sampass == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
