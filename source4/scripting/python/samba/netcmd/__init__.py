@@ -40,7 +40,7 @@ class Command(object):
 
     name = property(_get_name)
 
-    def usage(self, args):
+    def usage(self, *args):
         parser, _ = self._create_parser()
         parser.print_usage()
 
@@ -49,7 +49,7 @@ class Command(object):
     def _get_synopsis(self):
         ret = self.name
         if self.takes_args:
-            ret += " " + " ".join(self.takes_args)
+            ret += " " + " ".join([x.upper() for x in self.takes_args])
         return ret
 
     synopsis = property(_get_synopsis)
@@ -90,7 +90,7 @@ class Command(object):
             if arg[-1] == "*":
                 max_args = -1
         if len(args) < min_args or (max_args != -1 and len(args) > max_args):
-            self.usage(args)
+            self.usage(*args)
             return -1
         try:
             return self.run(*args, **kwargs)
@@ -108,21 +108,22 @@ class SuperCommand(Command):
 
     subcommands = {}
 
-    def run(self, subcommand, *args, **kwargs):
-        if not subcommand in subcommands:
-            print >>sys.stderr, "ERROR: No such subcommand '%s'" % subcommand
-            return subcommands[subcommand].run(*args, **kwargs)
-
-    def usage(self, subcommand=None, *args, **kwargs):
+    def _run(self, myname, subcommand=None, *args):
         if subcommand is None:
-            print "Available subcommands"
-            for subcommand in subcommands:
+            print "Available subcommands:"
+            for subcommand in self.subcommands:
                 print "\t%s" % subcommand
             return 0
+        if not subcommand in self.subcommands:
+            raise CommandError("No such subcommand '%s'" % subcommand)
+        return self.subcommands[subcommand]._run(subcommand, *args)
+
+    def usage(self, myname, subcommand=None, *args):
+        if subcommand is None or not subcommand in self.subcommands:
+            print "Usage: %s (%s) [options]" % (myname,
+                " | ".join(self.subcommands.keys()))
         else:
-            if not subcommand in subcommands:
-                print >>sys.stderr, "ERROR: No such subcommand '%s'" % subcommand
-            return subcommands[subcommand].usage(*args, **kwargs)
+            return self.subcommands[subcommand].usage(*args)
 
 
 class CommandError(Exception):
