@@ -49,7 +49,7 @@ cp setup/ad-schema/*.txt $SETUPDIR/ad-schema || exit 1
 cp setup/display-specifiers/*.txt $SETUPDIR/display-specifiers || exit 1
 
 echo "Installing sbin scripts from setup/*"
-for p in enableaccount newuser provision setexpiry setpassword 
+for p in enableaccount newuser provision
 do
 	cp setup/$p $SBINDIR || exit 1
 	chmod a+x $SBINDIR/$p

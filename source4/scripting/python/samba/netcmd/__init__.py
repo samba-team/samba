@@ -133,3 +133,5 @@ from samba.netcmd.domainlevel import cmd_domainlevel
 commands["domainlevel"] = cmd_domainlevel()
 from samba.netcmd.setpassword import cmd_setpassword
 commands["setpassword"] = cmd_setpassword()
+from samba.netcmd.setexpiry import cmd_setexpiry
+commands["setexpiry"] = cmd_setexpiry()
