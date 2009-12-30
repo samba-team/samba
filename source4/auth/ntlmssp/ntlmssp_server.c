@@ -678,7 +678,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 	user_info->client.account_name = gensec_ntlmssp_state->user;
 	user_info->client.domain_name = gensec_ntlmssp_state->domain;
 	user_info->workstation_name = gensec_ntlmssp_state->workstation;
-	user_info->remote_host = gensec_get_remote_address(gensec_ntlmssp_state->gensec_security);
+	user_info->remote_host = gensec_get_remote_address(gensec_ntlmssp->gensec_security);
 
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = gensec_ntlmssp_state->lm_resp;

@@ -122,7 +122,10 @@ static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
 static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 					   const DATA_BLOB input, uint32_t *idx)
 {
-	struct gensec_security *gensec_security = gensec_ntlmssp_state->gensec_security;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+				      struct gensec_ntlmssp_context);
+	struct gensec_security *gensec_security = gensec_ntlmssp->gensec_security;
 	uint32_t ntlmssp_command;
 	uint32_t i;
 
@@ -397,7 +400,6 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ntlmssp_state->gensec_security = gensec_security;
 	ntlmssp_state->callback_private = gensec_ntlmssp;
 
 	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
