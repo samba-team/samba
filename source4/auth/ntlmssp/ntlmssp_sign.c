@@ -136,7 +136,10 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 				    const uint8_t *whole_pdu, size_t pdu_length, 
 				    DATA_BLOB *sig)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	return ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 					     data, length, 
@@ -155,7 +158,10 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 				     const uint8_t *whole_pdu, size_t pdu_length, 
 				     const DATA_BLOB *sig)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
@@ -218,7 +224,10 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 				    const uint8_t *whole_pdu, size_t pdu_length, 
 				    DATA_BLOB *sig)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	NTSTATUS nt_status;
 	if (!gensec_ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot seal packet\n"));
@@ -281,7 +290,10 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 				      const DATA_BLOB *sig)
 {
 	NTSTATUS status;
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	if (!gensec_ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot unseal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -511,6 +523,10 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			       const DATA_BLOB *in, 
 			       DATA_BLOB *out)
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB sig;
 
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
@@ -528,8 +544,6 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 						    &sig);
 						  
 	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-		struct gensec_ntlmssp_state *gensec_ntlmssp_state =
-		(struct gensec_ntlmssp_state *)gensec_security->private_data;
 		NTSTATUS status;
 		uint32_t ntlm_seqnum;
 		struct arcfour_state ntlm_state;

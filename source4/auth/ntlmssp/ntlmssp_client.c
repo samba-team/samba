@@ -47,7 +47,10 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 				TALLOC_CTX *out_mem_ctx, 
 				DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	const char *domain = gensec_ntlmssp_state->domain;
 	const char *workstation = cli_credentials_get_workstation(gensec_security->credentials);
 
@@ -98,7 +101,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				  TALLOC_CTX *out_mem_ctx,
 				  const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
@@ -297,13 +303,16 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	NTSTATUS nt_status;
 
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
+					       struct gensec_ntlmssp_context);
+	gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	gensec_ntlmssp_state->role = NTLMSSP_CLIENT;
 
@@ -371,8 +380,6 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
-
-	gensec_security->private_data = gensec_ntlmssp_state;
 
 	return NT_STATUS_OK;
 }

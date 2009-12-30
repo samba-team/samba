@@ -120,7 +120,10 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 				  TALLOC_CTX *out_mem_ctx, 
 				  const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB struct_blob;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
@@ -398,7 +401,10 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 					DATA_BLOB *user_session_key, 
 					DATA_BLOB *lm_session_key) 
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	NTSTATUS nt_status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
@@ -548,7 +554,10 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 			     TALLOC_CTX *out_mem_ctx, 
 			     const DATA_BLOB in, DATA_BLOB *out) 
 {	
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB user_session_key = data_blob_null;
 	DATA_BLOB lm_session_key = data_blob_null;
 	NTSTATUS nt_status;
@@ -720,10 +729,10 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 				     struct auth_session_info **session_info) 
 {
 	NTSTATUS nt_status;
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	nt_status = auth_generate_session_info(gensec_ntlmssp_state,
 					       gensec_security->event_ctx,
@@ -752,10 +761,9 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
-
-	gensec_ntlmssp = talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
 					       struct gensec_ntlmssp_context);
+	gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
