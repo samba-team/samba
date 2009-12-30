@@ -94,10 +94,10 @@ static const char *ntlmssp_target_name(struct gensec_ntlmssp_state *gensec_ntlms
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
 		if (gensec_ntlmssp_state->server.is_standalone) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
-			return gensec_ntlmssp_state->server_name;
+			return gensec_ntlmssp_state->server.netbios_name;
 		} else {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN;
-			return gensec_ntlmssp_state->domain;
+			return gensec_ntlmssp_state->server.netbios_domain;
 		};
 	} else {
 		return "";
@@ -184,26 +184,12 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
-		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
-
-		/* Find out the DNS domain name */
-		dnsdomname[0] = '\0';
-		safe_strcpy(dnsdomname, lp_dnsdomain(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
-
-		/* Find out the DNS host name */
-		safe_strcpy(dnsname, gensec_ntlmssp_state->server_name, sizeof(dnsname) - 1);
-		if (dnsdomname[0] != '\0') {
-			safe_strcat(dnsname, ".", sizeof(dnsname) - 1);
-			safe_strcat(dnsname, dnsdomname, sizeof(dnsname) - 1);
-		}
-		strlower_m(dnsname);
-
 		msrpc_gen(out_mem_ctx, 
 			  &struct_blob, "aaaaa",
 			  MsvAvNbDomainName, target_name,
-			  MsvAvNbComputerName, gensec_ntlmssp_state->server_name,
-			  MsvAvDnsDomainName, dnsdomname,
-			  MsvAvDnsComputerName, dnsname,
+			  MsvAvNbComputerName, gensec_ntlmssp_state->server.netbios_name,
+			  MsvAvDnsDomainName, gensec_ntlmssp_state->server.dns_domain,
+			  MsvAvDnsComputerName, gensec_ntlmssp_state->server.dns_name,
 			  MsvAvEOL, "");
 	} else {
 		struct_blob = data_blob(NULL, 0);
@@ -767,11 +753,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
-	gensec_ntlmssp_state->workstation = NULL;
-	gensec_ntlmssp_state->server_name = lp_netbios_name(gensec_security->settings->lp_ctx);
-
-	gensec_ntlmssp_state->domain = lp_workgroup(gensec_security->settings->lp_ctx);
-
 	gensec_ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
 	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(gensec_security->settings->lp_ctx) 
@@ -823,6 +804,34 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->server.is_standalone = true;
 	} else {
 		gensec_ntlmssp_state->server.is_standalone = false;
+	}
+
+	gensec_ntlmssp_state->server.netbios_name = lp_netbios_name(gensec_security->settings->lp_ctx);
+
+	gensec_ntlmssp_state->server.netbios_domain = lp_workgroup(gensec_security->settings->lp_ctx);
+
+	{
+		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
+
+		/* Find out the DNS domain name */
+		dnsdomname[0] = '\0';
+		safe_strcpy(dnsdomname, lp_dnsdomain(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
+
+		/* Find out the DNS host name */
+		safe_strcpy(dnsname, gensec_ntlmssp_state->server.netbios_name, sizeof(dnsname) - 1);
+		if (dnsdomname[0] != '\0') {
+			safe_strcat(dnsname, ".", sizeof(dnsname) - 1);
+			safe_strcat(dnsname, dnsdomname, sizeof(dnsname) - 1);
+		}
+		strlower_m(dnsname);
+
+		gensec_ntlmssp_state->server.dns_name = talloc_strdup(gensec_ntlmssp_state,
+								      dnsname);
+		NT_STATUS_HAVE_NO_MEMORY(gensec_ntlmssp_state->server.dns_name);
+
+		gensec_ntlmssp_state->server.dns_domain = talloc_strdup(gensec_ntlmssp_state,
+								        dnsdomname);
+		NT_STATUS_HAVE_NO_MEMORY(gensec_ntlmssp_state->server.dns_domain);
 	}
 
 	return NT_STATUS_OK;

@@ -66,6 +66,10 @@ struct gensec_ntlmssp_state
 
 	struct {
 		bool is_standalone;
+		const char *netbios_name;
+		const char *netbios_domain;
+		const char *dns_name;
+		const char *dns_domain;
 	} server;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
@@ -130,8 +134,6 @@ struct gensec_ntlmssp_state
 	 */
 	NTSTATUS (*check_password)(struct gensec_ntlmssp_state *,
 				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
-
-	const char *server_name;
 
 	bool doing_ntlm2;
 
