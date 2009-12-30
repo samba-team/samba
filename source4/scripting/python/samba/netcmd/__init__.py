@@ -81,12 +81,15 @@ class Command(object):
             for option in option_group.option_list:
                 del kwargs[option.dest]
         kwargs.update(optiongroups)
+        min_args = 0
+        max_args = 0
         for i, arg in enumerate(self.takes_args):
-            if arg[-1] != "?":
-                if len(args) < i:
-                    self.usage(args)
-                    return -1
-        if len(args) > len(self.takes_args):
+            if arg[-1] not in ("?", "*"):
+                min_args += 1
+            max_args += 1
+            if arg[-1] == "*":
+                max_args = -1
+        if len(args) < min_args or (max_args != -1 and len(args) > max_args):
             self.usage(args)
             return -1
         try:
@@ -137,3 +140,5 @@ from samba.netcmd.setexpiry import cmd_setexpiry
 commands["setexpiry"] = cmd_setexpiry()
 from samba.netcmd.enableaccount import cmd_enableaccount
 commands["enableaccount"] = cmd_enableaccount()
+from samba.netcmd.newuser import cmd_newuser
+commands["newuser"] = cmd_newuser()
