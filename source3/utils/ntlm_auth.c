@@ -645,7 +645,11 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = ntlmssp_client_start(client_ntlmssp_state);
+	status = ntlmssp_client_start(NULL,
+				      global_myname(),
+				      lp_workgroup(),
+				      lp_client_ntlmv2_auth(),
+				      client_ntlmssp_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",

@@ -634,7 +634,11 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = ntlmssp_client_start(&es->s.ntlmssp_state);
+	status = ntlmssp_client_start(NULL,
+				      global_myname(),
+				      lp_workgroup(),
+				      lp_client_ntlmv2_auth(),
+				      &es->s.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

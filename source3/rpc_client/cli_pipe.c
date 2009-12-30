@@ -3167,7 +3167,11 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = ntlmssp_client_start(&result->a_u.ntlmssp_state);
+	status = ntlmssp_client_start(NULL,
+				      global_myname(),
+				      lp_workgroup(),
+				      lp_client_ntlmv2_auth(),
+				      &result->a_u.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

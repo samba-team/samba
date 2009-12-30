@@ -982,8 +982,8 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
-		  ntlmssp_state->get_domain(),
-		  ntlmssp_state->get_global_myname());
+		  ntlmssp_state->client.netbios_domain,
+		  ntlmssp_state->client.netbios_name);
 
 	if (DEBUGLEVEL >= 10) {
 		if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(next_request,
@@ -1272,7 +1272,7 @@ noccache:
 		       nt_response.data, nt_response.length,
 		       ntlmssp_state->domain,
 		       ntlmssp_state->user,
-		       ntlmssp_state->get_global_myname(),
+		       ntlmssp_state->client.netbios_name,
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags)) {
 
@@ -1310,27 +1310,36 @@ done:
 	return nt_status;
 }
 
-NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
+NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
+			      const char *netbios_name,
+			      const char *netbios_domain,
+			      bool use_ntlmv2,
+			      struct ntlmssp_state **_ntlmssp_state)
 {
-	*ntlmssp_state = TALLOC_ZERO_P(NULL, struct ntlmssp_state);
-	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
-		talloc_destroy(*ntlmssp_state);
+	struct ntlmssp_state *ntlmssp_state;
+
+	if (!netbios_name) {
+		netbios_name = "";
+	}
+
+	if (!netbios_domain) {
+		netbios_domain = "";
+	}
+
+	ntlmssp_state = talloc_zero(mem_ctx, struct ntlmssp_state);
+	if (!ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*ntlmssp_state)->role = NTLMSSP_CLIENT;
+	ntlmssp_state->role = NTLMSSP_CLIENT;
 
-	(*ntlmssp_state)->get_global_myname = global_myname;
-	(*ntlmssp_state)->get_domain = lp_workgroup;
+	ntlmssp_state->unicode = True;
 
-	(*ntlmssp_state)->unicode = True;
+	ntlmssp_state->use_ntlmv2 = use_ntlmv2;
 
-	(*ntlmssp_state)->use_ntlmv2 = lp_client_ntlmv2_auth();
+	ntlmssp_state->expected_state = NTLMSSP_INITIAL;
 
-	(*ntlmssp_state)->expected_state = NTLMSSP_INITIAL;
-
-	(*ntlmssp_state)->neg_flags =
+	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		NTLMSSP_NEGOTIATE_NTLM |
@@ -1338,5 +1347,21 @@ NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
 		NTLMSSP_REQUEST_TARGET;
 
+	ntlmssp_state->client.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
+	if (!ntlmssp_state->client.netbios_name) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->client.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
+	if (!ntlmssp_state->client.netbios_domain) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* TODO: remove this */
+	ntlmssp_state->get_global_myname = global_myname;
+	ntlmssp_state->get_domain = lp_workgroup;
+
+	*_ntlmssp_state = ntlmssp_state;
 	return NT_STATUS_OK;
 }

@@ -57,6 +57,11 @@ struct ntlmssp_state
 	unsigned char *lm_hash;
 
 	struct {
+		const char *netbios_name;
+		const char *netbios_domain;
+	} client;
+
+	struct {
 		bool is_standalone;
 		const char *netbios_name;
 		const char *netbios_domain;

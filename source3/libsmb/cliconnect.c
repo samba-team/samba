@@ -1000,7 +1000,11 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 
 	cli_temp_set_signing(cli);
 
-	status = ntlmssp_client_start(&state->ntlmssp_state);
+	status = ntlmssp_client_start(state,
+				      global_myname(),
+				      lp_workgroup(),
+				      lp_client_ntlmv2_auth(),
+				      &state->ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

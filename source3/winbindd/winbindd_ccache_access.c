@@ -54,7 +54,11 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	struct ntlmssp_state *ntlmssp_state = NULL;
 	DATA_BLOB dummy_msg, reply;
 
-	status = ntlmssp_client_start(&ntlmssp_state);
+	status = ntlmssp_client_start(NULL,
+				      global_myname(),
+				      lp_workgroup(),
+				      lp_client_ntlmv2_auth(),
+				      &ntlmssp_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",

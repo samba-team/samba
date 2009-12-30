@@ -3217,7 +3217,11 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 			      const char *dns_name,
 			      const char *dns_domain,
 			      struct ntlmssp_state **ntlmssp_state);
-NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state);
+NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
+			      const char *netbios_name,
+			      const char *netbios_domain,
+			      bool use_ntlmv2,
+			      struct ntlmssp_state **_ntlmssp_state);
 
 /* The following definitions come from libsmb/ntlmssp_sign.c  */
 
