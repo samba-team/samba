@@ -81,7 +81,12 @@ class Command(object):
             for option in option_group.option_list:
                 del kwargs[option.dest]
         kwargs.update(optiongroups)
-        if len(args) != len(self.takes_args):
+        for i, arg in enumerate(self.takes_args):
+            if arg[-1] != "?":
+                if len(args) < i:
+                    self.usage(args)
+                    return -1
+        if len(args) > len(self.takes_args):
             self.usage(args)
             return -1
         try:
@@ -126,3 +131,5 @@ from samba.netcmd.pwsettings import cmd_pwsettings
 commands["pwsettings"] = cmd_pwsettings()
 from samba.netcmd.domainlevel import cmd_domainlevel
 commands["domainlevel"] = cmd_domainlevel()
+from samba.netcmd.setpassword import cmd_setpassword
+commands["setpassword"] = cmd_setpassword()

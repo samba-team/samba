@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # Sets password settings.
-# (Password complexity, history length, minimum password length, the minimum 
+# (Password complexity, history length, minimum password length, the minimum
 # and maximum password age) on a Samba4 server
 #
 # Copyright Matthias Dieter Wallnoefer 2009

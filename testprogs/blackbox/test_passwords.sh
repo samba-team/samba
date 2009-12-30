@@ -26,7 +26,6 @@ net="$samba4bindir/net$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
 enableaccount="$PYTHON `dirname $0`/../../source4/setup/enableaccount"
-setpassword="$PYTHON `dirname $0`/../../source4/setup/setpassword"
 newuser="$PYTHON `dirname $0`/../../source4/setup/newuser"
 
 . `dirname $0`/subunit.sh
@@ -88,7 +87,7 @@ test_smbclient "Test login with user kerberos (unforced)" 'ls' -k yes -Unettestu
 
 
 NEWUSERPASS=testPaSS@04%
-testit "set password on user locally" $VALGRIND $setpassword nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
+testit "set password on user locally" $VALGRIND $net setpassword nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@05%
@@ -96,7 +95,7 @@ testit "change user password with 'net password change' (after must change flag 
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@06%
-testit "set password on user locally" $VALGRIND $setpassword nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
+testit "set password on user locally" $VALGRIND $net setpassword nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@07%
