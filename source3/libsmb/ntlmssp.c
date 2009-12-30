@@ -599,7 +599,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	ntlmssp_state->user = NULL;
 	ntlmssp_state->domain = NULL;
-	ntlmssp_state->workstation = NULL;
 
 	/* now the NTLMSSP encoded auth hashes */
 	if (!msrpc_parse(ntlmssp_state, &request, parse_string,
@@ -609,7 +608,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &ntlmssp_state->nt_resp,
 			 &ntlmssp_state->domain,
 			 &ntlmssp_state->user,
-			 &ntlmssp_state->workstation,
+			 &ntlmssp_state->client.netbios_name,
 			 &encrypted_session_key,
 			 &auth_flags)) {
 		auth_flags = 0;
@@ -629,7 +628,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				 &ntlmssp_state->nt_resp,
 				 &ntlmssp_state->domain,
 				 &ntlmssp_state->user,
-				 &ntlmssp_state->workstation)) {
+				 &ntlmssp_state->client.netbios_name)) {
 			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP (tried both formats):\n"));
 			dump_data(2, request.data, request.length);
 
@@ -651,7 +650,10 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%lu len2=%lu\n",
-		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
+		 ntlmssp_state->user, ntlmssp_state->domain,
+		 ntlmssp_state->client.netbios_name,
+		 (unsigned long)ntlmssp_state->lm_resp.length,
+		 (unsigned long)ntlmssp_state->nt_resp.length));
 
 #if 0
 	file_save("nthash1.dat",  &ntlmssp_state->nt_resp.data,  &ntlmssp_state->nt_resp.length);

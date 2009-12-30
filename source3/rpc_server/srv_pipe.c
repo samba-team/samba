@@ -704,7 +704,8 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	DEBUG(5, ("pipe_ntlmssp_verify_final: OK: user: %s domain: %s "
 		  "workstation: %s\n", a->ntlmssp_state->user,
-		  a->ntlmssp_state->domain, a->ntlmssp_state->workstation));
+		  a->ntlmssp_state->domain,
+		  a->ntlmssp_state->client.netbios_name));
 
 	if (a->server_info->ptok == NULL) {
 		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));

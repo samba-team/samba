@@ -571,7 +571,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	char *unix_name = NULL;
 
 	nt_status = contact_winbind_auth_crap(ntlmssp_state->user, ntlmssp_state->domain,
-					      ntlmssp_state->workstation,
+					      ntlmssp_state->client.netbios_name,
 					      &ntlmssp_state->chal,
 					      &ntlmssp_state->lm_resp,
 					      &ntlmssp_state->nt_resp, 
@@ -595,7 +595,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
 		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
 		       ntlmssp_state->domain, ntlmssp_state->user, 
-		       ntlmssp_state->workstation, 
+		       ntlmssp_state->client.netbios_name,
 		       error_string ? error_string : "unknown error (NULL)"));
 		ntlmssp_state->callback_private = NULL;
 	}
@@ -629,7 +629,8 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 							      ntlmssp_state->user);
 	} else {
 		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
-			  ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, 
+			  ntlmssp_state->domain, ntlmssp_state->user,
+			  ntlmssp_state->client.netbios_name,
 			  nt_errstr(nt_status)));
 		ntlmssp_state->callback_private = NULL;
 	}
