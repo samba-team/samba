@@ -147,26 +147,21 @@ NTSTATUS ntlmssp_sign_packet(struct gensec_ntlmssp_state *ntlmssp_state,
  *
  */
 
-NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
-				     TALLOC_CTX *sig_mem_ctx,
-				     const uint8_t *data, size_t length,
-				     const uint8_t *whole_pdu, size_t pdu_length,
-				     const DATA_BLOB *sig)
+NTSTATUS ntlmssp_check_packet(struct gensec_ntlmssp_state *ntlmssp_state,
+			      TALLOC_CTX *sig_mem_ctx,
+			      const uint8_t *data, size_t length,
+			      const uint8_t *whole_pdu, size_t pdu_length,
+			      const DATA_BLOB *sig)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
 
-	if (!gensec_ntlmssp_state->session_key.length) {
+	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot check packet signature\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx,
+	nt_status = ntlmssp_make_packet_signature(ntlmssp_state, sig_mem_ctx,
 						  data, length,
 						  whole_pdu, pdu_length,
 						  NTLMSSP_RECEIVE, &local_sig, true);
@@ -176,7 +171,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 		return nt_status;
 	}
 
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (local_sig.length != sig->length ||
 		    memcmp(local_sig.data, 
 			   sig->data, sig->length) != 0) {
@@ -187,6 +182,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 			DEBUG(10, ("BAD SIG: got signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
 			dump_data(10, sig->data, sig->length);
 			
+			data_blob_free(&local_sig);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
@@ -199,11 +195,13 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 			DEBUG(10, ("BAD SIG: got signature of %llu bytes of input:\n", (unsigned long long)length));
 			dump_data(10, sig->data, sig->length);
 			
+			data_blob_free(&local_sig);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 	dump_data_pw("checked ntlmssp signature\n", sig->data, sig->length);
 
+	data_blob_free(&local_sig);
 	return NT_STATUS_OK;
 }
 
@@ -469,6 +467,26 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 					data, length,
 					whole_pdu, pdu_length,
 					sig);
+
+	return nt_status;
+}
+
+NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
+				     TALLOC_CTX *sig_mem_ctx,
+				     const uint8_t *data, size_t length,
+				     const uint8_t *whole_pdu, size_t pdu_length,
+				     const DATA_BLOB *sig)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	NTSTATUS nt_status;
+
+	nt_status = ntlmssp_check_packet(gensec_ntlmssp->ntlmssp_state,
+					 sig_mem_ctx,
+					 data, length,
+					 whole_pdu, pdu_length,
+					 sig);
 
 	return nt_status;
 }
