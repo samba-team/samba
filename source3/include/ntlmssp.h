@@ -50,9 +50,9 @@ struct ntlmssp_state
 	bool unicode;
 	bool use_ntlmv2;
 	bool use_ccache;
-	char *user;
-	char *domain;
-	char *workstation;
+	const char *user;
+	const char *domain;
+	const char *workstation;
 	unsigned char *nt_hash;
 	unsigned char *lm_hash;
 
