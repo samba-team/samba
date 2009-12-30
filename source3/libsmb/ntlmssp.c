@@ -369,10 +369,10 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
 		if (ntlmssp_state->server.is_standalone) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
-			return ntlmssp_state->get_global_myname();
+			return ntlmssp_state->server.netbios_name;
 		} else {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN;
-			return ntlmssp_state->get_domain();
+			return ntlmssp_state->server.netbios_domain;
 		};
 	} else {
 		return "";
@@ -492,8 +492,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 					 const DATA_BLOB request, DATA_BLOB *reply)
 {
 	DATA_BLOB struct_blob;
-	const char *dnsname;
-	char *dnsdomname = NULL;
 	uint32 neg_flags = 0;
 	uint32 ntlmssp_command, chal_flags;
 	uint8_t cryptkey[8];
@@ -560,29 +558,14 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_state->internal_chal = data_blob_talloc(ntlmssp_state,
 							cryptkey, 8);
 
-	/* This should be a 'netbios domain -> DNS domain' mapping */
-	dnsdomname = get_mydnsdomname(ntlmssp_state);
-	if (!dnsdomname) {
-		dnsdomname = talloc_strdup(ntlmssp_state, "");
-	}
-	if (!dnsdomname) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	strlower_m(dnsdomname);
-
-	dnsname = get_mydnsfullname();
-	if (!dnsname) {
-		dnsname = "";
-	}
-
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
 	{
 		msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
 			  MsvAvNbDomainName, target_name,
-			  MsvAvNbComputerName, ntlmssp_state->get_global_myname(),
-			  MsvAvDnsDomainName, dnsdomname,
-			  MsvAvDnsComputerName, dnsname,
+			  MsvAvNbComputerName, ntlmssp_state->server.netbios_name,
+			  MsvAvDnsDomainName, ntlmssp_state->server.dns_domain,
+			  MsvAvDnsComputerName, ntlmssp_state->server.dns_name,
 			  MsvAvEOL, "");
 	} else {
 		struct_blob = data_blob_null;
@@ -885,28 +868,48 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
  * @param ntlmssp_state NTLMSSP State, allocated by this function
  */
 
-NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
+NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
+			      bool is_standalone,
+			      const char *netbios_name,
+			      const char *netbios_domain,
+			      const char *dns_name,
+			      const char *dns_domain,
+			      struct ntlmssp_state **_ntlmssp_state)
 {
-	*ntlmssp_state = TALLOC_ZERO_P(NULL, struct ntlmssp_state);
-	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
-		talloc_destroy(*ntlmssp_state);
+	struct ntlmssp_state *ntlmssp_state;
+
+	if (!netbios_name) {
+		netbios_name = "";
+	}
+
+	if (!netbios_domain) {
+		netbios_domain = "";
+	}
+
+	if (!dns_domain) {
+		dns_domain = "";
+	}
+
+	if (!dns_name) {
+		dns_name = "";
+	}
+
+	ntlmssp_state = talloc_zero(mem_ctx, struct ntlmssp_state);
+	if (!ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*ntlmssp_state)->role = NTLMSSP_SERVER;
+	ntlmssp_state->role = NTLMSSP_SERVER;
 
-	(*ntlmssp_state)->get_challenge = get_challenge;
-	(*ntlmssp_state)->set_challenge = set_challenge;
-	(*ntlmssp_state)->may_set_challenge = may_set_challenge;
+	ntlmssp_state->get_challenge = get_challenge;
+	ntlmssp_state->set_challenge = set_challenge;
+	ntlmssp_state->may_set_challenge = may_set_challenge;
 
-	(*ntlmssp_state)->get_global_myname = global_myname;
-	(*ntlmssp_state)->get_domain = lp_workgroup;
-	(*ntlmssp_state)->server.is_standalone = false; /* a good default */
+	ntlmssp_state->server.is_standalone = is_standalone;
 
-	(*ntlmssp_state)->expected_state = NTLMSSP_NEGOTIATE;
+	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	(*ntlmssp_state)->neg_flags =
+	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_56 |
 		NTLMSSP_NEGOTIATE_VERSION |
@@ -917,6 +920,32 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_SIGN |
 		NTLMSSP_NEGOTIATE_SEAL;
 
+	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
+	if (!ntlmssp_state->server.netbios_name) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->server.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
+	if (!ntlmssp_state->server.netbios_domain) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
+	if (!ntlmssp_state->server.dns_name) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
+	if (!ntlmssp_state->server.dns_domain) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* TODO: remove this */
+	ntlmssp_state->get_global_myname = global_myname;
+	ntlmssp_state->get_domain = lp_workgroup;
+
+	*_ntlmssp_state = ntlmssp_state;
 	return NT_STATUS_OK;
 }
 

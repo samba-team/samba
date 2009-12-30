@@ -157,6 +157,26 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
+	bool is_standalone;
+	const char *netbios_name;
+	const char *netbios_domain;
+	const char *dns_name;
+	char *dns_domain;
+
+	if ((enum server_types)lp_server_role() == ROLE_STANDALONE) {
+		is_standalone = true;
+	} else {
+		is_standalone = false;
+	}
+
+	netbios_name = global_myname();
+	netbios_domain = lp_workgroup();
+	/* This should be a 'netbios domain -> DNS domain' mapping */
+	dns_domain = get_mydnsdomname(talloc_tos());
+	if (dns_domain) {
+		strlower_m(dns_domain);
+	}
+	dns_name = get_mydnsfullname();
 
 	mem_ctx = talloc_init("AUTH NTLMSSP context");
 	
@@ -171,7 +191,14 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 
 	(*auth_ntlmssp_state)->mem_ctx = mem_ctx;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_start(&(*auth_ntlmssp_state)->ntlmssp_state))) {
+	nt_status = ntlmssp_server_start(NULL,
+					 is_standalone,
+					 netbios_name,
+					 netbios_domain,
+					 dns_name,
+					 dns_domain,
+					 &(*auth_ntlmssp_state)->ntlmssp_state);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
@@ -184,11 +211,6 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	(*auth_ntlmssp_state)->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	if ((enum server_types)lp_server_role() == ROLE_STANDALONE) {
-		(*auth_ntlmssp_state)->ntlmssp_state->server.is_standalone = true;
-	} else {
-		(*auth_ntlmssp_state)->ntlmssp_state->server.is_standalone = false;
-	}
 
 	return NT_STATUS_OK;
 }

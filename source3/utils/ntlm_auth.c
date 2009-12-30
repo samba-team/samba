@@ -688,8 +688,34 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 
 static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_state)
 {
-	NTSTATUS status = ntlmssp_server_start(ntlmssp_state);
+	NTSTATUS status;
+	const char *netbios_name;
+	const char *netbios_domain;
+	const char *dns_name;
+	char *dns_domain;
+	bool is_standalone = false;
 
+	if (opt_password) {
+		netbios_name = global_myname();
+		netbios_domain = lp_workgroup();
+	} else {
+		netbios_name = get_winbind_netbios_name();
+		netbios_domain = get_winbind_domain();
+	}
+	/* This should be a 'netbios domain -> DNS domain' mapping */
+	dns_domain = get_mydnsdomname(talloc_tos());
+	if (dns_domain) {
+		strlower_m(dns_domain);
+	}
+	dns_name = get_mydnsfullname();
+
+	status = ntlmssp_server_start(NULL,
+				      is_standalone,
+				      netbios_name,
+				      netbios_domain,
+				      dns_name,
+				      dns_domain,
+				      ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP server: %s\n",
 			  nt_errstr(status)));

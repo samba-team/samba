@@ -3210,7 +3210,13 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
 void ntlmssp_end(struct ntlmssp_state **ntlmssp_state);
 DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx);
-NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state);
+NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
+			      bool is_standalone,
+			      const char *netbios_name,
+			      const char *netbios_domain,
+			      const char *dns_name,
+			      const char *dns_domain,
+			      struct ntlmssp_state **ntlmssp_state);
 NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state);
 
 /* The following definitions come from libsmb/ntlmssp_sign.c  */

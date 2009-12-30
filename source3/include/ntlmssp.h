@@ -59,6 +59,10 @@ struct ntlmssp_state
 
 	struct {
 		bool is_standalone;
+		const char *netbios_name;
+		const char *netbios_domain;
+		const char *dns_name;
+		const char *dns_domain;
 	} server;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
