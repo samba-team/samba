@@ -2,20 +2,20 @@
 
 # Unix SMB/CIFS implementation.
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
-# 
+#
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
-#   
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -45,11 +45,11 @@ import ldb
 import glue
 
 class Ldb(ldb.Ldb):
-    """Simple Samba-specific LDB subclass that takes care 
+    """Simple Samba-specific LDB subclass that takes care
     of setting up the modules dir, credentials pointers, etc.
-    
-    Please note that this is intended to be for all Samba LDB files, 
-    not necessarily the Sam database. For Sam-specific helper 
+
+    Please note that this is intended to be for all Samba LDB files,
+    not necessarily the Sam database. For Sam-specific helper
     functions see samdb.py.
     """
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
@@ -65,7 +65,7 @@ class Ldb(ldb.Ldb):
         :param options: Additional options (optional)
 
         This is different from a regular Ldb file in that the Samba-specific
-        modules-dir is used by default and that credentials and session_info 
+        modules-dir is used by default and that credentials and session_info
         can be passed through (required by some modules).
         """
 
@@ -122,10 +122,10 @@ class Ldb(ldb.Ldb):
         # need one public, we will have to change this here
         super(Ldb, self).set_create_perms(perms)
 
-    def searchone(self, attribute, basedn=None, expression=None, 
+    def searchone(self, attribute, basedn=None, expression=None,
                   scope=ldb.SCOPE_BASE):
         """Search for one attribute as a string.
-        
+
         :param basedn: BaseDN for the search.
         :param attribute: Name of the attribute
         :param expression: Optional search expression.
@@ -166,7 +166,7 @@ class Ldb(ldb.Ldb):
         self.erase_users_computers(basedn)
 
         # Delete the 'visible' records, and the invisble 'deleted' records (if this DB supports it)
-        for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
+        for msg in self.search(basedn, ldb.SCOPE_SUBTREE,
                                "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
                                [], controls=["show_deleted:0"]):
             try:
@@ -174,14 +174,14 @@ class Ldb(ldb.Ldb):
             except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                 # Ignore no such object errors
                 pass
-            
-        res = self.search(basedn, ldb.SCOPE_SUBTREE, 
+
+        res = self.search(basedn, ldb.SCOPE_SUBTREE,
                           "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
                           [], controls=["show_deleted:0"])
         assert len(res) == 0
 
         # delete the specials
-        for attr in ["@SUBCLASSES", "@MODULES", 
+        for attr in ["@SUBCLASSES", "@MODULES",
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
                 self.delete(attr)
@@ -191,7 +191,7 @@ class Ldb(ldb.Ldb):
 
     def erase(self):
         """Erase this ldb, removing all records."""
-        
+
         self.erase_except_schema_controlled()
 
         # delete the specials
@@ -207,13 +207,12 @@ class Ldb(ldb.Ldb):
 
         def erase_recursive(self, dn):
             try:
-                res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[], 
+                res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[],
                                   controls=["show_deleted:0"])
             except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                 # Ignore no such object errors
                 return
-                pass
-            
+
             for msg in res:
                 erase_recursive(self, msg.dn)
 
@@ -223,7 +222,7 @@ class Ldb(ldb.Ldb):
                 # Ignore no such object errors
                 pass
 
-        res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)", 
+        res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)",
                          ["namingContexts"])
         assert len(res) == 1
         if not "namingContexts" in res[0]:
@@ -285,14 +284,14 @@ class Ldb(ldb.Ldb):
 
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
-        
+
         :param invocation_id: GUID of the invocation id.
         """
         glue.dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def set_opaque_integer(self, name, value):
         """Set an integer as an opaque (a flag or other value) value on the database
-        
+
         :param name: The name for the opaque value
         :param value: The integer value
         """
@@ -302,7 +301,7 @@ class Ldb(ldb.Ldb):
 def substitute_var(text, values):
     """substitute strings of the form ${NAME} in str, replacing
     with substitutions from subobj.
-    
+
     :param text: Text in which to subsitute.
     :param values: Dictionary with keys and values.
     """
@@ -318,21 +317,21 @@ def substitute_var(text, values):
 def check_all_substituted(text):
     """Make sure that all substitution variables in a string have been replaced.
     If not, raise an exception.
-    
+
     :param text: The text to search for substitution variables
     """
     if not "${" in text:
         return
-    
+
     var_start = text.find("${")
     var_end = text.find("}", var_start)
-    
+
     raise Exception("Not all variables substituted: %s" % text[var_start:var_end+1])
 
 
 def read_and_sub_file(file, subst_vars):
     """Read a file and sub in variables found in it
-    
+
     :param file: File to be read (typically from setup directory)
      param subst_vars: Optional variables to subsitute in the file.
     """
