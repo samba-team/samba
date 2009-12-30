@@ -829,10 +829,7 @@ int ldb_module_done(struct ldb_request *req,
 		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
 	}
 
-	req->callback(req, ares);
-	/* returning ares->error here allows the callback routines in
-	   modules to override the error code */
-	return ares->error;
+	return req->callback(req, ares);
 }
 
 /* to be used *only* in modules init functions.
