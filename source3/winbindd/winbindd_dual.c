@@ -610,7 +610,7 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 	}
 
 	for (child = children; child != NULL; child = child->next) {
-		/* Don't send message to internal childs.  We've already
+		/* Don't send message to internal children.  We've already
 		   done so above. */
 		if (!child->domain || winbindd_internal_child(child)) {
 			continue;
