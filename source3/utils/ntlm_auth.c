@@ -729,12 +729,8 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_st
 	/* Have we been given a local password, or should we ask winbind? */
 	if (opt_password) {
 		(*ntlmssp_state)->check_password = local_pw_check;
-		(*ntlmssp_state)->get_domain = lp_workgroup;
-		(*ntlmssp_state)->get_global_myname = global_myname;
 	} else {
 		(*ntlmssp_state)->check_password = winbind_pw_check;
-		(*ntlmssp_state)->get_domain = get_winbind_domain;
-		(*ntlmssp_state)->get_global_myname = get_winbind_netbios_name;
 	}
 	return NT_STATUS_OK;
 }

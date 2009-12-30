@@ -125,9 +125,6 @@ struct ntlmssp_state
 	 */
 	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
-	const char *(*get_global_myname)(void);
-	const char *(*get_domain)(void);
-
 	/* ntlmv2 */
 
 	unsigned char send_sign_key[16];

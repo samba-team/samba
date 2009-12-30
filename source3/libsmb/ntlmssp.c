@@ -941,10 +941,6 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* TODO: remove this */
-	ntlmssp_state->get_global_myname = global_myname;
-	ntlmssp_state->get_domain = lp_workgroup;
-
 	*_ntlmssp_state = ntlmssp_state;
 	return NT_STATUS_OK;
 }
@@ -1357,10 +1353,6 @@ NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
 		talloc_free(ntlmssp_state);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/* TODO: remove this */
-	ntlmssp_state->get_global_myname = global_myname;
-	ntlmssp_state->get_domain = lp_workgroup;
 
 	*_ntlmssp_state = ntlmssp_state;
 	return NT_STATUS_OK;
