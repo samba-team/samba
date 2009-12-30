@@ -26,7 +26,7 @@ from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba import Ldb, param, dom_sid_to_rid
+from samba import Ldb, param
 from samba import UF_NORMAL_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT
 from samba import UF_SERVER_TRUST_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT
 from samba import UF_INTERDOMAIN_TRUST_ACCOUNT
@@ -456,7 +456,7 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NAMING_VIOLATION)
- 
+
         self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
 
         self.ldb.add({
@@ -642,17 +642,17 @@ objectClass: container
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res1) == 1)
-	group_rid_1 = dom_sid_to_rid(ldb.schema_format_value("objectSID",
-          res1[0]["objectSID"][0]))
+        group_rid_1 = security.dom_sid(ldb.schema_format_value("objectSID",
+          res1[0]["objectSID"][0])).split()[1]
 
         res1 = ldb.search("cn=ldaptestgroup2,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res1) == 1)
-        group_rid_2 = dom_sid_to_rid(ldb.schema_format_value("objectSID",
-          res1[0]["objectSID"][0]))
+        group_rid_2 = security.dom_sid(ldb.schema_format_value("objectSID",
+          res1[0]["objectSID"][0])).split()[1]
 
         # Try to create a user with an invalid primary group
-	try:
+        try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectclass": ["user", "person"],
@@ -833,7 +833,7 @@ objectClass: container
         self.assertTrue(len(res1) == 1)
         self.assertFalse("primaryGroupToken" in res1[0])
 
-	res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
                           scope=SCOPE_BASE)
         self.assertTrue(len(res1) == 1)
         self.assertFalse("primaryGroupToken" in res1[0])
@@ -843,7 +843,7 @@ objectClass: container
         self.assertTrue(len(res1) == 1)
         primary_group_token = int(res1[0]["primaryGroupToken"][0])
 
-	rid = dom_sid_to_rid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
+        rid = security.dom_sid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0])).split()[1]
         self.assertEquals(primary_group_token, rid)
 
         m = Message()

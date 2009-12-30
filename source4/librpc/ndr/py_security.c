@@ -41,6 +41,33 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 	}
 }
 
+static PyObject *py_dom_sid_split(PyObject *py_self, PyObject *args)
+{
+	struct dom_sid *self = py_talloc_get_ptr(py_self);
+	struct dom_sid *domain_sid;
+	TALLOC_CTX *mem_ctx;
+	uint32_t rid;
+	NTSTATUS status;
+	PyObject *py_domain_sid;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = dom_sid_split_rid(mem_ctx, self, &domain_sid, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_RuntimeError, "dom_sid_split_rid failed");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	py_domain_sid = py_talloc_steal(&dom_sid_Type, domain_sid);
+	talloc_free(mem_ctx);
+	return Py_BuildValue("(OI)", py_domain_sid, rid);
+}
+
 static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 {
 	struct dom_sid *self = py_talloc_get_ptr(py_self), *other;
@@ -86,12 +113,21 @@ static int py_dom_sid_init(PyObject *self, PyObject *args, PyObject *kwargs)
 	return 0;
 }
 
+static PyMethodDef py_dom_sid_extra_methods[] = {
+	{ "split", (PyCFunction)py_dom_sid_split, METH_NOARGS,
+		"S.split() -> (domain_sid, rid)\n"
+		"Split a domain sid" },
+	{ NULL }
+};
+
+
 static void py_dom_sid_patch(PyTypeObject *type)
 {
 	type->tp_init = py_dom_sid_init;
 	type->tp_str = py_dom_sid_str;
 	type->tp_repr = py_dom_sid_repr;
 	type->tp_compare = py_dom_sid_cmp;
+	PyType_AddMethods(type, py_dom_sid_extra_methods);
 }
 
 #define PY_DOM_SID_PATCH py_dom_sid_patch

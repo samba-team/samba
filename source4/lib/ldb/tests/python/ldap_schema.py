@@ -26,7 +26,7 @@ from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba import Ldb, param, dom_sid_to_rid
+from samba import Ldb
 from samba import UF_NORMAL_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT
 from samba import UF_SERVER_TRUST_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT
 from samba import UF_INTERDOMAIN_TRUST_ACCOUNT
