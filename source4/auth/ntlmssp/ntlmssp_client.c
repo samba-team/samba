@@ -178,7 +178,16 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	gensec_ntlmssp_state->server_domain = server_domain;
+	if (chal_flags & NTLMSSP_TARGET_TYPE_SERVER) {
+		gensec_ntlmssp_state->server.is_standalone = true;
+	} else {
+		gensec_ntlmssp_state->server.is_standalone = false;
+	}
+	/* TODO: parse struct_blob and fill in the rest */
+	gensec_ntlmssp_state->server.netbios_name = "";
+	gensec_ntlmssp_state->server.netbios_domain = server_domain;
+	gensec_ntlmssp_state->server.dns_name = "";
+	gensec_ntlmssp_state->server.dns_domain = "";
 
 	if (challenge_blob.length != 8) {
 		talloc_free(mem_ctx);

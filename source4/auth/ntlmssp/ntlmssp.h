@@ -62,7 +62,6 @@ struct gensec_ntlmssp_state
 	char *user;
 	const char *domain;
 	const char *workstation;
-	char *server_domain;
 
 	struct {
 		bool is_standalone;
