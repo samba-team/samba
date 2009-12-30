@@ -78,7 +78,10 @@ struct ntlmssp_state
 
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
-	void *auth_context;
+	/**
+	 * Private data for the callback functions
+	 */
+	void *callback_private;
 
 	/**
 	 * Callback to get the 'challenge' used for NTLM authentication.

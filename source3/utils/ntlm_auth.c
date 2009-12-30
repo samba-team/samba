@@ -589,15 +589,15 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		if (memcmp(user_sess_key, zeros, 16) != 0) {
 			*user_session_key = data_blob_talloc(ntlmssp_state, user_sess_key, 16);
 		}
-		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state,
-							    unix_name);
+		ntlmssp_state->callback_private = talloc_strdup(ntlmssp_state,
+								unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
 		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
 		       ntlmssp_state->domain, ntlmssp_state->user, 
 		       ntlmssp_state->workstation, 
 		       error_string ? error_string : "unknown error (NULL)"));
-		ntlmssp_state->auth_context = NULL;
+		ntlmssp_state->callback_private = NULL;
 	}
 
 	SAFE_FREE(error_string);
@@ -623,7 +623,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 					&lm_pw, &nt_pw, user_session_key, lm_session_key);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state,
+		ntlmssp_state->callback_private = talloc_asprintf(ntlmssp_state,
 							      "%s%c%s", ntlmssp_state->domain, 
 							      *lp_winbind_separator(), 
 							      ntlmssp_state->user);
@@ -631,7 +631,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
 			  ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, 
 			  nt_errstr(nt_status)));
-		ntlmssp_state->auth_context = NULL;
+		ntlmssp_state->callback_private = NULL;
 	}
 	return nt_status;
 }
@@ -920,7 +920,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
 		x_fprintf(x_stdout, "AF %s\n",
-				(char *)state->ntlmssp_state->auth_context);
+				(char *)state->ntlmssp_state->callback_private);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 
 		if(state->have_session_key)

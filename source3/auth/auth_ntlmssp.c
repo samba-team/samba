@@ -32,7 +32,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 					   uint8_t chal[8])
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
-		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
+		(AUTH_NTLMSSP_STATE *)ntlmssp_state->callback_private;
 	auth_ntlmssp_state->auth_context->get_ntlm_challenge(
 		auth_ntlmssp_state->auth_context, chal);
 	return NT_STATUS_OK;
@@ -46,7 +46,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
-		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
+		(AUTH_NTLMSSP_STATE *)ntlmssp_state->callback_private;
 	struct auth_context *auth_context = auth_ntlmssp_state->auth_context;
 
 	return auth_context->challenge_may_be_modified;
@@ -59,7 +59,7 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
-		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
+		(AUTH_NTLMSSP_STATE *)ntlmssp_state->callback_private;
 	struct auth_context *auth_context = auth_ntlmssp_state->auth_context;
 
 	SMB_ASSERT(challenge->length == 8);
@@ -84,7 +84,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
-		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
+		(AUTH_NTLMSSP_STATE *)ntlmssp_state->callback_private;
 	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
 	bool username_was_mapped;
@@ -206,7 +206,7 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 		return nt_status;
 	}
 
-	(*auth_ntlmssp_state)->ntlmssp_state->auth_context = (*auth_ntlmssp_state);
+	(*auth_ntlmssp_state)->ntlmssp_state->callback_private = (*auth_ntlmssp_state);
 	(*auth_ntlmssp_state)->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
