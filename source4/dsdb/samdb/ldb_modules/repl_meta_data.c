@@ -1939,6 +1939,9 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	ldb_msg_remove_attr(msg, "whenChanged");
+	ldb_msg_remove_attr(msg, "uSNChanged");
+
 	ret = replmd_update_rpmd(module, ac->schema, msg, &ac->seq_num, t);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
@@ -2205,7 +2208,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		"oMSyntax", "proxiedObjectName", "name", "replPropertyMetaData", "sAMAccountName",
 		"securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
 		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated",
-		NULL};
+		"whenChanged", NULL};
 	uint32_t el_count = 0;
 	int i;
 
