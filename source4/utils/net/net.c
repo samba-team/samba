@@ -94,7 +94,14 @@ static int py_call_with_string_args(PyObject *self, const char *method, int argc
 		return 1;
 	}
 
-	return PyInt_AsLong(ret);
+	if (ret == Py_None) {
+		return 0;
+	} else if (PyInt_Check(ret)) {
+		return PyInt_AsLong(ret);
+	} else {
+		fprintf(stderr, "Function return value type unexpected.\n");
+		return -1;
+	}
 }
 
 static PyObject *py_commands(void)
