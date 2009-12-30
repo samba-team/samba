@@ -810,12 +810,9 @@ struct winbindd_domain *find_root_domain(void)
 
 struct winbindd_domain *find_builtin_domain(void)
 {
-	DOM_SID sid;
 	struct winbindd_domain *domain;
 
-	string_to_sid(&sid, "S-1-5-32");
-	domain = find_domain_from_sid(&sid);
-
+	domain = find_domain_from_sid(&global_sid_Builtin);
 	if (domain == NULL) {
 		smb_panic("Could not find BUILTIN domain");
 	}
