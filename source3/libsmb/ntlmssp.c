@@ -211,19 +211,6 @@ NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *dom
 }
 
 /**
- * Set a workstation on an NTLMSSP context - ensures it is talloc()ed
- *
- */
-NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation)
-{
-	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state, workstation);
-	if (!ntlmssp_state->workstation) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/**
  * Request features for the NTLMSSP negotiation
  *
  * @param ntlmssp_state NTLMSSP state
