@@ -789,15 +789,15 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	*num_names = rids->count;
-	rid_mem = rids->rids;
-
-	if (!*num_names) {
+	if (!rids || !rids->count) {
 		names = NULL;
 		name_types = NULL;
 		sid_mem = NULL;
 		return NT_STATUS_OK;
 	}
+
+	*num_names = rids->count;
+	rid_mem = rids->rids;
 
         /* Step #2: Convert list of rids into list of usernames.  Do this
            in bunches of ~1000 to avoid crashing NT4.  It looks like there
