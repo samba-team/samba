@@ -3024,3 +3024,29 @@ int dsdb_get_deleted_objects_dn(struct ldb_context *ldb,
 	talloc_free(nc_root);
 	return ret;
 }
+
+/*
+  return the tombstoneLifetime, in days
+ */
+int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
+{
+	struct ldb_dn *dn;
+	dn = samdb_config_dn(ldb);
+	if (!dn) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	dn = ldb_dn_copy(ldb, dn);
+	if (!dn) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* see MS-ADTS section 7.1.1.2.4.1.1. There doesn't appear to
+	 be a wellknown GUID for this */
+	if (!ldb_dn_add_child_fmt(dn, "CN=Directory Service,CN=Windows NT")) {
+		talloc_free(dn);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*lifetime = samdb_search_uint(ldb, dn, 180, dn, "tombstoneLifetime", "objectClass=nTDSService");
+	talloc_free(dn);
+	return LDB_SUCCESS;
+}
