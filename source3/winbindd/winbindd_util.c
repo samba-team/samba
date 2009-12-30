@@ -799,11 +799,9 @@ struct winbindd_domain *find_root_domain(void)
 {
 	struct winbindd_domain *ours = find_our_domain();
 
-	if ( !ours )
+	if (ours->forest_name[0] == '\0') {
 		return NULL;
-
-	if ( strlen(ours->forest_name) == 0 )
-		return NULL;
+	}
 
 	return find_domain_from_name( ours->forest_name );
 }
