@@ -271,33 +271,27 @@ NTSTATUS ntlmssp_seal_packet(struct gensec_ntlmssp_state *ntlmssp_state,
  *
  */
 
-/*
-  wrappers for the ntlmssp_*() functions
-*/
-NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
-				      TALLOC_CTX *sig_mem_ctx,
-				      uint8_t *data, size_t length,
-				      const uint8_t *whole_pdu, size_t pdu_length,
-				      const DATA_BLOB *sig)
+NTSTATUS ntlmssp_unseal_packet(struct gensec_ntlmssp_state *ntlmssp_state,
+			       TALLOC_CTX *sig_mem_ctx,
+			       uint8_t *data, size_t length,
+			       const uint8_t *whole_pdu, size_t pdu_length,
+			       const DATA_BLOB *sig)
 {
 	NTSTATUS status;
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	if (!gensec_ntlmssp_state->session_key.length) {
+
+	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot unseal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
 	dump_data_pw("ntlmssp sealed data\n", data, length);
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state, data, length);
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state, data, length);
 	} else {
-		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm.arcfour_state, data, length);
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state, data, length);
 	}
 	dump_data_pw("ntlmssp clear data\n", data, length);
-	status = gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+	status = ntlmssp_check_packet(ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("NTLMSSP packet check for unseal failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
@@ -505,6 +499,29 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 					data, length,
 					whole_pdu, pdu_length,
 					sig);
+
+	return nt_status;
+}
+
+/*
+  wrappers for the ntlmssp_*() functions
+*/
+NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
+				      TALLOC_CTX *sig_mem_ctx,
+				      uint8_t *data, size_t length,
+				      const uint8_t *whole_pdu, size_t pdu_length,
+				      const DATA_BLOB *sig)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	NTSTATUS nt_status;
+
+	nt_status = ntlmssp_unseal_packet(gensec_ntlmssp->ntlmssp_state,
+					  sig_mem_ctx,
+					  data, length,
+					  whole_pdu, pdu_length,
+					  sig);
 
 	return nt_status;
 }
