@@ -2061,7 +2061,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 {
 	struct ldb_message *msg;
 	struct ldb_dn *basedn;
-	const char *sidstr;
+	char *sidstr;
 	int ret;
 
 	sidstr = dom_sid_string(mem_ctx, sid);
@@ -2070,45 +2070,47 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	/* We might have to create a ForeignSecurityPrincipal, even if this user
 	 * is in our own domain */
 
-	msg = ldb_msg_new(mem_ctx);
+	msg = ldb_msg_new(sidstr);
 	if (msg == NULL) {
+		talloc_free(sidstr);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* TODO: Hmmm. This feels wrong. How do I find the base dn to
-	 * put the ForeignSecurityPrincipals? d_state->domain_dn does
-	 * not work, this is wrong for the Builtin domain, there's no
-	 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
-	 */
-
-	basedn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
-				 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
-
-	if (basedn == NULL) {
+	ret = dsdb_wellknown_dn(sam_ctx, sidstr, samdb_base_dn(sam_ctx),
+				DS_GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER,
+				&basedn);
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to find DN for "
-			  "ForeignSecurityPrincipal container\n"));
+			  "ForeignSecurityPrincipal container - %s\n", ldb_errstring(sam_ctx)));
+		talloc_free(sidstr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* add core elements to the ldb_message for the alias */
-	msg->dn = ldb_dn_copy(mem_ctx, basedn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
+	msg->dn = basedn;
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr)) {
+		talloc_free(sidstr);
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	samdb_msg_add_string(sam_ctx, mem_ctx, msg,
+	samdb_msg_add_string(sam_ctx, msg, msg,
 			     "objectClass",
 			     "foreignSecurityPrincipal");
 
 	/* create the alias */
 	ret = ldb_add(sam_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create foreignSecurityPrincipal "
 			 "record %s: %s\n", 
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(sam_ctx)));
+		talloc_free(sidstr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	*ret_dn = msg->dn;
+
+	*ret_dn = talloc_steal(mem_ctx, msg->dn);
+	talloc_free(sidstr);
+
 	return NT_STATUS_OK;
 }
 
