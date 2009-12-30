@@ -92,7 +92,7 @@ static const char *ntlmssp_target_name(struct gensec_ntlmssp_state *gensec_ntlms
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
 		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
-		if (gensec_ntlmssp_state->server_role == ROLE_STANDALONE) {
+		if (gensec_ntlmssp_state->server.is_standalone) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
 			return gensec_ntlmssp_state->server_name;
 		} else {
@@ -819,7 +819,11 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	gensec_ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	gensec_ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	gensec_ntlmssp_state->server_role = lp_server_role(gensec_security->settings->lp_ctx);
+	if (lp_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
+		gensec_ntlmssp_state->server.is_standalone = true;
+	} else {
+		gensec_ntlmssp_state->server.is_standalone = false;
+	}
 
 	return NT_STATUS_OK;
 }

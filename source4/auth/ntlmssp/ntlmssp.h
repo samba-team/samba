@@ -19,7 +19,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "librpc/gen_ndr/samr.h"
 #include "../librpc/gen_ndr/ntlmssp.h"
 
 /* NTLMSSP mode */
@@ -48,7 +47,6 @@ enum ntlmssp_message_type
 struct gensec_ntlmssp_state
 {
 	enum ntlmssp_role role;
-	enum samr_Role server_role;
 	uint32_t expected_state;
 
 	bool unicode;
@@ -65,6 +63,10 @@ struct gensec_ntlmssp_state
 	const char *domain;
 	const char *workstation;
 	char *server_domain;
+
+	struct {
+		bool is_standalone;
+	} server;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
 
