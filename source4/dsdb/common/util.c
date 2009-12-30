@@ -2149,14 +2149,16 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	if (!ldb_dn_validate(dn)) {
 		DEBUG(2, ("Failed to validated DN %s\n",
 			  ldb_dn_get_linearized(dn)));
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	talloc_free(tmp_ctx);
 	return dn;
 }
+
 /*
   Find the DN of a domain, be it the netbios or DNS name 
 */
-
 struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
 				  const char *domain_name) 
 {
@@ -2228,13 +2230,14 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	res = talloc_zero(mem_ctx, struct ldb_result);
+	res = talloc_zero(expression, struct ldb_result);
 	if (!res) {
 		DEBUG(0, (__location__ ": out of memory\n"));
+		talloc_free(expression);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&search_req, ldb, mem_ctx,
+	ret = ldb_build_search_req(&search_req, ldb, expression,
 				   ldb_get_default_basedn(ldb),
 				   LDB_SCOPE_SUBTREE,
 				   expression, attrs,
@@ -2242,6 +2245,7 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 				   res, ldb_search_default_callback,
 				   NULL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
@@ -2250,12 +2254,14 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	options = talloc(search_req, struct ldb_search_options_control);
 	if (options == NULL) {
 		DEBUG(0, (__location__ ": out of memory\n"));
+		talloc_free(expression);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
 
 	ret = ldb_request_add_control(search_req, LDB_CONTROL_EXTENDED_DN_OID, true, NULL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
@@ -2263,16 +2269,19 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 				      LDB_CONTROL_SEARCH_OPTIONS_OID,
 				      true, options);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
 	ret = ldb_request(ldb, search_req);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
 	ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
@@ -2280,10 +2289,12 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	   partitions module that can return two here with the
 	   search_options control set */
 	if (res->count < 1) {
+		talloc_free(expression);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
-	*dn = res->msgs[0]->dn;
+	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
+	talloc_free(expression);
 
 	return LDB_SUCCESS;
 }
@@ -2306,6 +2317,7 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -2325,6 +2337,7 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 
 	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -2333,8 +2346,8 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	talloc_free(req);
 	*_res = talloc_steal(mem_ctx, res);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
