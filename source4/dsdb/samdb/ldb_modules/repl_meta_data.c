@@ -47,6 +47,7 @@
 #include "lib/util/dlinklist.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/binsearch.h"
+#include "libcli/security/security.h"
 
 #define W2K3_LINKED_ATTRIBUTES 1
 
@@ -2208,6 +2209,10 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	uint32_t el_count = 0;
 	int i;
 
+	if (ldb_dn_is_special(req->op.del.dn)) {
+		return ldb_next_request(module, req);
+	}
+
 	tmp_ctx = talloc_new(ldb);
 
 	old_dn = ldb_dn_copy(tmp_ctx, req->op.del.dn);
@@ -2223,6 +2228,20 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 	old_msg = res->msgs[0];
+
+	if (ldb_msg_check_string_attribute(old_msg, "isDeleted", "TRUE")) {
+		struct auth_session_info *session_info =
+			(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		if (security_session_user_level(session_info) != SECURITY_SYSTEM) {
+			ldb_asprintf_errstring(ldb, "Refusing to delete deleted object %s",
+					       ldb_dn_get_linearized(old_msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		/* it is already deleted - really remove it this time */
+		talloc_free(tmp_ctx);
+		return ldb_next_request(module, req);
+	}
 
 	/* work out where we will be renaming this object to */
 	ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn, &new_dn);
