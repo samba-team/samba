@@ -31,6 +31,8 @@ o   Michael Adam <obnox@samba.org>
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 6828: Fix infinite timeout when byte lock held outside of samba.
+    * BUG 6837: Fix "Too many open files" message when trying to access a large
+      number of files with Windows 7.
     * BUG 6841: Fix "map acl inherit = yes".
     * BUG 6867: Fix listing of directories with a lot of files.
     * BUG 6875: Fix DOS attributes on OS/2 clients.
