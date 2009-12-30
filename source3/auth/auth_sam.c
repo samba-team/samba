@@ -40,9 +40,12 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 {
 	uint32 acct_ctrl;
 	const uint8 *lm_pw, *nt_pw;
-	struct samr_Password lm_hash, nt_hash, client_lm_hash, client_nt_hash;
+	struct samr_Password _lm_hash, _nt_hash, _client_lm_hash, _client_nt_hash;
+	struct samr_Password *lm_hash = NULL;
+	struct samr_Password *nt_hash = NULL;
+	struct samr_Password *client_lm_hash = NULL;
+	struct samr_Password *client_nt_hash = NULL;
 	const char *username = pdb_get_username(sampass);
-	bool got_lm = false, got_nt = false;
 
 	*user_sess_key = data_blob(NULL, 0);
 	*lm_sess_key = data_blob(NULL, 0);
@@ -60,32 +63,36 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 
 	lm_pw = pdb_get_lanman_passwd(sampass);
 	nt_pw = pdb_get_nt_passwd(sampass);
+
 	if (lm_pw) {
-		memcpy(lm_hash.hash, lm_pw, sizeof(lm_hash.hash));
+		memcpy(_lm_hash.hash, lm_pw, sizeof(_lm_hash.hash));
+		lm_hash = &_lm_hash;
 	}
 	if (nt_pw) {
-		memcpy(nt_hash.hash, nt_pw, sizeof(nt_hash.hash));
+		memcpy(_nt_hash.hash, nt_pw, sizeof(_nt_hash.hash));
+		nt_hash = &_nt_hash;
 	}
-	if (user_info->lm_interactive_pwd.data && sizeof(client_lm_hash.hash) == user_info->lm_interactive_pwd.length) {
-		memcpy(client_lm_hash.hash, user_info->lm_interactive_pwd.data, sizeof(lm_hash.hash));
-		got_lm = true;
+	if (user_info->lm_interactive_pwd.data && sizeof(_client_lm_hash.hash) == user_info->lm_interactive_pwd.length) {
+		memcpy(_client_lm_hash.hash, user_info->lm_interactive_pwd.data, sizeof(_lm_hash.hash));
+		client_lm_hash = &_client_lm_hash;
 	}
-	if (user_info->nt_interactive_pwd.data && sizeof(client_nt_hash.hash) == user_info->nt_interactive_pwd.length) {
-		memcpy(client_nt_hash.hash, user_info->nt_interactive_pwd.data, sizeof(nt_hash.hash));
-		got_nt = true;
+	if (user_info->nt_interactive_pwd.data && sizeof(_client_nt_hash.hash) == user_info->nt_interactive_pwd.length) {
+		memcpy(_client_nt_hash.hash, user_info->nt_interactive_pwd.data, sizeof(_nt_hash.hash));
+		client_nt_hash = &_client_nt_hash;
 	}
-	if (got_lm || got_nt) {
+
+	if (client_lm_hash || client_nt_hash) {
 		*user_sess_key = data_blob(mem_ctx, 16);
 		if (!user_sess_key->data) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
 		return hash_password_check(mem_ctx, lp_lanman_auth(),
-					   got_lm ? &client_lm_hash : NULL, 
-					   got_nt ? &client_nt_hash : NULL,
+					   client_lm_hash,
+					   client_nt_hash,
 					   username, 
-					   lm_pw ? &lm_hash: NULL, 
-					   nt_pw ? &nt_hash : NULL);
+					   lm_hash,
+					   nt_hash);
 	} else {
 		return ntlm_password_check(mem_ctx, lp_lanman_auth(),
 					   lp_ntlm_auth(),
@@ -95,8 +102,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					   username, 
 					   user_info->smb_name,
 					   user_info->client_domain,
-					   lm_pw ? &lm_hash: NULL, 
-					   nt_pw ? &nt_hash : NULL,
+					   lm_hash,
+					   nt_hash,
 					   user_sess_key, lm_sess_key);
 	}
 }
