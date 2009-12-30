@@ -367,7 +367,7 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
 		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
-		if (ntlmssp_state->server_role == ROLE_STANDALONE) {
+		if (ntlmssp_state->server.is_standalone) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
 			return ntlmssp_state->get_global_myname();
 		} else {
@@ -902,7 +902,7 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 
 	(*ntlmssp_state)->get_global_myname = global_myname;
 	(*ntlmssp_state)->get_domain = lp_workgroup;
-	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
+	(*ntlmssp_state)->server.is_standalone = false; /* a good default */
 
 	(*ntlmssp_state)->expected_state = NTLMSSP_NEGOTIATE;
 

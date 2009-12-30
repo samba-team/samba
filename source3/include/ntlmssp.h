@@ -45,7 +45,6 @@ enum ntlmssp_message_type
 struct ntlmssp_state
 {
 	enum ntlmssp_role role;
-	enum server_types server_role;
 	uint32_t expected_state;
 
 	bool unicode;
@@ -57,6 +56,10 @@ struct ntlmssp_state
 	unsigned char *nt_hash;
 	unsigned char *lm_hash;
 	char *server_domain;
+
+	struct {
+		bool is_standalone;
+	} server;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
 
