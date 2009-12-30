@@ -99,8 +99,10 @@ WERROR dreplsrv_schedule_partition_pull_by_guid(struct dreplsrv_service *s, TALL
 	return WERR_NOT_FOUND;
 }
 
-static void dreplsrv_pending_op_callback(struct dreplsrv_out_operation *op)
+static void dreplsrv_pending_op_callback(struct tevent_req *subreq)
 {
+	struct dreplsrv_out_operation *op = tevent_req_callback_data(subreq,
+					    struct dreplsrv_out_operation);
 	struct repsFromTo1 *rf = op->source_dsa->repsFrom1;
 	struct dreplsrv_service *s = op->service;
 	time_t t;
@@ -109,7 +111,8 @@ static void dreplsrv_pending_op_callback(struct dreplsrv_out_operation *op)
 	t = time(NULL);
 	unix_to_nt_time(&now, t);
 
-	rf->result_last_attempt = dreplsrv_op_pull_source_recv(op->creq);
+	rf->result_last_attempt = dreplsrv_op_pull_source_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (W_ERROR_IS_OK(rf->result_last_attempt)) {
 		rf->consecutive_sync_failures	= 0;
 		rf->last_success		= now;
@@ -135,18 +138,12 @@ done:
 	dreplsrv_notify_run_ops(s);
 }
 
-static void dreplsrv_pending_op_callback_creq(struct composite_context *creq)
-{
-	struct dreplsrv_out_operation *op = talloc_get_type(creq->async.private_data,
-							   struct dreplsrv_out_operation);
-	dreplsrv_pending_op_callback(op);
-}
-
 void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
 {
 	struct dreplsrv_out_operation *op;
 	time_t t;
 	NTTIME now;
+	struct tevent_req *subreq;
 
 	if (s->ops.current || s->ops.n_current) {
 		/* if there's still one running, we're done */
@@ -167,12 +164,18 @@ void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
 
 	op->source_dsa->repsFrom1->last_attempt = now;
 
-	op->creq = dreplsrv_op_pull_source_send(op);
-	if (!op->creq) {
-		dreplsrv_pending_op_callback(op);
+	subreq = dreplsrv_op_pull_source_send(op, s->task->event_ctx, op);
+	if (!subreq) {
+		struct repsFromTo1 *rf = op->source_dsa->repsFrom1;
+
+		rf->result_last_attempt = WERR_NOMEM;
+		rf->consecutive_sync_failures++;
+
+		DEBUG(1,("dreplsrv_op_pull_source(%s/%s) failures[%u]\n",
+			win_errstr(rf->result_last_attempt),
+			nt_errstr(werror_to_ntstatus(rf->result_last_attempt)),
+			rf->consecutive_sync_failures));
 		return;
 	}
-
-	op->creq->async.fn		= dreplsrv_pending_op_callback_creq;
-	op->creq->async.private_data	= op;
+	tevent_req_set_callback(subreq, dreplsrv_pending_op_callback, op);
 }

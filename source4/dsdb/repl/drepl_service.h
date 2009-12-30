@@ -109,8 +109,6 @@ struct dreplsrv_out_operation {
 
 	struct dreplsrv_partition_source_dsa *source_dsa;
 
-	struct composite_context *creq;
-
 	enum drsuapi_DsExtendedOperation extended_op;
 	uint64_t fsmo_info;
 	dreplsrv_fsmo_callback_t callback;
