@@ -129,19 +129,14 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 	return NT_STATUS_OK;
 }
 
-/* TODO: make this non-public */
-NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
-				    TALLOC_CTX *sig_mem_ctx,
-				    const uint8_t *data, size_t length,
-				    const uint8_t *whole_pdu, size_t pdu_length,
-				    DATA_BLOB *sig)
+NTSTATUS ntlmssp_sign_packet(struct gensec_ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
+			     const uint8_t *data, size_t length,
+			     const uint8_t *whole_pdu, size_t pdu_length,
+			     DATA_BLOB *sig)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-
-	return ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx,
+	return ntlmssp_make_packet_signature(ntlmssp_state,
+					     sig_mem_ctx,
 					     data, length,
 					     whole_pdu, pdu_length,
 					     NTLMSSP_SEND, sig, true);
@@ -456,6 +451,26 @@ NTSTATUS ntlmssp_sign_init(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
+				    TALLOC_CTX *sig_mem_ctx,
+				    const uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
+				    DATA_BLOB *sig)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	NTSTATUS nt_status;
+
+	nt_status = ntlmssp_sign_packet(gensec_ntlmssp->ntlmssp_state,
+					sig_mem_ctx,
+					data, length,
+					whole_pdu, pdu_length,
+					sig);
+
+	return nt_status;
 }
 
 size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t data_size) 
