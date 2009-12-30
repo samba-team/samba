@@ -44,7 +44,7 @@ enum ntlmssp_message_type
 #define NTLMSSP_FEATURE_SEAL               0x00000004
 #define NTLMSSP_FEATURE_CCACHE		   0x00000008
 
-struct gensec_ntlmssp_state
+struct ntlmssp_state
 {
 	enum ntlmssp_role role;
 	uint32_t expected_state;
@@ -95,7 +95,7 @@ struct gensec_ntlmssp_state
 	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
 	 *
 	 */
-	NTSTATUS (*get_challenge)(const struct gensec_ntlmssp_state *,
+	NTSTATUS (*get_challenge)(const struct ntlmssp_state *ntlmssp_state,
 				  uint8_t challenge[8]);
 
 	/**
@@ -108,7 +108,7 @@ struct gensec_ntlmssp_state
 	 * @return Can the challenge be set to arbitary values?
 	 *
 	 */
-	bool (*may_set_challenge)(const struct gensec_ntlmssp_state *);
+	bool (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
 
 	/**
 	 * Callback to set the 'challenge' used for NTLM authentication.
@@ -120,7 +120,7 @@ struct gensec_ntlmssp_state
 	 * @param challenge 8 bytes of data, agreed by the client and server to be the effective challenge for NTLM2 authentication
 	 *
 	 */
-	NTSTATUS (*set_challenge)(struct gensec_ntlmssp_state *, DATA_BLOB *challenge);
+	NTSTATUS (*set_challenge)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
 
 	/**
 	 * Callback to check the user's password.
@@ -131,8 +131,7 @@ struct gensec_ntlmssp_state
 	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
 	 *
 	 */
-	NTSTATUS (*check_password)(struct gensec_ntlmssp_state *,
-				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
+	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	bool doing_ntlm2;
 
@@ -160,7 +159,7 @@ struct gensec_ntlmssp_state
 
 struct gensec_ntlmssp_context {
 	struct gensec_security *gensec_security;
-	struct gensec_ntlmssp_state *ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state;
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 };

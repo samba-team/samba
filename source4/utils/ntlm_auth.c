@@ -646,12 +646,12 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (strncmp(buf, "GF", 2) == 0) {
-		struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+		struct ntlmssp_state *ntlmssp_state;
 		uint32_t neg_flags;
 
-		gensec_ntlmssp_state = talloc_get_type(state->gensec_state->private_data, 
-				struct gensec_ntlmssp_state);
-		neg_flags = gensec_ntlmssp_state->neg_flags;
+		ntlmssp_state = talloc_get_type(state->gensec_state->private_data,
+				struct ntlmssp_state);
+		neg_flags = ntlmssp_state->neg_flags;
 
 		DEBUG(10, ("Requested negotiated feature flags\n"));
 		mux_printf(mux_id, "GF 0x%08x\n", neg_flags);

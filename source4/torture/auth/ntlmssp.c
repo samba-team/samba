@@ -28,7 +28,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 {
 	struct gensec_security *gensec_security;
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state;
 	DATA_BLOB data;
 	DATA_BLOB sig, expected_sig;
 	TALLOC_CTX *mem_ctx = tctx;
@@ -49,17 +49,17 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
 					       struct gensec_ntlmssp_context);
-	gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
-	gensec_ntlmssp_state->session_key = strhex_to_data_blob(tctx, "0102030405060708090a0b0c0d0e0f00");
+	ntlmssp_state->session_key = strhex_to_data_blob(tctx, "0102030405060708090a0b0c0d0e0f00");
 	dump_data_pw("NTLMSSP session key: \n", 
-		     gensec_ntlmssp_state->session_key.data,  
-		     gensec_ntlmssp_state->session_key.length);
+		     ntlmssp_state->session_key.data,
+		     ntlmssp_state->session_key.length);
 
-	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
+	ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
 
 	torture_assert_ntstatus_ok(tctx,  
-		ntlmssp_sign_init(gensec_ntlmssp_state),
+		ntlmssp_sign_init(ntlmssp_state),
 		"Failed to sign_init");
 
 	data = strhex_to_data_blob(tctx, "6a43494653");
@@ -81,7 +81,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 								  data.data, data.length, data.data, data.length, &sig),
 				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet (should fail, wrong end)");
 
-	gensec_ntlmssp_state->session_key = data_blob(NULL, 0);
+	ntlmssp_state->session_key = data_blob(NULL, 0);
 
 	torture_assert_ntstatus_equal(tctx, 
 				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
@@ -106,17 +106,17 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
 					       struct gensec_ntlmssp_context);
-	gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
-	gensec_ntlmssp_state->session_key = strhex_to_data_blob(tctx, "0102030405e538b0");
+	ntlmssp_state->session_key = strhex_to_data_blob(tctx, "0102030405e538b0");
 	dump_data_pw("NTLMSSP session key: \n", 
-		     gensec_ntlmssp_state->session_key.data,  
-		     gensec_ntlmssp_state->session_key.length);
+		     ntlmssp_state->session_key.data,
+		     ntlmssp_state->session_key.length);
 
-	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
+	ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
 
 	torture_assert_ntstatus_ok(tctx,  
-		ntlmssp_sign_init(gensec_ntlmssp_state),
+		ntlmssp_sign_init(ntlmssp_state),
 		"Failed to sign_init");
 
 	data = strhex_to_data_blob(tctx, "6a43494653");

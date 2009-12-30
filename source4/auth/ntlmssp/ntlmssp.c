@@ -119,17 +119,17 @@ static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
 	}
 }
 
-static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 					   const DATA_BLOB input, uint32_t *idx)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_ntlmssp_state->callback_private,
+		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
 	struct gensec_security *gensec_security = gensec_ntlmssp->gensec_security;
 	uint32_t ntlmssp_command;
 	uint32_t i;
 
-	if (gensec_ntlmssp_state->expected_state == NTLMSSP_DONE) {
+	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
 		/* We are strict here because other modules, which we
 		 * don't fully control (such as GSSAPI) are also
 		 * strict, but are tested less often */
@@ -139,7 +139,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_n
 	}
 
 	if (!input.length) {
-		switch (gensec_ntlmssp_state->role) {
+		switch (ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
 			ntlmssp_command = NTLMSSP_INITIAL;
 			break;
@@ -155,7 +155,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_n
 			break;
 		}
 	} else {
-		if (!msrpc_parse(gensec_ntlmssp_state, 
+		if (!msrpc_parse(ntlmssp_state,
 				 &input, "Cd",
 				 "NTLMSSP",
 				 &ntlmssp_command)) {
@@ -165,13 +165,13 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_n
 		}
 	}
 
-	if (ntlmssp_command != gensec_ntlmssp_state->expected_state) {
-		DEBUG(2, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, gensec_ntlmssp_state->expected_state));
+	if (ntlmssp_command != ntlmssp_state->expected_state) {
+		DEBUG(2, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, ntlmssp_state->expected_state));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
-		if (ntlmssp_callbacks[i].role == gensec_ntlmssp_state->role &&
+		if (ntlmssp_callbacks[i].role == ntlmssp_state->role &&
 		    ntlmssp_callbacks[i].command == ntlmssp_command) {
 			*idx = i;
 			return NT_STATUS_OK;
@@ -179,7 +179,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_n
 	}
 
 	DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
-		  gensec_ntlmssp_state->role, ntlmssp_command)); 
+		  ntlmssp_state->role, ntlmssp_command));
 		
 	return NT_STATUS_INVALID_PARAMETER;
 }
@@ -202,7 +202,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	NTSTATUS status;
 	uint32_t i;
 
@@ -211,10 +211,10 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	if (!out_mem_ctx) {
 		/* if the caller doesn't want to manage/own the memory, 
 		   we can put it on our context */
-		out_mem_ctx = gensec_ntlmssp_state;
+		out_mem_ctx = ntlmssp_state;
 	}
 
-	status = gensec_ntlmssp_update_find(gensec_ntlmssp_state, input, &i);
+	status = gensec_ntlmssp_update_find(ntlmssp_state, input, &i);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);
@@ -226,7 +226,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 /**
  * Return the NTLMSSP master session key
  * 
- * @param gensec_ntlmssp_state NTLMSSP State
+ * @param ntlmssp_state NTLMSSP State
  */
 
 NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
@@ -235,77 +235,77 @@ NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
-	if (gensec_ntlmssp_state->expected_state != NTLMSSP_DONE) {
+	if (ntlmssp_state->expected_state != NTLMSSP_DONE) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (!gensec_ntlmssp_state->session_key.data) {
+	if (!ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-	*session_key = gensec_ntlmssp_state->session_key;
+	*session_key = ntlmssp_state->session_key;
 
 	return NT_STATUS_OK;
 }
 
-void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 			      uint32_t neg_flags, bool allow_lm)
 {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
-		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
-		gensec_ntlmssp_state->unicode = true;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
+		ntlmssp_state->unicode = true;
 	} else {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
-		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
-		gensec_ntlmssp_state->unicode = false;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
+		ntlmssp_state->unicode = false;
 	}
 
-	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm && !gensec_ntlmssp_state->use_ntlmv2) {
+	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm && !ntlmssp_state->use_ntlmv2) {
 		/* other end forcing us to use LM */
-		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
 	}
 
 	/* Woop Woop - unknown flag for Windows compatibility...
 	   What does this really do ? JRA. */
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION)) {
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
 	}
 
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
-		gensec_ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
+		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
 	
 }
@@ -318,12 +318,12 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
    by the client lanman auth/lanman auth parameters, it isn't too bad.
 */
 
-DATA_BLOB ntlmssp_weakend_key(struct gensec_ntlmssp_state *gensec_ntlmssp_state, 
+DATA_BLOB ntlmssp_weakend_key(struct ntlmssp_state *ntlmssp_state,
 			      TALLOC_CTX *mem_ctx) 
 {
 	DATA_BLOB weakened_key = data_blob_talloc(mem_ctx, 
-						  gensec_ntlmssp_state->session_key.data, 
-						  gensec_ntlmssp_state->session_key.length);
+						  ntlmssp_state->session_key.data,
+						  ntlmssp_state->session_key.length);
 	/* Nothing to weaken.  We certainly don't want to 'extend' the length... */
 	if (weakened_key.length < 16) {
 		/* perhaps there was no key? */
@@ -334,11 +334,11 @@ DATA_BLOB ntlmssp_weakend_key(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 	   and does not occour for NTLM1.  Therefore we only need
 	   to do this for the LM_KEY.  
 	*/
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
 		/* LM key doesn't support 128 bit crypto, so this is
 		 * the best we can do.  If you negotiate 128 bit, but
 		 * not 56, you end up with 40 bit... */
-		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
 			weakened_key.data[7] = 0xa0;
 			weakened_key.length = 8;
 		} else { /* forty bits */
@@ -357,26 +357,26 @@ static bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	if (feature & GENSEC_FEATURE_SIGN) {
-		if (!gensec_ntlmssp_state->session_key.length) {
+		if (!ntlmssp_state->session_key.length) {
 			return false;
 		}
-		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
 			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
-		if (!gensec_ntlmssp_state->session_key.length) {
+		if (!ntlmssp_state->session_key.length) {
 			return false;
 		}
-		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
 			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-		if (gensec_ntlmssp_state->session_key.length) {
+		if (ntlmssp_state->session_key.length) {
 			return true;
 		}
 	}
@@ -384,7 +384,7 @@ static bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 		return true;
 	}
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
-		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 			return true;
 		}
 	}
@@ -394,7 +394,7 @@ static bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	struct gensec_ntlmssp_state *ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state;
 
 	gensec_ntlmssp = talloc_zero(gensec_security,
 				     struct gensec_ntlmssp_context);
@@ -405,7 +405,7 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp->gensec_security = gensec_security;
 
 	ntlmssp_state = talloc_zero(gensec_ntlmssp,
-				    struct gensec_ntlmssp_state);
+				    struct ntlmssp_state);
 	if (!ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
