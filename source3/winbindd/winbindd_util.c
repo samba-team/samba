@@ -223,6 +223,14 @@ done:
 	return domain;
 }
 
+bool domain_is_forest_root(const struct winbindd_domain *domain)
+{
+	const uint32_t fr_flags =
+		(NETR_TRUST_FLAG_TREEROOT|NETR_TRUST_FLAG_IN_FOREST);
+
+	return ((domain->domain_flags & fr_flags) == fr_flags);
+}
+
 /********************************************************************
   rescan our domains looking for new trusted domains
 ********************************************************************/
@@ -243,8 +251,6 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	uint32 fr_flags = (NETR_TRUST_FLAG_TREEROOT|NETR_TRUST_FLAG_IN_FOREST);
-
 	struct trustdom_state *state;
 
 	mem_ctx = talloc_init("add_trusted_domains");
@@ -269,7 +275,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	/* Flags used to know how to continue the forest trust search */
 
 	state->primary = domain->primary;
-	state->forest_root = ((domain->domain_flags & fr_flags) == fr_flags );
+	state->forest_root = domain_is_forest_root(domain);
 
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;

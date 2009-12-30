@@ -1263,7 +1263,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	int			i;
 	uint32			flags;	
 	struct rpc_pipe_client *cli;
-	uint32                 fr_flags = (NETR_TRUST_FLAG_IN_FOREST | NETR_TRUST_FLAG_TREEROOT);
 	int ret_count;
 
 	DEBUG(3,("ads: trusted_domains\n"));
@@ -1274,9 +1273,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	   query for all trusts.  If not, then just look for domain
 	   trusts in the target forest */
 
-	if ( domain->primary ||
-		((domain->domain_flags&fr_flags) == fr_flags) ) 
-	{
+	if (domain->primary || domain_is_forest_root(domain)) {
 		flags = NETR_TRUST_FLAG_OUTBOUND |
 			NETR_TRUST_FLAG_INBOUND |
 			NETR_TRUST_FLAG_IN_FOREST;
@@ -1354,7 +1351,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 			wcache_tdc_add_domain( &d );
 			ret_count++;
-		} else if ( (domain->domain_flags&fr_flags) == fr_flags ) {
+		} else if (domain_is_forest_root(domain)) {
 			/* Check if we already have this record. If
 			 * we are following our forest root that is not
 			 * our primary domain, we want to keep trust
