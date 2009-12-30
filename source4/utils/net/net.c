@@ -292,6 +292,33 @@ static int binary_net(int argc, const char **argv)
 
 	setlinebuf(stdout);
 
+	dcerpc_init(cmdline_lp_ctx);
+
+	ev = s4_event_context_init(NULL);
+	if (!ev) {
+		d_printf("Failed to create an event context\n");
+		exit(1);
+	}
+	py_load_samba_modules();
+	Py_Initialize();
+	PySys_SetArgv(argc, argv);
+	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+
+	py_cmds = py_commands();
+	if (py_cmds == NULL) {
+		return 1;
+	}
+
+	if (argc > 1) {
+		py_cmd = PyDict_GetItemString(py_cmds, argv[1]);
+		if (py_cmd != NULL) {
+			rc = py_call_with_string_args(py_cmd, "_run",
+				argc-1, argv+1);
+			talloc_free(ev);
+			return rc;
+		}
+	}
+
 	pc = poptGetContext("net", argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 
@@ -319,13 +346,7 @@ static int binary_net(int argc, const char **argv)
 		return net_usage(ctx, argc, argv);
 	}
 
-	dcerpc_init(cmdline_lp_ctx);
 
-	ev = s4_event_context_init(NULL);
-	if (!ev) {
-		d_printf("Failed to create an event context\n");
-		exit(1);
-	}
 	ctx = talloc(ev, struct net_context);
 	if (!ctx) {
 		d_printf("Failed to talloc a net_context\n");
@@ -337,23 +358,7 @@ static int binary_net(int argc, const char **argv)
 	ctx->credentials = cmdline_credentials;
 	ctx->event_ctx = ev;
 
-	py_load_samba_modules();
-	Py_Initialize();
-	PySys_SetArgv(argc, argv);
-	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
-	py_cmds = py_commands();
-	if (py_cmds == NULL) {
-		return 1;
-	}
-
-	py_cmd = PyDict_GetItemString(py_cmds, argv_new[1]);
-	if (py_cmd != NULL) {
-		rc = py_call_with_string_args(py_cmd, "_run", 
-			argc-1, argv+1);
-		talloc_free(ev);
-		return rc;
-	}
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable,
 			      net_usage);
