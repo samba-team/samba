@@ -83,6 +83,7 @@ PRIVATE_DEPENDENCIES = \
 KCC_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/kcc/, \
 		kcc_service.o \
 		kcc_connection.o \
+		kcc_deleted.o \
 		kcc_periodic.o)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/kcc/kcc_service_proto.h,$(KCC_SRV_OBJ_FILES:.o=.c)))

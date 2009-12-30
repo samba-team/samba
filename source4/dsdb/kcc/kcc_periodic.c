@@ -257,5 +257,10 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("kccsrv_simple_update failed - %s\n", nt_errstr(status)));
 	}
+
+	status = kccsrv_check_deleted(service, mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("kccsrv_check_deleted failed - %s\n", nt_errstr(status)));
+	}
 	talloc_free(mem_ctx);
 }
