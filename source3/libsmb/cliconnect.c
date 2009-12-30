@@ -1061,7 +1061,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 	if (NT_STATUS_IS_OK(status)) {
 		if (state->cli->server_domain[0] == '\0') {
 			fstrcpy(state->cli->server_domain,
-				state->ntlmssp_state->server_domain);
+				state->ntlmssp_state->server.netbios_domain);
 		}
 		cli_set_session_key(
 			state->cli, state->ntlmssp_state->session_key);

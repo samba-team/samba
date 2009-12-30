@@ -55,7 +55,6 @@ struct ntlmssp_state
 	char *workstation;
 	unsigned char *nt_hash;
 	unsigned char *lm_hash;
-	char *server_domain;
 
 	struct {
 		bool is_standalone;

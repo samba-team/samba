@@ -1140,7 +1140,16 @@ noccache:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ntlmssp_state->server_domain = server_domain;
+	if (chal_flags & NTLMSSP_TARGET_TYPE_SERVER) {
+		ntlmssp_state->server.is_standalone = true;
+	} else {
+		ntlmssp_state->server.is_standalone = false;
+	}
+	/* TODO: parse struct_blob and fill in the rest */
+	ntlmssp_state->server.netbios_name = "";
+	ntlmssp_state->server.netbios_domain = server_domain;
+	ntlmssp_state->server.dns_name = "";
+	ntlmssp_state->server.dns_domain = "";
 
 	if (challenge_blob.length != 8) {
 		data_blob_free(&struct_blob);
