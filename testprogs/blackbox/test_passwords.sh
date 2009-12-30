@@ -25,7 +25,6 @@ samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 net="$samba4bindir/net$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
-enableaccount="$PYTHON `dirname $0`/../../source4/setup/enableaccount"
 newuser="$PYTHON `dirname $0`/../../source4/setup/newuser"
 
 . `dirname $0`/subunit.sh

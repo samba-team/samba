@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Sets the user password expiry on a Samba4 server
+# Enables an user account on a Samba4 server
 # Copyright Jelmer Vernooij 2008
 #
 # Based on the original in EJS:
@@ -20,17 +20,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.netcmd import Command, CommandError, Option
-
 import samba.getopt as options
 
 from samba.auth import system_session
+from samba.netcmd import Command, CommandError, Option
 from samba.samdb import SamDB
 
-class cmd_setexpiry(Command):
-    """Set the expiration of a user account."""
+class cmd_enableaccount(Command):
+    """Enable an account."""
 
-    synopsis = "setexpiry [username] [options]"
+    synopsis = "enableaccount [username] [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -41,14 +40,12 @@ class cmd_setexpiry(Command):
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--filter", help="LDAP Filter to set password on", type=str),
-        Option("--days", help="Days to expiry", type=int),
-        Option("--noexpiry", help="Password does never expire", action="store_true"),
-    ]
+        ]
 
     takes_args = ["username?"]
 
     def run(self, username=None, sambaopts=None, credopts=None,
-            versionopts=None, H=None, filter=None, days=None, noexpiry=None):
+            versionopts=None, filter=None, H=None):
         if username is None and filter is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
@@ -58,9 +55,6 @@ class cmd_setexpiry(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        if days is None:
-            days = 0
-
         if H is not None:
             url = H
         else:
@@ -68,5 +62,4 @@ class cmd_setexpiry(Command):
 
         samdb = SamDB(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
-
-        samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
+        samdb.enable_account(filter)
