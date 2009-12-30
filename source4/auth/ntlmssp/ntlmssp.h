@@ -59,7 +59,7 @@ struct gensec_ntlmssp_state
 	bool server_multiple_authentications;  /* Set to 'True' to allow squid 2.5 
 						  style 'challenge caching' */
 
-	char *user;
+	const char *user;
 	const char *domain;
 	const char *workstation;
 
