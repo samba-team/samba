@@ -85,7 +85,7 @@ smb4torture="$samba4bindir/smbtorture${EXEEXT}"
 if which tap2subunit 2>/dev/null; then
 	TAP2SUBUNIT=tap2subunit
 else
-	TAP2SUBUNIT="$PERL $samba4srcdir/../lib/subunit/tap2subunit"
+	TAP2SUBUNIT="PYTHONPATH=$samba4srcdir/../lib/subunit/python $PYTHON $samba4srcdir/../lib/subunit/filters/tap2subunit"
 fi
 $smb4torture -V
 

@@ -5,9 +5,9 @@ TARGETDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
 bzr branch lp:subunit "$WORKDIR/subunit"
 
-for p in python filters; 
+for p in python/ filters/tap2subunit;
 do
-	rsync -avz --delete "$WORKDIR/subunit/$p/" "$TARGETDIR/$p/"
+	rsync -avz --delete "$WORKDIR/subunit/$p" "$TARGETDIR/$p"
 done
 
 rm -rf "$WORKDIR"
