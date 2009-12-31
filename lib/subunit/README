@@ -1,0 +1,7 @@
+This directory contains some helper code for the Subunit protocol. It is
+a partial import of the code from the upstream subunit project, which can 
+be found at https://launchpad.net/subunit.
+
+To update the snapshot, run update.sh in this directory. When making changes 
+here, please also submit them upstream - otherwise they'll be gone by the 
+next time we import subunit.
