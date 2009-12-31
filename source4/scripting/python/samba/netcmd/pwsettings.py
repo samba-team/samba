@@ -88,10 +88,10 @@ class cmd_pwsettings(Command):
         try:
             pwd_props = int(res[0]["pwdProperties"][0])
             pwd_hist_len = int(res[0]["pwdHistoryLength"][0])
-            min_pwd_len = int(res[0]["minPwdLength"][0])
+            cur_min_pwd_len = int(res[0]["minPwdLength"][0])
             # ticks -> days
-            min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
-            max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
+            cur_min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
+            cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
         except KeyError:
             raise CommandError("Could not retrieve password properties!")
 
@@ -103,9 +103,9 @@ class cmd_pwsettings(Command):
             else:
                 self.message("Password complexity: off")
             self.message("Password history length: %d" % pwd_hist_len)
-            self.message("Minimum password length: %d" % min_pwd_len)
-            self.message("Minimum password age (days): %d" % min_pwd_age)
-            self.message("Maximum password age (days): %d" % max_pwd_age)
+            self.message("Minimum password length: %d" % cur_min_pwd_len)
+            self.message("Minimum password age (days): %d" % cur_min_pwd_age)
+            self.message("Maximum password age (days): %d" % cur_max_pwd_age)
         elif subcommand == "set":
             msgs = []
             m = ldb.Message()
