@@ -158,6 +158,9 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	if (composite_nomem(state->r.in.my_accountname, state->ctx)) return;
 	state->r.in.account_control = ACB_WSTRUST;
 	state->r.in.domain_sid = state->domain_sid;
+	if (state->r.in.domain_sid == NULL) {
+		state->r.in.domain_sid = talloc_zero(state, struct dom_sid);
+	}
 
 	ireq = irpc_call_send(state->msg_ctx, nbt_servers[0],
 			      &ndr_table_irpc, NDR_NBTD_GETDCNAME,
