@@ -65,6 +65,7 @@ sub show($$)
 	showisexternal($output, "tdb", "LIBTDB");
 	showisexternal($output, "tevent", "LIBTEVENT");
 	showisexternal($output, "ldb", "LIBLDB");
+	showisexternal($output, "heimdal", "HEIMDAL_KRB5");
 	print "Developer mode: ".(enabled($config->{developer})?"yes":"no")."\n";
 	print "Automatic dependencies: ".
 	    (enabled($config->{automatic_dependencies})
