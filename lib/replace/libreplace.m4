@@ -228,6 +228,8 @@ AC_HAVE_DECL(environ, [#include <unistd.h>])
 AC_CHECK_FUNCS(strnlen)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 
+AC_CHECK_FUNCS(memmem)
+
 # this test disabled as we don't actually need __VA_ARGS__ yet
 AC_TRY_CPP([
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
