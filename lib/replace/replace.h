@@ -140,6 +140,12 @@ char *rep_strdup(const char *s);
 void *rep_memmove(void *dest,const void *src,int size);
 #endif
 
+#ifndef HAVE_MEMMEM
+#define memmem rep_memmem
+void *rep_memmem(const void *haystack, size_t haystacklen,
+		 const void *needle, size_t needlelen);
+#endif
+
 #ifndef HAVE_MKTIME
 #define mktime rep_mktime
 /* prototype is in "system/time.h" */
