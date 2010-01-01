@@ -870,7 +870,7 @@ static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
 		.write_clear_fn   = ldif_write_objectGUID,
 		.write_hex_fn     = extended_dn_write_hex
 	},{
-		.name		  = "DELETED",
+		.name		  = "RMD_FLAGS",
 		.read_fn          = ldb_handler_copy,
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy

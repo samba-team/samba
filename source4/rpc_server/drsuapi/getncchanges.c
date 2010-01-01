@@ -256,7 +256,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 	la->identifier = get_object_identifier(*la_list, msg);
 	W_ERROR_HAVE_NO_MEMORY(la->identifier);
 
-	active = ldb_dn_get_extended_component(dsdb_dn->dn, "DELETED")?false:true;
+	active = (dsdb_dn_rmd_flags(dsdb_dn->dn) & DSDB_RMD_FLAG_DELETED) == 0;
 
 	la->attid = sa->attributeID_id;
 	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;

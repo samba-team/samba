@@ -2895,17 +2895,51 @@ NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const cha
 }
 
 /*
+  return RMD_FLAGS directly from a ldb_dn
+  returns 0 if not found
+ */
+uint32_t dsdb_dn_rmd_flags(struct ldb_dn *dn)
+{
+	const struct ldb_val *v;
+	char buf[32];
+	v = ldb_dn_get_extended_component(dn, "RMD_FLAGS");
+	if (!v || v->length > sizeof(buf)-1) return 0;
+	strncpy(buf, (const char *)v->data, v->length);
+	buf[v->length] = 0;
+	return strtoul(buf, NULL, 10);
+}
+
+/*
+  return RMD_FLAGS directly from a ldb_val for a DN
+  returns 0 if RMD_FLAGS is not found
+ */
+uint32_t dsdb_dn_val_rmd_flags(struct ldb_val *val)
+{
+	const char *p;
+	uint32_t flags;
+	char *end;
+
+	if (val->length < 13) {
+		return 0;
+	}
+	p = memmem(val->data, val->length-2, "<RMD_FLAGS=", 11);
+	if (!p) {
+		return 0;
+	}
+	flags = strtoul(p+11, &end, 10);
+	if (!end || *end != '>') {
+		/* it must end in a > */
+		return 0;
+	}
+	return flags;
+}
+
+/*
   return true if a ldb_val containing a DN in storage form is deleted
  */
 bool dsdb_dn_is_deleted_val(struct ldb_val *val)
 {
-	/* this relies on the sort order and exact format of
-	   linearized extended DNs */
-	if (val->length >= 12 &&
-	    strncmp((const char *)val->data, "<DELETED=1>;", 12) == 0) {
-		return true;
-	}
-	return false;
+	return (dsdb_dn_val_rmd_flags(val) & DSDB_RMD_FLAG_DELETED) != 0;
 }
 
 /*

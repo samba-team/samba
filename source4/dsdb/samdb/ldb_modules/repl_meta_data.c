@@ -1204,7 +1204,7 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 /*
   build a new extended DN, including all meta data fields
 
-  DELETED             = 1 or missing
+  RMD_FLAGS           = DSDB_RMD_FLAG_* bits
   RMD_ADDTIME         = originating_add_time
   RMD_INVOCID         = originating_invocation_id
   RMD_CHANGETIME      = originating_change_time
@@ -1217,15 +1217,16 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
-	const char *tstring, *usn_string;
+	const char *tstring, *usn_string, *flags_string;
 	struct ldb_val tval;
 	struct ldb_val iid;
 	struct ldb_val usnv, local_usnv;
-	struct ldb_val vers;
+	struct ldb_val vers, flagsv;
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
 	char *vstring;
+	uint32_t rmd_flags = deleted?DSDB_RMD_FLAG_DELETED:0;
 
 	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
 	if (!tstring) {
@@ -1246,6 +1247,9 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	local_usnv = data_blob_string_const(usn_string);
 
 	vstring = talloc_asprintf(mem_ctx, "%lu", (unsigned long)version);
+	if (!vstring) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	vers = data_blob_string_const(vstring);
 
 	status = GUID_to_ndr_blob(invocation_id, dn, &iid);
@@ -1253,13 +1257,13 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (deleted) {
-		struct ldb_val dv;
-		dv = data_blob_string_const("1");
-		ret = ldb_dn_set_extended_component(dn, "DELETED", &dv);
-	} else {
-		ret = ldb_dn_set_extended_component(dn, "DELETED", NULL);
+	flags_string = talloc_asprintf(mem_ctx, "%u", rmd_flags);
+	if (!flags_string) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	flagsv = data_blob_string_const(flags_string);
+
+	ret = ldb_dn_set_extended_component(dn, "RMD_FLAGS", &flagsv);
 	if (ret != LDB_SUCCESS) return ret;
 	ret = ldb_dn_set_extended_component(dn, "RMD_ADDTIME", &tval);
 	if (ret != LDB_SUCCESS) return ret;
@@ -1325,17 +1329,18 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 				uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
-	const char *tstring, *usn_string;
+	const char *tstring, *usn_string, *flags_string;
 	struct ldb_val tval;
 	struct ldb_val iid;
 	struct ldb_val usnv, local_usnv;
-	struct ldb_val vers;
+	struct ldb_val vers, flagsv;
 	const struct ldb_val *old_addtime;
 	uint32_t old_version;
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
 	char *vstring;
+	uint32_t rmd_flags = deleted?DSDB_RMD_FLAG_DELETED:0;
 
 	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
 	if (!tstring) {
@@ -1360,13 +1365,13 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (deleted) {
-		struct ldb_val dv;
-		dv = data_blob_string_const("1");
-		ret = ldb_dn_set_extended_component(dn, "DELETED", &dv);
-	} else {
-		ret = ldb_dn_set_extended_component(dn, "DELETED", NULL);
+	flags_string = talloc_asprintf(mem_ctx, "%u", rmd_flags);
+	if (!flags_string) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	flagsv = data_blob_string_const(flags_string);
+
+	ret = ldb_dn_set_extended_component(dn, "RMD_FLAGS", &flagsv);
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* get the ADDTIME from the original */
@@ -1484,9 +1489,9 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		} else {
 			/* this is only allowed if the GUID was
 			   previously deleted. */
-			const struct ldb_val *v;
-			v = ldb_dn_get_extended_component(p->dsdb_dn->dn, "DELETED");
-			if (v == NULL) {
+			uint32_t rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
+
+			if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 				ldb_asprintf_errstring(ldb, "Attribute %s already exists for target GUID %s",
 						       el->name, GUID_string(tmp_ctx, p->guid));
 				talloc_free(tmp_ctx);
@@ -1595,7 +1600,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	for (i=0; i<el->num_values; i++) {
 		struct parsed_dn *p = &dns[i];
 		struct parsed_dn *p2;
-		const struct ldb_val *v;
+		uint32_t rmd_flags;
 
 		p2 = parsed_dn_find(old_dns, old_el->num_values, p->guid, NULL);
 		if (!p2) {
@@ -1603,8 +1608,8 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 					       el->name, GUID_string(tmp_ctx, p->guid));
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
-		v = ldb_dn_get_extended_component(p2->dsdb_dn->dn, "DELETED");
-		if (v) {
+		rmd_flags = dsdb_dn_rmd_flags(p2->dsdb_dn->dn);
+		if (rmd_flags & DSDB_RMD_FLAG_DELETED) {
 			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
 					       el->name, GUID_string(tmp_ctx, p->guid));
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
@@ -1616,14 +1621,14 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	*/
 	for (i=0; i<old_el->num_values; i++) {
 		struct parsed_dn *p = &old_dns[i];
-		const struct ldb_val *v;
+		uint32_t rmd_flags;
 
 		if (el->num_values && parsed_dn_find(dns, el->num_values, p->guid, NULL) == NULL) {
 			continue;
 		}
 
-		v = ldb_dn_get_extended_component(p->dsdb_dn->dn, "DELETED");
-		if (v != NULL) continue;
+		rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
+		if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
 
 		ret = replmd_update_la_val(old_el->values, p->v, p->dsdb_dn, p->dsdb_dn,
 					   invocation_id, seq_num, seq_num, now, 0, true);
@@ -1710,10 +1715,9 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 	for (i=0; i<old_num_values; i++) {
 		struct parsed_dn *old_p = &old_dns[i];
 		struct parsed_dn *p;
-		const struct ldb_val *v;
+		uint32_t rmd_flags = dsdb_dn_rmd_flags(old_p->dsdb_dn->dn);
 
-		v = ldb_dn_get_extended_component(old_p->dsdb_dn->dn, "DELETED");
-		if (v) continue;
+		if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
 
 		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr, false);
 		if (ret != LDB_SUCCESS) {
@@ -3519,7 +3523,7 @@ linked_attributes[0]:
 		struct GUID invocation_id = GUID_zero();
 		uint32_t version = 0;
 		NTTIME change_time = 0;
-		bool was_active = ldb_dn_get_extended_component(pdn->dsdb_dn->dn, "DELETED") == NULL;
+		uint32_t rmd_flags = dsdb_dn_rmd_flags(pdn->dsdb_dn->dn);
 
 		dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
 		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
@@ -3545,7 +3549,7 @@ linked_attributes[0]:
 			return ret;
 		}
 
-		if (was_active) {
+		if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 			/* remove the existing backlink */
 			ret = replmd_add_backlink(module, schema, &la->identifier->guid, &guid, false, attr, false);
 			if (ret != LDB_SUCCESS) {

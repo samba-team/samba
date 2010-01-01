@@ -15,3 +15,8 @@ struct dsdb_dn {
 #define DSDB_SYNTAX_BINARY_DN	"1.2.840.113556.1.4.903"
 #define DSDB_SYNTAX_STRING_DN	"1.2.840.113556.1.4.904"
 #define DSDB_SYNTAX_OR_NAME	"1.2.840.113556.1.4.1221"
+
+
+/* RMD_FLAGS component in a DN */
+#define DSDB_RMD_FLAG_DELETED     1
+#define DSDB_RMD_FLAG_INVISIBLE   2
