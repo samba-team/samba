@@ -304,7 +304,7 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 
 	acl = talloc_zero(sd, struct security_acl);
 	if (acl == NULL) return NULL;
-	acl->revision = SECURITY_ACL_REVISION_NT4;
+	acl->revision = SECURITY_ACL_REVISION_ADS;
 
 	if (isupper(sddl[0]) && sddl[1] == ':') {
 		/* its an empty ACL */
