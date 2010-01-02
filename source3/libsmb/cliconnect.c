@@ -3,17 +3,17 @@
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Andrew Bartlett 2001-2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -105,7 +105,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 	cli_set_message(cli->outbuf,10, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
-	
+
 	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
 	SSVAL(cli->outbuf,smb_vwv3,2);
@@ -131,7 +131,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 	if (cli_is_error(cli)) {
 		return cli_nt_error(cli);
 	}
-	
+
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);	
 	status = cli_set_username(cli, user);
@@ -360,14 +360,14 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	char *p;
 	NTSTATUS status;
 	fstring lanman;
-	
+
 	fstr_sprintf( lanman, "Samba %s", samba_version_string());
 
 	memset(cli->outbuf, '\0', smb_size);
 	cli_set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
-			
+
 	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
@@ -376,9 +376,9 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	SSVAL(cli->outbuf,smb_vwv8,0);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	
+
 	/* check wether to send the ASCII or UNICODE version of the password */
-	
+
 	if ( (capabilities & CAP_UNICODE) == 0 ) {
 		p += clistr_push(cli, p, pass, -1, STR_TERMINATE); /* password */
 		SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
@@ -394,7 +394,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 		p += clistr_push(cli, p, pass, -1, STR_UNICODE|STR_TERMINATE); /* unicode password */
 		SSVAL(cli->outbuf,smb_vwv8,PTR_DIFF(p, smb_buf(cli->outbuf))-1);	
 	}
-	
+
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
@@ -404,9 +404,9 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
 		return cli_nt_error(cli);
 	}
-	
+
 	show_msg(cli->inbuf);
-	
+
 	if (cli_is_error(cli)) {
 		return cli_nt_error(cli);
 	}
@@ -525,7 +525,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	cli_set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
-			
+
 	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
@@ -575,7 +575,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
-	
+
 	p = smb_buf(cli->inbuf);
 	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
 			 -1, STR_TERMINATE);
