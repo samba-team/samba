@@ -285,6 +285,14 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	if (!final_sd) {
 		return NULL;
 	}
+
+	if (final_sd->dacl) {
+		final_sd->dacl->revision = SECURITY_ACL_REVISION_ADS;
+	}
+	if (final_sd->sacl) {
+		final_sd->sacl->revision = SECURITY_ACL_REVISION_ADS;
+	}
+
 	sddl_sd = sddl_encode(mem_ctx, final_sd, domain_sid);
 	DEBUG(10, ("Object %s created with desriptor %s\n\n", ldb_dn_get_linearized(dn), sddl_sd));
 
