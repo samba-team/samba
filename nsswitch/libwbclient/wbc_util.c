@@ -669,7 +669,7 @@ wbcErr wbcAddNamedBlob(size_t *num_blobs,
 
 	wbc_status = WBC_ERR_SUCCESS;
 done:
-	if (!WBC_ERROR_IS_OK(wbc_status) && blobs) {
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		wbcFreeMemory(*blobs);
 	}
 	return wbc_status;
