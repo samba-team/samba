@@ -815,15 +815,29 @@ NTSTATUS cli_smb_recv(struct tevent_req *req, uint8_t min_wct,
 
 	status = cli_pull_error((char *)state->inbuf);
 
-	if (!have_andx_command((char *)state->inbuf, wct_ofs)
-	    && NT_STATUS_IS_ERR(status)) {
-		/*
-		 * The last command takes the error code. All further commands
-		 * down the requested chain will get a
-		 * NT_STATUS_REQUEST_ABORTED.
-		 */
-		return status;
+	if (!have_andx_command((char *)state->inbuf, wct_ofs)) {
+
+		if ((cmd == SMBsesssetupX)
+		    && NT_STATUS_EQUAL(
+			    status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			/*
+			 * NT_STATUS_MORE_PROCESSING_REQUIRED is a
+			 * valid return code for session setup
+			 */
+			goto no_err;
+		}
+
+		if (NT_STATUS_IS_ERR(status)) {
+			/*
+			 * The last command takes the error code. All
+			 * further commands down the requested chain
+			 * will get a NT_STATUS_REQUEST_ABORTED.
+			 */
+			return status;
+		}
 	}
+
+no_err:
 
 	wct = CVAL(state->inbuf, wct_ofs);
 	bytes_offset = wct_ofs + 1 + wct * sizeof(uint16_t);
@@ -856,7 +870,7 @@ NTSTATUS cli_smb_recv(struct tevent_req *req, uint8_t min_wct,
 		*pbytes = (uint8_t *)state->inbuf + bytes_offset + 2;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs)
