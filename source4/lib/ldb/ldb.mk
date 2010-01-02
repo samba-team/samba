@@ -34,26 +34,26 @@ lib/libldb.a: $(OBJS)
 sample.$(SHLIBEXT): tests/sample_module.o
 	$(MDLD) $(MDLD_FLAGS) -o $@ tests/sample_module.o
 
-bin/ldbadd: tools/ldbadd.o tools/cmdline.o
-	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbadd: tools/ldbadd.o tools/cmdline.o tools/ldbutil.o
+	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o
-	$(CC) -o bin/ldbsearch tools/ldbsearch.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o tools/ldbutil.o
+	$(CC) -o bin/ldbsearch tools/ldbsearch.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbdel: tools/ldbdel.o tools/cmdline.o
-	$(CC) -o bin/ldbdel tools/ldbdel.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbdel: tools/ldbdel.o tools/cmdline.o tools/ldbutil.o
+	$(CC) -o bin/ldbdel tools/ldbdel.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o
-	$(CC) -o bin/ldbmodify tools/ldbmodify.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o tools/ldbutil.o
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbedit: tools/ldbedit.o tools/cmdline.o
-	$(CC) -o bin/ldbedit tools/ldbedit.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbedit: tools/ldbedit.o tools/cmdline.o tools/ldbutil.o
+	$(CC) -o bin/ldbedit tools/ldbedit.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbrename: tools/ldbrename.o tools/cmdline.o
-	$(CC) -o bin/ldbrename tools/ldbrename.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbrename: tools/ldbrename.o tools/cmdline.o tools/ldbutil.o
+	$(CC) -o bin/ldbrename tools/ldbrename.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
-bin/ldbtest: tools/ldbtest.o tools/cmdline.o
-	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
+bin/ldbtest: tools/ldbtest.o tools/cmdline.o 
+	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o tools/ldbutil.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
 
 examples/ldbreader: examples/ldbreader.o
 	$(CC) -o examples/ldbreader examples/ldbreader.o $(LIB_FLAGS)
