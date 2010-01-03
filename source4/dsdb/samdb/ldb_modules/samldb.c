@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -333,37 +333,37 @@ static int samldb_check_samAccountName_callback(struct ldb_request *req,
 {
 	struct samldb_ctx *ac;
 	int ret;
-	
+
 	ac = talloc_get_type(req->context, struct samldb_ctx);
-	
+
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
                                        ares->response, ares->error);
 	}
-	
+
 	switch (ares->type) {
-	case LDB_REPLY_ENTRY:		
+	case LDB_REPLY_ENTRY:
 		/* if we get an entry it means this samAccountName
 		 * already exists */
 		return ldb_module_done(ac->req, NULL, NULL,
                                        LDB_ERR_ENTRY_ALREADY_EXISTS);
-		
+
 	case LDB_REPLY_REFERRAL:
 		/* this should not happen */
 		return ldb_module_done(ac->req, NULL, NULL,
                                        LDB_ERR_OPERATIONS_ERROR);
-		
+
 	case LDB_REPLY_DONE:
 		/* not found, go on */
 		talloc_free(ares);
 		ret = samldb_next_step(ac);
 		break;
 	}
-	
+
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
-	
+
 	return LDB_SUCCESS;
 }
 
@@ -374,16 +374,16 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 	const char *name;
 	char *filter;
         int ret;
-	
+
 	ldb = ldb_module_get_ctx(ac->module);
-	
+
         if (ldb_msg_find_element(ac->msg, "samAccountName") == NULL) {
                 ret = samldb_generate_samAccountName(ac->msg);
                 if (ret != LDB_SUCCESS) {
                         return ret;
                 }
         }
-	
+
 	name = ldb_msg_find_attr_as_string(ac->msg, "samAccountName", NULL);
 	if (name == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -393,7 +393,7 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 	if (filter == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	ret = ldb_build_search_req(&req, ldb, ac,
 				   ac->domain_dn, LDB_SCOPE_SUBTREE,
 				   filter, NULL,
@@ -569,7 +569,7 @@ static int samldb_get_sid_domain(struct samldb_ctx *ac)
 	/* get the domain component part of the provided SID */
 	ac->domain_sid->num_auths--;
 
-	filter = talloc_asprintf(ac, 
+	filter = talloc_asprintf(ac,
 				 "(&(objectSid=%s)"
 				 "(|(objectClass=domain)"
 				 "(objectClass=builtinDomain)))",
@@ -713,7 +713,7 @@ static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 		struct ldb_context *ldb;
 		ldb = ldb_module_get_ctx(ac->module);
 		ldb_asprintf_errstring(ldb,
-				       "Failed to find group sid %s!", 
+				       "Failed to find group sid %s!",
 				       dom_sid_string(ac->sid, ac->sid));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -1423,7 +1423,7 @@ static int samldb_foreign_notice_sid(struct samldb_ctx *ac)
 	}
 
 
-	filter = talloc_asprintf(ac, 
+	filter = talloc_asprintf(ac,
 				 "(&(objectSid=%s)"
 				 "(|(objectClass=domain)"
 				 "(objectClass=builtinDomain)))",
