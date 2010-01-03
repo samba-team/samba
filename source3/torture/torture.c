@@ -5970,7 +5970,7 @@ static bool run_windows_write(int dummy)
 	int i;
 	bool ret = false;
 	const char *fname = "\\writetest.txt";
-	struct timeval start;
+	struct timeval start_time;
 	double seconds;
 	double kbytes;
 
@@ -5986,7 +5986,7 @@ static bool run_windows_write(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	start = timeval_current();
+	start_time = timeval_current();
 
 	for (i=0; i<torture_numops; i++) {
 		char c = 0;
@@ -6008,7 +6008,7 @@ static bool run_windows_write(int dummy)
 		}
 	}
 
-	seconds = timeval_elapsed(&start);
+	seconds = timeval_elapsed(&start_time);
 	kbytes = (double)torture_blocksize * torture_numops;
 	kbytes /= 1024;
 
