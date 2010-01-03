@@ -5801,7 +5801,8 @@ static bool run_notify_bench(int dummy)
 	struct tevent_context *ev;
 	NTSTATUS status;
 	uint16_t dnum;
-	struct tevent_req *req1, *req2;
+	struct tevent_req *req1;
+	struct tevent_req *req2 = NULL;
 	int i, num_unc_names;
 	int num_finished = 0;
 
