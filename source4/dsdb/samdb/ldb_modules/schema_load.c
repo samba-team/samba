@@ -102,7 +102,7 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 				 "(objectClass=classSchema)");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search attributeSchema objects: %s",
+				       "dsdb_schema: failed to search classSchema objects: %s",
 				       ldb_errstring(ldb));
 		goto failed;
 	}
