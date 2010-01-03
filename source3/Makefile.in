@@ -862,10 +862,8 @@ STATUS_OBJ = utils/status.o utils/status_profile.o \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(LIBSAMBA_OBJ) $(FNAME_UTIL_OBJ)
 
-SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-	$(LIBSAMBA_OBJ) $(FNAME_UTIL_OBJ) \
-	$(PRINTBASE_OBJ)
+SMBCONTROL_OBJ = utils/smbcontrol.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+	$(LIBSMB_ERR_OBJ) $(POPT_LIB_OBJ) $(PRINTBASE_OBJ)
 
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
