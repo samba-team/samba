@@ -1463,25 +1463,88 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
  Send a uloggoff.
 *****************************************************************************/
 
-bool cli_ulogoff(struct cli_state *cli)
+struct cli_ulogoff_state {
+	struct cli_state *cli;
+	uint16_t vwv[2];
+};
+
+static void cli_ulogoff_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct cli_state *cli)
 {
-	memset(cli->outbuf,'\0',smb_size);
-	cli_set_message(cli->outbuf,2,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBulogoffX);
-	cli_setup_packet(cli);
-	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
+	struct tevent_req *req, *subreq;
+	struct cli_ulogoff_state *state;
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
-
-	if (cli_is_error(cli)) {
-		return False;
+	req = tevent_req_create(mem_ctx, &state, struct cli_ulogoff_state);
+	if (req == NULL) {
+		return NULL;
 	}
+	state->cli = cli;
 
-        cli->vuid = -1;
-        return True;
+	SCVAL(state->vwv+0, 0, 0xFF);
+	SCVAL(state->vwv+1, 0, 0);
+	SSVAL(state->vwv+2, 0, 0);
+
+	subreq = cli_smb_send(state, ev, cli, SMBulogoffX, 0, 2, state->vwv,
+			      0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_ulogoff_done, req);
+	return req;
+}
+
+static void cli_ulogoff_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_ulogoff_state *state = tevent_req_data(
+		req, struct cli_ulogoff_state);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->cli->vuid = -1;
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_ulogoff_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_ulogoff(struct cli_state *cli)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_ulogoff_send(ev, ev, cli);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_ulogoff_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

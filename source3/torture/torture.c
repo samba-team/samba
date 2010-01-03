@@ -5325,9 +5325,10 @@ static bool run_sesssetup_bench(int dummy)
 
 		d_printf("\r%d   ", (int)c->vuid);
 
-		if (!cli_ulogoff(c)) {
+		status = cli_ulogoff(c);
+		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) cli_ulogoff failed: %s\n",
-				 __location__, cli_errstr(c));
+				 __location__, nt_errstr(status));
 			return false;
 		}
 		c->vuid = 0;
@@ -6046,6 +6047,7 @@ static bool run_uid_regression_test(int dummy)
 	int16_t old_vuid;
 	int16_t old_cnum;
 	bool correct = True;
+	NTSTATUS status;
 
 	printf("starting uid regression test\n");
 
@@ -6058,9 +6060,10 @@ static bool run_uid_regression_test(int dummy)
 	/* Ok - now save then logoff our current user. */
 	old_vuid = cli->vuid;
 
-	if (!cli_ulogoff(cli)) {
+	status = cli_ulogoff(cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) cli_ulogoff failed: %s\n",
-			__location__, cli_errstr(cli));
+			 __location__, nt_errstr(status));
 		correct = false;
 		goto out;
 	}
