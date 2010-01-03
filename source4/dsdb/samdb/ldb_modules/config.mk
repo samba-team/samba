@@ -337,7 +337,7 @@ ldb_subtree_delete_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_delete.o
 [MODULE::ldb_linked_attributes]
 INIT_FUNCTION = LDB_MODULE(linked_attributes)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB DSDB_MODULE_HELPERS
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_linked_attributes
 ################################################
