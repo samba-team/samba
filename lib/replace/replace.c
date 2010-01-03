@@ -691,8 +691,8 @@ void *rep_memmem(const void *haystack, size_t haystacklen,
 		return discard_const(haystack);
 	}
 	while (haystacklen >= needlelen) {
-		char *p = memchr(haystack, *(const char *)needle,
-				 haystacklen-(needlelen-1));
+		char *p = (char *)memchr(haystack, *(const char *)needle,
+					 haystacklen-(needlelen-1));
 		if (!p) return NULL;
 		if (memcmp(p, needle, needlelen) == 0) {
 			return p;
