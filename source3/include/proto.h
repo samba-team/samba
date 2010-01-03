@@ -2180,7 +2180,11 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_tcon_andx_recv(struct tevent_req *req);
 NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen);
-bool cli_tdis(struct cli_state *cli);
+struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
+                                 struct tevent_context *ev,
+                                 struct cli_state *cli);
+NTSTATUS cli_tdis_recv(struct tevent_req *req);
+NTSTATUS cli_tdis(struct cli_state *cli);
 void cli_negprot_sendsync(struct cli_state *cli);
 NTSTATUS cli_negprot(struct cli_state *cli);
 struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,

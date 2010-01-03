@@ -1748,24 +1748,83 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
  Send a tree disconnect.
 ****************************************************************************/
 
-bool cli_tdis(struct cli_state *cli)
+struct cli_tdis_state {
+	struct cli_state *cli;
+};
+
+static void cli_tdis_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct cli_state *cli)
 {
-	memset(cli->outbuf,'\0',smb_size);
-	cli_set_message(cli->outbuf,0,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBtdis);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	struct tevent_req *req, *subreq;
+	struct cli_tdis_state *state;
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
-
-	if (cli_is_error(cli)) {
-		return False;
+	req = tevent_req_create(mem_ctx, &state, struct cli_tdis_state);
+	if (req == NULL) {
+		return NULL;
 	}
+	state->cli = cli;
 
-	cli->cnum = -1;
-	return True;
+	subreq = cli_smb_send(state, ev, cli, SMBtdis, 0, 0, NULL, 0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_tdis_done, req);
+	return req;
+}
+
+static void cli_tdis_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_tdis_state *state = tevent_req_data(
+		req, struct cli_tdis_state);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->cli->cnum = -1;
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_tdis_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_tdis(struct cli_state *cli)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_tdis_send(ev, ev, cli);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_tdis_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

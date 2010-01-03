@@ -364,8 +364,11 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 bool torture_close_connection(struct cli_state *c)
 {
 	bool ret = True;
-	if (!cli_tdis(c)) {
-		printf("tdis failed (%s)\n", cli_errstr(c));
+	NTSTATUS status;
+
+	status = cli_tdis(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("tdis failed (%s)\n", nt_errstr(status));
 		ret = False;
 	}
 
@@ -1192,8 +1195,9 @@ static bool run_tcon_test(int dummy)
 
 	cli->cnum = cnum2;
 
-	if (!cli_tdis(cli)) {
-		printf("secondary tdis failed (%s)\n", cli_errstr(cli));
+	status = cli_tdis(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("secondary tdis failed (%s)\n", nt_errstr(status));
 		return False;
 	}
 
@@ -6078,17 +6082,20 @@ static bool run_uid_regression_test(int dummy)
 	cli->vuid = 0;
 
 	/* This should succeed. */
-	if (cli_tdis(cli)) {
+	status = cli_tdis(cli);
+
+	if (NT_STATUS_IS_OK(status)) {
 		printf("First tdis with invalid vuid should succeed.\n");
 	} else {
-		printf("First tdis failed (%s)\n", cli_errstr(cli));
+		printf("First tdis failed (%s)\n", nt_errstr(status));
 	}
 
 	cli->vuid = old_vuid;
 	cli->cnum = old_cnum;
 
 	/* This should fail. */
-	if (cli_tdis(cli)) {
+	status = cli_tdis(cli);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("Second tdis with invalid vuid should fail - succeeded instead !.\n");
 	} else {
 		/* Should be bad tid. */

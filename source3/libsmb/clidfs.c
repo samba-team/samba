@@ -993,6 +993,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	bool res;
 	uint16 cnum;
 	char *newextrapath = NULL;
+	NTSTATUS status;
 
 	if (!cli || !sharename) {
 		return false;
@@ -1020,7 +1021,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	}
 
 	if (force_encrypt) {
-		NTSTATUS status = cli_cm_force_encryption(cli,
+		status = cli_cm_force_encryption(cli,
 					username,
 					password,
 					lp_workgroup(),
@@ -1032,7 +1033,8 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 	res = cli_dfs_get_referral(ctx, cli, fullpath, &refs, &num_refs, &consumed);
 
-	if (!cli_tdis(cli)) {
+	status = cli_tdis(cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 

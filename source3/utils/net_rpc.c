@@ -3074,13 +3074,19 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 
 static bool check_share_availability(struct cli_state *cli, const char *netname)
 {
-	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
+	NTSTATUS status;
+
+	status = cli_tcon_andx(cli, netname, "A:", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("skipping   [%s]: not a file share.\n"), netname);
 		return false;
 	}
 
-	if (!cli_tdis(cli))
+	status = cli_tdis(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf(_("cli_tdis returned %s\n"), nt_errstr(status));
 		return false;
+	}
 
 	return true;
 }
