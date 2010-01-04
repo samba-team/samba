@@ -47,8 +47,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	struct samr_Password *client_nt_hash = NULL;
 	const char *username = pdb_get_username(sampass);
 
-	*user_sess_key = data_blob(NULL, 0);
-	*lm_sess_key = data_blob(NULL, 0);
+	*user_sess_key = data_blob_null;
+	*lm_sess_key = data_blob_null;
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) {
