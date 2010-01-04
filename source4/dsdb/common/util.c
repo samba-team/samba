@@ -1521,6 +1521,68 @@ struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	return server_site_dn;
 }
 
+/*
+  find a 'reference' DN that points at another object
+  (eg. serverReference, rIDManagerReference etc)
+ */
+int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *base,
+		       const char *attribute, struct ldb_dn **dn)
+{
+	const char *attrs[2];
+	struct ldb_result *res;
+	int ret;
+
+	attrs[0] = attribute;
+	attrs[1] = NULL;
+
+	ret = ldb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		talloc_free(res);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	*dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0], attribute);
+	if (!*dn) {
+		talloc_free(res);
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	talloc_free(res);
+	return LDB_SUCCESS;
+}
+
+/*
+  find our machine account via the serverReference attribute in the
+  server DN
+ */
+int samdb_server_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	struct ldb_dn *server_dn;
+	int ret;
+
+	server_dn = samdb_server_dn(ldb, mem_ctx);
+	if (server_dn == NULL) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	ret = samdb_reference_dn(ldb, mem_ctx, server_dn, "serverReference", dn);
+	talloc_free(server_dn);
+
+	return ret;
+}
+
+/*
+  find the RID Manager$ DN via the rIDManagerReference attribute in the
+  base DN
+ */
+int samdb_rid_manager_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	return samdb_reference_dn(ldb, mem_ctx, samdb_base_dn(ldb), "rIDManagerReference", dn);
+}
+
 const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
 	const struct ldb_val *val = ldb_dn_get_rdn_val(samdb_server_site_dn(ldb, mem_ctx));
