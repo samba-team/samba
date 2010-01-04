@@ -1320,6 +1320,8 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	char *tmp = NULL;
 	uint8_t *bytes;
 
+	*psmbreq = NULL;
+
 	req = tevent_req_create(mem_ctx, &state, struct cli_tcon_andx_state);
 	if (req == NULL) {
 		return NULL;
@@ -1454,6 +1456,9 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 				   &subreq);
 	if (req == NULL) {
 		return NULL;
+	}
+	if (subreq == NULL) {
+		return req;
 	}
 	status = cli_smb_req_send(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
