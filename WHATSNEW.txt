@@ -142,6 +142,10 @@ o   Simo Sorce <idra@samba.org>
     * Change the way mksysms work in libtalloc.
 
 
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 7014: Fix Winbind crash when retrieving empty group members.
+
+
 o   Stefan Metzmacher <metze@samba.org>
     * Add tsocket_address_bsd_sockaddr() and tsocket_address_bsd_from_sockaddr()
       to tsocket.
