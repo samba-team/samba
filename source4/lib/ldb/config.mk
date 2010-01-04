@@ -16,7 +16,7 @@ ldb_asq_OBJ_FILES = $(ldbsrcdir)/modules/asq.o
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 CFLAGS = -I$(ldbsrcdir)/include
 INIT_FUNCTION = LDB_MODULE(sample)
-SUBSYSTEM = LIBTESTLDB
+SUBSYSTEM = LIBLDB
 
 # End MODULE sample_module
 ################################################
