@@ -46,7 +46,7 @@ SAMBA_VERSION_REVISION=
 # e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
 #  ->  "2.2.9pre1"                                     #
 ########################################################
-SAMBA_VERSION_PRE_RELEASE=2
+SAMBA_VERSION_PRE_RELEASE=
 
 ########################################################
 # For 'rc' releases the version will be                #
@@ -56,7 +56,7 @@ SAMBA_VERSION_PRE_RELEASE=2
 # e.g. SAMBA_VERSION_RC_RELEASE=1                      #
 #  ->  "3.0.0rc1"                                      #
 ########################################################
-SAMBA_VERSION_RC_RELEASE=
+SAMBA_VERSION_RC_RELEASE=1
 
 ########################################################
 # To mark SVN snapshots this should be set to 'yes'    #
