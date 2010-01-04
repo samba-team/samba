@@ -10,6 +10,7 @@ Major enhancements in Samba 3.4.4 include:
 
    o Fix interdomain trust relationships with Win2008R2 (bug #6697).
    o Fix Winbind crashes when queried from nss (bug #6889).
+   o Fix Winbind crash when retrieving empty group members (bug #7014).
    o Fix "UID range full" error in Winbind (bug #6901).
    o Fix multiple LDAP servers in "idmap backend" and "idmap alloc
      backend" (bug #6910).
@@ -66,6 +67,7 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Jim McDonough <jmcd@samba.org>
     * BUG 6967: Fix 'net ads join' with OU.
+    * BUG 7014: Fix Winbind crash when retrieving empty group members.
 
 
 o   Andrew Tridgell <tridge@samba.org>
