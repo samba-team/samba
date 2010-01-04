@@ -1879,6 +1879,203 @@ done:
 	return ret;
 }
 
+/**
+ * Test what happens when trying to open a file with directory parameters and
+ * vice-versa.  Also test that NTCREATEX_OPTIONS_DIRECTORY is treated as
+ * mandatory and FILE_ATTRIBUTE_DIRECTORY is advisory for directory
+ * creation/opening.
+ */
+static bool test_ntcreatexdir(struct torture_context *tctx,
+    struct smbcli_state *cli)
+{
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
+	const char *dname = BASEDIR "\\torture_ntcreatex_dir";
+	NTSTATUS status, expected_status;
+	bool ret = true;
+	int i;
+	uint32_t access_mask = 0;
+
+	struct {
+		uint32_t open_disp;
+		uint32_t file_attr;
+		uint32_t create_options;
+		NTSTATUS correct_status;
+	} open_funcs[] = {
+		{ NTCREATEX_DISP_SUPERSEDE, 	0, NTCREATEX_OPTIONS_DIRECTORY,
+		  NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_OPEN, 	        0, NTCREATEX_OPTIONS_DIRECTORY,
+		  NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE, 	0, NTCREATEX_OPTIONS_DIRECTORY,
+		  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	0, NTCREATEX_OPTIONS_DIRECTORY,
+		  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	0, NTCREATEX_OPTIONS_DIRECTORY,
+		  NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	0, NTCREATEX_OPTIONS_DIRECTORY,
+		  NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_SUPERSEDE, 	FILE_ATTRIBUTE_DIRECTORY, 0,
+		  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        FILE_ATTRIBUTE_DIRECTORY, 0,
+		  NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE, 	FILE_ATTRIBUTE_DIRECTORY, 0,
+		  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	FILE_ATTRIBUTE_DIRECTORY, 0,
+		  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	FILE_ATTRIBUTE_DIRECTORY, 0,
+		  NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	FILE_ATTRIBUTE_DIRECTORY, 0,
+		  NT_STATUS_OK },
+
+	};
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	/* setup some base params. */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	/*
+	 * Test the validity checking for create dispositions, which is done
+	 * against the requested parameters rather than what's actually on
+	 * disk.
+	 */
+	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
+		io.ntcreatex.in.open_disposition = open_funcs[i].open_disp;
+		io.ntcreatex.in.file_attr = open_funcs[i].file_attr;
+		io.ntcreatex.in.create_options = open_funcs[i].create_options;
+		status = smb_raw_open(cli->tree, tctx, &io);
+		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
+			torture_result(tctx, TORTURE_FAIL,
+				"(%s) incorrect status %s should be %s "
+				"(i=%d open_disp=%d)\n",
+				__location__, nt_errstr(status),
+				nt_errstr(open_funcs[i].correct_status),
+				i, (int)open_funcs[i].open_disp);
+			ret = false;
+		}
+		/* Close and delete the file. */
+		if (NT_STATUS_IS_OK(status)) {
+			if (open_funcs[i].create_options != 0) {
+				/* out attrib should be a directory. */
+				torture_assert_int_equal(tctx,
+				    io.ntcreatex.out.attrib,
+				    FILE_ATTRIBUTE_DIRECTORY, "should have "
+				    "created a directory");
+
+				smbcli_close(cli->tree,
+				    io.ntcreatex.out.file.fnum);
+
+				/* Make sure unlink fails. */
+				status = smbcli_unlink(cli->tree, fname);
+				torture_assert_ntstatus_equal(tctx, status,
+				    NT_STATUS_FILE_IS_A_DIRECTORY,
+				    "unlink should fail for a directory");
+
+				status = smbcli_rmdir(cli->tree, fname);
+				torture_assert_ntstatus_ok(tctx, status,
+				    "rmdir failed");
+			} else {
+				torture_assert_int_equal(tctx,
+				    io.ntcreatex.out.attrib,
+				    FILE_ATTRIBUTE_ARCHIVE, "should not have "
+				    "created a directory");
+
+				smbcli_close(cli->tree,
+				    io.ntcreatex.out.file.fnum);
+
+				/* Make sure rmdir fails. */
+				status = smbcli_rmdir(cli->tree, fname);
+				torture_assert_ntstatus_equal(tctx, status,
+				    NT_STATUS_NOT_A_DIRECTORY,
+				    "rmdir should fail for a file");
+
+				status = smbcli_unlink(cli->tree, fname);
+				torture_assert_ntstatus_ok(tctx, status,
+				    "unlink failed");
+			}
+		}
+	}
+
+	/* Create a file. */
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create file.");
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Try and open the file with file_attr_dir and check the error. */
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, "FILE_ATTRIBUTE_DIRECTORY "
+	    "doesn't produce a hard failure.");
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Try and open file with createx_option_dir and check the error. */
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_A_DIRECTORY,
+	    "NTCREATEX_OPTIONS_DIRECTORY will a file from being opened.");
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Delete the file and move onto directory testing. */
+	smbcli_unlink(cli->tree, fname);
+
+	/* Now try some tests on a directory. */
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create dir.");
+
+	/* out attrib should be a directory. */
+	torture_assert_int_equal(tctx, io.ntcreatex.out.attrib,
+	    FILE_ATTRIBUTE_DIRECTORY, "should have created a directory");
+
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Try and open it with normal attr and check the error. */
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, "FILE_ATTRIBUTE_NORMAL "
+	    "doesn't produce a hard failure.");
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Try and open it with file create_options and check the error. */
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_equal(tctx, status,
+	    NT_STATUS_FILE_IS_A_DIRECTORY,
+	    "NTCREATEX_OPTIONS_NON_DIRECTORY_FILE should be returned ");
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+done:
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
 
 /* basic testing of all RAW_OPEN_* calls
 */
@@ -1902,6 +2099,7 @@ struct torture_suite *torture_raw_open(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "OPENX-OVER-DIR", test_openx_over_dir);
 	torture_suite_add_1smb_test(suite, "OPEN-FOR-DELETE", test_open_for_delete);
 	torture_suite_add_1smb_test(suite, "OPENDISP-DIR", test_ntcreatex_opendisp_dir);
+	torture_suite_add_1smb_test(suite, "NTCREATEDIR", test_ntcreatexdir);
 
 	return suite;
 }
