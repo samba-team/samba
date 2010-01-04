@@ -34,6 +34,7 @@
 		<arg choice="opt">-q, --quiet</arg>
 		<arg choice="opt">-v, --verbose</arg>
 		<arg choice="opt">-b, --blocksize</arg>
+		<arg choice="opt">-O, --stdout</arg>
 		<arg choice="opt">-?, --help</arg>
 		<arg choice="opt">--usage</arg>
 		<arg choice="req">smb://host/share/path/to/file</arg>
@@ -112,7 +113,12 @@
 
 	<varlistentry>
 		<term>-o, --outputfile</term>
-		<listitem><para>Write the file that is being download to the specified file. Can not be used together with -R.</para></listitem>
+		<listitem><para>Write the file that is being downloaded to the specified file. Can not be used together with -R.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>-O, --stdout</term>
+		<listitem><para>Write the file that is being downloaded to standard output.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>

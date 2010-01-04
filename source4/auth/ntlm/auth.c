@@ -19,10 +19,11 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/dlinklist.h"
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
-#include "lib/events/events.h"
 #include "param/param.h"
 
 /***************************************************************************
@@ -42,7 +43,7 @@ _PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, cons
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-bool auth_challenge_may_be_modified(struct auth_context *auth_ctx) 
+_PUBLIC_ bool auth_challenge_may_be_modified(struct auth_context *auth_ctx)
 {
 	return auth_ctx->challenge.may_be_modified;
 }
@@ -51,42 +52,34 @@ bool auth_challenge_may_be_modified(struct auth_context *auth_ctx)
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
 ****************************************************************************/
-_PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal)
+_PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal[8])
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
 
-	if (auth_ctx->challenge.data.length) {
+	if (auth_ctx->challenge.data.length == 8) {
 		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n", 
 			  auth_ctx->challenge.set_by));
-		*_chal = auth_ctx->challenge.data.data;
+		memcpy(chal, auth_ctx->challenge.data.data, 8);
 		return NT_STATUS_OK;
 	}
 
 	for (method = auth_ctx->methods; method; method = method->next) {
-		DATA_BLOB challenge = data_blob(NULL,0);
-
-		nt_status = method->ops->get_challenge(method, auth_ctx, &challenge);
+		nt_status = method->ops->get_challenge(method, auth_ctx, chal);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
 			continue;
 		}
 
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		if (challenge.length != 8) {
-			DEBUG(0, ("auth_get_challenge: invalid challenge (length %u) by mothod [%s]\n",
-				(unsigned)challenge.length, method->ops->name));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		auth_ctx->challenge.data	= challenge;
+		auth_ctx->challenge.data	= data_blob_talloc(auth_ctx, chal, 8);
+		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
 		auth_ctx->challenge.set_by	= method->ops->name;
 
 		break;
 	}
 
 	if (!auth_ctx->challenge.set_by) {
-		uint8_t chal[8];
 		generate_random_buffer(chal, 8);
 
 		auth_ctx->challenge.data		= data_blob_talloc(auth_ctx, chal, 8);
@@ -99,7 +92,6 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_
 	DEBUG(10,("auth_get_challenge: challenge set by %s\n",
 		 auth_ctx->challenge.set_by));
 
-	*_chal = auth_ctx->challenge.data.data;
 	return NT_STATUS_OK;
 }
 
@@ -131,22 +123,6 @@ _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	return NT_STATUS_OK;
-}
-
-struct auth_check_password_sync_state {
-	bool finished;
-	NTSTATUS status;
-	struct auth_serversupplied_info *server_info;
-};
-
-static void auth_check_password_sync_callback(struct auth_check_password_request *req,
-					      void *private_data)
-{
-	struct auth_check_password_sync_state *s = talloc_get_type(private_data,
-						   struct auth_check_password_sync_state);
-
-	s->finished = true;
-	s->status = auth_check_password_recv(req, s, &s->server_info);
 }
 
 /**
@@ -181,48 +157,43 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     const struct auth_usersupplied_info *user_info, 
 			     struct auth_serversupplied_info **server_info)
 {
-	struct auth_check_password_sync_state *sync_state;
+	struct tevent_req *subreq;
+	struct tevent_context *ev;
+	bool ok;
 	NTSTATUS status;
 
-	sync_state = talloc_zero(auth_ctx, struct auth_check_password_sync_state);
-	NT_STATUS_HAVE_NO_MEMORY(sync_state);
+	/*TODO: create a new event context here! */
+	ev = auth_ctx->event_ctx;
 
-	auth_check_password_send(auth_ctx, user_info, auth_check_password_sync_callback, sync_state);
-
-	while (!sync_state->finished) {
-		event_loop_once(auth_ctx->event_ctx);
+	subreq = auth_check_password_send(mem_ctx,
+					  ev,
+					  auth_ctx,
+					  user_info);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = sync_state->status;
-
-	if (NT_STATUS_IS_OK(status)) {
-		*server_info = talloc_steal(mem_ctx, sync_state->server_info);
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	talloc_free(sync_state);
+	status = auth_check_password_recv(subreq, mem_ctx, server_info);
+	TALLOC_FREE(subreq);
+
 	return status;
 }
 
-struct auth_check_password_request {
+struct auth_check_password_state {
 	struct auth_context *auth_ctx;
 	const struct auth_usersupplied_info *user_info;
 	struct auth_serversupplied_info *server_info;
 	struct auth_method_context *method;
-	NTSTATUS status;
-	struct {
-		void (*fn)(struct auth_check_password_request *req, void *private_data);
-		void *private_data;
-	} callback;
 };
 
-static void auth_check_password_async_timed_handler(struct tevent_context *ev, struct tevent_timer *te,
-						    struct timeval t, void *ptr)
-{
-	struct auth_check_password_request *req = talloc_get_type(ptr, struct auth_check_password_request);
-	req->status = req->method->ops->check_password(req->method, req, req->user_info, &req->server_info);
-	req->callback.fn(req, req->callback.private_data);
-}
-
+static void auth_check_password_async_trigger(struct tevent_context *ev,
+					      struct tevent_immediate *im,
+					      void *private_data);
 /**
  * Check a user's Plaintext, LM or NTLM password.
  * async send hook
@@ -234,6 +205,10 @@ static void auth_check_password_async_timed_handler(struct tevent_context *ev, s
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
  *
+ * @param mem_ctx The memory context the request should operate on
+ *
+ * @param ev The tevent context the request should operate on
+ *
  * @param auth_ctx Supplies the challenges and some other data. 
  *                  Must be created with make_auth_context(), and the challenges should be 
  *                  filled in, either at creation or by calling the challenge geneation 
@@ -241,93 +216,131 @@ static void auth_check_password_async_timed_handler(struct tevent_context *ev, s
  *
  * @param user_info Contains the user supplied components, including the passwords.
  *
- * @param callback A callback function which will be called when the operation is finished.
- *                 The callback function needs to call auth_check_password_recv() to get the return values
- *
- * @param private_data A private pointer which will ba passed to the callback function
+ * @return The request handle or NULL on no memory error.
  *
  **/
 
-_PUBLIC_ void auth_check_password_send(struct auth_context *auth_ctx,
-			      const struct auth_usersupplied_info *user_info,
-			      void (*callback)(struct auth_check_password_request *req, void *private_data),
-			      void *private_data)
+_PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct auth_context *auth_ctx,
+				const struct auth_usersupplied_info *user_info)
 {
+	struct tevent_req *req;
+	struct auth_check_password_state *state;
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
-	const uint8_t *challenge;
+	uint8_t chal[8];
 	struct auth_usersupplied_info *user_info_tmp;
-	struct auth_check_password_request *req = NULL;
+	struct tevent_immediate *im;
 
-	DEBUG(3,   ("auth_check_password_send:  Checking password for unmapped user [%s]\\[%s]@[%s]\n", 
-		    user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
+	DEBUG(3,("auth_check_password_send: "
+		 "Checking password for unmapped user [%s]\\[%s]@[%s]\n",
+		 user_info->client.domain_name, user_info->client.account_name,
+		 user_info->workstation_name));
 
-	req = talloc_zero(auth_ctx, struct auth_check_password_request);
-	if (!req) {
-		callback(NULL, private_data);
-		return;
+	req = tevent_req_create(mem_ctx, &state,
+				struct auth_check_password_state);
+	if (req == NULL) {
+		return NULL;
 	}
-	req->auth_ctx			= auth_ctx;
-	req->user_info			= user_info;
-	req->callback.fn		= callback;
-	req->callback.private_data	= private_data;
+
+	state->auth_ctx		= auth_ctx;
+	state->user_info	= user_info;
+	state->method		= NULL;
 
 	if (!user_info->mapped_state) {
-		nt_status = map_user_info(req, lp_workgroup(auth_ctx->lp_ctx), user_info, &user_info_tmp);
-		if (!NT_STATUS_IS_OK(nt_status)) goto failed;
+		nt_status = map_user_info(req, lp_workgroup(auth_ctx->lp_ctx),
+					  user_info, &user_info_tmp);
+		if (tevent_req_nterror(req, nt_status)) {
+			return tevent_req_post(req, ev);
+		}
 		user_info = user_info_tmp;
-		req->user_info	= user_info_tmp;
+		state->user_info = user_info_tmp;
 	}
 
-	DEBUGADD(3,("auth_check_password_send:  mapped user is: [%s]\\[%s]@[%s]\n", 
-		    user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
+	DEBUGADD(3,("auth_check_password_send: "
+		    "mapped user is: [%s]\\[%s]@[%s]\n",
+		    user_info->mapped.domain_name,
+		    user_info->mapped.account_name,
+		    user_info->workstation_name));
 
-	nt_status = auth_get_challenge(auth_ctx, &challenge);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("auth_check_password_send:  Invalid challenge (length %u) stored for this auth context set_by %s - cannot continue: %s\n",
-			(unsigned)auth_ctx->challenge.data.length, auth_ctx->challenge.set_by, nt_errstr(nt_status)));
-		goto failed;
+	nt_status = auth_get_challenge(auth_ctx, chal);
+	if (tevent_req_nterror(req, nt_status)) {
+		DEBUG(0,("auth_check_password_send: "
+			 "Invalid challenge (length %u) stored for "
+			 "this auth context set_by %s - cannot continue: %s\n",
+			(unsigned)auth_ctx->challenge.data.length,
+			auth_ctx->challenge.set_by,
+			nt_errstr(nt_status)));
+		return tevent_req_post(req, ev);
 	}
 
 	if (auth_ctx->challenge.set_by) {
-		DEBUG(10, ("auth_check_password_send: auth_context challenge created by %s\n",
-					auth_ctx->challenge.set_by));
+		DEBUG(10,("auth_check_password_send: "
+			  "auth_context challenge created by %s\n",
+			  auth_ctx->challenge.set_by));
 	}
 
 	DEBUG(10, ("auth_check_password_send: challenge is: \n"));
-	dump_data(5, auth_ctx->challenge.data.data, auth_ctx->challenge.data.length);
+	dump_data(5, auth_ctx->challenge.data.data,
+		  auth_ctx->challenge.data.length);
 
-	nt_status = NT_STATUS_NO_SUCH_USER; /* If all the modules say 'not for me', then this is reasonable */
+	im = tevent_create_immediate(state);
+	if (tevent_req_nomem(im, req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	for (method = auth_ctx->methods; method; method = method->next) {
 		NTSTATUS result;
-		struct tevent_timer *te = NULL;
 
 		/* check if the module wants to chek the password */
 		result = method->ops->want_check(method, req, user_info);
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			DEBUG(11,("auth_check_password_send: %s had nothing to say\n", method->ops->name));
+			DEBUG(11,("auth_check_password_send: "
+				  "%s had nothing to say\n",
+				  method->ops->name));
 			continue;
 		}
 
-		nt_status = result;
-		req->method	= method;
+		state->method = method;
 
-		if (!NT_STATUS_IS_OK(nt_status)) break;
-
-		te = event_add_timed(auth_ctx->event_ctx, req,
-				     timeval_zero(),
-				     auth_check_password_async_timed_handler, req);
-		if (!te) {
-			nt_status = NT_STATUS_NO_MEMORY;
-			goto failed;
+		if (tevent_req_nterror(req, result)) {
+			return tevent_req_post(req, ev);
 		}
+
+		tevent_schedule_immediate(im,
+					  auth_ctx->event_ctx,
+					  auth_check_password_async_trigger,
+					  req);
+
+		return req;
+	}
+
+	/* If all the modules say 'not for me', then this is reasonable */
+	tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
+	return tevent_req_post(req, ev);
+}
+
+static void auth_check_password_async_trigger(struct tevent_context *ev,
+					      struct tevent_immediate *im,
+					      void *private_data)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(private_data, struct tevent_req);
+	struct auth_check_password_state *state =
+		tevent_req_data(req, struct auth_check_password_state);
+	NTSTATUS status;
+
+	status = state->method->ops->check_password(state->method,
+						    state,
+						    state->user_info,
+						    &state->server_info);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-failed:
-	req->status = nt_status;
-	req->callback.fn(req, req->callback.private_data);
+	tevent_req_done(req);
 }
 
 /**
@@ -339,7 +352,7 @@ failed:
  * of that structure is undefined.
  *
  *
- * @param req The async auth_check_password state, passes to the callers callback function
+ * @param req The async request state
  *
  * @param mem_ctx The parent memory context for the server_info structure
  *
@@ -350,30 +363,36 @@ failed:
  *
  **/
 
-_PUBLIC_ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
+_PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info **server_info)
 {
+	struct auth_check_password_state *state =
+		tevent_req_data(req, struct auth_check_password_state);
 	NTSTATUS status;
 
-	NT_STATUS_HAVE_NO_MEMORY(req);
-
-	if (NT_STATUS_IS_OK(req->status)) {
-		DEBUG(5,("auth_check_password_recv: %s authentication for user [%s\\%s] succeeded\n",
-			 req->method->ops->name, req->server_info->domain_name, req->server_info->account_name));
-
-		*server_info = talloc_steal(mem_ctx, req->server_info);
-	} else {
-		DEBUG(2,("auth_check_password_recv: %s authentication for user [%s\\%s] FAILED with error %s\n", 
-			 (req->method ? req->method->ops->name : "NO_METHOD"),
-			 req->user_info->mapped.domain_name,
-			 req->user_info->mapped.account_name, 
-			 nt_errstr(req->status)));
+	if (tevent_req_is_nterror(req, &status)) {
+		DEBUG(2,("auth_check_password_recv: "
+			 "%s authentication for user [%s\\%s]"
+			 "FAILED with error %s\n",
+			 (state->method ? state->method->ops->name : "NO_METHOD"),
+			 state->user_info->mapped.domain_name,
+			 state->user_info->mapped.account_name,
+			 nt_errstr(status)));
+		tevent_req_received(req);
+		return status;
 	}
 
-	status = req->status;
-	talloc_free(req);
-	return status;
+	DEBUG(5,("auth_check_password_recv: "
+		 "%s authentication for user [%s\\%s] succeeded\n",
+		 state->method->ops->name,
+		 state->server_info->domain_name,
+		 state->server_info->account_name));
+
+	*server_info = talloc_move(mem_ctx, &state->server_info);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************

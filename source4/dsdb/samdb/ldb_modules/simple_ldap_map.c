@@ -181,7 +181,7 @@ static struct ldb_val usn_to_entryCSN(struct ldb_module *module, TALLOC_CTX *ctx
 
 static unsigned long long entryCSN_to_usn_int(TALLOC_CTX *ctx, const struct ldb_val *val) 
 {
-	char *entryCSN = talloc_strdup(ctx, (const char *)val->data);
+	char *entryCSN = talloc_strndup(ctx, (const char *)val->data, val->length);
 	char *mod_per_sec;
 	time_t t;
 	unsigned long long usn;
@@ -232,10 +232,10 @@ static struct ldb_val usn_to_timestamp(struct ldb_module *module, TALLOC_CTX *ct
 static struct ldb_val timestamp_to_usn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out;
-	time_t t;
+	time_t t=0;
 	unsigned long long usn;
 
-	t = ldb_string_to_time((const char *)val->data);
+	ldb_val_to_time(val, &t);
 	
 	usn = ((unsigned long long)t <<24);
 

@@ -303,6 +303,14 @@ struct wbint_ChangeMachineAccount {
 };
 
 
+struct wbint_PingDc {
+	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
+
 struct wbint_SetMapping {
 	struct {
 		struct dom_sid *sid;/* [ref] */

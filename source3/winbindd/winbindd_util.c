@@ -58,7 +58,7 @@ struct winbindd_domain *domain_list(void)
 
 /* Free all entries in the trusted domain list */
 
-void free_domain_list(void)
+static void free_domain_list(void)
 {
 	struct winbindd_domain *domain = _domain_list;
 
@@ -143,13 +143,14 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		}
 	}
 
-	/* See if we found a match.  Check if we need to update the
-	   SID. */
-
-	if ( domain && sid) {
-		if ( sid_equal( &domain->sid, &global_sid_NULL ) )
+	if (domain != NULL) {
+		/*
+		 * We found a match. Possibly update the SID
+		 */
+		if ((sid != NULL)
+		    && sid_equal(&domain->sid, &global_sid_NULL)) {
 			sid_copy( &domain->sid, sid );
-
+		}
 		return domain;
 	}
 
@@ -223,6 +224,14 @@ done:
 	return domain;
 }
 
+bool domain_is_forest_root(const struct winbindd_domain *domain)
+{
+	const uint32_t fr_flags =
+		(NETR_TRUST_FLAG_TREEROOT|NETR_TRUST_FLAG_IN_FOREST);
+
+	return ((domain->domain_flags & fr_flags) == fr_flags);
+}
+
 /********************************************************************
   rescan our domains looking for new trusted domains
 ********************************************************************/
@@ -243,8 +252,6 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	uint32 fr_flags = (NETR_TRUST_FLAG_TREEROOT|NETR_TRUST_FLAG_IN_FOREST);
-
 	struct trustdom_state *state;
 
 	mem_ctx = talloc_init("add_trusted_domains");
@@ -269,7 +276,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	/* Flags used to know how to continue the forest trust search */
 
 	state->primary = domain->primary;
-	state->forest_root = ((domain->domain_flags & fr_flags) == fr_flags );
+	state->forest_root = domain_is_forest_root(domain);
 
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;
@@ -792,23 +799,18 @@ struct winbindd_domain *find_root_domain(void)
 {
 	struct winbindd_domain *ours = find_our_domain();
 
-	if ( !ours )
+	if (ours->forest_name[0] == '\0') {
 		return NULL;
-
-	if ( strlen(ours->forest_name) == 0 )
-		return NULL;
+	}
 
 	return find_domain_from_name( ours->forest_name );
 }
 
 struct winbindd_domain *find_builtin_domain(void)
 {
-	DOM_SID sid;
 	struct winbindd_domain *domain;
 
-	string_to_sid(&sid, "S-1-5-32");
-	domain = find_domain_from_sid(&sid);
-
+	domain = find_domain_from_sid(&global_sid_Builtin);
 	if (domain == NULL) {
 		smb_panic("Could not find BUILTIN domain");
 	}
@@ -866,95 +868,6 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 
 
 	return find_our_domain();
-}
-
-/* Lookup a sid in a domain from a name */
-
-bool winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
-				 enum winbindd_cmd orig_cmd,
-				 struct winbindd_domain *domain,
-				 const char *domain_name,
-				 const char *name, DOM_SID *sid,
-				 enum lsa_SidType *type)
-{
-	NTSTATUS result;
-
-	/*
-	 * For all but LOOKUPNAME we have to avoid nss calls to avoid
-	 * recursion
-	 */
-	result = domain->methods->name_to_sid(
-		domain, mem_ctx, domain_name, name,
-		orig_cmd == WINBINDD_LOOKUPNAME ? 0 : LOOKUP_NAME_NO_NSS,
-		sid, type);
-
-	/* Return sid and type if lookup successful */
-	if (!NT_STATUS_IS_OK(result)) {
-		*type = SID_NAME_UNKNOWN;
-	}
-
-	return NT_STATUS_IS_OK(result);
-}
-
-/**
- * @brief Lookup a name in a domain from a sid.
- *
- * @param sid Security ID you want to look up.
- * @param name On success, set to the name corresponding to @p sid.
- * @param dom_name On success, set to the 'domain name' corresponding to @p sid.
- * @param type On success, contains the type of name: alias, group or
- * user.
- * @retval True if the name exists, in which case @p name and @p type
- * are set, otherwise False.
- **/
-bool winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
-				 struct winbindd_domain *domain,
-				 DOM_SID *sid,
-				 char **dom_name,
-				 char **name,
-				 enum lsa_SidType *type)
-{
-	NTSTATUS result;
-
-	*dom_name = NULL;
-	*name = NULL;
-
-	/* Lookup name */
-
-	result = domain->methods->sid_to_name(domain, mem_ctx, sid, dom_name, name, type);
-
-	/* Return name and type if successful */
-
-	if (NT_STATUS_IS_OK(result)) {
-		return True;
-	}
-
-	*type = SID_NAME_UNKNOWN;
-
-	return False;
-}
-
-/* Free state information held for {set,get,end}{pw,gr}ent() functions */
-
-void free_getent_state(struct getent_state *state)
-{
-	struct getent_state *temp;
-
-	/* Iterate over state list */
-
-	temp = state;
-
-	while(temp != NULL) {
-		struct getent_state *next = temp->next;
-
-		/* Free sam entries then list entry */
-
-		SAFE_FREE(state->sam_entries);
-		DLIST_REMOVE(state, state);
-
-		SAFE_FREE(temp);
-		temp = next;
-	}
 }
 
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
@@ -1549,4 +1462,15 @@ void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
 		fstrcpy(resp->data.auth.error_string,
 			get_friendly_nt_error_msg(result));
 	resp->data.auth.pam_error = nt_status_to_pam(result);
+}
+
+bool is_domain_offline(const struct winbindd_domain *domain)
+{
+	if (!lp_winbind_offline_logon()) {
+		return false;
+	}
+	if (get_global_winbindd_state_offline()) {
+		return true;
+	}
+	return !domain->online;
 }

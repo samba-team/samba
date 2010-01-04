@@ -31,14 +31,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_PING,
 		.struct_fn	= winbindd_dual_ping,
 	},{
-		.name		= "LOOKUPSID",
-		.struct_cmd	= WINBINDD_LOOKUPSID,
-		.struct_fn	= winbindd_dual_lookupsid,
-	},{
-		.name		= "LOOKUPNAME",
-		.struct_cmd	= WINBINDD_LOOKUPNAME,
-		.struct_fn	= winbindd_dual_lookupname,
-	},{
 		.name		= "LIST_TRUSTDOM",
 		.struct_cmd	= WINBINDD_LIST_TRUSTDOM,
 		.struct_fn	= winbindd_dual_list_trusted_domains,
@@ -46,10 +38,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.name		= "INIT_CONNECTION",
 		.struct_cmd	= WINBINDD_INIT_CONNECTION,
 		.struct_fn	= winbindd_dual_init_connection,
-	},{
-		.name		= "GETDCNAME",
-		.struct_cmd	= WINBINDD_GETDCNAME,
-		.struct_fn	= winbindd_dual_getdcname,
 	},{
 		.name		= "SHOW_SEQUENCE",
 		.struct_cmd	= WINBINDD_SHOW_SEQUENCE,
@@ -75,22 +63,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_PAM_CHAUTHTOK,
 		.struct_fn	= winbindd_dual_pam_chauthtok,
 	},{
-		.name		= "DUAL_USERINFO",
-		.struct_cmd	= WINBINDD_DUAL_USERINFO,
-		.struct_fn	= winbindd_dual_userinfo,
-	},{
-		.name		= "GETUSERDOMGROUPS",
-		.struct_cmd	= WINBINDD_GETUSERDOMGROUPS,
-		.struct_fn	= winbindd_dual_getuserdomgroups,
-	},{
-		.name		= "GETSIDALIASES",
-		.struct_cmd	= WINBINDD_DUAL_GETSIDALIASES,
-		.struct_fn	= winbindd_dual_getsidaliases,
-	},{
-		.name		= "GETSIDALIASES",
-		.struct_cmd	= WINBINDD_GETSIDALIASES,
-		.struct_fn	= winbindd_dual_getsidaliases,
-	},{
 		.name		= "CCACHE_NTLM_AUTH",
 		.struct_cmd	= WINBINDD_CCACHE_NTLMAUTH,
 		.struct_fn	= winbindd_dual_ccache_ntlm_auth,
@@ -108,6 +80,4 @@ void setup_domain_child(struct winbindd_domain *domain,
 {
 	setup_child(domain, child, domain_dispatch_table,
 		    "log.wb", domain->name);
-
-	child->domain = domain;
 }

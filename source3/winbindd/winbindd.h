@@ -65,20 +65,9 @@ struct winbindd_cli_state {
 						   * initialized? */
 	bool getgrent_initialized;                /* Has getgrent_state been
 						   * initialized? */
-	struct getent_state *getgrent_state;      /* State for getgrent() */
 
 	struct getpwent_state *pwent_state; /* State for getpwent() */
 	struct getgrent_state *grent_state; /* State for getgrent() */
-};
-
-/* State between get{pw,gr}ent() calls */
-
-struct getent_state {
-	struct getent_state *prev, *next;
-	void *sam_entries;
-	uint32 sam_entry_index, num_sam_entries;
-	bool got_sam_entries;
-	fstring domain_name;
 };
 
 struct getpwent_state {
@@ -120,8 +109,6 @@ struct winbindd_cm_conn {
 
 	struct rpc_pipe_client *netlogon_pipe;
 };
-
-struct winbindd_async_request;
 
 /* Async child */
 
@@ -326,10 +313,7 @@ struct winbindd_methods {
 	/* enumerate trusted domains */
 	NTSTATUS (*trusted_domains)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32 *num_domains,
-				    char ***names,
-				    char ***alt_names,
-				    DOM_SID **dom_sids);
+				    struct netr_DomainTrustList *trusts);
 };
 
 /* Filled out by IDMAP backends */
@@ -399,10 +383,5 @@ struct WINBINDD_CCACHE_ENTRY {
 #define WINBINDD_RESCAN_FREQ lp_winbind_cache_time()
 #define WINBINDD_PAM_AUTH_KRB5_RENEW_TIME 2592000 /* one month */
 #define DOM_SEQUENCE_NONE ((uint32)-1)
-
-#define IS_DOMAIN_OFFLINE(x) ( lp_winbind_offline_logon() && \
-			       ( get_global_winbindd_state_offline() \
-				 || !(x)->online ) )
-#define IS_DOMAIN_ONLINE(x) (!IS_DOMAIN_OFFLINE(x))
 
 #endif /* _WINBINDD_H */

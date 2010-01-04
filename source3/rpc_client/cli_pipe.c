@@ -23,6 +23,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
+#include "ntlmssp.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -631,7 +632,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	RPC_HDR_AUTH auth_info;
 	uint32 save_offset = prs_offset(current_pdu);
 	uint32 auth_len = prhdr->auth_len;
-	NTLMSSP_STATE *ntlmssp_state = cli->auth->a_u.ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state = cli->auth->a_u.ntlmssp_state;
 	unsigned char *data = NULL;
 	size_t data_len;
 	unsigned char *full_packet_data = NULL;

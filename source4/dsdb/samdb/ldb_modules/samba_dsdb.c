@@ -38,6 +38,7 @@
 
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
+#include "librpc/ndr/libndr.h"
 
 static int read_at_rootdse_record(struct ldb_context *ldb, struct ldb_module *module, TALLOC_CTX *mem_ctx,
 				  struct ldb_message **msg)
@@ -135,6 +136,55 @@ static int prepare_modules_line(struct ldb_context *ldb,
 	return ret;
 }
 
+
+
+/*
+  initialise the invocationID for a standalone server
+ */
+static int initialise_invocation_id(struct ldb_module *module, struct GUID *guid)
+{
+	struct ldb_message *msg;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+
+	*guid = GUID_random();
+
+	msg = ldb_msg_new(module);
+	if (msg == NULL) {
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	msg->dn = ldb_dn_new(msg, ldb, "@SAMBA_DSDB");
+	if (!msg->dn) {
+		ldb_module_oom(module);
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = dsdb_msg_add_guid(msg, guid, "invocationID");
+	if (ret != LDB_SUCCESS) {
+		ldb_module_oom(module);
+		talloc_free(msg);
+		return ret;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+
+	ret = ldb_modify(ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to setup standalone invocationID - %s",
+				       ldb_errstring(ldb));
+		talloc_free(msg);
+		return ret;
+	}
+
+	DEBUG(1,("Initialised standalone invocationID to %s\n",
+		 GUID_string(msg, guid)));
+
+	talloc_free(msg);
+
+	return LDB_SUCCESS;
+}
+
+
 static int samba_dsdb_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -184,16 +234,11 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "instancetype",
 					     NULL };
 
-	const char *objectguid_module;
-	/* if serverrole == "domain controller": */
-	const char *repl_meta_data = "repl_meta_data";
-	/*    else: */
-        const char *objectguid = "objectguid";
-
 	const char **link_modules;
 	static const char *tdb_modules_list[] = {
-		"subtree_rename",
 		"subtree_delete",
+		"repl_meta_data",
+		"subtree_rename",
 		"linked_attributes",
 		NULL};
 
@@ -213,7 +258,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *openldap_backend_modules[] = {
 		"entryuuid", "paged_searches", NULL };
 
-	static const char *samba_dsdb_attrs[] = { "backendType", "serverRole", NULL };
+	static const char *samba_dsdb_attrs[] = { "backendType", "serverRole", "invocationID", NULL };
 	const char *backendType, *serverRole;
 
 	if (!tmp_ctx) {
@@ -248,17 +293,39 @@ static int samba_dsdb_init(struct ldb_module *module)
 		return ret;
 	}
 
+	if (strcmp(serverRole, "standalone") == 0 ||
+	    strcmp(serverRole, "member server") == 0) {
+		struct GUID *guid;
+
+		guid = talloc(module, struct GUID);
+		if (!guid) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		*guid = samdb_result_guid(res->msgs[0], "invocationID");
+		if (GUID_all_zero(guid)) {
+			ret = initialise_invocation_id(module, guid);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+		}
+
+		/* cache the domain_sid in the ldb. See the matching
+		 * code in samdb_ntds_invocation_id() */
+		ret = ldb_set_opaque(ldb, "cache.invocation_id", guid);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+
 	backend_modules = NULL;
 	if (strcasecmp(backendType, "ldb") == 0) {
-		if (strcasecmp(serverRole, "dc") == 0 || strcasecmp(serverRole, "domain controller") == 0) {
-			objectguid_module = repl_meta_data;
-		} else {
-			objectguid_module = objectguid;
-		}
 		extended_dn_module = extended_dn_module_ldb;
 		link_modules = tdb_modules_list;
 	} else {
-		objectguid_module = NULL;
 		link_modules = NULL;
 		if (strcasecmp(backendType, "fedora-ds") == 0) {
 			backend_modules = fedora_ds_backend_modules;
@@ -279,9 +346,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 	} while (0)
 
 	final_module_list = str_list_copy_const(tmp_ctx, modules_list);
-	CHECK_MODULE_LIST;
-
-	final_module_list = str_list_add_const(final_module_list, objectguid_module);
 	CHECK_MODULE_LIST;
 
 	final_module_list = str_list_append_const(final_module_list, link_modules);

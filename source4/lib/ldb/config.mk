@@ -11,6 +11,19 @@ ldb_asq_OBJ_FILES = $(ldbsrcdir)/modules/asq.o
 ################################################
 
 ################################################
+# Start MODULE sample_module
+[MODULE::sample]
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
+CFLAGS = -I$(ldbsrcdir)/include
+INIT_FUNCTION = LDB_MODULE(sample)
+SUBSYSTEM = LIBTESTLDB
+
+# End MODULE sample_module
+################################################
+sample_OBJ_FILES = $(ldbsrcdir)/tests/sample_module.o
+
+
+################################################
 # Start MODULE ldb_server_sort
 [MODULE::ldb_server_sort]
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT

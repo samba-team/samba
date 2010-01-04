@@ -89,6 +89,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 			/* FIXME: We don't support this yet */
 			break;
 		default:
+			/* FIXME */
 			/* Other datatypes aren't supported -> return "NULL" */
 			break;
 	}
@@ -156,6 +157,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 			/* FIXME: We don't support this yet */
 			return false;
 		default:
+			/* FIXME */
 			/* Other datatypes aren't supported -> return no success */
 			return false;
 	}

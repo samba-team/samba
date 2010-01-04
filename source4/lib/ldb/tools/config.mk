@@ -1,4 +1,14 @@
 ################################################
+# Start SUBSYSTEM LIBLDB_UTIL
+[SUBSYSTEM::LIBLDB_UTIL]
+CFLAGS = -I$(ldbsrcdir) -I$(ldbsrcdir)/include
+PUBLIC_DEPENDENCIES = LIBLDB
+# End SUBSYSTEM LIBLDB_UTIL
+################################################
+
+LIBLDB_UTIL_OBJ_FILES = $(ldbsrcdir)/tools/ldbutil.o
+
+################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
 CFLAGS = -I$(ldbsrcdir) -I$(ldbsrcdir)/include
@@ -14,6 +24,7 @@ LIBLDB_CMDLINE_OBJ_FILES = $(ldbsrcdir)/tools/cmdline.o
 [BINARY::ldbadd]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
+		LIBLDB_UTIL \
 		LIBLDB_CMDLINE LIBCLI_RESOLVE
 # End BINARY ldbadd
 ################################################
@@ -28,6 +39,7 @@ MANPAGES += $(ldbsrcdir)/man/ldbadd.1
 [BINARY::ldbdel]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
+		LIBLDB_UTIL \
 		LIBLDB_CMDLINE
 # End BINARY ldbdel
 ################################################
@@ -41,6 +53,7 @@ MANPAGES += $(ldbsrcdir)/man/ldbdel.1
 [BINARY::ldbmodify]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
+		LIBLDB_UTIL \
 		LIBLDB_CMDLINE
 # End BINARY ldbmodify
 ################################################

@@ -21,6 +21,8 @@
 
 struct dsdb_schema; /* predeclare schema struct */
 struct GUID;
+struct dsdb_attribute;
+
 #include "dsdb/samdb/ldb_modules/util_proto.h"
 
 #define DSDB_SEARCH_SEARCH_ALL_PARTITIONS     0x0001
@@ -28,3 +30,5 @@ struct GUID;
 #define DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT 0x0004
 #define DSDB_SEARCH_REVEAL_INTERNALS          0x0008
 #define DSDB_SEARCH_SHOW_EXTENDED_DN          0x0010
+#define DSDB_MODIFY_RELAX		      0x0020
+#define DSDB_FLAG_OWN_MODULE		      0x0040

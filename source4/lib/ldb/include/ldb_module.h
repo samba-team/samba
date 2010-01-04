@@ -140,6 +140,7 @@ const char * ldb_module_get_name(struct ldb_module *module);
 struct ldb_context *ldb_module_get_ctx(struct ldb_module *module);
 void *ldb_module_get_private(struct ldb_module *module);
 void ldb_module_set_private(struct ldb_module *module, void *private_data);
+const struct ldb_module_ops *ldb_module_get_ops(struct ldb_module *module);
 
 int ldb_next_request(struct ldb_module *module, struct ldb_request *request);
 int ldb_next_start_trans(struct ldb_module *module);

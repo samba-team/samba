@@ -279,21 +279,15 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 /* get a list of trusted domains */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+				struct netr_DomainTrustList *trusts)
 {
 	NTSTATUS result;
 
-	result = msrpc_methods.trusted_domains(domain, mem_ctx,
-					       num_domains, names,
-					       alt_names, dom_sids);
+	result = msrpc_methods.trusted_domains(domain, mem_ctx, trusts);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
 		result = msrpc_methods.trusted_domains(domain, mem_ctx,
-						       num_domains, names,
-						       alt_names, dom_sids);
+						       trusts);
 
 	return result;
 }

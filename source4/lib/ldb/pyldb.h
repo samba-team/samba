@@ -35,7 +35,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 } PyLdbObject;
 
-PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 #define PyLdb_AsLdbContext(pyobj) ((PyLdbObject *)pyobj)->ldb_ctx
 #define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
 

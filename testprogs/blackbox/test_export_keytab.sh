@@ -22,7 +22,7 @@ samba4bindir="$BUILDDIR/bin"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 net="$samba4bindir/net$EXEEXT"
-newuser="$PYTHON `dirname $0`/../../source4/setup/newuser"
+newuser="$net newuser"
 
 . `dirname $0`/subunit.sh
 

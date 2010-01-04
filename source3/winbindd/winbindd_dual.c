@@ -367,85 +367,6 @@ int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-/*
- * Machinery for async requests sent to children. You set up a
- * winbindd_request, select a child to query, and issue a async_request
- * call. When the request is completed, the callback function you specified is
- * called back with the private pointer you gave to async_request.
- */
-
-struct winbindd_async_request {
-	struct winbindd_async_request *next, *prev;
-	TALLOC_CTX *mem_ctx;
-	struct winbindd_child *child;
-	struct winbindd_response *response;
-	void (*continuation)(void *private_data, bool success);
-	struct timed_event *reply_timeout_event;
-	pid_t child_pid; /* pid of the child we're waiting on. Used to detect
-			    a restart of the child (child->pid != child_pid). */
-	void *private_data;
-};
-
-static void async_request_done(struct tevent_req *req);
-
-void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
-		   struct winbindd_request *request,
-		   struct winbindd_response *response,
-		   void (*continuation)(void *private_data, bool success),
-		   void *private_data)
-{
-	struct winbindd_async_request *state;
-	struct tevent_req *req;
-
-	DEBUG(10, ("Sending request to child pid %d (domain=%s)\n",
-		   (int)child->pid,
-		   (child->domain != NULL) ? child->domain->name : "''"));
-
-	state = talloc(mem_ctx, struct winbindd_async_request);
-	if (state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		continuation(private_data, False);
-		return;
-	}
-
-	state->mem_ctx = mem_ctx;
-	state->child = child;
-	state->reply_timeout_event = NULL;
-	state->response = response;
-	state->continuation = continuation;
-	state->private_data = private_data;
-
-	request->pid = child->pid;
-
-	req = wb_child_request_send(state, winbind_event_context(),
-					   child, request);
-	if (req == NULL) {
-		DEBUG(0, ("wb_child_request_send failed\n"));
-                continuation(private_data, false);
-		return;
-        }
-	tevent_req_set_callback(req, async_request_done, state);
-}
-
-static void async_request_done(struct tevent_req *req)
-{
-	struct winbindd_async_request *state = tevent_req_callback_data(
-		req, struct winbindd_async_request);
-	struct winbindd_response *response;
-	int ret, err;
-
-	ret = wb_child_request_recv(req, state, &response, &err);
-	TALLOC_FREE(req);
-	if (ret == -1) {
-		DEBUG(2, ("wb_child_request_recv failed: %s\n",
-			  strerror(err)));
-		state->continuation(state->private_data, false);
-		return;
-	}
-	*state->response = *response;
-	state->continuation(state->private_data, true);
-}
-
 struct domain_request_state {
 	struct winbindd_domain *domain;
 	struct winbindd_request *request;
@@ -527,13 +448,6 @@ static void recvfrom_child(void *private_data_data, bool success)
 	request_ok(state);
 }
 
-void sendto_child(struct winbindd_cli_state *state,
-		  struct winbindd_child *child)
-{
-	async_request(state->mem_ctx, child, state->request,
-		      state->response, recvfrom_child, state);
-}
-
 void sendto_domain(struct winbindd_cli_state *state,
 		   struct winbindd_domain *domain)
 {
@@ -588,7 +502,7 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 			  "logname == NULL");
 	}
 
-	child->domain = NULL;
+	child->domain = domain;
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
@@ -696,7 +610,7 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 	}
 
 	for (child = children; child != NULL; child = child->next) {
-		/* Don't send message to internal childs.  We've already
+		/* Don't send message to internal children.  We've already
 		   done so above. */
 		if (!child->domain || winbindd_internal_child(child)) {
 			continue;
@@ -830,7 +744,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	TALLOC_CTX *mem_ctx;
 	const char *message;
 	struct server_id *sender;
-	
+
 	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
 
 	if (!data->data) {
@@ -843,7 +757,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	if (mem_ctx == NULL) {
 		return;
 	}
-	
+
 	message = collect_onlinestatus(mem_ctx);
 	if (message == NULL) {
 		talloc_destroy(mem_ctx);

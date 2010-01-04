@@ -450,6 +450,7 @@ plantest "samba.python" none $SUBUNITRUN samba.tests
 plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
 plantest "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
+plantest "netcmd.python" none $SUBUNITRUN samba.tests.netcmd
 plantest "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
 plantest "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
@@ -460,6 +461,7 @@ plantest "subunit.python" none $SUBUNITRUN subunit
 plantest "rpcecho.python" dc:local $SUBUNITRUN samba.tests.dcerpc.rpcecho
 plantest "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantest "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "ldap_schema.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap_schema.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "ldap.possibleInferiors.python" dc $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py $CONFIGURATION ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "ldap.secdesc.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/sec_descriptor.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "ldap.acl.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/acl.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN

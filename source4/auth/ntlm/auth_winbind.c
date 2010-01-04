@@ -271,7 +271,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		s->req.in.logon.password= password_info;
 	} else {
 		struct netr_NetworkInfo *network_info;
-		const uint8_t *challenge;
+		uint8_t chal[8];
 
 		status = encrypt_user_info(s, ctx->auth_ctx, AUTH_PASSWORD_RESPONSE,
 					   user_info, &user_info_new);
@@ -281,10 +281,10 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		network_info = talloc(s, struct netr_NetworkInfo);
 		NT_STATUS_HAVE_NO_MEMORY(network_info);
 
-		status = auth_get_challenge(ctx->auth_ctx, &challenge);
+		status = auth_get_challenge(ctx->auth_ctx, chal);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		memcpy(network_info->challenge, challenge, sizeof(network_info->challenge));
+		memcpy(network_info->challenge, chal, sizeof(network_info->challenge));
 
 		network_info->nt.length = user_info->password.response.nt.length;
 		network_info->nt.data	= user_info->password.response.nt.data;

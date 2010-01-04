@@ -557,17 +557,18 @@ char *sid_binstring_hex(const DOM_SID *sid)
  Tallocs a duplicate SID. 
 ********************************************************************/ 
 
-DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
+struct dom_sid *sid_dup_talloc(TALLOC_CTX *ctx, const struct dom_sid *src)
 {
-	DOM_SID *dst;
-	
-	if(!src)
+	struct dom_sid *dst;
+
+	if (src == NULL) {
 		return NULL;
-	
-	if((dst = TALLOC_ZERO_P(ctx, DOM_SID)) != NULL) {
-		sid_copy( dst, src);
 	}
-	
+	dst = talloc_zero(ctx, struct dom_sid);
+	if (dst == NULL) {
+		return NULL;
+	}
+	sid_copy(dst, src);
 	return dst;
 }
 

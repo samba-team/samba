@@ -678,20 +678,43 @@ static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				  v1, v2);
 }
 
+/* length limited conversion of a ldb_val to a int32_t */
+static int val_to_int32(const struct ldb_val *in, int32_t *v)
+{
+	char *end;
+	char buf[64];
+
+	/* make sure we don't read past the end of the data */
+	if (in->length > sizeof(buf)-1) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	strncpy(buf, (char *)in->data, in->length);
+	buf[in->length] = 0;
+
+	/* We've to use "strtoll" here to have the intended overflows.
+	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
+	*v = (int32_t) strtoll(buf, &end, 0);
+	if (*end != 0) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	return LDB_SUCCESS;
+}
+
 /* Canonicalisation of two 32-bit integers */
 static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *in, struct ldb_val *out)
 {
-	char *end;
-	/* We've to use "strtoll" here to have the intended overflows.
-	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
-	int32_t i = (int32_t) strtoll((char *)in->data, &end, 0);
-	if (*end != 0) {
-		return -1;
+	int32_t i;
+	int ret;
+
+	ret = val_to_int32(in, &i);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 	out->data = (uint8_t *) talloc_asprintf(mem_ctx, "%d", i);
 	if (out->data == NULL) {
-		return -1;
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	out->length = strlen((char *)out->data);
 	return 0;
@@ -699,12 +722,13 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 
 /* Comparison of two 32-bit integers */
 static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
-			const struct ldb_val *v1, const struct ldb_val *v2)
+				 const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	/* We've to use "strtoll" here to have the intended overflows.
-	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
-	return (int32_t) strtoll((char *)v1->data, NULL, 0)
-	 - (int32_t) strtoll((char *)v2->data, NULL, 0);
+	int32_t i1=0, i2=0;
+	val_to_int32(v1, &i1);
+	val_to_int32(v2, &i2);
+	if (i1 == i2) return 0;
+	return i1 > i2? 1 : -1;
 }
 
 /*
@@ -846,7 +870,7 @@ static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
 		.write_clear_fn   = ldif_write_objectGUID,
 		.write_hex_fn     = extended_dn_write_hex
 	},{
-		.name		  = "DELETED",
+		.name		  = "RMD_FLAGS",
 		.read_fn          = ldb_handler_copy,
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy
@@ -861,7 +885,12 @@ static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy
 	},{
-		.name		  = "RMD_USN",
+		.name		  = "RMD_LOCAL_USN",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
+	},{
+		.name		  = "RMD_ORIGINATING_USN",
 		.read_fn          = ldb_handler_copy,
 		.write_clear_fn   = ldb_handler_copy,
 		.write_hex_fn     = ldb_handler_copy

@@ -27,6 +27,25 @@
 
 
 /**
+ * Determine range type for supplied ATTID
+ */
+enum dsdb_attid_type dsdb_pfm_get_attid_type(uint32_t attid)
+{
+	if (attid <= 0x7FFFFFFF) {
+		return dsdb_attid_type_pfm;
+	}
+	else if (attid <= 0xBFFFFFFF) {
+		return dsdb_attid_type_intid;
+	}
+	else if (attid <= 0xFFFEFFFF) {
+		return dsdb_attid_type_reserved;
+	}
+	else {
+		return dsdb_attid_type_internal;
+	}
+}
+
+/**
  * Allocates schema_prefixMap object in supplied memory context
  */
 static struct dsdb_schema_prefixmap *_dsdb_schema_prefixmap_talloc(TALLOC_CTX *mem_ctx,
@@ -302,6 +321,11 @@ WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_
 	DATA_BLOB bin_oid = {NULL, 0};
 	struct dsdb_schema_prefixmap_oid *pfm_entry;
 	WERROR werr = WERR_OK;
+
+	/* sanity check for attid requested */
+	if (dsdb_pfm_get_attid_type(attid) != dsdb_attid_type_pfm) {
+		return WERR_INVALID_PARAMETER;
+	}
 
 	/* crack attid value */
 	hi_word = attid >> 16;

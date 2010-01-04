@@ -56,7 +56,7 @@ struct cli_pipe_auth_data {
 
 	union {
 		struct schannel_state *schannel_auth;
-		NTLMSSP_STATE *ntlmssp_state;
+		struct ntlmssp_state *ntlmssp_state;
 		struct kerberos_auth_struct *kerberos_auth;
 	} a_u;
 };
@@ -172,7 +172,7 @@ struct smb_trans_enc_state {
         uint16 enc_ctx_num;
         bool enc_on;
         union {
-                NTLMSSP_STATE *ntlmssp_state;
+                struct ntlmssp_state *ntlmssp_state;
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
                 struct smb_tran_enc_state_gss *gss_state;
 #endif

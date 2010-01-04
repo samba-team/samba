@@ -488,13 +488,17 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		NTTIME v;
 		time_t t;
+		int ret;
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		t = ldb_string_to_time((const char *)in->values[i].data);
+		ret = ldb_val_to_time(&in->values[i], &t);
+		if (ret != LDB_SUCCESS) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
 		unix_to_nt_time(&v, t);
 		v /= 10000000;
 
@@ -735,7 +739,10 @@ static WERROR _dsdb_syntax_OID_obj_ldb_to_drsuapi(struct ldb_context *ldb,
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		obj_class = dsdb_class_by_lDAPDisplayName(schema, (const char *)in->values[i].data);
+		/* in DRS windows puts the classes in the opposite
+		   order to the order used in ldap */
+		obj_class = dsdb_class_by_lDAPDisplayName(schema,
+							  (const char *)in->values[(in->num_values-1)-i].data);
 		if (!obj_class) {
 			return WERR_FOOBAR;
 		}
@@ -1074,19 +1081,20 @@ WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context
 		W_ERROR_HAVE_NO_MEMORY(dn);
 	}
 
-	status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return ntstatus_to_werror(status);
-	}
+	if (!GUID_all_zero(&id3.guid)) {
+		status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(status);
+		}
 	
-	ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return WERR_FOOBAR;
+		ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return WERR_FOOBAR;
+		}
+		talloc_free(guid_blob.data);
 	}
-	
-	talloc_free(guid_blob.data);
 	
 	if (id3.__ndr_size_sid) {
 		DATA_BLOB sid_blob;
@@ -1183,7 +1191,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		ZERO_STRUCT(id3);
 
-		status = dsdb_get_extended_dn_guid(dn, &id3.guid);
+		status = dsdb_get_extended_dn_guid(dn, &id3.guid, "GUID");
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			talloc_free(tmp_ctx);
@@ -1367,7 +1375,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		ZERO_STRUCT(id3);
 
-		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &id3.guid);
+		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &id3.guid, "GUID");
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			talloc_free(tmp_ctx);

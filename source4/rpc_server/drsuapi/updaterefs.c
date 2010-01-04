@@ -105,7 +105,9 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return werr;
 	}
 
-	if (!found && !(options & DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK)) {
+	if (!found &&
+	    !(options & DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK) &&
+	    !(options & DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE)) {
 		return WERR_DS_DRA_REF_NOT_FOUND;
 	}
 

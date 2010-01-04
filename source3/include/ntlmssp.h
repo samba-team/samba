@@ -20,14 +20,14 @@
 */
 
 /* NTLMSSP mode */
-enum NTLMSSP_ROLE
+enum ntlmssp_role
 {
 	NTLMSSP_SERVER,
 	NTLMSSP_CLIENT
 };
 
 /* NTLMSSP message types */
-enum NTLM_MESSAGE_TYPE
+enum ntlmssp_message_type
 {
 	NTLMSSP_INITIAL = 0 /* samba internal state */,
 	NTLMSSP_NEGOTIATE = 1,
@@ -41,12 +41,11 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_FEATURE_SIGN               0x00000002
 #define NTLMSSP_FEATURE_SEAL               0x00000004
 
-typedef struct ntlmssp_state
+struct ntlmssp_state
 {
-	unsigned int ref_count;
-	enum NTLMSSP_ROLE role;
+	enum ntlmssp_role role;
 	enum server_types server_role;
-	uint32 expected_state;
+	uint32_t expected_state;
 
 	bool unicode;
 	bool use_ntlmv2;
@@ -60,11 +59,11 @@ typedef struct ntlmssp_state
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
 
 	DATA_BLOB chal; /* Random challenge as input into the actual NTLM (or NTLM2) authentication */
- 	DATA_BLOB lm_resp;
+	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 
-	uint32 neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
 	void *auth_context;
 
@@ -72,11 +71,11 @@ typedef struct ntlmssp_state
 	 * Callback to get the 'challenge' used for NTLM authentication.
 	 *
 	 * @param ntlmssp_state This structure
-	 * @return 8 bytes of challnege data, determined by the server to be the challenge for NTLM authentication
+	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
 	 *
 	 */
-	void (*get_challenge)(const struct ntlmssp_state *ntlmssp_state,
-			      uint8_t challenge[8]);
+	NTSTATUS (*get_challenge)(const struct ntlmssp_state *ntlmssp_state,
+				  uint8_t challenge[8]);
 
 	/**
 	 * Callback to find if the challenge used by NTLM authentication may be modified
@@ -126,15 +125,10 @@ typedef struct ntlmssp_state
 	struct arcfour_state send_seal_arc4_state;
 	struct arcfour_state recv_seal_arc4_state;
 
-	uint32 ntlm2_send_seq_num;
-	uint32 ntlm2_recv_seq_num;
+	uint32_t ntlm2_send_seq_num;
+	uint32_t ntlm2_recv_seq_num;
 
 	/* ntlmv1 */
 	struct arcfour_state ntlmv1_arc4_state;
-	uint32 ntlmv1_seq_num;
-
-	/* it turns out that we don't always get the
-	   response in at the time we want to process it.
-	   Store it here, until we need it */
-	DATA_BLOB stored_response;
-} NTLMSSP_STATE;
+	uint32_t ntlmv1_seq_num;
+};

@@ -23,6 +23,17 @@
 #define _DSDB_PREFIXMAP_H
 
 /**
+ * ATTRTYP ranges
+ * Ref: MS-ADTS, 3.1.1.2.6 ATTRTYP
+ */
+enum dsdb_attid_type {
+	dsdb_attid_type_pfm = 1,	/* attid in [0x00000000..0x7FFFFFFF] */
+	dsdb_attid_type_intid = 2,	/* attid in [0x80000000..0xBFFFFFFF] */
+	dsdb_attid_type_reserved = 3,	/* attid in [0xC0000000..0xFFFEFFFF] */
+	dsdb_attid_type_internal = 4,	/* attid in [0xFFFF0000..0xFFFFFFFF] */
+};
+
+/**
  * oid-prefix in prefixmap
  */
 struct dsdb_schema_prefixmap_oid {

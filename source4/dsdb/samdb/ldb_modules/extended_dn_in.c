@@ -34,6 +34,11 @@
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_module.h"
 
+/*
+  TODO: if relax is not set then we need to reject the fancy RMD_* and
+  DELETED extended DN codes
+ */
+
 /* search */
 struct extended_search_context {
 	struct ldb_module *module;

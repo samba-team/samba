@@ -23,12 +23,14 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "version.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*
   setup the OS, Lanman and domain portions of a session setup reply
@@ -54,17 +56,18 @@ static void smbsrv_sesssetup_backend_send(struct smbsrv_request *req,
 	smbsrv_reply_sesssetup_send(req, sess, status);
 }
 
-static void sesssetup_old_send(struct auth_check_password_request *areq,
-			       void *private_data)
+static void sesssetup_old_send(struct tevent_req *subreq)
 {
-	struct smbsrv_request *req = talloc_get_type(private_data, struct smbsrv_request);
+	struct smbsrv_request *req =
+		tevent_req_callback_data(subreq, struct smbsrv_request);
 	union smb_sesssetup *sess = talloc_get_type(req->io_ptr, union smb_sesssetup);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
 	NTSTATUS status;
 
-	status = auth_check_password_recv(areq, req, &server_info);
+	status = auth_check_password_recv(subreq, req, &server_info);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
@@ -100,8 +103,9 @@ failed:
 static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	struct auth_usersupplied_info *user_info = NULL;
-	struct socket_address *remote_address;
+	struct tsocket_address *remote_address;
 	const char *remote_machine = NULL;
+	struct tevent_req *subreq;
 
 	sess->old.out.vuid = 0;
 	sess->old.out.action = 0;
@@ -119,11 +123,12 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 	
-	remote_address = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+	remote_address = socket_get_remote_addr(req->smb_conn->connection->socket, req);
 	if (!remote_address) goto nomem;
 
 	if (!remote_machine) {
-		remote_machine = remote_address->addr;
+		remote_machine = tsocket_address_inet_addr_string(remote_address, req);
+		if (!remote_machine) goto nomem;
 	}
 
 	user_info = talloc(req, struct auth_usersupplied_info);
@@ -142,25 +147,30 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->password.response.lanman.data = talloc_steal(user_info, sess->old.in.password.data);
 	user_info->password.response.nt = data_blob(NULL, 0);
 
-	auth_check_password_send(req->smb_conn->negotiate.auth_context, user_info,
-				 sesssetup_old_send, req);
+	subreq = auth_check_password_send(req,
+					  req->smb_conn->connection->event.ctx,
+					  req->smb_conn->negotiate.auth_context,
+					  user_info);
+	if (!subreq) goto nomem;
+	tevent_req_set_callback(subreq, sesssetup_old_send, req);
 	return;
 
 nomem:
 	smbsrv_sesssetup_backend_send(req, sess, NT_STATUS_NO_MEMORY);
 }
 
-static void sesssetup_nt1_send(struct auth_check_password_request *areq,
-			       void *private_data)
+static void sesssetup_nt1_send(struct tevent_req *subreq)
 {
-	struct smbsrv_request *req = talloc_get_type(private_data, struct smbsrv_request);
+	struct smbsrv_request *req =
+		tevent_req_callback_data(subreq, struct smbsrv_request);
 	union smb_sesssetup *sess = talloc_get_type(req->io_ptr, union smb_sesssetup);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
 	NTSTATUS status;
 
-	status = auth_check_password_recv(areq, req, &server_info);
+	status = auth_check_password_recv(subreq, req, &server_info);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
@@ -206,9 +216,10 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	NTSTATUS status;
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info = NULL;
-	struct socket_address *remote_address;
+	struct tsocket_address *remote_address;
 	const char *remote_machine = NULL;
-	
+	struct tevent_req *subreq;
+
 	sess->nt1.out.vuid = 0;
 	sess->nt1.out.action = 0;
 
@@ -245,11 +256,12 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 
-	remote_address = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+	remote_address = socket_get_remote_addr(req->smb_conn->connection->socket, req);
 	if (!remote_address) goto nomem;
 
 	if (!remote_machine) {
-		remote_machine = remote_address->addr;
+		remote_machine = tsocket_address_inet_addr_string(remote_address, req);
+		if (!remote_machine) goto nomem;
 	}
 
 	user_info = talloc(req, struct auth_usersupplied_info);
@@ -269,8 +281,13 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->password.response.nt = sess->nt1.in.password2;
 	user_info->password.response.nt.data = talloc_steal(user_info, sess->nt1.in.password2.data);
 
-	auth_check_password_send(auth_context, user_info,
-				 sesssetup_nt1_send, req);
+	subreq = auth_check_password_send(req,
+					  req->smb_conn->connection->event.ctx,
+					  auth_context,
+					  user_info);
+	if (!subreq) goto nomem;
+	tevent_req_set_callback(subreq, sesssetup_nt1_send, req);
+
 	return;
 
 nomem:
@@ -286,9 +303,9 @@ struct sesssetup_spnego_state {
 	struct smbsrv_session *smb_sess;
 };
 
-static void sesssetup_spnego_send(struct gensec_update_request *greq, void *private_data)
+static void sesssetup_spnego_send(struct tevent_req *subreq)
 {
-	struct sesssetup_spnego_state *s = talloc_get_type(private_data,
+	struct sesssetup_spnego_state *s = tevent_req_callback_data(subreq,
 					   struct sesssetup_spnego_state);
 	struct smbsrv_request *req = s->req;
 	union smb_sesssetup *sess = s->sess;
@@ -298,7 +315,8 @@ static void sesssetup_spnego_send(struct gensec_update_request *greq, void *priv
 	NTSTATUS skey_status;
 	DATA_BLOB session_key;
 
-	status = gensec_update_recv(greq, req, &sess->spnego.out.secblob);
+	status = gensec_update_recv(subreq, req, &sess->spnego.out.secblob);
+	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -340,6 +358,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	struct smbsrv_session *smb_sess = NULL;
 	struct sesssetup_spnego_state *s = NULL;
 	uint16_t vuid;
+	struct tevent_req *subreq;
 
 	sess->spnego.out.vuid = 0;
 	sess->spnego.out.action = 0;
@@ -407,8 +426,15 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	s->sess		= sess;
 	s->smb_sess	= smb_sess;
 
-	gensec_update_send(smb_sess->gensec_ctx, sess->spnego.in.secblob,
-			   sesssetup_spnego_send, s);
+	subreq = gensec_update_send(s,
+				    req->smb_conn->connection->event.ctx,
+				    smb_sess->gensec_ctx,
+				    sess->spnego.in.secblob);
+	if (!subreq) {
+		goto nomem;
+	}
+	tevent_req_set_callback(subreq, sesssetup_spnego_send, s);
+
 	return;
 
 nomem:

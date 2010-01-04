@@ -151,12 +151,14 @@ SMBC_get_cached_server(SMBCCTX * context,
                          * attribute server connection) is cool.
                          */
                         if (smbc_getOptionOneSharePerServer(context)) {
+				NTSTATUS status;
                                 /*
                                  * The currently connected share name
                                  * doesn't match the requested share, so
                                  * disconnect from the current share.
                                  */
-                                if (! cli_tdis(srv->server->cli)) {
+				status = cli_tdis(srv->server->cli);
+				if (!NT_STATUS_IS_OK(status)) {
                                         /* Sigh. Couldn't disconnect. */
                                         cli_shutdown(srv->server->cli);
 					srv->server->cli = NULL;

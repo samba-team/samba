@@ -60,6 +60,13 @@ struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (lp_winbind_trusted_domains_only() && domain->primary) {
+		DEBUG(7, ("wb_gettoken: My domain -- rejecting getgroups() "
+			  "for %s.\n", sid_string_tos(sid)));
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
+		return tevent_req_post(req, ev);
+	}
+
 	subreq = wb_lookupusergroups_send(state, ev, domain, &state->usersid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

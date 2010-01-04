@@ -398,16 +398,10 @@ static NTSTATUS builtin_query_user(struct winbindd_domain *domain,
 
 /* get a list of trusted domains - builtin domain */
 static NTSTATUS builtin_trusted_domains(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+					TALLOC_CTX *mem_ctx,
+					struct netr_DomainTrustList *trusts)
 {
-	*num_domains = 0;
-	*names = NULL;
-	*alt_names = NULL;
-	*dom_sids = NULL;
+	ZERO_STRUCTP(trusts);
 	return NT_STATUS_OK;
 }
 
@@ -649,58 +643,44 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 
 /* get a list of trusted domains */
 static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+				    TALLOC_CTX *mem_ctx,
+				    struct netr_DomainTrustList *trusts)
 {
 	NTSTATUS nt_status;
 	struct trustdom_info **domains;
 	int i;
-	TALLOC_CTX *tmp_ctx;
 
-	*num_domains = 0;
-	*names = NULL;
-	*alt_names = NULL;
-	*dom_sids = NULL;
-
-	if (!(tmp_ctx = talloc_init("trusted_domains"))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	nt_status = pdb_enum_trusteddoms(tmp_ctx, num_domains, &domains);
+	nt_status = pdb_enum_trusteddoms(talloc_tos(), &trusts->count,
+					 &domains);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
 
-	if (*num_domains) {
-		*names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-		*alt_names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
-		*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
-
-		if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		*names = NULL;
-		*alt_names = NULL;
-		*dom_sids = NULL;
+	if (trusts->count == 0) {
+		trusts->array = NULL;
+		return NT_STATUS_OK;
 	}
 
-	for (i=0; i<*num_domains; i++) {
-		(*alt_names)[i] = NULL;
-		if (!((*names)[i] = talloc_strdup((*names),
-						  domains[i]->name))) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		sid_copy(&(*dom_sids)[i], &domains[i]->sid);
+	trusts->array = talloc_zero_array(
+		mem_ctx, struct netr_DomainTrust, trusts->count);
+	if (trusts->array == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	TALLOC_FREE(tmp_ctx);
+	for (i=0; i<trusts->count; i++) {
+		struct dom_sid *sid;
+
+		trusts->array[i].netbios_name = talloc_move(
+			trusts->array, &domains[i]->name);
+		trusts->array[i].dns_name = NULL;
+
+		sid = talloc(trusts->array, struct dom_sid);
+		if (sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		sid_copy(sid, &domains[i]->sid);
+		trusts->array[i].sid = sid;
+	}
 	return NT_STATUS_OK;
 }
 

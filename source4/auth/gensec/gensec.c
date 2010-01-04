@@ -25,6 +25,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/tsocket/tsocket.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -982,71 +983,105 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
 }
 
-static void gensec_update_async_timed_handler(struct tevent_context *ev, struct tevent_timer *te,
-					      struct timeval t, void *ptr)
-{
-	struct gensec_update_request *req = talloc_get_type(ptr, struct gensec_update_request);
-	req->status = req->gensec_security->ops->update(req->gensec_security, req, req->in, &req->out);
-	req->callback.fn(req, req->callback.private_data);
-}
+struct gensec_update_state {
+	struct tevent_immediate *im;
+	struct gensec_security *gensec_security;
+	DATA_BLOB in;
+	DATA_BLOB out;
+};
 
+static void gensec_update_async_trigger(struct tevent_context *ctx,
+					struct tevent_immediate *im,
+					void *private_data);
 /**
  * Next state function for the GENSEC state machine async version
- * 
+ *
+ * @param mem_ctx The memory context for the request
+ * @param ev The event context for the request
  * @param gensec_security GENSEC State
  * @param in The request, as a DATA_BLOB
- * @param callback The function that will be called when the operation is
- *                 finished, it should return gensec_update_recv() to get output
- * @param private_data A private pointer that will be passed to the callback function
+ *
+ * @return The request handle or NULL on no memory failure
  */
 
-_PUBLIC_ void gensec_update_send(struct gensec_security *gensec_security, const DATA_BLOB in,
-				 void (*callback)(struct gensec_update_request *req, void *private_data),
-				 void *private_data)
+_PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct gensec_security *gensec_security,
+					       const DATA_BLOB in)
 {
-	struct gensec_update_request *req = NULL;
-	struct tevent_timer *te = NULL;
+	struct tevent_req *req;
+	struct gensec_update_state *state = NULL;
 
-	req = talloc(gensec_security, struct gensec_update_request);
-	if (!req) goto failed;
-	req->gensec_security		= gensec_security;
-	req->in				= in;
-	req->out			= data_blob(NULL, 0);
-	req->callback.fn		= callback;
-	req->callback.private_data	= private_data;
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
-	te = event_add_timed(gensec_security->event_ctx, req,
-			     timeval_zero(),
-			     gensec_update_async_timed_handler, req);
-	if (!te) goto failed;
+	state->gensec_security		= gensec_security;
+	state->in			= in;
+	state->out			= data_blob(NULL, 0);
+	state->im			= tevent_create_immediate(state);
+	if (tevent_req_nomem(state->im, req)) {
+		return tevent_req_post(req, ev);
+	}
 
-	return;
+	tevent_schedule_immediate(state->im, ev,
+				  gensec_update_async_trigger,
+				  req);
 
-failed:
-	talloc_free(req);
-	callback(NULL, private_data);
+	return req;
+}
+
+static void gensec_update_async_trigger(struct tevent_context *ctx,
+					struct tevent_immediate *im,
+					void *private_data)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(private_data, struct tevent_req);
+	struct gensec_update_state *state =
+		tevent_req_data(req, struct gensec_update_state);
+	NTSTATUS status;
+
+	status = gensec_update(state->gensec_security, state,
+			       state->in, &state->out);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 /**
  * Next state function for the GENSEC state machine
  * 
- * @param req GENSEC update request state
+ * @param req request state
  * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
  * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
  * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
  *                or NT_STATUS_OK if the user is authenticated. 
  */
-_PUBLIC_ NTSTATUS gensec_update_recv(struct gensec_update_request *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out)
+_PUBLIC_ NTSTATUS gensec_update_recv(struct tevent_req *req,
+				     TALLOC_CTX *out_mem_ctx,
+				     DATA_BLOB *out)
 {
+	struct gensec_update_state *state =
+		tevent_req_data(req, struct gensec_update_state);
 	NTSTATUS status;
 
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	if (tevent_req_is_nterror(req, &status)) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			tevent_req_received(req);
+			return status;
+		}
+	} else {
+		status = NT_STATUS_OK;
+	}
 
-	*out = req->out;
+	*out = state->out;
 	talloc_steal(out_mem_ctx, out->data);
-	status = req->status;
 
-	talloc_free(req);
+	tevent_req_received(req);
 	return status;
 }
 

@@ -463,7 +463,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	val_time.data = (uint8_t *)s;
 	val_time.length = strlen(s);
 
-	ret = ltdb_modify_internal(module, msg);
+	ret = ltdb_modify_internal(module, msg, NULL);
 
 	talloc_free(msg);
 

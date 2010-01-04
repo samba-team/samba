@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
@@ -58,7 +59,7 @@ enum ntlmssp_direction {
 	NTLMSSP_RECEIVE
 };
 
-static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
+static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_state,
 						const uchar *data, size_t length,
 						const uchar *whole_pdu, size_t pdu_length,
 						enum ntlmssp_direction direction,
@@ -76,27 +77,27 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 		}
 
 		switch (direction) {
-			case NTLMSSP_SEND:
-	                        DEBUG(100,("ntlmssp_make_packet_signature: SEND seq = %u, len = %u, pdu_len = %u\n",
-					ntlmssp_state->ntlm2_send_seq_num,
-					(unsigned int)length,
-					(unsigned int)pdu_length));
+		case NTLMSSP_SEND:
+			DEBUG(100,("ntlmssp_make_packet_signature: SEND seq = %u, len = %u, pdu_len = %u\n",
+				ntlmssp_state->ntlm2_send_seq_num,
+				(unsigned int)length,
+				(unsigned int)pdu_length));
 
-				SIVAL(seq_num, 0, ntlmssp_state->ntlm2_send_seq_num);
-				ntlmssp_state->ntlm2_send_seq_num++;
-				hmac_md5_init_limK_to_64(ntlmssp_state->send_sign_key, 16, &ctx);
-				break;
-			case NTLMSSP_RECEIVE:
+			SIVAL(seq_num, 0, ntlmssp_state->ntlm2_send_seq_num);
+			ntlmssp_state->ntlm2_send_seq_num++;
+			hmac_md5_init_limK_to_64(ntlmssp_state->send_sign_key, 16, &ctx);
+			break;
+		case NTLMSSP_RECEIVE:
 
-				DEBUG(100,("ntlmssp_make_packet_signature: RECV seq = %u, len = %u, pdu_len = %u\n",
-					ntlmssp_state->ntlm2_recv_seq_num,
-					(unsigned int)length,
-					(unsigned int)pdu_length));
+			DEBUG(100,("ntlmssp_make_packet_signature: RECV seq = %u, len = %u, pdu_len = %u\n",
+				ntlmssp_state->ntlm2_recv_seq_num,
+				(unsigned int)length,
+				(unsigned int)pdu_length));
 
-				SIVAL(seq_num, 0, ntlmssp_state->ntlm2_recv_seq_num);
-				ntlmssp_state->ntlm2_recv_seq_num++;
-				hmac_md5_init_limK_to_64(ntlmssp_state->recv_sign_key, 16, &ctx);
-				break;
+			SIVAL(seq_num, 0, ntlmssp_state->ntlm2_recv_seq_num);
+			ntlmssp_state->ntlm2_recv_seq_num++;
+			hmac_md5_init_limK_to_64(ntlmssp_state->recv_sign_key, 16, &ctx);
+			break;
                 }
 
 		dump_data_pw("pdu data ", whole_pdu, pdu_length);
@@ -137,7 +138,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 				    const uchar *data, size_t length,
 				    const uchar *whole_pdu, size_t pdu_length,
 				    DATA_BLOB *sig)
@@ -168,7 +169,7 @@ NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 				const uchar *data, size_t length,
 				const uchar *whole_pdu, size_t pdu_length,
 				const DATA_BLOB *sig)
@@ -236,7 +237,7 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     uchar *data, size_t length,
 			     uchar *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
@@ -302,7 +303,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 				uchar *data, size_t length,
 				uchar *whole_pdu, size_t pdu_length,
 				DATA_BLOB *sig)
@@ -329,11 +330,9 @@ NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 /**
    Initialise the state for NTLMSSP signing.
 */
-NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 {
-	unsigned char p24[24];
 	TALLOC_CTX *mem_ctx;
-	ZERO_STRUCT(p24);
 
 	mem_ctx = talloc_init("weak_keys");
 	if (!mem_ctx) {

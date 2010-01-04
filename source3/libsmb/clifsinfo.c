@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
+#include "ntlmssp.h"
 
 /****************************************************************************
  Get UNIX extensions version info.

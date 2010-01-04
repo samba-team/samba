@@ -997,6 +997,81 @@ int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_m
 }
 
 /*
+ * Handle ldb_request in transaction
+ */
+static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
+				 struct ldb_request *req)
+{
+	int ret;
+
+	ret = ldb_transaction_start(sam_ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(sam_ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		return ldb_transaction_commit(sam_ldb);
+	}
+	ldb_transaction_cancel(sam_ldb);
+
+	return ret;
+}
+
+/*
+ * replace elements in a record using LDB_CONTROL_AS_SYSTEM
+ * used to skip access checks on operations
+ * that are performed by the system
+ */
+int samdb_replace_as_system(struct ldb_context *sam_ldb,
+			    TALLOC_CTX *mem_ctx,
+			    struct ldb_message *msg)
+{
+	int i;
+	int ldb_ret;
+	struct ldb_request *req = NULL;
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+
+	ldb_ret = ldb_msg_sanity_check(sam_ldb, msg);
+	if (ldb_ret != LDB_SUCCESS) {
+		return ldb_ret;
+	}
+
+	ldb_ret = ldb_build_mod_req(&req, sam_ldb, mem_ctx,
+	                            msg,
+	                            NULL,
+	                            NULL,
+	                            ldb_op_default_callback,
+	                            NULL);
+
+	if (ldb_ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ldb_ret;
+	}
+
+	ldb_ret = ldb_request_add_control(req, LDB_CONTROL_AS_SYSTEM_OID, false, NULL);
+	if (ldb_ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ldb_ret;
+	}
+
+	/* do request and auto start a transaction */
+	ldb_ret = dsdb_autotransaction_request(sam_ldb, req);
+
+	talloc_free(req);
+	return ldb_ret;
+}
+
+/*
   return a default security descriptor
 */
 struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ctx)
@@ -1986,7 +2061,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 {
 	struct ldb_message *msg;
 	struct ldb_dn *basedn;
-	const char *sidstr;
+	char *sidstr;
 	int ret;
 
 	sidstr = dom_sid_string(mem_ctx, sid);
@@ -1995,45 +2070,47 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	/* We might have to create a ForeignSecurityPrincipal, even if this user
 	 * is in our own domain */
 
-	msg = ldb_msg_new(mem_ctx);
+	msg = ldb_msg_new(sidstr);
 	if (msg == NULL) {
+		talloc_free(sidstr);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* TODO: Hmmm. This feels wrong. How do I find the base dn to
-	 * put the ForeignSecurityPrincipals? d_state->domain_dn does
-	 * not work, this is wrong for the Builtin domain, there's no
-	 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
-	 */
-
-	basedn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
-				 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
-
-	if (basedn == NULL) {
+	ret = dsdb_wellknown_dn(sam_ctx, sidstr, samdb_base_dn(sam_ctx),
+				DS_GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER,
+				&basedn);
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to find DN for "
-			  "ForeignSecurityPrincipal container\n"));
+			  "ForeignSecurityPrincipal container - %s\n", ldb_errstring(sam_ctx)));
+		talloc_free(sidstr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* add core elements to the ldb_message for the alias */
-	msg->dn = ldb_dn_copy(mem_ctx, basedn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
+	msg->dn = basedn;
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr)) {
+		talloc_free(sidstr);
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	samdb_msg_add_string(sam_ctx, mem_ctx, msg,
+	samdb_msg_add_string(sam_ctx, msg, msg,
 			     "objectClass",
 			     "foreignSecurityPrincipal");
 
 	/* create the alias */
 	ret = ldb_add(sam_ctx, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create foreignSecurityPrincipal "
 			 "record %s: %s\n", 
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(sam_ctx)));
+		talloc_free(sidstr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	*ret_dn = msg->dn;
+
+	*ret_dn = talloc_steal(mem_ctx, msg->dn);
+	talloc_free(sidstr);
+
 	return NT_STATUS_OK;
 }
 
@@ -2072,14 +2149,16 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	if (!ldb_dn_validate(dn)) {
 		DEBUG(2, ("Failed to validated DN %s\n",
 			  ldb_dn_get_linearized(dn)));
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	talloc_free(tmp_ctx);
 	return dn;
 }
+
 /*
   Find the DN of a domain, be it the netbios or DNS name 
 */
-
 struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
 				  const char *domain_name) 
 {
@@ -2151,13 +2230,14 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	res = talloc_zero(mem_ctx, struct ldb_result);
+	res = talloc_zero(expression, struct ldb_result);
 	if (!res) {
 		DEBUG(0, (__location__ ": out of memory\n"));
+		talloc_free(expression);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&search_req, ldb, mem_ctx,
+	ret = ldb_build_search_req(&search_req, ldb, expression,
 				   ldb_get_default_basedn(ldb),
 				   LDB_SCOPE_SUBTREE,
 				   expression, attrs,
@@ -2165,6 +2245,7 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 				   res, ldb_search_default_callback,
 				   NULL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
@@ -2173,12 +2254,14 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	options = talloc(search_req, struct ldb_search_options_control);
 	if (options == NULL) {
 		DEBUG(0, (__location__ ": out of memory\n"));
+		talloc_free(expression);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
 
 	ret = ldb_request_add_control(search_req, LDB_CONTROL_EXTENDED_DN_OID, true, NULL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
@@ -2186,16 +2269,19 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 				      LDB_CONTROL_SEARCH_OPTIONS_OID,
 				      true, options);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
 	ret = ldb_request(ldb, search_req);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
 	ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(expression);
 		return ret;
 	}
 
@@ -2203,10 +2289,12 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	   partitions module that can return two here with the
 	   search_options control set */
 	if (res->count < 1) {
+		talloc_free(expression);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
-	*dn = res->msgs[0]->dn;
+	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
+	talloc_free(expression);
 
 	return LDB_SUCCESS;
 }
@@ -2229,6 +2317,7 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -2248,6 +2337,7 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 
 	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -2256,8 +2346,8 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	talloc_free(req);
 	*_res = talloc_steal(mem_ctx, res);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
@@ -2720,13 +2810,32 @@ int dsdb_functional_level(struct ldb_context *ldb)
 }
 
 /*
+  set a GUID in an extended DN structure
+ */
+int dsdb_set_extended_dn_guid(struct ldb_dn *dn, const struct GUID *guid, const char *component_name)
+{
+	struct ldb_val v;
+	NTSTATUS status;
+	int ret;
+
+	status = GUID_to_ndr_blob(guid, dn, &v);
+	if (!NT_STATUS_IS_OK(status)) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	ret = ldb_dn_set_extended_component(dn, component_name, &v);
+	data_blob_free(&v);
+	return ret;
+}
+
+/*
   return a GUID from a extended DN structure
  */
-NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid)
+NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid, const char *component_name)
 {
 	const struct ldb_val *v;
 
-	v = ldb_dn_get_extended_component(dn, "GUID");
+	v = ldb_dn_get_extended_component(dn, component_name);
 	if (v == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -2735,17 +2844,111 @@ NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid)
 }
 
 /*
+  return a uint64_t from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_uint64(struct ldb_dn *dn, uint64_t *val, const char *component_name)
+{
+	const struct ldb_val *v;
+	char *s;
+
+	v = ldb_dn_get_extended_component(dn, component_name);
+	if (v == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	s = talloc_strndup(dn, (const char *)v->data, v->length);
+	NT_STATUS_HAVE_NO_MEMORY(s);
+
+	*val = strtoull(s, NULL, 0);
+
+	talloc_free(s);
+	return NT_STATUS_OK;
+}
+
+/*
+  return a NTTIME from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_nttime(struct ldb_dn *dn, NTTIME *nttime, const char *component_name)
+{
+	return dsdb_get_extended_dn_uint64(dn, nttime, component_name);
+}
+
+/*
+  return a uint32_t from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const char *component_name)
+{
+	const struct ldb_val *v;
+	char *s;
+
+	v = ldb_dn_get_extended_component(dn, component_name);
+	if (v == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	s = talloc_strndup(dn, (const char *)v->data, v->length);
+	NT_STATUS_HAVE_NO_MEMORY(s);
+
+	*val = strtoul(s, NULL, 0);
+
+	talloc_free(s);
+	return NT_STATUS_OK;
+}
+
+/*
+  return RMD_FLAGS directly from a ldb_dn
+  returns 0 if not found
+ */
+uint32_t dsdb_dn_rmd_flags(struct ldb_dn *dn)
+{
+	const struct ldb_val *v;
+	char buf[32];
+	v = ldb_dn_get_extended_component(dn, "RMD_FLAGS");
+	if (!v || v->length > sizeof(buf)-1) return 0;
+	strncpy(buf, (const char *)v->data, v->length);
+	buf[v->length] = 0;
+	return strtoul(buf, NULL, 10);
+}
+
+/*
+  return RMD_FLAGS directly from a ldb_val for a DN
+  returns 0 if RMD_FLAGS is not found
+ */
+uint32_t dsdb_dn_val_rmd_flags(struct ldb_val *val)
+{
+	const char *p;
+	uint32_t flags;
+	char *end;
+
+	if (val->length < 13) {
+		return 0;
+	}
+	p = memmem(val->data, val->length-2, "<RMD_FLAGS=", 11);
+	if (!p) {
+		return 0;
+	}
+	flags = strtoul(p+11, &end, 10);
+	if (!end || *end != '>') {
+		/* it must end in a > */
+		return 0;
+	}
+	return flags;
+}
+
+/*
   return true if a ldb_val containing a DN in storage form is deleted
  */
 bool dsdb_dn_is_deleted_val(struct ldb_val *val)
 {
-	/* this relies on the sort order and exact format of
-	   linearized extended DNs */
-	if (val->length >= 12 &&
-	    strncmp((const char *)val->data, "<DELETED=1>;", 12) == 0) {
-		return true;
-	}
-	return false;
+	return (dsdb_dn_val_rmd_flags(val) & DSDB_RMD_FLAG_DELETED) != 0;
+}
+
+/*
+  return true if a ldb_val containing a DN in storage form is
+  in the upgraded w2k3 linked attribute format
+ */
+bool dsdb_dn_is_upgraded_link_val(struct ldb_val *val)
+{
+	return memmem(val->data, val->length, "<RMD_ADDTIME=", 13) != NULL;
 }
 
 /*
@@ -2869,4 +3072,30 @@ int dsdb_get_deleted_objects_dn(struct ldb_context *ldb,
 	ret = dsdb_wellknown_dn(ldb, mem_ctx, nc_root, DS_GUID_DELETED_OBJECTS_CONTAINER, do_dn);
 	talloc_free(nc_root);
 	return ret;
+}
+
+/*
+  return the tombstoneLifetime, in days
+ */
+int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
+{
+	struct ldb_dn *dn;
+	dn = samdb_config_dn(ldb);
+	if (!dn) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	dn = ldb_dn_copy(ldb, dn);
+	if (!dn) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* see MS-ADTS section 7.1.1.2.4.1.1. There doesn't appear to
+	 be a wellknown GUID for this */
+	if (!ldb_dn_add_child_fmt(dn, "CN=Directory Service,CN=Windows NT")) {
+		talloc_free(dn);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*lifetime = samdb_search_uint(ldb, dn, 180, dn, "tombstoneLifetime", "objectClass=nTDSService");
+	talloc_free(dn);
+	return LDB_SUCCESS;
 }

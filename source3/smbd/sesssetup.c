@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
+#include "ntlmssp.h"
 
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {

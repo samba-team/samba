@@ -112,8 +112,7 @@
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 #define reply_nterror(req,status) reply_nt_error(req,status,__LINE__,__FILE__)
-#define reply_force_nterror(req,status) reply_force_nt_error(req,status,__LINE__,__FILE__)
-#define reply_doserror(req,eclass,ecode) reply_dos_error(req,eclass,ecode,__LINE__,__FILE__)
+#define reply_force_doserror(req,eclass,ecode) reply_force_dos_error(req,eclass,ecode,__LINE__,__FILE__)
 #define reply_botherror(req,status,eclass,ecode) reply_both_error(req,eclass,ecode,status,__LINE__,__FILE__)
 
 #if 0

@@ -2165,7 +2165,11 @@ struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 						struct event_context *ev,
 						struct cli_state *cli);
 NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req);
-bool cli_ulogoff(struct cli_state *cli);
+struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct cli_state *cli);
+NTSTATUS cli_ulogoff_recv(struct tevent_req *req);
+NTSTATUS cli_ulogoff(struct cli_state *cli);
 struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,
@@ -2180,7 +2184,11 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_tcon_andx_recv(struct tevent_req *req);
 NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen);
-bool cli_tdis(struct cli_state *cli);
+struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
+                                 struct tevent_context *ev,
+                                 struct cli_state *cli);
+NTSTATUS cli_tdis_recv(struct tevent_req *req);
+NTSTATUS cli_tdis(struct cli_state *cli);
 void cli_negprot_sendsync(struct cli_state *cli);
 NTSTATUS cli_negprot(struct cli_state *cli);
 struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
@@ -3057,8 +3065,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 NTSTATUS check_negative_conn_cache_timeout( const char *domain, const char *server, unsigned int failed_cache_timeout );
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
 void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) ;
-void delete_negative_conn_cache(const char *domain, const char *server);
-void flush_negative_conn_cache( void );
 void flush_negative_conn_cache_for_domain(const char *domain);
 
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
@@ -3213,43 +3219,41 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status);
 /* The following definitions come from libsmb/ntlmssp.c  */
 
 void debug_ntlmssp_flags(uint32 neg_flags);
-NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user) ;
-NTSTATUS ntlmssp_set_hashes(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
+NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 		const unsigned char lm_hash[16],
 		const unsigned char nt_hash[16]) ;
-NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password) ;
-NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain) ;
-NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *workstation) ;
-NTSTATUS ntlmssp_store_response(NTLMSSP_STATE *ntlmssp_state,
-				DATA_BLOB response) ;
-void ntlmssp_want_feature_list(NTLMSSP_STATE *ntlmssp_state, char *feature_list);
-void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature);
-NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state, 
+NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
+NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
+NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) ;
+void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);
+void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature);
+NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
-void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state);
-DATA_BLOB ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state, TALLOC_CTX *mem_ctx);
-NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state);
-NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state);
+void ntlmssp_end(struct ntlmssp_state **ntlmssp_state);
+DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx);
+NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state);
+NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state);
 
 /* The following definitions come from libsmb/ntlmssp_sign.c  */
 
-NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 				    const uchar *data, size_t length, 
 				    const uchar *whole_pdu, size_t pdu_length, 
 				    DATA_BLOB *sig) ;
-NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 				const uchar *data, size_t length, 
 				const uchar *whole_pdu, size_t pdu_length, 
 				const DATA_BLOB *sig) ;
-NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     uchar *data, size_t length,
 			     uchar *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig);
-NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 				uchar *data, size_t length,
 				uchar *whole_pdu, size_t pdu_length,
 				DATA_BLOB *sig);
-NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state);
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
 
 /* The following definitions come from libsmb/passchange.c  */
 
@@ -3270,8 +3274,8 @@ bool netsamlogon_cache_have(const DOM_SID *user_sid);
 
 NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num);
 bool common_encryption_on(struct smb_trans_enc_state *es);
-NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf);
-NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS common_ntlm_decrypt_buffer(struct ntlmssp_state *ntlmssp_state, char *buf);
+NTSTATUS common_ntlm_encrypt_buffer(struct ntlmssp_state *ntlmssp_state,
 				uint16 enc_ctx_num,
 				char *buf,
 				char **ppbuf_out);
@@ -6277,9 +6281,7 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file);
 void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 		    int line, const char *file);
-void reply_force_nt_error(struct smb_request *req, NTSTATUS ntstatus,
-			  int line, const char *file);
-void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
+void reply_force_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		    int line, const char *file);
 void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		      NTSTATUS status, int line, const char *file);
@@ -6737,6 +6739,10 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 void create_file_sids(const SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid);
 bool nt4_compatible_acls(void);
+uint32_t map_canon_ace_perms(int snum,
+                                enum security_ace_type *pacl_type,
+                                mode_t perms,
+                                bool directory_ace);
 NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,

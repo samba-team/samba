@@ -109,11 +109,11 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 								   nt_errstr(status));
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_ChangePasswordUser3 for '%s\\%s' failed: %s",
-								   r->samr.in.domain_name, r->samr.in.account_name, 
+								   r->samr.in.domain_name, r->samr.in.account_name,
 								   nt_errstr(status));
 		}
 		goto disconnect;
-	} 
+	}
 
 	/* prepare samr_ChangePasswordUser2 */
 	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII|STR_TERMINATE);
@@ -216,7 +216,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 #endif
 disconnect:
 	/* close connection */
-	talloc_free(c.out.dcerpc_pipe);
+	talloc_unlink(ctx, c.out.dcerpc_pipe);
 
 	return status;
 }
@@ -627,7 +627,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 disconnect:
 	/* close connection */
-	talloc_free(c.out.dcerpc_pipe);
+	talloc_unlink(ctx, c.out.dcerpc_pipe);
 
 	return status;
 }

@@ -124,8 +124,9 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	DATA_BLOB struct_blob;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
-	const uint8_t *cryptkey;
+	uint8_t cryptkey[8];
 	const char *target_name;
+	NTSTATUS status;
 
 	/* parse the NTLMSSP packet */
 #if 0
@@ -150,10 +151,11 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	ntlmssp_handle_neg_flags(gensec_ntlmssp_state, neg_flags, gensec_ntlmssp_state->allow_lm_key);
 
 	/* Ask our caller what challenge they would like in the packet */
-	cryptkey = gensec_ntlmssp_state->get_challenge(gensec_ntlmssp_state);
-	if (!cryptkey) {
-		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+	status = gensec_ntlmssp_state->get_challenge(gensec_ntlmssp_state, cryptkey);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* Check if we may set the challenge */
@@ -180,7 +182,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
-		const char *target_name_dns = "";
 
 		/* Find out the DNS domain name */
 		dnsdomname[0] = '\0';
@@ -193,12 +194,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 			safe_strcat(dnsname, dnsdomname, sizeof(dnsname) - 1);
 		}
 		strlower_m(dnsname);
-
-		if (chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN) {
-			target_name_dns = dnsdomname;
-		} else if (chal_flags |= NTLMSSP_TARGET_TYPE_SERVER) {
-			target_name_dns = dnsname;
-		}
 
 		msrpc_gen(out_mem_ctx, 
 			  &struct_blob, "aaaaa",
@@ -268,6 +263,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 	}
 
 	/* zero these out */
+	data_blob_free(&gensec_ntlmssp_state->session_key);
 	data_blob_free(&gensec_ntlmssp_state->lm_resp);
 	data_blob_free(&gensec_ntlmssp_state->nt_resp);
 	data_blob_free(&gensec_ntlmssp_state->encrypted_session_key);
@@ -405,6 +401,11 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	NTSTATUS nt_status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
+
+	if (!(gensec_security->want_features
+	      & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY))) {
+		return NT_STATUS_OK;
+	}
 
 	if (user_session_key)
 		dump_data_pw("USER session key:\n", user_session_key->data, user_session_key->length);
@@ -548,20 +549,15 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 			     const DATA_BLOB in, DATA_BLOB *out) 
 {	
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
-	DATA_BLOB user_session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+	DATA_BLOB user_session_key = data_blob_null;
+	DATA_BLOB lm_session_key = data_blob_null;
 	NTSTATUS nt_status;
 
-	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* zero the outbound NTLMSSP packet */
-	*out = data_blob_talloc(out_mem_ctx, NULL, 0);
+	*out = data_blob_null;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_preauth(gensec_ntlmssp_state, in))) {
-		talloc_free(mem_ctx);
+	nt_status = ntlmssp_server_preauth(gensec_ntlmssp_state, in);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
@@ -573,23 +569,21 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 	 */
 
 	/* Finally, actually ask if the password is OK */
+	nt_status = gensec_ntlmssp_state->check_password(gensec_ntlmssp_state,
+							 &user_session_key,
+							 &lm_session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
-	if (!NT_STATUS_IS_OK(nt_status = gensec_ntlmssp_state->check_password(gensec_ntlmssp_state, mem_ctx,
-									      &user_session_key, &lm_session_key))) {
-		talloc_free(mem_ctx);
+	nt_status = ntlmssp_server_postauth(gensec_security,
+					    &user_session_key,
+					    &lm_session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-	
-	if (gensec_security->want_features
-	    & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY)) {
-		nt_status = ntlmssp_server_postauth(gensec_security, &user_session_key, &lm_session_key);
-		talloc_free(mem_ctx);
-		return nt_status;
-	} else {
-		gensec_ntlmssp_state->session_key = data_blob(NULL, 0);
-		talloc_free(mem_ctx);
-		return NT_STATUS_OK;
-	}
+
+	return NT_STATUS_OK;
 }
 
 /**
@@ -597,19 +591,19 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
  * @return an 8 byte random challenge
  */
 
-static const uint8_t *auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
+static NTSTATUS auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+					   uint8_t chal[8])
 {
 	NTSTATUS status;
-	const uint8_t *chal;
 
-	status = gensec_ntlmssp_state->auth_context->get_challenge(gensec_ntlmssp_state->auth_context, &chal);
+	status = gensec_ntlmssp_state->auth_context->get_challenge(gensec_ntlmssp_state->auth_context, chal);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
 			nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 
-	return chal;
+	return NT_STATUS_OK;
 }
 
 /**
@@ -651,12 +645,13 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct gensec_ntlmssp_state *gensec_n
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_ntlmssp_state, 
-					    TALLOC_CTX *mem_ctx, 
-					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	NTSTATUS nt_status;
-	struct auth_usersupplied_info *user_info = talloc(mem_ctx, struct auth_usersupplied_info);
+	struct auth_usersupplied_info *user_info;
+
+	user_info = talloc(gensec_ntlmssp_state, struct auth_usersupplied_info);
 	if (!user_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -675,31 +670,21 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 	user_info->password.response.nt = gensec_ntlmssp_state->nt_resp;
 	user_info->password.response.nt.data = talloc_steal(user_info, gensec_ntlmssp_state->nt_resp.data);
 
-	nt_status = gensec_ntlmssp_state->auth_context->check_password(gensec_ntlmssp_state->auth_context, 
-								       mem_ctx,
-								       user_info, 
+	nt_status = gensec_ntlmssp_state->auth_context->check_password(gensec_ntlmssp_state->auth_context,
+								       gensec_ntlmssp_state,
+								       user_info,
 								       &gensec_ntlmssp_state->server_info);
 	talloc_free(user_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	talloc_steal(gensec_ntlmssp_state, gensec_ntlmssp_state->server_info);
-
 	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
-		DEBUG(10, ("Got NT session key of length %u\n", 
+		DEBUG(10, ("Got NT session key of length %u\n",
 			   (unsigned)gensec_ntlmssp_state->server_info->user_session_key.length));
-		if (!talloc_reference(mem_ctx, gensec_ntlmssp_state->server_info->user_session_key.data)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		*user_session_key = gensec_ntlmssp_state->server_info->user_session_key;
 	}
 	if (gensec_ntlmssp_state->server_info->lm_session_key.length) {
-		DEBUG(10, ("Got LM session key of length %u\n", 
+		DEBUG(10, ("Got LM session key of length %u\n",
 			   (unsigned)gensec_ntlmssp_state->server_info->lm_session_key.length));
-		if (!talloc_reference(mem_ctx, gensec_ntlmssp_state->server_info->lm_session_key.data)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		*lm_session_key = gensec_ntlmssp_state->server_info->lm_session_key;
 	}
 	return nt_status;

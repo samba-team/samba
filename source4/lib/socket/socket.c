@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "system/network.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*
   auto-close sockets on free
@@ -342,6 +343,77 @@ _PUBLIC_ struct socket_address *socket_get_my_addr(struct socket_context *sock, 
 	}
 
 	return sock->ops->fn_get_my_addr(sock, mem_ctx);
+}
+
+_PUBLIC_ struct tsocket_address *socket_address_to_tsocket_address(TALLOC_CTX *mem_ctx,
+								   const struct socket_address *a)
+{
+	struct tsocket_address *r;
+	int ret;
+
+	if (a->sockaddr) {
+		ret = tsocket_address_bsd_from_sockaddr(mem_ctx,
+							a->sockaddr,
+							a->sockaddrlen,
+							&r);
+	} else {
+		ret = tsocket_address_inet_from_strings(mem_ctx,
+							a->family,
+							a->addr,
+							a->port,
+							&r);
+	}
+
+	if (ret != 0) {
+		return NULL;
+	}
+
+	return r;
+}
+
+_PUBLIC_ struct socket_address *tsocket_address_to_socket_address(TALLOC_CTX *mem_ctx,
+								  const struct tsocket_address *a)
+{
+	ssize_t ret;
+	struct sockaddr_storage ss;
+	size_t sslen = sizeof(ss);
+
+	ret = tsocket_address_bsd_sockaddr(a, (struct sockaddr *)(void *)&ss, sslen);
+	if (ret < 0) {
+		return NULL;
+	}
+
+	return socket_address_from_sockaddr(mem_ctx, (struct sockaddr *)(void *)&ss, ret);
+}
+
+_PUBLIC_ struct tsocket_address *socket_get_remote_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct socket_address *a;
+	struct tsocket_address *r;
+
+	a = socket_get_peer_addr(sock, mem_ctx);
+	if (a == NULL) {
+		return NULL;
+	}
+
+	r = socket_address_to_tsocket_address(mem_ctx, a);
+	talloc_free(a);
+	return r;
+}
+
+_PUBLIC_ struct tsocket_address *socket_get_local_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct socket_address *a;
+	struct tsocket_address *r;
+
+	a = socket_get_my_addr(sock, mem_ctx);
+	if (a == NULL) {
+		return NULL;
+	}
+
+	r = socket_address_to_tsocket_address(mem_ctx, a);
+	talloc_free(a);
+	return r;
 }
 
 _PUBLIC_ int socket_get_fd(struct socket_context *sock)

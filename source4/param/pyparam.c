@@ -374,6 +374,9 @@ void initparam(void)
 	if (PyType_Ready(&PyLoadparmContext) < 0)
 		return;
 
+	if (PyType_Ready(&PyLoadparmService) < 0)
+		return;
+
 	m = Py_InitModule3("param", pyparam_methods, "Parsing and writing Samba configuration files.");
 	if (m == NULL)
 		return;

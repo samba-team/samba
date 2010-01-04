@@ -681,3 +681,26 @@ char *rep_realpath(const char *path, char *resolved_path)
 	return NULL;
 }
 #endif
+
+
+#ifndef HAVE_MEMMEM
+void *rep_memmem(const void *haystack, size_t haystacklen,
+		 const void *needle, size_t needlelen)
+{
+	if (needlelen == 0) {
+		return discard_const(haystack);
+	}
+	while (haystacklen >= needlelen) {
+		char *p = memchr(haystack, *(const char *)needle,
+				 haystacklen-(needlelen-1));
+		if (!p) return NULL;
+		if (memcmp(p, needle, needlelen) == 0) {
+			return p;
+		}
+		haystack = p+1;
+		haystacklen -= (p - (const char *)haystack) + 1;
+	}
+	return NULL;
+}
+#endif
+

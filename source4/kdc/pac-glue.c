@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    PAC Glue between Samba and the KDC
-   
+
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -34,22 +34,22 @@
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
 
-static krb5_error_code	samba_kdc_plugin_init(krb5_context context, void **ptr) 
+static krb5_error_code	samba_kdc_plugin_init(krb5_context context, void **ptr)
 {
 	*ptr = NULL;
 	return 0;
 }
 
-static void	samba_kdc_plugin_fini(void *ptr) 
+static void	samba_kdc_plugin_fini(void *ptr)
 {
 	return;
 }
 
 static krb5_error_code make_pac(krb5_context context,
-				TALLOC_CTX *mem_ctx, 
+				TALLOC_CTX *mem_ctx,
 				struct smb_iconv_convenience *iconv_convenience,
 				struct auth_serversupplied_info *server_info,
-				krb5_pac *pac) 
+				krb5_pac *pac)
 {
 	union PAC_INFO info;
 	struct netr_SamInfo3 *info3;
@@ -105,7 +105,7 @@ static krb5_error_code make_pac(krb5_context context,
 
 /* Given the right private pointer from hdb_samba4, get a PAC from the attached ldb messages */
 static krb5_error_code samba_kdc_get_pac(void *priv,
-					 krb5_context context, 
+					 krb5_context context,
 					 struct hdb_entry_ex *client,
 					 krb5_pac *pac)
 {
@@ -151,7 +151,7 @@ static krb5_error_code samba_kdc_get_pac(void *priv,
 
 static krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 					   const krb5_principal client_principal,
-					   struct hdb_entry_ex *client,  
+					   struct hdb_entry_ex *client,
 					   struct hdb_entry_ex *server, krb5_pac *pac)
 {
 	krb5_error_code ret;
@@ -163,7 +163,7 @@ static krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	struct auth_serversupplied_info *server_info_out;
 
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_get_pac context");
-	
+
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
@@ -230,8 +230,8 @@ static void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
  * the account_ok routine in auth/auth_sam.c for consistancy */
 
 
-static krb5_error_code samba_kdc_check_client_access(void *priv, 
-						     krb5_context context, 
+static krb5_error_code samba_kdc_check_client_access(void *priv,
+						     krb5_context context,
 						     krb5_kdc_configuration *config,
 						     hdb_entry_ex *client_ex, const char *client_name,
 						     hdb_entry_ex *server_ex, const char *server_name,
@@ -253,7 +253,7 @@ static krb5_error_code samba_kdc_check_client_access(void *priv,
 	if (!tmp_ctx) {
 		return ENOMEM;
 	}
-	
+
 	if (addresses) {
 		for (i=0; i < addresses->len; i++) {
 			if (addresses->val->addr_type == KRB5_ADDRESS_NETBIOS) {
@@ -276,7 +276,7 @@ static krb5_error_code samba_kdc_check_client_access(void *priv,
 	password_change = (server_ex && server_ex->entry.flags.change_pw);
 
 	/* we allow all kinds of trusts here */
-	nt_status = authsam_account_ok(tmp_ctx, 
+	nt_status = authsam_account_ok(tmp_ctx,
 				       p->samdb,
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 				       p->realm_dn,

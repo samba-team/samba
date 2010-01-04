@@ -704,7 +704,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= req->buflen)) {
-		reply_doserror(req, ERRDOS, ERRbuftoosmall);
+		reply_force_doserror(req, ERRDOS, ERRbuftoosmall);
 		END_PROFILE(SMBtconX);
 		return;
 	}
@@ -744,7 +744,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		q = strchr_m(path+2,'\\');
 		if (!q) {
 			data_blob_clear_free(&password);
-			reply_doserror(req, ERRDOS, ERRnosuchshare);
+			reply_nterror(req, NT_STATUS_BAD_NETWORK_NAME);
 			END_PROFILE(SMBtconX);
 			return;
 		}
@@ -864,7 +864,7 @@ void reply_unknown_new(struct smb_request *req, uint8 type)
 {
 	DEBUG(0, ("unknown command type (%s): type=%d (0x%X)\n",
 		  smb_fn_name(type), type, type));
-	reply_doserror(req, ERRSRV, ERRunknownsmb);
+	reply_force_doserror(req, ERRSRV, ERRunknownsmb);
 	return;
 }
 
@@ -901,7 +901,7 @@ void reply_ioctl(struct smb_request *req)
 		    replysize = 32;
 		    break;
 	    default:
-		    reply_doserror(req, ERRSRV, ERRnosupport);
+		    reply_force_doserror(req, ERRSRV, ERRnosupport);
 		    END_PROFILE(SMBioctl);
 		    return;
 	}
@@ -920,7 +920,7 @@ void reply_ioctl(struct smb_request *req)
 			files_struct *fsp = file_fsp(
 				req, SVAL(req->vwv+0, 0));
 			if (!fsp) {
-				reply_doserror(req, ERRDOS, ERRbadfid);
+				reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 				END_PROFILE(SMBioctl);
 				return;
 			}
@@ -1652,7 +1652,7 @@ void reply_fclose(struct smb_request *req)
 	p += 2;
 
 	if (status_len == 0) {
-		reply_doserror(req, ERRSRV, ERRsrverror);
+		reply_force_doserror(req, ERRSRV, ERRsrverror);
 		END_PROFILE(SMBfclose);
 		return;
 	}
@@ -1738,7 +1738,7 @@ void reply_open(struct smb_request *req)
 					 OPENX_FILE_EXISTS_OPEN, &access_mask,
 					 &share_mode, &create_disposition,
 					 &create_options)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
 
@@ -1789,7 +1789,8 @@ void reply_open(struct smb_request *req)
 		DEBUG(3,("attempt to open a directory %s\n",
 			 fsp_str_dbg(fsp)));
 		close_file(req, fsp, ERROR_CLOSE);
-		reply_doserror(req, ERRDOS,ERRnoaccess);
+		reply_botherror(req, NT_STATUS_ACCESS_DENIED,
+			ERRDOS, ERRnoaccess);
 		goto out;
 	}
 
@@ -1875,7 +1876,7 @@ void reply_open_and_X(struct smb_request *req)
 		if (lp_nt_pipe_support()) {
 			reply_open_pipe_and_X(conn, req);
 		} else {
-			reply_doserror(req, ERRSRV, ERRaccess);
+			reply_nterror(req, NT_STATUS_NETWORK_ACCESS_DENIED);
 		}
 		goto out;
 	}
@@ -1910,7 +1911,7 @@ void reply_open_and_X(struct smb_request *req)
 					 &access_mask, &share_mode,
 					 &create_disposition,
 					 &create_options)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
 
@@ -1963,7 +1964,7 @@ void reply_open_and_X(struct smb_request *req)
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	if (fattr & aDIR) {
 		close_file(req, fsp, ERROR_CLOSE);
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
 
@@ -3198,7 +3199,7 @@ void reply_lockread(struct smb_request *req)
 	}
 
 	if (!CHECK_READ(fsp,req)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBlockread);
 		return;
 	}
@@ -3308,7 +3309,7 @@ void reply_read(struct smb_request *req)
 	}
 
 	if (!CHECK_READ(fsp,req)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBread);
 		return;
 	}
@@ -3338,7 +3339,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS,ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBread);
 		return;
 	}
@@ -3420,7 +3421,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return;
 	}
 
@@ -3618,7 +3619,7 @@ void reply_read_and_X(struct smb_request *req)
 	}
 
 	if (!CHECK_READ(fsp,req)) {
-		reply_doserror(req, ERRDOS,ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBreadX);
 		return;
 	}
@@ -3669,7 +3670,7 @@ void reply_read_and_X(struct smb_request *req)
 				 "used and we don't support 64 bit offsets.\n",
 				 (unsigned int)IVAL(req->vwv+10, 0) ));
 			END_PROFILE(SMBreadX);
-			reply_doserror(req, ERRDOS, ERRbadaccess);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
 
@@ -3752,7 +3753,7 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
 		return;
@@ -3786,7 +3787,7 @@ void reply_writebraw(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
 		return;
@@ -3802,7 +3803,7 @@ void reply_writebraw(struct smb_request *req)
 		(int)nwritten, (int)write_through));
 
 	if (nwritten < (ssize_t)numtowrite)  {
-		reply_doserror(req, ERRHRD, ERRdiskfull);
+		reply_nterror(req, NT_STATUS_DISK_FULL);
 		error_to_writebrawerr(req);
 		goto strict_unlock;
 	}
@@ -3812,7 +3813,7 @@ void reply_writebraw(struct smb_request *req)
 	/* Allocate a buffer of 64k + length. */
 	buf = TALLOC_ARRAY(NULL, char, 65540);
 	if (!buf) {
-		reply_doserror(req, ERRDOS, ERRnomem);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		error_to_writebrawerr(req);
 		goto strict_unlock;
 	}
@@ -3968,7 +3969,7 @@ void reply_writeunlock(struct smb_request *req)
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS,ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBwriteunlock);
 		return;
 	}
@@ -3983,7 +3984,7 @@ void reply_writeunlock(struct smb_request *req)
 		    &lock);
 
 		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-			reply_doserror(req, ERRDOS, ERRlock);
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwriteunlock);
 			return;
 		}
@@ -4013,7 +4014,7 @@ void reply_writeunlock(struct smb_request *req)
 	}
 
 	if((nwritten < numtowrite) && (numtowrite != 0)) {
-		reply_doserror(req, ERRHRD, ERRdiskfull);
+		reply_nterror(req, NT_STATUS_DISK_FULL);
 		goto strict_unlock;
 	}
 
@@ -4089,7 +4090,7 @@ void reply_write(struct smb_request *req)
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBwrite);
 		return;
 	}
@@ -4103,7 +4104,7 @@ void reply_write(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBwrite);
 		return;
 	}
@@ -4147,7 +4148,7 @@ void reply_write(struct smb_request *req)
 	}
 
 	if((nwritten == 0) && (numtowrite != 0)) {
-		reply_doserror(req, ERRHRD, ERRdiskfull);
+		reply_nterror(req, NT_STATUS_DISK_FULL);
 		goto strict_unlock;
 	}
 
@@ -4299,14 +4300,14 @@ void reply_write_and_X(struct smb_request *req)
 			return;
 		}
 	       	if (numtowrite != req->unread_bytes) {
-			reply_doserror(req, ERRDOS, ERRbadmem);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			END_PROFILE(SMBwriteX);
 			return;
 		}
 	} else {
 		if (smb_doff > smblen || smb_doff + numtowrite < numtowrite ||
 				smb_doff + numtowrite > smblen) {
-			reply_doserror(req, ERRDOS, ERRbadmem);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			END_PROFILE(SMBwriteX);
 			return;
 		}
@@ -4315,7 +4316,7 @@ void reply_write_and_X(struct smb_request *req)
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
 		if (req->unread_bytes) {
-			reply_doserror(req, ERRDOS, ERRbadmem);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			END_PROFILE(SMBwriteX);
 			return;
 		}
@@ -4334,7 +4335,7 @@ void reply_write_and_X(struct smb_request *req)
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
@@ -4358,7 +4359,7 @@ void reply_write_and_X(struct smb_request *req)
 			DEBUG(0,("reply_write_and_X - large offset (%x << 32) "
 				 "used and we don't support 64 bit offsets.\n",
 				 (unsigned int)IVAL(req->vwv+12, 0) ));
-			reply_doserror(req, ERRDOS, ERRbadaccess);
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			END_PROFILE(SMBwriteX);
 			return;
 		}
@@ -4371,7 +4372,7 @@ void reply_write_and_X(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_doserror(req, ERRDOS, ERRlock);
+		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBwriteX);
 		return;
 	}
@@ -4400,7 +4401,7 @@ void reply_write_and_X(struct smb_request *req)
 	}
 
 	if((nwritten == 0) && (numtowrite != 0)) {
-		reply_doserror(req, ERRHRD, ERRdiskfull);
+		reply_nterror(req, NT_STATUS_DISK_FULL);
 		goto strict_unlock;
 	}
 
@@ -4611,7 +4612,7 @@ void reply_close(struct smb_request *req)
 	 */
 
 	if(!fsp || (fsp->conn != conn) || (fsp->vuid != req->vuid)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		END_PROFILE(SMBclose);
 		return;
 	}
@@ -4690,7 +4691,7 @@ void reply_writeclose(struct smb_request *req)
 		return;
 	}
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS,ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBwriteclose);
 		return;
 	}
@@ -4706,7 +4707,7 @@ void reply_writeclose(struct smb_request *req)
 		    &lock);
 
 		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-			reply_doserror(req, ERRDOS,ERRlock);
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwriteclose);
 			return;
 		}
@@ -4732,7 +4733,7 @@ void reply_writeclose(struct smb_request *req)
 		 conn->num_files_open));
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-		reply_doserror(req, ERRHRD, ERRdiskfull);
+		reply_nterror(req, NT_STATUS_DISK_FULL);
 		goto strict_unlock;
 	}
 
@@ -4882,7 +4883,7 @@ void reply_tdis(struct smb_request *req)
 
 	if (!conn) {
 		DEBUG(4,("Invalid connection in tdis\n"));
-		reply_doserror(req, ERRSRV, ERRinvnid);
+		reply_nterror(req, NT_STATUS_NETWORK_NAME_DELETED);
 		END_PROFILE(SMBtdis);
 		return;
 	}
@@ -4982,7 +4983,7 @@ void reply_printopen(struct smb_request *req)
 	}
 
 	if (!CAN_PRINT(conn)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBsplopen);
 		return;
 	}
@@ -5040,7 +5041,7 @@ void reply_printclose(struct smb_request *req)
         }
 
 	if (!CAN_PRINT(conn)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRerror));
+		reply_force_doserror(req, ERRSRV, ERRerror);
 		END_PROFILE(SMBsplclose);
 		return;
 	}
@@ -5088,7 +5089,7 @@ void reply_printqueue(struct smb_request *req)
 	   one printer - I think we should now only accept it if they
 	   get it right (tridge) */
 	if (!CAN_PRINT(conn)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBsplretq);
 		return;
 	}
@@ -5182,13 +5183,13 @@ void reply_printwrite(struct smb_request *req)
         }
 
 	if (!CAN_PRINT(conn)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBsplwr);
 		return;
 	}
 
 	if (!CHECK_WRITE(fsp)) {
-		reply_doserror(req, ERRDOS, ERRbadaccess);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBsplwr);
 		return;
 	}
@@ -6548,7 +6549,7 @@ void reply_copy(struct smb_request *req)
 	if (tid2 != conn->cnum) {
 		/* can't currently handle inter share copies XXXX */
 		DEBUG(3,("Rejecting inter-share copy\n"));
-		reply_doserror(req, ERRSRV, ERRinvdevice);
+		reply_nterror(req, NT_STATUS_BAD_DEVICE_TYPE);
 		goto out;
 	}
 
@@ -6587,19 +6588,19 @@ void reply_copy(struct smb_request *req)
 	target_is_directory = VALID_STAT_OF_DIR(smb_fname_dst->st);
 
 	if ((flags&1) && target_is_directory) {
-		reply_doserror(req, ERRDOS, ERRbadfile);
+		reply_nterror(req, NT_STATUS_NO_SUCH_FILE);
 		goto out;
 	}
 
 	if ((flags&2) && !target_is_directory) {
-		reply_doserror(req, ERRDOS, ERRbadpath);
+		reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 		goto out;
 	}
 
 	if ((flags&(1<<5)) && VALID_STAT_OF_DIR(smb_fname_src->st)) {
 		/* wants a tree copy! XXXX */
 		DEBUG(3,("Rejecting tree copy\n"));
-		reply_doserror(req, ERRSRV, ERRerror);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		goto out;
 	}
 
@@ -6810,7 +6811,7 @@ void reply_copy(struct smb_request *req)
 	}
 
 	if (count == 0) {
-		reply_doserror(req, ERRDOS, error);
+		reply_nterror(req, dos_to_ntstatus(ERRDOS, error));
 		goto out;
 	}
 
@@ -7239,7 +7240,7 @@ void reply_lockingX(struct smb_request *req)
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
+		reply_force_doserror(req, ERRDOS, ERRnoatomiclocks);
 		END_PROFILE(SMBlockingX);
 		return;
 	}
@@ -7282,7 +7283,7 @@ void reply_lockingX(struct smb_request *req)
 				return;
 			} else {
 				END_PROFILE(SMBlockingX);
-				reply_doserror(req, ERRDOS, ERRlock);
+				reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 				return;
 			}
 		}
@@ -7350,8 +7351,8 @@ void reply_lockingX(struct smb_request *req)
 		 * There is no error code marked "stupid client bug".... :-).
 		 */
 		if(err) {
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			END_PROFILE(SMBlockingX);
-			reply_doserror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
 	}
@@ -7385,8 +7386,8 @@ void reply_lockingX(struct smb_request *req)
 		 * There is no error code marked "stupid client bug".... :-).
 		 */
 		if(err) {
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			END_PROFILE(SMBlockingX);
-			reply_doserror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
 	}
@@ -7427,7 +7428,7 @@ void reply_lockingX(struct smb_request *req)
 void reply_readbmpx(struct smb_request *req)
 {
 	START_PROFILE(SMBreadBmpx);
-	reply_doserror(req, ERRSRV, ERRuseSTD);
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBreadBmpx);
 	return;
 }
@@ -7441,7 +7442,7 @@ void reply_readbmpx(struct smb_request *req)
 void reply_readbs(struct smb_request *req)
 {
 	START_PROFILE(SMBreadBs);
-	reply_doserror(req, ERRSRV, ERRuseSTD);
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBreadBs);
 	return;
 }
@@ -7468,7 +7469,7 @@ void reply_setattrE(struct smb_request *req)
 	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if(!fsp || (fsp->conn != conn)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		goto out;
 	}
 
@@ -7499,7 +7500,7 @@ void reply_setattrE(struct smb_request *req)
 
 	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, status);
 		goto out;
 	}
 
@@ -7527,7 +7528,7 @@ void reply_setattrE(struct smb_request *req)
 void reply_writebmpx(struct smb_request *req)
 {
 	START_PROFILE(SMBwriteBmpx);
-	reply_doserror(req, ERRSRV, ERRuseSTD);
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBwriteBmpx);
 	return;
 }
@@ -7541,7 +7542,7 @@ void reply_writebmpx(struct smb_request *req)
 void reply_writebs(struct smb_request *req)
 {
 	START_PROFILE(SMBwriteBs);
-	reply_doserror(req, ERRSRV, ERRuseSTD);
+	reply_force_doserror(req, ERRSRV, ERRuseSTD);
 	END_PROFILE(SMBwriteBs);
 	return;
 }
@@ -7568,7 +7569,7 @@ void reply_getattrE(struct smb_request *req)
 	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if(!fsp || (fsp->conn != conn)) {
-		reply_doserror(req, ERRDOS, ERRbadfid);
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		END_PROFILE(SMBgetattrE);
 		return;
 	}

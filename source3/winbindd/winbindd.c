@@ -532,6 +532,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_list_groups_send, winbindd_list_groups_recv },
 	{ WINBINDD_CHECK_MACHACC, "CHECK_MACHACC",
 	  winbindd_check_machine_acct_send, winbindd_check_machine_acct_recv },
+	{ WINBINDD_PING_DC, "PING_DC",
+	  winbindd_ping_dc_send, winbindd_ping_dc_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
@@ -796,10 +798,15 @@ static void winbind_client_request_read(struct tevent_req *req)
 	ret = wb_req_read_recv(req, state, &state->request, &err);
 	TALLOC_FREE(req);
 	if (ret == -1) {
+		if (err == EPIPE) {
+			DEBUG(6, ("closing socket %d, client exited\n",
+				  state->sock));
+		} else {
+			DEBUG(2, ("Could not read client request from fd %d: "
+				  "%s\n", state->sock, strerror(err)));
+		}
 		close(state->sock);
 		state->sock = -1;
-		DEBUG(2, ("Could not read client request: %s\n",
-			  strerror(err)));
 		remove_client(state);
 		return;
 	}
@@ -833,10 +840,6 @@ static void remove_client(struct winbindd_cli_state *state)
 		state->sock = -1;
 	}
 
-	/* Free any getent state */
-
-	free_getent_state(state->getgrent_state);
-
 	TALLOC_FREE(state->mem_ctx);
 
 	/* Remove from list and free */
@@ -855,7 +858,7 @@ static bool remove_idle_client(void)
 
 	for (state = winbindd_client_list(); state; state = state->next) {
 		if (state->response == NULL &&
-		    !state->pwent_state && !state->getgrent_state) {
+		    !state->pwent_state && !state->grent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
 				last_access = state->last_access;

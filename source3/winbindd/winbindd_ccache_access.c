@@ -6,23 +6,24 @@
    Copyright (C) Robert O'Callahan 2006
    Copyright (C) Jeremy Allison 2006 (minor fixes to fit into Samba and
 				      protect against integer wrap).
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
 #include "winbindd.h"
+#include "ntlmssp.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -49,7 +50,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 					DATA_BLOB *auth_msg)
 {
 	NTSTATUS status;
-	NTLMSSP_STATE *ntlmssp_state = NULL;
+	struct ntlmssp_state *ntlmssp_state = NULL;
 	DATA_BLOB dummy_msg, reply;
 
 	status = ntlmssp_client_start(&ntlmssp_state);
@@ -77,7 +78,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	}
 
 	status = ntlmssp_set_hashes(ntlmssp_state, lm_hash, nt_hash);
-        
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set hashes: %s\n",
 			nt_errstr(status)));
@@ -250,21 +251,15 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		goto process_result;
 	}
 
-	initial = data_blob(state->request->extra_data.data, initial_blob_len);
-	challenge = data_blob(state->request->extra_data.data + initial_blob_len,
-				state->request->data.ccache_ntlm_auth.challenge_blob_len);
+	initial = data_blob_const(state->request->extra_data.data,
+				  initial_blob_len);
+	challenge = data_blob_const(
+		state->request->extra_data.data + initial_blob_len,
+		state->request->data.ccache_ntlm_auth.challenge_blob_len);
 
-	if (!initial.data || !challenge.data) {
-		result = NT_STATUS_NO_MEMORY;
-	} else {
-		result = do_ntlm_auth_with_hashes(name_user, name_domain,
-						entry->lm_hash, entry->nt_hash,
-						initial, challenge, &auth);
-	}
-
-	data_blob_free(&initial);
-	data_blob_free(&challenge);
-
+	result = do_ntlm_auth_with_hashes(name_user, name_domain,
+					  entry->lm_hash, entry->nt_hash,
+					  initial, challenge, &auth);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto process_result;
 	}

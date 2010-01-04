@@ -787,15 +787,15 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	*num_names = rids->count;
-	rid_mem = rids->rids;
-
-	if (!*num_names) {
+	if (!rids || !rids->count) {
 		names = NULL;
 		name_types = NULL;
 		sid_mem = NULL;
 		return NT_STATUS_OK;
 	}
+
+	*num_names = rids->count;
+	rid_mem = rids->rids;
 
         /* Step #2: Convert list of rids into list of usernames.  Do this
            in bunches of ~1000 to avoid crashing NT4.  It looks like there
@@ -1032,10 +1032,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 /* get a list of trusted domains */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+				struct netr_DomainTrustList *trusts)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
@@ -1044,10 +1041,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	DEBUG(3,("rpc: trusted_domains\n"));
 
-	*num_domains = 0;
-	*names = NULL;
-	*alt_names = NULL;
-	*dom_sids = NULL;
+	ZERO_STRUCTP(trusts);
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result))
@@ -1070,22 +1064,33 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
 
-		start_idx = *num_domains;
-		*num_domains += dom_list.count;
-		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names,
-					      char *, *num_domains);
-		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids,
-						 DOM_SID, *num_domains);
-		*alt_names = TALLOC_REALLOC_ARRAY(mem_ctx, *alt_names,
-						 char *, *num_domains);
-		if ((*names == NULL) || (*dom_sids == NULL) ||
-		    (*alt_names == NULL))
+		start_idx = trusts->count;
+		trusts->count += dom_list.count;
+
+		trusts->array = talloc_realloc(
+			mem_ctx, trusts->array, struct netr_DomainTrust,
+			trusts->count);
+		if (trusts->array == NULL) {
 			return NT_STATUS_NO_MEMORY;
+		}
 
 		for (i=0; i<dom_list.count; i++) {
-			(*names)[start_idx+i] = CONST_DISCARD(char *, dom_list.domains[i].name.string);
-			(*dom_sids)[start_idx+i] = *dom_list.domains[i].sid;
-			(*alt_names)[start_idx+i] = talloc_strdup(mem_ctx, "");
+			struct netr_DomainTrust *trust = &trusts->array[i];
+			struct dom_sid *sid;
+
+			ZERO_STRUCTP(trust);
+
+			trust->netbios_name = talloc_move(
+				trusts->array,
+				&dom_list.domains[i].name.string);
+			trust->dns_name = NULL;
+
+			sid = talloc(trusts->array, struct dom_sid);
+			if (sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			sid_copy(sid, dom_list.domains[i].sid);
+			trust->sid = sid;
 		}
 	}
 	return result;
@@ -1258,7 +1263,7 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle lsa_policy;
-	unsigned int orig_timeout;
+	unsigned int orig_timeout = 0;
 	lookup_names_fn_t lookup_names_fn = rpccli_lsa_lookup_names;
 
 	if (domain->can_do_ncacn_ip_tcp) {

@@ -364,8 +364,11 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 bool torture_close_connection(struct cli_state *c)
 {
 	bool ret = True;
-	if (!cli_tdis(c)) {
-		printf("tdis failed (%s)\n", cli_errstr(c));
+	NTSTATUS status;
+
+	status = cli_tdis(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("tdis failed (%s)\n", nt_errstr(status));
 		ret = False;
 	}
 
@@ -1192,8 +1195,9 @@ static bool run_tcon_test(int dummy)
 
 	cli->cnum = cnum2;
 
-	if (!cli_tdis(cli)) {
-		printf("secondary tdis failed (%s)\n", cli_errstr(cli));
+	status = cli_tdis(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("secondary tdis failed (%s)\n", nt_errstr(status));
 		return False;
 	}
 
@@ -5321,9 +5325,10 @@ static bool run_sesssetup_bench(int dummy)
 
 		d_printf("\r%d   ", (int)c->vuid);
 
-		if (!cli_ulogoff(c)) {
+		status = cli_ulogoff(c);
+		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) cli_ulogoff failed: %s\n",
-				 __location__, cli_errstr(c));
+				 __location__, nt_errstr(status));
 			return false;
 		}
 		c->vuid = 0;
@@ -5796,7 +5801,8 @@ static bool run_notify_bench(int dummy)
 	struct tevent_context *ev;
 	NTSTATUS status;
 	uint16_t dnum;
-	struct tevent_req *req1, *req2;
+	struct tevent_req *req1;
+	struct tevent_req *req2 = NULL;
 	int i, num_unc_names;
 	int num_finished = 0;
 
@@ -5964,7 +5970,7 @@ static bool run_windows_write(int dummy)
 	int i;
 	bool ret = false;
 	const char *fname = "\\writetest.txt";
-	struct timeval start;
+	struct timeval start_time;
 	double seconds;
 	double kbytes;
 
@@ -5980,7 +5986,7 @@ static bool run_windows_write(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	start = timeval_current();
+	start_time = timeval_current();
 
 	for (i=0; i<torture_numops; i++) {
 		char c = 0;
@@ -6002,7 +6008,7 @@ static bool run_windows_write(int dummy)
 		}
 	}
 
-	seconds = timeval_elapsed(&start);
+	seconds = timeval_elapsed(&start_time);
 	kbytes = (double)torture_blocksize * torture_numops;
 	kbytes /= 1024;
 
@@ -6042,6 +6048,7 @@ static bool run_uid_regression_test(int dummy)
 	int16_t old_vuid;
 	int16_t old_cnum;
 	bool correct = True;
+	NTSTATUS status;
 
 	printf("starting uid regression test\n");
 
@@ -6054,9 +6061,10 @@ static bool run_uid_regression_test(int dummy)
 	/* Ok - now save then logoff our current user. */
 	old_vuid = cli->vuid;
 
-	if (!cli_ulogoff(cli)) {
+	status = cli_ulogoff(cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) cli_ulogoff failed: %s\n",
-			__location__, cli_errstr(cli));
+			 __location__, nt_errstr(status));
 		correct = false;
 		goto out;
 	}
@@ -6078,17 +6086,20 @@ static bool run_uid_regression_test(int dummy)
 	cli->vuid = 0;
 
 	/* This should succeed. */
-	if (cli_tdis(cli)) {
+	status = cli_tdis(cli);
+
+	if (NT_STATUS_IS_OK(status)) {
 		printf("First tdis with invalid vuid should succeed.\n");
 	} else {
-		printf("First tdis failed (%s)\n", cli_errstr(cli));
+		printf("First tdis failed (%s)\n", nt_errstr(status));
 	}
 
 	cli->vuid = old_vuid;
 	cli->cnum = old_cnum;
 
 	/* This should fail. */
-	if (cli_tdis(cli)) {
+	status = cli_tdis(cli);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("Second tdis with invalid vuid should fail - succeeded instead !.\n");
 	} else {
 		/* Should be bad tid. */

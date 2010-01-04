@@ -130,7 +130,7 @@ int ltdb_lock_read(struct ldb_module *module);
 int ltdb_unlock_read(struct ldb_module *module);
 struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
-int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
 int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_err_map(enum TDB_ERROR tdb_code);
 

@@ -33,6 +33,7 @@
 
 #include "ldb.h"
 #include "tools/cmdline.h"
+#include "ldbutil.h"
 
 static int dn_cmp(const void *p1, const void *p2)
 {
@@ -42,7 +43,7 @@ static int dn_cmp(const void *p1, const void *p2)
 	return ldb_dn_compare(msg1->dn, msg2->dn);
 }
 
-static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn)
+static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struct ldb_control **req_ctrls)
 {
 	int ret, i, total=0;
 	const char *attrs[] = { NULL };
@@ -55,7 +56,7 @@ static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn)
 	qsort(res->msgs, res->count, sizeof(res->msgs[0]), dn_cmp);
 
 	for (i = 0; i < res->count; i++) {
-		if (ldb_delete(ldb, res->msgs[i]->dn) == 0) {
+		if (ldb_delete_ctrl(ldb, res->msgs[i]->dn,req_ctrls) == 0) {
 			total++;
 		} else {
 			printf("Failed to delete '%s' - %s\n",
@@ -83,9 +84,10 @@ static void usage(void)
 
 int main(int argc, const char **argv)
 {
+	struct ldb_control **req_ctrls;
+	struct ldb_cmdline *options;
 	struct ldb_context *ldb;
 	int ret = 0, i;
-	struct ldb_cmdline *options;
 
 	ldb = ldb_init(NULL, NULL);
 
@@ -94,6 +96,12 @@ int main(int argc, const char **argv)
 	if (options->argc < 1) {
 		usage();
 		exit(1);
+	}
+
+	req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+	if (options->controls != NULL &&  req_ctrls== NULL) {
+		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
+		return -1;
 	}
 
 	for (i=0;i<options->argc;i++) {
@@ -105,17 +113,18 @@ int main(int argc, const char **argv)
 			exit(1);
 		}
 		if (options->recursive) {
-			ret = ldb_delete_recursive(ldb, dn);
+			ret = ldb_delete_recursive(ldb, dn,req_ctrls);
 		} else {
-			ret = ldb_delete(ldb, dn);
+			ret = ldb_delete_ctrl(ldb, dn,req_ctrls);
 			if (ret == 0) {
 				printf("Deleted 1 record\n");
 			}
 		}
 		if (ret != 0) {
-			printf("delete of '%s' failed - %s\n",
-				ldb_dn_get_linearized(dn),
-				ldb_errstring(ldb));
+			printf("delete of '%s' failed - (%s) %s\n",
+			       ldb_dn_get_linearized(dn),
+			       ldb_strerror(ret),
+			       ldb_errstring(ldb));
 		}
 	}
 

@@ -25,10 +25,37 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "rpc_server/dcerpc_server_proto.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/security/security.h"
+
+/*
+  build a DsReplicaObjectIdentifier from a ldb msg
+ */
+static struct drsuapi_DsReplicaObjectIdentifier *get_object_identifier(TALLOC_CTX *mem_ctx,
+								       struct ldb_message *msg)
+{
+	struct drsuapi_DsReplicaObjectIdentifier *identifier;
+	struct dom_sid *sid;
+
+	identifier = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
+	if (identifier == NULL) {
+		return NULL;
+	}
+
+	identifier->dn = ldb_dn_alloc_linearized(identifier, msg->dn);
+	identifier->guid = samdb_result_guid(msg, "objectGUID");
+
+	sid = samdb_result_dom_sid(identifier, msg, "objectSid");
+	if (sid) {
+		identifier->sid = *sid;
+	} else {
+		ZERO_STRUCT(identifier->sid);
+	}
+	return identifier;
+}
 
 /* 
   drsuapi_DsGetNCChanges for one object
@@ -44,9 +71,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 {
 	const struct ldb_val *md_value;
 	int i, n;
-	struct ldb_dn *obj_dn;
 	struct replPropertyMetaDataBlob md;
-	struct dom_sid *sid;
 	uint32_t rid = 0;
 	enum ndr_err_code ndr_err;
 	uint32_t *attids;
@@ -104,20 +129,15 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	obj->meta_data_ctr = talloc(obj, struct drsuapi_DsReplicaMetaDataCtr);
 	attids = talloc_array(obj, uint32_t, md.ctr.ctr1.count);
 
-	obj->object.identifier = talloc(obj, struct drsuapi_DsReplicaObjectIdentifier);
-	obj_dn = ldb_msg_find_attr_as_dn(sam_ctx, obj, msg, "distinguishedName");
-	obj->object.identifier->dn = ldb_dn_get_linearized(obj_dn);
-	obj->object.identifier->guid = samdb_result_guid(msg, "objectGUID");
-	sid = samdb_result_dom_sid(obj, msg, "objectSid");
-	if (sid) {
-		dom_sid_split_rid(NULL, sid, NULL, &rid);
-		obj->object.identifier->sid = *sid;
-	} else {
-		ZERO_STRUCT(obj->object.identifier->sid);
+	obj->object.identifier = get_object_identifier(obj, msg);
+	if (obj->object.identifier == NULL) {
+		return WERR_NOMEM;
 	}
+	dom_sid_split_rid(NULL, &obj->object.identifier->sid, NULL, &rid);
 	
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
+		const struct dsdb_attribute *sa;
 		/* if the attribute has not changed, and it is not the
 		   instanceType then don't include it */
 		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
@@ -125,6 +145,16 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 		/* don't include the rDN */
 		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
+
+		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+		if (sa->linkID) {
+			struct ldb_message_element *el;
+			el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
+			if (el && el->num_values && dsdb_dn_is_upgraded_link_val(&el->values[0])) {
+				/* don't send upgraded links inline */
+				continue;
+			}
+		}
 
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
@@ -199,6 +229,149 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	return WERR_OK;
 }
 
+
+/*
+  add one linked attribute from an object to the list of linked
+  attributes in a getncchanges request
+ */
+static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
+				    struct ldb_context *sam_ctx,
+				    const struct dsdb_schema *schema,
+				    const struct dsdb_attribute *sa,
+				    struct ldb_message *msg,
+				    struct dsdb_dn *dsdb_dn,
+				    struct drsuapi_DsReplicaLinkedAttribute **la_list,
+				    uint32_t *la_count)
+{
+	struct drsuapi_DsReplicaLinkedAttribute *la;
+	bool active;
+	NTSTATUS status;
+	WERROR werr;
+
+	(*la_list) = talloc_realloc(mem_ctx, *la_list, struct drsuapi_DsReplicaLinkedAttribute, (*la_count)+1);
+	W_ERROR_HAVE_NO_MEMORY(*la_list);
+
+	la = &(*la_list)[*la_count];
+
+	la->identifier = get_object_identifier(*la_list, msg);
+	W_ERROR_HAVE_NO_MEMORY(la->identifier);
+
+	active = (dsdb_dn_rmd_flags(dsdb_dn->dn) & DSDB_RMD_FLAG_DELETED) == 0;
+
+	la->attid = sa->attributeID_id;
+	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;
+
+	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->originating_add_time, "RMD_ADDTIME");
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	status = dsdb_get_extended_dn_uint32(dsdb_dn->dn, &la->meta_data.version, "RMD_VERSION");
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->meta_data.originating_change_time, "RMD_CHANGETIME");
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &la->meta_data.originating_invocation_id, "RMD_INVOCID");
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	status = dsdb_get_extended_dn_uint64(dsdb_dn->dn, &la->meta_data.originating_usn, "RMD_ORIGINATING_USN");
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	werr = dsdb_dn_la_to_blob(sam_ctx, sa, schema, *la_list, dsdb_dn, &la->value.blob);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	(*la_count)++;
+	return WERR_OK;
+}
+
+
+/*
+  add linked attributes from an object to the list of linked
+  attributes in a getncchanges request
+ */
+static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_dn *ncRoot_dn,
+				       struct dsdb_schema *schema,
+				       uint64_t highest_usn,
+				       uint32_t replica_flags,
+				       struct ldb_message *msg,
+				       struct drsuapi_DsReplicaLinkedAttribute **la_list,
+				       uint32_t *la_count)
+{
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	uint64_t uSNChanged = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
+
+	for (i=0; i<msg->num_elements; i++) {
+		struct ldb_message_element *el = &msg->elements[i];
+		const struct dsdb_attribute *sa;
+		int j;
+
+		sa = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+
+		if (!sa || sa->linkID == 0 || (sa->linkID & 1)) {
+			/* we only want forward links */
+			continue;
+		}
+
+		if (el->num_values && !dsdb_dn_is_upgraded_link_val(&el->values[0])) {
+			/* its an old style link, it will have been
+			 * sent in the main replication data */
+			continue;
+		}
+
+		for (j=0; j<el->num_values; j++) {
+			struct dsdb_dn *dsdb_dn;
+			uint64_t local_usn;
+			NTSTATUS status;
+			WERROR werr;
+
+			dsdb_dn = dsdb_dn_parse(tmp_ctx, sam_ctx, &el->values[j], sa->syntax->ldap_oid);
+			if (dsdb_dn == NULL) {
+				DEBUG(1,(__location__ ": Failed to parse DN for %s in %s\n",
+					 el->name, ldb_dn_get_linearized(msg->dn)));
+				talloc_free(tmp_ctx);
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			status = dsdb_get_extended_dn_uint64(dsdb_dn->dn, &local_usn, "RMD_LOCAL_USN");
+			if (!NT_STATUS_IS_OK(status)) {
+				/* this can happen for attributes
+				   given to us with old style meta
+				   data */
+				continue;
+			}
+
+			if (local_usn > uSNChanged) {
+				DEBUG(1,(__location__ ": uSNChanged less than RMD_LOCAL_USN for %s on %s\n",
+					 el->name, ldb_dn_get_linearized(msg->dn)));
+				talloc_free(tmp_ctx);
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			if (local_usn < highest_usn) {
+				continue;
+			}
+
+			werr = get_nc_changes_add_la(mem_ctx, sam_ctx, schema, sa, msg,
+						     dsdb_dn, la_list, la_count);
+			if (!W_ERROR_IS_OK(werr)) {
+				talloc_free(tmp_ctx);
+				return werr;
+			}
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return WERR_OK;
+}
+
 /*
   load replUpToDateVector from a DN
  */
@@ -255,6 +428,7 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	NTTIME now;
 	time_t t = time(NULL);
 	struct replUpToDateVectorBlob ouv;
+	int i;
 
 	werr = load_udv(sam_ctx, udv, ncRoot_dn, &ouv);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -267,13 +441,24 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	unix_to_nt_time(&now, t);
 	tmp_cursor->last_sync_success = now;
 
-	udv->count = ouv.ctr.ctr2.count + 1;
+	udv->count = ouv.ctr.ctr2.count;
 	udv->cursors = talloc_steal(udv, ouv.ctr.ctr2.cursors);
-	udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count);
-	if (!udv->cursors) {
-		return WERR_DS_DRA_INTERNAL_ERROR;
+
+	for (i=0; i<udv->count; i++) {
+		if (GUID_equal(&tmp_cursor->source_dsa_invocation_id,
+			       &udv->cursors[i].source_dsa_invocation_id)) {
+			udv->cursors[i] = *tmp_cursor;
+			break;
+		}
 	}
-	udv->cursors[udv->count - 1] = *tmp_cursor;
+	if (i == udv->count) {
+		udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count+1);
+		if (!udv->cursors) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		udv->cursors[udv->count] = *tmp_cursor;
+		udv->count++;
+	}
 	
 	qsort(udv->cursors, udv->count,
 	      sizeof(struct drsuapi_DsReplicaCursor2),
@@ -282,6 +467,103 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	return WERR_OK;
 }
 
+
+/* comparison function for linked attributes - see CompareLinks() in
+ * MS-DRSR section 4.1.10.5.17 */
+static int linked_attribute_compare(const struct drsuapi_DsReplicaLinkedAttribute *la1,
+				    const struct drsuapi_DsReplicaLinkedAttribute *la2,
+				    struct ldb_context *sam_ctx)
+{
+	int c;
+	WERROR werr;
+	TALLOC_CTX *tmp_ctx;
+	const struct dsdb_schema *schema;
+	const struct dsdb_attribute *schema_attrib;
+	struct dsdb_dn *dn1, *dn2;
+	struct GUID guid1, guid2;
+	NTSTATUS status;
+
+	c = GUID_compare(&la1->identifier->guid,
+			 &la2->identifier->guid);
+	if (c != 0) return c;
+
+	if (la1->attid != la2->attid) {
+		return la1->attid < la2->attid? -1:1;
+	}
+
+	if ((la1->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) !=
+	    (la2->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)) {
+		return (la1->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)? 1:-1;
+	}
+
+	/* we need to get the target GUIDs to compare */
+	tmp_ctx = talloc_new(sam_ctx);
+
+	schema = dsdb_get_schema(sam_ctx);
+	schema_attrib = dsdb_attribute_by_attributeID_id(schema, la1->attid);
+
+	werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, tmp_ctx, la1->value.blob, &dn1);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": Bad la1 blob in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, tmp_ctx, la2->value.blob, &dn2);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": Bad la2 blob in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	status = dsdb_get_extended_dn_guid(dn1->dn, &guid1, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Bad la1 guid in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+	status = dsdb_get_extended_dn_guid(dn2->dn, &guid2, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Bad la2 guid in sort\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return GUID_compare(&guid1, &guid2);
+}
+
+
+/*
+  sort the objects we send by tree order
+ */
+static int site_res_cmp_parent_order(const struct ldb_message **m1, const struct ldb_message **m2)
+{
+	return ldb_dn_compare((*m2)->dn, (*m1)->dn);
+}
+
+/*
+  sort the objects we send first by uSNChanged
+ */
+static int site_res_cmp_usn_order(const struct ldb_message **m1, const struct ldb_message **m2)
+{
+	unsigned usnchanged1, usnchanged2;
+	unsigned cn1, cn2;
+	cn1 = ldb_dn_get_comp_num((*m1)->dn);
+	cn2 = ldb_dn_get_comp_num((*m2)->dn);
+	if (cn1 != cn2) {
+		return cn1 > cn2 ? 1 : -1;
+	}
+	usnchanged1 = ldb_msg_find_attr_as_uint(*m1, "uSNChanged", 0);
+	usnchanged2 = ldb_msg_find_attr_as_uint(*m2, "uSNChanged", 0);
+	if (usnchanged1 == usnchanged2) {
+		return 0;
+	}
+	return usnchanged1 > usnchanged2 ? 1 : -1;
+}
+
+
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
 	struct ldb_result *site_res;
@@ -289,6 +571,9 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *ncRoot_dn;
 	uint64_t min_usn;
 	uint64_t highest_usn;
+	struct ldb_dn *last_dn;
+	struct drsuapi_DsReplicaLinkedAttribute *la_list;
+	uint32_t la_count;
 };
 
 /* 
@@ -323,6 +608,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_getncchanges_state *getnc_state;
 	struct drsuapi_DsGetNCChangesRequest8 *req8;
 	uint32_t options;
+	uint32_t max_objects;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -389,9 +675,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (getnc_state) {
 		struct ldb_dn *new_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
-			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s\n",
+			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s (last_dn %s)\n",
 				 ldb_dn_get_linearized(new_dn),
-				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
+				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
+				 ldb_dn_get_linearized(getnc_state->last_dn)));
 			talloc_free(getnc_state);
 			getnc_state = NULL;
 		}
@@ -433,6 +720,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (getnc_state->site_res == NULL) {
 		char* search_filter;
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+		const char *extra_filter;
+
+		extra_filter = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req8->highwatermark.highest_usn;
 
@@ -441,6 +731,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						"(uSNChanged>=%llu)",
 						(unsigned long long)(getnc_state->min_usn+1));
 	
+		if (extra_filter) {
+			search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
+		}
+
 		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_CRITICAL_ONLY) {
 			search_filter = talloc_asprintf(mem_ctx,
 							"(&%s(isCriticalSystemObject=TRUE))",
@@ -451,15 +745,27 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			scope = LDB_SCOPE_BASE;
 		}
 		
-		DEBUG(6,(__location__ ": getncchanges on %s using filter %s\n",
+		DEBUG(1,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
 		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, &getnc_state->site_res,
 						      getnc_state->ncRoot_dn, scope, attrs,
-						      "uSNChanged",
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
+
+		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS) {
+			qsort(getnc_state->site_res->msgs,
+			      getnc_state->site_res->count,
+			      sizeof(getnc_state->site_res->msgs[0]),
+			      (comparison_fn_t)site_res_cmp_parent_order);
+		} else {
+			qsort(getnc_state->site_res->msgs,
+			      getnc_state->site_res->count,
+			      sizeof(getnc_state->site_res->msgs[0]),
+			      (comparison_fn_t)site_res_cmp_usn_order);
+		}
+
 	}
 
 	/* Prefix mapping */
@@ -494,23 +800,25 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.first_object = NULL;
 	currentObject = &r->out.ctr->ctr6.first_object;
 
+	/* use this to force single objects at a time, which is useful
+	 * for working out what object is giving problems
+	 */
+	max_objects = lp_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
+	if (req8->max_object_count < max_objects) {
+		max_objects = req8->max_object_count;
+	}
+
 	for(i=getnc_state->num_sent; 
 	    i<getnc_state->site_res->count && 
-		    (r->out.ctr->ctr6.object_count < req8->max_object_count);
+		    (r->out.ctr->ctr6.object_count < max_objects);
 	    i++) {
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
+		struct ldb_message *msg = getnc_state->site_res->msgs[i];
+
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 
-		uSN = ldb_msg_find_attr_as_int(getnc_state->site_res->msgs[i], "uSNChanged", -1);
-		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
-			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
-		}
-		if (uSN > getnc_state->highest_usn) {
-			getnc_state->highest_usn = uSN;
-		}
-
-		werr = get_nc_changes_build_object(obj, getnc_state->site_res->msgs[i], 
+		werr = get_nc_changes_build_object(obj, msg,
 						   b_state->sam_ctx, getnc_state->ncRoot_dn, 
 						   schema, &session_key, getnc_state->min_usn,
 						   req8->replica_flags);
@@ -518,9 +826,28 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return werr;
 		}
 
+		werr = get_nc_changes_add_links(b_state->sam_ctx, getnc_state,
+						getnc_state->ncRoot_dn,
+						schema, getnc_state->min_usn,
+						req8->replica_flags,
+						msg,
+						&getnc_state->la_list,
+						&getnc_state->la_count);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		uSN = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
+		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
+			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
+		}
+		if (uSN > getnc_state->highest_usn) {
+			getnc_state->highest_usn = uSN;
+		}
+
 		if (obj->meta_data_ctr == NULL) {
 			DEBUG(0,(__location__ ": getncchanges skipping send of object %s\n",
-				 ldb_dn_get_linearized(getnc_state->site_res->msgs[i]->dn)));
+				 ldb_dn_get_linearized(msg->dn)));
 			/* no attributes to send */
 			talloc_free(obj);
 			continue;
@@ -530,6 +857,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		
 		*currentObject = obj;
 		currentObject = &obj->next_object;
+
+		talloc_free(getnc_state->last_dn);
+		getnc_state->last_dn = ldb_dn_copy(getnc_state, msg->dn);
+
+		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
 	}
 
 	getnc_state->num_sent += r->out.ctr->ctr6.object_count;
@@ -562,6 +894,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (i < getnc_state->site_res->count) {
 		r->out.ctr->ctr6.more_data = true;
 	} else {
+		r->out.ctr->ctr6.linked_attributes_count = getnc_state->la_count;
+		r->out.ctr->ctr6.linked_attributes = talloc_steal(mem_ctx, getnc_state->la_list);
+
+		ldb_qsort(r->out.ctr->ctr6.linked_attributes, r->out.ctr->ctr6.linked_attributes_count,
+			  sizeof(r->out.ctr->ctr6.linked_attributes[0]),
+			  b_state->sam_ctx, (ldb_qsort_cmp_fn_t)linked_attribute_compare);
+
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.uptodateness_vector->version = 2;
 		r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
@@ -580,11 +919,19 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		b_state->getncchanges_state = NULL;
 	}
 
-	DEBUG(2,("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %d/%d)\n",
-		 (unsigned long long)(req8->highwatermark.highest_usn+1),
-		 req8->replica_flags,
-		 ncRoot->dn, r->out.ctr->ctr6.object_count,
-		 i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i));
+	DEBUG(r->out.ctr->ctr6.more_data?2:1,
+	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %d/%d la=%d)\n",
+	       (unsigned long long)(req8->highwatermark.highest_usn+1),
+	       req8->replica_flags,
+	       ncRoot->dn, r->out.ctr->ctr6.object_count,
+	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
+	       r->out.ctr->ctr6.linked_attributes_count));
+
+#if 0
+	if (!r->out.ctr->ctr6.more_data) {
+		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
+	}
+#endif
 
 	return WERR_OK;
 }

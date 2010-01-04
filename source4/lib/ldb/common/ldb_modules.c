@@ -527,6 +527,11 @@ struct ldb_context *ldb_module_get_ctx(struct ldb_module *module)
 	return module->ldb;
 }
 
+const struct ldb_module_ops *ldb_module_get_ops(struct ldb_module *module)
+{
+	return module->ops;
+}
+
 void *ldb_module_get_private(struct ldb_module *module)
 {
 	return module->private_data;
@@ -601,7 +606,7 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 		 * all our modules, and leaves us one less sharp
 		 * corner for module developers to cut themselves on
 		 */
-		ldb_module_done(request, NULL, NULL, ret);
+		ret = ldb_module_done(request, NULL, NULL, ret);
 	}
 	return ret;
 }
@@ -824,8 +829,7 @@ int ldb_module_done(struct ldb_request *req,
 		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
 	}
 
-	req->callback(req, ares);
-	return error;
+	return req->callback(req, ares);
 }
 
 /* to be used *only* in modules init functions.

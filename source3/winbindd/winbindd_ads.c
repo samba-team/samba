@@ -1257,33 +1257,23 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 /* get a list of trusted domains */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_domains,
-				char ***names,
-				char ***alt_names,
-				DOM_SID **dom_sids)
+				struct netr_DomainTrustList *trusts)
 {
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
-	struct netr_DomainTrustList trusts;
 	int			i;
 	uint32			flags;	
 	struct rpc_pipe_client *cli;
-	uint32                 fr_flags = (NETR_TRUST_FLAG_IN_FOREST | NETR_TRUST_FLAG_TREEROOT);
 	int ret_count;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
-	*num_domains = 0;
-	*alt_names   = NULL;
-	*names       = NULL;
-	*dom_sids    = NULL;
+	ZERO_STRUCTP(trusts);
 
 	/* If this is our primary domain or a root in our forest,
 	   query for all trusts.  If not, then just look for domain
 	   trusts in the target forest */
 
-	if ( domain->primary ||
-		((domain->domain_flags&fr_flags) == fr_flags) ) 
-	{
+	if (domain->primary || domain_is_forest_root(domain)) {
 		flags = NETR_TRUST_FLAG_OUTBOUND |
 			NETR_TRUST_FLAG_INBOUND |
 			NETR_TRUST_FLAG_IN_FOREST;
@@ -1303,142 +1293,121 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
 						      cli->desthost,
 						      flags,
-						      &trusts,
+						      trusts,
 						      NULL);
-	if ( NT_STATUS_IS_OK(result) && trusts.count) {
-
-		/* Allocate memory for trusted domain names and sids */
-
-		if ( !(*names = TALLOC_ARRAY(mem_ctx, char *, trusts.count)) ) {
-			DEBUG(0, ("trusted_domains: out of memory\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if ( !(*alt_names = TALLOC_ARRAY(mem_ctx, char *, trusts.count)) ) {
-			DEBUG(0, ("trusted_domains: out of memory\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if ( !(*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, trusts.count)) ) {
-			DEBUG(0, ("trusted_domains: out of memory\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* Copy across names and sids */
-
-
-		ret_count = 0;		
-		for (i = 0; i < trusts.count; i++) {
-			struct winbindd_domain d;
-
-			ZERO_STRUCT(d);
-
-			/* drop external trusts if this is not our primary 
-			   domain.  This means that the returned number of 
-			   domains may be less that the ones actually trusted
-			   by the DC. */
-
-			if ( (trusts.array[i].trust_attributes == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) &&
-			     !domain->primary ) 
-			{
-				DEBUG(10,("trusted_domains: Skipping external trusted domain "
-					  "%s because it is outside of our primary domain\n",
-					  trusts.array[i].netbios_name));
-				continue;
-			}
-
-			/* We must check that the SID of each trusted domain
-			 * was returned to work around a bug in Windows:
-			 * http://support.microsoft.com/kb/922832 */
-
-			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
-			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);
-			if (trusts.array[i].sid) {
-				sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
-			} else {
-				sid_copy(&(*dom_sids)[ret_count], &global_sid_NULL);
-			}
-
-			/* add to the trusted domain cache */
-
-			fstrcpy( d.name,  trusts.array[i].netbios_name);
-			fstrcpy( d.alt_name, trusts.array[i].dns_name);
-			if (trusts.array[i].sid) {
-				sid_copy( &d.sid, trusts.array[i].sid);
-			} else {
-				sid_copy(&d.sid, &global_sid_NULL);
-			}
-
-			if ( domain->primary ) {
-				DEBUG(10,("trusted_domains(ads):  Searching "
-					  "trusted domain list of %s and storing "
-					  "trust flags for domain %s\n", 
-					  domain->name, d.alt_name));
-
-				d.domain_flags = trusts.array[i].trust_flags;
-				d.domain_type = trusts.array[i].trust_type;
-				d.domain_trust_attribs = trusts.array[i].trust_attributes;
-
-				wcache_tdc_add_domain( &d );
-				ret_count++;
-			} else if ( (domain->domain_flags&fr_flags) == fr_flags ) {
-				/* Check if we already have this record. If
-				 * we are following our forest root that is not
-				 * our primary domain, we want to keep trust
-				 * flags from the perspective of our primary
-				 * domain not our forest root. */
-				struct winbindd_tdc_domain *exist = NULL;
-
-				exist = 
-				    wcache_tdc_fetch_domain(NULL, trusts.array[i].netbios_name);
-				if (!exist) {
-					DEBUG(10,("trusted_domains(ads):  Searching "
-						  "trusted domain list of %s and storing "
-						  "trust flags for domain %s\n", 
-						  domain->name, d.alt_name));
-					d.domain_flags = trusts.array[i].trust_flags;
-					d.domain_type = trusts.array[i].trust_type;
-					d.domain_trust_attribs = trusts.array[i].trust_attributes;
-
-					wcache_tdc_add_domain( &d );
-					ret_count++;
-				}
-				TALLOC_FREE(exist);
-			} else {
-				/* This gets a little tricky.  If we are
-				   following a transitive forest trust, then
-				   innerit the flags, type, and attribs from
-				   the domain we queried to make sure we don't
-				   record the view of the trust from the wrong
-				   side.  Always view it from the side of our
-				   primary domain.   --jerry */
-				struct winbindd_tdc_domain *parent = NULL;
-
-				DEBUG(10,("trusted_domains(ads):  Searching "
-					  "trusted domain list of %s and inheriting "
-					  "trust flags for domain %s\n", 
-					  domain->name, d.alt_name));
-
-				parent = wcache_tdc_fetch_domain(NULL, domain->name);
-				if (parent) {
-					d.domain_flags = parent->trust_flags;
-					d.domain_type  = parent->trust_type;
-					d.domain_trust_attribs = parent->trust_attribs;
-				} else {
-					d.domain_flags = domain->domain_flags;
-					d.domain_type  = domain->domain_type;
-					d.domain_trust_attribs = domain->domain_trust_attribs;
-				}
-				TALLOC_FREE(parent);
-
-				wcache_tdc_add_domain( &d );
-				ret_count++;
-			}
-		}
-
-		*num_domains = ret_count;	
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+	if (trusts->count == 0) {
+		return NT_STATUS_OK;
 	}
 
+	/* Copy across names and sids */
+
+	ret_count = 0;
+	for (i = 0; i < trusts->count; i++) {
+		struct netr_DomainTrust *trust = &trusts->array[i];
+		struct winbindd_domain d;
+
+		ZERO_STRUCT(d);
+
+		/*
+		 * drop external trusts if this is not our primary
+		 * domain.  This means that the returned number of
+		 * domains may be less that the ones actually trusted
+		 * by the DC.
+		 */
+
+		if ((trust->trust_attributes
+		     == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) &&
+		    !domain->primary )
+		{
+			DEBUG(10,("trusted_domains: Skipping external trusted "
+				  "domain %s because it is outside of our "
+				  "primary domain\n",
+				  trust->netbios_name));
+			continue;
+		}
+
+		/* add to the trusted domain cache */
+
+		fstrcpy(d.name, trust->netbios_name);
+		fstrcpy(d.alt_name, trust->dns_name);
+		if (trust->sid) {
+			sid_copy(&d.sid, trust->sid);
+		} else {
+			sid_copy(&d.sid, &global_sid_NULL);
+		}
+
+		if ( domain->primary ) {
+			DEBUG(10,("trusted_domains(ads):  Searching "
+				  "trusted domain list of %s and storing "
+				  "trust flags for domain %s\n",
+				  domain->name, d.alt_name));
+
+			d.domain_flags = trust->trust_flags;
+			d.domain_type = trust->trust_type;
+			d.domain_trust_attribs = trust->trust_attributes;
+
+			wcache_tdc_add_domain( &d );
+			ret_count++;
+		} else if (domain_is_forest_root(domain)) {
+			/* Check if we already have this record. If
+			 * we are following our forest root that is not
+			 * our primary domain, we want to keep trust
+			 * flags from the perspective of our primary
+			 * domain not our forest root. */
+			struct winbindd_tdc_domain *exist = NULL;
+
+			exist = wcache_tdc_fetch_domain(
+				talloc_tos(), trust->netbios_name);
+			if (!exist) {
+				DEBUG(10,("trusted_domains(ads):  Searching "
+					  "trusted domain list of %s and "
+					  "storing trust flags for domain "
+					  "%s\n", domain->name, d.alt_name));
+				d.domain_flags = trust->trust_flags;
+				d.domain_type = trust->trust_type;
+				d.domain_trust_attribs =
+					trust->trust_attributes;
+
+				wcache_tdc_add_domain( &d );
+				ret_count++;
+			}
+			TALLOC_FREE(exist);
+		} else {
+			/* This gets a little tricky.  If we are
+			   following a transitive forest trust, then
+			   innerit the flags, type, and attribs from
+			   the domain we queried to make sure we don't
+			   record the view of the trust from the wrong
+			   side.  Always view it from the side of our
+			   primary domain.   --jerry */
+			struct winbindd_tdc_domain *parent = NULL;
+
+			DEBUG(10,("trusted_domains(ads):  Searching "
+				  "trusted domain list of %s and inheriting "
+				  "trust flags for domain %s\n",
+				  domain->name, d.alt_name));
+
+			parent = wcache_tdc_fetch_domain(talloc_tos(),
+							 domain->name);
+			if (parent) {
+				d.domain_flags = parent->trust_flags;
+				d.domain_type  = parent->trust_type;
+				d.domain_trust_attribs = parent->trust_attribs;
+			} else {
+				d.domain_flags = domain->domain_flags;
+				d.domain_type  = domain->domain_type;
+				d.domain_trust_attribs =
+					domain->domain_trust_attribs;
+			}
+			TALLOC_FREE(parent);
+
+			wcache_tdc_add_domain( &d );
+			ret_count++;
+		}
+	}
 	return result;
 }
 

@@ -50,8 +50,8 @@
 <!ENTITY person.gd '
 <firstname>Guenther</firstname><surname>Deschner</surname>
 <affiliation>
-	<orgname>SuSE</orgname>
-	<address><email>gd@suse.de</email></address>
+	<orgname>Samba Team</orgname>
+	<address><email>gd@samba.org</email></address>
 </affiliation>'>
 
 <!ENTITY author.gd '<author>&person.gd;</author>'>
@@ -214,7 +214,7 @@ in the &smb.conf; file.</para>
 
 <!ENTITY stdarg.configfile '
 <varlistentry>
-<term>-s &lt;configuration file&gt;</term>
+<term>-s|--configfile &lt;configuration file&gt;</term>
 <listitem><para>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
@@ -227,7 +227,7 @@ compile time.</para></listitem>
 
 <!ENTITY stdarg.version '
 <varlistentry>
-<term>-V</term>
+<term>-V|--version</term>
 <listitem><para>Prints the program version number.
 </para></listitem>
 </varlistentry>'>
@@ -249,7 +249,7 @@ log.smbd, etc...). The log file is never removed by the client.
 
 <!ENTITY stdarg.resolve.order '
 <varlistentry>
-<term>-R &lt;name resolve order&gt;</term> 
+<term>-R|--name-resolve &lt;name resolve order&gt;</term>
 <listitem><para>This option is used to determine what naming 
 services and in what order to resolve 
 host names to IP addresses. The option takes a space-separated 
@@ -307,7 +307,7 @@ resolution methods will be attempted in this order. </para></listitem>
 
 <!ENTITY stdarg.netbios.name '
 <varlistentry>
-<term>-n &lt;primary NetBIOS name&gt;</term>
+<term>-n|--netbiosname &lt;primary NetBIOS name&gt;</term>
 <listitem><para>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
 to setting the <smbconfoption><name>netbios name</name></smbconfoption> parameter in the &smb.conf; file. 
@@ -318,7 +318,7 @@ line setting will take precedence over settings in
 
 <!ENTITY stdarg.scope '
 <varlistentry>
-<term>-i &lt;scope&gt;</term>
+<term>-i|--scope &lt;scope&gt;</term>
 <listitem><para>This specifies a NetBIOS scope that
 <command>nmblookup</command> will use to communicate with when
 generating NetBIOS names. For details on the use of NetBIOS
@@ -340,7 +340,7 @@ SAM (as opposed to the Domain SAM). </para></listitem>
 
 <!ENTITY stdarg.socket.options '
 <varlistentry>
-<term>-O socket options</term>
+<term>-O|--socket-options socket options</term>
 <listitem><para>TCP socket options to set on the client
 socket. See the socket options parameter in
 the &smb.conf; manual page for the list of valid
@@ -357,7 +357,7 @@ options. </para></listitem>
 
 <!ENTITY stdarg.nopass '
 <varlistentry>
-<term>-N</term>
+<term>-N|--no-pass</term>
 <listitem><para>If specified, this parameter suppresses the normal
 password prompt from the client to the user. This is useful when
 accessing a service that does not require a password. </para>
@@ -420,7 +420,7 @@ access from unwanted users. </para></listitem>
 
 <!ENTITY stdarg.kerberos '
 <varlistentry>
-<term>-k</term>
+<term>-k|--kerberos</term>
 <listitem><para>
 Try to authenticate with kerberos. Only useful in
 an Active Directory environment.

@@ -26,7 +26,7 @@ from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba import Ldb, param, dom_sid_to_rid
+from samba import Ldb, param
 from samba import UF_NORMAL_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT
 from samba import UF_SERVER_TRUST_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT
 from samba import UF_INTERDOMAIN_TRUST_ACCOUNT
@@ -456,7 +456,7 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NAMING_VIOLATION)
- 
+
         self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
 
         self.ldb.add({
@@ -642,17 +642,17 @@ objectClass: container
         res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res1) == 1)
-	group_rid_1 = dom_sid_to_rid(ldb.schema_format_value("objectSID",
-          res1[0]["objectSID"][0]))
+        group_rid_1 = security.dom_sid(ldb.schema_format_value("objectSID",
+          res1[0]["objectSID"][0])).split()[1]
 
         res1 = ldb.search("cn=ldaptestgroup2,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res1) == 1)
-        group_rid_2 = dom_sid_to_rid(ldb.schema_format_value("objectSID",
-          res1[0]["objectSID"][0]))
+        group_rid_2 = security.dom_sid(ldb.schema_format_value("objectSID",
+          res1[0]["objectSID"][0])).split()[1]
 
         # Try to create a user with an invalid primary group
-	try:
+        try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectclass": ["user", "person"],
@@ -704,7 +704,8 @@ objectClass: container
         # Make group 1 secondary
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_REPLACE, "member")
         ldb.modify(m)
 
         # Make group 1 primary
@@ -724,7 +725,8 @@ objectClass: container
         # Try to add group 1 also as secondary - should be denied
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
         try:
             ldb.modify(m)
             self.fail()
@@ -746,7 +748,8 @@ objectClass: container
         # Make group 2 secondary
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
-        m["member"] = "cn=ldaptestuser,cn=users," + self.base_dn
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
         ldb.modify(m)
 
         # Swap the groups
@@ -833,7 +836,7 @@ objectClass: container
         self.assertTrue(len(res1) == 1)
         self.assertFalse("primaryGroupToken" in res1[0])
 
-	res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
                           scope=SCOPE_BASE)
         self.assertTrue(len(res1) == 1)
         self.assertFalse("primaryGroupToken" in res1[0])
@@ -843,7 +846,7 @@ objectClass: container
         self.assertTrue(len(res1) == 1)
         primary_group_token = int(res1[0]["primaryGroupToken"][0])
 
-	rid = dom_sid_to_rid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0]))
+        rid = security.dom_sid(ldb.schema_format_value("objectSID", res1[0]["objectSID"][0])).split()[1]
         self.assertEquals(primary_group_token, rid)
 
         m = Message()
@@ -1990,137 +1993,6 @@ class BaseDnTests(unittest.TestCase):
         self.assertTrue(res[0]["configurationNamingContext"][0] in ncs)
         self.assertTrue(res[0]["schemaNamingContext"][0] in ncs)
 
-class SchemaTests(unittest.TestCase):
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-
-    def find_schemadn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["schemaNamingContext"][0]
-
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
-    def setUp(self):
-        self.ldb = ldb
-        self.schema_dn = self.find_schemadn(ldb)
-        self.base_dn = self.find_basedn(ldb)
-
-    def test_generated_schema(self):
-        """Testing we can read the generated schema via LDAP"""
-        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
-                attrs=["objectClasses", "attributeTypes", "dITContentRules"])
-        self.assertEquals(len(res), 1)
-        self.assertTrue("dITContentRules" in res[0])
-        self.assertTrue("objectClasses" in res[0])
-        self.assertTrue("attributeTypes" in res[0])
-
-    def test_generated_schema_is_operational(self):
-        """Testing we don't get the generated schema via LDAP by default"""
-        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
-                attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertFalse("dITContentRules" in res[0])
-        self.assertFalse("objectClasses" in res[0])
-        self.assertFalse("attributeTypes" in res[0])
-
-
-    def test_schemaUpdateNow(self):
-        """Testing schemaUpdateNow"""
-        attr_name = "test-Attr" + time.strftime("%s", time.gmtime())
-        attr_ldap_display_name = attr_name.replace("-", "")
-
-        ldif = """
-dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
-objectClass: top
-objectClass: attributeSchema
-adminDescription: """ + attr_name + """
-adminDisplayName: """ + attr_name + """
-cn: """ + attr_name + """
-attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
-attributeSyntax: 2.5.5.12
-omSyntax: 64
-instanceType: 4
-isSingleValued: TRUE
-systemOnly: FALSE
-"""
-        self.ldb.add_ldif(ldif)
-
-        class_name = "test-Class" + time.strftime("%s", time.gmtime())
-        class_ldap_display_name = class_name.replace("-", "")
-
-        ldif = """
-dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
-objectClass: top
-objectClass: classSchema
-adminDescription: """ + class_name + """
-adminDisplayName: """ + class_name + """
-cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
-instanceType: 4
-objectClassCategory: 1
-subClassOf: organizationalPerson
-systemFlags: 16
-rDNAttID: cn
-systemMustContain: cn
-systemMustContain: """ + attr_ldap_display_name + """
-systemOnly: FALSE
-"""
-        self.ldb.add_ldif(ldif)
-
-        ldif = """
-dn:
-changetype: modify
-add: schemaUpdateNow
-schemaUpdateNow: 1
-"""
-        self.ldb.modify_ldif(ldif)
-
-        object_name = "obj" + time.strftime("%s", time.gmtime())
-
-        ldif = """
-dn: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
-objectClass: organizationalPerson
-objectClass: person
-objectClass: """ + class_ldap_display_name + """
-objectClass: top
-cn: """ + object_name + """
-instanceType: 4
-objectCategory: CN=%s,%s"""% (class_name, self.schema_dn) + """
-distinguishedName: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
-name: """ + object_name + """
-""" + attr_ldap_display_name + """: test
-"""
-        self.ldb.add_ldif(ldif)
-
-        # Search for created attribute
-        res = []
-        res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
-        self.assertTrue("schemaIDGUID" in res[0])
-
-        # Search for created objectclass
-        res = []
-        res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
-        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
-        self.assertTrue("schemaIDGUID" in res[0])
-
-        # Search for created object
-        res = []
-        res = self.ldb.search("cn=%s,cn=Users,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        # Delete the object
-        self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
 if not "://" in host:
     if os.path.isfile(host):
@@ -2140,7 +2012,5 @@ rc = 0
 if not runner.run(unittest.makeSuite(BaseDnTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(BasicTests)).wasSuccessful():
-    rc = 1
-if not runner.run(unittest.makeSuite(SchemaTests)).wasSuccessful():
     rc = 1
 sys.exit(rc)

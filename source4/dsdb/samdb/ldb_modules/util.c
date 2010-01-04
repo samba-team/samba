@@ -87,6 +87,13 @@ int dsdb_request_add_controls(struct ldb_module *module, struct ldb_request *req
 		}
 	}
 
+	if (dsdb_flags & DSDB_MODIFY_RELAX) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_RELAX_OID, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -164,14 +171,20 @@ int dsdb_module_search(struct ldb_module *module,
 		       struct ldb_dn *basedn, enum ldb_scope scope, 
 		       const char * const *attrs,
 		       int dsdb_flags, 
-		       const char *expression)
+		       const char *format, ...) _PRINTF_ATTRIBUTE(8, 9)
 {
 	int ret;
 	struct ldb_request *req;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
+	va_list ap;
+	char *expression;
 
 	tmp_ctx = talloc_new(mem_ctx);
+
+	va_start(ap, format);
+	expression = talloc_vasprintf(tmp_ctx, format, ap);
+	va_end(ap);
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -198,7 +211,12 @@ int dsdb_module_search(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = ldb_next_request(module, req);
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->search(module, req);
+	} else {
+		ret = ldb_next_request(module, req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -219,22 +237,15 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 {
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
-	char *expression;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
-
-	expression = talloc_asprintf(tmp_ctx, "objectGUID=%s", GUID_string(tmp_ctx, guid));
-	if (!expression) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 attrs,
 				 DSDB_SEARCH_SHOW_DELETED |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
-				 expression);
+				 "objectGUID=%s", GUID_string(tmp_ctx, guid));
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -244,13 +255,44 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	if (res->count != 1) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching %s\n",
-				       expression);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching objectGUID %s\n",
+				       GUID_string(tmp_ctx, guid));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
+  find a GUID given a DN.
+ */
+int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct GUID *guid)
+{
+	const char *attrs[] = { NULL };
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	int ret;
+	NTSTATUS status;
+
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, dn, attrs,
+				    DSDB_SEARCH_SHOW_DELETED|
+				    DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to find GUID for %s",
+				       ldb_dn_get_linearized(dn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	status = dsdb_get_extended_dn_guid(res->msgs[0]->dn, guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
@@ -287,7 +329,12 @@ int dsdb_module_modify(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	ret = ldb_next_request(module, mod_req);
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->modify(module, mod_req);
+	} else {
+		ret = ldb_next_request(module, mod_req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
 	}
@@ -330,7 +377,12 @@ int dsdb_module_rename(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	ret = ldb_next_request(module, req);
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->rename(module, req);
+	} else {
+		ret = ldb_next_request(module, req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -364,4 +416,33 @@ const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *sc
 	}
 
 	return last_class;
+}
+
+/*
+  check if a single valued link has multiple non-deleted values
+
+  This is needed when we will be using the RELAX control to stop
+  ldb_tdb from checking single valued links
+ */
+int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
+				  const struct ldb_message_element *el)
+{
+	bool found_active = false;
+	int i;
+
+	if (!(attr->ldb_schema_attribute->flags & LDB_ATTR_FLAG_SINGLE_VALUE) ||
+	    el->num_values < 2) {
+		return LDB_SUCCESS;
+	}
+
+	for (i=0; i<el->num_values; i++) {
+		if (!dsdb_dn_is_deleted_val(&el->values[i])) {
+			if (found_active) {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+			found_active = true;
+		}
+	}
+
+	return LDB_SUCCESS;
 }

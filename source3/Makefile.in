@@ -482,7 +482,7 @@ LIBSMB_OBJ0 = \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_sign.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \
-	       libsmb/ntlmssp_ndr.o
+	       ../libcli/auth/ntlmssp_ndr.o
 
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)
@@ -862,10 +862,8 @@ STATUS_OBJ = utils/status.o utils/status_profile.o \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(LIBSAMBA_OBJ) $(FNAME_UTIL_OBJ)
 
-SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-	$(LIBSAMBA_OBJ) $(FNAME_UTIL_OBJ) \
-	$(PRINTBASE_OBJ)
+SMBCONTROL_OBJ = utils/smbcontrol.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+	$(LIBSMB_ERR_OBJ) $(POPT_LIB_OBJ) $(PRINTBASE_OBJ)
 
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
@@ -1148,7 +1146,6 @@ IDMAP_ADEX_OBJ = \
 
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
-		winbindd/winbindd_user.o  \
 		winbindd/winbindd_group.o \
 		winbindd/winbindd_util.o  \
 		winbindd/winbindd_cache.o \
@@ -1226,6 +1223,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_list_groups.o \
 		winbindd/winbindd_check_machine_acct.o \
 		winbindd/winbindd_change_machine_acct.o \
+		winbindd/winbindd_ping_dc.o \
 		winbindd/winbindd_set_mapping.o \
 		winbindd/winbindd_remove_mapping.o \
 		winbindd/winbindd_set_hwm.o \

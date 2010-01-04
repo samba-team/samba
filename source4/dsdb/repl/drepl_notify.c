@@ -404,7 +404,7 @@ WERROR dreplsrv_notify_schedule(struct dreplsrv_service *service, uint32_t next_
 	W_ERROR_HAVE_NO_MEMORY(new_te);
 
 	tmp_mem = talloc_new(service);
-	DEBUG(2,("dreplsrv_notify_schedule(%u) %sscheduled for: %s\n",
+	DEBUG(4,("dreplsrv_notify_schedule(%u) %sscheduled for: %s\n",
 		next_interval,
 		(service->notify.te?"re":""),
 		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));

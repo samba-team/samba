@@ -22,9 +22,10 @@
 */
 
 #include "includes.h"
+#include "ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
-#include "libsmb/ntlmssp_ndr.h"
+#include "../libcli/auth/ntlmssp_ndr.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       DATA_BLOB reply, DATA_BLOB *next_request);
@@ -41,8 +42,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
  */
 
 static const struct ntlmssp_callbacks {
-	enum NTLMSSP_ROLE role;
-	enum NTLM_MESSAGE_TYPE ntlmssp_command;
+	enum ntlmssp_role role;
+	enum ntlmssp_message_type ntlmssp_command;
 	NTSTATUS (*fn)(struct ntlmssp_state *ntlmssp_state,
 		       DATA_BLOB in, DATA_BLOB *out);
 } ntlmssp_callbacks[] = {
@@ -111,10 +112,11 @@ void debug_ntlmssp_flags(uint32 neg_flags)
  *
  */
 
-static void get_challenge(const struct ntlmssp_state *ntlmssp_state,
-			  uint8_t chal[8])
+static NTSTATUS get_challenge(const struct ntlmssp_state *ntlmssp_state,
+			      uint8_t chal[8])
 {
 	generate_random_buffer(chal, 8);
+	return NT_STATUS_OK;
 }
 
 /**
@@ -145,7 +147,7 @@ static NTSTATUS set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *ch
  *
  */
 
-NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user)
+NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user)
 {
 	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user ? user : "" );
 	if (!ntlmssp_state->user) {
@@ -158,7 +160,7 @@ NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user)
  * Store NT and LM hashes on an NTLMSSP context - ensures they are talloc()ed
  *
  */
-NTSTATUS ntlmssp_set_hashes(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 		const unsigned char lm_hash[16],
 		const unsigned char nt_hash[16])
 {
@@ -178,7 +180,7 @@ NTSTATUS ntlmssp_set_hashes(NTLMSSP_STATE *ntlmssp_state,
  * Converts a password to the hashes on an NTLMSSP context.
  *
  */
-NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password)
+NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password)
 {
 	if (!password) {
 		ntlmssp_state->lm_hash = NULL;
@@ -198,7 +200,7 @@ NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password
  * Set a domain on an NTLMSSP context - ensures it is talloc()ed
  *
  */
-NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain)
+NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain)
 {
 	ntlmssp_state->domain = talloc_strdup(ntlmssp_state,
 					      domain ? domain : "" );
@@ -212,7 +214,7 @@ NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain)
  * Set a workstation on an NTLMSSP context - ensures it is talloc()ed
  *
  */
-NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *workstation)
+NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation)
 {
 	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state, workstation);
 	if (!ntlmssp_state->workstation) {
@@ -222,26 +224,12 @@ NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *works
 }
 
 /**
- *  Store a DATA_BLOB containing an NTLMSSP response, for use later.
- *  This copies the data blob
- */
-
-NTSTATUS ntlmssp_store_response(NTLMSSP_STATE *ntlmssp_state,
-				DATA_BLOB response)
-{
-	ntlmssp_state->stored_response = data_blob_talloc(ntlmssp_state,
-							  response.data,
-							  response.length);
-	return NT_STATUS_OK;
-}
-
-/**
  * Request features for the NTLMSSP negotiation
  *
  * @param ntlmssp_state NTLMSSP state
  * @param feature_list List of space seperated features requested from NTLMSSP.
  */
-void ntlmssp_want_feature_list(NTLMSSP_STATE *ntlmssp_state, char *feature_list)
+void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list)
 {
 	/*
 	 * We need to set this to allow a later SetPassword
@@ -265,7 +253,7 @@ void ntlmssp_want_feature_list(NTLMSSP_STATE *ntlmssp_state, char *feature_list)
  * @param ntlmssp_state NTLMSSP state
  * @param feature Bit flag specifying the requested feature
  */
-void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature)
+void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature)
 {
 	/* As per JRA's comment above */
 	if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
@@ -288,10 +276,9 @@ void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature)
  * @return Errors, NT_STATUS_MORE_PROCESSING_REQUIRED or NT_STATUS_OK.
  */
 
-NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
-			const DATA_BLOB in, DATA_BLOB *out)
+NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
+			const DATA_BLOB input, DATA_BLOB *out)
 {
-	DATA_BLOB input;
 	uint32 ntlmssp_command;
 	int i;
 
@@ -302,15 +289,6 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 	}
 
 	*out = data_blob_null;
-
-	if (!in.length && ntlmssp_state->stored_response.length) {
-		input = ntlmssp_state->stored_response;
-
-		/* we only want to read the stored response once - overwrite it */
-		ntlmssp_state->stored_response = data_blob_null;
-	} else {
-		input = in;
-	}
 
 	if (!input.length) {
 		switch (ntlmssp_state->role) {
@@ -356,16 +334,12 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
  * @param ntlmssp_state NTLMSSP State, free()ed by this function
  */
 
-void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state)
+void ntlmssp_end(struct ntlmssp_state **ntlmssp_state)
 {
-	(*ntlmssp_state)->ref_count--;
-
-	if ((*ntlmssp_state)->ref_count == 0) {
-		data_blob_free(&(*ntlmssp_state)->chal);
-		data_blob_free(&(*ntlmssp_state)->lm_resp);
-		data_blob_free(&(*ntlmssp_state)->nt_resp);
-		TALLOC_FREE(*ntlmssp_state);
-	}
+	data_blob_free(&(*ntlmssp_state)->chal);
+	data_blob_free(&(*ntlmssp_state)->lm_resp);
+	data_blob_free(&(*ntlmssp_state)->nt_resp);
+	TALLOC_FREE(*ntlmssp_state);
 
 	*ntlmssp_state = NULL;
 	return;
@@ -466,7 +440,7 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
  by the client lanman auth/lanman auth parameters, it isn't too bad.
 */
 
-DATA_BLOB ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state, TALLOC_CTX *mem_ctx)
+DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx)
 {
 	DATA_BLOB weakened_key = data_blob_talloc(mem_ctx,
 					ntlmssp_state->session_key.data,
@@ -520,6 +494,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	const char *target_name;
 	struct NEGOTIATE_MESSAGE negotiate;
 	struct CHALLENGE_MESSAGE challenge;
+	NTSTATUS status;
 
 	/* parse the NTLMSSP packet */
 #if 0
@@ -552,7 +527,10 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
 
 	/* Ask our caller what challenge they would like in the packet */
-	ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
+	status = ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* Check if we may set the challenge */
 	if (!ntlmssp_state->may_set_challenge(ntlmssp_state)) {
@@ -902,9 +880,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
  * @param ntlmssp_state NTLMSSP State, allocated by this function
  */
 
-NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
+NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 {
-	*ntlmssp_state = TALLOC_ZERO_P(NULL, NTLMSSP_STATE);
+	*ntlmssp_state = TALLOC_ZERO_P(NULL, struct ntlmssp_state);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
 		talloc_destroy(*ntlmssp_state);
@@ -922,8 +900,6 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
 
 	(*ntlmssp_state)->expected_state = NTLMSSP_NEGOTIATE;
-
-	(*ntlmssp_state)->ref_count = 1;
 
 	(*ntlmssp_state)->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |
@@ -1239,9 +1215,9 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
-NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
+NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 {
-	*ntlmssp_state = TALLOC_ZERO_P(NULL, NTLMSSP_STATE);
+	*ntlmssp_state = TALLOC_ZERO_P(NULL, struct ntlmssp_state);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
 		talloc_destroy(*ntlmssp_state);
@@ -1258,8 +1234,6 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 	(*ntlmssp_state)->use_ntlmv2 = lp_client_ntlmv2_auth();
 
 	(*ntlmssp_state)->expected_state = NTLMSSP_INITIAL;
-
-	(*ntlmssp_state)->ref_count = 1;
 
 	(*ntlmssp_state)->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |

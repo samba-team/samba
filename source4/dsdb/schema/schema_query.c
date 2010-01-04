@@ -31,7 +31,8 @@ static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
 
 static int uint32_cmp(uint32_t c1, uint32_t c2) 
 {
-	return c1 - c2;
+	if (c1 == c2) return 0;
+	return c1 > c2 ? 1 : -1;
 }
 
 static int strcasecmp_with_ldb_val(const struct ldb_val *target, const char *str)

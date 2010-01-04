@@ -52,6 +52,34 @@ static PyObject *schema_module(void)
 	return PyImport_Import(name);
 }
 
+static PyObject *ldb_module(void)
+{
+	PyObject *name = PyString_FromString("ldb");
+	if (name == NULL)
+		return NULL;
+	return PyImport_Import(name);
+}
+
+static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
+{
+	PyLdbObject *ret;
+	PyObject *ldb_mod = ldb_module();
+	PyTypeObject *ldb_ctx_type;
+	if (ldb_mod == NULL)
+		return NULL;
+
+	ldb_ctx_type = PyObject_GetAttrString(ldb_mod, "Ldb");
+
+	ret = (PyLdbObject *)ldb_ctx_type->tp_alloc(ldb_ctx_type, 0);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	ret->mem_ctx = talloc_new(NULL);
+	ret->ldb_ctx = talloc_reference(ret->mem_ctx, ldb_ctx);
+	return (PyObject *)ret;
+}
+
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
@@ -167,8 +195,6 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	return NT_STATUS_OK;
 }
 
-extern void initldb(void);
-
 static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
 {
 	PyObject *mod_security, *dom_sid_Type;
@@ -220,7 +246,6 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	py_load_samba_modules();
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
-	initldb();
 	provision_mod = provision_module();
 
 	if (provision_mod == NULL) {

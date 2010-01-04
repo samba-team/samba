@@ -383,6 +383,48 @@ static bool torture_drs_unit_pfm_oid_from_attid(struct torture_context *tctx, st
 }
 
 /**
+ * Tests dsdb_schema_pfm_oid_from_attid() for handling
+ * correctly different type of attid values.
+ * See: MS-ADTS, 3.1.1.2.6 ATTRTYP
+ */
+static bool torture_drs_unit_pfm_oid_from_attid_check_attid(struct torture_context *tctx,
+							    struct drsut_prefixmap_data *priv)
+{
+	WERROR werr;
+	const char *oid;
+
+	/* Test with valid prefixMap attid */
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0x00000000, tctx, &oid);
+	torture_assert_werr_ok(tctx, werr, "Testing prefixMap type attid = 0x0000000");
+
+	/* Test with attid in msDS-IntId range */
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0x80000000, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_INVALID_PARAMETER,
+				  "Testing msDS-IntId type attid = 0x80000000");
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0xBFFFFFFF, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_INVALID_PARAMETER,
+				  "Testing msDS-IntId type attid = 0xBFFFFFFF");
+
+	/* Test with attid in RESERVED range */
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0xC0000000, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_INVALID_PARAMETER,
+				  "Testing RESERVED type attid = 0xC0000000");
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0xFFFEFFFF, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_INVALID_PARAMETER,
+				  "Testing RESERVED type attid = 0xFFFEFFFF");
+
+	/* Test with attid in INTERNAL range */
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0xFFFF0000, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_INVALID_PARAMETER,
+				  "Testing INTERNAL type attid = 0xFFFF0000");
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0xFFFFFFFF, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_INVALID_PARAMETER,
+				  "Testing INTERNAL type attid = 0xFFFFFFFF");
+
+	return true;
+}
+
+/**
  * Test Schema prefixMap conversions to/from drsuapi prefixMap
  * representation.
  */
@@ -663,7 +705,6 @@ static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsu
 	}
 
 DONE:
-	unlink(ldb_url);
 	talloc_free(mem_ctx);
 	return bret;
 }
@@ -722,6 +763,8 @@ struct torture_tcase * torture_drs_unit_prefixmap(struct torture_suite *suite)
 	torture_tcase_add_simple_test(tc, "make_attid_full_map", (pfn_run)torture_drs_unit_pfm_make_attid_full_map);
 	torture_tcase_add_simple_test(tc, "make_attid_small_map", (pfn_run)torture_drs_unit_pfm_make_attid_small_map);
 	torture_tcase_add_simple_test(tc, "oid_from_attid_full_map", (pfn_run)torture_drs_unit_pfm_oid_from_attid);
+	torture_tcase_add_simple_test(tc, "oid_from_attid_check_attid",
+				      (pfn_run)torture_drs_unit_pfm_oid_from_attid_check_attid);
 
 	torture_tcase_add_simple_test(tc, "pfm_to_from_drsuapi", (pfn_run)torture_drs_unit_pfm_to_from_drsuapi);
 
