@@ -63,5 +63,5 @@ testit "kinit with keytab as $USERNAME" $VALGRIND $samba4kinit --keytab=$PREFIX/
 
 testit "del user" $VALGRIND $net user delete nettestuser -k yes $@ || failed=`expr $failed + 1`
 
-rm -f tmpadminccache tmpuserccache tmpkeytab
+rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab
 exit $failed
