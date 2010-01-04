@@ -33,24 +33,23 @@
 
 static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
-				struct samu *sampass, 
+				const char *username,
+				uint32_t acct_ctrl,
+				const uint8_t *lm_pw,
+				const uint8_t *nt_pw,
 				const auth_usersupplied_info *user_info, 
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
 {
-	uint32 acct_ctrl;
-	const uint8 *lm_pw, *nt_pw;
 	struct samr_Password _lm_hash, _nt_hash, _client_lm_hash, _client_nt_hash;
 	struct samr_Password *lm_hash = NULL;
 	struct samr_Password *nt_hash = NULL;
 	struct samr_Password *client_lm_hash = NULL;
 	struct samr_Password *client_nt_hash = NULL;
-	const char *username = pdb_get_username(sampass);
 
 	*user_sess_key = data_blob_null;
 	*lm_sess_key = data_blob_null;
 
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", username));
@@ -60,9 +59,6 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			return NT_STATUS_LOGON_FAILURE;
 		}		
 	}
-
-	lm_pw = pdb_get_lanman_passwd(sampass);
-	nt_pw = pdb_get_nt_passwd(sampass);
 
 	if (lm_pw) {
 		memcpy(_lm_hash.hash, lm_pw, sizeof(_lm_hash.hash));
@@ -304,6 +300,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	DATA_BLOB user_sess_key = data_blob_null;
 	DATA_BLOB lm_sess_key = data_blob_null;
 	bool updated_autolock = False, updated_badpw = False;
+	uint32_t acct_ctrl;
+	const char *username;
+	const uint8_t *nt_pw;
+	const uint8_t *lm_pw;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -330,16 +330,22 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	username = pdb_get_username(sampass);
+	nt_pw = pdb_get_nt_passwd(sampass);
+	lm_pw = pdb_get_lanman_passwd(sampass);
+
 	/* see if autolock flag needs to be updated */
-	if (pdb_get_acct_ctrl(sampass) & ACB_NORMAL)
+	if (acct_ctrl & ACB_NORMAL)
 		pdb_update_autolock_flag(sampass, &updated_autolock);
 	/* Quit if the account was locked out. */
-	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
-		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", pdb_get_username(sampass)));
+	if (acct_ctrl & ACB_AUTOLOCK) {
+		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", username));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
-	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, 
+	nt_status = sam_password_ok(auth_context, mem_ctx,
+				    username, acct_ctrl, lm_pw, nt_pw,
 				    user_info, &user_sess_key, &lm_sess_key);
 
 	/* Notify passdb backend of login success/failure. If not 
@@ -349,7 +355,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_WRONG_PASSWORD) && 
-		    pdb_get_acct_ctrl(sampass) &ACB_NORMAL &&
+		    acct_ctrl & ACB_NORMAL &&
 		    NT_STATUS_IS_OK(update_login_attempts_status)) 
 		{  
 			pdb_increment_bad_password_count(sampass);
@@ -370,7 +376,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	if ((pdb_get_acct_ctrl(sampass) & ACB_NORMAL) && 
+	if ((acct_ctrl & ACB_NORMAL) &&
 	    (pdb_get_bad_password_count(sampass) > 0)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
