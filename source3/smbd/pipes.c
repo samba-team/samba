@@ -353,6 +353,11 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 
  done:
 	chain_reply(req);
+	/*
+	 * We must free here as the ownership of req was
+	 * moved to the connection struct in reply_pipe_write_and_X().
+	 */
+	TALLOC_FREE(req);
 }
 
 /****************************************************************************
@@ -458,4 +463,9 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 
  done:
 	chain_reply(req);
+	/*
+	 * We must free here as the ownership of req was
+	 * moved to the connection struct in reply_pipe_read_and_X().
+	 */
+	TALLOC_FREE(req);
 }
