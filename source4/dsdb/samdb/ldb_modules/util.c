@@ -492,3 +492,46 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
 
 	return LDB_SUCCESS;
 }
+
+
+/*
+  find a 'reference' DN that points at another object
+  (eg. serverReference, rIDManagerReference etc)
+ */
+int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *base,
+			     const char *attribute, struct ldb_dn **dn)
+{
+	const char *attrs[2];
+	struct ldb_result *res;
+	int ret;
+
+	attrs[0] = attribute;
+	attrs[1] = NULL;
+
+	ret = dsdb_module_search_dn(module, mem_ctx, &res, base, attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	*dn = ldb_msg_find_attr_as_dn(ldb_module_get_ctx(module),
+				      mem_ctx, res->msgs[0], attribute);
+	if (!*dn) {
+		talloc_free(res);
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	talloc_free(res);
+	return LDB_SUCCESS;
+}
+
+/*
+  find the RID Manager$ DN via the rIDManagerReference attribute in the
+  base DN
+ */
+int dsdb_module_rid_manager_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	return dsdb_module_reference_dn(module, mem_ctx,
+					samdb_base_dn(ldb_module_get_ctx(module)),
+					"rIDManagerReference", dn);
+}
+
