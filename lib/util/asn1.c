@@ -216,7 +216,7 @@ bool asn1_write_BitString(struct asn1_data *data, const void *p, size_t length, 
 
 bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 {
-	uint_t v, v2;
+	unsigned int v, v2;
 	const char *p = (const char *)OID;
 	char *newp;
 	int i;
@@ -588,7 +588,7 @@ static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
 {
 	int i;
 	uint8_t *b;
-	uint_t v;
+	unsigned int v;
 	char *tmp_oid = NULL;
 
 	if (blob.length < 2) return false;

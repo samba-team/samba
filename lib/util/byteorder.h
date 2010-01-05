@@ -54,7 +54,7 @@ that don't have any int types that are 2 bytes long)
 You do this:
 
 #define CVAL(buf,pos) (((uint8_t *)(buf))[pos])
-#define PVAL(buf,pos) ((uint_t)CVAL(buf,pos))
+#define PVAL(buf,pos) ((unsigned int)CVAL(buf,pos))
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 
 then to extract a uint16_t value at offset 25 in a buffer you do this:
@@ -144,7 +144,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define CAREFUL_ALIGNMENT 1
 #endif
 
-#define CVAL(buf,pos) ((uint_t)(((const uint8_t *)(buf))[pos]))
+#define CVAL(buf,pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf,pos) (((uint8_t *)(buf))[pos]) /* Non-const version of CVAL */
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))

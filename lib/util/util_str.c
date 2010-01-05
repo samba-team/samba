@@ -64,7 +64,7 @@ _PUBLIC_ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 
 	if (len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
-			 (uint_t)(len-maxlength), (unsigned)len, (unsigned)maxlength, src));
+			 (unsigned int)(len-maxlength), (unsigned)len, (unsigned)maxlength, src));
 		len = maxlength;
 	}
       
