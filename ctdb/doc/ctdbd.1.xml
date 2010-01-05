@@ -215,7 +215,7 @@
 	    This option is used to tell ctdbd to NOT run as a real-time process
 	    and instead run ctdbd as a normal userspace process.
 	    This is useful for debugging and when you want to run ctdbd under
-	    valgrind or gdb. (You dont want to attach valgrind or gdb to a
+	    valgrind or gdb. (You don't want to attach valgrind or gdb to a
 	    real-time process.)
           </para>
         </listitem>
@@ -256,7 +256,7 @@
 	    </para>
 	    <para>
 	    This is only required when using public ip addresses and only when
-	    you dont specify the interface explicitly in /etc/ctdb/public_addresses or when you are using --single-public-ip.
+	    you don't specify the interface explicitly in /etc/ctdb/public_addresses or when you are using --single-public-ip.
           </para>
           <para>
 	  If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures. 
@@ -617,7 +617,7 @@
     eventually become banned from the cluster.
     This controls how long the culprit node will be banned from the cluster
     before it is allowed to try to join the cluster again.
-    Dont set to small. A node gets banned for a reason and it is usually due
+    Don't set to small. A node gets banned for a reason and it is usually due
     to real problems with the node.
     </para>
     </refsect2>
@@ -636,7 +636,7 @@
     <refsect2><title>EnableBans</title>
     <para>Default: 1</para>
     <para>
-    When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Dont set to 0.
+    When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Don't set to 0.
     </para>
     </refsect2>
     <refsect2><title>DeterministicIPs</title>

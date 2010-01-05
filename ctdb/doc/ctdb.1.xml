@@ -49,7 +49,7 @@
         <listitem>
           <para>
             This specifies the physical node number on which to execute the 
-	    command. Default is to run the command on the deamon running on 
+	    command. Default is to run the command on the daemon running on 
 	    the local host.
 	  </para>
 	  <para>
@@ -1190,7 +1190,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
 
     <refsect2><title>setmonmode &lt;0|1&gt;</title>
       <para>
-        This command can be used to explicitely disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
+        This command can be used to explicitly disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
       </para>
     </refsect2>
 
@@ -1246,7 +1246,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
         Administratively ban a node for bantime seconds. A bantime of 0 means that the node should be permanently banned. 
       </para>
       <para>
-        A banned node does not participate in the cluster and does not host any records for the clustered TDB. Its ip address has been taken over by an other node and no services are hosted.
+        A banned node does not participate in the cluster and does not host any records for the clustered TDB. Its ip address has been taken over by another node and no services are hosted.
       </para>
       <para>
         Nodes are automatically banned if they are the cause of too many
