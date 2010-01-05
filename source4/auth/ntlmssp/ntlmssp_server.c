@@ -220,6 +220,11 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
+struct ntlmssp_server_auth_state {
+	DATA_BLOB user_session_key;
+	DATA_BLOB lm_session_key;
+};
+
 /**
  * Next state function for the Authenticate packet
  * 
@@ -229,6 +234,7 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
  */
 
 static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
+				       struct ntlmssp_server_auth_state *state,
 				       const DATA_BLOB request) 
 {
 	uint32_t ntlmssp_command, auth_flags;
@@ -384,13 +390,14 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
  */
 
 static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security, 
-					DATA_BLOB *user_session_key, 
-					DATA_BLOB *lm_session_key) 
+					struct ntlmssp_server_auth_state *state)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	DATA_BLOB *user_session_key = &state->user_session_key;
+	DATA_BLOB *lm_session_key = &state->lm_session_key;
 	NTSTATUS nt_status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
@@ -536,15 +543,20 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	DATA_BLOB user_session_key = data_blob_null;
-	DATA_BLOB lm_session_key = data_blob_null;
+	struct ntlmssp_server_auth_state *state;
 	NTSTATUS nt_status;
 
 	/* zero the outbound NTLMSSP packet */
 	*out = data_blob_null;
 
-	nt_status = ntlmssp_server_preauth(ntlmssp_state, in);
+	state = talloc_zero(ntlmssp_state, struct ntlmssp_server_auth_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = ntlmssp_server_preauth(ntlmssp_state, state, in);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(state);
 		return nt_status;
 	}
 
@@ -557,19 +569,20 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 
 	/* Finally, actually ask if the password is OK */
 	nt_status = ntlmssp_state->check_password(ntlmssp_state,
-							 &user_session_key,
-							 &lm_session_key);
+						  &state->user_session_key,
+						  &state->lm_session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(state);
 		return nt_status;
 	}
 
-	nt_status = ntlmssp_server_postauth(gensec_security,
-					    &user_session_key,
-					    &lm_session_key);
+	nt_status = ntlmssp_server_postauth(gensec_security, state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(state);
 		return nt_status;
 	}
 
+	TALLOC_FREE(state);
 	return NT_STATUS_OK;
 }
 
