@@ -255,7 +255,10 @@ class Ldb(ldb.Ldb):
         :param ldif: LDIF text.
         """
         for changetype, msg in self.parse_ldif(ldif):
-            self.modify(msg, controls)
+            if (changetype == ldb.CHANGETYPE_ADD):
+                self.add(msg, controls)
+            else:
+                self.modify(msg, controls)
 
     def set_domain_sid(self, sid):
         """Change the domain SID used by this LDB.
