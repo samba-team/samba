@@ -144,9 +144,6 @@ struct ntlmssp_state
 			DATA_BLOB recv_sign_key;
 			struct arcfour_state *send_seal_arcfour_state;
 			struct arcfour_state *recv_seal_arcfour_state;
-
-			/* internal variables used by NTLM2 */
-			uint8_t session_nonce[16];
 		} ntlm2;
 	} crypt;
 };
