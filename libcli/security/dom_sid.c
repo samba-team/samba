@@ -91,7 +91,7 @@ bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 {
-	uint_t rev, ia, num_sub_auths, i;
+	unsigned int rev, ia, num_sub_auths, i;
 	char *p;
 
 	if (strncasecmp(sidstr, "S-", 2)) {

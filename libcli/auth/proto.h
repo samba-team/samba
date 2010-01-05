@@ -193,7 +193,7 @@ void des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16]);
 void des_crypt64(uint8_t out[8], const uint8_t in[8], const uint8_t key[8], int forw);
 void des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14], int forw);
 void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int forw);
-void sam_rid_crypt(uint_t rid, const uint8_t *in, uint8_t *out, int forw);
+void sam_rid_crypt(unsigned int rid, const uint8_t *in, uint8_t *out, int forw);
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 

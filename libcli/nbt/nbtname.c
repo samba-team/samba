@@ -48,7 +48,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 					    uint32_t *max_offset)
 {
 	uint8_t len;
-	uint_t loops = 0;
+	unsigned int loops = 0;
 	while (loops < 5) {
 		if (*offset >= ndr->data_size) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
