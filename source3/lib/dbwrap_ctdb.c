@@ -381,7 +381,7 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 {
 	struct ctdb_rec_data *rec = NULL;
 	struct ctdb_ltdb_header h;
-	bool found;
+	bool found = false;
 	TDB_DATA data;
 	int i;
 
