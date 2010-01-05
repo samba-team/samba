@@ -403,8 +403,11 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 	for (i=0; i<buf->count; i++) {
 		TDB_DATA tkey, tdata;
 		uint32_t reqid;
+		struct ctdb_ltdb_header hdr;
 
-		rec = db_ctdb_marshall_loop_next(buf, rec, &reqid, &h, &tkey,
+		ZERO_STRUCT(hdr);
+
+		rec = db_ctdb_marshall_loop_next(buf, rec, &reqid, &hdr, &tkey,
 						 &tdata);
 		if (rec == NULL) {
 			return false;
@@ -413,6 +416,7 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 		if (tdb_data_equal(key, tkey)) {
 			found = true;
 			data = tdata;
+			h = hdr;
 		}
 	}
 
