@@ -3,7 +3,9 @@
 [SUBSYSTEM::DSDB_MODULE_HELPERS]
 PRIVATE_DEPENDENCIES = LIBLDB LIBNDR SAMDB_SCHEMA
 
-DSDB_MODULE_HELPERS_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/util.o
+DSDB_MODULE_HELPERS_OBJ_FILES = \
+	$(dsdbsrcdir)/samdb/ldb_modules/util.o \
+	$(dsdbsrcdir)/samdb/ldb_modules/ridalloc.o
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/util_proto.h,$(DSDB_MODULE_HELPERS_OBJ_FILES:.o=.c)))
 
