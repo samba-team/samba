@@ -84,7 +84,7 @@ static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *h, uint8
 	return NT_STATUS_OK;
 }
 
-struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint8_t *base, uint_t offset)
+struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint8_t *base, unsigned int offset)
 {
 	struct smbsrv_tcon *tcon;
 	struct smbsrv_handle *handle;
@@ -160,7 +160,7 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 	return handle->ntvfs;
 }
 
-void smb2srv_push_handle(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvfs)
+void smb2srv_push_handle(uint8_t *base, unsigned int offset, struct ntvfs_handle *ntvfs)
 {
 	struct smbsrv_handle *handle = talloc_get_type(ntvfs->frontend_data.private_data,
 				       struct smbsrv_handle);

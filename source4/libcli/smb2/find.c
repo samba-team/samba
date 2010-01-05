@@ -95,14 +95,14 @@ NTSTATUS smb2_find(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
   smb_search_data structures
 */
 NTSTATUS smb2_find_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
-			      uint8_t level, uint_t *count,
+			      uint8_t level, unsigned int *count,
 			      union smb_search_data **io)
 {
 	struct smb2_find f;
 	NTSTATUS status;
 	DATA_BLOB b;
 	enum smb_search_data_level smb_level;
-	uint_t next_ofs=0;
+	unsigned int next_ofs=0;
 
 	switch (level) {
 	case SMB2_FIND_DIRECTORY_INFO:
@@ -171,7 +171,7 @@ NTSTATUS smb2_find_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS smb2_find_level(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 			 struct smb2_find *f, 
-			 uint_t *count, union smb_search_data **io)
+			 unsigned int *count, union smb_search_data **io)
 {
 	struct smb2_request *req;
 

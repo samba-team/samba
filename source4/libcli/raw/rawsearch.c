@@ -333,10 +333,10 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 			       enum smb_search_data_level level,
 			       const DATA_BLOB *blob,
 			       union smb_search_data *data,
-			       uint_t *next_ofs,
-			       uint_t str_flags)
+			       unsigned int *next_ofs,
+			       unsigned int str_flags)
 {
-	uint_t len, blen;
+	unsigned int len, blen;
 
 	if (blob->length < 4) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
@@ -487,7 +487,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 			       DATA_BLOB *blob,
 			       union smb_search_data *data)
 {
-	uint_t len, ofs;
+	unsigned int len, ofs;
 	uint32_t ea_size;
 	DATA_BLOB eablob;
 	NTSTATUS status;
@@ -656,7 +656,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
 		case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
 		case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO: {
-			uint_t str_flags = STR_UNICODE;
+			unsigned int str_flags = STR_UNICODE;
 			if (!(tree->session->transport->negotiate.capabilities & CAP_UNICODE)) {
 				str_flags = STR_ASCII;
 			}
@@ -694,7 +694,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 
 	for (i=0; i < count; i++) {
 		union smb_search_data search_data;
-		uint_t len;
+		unsigned int len;
 
 		len = parse_trans2_search(tree, mem_ctx, level, flags, &blob2, &search_data);
 		if (len == -1) {

@@ -46,8 +46,8 @@ struct lock_info {
 
 struct createx_params {
 	char *fname;
-	uint_t create_options;
-	uint_t create_disposition;
+	unsigned int create_options;
+	unsigned int create_disposition;
 	int handle;
 };
 
@@ -72,8 +72,8 @@ static struct {
 
 static bool nb_do_createx(struct ftable *f,
 			  const char *fname,
-			  uint_t create_options,
-			  uint_t create_disposition,
+			  unsigned int create_options,
+			  unsigned int create_disposition,
 			  int handle,
 			  NTSTATUS status,
 			  bool retry);
@@ -82,8 +82,8 @@ static bool nb_do_lockx(bool relock, int handle, off_t offset, int size, NTSTATU
 
 static void nb_set_createx_params(struct ftable *f,
 				  const char *fname,
-				  uint_t create_options,
-				  uint_t create_disposition,
+				  unsigned int create_options,
+				  unsigned int create_disposition,
 				  int handle)
 {
 	struct createx_params *cp = &f->cp;
@@ -455,8 +455,8 @@ bool nb_unlink(const char *fname, int attr, NTSTATUS status, bool retry)
 
 static bool nb_do_createx(struct ftable *f,
 			  const char *fname,
-			  uint_t create_options,
-			  uint_t create_disposition,
+			  unsigned int create_options,
+			  unsigned int create_disposition,
 			  int handle,
 			  NTSTATUS status,
 			  bool retry)
@@ -465,7 +465,7 @@ static bool nb_do_createx(struct ftable *f,
 	uint32_t desired_access;
 	NTSTATUS ret;
 	TALLOC_CTX *mem_ctx;
-	uint_t flags = 0;
+	unsigned int flags = 0;
 
 	mem_ctx = talloc_init("raw_open");
 
@@ -531,7 +531,7 @@ static bool nb_do_createx(struct ftable *f,
 }
 
 bool nb_createx(const char *fname, 
-	       uint_t create_options, uint_t create_disposition, int handle,
+	       unsigned int create_options, unsigned int create_disposition, int handle,
 	       NTSTATUS status)
 {
 	return nb_do_createx(NULL, fname, create_options, create_disposition, handle, status, false);
@@ -664,7 +664,7 @@ bool nb_lockx(int handle, off_t offset, int size, NTSTATUS status)
 	return nb_do_lockx(false, handle, offset, size, status);
 }
 
-bool nb_unlockx(int handle, uint_t offset, int size, NTSTATUS status)
+bool nb_unlockx(int handle, unsigned int offset, int size, NTSTATUS status)
 {
 	union smb_lock io;
 	int i;

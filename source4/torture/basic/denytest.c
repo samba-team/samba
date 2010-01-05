@@ -1399,7 +1399,7 @@ static const struct {
 };
 
 
-static void progress_bar(struct torture_context *tctx, uint_t i, uint_t total)
+static void progress_bar(struct torture_context *tctx, unsigned int i, unsigned int total)
 {
 	if (torture_setting_bool(tctx, "progress", true)) {
 		torture_comment(tctx, "%5d/%5d\r", i, total);
@@ -2279,8 +2279,8 @@ static bool createx_test_file(struct torture_context *tctx,
 /* TODO When redirecting stdout to a file, the progress bar really screws up
  * the output. Could use a switch "--noprogress", or direct the progress bar to
  * stderr? No other solution? */
-static void createx_progress_bar(struct torture_context *tctx, uint_t i,
-    uint_t total, uint_t skipped)
+static void createx_progress_bar(struct torture_context *tctx, unsigned int i,
+    unsigned int total, unsigned int skipped)
 {
 	if (torture_setting_bool(tctx, "progress", true)) {
 		torture_comment(tctx, "%5d/%5d (%d skipped)\r", i, total,

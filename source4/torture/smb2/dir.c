@@ -108,7 +108,7 @@ static bool test_find(struct torture_context *tctx,
 	struct file_elem files[NFILES] = {};
 	NTSTATUS status;
 	bool ret = true;
-	uint_t count;
+	unsigned int count;
 	int i, j, file_count = 0;
 
 	status = populate_tree(tctx, mem_ctx, tree, files, NFILES, &h);
@@ -193,7 +193,7 @@ static bool test_fixed(struct torture_context *tctx,
 	struct file_elem files[NFILES] = {};
 	NTSTATUS status;
 	bool ret = true;
-	uint_t count;
+	unsigned int count;
 	int i;
 
 	status = populate_tree(tctx, mem_ctx, tree, files, NFILES, &h);
@@ -360,7 +360,7 @@ static union smb_search_data *find(const char *name)
 static bool fill_level_data(TALLOC_CTX *mem_ctx,
 			    union smb_search_data *data,
 			    union smb_search_data *d,
-			    uint_t count,
+			    unsigned int count,
 			    uint8_t level,
 			    enum smb_search_data_level data_level)
 {
@@ -385,7 +385,7 @@ NTSTATUS torture_single_file_search(struct smb2_tree *tree,
 				    enum smb_search_data_level data_level,
 				    int idx,
 				    union smb_search_data *d,
-				    uint_t *count,
+				    unsigned int *count,
 				    struct smb2_handle *h)
 {
 	struct smb2_find f;
@@ -416,7 +416,7 @@ static bool test_one_file(struct torture_context *tctx,
 	const char *fname =  "torture_search.txt";
 	NTSTATUS status;
 	int i;
-	uint_t count;
+	unsigned int count;
 	union smb_fileinfo all_info2, alt_info, internal_info;
 	union smb_search_data *s;
 	union smb_search_data d;
@@ -671,7 +671,7 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 {
 	struct smb2_find f;
 	bool ret = true;
-	uint_t count = 0;
+	unsigned int count = 0;
 	union smb_search_data *d;
 	NTSTATUS status;
 	struct multiple_result *result = (struct multiple_result *)data;
@@ -895,7 +895,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	int i;
-	uint_t count;
+	unsigned int count;
 
 	smb2_deltree(tree, DNAME);
 

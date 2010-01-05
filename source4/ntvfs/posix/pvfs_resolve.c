@@ -59,7 +59,7 @@ static int component_compare(struct pvfs_state *pvfs, const char *comp, const ch
 */
 static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
 				 struct pvfs_filename *name,
-				 uint_t flags)
+				 unsigned int flags)
 {
 	/* break into a series of components */
 	int num_components;
@@ -256,7 +256,7 @@ static NTSTATUS parse_stream_name(struct smb_iconv_convenience *ic,
   errors are returned if the filename is illegal given the flags
 */
 static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
-			       uint_t flags, struct pvfs_filename *name)
+			       unsigned int flags, struct pvfs_filename *name)
 {
 	char *ret, *p, *p_start;
 	struct smb_iconv_convenience *ic = NULL;
@@ -389,7 +389,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 */
 static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, 
 				 struct smb_iconv_convenience *iconv_convenience, 
-				 const char **fname, uint_t flags)
+				 const char **fname, unsigned int flags)
 {
 	codepoint_t c;
 	size_t c_size, len;
@@ -511,7 +511,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, 
 			   struct ntvfs_request *req,
 			   const char *cifs_name,
-			   uint_t flags, struct pvfs_filename **name)
+			   unsigned int flags, struct pvfs_filename **name)
 {
 	NTSTATUS status;
 
@@ -610,7 +610,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs,
 */
 NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 			      const char *unix_dir, const char *fname,
-			      uint_t flags, struct pvfs_filename **name)
+			      unsigned int flags, struct pvfs_filename **name)
 {
 	NTSTATUS status;
 
@@ -647,7 +647,7 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
   to update the pvfs_filename stat information, and by pvfs_open()
 */
 NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
-			      struct pvfs_filename *name, uint_t flags)
+			      struct pvfs_filename *name, unsigned int flags)
 {
 	dev_t device = (dev_t)0;
 	ino_t inode = 0;

@@ -103,7 +103,7 @@ struct smb2_transport {
 	struct {
 		void (*func)(struct smb2_transport *, void *);
 		void *private_data;
-		uint_t period;
+		unsigned int period;
 	} idle;
 
 	struct {

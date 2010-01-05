@@ -1380,7 +1380,7 @@ static void reply_printqueue_send(struct ntvfs_request *ntvfs)
 	struct smbsrv_request *req;
 	union smb_lpq *lpq;
 	int i, maxcount;
-	const uint_t el_size = 28;
+	const unsigned int el_size = 28;
 
 	SMBSRV_CHECK_ASYNC_STATUS(lpq,union smb_lpq);
 
@@ -1647,8 +1647,8 @@ static void reply_lockingX_send(struct ntvfs_request *ntvfs)
 void smbsrv_reply_lockingX(struct smbsrv_request *req)
 {
 	union smb_lock *lck;
-	uint_t total_locks, i;
-	uint_t lck_size;
+	unsigned int total_locks, i;
+	unsigned int lck_size;
 	uint8_t *p;
 
 	/* parse request */

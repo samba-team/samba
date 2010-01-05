@@ -47,7 +47,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 	io->streams = NULL;
 
 	while (blob.length - ofs >= 24) {
-		uint_t n = io->num_streams;
+		unsigned int n = io->num_streams;
 		uint32_t nlen, len;
 		bool ret;
 		void *vstr;

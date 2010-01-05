@@ -26,9 +26,9 @@
   This assumes the names are strict ascii, which should be a
   reasonable assumption
 */
-size_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
+size_t ea_list_size(unsigned int num_eas, struct ea_struct *eas)
 {
-	uint_t total = 4;
+	unsigned int total = 4;
 	int i;
 	for (i=0;i<num_eas;i++) {
 		total += 4 + strlen(eas[i].name.s)+1 + eas[i].value.length;
@@ -39,9 +39,9 @@ size_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
 /*
   work out how many bytes on the wire a ea name list will consume. 
 */
-static uint_t ea_name_list_size(uint_t num_names, struct ea_name *eas)
+static unsigned int ea_name_list_size(unsigned int num_names, struct ea_name *eas)
 {
-	uint_t total = 4;
+	unsigned int total = 4;
 	int i;
 	for (i=0;i<num_names;i++) {
 		total += 1 + strlen(eas[i].name.s) + 1;
@@ -54,12 +54,12 @@ static uint_t ea_name_list_size(uint_t num_names, struct ea_name *eas)
   This assumes the names are strict ascii, which should be a
   reasonable assumption
 */
-size_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas, unsigned alignment)
+size_t ea_list_size_chained(unsigned int num_eas, struct ea_struct *eas, unsigned alignment)
 {
-	uint_t total = 0;
+	unsigned int total = 0;
 	int i;
 	for (i=0;i<num_eas;i++) {
-		uint_t len = 8 + strlen(eas[i].name.s)+1 + eas[i].value.length;
+		unsigned int len = 8 + strlen(eas[i].name.s)+1 + eas[i].value.length;
 		len = (len + (alignment-1)) & ~(alignment-1);
 		total += len;
 	}
@@ -70,7 +70,7 @@ size_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas, unsigned alig
   put a ea_list into a pre-allocated buffer - buffer must be at least
   of size ea_list_size()
 */
-void ea_put_list(uint8_t *data, uint_t num_eas, struct ea_struct *eas)
+void ea_put_list(uint8_t *data, unsigned int num_eas, struct ea_struct *eas)
 {
 	int i;
 	uint32_t ea_size;
@@ -81,7 +81,7 @@ void ea_put_list(uint8_t *data, uint_t num_eas, struct ea_struct *eas)
 	data += 4;
 
 	for (i=0;i<num_eas;i++) {
-		uint_t nlen = strlen(eas[i].name.s);
+		unsigned int nlen = strlen(eas[i].name.s);
 		SCVAL(data, 0, eas[i].flags);
 		SCVAL(data, 1, nlen);
 		SSVAL(data, 2, eas[i].value.length);
@@ -96,15 +96,15 @@ void ea_put_list(uint8_t *data, uint_t num_eas, struct ea_struct *eas)
   put a chained ea_list into a pre-allocated buffer - buffer must be
   at least of size ea_list_size()
 */
-void ea_put_list_chained(uint8_t *data, uint_t num_eas, struct ea_struct *eas,
+void ea_put_list_chained(uint8_t *data, unsigned int num_eas, struct ea_struct *eas,
 			 unsigned alignment)
 {
 	int i;
 
 	for (i=0;i<num_eas;i++) {
-		uint_t nlen = strlen(eas[i].name.s);
+		unsigned int nlen = strlen(eas[i].name.s);
 		uint32_t len = 8+nlen+1+eas[i].value.length;
-		uint_t pad = ((len + (alignment-1)) & ~(alignment-1)) - len;
+		unsigned int pad = ((len + (alignment-1)) & ~(alignment-1)) - len;
 		if (i == num_eas-1) {
 			SIVAL(data, 0, 0);
 		} else {
@@ -124,7 +124,7 @@ void ea_put_list_chained(uint8_t *data, uint_t num_eas, struct ea_struct *eas,
 /*
   pull a ea_struct from a buffer. Return the number of bytes consumed
 */
-uint_t ea_pull_struct(const DATA_BLOB *blob, 
+unsigned int ea_pull_struct(const DATA_BLOB *blob,
 		      TALLOC_CTX *mem_ctx,
 		      struct ea_struct *ea)
 {
@@ -164,7 +164,7 @@ uint_t ea_pull_struct(const DATA_BLOB *blob,
 */
 NTSTATUS ea_pull_list(const DATA_BLOB *blob, 
 		      TALLOC_CTX *mem_ctx,
-		      uint_t *num_eas, struct ea_struct **eas)
+		      unsigned int *num_eas, struct ea_struct **eas)
 {
 	int n;
 	uint32_t ea_size, ofs;
@@ -184,7 +184,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 	*eas = NULL;
 
 	while (ofs < ea_size) {
-		uint_t len;
+		unsigned int len;
 		DATA_BLOB blob2;
 
 		blob2.data = blob->data + ofs;
@@ -213,7 +213,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 */
 NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob, 
 			      TALLOC_CTX *mem_ctx,
-			      uint_t *num_eas, struct ea_struct **eas)
+			      unsigned int *num_eas, struct ea_struct **eas)
 {
 	int n;
 	uint32_t ofs;
@@ -228,7 +228,7 @@ NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob,
 	*eas = NULL;
 
 	while (ofs < blob->length) {
-		uint_t len;
+		unsigned int len;
 		DATA_BLOB blob2;
 		uint32_t next_ofs = IVAL(blob->data, ofs);
 
@@ -261,7 +261,7 @@ NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob,
 /*
   pull a ea_name from a buffer. Return the number of bytes consumed
 */
-static uint_t ea_pull_name(const DATA_BLOB *blob, 
+static unsigned int ea_pull_name(const DATA_BLOB *blob,
 			   TALLOC_CTX *mem_ctx,
 			   struct ea_name *ea)
 {
@@ -289,7 +289,7 @@ static uint_t ea_pull_name(const DATA_BLOB *blob,
 */
 NTSTATUS ea_pull_name_list(const DATA_BLOB *blob, 
 			   TALLOC_CTX *mem_ctx,
-			   uint_t *num_names, struct ea_name **ea_names)
+			   unsigned int *num_names, struct ea_name **ea_names)
 {
 	int n;
 	uint32_t ea_size, ofs;
@@ -309,7 +309,7 @@ NTSTATUS ea_pull_name_list(const DATA_BLOB *blob,
 	*ea_names = NULL;
 
 	while (ofs < ea_size) {
-		uint_t len;
+		unsigned int len;
 		DATA_BLOB blob2;
 
 		blob2.data = blob->data + ofs;
@@ -337,7 +337,7 @@ NTSTATUS ea_pull_name_list(const DATA_BLOB *blob,
   put a ea_name list into a data blob
 */
 bool ea_push_name_list(TALLOC_CTX *mem_ctx,
-		       DATA_BLOB *data, uint_t num_names, struct ea_name *eas)
+		       DATA_BLOB *data, unsigned int num_names, struct ea_name *eas)
 {
 	int i;
 	uint32_t ea_size;
@@ -354,7 +354,7 @@ bool ea_push_name_list(TALLOC_CTX *mem_ctx,
 	off = 4;
 
 	for (i=0;i<num_names;i++) {
-		uint_t nlen = strlen(eas[i].name.s);
+		unsigned int nlen = strlen(eas[i].name.s);
 		SCVAL(data->data, off, nlen);
 		memcpy(data->data+off+1, eas[i].name.s, nlen+1);
 		off += 1+nlen+1;

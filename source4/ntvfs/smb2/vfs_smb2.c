@@ -721,7 +721,7 @@ static NTSTATUS cvfs_search_first(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *p = ntvfs->private_data;
 	struct smb2_find f;
 	enum smb_search_data_level smb2_level;
-	uint_t count, i;
+	unsigned int count, i;
 	union smb_search_data *data;
 	NTSTATUS status;
 

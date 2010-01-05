@@ -84,8 +84,8 @@ struct ph_context {
 
 struct domain_data {
 	bool store_cleartext;
-	uint_t pwdProperties;
-	uint_t pwdHistoryLength;
+	unsigned int pwdProperties;
+	unsigned int pwdHistoryLength;
 	const char *netbios_domain;
 	const char *dns_domain;
 	const char *realm;

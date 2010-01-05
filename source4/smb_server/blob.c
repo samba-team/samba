@@ -173,7 +173,7 @@ size_t smbsrv_blob_push_string(TALLOC_CTX *mem_ctx,
 NTSTATUS smbsrv_blob_append_string(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *blob,
 				   const char *str,
-				   uint_t len_offset,
+				   unsigned int len_offset,
 				   int default_flags,
 				   int flags)
 {
@@ -197,7 +197,7 @@ NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
 				     union smb_fsinfo *fsinfo,
 				     int default_str_flags)
 {
-	uint_t i;
+	unsigned int i;
 	DATA_BLOB guid_blob;
 
 	switch (level) {
@@ -302,7 +302,7 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 				       union smb_fileinfo *st,
 				       int default_str_flags)
 {
-	uint_t i;
+	unsigned int i;
 	size_t list_size;
 
 	switch (level) {
@@ -650,7 +650,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 				     int default_str_flags)
 {
 	uint8_t *data;
-	uint_t ofs = blob->length;
+	unsigned int ofs = blob->length;
 
 	switch (level) {
 	case RAW_SEARCH_DATA_DIRECTORY_INFO:

@@ -132,7 +132,7 @@ void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, u
 	Uncomment this to test if the remote server actually verifies signitures...*/
 }
 
-bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac_key, uint_t seq_num) 
+bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac_key, unsigned int seq_num)
 {
 	bool good;
 	uint8_t calc_md5_mac[16];

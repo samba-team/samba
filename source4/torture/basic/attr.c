@@ -49,7 +49,7 @@ static const uint32_t open_attrs_table[] = {
 };
 
 struct trunc_open_results {
-	uint_t num;
+	unsigned int num;
 	uint32_t init_attr;
 	uint32_t trunc_attr;
 	uint32_t result_attr;
@@ -91,7 +91,7 @@ bool torture_openattrtest(struct torture_context *tctx,
 	const char *fname = "\\openattr.file";
 	int fnum1;
 	uint16_t attr;
-	uint_t i, j, k, l;
+	unsigned int i, j, k, l;
 	int failures = 0;
 
 	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32_t); i++) {
@@ -163,7 +163,7 @@ bool torture_openattrtest(struct torture_context *tctx,
 						torture_comment(tctx, "[%d] getatr check failed. [0x%x] trunc [0x%x] got attr 0x%x, should be 0x%x\n",
 						       k, open_attrs_table[i],
 						       open_attrs_table[j],
-						       (uint_t)attr,
+						       (unsigned int)attr,
 						       attr_results[l].result_attr);
 						CHECK_MAX_FAILURES(error_exit);
 					}

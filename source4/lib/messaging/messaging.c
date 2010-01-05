@@ -98,7 +98,7 @@ static void ping_message(struct messaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
 	DEBUG(1,("INFO: Received PING message from server %u.%u [%.*s]\n",
-		 (uint_t)src.node, (uint_t)src.id, (int)data->length, 
+		 (unsigned int)src.node, (unsigned int)src.id, (int)data->length,
 		 data->data?(const char *)data->data:""));
 	messaging_send(msg, src, MSG_PONG, data);
 }

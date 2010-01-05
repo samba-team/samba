@@ -232,10 +232,10 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
   the search fill loop
 */
 static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
-				 uint_t max_count, 
+				 unsigned int max_count,
 				 struct pvfs_search_state *search,
 				 enum smb_search_data_level level,
-				 uint_t *reply_count,
+				 unsigned int *reply_count,
 				 void *search_private, 
 				 bool (*callback)(void *, const union smb_search_data *))
 {
@@ -323,7 +323,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
 				  struct pvfs_state);
 	struct pvfs_search_state *search;
-	uint_t reply_count;
+	unsigned int reply_count;
 	uint16_t search_attrib;
 	const char *pattern;
 	NTSTATUS status;
@@ -415,7 +415,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	void *p;
 	struct pvfs_search_state *search;
 	struct pvfs_dir *dir;
-	uint_t reply_count, max_count;
+	unsigned int reply_count, max_count;
 	uint16_t handle;
 	NTSTATUS status;
 
@@ -467,7 +467,7 @@ static NTSTATUS pvfs_search_first_trans2(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
 				  struct pvfs_state);
 	struct pvfs_search_state *search;
-	uint_t reply_count;
+	unsigned int reply_count;
 	uint16_t search_attrib, max_count;
 	const char *pattern;
 	NTSTATUS status;
@@ -565,7 +565,7 @@ static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 	void *p;
 	struct pvfs_search_state *search;
 	struct pvfs_dir *dir;
-	uint_t reply_count;
+	unsigned int reply_count;
 	uint16_t handle;
 	NTSTATUS status;
 
@@ -629,7 +629,7 @@ static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
 				  struct pvfs_state);
 	struct pvfs_search_state *search;
-	uint_t reply_count;
+	unsigned int reply_count;
 	uint16_t max_count;
 	const char *pattern;
 	NTSTATUS status;
@@ -732,7 +732,7 @@ static NTSTATUS pvfs_search_next_smb2(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
 				  struct pvfs_state);
 	struct pvfs_search_state *search;
-	uint_t reply_count;
+	unsigned int reply_count;
 	uint16_t max_count;
 	NTSTATUS status;
 	struct pvfs_file *f;

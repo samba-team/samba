@@ -88,7 +88,7 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
 				  struct pvfs_state);
 	uint64_t blocks_free, blocks_total;
-	uint_t bpunit;
+	unsigned int bpunit;
 	struct stat st;
 	const uint16_t block_size = 512;
 

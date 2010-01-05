@@ -42,7 +42,7 @@ static bool torture_locktest1(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
-	uint_t lock_timeout;
+	unsigned int lock_timeout;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -120,7 +120,7 @@ static bool torture_locktest1(struct torture_context *tctx,
 			"error: This server appears not to support timed lock requests");
 	}
 	torture_comment(tctx, "server slept for %u seconds for a %u second timeout\n",
-	       (uint_t)(t2-t1), lock_timeout);
+	       (unsigned int)(t2-t1), lock_timeout);
 
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum2),
 		talloc_asprintf(tctx, "close1 failed (%s)", smbcli_errstr(cli1->tree)));

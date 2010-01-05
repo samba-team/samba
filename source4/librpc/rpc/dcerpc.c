@@ -831,7 +831,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt)
 {
 	struct rpc_request *req;
-	uint_t length;
+	unsigned int length;
 	NTSTATUS status = NT_STATUS_OK;
 
 	/*
@@ -1442,7 +1442,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	NTSTATUS status;
 	DATA_BLOB response;
 	struct ndr_pull *pull;
-	uint_t flags;
+	unsigned int flags;
 	TALLOC_CTX *mem_ctx = req->ndr.mem_ctx;
 	void *r = req->ndr.struct_ptr;
 	uint32_t opnum = req->ndr.opnum;

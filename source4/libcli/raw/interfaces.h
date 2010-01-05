@@ -185,7 +185,7 @@ union smb_mkdir {
 		enum smb_mkdir_level level;
 		struct {
 			const char *path;
-			uint_t num_eas;
+			unsigned int num_eas;
 			struct ea_struct *eas;			
 		} in;
 	} t2mkdir;
@@ -488,7 +488,7 @@ union smb_fileinfo {
 		struct {
 			uint32_t attrib;
 			uint32_t ea_size;
-			uint_t num_eas;
+			unsigned int num_eas;
 			struct ea_struct {
 				uint8_t flags;
 				struct smb_wire_string name;
@@ -516,7 +516,7 @@ union smb_fileinfo {
 			uint32_t mode;
 			uint32_t alignment_requirement;
 			uint32_t reparse_tag;
-			uint_t num_streams;
+			unsigned int num_streams;
 			struct stream_struct {
 				uint64_t size;
 				uint64_t alloc_size;
@@ -578,14 +578,14 @@ union smb_fileinfo {
 		enum smb_fileinfo_level level;
 		struct {
 			union smb_handle_or_path file;
-			uint_t num_names;
+			unsigned int num_names;
 			struct ea_name {
 				struct smb_wire_string name;
 			} *ea_names;	
 		} in;	
 
 		struct smb_ea_list {
-			uint_t num_eas;
+			unsigned int num_eas;
 			struct ea_struct *eas;
 		} out;
 	} ea_list;
@@ -732,7 +732,7 @@ union smb_fileinfo {
 			union smb_handle_or_path file;
 		} in;
 		struct stream_information {
-			uint_t num_streams;
+			unsigned int num_streams;
 			struct stream_struct *streams;
 		} out;
 	} stream_info;
@@ -993,7 +993,7 @@ union smb_setfileinfo {
 		enum smb_setfileinfo_level level;
 		struct {
 			union smb_handle_or_path file;
-			uint_t num_eas;
+			unsigned int num_eas;
 			struct ea_struct *eas;			
 		} in;
 	} ea_set;
@@ -1474,7 +1474,7 @@ union smb_open {
 			uint32_t size;
 			uint32_t timeout;
 			const char *fname;
-			uint_t num_eas;
+			unsigned int num_eas;
 			struct ea_struct *eas;			
 		} in;
 		struct {
@@ -2484,7 +2484,7 @@ union smb_search_first {
 			const char *pattern;
 
 			/* the ea names are only used for RAW_SEARCH_EA_LIST */
-			uint_t num_names;
+			unsigned int num_names;
 			struct ea_name *ea_names;
 		} in;
 		struct {
@@ -2568,7 +2568,7 @@ union smb_search_next {
 			const char *last_name;
 
 			/* the ea names are only used for RAW_SEARCH_EA_LIST */
-			uint_t num_names;
+			unsigned int num_names;
 			struct ea_name *ea_names;
 		} in;
 		struct {

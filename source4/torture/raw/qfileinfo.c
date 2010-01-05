@@ -29,10 +29,10 @@
 static struct {
 	const char *name;
 	enum smb_fileinfo_level level;
-	uint_t only_paths:1;
-	uint_t only_handles:1;
+	unsigned int only_paths:1;
+	unsigned int only_handles:1;
 	uint32_t capability_mask;
-	uint_t expected_ipc_access_denied:1;
+	unsigned int expected_ipc_access_denied:1;
 	NTSTATUS expected_ipc_fnum_status;
 	NTSTATUS fnum_status, fname_status;
 	union smb_fileinfo fnum_finfo, fname_finfo;
@@ -182,8 +182,8 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
 /* local macros to make the code below more readable */
 #define VAL_EQUAL(n1, v1, n2, v2) do {if (s1->n1.out.v1 != s2->n2.out.v2) { \
         printf("%s/%s [%u] != %s/%s [%u] at %s(%d)\n", \
-               #n1, #v1, (uint_t)s1->n1.out.v1, \
-               #n2, #v2, (uint_t)s2->n2.out.v2, \
+               #n1, #v1, (unsigned int)s1->n1.out.v1, \
+               #n2, #v2, (unsigned int)s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
         ret = false; \
 }} while(0)
@@ -211,8 +211,8 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
 #define VAL_UNKNOWN(n1, v1) do {if (s1->n1.out.v1 != 0) { \
         printf("%s/%s non-zero unknown - %u (0x%x) at %s(%d)\n", \
                #n1, #v1, \
-	       (uint_t)s1->n1.out.v1, \
-	       (uint_t)s1->n1.out.v1, \
+	       (unsigned int)s1->n1.out.v1, \
+	       (unsigned int)s1->n1.out.v1, \
 	       __FILE__, __LINE__); \
         ret = false; \
 }} while(0)
@@ -529,21 +529,21 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find(sname); \
 	if (s1 && s1->stype.out.tfield != correct_size) { \
 		printf("(%d) handle %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
-		       (uint_t)s1->stype.out.tfield, \
-		       (uint_t)correct_size); \
+		       (unsigned int)s1->stype.out.tfield, \
+		       (unsigned int)correct_size); \
 		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != correct_size) { \
 		printf("(%d) path %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
-		       (uint_t)s1->stype.out.tfield, \
-		       (uint_t)correct_size); \
+		       (unsigned int)s1->stype.out.tfield, \
+		       (unsigned int)correct_size); \
 		ret = false; \
 	}} while (0)
 
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.size;
-	torture_comment(torture, "size: %u\n", (uint_t)correct_size);
+	torture_comment(torture, "size: %u\n", (unsigned int)correct_size);
 	
 	SIZE_CHECK("GETATTR",                  getattr,                  size);
 	SIZE_CHECK("GETATTRE",                 getattre,                 size);
@@ -564,7 +564,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.alloc_size;
-	torture_comment(torture, "alloc_size: %u\n", (uint_t)correct_size);
+	torture_comment(torture, "alloc_size: %u\n", (unsigned int)correct_size);
 	
 	SIZE_CHECK("GETATTRE",                 getattre,                 alloc_size);
 	SIZE_CHECK("STANDARD",                 standard,                 alloc_size);
@@ -583,21 +583,21 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find(sname); \
 	if (s1 && s1->stype.out.tfield != correct_attrib) { \
 		printf("(%d) handle %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
-		       (uint_t)s1->stype.out.tfield, \
-		       (uint_t)correct_attrib); \
+		       (unsigned int)s1->stype.out.tfield, \
+		       (unsigned int)correct_attrib); \
 		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != correct_attrib) { \
 		printf("(%d) path %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
-		       (uint_t)s1->stype.out.tfield, \
-		       (uint_t)correct_attrib); \
+		       (unsigned int)s1->stype.out.tfield, \
+		       (unsigned int)correct_attrib); \
 		ret = false; \
 	}} while (0)
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_attrib = s1->basic_info.out.attrib;
-	torture_comment(torture, "attrib: 0x%x\n", (uint_t)correct_attrib);
+	torture_comment(torture, "attrib: 0x%x\n", (unsigned int)correct_attrib);
 	
 	ATTRIB_CHECK("GETATTR",                   getattr,                   attrib);
 	if (!is_ipc) {
@@ -825,13 +825,13 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	if (s1 && s1->stype.out.tfield != 0) { \
 		printf("(%d) handle %s/%s unknown != 0 (0x%x)\n", __LINE__, \
                        #stype, #tfield, \
-		       (uint_t)s1->stype.out.tfield); \
+		       (unsigned int)s1->stype.out.tfield); \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != 0) { \
 		printf("(%d) path %s/%s unknown != 0 (0x%x)\n", __LINE__, \
                        #stype, #tfield, \
-		       (uint_t)s1->stype.out.tfield); \
+		       (unsigned int)s1->stype.out.tfield); \
 	}} while (0)
 #endif
 	/* now get a bit fancier .... */

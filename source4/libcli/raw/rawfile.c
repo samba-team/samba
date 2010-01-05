@@ -918,8 +918,8 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 		
 	case RAW_LOCK_LOCKX: {
 		struct smb_lock_entry *lockp;
-		uint_t lck_size = (parms->lockx.in.mode & LOCKING_ANDX_LARGE_FILES)? 20 : 10;
-		uint_t lock_count = parms->lockx.in.ulock_cnt + parms->lockx.in.lock_cnt;
+		unsigned int lck_size = (parms->lockx.in.mode & LOCKING_ANDX_LARGE_FILES)? 20 : 10;
+		unsigned int lock_count = parms->lockx.in.ulock_cnt + parms->lockx.in.lock_cnt;
 		int i;
 
 		SETUP_REQUEST(SMBlockingX, 8, lck_size * lock_count);

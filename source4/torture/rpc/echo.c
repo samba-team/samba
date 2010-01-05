@@ -268,19 +268,19 @@ static bool test_sleep(struct torture_context *tctx,
 							talloc_asprintf(tctx, "TestSleep(%d) failed", i));
 				torture_assert(tctx, r[i].out.result == r[i].in.seconds,
 					talloc_asprintf(tctx, "Failed - Asked to sleep for %u seconds (server replied with %u seconds and the reply takes only %u seconds)", 
-					       	r[i].out.result, r[i].in.seconds, (uint_t)diff[i].tv_sec));
+						r[i].out.result, r[i].in.seconds, (unsigned int)diff[i].tv_sec));
 				torture_assert(tctx, r[i].out.result <= rounded_tdiff, 
 					talloc_asprintf(tctx, "Failed - Slept for %u seconds (but reply takes only %u.%06u seconds)", 
-						r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec));
+						r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec));
 				if (r[i].out.result+1 == rounded_tdiff) {
 					torture_comment(tctx, "Slept for %u seconds (but reply takes %u.%06u seconds - busy server?)\n", 
-							r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
+							r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec);
 				} else if (r[i].out.result == rounded_tdiff) {
 					torture_comment(tctx, "Slept for %u seconds (reply takes %u.%06u seconds - ok)\n", 
-							r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
+							r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec);
 				} else {
 						torture_comment(tctx, "(Failed) - Not async - Slept for %u seconds (but reply takes %u.%06u seconds)", 
-							r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
+							r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec);
 					/* TODO: let the test fail here, when we support async rpc on ncacn_np */
 				}
 			}

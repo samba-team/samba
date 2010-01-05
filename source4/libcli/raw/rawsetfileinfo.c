@@ -33,7 +33,7 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 				  union smb_setfileinfo *parms, 
 				  DATA_BLOB *blob)
 {	
-	uint_t len;
+	unsigned int len;
 
 #define NEED_BLOB(n) do { \
 	  *blob = data_blob_talloc(mem_ctx, NULL, n); \

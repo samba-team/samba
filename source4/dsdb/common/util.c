@@ -208,9 +208,9 @@ int samdb_search_count(struct ldb_context *sam_ldb,
 /*
   search the sam for a single integer attribute in exactly 1 record
 */
-uint_t samdb_search_uint(struct ldb_context *sam_ldb,
+unsigned int samdb_search_uint(struct ldb_context *sam_ldb,
 			 TALLOC_CTX *mem_ctx,
-			 uint_t default_value,
+			 unsigned int default_value,
 			 struct ldb_dn *basedn,
 			 const char *attr_name,
 			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
@@ -314,7 +314,7 @@ int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 /*
   pull a uint from a result set. 
 */
-uint_t samdb_result_uint(const struct ldb_message *msg, const char *attr, uint_t default_value)
+unsigned int samdb_result_uint(const struct ldb_message *msg, const char *attr, unsigned int default_value)
 {
 	return ldb_msg_find_attr_as_uint(msg, attr, default_value);
 }
@@ -557,10 +557,10 @@ struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_me
 /*
   pull an array of samr_Password structutres from a result set. 
 */
-uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
+unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
 			   const char *attr, struct samr_Password **hashes)
 {
-	uint_t count, i;
+	unsigned int count, i;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 
 	*hashes = NULL;
@@ -846,10 +846,10 @@ int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct l
 }
 
 /*
-  add a uint_t element to a message
+  add a unsigned int element to a message
 */
 int samdb_msg_add_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-		       const char *attr_name, uint_t v)
+		       const char *attr_name, unsigned int v)
 {
 	return samdb_msg_add_int(sam_ldb, mem_ctx, msg, attr_name, (int)v);
 }
@@ -892,7 +892,7 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
   add a samr_Password array to a message
 */
 int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, struct samr_Password *hashes, uint_t count)
+			 const char *attr_name, struct samr_Password *hashes, unsigned int count)
 {
 	struct ldb_val val;
 	int i;

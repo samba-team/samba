@@ -109,7 +109,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 {
 	NTSTATUS status;
 	uint32_t total_deleted = 0;
-	uint_t count, i;
+	unsigned int count, i;
 	union smb_search_data *list;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	struct smb2_find f;

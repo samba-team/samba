@@ -527,7 +527,7 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 	   the negotiated buffer size */
 	do {
 		uint32_t this_data, this_param, max_bytes;
-		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
+		unsigned int align1 = 1, align2 = (params_left ? 2 : 0);
 		struct smbsrv_request *this_req;
 
 		max_bytes = req_max_data(req) - (align1 + align2);

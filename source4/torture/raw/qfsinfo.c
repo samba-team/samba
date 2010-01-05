@@ -69,16 +69,16 @@ static union smb_fsinfo *find(const char *name)
 /* local macros to make the code below more readable */
 #define VAL_EQUAL(n1, v1, n2, v2) do {if (s1->n1.out.v1 != s2->n2.out.v2) { \
         printf("%s/%s [%u] != %s/%s [%u] at %s(%d)\n", \
-               #n1, #v1, (uint_t)s1->n1.out.v1, \
-               #n2, #v2, (uint_t)s2->n2.out.v2, \
+               #n1, #v1, (unsigned int)s1->n1.out.v1, \
+               #n2, #v2, (unsigned int)s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
         ret = false; \
 }} while(0)
 
 #define VAL_APPROX_EQUAL(n1, v1, n2, v2) do {if (abs((int)(s1->n1.out.v1) - (int)(s2->n2.out.v2)) > 0.1*s1->n1.out.v1) { \
         printf("%s/%s [%u] != %s/%s [%u] at %s(%d)\n", \
-               #n1, #v1, (uint_t)s1->n1.out.v1, \
-               #n2, #v2, (uint_t)s2->n2.out.v2, \
+               #n1, #v1, (unsigned int)s1->n1.out.v1, \
+               #n2, #v2, (unsigned int)s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
         ret = false; \
 }} while(0)
@@ -105,8 +105,8 @@ static union smb_fsinfo *find(const char *name)
 #define VAL_UNKNOWN(n1, v1) do {if (s1->n1.out.v1 != 0) { \
         printf("%s/%s non-zero unknown - %u (0x%x) at %s(%d)\n", \
                #n1, #v1, \
-	       (uint_t)s1->n1.out.v1, \
-	       (uint_t)s1->n1.out.v1, \
+	       (unsigned int)s1->n1.out.v1, \
+	       (unsigned int)s1->n1.out.v1, \
 	       __FILE__, __LINE__); \
         ret = false; \
 }} while(0)

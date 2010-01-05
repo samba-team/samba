@@ -33,9 +33,9 @@ static int showall;
 static int analyze;
 static int hide_unlock_fails;
 static int use_oplocks;
-static uint_t lock_range = 100;
-static uint_t lock_base = 0;
-static uint_t min_length = 0;
+static unsigned int lock_range = 100;
+static unsigned int lock_base = 0;
+static unsigned int min_length = 0;
 static int exact_error_codes;
 static int zero_zero;
 
@@ -216,8 +216,8 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 		     int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
-	uint_t conn = rec->conn;
-	uint_t f = rec->f;
+	unsigned int conn = rec->conn;
+	unsigned int f = rec->f;
 	uint64_t start = rec->start;
 	uint64_t len = rec->len;
 	enum brl_type op = rec->lock_type;
@@ -426,7 +426,7 @@ static int test_locks(struct tevent_context *ev,
 #endif
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
-			recorded[n].start = lock_base + ((uint_t)random() % (lock_range-1));
+			recorded[n].start = lock_base + ((unsigned int)random() % (lock_range-1));
 			recorded[n].len =  min_length +
 				random() % (lock_range-(recorded[n].start-lock_base));
 			recorded[n].start *= RANGE_MULTIPLE;

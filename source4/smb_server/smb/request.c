@@ -76,7 +76,7 @@ struct smbsrv_request *smbsrv_init_request(struct smbsrv_connection *smb_conn)
 /*
   setup a chained reply in req->out with the given word count and initial data buffer size. 
 */
-static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
+static void req_setup_chain_reply(struct smbsrv_request *req, unsigned int wct, unsigned int buflen)
 {
 	uint32_t chain_base_size = req->out.size;
 
@@ -110,7 +110,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
   the caller will then fill in the command words and data before calling req_send_reply() to 
   send the reply on its way
 */
-void smbsrv_setup_reply(struct smbsrv_request *req, uint_t wct, size_t buflen)
+void smbsrv_setup_reply(struct smbsrv_request *req, unsigned int wct, size_t buflen)
 {
 	uint16_t flags2;
 
@@ -233,7 +233,7 @@ int req_max_data(struct smbsrv_request *req)
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void req_grow_allocation(struct smbsrv_request *req, uint_t new_size)
+static void req_grow_allocation(struct smbsrv_request *req, unsigned int new_size)
 {
 	int delta;
 	uint8_t *buf2;
@@ -399,7 +399,7 @@ void smbsrv_send_error(struct smbsrv_request *req, NTSTATUS status)
 size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, int dest_len, size_t flags)
 {
 	size_t len;
-	uint_t grow_size;
+	unsigned int grow_size;
 	uint8_t *buf0;
 	const int max_bytes_per_char = 3;
 
@@ -478,7 +478,7 @@ size_t req_append_var_block(struct smbsrv_request *req,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
+static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2, alignment=0;
 	bool ret;
@@ -536,7 +536,7 @@ static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, 
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
+static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2;
 	bool ret;
@@ -585,7 +585,7 @@ static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
+size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
@@ -605,7 +605,7 @@ size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const
   on failure *dest is set to the zero length string. This seems to
   match win2000 behaviour
 */
-size_t req_pull_ascii4(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, uint_t flags)
+size_t req_pull_ascii4(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, unsigned int flags)
 {
 	ssize_t ret;
 
@@ -667,7 +667,7 @@ bool req_data_oob(struct request_bufinfo *bufinfo, const uint8_t *ptr, uint32_t 
 /* 
    pull an open file handle from a packet, taking account of the chained_fnum
 */
-static uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t offset)
+static uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, unsigned int offset)
 {
 	if (req->chained_fnum != -1) {
 		return req->chained_fnum;
@@ -675,7 +675,7 @@ static uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t
 	return SVAL(base, offset);
 }
 
-struct ntvfs_handle *smbsrv_pull_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t offset)
+struct ntvfs_handle *smbsrv_pull_fnum(struct smbsrv_request *req, const uint8_t *base, unsigned int offset)
 {
 	struct smbsrv_handle *handle;
 	uint16_t fnum = req_fnum(req, base, offset);
@@ -699,7 +699,7 @@ struct ntvfs_handle *smbsrv_pull_fnum(struct smbsrv_request *req, const uint8_t 
 	return handle->ntvfs;
 }
 
-void smbsrv_push_fnum(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvfs)
+void smbsrv_push_fnum(uint8_t *base, unsigned int offset, struct ntvfs_handle *ntvfs)
 {
 	struct smbsrv_handle *handle = talloc_get_type(ntvfs->frontend_data.private_data,
 				       struct smbsrv_handle);

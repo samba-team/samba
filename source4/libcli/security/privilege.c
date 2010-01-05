@@ -231,7 +231,7 @@ void security_token_debug_privileges(int dbg_lev, const struct security_token *t
 
 	if (token->privilege_mask) {
 		int i = 0;
-		uint_t privilege;
+		unsigned int privilege;
 
 		for (privilege = 1; privilege <= 64; privilege++) {
 			uint64_t mask = sec_privilege_mask(privilege);

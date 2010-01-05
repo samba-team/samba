@@ -40,7 +40,7 @@ struct unixuid_private {
 struct unix_sec_ctx {
 	uid_t uid;
 	gid_t gid;
-	uint_t ngroups;
+	unsigned int ngroups;
 	gid_t *groups;
 };
 

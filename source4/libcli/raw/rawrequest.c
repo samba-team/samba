@@ -119,7 +119,7 @@ struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *tran
   setup a SMB packet at transport level
 */
 struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *transport,
-						      uint8_t command, uint_t wct, uint_t buflen)
+						      uint8_t command, unsigned int wct, unsigned int buflen)
 {
 	struct smbcli_request *req;
 
@@ -167,7 +167,7 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
   way. This interface is used before a session is setup.
 */
 struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *session,
-						    uint8_t command, uint_t wct, size_t buflen)
+						    uint8_t command, unsigned int wct, size_t buflen)
 {
 	struct smbcli_request *req;
 
@@ -190,7 +190,7 @@ struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *sessi
 */
 struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
 					    uint8_t command, 
-					    uint_t wct, uint_t buflen)
+					    unsigned int wct, unsigned int buflen)
 {
 	struct smbcli_request *req;
 
@@ -211,7 +211,7 @@ struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_size)
+static void smbcli_req_grow_allocation(struct smbcli_request *req, unsigned int new_size)
 {
 	int delta;
 	uint8_t *buf2;
@@ -252,7 +252,7 @@ static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_si
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
+static void smbcli_req_grow_data(struct smbcli_request *req, unsigned int new_size)
 {
 	int delta;
 
@@ -274,9 +274,9 @@ static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
 */
 NTSTATUS smbcli_chained_request_setup(struct smbcli_request *req,
 				      uint8_t command, 
-				      uint_t wct, size_t buflen)
+				      unsigned int wct, size_t buflen)
 {
-	uint_t new_size = 1 + (wct*2) + 2 + buflen;
+	unsigned int new_size = 1 + (wct*2) + 2 + buflen;
 
 	SSVAL(req->out.vwv, VWV(0), command);
 	SSVAL(req->out.vwv, VWV(1), req->out.size - NBT_HDR_SIZE);
@@ -371,7 +371,7 @@ bool smbcli_request_receive(struct smbcli_request *req)
   handle oplock break requests from the server - return true if the request was
   an oplock break
 */
-bool smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, const uint8_t *hdr, const uint8_t *vwv)
+bool smbcli_handle_oplock_break(struct smbcli_transport *transport, unsigned int len, const uint8_t *hdr, const uint8_t *vwv)
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
@@ -416,7 +416,7 @@ bool smbcli_request_is_error(struct smbcli_request *req)
 
   return the number of bytes added to the packet
 */
-size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uint_t flags)
+size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, unsigned int flags)
 {
 	size_t len;
 
@@ -448,7 +448,7 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uin
  this is used in places where the non-terminated string byte length is
  placed in the packet as a separate field  
 */
-size_t smbcli_req_append_string_len(struct smbcli_request *req, const char *str, uint_t flags, int *len)
+size_t smbcli_req_append_string_len(struct smbcli_request *req, const char *str, unsigned int flags, int *len)
 {
 	int diff = 0;
 	size_t ret;
@@ -489,7 +489,7 @@ size_t smbcli_req_append_string_len(struct smbcli_request *req, const char *str,
 
   if dest_len is -1 then no limit applies
 */
-size_t smbcli_req_append_ascii4(struct smbcli_request *req, const char *str, uint_t flags)
+size_t smbcli_req_append_ascii4(struct smbcli_request *req, const char *str, unsigned int flags)
 {
 	size_t size;
 	smbcli_req_append_bytes(req, (const uint8_t *)"\4", 1);
@@ -555,7 +555,7 @@ size_t smbcli_req_append_var_block(struct smbcli_request *req, const uint8_t *by
   of bytes consumed in the packet is returned
 */
 static size_t smbcli_req_pull_ucs2(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx,
-				char **dest, const uint8_t *src, int byte_len, uint_t flags)
+				char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2, alignment=0;
 	bool ret;
@@ -609,7 +609,7 @@ static size_t smbcli_req_pull_ucs2(struct request_bufinfo *bufinfo, TALLOC_CTX *
   of bytes consumed in the packet is returned
 */
 size_t smbcli_req_pull_ascii(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx,
-			     char **dest, const uint8_t *src, int byte_len, uint_t flags)
+			     char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2;
 	bool ret;
@@ -653,7 +653,7 @@ size_t smbcli_req_pull_ascii(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ct
   of bytes consumed in the packet is returned
 */
 size_t smbcli_req_pull_string(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx, 
-			   char **dest, const uint8_t *src, int byte_len, uint_t flags)
+			   char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
@@ -751,7 +751,7 @@ NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
 */
 size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 			     const DATA_BLOB *blob, const char **dest, 
-			     const uint8_t *src, int byte_len, uint_t flags)
+			     const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2, alignment=0;
 	size_t ret_size;
@@ -808,7 +808,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 */
 static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 				     const DATA_BLOB *blob, const char **dest, 
-				     const uint8_t *src, int byte_len, uint_t flags)
+				     const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2;
 	size_t ret_size;
@@ -860,7 +860,7 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 			       const DATA_BLOB *blob, 
 			       struct smb_wire_string *dest, 
 			       uint16_t len_offset, uint16_t str_offset, 
-			       uint_t flags)
+			       unsigned int flags)
 {
 	int extra;
 	dest->s = NULL;
@@ -927,7 +927,7 @@ size_t smbcli_blob_pull_unix_string(struct smbcli_session *session,
 			    DATA_BLOB *blob, 
 			    const char **dest, 
 			    uint16_t str_offset, 
-			    uint_t flags)
+			    unsigned int flags)
 {
 	int extra = 0;
 	*dest = NULL;
@@ -961,7 +961,7 @@ size_t smbcli_blob_pull_unix_string(struct smbcli_session *session,
 */
 size_t smbcli_blob_append_string(struct smbcli_session *session,
 			      TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
-			      const char *str, uint_t flags)
+			      const char *str, unsigned int flags)
 {
 	size_t max_len;
 	int len;

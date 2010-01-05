@@ -1219,8 +1219,8 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 	const int LOCAL = 0;
 	const int GLOBAL = 1;
 
-	secname[LOCAL] = talloc_asprintf(tctx, "torturesecret-%u", (uint_t)random());
-	secname[GLOBAL] = talloc_asprintf(tctx, "G$torturesecret-%u", (uint_t)random());
+	secname[LOCAL] = talloc_asprintf(tctx, "torturesecret-%u", (unsigned int)random());
+	secname[GLOBAL] = talloc_asprintf(tctx, "G$torturesecret-%u", (unsigned int)random());
 
 	for (i=0; i< 2; i++) {
 		torture_comment(tctx, "\nTesting CreateSecret of %s\n", secname[i]);

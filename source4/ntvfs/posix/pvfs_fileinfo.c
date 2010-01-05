@@ -53,7 +53,7 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
   fill in the dos file attributes for a file
 */
 NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
-			    uint_t flags, int fd)
+			    unsigned int flags, int fd)
 {
 	NTSTATUS status;
 	DATA_BLOB lkey;

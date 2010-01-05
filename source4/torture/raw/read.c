@@ -52,7 +52,7 @@
 /*
   setup a random buffer based on a seed
 */
-static void setup_buffer(uint8_t *buf, uint_t seed, int len)
+static void setup_buffer(uint8_t *buf, unsigned int seed, int len)
 {
 	int i;
 	srandom(seed);
@@ -62,7 +62,7 @@ static void setup_buffer(uint8_t *buf, uint_t seed, int len)
 /*
   check a random buffer based on a seed
 */
-static bool check_buffer(uint8_t *buf, uint_t seed, int len, int line)
+static bool check_buffer(uint8_t *buf, unsigned int seed, int len, int line)
 {
 	int i;
 	srandom(seed);
@@ -90,7 +90,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	uint_t seed = time(NULL);
+	unsigned int seed = time(NULL);
 
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
@@ -222,7 +222,7 @@ static bool test_lockread(struct torture_context *tctx,
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	uint_t seed = time(NULL);
+	unsigned int seed = time(NULL);
 
 	if (!cli->transport->negotiate.lockread_supported) {
 		printf("Server does not support lockread - skipping\n");
@@ -372,7 +372,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	uint_t seed = time(NULL);
+	unsigned int seed = time(NULL);
 
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
@@ -655,7 +655,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	uint_t seed = time(NULL);
+	unsigned int seed = time(NULL);
 
 	if (!cli->transport->negotiate.readbraw_supported) {
 		printf("Server does not support readbraw - skipping\n");

@@ -40,7 +40,7 @@ struct pvfs_state {
 	struct GUID *base_fs_uuid;
 
 	const char *share_name;
-	uint_t flags;
+	unsigned int flags;
 
 	struct pvfs_mangle_context *mangle_ctx;
 
@@ -54,13 +54,13 @@ struct pvfs_state {
 	struct pvfs_wait *wait_list;
 
 	/* the sharing violation timeout (nsecs) */
-	uint_t sharing_violation_delay;
+	unsigned int sharing_violation_delay;
 
 	/* the oplock break timeout (secs) */
-	uint_t oplock_break_timeout;
+	unsigned int oplock_break_timeout;
 
 	/* the write time update delay (nsecs) */
-	uint_t writetime_delay;
+	unsigned int writetime_delay;
 
 	/* filesystem attributes (see FS_ATTR_*) */
 	uint32_t fs_attribs;
@@ -84,7 +84,7 @@ struct pvfs_state {
 		struct pvfs_search_state *list;
 
 		/* how long to keep inactive searches around for */
-		uint_t inactivity_time;
+		unsigned int inactivity_time;
 	} search;
 
 	/* used to accelerate acl mapping */
@@ -223,7 +223,7 @@ struct pvfs_search_state {
 	uint16_t must_attrib;
 	struct pvfs_dir *dir;
 	time_t last_used;
-	uint_t num_ea_names;
+	unsigned int num_ea_names;
 	struct ea_name *ea_names;
 	struct tevent_timer *te;
 };

@@ -63,7 +63,7 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, 
 	struct svfs_dir *dir;
 	DIR *odir;
 	struct dirent *dent;
-	uint_t allocated = 0;
+	unsigned int allocated = 0;
 	char *low_mask;
 
 	dir = talloc(mem_ctx, struct svfs_dir);
@@ -90,7 +90,7 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, 
 	if (!odir) { return NULL; }
 
 	while ((dent = readdir(odir))) {
-		uint_t i = dir->count;
+		unsigned int i = dir->count;
 		char *full_name;
 		char *low_name;
 

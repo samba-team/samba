@@ -72,9 +72,9 @@ struct smbclient_context {
 
 /* timing globals */
 static uint64_t get_total_size = 0;
-static uint_t get_total_time_ms = 0;
+static unsigned int get_total_time_ms = 0;
 static uint64_t put_total_size = 0;
-static uint_t put_total_time_ms = 0;
+static unsigned int put_total_time_ms = 0;
 
 /* Unfortunately, there is no way to pass the a context to the completion function as an argument */
 static struct smbclient_context *rl_ctx; 

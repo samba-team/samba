@@ -148,7 +148,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 	time_t write_time = 0;
 	uint32_t set_size = 0;
 	union smb_setfileinfo *sf;
-	uint_t state;
+	unsigned int state;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -579,7 +579,7 @@ static NTSTATUS ntvfs_map_fsinfo_finish(struct ntvfs_module_context *ntvfs,
 
 	case RAW_QFS_DSKATTR: {
 		/* map from generic to DSKATTR */
-		uint_t bpunit = 64;
+		unsigned int bpunit = 64;
 
 		/* we need to scale the sizes to fit */
 		for (bpunit=64; bpunit<0x10000; bpunit *= 2) {
@@ -1187,7 +1187,7 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 {
 	union smb_lock *lck;
 	union smb_close *cl;
-	uint_t state;
+	unsigned int state;
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1381,7 +1381,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 	union smb_read *rd2;
 	union smb_lock *lck;
 	NTSTATUS status;
-	uint_t state;
+	unsigned int state;
 
 	rd2 = talloc(req, union smb_read);
 	if (rd2 == NULL) {

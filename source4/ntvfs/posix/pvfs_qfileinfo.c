@@ -76,7 +76,7 @@ static uint32_t pvfs_fileinfo_access(union smb_fileinfo *info)
 */
 NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
 			    struct pvfs_filename *name, int fd, 
-			    uint_t num_names,
+			    unsigned int num_names,
 			    struct ea_name *names,
 			    struct smb_ea_list *eas)
 {

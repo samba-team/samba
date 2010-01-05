@@ -706,7 +706,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 	struct smbsrv_request *req = state->op->req;
 	struct smb_trans2 *trans = state->op->trans;
 	uint8_t *data;
-	uint_t ofs = trans->out.data.length;
+	unsigned int ofs = trans->out.data.length;
 	uint32_t ea_size;
 
 	switch (state->data_level) {
@@ -802,7 +802,7 @@ static bool find_callback(void *private_data, const union smb_search_data *file)
 {
 	struct find_state *state = talloc_get_type(private_data, struct find_state);
 	struct smb_trans2 *trans = state->op->trans;
-	uint_t old_length;
+	unsigned int old_length;
 
 	old_length = trans->out.data.length;
 
@@ -1116,7 +1116,7 @@ static void reply_trans_send(struct ntvfs_request *ntvfs)
 	   the negotiated buffer size */
 	do {
 		uint16_t this_data, this_param, max_bytes;
-		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
+		unsigned int align1 = 1, align2 = (params_left ? 2 : 0);
 		struct smbsrv_request *this_req;
 
 		max_bytes = req_max_data(req) - (align1 + align2);

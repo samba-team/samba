@@ -55,7 +55,7 @@ static bool use_oplocks;
 struct record {
 	char r1, r2;
 	char conn, f, fstype;
-	uint_t start, len;
+	unsigned int start, len;
 	char needed;
 };
 
@@ -95,7 +95,7 @@ static bool try_close(struct smbcli_state *c, int fstype, int fd)
 }
 
 static bool try_lock(struct smbcli_state *c, int fstype, 
-		     int fd, uint_t start, uint_t len,
+		     int fd, unsigned int start, unsigned int len,
 		     enum brl_type op)
 {
 	struct flock lock;
@@ -117,7 +117,7 @@ static bool try_lock(struct smbcli_state *c, int fstype,
 }
 
 static bool try_unlock(struct smbcli_state *c, int fstype, 
-		       int fd, uint_t start, uint_t len)
+		       int fd, unsigned int start, unsigned int len)
 {
 	struct flock lock;
 
@@ -228,13 +228,13 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 		     int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
-	uint_t conn = rec->conn;
-	uint_t f = rec->f;
-	uint_t fstype = rec->fstype;
-	uint_t start = rec->start;
-	uint_t len = rec->len;
-	uint_t r1 = rec->r1;
-	uint_t r2 = rec->r2;
+	unsigned int conn = rec->conn;
+	unsigned int f = rec->f;
+	unsigned int fstype = rec->fstype;
+	unsigned int start = rec->start;
+	unsigned int len = rec->len;
+	unsigned int r1 = rec->r1;
+	unsigned int r2 = rec->r2;
 	enum brl_type op;
 	int server;
 	bool ret[NSERVERS];
@@ -384,7 +384,7 @@ static void test_locks(TALLOC_CTX *mem_ctx, char *share1, char *share2,
 		recorded[n].conn = random() % NCONNECTIONS;
 		recorded[n].fstype = random() % NUMFSTYPES;
 		recorded[n].f = random() % NFILES;
-		recorded[n].start = LOCKBASE + ((uint_t)random() % (LOCKRANGE-1));
+		recorded[n].start = LOCKBASE + ((unsigned int)random() % (LOCKRANGE-1));
 		recorded[n].len = 1 + 
 			random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 		recorded[n].start *= RANGE_MULTIPLE;

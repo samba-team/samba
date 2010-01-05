@@ -55,7 +55,7 @@ static NTSTATUS smbcli_link_internal(struct smbcli_tree *tree,
 ****************************************************************************/
 uint32_t unix_perms_to_wire(mode_t perms)
 {
-        uint_t ret = 0;
+        unsigned int ret = 0;
 
         ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
         ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);
@@ -271,8 +271,8 @@ int smbcli_open(struct smbcli_tree *tree, const char *fname, int flags,
 	     int share_mode)
 {
 	union smb_open open_parms;
-	uint_t openfn=0;
-	uint_t accessmode=0;
+	unsigned int openfn=0;
+	unsigned int accessmode=0;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 

@@ -144,7 +144,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && finfo2.stype.out.field != value) { \
 		printf("(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		       call_name, #stype, #field, \
-		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
+		       (unsigned int)value, (unsigned int)finfo2.stype.out.field); \
 		dump_all_info(torture, &finfo1); \
 		ret = false; \
 	}} while (0)
@@ -154,8 +154,8 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && nt_time_to_unix(finfo2.stype.out.field) != value) { \
 		printf("(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		        call_name, #stype, #field, \
-		        (uint_t)value, \
-			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
+		        (unsigned int)value, \
+			(unsigned int)nt_time_to_unix(finfo2.stype.out.field)); \
 		printf("\t%s", timestring(torture, value)); \
 		printf("\t%s\n", nt_time_string(torture, finfo2.stype.out.field)); \
 		dump_all_info(torture, &finfo1); \

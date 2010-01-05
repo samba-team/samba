@@ -162,8 +162,8 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 static NTSTATUS raw_smbcli_open(struct smbcli_tree *tree, const char *fname, int flags, int share_mode, int *fnum)
 {
         union smb_open open_parms;
-        uint_t openfn=0;
-        uint_t accessmode=0;
+        unsigned int openfn=0;
+        unsigned int accessmode=0;
         TALLOC_CTX *mem_ctx;
         NTSTATUS status;
 
@@ -225,8 +225,8 @@ static NTSTATUS raw_smbcli_open(struct smbcli_tree *tree, const char *fname, int
 static NTSTATUS raw_smbcli_t2open(struct smbcli_tree *tree, const char *fname, int flags, int share_mode, int *fnum)
 {
         union smb_open io;
-        uint_t openfn=0;
-        uint_t accessmode=0;
+        unsigned int openfn=0;
+        unsigned int accessmode=0;
         TALLOC_CTX *mem_ctx;
         NTSTATUS status;
 

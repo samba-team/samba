@@ -52,7 +52,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	char *secret2;
 	char *secname;
 
-	secname = talloc_asprintf(tctx, "torturesecret-%u", (uint_t)random());
+	secname = talloc_asprintf(tctx, "torturesecret-%u", (unsigned int)random());
 
 	torture_comment(tctx, "Testing CreateSecret of %s\n", secname);
 		

@@ -117,7 +117,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && finfo2.stype.out.field != value) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		       call_name, #stype, #field, \
-		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
+		       (unsigned int)value, (unsigned int)finfo2.stype.out.field); \
 		torture_smb2_all_info(tree, handle); \
 		ret = false; \
 		goto done; \
@@ -128,8 +128,8 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && nt_time_to_unix(finfo2.stype.out.field) != value) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		        call_name, #stype, #field, \
-		        (uint_t)value, \
-			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
+		        (unsigned int)value, \
+			(unsigned int)nt_time_to_unix(finfo2.stype.out.field)); \
 		torture_warning(tctx, "\t%s", timestring(tctx, value)); \
 		torture_warning(tctx, "\t%s\n", nt_time_string(tctx, finfo2.stype.out.field)); \
 		torture_smb2_all_info(tree, handle); \

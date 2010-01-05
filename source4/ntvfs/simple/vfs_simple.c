@@ -861,7 +861,7 @@ static NTSTATUS svfs_search_first(struct ntvfs_module_context *ntvfs,
 	struct svfs_private *p = ntvfs->private_data;
 	struct search_state *search;
 	union smb_search_data file;
-	uint_t max_count;
+	unsigned int max_count;
 
 	if (io->generic.level != RAW_SEARCH_TRANS2) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -935,7 +935,7 @@ static NTSTATUS svfs_search_next(struct ntvfs_module_context *ntvfs,
 	struct svfs_private *p = ntvfs->private_data;
 	struct search_state *search;
 	union smb_search_data file;
-	uint_t max_count;
+	unsigned int max_count;
 
 	if (io->generic.level != RAW_SEARCH_TRANS2) {
 		return NT_STATUS_NOT_SUPPORTED;
