@@ -42,7 +42,7 @@ msgstr ""
 #: ../../utils/net.c:139 ../../utils/net.c:157 ../../utils/net_conf.c:1136 ../../utils/net_help.c:36 ../../utils/net_rap.c:161 ../../utils/net_rap.c:302 ../../utils/net_rap.c:467 ../../utils/net_rap.c:750 ../../utils/net_rap.c:891
 #: ../../utils/net_rap.c:1002 ../../utils/net_rap.c:1193 ../../utils/net_rpc.c:979 ../../utils/net_rpc.c:2820 ../../utils/net_rpc.c:4923 ../../utils/net_rpc.c:6962 ../../utils/net_rpc.c:7067 ../../utils/net_util.c:586
 msgid "Usage:\n"
-msgstr ""
+msgstr "Verwendung:\n"
 
 #: ../../utils/net.c:141
 #, c-format
@@ -9167,16 +9167,16 @@ msgstr "Ungültiges Kommando: %s %s\n"
 
 #: ../../utils/net_util.c:609
 msgid "Disk"
-msgstr ""
+msgstr "Festplatte"
 
 #: ../../utils/net_util.c:610
 msgid "Print"
-msgstr "Drucken"
+msgstr "Drucker"
 
 #: ../../utils/net_util.c:611
 msgid "Dev"
-msgstr ""
+msgstr "Gerät"
 
 #: ../../utils/net_util.c:612
 msgid "IPC"
-msgstr ""
+msgstr "IPC"
