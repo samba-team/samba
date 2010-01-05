@@ -652,7 +652,7 @@ string. This is equivalent to::
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-((type *)talloc_array(const void *ctx, type, uint_t count);
+((type *)talloc_array(const void *ctx, type, unsigned int count);
 
 The talloc_array() macro is equivalent to::
 
@@ -663,14 +663,14 @@ returning NULL if the multiply overflows.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc_array_size(const void *ctx, size_t size, uint_t count);
+void *talloc_array_size(const void *ctx, size_t size, unsigned int count);
 
 The talloc_array_size() function is useful when the type is not
 known. It operates in the same way as talloc_array(), but takes a size
 instead of a type.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, uint_t count);
+(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, unsigned int count);
 
 The talloc_ptrtype() macro should be used when you have a pointer to an array
 and want to allocate memory of an array to point at with this pointer. When compiling

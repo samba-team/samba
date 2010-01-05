@@ -689,7 +689,7 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
         </para>
         <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
     </refsect2>
-    <refsect2><title>(type *)talloc_array(const void *ctx, type, uint_t count);</title>
+    <refsect2><title>(type *)talloc_array(const void *ctx, type, unsigned int count);</title>
         <para>
 	  The talloc_array() macro is equivalent to:
         </para>
@@ -699,14 +699,14 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
 	  multiply, returning NULL if the multiply overflows.
         </para>
     </refsect2>
-    <refsect2><title>void *talloc_array_size(const void *ctx, size_t size, uint_t count);</title>
+    <refsect2><title>void *talloc_array_size(const void *ctx, size_t size, unsigned int count);</title>
         <para>
 	  The talloc_array_size() function is useful when the type is not
 	  known. It operates in the same way as talloc_array(), but takes a
 	  size instead of a type.
         </para>
     </refsect2>
-    <refsect2><title>(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, uint_t count);</title>
+    <refsect2><title>(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, unsigned int count);</title>
         <para>
 	  The talloc_ptrtype() macro should be used when you have a pointer to an array
 	  and want to allocate memory of an array to point at with this pointer. When compiling
