@@ -59,12 +59,6 @@ struct samldb_ctx {
 	/* the resulting message */
 	struct ldb_message *msg;
 
-	/* used to find parent domain */
-	struct ldb_dn *check_dn;
-	struct ldb_dn *domain_dn;
-	struct dom_sid *domain_sid;
-	uint32_t next_rid;
-
 	/* holds the entry SID */
 	struct dom_sid *sid;
 
@@ -175,139 +169,6 @@ static int samldb_next_step(struct samldb_ctx *ac)
 	}
 }
 
-/*
- * samldb_get_parent_domain (async)
- */
-
-static int samldb_get_parent_domain(struct samldb_ctx *ac);
-
-static int samldb_get_parent_domain_callback(struct ldb_request *req,
-					     struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	const char *nextRid;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		if ((ac->domain_dn != NULL) || (ac->domain_sid != NULL)) {
-			/* one too many! */
-			ldb_set_errstring(ldb,
-				"Invalid number of results while searching "
-				"for domain object!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		nextRid = ldb_msg_find_attr_as_string(ares->message,
-						      "nextRid", NULL);
-		if (nextRid == NULL) {
-			ldb_asprintf_errstring(ldb,
-				"While looking for domain above %s attribute nextRid not found in %s!",
-				ldb_dn_get_linearized(
-					ac->req->op.add.message->dn),
-				ldb_dn_get_linearized(ares->message->dn));
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		ac->next_rid = strtol(nextRid, NULL, 0);
-
-		ac->domain_sid = samdb_result_dom_sid(ac, ares->message,
-								"objectSid");
-		if (ac->domain_sid == NULL) {
-			ldb_set_errstring(ldb,
-				"Unable to get the parent domain SID!");
-			ret = LDB_ERR_CONSTRAINT_VIOLATION;
-			break;
-		}
-		ac->domain_dn = ldb_dn_copy(ac, ares->message->dn);
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-		if ((ac->domain_dn == NULL) || (ac->domain_sid == NULL)) {
-			/* not found -> retry */
-			ret = samldb_get_parent_domain(ac);
-		} else {
-			/* found, go on */
-			ret = samldb_next_step(ac);
-		}
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Find a domain object in the parents of a particular DN.  */
-static int samldb_get_parent_domain(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	static const char * const attrs[] = { "objectSid", "nextRid", NULL };
-	struct ldb_request *req;
-	struct ldb_dn *dn;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (ac->check_dn == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	dn = ldb_dn_get_parent(ac, ac->check_dn);
-	if (dn == NULL) {
-		ldb_set_errstring(ldb,
-			"Unable to find parent domain object!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	ac->check_dn = dn;
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				   dn, LDB_SCOPE_BASE,
-				   "(|(objectClass=domain)"
-				   "(objectClass=builtinDomain))",
-				   attrs,
-				   NULL,
-				   ac, samldb_get_parent_domain_callback,
-				   ac->req);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return ldb_next_request(ac->module, req);
-}
-
-
 static int samldb_generate_samAccountName(struct ldb_message *msg)
 {
 	char *name;
@@ -395,7 +256,7 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 	}
 
 	ret = ldb_build_search_req(&req, ldb, ac,
-				   ac->domain_dn, LDB_SCOPE_SUBTREE,
+				   samdb_base_dn(ldb), LDB_SCOPE_SUBTREE,
 				   filter, NULL,
 				   NULL,
 				   ac, samldb_check_samAccountName_callback,
@@ -464,134 +325,128 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 	return samldb_next_step(ac);
 }
 
-
-/*
- * samldb_get_sid_domain (async)
- */
-
-static int samldb_get_sid_domain_callback(struct ldb_request *req,
-					  struct ldb_reply *ares)
+static bool samldb_msg_add_sid(struct ldb_message *msg,
+				const char *name,
+				const struct dom_sid *sid)
 {
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	const char *nextRid;
-	int ret;
+	struct ldb_val v;
+	enum ndr_err_code ndr_err;
 
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
+	ndr_err = ndr_push_struct_blob(&v, msg, NULL, sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
 	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		if (ac->next_rid != 0) {
-			/* one too many! */
-			ldb_set_errstring(ldb,
-				"Invalid number of results while searching "
-				"for domain object!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		nextRid = ldb_msg_find_attr_as_string(ares->message,
-							"nextRid", NULL);
-		if (nextRid == NULL) {
-			ldb_asprintf_errstring(ldb,
-				"Attribute nextRid not found in %s!",
-				ldb_dn_get_linearized(ares->message->dn));
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		ac->next_rid = strtol(nextRid, NULL, 0);
-
-		ac->domain_dn = ldb_dn_copy(ac, ares->message->dn);
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-		if (ac->next_rid == 0) {
-			ldb_asprintf_errstring(ldb,
-				"Unable to get nextRid from domain entry!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		/* found, go on */
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
+	return (ldb_msg_add_value(msg, name, &v, NULL) == 0);
 }
 
-/* Find a domain object in the parents of a particular DN.  */
-static int samldb_get_sid_domain(struct samldb_ctx *ac)
+
+/* allocate a SID using our RID Set */
+static int samldb_allocate_sid(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
-	static const char * const attrs[] = { "nextRid", NULL };
-	struct ldb_request *req;
-	char *filter;
+	static const char * const attrs[] = { "rIDAllocationPool", "rIDNextRID" , NULL };
 	int ret;
+	struct ldb_dn *rid_set_dn;
+	struct ldb_result *res;
+	uint64_t alloc_pool;
+	uint32_t alloc_pool_lo, alloc_pool_hi;
+	int next_rid;
+	struct ldb_message *msg;
+	TALLOC_CTX *tmp_ctx = talloc_new(ac);
+	struct ldb_message_element *el;
+	struct ldb_val v1, v2;
+	char *ridstring;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (ac->sid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac->domain_sid = dom_sid_dup(ac, ac->sid);
-	if (!ac->domain_sid) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	/* get the domain component part of the provided SID */
-	ac->domain_sid->num_auths--;
-
-	filter = talloc_asprintf(ac,
-				 "(&(objectSid=%s)"
-				 "(|(objectClass=domain)"
-				 "(objectClass=builtinDomain)))",
-				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
-	if (filter == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				   ldb_get_default_basedn(ldb),
-				   LDB_SCOPE_SUBTREE,
-				   filter, attrs,
-				   NULL,
-				   ac, samldb_get_sid_domain_callback,
-				   ac->req);
-
+	ret = samdb_rid_set_dn(ldb, tmp_ctx, &rid_set_dn);
 	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, __location__ ": No RID Set DN");
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	ac->next_rid = 0;
-	return ldb_next_request(ac->module, req);
+	ret = dsdb_module_search_dn(ac->module, tmp_ctx, &res, rid_set_dn,
+				    attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, __location__ ": No RID Set %s", ldb_dn_get_linearized(rid_set_dn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
+	next_rid = ldb_msg_find_attr_as_int(res->msgs[0], "rIDNextRID", -1);
+	if (next_rid == -1 || alloc_pool == 0) {
+		ldb_asprintf_errstring(ldb, __location__ ": Bad RID Set %s", ldb_dn_get_linearized(rid_set_dn));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	alloc_pool_lo = alloc_pool & 0xFFFFFFFF;
+	alloc_pool_hi = alloc_pool >> 32;
+	if (next_rid > alloc_pool_hi) {
+		/* TODO: add call to RID Manager */
+		ldb_asprintf_errstring(ldb, __location__ ": Out of RIDs in RID Set %s",
+				       ldb_dn_get_linearized(rid_set_dn));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* despite the name, rIDNextRID is the value of the last user
+	 * added by this DC, not the next available RID */
+
+	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), next_rid+1);
+	if (ac->sid == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if ( ! samldb_msg_add_sid(ac->msg, "objectSid", ac->sid)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* now modify the RID Set to use up this RID using a
+	 * constrained delete/add */
+	msg = ldb_msg_new(tmp_ctx);
+	msg->dn = rid_set_dn;
+
+	ret = ldb_msg_add_empty(msg, "rIDNextRID", LDB_FLAG_MOD_DELETE, &el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	el->num_values = 1;
+	el->values = &v1;
+	ridstring = talloc_asprintf(msg, "%u", (unsigned)next_rid);
+	if (!ridstring) {
+		ldb_module_oom(ac->module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	v1 = data_blob_string_const(ridstring);
+
+	ret = ldb_msg_add_empty(msg, "rIDNextRID", LDB_FLAG_MOD_ADD, &el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	el->num_values = 1;
+	el->values = &v2;
+	ridstring = talloc_asprintf(msg, "%u", (unsigned)next_rid+1);
+	if (!ridstring) {
+		ldb_module_oom(ac->module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	v2 = data_blob_string_const(ridstring);
+
+	ret = dsdb_module_modify(ac->module, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	return samldb_next_step(ac);
 }
 
 /*
@@ -721,161 +576,6 @@ static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 	return samldb_next_step(ac);
 }
 
-
-static bool samldb_msg_add_sid(struct ldb_message *msg,
-				const char *name,
-				const struct dom_sid *sid)
-{
-	struct ldb_val v;
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(&v, msg, NULL, sid,
-				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-	return (ldb_msg_add_value(msg, name, &v, NULL) == 0);
-}
-
-static int samldb_new_sid(struct samldb_ctx *ac)
-{
-
-	if (ac->domain_sid == NULL || ac->next_rid == 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ac->sid = dom_sid_add_rid(ac, ac->domain_sid, ac->next_rid + 1);
-	if (ac->sid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if ( ! samldb_msg_add_sid(ac->msg, "objectSid", ac->sid)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	return samldb_next_step(ac);
-}
-
-/*
- * samldb_notice_sid_callback (async)
- */
-
-static int samldb_notice_sid_callback(struct ldb_request *req,
-					struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb,
-			"Invalid reply type!");
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	ret = samldb_next_step(ac);
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* If we are adding new users/groups, we need to update the nextRid
- * attribute to be 'above' the new/incoming RID. Attempt to do it
- * atomically. */
-static int samldb_notice_sid(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	uint32_t old_id, new_id;
-	struct ldb_request *req;
-	struct ldb_message *msg;
-	struct ldb_message_element *els;
-	struct ldb_val *vals;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-	old_id = ac->next_rid;
-	new_id = ac->sid->sub_auths[ac->sid->num_auths - 1];
-
-	if (old_id >= new_id) {
-		/* no need to update the domain nextRid attribute */
-		return samldb_next_step(ac);
-	}
-
-	/* we do a delete and add as a single operation. That prevents
-	   a race, in case we are not actually on a transaction db */
-	msg = ldb_msg_new(ac);
-	if (msg == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	els = talloc_array(msg, struct ldb_message_element, 2);
-	if (els == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	vals = talloc_array(msg, struct ldb_val, 2);
-	if (vals == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	msg->dn = ac->domain_dn;
-	msg->num_elements = 2;
-	msg->elements = els;
-
-	els[0].num_values = 1;
-	els[0].values = &vals[0];
-	els[0].flags = LDB_FLAG_MOD_DELETE;
-	els[0].name = talloc_strdup(msg, "nextRid");
-	if (!els[0].name) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	els[1].num_values = 1;
-	els[1].values = &vals[1];
-	els[1].flags = LDB_FLAG_MOD_ADD;
-	els[1].name = els[0].name;
-
-	vals[0].data = (uint8_t *)talloc_asprintf(vals, "%u", old_id);
-	if (!vals[0].data) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	vals[0].length = strlen((char *)vals[0].data);
-
-	vals[1].data = (uint8_t *)talloc_asprintf(vals, "%u", new_id);
-	if (!vals[1].data) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	vals[1].length = strlen((char *)vals[1].data);
-
-	ret = ldb_build_mod_req(&req, ldb, ac,
-				msg, NULL,
-				ac, samldb_notice_sid_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return ldb_next_request(ac->module, req);
-}
 
 /*
  * samldb_set_defaultObjectCategory_callback (async)
@@ -1142,11 +842,6 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	/* search for a parent domain objet */
-	ac->check_dn = ac->req->op.add.message->dn;
-	ret = samldb_add_step(ac, samldb_get_parent_domain);
-	if (ret != LDB_SUCCESS) return ret;
-
 	/* Add informations for the different account types */
 	ac->type = type;
 	if (strcmp(ac->type, "user") == 0) {
@@ -1287,20 +982,20 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 		 struct loadparm_context);
 
-	sid_generator = lp_sid_generator(lp_ctx);
-	if (sid_generator == SID_GENERATOR_INTERNAL) {
-		/* check if we have a valid SID */
-		ac->sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
-		if ( ! ac->sid) {
-			ret = samldb_add_step(ac, samldb_new_sid);
-			if (ret != LDB_SUCCESS) return ret;
-		} else {
-			ret = samldb_add_step(ac, samldb_get_sid_domain);
+	/* don't allow objectSID to be specified without the RELAX control */
+	ac->sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
+	if (ac->sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		ldb_asprintf_errstring(ldb, "No SID may be specified in user/group creation for %s",
+				       ldb_dn_get_linearized(ac->msg->dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	if ( ! ac->sid) {
+		sid_generator = lp_sid_generator(lp_ctx);
+		if (sid_generator == SID_GENERATOR_INTERNAL) {
+			ret = samldb_add_step(ac, samldb_allocate_sid);
 			if (ret != LDB_SUCCESS) return ret;
 		}
-
-		ret = samldb_add_step(ac, samldb_notice_sid);
-		if (ret != LDB_SUCCESS) return ret;
 	}
 
 	/* finally proceed with adding the entry */
@@ -1310,152 +1005,12 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	return samldb_first_step(ac);
 }
 
-/*
- * samldb_foreign_notice_sid (async)
- */
-
-static int samldb_foreign_notice_sid_callback(struct ldb_request *req,
-						struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	const char *nextRid;
-	const char *name;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		if (ac->next_rid != 0) {
-			/* one too many! */
-			ldb_set_errstring(ldb,
-				"Invalid number of results while searching "
-				"for domain object!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		nextRid = ldb_msg_find_attr_as_string(ares->message,
-							"nextRid", NULL);
-		if (nextRid == NULL) {
-			ldb_asprintf_errstring(ldb,
-				"While looking for foreign SID %s attribute nextRid not found in %s",
-				dom_sid_string(ares, ac->sid),
-					ldb_dn_get_linearized(ares->message->dn));
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		ac->next_rid = strtol(nextRid, NULL, 0);
-
-		ac->domain_dn = ldb_dn_copy(ac, ares->message->dn);
-
-		name = samdb_result_string(ares->message, "name", NULL);
-		ldb_debug(ldb, LDB_DEBUG_TRACE,
-			 "NOTE (strange but valid): Adding foreign SID "
-			 "record with SID %s, but this domain (%s) is "
-			 "not foreign in the database\n",
-			 dom_sid_string(ares, ac->sid), name);
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-
-		/* if this is a fake foreign SID, notice the SID */
-		if (ac->domain_dn) {
-			ret = samldb_notice_sid(ac);
-			break;
-		}
-
-		/* found, go on */
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Find a domain object in the parents of a particular DN. */
-static int samldb_foreign_notice_sid(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	static const char * const attrs[3] = { "nextRid", "name", NULL };
-	struct ldb_request *req;
-	NTSTATUS status;
-	char *filter;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (ac->sid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	status = dom_sid_split_rid(ac, ac->sid, &ac->domain_sid, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-
-	filter = talloc_asprintf(ac,
-				 "(&(objectSid=%s)"
-				 "(|(objectClass=domain)"
-				 "(objectClass=builtinDomain)))",
-				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
-	if (filter == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				   ldb_get_default_basedn(ldb),
-				   LDB_SCOPE_SUBTREE,
-				   filter, attrs,
-				   NULL,
-				   ac, samldb_foreign_notice_sid_callback,
-				   ac->req);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return ldb_next_request(ac->module, req);
-}
-
-
 static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
-
-	ac->next_rid = 0;
 
 	ac->sid = samdb_result_dom_sid(ac->msg, ac->msg, "objectSid");
 	if (ac->sid == NULL) {
@@ -1473,10 +1028,6 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
-
-	/* check if we need to notice this SID */
-	ret = samldb_add_step(ac, samldb_foreign_notice_sid);
-	if (ret != LDB_SUCCESS) return ret;
 
 	/* finally proceed with adding the entry */
 	ret = samldb_add_step(ac, samldb_add_entry);
@@ -2393,14 +1944,8 @@ static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 }
 
 
-static int samldb_init(struct ldb_module *module)
-{
-	return ldb_next_init(module);
-}
-
 _PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
 	.name          = "samldb",
-	.init_context  = samldb_init,
 	.add           = samldb_add,
 	.modify        = samldb_modify,
 	.del           = samldb_delete
