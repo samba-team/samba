@@ -511,16 +511,8 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	}
 
 	data_blob_free(&ntlmssp_state->encrypted_session_key);
-	
-	/* allow arbitarily many authentications, but watch that this will cause a 
-	   memory leak, until the ntlmssp_state is shutdown
-	*/
 
-	if (ntlmssp_state->server_multiple_authentications) {
-		ntlmssp_state->expected_state = NTLMSSP_AUTH;
-	} else {
-		ntlmssp_state->expected_state = NTLMSSP_DONE;
-	}
+	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
 	return nt_status;
 }
@@ -758,8 +750,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	ntlmssp_state->allow_lm_key = (lp_lanman_auth(gensec_security->settings->lp_ctx)
 					  && gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "allow_lm_key", false));
 
-	ntlmssp_state->server_multiple_authentications = false;
-	
 	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
 

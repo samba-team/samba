@@ -56,9 +56,6 @@ struct ntlmssp_state
 	bool allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
 				  very secure anyway */
 
-	bool server_multiple_authentications;  /* Set to 'True' to allow squid 2.5 
-						  style 'challenge caching' */
-
 	const char *user;
 	const char *domain;
 	const char *workstation;
