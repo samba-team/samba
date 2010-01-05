@@ -67,23 +67,6 @@ _PUBLIC_ DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, si
 	return ret;
 }
 
-
-/**
- reference a data blob, to the supplied TALLOC_CTX.  
- Returns a NULL DATA_BLOB on failure
-**/
-_PUBLIC_ DATA_BLOB data_blob_talloc_reference(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
-{
-	DATA_BLOB ret = *blob;
-
-	ret.data = talloc_reference(mem_ctx, blob->data);
-
-	if (!ret.data) {
-		return data_blob(NULL, 0);
-	}
-	return ret;
-}
-
 /**
  construct a zero data blob, using supplied TALLOC_CTX. 
  use this sparingly as it initialises data - better to initialise
