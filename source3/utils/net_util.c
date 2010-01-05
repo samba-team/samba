@@ -583,13 +583,13 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 		d_fprintf(stderr, _("Invalid command: %s %s\n"), whoami,
 			  (argc > 0)?argv[0]:"");
 	}
-	d_printf("Usage:\n");
+	d_printf(_("Usage:\n"));
 	for (i=0; table[i].funcname != NULL; i++) {
 		if(c->display_usage == false)
 			d_printf("%s %-15s %s\n", whoami, table[i].funcname,
-				 table[i].description);
+				 _(table[i].description));
 		else
-			d_printf("%s\n", table[i].usage);
+			d_printf("%s\n", _(table[i].usage));
 	}
 
 	return c->display_usage?0:-1;
@@ -599,7 +599,7 @@ void net_display_usage_from_functable(struct functable *table)
 {
 	int i;
 	for (i=0; table[i].funcname != NULL; i++) {
-		d_printf("%s\n", table[i].usage);
+		d_printf("%s\n", _(table[i].usage));
 	}
 }
 
