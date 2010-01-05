@@ -1031,13 +1031,31 @@ bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
 			/* Ignore zero valued entries. */
 			continue;
 		}
-		/* Create salted versions of new to compare. */
-		E_md5hash(current_salt, nt_pw, new_nt_pw_salted_md5_hash);
 
-		if (memcmp(new_nt_pw_salted_md5_hash,
-			   old_nt_pw_salted_md5_hash,
-			   SALTED_MD5_HASH_LEN) == 0) {
-			return true;
+		if (memcmp(zero_md5_nt_pw, current_salt,
+			   PW_HISTORY_SALT_LEN) == 0)
+		{
+			/*
+			 * New format: zero salt and then plain nt hash.
+			 * Directly compare the hashes.
+			 */
+			if (memcmp(nt_pw, old_nt_pw_salted_md5_hash,
+				   SALTED_MD5_HASH_LEN) == 0)
+			{
+				return true;
+			}
+		} else {
+			/*
+			 * Old format: md5sum of salted nt hash.
+			 * Create salted version of new pw to compare.
+			 */
+			E_md5hash(current_salt, nt_pw, new_nt_pw_salted_md5_hash);
+
+			if (memcmp(new_nt_pw_salted_md5_hash,
+				   old_nt_pw_salted_md5_hash,
+				   SALTED_MD5_HASH_LEN) == 0) {
+				return true;
+			}
 		}
 	}
 	return false;
