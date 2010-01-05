@@ -1583,6 +1583,24 @@ int samdb_rid_manager_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ld
 	return samdb_reference_dn(ldb, mem_ctx, samdb_base_dn(ldb), "rIDManagerReference", dn);
 }
 
+/*
+  find the RID Set DN via the rIDSetReferences attribute in our
+  machine account DN
+ */
+int samdb_rid_set_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	struct ldb_dn *server_ref_dn;
+	int ret;
+
+	ret = samdb_server_reference_dn(ldb, mem_ctx, &server_ref_dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = samdb_reference_dn(ldb, mem_ctx, server_ref_dn, "rIDSetReferences", dn);
+	talloc_free(server_ref_dn);
+	return ret;
+}
+
 const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
 	const struct ldb_val *val = ldb_dn_get_rdn_val(samdb_server_site_dn(ldb, mem_ctx));
