@@ -34,6 +34,64 @@
 
 
 /*
+  allocate a new range of RIDs in the RID Manager object
+ */
+static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_dn *rid_manager_dn, uint64_t *new_pool)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	const char *attrs[] = { "rIDAvailablePool", NULL };
+	uint64_t rid_pool, new_rid_pool, dc_pool;
+	uint32_t rid_pool_lo, rid_pool_hi;
+	struct ldb_result *res;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const unsigned alloc_size = 500;
+
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_manager_dn, attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find rIDAvailablePool in %s - %s",
+				       ldb_dn_get_linearized(rid_manager_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	rid_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAvailablePool", 0);
+	rid_pool_lo = rid_pool & 0xFFFFFFFF;
+	rid_pool_hi = rid_pool >> 32;
+	if (rid_pool_lo >= rid_pool_hi) {
+		ldb_asprintf_errstring(ldb, "Out of RIDs in RID Manager - rIDAvailablePool is %u-%u",
+				       rid_pool_lo, rid_pool_hi);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* lower part of new pool is the low part of the rIDAvailablePool */
+	dc_pool = rid_pool_lo;
+
+	/* allocate 500 RIDs to this DC */
+	rid_pool_lo = MIN(rid_pool_hi, rid_pool_lo + alloc_size);
+
+	/* work out upper part of new pool */
+	dc_pool |= (((uint64_t)rid_pool_lo-1)<<32);
+
+	/* and new rIDAvailablePool value */
+	new_rid_pool = rid_pool_lo | (((uint64_t)rid_pool_hi)<<32);
+
+	ret = dsdb_module_constrainted_update_integer(module, rid_manager_dn, "rIDAvailablePool",
+						      rid_pool, new_rid_pool);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to update rIDAvailablePool - %s",
+				       ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	(*new_pool) = dc_pool;
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
   create a RID Set object for the specified DC
  */
 static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *mem_ctx,
@@ -43,13 +101,9 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_dn *server_dn, *machine_dn, *rid_set_dn;
 	int ret;
-	const char *attrs[] = { "rIDAvailablePool", NULL };
-	uint64_t rid_pool, new_rid_pool, dc_pool;
-	uint32_t rid_pool_lo, rid_pool_hi;
+	uint64_t dc_pool;
 	struct ldb_message *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	const unsigned int alloc_size = 500;
-	struct ldb_result *res;
 
 	/*
 	  steps:
@@ -87,41 +141,9 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_manager_dn, attrs, 0);
+	/* grab a pool from the RID Manager object */
+	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &dc_pool);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "Failed to find rIDAvailablePool in %s - %s",
-				       ldb_dn_get_linearized(rid_manager_dn), ldb_errstring(ldb));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	rid_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAvailablePool", 0);
-	rid_pool_lo = rid_pool & 0xFFFFFFFF;
-	rid_pool_hi = rid_pool >> 32;
-	if (rid_pool_lo >= rid_pool_hi) {
-		ldb_asprintf_errstring(ldb, "Out of RIDs in RID Manager - rIDAvailablePool is %u-%u",
-				       rid_pool_lo, rid_pool_hi);
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	/* lower part of new pool is the low part of the rIDAvailablePool */
-	dc_pool = rid_pool_lo;
-
-	/* allocate 500 RIDs to this DC */
-	rid_pool_lo = MIN(rid_pool_hi, rid_pool_lo + alloc_size);
-
-	/* work out upper part of new pool */
-	dc_pool |= (((uint64_t)rid_pool_lo-1)<<32);
-
-	/* and new rIDAvailablePool value */
-	new_rid_pool = rid_pool_lo | (((uint64_t)rid_pool_hi)<<32);
-
-	ret = dsdb_module_constrainted_update_integer(module, rid_manager_dn, "rIDAvailablePool",
-						      rid_pool, new_rid_pool);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "Failed to update rIDAvailablePool - %s",
-				       ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -252,11 +274,96 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
   also returns the first RID for the new pool
  */
 static int ridalloc_refresh_rid_set_ntds(struct ldb_module *module,
-					struct ldb_dn *rid_manager_dn,
-					struct ldb_dn *ntds_dn, uint32_t *first_rid)
+					 struct ldb_dn *rid_manager_dn,
+					 struct ldb_dn *ntds_dn, uint32_t *first_rid)
 {
-	ldb_asprintf_errstring(ldb, "Refresh of RID Set not implemented");
-	return LDB_ERR_UNWILLING_TO_PERFORM;
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	uint64_t new_pool;
+	struct ldb_dn *server_dn, *machine_dn, *rid_set_dn;
+	struct ldb_result *res;
+	const char *attrs[] = { "rIDAllocationPool", "rIDUsedPool", NULL };
+	struct ldb_message *msg;
+	uint64_t prev_pool;
+	uint32_t used_pool;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+
+	/* grab a pool from the RID Manager object */
+	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &new_pool);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
+	if (!server_dn) {
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find serverReference in %s - %s",
+				       ldb_dn_get_linearized(server_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_reference_dn(module, tmp_ctx, machine_dn, "rIDSetReferences", &rid_set_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find rIDSetReferences in %s - %s",
+				       ldb_dn_get_linearized(machine_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn, attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to load old pool values from %s - %s",
+				       ldb_dn_get_linearized(rid_set_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	prev_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
+	used_pool = ldb_msg_find_attr_as_uint(res->msgs[0], "rIDUsedPool", 0);
+
+	msg = ldb_msg_new(tmp_ctx);
+	msg->dn = rid_set_dn;
+
+	ret = ldb_msg_add_fmt(msg, "rIDPreviousAllocationPool", "%llu", (unsigned long long)prev_pool);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_msg_add_fmt(msg, "rIDAllocationPool", "%llu", (unsigned long long)new_pool);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_msg_add_fmt(msg, "rIDUsedPool", "%lu", (unsigned long)used_pool+1);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	msg->elements[2].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = dsdb_module_modify(module, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to modify RID Set object %s - %s",
+				       ldb_dn_get_linearized(rid_set_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	(*first_rid) = (new_pool & 0xFFFFFFFF);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
 }
 
 
@@ -350,7 +457,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 
 	alloc_pool_lo = alloc_pool & 0xFFFFFFFF;
 	alloc_pool_hi = alloc_pool >> 32;
-	if (prev_rid > alloc_pool_hi) {
+	if (prev_rid >= alloc_pool_hi) {
 		ret = ridalloc_refresh_own_pool(module, rid);
 		if (ret != LDB_SUCCESS) {
 			return ret;
