@@ -28,12 +28,12 @@ static void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 /*
  * Note: this code is harmless on little-endian machines.
  */
-static void byteReverse(uint8_t *buf, uint_t longs)
+static void byteReverse(uint8_t *buf, unsigned int longs)
 {
     uint32_t t;
     do {
-	t = (uint32_t) ((uint_t) buf[3] << 8 | buf[2]) << 16 |
-	    ((uint_t) buf[1] << 8 | buf[0]);
+	t = (uint32_t) ((unsigned int) buf[3] << 8 | buf[2]) << 16 |
+	    ((unsigned int) buf[1] << 8 | buf[0]);
 	*(uint32_t *) buf = t;
 	buf += 4;
     } while (--longs);
@@ -108,7 +108,7 @@ _PUBLIC_ void MD5Update(struct MD5Context *ctx, const uint8_t *buf, size_t len)
  */
 _PUBLIC_ void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
 {
-    uint_t count;
+    unsigned int count;
     uint8_t *p;
 
     /* Compute number of bytes mod 64 */
