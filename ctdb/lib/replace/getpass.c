@@ -211,7 +211,7 @@ char *rep_getpass(const char *prompt)
 	catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
 
 	if (gotintr) {
-		printf("Interupted by signal.\n");
+		printf("Interrupted by signal.\n");
 		fflush(stdout);
 		exit(1);
 	}
