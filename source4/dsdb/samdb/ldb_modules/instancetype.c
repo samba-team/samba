@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "../libds/common/flags.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 struct it_context {
 	struct ldb_module *module;
@@ -143,7 +144,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_build_add_req(&down_req, ldb, req,
 				msg,
 				req->controls,
-				req->context, req->callback,
+				req, dsdb_next_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
