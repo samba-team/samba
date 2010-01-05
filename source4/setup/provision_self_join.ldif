@@ -15,7 +15,7 @@ localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
 primaryGroupID: 516
-# "rIDSetReferences" doesn't exist since we still miss distributed RIDs
+rIDSetReferences: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 sAMAccountName: ${NETBIOSNAME}$
 # "servicePrincipalName" for FRS doesn't exit since we still miss FRS support
 # "servicePrincipalName"s for DNS ("ldap/../ForestDnsZones",
@@ -33,6 +33,15 @@ servicePrincipalName: ldap/${DNSNAME}
 servicePrincipalName: ldap/${DNSNAME}/${REALM}
 userAccountControl: 532480
 userPassword:: ${MACHINEPASS_B64}
+
+dn: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+objectClass: top
+objectClass: rIDSet
+rIDAllocationPool: 1000-1499
+rIDPreviousAllocationPool: 1000-1499
+rIDUsedPool: 0
+rIDNextRID: 1000
+
 
 # Here are missing the objects for the NTFRS subscription and the RID set since
 # we don't support those techniques (FRS, distributed RIDs) yet.
