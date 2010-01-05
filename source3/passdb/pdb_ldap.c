@@ -560,7 +560,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		goto fn_exit;
 	}
 
-	if (!(username = smbldap_talloc_smallest_attribute(priv2ld(ldap_state),
+	if (!(username = smbldap_talloc_first_attribute(priv2ld(ldap_state),
 					entry,
 					"uid",
 					ctx))) {
