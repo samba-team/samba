@@ -223,6 +223,8 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 struct ntlmssp_server_auth_state {
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
+	/* internal variables used by KEY_EXCH (client-supplied user session key */
+	DATA_BLOB encrypted_session_key;
 };
 
 /**
@@ -261,7 +263,6 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 	data_blob_free(&ntlmssp_state->session_key);
 	data_blob_free(&ntlmssp_state->lm_resp);
 	data_blob_free(&ntlmssp_state->nt_resp);
-	data_blob_free(&ntlmssp_state->encrypted_session_key);
 
 	ntlmssp_state->user = NULL;
 	ntlmssp_state->domain = NULL;
@@ -277,13 +278,13 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 			 &domain, 
 			 &user, 
 			 &workstation,
-			 &ntlmssp_state->encrypted_session_key,
+			 &state->encrypted_session_key,
 			 &auth_flags)) {
 		DEBUG(10, ("ntlmssp_server_auth: failed to parse NTLMSSP (nonfatal):\n"));
 		dump_data(10, request.data, request.length);
 
 		/* zero this out */
-		data_blob_free(&ntlmssp_state->encrypted_session_key);
+		data_blob_free(&state->encrypted_session_key);
 		auth_flags = 0;
 		
 		/* Try again with a shorter string (Win9X truncates this packet) */
@@ -310,24 +311,20 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
+	talloc_steal(state, state->encrypted_session_key.data);
+
 	if (auth_flags)
 		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, ntlmssp_state->allow_lm_key);
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
-		/* zero this out */
-		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		return nt_status;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
-		/* zero this out */
-		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		return nt_status;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_workstation(ntlmssp_state, workstation))) {
-		/* zero this out */
-		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		return nt_status;
 	}
 
@@ -369,8 +366,6 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 			if (!NT_STATUS_IS_OK(nt_status = 
 					     ntlmssp_state->set_challenge(ntlmssp_state,
 										 &ntlmssp_state->chal))) {
-				/* zero this out */
-				data_blob_free(&ntlmssp_state->encrypted_session_key);
 				return nt_status;
 			}
 
@@ -482,11 +477,11 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	/* With KEY_EXCH, the client supplies the proposed session key, 
 	   but encrypts it with the long-term key */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
-		if (!ntlmssp_state->encrypted_session_key.data
-		    || ntlmssp_state->encrypted_session_key.length != 16) {
-			data_blob_free(&ntlmssp_state->encrypted_session_key);
+		if (!state->encrypted_session_key.data
+		    || state->encrypted_session_key.length != 16) {
+			data_blob_free(&state->encrypted_session_key);
 			DEBUG(1, ("Client-supplied KEY_EXCH session key was of invalid length (%u)!\n", 
-				  (unsigned)ntlmssp_state->encrypted_session_key.length));
+				  (unsigned)state->encrypted_session_key.length));
 			return NT_STATUS_INVALID_PARAMETER;
 		} else if (!session_key.data || session_key.length != 16) {
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n", 
@@ -494,16 +489,17 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 			ntlmssp_state->session_key = session_key;
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n", 
-				     ntlmssp_state->encrypted_session_key.data,
-				     ntlmssp_state->encrypted_session_key.length);
-			arcfour_crypt(ntlmssp_state->encrypted_session_key.data,
+				     state->encrypted_session_key.data,
+				     state->encrypted_session_key.length);
+			arcfour_crypt(state->encrypted_session_key.data,
 				      session_key.data, 
-				      ntlmssp_state->encrypted_session_key.length);
+				      state->encrypted_session_key.length);
 			ntlmssp_state->session_key = data_blob_talloc(ntlmssp_state,
-								      ntlmssp_state->encrypted_session_key.data,
-								      ntlmssp_state->encrypted_session_key.length);
-			dump_data_pw("KEY_EXCH session key:\n", ntlmssp_state->encrypted_session_key.data,
-				     ntlmssp_state->encrypted_session_key.length);
+								      state->encrypted_session_key.data,
+								      state->encrypted_session_key.length);
+			dump_data_pw("KEY_EXCH session key:\n",
+				     state->encrypted_session_key.data,
+				     state->encrypted_session_key.length);
 			talloc_free(session_key.data);
 		}
 	} else {
@@ -516,8 +512,6 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	} else {
 		nt_status = NT_STATUS_OK;
 	}
-
-	data_blob_free(&ntlmssp_state->encrypted_session_key);
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
@@ -768,7 +762,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->lm_resp = data_blob(NULL, 0);
 	ntlmssp_state->nt_resp = data_blob(NULL, 0);
-	ntlmssp_state->encrypted_session_key = data_blob(NULL, 0);
 
 	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "128bit", true)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;

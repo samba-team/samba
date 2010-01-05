@@ -77,9 +77,6 @@ struct ntlmssp_state
 
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
-	/* internal variables used by KEY_EXCH (client-supplied user session key */
-	DATA_BLOB encrypted_session_key;
-
 	/**
 	 * Private data for the callback functions
 	 */
