@@ -431,8 +431,7 @@ dn: CN=RID Manager$,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: rIDManager
 systemFlags: -1946157056
-# we have granted up to 1499 to ourselves in a RID Set
-rIDAvailablePool: 1500-1073741823
+rIDAvailablePool: 1000-1073741823
 isCriticalSystemObject: TRUE
 
 dn: CN=RpcServices,CN=System,${DOMAINDN}

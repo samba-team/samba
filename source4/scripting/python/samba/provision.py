@@ -793,7 +793,6 @@ def setup_self_join(samdb, names,
               "DEFAULTSITE": names.sitename,
               "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
               "MACHINEPASS_B64": b64encode(machinepass),
-              "DNSPASS_B64": b64encode(dnspass),
               "REALM": names.realm,
               "DOMAIN": names.domain,
               "DOMAINSID": str(domainsid),
@@ -825,7 +824,8 @@ def setup_self_join(samdb, names,
               "DEFAULTSITE": names.sitename,
               "SERVERDN": names.serverdn,
               "NETBIOSNAME": names.netbiosname,
-              "NTDSGUID": names.ntdsguid
+              "NTDSGUID": names.ntdsguid,
+              "DNSPASS_B64": b64encode(dnspass),
               })
 
 

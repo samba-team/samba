@@ -15,7 +15,6 @@ localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
 primaryGroupID: 516
-rIDSetReferences: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 sAMAccountName: ${NETBIOSNAME}$
 # "servicePrincipalName" for FRS doesn't exit since we still miss FRS support
 # "servicePrincipalName"s for DNS ("ldap/../ForestDnsZones",
@@ -33,16 +32,7 @@ servicePrincipalName: ldap/${DNSNAME}
 servicePrincipalName: ldap/${DNSNAME}/${REALM}
 userAccountControl: 532480
 userPassword:: ${MACHINEPASS_B64}
-objectSID: ${DOMAINSID}-1001
-
-dn: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
-objectClass: top
-objectClass: rIDSet
-rIDAllocationPool: 1000-1499
-rIDPreviousAllocationPool: 1000-1499
-rIDUsedPool: 0
-rIDNextRID: 1001
-
+objectSID: ${DOMAINSID}-1000
 
 # Here are missing the objects for the NTFRS subscription and the RID set since
 # we don't support those techniques (FRS, distributed RIDs) yet.
@@ -78,17 +68,3 @@ msDS-hasMasterNCs: ${DOMAINDN}
 options: 1
 systemFlags: 33554432
 ${NTDSGUID}
-
-# Provides an account for DNS keytab export
-dn: CN=dns,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: user
-description: DNS Service Account
-userAccountControl: 514
-accountExpires: 9223372036854775807
-sAMAccountName: dns
-servicePrincipalName: DNS/${DNSDOMAIN}
-userPassword:: ${DNSPASS_B64}
-isCriticalSystemObject: TRUE
