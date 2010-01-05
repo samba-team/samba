@@ -915,9 +915,9 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		if ((pwhist = TALLOC_ARRAY(ctx, uint8,
-					pwHistLen * PW_HISTORY_ENTRY_LEN)) ==
-				NULL){
+		pwhist = TALLOC_ARRAY(ctx, uint8,
+				      pwHistLen * PW_HISTORY_ENTRY_LEN);
+		if (pwhist == NULL) {
 			DEBUG(0, ("init_sam_from_ldap: talloc failed!\n"));
 			goto fn_exit;
 		}
