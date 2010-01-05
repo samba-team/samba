@@ -751,7 +751,6 @@ FIXME:
 Types:
 bool
 socklen_t
-uint_t
 uint{8,16,32,64}_t
 int{8,16,32,64}_t
 intptr_t

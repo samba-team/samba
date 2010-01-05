@@ -282,7 +282,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	i = ifc.ifc_len;
 
 	while (i > 0) {
-		uint_t inc;
+		unsigned int inc;
 
 		inc = ifr->ifr_addr.sa_len;
 

@@ -115,7 +115,6 @@ AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 
-AC_CHECK_TYPE(uint_t, unsigned int)
 AC_CHECK_TYPE(int8_t, char)
 AC_CHECK_TYPE(uint8_t, unsigned char)
 AC_CHECK_TYPE(int16_t, short)
