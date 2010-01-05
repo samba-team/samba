@@ -585,3 +585,15 @@ int dsdb_module_constrainted_update_integer(struct ldb_module *module, struct ld
 	talloc_free(msg);
 	return ret;
 }
+
+/*
+  used to chain to the callers callback
+ */
+int dsdb_next_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct ldb_request *up_req = talloc_get_type(req->context, struct ldb_request);
+
+	talloc_steal(up_req, req);
+	return up_req->callback(up_req, ares);
+}
+
