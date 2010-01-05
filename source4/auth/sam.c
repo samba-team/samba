@@ -503,10 +503,20 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	server_info->acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, 
 							  msg, domain_dn);
 
-	server_info->user_session_key = data_blob_talloc_reference(server_info,
-		&user_sess_key);
-	server_info->lm_session_key = data_blob_talloc_reference(server_info,
-		&lm_sess_key);
+	server_info->user_session_key = data_blob_talloc(server_info,
+							 user_sess_key.data,
+							 user_sess_key.length);
+	if (user_sess_key.data) {
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->user_session_key.data,
+						  server_info);
+	}
+	server_info->lm_session_key = data_blob_talloc(server_info,
+						       lm_sess_key.data,
+						       lm_sess_key.length);
+	if (lm_sess_key.data) {
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->lm_session_key.data,
+						  server_info);
+	}
 
 	server_info->authenticated = true;
 
