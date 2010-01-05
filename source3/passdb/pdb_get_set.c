@@ -1070,15 +1070,20 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	}
 
 	/*
-	 * Create the new salt as the first part of the history entry.
+	 * Fill the salt area with 0-s: this indicates that
+	 * a plain nt hash is stored in the has area.
+	 * The old format was to store a 16 byte salt and
+	 * then an md5hash of the nt_hash concatenated with
+	 * the salt.
 	 */
-	generate_random_buffer(pwhistory, PW_HISTORY_SALT_LEN);
+	memset(pwhistory, 0, PW_HISTORY_SALT_LEN);
 
 	/*
-	 * Generate the md5 hash of the salt+new password as the
-	 * second part of the history entry.
+	 * Store the plain nt hash in the second 16 bytes.
+	 * The old format was to store the md5 hash of
+	 * the salt+newpw.
 	 */
-	E_md5hash(pwhistory, new_nt_p16, &pwhistory[PW_HISTORY_SALT_LEN]);
+	memcpy(&pwhistory[PW_HISTORY_SALT_LEN], new_nt_p16, SALTED_MD5_HASH_LEN);
 
 	pdb_set_pw_history(sampass, pwhistory, pwHistLen, PDB_CHANGED);
 
