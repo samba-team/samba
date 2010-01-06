@@ -3034,12 +3034,30 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *rpc_cli,
 				unsigned int timeout)
 {
-	struct cli_state *cli = rpc_pipe_np_smb_conn(rpc_cli);
+	struct cli_state *cli;
 
-	if (cli == NULL) {
-		return 0;
+	if (rpc_cli->transport->transport == NCACN_NP) {
+		cli = rpc_pipe_np_smb_conn(rpc_cli);
+		if (cli == NULL) {
+			return 0;
+		}
+		return cli_set_timeout(cli, timeout);
 	}
-	return cli_set_timeout(cli, timeout);
+
+	if (rpc_cli->transport->transport == NCACN_IP_TCP ||
+	    rpc_cli->transport->transport == NCALRPC) {
+		return rpccli_set_sock_timeout(rpc_cli, timeout);
+	}
+
+	if (rpc_cli->transport->transport == NCACN_INTERNAL) {
+		cli = rpc_pipe_smbd_smb_conn(rpc_cli);
+		if (!cli) {
+			return 0;
+		}
+		return cli_set_timeout(cli, timeout);
+	}
+
+	return 0;
 }
 
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
