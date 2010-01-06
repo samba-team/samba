@@ -365,10 +365,16 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 						      &updated_badpw);
 		}
 		if (updated_autolock || updated_badpw){
+			NTSTATUS status;
+
 			become_root();
-			if(!NT_STATUS_IS_OK(pdb_update_sam_account(sampass)))
-				DEBUG(1, ("Failed to modify entry.\n"));
+			status = pdb_update_sam_account(sampass);
 			unbecome_root();
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("Failed to modify entry: %s\n",
+					  nt_errstr(status)));
+			}
 		}
 		goto done;
 	}
@@ -381,10 +387,16 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	if (updated_autolock || updated_badpw){
+		NTSTATUS status;
+
 		become_root();
-		if(!NT_STATUS_IS_OK(pdb_update_sam_account(sampass)))
-			DEBUG(1, ("Failed to modify entry.\n"));
+		status = pdb_update_sam_account(sampass);
 		unbecome_root();
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to modify entry: %s\n",
+				  nt_errstr(status)));
+		}
 	}
 
 	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
