@@ -1860,11 +1860,41 @@ static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 	return samldb_prim_group_users_check(ac);
 }
 
+static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_fsmo_extended_op *exop;
+	int ret;
+
+	exop = talloc_get_type(req->op.extended.data, struct dsdb_fsmo_extended_op);
+	if (!exop) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "samldb_extended_allocate_rid_pool: invalid extended data\n");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	ret = ridalloc_allocate_rid_pool_fsmo(module, exop);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
+static int samldb_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_ALLOCATE_RID_POOL) == 0) {
+		return samldb_extended_allocate_rid_pool(module, req);
+	}
+
+	return ldb_next_request(module, req);
+}
+
 
 _PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
 	.name          = "samldb",
 	.add           = samldb_add,
 	.modify        = samldb_modify,
-	.del           = samldb_delete
+	.del           = samldb_delete,
+	.extended      = samldb_extended
 };
 

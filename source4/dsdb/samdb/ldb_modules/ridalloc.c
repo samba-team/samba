@@ -33,6 +33,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   Note: the RID allocation attributes in AD are very badly named. Here
@@ -140,6 +141,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
 	if (!server_dn) {
 		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -315,6 +317,7 @@ static int ridalloc_refresh_rid_set_ntds(struct ldb_module *module,
 	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
 	if (!server_dn) {
 		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -560,6 +563,93 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 
 	talloc_free(tmp_ctx);
 
+	return ret;
+}
 
+
+/*
+  called by DSDB_EXTENDED_ALLOCATE_RID_POOL extended operation in samldb
+ */
+int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_extended_op *exop)
+{
+	struct ldb_dn *ntds_dn, *server_dn, *machine_dn, *rid_set_dn;
+	struct ldb_dn *rid_manager_dn;
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	uint64_t new_pool;
+
+	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &exop->destination_dsa_guid, &ntds_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, __location__ ": Unable to find NTDS object for guid %s - %s\n",
+				       GUID_string(tmp_ctx, &exop->destination_dsa_guid), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
+	if (!server_dn) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, __location__ ": Failed to find serverReference in %s - %s",
+				       ldb_dn_get_linearized(server_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+
+	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, __location__ ": Failed to find RID Manager object - %s",
+				       ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_reference_dn(module, tmp_ctx, machine_dn, "rIDSetReferences", &rid_set_dn);
+	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		ret = ridalloc_create_rid_set_ntds(module, tmp_ctx, rid_manager_dn, ntds_dn, &rid_set_dn);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find rIDSetReferences in %s - %s",
+				       ldb_dn_get_linearized(machine_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (exop->fsmo_info != 0) {
+		const char *attrs[] = { "rIDAllocationPool", NULL };
+		struct ldb_result *res;
+		uint64_t alloc_pool;
+
+		ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn, attrs, 0);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, __location__ ": No RID Set %s",
+					       ldb_dn_get_linearized(rid_set_dn));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
+		if (alloc_pool != exop->fsmo_info) {
+			/* it has already been updated */
+			DEBUG(2,(__location__ ": rIDAllocationPool fsmo_info mismatch - already changed (0x%llx 0x%llx)\n",
+				 (unsigned long long)exop->fsmo_info,
+				 (unsigned long long)alloc_pool));
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+	}
+
+	ret = ridalloc_refresh_rid_set_ntds(module, rid_manager_dn, ntds_dn, &new_pool);
+	talloc_free(tmp_ctx);
 	return ret;
 }
