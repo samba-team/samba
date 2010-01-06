@@ -597,6 +597,8 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	    !ldb_dn_validate(req_dn) ||
 	    ldb_dn_compare(samdb_ntds_settings_dn(ldb), rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
+		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s",
+			 req8->naming_context->dn));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -611,6 +613,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
 		/* we're not the RID Manager - go away */
+		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_OK;
 	}
@@ -630,6 +633,9 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	talloc_free(ext_res);
 
 	base_dn = samdb_base_dn(ldb);
+
+	DEBUG(2,("Allocated RID pool for server %s\n",
+		 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
 
 	/* to complete the rest of the operation we need to point
 	   getncchanges at the base DN for the domain */
