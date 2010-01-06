@@ -890,6 +890,13 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
   out:
 	(*is_data_outstanding) = prs_offset(&p->out_data.frag) > n;
 
+	if (p->out_data.current_pdu_sent == prs_offset(&p->out_data.frag)) {
+		/* We've returned everything in the out_data.frag
+		 * so we're done with this pdu. Free it and reset
+		 * current_pdu_sent. */
+		p->out_data.current_pdu_sent = 0;
+		prs_mem_free(&p->out_data.frag);
+	}
 	return data_returned;
 }
 
