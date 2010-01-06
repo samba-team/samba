@@ -33,21 +33,21 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/composite/composite.h"
 
-static WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
-						      struct dreplsrv_partition *p,
-						      struct dreplsrv_partition_source_dsa *source,
-						      TALLOC_CTX *mem_ctx)
+WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
+					       struct dreplsrv_partition_source_dsa *source,
+					       enum drsuapi_DsExtendedOperation extended_op)
 {
 	struct dreplsrv_out_operation *op;
 
-	op = talloc_zero(mem_ctx, struct dreplsrv_out_operation);
+	op = talloc_zero(s, struct dreplsrv_out_operation);
 	W_ERROR_HAVE_NO_MEMORY(op);
 
 	op->service	= s;
 	op->source_dsa	= source;
+	op->extended_op = extended_op;
 
 	DLIST_ADD_END(s->ops.pending, op, struct dreplsrv_out_operation *);
-	talloc_steal(s, op);
+
 	return WERR_OK;
 }
 
@@ -59,7 +59,7 @@ static WERROR dreplsrv_schedule_partition_pull(struct dreplsrv_service *s,
 	struct dreplsrv_partition_source_dsa *cur;
 
 	for (cur = p->sources; cur; cur = cur->next) {
-		status = dreplsrv_schedule_partition_pull_source(s, p, cur, mem_ctx);
+		status = dreplsrv_schedule_partition_pull_source(s, cur, DRSUAPI_EXOP_NONE);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 

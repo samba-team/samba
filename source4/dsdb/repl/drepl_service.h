@@ -108,6 +108,8 @@ struct dreplsrv_out_operation {
 	struct dreplsrv_partition_source_dsa *source_dsa;
 
 	struct composite_context *creq;
+
+	enum drsuapi_DsExtendedOperation extended_op;
 };
 
 struct dreplsrv_notify_operation {
@@ -204,6 +206,10 @@ struct dreplsrv_service {
 		/* an active notify operation */
 		struct dreplsrv_notify_operation *n_current;
 	} ops;
+
+	struct {
+		struct dreplsrv_partition_source_dsa *rid_manager_source_dsa;
+	} ridalloc;
 };
 
 #include "dsdb/repl/drepl_out_helpers.h"

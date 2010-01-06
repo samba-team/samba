@@ -88,9 +88,9 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	return WERR_OK;
 }
 
-static WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
-					     const struct repsFromTo1 *rft,
-					     struct dreplsrv_out_connection **_conn)
+WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
+				      const struct repsFromTo1 *rft,
+				      struct dreplsrv_out_connection **_conn)
 {
 	struct dreplsrv_out_connection *cur, *conn = NULL;
 	const char *hostname;
