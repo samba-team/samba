@@ -225,6 +225,7 @@ struct ntlmssp_server_auth_state {
 	DATA_BLOB lm_session_key;
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
 	DATA_BLOB encrypted_session_key;
+	bool doing_ntlm2;
 	/* internal variables used by NTLM2 */
 	uint8_t session_nonce[16];
 };
@@ -349,7 +350,7 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 			SMB_ASSERT(ntlmssp_state->internal_chal.data
 				   && ntlmssp_state->internal_chal.length == 8);
 			
-			ntlmssp_state->doing_ntlm2 = true;
+			state->doing_ntlm2 = true;
 
 			memcpy(state->session_nonce, ntlmssp_state->internal_chal.data, 8);
 			memcpy(&state->session_nonce[8], ntlmssp_state->lm_resp.data, 8);
@@ -410,7 +411,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		dump_data_pw("LM first-8:\n", lm_session_key->data, lm_session_key->length);
 
 	/* Handle the different session key derivation for NTLM2 */
-	if (ntlmssp_state->doing_ntlm2) {
+	if (state->doing_ntlm2) {
 		if (user_session_key && user_session_key->data && user_session_key->length == 16) {
 			session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
 			hmac_md5(user_session_key->data, state->session_nonce,
