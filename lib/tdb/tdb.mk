@@ -61,9 +61,9 @@ doc:: manpages/tdbbackup.8 manpages/tdbdump.8 manpages/tdbtool.8
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
 installdocs::
-	${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1
-	for I in manpages/*.1; do \
-		${INSTALLCMD} -m 644 $$I $(DESTDIR)$(mandir)/man1 \
+	${INSTALLCMD} -d $(DESTDIR)$(mandir)/man8
+	for I in manpages/*.8; do \
+		${INSTALLCMD} -m 644 $$I $(DESTDIR)$(mandir)/man8; \
 	done
 
 install-python:: build-python
