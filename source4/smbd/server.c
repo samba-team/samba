@@ -376,6 +376,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	   should hang off that */
 	event_ctx = s4_event_context_init(talloc_autofree_context());
 
+	/* setup this as the default context */
+	s4_event_context_set_default(event_ctx);
+
 	if (event_ctx == NULL) {
 		DEBUG(0,("Initializing event context failed\n"));
 		return 1;
