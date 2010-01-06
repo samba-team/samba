@@ -290,7 +290,7 @@ static void dreplsrv_op_pull_source_get_changes_send(struct dreplsrv_op_pull_sou
 		r->in.req->req8.max_object_count	= 133;
 		r->in.req->req8.max_ndr_size		= 1336811;
 		r->in.req->req8.extended_op		= st->op->extended_op;
-		r->in.req->req8.fsmo_info		= 0;
+		r->in.req->req8.fsmo_info		= st->op->fsmo_info;
 		r->in.req->req8.partial_attribute_set	= NULL;
 		r->in.req->req8.partial_attribute_set_ex= NULL;
 		r->in.req->req8.mapping_ctr.num_mappings= 0;
@@ -306,7 +306,7 @@ static void dreplsrv_op_pull_source_get_changes_send(struct dreplsrv_op_pull_sou
 		r->in.req->req5.max_object_count	= 133;
 		r->in.req->req5.max_ndr_size		= 1336770;
 		r->in.req->req5.extended_op		= st->op->extended_op;
-		r->in.req->req5.fsmo_info		= 0;
+		r->in.req->req5.fsmo_info		= st->op->fsmo_info;
 	}
 
 	req = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi->pipe, r, r);
