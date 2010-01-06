@@ -206,6 +206,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	irpc_add_name(task->msg_ctx, "dreplsrv");
 
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);
+	messaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
 }
 
 /*

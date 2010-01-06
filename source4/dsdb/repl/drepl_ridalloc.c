@@ -96,13 +96,32 @@ static WERROR drepl_create_rid_manager_source_dsa(struct dreplsrv_service *servi
 	return WERR_OK;
 }
 
+/*
+  called when a rid allocation request has completed
+ */
+static void drepl_new_rid_pool_callback(struct dreplsrv_service *service, WERROR werr)
+{
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": RID Manager failed RID allocation - %s\n",
+			 win_errstr(werr)));
+	} else {
+		DEBUG(3,(__location__ ": RID Manager completed RID allocation OK\n"));
+	}
+
+	/* don't keep the connection open to the RID Manager */
+	talloc_free(service->ridalloc.rid_manager_source_dsa);
+	service->ridalloc.rid_manager_source_dsa = NULL;
+
+	service->ridalloc.in_progress = false;
+}
 
 /*
   schedule a getncchanges request to the RID Manager to ask for a new
   set of RIDs using DRSUAPI_EXOP_FSMO_RID_ALLOC
  */
 static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
-					 struct ldb_dn *rid_manager_dn, struct ldb_dn *fsmo_role_dn)
+					 struct ldb_dn *rid_manager_dn, struct ldb_dn *fsmo_role_dn,
+					 uint64_t alloc_pool)
 {
 	WERROR werr;
 
@@ -113,8 +132,11 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
+	service->ridalloc.in_progress = true;
+
 	werr = dreplsrv_schedule_partition_pull_source(service, service->ridalloc.rid_manager_source_dsa,
-						       DRSUAPI_EXOP_FSMO_RID_ALLOC);
+						       DRSUAPI_EXOP_FSMO_RID_ALLOC, alloc_pool,
+						       drepl_new_rid_pool_callback);
 	return werr;
 }
 
@@ -122,11 +144,11 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 /*
   see if we are on the last pool we have
  */
-static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhausted)
+static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhausted, uint64_t *alloc_pool)
 {
 	struct ldb_dn *server_dn, *machine_dn, *rid_set_dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-	uint64_t alloc_pool, prev_alloc_pool;
+	uint64_t prev_alloc_pool;
 	const char *attrs[] = { "rIDPreviousAllocationPool", "rIDAllocationPool", NULL };
 	int ret;
 	struct ldb_result *res;
@@ -166,10 +188,10 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhauste
 		return ret;
 	}
 
-	alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
+	*alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
 	prev_alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDPreviousAllocationPool", 0);
 
-	if (alloc_pool != prev_alloc_pool) {
+	if (*alloc_pool != prev_alloc_pool) {
 		*exhausted = false;
 	} else {
 		*exhausted = true;
@@ -193,6 +215,12 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	bool exhausted;
 	WERROR werr;
 	int ret;
+	uint64_t alloc_pool;
+
+	if (service->ridalloc.in_progress) {
+		talloc_free(tmp_ctx);
+		return WERR_OK;
+	}
 
 	/*
 	  steps:
@@ -230,25 +258,25 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 		return WERR_OK;
 	}
 
-	ret = drepl_ridalloc_pool_exhausted(ldb, &exhausted);
+	ret = drepl_ridalloc_pool_exhausted(ldb, &exhausted, &alloc_pool);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (!exhausted) {
-		/* if we're not exhausted we don't need the exop call */
-		talloc_free(tmp_ctx);
+	DEBUG(2,(__location__ ": Requesting more RIDs from RID Manager\n"));
 
-		/* we don't need to keep an open connection to the RID
-		   Manager */
-		talloc_free(service->ridalloc.rid_manager_source_dsa);
-		service->ridalloc.rid_manager_source_dsa = NULL;
-
-		return WERR_OK;
-	}
-
-	werr = drepl_request_new_rid_pool(service, rid_manager_dn, fsmo_role_dn);
+	werr = drepl_request_new_rid_pool(service, rid_manager_dn, fsmo_role_dn, alloc_pool);
 	talloc_free(tmp_ctx);
 	return werr;
+}
+
+/* called by the samldb ldb module to tell us to ask for a new RID
+   pool */
+void dreplsrv_allocate_rid(struct messaging_context *msg, void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id, DATA_BLOB *data)
+{
+	struct dreplsrv_service *service = talloc_get_type(private_data, struct dreplsrv_service);
+	dreplsrv_ridalloc_check_rid_pool(service);
 }
