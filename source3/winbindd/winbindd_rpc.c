@@ -199,7 +199,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		talloc_destroy(mem_ctx2);
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* List all domain groups */
@@ -269,7 +269,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
-	return NT_STATUS_OK;
+	return result;
 }
 
 /* convert a single name to a sid in a domain */
