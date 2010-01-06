@@ -1065,7 +1065,6 @@ time_t nt_time_to_unix_abs(const NTTIME *nt);
 time_t uint64s_nt_time_to_unix_abs(const uint64_t *src);
 void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts);
 void unix_to_nt_time_abs(NTTIME *nt, time_t t);
-bool null_mtime(time_t mtime);
 const char *time_to_asc(const time_t t);
 const char *display_time(NTTIME nttime);
 bool nt_time_is_set(const NTTIME *nt);
