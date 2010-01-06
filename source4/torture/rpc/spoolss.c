@@ -933,6 +933,32 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_SetPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle,
+			    struct spoolss_SetPrinterInfoCtr *info_ctr,
+			    struct spoolss_DevmodeContainer *devmode_ctr,
+			    struct sec_desc_buf *secdesc_ctr,
+			    enum spoolss_PrinterControl command)
+{
+	struct spoolss_SetPrinter r;
+
+	r.in.handle = handle;
+	r.in.info_ctr = info_ctr;
+	r.in.devmode_ctr = devmode_ctr;
+	r.in.secdesc_ctr = secdesc_ctr;
+	r.in.command = command;
+
+	torture_comment(tctx, "Testing SetPrinter Level %d\n", r.in.info_ctr->level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
+		"failed to call SetPrinter");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call SetPrinter");
+
+	return true;
+}
+
 static bool test_SetPrinter_errors(struct torture_context *tctx,
 				   struct dcerpc_pipe *p,
 				   struct policy_handle *handle)
