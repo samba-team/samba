@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    test suite for spoolss rpc operations
 
-   Copyright (C) Guenther Deschner 2009
+   Copyright (C) Guenther Deschner 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -115,7 +115,8 @@ static BOOL test_EnumPrinters(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_EnumDrivers(struct torture_context *tctx,
-			     LPSTR servername)
+			     LPSTR servername,
+			     LPSTR architecture)
 {
 	DWORD levels[]  = { 1, 2, 3, 4, 5, 6, 8 };
 	DWORD success[] = { 1, 1, 1, 1, 1, 1, 1 };
@@ -131,13 +132,13 @@ static BOOL test_EnumDrivers(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing EnumPrinterDrivers level %d", levels[i]);
 
-		EnumPrinterDrivers(servername, "Windows NT x86", levels[i], NULL, 0, &needed, &returned);
+		EnumPrinterDrivers(servername, architecture, levels[i], NULL, 0, &needed, &returned);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!EnumPrinterDrivers(servername, "Windows NT x86", levels[i], buffer, needed, &needed, &returned)) {
+			if (!EnumPrinterDrivers(servername, architecture, levels[i], buffer, needed, &needed, &returned)) {
 				err = GetLastError();
 			}
 		}
@@ -304,7 +305,8 @@ static BOOL test_EnumMonitors(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_EnumPrintProcessors(struct torture_context *tctx,
-				     LPSTR servername)
+				     LPSTR servername,
+				     LPSTR architecture)
 {
 	DWORD levels[]  = { 1 };
 	DWORD success[] = { 1 };
@@ -320,13 +322,13 @@ static BOOL test_EnumPrintProcessors(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing EnumPrintProcessors level %d", levels[i]);
 
-		EnumPrintProcessors(servername, "Windows NT x86", levels[i], NULL, 0, &needed, &returned);
+		EnumPrintProcessors(servername, architecture, levels[i], NULL, 0, &needed, &returned);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!EnumPrintProcessors(servername, "Windows NT x86", levels[i], buffer, needed, &needed, &returned)) {
+			if (!EnumPrintProcessors(servername, architecture, levels[i], buffer, needed, &needed, &returned)) {
 				err = GetLastError();
 			}
 		}
@@ -351,7 +353,8 @@ static BOOL test_EnumPrintProcessors(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_EnumPrintProcessorDatatypes(struct torture_context *tctx,
-					     LPSTR servername)
+					     LPSTR servername,
+					     LPSTR architecture)
 {
 	DWORD levels[]  = { 1 };
 	DWORD success[] = { 1 };
@@ -367,13 +370,13 @@ static BOOL test_EnumPrintProcessorDatatypes(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing EnumPrintProcessorDatatypes level %d", levels[i]);
 
-		EnumPrintProcessorDatatypes(servername, "Windows NT x86", levels[i], NULL, 0, &needed, &returned);
+		EnumPrintProcessorDatatypes(servername, architecture, levels[i], NULL, 0, &needed, &returned);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!EnumPrintProcessorDatatypes(servername, "Windows NT x86", levels[i], buffer, needed, &needed, &returned)) {
+			if (!EnumPrintProcessorDatatypes(servername, architecture, levels[i], buffer, needed, &needed, &returned)) {
 				err = GetLastError();
 			}
 		}
@@ -446,6 +449,7 @@ static BOOL test_GetPrinter(struct torture_context *tctx,
 
 static BOOL test_GetPrinterDriver(struct torture_context *tctx,
 				  LPSTR printername,
+				  LPSTR architecture,
 				  HANDLE handle)
 {
 	DWORD levels[]  = { 1, 2, 3, 4, 5, 6, 8, 101};
@@ -461,13 +465,13 @@ static BOOL test_GetPrinterDriver(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetPrinterDriver level %d", levels[i]);
 
-		GetPrinterDriver(handle, "Windows NT x86", levels[i], NULL, 0, &needed);
+		GetPrinterDriver(handle, architecture, levels[i], NULL, 0, &needed);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!GetPrinterDriver(handle, "Windows NT x86", levels[i], buffer, needed, &needed)) {
+			if (!GetPrinterDriver(handle, architecture, levels[i], buffer, needed, &needed)) {
 				err = GetLastError();
 			}
 		}
@@ -541,7 +545,8 @@ static BOOL test_EnumJobs(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_OnePrinter(struct torture_context *tctx,
-			    LPSTR printername)
+			    LPSTR printername,
+			    LPSTR architecture)
 {
 	HANDLE handle;
 	BOOL ret = TRUE;
@@ -550,7 +555,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 
 	ret &= test_OpenPrinter(tctx, printername, &handle);
 	ret &= test_GetPrinter(tctx, printername, handle);
-	ret &= test_GetPrinterDriver(tctx, printername, handle);
+	ret &= test_GetPrinterDriver(tctx, printername, architecture, handle);
 	ret &= test_EnumForms(tctx, printername, handle);
 	ret &= test_EnumJobs(tctx, printername, handle);
 	ret &= test_ClosePrinter(tctx, handle);
@@ -581,7 +586,8 @@ static BOOL test_EachDriver(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_EachPrinter(struct torture_context *tctx,
-			     LPSTR servername)
+			     LPSTR servername,
+			     LPSTR architecture)
 {
 	DWORD needed = 0;
 	DWORD returned = 0;
@@ -610,7 +616,7 @@ static BOOL test_EachPrinter(struct torture_context *tctx,
 	}
 
 	for (i=0; i < returned; i++) {
-		torture_assert(tctx, test_OnePrinter(tctx, buffer[i].pName),
+		torture_assert(tctx, test_OnePrinter(tctx, buffer[i].pName, architecture),
 			"failed to test one printer");
 	}
 
@@ -623,7 +629,8 @@ static BOOL test_EachPrinter(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_GetPrintProcessorDirectory(struct torture_context *tctx,
-					    LPSTR servername)
+					    LPSTR servername,
+					    LPSTR architecture)
 {
 	DWORD levels[]  = { 1 };
 	DWORD success[] = { 1 };
@@ -638,13 +645,13 @@ static BOOL test_GetPrintProcessorDirectory(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetPrintProcessorDirectory level %d", levels[i]);
 
-		GetPrintProcessorDirectory(servername, "Windows NT x86", levels[i], NULL, 0, &needed);
+		GetPrintProcessorDirectory(servername, architecture, levels[i], NULL, 0, &needed);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!GetPrintProcessorDirectory(servername, "Windows NT x86", levels[i], buffer, needed, &needed)) {
+			if (!GetPrintProcessorDirectory(servername, architecture, levels[i], buffer, needed, &needed)) {
 				err = GetLastError();
 			}
 		}
@@ -669,7 +676,8 @@ static BOOL test_GetPrintProcessorDirectory(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_GetPrinterDriverDirectory(struct torture_context *tctx,
-					   LPSTR servername)
+					   LPSTR servername,
+					   LPSTR architecture)
 {
 	DWORD levels[]  = { 1 };
 	DWORD success[] = { 1 };
@@ -684,13 +692,13 @@ static BOOL test_GetPrinterDriverDirectory(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetPrinterDriverDirectory level %d", levels[i]);
 
-		GetPrinterDriverDirectory(servername, "Windows NT x86", levels[i], NULL, 0, &needed);
+		GetPrinterDriverDirectory(servername, architecture, levels[i], NULL, 0, &needed);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!GetPrinterDriverDirectory(servername, "Windows NT x86", levels[i], buffer, needed, &needed)) {
+			if (!GetPrinterDriverDirectory(servername, architecture, levels[i], buffer, needed, &needed)) {
 				err = GetLastError();
 			}
 		}
@@ -719,6 +727,7 @@ int main(int argc, char *argv[])
 {
 	BOOL ret = FALSE;
 	LPSTR servername;
+	LPSTR architecture = "Windows NT x86";
 	HANDLE handle;
 	struct torture_context *tctx;
 
@@ -743,17 +752,17 @@ int main(int argc, char *argv[])
 	}
 
 	ret &= test_EnumPrinters(tctx, servername);
-	ret &= test_EnumDrivers(tctx, servername);
+	ret &= test_EnumDrivers(tctx, servername, architecture);
 	ret &= test_OpenPrinter(tctx, servername, &handle);
 	ret &= test_EnumForms(tctx, servername, handle);
 	ret &= test_ClosePrinter(tctx, handle);
 	ret &= test_EnumPorts(tctx, servername);
 	ret &= test_EnumMonitors(tctx, servername);
-	ret &= test_EnumPrintProcessors(tctx, servername);
-	ret &= test_EnumPrintProcessorDatatypes(tctx, servername);
-	ret &= test_GetPrintProcessorDirectory(tctx, servername);
-	ret &= test_GetPrinterDriverDirectory(tctx, servername);
-	ret &= test_EachPrinter(tctx, servername);
+	ret &= test_EnumPrintProcessors(tctx, servername, architecture);
+	ret &= test_EnumPrintProcessorDatatypes(tctx, servername, architecture);
+	ret &= test_GetPrintProcessorDirectory(tctx, servername, architecture);
+	ret &= test_GetPrinterDriverDirectory(tctx, servername, architecture);
+	ret &= test_EachPrinter(tctx, servername, architecture);
 	ret &= test_EachDriver(tctx, servername);
 
 	if (!ret) {
