@@ -1388,6 +1388,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 
+do_fetch_cache:
 	*num_entries = centry_uint32(centry);
 
 	if (*num_entries == 0)
@@ -1448,12 +1449,44 @@ do_query:
 				  "connection cache\n"));
 			invalidate_cm_connection(&domain->conn);
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+			if (!domain->internal) {
+				set_domain_offline(domain);
+			}
+			/* store partial response. */
+			if (*num_entries > 0) {
+				/*
+				 * humm, what about the status used for cache?
+				 * Should it be NT_STATUS_OK?
+				 */
+				break;
+			}
+			/*
+			 * domain is offline now, and there is no user entries,
+			 * try to fetch from cache again.
+			 */
+			if (cache->tdb && !domain->online && !domain->internal) {
+				centry = wcache_fetch(cache, domain, "UL/%s", domain->name);
+				/* partial response... */
+				if (!centry) {
+					goto skip_save;
+				} else {
+					goto do_fetch_cache;
+				}
+			} else {
+				goto skip_save;
+			}
+		}
 
 	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 
 		 (retry++ < 5));
 
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
@@ -1505,6 +1538,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 
+do_fetch_cache:
 	*num_entries = centry_uint32(centry);
 
 	if (*num_entries == 0)
@@ -1543,8 +1577,25 @@ do_query:
 
 	status = domain->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (cache->tdb &&
+			!domain->online &&
+			!domain->internal) {
+			centry = wcache_fetch(cache, domain, "GL/%s/domain", domain->name);
+			if (centry) {
+				goto do_fetch_cache;
+			}
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
@@ -1579,6 +1630,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 
+do_fetch_cache:
 	*num_entries = centry_uint32(centry);
 
 	if (*num_entries == 0)
@@ -1627,8 +1679,25 @@ do_query:
 
 	status = domain->backend->enum_local_groups(domain, mem_ctx, num_entries, info);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (cache->tdb &&
+			!domain->internal &&
+			!domain->online) {
+			centry = wcache_fetch(cache, domain, "GL/%s/local", domain->name);
+			if (centry) {
+				goto do_fetch_cache;
+			}
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
@@ -1719,6 +1788,18 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name,
 					      name, flags, sid, type);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online) {
+			NTSTATUS cache_status;
+			cache_status = wcache_name_to_sid(domain, domain_name, name, sid, type);
+			return cache_status;
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
 
@@ -1815,8 +1896,24 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	status = domain->backend->sid_to_name(domain, mem_ctx, sid, domain_name, name, type);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online) {
+			NTSTATUS cache_status;
+			cache_status = wcache_sid_to_name(domain, sid, mem_ctx,
+							domain_name, name, type);
+			return cache_status;
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	wcache_save_sid_to_name(domain, status, sid, *domain_name, *name, *type);
 
 	/* We can't save the name to sid mapping here, as with sid history a
@@ -1924,6 +2021,72 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 						rids, num_rids, domain_name,
 						names, types);
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (cache->tdb &&
+			!domain->internal &&
+			!domain->online) {
+			have_mapped = have_unmapped = false;
+
+			for (i=0; i<num_rids; i++) {
+				DOM_SID sid;
+				struct cache_entry *centry;
+				fstring tmp;
+
+				if (!sid_compose(&sid, domain_sid, rids[i])) {
+					result = NT_STATUS_INTERNAL_ERROR;
+					goto error;
+				}
+
+				centry = wcache_fetch(cache, domain, "SN/%s",
+						      sid_to_fstring(tmp, &sid));
+				if (!centry) {
+					(*types)[i] = SID_NAME_UNKNOWN;
+					(*names)[i] = talloc_strdup(*names, "");
+					continue;
+				}
+
+				(*types)[i] = SID_NAME_UNKNOWN;
+				(*names)[i] = talloc_strdup(*names, "");
+
+				if (NT_STATUS_IS_OK(centry->status)) {
+					char *dom;
+					have_mapped = true;
+					(*types)[i] = (enum lsa_SidType)centry_uint32(centry);
+
+					dom = centry_string(centry, mem_ctx);
+					if (*domain_name == NULL) {
+						*domain_name = dom;
+					} else {
+						talloc_free(dom);
+					}
+
+					(*names)[i] = centry_string(centry, *names);
+
+				} else if (NT_STATUS_EQUAL(centry->status, NT_STATUS_NONE_MAPPED)) {
+					have_unmapped = true;
+
+				} else {
+					/* something's definitely wrong */
+					result = centry->status;
+					goto error;
+				}
+
+				centry_free(centry);
+			}
+
+			if (!have_mapped) {
+				return NT_STATUS_NONE_MAPPED;
+			}
+			if (!have_unmapped) {
+				return NT_STATUS_OK;
+			}
+			return STATUS_SOME_UNMAPPED;
+		}
+	}
 	/*
 	  None of the queried rids has been found so save all negative entries
 	*/
@@ -2064,8 +2227,23 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	status = domain->backend->query_user(domain, mem_ctx, user_sid, info);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online) {
+			NTSTATUS cache_status;
+			cache_status = wcache_query_user(domain, mem_ctx, user_sid, info);
+			return cache_status;
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	wcache_save_user(domain, status, info);
 
 	return status;
@@ -2160,11 +2338,27 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	status = domain->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online) {
+			NTSTATUS cache_status;
+			cache_status = wcache_lookup_usergroups(domain, mem_ctx, user_sid,
+							  num_groups, user_gids);
+			return cache_status;
+		}
+	}
 	if ( NT_STATUS_EQUAL(status, NT_STATUS_SYNCHRONIZATION_REQUIRED) )
 		goto skip_save;
 
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
@@ -2297,8 +2491,24 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 						     num_sids, sids,
 						     num_aliases, alias_rids);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online) {
+			NTSTATUS cache_status;
+			cache_status = wcache_lookup_useraliases(domain, mem_ctx, num_sids,
+								 sids, num_aliases, alias_rids);
+			return cache_status;
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
@@ -2413,8 +2623,25 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 						  type, num_names,
 						  sid_mem, names, name_types);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online) {
+			NTSTATUS cache_status;
+			cache_status = wcache_lookup_groupmem(domain, mem_ctx, group_sid,
+							      num_names, sid_mem, names,
+							      name_types);
+			return cache_status;
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
@@ -2487,6 +2714,7 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 	if (!centry)
  		goto do_query;
 
+do_fetch_cache:
 	policy->lockout_duration = centry_nttime(centry);
 	policy->lockout_window = centry_nttime(centry);
 	policy->lockout_threshold = centry_uint16(centry);
@@ -2512,8 +2740,25 @@ do_query:
 
 	status = domain->backend->lockout_policy(domain, mem_ctx, policy);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (cache->tdb &&
+			!domain->internal &&
+			!domain->online) {
+			centry = wcache_fetch(cache, domain, "LOC_POL/%s", domain->name);
+			if (centry) {
+				goto do_fetch_cache;
+			}
+		}
+	}
 	/* and save it */
  	refresh_sequence_number(domain, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	wcache_save_lockout_policy(domain, status, policy);
 
  	return status;
@@ -2536,6 +2781,7 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 
+do_fetch_cache:
 	policy->min_password_length = centry_uint16(centry);
 	policy->password_history_length = centry_uint16(centry);
 	policy->password_properties = centry_uint32(centry);
@@ -2563,11 +2809,26 @@ do_query:
 
 	status = domain->backend->password_policy(domain, mem_ctx, policy);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal) {
+			set_domain_offline(domain);
+		}
+		if (cache->tdb &&
+			!domain->internal &&
+			!domain->online) {
+			centry = wcache_fetch(cache, domain, "PWD_POL/%s", domain->name);
+			if (centry) {
+				goto do_fetch_cache;
+			}
+		}
+	}
 	/* and save it */
 	refresh_sequence_number(domain, false);
-	if (NT_STATUS_IS_OK(status)) {
-		wcache_save_password_policy(domain, status, policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+	wcache_save_password_policy(domain, status, policy);
 
 	return status;
 }
