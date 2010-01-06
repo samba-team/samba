@@ -283,14 +283,19 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
 
 	ret = getaddrinfo(state->name.name, "0", &hints, &res_list);
+	/* try to fallback in case of error */
+	if (state->do_fallback) {
+		switch (ret) {
 #ifdef EAI_NODATA
-	if (ret == EAI_NODATA && state->do_fallback) {
-#else
-	if (ret == EAI_NONAME && state->do_fallback) {
+		case EAI_NODATA:
 #endif
-		/* getaddrinfo() doesn't handle CNAME records */
-		run_child_dns_lookup(state, fd);
-		return;
+		case EAI_NONAME:
+			/* getaddrinfo() doesn't handle CNAME records */
+			run_child_dns_lookup(state, fd);
+			return;
+		default:
+			break;
+		}
 	}
 	if (ret != 0) {
 		goto done;
