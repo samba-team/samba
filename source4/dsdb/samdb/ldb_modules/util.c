@@ -597,3 +597,27 @@ int dsdb_next_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return up_req->callback(up_req, ares);
 }
 
+
+/*
+  set an integer attribute
+ */
+int dsdb_module_set_integer(struct ldb_module *module, struct ldb_dn *dn,
+			    const char *attr, uint64_t new_val)
+{
+	struct ldb_message *msg;
+	int ret;
+
+	msg = ldb_msg_new(module);
+	msg->dn = dn;
+
+	ret = ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)new_val);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = dsdb_module_modify(module, msg, 0);
+	talloc_free(msg);
+	return ret;
+}
