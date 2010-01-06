@@ -402,3 +402,15 @@ struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)
 	}
 	return state->cli;
 }
+
+void rpccli_close_np_fd(struct rpc_pipe_client *p)
+{
+	struct cli_state *cli = rpc_pipe_np_smb_conn(p);
+	if (cli) {
+		if (cli->fd != -1) {
+			close(cli->fd);
+			cli->fd = -1;
+		}
+	}
+	return;
+}
