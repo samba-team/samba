@@ -281,6 +281,75 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Check whether the given password is one of the last two
+ * password history entries. If so, the bad pwcount should
+ * not be incremented even thought the actual password check
+ * failed.
+ */
+static bool need_to_increment_bad_pw_count(
+	const struct auth_context *auth_context,
+	struct samu* sampass,
+	const auth_usersupplied_info *user_info)
+{
+	uint8_t i;
+	const uint8_t *pwhistory;
+	uint32_t pwhistory_len;
+	uint32_t policy_pwhistory_len;
+	uint32_t acct_ctrl;
+	const char *username;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	bool result = true;
+
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY,
+			       &policy_pwhistory_len);
+	if (policy_pwhistory_len == 0) {
+		goto done;
+	}
+
+	pwhistory = pdb_get_pw_history(sampass, &pwhistory_len);
+	if (!pwhistory || pwhistory_len == 0) {
+		goto done;
+	}
+
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	username = pdb_get_username(sampass);
+
+	for (i=1; i < MIN(MIN(3, policy_pwhistory_len), pwhistory_len); i++) {
+		static const uint8_t zero16[SALTED_MD5_HASH_LEN];
+		const uint8_t *salt;
+		const uint8_t *nt_pw;
+		NTSTATUS status;
+		DATA_BLOB user_sess_key = data_blob_null;
+		DATA_BLOB lm_sess_key = data_blob_null;
+
+		salt = &pwhistory[i*PW_HISTORY_ENTRY_LEN];
+		nt_pw = salt + PW_HISTORY_SALT_LEN;
+
+		if (memcmp(zero16, nt_pw, NT_HASH_LEN) == 0) {
+			/* skip zero password hash */
+			continue;
+		}
+
+		if (memcmp(zero16, salt, PW_HISTORY_SALT_LEN) != 0) {
+			/* skip nonzero salt (old format entry) */
+			continue;
+		}
+
+		status = sam_password_ok(auth_context, mem_ctx,
+					 username, acct_ctrl, NULL, nt_pw,
+					 user_info, &user_sess_key, &lm_sess_key);
+		if (NT_STATUS_IS_OK(status)) {
+			result = false;
+			break;
+		}
+	}
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return result;
+}
+
 /****************************************************************************
 check if a username/password is OK assuming the password is a 24 byte
 SMB hash supplied in the user_info structure
@@ -360,7 +429,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		    acct_ctrl & ACB_NORMAL &&
 		    NT_STATUS_IS_OK(update_login_attempts_status)) 
 		{
-			increment_bad_pw_count = true;
+			increment_bad_pw_count =
+				need_to_increment_bad_pw_count(auth_context,
+							       sampass,
+							       user_info);
 		}
 
 		if (increment_bad_pw_count) {
