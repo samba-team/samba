@@ -2433,15 +2433,19 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 
 
 /*
-  use a DN to find a GUID
+  use a DN to find a GUID with a given attribute name
  */
-int dsdb_find_guid_by_dn(struct ldb_context *ldb, 
-			 struct ldb_dn *dn, struct GUID *guid)
+int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
+			      struct ldb_dn *dn, const char *attribute,
+			      struct GUID *guid)
 {
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "objectGUID", NULL };
+	const char *attrs[2];
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+
+	attrs[0] = attribute;
+	attrs[1] = NULL;
 
 	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, dn, attrs);
 	if (ret != LDB_SUCCESS) {
@@ -2452,9 +2456,18 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-	*guid = samdb_result_guid(res->msgs[0], "objectGUID");
+	*guid = samdb_result_guid(res->msgs[0], attribute);
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
+}
+
+/*
+  use a DN to find a GUID
+ */
+int dsdb_find_guid_by_dn(struct ldb_context *ldb,
+			 struct ldb_dn *dn, struct GUID *guid)
+{
+	return dsdb_find_guid_attr_by_dn(ldb, dn, "objectGUID", guid);
 }
 
 
