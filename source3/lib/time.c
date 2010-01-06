@@ -558,14 +558,6 @@ time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr)
 	return make_unix_date3(date_ptr, cli->serverzone);
 }
 
-/****************************************************************************
- Check if two NTTIMEs are the same.
-****************************************************************************/
-
-bool nt_time_equals(const NTTIME *nt1, const NTTIME *nt2)
-{
-	return (*nt1 == *nt2);
-}
 
 /*******************************************************************
  Re-read the smb serverzone value.

@@ -1059,7 +1059,6 @@ void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unix
 time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date2(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr);
-bool nt_time_equals(const NTTIME *nt1, const NTTIME *nt2);
 void TimeInit(void);
 void get_process_uptime(struct timeval *ret_time);
 time_t nt_time_to_unix_abs(const NTTIME *nt);
