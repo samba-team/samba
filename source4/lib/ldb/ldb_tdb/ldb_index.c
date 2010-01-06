@@ -1104,6 +1104,8 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 	if (list->count > 0 &&
 	    a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
 		talloc_free(list);
+		ldb_asprintf_errstring(ldb, __location__ ": unique index violation on %s in %s",
+				       el->name, dn);
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;		
 	}
 
@@ -1168,6 +1170,10 @@ static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
 		}
 		ret = ltdb_index_add_el(module, dn, &elements[i]);
 		if (ret != LDB_SUCCESS) {
+			struct ldb_context *ldb = ldb_module_get_ctx(module);
+			ldb_asprintf_errstring(ldb,
+					       __location__ ": Failed to re-index %s in %s - %s",
+					       elements[i].name, dn, ldb_errstring(ldb));
 			return ret;
 		}
 	}
@@ -1446,13 +1452,19 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	return 0;
 }
 
+struct ltdb_reindex_context {
+	struct ldb_module *module;
+	int error;
+};
+
 /*
   traversal function that adds @INDEX records during a re index
 */
 static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
 	struct ldb_context *ldb;
-	struct ldb_module *module = (struct ldb_module *)state;
+	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
+	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
 	const char *dn = NULL;
 	int ret;
@@ -1511,9 +1523,13 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 
 	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements);
 
-	talloc_free(msg);
+	if (ret != LDB_SUCCESS) {
+		ctx->error = ret;
+		talloc_free(msg);
+		return -1;
+	}
 
-	if (ret != LDB_SUCCESS) return -1;
+	talloc_free(msg);
 
 	return 0;
 }
@@ -1525,6 +1541,7 @@ int ltdb_reindex(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	int ret;
+	struct ltdb_reindex_context ctx;
 
 	if (ltdb_cache_reload(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1543,10 +1560,21 @@ int ltdb_reindex(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
+	ctx.module = module;
+	ctx.error = 0;
+
 	/* now traverse adding any indexes for normal LDB records */
-	ret = tdb_traverse(ltdb->tdb, re_index, module);
+	ret = tdb_traverse(ltdb->tdb, re_index, &ctx);
 	if (ret == -1) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		ldb_asprintf_errstring(ldb, "reindexing traverse failed: %s", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (ctx.error != LDB_SUCCESS) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		ldb_asprintf_errstring(ldb, "reindexing failed: %s", ldb_errstring(ldb));
+		return ctx.error;
 	}
 
 	return LDB_SUCCESS;

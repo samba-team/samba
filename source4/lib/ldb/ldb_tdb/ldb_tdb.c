@@ -230,7 +230,8 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 	}
 
 	/* If the modify was to @OPTIONS, reload the cache */
-	if (ldb_dn_is_special(dn) &&
+	if (ret == LDB_SUCCESS &&
+	    ldb_dn_is_special(dn) &&
 	    (ldb_dn_check_special(dn, LTDB_OPTIONS)) ) {
 		ret = ltdb_cache_reload(module);
 	}
