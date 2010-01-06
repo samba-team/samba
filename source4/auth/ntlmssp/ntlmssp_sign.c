@@ -40,6 +40,12 @@
  *
  */
 
+static void dump_arc4_state(const char *description,
+			    struct arcfour_state *state)
+{
+	dump_data_pw(description, state->sbox, sizeof(state->sbox));
+}
+
 static void calc_ntlmv2_key(uint8_t subkey[16],
 			    DATA_BLOB session_key,
 			    const char *constant)
