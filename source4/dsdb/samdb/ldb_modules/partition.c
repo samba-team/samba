@@ -39,7 +39,6 @@ struct part_request {
 struct partition_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
-	bool got_success;
 
 	struct part_request *part_req;
 	int num_requests;
@@ -160,7 +159,7 @@ static int partition_req_callback(struct ldb_request *req,
 			}
 	}
 
-	if (ares->error != LDB_SUCCESS && !ac->got_success) {
+	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
 	}
@@ -182,9 +181,6 @@ static int partition_req_callback(struct ldb_request *req,
 		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_DONE:
-		if (ares->error == LDB_SUCCESS) {
-			ac->got_success = true;
-		}
 		if (ac->req->operation == LDB_EXTENDED) {
 			/* FIXME: check for ares->response, replmd does not fill it ! */
 			if (ares->response) {
@@ -205,7 +201,7 @@ static int partition_req_callback(struct ldb_request *req,
 			/* this was the last one, call callback */
 			return ldb_module_done(ac->req, ares->controls,
 					       ares->response, 
-					       ac->got_success?LDB_SUCCESS:ares->error);
+					       ares->error);
 		}
 
 		/* not the last, now call the next one */
