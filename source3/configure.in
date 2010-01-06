@@ -459,6 +459,7 @@ default_shared_modules="$default_shared_modules vfs_catia"
 default_shared_modules="$default_shared_modules vfs_scannedonly"
 default_shared_modules="$default_shared_modules vfs_crossrename"
 default_shared_modules="$default_shared_modules vfs_linux_xfs_sgid"
+default_shared_modules="$default_shared_modules vfs_time_audit"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
@@ -6763,6 +6764,7 @@ SMB_MODULE(vfs_dirsort, \$(VFS_DIRSORT_OBJ), "bin/dirsort.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_scannedonly, \$(VFS_SCANNEDONLY_OBJ), "bin/scannedonly.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_crossrename, \$(VFS_CROSSRENAME_OBJ), "bin/crossrename.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_linux_xfs_sgid, \$(VFS_LINUX_XFS_SGID_OBJ), "bin/linux_xfs_sgid.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_time_audit, \$(VFS_TIME_AUDIT_OBJ), "bin/time_audit.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
