@@ -38,10 +38,12 @@
 
   in RID Set object:
     - rIDPreviousAllocationPool: the pool which a DC is currently
-      pulling RIDs from
+      pulling RIDs from. Managed by client DC
+
     - rIDAllocationPool: the pool that the DC will switch to next,
-      when rIDPreviousAllocationPool is exhausted
-    - rIDNextRID: the last RID allocated by this DC
+      when rIDPreviousAllocationPool is exhausted. Managed by RID Manager.
+
+    - rIDNextRID: the last RID allocated by this DC. Managed by client DC
 
   in RID Manager object:
     - rIDAvailablePool: the pool where the RID Manager gets new rID
