@@ -23,6 +23,20 @@
 #define _PUBLIC_
 #endif
 
+#ifndef TIME_T_MIN
+/* we use 0 here, because (time_t)-1 means error */
+#define TIME_T_MIN 0
+#endif
+
+/*
+ * we use the INT32_MAX here as on 64 bit systems,
+ * gmtime() fails with INT64_MAX
+ */
+#ifndef TIME_T_MAX
+#define TIME_T_MAX MIN(INT32_MAX,_TYPE_MAXIMUM(time_t))
+#endif
+
+
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
 

@@ -27,11 +27,6 @@
  * @brief time handling functions
  */
 
-#ifndef TIME_T_MIN
-/* we use 0 here, because (time_t)-1 means error */
-#define TIME_T_MIN 0
-#endif
-
 #if (SIZEOF_LONG == 8)
 #define TIME_FIXUP_CONSTANT_INT 11644473600L
 #elif (SIZEOF_LONG_LONG == 8)
@@ -39,15 +34,6 @@
 #endif
 
 
-
-/*
- * we use the INT32_MAX here as on 64 bit systems,
- * gmtime() fails with INT64_MAX
- */
-
-#ifndef TIME_T_MAX
-#define TIME_T_MAX MIN(INT32_MAX,_TYPE_MAXIMUM(time_t))
-#endif
 
 /**
  External access to time_t_min and time_t_max.
