@@ -181,8 +181,8 @@ static int schema_load_init(struct ldb_module *module)
 	ret = dsdb_set_schema(ldb, schema);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "schema_load_init: dsdb_set_schema() failed: %d:%s",
-			      ret, ldb_strerror(ret));
+			      "schema_load_init: dsdb_set_schema() failed: %d:%s: %s",
+			      ret, ldb_strerror(ret), ldb_errstring(ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -240,8 +240,8 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 	ret = dsdb_set_schema(ldb, schema);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "schema_load_extended: dsdb_set_schema() failed: %d:%s",
-			      ret, ldb_strerror(ret));
+			      "schema_load_extended: dsdb_set_schema() failed: %d:%s: %s",
+			      ret, ldb_strerror(ret), ldb_errstring(ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
