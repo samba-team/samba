@@ -682,3 +682,13 @@ NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(frame);
 	return status;
 }
+
+struct cli_state *rpc_pipe_smbd_smb_conn(struct rpc_pipe_client *p)
+{
+	struct rpc_transport_smbd_state *state = talloc_get_type(p->transport->priv,
+		struct rpc_transport_smbd_state);
+	if (!state || !state->conn) {
+		return NULL;
+	}
+	return state->conn->cli;
+}

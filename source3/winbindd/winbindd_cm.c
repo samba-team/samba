@@ -2214,7 +2214,8 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	if (conn->lsa_pipe_tcp &&
 	    conn->lsa_pipe_tcp->transport->transport == NCACN_IP_TCP &&
-	    conn->lsa_pipe_tcp->auth->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+	    conn->lsa_pipe_tcp->auth->auth_level == DCERPC_AUTH_LEVEL_PRIVACY &&
+	    rpc_pipe_tcp_connection_ok(conn->lsa_pipe_tcp)) {
 		goto done;
 	}
 
