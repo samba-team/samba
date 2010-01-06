@@ -9,6 +9,7 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 includedir = @includedir@
 libdir = @libdir@
+mandir = @mandir@
 VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
