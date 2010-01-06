@@ -564,6 +564,88 @@ static int site_res_cmp_usn_order(const struct ldb_message **m1, const struct ld
 }
 
 
+/*
+  handle a DRSUAPI_EXOP_FSMO_RID_ALLOC call
+ */
+static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
+				     TALLOC_CTX *mem_ctx,
+				     struct drsuapi_DsGetNCChangesRequest8 *req8,
+				     struct drsuapi_DsGetNCChangesCtr6 *ctr6)
+{
+	struct ldb_dn *rid_manager_dn, *fsmo_role_dn, *req_dn;
+	int ret;
+	struct ldb_context *ldb = b_state->sam_ctx;
+	struct ldb_result *ext_res;
+	struct ldb_dn *base_dn;
+	struct dsdb_fsmo_extended_op *exop;
+
+	/*
+	  steps:
+	    - verify that the DN being asked for is the RID Manager DN
+	    - verify that we are the RID Manager
+	 */
+
+	/* work out who is the RID Manager */
+	ret = samdb_rid_manager_dn(ldb, mem_ctx, &rid_manager_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, (__location__ ": Failed to find RID Manager object - %s", ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	req_dn = ldb_dn_new(ldb, mem_ctx, req8->naming_context->dn);
+	if (!req_dn ||
+	    !ldb_dn_validate(req_dn) ||
+	    ldb_dn_compare(samdb_ntds_settings_dn(ldb), rid_manager_dn) != 0) {
+		/* that isn't the RID Manager DN */
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
+		return WERR_OK;
+	}
+
+	/* find the DN of the RID Manager */
+	ret = samdb_reference_dn(ldb, mem_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+		/* we're not the RID Manager - go away */
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
+		return WERR_OK;
+	}
+
+	exop = talloc(mem_ctx, struct dsdb_fsmo_extended_op);
+	W_ERROR_HAVE_NO_MEMORY(exop);
+
+	exop->fsmo_info = req8->fsmo_info;
+	exop->destination_dsa_guid = req8->destination_dsa_guid;
+
+	ret = ldb_extended(ldb, DSDB_EXTENDED_ALLOCATE_RID_POOL, exop, &ext_res);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed extended allocation RID pool operation - %s\n",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	talloc_free(ext_res);
+
+	base_dn = samdb_base_dn(ldb);
+
+	/* to complete the rest of the operation we need to point
+	   getncchanges at the base DN for the domain */
+	req8->naming_context->dn = ldb_dn_get_linearized(base_dn);
+	ret = dsdb_find_guid_by_dn(ldb, base_dn, &req8->naming_context->guid);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to find base DN GUID - %s\n",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	return WERR_OK;
+}
+
+
+
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
 	struct ldb_result *site_res;
@@ -669,6 +751,27 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 
+	/* we don't yet support extended operations */
+	switch (req8->extended_op) {
+	case DRSUAPI_EXOP_NONE:
+		break;
+
+	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
+		werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+		W_ERROR_NOT_OK_RETURN(werr);
+		break;
+
+	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_REQ_PDC:
+	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
+	case DRSUAPI_EXOP_REPL_OBJ:
+	case DRSUAPI_EXOP_REPL_SECRET:
+		DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
+			 (unsigned)req8->extended_op));
+		return WERR_DS_DRA_NOT_SUPPORTED;
+	}
+
 	getnc_state = b_state->getncchanges_state;
 
 	/* see if a previous replication has been abandoned */
@@ -704,13 +807,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,(__location__ ": Failed to get session key\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;		
-	}
-
-	/* we don't yet support extended operations */
-	if (req8->extended_op != DRSUAPI_EXOP_NONE) {
-		DEBUG(0,(__location__ ": Request for DsGetNCChanges extended op 0x%x\n",
-			 (unsigned)req8->extended_op));
-		return WERR_DS_DRA_NOT_SUPPORTED;
 	}
 
 	/* 
