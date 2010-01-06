@@ -370,10 +370,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				DEBUG(1, ("Failed to modify entry.\n"));
 			unbecome_root();
 		}
-		data_blob_free(&user_sess_key);
-		data_blob_free(&lm_sess_key);
-		TALLOC_FREE(sampass);
-		return nt_status;
+		goto done;
 	}
 
 	if ((acct_ctrl & ACB_NORMAL) &&
@@ -393,10 +390,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(sampass);
-		data_blob_free(&user_sess_key);
-		data_blob_free(&lm_sess_key);
-		return nt_status;
+		goto done;
 	}
 
 	become_root();
@@ -406,9 +400,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
-		data_blob_free(&user_sess_key);
-		data_blob_free(&lm_sess_key);
-		return nt_status;
+		goto done;
 	}
 
 	(*server_info)->user_session_key =
@@ -423,6 +415,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	(*server_info)->nss_token |= user_info->was_mapped;
 
+done:
+	TALLOC_FREE(sampass);
+	data_blob_free(&user_sess_key);
+	data_blob_free(&lm_sess_key);
 	return nt_status;
 }
 
