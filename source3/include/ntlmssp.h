@@ -131,9 +131,7 @@ struct ntlmssp_state
 	/* ntlmv2 */
 
 	unsigned char send_sign_key[16];
-	unsigned char send_seal_key[16];
 	unsigned char recv_sign_key[16];
-	unsigned char recv_seal_key[16];
 
 	struct arcfour_state send_seal_arc4_state;
 	struct arcfour_state recv_seal_arc4_state;

@@ -353,7 +353,12 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		const char *send_seal_const;
 		const char *recv_sign_const;
 		const char *recv_seal_const;
-		DATA_BLOB send_seal_key_blob, recv_seal_blob;
+		uint8_t send_seal_key[16];
+		DATA_BLOB send_seal_blob = data_blob_const(send_seal_key,
+					   sizeof(send_seal_key));
+		uint8_t recv_seal_key[16];
+		DATA_BLOB recv_seal_blob = data_blob_const(recv_seal_key,
+					   sizeof(recv_seal_key));
 
 		switch (ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
@@ -397,15 +402,12 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 				ntlmssp_state->send_sign_key, 16);
 
 		/* SEND: seal ARCFOUR pad */
-		calc_ntlmv2_key(ntlmssp_state->send_seal_key,
+		calc_ntlmv2_key(send_seal_key,
 				weak_session_key, send_seal_const);
-		dump_data_pw("NTLMSSP send seal key:\n",
-				ntlmssp_state->send_seal_key, 16);
+		dump_data_pw("NTLMSSP send seal key:\n", send_seal_key, 16);
 
-		send_seal_key_blob.data = ntlmssp_state->send_seal_key;
-		send_seal_key_blob.length = 16;
 		arcfour_init(&ntlmssp_state->send_seal_arc4_state,
-			     &send_seal_key_blob);
+			     &send_seal_blob);
 
 		dump_arc4_state("NTLMSSP send seal arc4 state:\n",
 			     &ntlmssp_state->send_seal_arc4_state);
@@ -417,16 +419,12 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 				ntlmssp_state->recv_sign_key, 16);
 
 		/* RECV: seal ARCFOUR pad */
-		calc_ntlmv2_key(ntlmssp_state->recv_seal_key,
+		calc_ntlmv2_key(recv_seal_key,
 				weak_session_key, recv_seal_const);
+		dump_data_pw("NTLMSSP recv seal key:\n", recv_seal_key, 16);
 
-		dump_data_pw("NTLMSSP recv seal key:\n",
-				ntlmssp_state->recv_seal_key, 16);
-
-		recv_seal_blob.data = ntlmssp_state->recv_seal_key;
-		recv_seal_blob.length = 16;
 		arcfour_init(&ntlmssp_state->recv_seal_arc4_state,
-				&recv_seal_blob);
+			     &recv_seal_blob);
 
 		dump_arc4_state("NTLMSSP recv seal arc4 state:\n",
 			     &ntlmssp_state->recv_seal_arc4_state);
