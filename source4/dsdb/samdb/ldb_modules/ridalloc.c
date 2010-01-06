@@ -31,6 +31,8 @@
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/messaging/irpc.h"
+#include "param/param.h"
 
 /*
   Note: the RID allocation attributes in AD are very badly named. Here
@@ -280,7 +282,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	}
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
-		ldb_asprintf_errstring(ldb, "Remote RID Set allocation not implemented");
+		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -345,6 +347,43 @@ static int ridalloc_refresh_rid_set_ntds(struct ldb_module *module,
 }
 
 
+/*
+  make a IRPC call to the drepl task to ask it to get the RID
+  Manager to give us another RID pool.
+
+  This function just sends the message to the drepl task then
+  returns immediately. It should be called well before we
+  completely run out of RIDs
+ */
+static void ridalloc_poke_rid_manager(struct ldb_module *module)
+{
+	struct messaging_context *msg;
+	struct server_id *server;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+
+	msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, lp_ctx),
+				    lp_iconv_convenience(lp_ctx),
+				    ldb_get_event_context(ldb));
+	if (!msg) {
+		DEBUG(3,(__location__ ": Failed to create messaging context\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	server = irpc_servers_byname(msg, msg, "dreplsrv");
+	if (!server) {
+		/* this means the drepl service is not running */
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	messaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
+
+	/* we don't care if the message got through */
+	talloc_free(tmp_ctx);
+}
 
 /*
   get a new RID pool for ourselves
@@ -376,7 +415,7 @@ static int ridalloc_refresh_own_pool(struct ldb_module *module, uint64_t *new_po
 	}
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
-		ldb_asprintf_errstring(ldb, "Remote RID Set allocation not implemented");
+		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -395,15 +434,17 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 {
 	struct ldb_context *ldb;
 	static const char * const attrs[] = { "rIDAllocationPool", "rIDPreviousAllocationPool",
-					      "rIDNextRID" , NULL };
+					      "rIDNextRID" , "rIDUsedPool", NULL };
 	int ret;
 	struct ldb_dn *rid_set_dn;
 	struct ldb_result *res;
 	uint64_t alloc_pool, prev_alloc_pool;
 	uint32_t prev_alloc_pool_lo, prev_alloc_pool_hi;
+	uint32_t rid_used_pool;
 	int prev_rid;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 
+	(*rid) = 0;
 	ldb = ldb_module_get_ctx(module);
 
 	ret = samdb_rid_set_dn(ldb, tmp_ctx, &rid_set_dn);
@@ -428,6 +469,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 	prev_alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDPreviousAllocationPool", 0);
 	alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
 	prev_rid = ldb_msg_find_attr_as_int(res->msgs[0], "rIDNextRID", 0);
+	rid_used_pool = ldb_msg_find_attr_as_int(res->msgs[0], "rIDUsedPool", 0);
 	if (alloc_pool == 0) {
 		ldb_asprintf_errstring(ldb, __location__ ": Bad RID Set %s",
 				       ldb_dn_get_linearized(rid_set_dn));
@@ -453,7 +495,19 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 		prev_alloc_pool = alloc_pool;
 		prev_alloc_pool_lo = prev_alloc_pool & 0xFFFFFFFF;
 		prev_alloc_pool_hi = prev_alloc_pool >> 32;
+
+		/* update the rIDUsedPool attribute */
+		ret = dsdb_module_set_integer(module, rid_set_dn, "rIDUsedPool", rid_used_pool+1);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, __location__ ": Failed to update rIDUsedPool on %s - %s",
+					       ldb_dn_get_linearized(rid_set_dn), ldb_errstring(ldb));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		(*rid) = prev_alloc_pool_lo;
 	}
+
 	/* see if we are still out of RIDs, and if so then ask
 	   the RID Manager to give us more */
 	if (prev_rid >= prev_alloc_pool_hi) {
@@ -477,9 +531,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 	} else {
 		/* despite the name, rIDNextRID is the value of the last user
 		 * added by this DC, not the next available RID */
-		if (prev_rid == 0) {
-			(*rid) = prev_alloc_pool_lo;
-		} else {
+		if (*rid == 0) {
 			(*rid) = prev_rid + 1;
 		}
 	}
@@ -499,7 +551,15 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 	} else {
 		ret = dsdb_module_constrainted_update_integer(module, rid_set_dn, "rIDNextRID", prev_rid, *rid);
 	}
+
+	/* if we are half-exhausted then ask the repl task to start
+	 * getting another one */
+	if (*rid > (prev_alloc_pool_hi + prev_alloc_pool_lo)/2) {
+		ridalloc_poke_rid_manager(module);
+	}
+
 	talloc_free(tmp_ctx);
+
 
 	return ret;
 }
