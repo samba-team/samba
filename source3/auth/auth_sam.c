@@ -354,10 +354,16 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	update_login_attempts_status = pdb_update_login_attempts(sampass, NT_STATUS_IS_OK(nt_status));
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		bool increment_bad_pw_count = false;
+
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_WRONG_PASSWORD) && 
 		    acct_ctrl & ACB_NORMAL &&
 		    NT_STATUS_IS_OK(update_login_attempts_status)) 
-		{  
+		{
+			increment_bad_pw_count = true;
+		}
+
+		if (increment_bad_pw_count) {
 			pdb_increment_bad_password_count(sampass);
 			updated_badpw = True;
 		} else {
