@@ -44,53 +44,6 @@
 #define TIME_FIXUP_CONSTANT_INT 11644473600LL
 #endif
 
-/*******************************************************************
-  create a 16 bit dos packed date
-********************************************************************/
-static uint16_t make_dos_date1(struct tm *t)
-{
-	uint16_t ret=0;
-	ret = (((unsigned int)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
-	ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
-	return ret;
-}
-
-/*******************************************************************
-  create a 16 bit dos packed time
-********************************************************************/
-static uint16_t make_dos_time1(struct tm *t)
-{
-	uint16_t ret=0;
-	ret = ((((unsigned int)t->tm_min >> 3)&0x7) | (((unsigned int)t->tm_hour) << 3));
-	ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
-	return ret;
-}
-
-/*******************************************************************
-  create a 32 bit dos packed date/time from some parameters
-  This takes a GMT time and returns a packed localtime structure
-********************************************************************/
-static uint32_t make_dos_date(time_t unixdate, int zone_offset)
-{
-	struct tm *t;
-	uint32_t ret=0;
-
-	if (unixdate == 0) {
-		return 0;
-	}
-
-	unixdate -= zone_offset;
-
-	t = gmtime(&unixdate);
-	if (!t) {
-		return 0xFFFFFFFF;
-	}
-
-	ret = make_dos_date1(t);
-	ret = ((ret&0xFFFF)<<16) | make_dos_time1(t);
-
-	return ret;
-}
 
 /**
   parse a nttime as a large integer in a string and return a NTTIME
@@ -245,42 +198,6 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 	return timeval_string(ctx, &tv, hires);
 }
 
-/*******************************************************************
- Put a dos date into a buffer (time/date format).
- This takes GMT time and puts local time in the buffer.
-********************************************************************/
-
-static void put_dos_date(char *buf,int offset,time_t unixdate, int zone_offset)
-{
-	uint32_t x = make_dos_date(unixdate, zone_offset);
-	SIVAL(buf,offset,x);
-}
-
-/*******************************************************************
- Put a dos date into a buffer (date/time format).
- This takes GMT time and puts local time in the buffer.
-********************************************************************/
-
-static void put_dos_date2(char *buf,int offset,time_t unixdate, int zone_offset)
-{
-	uint32_t x = make_dos_date(unixdate, zone_offset);
-	x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
-	SIVAL(buf,offset,x);
-}
-
-/*******************************************************************
- Put a dos 32 bit "unix like" date into a buffer. This routine takes
- GMT and converts it to LOCAL time before putting it (most SMBs assume
- localtime for this sort of date)
-********************************************************************/
-
-static void put_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
-{
-	if (!null_time(unixdate)) {
-		unixdate -= zone_offset;
-	}
-	SIVAL(buf,offset,unixdate);
-}
 
 
 /***************************************************************************
@@ -289,17 +206,17 @@ static void put_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
 
 void srv_put_dos_date(char *buf,int offset,time_t unixdate)
 {
-	put_dos_date(buf, offset, unixdate, server_zone_offset);
+	push_dos_date(buf, offset, unixdate, server_zone_offset);
 }
 
 void srv_put_dos_date2(char *buf,int offset, time_t unixdate)
 {
-	put_dos_date2(buf, offset, unixdate, server_zone_offset);
+	push_dos_date2(buf, offset, unixdate, server_zone_offset);
 }
 
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate)
 {
-	put_dos_date3(buf, offset, unixdate, server_zone_offset);
+	push_dos_date3(buf, offset, unixdate, server_zone_offset);
 }
 
 void round_timespec(enum timestamp_set_resolution res, struct timespec *ts)
@@ -530,17 +447,17 @@ struct timespec interpret_long_date(const char *p)
 
 void cli_put_dos_date(struct cli_state *cli, char *buf, int offset, time_t unixdate)
 {
-	put_dos_date(buf, offset, unixdate, cli->serverzone);
+	push_dos_date(buf, offset, unixdate, cli->serverzone);
 }
 
 void cli_put_dos_date2(struct cli_state *cli, char *buf, int offset, time_t unixdate)
 {
-	put_dos_date2(buf, offset, unixdate, cli->serverzone);
+	push_dos_date2(buf, offset, unixdate, cli->serverzone);
 }
 
 void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unixdate)
 {
-	put_dos_date3(buf, offset, unixdate, cli->serverzone);
+	push_dos_date3(buf, offset, unixdate, cli->serverzone);
 }
 
 time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr)
