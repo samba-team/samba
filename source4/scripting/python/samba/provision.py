@@ -946,6 +946,15 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
+        message("Reopening sam.ldb with new schema");
+        samdb.transaction_commit()
+        samdb = Ldb(session_info=session_info,
+                    credentials=provision_backend.credentials, lp=lp)
+        samdb.connect(path)
+        samdb.transaction_start()
+        if serverrole == "domain controller":
+            samdb.set_invocation_id(invocationid)
+
         message("Setting up sam.ldb configuration data")
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
             "CONFIGDN": names.configdn,
