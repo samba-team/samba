@@ -331,18 +331,10 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 */
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("weak_keys");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	DEBUG(3, ("NTLMSSP Sign/Seal - Initialising with flags:\n"));
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
 	if (ntlmssp_state->session_key.length < 8) {
-		TALLOC_FREE(mem_ctx);
 		DEBUG(3, ("NO session key, cannot intialise signing\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
@@ -374,7 +366,6 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			recv_seal_const = CLI_SEAL;
 			break;
 		default:
-			TALLOC_FREE(mem_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
@@ -434,33 +425,50 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 
 
 	} else {
-#if 0
-		/* Hmmm. Shouldn't we also weaken keys for ntlmv1 ? JRA. */
-
-		DATA_BLOB weak_session_key = ntlmssp_state->session_key;
-		/**
-		  Weaken NTLMSSP keys to cope with down-level clients, servers and export restrictions.
-		  We probably should have some parameters to control this, once we get NTLM2 working.
-		*/
-
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
-			;
-		} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			weak_session_key.length = 6;
-		} else { /* forty bits */
-			weak_session_key.length = 5;
-		}
-		dump_data_pw("NTLMSSP weakend master key:\n",
-				weak_session_key.data,
-				weak_session_key.length);
-#endif
-
-		DATA_BLOB weak_session_key = ntlmssp_weaken_keys(ntlmssp_state, mem_ctx);
+		uint8_t weak_session_key[8];
+		DATA_BLOB seal_session_key = ntlmssp_state->session_key;
+		bool do_weak = false;
 
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NTLM1\n"));
 
+		/*
+		 * Key weakening not performed on the master key for NTLM2
+		 * and does not occour for NTLM1. Therefore we only need
+		 * to do this for the LM_KEY.
+		 */
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
+			do_weak = true;
+		}
+
+		/*
+		 * Nothing to weaken.
+		 * We certainly don't want to 'extend' the length...
+		 */
+		if (seal_session_key.length < 16) {
+			/* TODO: is this really correct? */
+			do_weak = false;
+		}
+
+		if (do_weak) {
+			memcpy(weak_session_key, seal_session_key.data, 8);
+			seal_session_key = data_blob_const(weak_session_key, 8);
+
+			/*
+			 * LM key doesn't support 128 bit crypto, so this is
+			 * the best we can do. If you negotiate 128 bit, but
+			 * not 56, you end up with 40 bit...
+			 */
+			if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
+				weak_session_key[7] = 0xa0;
+			} else { /* forty bits */
+				weak_session_key[5] = 0xe5;
+				weak_session_key[6] = 0x38;
+				weak_session_key[7] = 0xb0;
+			}
+		}
+
 		arcfour_init(&ntlmssp_state->ntlmv1_arc4_state,
-			     &weak_session_key);
+			     &seal_session_key);
 
                 dump_arc4_state("NTLMv1 arc4 state:\n",
 				&ntlmssp_state->ntlmv1_arc4_state);
@@ -468,6 +476,5 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		ntlmssp_state->ntlmv1_seq_num = 0;
 	}
 
-	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_OK;
 }

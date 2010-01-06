@@ -439,47 +439,6 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 }
 
 /**
- Weaken NTLMSSP keys to cope with down-level clients and servers.
-
- We probably should have some parameters to control this, but as
- it only occours for LM_KEY connections, and this is controlled
- by the client lanman auth/lanman auth parameters, it isn't too bad.
-*/
-
-DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx)
-{
-	DATA_BLOB weakened_key = data_blob_talloc(mem_ctx,
-					ntlmssp_state->session_key.data,
-					ntlmssp_state->session_key.length);
-
-	/* Nothing to weaken.  We certainly don't want to 'extend' the length... */
-	if (weakened_key.length < 16) {
-		/* perhaps there was no key? */
-		return weakened_key;
-	}
-
-	/* Key weakening not performed on the master key for NTLM2
-	   and does not occour for NTLM1.  Therefore we only need
-	   to do this for the LM_KEY.
-	*/
-
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
-		/* LM key doesn't support 128 bit crypto, so this is
-		 * the best we can do.  If you negotiate 128 bit, but
-		 * not 56, you end up with 40 bit... */
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			weakened_key.data[7] = 0xa0;
-		} else { /* forty bits */
-			weakened_key.data[5] = 0xe5;
-			weakened_key.data[6] = 0x38;
-			weakened_key.data[7] = 0xb0;
-		}
-		weakened_key.length = 8;
-	}
-	return weakened_key;
-}
-
-/**
  * Next state function for the Negotiate packet
  *
  * @param ntlmssp_state NTLMSSP State
