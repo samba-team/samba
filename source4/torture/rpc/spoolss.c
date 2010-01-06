@@ -5,7 +5,7 @@
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
    Copyright (C) Jelmer Vernooij 2007
-   Copyright (C) Guenther Deschner 2009
+   Copyright (C) Guenther Deschner 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -865,45 +865,67 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   const char *driver_name);
 
-static bool test_GetPrinter(struct torture_context *tctx,
-			    struct dcerpc_pipe *p,
-		     struct policy_handle *handle)
+static bool test_GetPrinter_level(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  uint32_t level,
+				  union spoolss_PrinterInfo *info)
 {
-	NTSTATUS status;
 	struct spoolss_GetPrinter r;
-	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-	int i;
 	uint32_t needed;
 
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+
+	torture_comment(tctx, "Testing GetPrinter level %u\n", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinter(p, tctx, &r),
+		"GetPrinter failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinter(p, tctx, &r),
+			"GetPrinter failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
+
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
+	if (info && r.out.info) {
+		*info = *r.out.info;
+	}
+
+	return true;
+}
+
+
+static bool test_GetPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle)
+{
+	uint32_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+	int i;
+
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.handle = handle;
-		r.in.level = levels[i];
-		r.in.buffer = NULL;
-		r.in.offered = 0;
-		r.out.needed = &needed;
 
-		torture_comment(tctx, "Testing GetPrinter level %u\n", r.in.level);
+		union spoolss_PrinterInfo info;
 
-		status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
+		ZERO_STRUCT(info);
 
-		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
-			r.in.buffer = &blob;
-			r.in.offered = needed;
-			status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
-		}
+		torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, levels[i], &info),
+			"failed to call GetPrinter");
 
-		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
-
-		torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
-
-		CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
-
-		if ((r.in.level == 2) && r.out.info->info2.drivername && strlen(r.out.info->info2.drivername)) {
+		if ((levels[i] == 2) && info.info2.drivername && strlen(info.info2.drivername)) {
 			torture_assert(tctx,
-				test_GetPrinterDriver2(tctx, p, handle, r.out.info->info2.drivername),
+				test_GetPrinterDriver2(tctx, p, handle, info.info2.drivername),
 				"failed to call test_GetPrinterDriver2");
 		}
 	}
