@@ -524,9 +524,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 			 */
 			if (ldb_dn_compare(data->partitions[i]->ctrl->dn, req->op.search.base) == 0) {
 				match = true;
-				if (req->op.search.scope == LDB_SCOPE_BASE) {
-					stop = true;
-				}
+				stop = true;
 			}
 			if (!match && 
 			    (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->ctrl->dn) == 0 &&
