@@ -26,6 +26,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "util.h"
+#include "libcli/security/security.h"
 
 /*
   add a set of controls to a ldb_request structure based on a set of
@@ -628,4 +629,12 @@ int dsdb_module_set_integer(struct ldb_module *module, struct ldb_dn *dn,
 	ret = dsdb_module_modify(module, msg, 0);
 	talloc_free(msg);
 	return ret;
+}
+
+bool dsdb_module_am_system(struct ldb_module *module)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct auth_session_info *session_info
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	return security_session_user_level(session_info) == SECURITY_SYSTEM;
 }
