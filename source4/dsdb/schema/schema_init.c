@@ -833,6 +833,7 @@ static const struct {
 	{ "mayContain",				"1.2.840.113556.1.2.25" },
 	{ "defaultSecurityDescriptor",		"1.2.840.113556.1.4.224" },
 	{ "defaultHidingValue",			"1.2.840.113556.1.4.518" },
+	{ "msDS-IntId",				"1.2.840.113556.1.4.1716" },
 };
 
 static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb_schema *schema,
@@ -1020,6 +1021,9 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 			win_errstr(status)));
 		return status;
 	}
+	/* fetch msDS-IntId to be used in resolving ATTRTYP values */
+	GET_UINT32_DS(schema, r, "msDS-IntId", attr, msDS_IntId, 0);
+
 	GET_GUID_DS(schema, r, "schemaIDGUID", mem_ctx, attr, schemaIDGUID);
 	GET_UINT32_DS(schema, r, "mAPIID", attr, mAPIID, 0);
 
