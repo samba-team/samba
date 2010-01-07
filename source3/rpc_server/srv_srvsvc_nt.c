@@ -1033,6 +1033,13 @@ WERROR _srvsvc_NetFileEnum(pipes_struct *p,
 		return WERR_UNKNOWN_LEVEL;
 	}
 
+	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
+				p->server_info->ptok)) {
+		DEBUG(1, ("Enumerating files only allowed for "
+			  "administrators\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	ctx = talloc_tos();
 	ctr3 = r->in.info_ctr->ctr.ctr3;
 	if (!ctr3) {
@@ -1185,6 +1192,13 @@ WERROR _srvsvc_NetConnEnum(pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
 
+	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
+				p->server_info->ptok)) {
+		DEBUG(1, ("Enumerating connections only allowed for "
+			  "administrators\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	switch (r->in.info_ctr->level) {
 		case 0:
 			werr = init_srv_conn_info_0(r->in.info_ctr->ctr.ctr0,
@@ -1215,6 +1229,13 @@ WERROR _srvsvc_NetSessEnum(pipes_struct *p,
 	WERROR werr;
 
 	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
+
+	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
+				p->server_info->ptok)) {
+		DEBUG(1, ("Enumerating sessions only allowed for "
+			  "administrators\n"));
+		return WERR_ACCESS_DENIED;
+	}
 
 	switch (r->in.info_ctr->level) {
 		case 0:
