@@ -39,7 +39,14 @@ static int strcasecmp_with_ldb_val(const struct ldb_val *target, const char *str
 {
 	int ret = strncasecmp((const char *)target->data, str, target->length);
 	if (ret == 0) {
-		return (target->length - strlen(str));
+		size_t len = strlen(str);
+		if (target->length > len) {
+			if (target->data[len] == 0) {
+				return 0;
+			}
+			return 1;
+		}
+		return (target->length - len);
 	}
 	return ret;
 }
