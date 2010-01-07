@@ -175,22 +175,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	msg = ldb_msg_new(tmp_ctx);
 	msg->dn = rid_set_dn;
 
-	ret = ldb_msg_add_string(msg, "objectClass", "top");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
 	ret = ldb_msg_add_string(msg, "objectClass", "rIDSet");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-	ret = ldb_msg_add_string(msg, "cn", "RID Set");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-	ret = ldb_msg_add_string(msg, "name", "RID Set");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -218,7 +203,10 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 		return ret;
 	}
 
-	ret = dsdb_module_add(module, msg, 0);
+	/* we need this to go all the way to the top of the module
+	 * stack, as we need all the extra attributes added (including
+	 * complex ones like ntsecuritydescriptor) */
+	ret = dsdb_module_add(module, msg, DSDB_FLAG_TOP_MODULE | DSDB_MODIFY_RELAX);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to add RID Set %s - %s",
 				       ldb_dn_get_linearized(msg->dn),
