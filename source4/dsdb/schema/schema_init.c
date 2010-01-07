@@ -568,6 +568,9 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 			return status;
 		}
 	}
+	/* fetch msDS-IntId to be used in resolving ATTRTYP values */
+	GET_UINT32_LDB(msg, "msDS-IntId", attr, msDS_IntId);
+
 	GET_GUID_LDB(msg, "schemaIDGUID", attr, schemaIDGUID);
 	GET_UINT32_LDB(msg, "mAPIID", attr, mAPIID);
 
