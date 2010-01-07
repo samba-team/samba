@@ -588,16 +588,16 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	/* work out who is the RID Manager */
 	ret = samdb_rid_manager_dn(ldb, mem_ctx, &rid_manager_dn);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, (__location__ ": Failed to find RID Manager object - %s", ldb_errstring(ldb)));
+		DEBUG(0, (__location__ ": Failed to find RID Manager object - %s\n", ldb_errstring(ldb)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	req_dn = ldb_dn_new(ldb, mem_ctx, req8->naming_context->dn);
 	if (!req_dn ||
 	    !ldb_dn_validate(req_dn) ||
-	    ldb_dn_compare(samdb_ntds_settings_dn(ldb), rid_manager_dn) != 0) {
+	    ldb_dn_compare(req_dn, rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
-		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s",
+		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
 			 req8->naming_context->dn));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
@@ -606,14 +606,14 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	/* find the DN of the RID Manager */
 	ret = samdb_reference_dn(ldb, mem_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s",
+		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s\n",
 			 ldb_errstring(ldb)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
 		/* we're not the RID Manager - go away */
-		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager"));
+		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_OK;
 	}
@@ -624,12 +624,28 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	exop->fsmo_info = req8->fsmo_info;
 	exop->destination_dsa_guid = req8->destination_dsa_guid;
 
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed transaction start - %s\n",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
 	ret = ldb_extended(ldb, DSDB_EXTENDED_ALLOCATE_RID_POOL, exop, &ext_res);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed extended allocation RID pool operation - %s\n",
 			 ldb_errstring(ldb)));
+		ldb_transaction_cancel(ldb);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
+
+	ret = ldb_transaction_commit(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed transaction commit - %s\n",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
 	talloc_free(ext_res);
 
 	base_dn = samdb_base_dn(ldb);
