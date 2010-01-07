@@ -104,20 +104,31 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6837: Fix "Too many open files" when trying to access large number of
       files with Windows 7.
     * BUG 6939: Fix long filenames when "mangling method" is set to "hash".
+    * BUG 7020: Fix smbd using 2G memory.
     * Ensure dos_mode can return FILE_ATTRIBUTE_NORMAL, then filter the returned
       attributes by protocol level.
     * Vector correctly through reply_openerror() (which uses the same logic).
     * Fix bugs with the full Windows ACL support.
 
 
+o   Kai Blin <kai@samba.org>
+    * Add a few missing gettext calls to the 'net' command.
+    * Fix up a share type translation and translate some more strings in 'net'.
+
+
 o   Günther Deschner <gd@samba.org>
     * Allow to call "pdbedit -N description -u user" without specifiyng "-r".
     * Add spoolss_DriverInfo7.
     * Fix rpcclient after setprinter IDL fixes.
+    * Use generated krb5.conf in 'net ads testjoin'.
 
 
 o   Jonas Gorski <jonas.gorski+samba@gmail.com>
     * BUG 6992: make test for getgrouplist cacheable.
+
+
+o   André Hentschel <nerv@dawncrow.de>
+    * Add some German translations for the 'net' command.
 
 
 o   Suresh Jayaraman <sjayaraman@suse.de>
@@ -164,6 +175,13 @@ o   Ronnie Sahlberg <ronniesahlberg@gmail.com>
 o   Kirill Smelkov <kirr@mns.spb.ru>
     * Remove swig stuff from libtdb.
     * Reset tdb->fd to -1 in tdb_close() in libtdb.
+
+
+o   Bo Yang <boyang@samba.org>
+    * Fix infinite loop in NCACN_IP_TCP as there is no timeout.
+    * Make winbindd_cache.c aware of domain offline to avoid unnecessary backend
+      query.
+    * List trusted domains from wcache when domain is offline.
 
 
 Changes since 3.5.0pre1
