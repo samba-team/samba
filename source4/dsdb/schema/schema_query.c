@@ -100,6 +100,18 @@ const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb
 	return c;
 }
 
+const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName_ldb_val(const struct dsdb_schema *schema,
+								       const struct ldb_val *name)
+{
+	struct dsdb_attribute *a;
+
+	if (!name) return NULL;
+
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_lDAPDisplayName,
+			      schema->num_attributes, lDAPDisplayName, name, strcasecmp_with_ldb_val, a);
+	return a;
+}
+
 const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *schema,
 						      int linkID)
 {
