@@ -29,6 +29,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/tsocket/tsocket.h"
+#include "libcli/util/tstream.h"
 #include "system/network.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/messaging/irpc.h"
@@ -73,7 +74,9 @@ struct kdc_tcp_connection {
 	/* the kdc_server the connection belongs to */
 	struct kdc_socket *kdc_socket;
 
-	struct packet_context *packet;
+	struct tstream_context *tstream;
+
+	struct tevent_queue *send_queue;
 };
 
 static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
@@ -81,83 +84,20 @@ static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, con
 	stream_terminate_connection(kdcconn->conn, reason);
 }
 
-/*
-  receive a full packet on a KDC connection
-*/
-static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
-{
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(private_data,
-							     struct kdc_tcp_connection);
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
-	int ret;
-	DATA_BLOB input, reply;
-	talloc_steal(tmp_ctx, blob.data);
-
-	/* Call krb5 */
-	input = data_blob_const(blob.data + 4, blob.length - 4);
-
-	ret = kdcconn->kdc_socket->process(kdcconn->kdc_socket->kdc,
-					   tmp_ctx,
-					   &input,
-					   &reply,
-					   kdcconn->conn->remote_address,
-					   kdcconn->conn->local_address,
-					   0 /* Not datagram */);
-	if (!ret) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	/* and now encode the reply */
-	blob = data_blob_talloc(kdcconn, NULL, reply.length + 4);
-	if (!blob.data) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	RSIVAL(blob.data, 0, reply.length);
-	memcpy(blob.data + 4, reply.data, reply.length);
-
-	status = packet_send(kdcconn->packet, blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return status;
-	}
-
-	/* the call isn't needed any more */
-	talloc_free(tmp_ctx);
-	return NT_STATUS_OK;
-}
-
-/*
-  receive some data on a KDC connection
-*/
-static void kdc_tcp_recv_handler(struct stream_connection *conn, uint16_t flags)
+static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private_data,
 							     struct kdc_tcp_connection);
-	packet_recv(kdcconn->packet);
+	/* this should never be triggered! */
+	kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_recv: called");
 }
 
-/*
-  called on a tcp recv error
-*/
-static void kdc_tcp_recv_error(void *private_data, NTSTATUS status)
-{
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(private_data,
-					     struct kdc_tcp_connection);
-	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
-}
-
-/*
-  called when we can write to a connection
-*/
 static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private_data,
 							     struct kdc_tcp_connection);
-	packet_queue_run(kdcconn->packet);
+	/* this should never be triggered! */
+	kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_send: called");
 }
 
 /**
@@ -214,42 +154,201 @@ static bool kdc_process(struct kdc_server *kdc,
 	return true;
 }
 
+struct kdc_tcp_call {
+	struct kdc_tcp_connection *kdc_conn;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	uint8_t out_hdr[4];
+	struct iovec out_iov[2];
+};
+
+static void kdc_tcp_call_writev_done(struct tevent_req *subreq);
+
+static void kdc_tcp_call_loop(struct tevent_req *subreq)
+{
+	struct kdc_tcp_connection *kdc_conn = tevent_req_callback_data(subreq,
+				      struct kdc_tcp_connection);
+	struct kdc_tcp_call *call;
+	NTSTATUS status;
+	bool ok;
+
+	call = talloc(kdc_conn, struct kdc_tcp_call);
+	if (call == NULL) {
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+				"no memory for kdc_tcp_call");
+		return;
+	}
+	call->kdc_conn = kdc_conn;
+
+	status = tstream_read_pdu_blob_recv(subreq,
+					    call,
+					    &call->in);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "kdc_tcp_call_loop: "
+					 "tstream_read_pdu_blob_recv() - %s",
+					 nt_errstr(status));
+		if (!reason) {
+			reason = nt_errstr(status);
+		}
+
+		kdc_tcp_terminate_connection(kdc_conn, reason);
+		return;
+	}
+
+	DEBUG(10,("Received krb5 TCP packet of length %lu from %s\n",
+		 (long) call->in.length,
+		 tsocket_address_string(kdc_conn->conn->remote_address, call)));
+
+	/* skip length header */
+	call->in.data +=4;
+	call->in.length -= 4;
+
+	/* Call krb5 */
+	ok = kdc_conn->kdc_socket->process(kdc_conn->kdc_socket->kdc,
+					   call,
+					   &call->in,
+					   &call->out,
+					   kdc_conn->conn->remote_address,
+					   kdc_conn->conn->local_address,
+					   0 /* Stream */);
+	if (!ok) {
+		kdc_tcp_terminate_connection(kdc_conn,
+				"kdc_tcp_call_loop: process function failed");
+		return;
+	}
+
+	/* First add the length of the out buffer */
+	RSIVAL(call->out_hdr, 0, call->out.length);
+	call->out_iov[0].iov_base = call->out_hdr;
+	call->out_iov[0].iov_len = 4;
+
+	call->out_iov[1].iov_base = call->out.data;
+	call->out_iov[1].iov_len = call->out.length;
+
+	subreq = tstream_writev_queue_send(call,
+					   kdc_conn->conn->event.ctx,
+					   kdc_conn->tstream,
+					   kdc_conn->send_queue,
+					   call->out_iov, 2);
+	if (subreq == NULL) {
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+				"no memory for tstream_writev_queue_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_call_writev_done, call);
+
+	/*
+	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
+	 * packet_full_request_u32 provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(kdc_conn,
+					    kdc_conn->conn->event.ctx,
+					    kdc_conn->tstream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    kdc_conn);
+	if (subreq == NULL) {
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_call_loop, kdc_conn);
+}
+
+static void kdc_tcp_call_writev_done(struct tevent_req *subreq)
+{
+	struct kdc_tcp_call *call = tevent_req_callback_data(subreq,
+			struct kdc_tcp_call);
+	int sys_errno;
+	int rc;
+
+	rc = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (rc == -1) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "kdc_tcp_call_writev_done: "
+					 "tstream_writev_queue_recv() - %d:%s",
+					 sys_errno, strerror(sys_errno));
+		if (!reason) {
+			reason = "kdc_tcp_call_writev_done: tstream_writev_queue_recv() failed";
+		}
+
+		kdc_tcp_terminate_connection(call->kdc_conn, reason);
+		return;
+	}
+
+	/* We don't care about errors */
+
+	talloc_free(call);
+}
+
 /*
   called when we get a new connection
 */
 static void kdc_tcp_accept(struct stream_connection *conn)
 {
- 	struct kdc_socket *kdc_socket = talloc_get_type(conn->private_data, struct kdc_socket);
-	struct kdc_tcp_connection *kdcconn;
+	struct kdc_socket *kdc_socket;
+	struct kdc_tcp_connection *kdc_conn;
+	struct tevent_req *subreq;
+	int rc;
 
-	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
-	if (!kdcconn) {
-		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+	kdc_conn = talloc_zero(conn, struct kdc_tcp_connection);
+	if (kdc_conn == NULL) {
+		stream_terminate_connection(conn,
+				"kdc_tcp_accept: out of memory");
 		return;
 	}
-	kdcconn->conn		= conn;
-	kdcconn->kdc_socket	= kdc_socket;
-	conn->private_data    = kdcconn;
 
-	kdcconn->packet = packet_init(kdcconn);
-	if (kdcconn->packet == NULL) {
-		kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_accept: out of memory");
+	kdc_conn->send_queue = tevent_queue_create(conn, "kdc_tcp_accept");
+	if (kdc_conn->send_queue == NULL) {
+		stream_terminate_connection(conn,
+				"kdc_tcp_accept: out of memory");
 		return;
 	}
-	packet_set_private(kdcconn->packet, kdcconn);
-	packet_set_socket(kdcconn->packet, conn->socket);
-	packet_set_callback(kdcconn->packet, kdc_tcp_recv);
-	packet_set_full_request(kdcconn->packet, packet_full_request_u32);
-	packet_set_error_handler(kdcconn->packet, kdc_tcp_recv_error);
-	packet_set_event_context(kdcconn->packet, conn->event.ctx);
-	packet_set_fde(kdcconn->packet, conn->event.fde);
-	packet_set_serialise(kdcconn->packet);
+
+	kdc_socket = talloc_get_type(conn->private_data, struct kdc_socket);
+
+	TALLOC_FREE(conn->event.fde);
+
+	rc = tstream_bsd_existing_socket(kdc_conn->tstream,
+			socket_get_fd(conn->socket),
+			&kdc_conn->tstream);
+	if (rc < 0) {
+		stream_terminate_connection(conn,
+				"kdc_tcp_accept: out of memory");
+		return;
+	}
+
+	kdc_conn->conn = conn;
+	kdc_conn->kdc_socket = kdc_socket;
+	conn->private_data = kdc_conn;
+
+	/*
+	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
+	 * packet_full_request_u32 provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(kdc_conn,
+					    kdc_conn->conn->event.ctx,
+					    kdc_conn->tstream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    kdc_conn);
+	if (subreq == NULL) {
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_accept: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_call_loop, kdc_conn);
 }
 
 static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.name			= "kdc_tcp",
 	.accept_connection	= kdc_tcp_accept,
-	.recv_handler		= kdc_tcp_recv_handler,
+	.recv_handler		= kdc_tcp_recv,
 	.send_handler		= kdc_tcp_send
 };
 
