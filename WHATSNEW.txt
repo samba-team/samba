@@ -147,14 +147,15 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
     * Fix write behind memory block in libtalloc.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Change the way mksysms work in libtalloc.
+    * Fix result check for getaddrinfo().
 
 
 o   Jim McDonough <jmcd@samba.org>
     * BUG 7014: Fix Winbind crash when retrieving empty group members.
+
+
+o   Brian Lu <brian.lu@sun.com>
+    * BUG 6991: Create symbol links to shared libraries.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -162,6 +163,7 @@ o   Stefan Metzmacher <metze@samba.org>
       to tsocket.
     * Always set tdb->tracefd to -1 to be safe on goto fail in libtdb.
     * Add TDB_DISALLOW_NESTING and make TDB_ALLOW_NESTING the default behavior.
+    * Fix standalone 'make installdocs'.
 
 
 o   Peter Rosin <peda@lysator.liu.se>
@@ -175,6 +177,14 @@ o   Ronnie Sahlberg <ronniesahlberg@gmail.com>
 o   Kirill Smelkov <kirr@mns.spb.ru>
     * Remove swig stuff from libtdb.
     * Reset tdb->fd to -1 in tdb_close() in libtdb.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Change the way mksysms work in libtalloc.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Also build and install tdb manpages from standalone tdb.
 
 
 o   Bo Yang <boyang@samba.org>
