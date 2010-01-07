@@ -111,7 +111,7 @@
 		<varlistentry>
 		<term>
 		<option>-o</option>
-		<literal>write</literal>
+		<literal>dump</literal>
 		<replaceable>EVENTLOG</replaceable>
 		<replaceable>RECORD_NUMBER</replaceable>
 		</term>
