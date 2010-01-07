@@ -125,10 +125,16 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		dump_data_pw("ntlmssp v2 sig ", sig->data, sig->length);
 
 	} else {
+		bool ok;
 		uint32_t crc;
 
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(ntlmssp_state, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
+
+		ok = msrpc_gen(ntlmssp_state,
+			       sig, "dddd",
+			       NTLMSSP_SIGN_VERSION, 0, crc,
+			       ntlmssp_state->ntlmv1_seq_num);
+		if (!ok) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -285,10 +291,16 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 					   sig->data+4, 8);
 		}
 	} else {
+		bool ok;
 		uint32_t crc;
 
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(ntlmssp_state, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
+
+		ok = msrpc_gen(ntlmssp_state,
+			       sig, "dddd",
+			       NTLMSSP_SIGN_VERSION, 0, crc,
+			       ntlmssp_state->ntlmv1_seq_num);
+		if (!ok) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
