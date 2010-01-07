@@ -5,7 +5,7 @@
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
    Copyright (C) Jelmer Vernooij 2007
-   Copyright (C) Guenther Deschner 2009
+   Copyright (C) Guenther Deschner 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -865,48 +865,96 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   const char *driver_name);
 
-static bool test_GetPrinter(struct torture_context *tctx,
-			    struct dcerpc_pipe *p,
-		     struct policy_handle *handle)
+static bool test_GetPrinter_level(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  uint32_t level,
+				  union spoolss_PrinterInfo *info)
 {
-	NTSTATUS status;
 	struct spoolss_GetPrinter r;
-	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-	int i;
 	uint32_t needed;
 
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+
+	torture_comment(tctx, "Testing GetPrinter level %u\n", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinter(p, tctx, &r),
+		"GetPrinter failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinter(p, tctx, &r),
+			"GetPrinter failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
+
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
+	if (info && r.out.info) {
+		*info = *r.out.info;
+	}
+
+	return true;
+}
+
+
+static bool test_GetPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle)
+{
+	uint32_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+	int i;
+
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.handle = handle;
-		r.in.level = levels[i];
-		r.in.buffer = NULL;
-		r.in.offered = 0;
-		r.out.needed = &needed;
 
-		torture_comment(tctx, "Testing GetPrinter level %u\n", r.in.level);
+		union spoolss_PrinterInfo info;
 
-		status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
+		ZERO_STRUCT(info);
 
-		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
-			r.in.buffer = &blob;
-			r.in.offered = needed;
-			status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
-		}
+		torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, levels[i], &info),
+			"failed to call GetPrinter");
 
-		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
-
-		torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
-
-		CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
-
-		if ((r.in.level == 2) && r.out.info->info2.drivername && strlen(r.out.info->info2.drivername)) {
+		if ((levels[i] == 2) && info.info2.drivername && strlen(info.info2.drivername)) {
 			torture_assert(tctx,
-				test_GetPrinterDriver2(tctx, p, handle, r.out.info->info2.drivername),
+				test_GetPrinterDriver2(tctx, p, handle, info.info2.drivername),
 				"failed to call test_GetPrinterDriver2");
 		}
 	}
+
+	return true;
+}
+
+static bool test_SetPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle,
+			    struct spoolss_SetPrinterInfoCtr *info_ctr,
+			    struct spoolss_DevmodeContainer *devmode_ctr,
+			    struct sec_desc_buf *secdesc_ctr,
+			    enum spoolss_PrinterControl command)
+{
+	struct spoolss_SetPrinter r;
+
+	r.in.handle = handle;
+	r.in.info_ctr = info_ctr;
+	r.in.devmode_ctr = devmode_ctr;
+	r.in.secdesc_ctr = secdesc_ctr;
+	r.in.command = command;
+
+	torture_comment(tctx, "Testing SetPrinter Level %d\n", r.in.info_ctr->level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
+		"failed to call SetPrinter");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call SetPrinter");
 
 	return true;
 }
@@ -2618,6 +2666,181 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct policy_handle *handle,
+					 uint32_t *change_id)
+{
+	enum winreg_Type type;
+	union spoolss_PrinterData data;
+
+	torture_assert(tctx,
+		test_GetPrinterData(tctx, p, handle, "ChangeID", &type, &data),
+		"failed to call GetPrinterData");
+
+	torture_assert(tctx, type == REG_DWORD, "unexpected type");
+
+	*change_id = data.value;
+
+	return true;
+}
+
+static bool test_GetChangeID_PrinterDataEx(struct torture_context *tctx,
+					   struct dcerpc_pipe *p,
+					   struct policy_handle *handle,
+					   uint32_t *change_id)
+{
+	enum winreg_Type type;
+	union spoolss_PrinterData data;
+
+	torture_assert(tctx,
+		test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", "ChangeID", &type, &data),
+		"failed to call GetPrinterData");
+
+	torture_assert(tctx, type == REG_DWORD, "unexpected type");
+
+	*change_id = data.value;
+
+	return true;
+}
+
+static bool test_GetChangeID_PrinterInfo(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct policy_handle *handle,
+					 uint32_t *change_id)
+{
+	union spoolss_PrinterInfo info;
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 0, &info),
+		"failed to query Printer level 0");
+
+	*change_id = info.info0.change_id;
+
+	return true;
+}
+
+static bool test_ChangeID(struct torture_context *tctx,
+			  struct dcerpc_pipe *p,
+			  struct policy_handle *handle)
+{
+	uint32_t change_id, change_id_ex, change_id_info;
+	uint32_t change_id2, change_id_ex2, change_id_info2;
+	union spoolss_PrinterInfo info;
+	const char *comment;
+
+
+	torture_comment(tctx, "Testing ChangeID: id change test #1\n");
+
+	torture_assert(tctx, test_GetChangeID_PrinterData(tctx, p, handle, &change_id),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterDataEx(tctx, p, handle, &change_id_ex),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterInfo(tctx, p, handle, &change_id_info),
+		"failed to query for ChangeID");
+
+	torture_assert_int_equal(tctx, change_id, change_id_ex,
+		"change_ids should all be equal");
+	torture_assert_int_equal(tctx, change_id_ex, change_id_info,
+		"change_ids should all be equal");
+
+
+	torture_comment(tctx, "Testing ChangeID: id change test #2\n");
+
+	torture_assert(tctx, test_GetChangeID_PrinterData(tctx, p, handle, &change_id),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info),
+		"failed to query Printer level 2");
+	torture_assert(tctx, test_GetChangeID_PrinterDataEx(tctx, p, handle, &change_id_ex),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterInfo(tctx, p, handle, &change_id_info),
+		"failed to query for ChangeID");
+	torture_assert_int_equal(tctx, change_id, change_id_ex,
+		"change_id should not have changed");
+	torture_assert_int_equal(tctx, change_id_ex, change_id_info,
+		"change_id should not have changed");
+
+
+	torture_comment(tctx, "Testing ChangeID: id change test #3\n");
+
+	torture_assert(tctx, test_GetChangeID_PrinterData(tctx, p, handle, &change_id),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterDataEx(tctx, p, handle, &change_id_ex),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterInfo(tctx, p, handle, &change_id_info),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info),
+		"failed to query Printer level 2");
+	comment = talloc_strdup(tctx, info.info2.comment);
+
+	{
+		struct spoolss_SetPrinterInfoCtr info_ctr;
+		struct spoolss_DevmodeContainer devmode_ctr;
+		struct sec_desc_buf secdesc_ctr;
+		struct spoolss_SetPrinterInfo2 info2;
+
+		ZERO_STRUCT(info_ctr);
+		ZERO_STRUCT(devmode_ctr);
+		ZERO_STRUCT(secdesc_ctr);
+
+		info2.servername	= info.info2.servername;
+		info2.printername	= info.info2.printername;
+		info2.sharename		= info.info2.sharename;
+		info2.portname		= info.info2.portname;
+		info2.drivername	= info.info2.drivername;
+		info2.comment		= "torture_comment";
+		info2.location		= info.info2.location;
+		info2.devmode_ptr	= 0;
+		info2.sepfile		= info.info2.sepfile;
+		info2.printprocessor	= info.info2.printprocessor;
+		info2.datatype		= info.info2.datatype;
+		info2.parameters	= info.info2.parameters;
+		info2.secdesc_ptr	= 0;
+		info2.attributes	= info.info2.attributes;
+		info2.priority		= info.info2.priority;
+		info2.defaultpriority	= info.info2.defaultpriority;
+		info2.starttime		= info.info2.starttime;
+		info2.untiltime		= info.info2.untiltime;
+		info2.status		= info.info2.status;
+		info2.cjobs		= info.info2.cjobs;
+		info2.averageppm	= info.info2.averageppm;
+
+		info_ctr.level = 2;
+		info_ctr.info.info2 = &info2;
+
+		torture_assert(tctx, test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),
+			"failed to call SetPrinter");
+
+		info2.comment		= comment;
+
+		torture_assert(tctx, test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),
+			"failed to call SetPrinter");
+
+	}
+
+	torture_assert(tctx, test_GetChangeID_PrinterData(tctx, p, handle, &change_id2),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterDataEx(tctx, p, handle, &change_id_ex2),
+		"failed to query for ChangeID");
+	torture_assert(tctx, test_GetChangeID_PrinterInfo(tctx, p, handle, &change_id_info2),
+		"failed to query for ChangeID");
+
+	torture_assert_int_equal(tctx, change_id2, change_id_ex2,
+		"change_ids should all be equal");
+	torture_assert_int_equal(tctx, change_id_ex2, change_id_info2,
+		"change_ids should all be equal");
+
+	torture_assert(tctx, (change_id < change_id2),
+		talloc_asprintf(tctx, "change_id %d needs to be larger than change_id %d",
+		change_id2, change_id));
+	torture_assert(tctx, (change_id_ex < change_id_ex2),
+		talloc_asprintf(tctx, "change_id %d needs to be larger than change_id %d",
+		change_id_ex2, change_id_ex));
+	torture_assert(tctx, (change_id_info < change_id_info2),
+		talloc_asprintf(tctx, "change_id %d needs to be larger than change_id %d",
+		change_id_info2, change_id_info));
+
+	return true;
+}
 
 static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 				       struct dcerpc_pipe *p,
@@ -2845,6 +3068,10 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	}
 
 	if (!test_SetPrinterDataEx(tctx, p, &handle)) {
+		ret = false;
+	}
+
+	if (!test_ChangeID(tctx, p, &handle)) {
 		ret = false;
 	}
 

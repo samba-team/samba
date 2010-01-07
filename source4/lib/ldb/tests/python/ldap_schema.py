@@ -132,8 +132,40 @@ systemOnly: FALSE
 """
         self.ldb.add_ldif(ldif)
 
+        # Search for created attribute
+        res = []
+        res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
+        self.assertTrue("schemaIDGUID" in res[0])
+
         class_name = "test-Class" + time.strftime("%s", time.gmtime())
         class_ldap_display_name = class_name.replace("-", "")
+
+        # First try to create a class with a wrong "defaultObjectCategory"
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+defaultObjectCategory: CN=_
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalPerson
+systemFlags: 16
+rDNAttID: cn
+systemMustContain: cn
+systemMustContain: """ + attr_ldap_display_name + """
+systemOnly: FALSE
+"""
+        try:
+                 self.ldb.add_ldif(ldif)
+                 self.fail()
+        except LdbError, (num, _):
+                 self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         ldif = """
 dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
@@ -153,6 +185,14 @@ systemMustContain: """ + attr_ldap_display_name + """
 systemOnly: FALSE
 """
         self.ldb.add_ldif(ldif)
+
+        # Search for created objectclass
+        res = []
+        res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
+        self.assertTrue("schemaIDGUID" in res[0])
 
         ldif = """
 dn:
@@ -178,21 +218,6 @@ name: """ + object_name + """
 """ + attr_ldap_display_name + """: test
 """
         self.ldb.add_ldif(ldif)
-
-        # Search for created attribute
-        res = []
-        res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
-        self.assertTrue("schemaIDGUID" in res[0])
-
-        # Search for created objectclass
-        res = []
-        res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
-        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
-        self.assertTrue("schemaIDGUID" in res[0])
 
         # Search for created object
         res = []

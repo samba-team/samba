@@ -61,9 +61,9 @@ doc:: manpages/tdbbackup.8 manpages/tdbdump.8 manpages/tdbtool.8
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
 installdocs::
-	${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1
-	for I in manpages/*.1; do \
-		${INSTALLCMD} -m 644 $$I $(DESTDIR)$(mandir)/man1 \
+	${INSTALLCMD} -d $(DESTDIR)$(mandir)/man8
+	for I in manpages/*.8; do \
+		${INSTALLCMD} -m 644 $$I $(DESTDIR)$(mandir)/man8; \
 	done
 
 install-python:: build-python
@@ -91,6 +91,10 @@ installheaders:: installdirs
 installlibs:: all installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp $(TDB_STLIB) $(TDB_SOLIB) $(DESTDIR)$(libdir)
+	rm -f $(DESTDIR)$(libdir)/libtdb.$(SHLIBEXT)
+	ln -s $(TDB_SOLIB) $(DESTDIR)$(libdir)/libtdb.$(SHLIBEXT)
+	rm -f $(DESTDIR)$(libdir)/$(TDB_SONAME)
+	ln -s $(TDB_SOLIB) $(DESTDIR)$(libdir)/$(TDB_SONAME)
 
 $(TDB_STLIB): $(TDB_OBJ)
 	ar -rv $(TDB_STLIB) $(TDB_OBJ)

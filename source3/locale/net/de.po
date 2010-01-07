@@ -8,13 +8,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: @PACKAGE@\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-08-11 09:01+0200\n"
+"POT-Creation-Date: 2010-01-05 09:23+0100\n"
 "PO-Revision-Date: 2009-12-26 19:20+0100\n"
 "Last-Translator: André Hentschel <nerv@dawncrow.de>\n"
+"Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language-Team: \n"
 
 #: ../../utils/net.c:103
 msgid "Enter machine password: "
@@ -35,219 +35,269 @@ msgid ""
 "This function will change the ADS Domain member machine account password in the secrets.tdb file!\n"
 msgstr ""
 
-#: ../../utils/net.c:150
-#: ../../utils/net.c:228
+#: ../../utils/net.c:132
+msgid "Failed to open secrets.tdb.\n"
+msgstr ""
+
+#: ../../utils/net.c:139 ../../utils/net.c:157 ../../utils/net_conf.c:1136 ../../utils/net_help.c:36 ../../utils/net_rap.c:161 ../../utils/net_rap.c:302 ../../utils/net_rap.c:467 ../../utils/net_rap.c:750 ../../utils/net_rap.c:891
+#: ../../utils/net_rap.c:1002 ../../utils/net_rap.c:1193 ../../utils/net_rpc.c:979 ../../utils/net_rpc.c:2820 ../../utils/net_rpc.c:4923 ../../utils/net_rpc.c:6962 ../../utils/net_rpc.c:7067 ../../utils/net_util.c:586
+msgid "Usage:\n"
+msgstr "Verwendung:\n"
+
+#: ../../utils/net.c:141
+#, c-format
+msgid ""
+"    net setauthuser -U user[%%password] \n"
+"        Set the auth user account to userpassword. Prompt for password if not specified.\n"
+msgstr ""
+
+#: ../../utils/net.c:146 ../../utils/net.c:164
+msgid ""
+"    net setauthuser delete\n"
+"        Delete the auth user setting.\n"
+msgstr ""
+
+#: ../../utils/net.c:159
+#, c-format
+msgid ""
+"    net setauthuser -U user[%%password]\n"
+"        Set the auth user account to userpassword. Prompt for password if not specified.\n"
+msgstr ""
+
+#: ../../utils/net.c:169
+msgid "the auth user"
+msgstr ""
+
+#: ../../utils/net.c:171
+msgid "Failed to get the auth users password.\n"
+msgstr ""
+
+#: ../../utils/net.c:177
+msgid "error storing auth user name\n"
+msgstr ""
+
+#: ../../utils/net.c:183
+msgid "error storing auth user domain\n"
+msgstr ""
+
+#: ../../utils/net.c:189
+msgid "error storing auth user password\n"
+msgstr ""
+
+#: ../../utils/net.c:213
+msgid "No authorised user configured\n"
+msgstr ""
+
+#: ../../utils/net.c:255 ../../utils/net.c:333
 #, c-format
 msgid "Unable to open secrets.tdb.  Can't fetch domain SID for name: %s\n"
 msgstr ""
 
-#: ../../utils/net.c:163
-#: ../../utils/net.c:251
+#: ../../utils/net.c:268 ../../utils/net.c:356
 #, c-format
 msgid "SID for domain %s is: %s\n"
 msgstr ""
 
-#: ../../utils/net.c:175
+#: ../../utils/net.c:280
 msgid "usage: net setlocalsid S-1-5-21-x-y-z\n"
 msgstr ""
 
-#: ../../utils/net.c:195
+#: ../../utils/net.c:300
 msgid "usage: net setdomainsid S-1-5-21-x-y-z\n"
 msgstr ""
 
-#: ../../utils/net.c:213
+#: ../../utils/net.c:318
 msgid "usage: net getdomainsid\n"
 msgstr ""
 
-#: ../../utils/net.c:238
+#: ../../utils/net.c:343
 msgid "Could not fetch local SID\n"
 msgstr ""
 
-#: ../../utils/net.c:242
+#: ../../utils/net.c:347
 #, c-format
 msgid "SID for local machine %s is: %s\n"
 msgstr ""
 
-#: ../../utils/net.c:246
+#: ../../utils/net.c:351
 msgid "Could not fetch domain SID\n"
 msgstr ""
 
-#: ../../utils/net.c:263
+#: ../../utils/net.c:368
 #, c-format
 msgid "get_maxrid: Could not search %s\n"
 msgstr ""
 
-#: ../../utils/net.c:297
+#: ../../utils/net.c:402
 msgid "usage: net maxrid\n"
 msgstr ""
 
-#: ../../utils/net.c:302
+#: ../../utils/net.c:407
 msgid "can't get current maximum rid\n"
 msgstr ""
 
-#: ../../utils/net.c:306
+#: ../../utils/net.c:411
 #, c-format
 msgid "Currently used maximum rid: %d\n"
 msgstr ""
 
-#: ../../utils/net.c:317
+#: ../../utils/net.c:422
 msgid "Run functions using RPC transport"
 msgstr "RPC Protokoll nutzen"
 
-#: ../../utils/net.c:318
+#: ../../utils/net.c:423
 msgid "  Use 'net help rpc' to get more extensive information about 'net rpc' commands."
 msgstr ""
 
-#: ../../utils/net.c:325
+#: ../../utils/net.c:430
 msgid "Run functions using RAP transport"
 msgstr "RAP Protokoll nutzen"
 
-#: ../../utils/net.c:326
+#: ../../utils/net.c:431
 msgid "  Use 'net help rap' to get more extensive information about 'net rap' commands."
 msgstr ""
 
-#: ../../utils/net.c:333
+#: ../../utils/net.c:438
 msgid "Run functions using ADS transport"
 msgstr "ADS Protokoll nutzen"
 
-#: ../../utils/net.c:334
+#: ../../utils/net.c:439
 msgid "  Use 'net help ads' to get more extensive information about 'net ads' commands."
 msgstr ""
 
-#: ../../utils/net.c:343
+#: ../../utils/net.c:448
 msgid "Functions on remote opened files"
 msgstr "Freigegebene Dateien verwalten"
 
-#: ../../utils/net.c:344
+#: ../../utils/net.c:449
 msgid "  Use 'net help file' to get more information about 'net file' commands."
 msgstr ""
 
-#: ../../utils/net.c:351
+#: ../../utils/net.c:456
 msgid "Functions on shares"
 msgstr "Freigaben verwalten"
 
-#: ../../utils/net.c:352
+#: ../../utils/net.c:457
 msgid "  Use 'net help share' to get more information about 'net share' commands."
 msgstr ""
 
-#: ../../utils/net.c:359
+#: ../../utils/net.c:464
 msgid "Manage sessions"
 msgstr "Sitzungen verwalten"
 
-#: ../../utils/net.c:360
+#: ../../utils/net.c:465
 msgid "  Use 'net help session' to get more information about 'net session' commands."
 msgstr ""
 
-#: ../../utils/net.c:367
-#: ../../utils/net_rap.c:1291
+#: ../../utils/net.c:472 ../../utils/net_rap.c:1291
 msgid "List servers in workgroup"
 msgstr "Server der Arbeitsgruppe auflisten"
 
-#: ../../utils/net.c:368
+#: ../../utils/net.c:473
 msgid "  Use 'net help server' to get more information about 'net server' commands."
 msgstr ""
 
-#: ../../utils/net.c:375
+#: ../../utils/net.c:480
 msgid "List domains/workgroups on network"
 msgstr "Domänen/Arbeitsgruppen im Netzwerk auflisten"
 
-#: ../../utils/net.c:376
+#: ../../utils/net.c:481
 msgid "  Use 'net help domain' to get more information about 'net domain' commands."
 msgstr ""
 
-#: ../../utils/net.c:383
+#: ../../utils/net.c:488
 msgid "Modify printer queue"
 msgstr ""
 
-#: ../../utils/net.c:384
+#: ../../utils/net.c:489
 msgid "  Use 'net help printq' to get more information about 'net printq' commands."
 msgstr ""
 
-#: ../../utils/net.c:391
+#: ../../utils/net.c:496
 msgid "Manage users"
 msgstr "Benutzer verwalten"
 
-#: ../../utils/net.c:392
+#: ../../utils/net.c:497
 msgid "  Use 'net help user' to get more information about 'net user' commands."
 msgstr ""
 
-#: ../../utils/net.c:399
+#: ../../utils/net.c:504
 msgid "Manage groups"
 msgstr "Gruppen verwalten"
 
-#: ../../utils/net.c:400
+#: ../../utils/net.c:505
 msgid "  Use 'net help group' to get more information about 'net group' commands."
 msgstr ""
 
-#: ../../utils/net.c:407
+#: ../../utils/net.c:512
 msgid "Manage group mappings"
 msgstr "Gruppenzuweisungen verwalten"
 
-#: ../../utils/net.c:408
+#: ../../utils/net.c:513
 msgid "  Use 'net help groupmap' to get more information about 'net groupmap' commands."
 msgstr ""
 
-#: ../../utils/net.c:415
+#: ../../utils/net.c:520
 msgid "Functions on the SAM database"
 msgstr ""
 
-#: ../../utils/net.c:416
+#: ../../utils/net.c:521
 msgid "  Use 'net help sam' to get more information about 'net sam' commands."
 msgstr ""
 
-#: ../../utils/net.c:423
+#: ../../utils/net.c:528
 msgid "Validate username and password"
 msgstr ""
 
-#: ../../utils/net.c:424
+#: ../../utils/net.c:529
 msgid "  Use 'net help validate' to get more information about 'net validate' commands."
 msgstr ""
 
-#: ../../utils/net.c:431
+#: ../../utils/net.c:536
 msgid "Modify group memberships"
 msgstr "Gruppenzugehörigkeiten verwalten"
 
-#: ../../utils/net.c:432
+#: ../../utils/net.c:537
 msgid "  Use 'net help groupmember' to get more information about 'net groupmember' commands."
 msgstr ""
 
-#: ../../utils/net.c:438
+#: ../../utils/net.c:543
 msgid "Execute remote command on a remote OS/2 server"
 msgstr "Befehl auf einem entfernten OS/2 Server ausführen"
 
-#: ../../utils/net.c:439
+#: ../../utils/net.c:544
 msgid "  Use 'net help admin' to get more information about 'net admin' commands."
 msgstr ""
 
-#: ../../utils/net.c:445
+#: ../../utils/net.c:550
 msgid "List/modify running services"
 msgstr "Zeige/Ändere laufende Dienste"
 
-#: ../../utils/net.c:446
+#: ../../utils/net.c:551
 msgid "  Use 'net help service' to get more information about 'net service' commands."
 msgstr ""
 
-#: ../../utils/net.c:453
+#: ../../utils/net.c:558
 msgid "Change user password on target server"
 msgstr ""
 
-#: ../../utils/net.c:454
+#: ../../utils/net.c:559
 msgid "  Use 'net help password' to get more information about 'net password' commands."
 msgstr ""
 
-#: ../../utils/net.c:460
+#: ../../utils/net.c:565
 msgid "Change the trust password"
 msgstr ""
 
-#: ../../utils/net.c:461
+#: ../../utils/net.c:566
 msgid "  Use 'net help changetrustpw' to get more information about 'net changetrustpw'."
 msgstr ""
 
-#: ../../utils/net.c:467
+#: ../../utils/net.c:572
 msgid "Change the secret password"
 msgstr "Das geheime Passwort ändern"
 
-#: ../../utils/net.c:468
+#: ../../utils/net.c:573
 msgid ""
 "  net [options] changesecretpw\n"
 "    Change the ADS domain member machine account password in secrets.tdb.\n"
@@ -255,169 +305,193 @@ msgid ""
 "    Requires the -f flag to work."
 msgstr ""
 
-#: ../../utils/net.c:477
-msgid "Show/set time"
-msgstr "Zeigt/Setzt die Systemzeit"
-
-#: ../../utils/net.c:478
-msgid "  Use 'net help time' to get more information about 'net time' commands."
+#: ../../utils/net.c:583
+msgid "Set the winbind auth user"
 msgstr ""
 
-#: ../../utils/net.c:484
-msgid "Look up host names/IP addresses"
+#: ../../utils/net.c:584
+#, c-format
+msgid ""
+"  net -U user[%%password] [-W domain] setauthuser\n"
+"    Set the auth user, password (and optionally domain\n"
+"    Will prompt for password if not given.\n"
+"  net setauthuser delete\n"
+"    Delete the existing auth user settings."
 msgstr ""
 
-#: ../../utils/net.c:485
-msgid "  Use 'net help lookup' to get more information about 'net lookup' commands."
+#: ../../utils/net.c:594
+msgid "Get the winbind auth user settings"
 msgstr ""
 
-#: ../../utils/net.c:491
-msgid "Join a domain/AD"
-msgstr "Einer Domäne/AD beitreten"
-
-#: ../../utils/net.c:492
-msgid "  Use 'net help join' to get more information about 'net join'."
-msgstr ""
-
-#: ../../utils/net.c:498
-msgid "Join/unjoin (remote) machines to/from a domain/AD"
-msgstr ""
-
-#: ../../utils/net.c:499
-msgid "  Use 'net help dom' to get more information about 'net dom' commands."
-msgstr ""
-
-#: ../../utils/net.c:505
-msgid "Operate on the cache tdb file"
-msgstr ""
-
-#: ../../utils/net.c:506
-msgid "  Use 'net help cache' to get more information about 'net cache' commands."
-msgstr ""
-
-#: ../../utils/net.c:512
-msgid "Get the SID for the local domain"
-msgstr ""
-
-#: ../../utils/net.c:513
-msgid "  net getlocalsid"
-msgstr ""
-
-#: ../../utils/net.c:518
-msgid "Set the SID for the local domain"
-msgstr ""
-
-#: ../../utils/net.c:519
-msgid "  net setlocalsid S-1-5-21-x-y-z"
-msgstr ""
-
-#: ../../utils/net.c:524
-msgid "Set domain SID on member servers"
-msgstr ""
-
-#: ../../utils/net.c:525
-msgid "  net setdomainsid S-1-5-21-x-y-z"
-msgstr ""
-
-#: ../../utils/net.c:530
-msgid "Get domain SID on member servers"
-msgstr ""
-
-#: ../../utils/net.c:531
-msgid "  net getdomainsid"
-msgstr ""
-
-#: ../../utils/net.c:536
-msgid "Display the maximul RID currently used"
-msgstr ""
-
-#: ../../utils/net.c:537
-msgid "  net maxrid"
-msgstr ""
-
-#: ../../utils/net.c:542
-msgid "IDmap functions"
-msgstr ""
-
-#: ../../utils/net.c:543
-msgid "  Use 'net help idmap to get more information about 'net idmap' commands."
-msgstr ""
-
-#: ../../utils/net.c:549
-msgid "Display server status"
-msgstr "Zeigt den Server Status"
-
-#: ../../utils/net.c:550
-msgid "  Use 'net help status' to get more information about 'net status' commands."
-msgstr ""
-
-#: ../../utils/net.c:556
-msgid "Manage user-modifiable shares"
-msgstr "Benutzerfreigaben verwalten"
-
-#: ../../utils/net.c:557
-msgid "  Use 'net help usershare to get more information about 'net usershare' commands."
-msgstr ""
-
-#: ../../utils/net.c:563
-msgid "Display list of all users with SID"
-msgstr "Zeigt eine Liste aller SID-Benutzer"
-
-#: ../../utils/net.c:564
-msgid "  Use 'net help usersidlist' to get more information about 'net usersidlist'."
-msgstr ""
-
-#: ../../utils/net.c:570
-msgid "Manage Samba registry based configuration"
-msgstr "Konfiguration ändern"
-
-#: ../../utils/net.c:571
-msgid "  Use 'net help conf' to get more information about 'net conf' commands."
-msgstr ""
-
-#: ../../utils/net.c:577
-msgid "Manage the Samba registry"
-msgstr ""
-
-#: ../../utils/net.c:578
-msgid "  Use 'net help registry' to get more information about 'net registry' commands."
-msgstr ""
-
-#: ../../utils/net.c:591
-msgid "Process Win32 *.evt eventlog files"
-msgstr "Arbeitet mit Win32 *.evt Eventlog Dateien"
-
-#: ../../utils/net.c:592
-msgid "  Use 'net help eventlog' to get more information about 'net eventlog' commands."
-msgstr ""
-
-#: ../../utils/net.c:600
-msgid "Manage AFS tokens"
+#: ../../utils/net.c:595
+msgid ""
+"  net getauthuser\n"
+"    Get the current winbind auth user settings."
 msgstr ""
 
 #: ../../utils/net.c:601
-msgid "  Use 'net help afs' to get more information about 'net afs' commands."
+msgid "Show/set time"
+msgstr "Zeigt/Setzt die Systemzeit"
+
+#: ../../utils/net.c:602
+msgid "  Use 'net help time' to get more information about 'net time' commands."
+msgstr ""
+
+#: ../../utils/net.c:608
+msgid "Look up host names/IP addresses"
 msgstr ""
 
 #: ../../utils/net.c:609
+msgid "  Use 'net help lookup' to get more information about 'net lookup' commands."
+msgstr ""
+
+#: ../../utils/net.c:615
+msgid "Join a domain/AD"
+msgstr "Einer Domäne/AD beitreten"
+
+#: ../../utils/net.c:616
+msgid "  Use 'net help join' to get more information about 'net join'."
+msgstr ""
+
+#: ../../utils/net.c:622
+msgid "Join/unjoin (remote) machines to/from a domain/AD"
+msgstr ""
+
+#: ../../utils/net.c:623
+msgid "  Use 'net help dom' to get more information about 'net dom' commands."
+msgstr ""
+
+#: ../../utils/net.c:629
+msgid "Operate on the cache tdb file"
+msgstr ""
+
+#: ../../utils/net.c:630
+msgid "  Use 'net help cache' to get more information about 'net cache' commands."
+msgstr ""
+
+#: ../../utils/net.c:636
+msgid "Get the SID for the local domain"
+msgstr ""
+
+#: ../../utils/net.c:637
+msgid "  net getlocalsid"
+msgstr ""
+
+#: ../../utils/net.c:642
+msgid "Set the SID for the local domain"
+msgstr ""
+
+#: ../../utils/net.c:643
+msgid "  net setlocalsid S-1-5-21-x-y-z"
+msgstr ""
+
+#: ../../utils/net.c:648
+msgid "Set domain SID on member servers"
+msgstr ""
+
+#: ../../utils/net.c:649
+msgid "  net setdomainsid S-1-5-21-x-y-z"
+msgstr ""
+
+#: ../../utils/net.c:654
+msgid "Get domain SID on member servers"
+msgstr ""
+
+#: ../../utils/net.c:655
+msgid "  net getdomainsid"
+msgstr ""
+
+#: ../../utils/net.c:660
+msgid "Display the maximul RID currently used"
+msgstr ""
+
+#: ../../utils/net.c:661
+msgid "  net maxrid"
+msgstr ""
+
+#: ../../utils/net.c:666
+msgid "IDmap functions"
+msgstr ""
+
+#: ../../utils/net.c:667
+msgid "  Use 'net help idmap to get more information about 'net idmap' commands."
+msgstr ""
+
+#: ../../utils/net.c:673
+msgid "Display server status"
+msgstr "Zeigt den Server Status"
+
+#: ../../utils/net.c:674
+msgid "  Use 'net help status' to get more information about 'net status' commands."
+msgstr ""
+
+#: ../../utils/net.c:680
+msgid "Manage user-modifiable shares"
+msgstr "Benutzerfreigaben verwalten"
+
+#: ../../utils/net.c:681
+msgid "  Use 'net help usershare to get more information about 'net usershare' commands."
+msgstr ""
+
+#: ../../utils/net.c:687
+msgid "Display list of all users with SID"
+msgstr "Zeigt eine Liste aller SID-Benutzer"
+
+#: ../../utils/net.c:688
+msgid "  Use 'net help usersidlist' to get more information about 'net usersidlist'."
+msgstr ""
+
+#: ../../utils/net.c:694
+msgid "Manage Samba registry based configuration"
+msgstr "Konfiguration ändern"
+
+#: ../../utils/net.c:695
+msgid "  Use 'net help conf' to get more information about 'net conf' commands."
+msgstr ""
+
+#: ../../utils/net.c:701
+msgid "Manage the Samba registry"
+msgstr ""
+
+#: ../../utils/net.c:702
+msgid "  Use 'net help registry' to get more information about 'net registry' commands."
+msgstr ""
+
+#: ../../utils/net.c:708
+msgid "Process Win32 *.evt eventlog files"
+msgstr "Arbeitet mit Win32 *.evt Eventlog Dateien"
+
+#: ../../utils/net.c:709
+msgid "  Use 'net help eventlog' to get more information about 'net eventlog' commands."
+msgstr ""
+
+#: ../../utils/net.c:717
+msgid "Manage AFS tokens"
+msgstr ""
+
+#: ../../utils/net.c:718
+msgid "  Use 'net help afs' to get more information about 'net afs' commands."
+msgstr ""
+
+#: ../../utils/net.c:726
 msgid "Print usage information"
 msgstr "Zeigt die Hilfe an"
 
-#: ../../utils/net.c:610
+#: ../../utils/net.c:727
 msgid "  Use 'net help help' to list usage information for 'net' commands."
 msgstr ""
 
-#: ../../utils/net.c:639
+#: ../../utils/net.c:756
 msgid "Encrypt SMB transport (UNIX extended servers only)"
 msgstr ""
 
-#: ../../utils/net.c:703
+#: ../../utils/net.c:824
 msgid ""
 "\n"
 "Invalid ip address specified\n"
 msgstr ""
 
-#: ../../utils/net.c:718
+#: ../../utils/net.c:839
 #, c-format
 msgid ""
 "\n"
@@ -426,28 +500,27 @@ msgstr ""
 "\n"
 "Ungültige Option %s: %s\n"
 
-#: ../../utils/net_ads.c:52
-#: ../../utils/net_ads.c:392
+#: ../../utils/net_ads.c:53 ../../utils/net_ads.c:393
 msgid "CLDAP query failed!\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:56
+#: ../../utils/net_ads.c:57
 #, c-format
 msgid ""
 "Information for Domain Controller: %s\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:59
+#: ../../utils/net_ads.c:60
 msgid "Response Type: "
 msgstr ""
 
-#: ../../utils/net_ads.c:72
+#: ../../utils/net_ads.c:73
 #, c-format
 msgid "GUID: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:74
+#: ../../utils/net_ads.c:75
 #, c-format
 msgid ""
 "Flags:\n"
@@ -465,324 +538,293 @@ msgid ""
 "\tIs NT6 DC that has all secrets:             %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:87
-#: ../../utils/net_ads.c:88
-#: ../../utils/net_ads.c:89
-#: ../../utils/net_ads.c:90
-#: ../../utils/net_ads.c:91
-#: ../../utils/net_ads.c:92
-#: ../../utils/net_ads.c:93
-#: ../../utils/net_ads.c:94
-#: ../../utils/net_ads.c:95
-#: ../../utils/net_ads.c:96
-#: ../../utils/net_ads.c:97
-#: ../../utils/net_ads.c:98
-#: ../../utils/net_rap.c:376
-#: ../../utils/net_rpc_sh_acct.c:203
-#: ../../utils/net_rpc_sh_acct.c:206
+#: ../../utils/net_ads.c:88 ../../utils/net_ads.c:89 ../../utils/net_ads.c:90 ../../utils/net_ads.c:91 ../../utils/net_ads.c:92 ../../utils/net_ads.c:93 ../../utils/net_ads.c:94 ../../utils/net_ads.c:95 ../../utils/net_ads.c:96 ../../utils/net_ads.c:97
+#: ../../utils/net_ads.c:98 ../../utils/net_ads.c:99 ../../utils/net_rap.c:376 ../../utils/net_rpc_sh_acct.c:204 ../../utils/net_rpc_sh_acct.c:207
 msgid "yes"
 msgstr "Ja"
 
-#: ../../utils/net_ads.c:87
-#: ../../utils/net_ads.c:88
-#: ../../utils/net_ads.c:89
-#: ../../utils/net_ads.c:90
-#: ../../utils/net_ads.c:91
-#: ../../utils/net_ads.c:92
-#: ../../utils/net_ads.c:93
-#: ../../utils/net_ads.c:94
-#: ../../utils/net_ads.c:95
-#: ../../utils/net_ads.c:96
-#: ../../utils/net_ads.c:97
-#: ../../utils/net_ads.c:98
-#: ../../utils/net_rap.c:376
-#: ../../utils/net_rpc_sh_acct.c:203
-#: ../../utils/net_rpc_sh_acct.c:206
+#: ../../utils/net_ads.c:88 ../../utils/net_ads.c:89 ../../utils/net_ads.c:90 ../../utils/net_ads.c:91 ../../utils/net_ads.c:92 ../../utils/net_ads.c:93 ../../utils/net_ads.c:94 ../../utils/net_ads.c:95 ../../utils/net_ads.c:96 ../../utils/net_ads.c:97
+#: ../../utils/net_ads.c:98 ../../utils/net_ads.c:99 ../../utils/net_rap.c:376 ../../utils/net_rpc_sh_acct.c:204 ../../utils/net_rpc_sh_acct.c:207
 msgid "no"
 msgstr "Nein"
 
-#: ../../utils/net_ads.c:101
+#: ../../utils/net_ads.c:102
 #, c-format
 msgid "Forest:\t\t\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:102
+#: ../../utils/net_ads.c:103
 #, c-format
 msgid "Domain:\t\t\t%s\n"
 msgstr "Domäne:\t\t\t%s\n"
 
-#: ../../utils/net_ads.c:103
+#: ../../utils/net_ads.c:104
 #, c-format
 msgid "Domain Controller:\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:105
+#: ../../utils/net_ads.c:106
 #, c-format
 msgid "Pre-Win2k Domain:\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:106
+#: ../../utils/net_ads.c:107
 #, c-format
 msgid "Pre-Win2k Hostname:\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:108
+#: ../../utils/net_ads.c:109
 #, c-format
 msgid "User name:\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:110
+#: ../../utils/net_ads.c:111
 #, c-format
 msgid "Server Site Name :\t\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:111
+#: ../../utils/net_ads.c:112
 #, c-format
 msgid "Client Site Name :\t\t%s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:113
+#: ../../utils/net_ads.c:114
 #, c-format
 msgid "NT Version: %d\n"
 msgstr "NT Version: %d\n"
 
-#: ../../utils/net_ads.c:114
+#: ../../utils/net_ads.c:115
 #, c-format
 msgid "LMNT Token: %.2x\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:115
+#: ../../utils/net_ads.c:116
 #, c-format
 msgid "LM20 Token: %.2x\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:130
+#: ../../utils/net_ads.c:131
 msgid ""
 "Usage:\n"
 "net ads lookup\n"
 "    Find the ADS DC using CLDAP lookup.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:137
-#: ../../utils/net_ads.c:381
+#: ../../utils/net_ads.c:138 ../../utils/net_ads.c:382
 msgid "Didn't find the cldap server!\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:160
+#: ../../utils/net_ads.c:161
 msgid ""
 "Usage:\n"
 "net ads info\n"
 "    Display information about an Active Directory server.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:168
-#: ../../utils/net_ads.c:173
+#: ../../utils/net_ads.c:169 ../../utils/net_ads.c:174
 msgid "Didn't find the ldap server!\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:182
+#: ../../utils/net_ads.c:183
 msgid "Failed to get server's current time!\n"
-msgstr ""
-
-#: ../../utils/net_ads.c:187
-#, c-format
-msgid "LDAP server: %s\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:188
 #, c-format
-msgid "LDAP server name: %s\n"
+msgid "LDAP server: %s\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:189
 #, c-format
-msgid "Realm: %s\n"
+msgid "LDAP server name: %s\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:190
 #, c-format
-msgid "Bind Path: %s\n"
+msgid "Realm: %s\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:191
 #, c-format
-msgid "LDAP port: %d\n"
+msgid "Bind Path: %s\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:192
 #, c-format
-msgid "Server time: %s\n"
+msgid "LDAP port: %d\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:195
+#: ../../utils/net_ads.c:193
 #, c-format
-msgid "KDC server: %s\n"
+msgid "Server time: %s\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:196
 #, c-format
+msgid "KDC server: %s\n"
+msgstr ""
+
+#: ../../utils/net_ads.c:197
+#, c-format
 msgid "Server time offset: %d\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:374
+#: ../../utils/net_ads.c:375
 msgid ""
 "Usage:\n"
 "net ads workgroup\n"
 "    Print the workgroup name\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:397
+#: ../../utils/net_ads.c:398
 #, c-format
 msgid "Workgroup: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:458
+#: ../../utils/net_ads.c:459
 #, c-format
 msgid "ads_user_add: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:463
+#: ../../utils/net_ads.c:464
 #, c-format
 msgid "ads_user_add: User %s already exists\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:477
+#: ../../utils/net_ads.c:478
 #, c-format
 msgid "Could not add user %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:484
-#: ../../utils/net_ads.c:497
+#: ../../utils/net_ads.c:485 ../../utils/net_ads.c:498
 #, c-format
 msgid "User %s added\n"
 msgstr ""
 
 #. password didn't set, delete account
-#: ../../utils/net_ads.c:503
+#: ../../utils/net_ads.c:504
 #, c-format
 msgid "Could not add user %s. Error setting password %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:551
+#: ../../utils/net_ads.c:552
 #, c-format
 msgid "ads_user_info: failed to escape user %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:569
+#: ../../utils/net_ads.c:570
 #, c-format
 msgid "ads_search: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:575
+#: ../../utils/net_ads.c:576
 msgid "ads_pull_uint32 failed\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:582
+#: ../../utils/net_ads.c:583
 #, c-format
 msgid "ads_domain_sid: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:642
+#: ../../utils/net_ads.c:643
 #, c-format
 msgid "User %s does not exist.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:652
+#: ../../utils/net_ads.c:653
 #, c-format
 msgid "User %s deleted\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:656
+#: ../../utils/net_ads.c:657
 #, c-format
 msgid "Error deleting user %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:669
+#: ../../utils/net_ads.c:670
 msgid "Add an AD user"
 msgstr ""
 
-#: ../../utils/net_ads.c:670
+#: ../../utils/net_ads.c:671
 msgid ""
 "net ads user add\n"
 "    Add an AD user"
 msgstr ""
 
-#: ../../utils/net_ads.c:677
+#: ../../utils/net_ads.c:678
 msgid "Display information about an AD user"
 msgstr ""
 
-#: ../../utils/net_ads.c:678
+#: ../../utils/net_ads.c:679
 msgid ""
 "net ads user info\n"
 "    Display information about an AD user"
 msgstr ""
 
-#: ../../utils/net_ads.c:685
+#: ../../utils/net_ads.c:686
 msgid "Delete an AD user"
 msgstr ""
 
-#: ../../utils/net_ads.c:686
+#: ../../utils/net_ads.c:687
 msgid ""
 "net ads user delete\n"
 "    Delete an AD user"
 msgstr ""
 
-#: ../../utils/net_ads.c:699
+#: ../../utils/net_ads.c:700
 msgid ""
 "Usage:\n"
 "net ads user\n"
 "    List AD users\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:711
-#: ../../utils/net_rap.c:901
-#: ../../utils/net_rpc.c:852
+#: ../../utils/net_ads.c:712 ../../utils/net_rap.c:901 ../../utils/net_rpc.c:871
 msgid ""
 "\n"
 "User name             Comment\n"
 "-----------------------------\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:751
+#: ../../utils/net_ads.c:752
 #, c-format
 msgid "ads_group_add: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:756
+#: ../../utils/net_ads.c:757
 #, c-format
 msgid "ads_group_add: Group %s already exists\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:769
+#: ../../utils/net_ads.c:770
 #, c-format
 msgid "Group %s added\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:772
+#: ../../utils/net_ads.c:773
 #, c-format
 msgid "Could not add group %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:801
+#: ../../utils/net_ads.c:802
 #, c-format
 msgid "Group %s does not exist.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:811
+#: ../../utils/net_ads.c:812
 #, c-format
 msgid "Group %s deleted\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:815
+#: ../../utils/net_ads.c:816
 #, c-format
 msgid "Error deleting group %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:828
+#: ../../utils/net_ads.c:829
 msgid "Add an AD group"
 msgstr "AD Gruppe hinzufügen"
 
-#: ../../utils/net_ads.c:829
+#: ../../utils/net_ads.c:830
 msgid ""
 "net ads group add\n"
 "    Add an AD group"
@@ -790,11 +832,11 @@ msgstr ""
 "net ads group add\n"
 "    AD Gruppe hinzufügen"
 
-#: ../../utils/net_ads.c:836
+#: ../../utils/net_ads.c:837
 msgid "Delete an AD group"
 msgstr "AD Gruppe entfernen"
 
-#: ../../utils/net_ads.c:837
+#: ../../utils/net_ads.c:838
 msgid ""
 "net ads group delete\n"
 "    Delete an AD group"
@@ -802,15 +844,14 @@ msgstr ""
 "net ads group delete\n"
 "    AD Gruppe entfernen"
 
-#: ../../utils/net_ads.c:850
+#: ../../utils/net_ads.c:851
 msgid ""
 "Usage:\n"
 "net ads group\n"
 "    List AD groups\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:862
-#: ../../utils/net_rpc.c:2230
+#: ../../utils/net_ads.c:863 ../../utils/net_rpc.c:2249
 msgid ""
 "\n"
 "Group name            Comment\n"
@@ -820,54 +861,53 @@ msgstr ""
 "Gruppenname         Kommentar\n"
 "-----------------------------\n"
 
-#: ../../utils/net_ads.c:884
+#: ../../utils/net_ads.c:885
 msgid ""
 "Usage:\n"
 "net ads status\n"
 "    Display machine account details\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:896
+#: ../../utils/net_ads.c:897
 #, c-format
 msgid "ads_find_machine_acct: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:902
+#: ../../utils/net_ads.c:903
 #, c-format
 msgid "No machine account for '%s' found\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:926
+#: ../../utils/net_ads.c:927
 msgid ""
 "Usage:\n"
 "net ads leave\n"
 "    Leave an AD domain\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:933
+#: ../../utils/net_ads.c:934
 msgid "No realm set, are we joined ?\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:938
-#: ../../utils/net_ads.c:1260
+#: ../../utils/net_ads.c:939 ../../utils/net_ads.c:1265
 msgid "Could not initialise talloc context.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:948
+#: ../../utils/net_ads.c:949
 msgid "Could not initialise unjoin context.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:968
+#: ../../utils/net_ads.c:969
 #, c-format
 msgid "Failed to leave domain: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:975
+#: ../../utils/net_ads.c:976
 #, c-format
 msgid "Deleted account for '%s' in realm '%s'\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:982
+#: ../../utils/net_ads.c:983
 #, c-format
 msgid "Disabled account for '%s' in realm '%s'\n"
 msgstr ""
@@ -875,61 +915,60 @@ msgstr ""
 #. Based on what we requseted, we shouldn't get here, but if
 #. we did, it means the secrets were removed, and therefore
 #. we have left the domain
-#: ../../utils/net_ads.c:991
+#: ../../utils/net_ads.c:992
 #, c-format
 msgid "Machine '%s' Left domain '%s'\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1035
+#: ../../utils/net_ads.c:1040
 msgid ""
 "Usage:\n"
 "net ads testjoin\n"
 "    Test if the existing join is ok\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1044
+#: ../../utils/net_ads.c:1049
 #, c-format
 msgid "Join to domain is not valid: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1049
+#: ../../utils/net_ads.c:1054
 #, fuzzy, c-format
 msgid "Join is OK\n"
 msgstr "Beitritt ist OK\n"
 
-#: ../../utils/net_ads.c:1060
+#: ../../utils/net_ads.c:1065
 msgid "Host is not configured as a member server.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1065
-#: ../../utils/net_rpc.c:436
+#: ../../utils/net_ads.c:1070 ../../utils/net_rpc.c:455
 #, c-format
 msgid "Our netbios name can be at most 15 chars long, \"%s\" is %u chars long\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1072
+#: ../../utils/net_ads.c:1077
 #, c-format
 msgid "realm must be set in in %s for ADS join to succeed.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1105
+#: ../../utils/net_ads.c:1110
 #, c-format
 msgid "No DNS domain configured for %s. Unable to perform DNS Update.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1212
+#: ../../utils/net_ads.c:1217
 msgid ""
 "net ads join [options]\n"
 "Valid options:\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1214
+#: ../../utils/net_ads.c:1219
 msgid ""
 "   createupn[=UPN]    Set the userPrincipalName attribute during the join.\n"
 "                      The deault UPN is in the form host/netbiosname@REALM.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1216
+#: ../../utils/net_ads.c:1221
 msgid ""
 "   createcomputer=OU  Precreate the computer account in a specific OU.\n"
 "                      The OU string read from top to bottom without RDNs and delimited by a '/'.\n"
@@ -938,11 +977,11 @@ msgid ""
 "                          need to be doubled or even quadrupled.  It is not used as a separator.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1221
+#: ../../utils/net_ads.c:1226
 msgid "   osName=string      Set the operatingSystem attribute during the join.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1222
+#: ../../utils/net_ads.c:1227
 msgid ""
 "   osVer=string       Set the operatingSystemVersion attribute during the join.\n"
 "                      NB: osName and osVer must be specified together for either to take effect.\n"
@@ -950,27 +989,27 @@ msgid ""
 "                          the two other attributes.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1254
+#: ../../utils/net_ads.c:1259
 msgid "Invalid configuration.  Exiting....\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1283
+#: ../../utils/net_ads.c:1288
 msgid "Please supply a valid OU path.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1290
+#: ../../utils/net_ads.c:1295
 msgid "Please supply a operating system name.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1297
+#: ../../utils/net_ads.c:1302
 msgid "Please supply a valid operating system version.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1308
+#: ../../utils/net_ads.c:1313
 msgid "Please supply a valid domain name\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1339
+#: ../../utils/net_ads.c:1344
 #, c-format
 msgid ""
 "The workgroup in %s does not match the short\n"
@@ -979,53 +1018,51 @@ msgid ""
 "You should set \"workgroup = %s\" in %s.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1347
+#: ../../utils/net_ads.c:1352
 #, c-format
 msgid "Using short domain name -- %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1350
+#: ../../utils/net_ads.c:1355
 #, c-format
 msgid "Joined '%s' to realm '%s'\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1353
+#: ../../utils/net_ads.c:1358
 #, c-format
 msgid "Joined '%s' to domain '%s'\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1377
-#: ../../utils/net_ads.c:1433
+#: ../../utils/net_ads.c:1382 ../../utils/net_ads.c:1438
 msgid "DNS update failed!\n"
 msgstr ""
 
 #. issue an overall failure message at the end.
-#: ../../utils/net_ads.c:1391
-#: ../../utils/net_dom.c:198
+#: ../../utils/net_ads.c:1396 ../../utils/net_dom.c:199
 #, c-format
 msgid "Failed to join domain: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1414
+#: ../../utils/net_ads.c:1419
 msgid ""
 "Usage:\n"
 "net ads dns register\n"
 "    Register hostname with DNS\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1421
+#: ../../utils/net_ads.c:1426
 msgid "Could not initialise talloc context\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1439
+#: ../../utils/net_ads.c:1444
 msgid "Successfully registered hostname with DNS\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1447
+#: ../../utils/net_ads.c:1452
 msgid "DNS update support not enabled at compile time!\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1466
+#: ../../utils/net_ads.c:1471
 msgid ""
 "Usage:\n"
 "net ads dns gethostbyname <server> <name>\n"
@@ -1034,32 +1071,32 @@ msgid ""
 "    name\tName to look up\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1476
+#: ../../utils/net_ads.c:1481
 #, c-format
 msgid "do_gethostbyname returned %d\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1488
+#: ../../utils/net_ads.c:1493
 msgid "Add host dns entry to AD"
 msgstr ""
 
-#: ../../utils/net_ads.c:1489
+#: ../../utils/net_ads.c:1494
 msgid ""
 "net ads dns register\n"
 "    Add host dns entry to AD"
 msgstr ""
 
-#: ../../utils/net_ads.c:1496
+#: ../../utils/net_ads.c:1501
 msgid "Look up host"
 msgstr ""
 
-#: ../../utils/net_ads.c:1497
+#: ../../utils/net_ads.c:1502
 msgid ""
 "net ads dns gethostbyname\n"
 "    Look up host"
 msgstr ""
 
-#: ../../utils/net_ads.c:1512
+#: ../../utils/net_ads.c:1517
 msgid ""
 "\n"
 "net ads printer search <printer>\n"
@@ -1078,23 +1115,23 @@ msgid ""
 "\t(note: printer name is required)\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1536
+#: ../../utils/net_ads.c:1541
 msgid ""
 "Usage:\n"
 "net ads printer search\n"
 "    List printers in the AD\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1549
+#: ../../utils/net_ads.c:1554
 #, c-format
 msgid "ads_find_printer: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1556
+#: ../../utils/net_ads.c:1561
 msgid "No results found\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1576
+#: ../../utils/net_ads.c:1581
 msgid ""
 "Usage:\n"
 "net ads printer info [printername [servername]]\n"
@@ -1103,18 +1140,17 @@ msgid ""
 "    servername\tName of the print server\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1603
+#: ../../utils/net_ads.c:1608
 #, c-format
 msgid "Server '%s' not found: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1611
-#: ../../utils/net_ads.c:1794
+#: ../../utils/net_ads.c:1616 ../../utils/net_ads.c:1799
 #, c-format
 msgid "Printer '%s' not found\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1640
+#: ../../utils/net_ads.c:1645
 msgid ""
 "Usage:\n"
 "net ads printer publish <printername> [servername]\n"
@@ -1123,27 +1159,26 @@ msgid ""
 "    servername\tName of the print server\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1675
+#: ../../utils/net_ads.c:1680
 #, c-format
 msgid "Unable to open a connnection to %s to obtain data for %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1688
+#: ../../utils/net_ads.c:1693
 #, c-format
 msgid "Could not find machine account for server %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1704
-#: ../../utils/net_ads.c:1713
+#: ../../utils/net_ads.c:1709 ../../utils/net_ads.c:1718
 msgid "Internal error, out of memory!"
 msgstr ""
 
-#: ../../utils/net_ads.c:1724
+#: ../../utils/net_ads.c:1729
 #, c-format
 msgid "Unable to open a connnection to the spoolss pipe on %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1766
+#: ../../utils/net_ads.c:1771
 msgid ""
 "Usage:\n"
 "net ads printer remove <printername> [servername]\n"
@@ -1152,57 +1187,57 @@ msgid ""
 "    servername\tName of the print server\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1787
+#: ../../utils/net_ads.c:1792
 #, c-format
 msgid "ads_find_printer_on_server: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1806
+#: ../../utils/net_ads.c:1811
 #, c-format
 msgid "ads_del_dn: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1822
+#: ../../utils/net_ads.c:1827
 msgid "Search for a printer"
 msgstr ""
 
-#: ../../utils/net_ads.c:1823
+#: ../../utils/net_ads.c:1828
 msgid ""
 "net ads printer search\n"
 "    Search for a printer"
 msgstr ""
 
-#: ../../utils/net_ads.c:1830
+#: ../../utils/net_ads.c:1835
 msgid "Display printer information"
 msgstr ""
 
-#: ../../utils/net_ads.c:1831
+#: ../../utils/net_ads.c:1836
 msgid ""
 "net ads printer info\n"
 "    Display printer information"
 msgstr ""
 
-#: ../../utils/net_ads.c:1838
+#: ../../utils/net_ads.c:1843
 msgid "Publish a printer"
 msgstr ""
 
-#: ../../utils/net_ads.c:1839
+#: ../../utils/net_ads.c:1844
 msgid ""
 "net ads printer publish\n"
 "    Publish a printer"
 msgstr ""
 
-#: ../../utils/net_ads.c:1846
+#: ../../utils/net_ads.c:1851
 msgid "Delete a printer"
 msgstr ""
 
-#: ../../utils/net_ads.c:1847
+#: ../../utils/net_ads.c:1852
 msgid ""
 "net ads printer remove\n"
 "    Delete a printer"
 msgstr ""
 
-#: ../../utils/net_ads.c:1869
+#: ../../utils/net_ads.c:1874
 msgid ""
 "Usage:\n"
 "net ads password <username>\n"
@@ -1210,61 +1245,59 @@ msgid ""
 "    username\tName of user to change password for\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1877
+#: ../../utils/net_ads.c:1882
 msgid "You must supply an administrator username/password\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1883
+#: ../../utils/net_ads.c:1888
 msgid "ERROR: You must say which username to change password for\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1915
+#: ../../utils/net_ads.c:1920
 msgid "Didn't find the kerberos server!\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1923
-#: ../../utils/net_rpc.c:756
+#: ../../utils/net_ads.c:1928 ../../utils/net_rpc.c:775
 #, c-format
 msgid "Enter new password for %s:"
 msgstr "Bitte neues Passwort für %s eingeben: "
 
-#: ../../utils/net_ads.c:1933
-#: ../../utils/net_ads.c:1982
+#: ../../utils/net_ads.c:1938 ../../utils/net_ads.c:1987
 #, c-format
 msgid "Password change failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1938
+#: ../../utils/net_ads.c:1943
 #, c-format
 msgid "Password change for %s completed.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1952
+#: ../../utils/net_ads.c:1957
 msgid ""
 "Usage:\n"
 "net ads changetrustpw\n"
 "    Change the machine account's trust password\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1977
+#: ../../utils/net_ads.c:1982
 #, c-format
 msgid "Changing password for principal: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1988
+#: ../../utils/net_ads.c:1993
 #, c-format
 msgid "Password change for principal %s succeeded.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1991
+#: ../../utils/net_ads.c:1996
 msgid "Attempting to update system keytab with new password.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:1993
+#: ../../utils/net_ads.c:1998
 msgid "Failed to update system keytab.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2009
+#: ../../utils/net_ads.c:2014
 msgid ""
 "\n"
 "net ads search <expression> <attributes...>\n"
@@ -1277,24 +1310,19 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2046
-#: ../../utils/net_ads.c:2107
-#: ../../utils/net_ads.c:2171
-#: ../../utils/net_ads_gpo.c:250
+#: ../../utils/net_ads.c:2051 ../../utils/net_ads.c:2112 ../../utils/net_ads.c:2176 ../../utils/net_ads_gpo.c:250
 #, c-format
 msgid "search failed: %s\n"
 msgstr "Suche fehlgeschlagen: %s\n"
 
-#: ../../utils/net_ads.c:2051
-#: ../../utils/net_ads.c:2176
-#: ../../utils/net_ads_gpo.c:256
+#: ../../utils/net_ads.c:2056 ../../utils/net_ads.c:2181 ../../utils/net_ads_gpo.c:256
 #, c-format
 msgid ""
 "Got %d replies\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2069
+#: ../../utils/net_ads.c:2074
 msgid ""
 "\n"
 "net ads dn <dn> <attributes...>\n"
@@ -1309,7 +1337,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2129
+#: ../../utils/net_ads.c:2134
 msgid ""
 "\n"
 "net ads sid <sid> <attributes...>\n"
@@ -1322,18 +1350,18 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2164
+#: ../../utils/net_ads.c:2169
 msgid "could not convert sid\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2193
+#: ../../utils/net_ads.c:2198
 msgid ""
 "Usage:\n"
 "net ads keytab flush\n"
 "    Delete the whole keytab\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2214
+#: ../../utils/net_ads.c:2219
 msgid ""
 "Usage:\n"
 "net ads keytab add <principal> [principal ...]\n"
@@ -1341,18 +1369,18 @@ msgid ""
 "    principal\tKerberos principal to add to keytab\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2222
+#: ../../utils/net_ads.c:2227
 msgid "Processing principals to add...\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2239
+#: ../../utils/net_ads.c:2244
 msgid ""
 "Usage:\n"
 "net ads keytab create\n"
 "    Create new default keytab\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2258
+#: ../../utils/net_ads.c:2263
 msgid ""
 "Usage:\n"
 "net ads keytab list [keytab]\n"
@@ -1360,317 +1388,314 @@ msgid ""
 "    keytab\tKeytab to list\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2280
+#: ../../utils/net_ads.c:2285
 msgid "Add a service principal"
 msgstr ""
 
-#: ../../utils/net_ads.c:2281
+#: ../../utils/net_ads.c:2286
 msgid ""
 "net ads keytab add\n"
 "    Add a service principal"
 msgstr ""
 
-#: ../../utils/net_ads.c:2288
+#: ../../utils/net_ads.c:2293
 msgid "Create a fresh keytab"
 msgstr ""
 
-#: ../../utils/net_ads.c:2289
+#: ../../utils/net_ads.c:2294
 msgid ""
 "net ads keytab create\n"
 "    Create a fresh keytab"
 msgstr ""
 
-#: ../../utils/net_ads.c:2296
+#: ../../utils/net_ads.c:2301
 msgid "Remove all keytab entries"
 msgstr ""
 
-#: ../../utils/net_ads.c:2297
+#: ../../utils/net_ads.c:2302
 msgid ""
 "net ads keytab flush\n"
 "    Remove all keytab entries"
 msgstr ""
 
-#: ../../utils/net_ads.c:2304
+#: ../../utils/net_ads.c:2309
 msgid "List a keytab"
 msgstr ""
 
-#: ../../utils/net_ads.c:2305
+#: ../../utils/net_ads.c:2310
 msgid ""
 "net ads keytab list\n"
 "    List a keytab"
 msgstr ""
 
-#: ../../utils/net_ads.c:2312
+#: ../../utils/net_ads.c:2317
 msgid ""
 "\n"
 "Warning: \"kerberos method\" must be set to a keytab method to use keytab functions.\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2324
+#: ../../utils/net_ads.c:2329
 msgid ""
 "Usage:\n"
 "net ads kerberos renew\n"
 "    Renew TGT from existing credential cache\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2332
+#: ../../utils/net_ads.c:2337
 #, c-format
 msgid "failed to renew kerberos ticket: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2347
+#: ../../utils/net_ads.c:2353
 msgid ""
 "Usage:\n"
 "net ads kerberos pac\n"
 "    Dump the Kerberos PAC\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2372
+#: ../../utils/net_ads.c:2383
 #, c-format
 msgid "failed to query kerberos PAC: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2381
+#: ../../utils/net_ads.c:2392
 #, c-format
 msgid "The Pac: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2397
+#: ../../utils/net_ads.c:2408
 msgid ""
 "Usage:\n"
 "net ads kerberos kinit\n"
 "    Get Ticket Granting Ticket (TGT) for the user\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2421
+#: ../../utils/net_ads.c:2432
 #, c-format
 msgid "failed to kinit password: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads.c:2435
+#: ../../utils/net_ads.c:2446
 msgid "Retrieve Ticket Granting Ticket (TGT)"
 msgstr ""
 
-#: ../../utils/net_ads.c:2436
+#: ../../utils/net_ads.c:2447
 msgid ""
 "net ads kerberos kinit\n"
 "    Receive Ticket Granting Ticket (TGT)"
 msgstr ""
 
-#: ../../utils/net_ads.c:2443
+#: ../../utils/net_ads.c:2454
 msgid "Renew Ticket Granting Ticket from credential cache"
 msgstr ""
 
-#: ../../utils/net_ads.c:2444
+#: ../../utils/net_ads.c:2455
 msgid ""
 "net ads kerberos renew\n"
 "    Renew Ticket Granting Ticket (TGT) from credential cache"
 msgstr ""
 
-#: ../../utils/net_ads.c:2452
+#: ../../utils/net_ads.c:2463
 msgid "Dump Kerberos PAC"
 msgstr ""
 
-#: ../../utils/net_ads.c:2453
+#: ../../utils/net_ads.c:2464
 msgid ""
 "net ads kerberos pac\n"
 "    Dump Kerberos PAC"
 msgstr ""
 
-#: ../../utils/net_ads.c:2469
+#: ../../utils/net_ads.c:2480
 msgid "Display details on remote ADS server"
 msgstr ""
 
-#: ../../utils/net_ads.c:2470
+#: ../../utils/net_ads.c:2481
 msgid ""
 "net ads info\n"
 "    Display details on remote ADS server"
 msgstr ""
 
-#: ../../utils/net_ads.c:2477
+#: ../../utils/net_ads.c:2488
 msgid "Join the local machine to ADS realm"
 msgstr ""
 
-#: ../../utils/net_ads.c:2478
+#: ../../utils/net_ads.c:2489
 msgid ""
 "net ads join\n"
 "    Join the local machine to ADS realm"
 msgstr ""
 
-#: ../../utils/net_ads.c:2485
+#: ../../utils/net_ads.c:2496
 msgid "Validate machine account"
 msgstr ""
 
-#: ../../utils/net_ads.c:2486
+#: ../../utils/net_ads.c:2497
 msgid ""
 "net ads testjoin\n"
 "    Validate machine account"
 msgstr ""
 
-#: ../../utils/net_ads.c:2493
+#: ../../utils/net_ads.c:2504
 msgid "Remove the local machine from ADS"
 msgstr ""
 
-#: ../../utils/net_ads.c:2494
+#: ../../utils/net_ads.c:2505
 msgid ""
 "net ads leave\n"
 "    Remove the local machine from ADS"
 msgstr ""
 
-#: ../../utils/net_ads.c:2501
+#: ../../utils/net_ads.c:2512
 msgid "Display machine account details"
 msgstr ""
 
-#: ../../utils/net_ads.c:2502
+#: ../../utils/net_ads.c:2513
 msgid ""
 "net ads status\n"
 "    Display machine account details"
 msgstr ""
 
-#: ../../utils/net_ads.c:2509
-#: ../../utils/net_rpc.c:7110
+#: ../../utils/net_ads.c:2520 ../../utils/net_rpc.c:7139
 msgid "List/modify users"
 msgstr ""
 
-#: ../../utils/net_ads.c:2510
+#: ../../utils/net_ads.c:2521
 msgid ""
 "net ads user\n"
 "    List/modify users"
 msgstr ""
 
-#: ../../utils/net_ads.c:2517
-#: ../../utils/net_rpc.c:7127
+#: ../../utils/net_ads.c:2528 ../../utils/net_rpc.c:7156
 msgid "List/modify groups"
 msgstr ""
 
-#: ../../utils/net_ads.c:2518
+#: ../../utils/net_ads.c:2529
 msgid ""
 "net ads group\n"
 "    List/modify groups"
 msgstr ""
 
-#: ../../utils/net_ads.c:2525
+#: ../../utils/net_ads.c:2536
 msgid "Issue dynamic DNS update"
 msgstr ""
 
-#: ../../utils/net_ads.c:2526
+#: ../../utils/net_ads.c:2537
 msgid ""
 "net ads dns\n"
 "    Issue dynamic DNS update"
 msgstr ""
 
-#: ../../utils/net_ads.c:2533
+#: ../../utils/net_ads.c:2544
 msgid "Change user passwords"
 msgstr ""
 
-#: ../../utils/net_ads.c:2534
+#: ../../utils/net_ads.c:2545
 msgid ""
 "net ads password\n"
 "    Change user passwords"
 msgstr ""
 
-#: ../../utils/net_ads.c:2541
-#: ../../utils/net_rpc.c:7159
+#: ../../utils/net_ads.c:2552 ../../utils/net_rpc.c:7188
 msgid "Change trust account password"
 msgstr "Trust account Passwort ändern"
 
-#: ../../utils/net_ads.c:2542
+#: ../../utils/net_ads.c:2553
 msgid ""
 "net ads changetrustpw\n"
 "    Change trust account password"
 msgstr ""
 
-#: ../../utils/net_ads.c:2549
+#: ../../utils/net_ads.c:2560
 msgid "List/modify printer entries"
 msgstr ""
 
-#: ../../utils/net_ads.c:2550
+#: ../../utils/net_ads.c:2561
 msgid ""
 "net ads printer\n"
 "    List/modify printer entries"
 msgstr ""
 
-#: ../../utils/net_ads.c:2557
+#: ../../utils/net_ads.c:2568
 msgid "Issue LDAP search using filter"
 msgstr ""
 
-#: ../../utils/net_ads.c:2558
+#: ../../utils/net_ads.c:2569
 msgid ""
 "net ads search\n"
 "    Issue LDAP search using filter"
 msgstr ""
 
-#: ../../utils/net_ads.c:2565
+#: ../../utils/net_ads.c:2576
 msgid "Issue LDAP search by DN"
 msgstr ""
 
-#: ../../utils/net_ads.c:2566
+#: ../../utils/net_ads.c:2577
 msgid ""
 "net ads dn\n"
 "    Issue LDAP search by DN"
 msgstr ""
 
-#: ../../utils/net_ads.c:2573
+#: ../../utils/net_ads.c:2584
 msgid "Issue LDAP search by SID"
 msgstr ""
 
-#: ../../utils/net_ads.c:2574
+#: ../../utils/net_ads.c:2585
 msgid ""
 "net ads sid\n"
 "    Issue LDAP search by SID"
 msgstr ""
 
-#: ../../utils/net_ads.c:2581
+#: ../../utils/net_ads.c:2592
 msgid "Display workgroup name"
 msgstr ""
 
-#: ../../utils/net_ads.c:2582
+#: ../../utils/net_ads.c:2593
 msgid ""
 "net ads workgroup\n"
 "    Display the workgroup name"
 msgstr ""
 
-#: ../../utils/net_ads.c:2589
+#: ../../utils/net_ads.c:2600
 msgid "Perfom CLDAP query on DC"
 msgstr ""
 
-#: ../../utils/net_ads.c:2590
+#: ../../utils/net_ads.c:2601
 msgid ""
 "net ads lookup\n"
 "    Find the ADS DC using CLDAP lookups"
 msgstr ""
 
-#: ../../utils/net_ads.c:2597
+#: ../../utils/net_ads.c:2608
 msgid "Manage local keytab file"
 msgstr ""
 
-#: ../../utils/net_ads.c:2598
+#: ../../utils/net_ads.c:2609
 msgid ""
 "net ads keytab\n"
 "    Manage local keytab file"
 msgstr ""
 
-#: ../../utils/net_ads.c:2605
+#: ../../utils/net_ads.c:2616
 msgid "Manage group policy objects"
 msgstr ""
 
-#: ../../utils/net_ads.c:2606
+#: ../../utils/net_ads.c:2617
 msgid ""
 "net ads gpo\n"
 "    Manage group policy objects"
 msgstr ""
 
-#: ../../utils/net_ads.c:2613
+#: ../../utils/net_ads.c:2624
 msgid "Manage kerberos keytab"
 msgstr ""
 
-#: ../../utils/net_ads.c:2614
+#: ../../utils/net_ads.c:2625
 msgid ""
 "net ads kerberos\n"
 "    Manage kerberos keytab"
 msgstr ""
 
-#: ../../utils/net_ads.c:2627
+#: ../../utils/net_ads.c:2638
 msgid "ADS support not compiled in\n"
 msgstr ""
 
@@ -1701,13 +1726,11 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_ads_gpo.c:71
-#: ../../utils/net_ads_gpo.c:328
+#: ../../utils/net_ads_gpo.c:71 ../../utils/net_ads_gpo.c:328
 msgid "machine"
 msgstr ""
 
-#: ../../utils/net_ads_gpo.c:71
-#: ../../utils/net_ads_gpo.c:328
+#: ../../utils/net_ads_gpo.c:71 ../../utils/net_ads_gpo.c:328
 msgid "user"
 msgstr ""
 
@@ -1715,20 +1738,12 @@ msgstr ""
 msgid "* fetching token "
 msgstr ""
 
-#: ../../utils/net_ads_gpo.c:82
-#: ../../utils/net_ads_gpo.c:90
-#: ../../utils/net_ads_gpo.c:102
-#: ../../utils/net_ads_gpo.c:113
-#: ../../utils/net_ads_gpo.c:158
+#: ../../utils/net_ads_gpo.c:82 ../../utils/net_ads_gpo.c:90 ../../utils/net_ads_gpo.c:102 ../../utils/net_ads_gpo.c:113 ../../utils/net_ads_gpo.c:158
 #, c-format
 msgid "failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_ads_gpo.c:85
-#: ../../utils/net_ads_gpo.c:94
-#: ../../utils/net_ads_gpo.c:105
-#: ../../utils/net_ads_gpo.c:118
-#: ../../utils/net_ads_gpo.c:163
+#: ../../utils/net_ads_gpo.c:85 ../../utils/net_ads_gpo.c:94 ../../utils/net_ads_gpo.c:105 ../../utils/net_ads_gpo.c:118 ../../utils/net_ads_gpo.c:163
 msgid "finished\n"
 msgstr ""
 
@@ -2031,8 +2046,7 @@ msgid ""
 "    List all cache entries.\n"
 msgstr ""
 
-#: ../../utils/net_cache.c:293
-#: ../../utils/net_cache.c:306
+#: ../../utils/net_cache.c:293 ../../utils/net_cache.c:306
 msgid ""
 "Usage:\n"
 "net cache flush\n"
@@ -2181,18 +2195,8 @@ msgstr ""
 msgid "Error getting config: %s\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:305
-#: ../../utils/net_conf.c:318
-#: ../../utils/net_conf.c:614
-#: ../../utils/net_conf.c:742
-#: ../../utils/net_conf.c:780
-#: ../../utils/net_conf.c:786
-#: ../../utils/net_conf.c:860
-#: ../../utils/net_conf.c:866
-#: ../../utils/net_conf.c:916
-#: ../../utils/net_conf.c:970
-#: ../../utils/net_conf.c:1010
-#: ../../utils/net_conf.c:1050
+#: ../../utils/net_conf.c:305 ../../utils/net_conf.c:318 ../../utils/net_conf.c:614 ../../utils/net_conf.c:742 ../../utils/net_conf.c:780 ../../utils/net_conf.c:786 ../../utils/net_conf.c:860 ../../utils/net_conf.c:866 ../../utils/net_conf.c:916
+#: ../../utils/net_conf.c:970 ../../utils/net_conf.c:1010 ../../utils/net_conf.c:1050
 msgid "error: out of memory!\n"
 msgstr ""
 
@@ -2208,23 +2212,17 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:346
-#: ../../utils/net_conf.c:382
-#: ../../utils/net_conf.c:407
-#: ../../utils/net_conf.c:793
+#: ../../utils/net_conf.c:346 ../../utils/net_conf.c:382 ../../utils/net_conf.c:407 ../../utils/net_conf.c:793
 #, c-format
 msgid "error starting transaction: %s\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:400
-#: ../../utils/net_conf.c:416
-#: ../../utils/net_conf.c:817
+#: ../../utils/net_conf.c:400 ../../utils/net_conf.c:416 ../../utils/net_conf.c:817
 #, c-format
 msgid "error committing transaction: %s\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:427
-#: ../../utils/net_conf.c:828
+#: ../../utils/net_conf.c:427 ../../utils/net_conf.c:828
 #, c-format
 msgid "error cancelling transaction: %s\n"
 msgstr ""
@@ -2275,10 +2273,7 @@ msgstr ""
 msgid "Error creating share %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:690
-#: ../../utils/net_conf.c:699
-#: ../../utils/net_conf.c:707
-#: ../../utils/net_conf.c:715
+#: ../../utils/net_conf.c:690 ../../utils/net_conf.c:699 ../../utils/net_conf.c:707 ../../utils/net_conf.c:715
 #, c-format
 msgid "Error setting parameter %s: %s\n"
 msgstr ""
@@ -2298,14 +2293,12 @@ msgstr ""
 msgid "Error setting value '%s': %s\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:874
-#: ../../utils/net_conf.c:930
+#: ../../utils/net_conf.c:874 ../../utils/net_conf.c:930
 #, c-format
 msgid "Error: given service '%s' does not exist.\n"
 msgstr ""
 
-#: ../../utils/net_conf.c:879
-#: ../../utils/net_conf.c:935
+#: ../../utils/net_conf.c:879 ../../utils/net_conf.c:935
 #, c-format
 msgid "Error: given parameter '%s' is not set.\n"
 msgstr ""
@@ -2333,23 +2326,6 @@ msgstr ""
 #: ../../utils/net_conf.c:1056
 #, c-format
 msgid "error deleting includes: %s\n"
-msgstr ""
-
-#: ../../utils/net_conf.c:1136
-#: ../../utils/net_help.c:36
-#: ../../utils/net_rap.c:161
-#: ../../utils/net_rap.c:302
-#: ../../utils/net_rap.c:467
-#: ../../utils/net_rap.c:750
-#: ../../utils/net_rap.c:891
-#: ../../utils/net_rap.c:1002
-#: ../../utils/net_rap.c:1193
-#: ../../utils/net_rpc.c:960
-#: ../../utils/net_rpc.c:2801
-#: ../../utils/net_rpc.c:4897
-#: ../../utils/net_rpc.c:6933
-#: ../../utils/net_rpc.c:7038
-msgid "Usage:\n"
 msgstr ""
 
 #: ../../utils/net_conf.c:1160
@@ -2482,73 +2458,72 @@ msgid ""
 "    Delete includes from a share definition."
 msgstr ""
 
-#: ../../utils/net_dom.c:25
+#: ../../utils/net_dom.c:26
 msgid ""
 "usage: net dom join <domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 "  Join a remote machine\n"
 msgstr ""
 
-#: ../../utils/net_dom.c:28
+#: ../../utils/net_dom.c:29
 msgid ""
 "usage: net dom unjoin <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 "  Unjoin a remote machine\n"
 msgstr ""
 
-#: ../../utils/net_dom.c:31
+#: ../../utils/net_dom.c:32
 msgid ""
 "usage: net dom renamecomputer <newname=NEWNAME> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 "  Rename joined computer\n"
 msgstr ""
 
-#: ../../utils/net_dom.c:91
+#: ../../utils/net_dom.c:92
 #, c-format
 msgid "Failed to unjoin domain: %s\n"
 msgstr ""
 
-#: ../../utils/net_dom.c:97
-#: ../../utils/net_dom.c:204
+#: ../../utils/net_dom.c:98 ../../utils/net_dom.c:205
 msgid "Shutting down due to a domain membership change"
 msgstr ""
 
-#: ../../utils/net_dom.c:290
+#: ../../utils/net_dom.c:291
 #, c-format
 msgid "Failed to rename machine: "
 msgstr ""
 
-#: ../../utils/net_dom.c:292
+#: ../../utils/net_dom.c:293
 #, c-format
 msgid "Computer is not joined to a Domain\n"
 msgstr ""
 
-#: ../../utils/net_dom.c:301
+#: ../../utils/net_dom.c:302
 msgid "Shutting down due to a computer rename"
 msgstr ""
 
-#: ../../utils/net_dom.c:338
+#: ../../utils/net_dom.c:339
 msgid "Join a remote machine"
 msgstr ""
 
-#: ../../utils/net_dom.c:339
+#: ../../utils/net_dom.c:340
 msgid ""
 "net dom join <domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 "  Join a remote machine"
 msgstr ""
 
-#: ../../utils/net_dom.c:347
+#: ../../utils/net_dom.c:348
 msgid "Unjoin a remote machine"
 msgstr ""
 
-#: ../../utils/net_dom.c:348
+#: ../../utils/net_dom.c:349
 msgid ""
 "net dom unjoin <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 "  Unjoin a remote machine"
 msgstr ""
 
-#: ../../utils/net_dom.c:356
+#: ../../utils/net_dom.c:357
 msgid "Rename a computer that is joined to a domain"
 msgstr ""
 
-#: ../../utils/net_dom.c:357
+#: ../../utils/net_dom.c:358
 msgid ""
 "net dom renamecomputer <newname=NEWNAME> <account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 "  Rename joined computer"
@@ -2558,14 +2533,12 @@ msgstr ""
 msgid "usage: net eventlog dump <file.evt>\n"
 msgstr ""
 
-#: ../../utils/net_eventlog.c:52
-#: ../../utils/net_eventlog.c:108
+#: ../../utils/net_eventlog.c:52 ../../utils/net_eventlog.c:108
 #, c-format
 msgid "failed to load evt file: %s\n"
 msgstr ""
 
-#: ../../utils/net_eventlog.c:59
-#: ../../utils/net_eventlog.c:129
+#: ../../utils/net_eventlog.c:59 ../../utils/net_eventlog.c:129
 #, c-format
 msgid "evt pull failed: %s\n"
 msgstr ""
@@ -2583,8 +2556,7 @@ msgstr ""
 msgid "input file is wrapped, cannot proceed\n"
 msgstr ""
 
-#: ../../utils/net_eventlog.c:138
-#: ../../utils/net_eventlog.c:203
+#: ../../utils/net_eventlog.c:138 ../../utils/net_eventlog.c:203
 #, c-format
 msgid "can't open the eventlog TDB (%s)\n"
 msgstr ""
@@ -2713,13 +2685,11 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_group.c:44
-#: ../../utils/net_user.c:41
+#: ../../utils/net_group.c:44 ../../utils/net_user.c:41
 msgid "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
 msgstr ""
 
-#: ../../utils/net_group.c:46
-#: ../../utils/net_user.c:43
+#: ../../utils/net_group.c:46 ../../utils/net_user.c:43
 msgid "\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n"
 msgstr ""
 
@@ -2770,37 +2740,22 @@ msgid ""
 "    sid\tSID of group to list"
 msgstr ""
 
-#: ../../utils/net_groupmap.c:91
-#: ../../utils/net_groupmap.c:271
-#: ../../utils/net_groupmap.c:356
-#: ../../utils/net_groupmap.c:412
-#: ../../utils/net_groupmap.c:495
-#: ../../utils/net_groupmap.c:522
+#: ../../utils/net_groupmap.c:91 ../../utils/net_groupmap.c:271 ../../utils/net_groupmap.c:356 ../../utils/net_groupmap.c:412 ../../utils/net_groupmap.c:495 ../../utils/net_groupmap.c:522
 #, c-format
 msgid ""
 "Usage:\n"
 "%s\n"
 msgstr ""
 
-#: ../../utils/net_groupmap.c:106
-#: ../../utils/net_groupmap.c:213
-#: ../../utils/net_groupmap.c:220
-#: ../../utils/net_groupmap.c:365
-#: ../../utils/net_groupmap.c:372
-#: ../../utils/net_groupmap.c:504
+#: ../../utils/net_groupmap.c:106 ../../utils/net_groupmap.c:213 ../../utils/net_groupmap.c:220 ../../utils/net_groupmap.c:365 ../../utils/net_groupmap.c:372 ../../utils/net_groupmap.c:504
 msgid "must supply a name\n"
 msgstr ""
 
-#: ../../utils/net_groupmap.c:113
-#: ../../utils/net_groupmap.c:227
-#: ../../utils/net_groupmap.c:511
+#: ../../utils/net_groupmap.c:113 ../../utils/net_groupmap.c:227 ../../utils/net_groupmap.c:511
 msgid "must supply a SID\n"
 msgstr ""
 
-#: ../../utils/net_groupmap.c:118
-#: ../../utils/net_groupmap.c:265
-#: ../../utils/net_groupmap.c:406
-#: ../../utils/net_groupmap.c:516
+#: ../../utils/net_groupmap.c:118 ../../utils/net_groupmap.c:265 ../../utils/net_groupmap.c:406 ../../utils/net_groupmap.c:516
 #, c-format
 msgid "Bad option: %s\n"
 msgstr "Ungültige Option: %s\n"
@@ -2825,8 +2780,7 @@ msgstr ""
 msgid "RID must be greater than %d\n"
 msgstr ""
 
-#: ../../utils/net_groupmap.c:235
-#: ../../utils/net_groupmap.c:380
+#: ../../utils/net_groupmap.c:235 ../../utils/net_groupmap.c:380
 msgid "must supply a comment string\n"
 msgstr ""
 
@@ -3015,8 +2969,7 @@ msgstr ""
 msgid "Usage: net groupmap memberof sid\n"
 msgstr ""
 
-#: ../../utils/net_groupmap.c:820
-#: ../../utils/net_idmap.c:345
+#: ../../utils/net_groupmap.c:820 ../../utils/net_idmap.c:345
 msgid "talloc_init failed\n"
 msgstr ""
 
@@ -3129,18 +3082,15 @@ msgstr ""
 msgid "net %s usage:\n"
 msgstr ""
 
-#: ../../utils/net_help_common.c:25
-#: ../../utils/net_join.c:28
+#: ../../utils/net_help_common.c:25 ../../utils/net_join.c:28
 msgid "Valid methods: (auto-detected if not specified)\n"
 msgstr ""
 
-#: ../../utils/net_help_common.c:26
-#: ../../utils/net_join.c:29
+#: ../../utils/net_help_common.c:26 ../../utils/net_join.c:29
 msgid "\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n"
 msgstr ""
 
-#: ../../utils/net_help_common.c:27
-#: ../../utils/net_join.c:30
+#: ../../utils/net_help_common.c:27 ../../utils/net_join.c:30
 msgid "\trpc\t\t\t\tDCE-RPC\n"
 msgstr ""
 
@@ -3277,8 +3227,7 @@ msgstr "ignoriere ungültige sid [%s]: %s\n"
 msgid "Could not set mapping of %s %lu to sid %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_idmap.c:196
-#: ../../utils/net_idmap.c:202
+#: ../../utils/net_idmap.c:196 ../../utils/net_idmap.c:202
 msgid "Not Implemented yet\n"
 msgstr ""
 
@@ -3341,8 +3290,7 @@ msgstr ""
 msgid "db_open failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_idmap.c:356
-#: ../../utils/net_idmap.c:361
+#: ../../utils/net_idmap.c:356 ../../utils/net_idmap.c:361
 #, c-format
 msgid "%s is not a valid sid\n"
 msgstr ""
@@ -3380,8 +3328,7 @@ msgid ""
 "  Restore entries from stdin"
 msgstr ""
 
-#: ../../utils/net_idmap.c:418
-#: ../../utils/net_idmap.c:426
+#: ../../utils/net_idmap.c:418 ../../utils/net_idmap.c:426
 msgid "Not implemented yet"
 msgstr ""
 
@@ -3466,8 +3413,7 @@ msgstr ""
 msgid "usage: net lookup name <name>\n"
 msgstr ""
 
-#: ../../utils/net_lookup.c:331
-#: ../../utils/net_lookup.c:358
+#: ../../utils/net_lookup.c:331 ../../utils/net_lookup.c:358
 #, c-format
 msgid "Could not lookup name %s\n"
 msgstr ""
@@ -3523,8 +3469,7 @@ msgid ""
 "------  ---------            -----  -----  ---- \n"
 msgstr ""
 
-#: ../../utils/net_rap.c:120
-#: ../../utils/net_rap.c:180
+#: ../../utils/net_rap.c:120 ../../utils/net_rap.c:180
 msgid ""
 "\n"
 "Operation not supported by server!\n"
@@ -3582,8 +3527,7 @@ msgstr ""
 msgid "Server path not specified\n"
 msgstr ""
 
-#: ../../utils/net_rap.c:273
-#: ../../utils/net_rap.c:281
+#: ../../utils/net_rap.c:273 ../../utils/net_rap.c:281
 msgid "Delete a share from server"
 msgstr ""
 
@@ -3616,8 +3560,7 @@ msgid ""
 "    List all shares on remote server\n"
 msgstr ""
 
-#: ../../utils/net_rap.c:314
-#: ../../utils/net_rpc.c:3046
+#: ../../utils/net_rap.c:314 ../../utils/net_rpc.c:3065
 msgid ""
 "\n"
 "Enumerating shared resources (exports) on remote server:\n"
@@ -3677,8 +3620,7 @@ msgid ""
 "    Display information about session"
 msgstr ""
 
-#: ../../utils/net_rap.c:446
-#: ../../utils/net_rap.c:455
+#: ../../utils/net_rap.c:446 ../../utils/net_rap.c:455
 msgid "Close specified session"
 msgstr ""
 
@@ -3812,8 +3754,7 @@ msgstr ""
 msgid "*Delete Pending*\n"
 msgstr ""
 
-#: ../../utils/net_rap.c:652
-#: ../../utils/net_rap.c:678
+#: ../../utils/net_rap.c:652 ../../utils/net_rap.c:678
 msgid "**UNKNOWN STATUS**\n"
 msgstr ""
 
@@ -3870,8 +3811,7 @@ msgid ""
 "    List the print queue\n"
 msgstr ""
 
-#: ../../utils/net_rap.c:864
-#: ../../utils/net_rpc.c:909
+#: ../../utils/net_rap.c:864 ../../utils/net_rpc.c:928
 msgid "Add specified user"
 msgstr ""
 
@@ -3891,8 +3831,7 @@ msgid ""
 "    List domain groups of specified user"
 msgstr ""
 
-#: ../../utils/net_rap.c:881
-#: ../../utils/net_rpc.c:925
+#: ../../utils/net_rap.c:881 ../../utils/net_rpc.c:944
 msgid "Remove specified user"
 msgstr ""
 
@@ -3923,8 +3862,7 @@ msgid ""
 "    Add specified group"
 msgstr ""
 
-#: ../../utils/net_rap.c:991
-#: ../../utils/net_rpc.c:2742
+#: ../../utils/net_rap.c:991 ../../utils/net_rpc.c:2761
 msgid "Delete specified group"
 msgstr ""
 
@@ -4059,8 +3997,7 @@ msgid ""
 "\texecutes a remote command on an os/2 target server\n"
 msgstr ""
 
-#: ../../utils/net_rap.c:1267
-#: ../../utils/net_rpc.c:7143
+#: ../../utils/net_rap.c:1267 ../../utils/net_rpc.c:7172
 msgid "List open files"
 msgstr ""
 
@@ -4176,8 +4113,7 @@ msgid ""
 "    Start/stop remote service"
 msgstr ""
 
-#: ../../utils/net_rap.c:1363
-#: ../../utils/net_rpc.c:933
+#: ../../utils/net_rap.c:1363 ../../utils/net_rpc.c:952
 msgid "Change user password"
 msgstr ""
 
@@ -4187,9 +4123,7 @@ msgid ""
 "    Change user password"
 msgstr ""
 
-#: ../../utils/net_registry.c:94
-#: ../../utils/net_registry.c:197
-#: ../../utils/net_registry.c:250
+#: ../../utils/net_registry.c:94 ../../utils/net_registry.c:197 ../../utils/net_registry.c:250
 #, c-format
 msgid "open_hive failed: %s\n"
 msgstr ""
@@ -4207,11 +4141,7 @@ msgstr ""
 msgid "Example:  net registry enumerate 'HKLM\\Software\\Samba'\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:141
-#: ../../utils/net_registry.c:286
-#: ../../utils/net_registry.c:356
-#: ../../utils/net_registry.c:390
-#: ../../utils/net_registry.c:439
+#: ../../utils/net_registry.c:141 ../../utils/net_registry.c:286 ../../utils/net_registry.c:356 ../../utils/net_registry.c:390 ../../utils/net_registry.c:439
 #, c-format
 msgid "open_key failed: %s\n"
 msgstr ""
@@ -4224,8 +4154,7 @@ msgstr ""
 msgid "Example:  net registry createkey 'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:191
-#: ../../utils/net_registry.c:244
+#: ../../utils/net_registry.c:191 ../../utils/net_registry.c:244
 msgid "error: zero length key name given\n"
 msgstr ""
 
@@ -4234,19 +4163,16 @@ msgstr ""
 msgid "reg_createkey failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:211
-#: ../../utils/net_rpc_registry.c:681
+#: ../../utils/net_registry.c:211 ../../utils/net_rpc_registry.c:722
 msgid "createkey did nothing -- huh?\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:214
-#: ../../utils/net_rpc_registry.c:684
+#: ../../utils/net_registry.c:214 ../../utils/net_rpc_registry.c:725
 #, c-format
 msgid "createkey created %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:217
-#: ../../utils/net_rpc_registry.c:687
+#: ../../utils/net_registry.c:217 ../../utils/net_rpc_registry.c:728
 #, c-format
 msgid "createkey opened existing %s\n"
 msgstr ""
@@ -4259,15 +4185,12 @@ msgstr ""
 msgid "Example:  net registry deletekey 'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:257
-#: ../../utils/net_registry.c:396
+#: ../../utils/net_registry.c:257 ../../utils/net_registry.c:396
 #, c-format
 msgid "reg_deletekey failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:279
-#: ../../utils/net_rpc_registry.c:601
-#: ../../utils/net_rpc_registry.c:628
+#: ../../utils/net_registry.c:279 ../../utils/net_rpc_registry.c:642 ../../utils/net_rpc_registry.c:669
 msgid "usage: net rpc registry getvalue <key> <valuename>\n"
 msgstr ""
 
@@ -4276,19 +4199,16 @@ msgstr ""
 msgid "reg_queryvalue failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:328
-#: ../../utils/net_rpc_registry.c:433
+#: ../../utils/net_registry.c:328 ../../utils/net_rpc_registry.c:474
 msgid "usage: net rpc registry setvalue <key> <valuename> <type> [<val>]+\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:334
-#: ../../utils/net_rpc_registry.c:395
+#: ../../utils/net_registry.c:334 ../../utils/net_rpc_registry.c:436
 #, c-format
 msgid "Too many args for type %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:350
-#: ../../utils/net_rpc_registry.c:409
+#: ../../utils/net_registry.c:350 ../../utils/net_rpc_registry.c:450
 #, c-format
 msgid "type \"%s\" not implemented\n"
 msgstr ""
@@ -4298,8 +4218,7 @@ msgstr ""
 msgid "reg_setvalue failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:383
-#: ../../utils/net_rpc_registry.c:486
+#: ../../utils/net_registry.c:383 ../../utils/net_rpc_registry.c:527
 msgid "usage: net rpc registry deletevalue <key> <valuename>\n"
 msgstr ""
 
@@ -4316,8 +4235,7 @@ msgstr ""
 msgid "reg_getkeysecurity failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_registry.c:468
-#: ../../utils/net_rpc_registry.c:1234
+#: ../../utils/net_registry.c:468 ../../utils/net_rpc_registry.c:1273
 msgid "Enumerate registry keys and values"
 msgstr ""
 
@@ -4327,8 +4245,7 @@ msgid ""
 "    Enumerate registry keys and values"
 msgstr ""
 
-#: ../../utils/net_registry.c:476
-#: ../../utils/net_rpc_registry.c:1242
+#: ../../utils/net_registry.c:476 ../../utils/net_rpc_registry.c:1281
 msgid "Create a new registry key"
 msgstr ""
 
@@ -4338,8 +4255,7 @@ msgid ""
 "    Create a new registry key"
 msgstr ""
 
-#: ../../utils/net_registry.c:484
-#: ../../utils/net_rpc_registry.c:1250
+#: ../../utils/net_registry.c:484 ../../utils/net_rpc_registry.c:1289
 msgid "Delete a registry key"
 msgstr ""
 
@@ -4349,9 +4265,7 @@ msgid ""
 "    Delete a registry key"
 msgstr ""
 
-#: ../../utils/net_registry.c:492
-#: ../../utils/net_rpc_registry.c:1258
-#: ../../utils/net_rpc_registry.c:1266
+#: ../../utils/net_registry.c:492 ../../utils/net_rpc_registry.c:1297 ../../utils/net_rpc_registry.c:1305
 msgid "Print a registry value"
 msgstr ""
 
@@ -4371,8 +4285,7 @@ msgid ""
 "    Print a registry value (raw format)"
 msgstr ""
 
-#: ../../utils/net_registry.c:508
-#: ../../utils/net_rpc_registry.c:1274
+#: ../../utils/net_registry.c:508 ../../utils/net_rpc_registry.c:1313
 msgid "Set a new registry value"
 msgstr ""
 
@@ -4382,8 +4295,7 @@ msgid ""
 "    Set a new registry value"
 msgstr ""
 
-#: ../../utils/net_registry.c:516
-#: ../../utils/net_rpc_registry.c:1282
+#: ../../utils/net_registry.c:516 ../../utils/net_rpc_registry.c:1321
 msgid "Delete a registry value"
 msgstr ""
 
@@ -4393,8 +4305,7 @@ msgid ""
 "    Delete a registry value"
 msgstr ""
 
-#: ../../utils/net_registry.c:524
-#: ../../utils/net_rpc_registry.c:1314
+#: ../../utils/net_registry.c:524 ../../utils/net_rpc_registry.c:1353
 msgid "Get security descriptor"
 msgstr ""
 
@@ -4423,9 +4334,7 @@ msgstr ""
 msgid "Type       = %s\n"
 msgstr ""
 
-#: ../../utils/net_registry_util.c:45
-#: ../../utils/net_registry_util.c:76
-#: ../../utils/net_registry_util.c:82
+#: ../../utils/net_registry_util.c:45 ../../utils/net_registry_util.c:76 ../../utils/net_registry_util.c:82
 msgid "Value      = "
 msgstr ""
 
@@ -4452,47 +4361,49 @@ msgstr ""
 msgid "Valuename  = %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:66
-#: ../../utils/net_util.c:43
+#: ../../utils/net_rpc.c:73 ../../utils/net_util.c:45
 msgid "Could not initialise lsa pipe\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:74
-#: ../../utils/net_util.c:51
+#: ../../utils/net_rpc.c:81 ../../utils/net_util.c:53
 #, c-format
 msgid "open_policy failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:84
+#: ../../utils/net_rpc.c:91
 #, c-format
 msgid "lsaquery failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:257
+#: ../../utils/net_rpc.c:254
+#, fuzzy, c-format
+msgid "Failed to change machine account password: %s\n"
+msgstr "Konnte Passwort für trust account nicht stetzen: %s\n"
+
+#: ../../utils/net_rpc.c:275
 msgid ""
 "Usage:\n"
 "net rpc changetrustpw\n"
 "    Change the machine trust password\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:341
-#: ../../utils/net_rpc_join.c:470
+#: ../../utils/net_rpc.c:360 ../../utils/net_rpc_join.c:477
 #, c-format
 msgid "Joined domain %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:387
+#: ../../utils/net_rpc.c:406
 msgid ""
 "Usage:\n"
 "net rpc oldjoin\n"
 "    Join a domain the old way\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:396
+#: ../../utils/net_rpc.c:415
 msgid "Failed to join domain\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:417
+#: ../../utils/net_rpc.c:436
 #, c-format
 msgid ""
 "Usage:\n"
@@ -4505,387 +4416,375 @@ msgid ""
 "\t\tPDC\tJoin as PDC\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:431
+#: ../../utils/net_rpc.c:450
 msgid "cannot join as standalone machine\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:486
+#: ../../utils/net_rpc.c:505
 #, c-format
 msgid "Could not connect to SAM: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:498
+#: ../../utils/net_rpc.c:517
 #, c-format
 msgid "Could not open domain: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:508
+#: ../../utils/net_rpc.c:527
 #, c-format
 msgid "Domain Name: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:510
+#: ../../utils/net_rpc.c:529
 #, c-format
 msgid "Domain SID: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:511
+#: ../../utils/net_rpc.c:530
 #, c-format
 msgid "Sequence number: %llu\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:513
+#: ../../utils/net_rpc.c:532
 #, c-format
 msgid "Num users: %u\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:514
+#: ../../utils/net_rpc.c:533
 #, c-format
 msgid "Num domain groups: %u\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:515
+#: ../../utils/net_rpc.c:534
 #, c-format
 msgid "Num local groups: %u\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:532
+#: ../../utils/net_rpc.c:551
 msgid ""
 "Usage:\n"
 "net rpc info\n"
 "  Display information about the domain\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:571
+#: ../../utils/net_rpc.c:590
 #, c-format
 msgid "Storing SID %s for Domain %s in secrets.tdb\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:592
+#: ../../utils/net_rpc.c:611
 msgid ""
 "Usage:\n"
 "net rpc getsid\n"
 "    Fetch domain SID into local secrets.tdb\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:649
+#: ../../utils/net_rpc.c:668
 #, c-format
 msgid "Failed to add user '%s' with error: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:654
+#: ../../utils/net_rpc.c:673
 #, c-format
 msgid "Added user '%s'.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:687
+#: ../../utils/net_rpc.c:706
 #, c-format
 msgid "Failed to rename user from %s to %s - %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:691
+#: ../../utils/net_rpc.c:710
 #, c-format
 msgid "Renamed user from %s to %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:719
+#: ../../utils/net_rpc.c:738
 #, c-format
 msgid "Failed to delete user '%s' with: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:724
+#: ../../utils/net_rpc.c:743
 #, c-format
 msgid "Deleted user '%s'.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:770
+#: ../../utils/net_rpc.c:789
 #, c-format
 msgid "Failed to set password for '%s' with error: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:813
+#: ../../utils/net_rpc.c:832
 #, c-format
 msgid "Failed to get groups for '%s' with error: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:910
+#: ../../utils/net_rpc.c:929
 msgid ""
 "net rpc user add\n"
 "    Add specified user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:917
+#: ../../utils/net_rpc.c:936
 msgid "List domain groups of user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:918
+#: ../../utils/net_rpc.c:937
 msgid ""
 "net rpc user info\n"
 "    Lis domain groups of user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:926
+#: ../../utils/net_rpc.c:945
 msgid ""
 "net rpc user delete\n"
 "    Remove specified user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:934
+#: ../../utils/net_rpc.c:953
 msgid ""
 "net rpc user password\n"
 "    Change user password"
 msgstr ""
 
-#: ../../utils/net_rpc.c:941
+#: ../../utils/net_rpc.c:960
 msgid "Rename specified user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:942
+#: ../../utils/net_rpc.c:961
 msgid ""
 "net rpc user rename\n"
 "    Rename specified user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:961
+#: ../../utils/net_rpc.c:980
 msgid ""
 "net rpc user\n"
 "    List all users\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1011
+#: ../../utils/net_rpc.c:1030
 #, c-format
 msgid "usage: %s <username>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1022
+#: ../../utils/net_rpc.c:1041
 #, c-format
 msgid "Could not lookup %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1028
-#: ../../utils/net_sam.c:52
-#: ../../utils/net_sam.c:157
-#: ../../utils/net_sam.c:249
+#: ../../utils/net_rpc.c:1047 ../../utils/net_sam.c:52 ../../utils/net_sam.c:157 ../../utils/net_sam.c:249
 #, c-format
 msgid "%s is a %s, not a user\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1035
+#: ../../utils/net_rpc.c:1054
 #, c-format
 msgid "%s is not in our domain\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1092
+#: ../../utils/net_rpc.c:1111
 #, c-format
 msgid "usage: %s show <username>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1104
+#: ../../utils/net_rpc.c:1123
 #, c-format
 msgid "user rid: %d, group rid: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1145
+#: ../../utils/net_rpc.c:1164
 #, c-format
 msgid "usage: %s <username> [new value|NULL]\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1168
+#: ../../utils/net_rpc.c:1187
 #, c-format
 msgid "%s's %s: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1190
+#: ../../utils/net_rpc.c:1209
 #, c-format
 msgid "Set %s's %s from [%s] to [%s]\n"
 msgstr ""
 
 #. TRANSATORS: The yes|no here are program keywords. Please do
 #. not translate.
-#: ../../utils/net_rpc.c:1236
+#: ../../utils/net_rpc.c:1255
 #, c-format
 msgid "usage: %s <username> [yes|no]\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1261
+#: ../../utils/net_rpc.c:1280
 #, c-format
 msgid "%s's %s flag: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1277
+#: ../../utils/net_rpc.c:1296
 #, c-format
 msgid "Set %s's %s flag from [%s] to [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1303
+#: ../../utils/net_rpc.c:1322
 msgid "Show/Set a user's full name"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1306
+#: ../../utils/net_rpc.c:1325
 msgid "Show/Set a user's home directory"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1309
+#: ../../utils/net_rpc.c:1328
 msgid "Show/Set a user's home drive"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1312
+#: ../../utils/net_rpc.c:1331
 msgid "Show/Set a user's logon script"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1315
+#: ../../utils/net_rpc.c:1334
 msgid "Show/Set a user's profile path"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1318
+#: ../../utils/net_rpc.c:1337
 msgid "Show/Set a user's description"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1321
+#: ../../utils/net_rpc.c:1340
 msgid "Show/Set whether a user is disabled"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1324
+#: ../../utils/net_rpc.c:1343
 msgid "Show/Set whether a user locked out"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1327
+#: ../../utils/net_rpc.c:1346
 msgid "Show/Set whether a user does not need a password"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1330
+#: ../../utils/net_rpc.c:1349
 msgid "Show/Set whether a user's password does not expire"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1345
+#: ../../utils/net_rpc.c:1364
 msgid "List available users"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1348
+#: ../../utils/net_rpc.c:1367
 msgid "List the domain groups a user is member of"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1351
+#: ../../utils/net_rpc.c:1370
 msgid "Show info about a user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1354
+#: ../../utils/net_rpc.c:1373
 msgid "Show/Modify a user's fields"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1425
+#: ../../utils/net_rpc.c:1444
 msgid "Request samr_Connect2 failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1436
+#: ../../utils/net_rpc.c:1455
 msgid "Request open_domain failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1449
+#: ../../utils/net_rpc.c:1468
 #, c-format
 msgid "Lookup of '%s' failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1462
+#: ../../utils/net_rpc.c:1481
 msgid "Request open_group failed"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1474
+#: ../../utils/net_rpc.c:1493
 #, c-format
 msgid "Unable to query group members of %s"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1481
+#: ../../utils/net_rpc.c:1500
 #, c-format
 msgid "Domain Group %s (rid: %d) has %d members\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1496
+#: ../../utils/net_rpc.c:1515
 #, c-format
 msgid "Unable to open group member %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1508
+#: ../../utils/net_rpc.c:1527
 #, c-format
 msgid "Unable to lookup userinfo for group member %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1516
+#: ../../utils/net_rpc.c:1535
 #, c-format
 msgid "Group is primary group of %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1527
+#: ../../utils/net_rpc.c:1546
 msgid "Unable to delete group because some of it's members have it as primary group\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1538
+#: ../../utils/net_rpc.c:1557
 #, c-format
 msgid "Remove group member %d..."
 msgstr ""
 
-#: ../../utils/net_rpc.c:1546
-#: ../../utils/net_rpc_registry.c:1053
-#: ../../utils/net_rpc_registry.c:1073
-#: ../../utils/net_rpc_registry.c:1098
-#: ../../utils/net_rpc_registry.c:1105
-#: ../../utils/net_rpc_registry.c:1125
-#: ../../utils/net_rpc_registry.c:1131
+#: ../../utils/net_rpc.c:1565 ../../utils/net_rpc_registry.c:1092 ../../utils/net_rpc_registry.c:1112 ../../utils/net_rpc_registry.c:1137 ../../utils/net_rpc_registry.c:1144 ../../utils/net_rpc_registry.c:1164 ../../utils/net_rpc_registry.c:1170
 msgid "ok\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1549
+#: ../../utils/net_rpc.c:1568
 msgid "failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1567
+#: ../../utils/net_rpc.c:1586
 msgid "Request open_alias failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1575
+#: ../../utils/net_rpc.c:1594
 #, c-format
 msgid "%s is of type %s. This command is only for deleting local or global groups\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1584
+#: ../../utils/net_rpc.c:1603
 #, c-format
 msgid "Deleted %s '%s'\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1587
+#: ../../utils/net_rpc.c:1606
 #, c-format
 msgid "Deleting of %s failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1624
+#: ../../utils/net_rpc.c:1643
 #, c-format
 msgid "Failed to add group '%s' with error: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1629
+#: ../../utils/net_rpc.c:1648
 #, c-format
 msgid "Added group '%s'.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1657
+#: ../../utils/net_rpc.c:1676
 #, c-format
 msgid "Failed to add alias '%s' with error: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1662
+#: ../../utils/net_rpc.c:1681
 #, c-format
 msgid "Added alias '%s'.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1782
-#: ../../utils/net_rpc.c:1832
-#: ../../utils/net_rpc.c:1989
-#: ../../utils/net_rpc.c:2036
+#: ../../utils/net_rpc.c:1801 ../../utils/net_rpc.c:1851 ../../utils/net_rpc.c:2008 ../../utils/net_rpc.c:2055
 #, c-format
 msgid "Could not lookup up group member %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1892
+#: ../../utils/net_rpc.c:1911
 msgid ""
 "Usage:\n"
 "net rpc group addmem <group> <member>\n"
@@ -4894,24 +4793,22 @@ msgid ""
 "    member\tMember to add to group\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1902
-#: ../../utils/net_rpc.c:2104
+#: ../../utils/net_rpc.c:1921 ../../utils/net_rpc.c:2123
 #, c-format
 msgid "Could not lookup group name %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1912
-#: ../../utils/net_rpc.c:1923
+#: ../../utils/net_rpc.c:1931 ../../utils/net_rpc.c:1942
 #, c-format
 msgid "Could not add %s to %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:1929
+#: ../../utils/net_rpc.c:1948
 #, c-format
 msgid "Can only add members to global or local groups which %s is not\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2094
+#: ../../utils/net_rpc.c:2113
 msgid ""
 "Usage:\n"
 "net rpc group delmem <group> <member>\n"
@@ -4920,18 +4817,17 @@ msgid ""
 "    member\tMember to delete from group\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2114
-#: ../../utils/net_rpc.c:2125
+#: ../../utils/net_rpc.c:2133 ../../utils/net_rpc.c:2144
 #, c-format
 msgid "Could not del %s from %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2131
+#: ../../utils/net_rpc.c:2150
 #, c-format
 msgid "Can only delete members from global or local groups which %s is not\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2178
+#: ../../utils/net_rpc.c:2197
 msgid ""
 "Usage:\n"
 "net rpc group list [global] [local] [builtin]\n"
@@ -4942,353 +4838,338 @@ msgid ""
 "    If none of global, local or builtin is specified, all three options are considered set\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2499
+#: ../../utils/net_rpc.c:2518
 msgid "Couldn't list alias members\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2513
+#: ../../utils/net_rpc.c:2532
 #, c-format
 msgid "Couldn't open LSA pipe. Error was %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2522
+#: ../../utils/net_rpc.c:2541
 msgid "Couldn't open LSA policy handle\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2529
+#: ../../utils/net_rpc.c:2548
 msgid "Out of memory\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2544
+#: ../../utils/net_rpc.c:2563
 msgid "Couldn't lookup SIDs\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2555
-#: ../../utils/net_rpc.c:2556
+#: ../../utils/net_rpc.c:2574 ../../utils/net_rpc.c:2575
 msgid "*unknown*"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2630
-#: ../../utils/net_rpc.c:2643
-#: ../../utils/net_rpc.c:2650
+#: ../../utils/net_rpc.c:2649 ../../utils/net_rpc.c:2662 ../../utils/net_rpc.c:2669
 #, c-format
 msgid "Couldn't find group %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2687
+#: ../../utils/net_rpc.c:2706
 msgid "Usage: 'net rpc group rename group newname'\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2700
+#: ../../utils/net_rpc.c:2719
 #, c-format
 msgid "Renaming group %s failed with: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2734
+#: ../../utils/net_rpc.c:2753
 msgid "Create specified group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2735
+#: ../../utils/net_rpc.c:2754
 msgid ""
 "net rpc group add\n"
 "    Create specified group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2743
+#: ../../utils/net_rpc.c:2762
 msgid ""
 "net rpc group delete\n"
 "    Delete specified group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2750
+#: ../../utils/net_rpc.c:2769
 msgid "Add member to group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2751
+#: ../../utils/net_rpc.c:2770
 msgid ""
 "net rpc group addmem\n"
 "    Add member to group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2758
+#: ../../utils/net_rpc.c:2777
 msgid "Remove member from group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2759
+#: ../../utils/net_rpc.c:2778
 msgid ""
 "net rpc group delmem\n"
 "    Remove member from group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2766
+#: ../../utils/net_rpc.c:2785
 msgid "List groups"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2767
+#: ../../utils/net_rpc.c:2786
 msgid ""
 "net rpc group list\n"
 "    List groups"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2774
-#: ../../utils/net_sam.c:2053
+#: ../../utils/net_rpc.c:2793 ../../utils/net_sam.c:2053
 msgid "List group members"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2775
+#: ../../utils/net_rpc.c:2794
 msgid ""
 "net rpc group members\n"
 "    List group members"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2782
+#: ../../utils/net_rpc.c:2801
 msgid "Rename group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2783
+#: ../../utils/net_rpc.c:2802
 msgid ""
 "net rpc group rename\n"
 "    Rename group"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2802
+#: ../../utils/net_rpc.c:2821
 msgid ""
 "net rpc group\n"
 "    Alias for net rpc group list global local builtin\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:2874
+#: ../../utils/net_rpc.c:2893
 #, c-format
 msgid "NetShareAdd failed with: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3025
+#: ../../utils/net_rpc.c:3044
 msgid ""
 "Usage\n"
 "net rpc share list\n"
 "    List shares on remote server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3059
+#: ../../utils/net_rpc.c:3081
 #, c-format
 msgid "skipping   [%s]: not a file share.\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3074
+#: ../../utils/net_rpc.c:3087
+#, c-format
+msgid "cli_tdis returned %s\n"
+msgstr ""
+
+#: ../../utils/net_rpc.c:3099
 #, c-format
 msgid "share [%s] is not a diskshare (type: %x)\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3086
+#: ../../utils/net_rpc.c:3111
 #, c-format
 msgid "excluding  [%s]\n"
 msgstr ""
 
 #. finally add the share on the dst server
-#: ../../utils/net_rpc.c:3153
+#: ../../utils/net_rpc.c:3178
 #, c-format
 msgid "migrating: [%s], path: %s, comment: %s, without share-ACLs\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3167
+#: ../../utils/net_rpc.c:3192
 #, c-format
 msgid "           [%s] does already exist\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3173
+#: ../../utils/net_rpc.c:3198
 #, c-format
 msgid "cannot add share: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3203
+#: ../../utils/net_rpc.c:3228
 msgid ""
 "Usage:\n"
 "net rpc share migrate shares\n"
 "    Migrate shares to local server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3210
-#: ../../utils/net_rpc.c:3543
-#: ../../utils/net_rpc.c:3668
-#: ../../utils/net_rpc.c:3701
-#: ../../utils/net_rpc.c:6476
-#: ../../utils/net_rpc.c:6530
-#: ../../utils/net_rpc.c:6560
-#: ../../utils/net_rpc.c:6590
-#: ../../utils/net_rpc.c:6620
-#: ../../utils/net_rpc.c:6651
+#: ../../utils/net_rpc.c:3235 ../../utils/net_rpc.c:3568 ../../utils/net_rpc.c:3693 ../../utils/net_rpc.c:3726 ../../utils/net_rpc.c:6505 ../../utils/net_rpc.c:6559 ../../utils/net_rpc.c:6589 ../../utils/net_rpc.c:6619 ../../utils/net_rpc.c:6649
+#: ../../utils/net_rpc.c:6680
 #, c-format
 msgid "no server to migrate\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3270
-#: ../../utils/net_rpc.c:3382
-#: ../../utils/net_rpc.c:3465
+#: ../../utils/net_rpc.c:3295 ../../utils/net_rpc.c:3407 ../../utils/net_rpc.c:3490
 #, c-format
 msgid "Unsupported mode %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3275
+#: ../../utils/net_rpc.c:3300
 #, c-format
 msgid "could not handle dir %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3285
+#: ../../utils/net_rpc.c:3310
 #, c-format
 msgid "could not handle files\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3312
+#: ../../utils/net_rpc.c:3337
 #, c-format
 msgid "Unsupported file mode %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3318
+#: ../../utils/net_rpc.c:3343
 #, c-format
 msgid "could not handle file %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3341
+#: ../../utils/net_rpc.c:3366
 #, c-format
 msgid "cli_resolve_path %s failed with error: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3348
+#: ../../utils/net_rpc.c:3373
 #, c-format
 msgid "listing %s failed with error: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3387
+#: ../../utils/net_rpc.c:3412
 #, c-format
 msgid "Could handle directory attributes for top level directory of share %s. Error %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3454
+#: ../../utils/net_rpc.c:3479
 #, c-format
 msgid "skipping   [%s]: builtin/hidden share\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3469
+#: ../../utils/net_rpc.c:3494
 #, c-format
 msgid "    [%s] files and directories %s ACLs, %s DOS Attributes %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3472
-#: ../../utils/net_rpc.c:3473
+#: ../../utils/net_rpc.c:3497 ../../utils/net_rpc.c:3498
 msgid "including"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3472
-#: ../../utils/net_rpc.c:3473
-#: ../../utils/net_rpc_printer.c:371
-#: ../../utils/net_rpc_printer.c:372
+#: ../../utils/net_rpc.c:3497 ../../utils/net_rpc.c:3498 ../../utils/net_rpc_printer.c:370 ../../utils/net_rpc_printer.c:371
 msgid "without"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3474
-#: ../../utils/net_rpc_printer.c:373
+#: ../../utils/net_rpc.c:3499 ../../utils/net_rpc_printer.c:372
 msgid "(preserving timestamps)"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3503
+#: ../../utils/net_rpc.c:3528
 #, c-format
 msgid "Could not handle the top level directory permissions for the share: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3511
+#: ../../utils/net_rpc.c:3536
 #, c-format
 msgid "could not handle files for share: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3536
+#: ../../utils/net_rpc.c:3561
 msgid ""
 "Usage:\n"
 "net share migrate files\n"
 "    Migrate files to local server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3611
+#: ../../utils/net_rpc.c:3636
 #, c-format
 msgid "migrating: [%s], path: %s, comment: %s, including share-ACLs\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3630
+#: ../../utils/net_rpc.c:3655
 #, c-format
 msgid "cannot set share-acl: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3661
+#: ../../utils/net_rpc.c:3686
 msgid ""
 "Usage:\n"
 "net rpc share migrate security\n"
 "    Migrate share-acls to local server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3694
+#: ../../utils/net_rpc.c:3719
 msgid ""
 "Usage:\n"
 "net rpc share migrate all\n"
 "    Migrates shares including all share settings\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3738
-#: ../../utils/net_rpc.c:3762
+#: ../../utils/net_rpc.c:3763 ../../utils/net_rpc.c:3787
 msgid "Migrate shares from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3739
+#: ../../utils/net_rpc.c:3764
 msgid ""
 "net rpc share migrate all\n"
 "    Migrate shares from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3746
+#: ../../utils/net_rpc.c:3771
 msgid "Migrate files from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3747
+#: ../../utils/net_rpc.c:3772
 msgid ""
 "net rpc share migrate files\n"
 "    Migrate files from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3754
+#: ../../utils/net_rpc.c:3779
 msgid "Migrate share-ACLs from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3755
+#: ../../utils/net_rpc.c:3780
 msgid ""
 "net rpc share migrate security\n"
 "    Migrate share-ACLs from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3763
+#: ../../utils/net_rpc.c:3788
 msgid ""
 "net rpc share migrate shares\n"
 "    Migrate shares from remote to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:3991
+#: ../../utils/net_rpc.c:4016
 msgid "malloc failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4178
+#: ../../utils/net_rpc.c:4203
 msgid "winbind use default domain = yes set, please specify a workgroup\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4187
+#: ../../utils/net_rpc.c:4212
 #, c-format
 msgid "winbind could not list users: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4496
+#: ../../utils/net_rpc.c:4522
 msgid ""
 "Usage:\n"
 "net rpc share allowedusers\n"
 "    List allowed users\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4546
+#: ../../utils/net_rpc.c:4572
 msgid ""
 "net usersidlist\n"
 "\tprints out a list of all users the running winbind knows\n"
@@ -5297,57 +5178,57 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4571
+#: ../../utils/net_rpc.c:4597
 msgid "Add share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4572
+#: ../../utils/net_rpc.c:4598
 msgid ""
 "net rpc share add\n"
 "    Add share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4579
+#: ../../utils/net_rpc.c:4605
 msgid "Remove share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4580
+#: ../../utils/net_rpc.c:4606
 msgid ""
 "net rpc share delete\n"
 "    Remove share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4587
+#: ../../utils/net_rpc.c:4613
 msgid "Modify allowed users"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4588
+#: ../../utils/net_rpc.c:4614
 msgid ""
 "net rpc share allowedusers\n"
 "    Modify allowed users"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4595
+#: ../../utils/net_rpc.c:4621
 msgid "Migrate share to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4596
+#: ../../utils/net_rpc.c:4622
 msgid ""
 "net rpc share migrate\n"
 "    Migrate share to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4603
+#: ../../utils/net_rpc.c:4629
 msgid "List shares"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4604
+#: ../../utils/net_rpc.c:4630
 msgid ""
 "net rpc share list\n"
 "    List shares"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4622
+#: ../../utils/net_rpc.c:4648
 msgid ""
 "Usage:\n"
 "net rpc share\n"
@@ -5355,54 +5236,53 @@ msgid ""
 "    Alias for net rpc share list\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4657
+#: ../../utils/net_rpc.c:4683
 #, c-format
 msgid "usage: %s <share> <path> [comment]\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4686
-#: ../../utils/net_rpc.c:4704
+#: ../../utils/net_rpc.c:4712 ../../utils/net_rpc.c:4730
 #, c-format
 msgid "usage: %s <share>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4718
+#: ../../utils/net_rpc.c:4744
 #, c-format
 msgid "Name:     %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4719
+#: ../../utils/net_rpc.c:4745
 #, c-format
 msgid "Comment:  %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4720
+#: ../../utils/net_rpc.c:4746
 #, c-format
 msgid "Path:     %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4721
+#: ../../utils/net_rpc.c:4747
 #, c-format
 msgid "Password: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4733
+#: ../../utils/net_rpc.c:4759
 msgid "List available shares"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4736
+#: ../../utils/net_rpc.c:4762
 msgid "Add a share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4739
+#: ../../utils/net_rpc.c:4765
 msgid "Delete a share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4742
+#: ../../utils/net_rpc.c:4768
 msgid "Get information about a share"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4834
+#: ../../utils/net_rpc.c:4860
 msgid ""
 "\n"
 "Enumerating open files on remote server:\n"
@@ -5412,137 +5292,134 @@ msgid ""
 "------  ---------            -----  -----  ---- \n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4860
+#: ../../utils/net_rpc.c:4886
 msgid "Close opened file"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4861
+#: ../../utils/net_rpc.c:4887
 msgid ""
 "net rpc file close\n"
 "    Close opened file"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4868
+#: ../../utils/net_rpc.c:4894
 msgid "List files opened by user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4869
+#: ../../utils/net_rpc.c:4895
 msgid ""
 "net rpc file user\n"
 "    List files opened by user"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4877
+#: ../../utils/net_rpc.c:4903
 msgid "Display information about opened file"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4878
+#: ../../utils/net_rpc.c:4904
 msgid ""
 "net rpc file info\n"
 "    Display information about opened file"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4898
+#: ../../utils/net_rpc.c:4924
 msgid ""
 "net rpc file\n"
 "    List opened files\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:4941
-#: ../../utils/net_rpc.c:4980
+#: ../../utils/net_rpc.c:4967 ../../utils/net_rpc.c:5006
 msgid ""
 "\n"
 "Shutdown successfully aborted\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5004
+#: ../../utils/net_rpc.c:5030
 msgid ""
 "Usage:\n"
 "net rpc abortshutdown\n"
 "    Abort a scheduled shutdown\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5050
-#: ../../utils/net_rpc.c:5103
+#: ../../utils/net_rpc.c:5076 ../../utils/net_rpc.c:5129
 msgid "This machine will be shutdown shortly"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5069
-#: ../../utils/net_rpc.c:5124
+#: ../../utils/net_rpc.c:5095 ../../utils/net_rpc.c:5150
 msgid ""
 "\n"
 "Shutdown of remote machine succeeded\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5151
+#: ../../utils/net_rpc.c:5177
 msgid ""
 "Usage:\n"
 "net rpc shutdown\n"
 "    Shut down a remote RPC server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5210
+#: ../../utils/net_rpc.c:5236
 msgid "Usage: net rpc trustdom add <domain_name> <trust password>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5272
+#: ../../utils/net_rpc.c:5298
 #, c-format
 msgid "net rpc trustdom add: create user %s failed %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5323
+#: ../../utils/net_rpc.c:5349
 msgid ""
 "Usage:\n"
 "net rpc trustdom add <domain_name> <trust password>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5364
+#: ../../utils/net_rpc.c:5390
 msgid "Usage: net rpc trustdom del <domain_name>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5407
+#: ../../utils/net_rpc.c:5433
 #, c-format
 msgid "net rpc trustdom del: LookupNames on user %s failed %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5420
+#: ../../utils/net_rpc.c:5446
 #, c-format
 msgid "net rpc trustdom del: OpenUser on user %s failed %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5438
+#: ../../utils/net_rpc.c:5464
 #, c-format
 msgid "net rpc trustdom del: RemoveMemberFromForeignDomain on user %s failed %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5450
+#: ../../utils/net_rpc.c:5476
 #, c-format
 msgid "net rpc trustdom del: DeleteUser on user %s failed %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5457
+#: ../../utils/net_rpc.c:5483
 #, c-format
 msgid "Could not set trust account password: %s\n"
 msgstr "Konnte Passwort für trust account nicht stetzen: %s\n"
 
-#: ../../utils/net_rpc.c:5481
+#: ../../utils/net_rpc.c:5507
 msgid ""
 "Usage:\n"
 "net rpc trustdom del <domain>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5564
+#: ../../utils/net_rpc.c:5590
 msgid ""
 "Usage:\n"
 "net rpc trustdom establish <domain_name>\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5707
+#: ../../utils/net_rpc.c:5733
 #, c-format
 msgid "Trust to domain %s established\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5728
+#: ../../utils/net_rpc.c:5754
 msgid ""
 "Usage:\n"
 "net rpc trustdom revoke <domain_name>\n"
@@ -5550,7 +5427,7 @@ msgid ""
 "    domain_name\tName of domain to revoke trust\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:5863
+#: ../../utils/net_rpc.c:5885
 msgid ""
 "Usage:\n"
 "net rpc trustdom vampire\n"
@@ -5561,7 +5438,7 @@ msgstr ""
 #. * Keep calling LsaEnumTrustdom over opened pipe until
 #. * the end of enumeration is reached
 #.
-#: ../../utils/net_rpc.c:5939
+#: ../../utils/net_rpc.c:5961
 msgid ""
 "Vampire trusted domains:\n"
 "\n"
@@ -5571,23 +5448,22 @@ msgstr ""
 #. * in case of no trusted domains say something rather
 #. * than just display blank line
 #.
-#: ../../utils/net_rpc.c:5974
-#: ../../utils/net_rpc.c:6121
+#: ../../utils/net_rpc.c:5996 ../../utils/net_rpc.c:6150
 msgid "none\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6020
+#: ../../utils/net_rpc.c:6042
 msgid ""
 "Usage:\n"
 "net rpc trustdom list\n"
-"    List trust relationships\n"
+"    List in- and outgoing trust relationships\n"
 msgstr ""
 
 #.
 #. * Keep calling LsaEnumTrustdom over opened pipe until
 #. * the end of enumeration is reached
 #.
-#: ../../utils/net_rpc.c:6096
+#: ../../utils/net_rpc.c:6118
 msgid ""
 "Trusted domains list:\n"
 "\n"
@@ -5596,333 +5472,336 @@ msgstr ""
 #.
 #. * Listing trusting domains (stored in passdb backend, if local)
 #.
-#: ../../utils/net_rpc.c:6141
+#: ../../utils/net_rpc.c:6169
 msgid ""
 "\n"
 "Trusting domains list:\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6244
-msgid "couldn't get domain's sid\n"
+#: ../../utils/net_rpc.c:6270
+msgid "strange - couldn't get domain's sid\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6249
+#: ../../utils/net_rpc.c:6275
 #, c-format
 msgid "domain controller is not responding: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6293
-msgid "Add trusted domain's account"
+#: ../../utils/net_rpc.c:6278
+msgid "couldn't get domain's sid\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6294
+#: ../../utils/net_rpc.c:6322
+msgid "Add trusting domain's account"
+msgstr ""
+
+#: ../../utils/net_rpc.c:6323
 msgid ""
 "net rpc trustdom add\n"
-"    Add trusted domain's account"
+"    Add trusting domain's account"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6301
-msgid "Remove trusted domain's account"
+#: ../../utils/net_rpc.c:6330
+msgid "Remove trusting domain's account"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6302
+#: ../../utils/net_rpc.c:6331
 msgid ""
 "net rpc trustdom del\n"
-"    Remove trusted domain's account"
+"    Remove trusting domain's account"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6309
-msgid "Establish trust relationship"
+#: ../../utils/net_rpc.c:6338
+msgid "Establish outgoing trust relationship"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6310
+#: ../../utils/net_rpc.c:6339
 msgid ""
 "net rpc trustdom establish\n"
-"    Establish trust relationship"
+"    Establish outgoing trust relationship"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6317
-msgid "Revoke trust relationship"
+#: ../../utils/net_rpc.c:6346
+msgid "Revoke outgoing trust relationship"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6318
+#: ../../utils/net_rpc.c:6347
 msgid ""
 "net rpc trustdom revoke\n"
-"    Revoke trust relationship"
+"    Revoke outgoing trust relationship"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6325
-msgid "List domain trusts"
+#: ../../utils/net_rpc.c:6354
+msgid "List in- and outgoing domain trusts"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6326
+#: ../../utils/net_rpc.c:6355
 msgid ""
 "net rpc trustdom list\n"
-"    List domain trusts"
+"    List in- and outgoing domain trusts"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6333
+#: ../../utils/net_rpc.c:6362
 msgid "Vampire trusts from remote server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6334
+#: ../../utils/net_rpc.c:6363
 msgid ""
 "net rpc trustdom vampire\n"
 "    Vampire trusts from remote server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6386
+#: ../../utils/net_rpc.c:6415
 msgid ""
 "Usage:\n"
 "net rpc samdump\n"
 "    Dump remote SAM database\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6405
+#: ../../utils/net_rpc.c:6434
 msgid "Dump remote SAM database to ldif"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6406
+#: ../../utils/net_rpc.c:6435
 msgid ""
 "net rpc vampire ldif\n"
 "    Dump remote SAM database to LDIF file or stdout"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6414
+#: ../../utils/net_rpc.c:6443
 msgid "Dump remote SAM database to Kerberos Keytab"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6415
+#: ../../utils/net_rpc.c:6444
 msgid ""
 "net rpc vampire keytab\n"
 "    Dump remote SAM database to Kerberos keytab file"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6423
+#: ../../utils/net_rpc.c:6452
 msgid "Dump remote SAM database to passdb"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6424
+#: ../../utils/net_rpc.c:6453
 msgid ""
 "net rpc vampire passdb\n"
 "    Dump remote SAM database to passdb"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6433
+#: ../../utils/net_rpc.c:6462
 msgid ""
 "Usage:\n"
 "net rpc vampire\n"
 "    Vampire remote SAM database\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6469
+#: ../../utils/net_rpc.c:6498
 msgid ""
 "Usage:\n"
 "net rpc printer migrate all\n"
 "    Migrate everything from a print server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6523
+#: ../../utils/net_rpc.c:6552
 msgid ""
 "Usage:\n"
 "net rpc printer migrate drivers\n"
 "     Migrate print-drivers from a print-server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6553
+#: ../../utils/net_rpc.c:6582
 msgid ""
 "Usage:\n"
 "net rpc printer migrate forms\n"
 "    Migrate print-forms from a print-server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6583
+#: ../../utils/net_rpc.c:6612
 msgid ""
 "Usage:\n"
 "net rpc printer migrate printers\n"
 "    Migrate printers from a print-server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6613
+#: ../../utils/net_rpc.c:6642
 msgid ""
 "Usage:\n"
 "net rpc printer migrate security\n"
 "    Migrate printer-ACLs from a print-server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6643
+#: ../../utils/net_rpc.c:6672
 msgid ""
 "Usage:\n"
 "net rpc printer migrate settings\n"
 "    Migrate printer-settings from a print-server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6681
+#: ../../utils/net_rpc.c:6710
 msgid "Migrate all from remote to local print server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6682
+#: ../../utils/net_rpc.c:6711
 msgid ""
 "net rpc printer migrate all\n"
 "    Migrate all from remote to local print server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6689
+#: ../../utils/net_rpc.c:6718
 msgid "Migrate drivers to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6690
+#: ../../utils/net_rpc.c:6719
 msgid ""
 "net rpc printer migrate drivers\n"
 "    Migrate drivers to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6697
+#: ../../utils/net_rpc.c:6726
 msgid "Migrate froms to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6698
+#: ../../utils/net_rpc.c:6727
 msgid ""
 "net rpc printer migrate forms\n"
 "    Migrate froms to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6705
+#: ../../utils/net_rpc.c:6734
 msgid "Migrate printers to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6706
+#: ../../utils/net_rpc.c:6735
 msgid ""
 "net rpc printer migrate printers\n"
 "    Migrate printers to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6713
+#: ../../utils/net_rpc.c:6742
 msgid "Mirgate printer ACLs to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6714
+#: ../../utils/net_rpc.c:6743
 msgid ""
 "net rpc printer migrate security\n"
 "    Mirgate printer ACLs to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6721
+#: ../../utils/net_rpc.c:6750
 msgid "Migrate printer settings to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6722
+#: ../../utils/net_rpc.c:6751
 msgid ""
 "net rpc printer migrate settings\n"
 "    Migrate printer settings to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6745
+#: ../../utils/net_rpc.c:6774
 msgid ""
 "Usage:\n"
 "net rpc printer list\n"
 "    List printers on a remote RPC server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6770
+#: ../../utils/net_rpc.c:6799
 msgid ""
 "Usage:\n"
 "net rpc printer driver\n"
 "    List printer-drivers on a remote RPC server\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6795
+#: ../../utils/net_rpc.c:6824
 msgid ""
 "Usage:\n"
 "net rpc printer publish publish\n"
 "     Publish printer in ADS via MSRPC\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6819
+#: ../../utils/net_rpc.c:6848
 msgid ""
 "Usage:\n"
 "net rpc printer publish update\n"
 "    Update printer in ADS via MSRPC\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6844
+#: ../../utils/net_rpc.c:6873
 msgid ""
 "Usage:\n"
 "net rpc printer publish unpublish\n"
 "    UnPublish printer in ADS via MSRPC\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6869
+#: ../../utils/net_rpc.c:6898
 msgid ""
 "Usage:\n"
 "net rpc printer publish list\n"
 "    List published printers via MSRPC\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6900
-#: ../../utils/net_rpc.c:7029
+#: ../../utils/net_rpc.c:6929 ../../utils/net_rpc.c:7058
 msgid "Publish printer in AD"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6901
+#: ../../utils/net_rpc.c:6930
 msgid ""
 "net rpc printer publish publish\n"
 "    Publish printer in AD"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6908
+#: ../../utils/net_rpc.c:6937
 msgid "Update printer in AD"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6909
+#: ../../utils/net_rpc.c:6938
 msgid ""
 "net rpc printer publish update\n"
 "    Update printer in AD"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6916
+#: ../../utils/net_rpc.c:6945
 msgid "Unpublish printer"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6917
+#: ../../utils/net_rpc.c:6946
 msgid ""
 "net rpc printer publish unpublish\n"
 "    Unpublish printer"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6924
+#: ../../utils/net_rpc.c:6953
 msgid "List published printers"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6925
+#: ../../utils/net_rpc.c:6954
 msgid ""
 "net rpc printer publish list\n"
 "    List published printers"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6934
+#: ../../utils/net_rpc.c:6963
 msgid ""
 "net rpc printer publish\n"
 "    List published printers\n"
 "    Alias of net rpc printer publish list\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6961
+#: ../../utils/net_rpc.c:6990
 msgid ""
 "net rpc printer LIST [printer] [misc. options] [targets]\n"
 "\tlists all printers on print-server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6963
+#: ../../utils/net_rpc.c:6992
 msgid ""
 "net rpc printer DRIVER [printer] [misc. options] [targets]\n"
 "\tlists all printer-drivers on print-server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6965
+#: ../../utils/net_rpc.c:6994
 msgid ""
 "net rpc printer PUBLISH action [printer] [misc. options] [targets]\n"
 "\tpublishes printer settings in Active Directory\n"
@@ -5930,42 +5809,42 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6968
+#: ../../utils/net_rpc.c:6997
 msgid ""
 "net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]\n"
 "\tmigrates printers from remote to local server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6970
+#: ../../utils/net_rpc.c:6999
 msgid ""
 "net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]\n"
 "\tmigrates printer-settings from remote to local server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6972
+#: ../../utils/net_rpc.c:7001
 msgid ""
 "net rpc printer MIGRATE DRIVERS [printer] [misc. options] [targets]\n"
 "\tmigrates printer-drivers from remote to local server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6974
+#: ../../utils/net_rpc.c:7003
 msgid ""
 "net rpc printer MIGRATE FORMS [printer] [misc. options] [targets]\n"
 "\tmigrates printer-forms from remote to local server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6976
+#: ../../utils/net_rpc.c:7005
 msgid ""
 "net rpc printer MIGRATE SECURITY [printer] [misc. options] [targets]\n"
 "\tmigrates printer-ACLs from remote to local server\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6978
+#: ../../utils/net_rpc.c:7007
 msgid ""
 "net rpc printer MIGRATE ALL [printer] [misc. options] [targets]\n"
 "\tmigrates drivers, forms, queues, settings and acls from\n"
@@ -5973,154 +5852,154 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:6984
+#: ../../utils/net_rpc.c:7013
 msgid ""
 "\t-v or --verbose\t\t\tgive verbose output\n"
 "\t      --destination\t\tmigration target server (default: localhost)\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7005
+#: ../../utils/net_rpc.c:7034
 msgid "List all printers on print server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7006
+#: ../../utils/net_rpc.c:7035
 msgid ""
 "net rpc printer list\n"
 "    List all printers on print server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7013
+#: ../../utils/net_rpc.c:7042
 msgid "Migrate printer to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7014
+#: ../../utils/net_rpc.c:7043
 msgid ""
 "net rpc printer migrate\n"
 "    Migrate printer to local server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7021
+#: ../../utils/net_rpc.c:7050
 msgid "List printer drivers"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7022
+#: ../../utils/net_rpc.c:7051
 msgid ""
 "net rpc printer driver\n"
 "    List printer drivers"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7030
+#: ../../utils/net_rpc.c:7059
 msgid ""
 "net rpc printer publish\n"
 "    Publish printer in AD"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7039
+#: ../../utils/net_rpc.c:7068
 msgid ""
 "net rpc printer\n"
 "    List printers\n"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7070
+#: ../../utils/net_rpc.c:7099
 msgid "Modify global audit settings"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7071
+#: ../../utils/net_rpc.c:7100
 msgid ""
 "net rpc audit\n"
 "    Modify global audit settings"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7078
+#: ../../utils/net_rpc.c:7107
 msgid "Show basic info about a domain"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7079
+#: ../../utils/net_rpc.c:7108
 msgid ""
 "net rpc info\n"
 "    Show basic info about a domain"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7086
+#: ../../utils/net_rpc.c:7115
 msgid "Join a domain"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7087
+#: ../../utils/net_rpc.c:7116
 msgid ""
 "net rpc join\n"
 "    Join a domain"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7094
+#: ../../utils/net_rpc.c:7123
 msgid "Join a domain created in server manager"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7095
+#: ../../utils/net_rpc.c:7124
 msgid ""
 "net rpc oldjoin\n"
 "    Join a domain created in server manager"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7102
+#: ../../utils/net_rpc.c:7131
 msgid "Test that a join is valid"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7103
+#: ../../utils/net_rpc.c:7132
 msgid ""
 "net rpc testjoin\n"
 "    Test that a join is valid"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7111
+#: ../../utils/net_rpc.c:7140
 msgid ""
 "net rpc user\n"
 "    List/modify users"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7118
+#: ../../utils/net_rpc.c:7147
 msgid "Change a user password"
 msgstr "Benutzerpasswort ändern"
 
-#: ../../utils/net_rpc.c:7119
+#: ../../utils/net_rpc.c:7148
 msgid ""
 "net rpc password\n"
 "    Change a user password\n"
 "    Alias for net rpc user password"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7128
+#: ../../utils/net_rpc.c:7157
 msgid ""
 "net rpc group\n"
 "    List/modify groups"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7135
+#: ../../utils/net_rpc.c:7164
 msgid "List/modify shares"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7136
+#: ../../utils/net_rpc.c:7165
 msgid ""
 "net rpc share\n"
 "    List/modify shares"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7144
+#: ../../utils/net_rpc.c:7173
 msgid ""
 "net rpc file\n"
 "    List open files"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7151
+#: ../../utils/net_rpc.c:7180
 msgid "List/modify printers"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7152
+#: ../../utils/net_rpc.c:7181
 msgid ""
 "net rpc printer\n"
 "    List/modify printers"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7160
+#: ../../utils/net_rpc.c:7189
 msgid ""
 "net rpc changetrustpw\n"
 "    Change trust account password"
@@ -6128,1041 +6007,1014 @@ msgstr ""
 "net rpc changetrustpw\n"
 "    trust account Passwort ändern"
 
-#: ../../utils/net_rpc.c:7167
+#: ../../utils/net_rpc.c:7196
 msgid "Modify domain trusts"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7168
+#: ../../utils/net_rpc.c:7197
 msgid ""
 "net rpc trustdom\n"
 "    Modify domain trusts"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7175
+#: ../../utils/net_rpc.c:7204
 msgid "Abort a remote shutdown"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7176
+#: ../../utils/net_rpc.c:7205
 msgid ""
 "net rpc abortshutdown\n"
 "    Abort a remote shutdown"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7183
+#: ../../utils/net_rpc.c:7212
 msgid "Shutdown a remote server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7184
+#: ../../utils/net_rpc.c:7213
 msgid ""
 "net rpc shutdown\n"
 "    Shutdown a remote server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7191
+#: ../../utils/net_rpc.c:7220
 msgid "Dump SAM data of remote NT PDC"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7192
+#: ../../utils/net_rpc.c:7221
 msgid ""
 "net rpc samdump\n"
 "    Dump SAM data of remote NT PDC"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7199
+#: ../../utils/net_rpc.c:7228
 msgid "Sync a remote NT PDC's data into local passdb"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7200
+#: ../../utils/net_rpc.c:7229
 msgid ""
 "net rpc vampire\n"
 "    Sync a remote NT PDC's data into local passdb"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7207
+#: ../../utils/net_rpc.c:7236
 msgid "Fetch the domain sid into local secrets.tdb"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7208
+#: ../../utils/net_rpc.c:7237
 msgid ""
 "net rpc getsid\n"
 "    Fetch the domain sid into local secrets.tdb"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7215
+#: ../../utils/net_rpc.c:7244
 msgid "Manage privileges assigned to SID"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7216
+#: ../../utils/net_rpc.c:7245
 msgid ""
 "net rpc rights\n"
 "    Manage privileges assigned to SID"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7223
+#: ../../utils/net_rpc.c:7252
 msgid "Start/stop/query remote services"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7224
+#: ../../utils/net_rpc.c:7253
 msgid ""
 "net rpc service\n"
 "    Start/stop/query remote services"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7231
+#: ../../utils/net_rpc.c:7260
 msgid "Manage registry hives"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7232
+#: ../../utils/net_rpc.c:7261
 msgid ""
 "net rpc registry\n"
 "    Manage registry hives"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7239
+#: ../../utils/net_rpc.c:7268
 msgid "Open interactive shell on remote server"
 msgstr ""
 
-#: ../../utils/net_rpc.c:7240
+#: ../../utils/net_rpc.c:7269
 msgid ""
 "net rpc shell\n"
 "    Open interactive shell on remote server"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:27
+#: ../../utils/net_rpc_audit.c:28
 msgid "net rpc audit list                       View configured Auditing policies\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:28
+#: ../../utils/net_rpc_audit.c:29
 msgid "net rpc audit enable                     Enable Auditing\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:29
+#: ../../utils/net_rpc_audit.c:30
 msgid "net rpc audit disable                    Disable Auditing\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:30
+#: ../../utils/net_rpc_audit.c:31
 msgid "net rpc audit get <category>             View configured Auditing policy setting\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:31
+#: ../../utils/net_rpc_audit.c:32
 msgid ""
 "net rpc audit set <category> <policy>    Set Auditing policies\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:32
+#: ../../utils/net_rpc_audit.c:33
 msgid "\tcategory can be one of: SYSTEM, LOGON, OBJECT, PRIVILEGE, PROCESS, POLICY, SAM, DIRECTORY or ACCOUNT\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:33
+#: ../../utils/net_rpc_audit.c:34
 msgid ""
 "\tpolicy can be one of: SUCCESS, FAILURE, ALL or NONE\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:47
-#: ../../utils/net_util.c:611
+#: ../../utils/net_rpc_audit.c:45 ../../utils/net_util.c:613
 msgid "Unknown"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:50
+#: ../../utils/net_rpc_audit.c:48
 msgid "Invalid"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:58
+#: ../../utils/net_rpc_audit.c:51
 #, c-format
-msgid "\t%s%s%s\n"
+msgid "\t%-30s%s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:80
-#: ../../utils/net_rpc_audit.c:147
+#: ../../utils/net_rpc_audit.c:73 ../../utils/net_rpc_audit.c:140
 msgid "insufficient arguments\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:86
-#: ../../utils/net_rpc_audit.c:153
+#: ../../utils/net_rpc_audit.c:79 ../../utils/net_rpc_audit.c:146
 #, c-format
 msgid "invalid auditing category: %s\n"
 msgstr "Ungültige Audit-Kategorie: %s\n"
 
-#: ../../utils/net_rpc_audit.c:122
+#: ../../utils/net_rpc_audit.c:115
 #, c-format
 msgid "failed to get auditing policy: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:168
+#: ../../utils/net_rpc_audit.c:161
 #, c-format
 msgid "invalid auditing policy: %s\n"
 msgstr "Ungültige Audit-Regel: %s\n"
 
-#: ../../utils/net_rpc_audit.c:212
+#: ../../utils/net_rpc_audit.c:205
 #, c-format
 msgid "failed to set audit policy: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:261
+#: ../../utils/net_rpc_audit.c:254
 #, c-format
 msgid "%s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:262
+#: ../../utils/net_rpc_audit.c:255
 msgid "failed to enable audit policy"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:263
+#: ../../utils/net_rpc_audit.c:256
 msgid "failed to disable audit policy"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:335
+#: ../../utils/net_rpc_audit.c:328
 #, c-format
 msgid "Auditing:\t\t"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:338
+#: ../../utils/net_rpc_audit.c:331
 #, c-format
 msgid "Enabled"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:341
+#: ../../utils/net_rpc_audit.c:334
 #, c-format
 msgid "Disabled"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:344
+#: ../../utils/net_rpc_audit.c:337
 #, c-format
 msgid "unknown (%d)"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:350
+#: ../../utils/net_rpc_audit.c:343
 #, c-format
 msgid "Auditing categories:\t%d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:351
+#: ../../utils/net_rpc_audit.c:344
 #, c-format
 msgid "Auditing settings:\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:361
+#: ../../utils/net_rpc_audit.c:354
 #, c-format
 msgid "failed to list auditing policies: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:374
+#: ../../utils/net_rpc_audit.c:367
 msgid ""
 "Usage:\n"
 "net rpc audit get\n"
 "    View configured audit setting\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:390
+#: ../../utils/net_rpc_audit.c:383
 msgid ""
 "Usage:\n"
 "net rpc audit set\n"
 "    Set audit policies\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:406
+#: ../../utils/net_rpc_audit.c:399
 msgid ""
 "Usage:\n"
 "net rpc audit enable\n"
 "    Enable auditing\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:422
+#: ../../utils/net_rpc_audit.c:415
 msgid ""
 "Usage:\n"
 "net rpc audit disable\n"
 "    Disable auditing\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:438
+#: ../../utils/net_rpc_audit.c:431
 msgid ""
 "Usage:\n"
 "net rpc audit list\n"
 "    List auditing settings\n"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:458
+#: ../../utils/net_rpc_audit.c:451
 msgid "View configured auditing settings"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:459
+#: ../../utils/net_rpc_audit.c:452
 msgid ""
 "net rpc audit get\n"
 "    View configured auditing settings"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:466
+#: ../../utils/net_rpc_audit.c:459
 msgid "Set auditing policies"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:467
+#: ../../utils/net_rpc_audit.c:460
 msgid ""
 "net rpc audit set\n"
 "    Set auditing policies"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:474
+#: ../../utils/net_rpc_audit.c:467
 msgid "Enable auditing"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:475
+#: ../../utils/net_rpc_audit.c:468
 msgid ""
 "net rpc audit enable\n"
 "    Enable auditing"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:482
+#: ../../utils/net_rpc_audit.c:475
 msgid "Disable auditing"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:483
+#: ../../utils/net_rpc_audit.c:476
 msgid ""
 "net rpc audit disable\n"
 "    Disable auditing"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:490
+#: ../../utils/net_rpc_audit.c:483
 msgid "List configured auditing settings"
 msgstr ""
 
-#: ../../utils/net_rpc_audit.c:491
+#: ../../utils/net_rpc_audit.c:484
 msgid ""
 "net rpc audit list\n"
 "    List configured auditing settings"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:290
+#: ../../utils/net_rpc_join.c:297
 msgid "Creation of workstation account failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:297
+#: ../../utils/net_rpc_join.c:304
 msgid "User specified does not have administrator privileges\n"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:403
-#: ../../utils/net_rpc_join.c:431
+#: ../../utils/net_rpc_join.c:410 ../../utils/net_rpc_join.c:438
 #, c-format
 msgid ""
 "Please make sure that no computer account\n"
 "named like this machine (%s) exists in the domain\n"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:468
+#: ../../utils/net_rpc_join.c:475
 #, c-format
 msgid "Unable to join domain %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:492
+#: ../../utils/net_rpc_join.c:499
 msgid ""
 "Usage\n"
 "net rpc testjoin\n"
 "    Test if a join is OK\n"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:501
+#: ../../utils/net_rpc_join.c:508
 #, c-format
 msgid "Join to domain '%s' is not valid: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_join.c:506
+#: ../../utils/net_rpc_join.c:513
 #, c-format
 msgid "Join to '%s' is OK\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:54
+#: ../../utils/net_rpc_printer.c:55
 #, c-format
 msgid "Printer Driver Info 3:\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:55
+#: ../../utils/net_rpc_printer.c:56
 #, c-format
 msgid "\tVersion: [%x]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:56
+#: ../../utils/net_rpc_printer.c:57
 #, c-format
 msgid "\tDriver Name: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:57
+#: ../../utils/net_rpc_printer.c:58
 #, c-format
 msgid "\tArchitecture: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:58
+#: ../../utils/net_rpc_printer.c:59
 #, c-format
 msgid "\tDriver Path: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:59
+#: ../../utils/net_rpc_printer.c:60
 #, c-format
 msgid "\tDatafile: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:60
+#: ../../utils/net_rpc_printer.c:61
 #, c-format
 msgid ""
 "\tConfigfile: [%s]\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:61
+#: ../../utils/net_rpc_printer.c:62
 #, c-format
 msgid ""
 "\tHelpfile: [%s]\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:64
+#: ../../utils/net_rpc_printer.c:65
 #, c-format
 msgid "\tDependentfiles: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:69
+#: ../../utils/net_rpc_printer.c:70
 #, c-format
 msgid "\tMonitorname: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:70
+#: ../../utils/net_rpc_printer.c:71
 #, c-format
 msgid ""
 "\tDefaultdatatype: [%s]\n"
 "\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:79
+#: ../../utils/net_rpc_printer.c:81
 #, c-format
 msgid "\t[%s:%s]: REG_DWORD: 0x%08x\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:92
+#: ../../utils/net_rpc_printer.c:91
 #, c-format
 msgid "\t[%s:%s]: REG_SZ: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:97
+#: ../../utils/net_rpc_printer.c:96
 #, c-format
 msgid "\t[%s:%s]: REG_BINARY: unknown length value not displayed\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:109
-msgid "reg_pull_multi_sz failed\n"
-msgstr ""
-
-#: ../../utils/net_rpc_printer.c:121
+#: ../../utils/net_rpc_printer.c:120
 #, c-format
 msgid "\t%s: unknown type %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:255
+#: ../../utils/net_rpc_printer.c:254
 #, c-format
 msgid "could not close %s on originating server: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:263
+#: ../../utils/net_rpc_printer.c:262
 #, c-format
 msgid "could not close %s on destination server: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:356
+#: ../../utils/net_rpc_printer.c:355
 #, c-format
 msgid "malloc fail for size %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:367
+#: ../../utils/net_rpc_printer.c:366
 #, c-format
 msgid "copying [\\\\%s\\%s%s] => [\\\\%s\\%s%s] %s ACLs and %s DOS Attributes %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:371
-#: ../../utils/net_rpc_printer.c:372
+#: ../../utils/net_rpc_printer.c:370 ../../utils/net_rpc_printer.c:371
 msgid "with"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:391
+#: ../../utils/net_rpc_printer.c:390
 #, c-format
 msgid "Error writing file: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:415
+#: ../../utils/net_rpc_printer.c:414
 #, c-format
 msgid "cannot check for directory %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:425
+#: ../../utils/net_rpc_printer.c:424
 #, c-format
 msgid "could not close file on originating server: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:433
+#: ../../utils/net_rpc_printer.c:432
 #, c-format
 msgid "could not close file on destination server: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:566
+#: ../../utils/net_rpc_printer.c:565
 #, c-format
 msgid "cannot check %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:607
+#: ../../utils/net_rpc_printer.c:606
 #, c-format
 msgid "copying driver: [%s], for architecture: [%s], version: [%d]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:676
+#: ../../utils/net_rpc_printer.c:675
 #, c-format
 msgid "cannot enum printers: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:709
+#: ../../utils/net_rpc_printer.c:708
 #, c-format
 msgid "no access to printer [%s] on [%s] for user [%s] granted\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:716
+#: ../../utils/net_rpc_printer.c:715
 #, c-format
 msgid "cannot open printer %s on server %s: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:742
+#: ../../utils/net_rpc_printer.c:741
 #, c-format
 msgid "cannot get printer-info: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:823
-#: ../../utils/net_rpc_printer.c:1318
+#: ../../utils/net_rpc_printer.c:822 ../../utils/net_rpc_printer.c:1326
 #, c-format
 msgid "cannot set printer-info: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:851
+#: ../../utils/net_rpc_printer.c:850
 #, c-format
 msgid "unable to set printerdata: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:872
+#: ../../utils/net_rpc_printer.c:871
 #, c-format
 msgid "enumprinterkey failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:898
+#: ../../utils/net_rpc_printer.c:897
 #, c-format
 msgid "enumprinterdataex failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:926
+#: ../../utils/net_rpc_printer.c:934
 #, c-format
 msgid "could not set printerdataex: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:951
+#: ../../utils/net_rpc_printer.c:959
 #, c-format
 msgid "could not enum forms: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:975
+#: ../../utils/net_rpc_printer.c:983
 #, c-format
 msgid "cannot enum drivers: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1008
+#: ../../utils/net_rpc_printer.c:1016
 #, c-format
 msgid "cannot get driver: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1038
+#: ../../utils/net_rpc_printer.c:1046
 #, c-format
 msgid "unsupported info level: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1049
+#: ../../utils/net_rpc_printer.c:1057
 #, c-format
 msgid "You are not allowed to add drivers\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1053
+#: ../../utils/net_rpc_printer.c:1061
 #, c-format
 msgid "cannot add driver: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1153
+#: ../../utils/net_rpc_printer.c:1161
 #, c-format
 msgid "printer %d: %s, shared as: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1193
+#: ../../utils/net_rpc_printer.c:1201
 #, c-format
 msgid "listing printer-drivers\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1208
+#: ../../utils/net_rpc_printer.c:1216
 #, c-format
 msgid "no drivers found on server for architecture: [%s].\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1214
+#: ../../utils/net_rpc_printer.c:1222
 #, c-format
 msgid "got %d printer-drivers for architecture: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1287
+#: ../../utils/net_rpc_printer.c:1295
 msgid "published"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1290
+#: ../../utils/net_rpc_printer.c:1298
 msgid "updated"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1293
+#: ../../utils/net_rpc_printer.c:1301
 msgid "unpublished"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1296
+#: ../../utils/net_rpc_printer.c:1304
 msgid "unknown action"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1297
+#: ../../utils/net_rpc_printer.c:1305
 #, c-format
 msgid "unkown action: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1323
+#: ../../utils/net_rpc_printer.c:1331
 #, c-format
 msgid "successfully %s printer %s in Active Directory\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1435
+#: ../../utils/net_rpc_printer.c:1443
 #, c-format
 msgid "printer [%s] is published"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1438
+#: ../../utils/net_rpc_printer.c:1446
 #, c-format
 msgid ", guid: %s"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1442
+#: ../../utils/net_rpc_printer.c:1450
 #, c-format
 msgid "printer [%s] is unpublished\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1446
+#: ../../utils/net_rpc_printer.c:1454
 #, c-format
 msgid "printer [%s] is currently updating\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1450
+#: ../../utils/net_rpc_printer.c:1458
 #, c-format
 msgid "unkown state: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1520
-#: ../../utils/net_rpc_printer.c:1667
-#: ../../utils/net_rpc_printer.c:1850
-#: ../../utils/net_rpc_printer.c:2039
-#: ../../utils/net_rpc_printer.c:2206
+#: ../../utils/net_rpc_printer.c:1528 ../../utils/net_rpc_printer.c:1675 ../../utils/net_rpc_printer.c:1858 ../../utils/net_rpc_printer.c:2047 ../../utils/net_rpc_printer.c:2214
 #, c-format
 msgid "no printers found on server.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1541
+#: ../../utils/net_rpc_printer.c:1549
 #, c-format
 msgid "migrating printer ACLs for:     [%s] / [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1687
+#: ../../utils/net_rpc_printer.c:1695
 #, c-format
 msgid "migrating printer forms for:    [%s] / [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1723
+#: ../../utils/net_rpc_printer.c:1731
 #, c-format
 msgid "\tmigrating form # %d [%s] of type [%d]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1739
+#: ../../utils/net_rpc_printer.c:1747
 #, c-format
 msgid "\tAddForm form %d: [%s] refused.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:1872
+#: ../../utils/net_rpc_printer.c:1880
 #, c-format
 msgid "migrating printer driver for:   [%s] / [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2059
+#: ../../utils/net_rpc_printer.c:2067
 #, c-format
 msgid "migrating printer queue for:    [%s] / [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2071
+#: ../../utils/net_rpc_printer.c:2079
 #, c-format
 msgid "could not get printer, creating printer.\n"
 msgstr ""
 
 #. copy each src printer to a dst printer 1:1,
 #. maybe some values have to be changed though
-#: ../../utils/net_rpc_printer.c:2095
+#: ../../utils/net_rpc_printer.c:2103
 #, c-format
 msgid "creating printer: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2106
+#: ../../utils/net_rpc_printer.c:2114
 #, c-format
 msgid "printer [%s] successfully added.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2109
+#: ../../utils/net_rpc_printer.c:2117
 #, c-format
 msgid "printer [%s] already exists.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2112
+#: ../../utils/net_rpc_printer.c:2120
 #, c-format
 msgid "could not create printer [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2240
+#: ../../utils/net_rpc_printer.c:2248
 #, c-format
 msgid "migrating printer settings for: [%s] / [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_printer.c:2393
+#: ../../utils/net_rpc_printer.c:2401
 #, c-format
 msgid "got no key-data\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:389
-#: ../../utils/net_rpc_registry.c:461
-#: ../../utils/net_rpc_registry.c:522
-#: ../../utils/net_rpc_registry.c:791
-#: ../../utils/net_rpc_registry.c:862
-#: ../../utils/net_rpc_registry.c:1171
+#: ../../utils/net_rpc_registry.c:430 ../../utils/net_rpc_registry.c:502 ../../utils/net_rpc_registry.c:563 ../../utils/net_rpc_registry.c:832 ../../utils/net_rpc_registry.c:903 ../../utils/net_rpc_registry.c:1210
 #, c-format
 msgid "registry_openkey failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:418
+#: ../../utils/net_rpc_registry.c:459
 #, c-format
 msgid "registry_setvalue failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:472
+#: ../../utils/net_rpc_registry.c:513
 #, c-format
 msgid "registry_deletevalue failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:543
-#: ../../utils/net_rpc_registry.c:560
+#: ../../utils/net_rpc_registry.c:584 ../../utils/net_rpc_registry.c:601
 #, c-format
 msgid "registry_queryvalue failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:673
+#: ../../utils/net_rpc_registry.c:714
 #, c-format
 msgid "createkey returned %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:702
+#: ../../utils/net_rpc_registry.c:743
 msgid "usage: net rpc registry createkey <key>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:741
+#: ../../utils/net_rpc_registry.c:782
 #, c-format
 msgid "deletekey returned %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:752
+#: ../../utils/net_rpc_registry.c:793
 msgid "usage: net rpc registry deletekey <key>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:782
+#: ../../utils/net_rpc_registry.c:823
 msgid "Usage:    net rpc registry enumerate <path>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:783
+#: ../../utils/net_rpc_registry.c:824
 msgid "Example:  net rpc registry enumerate 'HKLM\\Software\\Samba'\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:799
+#: ../../utils/net_rpc_registry.c:840
 #, c-format
 msgid "enumerating keys failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:811
+#: ../../utils/net_rpc_registry.c:852
 #, c-format
 msgid "enumerating values failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:854
+#: ../../utils/net_rpc_registry.c:895
 msgid "Usage:    net rpc registry backup <path> <file> \n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:870
+#: ../../utils/net_rpc_registry.c:911
 #, c-format
 msgid "Unable to save [%s] to %s:%s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:937
+#: ../../utils/net_rpc_registry.c:976
 msgid "unknown"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1044
+#: ../../utils/net_rpc_registry.c:1083
 msgid "Usage:    net rpc registry dump <file> \n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1048
-#: ../../utils/net_rpc_registry.c:1093
-#: ../../utils/net_rpc_registry.c:1100
+#: ../../utils/net_rpc_registry.c:1087 ../../utils/net_rpc_registry.c:1132 ../../utils/net_rpc_registry.c:1139
 #, c-format
 msgid "Opening %s...."
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1050
-#: ../../utils/net_rpc_registry.c:1095
+#: ../../utils/net_rpc_registry.c:1089 ../../utils/net_rpc_registry.c:1134
 #, c-format
 msgid "Failed to open %s for reading\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1058
-#: ../../utils/net_rpc_registry.c:1110
+#: ../../utils/net_rpc_registry.c:1097 ../../utils/net_rpc_registry.c:1149
 msgid "Could not get rootkey\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1071
+#: ../../utils/net_rpc_registry.c:1110
 msgid "Closing registry..."
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1088
+#: ../../utils/net_rpc_registry.c:1127
 msgid "Usage:    net rpc registry copy <srcfile> <newfile>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1102
+#: ../../utils/net_rpc_registry.c:1141
 #, c-format
 msgid "Failed to open %s for writing\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1113
+#: ../../utils/net_rpc_registry.c:1152
 #, c-format
 msgid "RootKey: [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1121
-#: ../../utils/net_rpc_registry.c:1127
+#: ../../utils/net_rpc_registry.c:1160 ../../utils/net_rpc_registry.c:1166
 #, c-format
 msgid "Closing %s..."
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1160
+#: ../../utils/net_rpc_registry.c:1199
 msgid "Usage:    net rpc registry getsd <path> <secinfo>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1162
+#: ../../utils/net_rpc_registry.c:1201
 msgid "Example:  net rpc registry getsd 'HKLM\\Software\\Samba'\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1192
+#: ../../utils/net_rpc_registry.c:1231
 #, c-format
 msgid "getting sd failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1235
+#: ../../utils/net_rpc_registry.c:1274
 msgid ""
 "net rpc registry enumerate\n"
 "    Enumerate registry keys and values"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1243
+#: ../../utils/net_rpc_registry.c:1282
 msgid ""
 "net rpc registry createkey\n"
 "    Create a new registry key"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1251
+#: ../../utils/net_rpc_registry.c:1290
 msgid ""
 "net rpc registry deletekey\n"
 "    Delete a registry key"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1259
+#: ../../utils/net_rpc_registry.c:1298
 msgid ""
 "net rpc registry getvalue\n"
 "    Print a registry value"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1267
+#: ../../utils/net_rpc_registry.c:1306
 msgid ""
 "net rpc registry getvalueraw\n"
 "    Print a registry value (raw version)"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1275
+#: ../../utils/net_rpc_registry.c:1314
 msgid ""
 "net rpc registry setvalue\n"
 "    Set a new registry value"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1283
+#: ../../utils/net_rpc_registry.c:1322
 msgid ""
 "net rpc registry deletevalue\n"
 "    Delete a registry value"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1290
+#: ../../utils/net_rpc_registry.c:1329
 msgid "Save a registry file"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1291
+#: ../../utils/net_rpc_registry.c:1330
 msgid ""
 "net rpc registry save\n"
 "    Save a registry file"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1298
+#: ../../utils/net_rpc_registry.c:1337
 msgid "Dump a registry file"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1299
+#: ../../utils/net_rpc_registry.c:1338
 msgid ""
 "net rpc registry dump\n"
 "    Dump a registry file"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1306
+#: ../../utils/net_rpc_registry.c:1345
 msgid "Copy a registry file"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1307
+#: ../../utils/net_rpc_registry.c:1346
 msgid ""
 "net rpc registry copy\n"
 "    Copy a registry file"
 msgstr ""
 
-#: ../../utils/net_rpc_registry.c:1315
+#: ../../utils/net_rpc_registry.c:1354
 msgid ""
 "net rpc registry getsd\n"
 "    Get security descriptior"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:202
+#: ../../utils/net_rpc_rights.c:203
 msgid "No privileges assigned\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:367
+#: ../../utils/net_rpc_rights.c:368
 #, c-format
 msgid "No such privilege exists: %s.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:370
+#: ../../utils/net_rpc_rights.c:371
 #, c-format
 msgid "Error resolving privilege display name [%s].\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:379
+#: ../../utils/net_rpc_rights.c:380
 #, c-format
 msgid "Error enumerating accounts for privilege %s [%s].\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:415
+#: ../../utils/net_rpc_rights.c:416
 msgid "Usage: net rpc rights list [[accounts|privileges] [name|SID]]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:453
+#: ../../utils/net_rpc_rights.c:454
 msgid "Usage: net rpc rights grant <name|SID> <rights...>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:491
+#: ../../utils/net_rpc_rights.c:492
 msgid "Successfully granted rights.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:495
+#: ../../utils/net_rpc_rights.c:496
 #, c-format
 msgid "Failed to grant privileges for %s (%s)\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:523
+#: ../../utils/net_rpc_rights.c:524
 msgid "Usage: net rpc rights revoke <name|SID> <rights...>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:559
+#: ../../utils/net_rpc_rights.c:560
 msgid "Successfully revoked rights.\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:563
+#: ../../utils/net_rpc_rights.c:564
 #, c-format
 msgid "Failed to revoke privileges for %s (%s)\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:579
+#: ../../utils/net_rpc_rights.c:580
 msgid ""
 "Usage:\n"
 "net rpc rights list [{accounts|privileges} [name|SID]]\n"
 "    View available/assigned privileges\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:596
+#: ../../utils/net_rpc_rights.c:597
 msgid ""
 "Usage:\n"
 "net rpc rights grant <name|SID> <right>\n"
 "    Assign privilege[s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:599
+#: ../../utils/net_rpc_rights.c:600
 msgid ""
 "For example:\n"
 "    net rpc rights grant 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivilege\n"
 "    would grant the printer admin and disk manager rights to the user 'VALE\\biddle'\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:617
+#: ../../utils/net_rpc_rights.c:618
 msgid ""
 "Usage:\n"
 "net rpc rights revoke <name|SID> <right>\n"
 "    Revoke privilege[s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:620
+#: ../../utils/net_rpc_rights.c:621
 msgid ""
 "For example:\n"
 "    net rpc rights revoke 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivilege\n"
 "    would revoke the printer admin and disk manager rights from the user 'VALE\\biddle'\n"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:642
+#: ../../utils/net_rpc_rights.c:643
 msgid "View available/assigned privileges"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:643
+#: ../../utils/net_rpc_rights.c:644
 msgid ""
 "net rpc rights list\n"
 "    View available/assigned privileges"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:650
-#: ../../utils/net_rpc_rights.c:709
+#: ../../utils/net_rpc_rights.c:651 ../../utils/net_rpc_rights.c:710
 msgid "Assign privilege[s]"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:651
+#: ../../utils/net_rpc_rights.c:652
 msgid ""
 "net rpc rights grant\n"
 "    Assign privilege[s]"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:658
-#: ../../utils/net_rpc_rights.c:712
+#: ../../utils/net_rpc_rights.c:659 ../../utils/net_rpc_rights.c:713
 msgid "Revoke privilege[s]"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:659
+#: ../../utils/net_rpc_rights.c:660
 msgid ""
 "net rpc rights revoke\n"
 "    Revoke privilege[s]"
 msgstr ""
 
-#: ../../utils/net_rpc_rights.c:706
+#: ../../utils/net_rpc_rights.c:707
 msgid "View available or assigned privileges"
 msgstr ""
 
@@ -7254,11 +7106,7 @@ msgstr ""
 msgid "Unknown State [%d]"
 msgstr ""
 
-#: ../../utils/net_rpc_service.c:82
-#: ../../utils/net_rpc_service.c:162
-#: ../../utils/net_rpc_service.c:355
-#: ../../utils/net_rpc_service.c:625
-#: ../../utils/net_rpc_service.c:705
+#: ../../utils/net_rpc_service.c:82 ../../utils/net_rpc_service.c:162 ../../utils/net_rpc_service.c:355 ../../utils/net_rpc_service.c:625 ../../utils/net_rpc_service.c:705
 #, c-format
 msgid "Failed to open service.  [%s]\n"
 msgstr ""
@@ -7268,8 +7116,7 @@ msgstr ""
 msgid "Control service request failed.  [%s]\n"
 msgstr ""
 
-#: ../../utils/net_rpc_service.c:185
-#: ../../utils/net_rpc_service.c:373
+#: ../../utils/net_rpc_service.c:185 ../../utils/net_rpc_service.c:373
 #, c-format
 msgid "%s service is %s.\n"
 msgstr ""
@@ -7278,8 +7125,7 @@ msgstr ""
 msgid "Usage: net rpc service list\n"
 msgstr ""
 
-#: ../../utils/net_rpc_service.c:230
-#: ../../utils/net_rpc_service.c:340
+#: ../../utils/net_rpc_service.c:230 ../../utils/net_rpc_service.c:340
 #, c-format
 msgid "Failed to open Service Control Manager. [%s]\n"
 msgstr ""
@@ -7293,16 +7139,11 @@ msgstr ""
 msgid "No services returned\n"
 msgstr ""
 
-#: ../../utils/net_rpc_service.c:327
-#: ../../utils/net_rpc_service.c:459
-#: ../../utils/net_rpc_service.c:505
-#: ../../utils/net_rpc_service.c:551
-#: ../../utils/net_rpc_service.c:597
+#: ../../utils/net_rpc_service.c:327 ../../utils/net_rpc_service.c:459 ../../utils/net_rpc_service.c:505 ../../utils/net_rpc_service.c:551 ../../utils/net_rpc_service.c:597
 msgid "Usage: net rpc service status <service>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_service.c:368
-#: ../../utils/net_rpc_service.c:639
+#: ../../utils/net_rpc_service.c:368 ../../utils/net_rpc_service.c:639
 #, c-format
 msgid "Query status request failed.  [%s]\n"
 msgstr ""
@@ -7367,12 +7208,7 @@ msgstr ""
 msgid "\tDisplay Name         = %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_service.c:474
-#: ../../utils/net_rpc_service.c:520
-#: ../../utils/net_rpc_service.c:566
-#: ../../utils/net_rpc_service.c:610
-#: ../../utils/net_rpc_service.c:690
-#: ../../utils/net_rpc_service.c:769
+#: ../../utils/net_rpc_service.c:474 ../../utils/net_rpc_service.c:520 ../../utils/net_rpc_service.c:566 ../../utils/net_rpc_service.c:610 ../../utils/net_rpc_service.c:690 ../../utils/net_rpc_service.c:769
 #, c-format
 msgid "Failed to open Service Control Manager.  [%s]\n"
 msgstr ""
@@ -7551,164 +7387,150 @@ msgid ""
 "    Creates a service"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:78
+#: ../../utils/net_rpc_sh_acct.c:79
 #, c-format
 msgid "query_domain_info level 1 failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:89
+#: ../../utils/net_rpc_sh_acct.c:90
 #, c-format
 msgid "query_domain_info level 3 failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:100
+#: ../../utils/net_rpc_sh_acct.c:101
 #, c-format
 msgid "query_domain_info level 12 failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:133
+#: ../../utils/net_rpc_sh_acct.c:134
 #, c-format
 msgid "Got unexpected info level %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:157
+#: ../../utils/net_rpc_sh_acct.c:158
 #, c-format
 msgid "usage: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:161
+#: ../../utils/net_rpc_sh_acct.c:162
 #, c-format
 msgid "Minimum password length: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:162
+#: ../../utils/net_rpc_sh_acct.c:163
 #, c-format
 msgid "Password history length: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:165
+#: ../../utils/net_rpc_sh_acct.c:166
 msgid "Minimum password age: "
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:168
-#: ../../utils/net_rpc_sh_acct.c:176
-#: ../../utils/net_rpc_sh_acct.c:188
-#: ../../utils/net_rpc_sh_acct.c:196
+#: ../../utils/net_rpc_sh_acct.c:169 ../../utils/net_rpc_sh_acct.c:177 ../../utils/net_rpc_sh_acct.c:189 ../../utils/net_rpc_sh_acct.c:197
 #, c-format
 msgid "%d seconds\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:170
-#: ../../utils/net_rpc_sh_acct.c:178
-#: ../../utils/net_rpc_sh_acct.c:190
-#: ../../utils/net_rpc_sh_acct.c:198
+#: ../../utils/net_rpc_sh_acct.c:171 ../../utils/net_rpc_sh_acct.c:179 ../../utils/net_rpc_sh_acct.c:191 ../../utils/net_rpc_sh_acct.c:199
 msgid "not set\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:173
+#: ../../utils/net_rpc_sh_acct.c:174
 msgid "Maximum password age: "
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:181
+#: ../../utils/net_rpc_sh_acct.c:182
 #, c-format
 msgid "Bad logon attempts: %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:185
+#: ../../utils/net_rpc_sh_acct.c:186
 msgid "Account lockout duration: "
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:193
+#: ../../utils/net_rpc_sh_acct.c:194
 msgid "Bad password count reset after: "
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:202
+#: ../../utils/net_rpc_sh_acct.c:203
 #, c-format
 msgid "Disconnect users when logon hours expire: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:205
+#: ../../utils/net_rpc_sh_acct.c:206
 #, c-format
 msgid "User must logon to change password: %s\n"
 msgstr "Benutzer muss sich anmelden um Passwort zu ändern: %s\n"
 
-#: ../../utils/net_rpc_sh_acct.c:228
-#: ../../utils/net_rpc_sh_acct.c:258
-#: ../../utils/net_rpc_sh_acct.c:288
-#: ../../utils/net_rpc_sh_acct.c:318
-#: ../../utils/net_rpc_sh_acct.c:348
-#: ../../utils/net_rpc_sh_acct.c:378
-#: ../../utils/net_rpc_sh_acct.c:408
+#: ../../utils/net_rpc_sh_acct.c:229 ../../utils/net_rpc_sh_acct.c:259 ../../utils/net_rpc_sh_acct.c:289 ../../utils/net_rpc_sh_acct.c:319 ../../utils/net_rpc_sh_acct.c:349 ../../utils/net_rpc_sh_acct.c:379 ../../utils/net_rpc_sh_acct.c:409
 #, c-format
 msgid "usage: %s <count>\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:233
+#: ../../utils/net_rpc_sh_acct.c:234
 #, c-format
 msgid "Setting bad password count to %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:263
+#: ../../utils/net_rpc_sh_acct.c:264
 #, c-format
 msgid "Setting lockout duration to %d seconds\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:293
+#: ../../utils/net_rpc_sh_acct.c:294
 #, c-format
 msgid "Setting bad password reset duration to %d seconds\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:323
+#: ../../utils/net_rpc_sh_acct.c:324
 #, c-format
 msgid "Setting minimum password age to %d seconds\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:353
+#: ../../utils/net_rpc_sh_acct.c:354
 #, c-format
 msgid "Setting maximum password age to %d seconds\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:383
+#: ../../utils/net_rpc_sh_acct.c:384
 #, c-format
 msgid "Setting minimum password length to %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:413
+#: ../../utils/net_rpc_sh_acct.c:414
 #, c-format
 msgid "Setting password history length to %d\n"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:434
+#: ../../utils/net_rpc_sh_acct.c:435
 msgid "Show current account policy settings"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:436
+#: ../../utils/net_rpc_sh_acct.c:437
 msgid "Set bad password count before lockout"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:438
+#: ../../utils/net_rpc_sh_acct.c:439
 msgid "Set account lockout duration"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:441
+#: ../../utils/net_rpc_sh_acct.c:442
 msgid "Set bad password count reset duration"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:443
-#, fuzzy
+#: ../../utils/net_rpc_sh_acct.c:444
 msgid "Set minimum password age"
-msgstr "Bitte Maschinenpasswort eingeben: "
+msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:445
-#, fuzzy
+#: ../../utils/net_rpc_sh_acct.c:446
 msgid "Set maximum password age"
-msgstr "Bitte Maschinenpasswort eingeben: "
+msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:447
+#: ../../utils/net_rpc_sh_acct.c:448
 msgid "Set minimum password length"
 msgstr ""
 
-#: ../../utils/net_rpc_sh_acct.c:449
+#: ../../utils/net_rpc_sh_acct.c:450
 msgid "Set the password history length"
 msgstr ""
 
@@ -7722,60 +7544,57 @@ msgid "Could not open pipe: %s\n"
 msgstr ""
 
 #. None found
-#: ../../utils/net_rpc_shell.c:144
+#: ../../utils/net_rpc_shell.c:146
 #, c-format
 msgid "%s: unknown cmd\n"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:150
-#: ../../utils/net_rpc_shell.c:231
-#: ../../utils/net_sam.c:1573
-#: ../../utils/net_sam.c:1835
+#: ../../utils/net_rpc_shell.c:152 ../../utils/net_rpc_shell.c:233 ../../utils/net_sam.c:1573 ../../utils/net_sam.c:1835
 msgid "talloc failed\n"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:182
+#: ../../utils/net_rpc_shell.c:184
 #, c-format
 msgid "%s failed: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:192
+#: ../../utils/net_rpc_shell.c:194
 msgid "Print information about the domain connected to"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:195
+#: ../../utils/net_rpc_shell.c:197
 msgid "List/Grant/Revoke user rights"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:198
+#: ../../utils/net_rpc_shell.c:200
 msgid "List/Add/Remove etc shares"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:201
+#: ../../utils/net_rpc_shell.c:203
 msgid "List/Add/Remove user info"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:204
+#: ../../utils/net_rpc_shell.c:206
 msgid "Show/Change account policy settings"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:215
+#: ../../utils/net_rpc_shell.c:217
 msgid ""
 "Usage:\n"
 "net rpc shell\n"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:237
+#: ../../utils/net_rpc_shell.c:239
 #, c-format
 msgid "Could not open connection: %s\n"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:252
+#: ../../utils/net_rpc_shell.c:254
 #, c-format
 msgid "Talking to domain %s (%s)\n"
 msgstr ""
 
-#: ../../utils/net_rpc_shell.c:279
+#: ../../utils/net_rpc_shell.c:281
 #, c-format
 msgid "cmdline invalid: %s\n"
 msgstr "Kommandozeile ungültig: %s\n"
@@ -7785,34 +7604,21 @@ msgstr "Kommandozeile ungültig: %s\n"
 msgid "usage: net sam set %s <user> <value>\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:47
-#: ../../utils/net_sam.c:152
-#: ../../utils/net_sam.c:244
-#: ../../utils/net_sam.c:307
-#: ../../utils/net_sam.c:697
-#: ../../utils/net_sam.c:735
-#: ../../utils/net_sam.c:1527
+#: ../../utils/net_sam.c:47 ../../utils/net_sam.c:152 ../../utils/net_sam.c:244 ../../utils/net_sam.c:307 ../../utils/net_sam.c:697 ../../utils/net_sam.c:735 ../../utils/net_sam.c:1527
 #, c-format
 msgid "Could not find name %s\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:58
-#: ../../utils/net_sam.c:68
-#: ../../utils/net_sam.c:163
-#: ../../utils/net_sam.c:255
+#: ../../utils/net_sam.c:58 ../../utils/net_sam.c:68 ../../utils/net_sam.c:163 ../../utils/net_sam.c:255
 msgid "Internal error\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:63
-#: ../../utils/net_sam.c:168
-#: ../../utils/net_sam.c:260
+#: ../../utils/net_sam.c:63 ../../utils/net_sam.c:168 ../../utils/net_sam.c:260
 #, c-format
 msgid "Loading user %s failed\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:74
-#: ../../utils/net_sam.c:184
-#: ../../utils/net_sam.c:272
+#: ../../utils/net_sam.c:74 ../../utils/net_sam.c:184 ../../utils/net_sam.c:272
 #, c-format
 msgid "Updating sam account %s failed with %s\n"
 msgstr ""
@@ -7996,14 +7802,11 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:493
-#: ../../utils/net_sam.c:545
-#: ../../utils/net_sam.c:583
+#: ../../utils/net_sam.c:493 ../../utils/net_sam.c:545 ../../utils/net_sam.c:583
 msgid "Valid account policies are:\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:504
-#: ../../utils/net_sam.c:556
+#: ../../utils/net_sam.c:504 ../../utils/net_sam.c:556
 #, c-format
 msgid "Valid account policy, but unable to fetch value!\n"
 msgstr ""
@@ -8090,8 +7893,7 @@ msgstr ""
 msgid "usage: net sam rights grant <name> <rights> ...\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:703
-#: ../../utils/net_sam.c:742
+#: ../../utils/net_sam.c:703 ../../utils/net_sam.c:742
 #, c-format
 msgid "%s unknown\n"
 msgstr ""
@@ -8152,10 +7954,7 @@ msgstr ""
 msgid "usage: net sam mapunixgroup <name>\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:861
-#: ../../utils/net_sam.c:1161
-#: ../../utils/net_sam.c:1248
-#: ../../utils/net_sam.c:1320
+#: ../../utils/net_sam.c:861 ../../utils/net_sam.c:1161 ../../utils/net_sam.c:1248 ../../utils/net_sam.c:1320
 #, c-format
 msgid "Could not find group %s\n"
 msgstr ""
@@ -8193,9 +7992,7 @@ msgstr ""
 msgid "usage: net sam createdomaingroup <name>\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:960
-#: ../../utils/net_sam.c:1038
-#: ../../utils/net_sam.c:1133
+#: ../../utils/net_sam.c:960 ../../utils/net_sam.c:1038 ../../utils/net_sam.c:1133
 #, c-format
 msgid "Creating %s failed with %s\n"
 msgstr ""
@@ -8205,13 +8002,11 @@ msgstr ""
 msgid "Created domain group %s with RID %d\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:984
-#: ../../utils/net_sam.c:1060
+#: ../../utils/net_sam.c:984 ../../utils/net_sam.c:1060
 msgid "usage: net sam deletelocalgroup <name>\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:990
-#: ../../utils/net_sam.c:1066
+#: ../../utils/net_sam.c:990 ../../utils/net_sam.c:1066
 #, c-format
 msgid "Could not find %s.\n"
 msgstr ""
@@ -8286,8 +8081,7 @@ msgstr ""
 msgid "usage: net sam addmem <group> <member>\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:1173
-#: ../../utils/net_sam.c:1255
+#: ../../utils/net_sam.c:1173 ../../utils/net_sam.c:1255
 #, c-format
 msgid "Could not find member %s\n"
 msgstr ""
@@ -8357,8 +8151,7 @@ msgstr ""
 msgid "usage: net sam listmem <group>\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:1329
-#: ../../utils/net_sam.c:1339
+#: ../../utils/net_sam.c:1329 ../../utils/net_sam.c:1339
 #, c-format
 msgid "Listing group members failed with %s\n"
 msgstr ""
@@ -8450,14 +8243,7 @@ msgid ""
 "    Init an LDAP tree with default users/groups\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:1568
-#: ../../utils/net_sam.c:1697
-#: ../../utils/net_sam.c:1729
-#: ../../utils/net_sam.c:1773
-#: ../../utils/net_sam.c:1811
-#: ../../utils/net_sam.c:1849
-#: ../../utils/net_sam.c:1860
-#: ../../utils/net_sam.c:1929
+#: ../../utils/net_sam.c:1568 ../../utils/net_sam.c:1697 ../../utils/net_sam.c:1729 ../../utils/net_sam.c:1773 ../../utils/net_sam.c:1811 ../../utils/net_sam.c:1849 ../../utils/net_sam.c:1860 ../../utils/net_sam.c:1929
 msgid "Out of Memory!\n"
 msgstr ""
 
@@ -8493,12 +8279,7 @@ msgstr ""
 msgid "Failed to add Domain Users group to ldap directory\n"
 msgstr ""
 
-#: ../../utils/net_sam.c:1663
-#: ../../utils/net_sam.c:1720
-#: ../../utils/net_sam.c:1804
-#: ../../utils/net_sam.c:1893
-#: ../../utils/net_sam.c:1907
-#: ../../utils/net_sam.c:1954
+#: ../../utils/net_sam.c:1663 ../../utils/net_sam.c:1720 ../../utils/net_sam.c:1804 ../../utils/net_sam.c:1893 ../../utils/net_sam.c:1907 ../../utils/net_sam.c:1954
 msgid "found!\n"
 msgstr "gefunden!\n"
 
@@ -8802,8 +8583,7 @@ msgid ""
 "-------------------------------------------------------------------\n"
 msgstr ""
 
-#: ../../utils/net_status.c:92
-#: ../../utils/net_status.c:198
+#: ../../utils/net_status.c:92 ../../utils/net_status.c:198
 #, c-format
 msgid "%s not initialised\n"
 msgstr ""
@@ -9326,79 +9106,77 @@ msgstr ""
 msgid "Please ask your system administrator to enable user sharing.\n"
 msgstr ""
 
-#: ../../utils/net_util.c:116
+#: ../../utils/net_util.c:118
 #, c-format
 msgid "Could not connect to server %s\n"
 msgstr ""
 
-#: ../../utils/net_util.c:124
+#: ../../utils/net_util.c:126
 msgid "The username or password was not correct.\n"
 msgstr "Benutzername oder Passwort nicht korrekt.\n"
 
-#: ../../utils/net_util.c:129
+#: ../../utils/net_util.c:131
 msgid "The account was locked out.\n"
 msgstr ""
 
-#: ../../utils/net_util.c:133
+#: ../../utils/net_util.c:135
 msgid "The account was disabled.\n"
 msgstr ""
 
-#: ../../utils/net_util.c:144
+#: ../../utils/net_util.c:146
 msgid "Encryption required and server that doesn't support UNIX extensions - failing connect\n"
 msgstr ""
 
-#: ../../utils/net_util.c:148
+#: ../../utils/net_util.c:150
 msgid "Encryption required and can't get UNIX CIFS extensions version from server.\n"
 msgstr ""
 
-#: ../../utils/net_util.c:152
+#: ../../utils/net_util.c:154
 #, c-format
 msgid "Encryption required and share %s doesn't support encryption.\n"
 msgstr ""
 
-#: ../../utils/net_util.c:156
+#: ../../utils/net_util.c:158
 #, c-format
 msgid "Encryption required and setup failed with error %s.\n"
 msgstr ""
 
-#: ../../utils/net_util.c:343
-#: ../../utils/net_util.c:365
+#: ../../utils/net_util.c:345 ../../utils/net_util.c:367
 msgid "ERROR: Unable to open secrets database\n"
 msgstr ""
 
-#: ../../utils/net_util.c:499
+#: ../../utils/net_util.c:501
 #, c-format
 msgid "Unable to find a suitable server for domain %s\n"
 msgstr ""
 
-#: ../../utils/net_util.c:524
+#: ../../utils/net_util.c:526
 #, c-format
 msgid "Connection failed: %s\n"
 msgstr "Verbindung fehlgeschlagen: %s\n"
 
-#: ../../utils/net_util.c:558
+#: ../../utils/net_util.c:560
 #, c-format
 msgid "Enter %s's password:"
 msgstr "Bitte Passwort für %s eingeben: "
 
-#: ../../utils/net_util.c:581
+#: ../../utils/net_util.c:583
 #, c-format
 msgid "Invalid command: %s %s\n"
 msgstr "Ungültiges Kommando: %s %s\n"
 
-#: ../../utils/net_util.c:607
-msgid "Disk"
-msgstr ""
-
-#: ../../utils/net_util.c:608
-msgid "Print"
-msgstr "Drucken"
-
 #: ../../utils/net_util.c:609
-msgid "Dev"
-msgstr ""
+msgid "Disk"
+msgstr "Festplatte"
 
 #: ../../utils/net_util.c:610
-msgid "IPC"
-msgstr ""
+msgid "Print"
+msgstr "Drucker"
 
+#: ../../utils/net_util.c:611
+msgid "Dev"
+msgstr "Gerät"
+
+#: ../../utils/net_util.c:612
+msgid "IPC"
+msgstr "IPC"

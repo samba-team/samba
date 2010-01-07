@@ -52,16 +52,16 @@ testit "export keytab from domain (2nd time)" $VALGRIND $net export keytab $PREF
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
 
-testit "kinit with keytab as user" $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with keytab as user" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpadminccache"
 export KRB5CCNAME
 
-testit "kinit with keytab as $USERNAME" $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
+testit "kinit with keytab as $USERNAME" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 
 testit "del user" $VALGRIND $net user delete nettestuser -k yes $@ || failed=`expr $failed + 1`
 
-rm -f tmpadminccache tmpuserccache tmpkeytab
+rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab
 exit $failed

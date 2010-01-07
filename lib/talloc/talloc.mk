@@ -1,5 +1,6 @@
 TALLOC_OBJ = $(tallocdir)/talloc.o 
 
+TALLOC_SHLIB = libtalloc.$(SHLIBEXT)
 TALLOC_SOLIB = libtalloc.$(SHLIBEXT).$(TALLOC_VERSION)
 TALLOC_SONAME = libtalloc.$(SHLIBEXT).$(TALLOC_VERSION_MAJOR)
 TALLOC_STLIB = libtalloc.a
@@ -25,6 +26,10 @@ install:: all
 	if [ -f talloc.3 ];then ${INSTALLCMD} -m 644 talloc.3 $(DESTDIR)$(mandir)/man3; fi
 	which swig >/dev/null 2>&1 && ${INSTALLCMD} -d $(DESTDIR)`swig -swiglib` || true
 	which swig >/dev/null 2>&1 && ${INSTALLCMD} -m 644 talloc.i $(DESTDIR)`swig -swiglib` || true
+	rm -f $(DESTDIR)$(libdir)/$(TALLOC_SONAME)
+	ln -s $(TALLOC_SOLIB) $(DESTDIR)$(libdir)/$(TALLOC_SONAME)
+	rm -f $(DESTDIR)$(libdir)/$(TALLOC_SHLIB)
+	ln -s $(TALLOC_SOLIB) $(DESTDIR)$(libdir)/$(TALLOC_SHLIB)
 
 doc:: talloc.3 talloc.3.html
 

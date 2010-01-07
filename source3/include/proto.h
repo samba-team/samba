@@ -1059,14 +1059,12 @@ void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unix
 time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date2(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr);
-bool nt_time_equals(const NTTIME *nt1, const NTTIME *nt2);
 void TimeInit(void);
 void get_process_uptime(struct timeval *ret_time);
 time_t nt_time_to_unix_abs(const NTTIME *nt);
 time_t uint64s_nt_time_to_unix_abs(const uint64_t *src);
 void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts);
 void unix_to_nt_time_abs(NTTIME *nt, time_t t);
-bool null_mtime(time_t mtime);
 const char *time_to_asc(const time_t t);
 const char *display_time(NTTIME nttime);
 bool nt_time_is_set(const NTTIME *nt);
@@ -5396,6 +5394,7 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
+void rpccli_close_np_fd(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_client/rpc_transport_smbd.c  */
 
@@ -5426,11 +5425,15 @@ NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
 				 struct rpc_cli_smbd_conn *conn,
 				 const struct ndr_syntax_id *abstract_syntax,
 				 struct rpc_cli_transport **presult);
+struct cli_state *rpc_pipe_smbd_smb_conn(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_client/rpc_transport_sock.c  */
 
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
+int rpccli_set_sock_timeout(struct rpc_pipe_client *rpccli, int timeout);
+void rpccli_close_sock_fd(struct rpc_pipe_client *rpccli);
+bool rpc_pipe_tcp_connection_ok(struct rpc_pipe_client *rpccli);
 
 /* The following definitions come from rpc_client/cli_samr.c  */
 

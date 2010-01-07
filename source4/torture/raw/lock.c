@@ -643,7 +643,101 @@ static bool test_async(struct torture_context *tctx,
 	/* cleanup the second lock */
 	io.lockx.in.ulock_cnt = 1;
 	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.locks = &lock[1];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* If a lock request contained multiple ranges and we are cancelling
+	 * one while it's still pending, what happens? */
+	torture_comment(tctx, "testing cancel 1/2 lock request\n");
+
+	/* Send request with two ranges */
+	io.lockx.in.timeout = -1;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 2;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = lock;
+	req = smb_raw_lock_send(cli->tree, &io);
+	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
+		       "Failed to setup pending lock (%s)\n", __location__));
+
+	/* Try to cancel the first lock range */
+	io.lockx.in.timeout = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK | LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Locking request should've failed and second range should be
+	 * unlocked */
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = &lock[1];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Cleanup both locks */
+	io.lockx.in.ulock_cnt = 2;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = lock;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_comment(tctx, "testing cancel 2/2 lock request\n");
+
+	/* Lock second range so it contends */
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = &lock[1];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Send request with two ranges */
+	io.lockx.in.timeout = -1;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 2;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = lock;
+	req = smb_raw_lock_send(cli->tree, &io);
+	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
+		       "Failed to setup pending lock (%s)\n", __location__));
+
+	/* Try to cancel the second lock range */
+	io.lockx.in.timeout = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK | LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = &lock[1];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Locking request should've failed and first range should be
+	 * unlocked */
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Cleanup both locks */
+	io.lockx.in.ulock_cnt = 2;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.locks = lock;
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -654,7 +748,7 @@ static bool test_async(struct torture_context *tctx,
 	io.lockx.in.timeout = 0;
 	io.lockx.in.locks = &lock[0];
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	io.lockx.in.timeout = 5000;
 	req = smb_raw_lock_send(cli->tree, &io);
@@ -680,7 +774,7 @@ static bool test_async(struct torture_context *tctx,
 	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.timeout = 0;
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	t = time(NULL);
 	io.lockx.in.timeout = 10000;

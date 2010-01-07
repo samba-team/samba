@@ -101,13 +101,14 @@ static void dreplsrv_op_notify_replica_sync_send(struct dreplsrv_op_notify_state
 /*
   called when we have an established connection
  */
-static void dreplsrv_op_notify_connect_recv(struct composite_context *creq)
+static void dreplsrv_op_notify_connect_done(struct tevent_req *subreq)
 {
-	struct dreplsrv_op_notify_state *st = talloc_get_type(creq->async.private_data,
-							      struct dreplsrv_op_notify_state);
+	struct dreplsrv_op_notify_state *st = tevent_req_callback_data(subreq,
+					      struct dreplsrv_op_notify_state);
 	struct composite_context *c = st->creq;
 
-	c->status = dreplsrv_out_drsuapi_recv(creq);
+	c->status = dreplsrv_out_drsuapi_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	dreplsrv_op_notify_replica_sync_send(st);
@@ -119,8 +120,8 @@ static void dreplsrv_op_notify_connect_recv(struct composite_context *creq)
 static struct composite_context *dreplsrv_op_notify_send(struct dreplsrv_notify_operation *op)
 {
 	struct composite_context *c;
-	struct composite_context *creq;
 	struct dreplsrv_op_notify_state *st;
+	struct tevent_req *subreq;
 
 	c = composite_create(op, op->service->task->event_ctx);
 	if (c == NULL) return NULL;
@@ -131,8 +132,11 @@ static struct composite_context *dreplsrv_op_notify_send(struct dreplsrv_notify_
 	st->creq	= c;
 	st->op		= op;
 
-	creq = dreplsrv_out_drsuapi_send(op->source_dsa->conn);
-	composite_continue(c, creq, dreplsrv_op_notify_connect_recv, st);
+	subreq = dreplsrv_out_drsuapi_send(st,
+					   op->service->task->event_ctx,
+					   op->source_dsa->conn);
+	if (composite_nomem(subreq, c)) return c;
+	tevent_req_set_callback(subreq, dreplsrv_op_notify_connect_done, st);
 
 	return c;
 }
