@@ -486,9 +486,9 @@ free_log:
 int ctdb_set_child_logging(struct ctdb_context *ctdb)
 {
 	int p[2];
-	int ret;
+	int old_stdout, old_stderr;
 
-	if (ctdb->log->fd == 1) {
+	if (ctdb->log->fd == STDOUT_FILENO) {
 		/* not needed for stdout logging */
 		return 0;
 	}
@@ -499,30 +499,38 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 		return -1;
 	}
 
+	/* We'll fail if stderr/stdout not already open; it's simpler. */
+	old_stdout = dup(STDOUT_FILENO);
+	old_stderr = dup(STDERR_FILENO);
+	if (dup2(p[1], STDOUT_FILENO) < 0 || dup2(p[1], STDERR_FILENO) < 0) {
+		int saved_errno = errno;
+		dup2(old_stdout, STDOUT_FILENO);
+		dup2(old_stderr, STDERR_FILENO);
+		close(old_stdout);
+		close(old_stderr);
+		close(p[0]);
+		close(p[1]);
+		errno = saved_errno;
+
+		printf(__location__ " dup2 failed: %s\n",
+			strerror(errno));
+		return -1;
+	}
+	close(p[1]);
+	close(old_stdout);
+	close(old_stderr);
+
+	/* Is this correct for STDOUT and STDERR ? */
+	set_close_on_exec(STDOUT_FILENO);
+	set_close_on_exec(STDERR_FILENO);
+	set_close_on_exec(p[0]);
+
 	event_add_fd(ctdb->ev, ctdb->log, p[0],
 		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
 		     ctdb_log_handler, ctdb->log);
-	set_close_on_exec(p[0]);
 	ctdb->log->pfd = p[0];
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for logging\n", p[0]));
-
-	close(1);
-	close(2);
-	if (p[1] != 1) {
-		ret = dup2(p[1], 1);
-		if (ret == -1) {
-			printf("dup2 failed: %s\n", strerror(errno));
-			return -1;
-		}
-		close(p[1]);
-	}
-	/* also catch stderr of subcommands to the log */
-	ret = dup2(1, 2);
-	if (ret == -1) {
-		printf("dup2 failed: %s\n", strerror(errno));
-		return -1;
-	}
 
 	return 0;
 }
