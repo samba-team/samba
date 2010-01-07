@@ -44,6 +44,8 @@ enum ntlmssp_message_type
 #define NTLMSSP_FEATURE_SEAL               0x00000004
 #define NTLMSSP_FEATURE_CCACHE		   0x00000008
 
+union ntlmssp_crypt_state;
+
 struct ntlmssp_state
 {
 	enum ntlmssp_role role;
@@ -127,23 +129,7 @@ struct ntlmssp_state
 	 */
 	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
-	union {
-		/* NTLM */
-		struct {
-			uint32_t seq_num;
-			struct arcfour_state *arcfour_state;
-		} ntlm;
-
-		/* NTLM2 */
-		struct {
-			uint32_t send_seq_num;
-			uint32_t recv_seq_num;
-			uint8_t send_sign_key[16];
-			uint8_t recv_sign_key[16];
-			struct arcfour_state *send_seal_arcfour_state;
-			struct arcfour_state *recv_seal_arcfour_state;
-		} ntlm2;
-	} crypt;
+	union ntlmssp_crypt_state *crypt;
 };
 
 struct gensec_ntlmssp_context {
