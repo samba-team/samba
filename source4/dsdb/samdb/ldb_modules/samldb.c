@@ -901,7 +901,8 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 
 	/* don't allow objectSID to be specified without the RELAX control */
 	ac->sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
-	if (ac->sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+	if (ac->sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+	    !dsdb_module_am_system(ac->module)) {
 		ldb_asprintf_errstring(ldb, "No SID may be specified in user/group creation for %s",
 				       ldb_dn_get_linearized(ac->msg->dn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
