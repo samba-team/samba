@@ -53,7 +53,7 @@ struct acl_private {
 struct acl_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
-	enum security_user_level user_type;
+	bool am_system;
 	bool allowedAttributes;
 	bool allowedAttributesEffective;
 	bool allowedChildClasses;
@@ -68,14 +68,6 @@ bool is_root_base_dn(struct ldb_context *ldb, struct ldb_dn *dn_to_check)
 	struct ldb_dn *root_base_dn = ldb_get_root_basedn(ldb);
 	result = ldb_dn_compare(root_base_dn,dn_to_check);
 	return (result==0);
-}
-
-static enum security_user_level what_is_user(struct ldb_module *module)
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-	return security_session_user_level(session_info);
 }
 
 static struct security_token *acl_user_token(struct ldb_module *module)
@@ -450,7 +442,7 @@ static int acl_allowedAttributes(struct ldb_module *module,
 		struct ldb_control *as_system = ldb_request_get_control(ac->req,
 									LDB_CONTROL_AS_SYSTEM_OID);
 		ldb_msg_remove_attr(msg, "allowedAttributesEffective");
-		if (ac->user_type == SECURITY_SYSTEM || as_system) {
+		if (ac->am_system || as_system) {
 			for (i=0; attr_list && attr_list[i]; i++) {
 				ldb_msg_add_string(msg, "allowedAttributesEffective", attr_list[i]);
 			}
@@ -566,7 +558,7 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	struct dom_sid *sid = NULL;
 	int i, j, ret;
 
-	if (ac->user_type == SECURITY_SYSTEM || as_system) {
+	if (ac->am_system || as_system) {
 		return acl_childClasses(module, sd_msg, msg, "allowedChildClassesEffective");
 	}
 
@@ -650,7 +642,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	if (ac->user_type == SECURITY_SYSTEM || as_system) {
+	if (ac->am_system || as_system) {
 		flags = SECINFO_OWNER | SECINFO_GROUP |  SECINFO_SACL |  SECINFO_DACL;
 	}
 	else {
@@ -707,7 +699,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	struct object_tree *new_node = NULL;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
-	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
+	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
 
@@ -773,7 +765,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	{
 		DEBUG(10, ("ldb:acl_modify: %s\n", req->op.mod.message->elements[0].name));
 	}
-	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
+	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -901,7 +893,7 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
 	DEBUG(10, ("ldb:acl_delete: %s\n", ldb_dn_get_linearized(req->op.del.dn)));
-	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
+	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
 
@@ -955,7 +947,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	};
 
 	DEBUG(10, ("ldb:acl_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn)));
-	if (what_is_user(module) == SECURITY_SYSTEM || as_system) {
+	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
 	if (ldb_dn_is_special(req->op.rename.olddn)) {
@@ -1135,7 +1127,7 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			}
 		}
 		if (data && data->password_attrs) {
-			if (ac->user_type != SECURITY_SYSTEM) {
+			if (!ac->am_system) {
 				for (i = 0; data->password_attrs[i]; i++) {
 					ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
 				}
@@ -1173,7 +1165,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->module = module;
 	ac->req = req;
-	ac->user_type = what_is_user(module);
+	ac->am_system = dsdb_module_am_system(module);
 	ac->allowedAttributes = ldb_attr_in_list(req->op.search.attrs, "allowedAttributes");
 	ac->allowedAttributesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedAttributesEffective");
 	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
@@ -1183,7 +1175,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	/* replace any attributes in the parse tree that are private,
 	   so we don't allow a search for 'userPassword=penguin',
 	   just as we would not allow that attribute to be returned */
-	if (ac->user_type != SECURITY_SYSTEM) {
+	if (ac->am_system) {
 		/* FIXME: We should copy the tree and keep the original unmodified. */
 		/* remove password attributes */
 		if (data && data->password_attrs) {
