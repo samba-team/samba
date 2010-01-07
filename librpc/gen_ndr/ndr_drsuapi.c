@@ -1389,6 +1389,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_governsID: val = "DRSUAPI_ATTRIBUTE_governsID"; break;
 			case DRSUAPI_ATTRIBUTE_mustContain: val = "DRSUAPI_ATTRIBUTE_mustContain"; break;
 			case DRSUAPI_ATTRIBUTE_mayContain: val = "DRSUAPI_ATTRIBUTE_mayContain"; break;
+			case DRSUAPI_ATTRIBUTE_rDNAttId: val = "DRSUAPI_ATTRIBUTE_rDNAttId"; break;
 			case DRSUAPI_ATTRIBUTE_attributeID: val = "DRSUAPI_ATTRIBUTE_attributeID"; break;
 			case DRSUAPI_ATTRIBUTE_attributeSyntax: val = "DRSUAPI_ATTRIBUTE_attributeSyntax"; break;
 			case DRSUAPI_ATTRIBUTE_isSingleValued: val = "DRSUAPI_ATTRIBUTE_isSingleValued"; break;
@@ -1427,6 +1428,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_systemPossSuperiors: val = "DRSUAPI_ATTRIBUTE_systemPossSuperiors"; break;
 			case DRSUAPI_ATTRIBUTE_systemMayContain: val = "DRSUAPI_ATTRIBUTE_systemMayContain"; break;
 			case DRSUAPI_ATTRIBUTE_systemMustContain: val = "DRSUAPI_ATTRIBUTE_systemMustContain"; break;
+			case DRSUAPI_ATTRIBUTE_systemAuxiliaryClass: val = "DRSUAPI_ATTRIBUTE_systemAuxiliaryClass"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountName: val = "DRSUAPI_ATTRIBUTE_sAMAccountName"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountType: val = "DRSUAPI_ATTRIBUTE_sAMAccountType"; break;
 			case DRSUAPI_ATTRIBUTE_fSMORoleOwner: val = "DRSUAPI_ATTRIBUTE_fSMORoleOwner"; break;
@@ -1443,6 +1445,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_servicePrincipalName: val = "DRSUAPI_ATTRIBUTE_servicePrincipalName"; break;
 			case DRSUAPI_ATTRIBUTE_objectCategory: val = "DRSUAPI_ATTRIBUTE_objectCategory"; break;
 			case DRSUAPI_ATTRIBUTE_gPLink: val = "DRSUAPI_ATTRIBUTE_gPLink"; break;
+			case DRSUAPI_ATTRIBUTE_transportAddressAttribute: val = "DRSUAPI_ATTRIBUTE_transportAddressAttribute"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_Behavior_Version: val = "DRSUAPI_ATTRIBUTE_msDS_Behavior_Version"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber: val = "DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs: val = "DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs"; break;

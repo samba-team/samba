@@ -336,6 +336,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_governsID=(int)(0x00020016),
 	DRSUAPI_ATTRIBUTE_mustContain=(int)(0x00020018),
 	DRSUAPI_ATTRIBUTE_mayContain=(int)(0x00020019),
+	DRSUAPI_ATTRIBUTE_rDNAttId=(int)(0x0002001A),
 	DRSUAPI_ATTRIBUTE_attributeID=(int)(0x0002001e),
 	DRSUAPI_ATTRIBUTE_attributeSyntax=(int)(0x00020020),
 	DRSUAPI_ATTRIBUTE_isSingleValued=(int)(0x00020021),
@@ -374,6 +375,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_systemPossSuperiors=(int)(0x000900c3),
 	DRSUAPI_ATTRIBUTE_systemMayContain=(int)(0x000900c4),
 	DRSUAPI_ATTRIBUTE_systemMustContain=(int)(0x000900c5),
+	DRSUAPI_ATTRIBUTE_systemAuxiliaryClass=(int)(0x000900c6),
 	DRSUAPI_ATTRIBUTE_sAMAccountName=(int)(0x000900dd),
 	DRSUAPI_ATTRIBUTE_sAMAccountType=(int)(0x0009012e),
 	DRSUAPI_ATTRIBUTE_fSMORoleOwner=(int)(0x00090171),
@@ -390,6 +392,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_servicePrincipalName=(int)(0x00090303),
 	DRSUAPI_ATTRIBUTE_objectCategory=(int)(0x0009030e),
 	DRSUAPI_ATTRIBUTE_gPLink=(int)(0x0009037b),
+	DRSUAPI_ATTRIBUTE_transportAddressAttribute=(int)(0x0009037f),
 	DRSUAPI_ATTRIBUTE_msDS_Behavior_Version=(int)(0x000905b3),
 	DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber=(int)(0x000906f6),
 	DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs=(int)(0x0009071c),
@@ -408,6 +411,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_governsID ( 0x00020016 )
 #define DRSUAPI_ATTRIBUTE_mustContain ( 0x00020018 )
 #define DRSUAPI_ATTRIBUTE_mayContain ( 0x00020019 )
+#define DRSUAPI_ATTRIBUTE_rDNAttId ( 0x0002001A )
 #define DRSUAPI_ATTRIBUTE_attributeID ( 0x0002001e )
 #define DRSUAPI_ATTRIBUTE_attributeSyntax ( 0x00020020 )
 #define DRSUAPI_ATTRIBUTE_isSingleValued ( 0x00020021 )
@@ -446,6 +450,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_systemPossSuperiors ( 0x000900c3 )
 #define DRSUAPI_ATTRIBUTE_systemMayContain ( 0x000900c4 )
 #define DRSUAPI_ATTRIBUTE_systemMustContain ( 0x000900c5 )
+#define DRSUAPI_ATTRIBUTE_systemAuxiliaryClass ( 0x000900c6 )
 #define DRSUAPI_ATTRIBUTE_sAMAccountName ( 0x000900dd )
 #define DRSUAPI_ATTRIBUTE_sAMAccountType ( 0x0009012e )
 #define DRSUAPI_ATTRIBUTE_fSMORoleOwner ( 0x00090171 )
@@ -462,6 +467,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_servicePrincipalName ( 0x00090303 )
 #define DRSUAPI_ATTRIBUTE_objectCategory ( 0x0009030e )
 #define DRSUAPI_ATTRIBUTE_gPLink ( 0x0009037b )
+#define DRSUAPI_ATTRIBUTE_transportAddressAttribute ( 0x0009037f )
 #define DRSUAPI_ATTRIBUTE_msDS_Behavior_Version ( 0x000905b3 )
 #define DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber ( 0x000906f6 )
 #define DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs ( 0x0009071c )
