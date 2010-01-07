@@ -720,7 +720,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	printf("mark ROOTDSE with isSynchronized=TRUE\n");
 	ldb_ret = ldb_modify(s->ldb, msg);
 	if (ldb_ret != LDB_SUCCESS) {
-		printf("ldb_modify() failed: %d\n", ldb_ret);
+		printf("ldb_modify() failed: %d : %s\n", ldb_ret, ldb_errstring(s->ldb));
 		talloc_free(s);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
@@ -730,7 +730,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	   triggers the writing of the linked attribute backlinks.
 	*/
 	if (ldb_transaction_prepare_commit(s->ldb) != LDB_SUCCESS) {
-		printf("Failed to prepare_commit vampire transaction\n");
+		printf("Failed to prepare_commit vampire transaction: %s\n", ldb_errstring(s->ldb));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
