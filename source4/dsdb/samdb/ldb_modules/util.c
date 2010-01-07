@@ -214,6 +214,8 @@ int dsdb_module_search(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->search(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
 		ret = ldb_next_request(module, req);
 	}
@@ -332,6 +334,8 @@ int dsdb_module_modify(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->modify(module, mod_req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), mod_req);
 	} else {
 		ret = ldb_next_request(module, mod_req);
 	}
@@ -380,6 +384,8 @@ int dsdb_module_rename(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->rename(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
 		ret = ldb_next_request(module, req);
 	}
@@ -425,6 +431,8 @@ int dsdb_module_add(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->add(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
 		ret = ldb_next_request(module, req);
 	}
