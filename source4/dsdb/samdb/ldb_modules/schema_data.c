@@ -290,6 +290,11 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
+	/* bypass further processing if CONTROL_RELAX is set */
+	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)) {
+		return ldb_next_request(module, req);
+	}
+
 	/* generate and add msDS-IntId attr value */
 	if (attributeID
 	    && (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2003)
