@@ -108,6 +108,9 @@ static void standard_accept_connection(struct tevent_context *ev,
 	/* This is now the child code. We need a completely new event_context to work with */
 	ev2 = s4_event_context_init(NULL);
 
+	/* setup this as the default context */
+	s4_event_context_set_default(ev2);
+
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
 	   everything else will be freed */
@@ -178,6 +181,9 @@ static void standard_new_task(struct tevent_context *ev,
 
 	/* This is now the child code. We need a completely new event_context to work with */
 	ev2 = s4_event_context_init(NULL);
+
+	/* setup this as the default context */
+	s4_event_context_set_default(ev2);
 
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -

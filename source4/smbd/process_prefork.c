@@ -114,6 +114,9 @@ static void prefork_new_task(struct tevent_context *ev,
 	/* This is now the child code. We need a completely new event_context to work with */
 	ev2 = s4_event_context_init(NULL);
 
+	/* setup this as the default context */
+	s4_event_context_set_default(ev2);
+
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
 	   everything else will be freed */
@@ -171,7 +174,10 @@ static void prefork_new_task(struct tevent_context *ev,
 	
 	/* But we need a events system to handle reaping children */
 	ev_parent = s4_event_context_init(NULL);
-	
+
+	/* setup this as the default context */
+	s4_event_context_set_default(ev_parent);
+
 	/* TODO: Handle some events... */
 	
 	/* we can't return to the top level here, as that event context is gone,
