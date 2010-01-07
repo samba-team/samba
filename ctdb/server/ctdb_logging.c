@@ -433,8 +433,6 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 					      void *logfn_private, pid_t *pid)
 {
 	int p[2];
-	int old_stdout, old_stderr;
-	int saved_errno;
 	struct ctdb_log_state *log;
 
 	log = talloc_zero(mem_ctx, struct ctdb_log_state);
@@ -448,36 +446,24 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 		goto free_log;
 	}
 
-	/* We'll fail if stderr/stdout not already open; it's simpler. */
-	old_stdout = dup(STDOUT_FILENO);
-	old_stderr = dup(STDERR_FILENO);
-	if (dup2(p[1], STDOUT_FILENO) < 0 || dup2(p[1], STDERR_FILENO) < 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to setup output for child\n"));
-		goto close_pipe;
-	}
-	close(p[1]);
-
 	*pid = fork();
 
 	/* Child? */
 	if (*pid == 0) {
-		close(old_stdout);
-		close(old_stderr);
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
+		dup2(p[1], STDOUT_FILENO);
+		dup2(p[1], STDERR_FILENO);
 		close(p[0]);
+		close(p[1]);
 		return log;
 	}
-
-	saved_errno = errno;
-	dup2(STDOUT_FILENO, old_stdout);
-	dup2(STDERR_FILENO, old_stderr);
-	close(old_stdout);
-	close(old_stderr);
+	close(p[1]);
 
 	/* We failed? */
 	if (*pid < 0) {
 		DEBUG(DEBUG_ERR, (__location__ " fork failed for child process\n"));
 		close(p[0]);
-		errno = saved_errno;
 		goto free_log;
 	}
 
@@ -489,9 +475,6 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 		     ctdb_log_handler, log);
 	return log;
 
-close_pipe:
-	close(p[0]);
-	close(p[1]);
 free_log:
 	talloc_free(log);
 	return NULL;
