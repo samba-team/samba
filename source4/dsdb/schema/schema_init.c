@@ -558,19 +558,14 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		/* set an invalid value */
 		attr->attributeID_id = 0xFFFFFFFF;
 	} else {
-		/* check if msDS-IntId element is set */
-		attr->attributeID_id = samdb_result_uint(msg, "msDS-IntId", 0xFFFFFFFF);
-		if (attr->attributeID_id == 0xFFFFFFFF) {
-			/* msDS-IntId is not set, make */
-			status = dsdb_schema_pfm_make_attid(schema->prefixmap,
-							    attr->attributeID_oid,
-							    &attr->attributeID_id);
-			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
-					__location__, attr->lDAPDisplayName, attr->attributeID_oid,
-					win_errstr(status)));
-				return status;
-			}
+		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
+						    attr->attributeID_oid,
+						    &attr->attributeID_id);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
+				__location__, attr->lDAPDisplayName, attr->attributeID_oid,
+				win_errstr(status)));
+			return status;
 		}
 	}
 	GET_GUID_LDB(msg, "schemaIDGUID", attr, schemaIDGUID);
