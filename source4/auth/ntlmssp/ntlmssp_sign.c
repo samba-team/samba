@@ -1,20 +1,20 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Version 3.0
  *  NTLMSSP Signing routines
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2001
  *  Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2005
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -42,7 +42,7 @@
 
 static void calc_ntlmv2_key(TALLOC_CTX *mem_ctx, 
 			    DATA_BLOB *subkey,
-			    DATA_BLOB session_key, 
+			    DATA_BLOB session_key,
 			    const char *constant)
 {
 	struct MD5Context ctx3;
@@ -66,7 +66,6 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 					      DATA_BLOB *sig, bool encrypt_sig)
 {
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-
 		HMACMD5Context ctx;
 		uint8_t digest[16];
 		uint8_t seq_num[4];
@@ -94,13 +93,15 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		hmac_md5_update(whole_pdu, pdu_length, &ctx);
 		hmac_md5_final(digest, &ctx);
 
-		if (encrypt_sig && ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+		if (encrypt_sig && (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 			switch (direction) {
 			case NTLMSSP_SEND:
-				arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state, digest, 8);
+				arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state,
+						   digest, 8);
 				break;
 			case NTLMSSP_RECEIVE:
-				arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state, digest, 8);
+				arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state,
+						   digest, 8);
 				break;
 			}
 		}
@@ -109,11 +110,12 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		memcpy(sig->data + 4, digest, 8);
 		memcpy(sig->data + 12, seq_num, 4);
 
-		DEBUG(10, ("NTLM2: created signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
+		DEBUG(10,("NTLM2: created signature over %llu bytes of input:\n",
+			  (unsigned long long)pdu_length));
 		dump_data(11, sig->data, sig->length);
-			
 	} else {
 		uint32_t crc;
+
 		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(sig_mem_ctx, 
 			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0,
@@ -122,9 +124,11 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		}
 		ntlmssp_state->crypt.ntlm.seq_num++;
 
-		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state, sig->data+4, sig->length-4);
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state,
+				   sig->data+4, sig->length-4);
 
-		DEBUG(10, ("NTLM1: created signature over %llu bytes of input:\n", (unsigned long long)length));
+		DEBUG(10,("NTLM1: created signature over %llu bytes of input:\n",
+			  (unsigned long long)length));
 		dump_data(11, sig->data, sig->length);
 	}
 	return NT_STATUS_OK;
@@ -136,11 +140,15 @@ NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
 {
-	return ntlmssp_make_packet_signature(ntlmssp_state,
-					     sig_mem_ctx,
-					     data, length,
-					     whole_pdu, pdu_length,
-					     NTLMSSP_SEND, sig, true);
+	NTSTATUS nt_status;
+
+	nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+						  sig_mem_ctx,
+						  data, length,
+						  whole_pdu, pdu_length,
+						  NTLMSSP_SEND, sig, true);
+
+	return nt_status;
 }
 
 /**
@@ -162,40 +170,45 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	nt_status = ntlmssp_make_packet_signature(ntlmssp_state, sig_mem_ctx,
+	nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+						  sig_mem_ctx,
 						  data, length,
 						  whole_pdu, pdu_length,
-						  NTLMSSP_RECEIVE, &local_sig, true);
+						  NTLMSSP_RECEIVE,
+						  &local_sig, true);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("NTLMSSP packet sig creation failed with %s\n", nt_errstr(nt_status)));
+		DEBUG(0,("NTLMSSP packet sig creation failed with %s\n",
+			 nt_errstr(nt_status)));
 		return nt_status;
 	}
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (local_sig.length != sig->length ||
-		    memcmp(local_sig.data, 
-			   sig->data, sig->length) != 0) {
+		    memcmp(local_sig.data, sig->data, sig->length) != 0) {
 
-			DEBUG(10, ("BAD SIG NTLM2: wanted signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
+			DEBUG(10,("BAD SIG NTLM2: wanted signature over %llu bytes of input:\n",
+				  (unsigned long long)pdu_length));
 			dump_data(10, local_sig.data, local_sig.length);
-			
-			DEBUG(10, ("BAD SIG: got signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
+
+			DEBUG(10,("BAD SIG: got signature over %llu bytes of input:\n",
+				  (unsigned long long)pdu_length));
 			dump_data(10, sig->data, sig->length);
-			
+
 			data_blob_free(&local_sig);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
 		if (local_sig.length != sig->length ||
-		    memcmp(local_sig.data + 8, 
-			   sig->data + 8, sig->length - 8) != 0) {
-			DEBUG(10, ("BAD SIG NTLM1: wanted signature of %llu bytes of input:\n", (unsigned long long)length));
+		    memcmp(local_sig.data + 8, sig->data + 8, sig->length - 8) != 0) {
+			DEBUG(10,("BAD SIG NTLM1: wanted signature of %llu bytes of input:\n",
+				  (unsigned long long)length));
 			dump_data(5, local_sig.data, local_sig.length);
-			
-			DEBUG(10, ("BAD SIG: got signature of %llu bytes of input:\n", (unsigned long long)length));
+
+			DEBUG(10,("BAD SIG: got signature of %llu bytes of input:\n",
+				  (unsigned long long)length));
 			dump_data(10, sig->data, sig->length);
-			
+
 			data_blob_free(&local_sig);
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -218,8 +231,6 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
 {
-	NTSTATUS nt_status;
-
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot seal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -228,19 +239,33 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 	DEBUG(10,("ntlmssp_seal_data: seal\n"));
 	dump_data_pw("ntlmssp clear data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		/* The order of these two operations matters - we must first seal the packet,
-		   then seal the sequence number - this is because the send_seal_hash is not
-		   constant, but is is rather updated with each iteration */
-		nt_status = ntlmssp_make_packet_signature(ntlmssp_state, sig_mem_ctx,
+		NTSTATUS nt_status;
+		/*
+		 * The order of these two operations matters - we
+		 * must first seal the packet, then seal the
+		 * sequence number - this is because the
+		 * send_seal_hash is not constant, but is is rather
+		 * updated with each iteration
+		 */
+		nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+							  sig_mem_ctx,
 							  data, length,
 							  whole_pdu, pdu_length,
-							  NTLMSSP_SEND, sig, false);
-		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state, data, length);
+							  NTLMSSP_SEND,
+							  sig, false);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state,
+				   data, length);
 		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
-			arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state, sig->data+4, 8);
+			arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state,
+					   sig->data+4, 8);
 		}
 	} else {
 		uint32_t crc;
+
 		crc = crc32_calc_buffer(data, length);
 		if (!msrpc_gen(sig_mem_ctx,
 			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0,
@@ -248,23 +273,27 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* The order of these two operations matters - we must
-		   first seal the packet, then seal the sequence
-		   number - this is because the ntlmssp_hash is not
-		   constant, but is is rather updated with each
-		   iteration */
+		/*
+		 * The order of these two operations matters - we
+		 * must first seal the packet, then seal the
+		 * sequence number - this is because the ntlmv1_arc4_state
+		 * is not constant, but is is rather updated with
+		 * each iteration
+		 */
 
-		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state, data, length);
-		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state, sig->data+4, sig->length-4);
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state,
+				   data, length);
+
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state,
+				   sig->data+4, sig->length-4);
+
 		/* increment counter on send */
 		ntlmssp_state->crypt.ntlm.seq_num++;
-		nt_status = NT_STATUS_OK;
 	}
 	dump_data_pw("ntlmssp signature\n", sig->data, sig->length);
 	dump_data_pw("ntlmssp sealed data\n", data, length);
 
-
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /**
@@ -287,15 +316,22 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 
 	dump_data_pw("ntlmssp sealed data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state, data, length);
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state,
+				   data, length);
 	} else {
-		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state, data, length);
+		arcfour_crypt_sbox(ntlmssp_state->crypt.ntlm.arcfour_state,
+				   data, length);
 	}
 	dump_data_pw("ntlmssp clear data\n", data, length);
-	status = ntlmssp_check_packet(ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+	status = ntlmssp_check_packet(ntlmssp_state,
+				      sig_mem_ctx,
+				      data, length,
+				      whole_pdu, pdu_length,
+				      sig);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("NTLMSSP packet check for unseal failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
+		DEBUG(1,("NTLMSSP packet check for unseal failed due to invalid signature on %llu bytes of input:\n",
+			 (unsigned long long)length));
 	}
 	return status;
 }
@@ -321,8 +357,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)
-	{
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		DATA_BLOB weak_session_key = ntlmssp_state->session_key;
 		const char *send_sign_const;
 		const char *send_seal_const;
@@ -355,29 +390,27 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state = talloc(ntlmssp_state, struct arcfour_state);
 		NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state);
 
-		/**
-		   Weaken NTLMSSP keys to cope with down-level
-		   clients, servers and export restrictions.
-		   
-		   We probably should have some parameters to control
-		   this, once we get NTLM2 working.
-		*/
-
-		/* Key weakening was not performed on the master key
-		 * for NTLM2 (in ntlmssp_weaken_keys()), but must be
-		 * done on the encryption subkeys only.  That is why
-		 * we don't have this code for the ntlmv1 case.
+		/*
+		 * Weaken NTLMSSP keys to cope with down-level
+		 * clients, servers and export restrictions.
+		 *
+		 * We probably should have some parameters to
+		 * control this, once we get NTLM2 working.
+		 *
+		 * Key weakening was not performed on the master key
+		 * for NTLM2, but must be done on the encryption subkeys only.
 		 */
 
 		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
-			
+			/* nothing to do */
 		} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
 			weak_session_key.length = 7;
 		} else { /* forty bits */
 			weak_session_key.length = 5;
 		}
+
 		dump_data_pw("NTLMSSP weakend master key:\n",
-			     weak_session_key.data, 
+			     weak_session_key.data,
 			     weak_session_key.length);
 
 		/* SEND: sign key */
@@ -387,7 +420,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		dump_data_pw("NTLMSSP send sign key:\n",
 			     ntlmssp_state->crypt.ntlm2.send_sign_key.data,
 			     ntlmssp_state->crypt.ntlm2.send_sign_key.length);
-		
+
 		/* SEND: seal ARCFOUR pad */
 		calc_ntlmv2_key(mem_ctx, 
 				&send_seal_key, 
@@ -400,6 +433,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		dump_data_pw("NTLMSSP send sesl hash:\n", 
 			     ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state->sbox,
 			     sizeof(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state->sbox));
+
+		/* SEND: seq num */
+		ntlmssp_state->crypt.ntlm2.send_seq_num = 0;
 
 		/* RECV: sign key */
 		calc_ntlmv2_key(ntlmssp_state,
@@ -422,7 +458,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state->sbox,
 			     sizeof(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state->sbox));
 
-		ntlmssp_state->crypt.ntlm2.send_seq_num = 0;
+		/* RECV: seq num */
 		ntlmssp_state->crypt.ntlm2.recv_seq_num = 0;
 
 	} else {
