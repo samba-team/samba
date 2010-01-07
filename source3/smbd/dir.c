@@ -1227,14 +1227,6 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 			goto out;
 		}
 
-		/* If it's a dfs symlink, ignore _hide xxxx_ options */
-		if (lp_host_msdfs() &&
-				lp_msdfs_root(SNUM(conn)) &&
-				is_msdfs_link(conn, entry, NULL)) {
-			ret = true;
-			goto out;
-		}
-
 		/* Create an smb_filename with stream_name == NULL. */
 		status = create_synthetic_smb_fname(talloc_tos(), entry, NULL,
 						    pst, &smb_fname_base);
