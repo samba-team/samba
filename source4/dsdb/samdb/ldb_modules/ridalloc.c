@@ -56,6 +56,45 @@
 
 
 /*
+  make a IRPC call to the drepl task to ask it to get the RID
+  Manager to give us another RID pool.
+
+  This function just sends the message to the drepl task then
+  returns immediately. It should be called well before we
+  completely run out of RIDs
+ */
+static void ridalloc_poke_rid_manager(struct ldb_module *module)
+{
+	struct messaging_context *msg;
+	struct server_id *server;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+
+	msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, lp_ctx),
+				    lp_iconv_convenience(lp_ctx),
+				    ldb_get_event_context(ldb));
+	if (!msg) {
+		DEBUG(3,(__location__ ": Failed to create messaging context\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	server = irpc_servers_byname(msg, msg, "dreplsrv");
+	if (!server) {
+		/* this means the drepl service is not running */
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	messaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
+
+	/* we don't care if the message got through */
+	talloc_free(tmp_ctx);
+}
+
+
+/*
   allocate a new range of RIDs in the RID Manager object
  */
 static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_dn *rid_manager_dn, uint64_t *new_pool)
@@ -272,6 +311,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	}
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+		ridalloc_poke_rid_manager(module);
 		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -339,44 +379,6 @@ static int ridalloc_refresh_rid_set_ntds(struct ldb_module *module,
 
 
 /*
-  make a IRPC call to the drepl task to ask it to get the RID
-  Manager to give us another RID pool.
-
-  This function just sends the message to the drepl task then
-  returns immediately. It should be called well before we
-  completely run out of RIDs
- */
-static void ridalloc_poke_rid_manager(struct ldb_module *module)
-{
-	struct messaging_context *msg;
-	struct server_id *server;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
-	TALLOC_CTX *tmp_ctx = talloc_new(module);
-
-	msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, lp_ctx),
-				    lp_iconv_convenience(lp_ctx),
-				    ldb_get_event_context(ldb));
-	if (!msg) {
-		DEBUG(3,(__location__ ": Failed to create messaging context\n"));
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	server = irpc_servers_byname(msg, msg, "dreplsrv");
-	if (!server) {
-		/* this means the drepl service is not running */
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	messaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
-
-	/* we don't care if the message got through */
-	talloc_free(tmp_ctx);
-}
-
-/*
   get a new RID pool for ourselves
   also returns the first rid for the new pool
  */
@@ -406,6 +408,7 @@ static int ridalloc_refresh_own_pool(struct ldb_module *module, uint64_t *new_po
 	}
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+		ridalloc_poke_rid_manager(module);
 		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
