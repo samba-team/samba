@@ -35,10 +35,10 @@
 #include "ldb_module.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 struct extended_access_check_attribute {
 	const char *oa_name;
@@ -301,7 +301,7 @@ static int acl_check_access_on_attribute(struct ldb_module *module,
 					 struct security_descriptor *sd,
 					 struct dom_sid *rp_sid,
 					 uint32_t access,
-					 struct dsdb_attribute *attr)
+					 const struct dsdb_attribute *attr)
 {
 	int ret;
 	NTSTATUS status;
@@ -362,7 +362,7 @@ static int acl_check_access_on_class(struct ldb_module *module,
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
-	struct GUID *guid;
+	const struct GUID *guid;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_token *token = acl_user_token(module);
@@ -460,7 +460,7 @@ static int acl_allowedAttributes(struct ldb_module *module,
 			return ret;
 		}
 		for (i=0; attr_list && attr_list[i]; i++) {
-			struct dsdb_attribute *attr = dsdb_attribute_by_lDAPDisplayName(schema,
+			const struct dsdb_attribute *attr = dsdb_attribute_by_lDAPDisplayName(schema,
 											attr_list[i]);
 			if (!attr) {
 				return LDB_ERR_OPERATIONS_ERROR;
