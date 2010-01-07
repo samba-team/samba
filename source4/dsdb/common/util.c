@@ -2655,10 +2655,11 @@ failed:
 
 
 /*
-  load the uSNHighest attribute from the @REPLCHANGED object for a
-  partition
+  load the uSNHighest and the uSNUrgent attributes from the @REPLCHANGED
+  object for a partition
  */
-int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t *uSN)
+int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn,
+				uint64_t *uSN, uint64_t *urgent_uSN)
 {
 	struct ldb_request *req;
 	int ret;
@@ -2723,8 +2724,14 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t
 
 	if (res->count < 1) {
 		*uSN = 0;
+		if (urgent_uSN) {
+			*urgent_uSN = 0;
+		}
 	} else {
 		*uSN = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNHighest", 0);
+		if (urgent_uSN) {
+			*urgent_uSN = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNUrgent", 0);
+		}
 	}
 
 	talloc_free(tmp_ctx);
@@ -2733,10 +2740,11 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t
 }
 
 /*
-  save the uSNHighest attribute in the @REPLCHANGED object for a
+  save uSNHighest and uSNUrgent attributes in the @REPLCHANGED object for a
   partition
  */
-int dsdb_save_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t uSN)
+int dsdb_save_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn,
+				uint64_t uSN, uint64_t urgent_uSN)
 {
 	struct ldb_request *req;
 	struct ldb_message *msg;
@@ -2761,6 +2769,16 @@ int dsdb_save_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn, uint64_t
 	}
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	
+	/* urgent_uSN is optional so may not be stored */
+	if (urgent_uSN) {
+		ret = ldb_msg_add_fmt(msg, "uSNUrgent", "%llu", (unsigned long long)urgent_uSN);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return ret;
+		}
+		msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
 
 	p_ctrl = talloc(msg, struct dsdb_control_current_partition);
 	if (p_ctrl == NULL) {

@@ -60,6 +60,7 @@ struct replmd_private {
 		struct nc_entry *prev, *next;
 		struct ldb_dn *dn;
 		uint64_t mod_usn;
+		uint64_t mod_usn_urgent;
 	} *ncs;
 };
 
@@ -85,11 +86,68 @@ struct replmd_replicated_request {
 	struct ldb_message *search_msg;
 
 	uint64_t seq_num;
-
+	bool is_urgent;
 };
 
-static int replmd_replicated_apply_next(struct replmd_replicated_request *ar);
+enum urgent_situation {
+	REPL_URGENT_ON_CREATE = 1,
+	REPL_URGENT_ON_UPDATE = 3, /* activated on creating as well*/
+	REPL_URGENT_ON_DELETE = 4
+};
 
+
+static const struct {
+	const char *update_name;
+	enum urgent_situation repl_situation;
+} urgent_objects[] = {
+		{"nTDSDSA", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_DELETE)},
+		{"crossRef", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_DELETE)},
+		{"attributeSchema", REPL_URGENT_ON_UPDATE},
+		{"classSchema", REPL_URGENT_ON_UPDATE},
+		{"secret", REPL_URGENT_ON_UPDATE},
+		{"rIDManager", REPL_URGENT_ON_UPDATE},
+		{NULL, 0}
+};
+
+/* Attributes looked for when updating or deleting, to check for a urgent replication needed */
+static const char *urgent_attrs[] = {
+		"lockoutTime",
+		"pwdLastSet",
+		"userAccountControl",
+		NULL
+};
+
+
+static bool replmd_check_urgent_objectclass(const struct ldb_message_element *objectclass_el,
+					enum urgent_situation situation)
+{
+	int i, j;
+	for (i=0; urgent_objects[i].update_name; i++) {
+
+		if ((situation & urgent_objects[i].repl_situation) == 0) {
+			continue;
+		}
+
+		for (j=0; j<objectclass_el->num_values; j++) {
+			const struct ldb_val *v = &objectclass_el->values[j];
+			if (ldb_attr_cmp((const char *)v->data, urgent_objects[i].update_name) == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+static bool replmd_check_urgent_attribute(const struct ldb_message_element *el)
+{
+	if (ldb_attr_in_list(urgent_attrs, el->name)) {
+		return true;
+	}
+	return false;
+}
+
+
+static int replmd_replicated_apply_next(struct replmd_replicated_request *ar);
 
 /*
   initialise the module
@@ -353,6 +411,9 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 		if (ac->seq_num > modified_partition->mod_usn) {
 			modified_partition->mod_usn = ac->seq_num;
+			if (ac->is_urgent) {
+				modified_partition->mod_usn_urgent = ac->seq_num;
+			}
 		}
 	}
 
@@ -383,7 +444,7 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
  */
 static int replmd_notify_store(struct ldb_module *module)
 {
-	struct replmd_private *replmd_private = 
+	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
@@ -391,7 +452,9 @@ static int replmd_notify_store(struct ldb_module *module)
 		int ret;
 		struct nc_entry *modified_partition = replmd_private->ncs;
 
-		ret = dsdb_save_partition_usn(ldb, modified_partition->dn, modified_partition->mod_usn);
+		ret = dsdb_save_partition_usn(ldb, modified_partition->dn,
+						modified_partition->mod_usn,
+						modified_partition->mod_usn_urgent);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to save partition uSN for %s\n",
 				 ldb_dn_get_linearized(modified_partition->dn)));
@@ -668,6 +731,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	uint32_t i, ni=0;
 	bool allow_add_guid = false;
 	bool remove_current_guid = false;
+	bool is_urgent = false;
+	struct ldb_message_element *objectclass_el;
 
         /* check if there's a show relax control (used by provision to say 'I know what I'm doing') */
         control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
@@ -888,11 +953,17 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	 */
 	replmd_ldb_message_sort(msg, ac->schema);
 
+	objectclass_el = ldb_msg_find_element(msg, "objectClass");
+	is_urgent = replmd_check_urgent_objectclass(objectclass_el,
+							REPL_URGENT_ON_CREATE);
+
+	ac->is_urgent = is_urgent;
 	ret = ldb_build_add_req(&down_req, ldb, ac,
 				msg,
 				req->controls,
 				ac, replmd_op_callback,
 				req);
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -911,7 +982,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 /*
  * update the replPropertyMetaData for one element
  */
-static int replmd_update_rpmd_element(struct ldb_context *ldb, 
+static int replmd_update_rpmd_element(struct ldb_context *ldb,
 				      struct ldb_message *msg,
 				      struct ldb_message_element *el,
 				      struct replPropertyMetaDataBlob *omd,
@@ -994,7 +1065,8 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 static int replmd_update_rpmd(struct ldb_module *module, 
 			      const struct dsdb_schema *schema, 
 			      struct ldb_message *msg, uint64_t *seq_num,
-			      time_t t)
+			      time_t t,
+			      bool *is_urgent)
 {
 	const struct ldb_val *omd_value;
 	enum ndr_err_code ndr_err;
@@ -1003,9 +1075,10 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	NTTIME now;
 	const struct GUID *our_invocation_id;
 	int ret;
-	const char *attrs[] = { "replPropertyMetaData" , NULL };
+	const char *attrs[] = { "replPropertyMetaData" , "objectClass", NULL };
 	struct ldb_result *res;
 	struct ldb_context *ldb;
+	struct ldb_message_element *objectclass_el;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1026,7 +1099,12 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			 ldb_dn_get_linearized(msg->dn)));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-		
+
+	objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
+	if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
+							REPL_URGENT_ON_UPDATE)) {
+		*is_urgent = true;
+	}
 
 	omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
 	if (!omd_value) {
@@ -1051,11 +1129,16 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	}
 
 	for (i=0; i<msg->num_elements; i++) {
-		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], &omd, schema, seq_num, 
+		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], &omd, schema, seq_num,
 						 our_invocation_id, now);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+
+		if (is_urgent && !*is_urgent) {
+			*is_urgent = replmd_check_urgent_attribute(&msg->elements[i]);
+		}
+
 	}
 
 	/*
@@ -1100,7 +1183,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 	return LDB_SUCCESS;	
 }
-
 
 struct parsed_dn {
 	struct dsdb_dn *dsdb_dn;
@@ -1920,6 +2002,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	time_t t = time(NULL);
 	int ret;
+	bool is_urgent = false;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -1946,7 +2029,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	ldb_msg_remove_attr(msg, "whenChanged");
 	ldb_msg_remove_attr(msg, "uSNChanged");
 
-	ret = replmd_update_rpmd(module, ac->schema, msg, &ac->seq_num, t);
+	ret = replmd_update_rpmd(module, ac->schema, msg, &ac->seq_num, t, &is_urgent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -1961,6 +2044,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	/* TODO:
 	 * - replace the old object with the newly constructed one
 	 */
+
+	ac->is_urgent = is_urgent;
 
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
 				msg,

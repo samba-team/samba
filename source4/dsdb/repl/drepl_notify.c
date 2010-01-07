@@ -318,7 +318,7 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 	}
 
 	/* loads the partition uSNHighest */
-	ret = dsdb_load_partition_usn(s->samdb, p->dn, &uSN);
+	ret = dsdb_load_partition_usn(s->samdb, p->dn, &uSN, NULL);
 	if (ret != LDB_SUCCESS || uSN == 0) {
 		/* nothing to do */
 		return WERR_OK;

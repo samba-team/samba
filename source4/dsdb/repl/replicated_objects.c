@@ -284,7 +284,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num1);
+	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num1, NULL);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
 		ldb_transaction_cancel(ldb);
@@ -307,7 +307,7 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num2);
+	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num2, NULL);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
 		ldb_transaction_cancel(ldb);
