@@ -138,8 +138,8 @@ struct ntlmssp_state
 		struct {
 			uint32_t send_seq_num;
 			uint32_t recv_seq_num;
-			DATA_BLOB send_sign_key;
-			DATA_BLOB recv_sign_key;
+			uint8_t send_sign_key[16];
+			uint8_t recv_sign_key[16];
 			struct arcfour_state *send_seal_arcfour_state;
 			struct arcfour_state *recv_seal_arcfour_state;
 		} ntlm2;

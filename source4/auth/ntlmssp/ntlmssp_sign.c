@@ -40,19 +40,6 @@
  *
  */
 
-static void calc_ntlmv2_key_talloc(TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *subkey,
-			    DATA_BLOB session_key,
-			    const char *constant)
-{
-	struct MD5Context ctx3;
-	*subkey = data_blob_talloc(mem_ctx, NULL, 16);
-	MD5Init(&ctx3);
-	MD5Update(&ctx3, session_key.data, session_key.length);
-	MD5Update(&ctx3, (const uint8_t *)constant, strlen(constant)+1);
-	MD5Final(subkey->data, &ctx3);
-}
-
 static void calc_ntlmv2_key(uint8_t subkey[16],
 			    DATA_BLOB session_key,
 			    const char *constant)
@@ -90,14 +77,12 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		case NTLMSSP_SEND:
 			SIVAL(seq_num, 0, ntlmssp_state->crypt.ntlm2.send_seq_num);
 			ntlmssp_state->crypt.ntlm2.send_seq_num++;
-			hmac_md5_init_limK_to_64(ntlmssp_state->crypt.ntlm2.send_sign_key.data,
-						 ntlmssp_state->crypt.ntlm2.send_sign_key.length, &ctx);
+			hmac_md5_init_limK_to_64(ntlmssp_state->crypt.ntlm2.send_sign_key, 16, &ctx);
 			break;
 		case NTLMSSP_RECEIVE:
 			SIVAL(seq_num, 0, ntlmssp_state->crypt.ntlm2.recv_seq_num);
 			ntlmssp_state->crypt.ntlm2.recv_seq_num++;
-			hmac_md5_init_limK_to_64(ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
-						 ntlmssp_state->crypt.ntlm2.recv_sign_key.length, &ctx);
+			hmac_md5_init_limK_to_64(ntlmssp_state->crypt.ntlm2.recv_sign_key, 16, &ctx);
 			break;
 		}
 		hmac_md5_update(seq_num, sizeof(seq_num), &ctx);
@@ -427,12 +412,10 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     weak_session_key.length);
 
 		/* SEND: sign key */
-		calc_ntlmv2_key_talloc(ntlmssp_state,
-				&ntlmssp_state->crypt.ntlm2.send_sign_key,
+		calc_ntlmv2_key(ntlmssp_state->crypt.ntlm2.send_sign_key,
 				ntlmssp_state->session_key, send_sign_const);
 		dump_data_pw("NTLMSSP send sign key:\n",
-			     ntlmssp_state->crypt.ntlm2.send_sign_key.data,
-			     ntlmssp_state->crypt.ntlm2.send_sign_key.length);
+			     ntlmssp_state->crypt.ntlm2.send_sign_key, 16);
 
 		/* SEND: seal ARCFOUR pad */
 		calc_ntlmv2_key(send_seal_key,
@@ -450,12 +433,10 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		ntlmssp_state->crypt.ntlm2.send_seq_num = 0;
 
 		/* RECV: sign key */
-		calc_ntlmv2_key_talloc(ntlmssp_state,
-				&ntlmssp_state->crypt.ntlm2.recv_sign_key,
+		calc_ntlmv2_key(ntlmssp_state->crypt.ntlm2.recv_sign_key,
 				ntlmssp_state->session_key, recv_sign_const);
 		dump_data_pw("NTLMSSP recv sign key:\n",
-			     ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
-			     ntlmssp_state->crypt.ntlm2.recv_sign_key.length);
+			     ntlmssp_state->crypt.ntlm2.recv_sign_key, 16);
 
 		/* RECV: seal ARCFOUR pad */
 		calc_ntlmv2_key(recv_seal_key,
@@ -715,7 +696,7 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			ntlm2_seqnum_r = ntlmssp_state->crypt.ntlm2.recv_seq_num;
 			ntlm2_state_r = *ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state;
 			memcpy(ntlm2_key_r,
-			       ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
+			       ntlmssp_state->crypt.ntlm2.recv_sign_key,
 			       16);
 		} else {
 			ntlm_seqnum = ntlmssp_state->crypt.ntlm.seq_num;
@@ -737,7 +718,7 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 				ntlmssp_state->crypt.ntlm2.recv_seq_num = ntlm2_seqnum_r;
 				*ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state = ntlm2_state_r;
-				memcpy(ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
+				memcpy(ntlmssp_state->crypt.ntlm2.recv_sign_key,
 				       ntlm2_key_r, 16);
 			} else {
 				ntlmssp_state->crypt.ntlm.seq_num = ntlm_seqnum;
