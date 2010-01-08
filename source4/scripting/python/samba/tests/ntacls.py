@@ -29,8 +29,12 @@ class NtaclsTests(TestCase):
 	def test_setntacl(self):
 		random.seed()
 		lp=LoadParm()
+		path=None
+		try:
+			path=os.environ['SELFTEST_PREFIX']
+		except:
+			self.assertTrue(path!=None, "SELFTEST_PREFIX env not set")
 		acl="O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-		path=os.environ['SELFTEST_PREFIX']
 		tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
 		ntacl=xattr.NTACL()
 		ntacl.version = 1
@@ -42,8 +46,12 @@ class NtaclsTests(TestCase):
 	def test_setntacl_getntacl(self):
 		random.seed()
 		lp=LoadParm()
+		path=None
+		try:
+			path=os.environ['SELFTEST_PREFIX']
+		except:
+			self.assertTrue(path!=None, "SELFTEST_PREFIX env not set")
 		acl="O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-		path=os.environ['SELFTEST_PREFIX']
 		tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
 		ntacl=xattr.NTACL()
 		ntacl.version = 1
@@ -59,22 +67,30 @@ class NtaclsTests(TestCase):
 		random.seed()
 		lp=LoadParm()
 		acl="O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-		path=os.environ['SELFTEST_PREFIX']
+		path=None
+		try:
+			path=os.environ['SELFTEST_PREFIX']
+		except:
+			self.assertTrue(path!=None, "SELFTEST_PREFIX env not set")
 		tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
 		ntacl=xattr.NTACL()
 		ntacl.version = 1
 		open(tempf, 'w').write("empty")
 		setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467","tdb",os.path.join(path,"eadbtest.tdb"))
 		facl=getntacl(lp,tempf,"tdb",os.path.join(path,"eadbtest.tdb"))
-		anysid=security.dom_sid(security.SID_NT_SELF)
-		self.assertEquals(facl.info.as_sddl(anysid),acl)
+		domsid=security.dom_sid(security.SID_NT_SELF)
+		self.assertEquals(facl.info.as_sddl(domsid),acl)
 		os.unlink(tempf)
 
 	def test_setntacl_invalidbackend(self):
 		random.seed()
 		lp=LoadParm()
 		acl="O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-		path=os.environ['SELFTEST_PREFIX']
+		path=None
+		try:
+			path=os.environ['SELFTEST_PREFIX']
+		except:
+			self.assertTrue(path!=None, "SELFTEST_PREFIX env not set")
 		tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
 		ntacl=xattr.NTACL()
 		ntacl.version = 1
@@ -86,7 +102,11 @@ class NtaclsTests(TestCase):
 			random.seed()
 			lp=LoadParm()
 			acl="O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-			path=os.environ['SELFTEST_PREFIX']
+			path=None
+			try:
+				path=os.environ['SELFTEST_PREFIX']
+			except:
+				self.assertTrue(path!=None, "SELFTEST_PREFIX env not set")
 			tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
 			ntacl=xattr.NTACL()
 			ntacl.version = 1
