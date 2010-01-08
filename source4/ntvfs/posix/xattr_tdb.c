@@ -20,9 +20,9 @@
 */
 
 #include "includes.h"
-#include "vfs_posix.h"
-#include "../tdb/include/tdb.h"
 #include "tdb_wrap.h"
+#include "../tdb/include/tdb.h"
+#include "vfs_posix.h"
 
 #define XATTR_LIST_ATTR ".xattr_list"
 
@@ -30,7 +30,7 @@
   we need to maintain a list of attributes on each file, so that unlink
   can automatically clean them up
 */
-static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_name, 
+static NTSTATUS xattr_tdb_add_list(struct tdb_wrap *ea_tdb, TALLOC_CTX *ctx, const char *attr_name,
 				   const char *fname, int fd)
 {
 	DATA_BLOB blob;
@@ -43,9 +43,9 @@ static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_nam
 		return NT_STATUS_OK;
 	}
 
-	mem_ctx = talloc_new(pvfs);
+	mem_ctx = talloc_new(ctx);
 
-	status = pull_xattr_blob_tdb(pvfs, mem_ctx, XATTR_LIST_ATTR, 
+	status = pull_xattr_blob_tdb_raw(ea_tdb, mem_ctx, XATTR_LIST_ATTR,
 				     fname, fd, 100, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		blob = data_blob(NULL, 0);
@@ -68,16 +68,16 @@ static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_nam
 	memcpy(blob.data + blob.length, attr_name, len);
 	blob.length += len;
 
-	status = push_xattr_blob_tdb(pvfs, XATTR_LIST_ATTR, fname, fd, &blob);
+	status = push_xattr_blob_tdb_raw(ea_tdb,ctx, XATTR_LIST_ATTR, fname, fd, &blob);
 	talloc_free(mem_ctx);
 
 	return status;
 }
 
 /*
-  form a key for using in the ea_db
+  form a key for using in the ea_tdb
 */
-static NTSTATUS get_ea_db_key(TALLOC_CTX *mem_ctx,
+static NTSTATUS get_ea_tdb_key(TALLOC_CTX *mem_ctx,
 			      const char *attr_name,
 			      const char *fname, int fd, 
 			      TDB_DATA *key)
@@ -108,26 +108,28 @@ static NTSTATUS get_ea_db_key(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+
+
 /*
-  pull a xattr as a blob, using the ea_db tdb
+  pull a xattr as a blob, using the ea_tdb_context tdb
 */
-NTSTATUS pull_xattr_blob_tdb(struct pvfs_state *pvfs,
+NTSTATUS pull_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
 			     TALLOC_CTX *mem_ctx,
-			     const char *attr_name, 
-			     const char *fname, 
-			     int fd, 
+			     const char *attr_name,
+			     const char *fname,
+			     int fd,
 			     size_t estimated_size,
 			     DATA_BLOB *blob)
 {
 	TDB_DATA tkey, tdata;
 	NTSTATUS status;
 
-	status = get_ea_db_key(mem_ctx, attr_name, fname, fd, &tkey);
+	status = get_ea_tdb_key(mem_ctx, attr_name, fname, fd, &tkey);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	tdata = tdb_fetch(pvfs->ea_db->tdb, tkey);
+	tdata = tdb_fetch(ea_tdb->tdb, tkey);
 	if (tdata.dptr == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -141,19 +143,31 @@ NTSTATUS pull_xattr_blob_tdb(struct pvfs_state *pvfs,
 	return NT_STATUS_OK;	
 }
 
+NTSTATUS pull_xattr_blob_tdb(struct pvfs_state *pvfs,
+			     TALLOC_CTX *mem_ctx,
+			     const char *attr_name,
+			     const char *fname,
+			     int fd,
+			     size_t estimated_size,
+			     DATA_BLOB *blob)
+{
+	return pull_xattr_blob_tdb_raw(pvfs->ea_db,mem_ctx,attr_name,fname,fd,estimated_size,blob);
+}
+
 /*
-  push a xattr as a blob, using ea_db
+  push a xattr as a blob, using ea_tdb
 */
-NTSTATUS push_xattr_blob_tdb(struct pvfs_state *pvfs,
-			     const char *attr_name, 
-			     const char *fname, 
-			     int fd, 
+NTSTATUS push_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
+			     TALLOC_CTX *mem_ctx,
+			     const char *attr_name,
+			     const char *fname,
+			     int fd,
 			     const DATA_BLOB *blob)
 {
 	TDB_DATA tkey, tdata;
 	NTSTATUS status;
 
-	status = get_ea_db_key(pvfs, attr_name, fname, fd, &tkey);
+	status = get_ea_tdb_key(mem_ctx, attr_name, fname, fd, &tkey);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -161,24 +175,32 @@ NTSTATUS push_xattr_blob_tdb(struct pvfs_state *pvfs,
 	tdata.dptr = blob->data;
 	tdata.dsize = blob->length;
 
-	if (tdb_chainlock(pvfs->ea_db->tdb, tkey) != 0) {
+	if (tdb_chainlock(ea_tdb->tdb, tkey) != 0) {
 		talloc_free(tkey.dptr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = xattr_tdb_add_list(pvfs, attr_name, fname, fd);
+	status = xattr_tdb_add_list(ea_tdb,mem_ctx, attr_name, fname, fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	if (tdb_store(pvfs->ea_db->tdb, tkey, tdata, TDB_REPLACE) == -1) {
+	if (tdb_store(ea_tdb->tdb, tkey, tdata, TDB_REPLACE) == -1) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 done:
-	tdb_chainunlock(pvfs->ea_db->tdb, tkey);
+	tdb_chainunlock(ea_tdb->tdb, tkey);
 	talloc_free(tkey.dptr);
 	return status;	
+}
+NTSTATUS push_xattr_blob_tdb(struct pvfs_state *pvfs,
+			     const char *attr_name,
+			     const char *fname,
+			     int fd,
+			     const DATA_BLOB *blob)
+{
+	return push_xattr_blob_tdb_raw(pvfs->ea_db,pvfs,attr_name,fname,fd,blob);
 }
 
 
@@ -191,7 +213,7 @@ NTSTATUS delete_xattr_tdb(struct pvfs_state *pvfs, const char *attr_name,
 	TDB_DATA tkey;
 	NTSTATUS status;
 
-	status = get_ea_db_key(NULL, attr_name, fname, fd, &tkey);
+	status = get_ea_tdb_key(NULL, attr_name, fname, fd, &tkey);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -217,7 +239,7 @@ NTSTATUS unlink_xattr_tdb(struct pvfs_state *pvfs, const char *fname)
 	const char *s;
 	NTSTATUS status;
 
-	status = pull_xattr_blob_tdb(pvfs, mem_ctx, XATTR_LIST_ATTR, 
+	status = pull_xattr_blob_tdb(pvfs, mem_ctx, XATTR_LIST_ATTR,
 				     fname, -1, 100, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
