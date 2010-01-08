@@ -47,7 +47,7 @@ from samba import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTI
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
-from samba.misc import setntacl,dsacl2fsacl
+from samba.ntacls import setntacl,dsacl2fsacl
 from samba.ndr import ndr_pack,ndr_unpack
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
@@ -435,7 +435,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     
 
 def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                 targetdir, sid_generator):
+                 targetdir, sid_generator,eadb):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -467,7 +467,11 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     #Load non-existant file
     if os.path.exists(smbconf):
         default_lp.load(smbconf)
-    
+    if eadb:
+        posixeadb_line = "posix:eadb = " + os.path.abspath(os.path.join(os.path.join(targetdir, "private"),"eadb.tdb"))
+    else:
+        posixeadb_line = ""
+
     if targetdir is not None:
         privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
         lockdir_line = "lock dir = " + os.path.abspath(targetdir)
@@ -495,7 +499,8 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "SYSVOLPATH": sysvol,
             "SIDGENERATOR_LINE": sid_generator_line,
             "PRIVATEDIR_LINE": privatedir_line,
-            "LOCKDIR_LINE": lockdir_line
+            "LOCKDIR_LINE": lockdir_line,
+			"POSIXEADB_LINE": posixeadb_line
             })
 
 
@@ -1056,39 +1061,45 @@ FILL_DRS = "DRS"
 SYSVOL_ACL = "O:${DOMAINSID}-500G:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;S-1-5-32-549)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:${DOMAINSID}-500G:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;S-1-5-32-549)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;${DOMAINSID}-520)"
 
-def set_gpo_acl(path,acl):
-	setntacl(path,acl)
+def set_gpo_acl(path,acl,lp,domsid):
+	setntacl(lp,path,acl,domsid)
 	for root, dirs, files in os.walk(path, topdown=False):
 		for name in files:
-			setntacl(os.path.join(root, name),acl)
+			setntacl(lp,os.path.join(root, name),acl,domsid)
 		for name in dirs:
-			setntacl(os.path.join(root, name),acl)
+			setntacl(lp,os.path.join(root, name),acl,domsid)
 
-def setdiracl(samdb,names,netlogon,sysvol,gid,domainsid):
+def setsysvolacl(samdb,names,netlogon,sysvol,gid,domainsid,lp):
+	canchown = 1
 	acl = SYSVOL_ACL.replace("${DOMAINSID}",str(domainsid))
-	os.chown(sysvol,-1,gid)
-	setntacl(sysvol,acl)
+	try:
+		os.chown(sysvol,-1,gid)
+	except:
+		canchown = 0
+
+	setntacl(lp,sysvol,acl,str(domainsid))
 	for root, dirs, files in os.walk(sysvol, topdown=False):
 		for name in files:
-			os.chown(os.path.join(root, name),-1,gid)
-			setntacl(os.path.join(root, name),acl)
+			if canchown:
+				os.chown(os.path.join(root, name),-1,gid)
+			setntacl(lp,os.path.join(root, name),acl,str(domainsid))
 		for name in dirs:
-			os.chown(os.path.join(root, name),-1,gid)
-			setntacl(os.path.join(root, name),acl)
+			if canchown:
+				os.chown(os.path.join(root, name),-1,gid)
+			setntacl(lp,os.path.join(root, name),acl,str(domainsid))
 
 	# Set ACL for GPO
 	policy_path = os.path.join(sysvol, names.dnsdomain, "Policies")
 	acl = POLICIES_ACL.replace("${DOMAINSID}",str(domainsid))
-	set_gpo_acl(policy_path,dsacl2fsacl(acl))
+	set_gpo_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
 	res = samdb.search(base="CN=Policies,CN=System,%s"%(names.domaindn),
 						attrs=["cn","nTSecurityDescriptor"],
 						expression="", scope=SCOPE_ONELEVEL)
-	security.dom_sid("S-1-5-21-1")
 	for policy in res:
 		acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
 		policy_path = os.path.join(sysvol, names.dnsdomain, "Policies",
 									 str(policy["cn"]))
-		set_gpo_acl(policy_path,dsacl2fsacl(acl))
+		set_gpo_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
 
 
 
@@ -1109,7 +1120,7 @@ def provision(setup_dir, message, session_info,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
               setup_ds_path=None, slapd_path=None, nosync=False,
-              ldap_dryrun_mode=False,setfileacl=False):
+              ldap_dryrun_mode=False,useeadb=False):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
@@ -1168,7 +1179,7 @@ def provision(setup_dir, message, session_info,
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(smbconf):
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                     targetdir, sid_generator)
+                     targetdir, sid_generator,useeadb)
 
     lp = param.LoadParm()
     lp.load(smbconf)
@@ -1316,11 +1327,10 @@ def provision(setup_dir, message, session_info,
                             root_uid=root_uid, nobody_uid=nobody_uid,
                             users_gid=users_gid, wheel_gid=wheel_gid)
 
-        setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid)
-
-        if setfileacl:
-            setdiracl(samdb,names,paths.netlogon,paths.sysvol,wheel_gid,domainsid)
-        # Set up group policies (domain policy and domain controller policy)
+        if serverrole == "domain controller":
+            # Set up group policies (domain policy and domain controller policy)
+            setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid)
+            setsysvolacl(samdb,names,paths.netlogon,paths.sysvol,wheel_gid,domainsid,lp)
 
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
