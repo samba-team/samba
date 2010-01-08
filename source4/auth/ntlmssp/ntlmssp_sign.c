@@ -40,7 +40,7 @@
  *
  */
 
-static void calc_ntlmv2_key(TALLOC_CTX *mem_ctx, 
+static void calc_ntlmv2_key_talloc(TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *subkey,
 			    DATA_BLOB session_key,
 			    const char *constant)
@@ -413,7 +413,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     weak_session_key.length);
 
 		/* SEND: sign key */
-		calc_ntlmv2_key(ntlmssp_state,
+		calc_ntlmv2_key_talloc(ntlmssp_state,
 				&ntlmssp_state->crypt.ntlm2.send_sign_key,
 				ntlmssp_state->session_key, send_sign_const);
 		dump_data_pw("NTLMSSP send sign key:\n",
@@ -421,7 +421,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     ntlmssp_state->crypt.ntlm2.send_sign_key.length);
 
 		/* SEND: seal ARCFOUR pad */
-		calc_ntlmv2_key(mem_ctx, 
+		calc_ntlmv2_key_talloc(mem_ctx,
 				&send_seal_key, 
 				weak_session_key, send_seal_const);
 		dump_data_pw("NTLMSSP send seal key:\n",
@@ -437,7 +437,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		ntlmssp_state->crypt.ntlm2.send_seq_num = 0;
 
 		/* RECV: sign key */
-		calc_ntlmv2_key(ntlmssp_state,
+		calc_ntlmv2_key_talloc(ntlmssp_state,
 				&ntlmssp_state->crypt.ntlm2.recv_sign_key,
 				ntlmssp_state->session_key, recv_sign_const);
 		dump_data_pw("NTLMSSP recv sign key:\n",
@@ -445,7 +445,7 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     ntlmssp_state->crypt.ntlm2.recv_sign_key.length);
 
 		/* RECV: seal ARCFOUR pad */
-		calc_ntlmv2_key(mem_ctx, 
+		calc_ntlmv2_key_talloc(mem_ctx,
 				&recv_seal_key, 
 				weak_session_key, recv_seal_const);
 		dump_data_pw("NTLMSSP recv seal key:\n",
