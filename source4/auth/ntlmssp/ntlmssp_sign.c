@@ -374,9 +374,12 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		const char *send_seal_const;
 		const char *recv_sign_const;
 		const char *recv_seal_const;
-
-		DATA_BLOB send_seal_key;
-		DATA_BLOB recv_seal_key;
+		uint8_t send_seal_key[16];
+		DATA_BLOB send_seal_blob = data_blob_const(send_seal_key,
+					   sizeof(send_seal_key));
+		uint8_t recv_seal_key[16];
+		DATA_BLOB recv_seal_blob = data_blob_const(recv_seal_key,
+					   sizeof(recv_seal_key));
 
 		switch (ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
@@ -432,14 +435,13 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     ntlmssp_state->crypt.ntlm2.send_sign_key.length);
 
 		/* SEND: seal ARCFOUR pad */
-		calc_ntlmv2_key_talloc(mem_ctx,
-				&send_seal_key, 
+		calc_ntlmv2_key(send_seal_key,
 				weak_session_key, send_seal_const);
-		dump_data_pw("NTLMSSP send seal key:\n",
-			     send_seal_key.data, 
-			     send_seal_key.length);
+		dump_data_pw("NTLMSSP send seal key:\n", send_seal_key, 16);
+
 		arcfour_init(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state,
-			     &send_seal_key);
+			     &send_seal_blob);
+
 		dump_data_pw("NTLMSSP send sesl hash:\n", 
 			     ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state->sbox,
 			     sizeof(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state->sbox));
@@ -456,14 +458,13 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			     ntlmssp_state->crypt.ntlm2.recv_sign_key.length);
 
 		/* RECV: seal ARCFOUR pad */
-		calc_ntlmv2_key_talloc(mem_ctx,
-				&recv_seal_key, 
+		calc_ntlmv2_key(recv_seal_key,
 				weak_session_key, recv_seal_const);
-		dump_data_pw("NTLMSSP recv seal key:\n",
-			     recv_seal_key.data, 
-			     recv_seal_key.length);
+		dump_data_pw("NTLMSSP recv seal key:\n", recv_seal_key, 16);
+
 		arcfour_init(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state,
-			     &recv_seal_key);
+			     &recv_seal_blob);
+
 		dump_data_pw("NTLMSSP receive seal hash:\n", 
 			     ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state->sbox,
 			     sizeof(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state->sbox));
