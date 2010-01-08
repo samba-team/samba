@@ -30,6 +30,7 @@ from samba.tests import LdbTestCase, TestCaseInTempDir, cmdline_loadparm
 import samba.dcerpc.security
 import samba.ndr
 from samba.auth import system_session
+from samba import param
 
 datadir = os.path.join(os.path.dirname(__file__), 
                        "../../../../../testdata/samba3")
@@ -50,7 +51,7 @@ class MapBaseTestCase(TestCaseInTempDir):
                  "@TO": "sambaDomainName=TESTS," + s3.basedn})
 
         ldb.add({"dn": "@MODULES",
-                 "@LIST": "rootdse,paged_results,server_sort,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition"})
+                 "@LIST": "rootdse,paged_results,server_sort,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,samba3sid,partition"})
 
         ldb.add({"dn": "@PARTITION",
             "partition": ["%s" % (s4.basedn_casefold), 
@@ -59,6 +60,7 @@ class MapBaseTestCase(TestCaseInTempDir):
             "modules": "*:"})
 
     def setUp(self):
+        cmdline_loadparm.set("sid generator", "backend")
         super(MapBaseTestCase, self).setUp()
 
         def make_dn(basedn, rdn):
