@@ -653,16 +653,6 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	DEBUG(2,("Allocated RID pool for server %s\n",
 		 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
 
-	/* to complete the rest of the operation we need to point
-	   getncchanges at the base DN for the domain */
-	req8->naming_context->dn = ldb_dn_get_linearized(base_dn);
-	ret = dsdb_find_guid_by_dn(ldb, base_dn, &req8->naming_context->guid);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find base DN GUID - %s\n",
-			 ldb_errstring(ldb)));
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
 	return WERR_OK;
 }
 
@@ -713,6 +703,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsGetNCChangesRequest8 *req8;
 	uint32_t options;
 	uint32_t max_objects;
+	struct ldb_dn *search_dn = NULL;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -781,6 +772,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 		werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 		W_ERROR_NOT_OK_RETURN(werr);
+		search_dn = samdb_base_dn(b_state->sam_ctx);
 		break;
 
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
@@ -863,10 +855,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			scope = LDB_SCOPE_BASE;
 		}
 		
+		if (!search_dn) {
+			search_dn = getnc_state->ncRoot_dn;
+		}
+
 		DEBUG(1,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
 		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, &getnc_state->site_res,
-						      getnc_state->ncRoot_dn, scope, attrs,
+						      search_dn, scope, attrs,
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -1035,6 +1031,12 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		talloc_free(getnc_state);
 		b_state->getncchanges_state = NULL;
+	}
+
+	if (req8->extended_op != DRSUAPI_EXOP_NONE) {
+		r->out.ctr->ctr6.uptodateness_vector = NULL;
+		r->out.ctr->ctr6.nc_object_count = 0;
+		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
 	}
 
 	DEBUG(r->out.ctr->ctr6.more_data?2:1,
