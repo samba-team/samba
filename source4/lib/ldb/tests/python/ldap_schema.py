@@ -11,7 +11,6 @@ import base64
 import os
 
 sys.path.append("bin/python")
-sys.path.append("../lib/subunit/python")
 
 import samba.getopt as options
 
@@ -45,7 +44,7 @@ from samba import ATYPE_DISTRIBUTION_LOCAL_GROUP
 from samba import ATYPE_DISTRIBUTION_UNIVERSAL_GROUP
 from samba import DS_DC_FUNCTION_2003
 
-from subunit import SubunitTestRunner
+from subunit.run import SubunitTestRunner
 import unittest
 
 from samba.ndr import ndr_pack, ndr_unpack

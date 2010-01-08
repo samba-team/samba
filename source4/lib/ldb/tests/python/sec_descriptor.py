@@ -11,7 +11,6 @@ import random
 import time
 
 sys.path.append("bin/python")
-sys.path.append("../lib/subunit/python")
 
 import samba.getopt as options
 
@@ -27,7 +26,7 @@ from samba.dcerpc import security
 from samba.auth import system_session
 from samba import Ldb, DS_DOMAIN_FUNCTION_2008, SECINFO_OWNER, \
     SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL
-from subunit import SubunitTestRunner
+from subunit.run import SubunitTestRunner
 import unittest
 
 parser = optparse.OptionParser("sec_descriptor [options] <host>")

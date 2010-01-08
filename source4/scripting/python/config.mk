@@ -30,6 +30,6 @@ $(eval $(foreach pyfile, $(_PY_FILES),$(call python_py_module_template,$(patsubs
 EPYDOC_OPTIONS = --no-private --url http://www.samba.org/ --no-sourcecode
 
 epydoc:: pythonmods
-	PYTHONPATH=$(pythonbuilddir):../lib/subunit/python epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit
+	PYTHONPATH=$(pythonbuilddir):../lib/subunit/python epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit testtools
 
 install:: installpython
