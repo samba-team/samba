@@ -1542,7 +1542,7 @@ krb5_error_code hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *
 		"objectSid", NULL
 	};
 
-	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "hdb_samba4_check_constrained_delegation");
+	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "hdb_samba4_check_pkinit_ms_upn_match");
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
