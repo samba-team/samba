@@ -276,7 +276,7 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 	uint8_t *buf;
 	ssize_t len;
 	int sys_errno;
-	int ret;
+	bool ok;
 
 	call = talloc(sock, struct kdc_udp_call);
 	if (call == NULL) {
@@ -300,14 +300,14 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 		 tsocket_address_string(call->src, call)));
 
 	/* Call krb5 */
-	ret = sock->kdc_socket->process(sock->kdc_socket->kdc,
-					call,
-					&call->in,
-					&call->out,
-					call->src,
-					sock->kdc_socket->local_address,
-					1 /* Datagram */);
-	if (!ret) {
+	ok = sock->kdc_socket->process(sock->kdc_socket->kdc,
+				       call,
+				       &call->in,
+				       &call->out,
+				       call->src,
+				       sock->kdc_socket->local_address,
+				       1 /* Datagram */);
+	if (!ok) {
 		talloc_free(call);
 		goto done;
 	}
