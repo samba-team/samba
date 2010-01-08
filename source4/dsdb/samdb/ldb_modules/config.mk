@@ -137,11 +137,24 @@ SUBSYSTEM = LIBLDB
 INIT_FUNCTION = LDB_MODULE(samba3sam)
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBLDB SMBPASSWD \
 			NSS_WRAPPER LIBSECURITY NDR_SECURITY
-# End MODULE ldb_samldb
+# End MODULE ldb_samba3sam
 ################################################
 
 ldb_samba3sam_OBJ_FILES = \
 		$(dsdbsrcdir)/samdb/ldb_modules/samba3sam.o
+
+################################################
+# Start MODULE ldb_samba3sid
+[MODULE::ldb_samba3sid]
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(samba3sid)
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBLDB SMBPASSWD \
+			NSS_WRAPPER LIBSECURITY NDR_SECURITY
+# End MODULE ldb_samba3sid
+################################################
+
+ldb_samba3sid_OBJ_FILES = \
+		$(dsdbsrcdir)/samdb/ldb_modules/samba3sid.o
 
 ################################################
 # Start MODULE ldb_simple_ldap_map
