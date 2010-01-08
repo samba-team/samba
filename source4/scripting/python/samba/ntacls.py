@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Matthieu Patou <mat@matws.net> 2009
+# Copyright (C) Matthieu Patou <mat@matws.net> 2009-2010
 #
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,25 +18,63 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-import samba.xattr
+import os
+import tdb
+import samba.xattr_native, samba.xattr_tdb
 from samba.dcerpc import security, xattr
 from samba.ndr import ndr_pack, ndr_unpack
+class XattrBackendError(Exception):
+    """A generic xattr backend error."""
 
+def checkset_backend(lp,backend,eadbfile):
+	if backend != None:
+		if backend == "native":
+			lp.set("posix:eadb","")
+		elif backend == "tdb":
+			if eadbfile != None:
+				lp.set("posix:eadb",eadbfile)
+			else:
+				os.path.abspath(os.path.join(lp.get("private dir"),"eadb.tdb"))
+		else:
+			raise XattrBackendError("Unvalid xattr backend choice %s"%backend)
 
-def getntacl(file):
-	attribute = samba.xattr.wrap_getxattr(file,xattr.XATTR_NTACL_NAME)
-	anysid=security.dom_sid(security.SID_NT_SELF)
-	ntacl = ndr_unpack(xattr.NTACL,attribute,1)
-	return ntacl.info.as_sddl(anysid)
+def getntacl(lp,file,backend=None,eadbfile=None):
+	try:
+		checkset_backend(lp,backend,eadbfile)
+	except:
+		raise
+	eadbname = lp.get("posix:eadb")
+	if eadbname != None and eadbname != "" :
+		attribute = samba.xattr_tdb.wrap_getxattr(eadbname,file,xattr.XATTR_NTACL_NAME)
+		try:
+			attribute = samba.xattr_tdb.wrap_getxattr(eadbname,file,xattr.XATTR_NTACL_NAME)
+		except:
+			print "Fail to open %s"%eadbname
+			attribute = samba.xattr_native.wrap_getxattr(file,xattr.XATTR_NTACL_NAME)
+	else:
+		attribute = samba.xattr_native.wrap_getxattr(file,xattr.XATTR_NTACL_NAME)
+	ntacl = ndr_unpack(xattr.NTACL,attribute)
+	return ntacl
 
-def setntacl(file,sddl):
+def setntacl(lp,file,sddl,domsid,backend=None,eadbfile=None):
+	try:
+		checkset_backend(lp,backend,eadbfile)
+	except:
+		raise
 	ntacl=xattr.NTACL()
 	ntacl.version = 1
-	anysid=security.dom_sid(security.SID_NT_SELF)
+	anysid=security.dom_sid(domsid)
 	sd = security.descriptor.from_sddl(sddl, anysid)
 	ntacl.info = sd
-	attribute = samba.xattr.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+	eadbname = lp.get("posix:eadb")
+	if eadbname != None  and eadbname != "":
+		try:
+			attribute = samba.xattr_tdb.wrap_setxattr(eadbname,file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+		except:
+			print "Fail to open %s"%eadbname
+			attribute = samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+	else:
+		attribute = samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
 
 # Takes the access mask of a DS ACE and transform them in a File ACE mask
 def ldapmask2filemask(ldm):
@@ -96,8 +134,8 @@ def ldapmask2filemask(ldm):
 # ACL and return the SDDL representation of this ACL adapted
 # for files. It's used for Policy object provision
 
-def dsacl2fsacl(dssddl):
-	anysid = security.dom_sid(security.SID_NT_SELF)
+def dsacl2fsacl(dssddl,domsid):
+	anysid = security.dom_sid(domsid)
 	ref = security.descriptor.from_sddl(dssddl,anysid)
 	fdescr = security.descriptor()
 	fdescr.owner_sid = ref.owner_sid
