@@ -7,3 +7,4 @@ objectClass: dMD
 cn: Schema
 nTSecurityDescriptor:: ${DESCRIPTOR}
 instanceType: 13
+msDS-NcType: 0
