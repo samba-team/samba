@@ -62,6 +62,7 @@ class MapBaseTestCase(TestCaseInTempDir):
     def setUp(self):
         cmdline_loadparm.set("sid generator", "backend")
         cmdline_loadparm.set("workgroup", "TESTS")
+        cmdline_loadparm.set("netbios name", "TESTS")
         super(MapBaseTestCase, self).setUp()
 
         def make_dn(basedn, rdn):
