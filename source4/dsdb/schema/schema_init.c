@@ -619,10 +619,14 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
 	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
@@ -1064,10 +1068,14 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
 	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
