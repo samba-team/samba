@@ -34,8 +34,8 @@ userAccountControl: 532480
 userPassword:: ${MACHINEPASS_B64}
 objectSID: ${DOMAINSID}-1000
 
-# Here are missing the objects for the NTFRS subscription and the RID set since
-# we don't support those techniques (FRS, distributed RIDs) yet.
+# Here are missing the objects for the NTFRS subscription since we don't
+# support this technique yet.
 
 # Objects under "Configuration/Sites/<Default sitename>/Servers"
 
