@@ -593,7 +593,7 @@ rangeLower: 1
 rangeUpper: 4096
 attributeSecurityGuid: 77b5b886-944a-11d1-aebd-0000f80367c1
 mapiID: 14941
-systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemFlags: 0
 
 cn: Address-Syntax
 ldapDisplayName: addressSyntax
@@ -880,6 +880,7 @@ isSingleValued: FALSE
 schemaIdGuid: fa4693bb-7bc2-4cb9-81a8-c99c43b7905e
 systemOnly: FALSE
 searchFlags: 0
+systemFlags: 0
 
 cn: Attribute-Display-Names
 ldapDisplayName: attributeDisplayNames
@@ -953,6 +954,7 @@ systemOnly: FALSE
 searchFlags: 0
 rangeUpper: 250000
 showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Auditing-Policy
 ldapDisplayName: auditingPolicy
@@ -1220,6 +1222,7 @@ schemaIdGuid: d4159c92-957d-4a87-8a67-8d2934e01649
 systemOnly: FALSE
 searchFlags: 0
 showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Catalogs
 ldapDisplayName: catalogs
@@ -1857,6 +1860,7 @@ schemaIdGuid: be9ef6ee-cbc7-4f22-b27b-96967e7ee585
 systemOnly: FALSE
 searchFlags: 0
 showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Description
 ldapDisplayName: description
@@ -2662,7 +2666,7 @@ searchFlags: 0
 rangeLower: 1
 rangeUpper: 512
 mapiID: 35943
-systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemFlags: 0
 
 cn: Employee-Type
 ldapDisplayName: employeeType
@@ -2676,7 +2680,7 @@ searchFlags: fCOPY
 rangeLower: 1
 rangeUpper: 256
 mapiID: 35945
-systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemFlags: 0
 
 cn: Enabled
 ldapDisplayName: Enabled
@@ -3609,6 +3613,7 @@ isSingleValued: TRUE
 schemaIdGuid: ec05b750-a977-4efe-8e8d-ba6c1a6e33a8
 systemOnly: FALSE
 searchFlags: 0
+systemFlags: 0
 
 cn: Home-Directory
 ldapDisplayName: homeDirectory
@@ -4129,6 +4134,7 @@ systemOnly: TRUE
 searchFlags: fPRESERVEONDELETE
 systemFlags: FLAG_SCHEMA_BASE_OBJECT |FLAG_ATTR_REQ_PARTIAL_SET_MEMBER
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+isMemberOfPartialAttributeSet: TRUE
 
 cn: Is-Single-Valued
 ldapDisplayName: isSingleValued
@@ -4153,6 +4159,7 @@ schemaIdGuid: bac80572-09c4-4fa9-9ae6-7628d7adbe0e
 systemOnly: FALSE
 searchFlags: 0
 showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Keywords
 ldapDisplayName: keywords
@@ -4190,6 +4197,7 @@ schemaIdGuid: c569bb46-c680-44bc-a273-e6c227d71b45
 systemOnly: FALSE
 searchFlags: 0
 showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Last-Backup-Restoration-Time
 ldapDisplayName: lastBackupRestorationTime
@@ -4264,6 +4272,7 @@ searchFlags: fATTINDEX
 attributeSecurityGuid: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+isMemberOfPartialAttributeSet: TRUE
 
 cn: Last-Set-Time
 ldapDisplayName: lastSetTime
@@ -5330,6 +5339,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 0
 rangeUpper: 32766
+systemFlags: FLAG_SCHEMA_BASE_OBJECT
 
 cn: ms-DFS-Generation-GUID-v2
 ldapDisplayName: msDFS-GenerationGUIDv2
@@ -5342,6 +5352,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 16
 rangeUpper: 16
+systemFlags: 16
 
 cn: ms-DFS-Last-Modified-v2
 ldapDisplayName: msDFS-LastModifiedv2
@@ -5352,6 +5363,7 @@ isSingleValued: TRUE
 schemaIdGuid: 3c095e8a-314e-465b-83f5-ab8277bcf29b
 isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
+systemFlags: 16
 
 cn: ms-DFS-Link-Identity-GUID-v2
 ldapDisplayName: msDFS-LinkIdentityGUIDv2
@@ -5364,6 +5376,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower:16
 rangeUpper: 16
+systemFlags: 16
 
 cn: ms-DFS-Link-Path-v2
 ldapDisplayName: msDFS-LinkPathv2
@@ -5376,6 +5389,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 0
 rangeUpper: 32766
+systemFlags: 16
 
 cn: ms-DFS-Link-Security-Descriptor-v2
 ldapDisplayName: msDFS-LinkSecurityDescriptorv2
@@ -5386,6 +5400,7 @@ isSingleValued: TRUE
 schemaIdGuid: 57cf87f7-3426-4841-b322-02b3b6e9eba8
 isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
+systemFlags: 16
 
 cn: ms-DFS-Namespace-Identity-GUID-v2
 ldapDisplayName: msDFS-NamespaceIdentityGUIDv2
@@ -5398,6 +5413,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 16
 rangeUpper: 16
+systemFlags: 16
 
 cn: ms-DFS-Properties-v2
 ldapDisplayName: msDFS-Propertiesv2
@@ -5410,6 +5426,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 0
 rangeUpper: 1024
+systemFlags: 16
 
 cn: ms-DFSR-CachePolicy
 ldapDisplayName: msDFSR-CachePolicy
@@ -5792,7 +5809,6 @@ isSingleValued: TRUE
 schemaIdGuid: 90b769ac-4413-43cf-ad7a-867142e740a3
 searchFlags: 0
 rangeLower: 0
-rangeUpper: -1
 
 cn: ms-DFSR-Schedule
 ldapDisplayName: msDFSR-Schedule
@@ -5868,6 +5884,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 2
 rangeUpper: 2
+systemFlags: 16
 
 cn: ms-DFS-Schema-Minor-Version
 ldapDisplayName: msDFS-SchemaMinorVersion
@@ -5880,6 +5897,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 0
 rangeUpper: 0
+systemFlags: 16
 
 cn: ms-DFS-Short-Name-Link-Path-v2
 ldapDisplayName: msDFS-ShortNameLinkPathv2
@@ -5892,6 +5910,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 0
 rangeUpper: 32766
+systemFlags: 16
 
 cn: ms-DFS-Target-List-v2
 ldapDisplayName: msDFS-TargetListv2
@@ -5904,6 +5923,7 @@ isMemberOfPartialAttributeSet: FALSE
 searchFlags: 0
 rangeLower: 0
 rangeUpper: 2097152
+systemFlags: 16
 
 cn: ms-DFS-Ttl-v2
 ldapDisplayName: msDFS-Ttlv2
@@ -5913,6 +5933,7 @@ omSyntax: 2
 isSingleValued: TRUE
 schemaIdGuid: ea944d31-864a-4349-ada5-062e2c614f5e
 isMemberOfPartialAttributeSet: FALSE
+systemFlags: FLAG_SCHEMA_BASE_OBJECT
 searchFlags: 0
 
 cn: MS-DRM-Identity-Certificate
@@ -5926,6 +5947,7 @@ searchFlags: 0
 rangeLower: 1
 rangeUpper: 10240
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Additional-Dns-Host-Name
 ldapDisplayName: msDS-AdditionalDnsHostName
@@ -6321,6 +6343,7 @@ schemaIdGuid: f0d8972e-dd5b-40e5-a51d-044c7c17ece7
 systemOnly: FALSE
 searchFlags: 0
 rangeUpper: 1000000
+showInAdvancedViewOnly: FALSE
 
 cn: ms-DS-Cached-Membership
 ldapDisplayName: msDS-Cached-Membership
@@ -6389,6 +6412,7 @@ isSingleValued: FALSE
 schemaIdGuid: 234fcbd8-fb52-4908-a328-fd9f6e58e403
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
 
 cn: ms-DS-Default-Quota
 ldapDisplayName: msDS-DefaultQuota
@@ -6452,7 +6476,6 @@ omObjectClass: 1.3.12.2.1011.28.0.714
 linkId: 2169
 isSingleValued: FALSE
 schemaIdGuid: ce5b01bc-17c6-44b8-9dc1-a9668b00901b
-isMemberOfPartialAttributeSet: TRUE
 systemOnly: TRUE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT|FLAG_ATTR_NOT_REPLICATED
@@ -6558,6 +6581,7 @@ searchFlags: fATTINDEX
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 mapiID: 36000
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Has-Domain-NCs
 ldapDisplayName: msDS-HasDomainNCs
@@ -6628,7 +6652,6 @@ omObjectClass: 1.3.12.2.1011.28.0.714
 isSingleValued: FALSE
 schemaIdGuid: 80641043-15a2-40e1-92a2-8ca866f70776
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
-systemOnly: FALSE
 searchFlags: 0
 linkID: 2166
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
@@ -6642,7 +6665,6 @@ omSyntax: 127
 omObjectClass: 1.3.12.2.1011.28.0.714
 isSingleValued: FALSE
 schemaIdGuid: 79abe4eb-88f3-48e7-89d6-f4bc7e98c331
-systemOnly: TRUE
 searchFlags: 0
 linkID: 2167
 systemFlags: FLAG_SCHEMA_BASE_OBJECT|FLAG_ATTR_NOT_REPLICATED
@@ -6657,6 +6679,7 @@ isSingleValued: FALSE
 schemaIdGuid: 7bc64cea-c04e-4318-b102-3e0729371a65
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
 
 cn: ms-DS-IntId
 ldapDisplayName: msDS-IntId
@@ -6809,6 +6832,8 @@ systemOnly: TRUE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+rangeLower: 1
+rangeUpper: 255
 
 cn: ms-DS-Last-Successful-Interactive-Logon-Time
 ldapDisplayName: msDS-LastSuccessfulInteractiveLogonTime
@@ -7092,7 +7117,6 @@ systemOnly: TRUE
 searchFlags: 0
 schemaIdGuid: 5a2eacd7-cc2b-48cf-9d9a-b6f1a0024de9
 showInAdvancedViewOnly: TRUE
-isMemberOfPartialAttributeSet: TRUE
 systemFlags: FLAG_SCHEMA_BASE_OBJECT | FLAG_ATTR_NOT_REPLICATED
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
 
@@ -7187,7 +7211,7 @@ linkID: 2164
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
 
-cn: ms-DS-OIDToGroup-Link-Bl
+cn: ms-DS-OIDToGroup-Link-BL
 ldapDisplayName: msDS-OIDToGroupLinkBl
 attributeId: 1.2.840.113556.1.4.2052
 attributeSyntax: 2.5.5.1
@@ -7195,7 +7219,7 @@ omSyntax: 127
 omObjectClass: 1.3.12.2.1011.28.0.714
 isSingleValued: FALSE
 schemaIdGuid: 1a3d0d20-5844-4199-ad25-0f5039a76ada
-systemOnly: FALSE
+systemOnly: TRUE
 searchFlags: 0
 linkID: 2165
 systemFlags: FLAG_SCHEMA_BASE_OBJECT|FLAG_ATTR_NOT_REPLICATED
@@ -7265,8 +7289,8 @@ searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
 
-cn: ms-DS-Optional-Feature-Guid
-ldapDisplayName: msDS-OptionalFeatureGuid
+cn: ms-DS-Optional-Feature-GUID
+ldapDisplayName: msDS-OptionalFeatureGUID
 attributeId: 1.2.840.113556.1.4.2062
 attributeSyntax: 2.5.5.10
 omSyntax: 4
@@ -7380,6 +7404,7 @@ rangeUpper: 64
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 mapiID: 35985
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Phonetic-Department
 ldapDisplayName: msDS-PhoneticDepartment
@@ -7395,6 +7420,7 @@ rangeUpper: 64
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 mapiID: 35984
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Phonetic-Display-Name
 ldapDisplayName: msDS-PhoneticDisplayName
@@ -7411,6 +7437,7 @@ attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 mapiID: 35986
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Phonetic-First-Name
 ldapDisplayName: msDS-PhoneticFirstName
@@ -7426,6 +7453,7 @@ rangeUpper: 64
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 mapiID: 35982
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Phonetic-Last-Name
 ldapDisplayName: msDS-PhoneticLastName
@@ -7441,6 +7469,7 @@ rangeUpper: 64
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 mapiID: 35983
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-DS-Preferred-GC-Site
 ldapDisplayName: msDS-Preferred-GC-Site
@@ -7486,7 +7515,7 @@ attributeSyntax: 2.5.5.1
 omSyntax: 127
 isSingleValued: FALSE
 systemOnly: TRUE
-searchFlags: fCOPY
+searchFlags: 0
 omObjectClass: 1.3.12.2.1011.28.0.714
 schemaIdGuid: 5e6cf031-bda8-43c8-aca4-8fee4127005b
 linkID: 2119
@@ -7660,7 +7689,7 @@ attributeSyntax: 2.5.5.1
 omSyntax: 127
 isSingleValued: TRUE
 systemOnly: TRUE
-searchFlags: fCOPY
+searchFlags: 0
 omObjectClass: 1.3.12.2.1011.28.0.714
 schemaIdGuid: b77ea093-88d0-4780-9a98-911f8e8b1dca
 systemFlags: FLAG_SCHEMA_BASE_OBJECT | FLAG_ATTR_IS_CONSTRUCTED
@@ -7806,6 +7835,7 @@ schemaIdGuid: 0e1b47d7-40a3-4b48-8d1b-4cac0c1cdf21
 systemOnly: FALSE
 searchFlags: 0
 rangeUpper: 1000000
+systemFlags: 0
 
 cn: ms-DS-Site-Affinity
 ldapDisplayName: msDS-Site-Affinity
@@ -8101,6 +8131,7 @@ schemaIdGuid: f76909bc-e678-47a0-b0b3-f86a0044c06d
 searchFlags: fCOPY | fPRESERVEONDELETE | fPDNTATTINDEX | fATTINDEX
 rangeUpper: 128
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-FVE-RecoveryPassword
 ldapDisplayName: msFVE-RecoveryPassword
@@ -8123,6 +8154,7 @@ searchFlags: fCOPY | fPRESERVEONDELETE | fPDNTATTINDEX | fATTINDEX
 rangeUpper: 128
 schemaIdGuid: 85e5a5cf-dcee-4075-9cfd-ac9db6a2f245
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: TRUE
 
 cn: ms-ieee-80211-Data
 ldapDisplayName: msieee80211-Data
@@ -8198,7 +8230,6 @@ attributeSyntax: 2.5.5.10
 omSyntax: 4
 isSingleValued: TRUE
 schemaIdGuid: 51583ce9-94fa-4b12-b990-304c35b18595
-systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 
@@ -8209,7 +8240,6 @@ attributeSyntax: 2.5.5.12
 omSyntax: 64
 isSingleValued: TRUE
 schemaIdGuid: 7b6760ae-d6ed-44a6-b6be-9de62c09ec67
-systemOnly: FALSE
 searchFlags: 0
 rangeUpper: 524288
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
@@ -9064,8 +9094,8 @@ omSyntax: 22
 isSingleValued: FALSE
 schemaIdGuid: db0c9089-c1f2-11d1-bbc5-0080c76670c0
 systemOnly: FALSE
-searchFlags: fCOPY
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+searchFlags: 0
 
 cn: msNPCallingStationID
 ldapDisplayName: msNPCallingStationID
@@ -9103,6 +9133,7 @@ searchFlags: fCONFIDENTIAL | fRODCFilteredAttribute
 attributeSecurityGuid: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
 linkID: 2048
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: FALSE
 
 cn: ms-PKI-Certificate-Application-Policy
 ldapDisplayName: msPKI-Certificate-Application-Policy
@@ -9133,9 +9164,9 @@ attributeSyntax: 2.5.5.12
 omSyntax: 64
 isSingleValued: FALSE
 schemaIdGuid: 38942346-cc5b-424b-a7d8-6ffd12029c5f
-systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemOnly: FALSE
 
 cn: ms-PKI-Cert-Template-OID
 ldapDisplayName: msPKI-Cert-Template-OID
@@ -9158,7 +9189,6 @@ isSingleValued: FALSE
 showInAdvancedViewOnly: TRUE
 schemaIdGuid: b7ff5a38-0818-42b0-8110-d3d154c97f24
 attributeSecurityGUID: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
-systemOnly: FALSE
 searchFlags: fCONFIDENTIAL
 linkID: 2162
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
@@ -9176,6 +9206,7 @@ searchFlags: fCONFIDENTIAL | fRODCFilteredAttribute
 attributeSecurityGuid: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
 linkID: 2046
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: FALSE
 
 cn: ms-PKI-Enrollment-Flag
 ldapDisplayName: msPKI-Enrollment-Flag
@@ -9314,6 +9345,7 @@ systemOnly: FALSE
 searchFlags: fCONFIDENTIAL | fRODCFilteredAttribute
 attributeSecurityGuid: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+isMemberOfPartialAttributeSet: FALSE
 
 cn: ms-PKI-Site-Name
 ldapDisplayName: msPKI-Site-Name
@@ -10712,6 +10744,7 @@ omSyntax: 127
 linkID: 2170
 isSingleValued: TRUE
 schemaIdGuid: 29259694-09e4-4237-9f72-9306ebe63ab2
+omObjectClass: 1.3.12.2.1011.28.0.714
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
@@ -10723,10 +10756,11 @@ attributeSyntax: 2.5.5.1
 omSyntax: 127
 linkID: 2171
 isSingleValued: FALSE
+omObjectClass: 1.3.12.2.1011.28.0.714
 schemaIdGuid: 9daadc18-40d1-4ed1-a2bf-6b9bf47d3daa
 systemOnly: TRUE
 searchFlags: 0
-systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemFlags: 17
 
 cn: ms-TS-Profile-Path
 ldapDisplayName: msTSProfilePath
@@ -10799,7 +10833,8 @@ isSingleValued: FALSE
 schemaIdGuid: 34b107af-a00a-455a-b139-dd1a1b12d8af
 systemOnly: TRUE
 searchFlags: 0
-systemFlags: FLAG_SCHEMA_BASE_OBJECT
+omObjectClass: 1.3.12.2.1011.28.0.714
+systemFlags: 17
 
 cn: ms-TS-Secondary-Desktops
 ldapDisplayName: msTSSecondaryDesktops
@@ -10811,6 +10846,7 @@ isSingleValued: FALSE
 schemaIdGuid: f63aa29a-bb31-48e1-bfab-0a6c5a1d39c2
 systemOnly: FALSE
 searchFlags: 0
+omObjectClass: 1.3.12.2.1011.28.0.714
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 
 cn: ms-TS-Work-Directory
@@ -10836,6 +10872,7 @@ schemaIdGuid: 6366c0c1-6972-4e66-b3a5-1d52ad0c0547
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-ChangeDate
 ldapDisplayName: msWMI-ChangeDate
@@ -10847,6 +10884,7 @@ schemaIdGuid: f9cdf7a0-ec44-4937-a79b-cd91522b3aa8
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-Class
 ldapDisplayName: msWMI-Class
@@ -10902,6 +10940,7 @@ schemaIdGuid: 9339a803-94b8-47f7-9123-a853b9ff7e45
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-int8Default
 ldapDisplayName: msWMI-Int8Default
@@ -10924,6 +10963,7 @@ schemaIdGuid: e3d8b547-003d-4946-a32b-dc7cedc96b74
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-int8Min
 ldapDisplayName: msWMI-Int8Min
@@ -10935,6 +10975,7 @@ schemaIdGuid: ed1489d1-54cc-4066-b368-a00daa2664f1
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-int8ValidValues
 ldapDisplayName: msWMI-Int8ValidValues
@@ -10957,6 +10998,7 @@ schemaIdGuid: 1b0c07f8-76dd-4060-a1e1-70084619dc90
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-intFlags1
 ldapDisplayName: msWMI-intFlags1
@@ -11012,6 +11054,7 @@ schemaIdGuid: fb920c2c-f294-4426-8ac1-d24b42aa2bce
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-intMin
 ldapDisplayName: msWMI-IntMin
@@ -11023,6 +11066,7 @@ schemaIdGuid: 68c2e3ba-9837-4c70-98e0-f0c33695d023
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-intValidValues
 ldapDisplayName: msWMI-IntValidValues
@@ -11045,6 +11089,7 @@ schemaIdGuid: 6736809f-2064-443e-a145-81262b1f1366
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-Name
 ldapDisplayName: msWMI-Name
@@ -11056,6 +11101,7 @@ schemaIdGuid: c6c8ace5-7e81-42af-ad72-77412c5941c4
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-NormalizedClass
 ldapDisplayName: msWMI-NormalizedClass
@@ -11133,6 +11179,7 @@ schemaIdGuid: 65fff93e-35e3-45a3-85ae-876c6718297f
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+showInAdvancedViewOnly: FALSE
 
 cn: ms-WMI-QueryLanguage
 ldapDisplayName: msWMI-QueryLanguage
@@ -12447,6 +12494,8 @@ isSingleValued: FALSE
 schemaIdGuid: 9c979768-ba1a-4c08-9632-c6a5c1ed649a
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Physical-Delivery-Office-Name
 ldapDisplayName: physicalDeliveryOfficeName
@@ -12737,6 +12786,7 @@ isSingleValued: TRUE
 schemaIdGuid: 856be0d0-18e7-46e1-8f5f-7ee4d9020e0d
 systemOnly: FALSE
 searchFlags: 0
+systemFlags: 0
 
 cn: Preferred-OU
 ldapDisplayName: preferredOU
@@ -13903,6 +13953,8 @@ isSingleValued: FALSE
 schemaIdGuid: 81d7f8c2-e327-4a0d-91c6-b42d4009115f
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Root-Trust
 ldapDisplayName: rootTrust
@@ -14216,6 +14268,8 @@ isSingleValued: FALSE
 schemaIdGuid: 01072d9a-98ad-4a53-9744-e83e287278fb
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Security-Identifier
 ldapDisplayName: securityIdentifier
@@ -15084,6 +15138,7 @@ systemOnly: FALSE
 searchFlags: fATTINDEX
 rangeUpper: 20480
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+attributeSecurityGUID: 5805bc62-bdc9-4428-a5e2-856a0f4c185e
 
 cn: Text-Country
 ldapDisplayName: co
@@ -15393,6 +15448,8 @@ schemaIdGuid: 0bb0fca0-1e89-429f-901a-1413894d9f59
 systemOnly: FALSE
 searchFlags: fPRESERVEONDELETE
 attributeSecurityGuid: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: UidNumber
 ldapDisplayName: uidNumber
@@ -15450,6 +15507,8 @@ isSingleValued: FALSE
 schemaIdGuid: 8f888726-f80a-44d7-b1ee-cb9df21392c8
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: UnixHomeDirectory
 ldapDisplayName: unixHomeDirectory
@@ -15484,6 +15543,7 @@ schemaIdGuid: 50950839-cc4c-4491-863a-fcf942d684b7
 systemOnly: FALSE
 searchFlags: 0
 rangeUpper: 256
+systemFlags: 0
 
 cn: unstructuredName
 ldapDisplayName: unstructuredName
@@ -15495,6 +15555,7 @@ schemaIdGuid: 9c8ef177-41cf-45c9-9673-7716c0c8901b
 systemOnly: FALSE
 searchFlags: 0
 rangeUpper: 256
+systemFlags: 0
 
 cn: Upgrade-Product-Code
 ldapDisplayName: upgradeProductCode
@@ -15615,6 +15676,8 @@ isSingleValued: FALSE
 schemaIdGuid: 23998ab5-70f8-4007-a4c1-a84a38311f9a
 systemOnly: FALSE
 searchFlags: 0
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: User-Principal-Name
 ldapDisplayName: userPrincipalName
@@ -15668,7 +15731,7 @@ rangeUpper: 32768
 attributeSecurityGuid: 77b5b886-944a-11d1-aebd-0000f80367c1
 mapiID: 14960
 isMemberOfPartialAttributeSet: TRUE
-systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemFlags: 0
 
 cn: User-Workstations
 ldapDisplayName: userWorkstations
@@ -15978,6 +16041,7 @@ isSingleValued: FALSE
 schemaIdGuid: d07da11f-8a3d-42b6-b0aa-76c962be719a
 systemOnly: FALSE
 searchFlags: 0
+systemFlags: 0
 
 cn: X509-Cert
 ldapDisplayName: userCertificate

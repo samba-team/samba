@@ -172,6 +172,7 @@ defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCL
 defaultHidingValue: TRUE
 systemOnly: FALSE
 defaultObjectCategory: CN=Application-Version,CN=Schema,CN=Configuration,<RootDomainDN>
+systemFlags: 0
 
 cn: Attribute-Schema
 ldapDisplayName: attributeSchema
@@ -318,7 +319,7 @@ rdnAttId: cn
 subClassOf: user
 auxiliaryClass: ipHost
 mayContain: msSFU30Aliases, msSFU30NisDomain, nisMapName,msSFU30Name
-systemMayContain: msTSEndpointData, msTSEndpointType,msTS-EndpointPlugin, msDS-HostServiceAccount,msDS-IsUserCachableAtRodc, msTSProperty02,msTSProperty01, msTPM-OwnerInformation, msDS-RevealOnDemandGroup,msDS-NeverRevealGroup, msDS-PromotionSettings, msDS-SiteName,msDS-isRODC, msDS-isGC, msDS-AuthenticatedAtDC, msDS-RevealedList,msDS-RevealedUsers, msDS-ExecuteScriptPassword, msDS-KrbTgtLink,volumeCount, siteGUID, rIDSetReferences, policyReplicationFlags,physicalLocationObject, operatingSystemVersion,operatingSystemServicePack, operatingSystemHotfix, operatingSystem,networkAddress, netbootSIFFile, netbootMirrorDataFile,netbootMachineFilePath, netbootInitialization, netbootGUID,msDS-AdditionalSamAccountName, msDS-AdditionalDnsHostName,managedBy, machineRole, location, localPolicyFlags, dNSHostName,defaultLocalPolicyObject, cn, catalogs
+systemMayContain: msTSEndpointData, msTSEndpointType,msTSEndpointPlugin, msDS-HostServiceAccount,msDS-IsUserCachableAtRodc, msTSProperty02,msTSProperty01, msTPM-OwnerInformation, msDS-RevealOnDemandGroup,msDS-NeverRevealGroup, msDS-PromotionSettings, msDS-SiteName,msDS-isRODC, msDS-isGC, msDS-AuthenticatedAtDC, msDS-RevealedList,msDS-RevealedUsers, msDS-ExecuteScriptPassword, msDS-KrbTgtLink,volumeCount, siteGUID, rIDSetReferences, policyReplicationFlags,physicalLocationObject, operatingSystemVersion,operatingSystemServicePack, operatingSystemHotfix, operatingSystem,networkAddress, netbootSIFFile, netbootMirrorDataFile,netbootMachineFilePath, netbootInitialization, netbootGUID,msDS-AdditionalSamAccountName, msDS-AdditionalDnsHostName,managedBy, machineRole, location, localPolicyFlags, dNSHostName,defaultLocalPolicyObject, cn, catalogs, msTSPrimaryDesktopBL, msTSSecondaryDesktopBL
 systemPossSuperiors: container, organizationalUnit, domainDNS
 schemaIdGuid:bf967a86-0de6-11d0-a285-00aa003049e2
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPCRLCLORCSDDT;;;CO)(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)(A;;RPLCLORC;;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)(A;;CCDC;;;PS)(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;PS)(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;CO)(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;CO)(OA;;WP;3e0abfd0-126a-11d0-a060-00aa006c33ed;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;bf967950-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)
@@ -562,9 +563,9 @@ systemPossSuperiors: configuration
 schemaIdGuid:bf967a8f-0de6-11d0-a285-00aa003049e2
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 defaultHidingValue: TRUE
-systemOnly: TRUE
 defaultObjectCategory: CN=DMD,CN=Schema,CN=Configuration,<RootDomainDN>
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+systemOnly: TRUE
 
 cn: Dns-Node
 ldapDisplayName: dnsNode
@@ -651,7 +652,44 @@ systemAuxiliaryClass: samDomain
 systemMayContain: msDS-EnabledFeature, msDS-USNLastSyncSuccess,msDS-Behavior-Version, msDS-AllowedDNSSuffixes, managedBy
 systemPossSuperiors: domainDNS
 schemaIdGuid:19195a5b-6da0-11d0-afd3-00c04fd930c9
-defaultSecurityDescriptor: D:(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;CIIO;CRRPWP;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
+defaultSecurityDescriptor: D:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;S-1
+ -5-21-2848215498-2472035911-1947525656-498)(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-
+ 11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(
+ OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f7
+ 9f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;
+ 1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRC
+ WDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;
+ ;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8
+ -0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO
+ ;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2
+ ;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-
+ 00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de
+ 6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;
+ bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa0
+ 06e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RP
+ RC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLO
+ RC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9
+ B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14
+ -1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d
+ 4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a7
+ 68-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-
+ 79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;
+ RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-
+ ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CI
+ IO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049
+ e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a28
+ 5-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0
+ de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;D
+ D)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)(OA;;CR;1131f6ad-9c07-11d1
+ -f79f-00c04fc2dcd2;;BA)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)(OA;;
+ CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-4
+ 38e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(O
+ A;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)(OA;;CR;1131f6ae-9c07-11d1-f79
+ f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;CIIO;
+ CRRPWP;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)S:(AU;SA;WDWOWP;;;WD)(AU;SA;C
+ R;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967a
+ a5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80
+ 367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
 defaultHidingValue: FALSE
 systemOnly: FALSE
 defaultObjectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,<RootDomainDN>
@@ -851,6 +889,7 @@ defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCL
 defaultHidingValue: TRUE
 systemOnly: FALSE
 defaultObjectCategory: CN=groupOfUniqueNames,CN=Schema,CN=Configuration,<RootDomainDN>
+systemFlags: 0
 
 cn: Group-Policy-Container
 ldapDisplayName: groupPolicyContainer
@@ -908,6 +947,8 @@ defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCL
 defaultHidingValue: FALSE
 systemOnly: FALSE
 defaultObjectCategory: CN=Person,CN=Schema,CN=Configuration,<RootDomainDN>
+showInAdvancedViewOnly: FALSE
+systemFlags: 0
 
 cn: Infrastructure-Update
 ldapDisplayName: infrastructureUpdate
@@ -1529,6 +1570,7 @@ defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCL
 defaultHidingValue: TRUE
 systemOnly: FALSE
 defaultObjectCategory: CN=ms-DS-App-Configuration,CN=Schema,CN=Configuration,<RootDomainDN>
+systemFlags: 0
 
 cn: ms-DS-App-Data
 ldapDisplayName: msDS-AppData
@@ -1543,6 +1585,7 @@ defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCL
 defaultHidingValue: TRUE
 systemOnly: FALSE
 defaultObjectCategory: CN=ms-DS-App-Data,CN=Schema,CN=Configuration,<RootDomainDN>
+systemFlags: 0
 
 cn: ms-DS-Az-Admin-Manager
 ldapDisplayName: msDS-AzAdminManager
@@ -1651,12 +1694,12 @@ defaultObjectCategory: CN=ms-DS-Managed-Service-Account,CN=Schema,CN=Configurati
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 
 cn: ms-DS-Optional-Feature
-ldapDisplayName: msDS-Optional-Feature
+ldapDisplayName: msDS-OptionalFeature
 governsId: 1.2.840.113556.1.5.265
 objectClassCategory: 1
 rdnAttId: cn
 subClassOf: top
-systemMustContain: msDS-OptionalFeatureFlags,msDS-OptionalFeatureGuid
+systemMustContain: msDS-OptionalFeatureFlags,msDS-OptionalFeatureGUID
 systemMayContain: msDS-RequiredDomainBehaviorVersion,msDS-RequiredForestBehaviorVersion
 systemPossSuperiors: container
 schemaIdGuid: 44f00041-35af-468b-b20a-6ce8737c580b
@@ -1780,8 +1823,8 @@ systemMayContain: msImaging-PSPString, serverName
 systemMustContain: displayName, msImaging-PSPIdentifier
 systemPossSuperiors: msImaging-PSPs
 schemaIdGuid: 1f7c257c-b8a3-4525-82f8-11ccc7bee36e
-defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-defaultHidingValue: TRUE
+defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLOLORCWOWDSDDTDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+defaultHidingValue: FALSE
 systemOnly: FALSE
 defaultObjectCategory: CN=ms-Imaging-PostScanProcess,CN=Schema,CN=Configuration,<RootDomainDN>
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
@@ -1794,11 +1837,12 @@ rdnAttId: cn
 subClassOf: container
 systemPossSuperiors: container
 schemaIdGuid: a0ed2ac1-970c-4777-848e-ec63a0ec44fc
-defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
-defaultHidingValue: TRUE
+defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLOLORCWOWDSDDTDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+defaultHidingValue: FALSE
 systemOnly: FALSE
 defaultObjectCategory: CN=ms-Imaging-PSPs,CN=Schema,CN=Configuration,<RootDomainDN>
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+
 
 cn: MSMQ-Configuration
 ldapDisplayName: mSMQConfiguration
@@ -2547,7 +2591,7 @@ governsId: 1.2.840.113556.1.5.7000.47
 objectClassCategory: 1
 rdnAttId: cn
 subClassOf: applicationSettings
-systemMayContain: msDS-IsUserCachableAtRodc, msDS-Sitename,msDS-isRODC, msDS-isGC, msDS-RevealedUsers,msDS-NeverRevealGroup, msDS-RevealOnDemandGroup,msDS-hasFullReplicaNCs, serverReference,msDS-RetiredReplNCSignatures, retiredReplDSASignatures,queryPolicyObject, options, networkAddress, msDS-ReplicationEpoch,msDS-HasInstantiatedNCs, msDS-hasMasterNCs, msDS-HasDomainNCs,msDS-Behavior-Version, managedBy, lastBackupRestorationTime,invocationId, hasPartialReplicaNCs, hasMasterNCs, fRSRootPath,dMDLocation
+systemMayContain: msDS-IsUserCachableAtRodc, msDS-SiteName,msDS-isRODC, msDS-isGC, msDS-RevealedUsers,msDS-NeverRevealGroup, msDS-RevealOnDemandGroup,msDS-hasFullReplicaNCs, serverReference,msDS-RetiredReplNCSignatures, retiredReplDSASignatures,queryPolicyObject, options, networkAddress, msDS-ReplicationEpoch,msDS-HasInstantiatedNCs, msDS-hasMasterNCs, msDS-HasDomainNCs,msDS-Behavior-Version, managedBy, lastBackupRestorationTime,invocationId, hasPartialReplicaNCs, hasMasterNCs, fRSRootPath,dMDLocation, msDS-EnabledFeature
 systemPossSuperiors: organization, server
 schemaIdGuid:f0f8ffab-1191-11d0-a060-00aa006c33ed
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
@@ -3137,7 +3181,7 @@ subClassOf: top
 systemAuxiliaryClass: samDomainBase
 systemMayContain: treeName, rIDManagerReference, replicaSource,pwdProperties, pwdHistoryLength, privateKey, pekList,pekKeyChangeInterval, nTMixedDomain, nextRid, nETBIOSName,msDS-PerUserTrustTombstonesQuota, msDS-PerUserTrustQuota,ms-DS-MachineAccountQuota, msDS-LogonTimeSyncInterval,msDS-AllUsersTrustQuota, modifiedCountAtLastProm, minPwdLength,minPwdAge, maxPwdAge, lSAModifiedCount, lSACreationTime,lockoutThreshold, lockoutDuration, lockOutObservationWindow,gPOptions, gPLink, eFSPolicy, domainPolicyObject, desktopProfile,description, defaultLocalPolicyObject, creationTime,controlAccessRights, cACertificate, builtinModifiedCount,builtinCreationTime, auditingPolicy
 schemaIdGuid:bf967a90-0de6-11d0-a285-00aa003049e2
-defaultSecurityDescriptor: D:(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;CIIO;CRRPWP;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
+defaultSecurityDescriptor: D:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;S-1-5-21-2848215498-2472035911-1947525656-498)(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;CIIO;CRRPWP;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
 defaultHidingValue: TRUE
 systemOnly: FALSE
 defaultObjectCategory: CN=Sam-Domain,CN=Schema,CN=Configuration,<RootDomainDN>
@@ -3458,7 +3502,7 @@ rdnAttId: cn
 subClassOf: top
 systemMustContain: objectClass, objectCategory, nTSecurityDescriptor,instanceType
 mayContain: msSFU30PosixMemberOf, msDFSR-ComputerReferenceBL,msDFSR-MemberReferenceBL, msDS-ObjectReferenceBL
-systemMayContain: msTSPrimaryDesktopBL, msTSSecondaryDesktopsBL,msDS-EnabledFeatureBL, msDS-LastKnownRDN, msDS-HostServiceAccountBL,msDS-OIDToGroupLinkBl, msDS-LocalEffectiveRecycleTime,msDS-LocalEffectiveDeletionTime, isRecyled, msDS-NcType,msDS-PSOApplied, msDS-PrincipalName,msDS-RevealedListBL, msDS-AuthenticatedToAccountlist,msDS-IsPartialReplicaFor, msDS-IsDomainFor, msDS-IsFullReplicaFor,msDS-RevealedDSAs, msDS-KrbTgtLinkBl, url, wWWHomePage, whenCreated,whenChanged, wellKnownObjects, wbemPath, uSNSource, uSNLastObjRem,USNIntersite, uSNDSALastObjRemoved, uSNCreated, uSNChanged,systemFlags, subSchemaSubEntry, subRefs, structuralObjectClass,siteObjectBL, serverReferenceBL, sDRightsEffective, revision,repsTo, repsFrom, directReports, replUpToDateVector,replPropertyMetaData, name, queryPolicyBL, proxyAddresses,proxiedObjectName, possibleInferiors, partialAttributeSet,partialAttributeDeletionList, otherWellKnownObjects, objectVersion,objectGUID, distinguishedName, nonSecurityMemberBL, netbootSCPBL,ownerBL, msDS-ReplValueMetaData, msDS-ReplAttributeMetaData,msDS-NonMembersBL, msDS-NCReplOutboundNeighbors,msDS-NCReplInboundNeighbors, msDS-NCReplCursors,msDS-TasksForAzRoleBL, msDS-TasksForAzTaskBL,msDS-OperationsForAzRoleBL, msDS-OperationsForAzTaskBL,msDS-MembersForAzRoleBL, msDs-masteredBy, mS-DS-ConsistencyGuid,mS-DS-ConsistencyChildCount, msDS-Approx-Immed-Subordinates,msCOM-PartitionSetLink, msCOM-UserLink, modifyTimeStamp, masteredBy,managedObjects, lastKnownParent, isPrivilegeHolder, memberOf,isDeleted, isCriticalSystemObject, showInAdvancedViewOnly,fSMORoleOwner, fRSMemberReferenceBL, frsComputerReferenceBL,fromEntry, flags, extensionName, dSASignature,dSCorePropagationData, displayNamePrintable, displayName,description, createTimeStamp, cn, canonicalName,bridgeheadServerListBL, allowedChildClassesEffective,allowedChildClasses, allowedAttributesEffective, allowedAttributes,adminDisplayName, adminDescription, msDS-NC-RO-Replica-Locations-BL
+systemMayContain: msDS-EnabledFeatureBL, msDS-LastKnownRDN, msDS-HostServiceAccountBL,msDS-OIDToGroupLinkBl, msDS-LocalEffectiveRecycleTime,msDS-LocalEffectiveDeletionTime, isRecycled, msDS-NcType,msDS-PSOApplied, msDS-PrincipalName,msDS-RevealedListBL, msDS-AuthenticatedToAccountlist,msDS-IsPartialReplicaFor, msDS-IsDomainFor, msDS-IsFullReplicaFor,msDS-RevealedDSAs, msDS-KrbTgtLinkBl, url, wWWHomePage, whenCreated,whenChanged, wellKnownObjects, wbemPath, uSNSource, uSNLastObjRem,USNIntersite, uSNDSALastObjRemoved, uSNCreated, uSNChanged,systemFlags, subSchemaSubEntry, subRefs, structuralObjectClass,siteObjectBL, serverReferenceBL, sDRightsEffective, revision,repsTo, repsFrom, directReports, replUpToDateVector,replPropertyMetaData, name, queryPolicyBL, proxyAddresses,proxiedObjectName, possibleInferiors, partialAttributeSet,partialAttributeDeletionList, otherWellKnownObjects, objectVersion,objectGUID, distinguishedName, nonSecurityMemberBL, netbootSCPBL,ownerBL, msDS-ReplValueMetaData, msDS-ReplAttributeMetaData,msDS-NonMembersBL, msDS-NCReplOutboundNeighbors,msDS-NCReplInboundNeighbors, msDS-NCReplCursors,msDS-TasksForAzRoleBL, msDS-TasksForAzTaskBL,msDS-OperationsForAzRoleBL, msDS-OperationsForAzTaskBL,msDS-MembersForAzRoleBL, msDs-masteredBy, mS-DS-ConsistencyGuid,mS-DS-ConsistencyChildCount, msDS-Approx-Immed-Subordinates,msCOM-PartitionSetLink, msCOM-UserLink, modifyTimeStamp, masteredBy,managedObjects, lastKnownParent, isPrivilegeHolder, memberOf,isDeleted, isCriticalSystemObject, showInAdvancedViewOnly,fSMORoleOwner, fRSMemberReferenceBL, frsComputerReferenceBL,fromEntry, flags, extensionName, dSASignature,dSCorePropagationData, displayNamePrintable, displayName,description, createTimeStamp, cn, canonicalName,bridgeheadServerListBL, allowedChildClassesEffective,allowedChildClasses, allowedAttributesEffective, allowedAttributes,adminDisplayName, adminDescription, msDS-NC-RO-Replica-Locations-BL
 systemPossSuperiors: lostAndFound
 schemaIdGuid:bf967ab7-0de6-11d0-a285-00aa003049e2
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
@@ -3506,7 +3550,7 @@ subClassOf: organizationalPerson
 auxiliaryClass: shadowAccount, posixAccount
 systemAuxiliaryClass: securityPrincipal, mailRecipient
 mayContain: msSFU30NisDomain, msSFU30Name, msDS-SourceObjectDN,x500uniqueIdentifier, userSMIMECertificate, userPKCS12, uid,secretary, roomNumber, preferredLanguage, photo, labeledURI,jpegPhoto, homePostalAddress, givenName, employeeType,employeeNumber, displayName, departmentNumber, carLicense, audio
-systemMayContain:  msTSPrimaryDesktop, msTSSecondaryDesktops,msPKI-CredentialRoamingTokens, msDS-ResultantPSO, MSTSLSProperty01,MSTSLSProperty02, msTSManagingLS2, msTSManagingLS3, msTSManagingLS4,msTSLicenseVersion2, msTSLicenseVersion3, msTSLicenseVersion4,msTSExpireDate2, msTSExpireDate3, msTSExpireDate4,msDS-AuthenticatedAtDC, msDS-UserPasswordExpiryTimeComputed,msTSManagingLS, msTSLicenseVersion, msTSExpireDate, msTSProperty02,msTSProperty01, msTSInitialProgram, msTSWorkDirectory,msTSDefaultToMainPrinter, msTSConnectPrinterDrives,msTSConnectClientDrives, msTSBrokenConnectionAction,msTSReconnectionAction, msTSMaxIdleTime, msTSMaxConnectionTime,msTSMaxDisconnectionTime, msTSRemoteControl, msTSAllowLogon,msTSHomeDrive, msTSHomeDirectory, msTSProfilePath,msDS-FailedInteractiveLogonCountAtLastSuccessfulLogon,msDS-FailedInteractiveLogonCount,msDS-LastFailedInteractiveLogonTime,msDS-LastSuccessfulInteractiveLogonTime,msRADIUS-SavedFramedIpv6Route, msRADIUS-FramedIpv6Route,msRADIUS-SavedFramedIpv6Prefix, msRADIUS-FramedIpv6Prefix,msRADIUS-SavedFramedInterfaceId, msRADIUS-FramedInterfaceId,msPKIAccountCredentials, msPKIDPAPIMasterKeys,msPKIRoamingTimeStamp, msDS-SupportedEncryptionTypes,msDS-SecondaryKrbTgtNumber, pager, o, mobile, manager, mail,initials, homePhone, businessCategory, userCertificate,userWorkstations, userSharedFolderOther, userSharedFolder,userPrincipalName, userParameters, userAccountControl, unicodePwd,terminalServer, servicePrincipalName, scriptPath, pwdLastSet,profilePath, primaryGroupID, preferredOU, otherLoginWorkstations,operatorCount, ntPwdHistory, networkAddress, msRASSavedFramedRoute,msRASSavedFramedIPAddress, msRASSavedCallbackNumber,msRADIUSServiceType, msRADIUSFramedRoute, msRADIUSFramedIPAddress,msRADIUSCallbackNumber, msNPSavedCallingStationID,msNPCallingStationID, msNPAllowDialin, mSMQSignCertificatesMig,mSMQSignCertificates, mSMQDigestsMig, mSMQDigests, msIIS-FTPRoot,msIIS-FTPDir, msDS-User-Account-Control-Computed,msDS-Site-Affinity, mS-DS-CreatorSID,msDS-Cached-Membership-Time-Stamp, msDS-Cached-Membership,msDRM-IdentityCertificate, msCOM-UserPartitionSetLink, maxStorage,logonWorkstation, logonHours, logonCount, lockoutTime, localeID,lmPwdHistory, lastLogonTimestamp, lastLogon, lastLogoff, homeDrive,homeDirectory, groupsToIgnore, groupPriority, groupMembershipSAM,dynamicLDAPServer, desktopProfile, defaultClassStore, dBCSPwd,controlAccessRights, codePage, badPwdCount, badPasswordTime,adminCount, aCSPolicyName, accountExpires
+systemMayContain:  msTSPrimaryDesktop, msTSSecondaryDesktops,msPKI-CredentialRoamingTokens, msDS-ResultantPSO, msTSLSProperty01,msTSLSProperty02, msTSManagingLS2, msTSManagingLS3, msTSManagingLS4,msTSLicenseVersion2, msTSLicenseVersion3, msTSLicenseVersion4,msTSExpireDate2, msTSExpireDate3, msTSExpireDate4,msDS-AuthenticatedAtDC, msDS-UserPasswordExpiryTimeComputed,msTSManagingLS, msTSLicenseVersion, msTSExpireDate, msTSProperty02,msTSProperty01, msTSInitialProgram, msTSWorkDirectory,msTSDefaultToMainPrinter, msTSConnectPrinterDrives,msTSConnectClientDrives, msTSBrokenConnectionAction,msTSReconnectionAction, msTSMaxIdleTime, msTSMaxConnectionTime,msTSMaxDisconnectionTime, msTSRemoteControl, msTSAllowLogon,msTSHomeDrive, msTSHomeDirectory, msTSProfilePath,msDS-FailedInteractiveLogonCountAtLastSuccessfulLogon,msDS-FailedInteractiveLogonCount,msDS-LastFailedInteractiveLogonTime,msDS-LastSuccessfulInteractiveLogonTime,msRADIUS-SavedFramedIpv6Route, msRADIUS-FramedIpv6Route,msRADIUS-SavedFramedIpv6Prefix, msRADIUS-FramedIpv6Prefix,msRADIUS-SavedFramedInterfaceId, msRADIUS-FramedInterfaceId,msPKIAccountCredentials, msPKIDPAPIMasterKeys,msPKIRoamingTimeStamp, msDS-SupportedEncryptionTypes,msDS-SecondaryKrbTgtNumber, pager, o, mobile, manager, mail,initials, homePhone, businessCategory, userCertificate,userWorkstations, userSharedFolderOther, userSharedFolder,userPrincipalName, userParameters, userAccountControl, unicodePwd,terminalServer, servicePrincipalName, scriptPath, pwdLastSet,profilePath, primaryGroupID, preferredOU, otherLoginWorkstations,operatorCount, ntPwdHistory, networkAddress, msRASSavedFramedRoute,msRASSavedFramedIPAddress, msRASSavedCallbackNumber,msRADIUSServiceType, msRADIUSFramedRoute, msRADIUSFramedIPAddress,msRADIUSCallbackNumber, msNPSavedCallingStationID,msNPCallingStationID, msNPAllowDialin, mSMQSignCertificatesMig,mSMQSignCertificates, mSMQDigestsMig, mSMQDigests, msIIS-FTPRoot,msIIS-FTPDir, msDS-User-Account-Control-Computed,msDS-Site-Affinity, mS-DS-CreatorSID,msDS-Cached-Membership-Time-Stamp, msDS-Cached-Membership,msDRM-IdentityCertificate, msCOM-UserPartitionSetLink, maxStorage,logonWorkstation, logonHours, logonCount, lockoutTime, localeID,lmPwdHistory, lastLogonTimestamp, lastLogon, lastLogoff, homeDrive,homeDirectory, groupsToIgnore, groupPriority, groupMembershipSAM,dynamicLDAPServer, desktopProfile, defaultClassStore, dBCSPwd,controlAccessRights, codePage, badPwdCount, badPasswordTime,adminCount, aCSPolicyName, accountExpires
 schemaIdGuid:bf967aba-0de6-11d0-a285-00aa003049e2
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a54-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a56-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B2-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B3-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RP;037088f8-0ae1-11d2-b422-00a0c968f939;;RS)(OA;;RP;4c164200-20c0-11d0-a768-00aa006e0529;;RS)(OA;;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;;RS)(A;;RC;;;AU)(OA;;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;;AU)(OA;;RP;77B5B886-944A-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;E45795B3-9455-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)(OA;;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;;RS)(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)(OA;;WPRP;6db69a1c-9422-11d1-aebd-0000f80367c1;;S-1-5-32-561)(OA;;WPRP;5805bc62-bdc9-4428-a5e2-856a0f4c185e;;S-1-5-32-561)
 systemPossSuperiors: builtinDomain, organizationalUnit, domainDNS
