@@ -592,7 +592,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	req_dn = ldb_dn_new(ldb, mem_ctx, req8->naming_context->dn);
+	req_dn = ldb_dn_new(mem_ctx, ldb, req8->naming_context->dn);
 	if (!req_dn ||
 	    !ldb_dn_validate(req_dn) ||
 	    ldb_dn_compare(req_dn, rid_manager_dn) != 0) {
