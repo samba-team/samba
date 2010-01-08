@@ -64,8 +64,8 @@ class Schema(object):
 
         self.schemadn = schemadn
         self.ldb = Ldb()
-        self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_Attributes.txt'),
-                                          setup_path('ad-schema/MS-AD_Schema_2K8_Classes.txt'))
+        self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
+                                          setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
 
         if files is not None:
             for file in files:
