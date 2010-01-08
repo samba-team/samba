@@ -48,7 +48,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int sambaNextRid, sambaNextGroupRid, sambaNextUserRid;
 	struct ldb_message *msg;
-	uint32_t rid;
+	int rid;
 	const char *sambaSID;
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
@@ -105,7 +105,10 @@ static int samba3sid_next_sid(struct ldb_module *module,
 		return ret;
 	}
 
-	(*sid) = talloc_asprintf(tmp_ctx, "%s-%u", sambaSID, rid);
+	/* sambaNextRid is actually the previous RID .... */
+	rid += 1;
+
+	(*sid) = talloc_asprintf(tmp_ctx, "%s-%d", sambaSID, rid);
 	if (!*sid) {
 		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
@@ -114,7 +117,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 
 	ret = dsdb_module_constrainted_update_integer(module, msg->dn,
 						      "sambaNextRid",
-						      sambaNextRid, rid+1);
+						      sambaNextRid, rid);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       __location__
