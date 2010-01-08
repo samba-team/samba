@@ -431,9 +431,8 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		arcfour_init(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state,
 			     &send_seal_blob);
 
-		dump_data_pw("NTLMSSP send sesl hash:\n", 
-			     ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state->sbox,
-			     sizeof(ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state->sbox));
+		dump_arc4_state("NTLMSSP send seal arc4 state:\n",
+				ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state);
 
 		/* SEND: seq num */
 		ntlmssp_state->crypt.ntlm2.send_seq_num = 0;
@@ -452,9 +451,8 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		arcfour_init(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state,
 			     &recv_seal_blob);
 
-		dump_data_pw("NTLMSSP receive seal hash:\n", 
-			     ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state->sbox,
-			     sizeof(ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state->sbox));
+		dump_arc4_state("NTLMSSP recv seal arc4 state:\n",
+				ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state);
 
 		/* RECV: seq num */
 		ntlmssp_state->crypt.ntlm2.recv_seq_num = 0;
@@ -506,8 +504,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 
 		arcfour_init(ntlmssp_state->crypt.ntlm.arcfour_state,
 			     &seal_session_key);
-		dump_data_pw("NTLMSSP hash:\n", ntlmssp_state->crypt.ntlm.arcfour_state->sbox,
-			     sizeof(ntlmssp_state->crypt.ntlm.arcfour_state->sbox));
+
+		dump_arc4_state("NTLMv1 arc4 state:\n",
+				ntlmssp_state->crypt.ntlm.arcfour_state);
 
 		ntlmssp_state->crypt.ntlm.seq_num = 0;
 	}
