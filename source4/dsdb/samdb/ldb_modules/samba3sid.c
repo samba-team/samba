@@ -69,7 +69,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 				       ": Expected exactly 1 domain object - got %u",
 				       res->count);
 		talloc_free(tmp_ctx);
-		return ret;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	msg = res->msgs[0];
 
@@ -84,7 +84,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 				       ": No sambaSID in %s",
 				       ldb_dn_get_linearized(msg->dn));
 		talloc_free(tmp_ctx);
-		return ret;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* choose the highest of the 3 - see pdb_ldap.c for an
@@ -102,7 +102,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 				       ": No sambaNextRid in %s",
 				       ldb_dn_get_linearized(msg->dn));
 		talloc_free(tmp_ctx);
-		return ret;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* sambaNextRid is actually the previous RID .... */
