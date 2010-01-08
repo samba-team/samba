@@ -53,6 +53,17 @@ static void calc_ntlmv2_key_talloc(TALLOC_CTX *mem_ctx,
 	MD5Final(subkey->data, &ctx3);
 }
 
+static void calc_ntlmv2_key(uint8_t subkey[16],
+			    DATA_BLOB session_key,
+			    const char *constant)
+{
+	struct MD5Context ctx3;
+	MD5Init(&ctx3);
+	MD5Update(&ctx3, session_key.data, session_key.length);
+	MD5Update(&ctx3, (const uint8_t *)constant, strlen(constant)+1);
+	MD5Final(subkey, &ctx3);
+}
+
 enum ntlmssp_direction {
 	NTLMSSP_SEND,
 	NTLMSSP_RECEIVE
