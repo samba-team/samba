@@ -1107,6 +1107,9 @@ static uint32_t map_canon_ace_perms(int snum,
 			nt_mask |= ((perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
 			nt_mask |= ((perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
 		}
+		if ((perms & S_IWUSR) && lp_dos_filemode(snum)) {
+			nt_mask |= (SEC_STD_WRITE_DAC|SEC_STD_WRITE_OWNER);
+		}
 	}
 
 	DEBUG(10,("map_canon_ace_perms: Mapped (UNIX) %x to (NT) %x\n",
