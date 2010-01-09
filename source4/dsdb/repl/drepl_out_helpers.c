@@ -261,6 +261,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
 	struct rpc_request *rreq;
 	struct drsuapi_DsGetNCChanges *r;
+	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 
 	r = talloc(state, struct drsuapi_DsGetNCChanges);
 	if (tevent_req_nomem(r, req)) {
@@ -280,6 +281,12 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		return;
 	}
 
+	if (partition->uptodatevector_ex.count == 0) {
+		uptodateness_vector = NULL;
+	} else {
+		uptodateness_vector = &partition->uptodatevector_ex;
+	}
+
 	r->in.bind_handle	= &drsuapi->bind_handle;
 	if (drsuapi->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
 		r->in.level				= 8;
@@ -287,7 +294,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req8.source_dsa_invocation_id= rf1->source_dsa_invocation_id;
 		r->in.req->req8.naming_context		= &partition->nc;
 		r->in.req->req8.highwatermark		= rf1->highwatermark;
-		r->in.req->req8.uptodateness_vector	= NULL;/*&partition->uptodatevector_ex;*/
+		r->in.req->req8.uptodateness_vector	= uptodateness_vector;
 		r->in.req->req8.replica_flags		= rf1->replica_flags;
 		r->in.req->req8.max_object_count	= 133;
 		r->in.req->req8.max_ndr_size		= 1336811;
@@ -303,13 +310,17 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req5.source_dsa_invocation_id= rf1->source_dsa_invocation_id;
 		r->in.req->req5.naming_context		= &partition->nc;
 		r->in.req->req5.highwatermark		= rf1->highwatermark;
-		r->in.req->req5.uptodateness_vector	= NULL;/*&partition->uptodatevector_ex;*/
+		r->in.req->req5.uptodateness_vector	= uptodateness_vector;
 		r->in.req->req5.replica_flags		= rf1->replica_flags;
 		r->in.req->req5.max_object_count	= 133;
 		r->in.req->req5.max_ndr_size		= 1336770;
 		r->in.req->req5.extended_op		= state->op->extended_op;
 		r->in.req->req5.fsmo_info		= state->op->fsmo_info;
 	}
+
+#if 0
+	NDR_PRINT_IN_DEBUG(drsuapi_DsGetNCChanges, r);
+#endif
 
 	rreq = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi->pipe, r, r);
 	if (tevent_req_nomem(rreq, req)) {
