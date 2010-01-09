@@ -1153,6 +1153,16 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
                           struct wbcCredentialCacheInfo **info,
                           struct wbcAuthErrorInfo **error);
 
+/**
+ * @brief Save a password with winbind for doing wbcCredentialCache() later
+ *
+ * @param *user	     Username
+ * @param *password  Password
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcCredentialSave(const char *user, const char *password);
+
 /**********************************************************
  * Resolve functions
  **********************************************************/

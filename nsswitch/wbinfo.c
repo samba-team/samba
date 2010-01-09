@@ -1530,6 +1530,43 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 	return WBC_ERROR_IS_OK(wbc_status);
 }
 
+/* Save creds with winbind */
+
+static bool wbinfo_ccache_save(char *username)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *s = NULL;
+	char *p = NULL;
+	char *password = NULL;
+	char *name = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	s = talloc_strdup(frame, username);
+	if (s == NULL) {
+		return false;
+	}
+
+	p = strchr(s, '%');
+	if (p != NULL) {
+		*p = 0;
+		p++;
+		password = talloc_strdup(frame, p);
+	} else {
+		password = wbinfo_prompt_pass(frame, NULL, username);
+	}
+
+	name = s;
+
+	wbc_status = wbcCredentialSave(name, password);
+
+	d_printf("saving creds %s\n",
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+
+	TALLOC_FREE(frame);
+
+	return WBC_ERROR_IS_OK(wbc_status);
+}
+
 #ifdef WITH_FAKE_KASERVER
 /* Authenticate a user with a plaintext password and set a token */
 
@@ -1736,6 +1773,7 @@ enum {
 	OPT_ONLINESTATUS,
 	OPT_CHANGE_USER_PASSWORD,
 	OPT_PING_DC,
+	OPT_CCACHE_SAVE,
 	OPT_SID_TO_FULLNAME,
 	OPT_NTLMV2,
 	OPT_LANMAN
@@ -1805,6 +1843,9 @@ int main(int argc, char **argv, char **envp)
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
+		{ "ccache-save", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_CCACHE_SAVE, "Store user and password for ccache "
+		  "operation", "user%password" },
 		{ "getdcname", 0, POPT_ARG_STRING, &string_arg, OPT_GETDCNAME,
 		  "Get a DC name for a foreign domain", "domainname" },
 		{ "dsgetdcname", 0, POPT_ARG_STRING, &string_arg, OPT_DSGETDCNAME, "Find a DC for a domain", "domainname" },
@@ -2188,6 +2229,11 @@ int main(int argc, char **argv, char **envp)
 		case OPT_GET_AUTH_USER:
 			wbinfo_get_auth_user();
 			goto done;
+			break;
+		case OPT_CCACHE_SAVE:
+			if (!wbinfo_ccache_save(string_arg)) {
+				goto done;
+			}
 			break;
 		case OPT_GETDCNAME:
 			if (!wbinfo_getdcname(string_arg)) {

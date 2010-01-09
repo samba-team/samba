@@ -67,6 +67,10 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_CCACHE_NTLMAUTH,
 		.struct_fn	= winbindd_dual_ccache_ntlm_auth,
 	},{
+		.name		= "CCACHE_SAVE",
+		.struct_cmd	= WINBINDD_CCACHE_SAVE,
+		.struct_fn	= winbindd_dual_ccache_save,
+	},{
 		.name		= "NDRCMD",
 		.struct_cmd	= WINBINDD_DUAL_NDRCMD,
 		.struct_fn	= winbindd_dual_ndrcmd,
