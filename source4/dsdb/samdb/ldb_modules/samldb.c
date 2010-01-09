@@ -786,9 +786,11 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"pwdLastSet", "0");
 		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"primaryGroupID", "513");
-		if (ret != LDB_SUCCESS) return ret;
+		if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
+			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+						 "primaryGroupID", DOMAIN_RID_USERS);
+			if (ret != LDB_SUCCESS) return ret;
+		}
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"accountExpires", "9223372036854775807");
 		if (ret != LDB_SUCCESS) return ret;
@@ -1782,6 +1784,20 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
+	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
+	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+		struct samldb_ctx *ac;
+
+		ac = samldb_ctx_init(module, req);
+		if (ac == NULL)
+			return LDB_ERR_OPERATIONS_ERROR;
+
+		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
+			req->op.mod.message);
+
+		return samldb_prim_group_change(ac);
+	}
+
 	el = ldb_msg_find_element(req->op.mod.message, "userAccountControl");
 	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t user_account_control;
@@ -1809,21 +1825,18 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 			}
 			el2 = ldb_msg_find_element(msg, "isCriticalSystemObject");
 			el2->flags = LDB_FLAG_MOD_REPLACE;
+
+			/* DCs have primaryGroupID of DOMAIN_RID_DCS */
+			if (!ldb_msg_find_element(msg, "primaryGroupID")) {
+				ret = samdb_msg_add_uint(ldb, msg, msg,
+							 "primaryGroupID", DOMAIN_RID_DCS);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+				el2 = ldb_msg_find_element(msg, "primaryGroupID");
+				el2->flags = LDB_FLAG_MOD_REPLACE;
+			}
 		}
-	}
-
-	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
-	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
-		struct samldb_ctx *ac;
-
-		ac = samldb_ctx_init(module, req);
-		if (ac == NULL)
-			return LDB_ERR_OPERATIONS_ERROR;
-
-		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
-			req->op.mod.message);
-
-		return samldb_prim_group_change(ac);
 	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "member");
