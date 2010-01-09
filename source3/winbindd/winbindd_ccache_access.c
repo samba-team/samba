@@ -115,7 +115,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		data_blob_free(&reply);
 		goto done;
 	}
-	*auth_msg = reply;
+	*auth_msg = data_blob(reply.data, reply.length);
 	status = NT_STATUS_OK;
 
 done:
