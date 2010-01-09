@@ -66,10 +66,8 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 
 	if (info3 != NULL) {
 
-		DOM_SID sid;
-		sid_copy(&sid, info3->base.domain_sid);
-		sid_append_rid(&sid, info3->base.rid);
-		sid_copy(&cred_sid, &sid);
+		sid_compose(&cred_sid, info3->base.domain_sid,
+			    info3->base.rid);
 		info3->base.user_flags |= NETLOGON_CACHED_ACCOUNT;
 
 	} else if (user_sid != NULL) {
