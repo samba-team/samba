@@ -339,7 +339,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 			       uint8_t *data, size_t length,
 			       const uint8_t *whole_pdu, size_t pdu_length,
-			       DATA_BLOB *sig)
+			       const DATA_BLOB *sig)
 {
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot unseal packet\n"));
