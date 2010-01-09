@@ -523,11 +523,10 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 				   "user krb5 ccache %s with %s\n", ccname,
 				   error_message(ret)));
 			return krb5_to_nt_status(ret);
-		} else {
-			DEBUG(10, ("add_ccache_to_list: successfully destroyed "
-				   "krb5 ccache %s for user %s\n", ccname,
-				   username));
 		}
+		DEBUG(10, ("add_ccache_to_list: successfully destroyed "
+			   "krb5 ccache %s for user %s\n", ccname,
+			   username));
 	}
 #endif
 
