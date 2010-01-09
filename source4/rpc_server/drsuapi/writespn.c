@@ -103,6 +103,13 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 				}
 				spn_count++;
 			}
+
+			if (msg->num_elements == 0) {
+				DEBUG(2,("No SPNs need changing on %s\n", ldb_dn_get_linearized(msg->dn)));
+				r->out.res->res1.status = WERR_OK;
+				return WERR_OK;
+			}
+
 			for (i=0;i<msg->num_elements;i++) {
 				switch (req->operation) {
 				case DRSUAPI_DS_SPN_OPERATION_ADD:
