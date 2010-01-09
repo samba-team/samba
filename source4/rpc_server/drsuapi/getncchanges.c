@@ -468,6 +468,10 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	struct replUpToDateVectorBlob ouv;
 	int i;
 
+	udv->version = 2;
+	udv->reserved1 = 0;
+	udv->reserved2 = 0;
+
 	werr = load_udv(sam_ctx, udv, ncRoot_dn, &ouv);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
@@ -1008,7 +1012,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		if (obj->meta_data_ctr == NULL) {
-			DEBUG(0,(__location__ ": getncchanges skipping send of object %s\n",
+			DEBUG(8,(__location__ ": getncchanges skipping send of object %s\n",
 				 ldb_dn_get_linearized(msg->dn)));
 			/* no attributes to send */
 			talloc_free(obj);
@@ -1064,10 +1068,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			  b_state->sam_ctx, (ldb_qsort_cmp_fn_t)linked_attribute_compare);
 
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
-		r->out.ctr->ctr6.uptodateness_vector->version = 2;
-		r->out.ctr->ctr6.uptodateness_vector->reserved1 = 0;
-		r->out.ctr->ctr6.uptodateness_vector->reserved2 = 0;
-
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
 
 		werr = get_nc_changes_udv(b_state->sam_ctx, getnc_state->ncRoot_dn, 
