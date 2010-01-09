@@ -47,6 +47,11 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			struct drsuapi_DsWriteAccountSpnRequest1 *req;
 			struct ldb_message *msg;
 			int count, i, ret;
+			struct ldb_result *res;
+			const char *attrs[] = { "servicePrincipalName", NULL };
+			struct ldb_message_element *el;
+			unsigned spn_count=0;
+
 			req = &r->in.req->req1;
 			count = req->count;
 
@@ -61,11 +66,42 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 				return WERR_OK;
 			}
 
+			/* load the existing SPNs, as these are
+			 * ignored for adds and deletes (see MS-DRSR
+			 * section 4.1.28.3)
+			 */
+			ret = ldb_search(b_state->sam_ctx, msg, &res, msg->dn, LDB_SCOPE_BASE,
+					 attrs, NULL);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(0,("Failed to load existing SPNs on %s: %s\n",
+					 ldb_dn_get_linearized(msg->dn),
+					 ldb_errstring(b_state->sam_ctx)));
+				r->out.res->res1.status = WERR_DS_OBJ_NOT_FOUND;
+				return WERR_OK;
+			}
+			el = ldb_msg_find_element(res->msgs[0], "servicePrincipalName");
+
 			/* construct mods */
 			for (i = 0; i < count; i++) {
-				samdb_msg_add_string(b_state->sam_ctx,
-						     msg, msg, "servicePrincipalName",
-						     req->spn_names[i].str);
+				bool found = false;
+				int j;
+				for (j=0; el && j<el->num_values; j++) {
+					if (samdb_ldb_val_case_cmp(req->spn_names[i].str, &el->values[j]) == 0) {
+						found = true;
+						break;
+					}
+				}
+				if ((req->operation == DRSUAPI_DS_SPN_OPERATION_ADD && found) ||
+				    (req->operation == DRSUAPI_DS_SPN_OPERATION_DELETE && !found)) {
+					continue;
+				}
+				ret = samdb_msg_add_string(b_state->sam_ctx,
+							   msg, msg, "servicePrincipalName",
+							   req->spn_names[i].str);
+				if (ret != LDB_SUCCESS) {
+					return WERR_NOMEM;
+				}
+				spn_count++;
 			}
 			for (i=0;i<msg->num_elements;i++) {
 				switch (req->operation) {
@@ -90,6 +126,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 					 ldb_errstring(b_state->sam_ctx)));
 				r->out.res->res1.status = WERR_ACCESS_DENIED;
 			} else {
+				DEBUG(2,("Modified %u SPNs on %s\n", spn_count, ldb_dn_get_linearized(msg->dn)));
 				r->out.res->res1.status = WERR_OK;
 			}
 
