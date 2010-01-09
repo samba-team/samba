@@ -30,6 +30,7 @@
 #include "rpc_server/dcerpc_server_proto.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/security/security.h"
+#include "lib/util/binsearch.h"
 
 /*
   build a DsReplicaObjectIdentifier from a ldb msg
@@ -57,6 +58,29 @@ static struct drsuapi_DsReplicaObjectIdentifier *get_object_identifier(TALLOC_CT
 	return identifier;
 }
 
+static int udv_compare(const struct GUID *guid1, struct GUID guid2)
+{
+	return GUID_compare(guid1, &guid2);
+}
+
+/*
+  see if we can filter an attribute using the uptodateness_vector
+ */
+static bool udv_filter(const struct drsuapi_DsReplicaCursorCtrEx *udv,
+		       const struct GUID *originating_invocation_id,
+		       uint64_t originating_usn)
+{
+	const struct drsuapi_DsReplicaCursor *c;
+	if (udv == NULL) return false;
+	BINARY_ARRAY_SEARCH(udv->cursors, udv->count, source_dsa_invocation_id, 
+			    originating_invocation_id, udv_compare, c);
+	if (c && originating_usn <= c->highest_usn) {
+		return true;
+	}
+	return false;
+	
+}
+
 /* 
   drsuapi_DsGetNCChanges for one object
 */
@@ -67,7 +91,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct dsdb_schema *schema,
 					  DATA_BLOB *session_key,
 					  uint64_t highest_usn,
-					  uint32_t replica_flags)
+					  uint32_t replica_flags,
+					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
 {
 	const struct ldb_val *md_value;
 	int i, n;
@@ -156,6 +181,14 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			}
 		}
 
+		/* filter by uptodateness_vector */
+		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType &&
+		    udv_filter(uptodateness_vector,
+			       &md.ctr.ctr1.array[i].originating_invocation_id, 
+			       md.ctr.ctr1.array[i].originating_usn)) {
+			continue;
+		}
+
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
 		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
@@ -164,11 +197,15 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		n++;
 	}
 
-	/*
-	  note that if n==0 we still need to send the change, as it
-	  could be a rename, which changes the uSNChanged, but not any
-	  of the replicated attributes
-	 */
+	/* ignore it if its an empty change. Note that renames always
+	 * change the 'name' attribute, so they won't be ignored by
+	 * this */
+	if (n == 0 ||
+	    (n == 1 && attids[0] == DRSUAPI_ATTRIBUTE_instanceType)) {
+		talloc_free(obj->meta_data_ctr);
+		obj->meta_data_ctr = NULL;
+		return WERR_OK;
+	}
 
 	obj->meta_data_ctr->count = n;
 
@@ -302,7 +339,8 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       uint32_t replica_flags,
 				       struct ldb_message *msg,
 				       struct drsuapi_DsReplicaLinkedAttribute **la_list,
-				       uint32_t *la_count)
+				       uint32_t *la_count,
+				       struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
 {
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -668,6 +706,7 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *last_dn;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
+	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 };
 
 /* 
@@ -880,6 +919,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			      (comparison_fn_t)site_res_cmp_usn_order);
 		}
 
+		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req8->uptodateness_vector);
+		if (getnc_state->uptodateness_vector) {
+			/* make sure its sorted */
+			qsort(getnc_state->uptodateness_vector->cursors, 
+			      getnc_state->uptodateness_vector->count,
+			      sizeof(getnc_state->uptodateness_vector->cursors[0]),
+			      (comparison_fn_t)drsuapi_DsReplicaCursor_compare);
+		}
 	}
 
 	/* Prefix mapping */
@@ -935,7 +982,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		werr = get_nc_changes_build_object(obj, msg,
 						   b_state->sam_ctx, getnc_state->ncRoot_dn, 
 						   schema, &session_key, getnc_state->min_usn,
-						   req8->replica_flags);
+						   req8->replica_flags, getnc_state->uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -946,7 +993,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						req8->replica_flags,
 						msg,
 						&getnc_state->la_list,
-						&getnc_state->la_count);
+						&getnc_state->la_count,
+						getnc_state->uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}

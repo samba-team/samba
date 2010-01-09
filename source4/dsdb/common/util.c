@@ -2810,6 +2810,12 @@ int drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
 	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
 }
 
+int drsuapi_DsReplicaCursor_compare(const struct drsuapi_DsReplicaCursor *c1,
+				    const struct drsuapi_DsReplicaCursor *c2)
+{
+	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
+}
+
 /*
   see if we are a RODC
 
