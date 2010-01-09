@@ -319,10 +319,10 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 
 		status = udv_convert(p, &p->uptodatevector, &p->uptodatevector_ex);
 		W_ERROR_NOT_OK_RETURN(status);
-
-		status = add_local_udv(s, p, samdb_ntds_invocation_id(s->samdb), &p->uptodatevector_ex);
-		W_ERROR_NOT_OK_RETURN(status);
 	}
+
+	status = add_local_udv(s, p, samdb_ntds_invocation_id(s->samdb), &p->uptodatevector_ex);
+	W_ERROR_NOT_OK_RETURN(status);
 
 	orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom");
 	if (orf_el) {
