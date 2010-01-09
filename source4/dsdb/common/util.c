@@ -3198,3 +3198,19 @@ int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
 	talloc_free(dn);
 	return LDB_SUCCESS;
 }
+
+/*
+  compare a ldb_val to a string case insensitively
+ */
+int samdb_ldb_val_case_cmp(const char *s, struct ldb_val *v)
+{
+	size_t len = strlen(s);
+	int ret;
+	if (len > v->length) return 1;
+	ret = strncasecmp(s, (const char *)v->data, v->length);
+	if (ret != 0) return ret;
+	if (v->length > len && v->data[len] != 0) {
+		return -1;
+	}
+	return 0;
+}
