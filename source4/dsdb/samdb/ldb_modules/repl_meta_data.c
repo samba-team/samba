@@ -2667,10 +2667,12 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				break;
 			}
 
-			DEBUG(1,("Discarding older DRS attribute update to %s on %s from %s\n",
-				 msg->elements[i-removed_attrs].name,
-				 ldb_dn_get_linearized(msg->dn),
-				 GUID_string(ar, &rmd->ctr.ctr1.array[i].originating_invocation_id)));
+			if (rmd->ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) {
+				DEBUG(1,("Discarding older DRS attribute update to %s on %s from %s\n",
+					 msg->elements[i-removed_attrs].name,
+					 ldb_dn_get_linearized(msg->dn),
+					 GUID_string(ar, &rmd->ctr.ctr1.array[i].originating_invocation_id)));
+			}
 
 			/* we don't want to apply this change so remove the attribute */
 			ldb_msg_remove_element(msg, &msg->elements[i-removed_attrs]);
