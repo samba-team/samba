@@ -123,10 +123,11 @@ static void dreplsrv_pending_op_callback(struct tevent_req *subreq)
 
 	rf->consecutive_sync_failures++;
 
-	DEBUG(1,("dreplsrv_op_pull_source(%s/%s) failures[%u]\n",
-		win_errstr(rf->result_last_attempt),
-		nt_errstr(werror_to_ntstatus(rf->result_last_attempt)),
-		rf->consecutive_sync_failures));
+	DEBUG(1,("dreplsrv_op_pull_source(%s/%s) for %s failures[%u]\n",
+		 win_errstr(rf->result_last_attempt),
+		 win_errstr(rf->result_last_attempt),
+		 ldb_dn_get_linearized(op->source_dsa->partition->dn),
+		 rf->consecutive_sync_failures));
 
 done:
 	if (op->callback) {
