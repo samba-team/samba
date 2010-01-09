@@ -451,6 +451,7 @@ static struct winbindd_dispatch_table {
 
 	/* Credential cache access */
 	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
+	{ WINBINDD_CCACHE_SAVE, winbindd_ccache_save, "CCACHE_SAVE" },
 
 	/* WINS functions */
 

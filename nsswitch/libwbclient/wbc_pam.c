@@ -1119,3 +1119,21 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
+
+/* Authenticate a user with cached credentials */
+wbcErr wbcCredentialSave(const char *user, const char *password)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	strncpy(request.data.ccache_save.user, user,
+		sizeof(request.data.ccache_save.user)-1);
+	strncpy(request.data.ccache_save.pass, password,
+		sizeof(request.data.ccache_save.pass)-1);
+	request.data.ccache_save.uid = getuid();
+
+	return wbcRequestResponse(WINBINDD_CCACHE_SAVE, &request, &response);
+}
