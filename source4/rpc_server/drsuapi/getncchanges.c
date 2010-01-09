@@ -650,6 +650,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s\n",
 			 ldb_errstring(ldb)));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
@@ -694,6 +695,8 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 
 	DEBUG(2,("Allocated RID pool for server %s\n",
 		 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
+
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 
 	return WERR_OK;
 }
