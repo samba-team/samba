@@ -99,7 +99,7 @@ static void single_new_task(struct tevent_context *ev,
 /* called when a task goes down */
 static void single_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
 {
-	DEBUG(2,("single_terminate: reason[%s]\n",reason));
+	DEBUG(3,("single_terminate: reason[%s]\n",reason));
 }
 
 /* called to set a title of a task or connection */
