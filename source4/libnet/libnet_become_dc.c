@@ -1031,14 +1031,6 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	struct ldb_dn *basedn;
 	struct ldb_dn *ntds_dn;
 	struct ldb_dn *server_dn;
-	static const char *_1_1_attrs[] = {
-		"1.1",
-		NULL
-	};
-	static const char *fsmo_attrs[] = {
-		"fSMORoleOwner",
-		NULL
-	};
 	static const char *dns_attrs[] = {
 		"dnsHostName",
 		NULL
@@ -1048,41 +1040,21 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 		NULL
 	};
 
-	basedn = ldb_dn_new_fmt(s, s->ldap1.ldb, "<WKGUID=2fbac1870ade11d297c400c04fd8d5cd,%s>",
-				s->domain.dn_str);
-	NT_STATUS_HAVE_NO_MEMORY(basedn);
-
-	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
-			 _1_1_attrs, "(objectClass=*)");
-	talloc_free(basedn);
+	ret = dsdb_wellknown_dn(s->ldap1.ldb, s, samdb_base_dn(s->ldap1.ldb),
+				DS_GUID_INFRASTRUCTURE_CONTAINER,
+				&basedn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
-	} else if (r->count != 1) {
-		talloc_free(r);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	basedn = talloc_steal(s, r->msgs[0]->dn);
-	talloc_free(r);
-
-	ret = ldb_search(s->ldap1.ldb, s, &r, basedn, LDB_SCOPE_BASE,
-			 fsmo_attrs, "(objectClass=*)");
-	talloc_free(basedn);
+	ret = samdb_reference_dn(s->ldap1.ldb, s, basedn, "fSMORoleOwner", &ntds_dn);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(basedn);
 		return NT_STATUS_LDAP(ret);
-	} else if (r->count != 1) {
-		talloc_free(r);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->infrastructure_fsmo.ntds_dn_str	= samdb_result_string(r->msgs[0], "fSMORoleOwner", NULL);
-	if (!s->infrastructure_fsmo.ntds_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	talloc_steal(s, s->infrastructure_fsmo.ntds_dn_str);
-
-	talloc_free(r);
-
-	ntds_dn = ldb_dn_new(s, s->ldap1.ldb, s->infrastructure_fsmo.ntds_dn_str);
-	NT_STATUS_HAVE_NO_MEMORY(ntds_dn);
+	s->infrastructure_fsmo.ntds_dn_str = ldb_dn_get_linearized(ntds_dn);
+	NT_STATUS_HAVE_NO_MEMORY(s->infrastructure_fsmo.ntds_dn_str);
 
 	server_dn = ldb_dn_get_parent(s, ntds_dn);
 	NT_STATUS_HAVE_NO_MEMORY(server_dn);
@@ -2951,55 +2923,40 @@ static NTSTATUS becomeDC_ldap2_modify_computer(struct libnet_BecomeDC_state *s)
 static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
 {
 	int ret;
-	struct ldb_result *r;
-	struct ldb_dn *basedn;
 	struct ldb_dn *old_dn;
 	struct ldb_dn *new_dn;
-	static const char *_1_1_attrs[] = {
-		"1.1",
-		NULL
-	};
 
-	basedn = ldb_dn_new_fmt(s, s->ldap2.ldb, "<WKGUID=a361b2ffffd211d1aa4b00c04fd7d83a,%s>",
-				s->domain.dn_str);
-	NT_STATUS_HAVE_NO_MEMORY(basedn);
-
-	ret = ldb_search(s->ldap2.ldb, s, &r, basedn, LDB_SCOPE_BASE,
-			 _1_1_attrs, "(objectClass=*)");
-	talloc_free(basedn);
+	ret = dsdb_wellknown_dn(s->ldap2.ldb, s, samdb_base_dn(s->ldap2.ldb),
+				DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
+				&new_dn);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
-	} else if (r->count != 1) {
-		talloc_free(r);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	old_dn = ldb_dn_new(r, s->ldap2.ldb, s->dest_dsa.computer_dn_str);
-	NT_STATUS_HAVE_NO_MEMORY(old_dn);
-
-	new_dn = r->msgs[0]->dn;
-
 	if (!ldb_dn_add_child_fmt(new_dn, "CN=%s", s->dest_dsa.netbios_name)) {
-		talloc_free(r);
+		talloc_free(new_dn);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	old_dn = ldb_dn_new(new_dn, s->ldap2.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(old_dn);
+
 	if (ldb_dn_compare(old_dn, new_dn) == 0) {
 		/* we don't need to rename if the old and new dn match */
-		talloc_free(r);
+		talloc_free(new_dn);
 		return NT_STATUS_OK;
 	}
 
 	ret = ldb_rename(s->ldap2.ldb, old_dn, new_dn);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(r);
+		talloc_free(new_dn);
 		return NT_STATUS_LDAP(ret);
 	}
 
 	s->dest_dsa.computer_dn_str = ldb_dn_alloc_linearized(s, new_dn);
 	NT_STATUS_HAVE_NO_MEMORY(s->dest_dsa.computer_dn_str);
 
-	talloc_free(r);
+	talloc_free(new_dn);
 
 	return NT_STATUS_OK;
 }
