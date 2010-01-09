@@ -102,8 +102,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	uint32_t *attids;
 	const char *rdn;
 	const struct dsdb_attribute *rdn_sa;
+	unsigned int instanceType;
 
-	if (ldb_dn_compare(ncRoot_dn, msg->dn) == 0) {
+	instanceType = ldb_msg_find_attr_as_uint(msg, "instanceType", 0);
+	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
 		obj->is_nc_prefix = true;
 		obj->parent_object_guid = NULL;
 	} else {
