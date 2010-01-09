@@ -1379,6 +1379,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		switch (r) {
 			case DRSUAPI_ATTRIBUTE_objectClass: val = "DRSUAPI_ATTRIBUTE_objectClass"; break;
+			case DRSUAPI_ATTRIBUTE_cn: val = "DRSUAPI_ATTRIBUTE_cn"; break;
 			case DRSUAPI_ATTRIBUTE_description: val = "DRSUAPI_ATTRIBUTE_description"; break;
 			case DRSUAPI_ATTRIBUTE_member: val = "DRSUAPI_ATTRIBUTE_member"; break;
 			case DRSUAPI_ATTRIBUTE_instanceType: val = "DRSUAPI_ATTRIBUTE_instanceType"; break;
@@ -1450,6 +1451,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber: val = "DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs: val = "DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs: val = "DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs"; break;
+			case DRSUAPI_ATTRIBUTE_NONE: val = "DRSUAPI_ATTRIBUTE_NONE"; break;
 		}
 		ndr_print_enum(ndr, name, "ENUM", val, r);
 		ndr->flags = _flags_save_ENUM;

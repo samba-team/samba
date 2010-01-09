@@ -437,6 +437,7 @@ interface drsuapi
 
 	typedef [flag(NDR_PAHEX),v1_enum,public] enum {
 		DRSUAPI_ATTRIBUTE_objectClass			= 0x00000000,
+		DRSUAPI_ATTRIBUTE_cn				= 0x00000003,
 		DRSUAPI_ATTRIBUTE_description			= 0x0000000d,
 		DRSUAPI_ATTRIBUTE_member			= 0x0000001f,
 		DRSUAPI_ATTRIBUTE_instanceType			= 0x00020001,
@@ -507,7 +508,8 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
 		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,
 		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
-		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c
+		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c,		
+		DRSUAPI_ATTRIBUTE_NONE				= 0xFFFFFFFF
 	} drsuapi_DsAttributeId;
 
 	typedef struct {

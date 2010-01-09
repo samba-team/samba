@@ -326,6 +326,7 @@ enum drsuapi_DsAttributeId
 #ifndef USE_UINT_ENUMS
  {
 	DRSUAPI_ATTRIBUTE_objectClass=(int)(0x00000000),
+	DRSUAPI_ATTRIBUTE_cn=(int)(0x00000003),
 	DRSUAPI_ATTRIBUTE_description=(int)(0x0000000d),
 	DRSUAPI_ATTRIBUTE_member=(int)(0x0000001f),
 	DRSUAPI_ATTRIBUTE_instanceType=(int)(0x00020001),
@@ -396,11 +397,13 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_msDS_Behavior_Version=(int)(0x000905b3),
 	DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber=(int)(0x000906f6),
 	DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs=(int)(0x0009071c),
-	DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs=(int)(0x0009072c)
+	DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs=(int)(0x0009072c),
+	DRSUAPI_ATTRIBUTE_NONE=(int)(0xFFFFFFFF)
 }
 #else
  { __donnot_use_enum_drsuapi_DsAttributeId=0x7FFFFFFF}
 #define DRSUAPI_ATTRIBUTE_objectClass ( 0x00000000 )
+#define DRSUAPI_ATTRIBUTE_cn ( 0x00000003 )
 #define DRSUAPI_ATTRIBUTE_description ( 0x0000000d )
 #define DRSUAPI_ATTRIBUTE_member ( 0x0000001f )
 #define DRSUAPI_ATTRIBUTE_instanceType ( 0x00020001 )
@@ -472,6 +475,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber ( 0x000906f6 )
 #define DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs ( 0x0009071c )
 #define DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs ( 0x0009072c )
+#define DRSUAPI_ATTRIBUTE_NONE ( 0xFFFFFFFF )
 #endif
 ;
 
