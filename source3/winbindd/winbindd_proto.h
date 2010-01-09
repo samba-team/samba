@@ -180,6 +180,9 @@ void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
 void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *domain,
 						struct winbindd_cli_state *state);
+void winbindd_ccache_save(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_dual_ccache_save(
+	struct winbindd_domain *domain, struct winbindd_cli_state *state);
 
 /* The following definitions come from winbindd/winbindd_cm.c  */
 

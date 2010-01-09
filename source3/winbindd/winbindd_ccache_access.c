@@ -283,3 +283,75 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
   process_result:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
+
+void winbindd_ccache_save(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	fstring name_domain, name_user;
+
+	/* Ensure null termination */
+	state->request->data.ccache_save.user[
+		sizeof(state->request->data.ccache_save.user)-1]='\0';
+	state->request->data.ccache_save.pass[
+		sizeof(state->request->data.ccache_save.pass)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: save passord of user %s\n",
+		  (unsigned long)state->pid,
+		  state->request->data.ccache_save.user));
+
+	/* Parse domain and username */
+
+	if (!canonicalize_username(state->request->data.ccache_ntlm_auth.user,
+				   name_domain, name_user)) {
+		DEBUG(5,("winbindd_ccache_save: cannot parse domain and user "
+			 "from name [%s]\n",
+			 state->request->data.ccache_save.user));
+		request_error(state);
+		return;
+	}
+
+	domain = find_auth_domain(state->request->flags, name_domain);
+
+	if (domain == NULL) {
+		DEBUG(5, ("winbindd_ccache_save: can't get domain [%s]\n",
+			  name_domain));
+		request_error(state);
+		return;
+	}
+
+	if (!check_client_uid(state, state->request->data.ccache_save.uid)) {
+		request_error(state);
+		return;
+	}
+
+	sendto_domain(state, domain);
+}
+
+enum winbindd_result winbindd_dual_ccache_save(
+	struct winbindd_domain *domain, struct winbindd_cli_state *state)
+{
+	NTSTATUS status = NT_STATUS_NOT_SUPPORTED;
+
+	/* Ensure null termination */
+	state->request->data.ccache_save.user[
+		sizeof(state->request->data.ccache_save.user)-1]='\0';
+	state->request->data.ccache_save.pass[
+		sizeof(state->request->data.ccache_save.pass)-1]='\0';
+
+	DEBUG(3, ("winbindd_dual_ccache_save: [%5lu]: save password of user "
+		  "%s\n", (unsigned long)state->pid,
+		  state->request->data.ccache_save.user));
+
+	status = winbindd_add_memory_creds(
+		state->request->data.ccache_save.user,
+		state->request->data.ccache_save.uid,
+		state->request->data.ccache_save.pass);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("winbindd_add_memory_creds failed %s\n",
+			  nt_errstr(status)));
+		return WINBINDD_ERROR;
+	}
+
+	return WINBINDD_OK;
+}
