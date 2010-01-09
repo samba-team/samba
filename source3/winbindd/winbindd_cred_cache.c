@@ -544,11 +544,11 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		/* FIXME: in this case we still might want to have a krb5 cred
 		 * event handler created - gd
 		 * Add ticket refresh handler here */
-		
+
 		if (!lp_winbind_refresh_tickets() || renew_until <= 0) {
 			return NT_STATUS_OK;
 		}
-		
+
 		if (!entry->event) {
 			if (postponed_request) {
 				t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
@@ -585,7 +585,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 			DEBUG(10,("add_ccache_to_list: added krb5_ticket handler\n"));
 		}
-		 
+
 		return NT_STATUS_OK;
 	}
 
