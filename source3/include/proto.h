@@ -1288,7 +1288,6 @@ void security_acl_map_generic(struct security_acl *sa, const struct generic_mapp
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
 NTSTATUS se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted);
-NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size);
 
 /* The following definitions come from lib/util_sec.c  */
 
