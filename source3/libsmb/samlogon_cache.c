@@ -113,8 +113,7 @@ void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3)
 			NETSAMLOGON_TDB));
 		return;
 	}
-	sid_copy(&user_sid, info3->base.domain_sid);
-	sid_append_rid(&user_sid, info3->base.rid);
+	sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid);
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
 	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, &user_sid));
@@ -151,8 +150,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 		return false;
 	}
 
-	sid_copy(&user_sid, info3->base.domain_sid);
-	sid_append_rid(&user_sid, info3->base.rid);
+	sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid);
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
 	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, &user_sid));

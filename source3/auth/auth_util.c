@@ -1274,8 +1274,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sid_copy(&guest_sid, get_global_sam_sid());
-	sid_append_rid(&guest_sid, DOMAIN_USER_RID_GUEST);
+	sid_compose(&guest_sid, get_global_sam_sid(), DOMAIN_USER_RID_GUEST);
 
 	become_root();
 	ret = pdb_getsampwsid(sampass, &guest_sid);
@@ -1645,13 +1644,12 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   matches.
 	*/
 
-	sid_copy(&user_sid, info3->base.domain_sid);
-	if (!sid_append_rid(&user_sid, info3->base.rid)) {
+	if (!sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	sid_copy(&group_sid, info3->base.domain_sid);
-	if (!sid_append_rid(&group_sid, info3->base.primary_gid)) {
+	if (!sid_compose(&group_sid, info3->base.domain_sid,
+			 info3->base.primary_gid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

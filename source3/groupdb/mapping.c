@@ -519,8 +519,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	DEBUG(10, ("Creating alias %s with gid %u and rid %u\n",
 		   name, (unsigned int)gid, (unsigned int)new_rid));
 
-	sid_copy(&sid, get_global_sam_sid());
-	sid_append_rid(&sid, new_rid);
+	sid_compose(&sid, get_global_sam_sid(), new_rid);
 
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);

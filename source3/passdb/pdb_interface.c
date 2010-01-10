@@ -1472,8 +1472,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	DEBUG(5,("lookup_global_sam_rid: looking up RID %u.\n",
 		 (unsigned int)rid));
 
-	sid_copy(&sid, get_global_sam_sid());
-	sid_append_rid(&sid, rid);
+	sid_compose(&sid, get_global_sam_sid(), rid);
 
 	/* see if the passdb can help us with the name of the user */
 

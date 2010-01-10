@@ -68,8 +68,7 @@ static int get_sid_from_cli_string(DOM_SID *sid, const char *str_sid)
 					"a complete SID or RID!\n");
 			return -1;
 		}
-		sid_copy(sid, get_global_sam_sid());
-		sid_append_rid(sid, rid);
+		sid_compose(sid, get_global_sam_sid(), rid);
 	}
 
 	return 0;

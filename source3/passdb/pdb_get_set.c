@@ -239,8 +239,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 	/* Just set it to the 'Domain Users' RID of 512 which will 
 	   always resolve to a name */
 
-	sid_copy( gsid, get_global_sam_sid() );
-	sid_append_rid( gsid, DOMAIN_GROUP_RID_USERS );
+	sid_compose(gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
 
 	sampass->group_sid = gsid;
 
@@ -552,8 +551,8 @@ bool pdb_set_group_sid(struct samu *sampass, const DOM_SID *g_sid, enum pdb_valu
 	if ( sid_to_gid( g_sid, &gid ) ) {
 		sid_copy(sampass->group_sid, g_sid);
 	} else {
-		sid_copy( sampass->group_sid, get_global_sam_sid() );
-		sid_append_rid( sampass->group_sid, DOMAIN_GROUP_RID_USERS );
+		sid_compose(sampass->group_sid, get_global_sam_sid(),
+			    DOMAIN_GROUP_RID_USERS);
 	}
 
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 

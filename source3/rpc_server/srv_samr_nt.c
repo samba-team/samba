@@ -145,8 +145,8 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	/* Add Full Access for Domain Admins if we are a DC */
 
 	if ( IS_DC ) {
-		sid_copy( &domadmin_sid, get_global_sam_sid() );
-		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
+		sid_compose(&domadmin_sid, get_global_sam_sid(),
+			    DOMAIN_GROUP_RID_ADMINS);
 		init_sec_ace(&ace[i++], &domadmin_sid,
 			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
 	}
@@ -266,8 +266,8 @@ void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
 	/* Full access for DOMAIN\Domain Admins. */
 	if ( IS_DC ) {
 		DOM_SID domadmin_sid;
-		sid_copy( &domadmin_sid, get_global_sam_sid() );
-		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
+		sid_compose(&domadmin_sid, get_global_sam_sid(),
+			    DOMAIN_GROUP_RID_ADMINS);
 		if (is_sid_in_token(nt_token, &domadmin_sid)) {
 			*pacc_requested |= GENERIC_ALL_ACCESS;
 			return;

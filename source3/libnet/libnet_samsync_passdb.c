@@ -318,8 +318,7 @@ static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	sid_copy(&user_sid, get_global_sam_sid());
-	sid_append_rid(&user_sid, r->rid);
+	sid_compose(&user_sid, get_global_sam_sid(), r->rid);
 
 	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n",
 		  sid_to_fstring(sid_string, &user_sid), account));
@@ -395,8 +394,7 @@ static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
 	fstrcpy(comment, r->description.string);
 
 	/* add the group to the mapping table */
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, rid);
+	sid_compose(&group_sid, get_global_sam_sid(), rid);
 	sid_to_fstring(sid_string, &group_sid);
 
 	if (pdb_getgrsid(&map, group_sid)) {
@@ -459,8 +457,7 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, rid);
+	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
 	if (!get_domain_group_from_sid(group_sid, &map)) {
 		DEBUG(0, ("Could not find global group %d\n", rid));
@@ -491,8 +488,7 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		sid_copy(&member_sid, get_global_sam_sid());
-		sid_append_rid(&member_sid, r->rids[i]);
+		sid_compose(&member_sid, get_global_sam_sid(), r->rids[i]);
 
 		if (!pdb_getsampwsid(member, &member_sid)) {
 			DEBUG(1, ("Found bogus group member: %d (member_sid=%s group=%s)\n",
@@ -587,8 +583,7 @@ static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
 	fstrcpy(comment, r->description.string);
 
 	/* Find out whether the group is already mapped */
-	sid_copy(&alias_sid, dom_sid);
-	sid_append_rid(&alias_sid, rid);
+	sid_compose(&alias_sid, dom_sid, rid);
 	sid_to_fstring(sid_string, &alias_sid);
 
 	if (pdb_getgrsid(&map, alias_sid)) {

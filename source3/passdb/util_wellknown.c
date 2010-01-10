@@ -160,8 +160,8 @@ bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 
 		for (j=0; users[j].name != NULL; j++) {
 			if ( strequal(users[j].name, name) ) {
-				sid_copy(sid, special_domains[i].sid);
-				sid_append_rid(sid, users[j].rid);
+				sid_compose(sid, special_domains[i].sid,
+					    users[j].rid);
 				*domain = talloc_strdup(
 					mem_ctx, special_domains[i].name);
 				return True;

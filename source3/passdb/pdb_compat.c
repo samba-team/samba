@@ -60,10 +60,9 @@ bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value
 		return False;
 	}
 
-	sid_copy(&u_sid, global_sam_sid);
-
-	if (!sid_append_rid(&u_sid, rid))
+	if (!sid_compose(&u_sid, global_sam_sid, rid)) {
 		return False;
+	}
 
 	if (!pdb_set_user_sid(sampass, &u_sid, flag))
 		return False;
@@ -87,10 +86,9 @@ bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32 grid, enum pdb_val
 		return False;
 	}
 
-	sid_copy(&g_sid, global_sam_sid);
-	
-	if (!sid_append_rid(&g_sid, grid))
+	if (!sid_compose(&g_sid, global_sam_sid, grid)) {
 		return False;
+	}
 
 	if (!pdb_set_group_sid(sampass, &g_sid, flag))
 		return False;

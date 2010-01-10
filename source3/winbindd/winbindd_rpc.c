@@ -612,9 +612,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0;i<(*num_groups);i++) {
-		sid_copy(&((*user_grpsids)[i]), &domain->sid);
-		sid_append_rid(&((*user_grpsids)[i]),
-				rid_array->rids[i].rid);
+		sid_compose(&((*user_grpsids)[i]), &domain->sid,
+			    rid_array->rids[i].rid);
 	}
 
 	return NT_STATUS_OK;

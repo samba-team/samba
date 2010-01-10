@@ -2986,8 +2986,7 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
                 return;
         }
 
-	sid_copy(&sid, info3->base.domain_sid);
-	sid_append_rid(&sid, info3->base.rid);
+	sid_compose(&sid, info3->base.domain_sid, info3->base.rid);
 
 	/* Clear U/SID cache entry */
 	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, &sid));

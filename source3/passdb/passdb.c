@@ -216,8 +216,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		sid_copy( &user_sid, get_global_sam_sid() );
-		sid_append_rid( &user_sid, user_rid );
+		sid_compose(&user_sid, get_global_sam_sid(), user_rid);
 
 		if ( !pdb_set_user_sid(user, &user_sid, PDB_SET) ) {
 			DEBUG(3, ("pdb_set_user_sid failed\n"));
