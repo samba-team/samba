@@ -187,11 +187,6 @@ objectClass: top
 objectClass: foreignSecurityPrincipal
 objectSid: S-1-5-11
 
-dn: CN=S-1-5-17,CN=ForeignSecurityPrincipals,${DOMAINDN}
-objectClass: top
-objectClass: foreignSecurityPrincipal
-objectSid: S-1-5-17
-
 dn: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
