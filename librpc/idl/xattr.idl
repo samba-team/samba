@@ -14,6 +14,7 @@ import "security.idl";
   uuid("12345778-1234-abcd-0001-00000002"),
   version(0.0),
   helper("../librpc/ndr/ndr_xattr.h"),
+  pyhelper("librpc/ndr/py_xattr.c"),
   pointer_default(unique)
 ]
 interface xattr
