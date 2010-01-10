@@ -1196,9 +1196,16 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	return domain_sid;
 
 failed:
-	DEBUG(1,("Failed to find domain_sid for open ldb\n"));
 	talloc_free(tmp_ctx);
 	return NULL;
+}
+
+/*
+  get domain sid from cache
+*/
+const struct dom_sid *samdb_domain_sid_cache_only(struct ldb_context *ldb)
+{
+	return (struct dom_sid *)ldb_get_opaque(ldb, "cache.domain_sid");
 }
 
 bool samdb_set_domain_sid(struct ldb_context *ldb, const struct dom_sid *dom_sid_in)
