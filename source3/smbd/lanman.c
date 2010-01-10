@@ -2616,7 +2616,7 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 	 */
 
 	{
-		auth_serversupplied_info *server_info = NULL;
+		struct auth_serversupplied_info *server_info = NULL;
 		DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
 
 		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {

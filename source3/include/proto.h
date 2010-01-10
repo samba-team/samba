@@ -38,7 +38,9 @@ NTSTATUS auth_builtin_init(void);
 
 /* The following definitions come from auth/auth_compat.c  */
 
-NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_password, auth_serversupplied_info **server_info);
+NTSTATUS check_plaintext_password(const char *smb_name,
+				  DATA_BLOB plaintext_password,
+				  struct auth_serversupplied_info **server_info);
 bool password_ok(struct auth_context *actx, bool global_encrypted,
 		 const char *session_workgroup,
 		 const char *smb_name, DATA_BLOB password_blob);
@@ -117,7 +119,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    struct nt_user_token **token);
 bool user_in_group_sid(const char *username, const DOM_SID *group_sid);
 bool user_in_group(const char *username, const char *groupname);
-NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, 
+NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
                              char *unix_username,
 			     struct passwd *pwd);
 NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
@@ -125,25 +127,25 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 				       bool is_guest,
 				       struct auth_serversupplied_info **presult);
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
-						 const auth_serversupplied_info *src);
+						 const struct auth_serversupplied_info *src);
 bool init_guest_info(void);
 bool server_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key);
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
-				auth_serversupplied_info **server_info);
+				struct auth_serversupplied_info **server_info);
 bool copy_current_user(struct current_user *dst, struct current_user *src);
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 			     fstring save_username, bool create );
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
 				const char *sent_nt_username,
 				const char *domain,
-				auth_serversupplied_info **server_info, 
+				struct auth_serversupplied_info **server_info,
 				struct netr_SamInfo3 *info3);
 NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const char *sent_nt_username,
 					  const char *domain,
 					  const struct wbcAuthUserInfo *info,
-					  auth_serversupplied_info **server_info);
+					  struct auth_serversupplied_info **server_info);
 void free_user_info(struct auth_usersupplied_info **user_info);
 bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) ;
 bool is_trusted_domain(const char* dom_name);
@@ -6716,7 +6718,7 @@ void invalidate_all_vuids(struct smbd_server_connection *sconn);
 int register_initial_vuid(struct smbd_server_connection *sconn);
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
-			auth_serversupplied_info *server_info,
+			struct auth_serversupplied_info *server_info,
 			DATA_BLOB response_blob,
 			const char *smb_name);
 void add_session_user(struct smbd_server_connection *sconn, const char *user);

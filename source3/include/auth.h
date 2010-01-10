@@ -40,7 +40,7 @@ struct auth_usersupplied_info {
 
 };
 
-typedef struct auth_serversupplied_info {
+struct auth_serversupplied_info {
 	bool guest;
 
 	DOM_SID *sids; 	/* These SIDs are preliminary between
@@ -77,7 +77,7 @@ typedef struct auth_serversupplied_info {
 	 * smb request. See set_current_user_info.
 	 */
 	char *sanitized_username;
-} auth_serversupplied_info;
+};
 
 struct auth_context {
 	DATA_BLOB challenge; 
@@ -110,7 +110,7 @@ typedef struct auth_methods
 			 void *my_private_data, 
 			 TALLOC_CTX *mem_ctx,
 			 const struct auth_usersupplied_info *user_info, 
-			 auth_serversupplied_info **server_info);
+			 struct auth_serversupplied_info **server_info);
 
 	/* If you are using this interface, then you are probably
 	 * getting something wrong.  This interface is only for

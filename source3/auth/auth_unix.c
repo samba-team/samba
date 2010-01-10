@@ -86,7 +86,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 			     void *my_private_data, 
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info,
-			     auth_serversupplied_info **server_info)
+			     struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;

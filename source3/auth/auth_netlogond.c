@@ -154,7 +154,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 					 void *my_private_data,
 					 TALLOC_CTX *mem_ctx,
 					 const struct auth_usersupplied_info *user_info,
-					 auth_serversupplied_info **server_info)
+					 struct auth_serversupplied_info **server_info)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct netr_SamInfo3 *info3 = NULL;
