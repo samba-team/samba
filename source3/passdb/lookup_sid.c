@@ -1187,9 +1187,8 @@ static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 static bool legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	enum lsa_SidType type;
-	uint32 rid;
 
-	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+	if (sid_check_is_in_our_domain(psid)) {
 		union unid_t id;
 		bool ret;
 
@@ -1230,7 +1229,6 @@ done:
 
 static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
-	uint32 rid;
 	GROUP_MAP map;
 	union unid_t id;
 	enum lsa_SidType type;
@@ -1252,7 +1250,7 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		return false;
 	}
 
-	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+	if (sid_check_is_in_our_domain(psid)) {
 		bool ret;
 
 		become_root();
