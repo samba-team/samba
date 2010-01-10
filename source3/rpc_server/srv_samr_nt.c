@@ -5837,8 +5837,9 @@ NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
 		return status;
 	}
 
-	if (!sid_equal(&dinfo->sid, get_global_sam_sid()))
+	if (!sid_check_is_domain(&dinfo->sid)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	name = r->in.name->string;
 	if (name == NULL) {
@@ -5898,8 +5899,9 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 		return result;
 	}
 
-	if (!sid_equal(&dinfo->sid, get_global_sam_sid()))
+	if (!sid_check_is_domain(&dinfo->sid)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	name = r->in.alias_name->string;
 
@@ -6277,8 +6279,9 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 
 	/* this should not be hard-coded like this */
 
-	if (!sid_equal(&dinfo->sid, get_global_sam_sid()))
+	if (!sid_check_is_domain(&dinfo->sid)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	sid_compose(&info_sid, &dinfo->sid, r->in.rid);
 
