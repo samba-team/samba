@@ -33,6 +33,7 @@
 #include "auth/auth.h"
 #include "ldb_wrap.h"
 #include "param/param.h"
+#include "dsdb/common/proto.h"
 #endif
 
 static struct ldb_cmdline options; /* needs to be static for older compilers */
@@ -320,6 +321,11 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 			ret->url, ldb_errstring(ldb));
 		goto failed;
 	}
+
+#if (_SAMBA_BUILD_ >= 4)
+	/* get the domain SID into the cache for SDDL processing */
+	samdb_domain_sid(ldb);
+#endif
 
 	return ret;
 

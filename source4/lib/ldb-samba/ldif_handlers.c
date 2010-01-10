@@ -406,7 +406,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 		talloc_free(sd);
 		return -1;
 	}
-	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, NULL);
+	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, samdb_domain_sid_cache_only(ldb));
 	talloc_free(sd);
 	if (out->data == NULL) {
 		return -1;
