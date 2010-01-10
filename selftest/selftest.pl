@@ -212,6 +212,17 @@ sub cleanup_pcap($$)
 	unlink($pcap_file);
 }
 
+# expand strings from %ENV
+sub expand_environment_strings($)
+{
+	my $s = shift;
+	# we use a reverse sort so we do the longer ones first
+	foreach my $k (sort { $b cmp $a } keys %ENV) {
+		$s =~ s/\$$k/$ENV{$k}/g;
+	}
+	return $s;
+}
+
 sub run_testsuite($$$$$)
 {
 	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
@@ -255,6 +266,7 @@ sub run_testsuite($$$$$)
 	}
 
 	print "command: $cmd\n";
+	printf "expanded command: %s\n", expand_environment_strings($cmd);
 
 	my $exitcode = $ret >> 8;
 
