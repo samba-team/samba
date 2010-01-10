@@ -107,7 +107,7 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
+static NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
                                const char *smb_name,
                                const char *internal_username,
                                const char *client_domain,
@@ -121,7 +121,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
 
-	*user_info = SMB_MALLOC_P(auth_usersupplied_info);
+	*user_info = SMB_MALLOC_P(struct auth_usersupplied_info);
 	if (*user_info == NULL) {
 		DEBUG(0,("malloc failed for user_info (size %lu)\n", (unsigned long)sizeof(*user_info)));
 		return NT_STATUS_NO_MEMORY;
@@ -188,7 +188,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
-NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
+NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *smb_name,
 			    const char *client_domain,
 			    const char *wksta_name,
@@ -252,7 +252,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-bool make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
@@ -290,7 +290,7 @@ bool make_user_info_netlogon_network(auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
@@ -402,7 +402,7 @@ bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-bool make_user_info_for_reply(auth_usersupplied_info **user_info, 
+bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const uint8 chal[8],
@@ -460,7 +460,7 @@ bool make_user_info_for_reply(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
                                       const char *smb_name,
                                       const char *client_domain, 
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
@@ -478,7 +478,7 @@ NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
  Create a guest user_info blob, for anonymous authenticaion.
 ****************************************************************************/
 
-bool make_user_info_guest(auth_usersupplied_info **user_info) 
+bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 {
 	NTSTATUS nt_status;
 
@@ -2114,7 +2114,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
  Free a user_info struct
 ***************************************************************************/
 
-void free_user_info(auth_usersupplied_info **user_info)
+void free_user_info(struct auth_usersupplied_info **user_info)
 {
 	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
 	if (*user_info != NULL) {

@@ -37,7 +37,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				uint32_t acct_ctrl,
 				const uint8_t *lm_pw,
 				const uint8_t *nt_pw,
-				const auth_usersupplied_info *user_info, 
+				const struct auth_usersupplied_info *user_info,
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
 {
@@ -168,7 +168,7 @@ static bool logon_hours_ok(struct samu *sampass)
 
 static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       struct samu *sampass, 
-			       const auth_usersupplied_info *user_info)
+			       const struct auth_usersupplied_info *user_info)
 {
 	uint32	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
@@ -290,7 +290,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 static bool need_to_increment_bad_pw_count(
 	const struct auth_context *auth_context,
 	struct samu* sampass,
-	const auth_usersupplied_info *user_info)
+	const struct auth_usersupplied_info *user_info)
 {
 	uint8_t i;
 	const uint8_t *pwhistory;
@@ -359,7 +359,7 @@ return an NT_STATUS constant.
 static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   void *my_private_data, 
 				   TALLOC_CTX *mem_ctx,
-				   const auth_usersupplied_info *user_info, 
+				   const struct auth_usersupplied_info *user_info,
 				   auth_serversupplied_info **server_info)
 {
 	struct samu *sampass=NULL;
@@ -532,7 +532,7 @@ Check SAM security (above) but with a few extra checks.
 static NTSTATUS check_samstrict_security(const struct auth_context *auth_context,
 					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info, 
+					 const struct auth_usersupplied_info *user_info,
 					 auth_serversupplied_info **server_info)
 {
 	bool is_local_name, is_my_domain;

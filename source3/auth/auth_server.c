@@ -270,7 +270,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 static NTSTATUS check_smbserver_security(const struct auth_context *auth_context,
 					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info, 
+					 const struct auth_usersupplied_info *user_info,
 					 auth_serversupplied_info **server_info)
 {
 	struct server_security_state *state = talloc_get_type_abort(

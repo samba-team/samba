@@ -40,7 +40,7 @@
 static NTSTATUS script_check_user_credentials(const struct auth_context *auth_context,
 					void *my_private_data, 
 					TALLOC_CTX *mem_ctx,
-					const auth_usersupplied_info *user_info, 
+					const struct auth_usersupplied_info *user_info,
 					auth_serversupplied_info **server_info)
 {
 	const char *script = lp_parm_const_string( GLOBAL_SECTION_SNUM, "auth_script", "script", NULL);

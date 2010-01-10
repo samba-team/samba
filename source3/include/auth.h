@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-typedef struct auth_usersupplied_info {
+struct auth_usersupplied_info {
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
  	DATA_BLOB lm_interactive_pwd;
@@ -38,7 +38,7 @@ typedef struct auth_usersupplied_info {
 
 	uint32 logon_parameters;
 
-} auth_usersupplied_info;
+};
 
 typedef struct auth_serversupplied_info {
 	bool guest;

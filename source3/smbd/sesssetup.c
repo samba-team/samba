@@ -131,7 +131,7 @@ static void reply_sesssetup_blob(struct smb_request *req,
 static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 {
 	struct auth_context *auth_context;
-	auth_usersupplied_info *user_info = NULL;
+	struct auth_usersupplied_info *user_info = NULL;
 
 	NTSTATUS nt_status;
 	unsigned char chal[8];
@@ -1388,7 +1388,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *native_os;
 	const char *native_lanman;
 	const char *primary_domain;
-	auth_usersupplied_info *user_info = NULL;
+	struct auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 

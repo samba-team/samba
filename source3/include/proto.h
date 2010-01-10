@@ -71,7 +71,7 @@ NTSTATUS auth_unix_init(void);
 
 /* The following definitions come from auth/auth_util.c  */
 
-NTSTATUS make_user_info_map(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *smb_name, 
 			    const char *client_domain, 
 			    const char *wksta_name, 
@@ -79,7 +79,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
  			    DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
 			    DATA_BLOB *plaintext, 
 			    bool encrypted);
-bool make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
@@ -88,7 +88,7 @@ bool make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				     int lm_pwd_len,
 				     const uchar *nt_network_pwd,
 				     int nt_pwd_len);
-bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
@@ -97,19 +97,19 @@ bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 const uchar lm_interactive_pwd[16], 
 					 const uchar nt_interactive_pwd[16], 
 					 const uchar *dc_sess_key);
-bool make_user_info_for_reply(auth_usersupplied_info **user_info, 
+bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const uint8 chal[8],
 			      DATA_BLOB plaintext_password);
-NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
                                       const char *smb_name,
                                       const char *client_domain, 
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp);
-bool make_user_info_guest(auth_usersupplied_info **user_info) ;
-NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info, 
+bool make_user_info_guest(struct auth_usersupplied_info **user_info) ;
+NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 			      struct samu *sampass);
-NTSTATUS create_local_token(auth_serversupplied_info *server_info);
+NTSTATUS create_local_token(struct auth_serversupplied_info *server_info);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
@@ -144,7 +144,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const char *domain,
 					  const struct wbcAuthUserInfo *info,
 					  auth_serversupplied_info **server_info);
-void free_user_info(auth_usersupplied_info **user_info);
+void free_user_info(struct auth_usersupplied_info **user_info);
 bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) ;
 bool is_trusted_domain(const char* dom_name);
 

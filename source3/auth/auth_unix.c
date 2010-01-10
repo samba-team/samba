@@ -85,7 +85,7 @@ static bool update_smbpassword_file(const char *user, const char *password)
 static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 			     void *my_private_data, 
 			     TALLOC_CTX *mem_ctx,
-			     const auth_usersupplied_info *user_info, 
+			     const struct auth_usersupplied_info *user_info,
 			     auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
