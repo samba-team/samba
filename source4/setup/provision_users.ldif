@@ -195,6 +195,11 @@ objectClass: top
 objectClass: foreignSecurityPrincipal
 objectSid: S-1-5-11
 
+dn: CN=S-1-5-17,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+objectSid: S-1-5-17
+
 dn: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
@@ -389,6 +394,17 @@ systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
+dn: CN=IIS_IUSRS,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Integrated group used by the IIS
+member: CN=S-1-5-17,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectSid: S-1-5-32-568
+sAMAccountName: IIS_IUSRS
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
 dn: CN=Cryptographic Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
@@ -475,6 +491,11 @@ dn: CN=Interactive,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
 objectSid: S-1-5-4
+
+dn: CN=IUSR,CN=WellKnown Security Principals,${CONFIGDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+objectSid: S-1-5-17
 
 dn: CN=Local Service,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
