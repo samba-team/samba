@@ -587,6 +587,7 @@ sub write_clientconf($$)
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	modules dir = $ENV{LD_SAMBA_MODULE_PATH}
+	setup directory = ./setup
 ";
 	close(CF);
 }
