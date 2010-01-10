@@ -672,7 +672,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
         /* check if there's a show relax control (used by provision to say 'I know what I'm doing') */
         control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
 	if (control) {
-		allow_add_guid = 1;
+		allow_add_guid = true;
 	}
 
 	/* do not manipulate our control entries */
