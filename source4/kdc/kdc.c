@@ -762,22 +762,22 @@ static void kdc_task_init(struct task_server *task)
 				   PLUGIN_TYPE_DATA, "hdb",
 				   &hdb_samba4);
 	if(ret) {
-		task_server_terminate(task, "kdc: failed to register hdb keytab", true);
+		task_server_terminate(task, "kdc: failed to register hdb plugin", true);
 		return;
 	}
 
 	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);
 	if(ret) {
-		task_server_terminate(task, "kdc: failed to register hdb keytab", true);
+		task_server_terminate(task, "kdc: failed to register keytab plugin", true);
 		return;
 	}
 
-	/* Registar WinDC hooks */
+	/* Register WinDC hooks */
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
 				   PLUGIN_TYPE_DATA, "windc",
 				   &windc_plugin_table);
 	if(ret) {
-		task_server_terminate(task, "kdc: failed to register hdb keytab", true);
+		task_server_terminate(task, "kdc: failed to register windc plugin", true);
 		return;
 	}
 
