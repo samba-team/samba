@@ -152,6 +152,32 @@ sAMAccountName: RAS and IAS Servers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
+dn: CN=Allowed RODC Password Replication Group,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members in this group can have their passwords replicated to all read-only domain controllers in the domain.
+objectSid: ${DOMAINSID}-571
+sAMAccountName: Allowed RODC Password Replication Group
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
+dn: CN=Denied RODC Password Replication Group,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members in this group cannot have their passwords replicated to any read-only domain controllers in the domain.
+member: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+member: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
+member: CN=Domain Admins,CN=Users,${DOMAINDN}
+member: CN=Cert Publishers,CN=Users,${DOMAINDN}
+member: CN=Enterprise Admins,CN=Users,${DOMAINDN}
+member: CN=Schema Admins,CN=Users,${DOMAINDN}
+member: CN=Domain Controllers,CN=Users,${DOMAINDN}
+member: CN=krbtgt,CN=Users,${DOMAINDN}
+objectSid: ${DOMAINSID}-572
+sAMAccountName: Denied RODC Password Replication Group
+groupType: -2147483644
+isCriticalSystemObject: TRUE
+
 # Add foreign security principals
 
 dn: CN=S-1-5-4,CN=ForeignSecurityPrincipals,${DOMAINDN}
