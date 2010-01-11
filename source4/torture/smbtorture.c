@@ -550,8 +550,11 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:openx_deny_dos_support",
 		    "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:range_not_locked_on_file_close", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:ea_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:smbexit_pdu_support",
+		    "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:smblock_pdu_support",
 		    "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:2_step_break_to_none",

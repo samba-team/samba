@@ -74,12 +74,25 @@ bool torture_register_suite(struct torture_suite *suite);
  * This parameter specifies whether the server supports the DENY_DOS open mode
  * of the SMBOpenX PDU. */
 
+/* torture:range_not_locked_on_file_close
+ *
+ * When a byte range lock is pending, and the file which is being locked is
+ * closed, Windows servers return the error NT_STATUS_RANGE_NOT_LOCKED. This
+ * is strange, as this error is meant to be returned only for unlock requests.
+ * When true, torture will expect the Windows behavior, otherwise it will
+ * expect the more logical NT_STATUS_LOCK_NOT_GRANTED.
+ */
+
 /* torture:sacl_support
  *
  * This parameter specifies whether the server supports the setting and
  * retrieval of System Access Control Lists.  This includes whether the server
  * supports the use of the SEC_FLAG_SYSTEM_SECURITY bit in the open access
  * mask.*/
+
+/* torture:smbexit_pdu_support
+ *
+ * This parameter specifies whether the server supports the SMBExit (0x11) PDU. */
 
 /* torture:smblock_pdu_support
  *
@@ -119,4 +132,5 @@ bool torture_register_suite(struct torture_suite *suite);
  * denied.  When true, torture will expect NT_STATUS_OBJECT_NAME_NOT_FOUND
  * rather than NT_STATUS_ACCESS_DENIED when trying to open one of these files.
  */
+
 #endif /* __SMBTORTURE_H__ */
