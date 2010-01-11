@@ -19,6 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* IMPORTANT: tdb_wrap should be always prefered over tdb_context for end consumer functions
+   it's because if the code will be running inside smbd, then we must use the linked list
+   of open tdb files, to determine if the tdb we desire is already open
+   as otherwise, when you close the tdb (even on a different file descriptor),
+   ALL LOCKS are lost (due to a real screwup in the POSIX specification that nobody has been able to get fixed)
+*/
+
 #ifndef _TDB_WRAP_H_
 #define _TDB_WRAP_H_
 
