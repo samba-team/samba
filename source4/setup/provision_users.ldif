@@ -150,33 +150,6 @@ sAMAccountName: Enterprise Read-Only Domain Controllers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
-dn: CN=Certificate Service DCOM Access,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Certificate Service DCOM Access
-objectSid: ${DOMAINSID}-574
-sAMAccountName: Certificate Service DCOM Access
-groupType: -2147483644
-isCriticalSystemObject: TRUE
-
-dn: CN=Cryptographic Operators,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Cryptographic Operators
-objectSid: ${DOMAINSID}-569
-sAMAccountName: Cryptographic Operators
-groupType: -2147483644
-isCriticalSystemObject: TRUE
-
-dn: CN=Event Log Readers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Event Log Readers
-objectSid: ${DOMAINSID}-573
-sAMAccountName: Event Log Readers
-groupType: -2147483644
-isCriticalSystemObject: TRUE
-
 # Add foreign security principals
 
 dn: CN=S-1-5-4,CN=ForeignSecurityPrincipals,${DOMAINDN}
