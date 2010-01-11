@@ -353,10 +353,19 @@ unsigned int ldb_msg_find_attr_as_uint(const struct ldb_message *msg,
 				       const char *attr_name,
 				       unsigned int default_value)
 {
+	unsigned int ret;
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
 		return default_value;
 	}
+
+	/* in LDAP there're only int32_t values */
+	errno = 0;
+	ret = strtol((const char *)v->data, NULL, 0);
+	if (errno == 0) {
+		return ret;
+	}
+
 	return strtoul((const char *)v->data, NULL, 0);
 }
 
@@ -375,10 +384,19 @@ uint64_t ldb_msg_find_attr_as_uint64(const struct ldb_message *msg,
 				     const char *attr_name,
 				     uint64_t default_value)
 {
+	uint64_t ret;
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
 		return default_value;
 	}
+
+	/* in LDAP there're only int64_t values */
+	errno = 0;
+	ret = strtoll((const char *)v->data, NULL, 0);
+	if (errno == 0) {
+		return ret;
+	}
+
 	return strtoull((const char *)v->data, NULL, 0);
 }
 
