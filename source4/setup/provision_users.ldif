@@ -78,10 +78,10 @@ isCriticalSystemObject: TRUE
 dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Enterprise read-only domain controllers
+description: Members of this group are Read-Only Domain Controllers in the enterprise
 objectSid: ${DOMAINSID}-498
 sAMAccountName: Enterprise Read-Only Domain Controllers
-groupType: -2147483644
+groupType: -2147483640
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Admins,CN=Users,${DOMAINDN}
@@ -98,9 +98,9 @@ dn: CN=Cert Publishers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: Members of this group are permitted to publish certificates to the Active Directory
-groupType: -2147483644
 objectSid: ${DOMAINSID}-517
 sAMAccountName: Cert Publishers
+groupType: -2147483644
 isCriticalSystemObject: TRUE
 
 dn: CN=Schema Admins,CN=Users,${DOMAINDN}
@@ -111,6 +111,7 @@ member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-518
 adminCount: 1
 sAMAccountName: Schema Admins
+groupType: -2147483640
 isCriticalSystemObject: TRUE
 
 dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
@@ -121,12 +122,13 @@ member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
+groupType: -2147483640
 isCriticalSystemObject: TRUE
 
 dn: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members in this group can modify group policy for the domain
+description: Members in this group can modify group policies for the domain
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
@@ -135,10 +137,10 @@ isCriticalSystemObject: TRUE
 dn: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Read-only domain controllers
+description: Members of this group are Read-Only Domain Controllers in the domain
 objectSid: ${DOMAINSID}-521
+adminCount: 1
 sAMAccountName: Read-Only Domain Controllers
-groupType: -2147483644
 isCriticalSystemObject: TRUE
 
 dn: CN=RAS and IAS Servers,CN=Users,${DOMAINDN}
