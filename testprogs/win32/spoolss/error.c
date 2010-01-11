@@ -25,6 +25,8 @@ const char *errstr(DWORD error)
 	static char tmp[20];
 
 	switch (error) {
+	case ERROR_FILE_NOT_FOUND:
+		return "ERROR_FILE_NOT_FOUND";
 	case ERROR_ACCESS_DENIED:
 		return "ERROR_ACCESS_DENIED";
 	case ERROR_INVALID_PARAMETER:
@@ -105,6 +107,8 @@ const char *errstr(DWORD error)
 	case ERROR_PRINT_JOB_RESTART_REQUIRED:
 		return "ERROR_PRINT_JOB_RESTART_REQUIRED";
 #endif
+	case ERROR_CANCELLED:
+		return "ERROR_CANCELLED";
 	default:
 		break;
 	}
