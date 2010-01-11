@@ -871,8 +871,7 @@ int samdb_msg_add_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 int samdb_msg_add_uint64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			const char *attr_name, uint64_t v)
 {
-	const char *s = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)v);
-	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
+	return samdb_msg_add_int64(sam_ldb, mem_ctx, msg, attr_name, (int64_t)v);
 }
 
 /*
