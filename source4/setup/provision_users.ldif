@@ -75,33 +75,13 @@ isCriticalSystemObject: TRUE
 
 # Add other groups
 
-dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
+dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Designated administrators of the enterprise
-member: CN=Administrator,CN=Users,${DOMAINDN}
-objectSid: ${DOMAINSID}-519
-adminCount: 1
-sAMAccountName: Enterprise Admins
-isCriticalSystemObject: TRUE
-
-dn: CN=Schema Admins,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Designated administrators of the schema
-member: CN=Administrator,CN=Users,${DOMAINDN}
-objectSid: ${DOMAINSID}-518
-adminCount: 1
-sAMAccountName: Schema Admins
-isCriticalSystemObject: TRUE
-
-dn: CN=Cert Publishers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Members of this group are permitted to publish certificates to the Active Directory
+description: Enterprise read-only domain controllers
+objectSid: ${DOMAINSID}-498
+sAMAccountName: Enterprise Read-Only Domain Controllers
 groupType: -2147483644
-objectSid: ${DOMAINSID}-517
-sAMAccountName: Cert Publishers
 isCriticalSystemObject: TRUE
 
 dn: CN=Domain Admins,CN=Users,${DOMAINDN}
@@ -114,6 +94,35 @@ adminCount: 1
 sAMAccountName: Domain Admins
 isCriticalSystemObject: TRUE
 
+dn: CN=Cert Publishers,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members of this group are permitted to publish certificates to the Active Directory
+groupType: -2147483644
+objectSid: ${DOMAINSID}-517
+sAMAccountName: Cert Publishers
+isCriticalSystemObject: TRUE
+
+dn: CN=Schema Admins,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Designated administrators of the schema
+member: CN=Administrator,CN=Users,${DOMAINDN}
+objectSid: ${DOMAINSID}-518
+adminCount: 1
+sAMAccountName: Schema Admins
+isCriticalSystemObject: TRUE
+
+dn: CN=Enterprise Admins,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Designated administrators of the enterprise
+member: CN=Administrator,CN=Users,${DOMAINDN}
+objectSid: ${DOMAINSID}-519
+adminCount: 1
+sAMAccountName: Enterprise Admins
+isCriticalSystemObject: TRUE
+
 dn: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
@@ -121,15 +130,6 @@ description: Members in this group can modify group policy for the domain
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
-isCriticalSystemObject: TRUE
-
-dn: CN=RAS and IAS Servers,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Servers in this group can access remote access properties of users
-objectSid: ${DOMAINSID}-553
-sAMAccountName: RAS and IAS Servers
-groupType: -2147483644
 isCriticalSystemObject: TRUE
 
 dn: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
@@ -141,12 +141,12 @@ sAMAccountName: Read-Only Domain Controllers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
-dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+dn: CN=RAS and IAS Servers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Enterprise read-only domain controllers
-objectSid: ${DOMAINSID}-498
-sAMAccountName: Enterprise Read-Only Domain Controllers
+description: Servers in this group can access remote access properties of users
+objectSid: ${DOMAINSID}-553
+sAMAccountName: RAS and IAS Servers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
@@ -213,6 +213,28 @@ systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
+dn: CN=Account Operators,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members can administer domain user and group accounts
+objectSid: S-1-5-32-548
+adminCount: 1
+sAMAccountName: Account Operators
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
+dn: CN=Server Operators,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members can administer domain servers
+objectSid: S-1-5-32-549
+adminCount: 1
+sAMAccountName: Server Operators
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
 dn: CN=Print Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
@@ -246,6 +268,17 @@ systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
+dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: A backward compatibility group which allows read access on all users and groups in the domain
+member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,${DOMAINDN}
+objectSid: S-1-5-32-554
+sAMAccountName: Pre-Windows 2000 Compatible Access
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
 dn: CN=Remote Desktop Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
@@ -262,6 +295,16 @@ objectClass: group
 description: Members in this group can have some administrative privileges to manage configuration of networking features
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
+dn: CN=Incoming Forest Trust Builders,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members of this group can create incoming, one-way trusts to this forest
+objectSid: S-1-5-32-557
+sAMAccountName: Incoming Forest Trust Builders
 systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
@@ -283,49 +326,6 @@ description: Members of this group have remote access to schedule logging of per
 member: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
-systemFlags: -1946157056
-groupType: -2147483643
-isCriticalSystemObject: TRUE
-
-dn: CN=Server Operators,CN=Builtin,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Members can administer domain servers
-objectSid: S-1-5-32-549
-adminCount: 1
-sAMAccountName: Server Operators
-systemFlags: -1946157056
-groupType: -2147483643
-isCriticalSystemObject: TRUE
-
-dn: CN=Account Operators,CN=Builtin,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Members can administer domain user and group accounts
-objectSid: S-1-5-32-548
-adminCount: 1
-sAMAccountName: Account Operators
-systemFlags: -1946157056
-groupType: -2147483643
-isCriticalSystemObject: TRUE
-
-dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: A backward compatibility group which allows read access on all users and groups in the domain
-member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,${DOMAINDN}
-objectSid: S-1-5-32-554
-sAMAccountName: Pre-Windows 2000 Compatible Access
-systemFlags: -1946157056
-groupType: -2147483643
-isCriticalSystemObject: TRUE
-
-dn: CN=Incoming Forest Trust Builders,CN=Builtin,${DOMAINDN}
-objectClass: top
-objectClass: group
-description: Members of this group can create incoming, one-way trusts to this forest
-objectSid: S-1-5-32-557
-sAMAccountName: Incoming Forest Trust Builders
 systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
