@@ -851,8 +851,7 @@ int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct l
 int samdb_msg_add_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		       const char *attr_name, uint_t v)
 {
-	const char *s = talloc_asprintf(mem_ctx, "%u", v);
-	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
+	return samdb_msg_add_int(sam_ldb, mem_ctx, msg, attr_name, (int)v);
 }
 
 /*
