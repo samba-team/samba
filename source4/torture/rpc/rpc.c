@@ -462,6 +462,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_samr_accessmask(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_workstation_auth(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_passwords_pwdlastset(suite));
+	torture_suite_add_suite(suite, torture_rpc_samr_passwords_badpwdcount(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_user_privileges(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_large_dc(suite));
 	torture_suite_add_suite(suite, torture_rpc_epmapper(suite));
