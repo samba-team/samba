@@ -599,6 +599,7 @@ static BOOL test_EachPrinter(struct torture_context *tctx,
 	DWORD i;
 	DWORD flags = PRINTER_ENUM_NAME;
 	PPRINTER_INFO_1 buffer = NULL;
+	BOOL ret = TRUE;
 
 	torture_comment(tctx, "Testing EnumPrinters level %d", 1);
 
@@ -619,13 +620,12 @@ static BOOL test_EachPrinter(struct torture_context *tctx,
 	}
 
 	for (i=0; i < returned; i++) {
-		torture_assert(tctx, test_OnePrinter(tctx, buffer[i].pName, architecture),
-			"failed to test one printer");
+		ret &= test_OnePrinter(tctx, buffer[i].pName, architecture);
 	}
 
 	free(buffer);
 
-	return TRUE;
+	return ret;
 }
 
 /****************************************************************************
