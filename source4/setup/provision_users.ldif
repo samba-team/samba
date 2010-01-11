@@ -389,6 +389,36 @@ systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
+dn: CN=Cryptographic Operators,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members are authorized to perform cryptographic operations.
+objectSid: S-1-5-32-569
+sAMAccountName: Cryptographic Operators
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
+dn: CN=Event Log Readers,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members of this group can read event logs from local machine.
+objectSid: S-1-5-32-573
+sAMAccountName: Event Log Readers
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
+dn: CN=Certificate Service DCOM Access,CN=Builtin,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members of this group are allowed to connect to Certification Authorities in the enterprise.
+objectSid: S-1-5-32-574
+sAMAccountName: Certificate Service DCOM Access
+systemFlags: -1946157056
+groupType: -2147483643
+isCriticalSystemObject: TRUE
+
 # Add well known security principals
 
 dn: CN=WellKnown Security Principals,${CONFIGDN}
