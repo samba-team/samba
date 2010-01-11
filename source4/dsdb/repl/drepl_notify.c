@@ -34,68 +34,69 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/composite/composite.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 
 struct dreplsrv_op_notify_state {
-	struct composite_context *creq;
-
-	struct dreplsrv_out_connection *conn;
-
-	struct dreplsrv_drsuapi_connection *drsuapi;
-
-	struct drsuapi_DsBindInfoCtr bind_info_ctr;
-	struct drsuapi_DsBind bind_r;
 	struct dreplsrv_notify_operation *op;
 };
 
 /*
   receive a DsReplicaSync reply
  */
-static void dreplsrv_op_notify_replica_sync_recv(struct rpc_request *req)
+static void dreplsrv_op_notify_replica_sync_done(struct rpc_request *rreq)
 {
-	struct dreplsrv_op_notify_state *st = talloc_get_type(req->async.private_data,
-							      struct dreplsrv_op_notify_state);
-	struct composite_context *c = st->creq;
-	struct drsuapi_DsReplicaSync *r = talloc_get_type(req->ndr.struct_ptr,
+	struct tevent_req *req = talloc_get_type(rreq->async.private_data,
+						 struct tevent_req);
+	struct drsuapi_DsReplicaSync *r = talloc_get_type(rreq->ndr.struct_ptr,
 							  struct drsuapi_DsReplicaSync);
+	NTSTATUS status;
 
-	c->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(c)) return;
-
-	if (!W_ERROR_IS_OK(r->out.result)) {
-		composite_error(c, werror_to_ntstatus(r->out.result));
+	status = dcerpc_ndr_request_recv(rreq);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	composite_done(c);
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		status = werror_to_ntstatus(r->out.result);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 /*
   send a DsReplicaSync
 */
-static void dreplsrv_op_notify_replica_sync_send(struct dreplsrv_op_notify_state *st)
+static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 {
-	struct composite_context *c = st->creq;
-	struct dreplsrv_partition *partition = st->op->source_dsa->partition;
-	struct dreplsrv_drsuapi_connection *drsuapi = st->op->source_dsa->conn->drsuapi;
-	struct rpc_request *req;
+	struct dreplsrv_op_notify_state *state =
+		tevent_req_data(req,
+		struct dreplsrv_op_notify_state);
+	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
+	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
+	struct rpc_request *rreq;
 	struct drsuapi_DsReplicaSync *r;
 
-	r = talloc_zero(st, struct drsuapi_DsReplicaSync);
-	if (composite_nomem(r, c)) return;
-
+	r = talloc_zero(state, struct drsuapi_DsReplicaSync);
+	if (tevent_req_nomem(r, req)) {
+		return;
+	}
 	r->in.bind_handle	= &drsuapi->bind_handle;
 	r->in.level = 1;
 	r->in.req.req1.naming_context = &partition->nc;
-	r->in.req.req1.source_dsa_guid = st->op->service->ntds_guid;
+	r->in.req.req1.source_dsa_guid = state->op->service->ntds_guid;
 	r->in.req.req1.options = 
 		DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_OPERATION |
 		DRSUAPI_DS_REPLICA_SYNC_WRITEABLE |
 		DRSUAPI_DS_REPLICA_SYNC_ALL_SOURCES;
-	
 
-	req = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);
-	composite_continue_rpc(c, req, dreplsrv_op_notify_replica_sync_recv, st);
+	rreq = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);
+	if (tevent_req_nomem(rreq, req)) {
+		return;
+	}
+	composite_continue_rpc(NULL, rreq, dreplsrv_op_notify_replica_sync_done, req);
 }
 
 /*
@@ -103,42 +104,51 @@ static void dreplsrv_op_notify_replica_sync_send(struct dreplsrv_op_notify_state
  */
 static void dreplsrv_op_notify_connect_done(struct tevent_req *subreq)
 {
-	struct dreplsrv_op_notify_state *st = tevent_req_callback_data(subreq,
-					      struct dreplsrv_op_notify_state);
-	struct composite_context *c = st->creq;
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	NTSTATUS status;
 
-	c->status = dreplsrv_out_drsuapi_recv(subreq);
+	status = dreplsrv_out_drsuapi_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!composite_is_ok(c)) return;
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
-	dreplsrv_op_notify_replica_sync_send(st);
+	dreplsrv_op_notify_replica_sync_trigger(req);
 }
 
 /*
   start the ReplicaSync async call
  */
-static struct composite_context *dreplsrv_op_notify_send(struct dreplsrv_notify_operation *op)
+static struct tevent_req *dreplsrv_op_notify_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dreplsrv_notify_operation *op)
 {
-	struct composite_context *c;
-	struct dreplsrv_op_notify_state *st;
+	struct tevent_req *req;
+	struct dreplsrv_op_notify_state *state;
 	struct tevent_req *subreq;
 
-	c = composite_create(op, op->service->task->event_ctx);
-	if (c == NULL) return NULL;
+	req = tevent_req_create(mem_ctx, &state,
+				struct dreplsrv_op_notify_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->op = op;
 
-	st = talloc_zero(c, struct dreplsrv_op_notify_state);
-	if (composite_nomem(st, c)) return c;
-
-	st->creq	= c;
-	st->op		= op;
-
-	subreq = dreplsrv_out_drsuapi_send(st,
-					   op->service->task->event_ctx,
+	subreq = dreplsrv_out_drsuapi_send(state,
+					   ev,
 					   op->source_dsa->conn);
-	if (composite_nomem(subreq, c)) return c;
-	tevent_req_set_callback(subreq, dreplsrv_op_notify_connect_done, st);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, dreplsrv_op_notify_connect_done, req);
 
-	return c;
+	return req;
+}
+
+static NTSTATUS dreplsrv_op_notify_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 static void dreplsrv_notify_del_repsTo(struct dreplsrv_notify_operation *op)
@@ -176,12 +186,16 @@ static void dreplsrv_notify_del_repsTo(struct dreplsrv_notify_operation *op)
 /*
   called when a notify operation has completed
  */
-static void dreplsrv_notify_op_callback(struct dreplsrv_notify_operation *op)
+static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 {
+	struct dreplsrv_notify_operation *op =
+		tevent_req_callback_data(subreq,
+		struct dreplsrv_notify_operation);
 	NTSTATUS status;
 	struct dreplsrv_service *s = op->service;
 
-	status = composite_wait(op->creq);
+	status = dreplsrv_op_notify_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name,
@@ -195,19 +209,10 @@ static void dreplsrv_notify_op_callback(struct dreplsrv_notify_operation *op)
 		   partition, as we have successfully told him to sync */
 		dreplsrv_notify_del_repsTo(op);
 	}
-	talloc_free(op->creq);
 
 	talloc_free(op);
 	s->ops.n_current = NULL;
 	dreplsrv_notify_run_ops(s);
-}
-
-
-static void dreplsrv_notify_op_callback_creq(struct composite_context *creq)
-{
-	struct dreplsrv_notify_operation *op = talloc_get_type(creq->async.private_data,
-							       struct dreplsrv_notify_operation);
-	dreplsrv_notify_op_callback(op);
 }
 
 /*
@@ -216,6 +221,7 @@ static void dreplsrv_notify_op_callback_creq(struct composite_context *creq)
 void dreplsrv_notify_run_ops(struct dreplsrv_service *s)
 {
 	struct dreplsrv_notify_operation *op;
+	struct tevent_req *subreq;
 
 	if (s->ops.n_current || s->ops.current) {
 		/* if there's still one running, we're done */
@@ -231,14 +237,14 @@ void dreplsrv_notify_run_ops(struct dreplsrv_service *s)
 	s->ops.n_current = op;
 	DLIST_REMOVE(s->ops.notifies, op);
 
-	op->creq = dreplsrv_op_notify_send(op);
-	if (!op->creq) {
-		dreplsrv_notify_op_callback(op);
+	subreq = dreplsrv_op_notify_send(op, s->task->event_ctx, op);
+	if (!subreq) {
+		DEBUG(0,("dreplsrv_notify_run_ops: dreplsrv_op_notify_send[%s][%s] - no memory\n",
+			 op->source_dsa->repsFrom1->other_info->dns_name,
+			 ldb_dn_get_linearized(op->source_dsa->partition->dn)));
 		return;
 	}
-
-	op->creq->async.fn		= dreplsrv_notify_op_callback_creq;
-	op->creq->async.private_data	= op;
+	tevent_req_set_callback(subreq, dreplsrv_notify_op_callback, op);
 }
 
 

@@ -121,8 +121,6 @@ struct dreplsrv_notify_operation {
 	uint64_t uSN;
 
 	struct dreplsrv_partition_source_dsa *source_dsa;
-
-	struct composite_context *creq;
 };
 
 struct dreplsrv_service {
