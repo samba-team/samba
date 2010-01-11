@@ -606,3 +606,17 @@ void print_printer_enum_values(PRINTER_ENUM_VALUES *info)
 
 	return;
 }
+
+void print_printer_keys(LPSTR buffer)
+{
+	LPSTR p = NULL;
+
+	p = buffer;
+
+	while (p && *p) {
+		printf("%s\n", p);
+		for (; *p; p = CharNext(p)) {
+			p = CharNext(p);
+		}
+	}
+}

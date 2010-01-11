@@ -31,6 +31,8 @@ const char *errstr(DWORD error)
 		return "ERROR_ACCESS_DENIED";
 	case ERROR_INVALID_PARAMETER:
 		return "ERROR_INVALID_PARAMETER";
+	case ERROR_INVALID_HANDLE:
+		return "ERROR_INVALID_HANDLE";
 	case ERROR_CALL_NOT_IMPLEMENTED:
 		return "ERROR_CALL_NOT_IMPLEMENTED";
 	case ERROR_INSUFFICIENT_BUFFER:
@@ -109,6 +111,8 @@ const char *errstr(DWORD error)
 #endif
 	case ERROR_CANCELLED:
 		return "ERROR_CANCELLED";
+	case RPC_S_SERVER_UNAVAILABLE:
+		return "RPC_S_SERVER_UNAVAILABLE";
 	default:
 		break;
 	}

@@ -403,6 +403,42 @@ static BOOL test_EnumPrintProcessorDatatypes(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_EnumPrinterKey(struct torture_context *tctx,
+				LPSTR servername,
+				HANDLE handle,
+				LPCSTR key)
+{
+	LPSTR buffer = NULL;
+	DWORD needed = 0;
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing EnumPrinterKey(%s)", key);
+
+	err = EnumPrinterKey(handle, key, NULL, 0, &needed);
+	if (err == ERROR_MORE_DATA) {
+		buffer = (LPTSTR)malloc(needed);
+		torture_assert(tctx, buffer, "malloc failed");
+		err = EnumPrinterKey(handle, key, buffer, needed, &needed);
+	}
+	if (err) {
+		sprintf(tmp, "EnumPrinterKey(%s) failed on [%s] (buffer size = %d), error: %s\n",
+			key, servername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_printer_keys(buffer);
+	}
+
+	free(buffer);
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_GetPrinter(struct torture_context *tctx,
 			    LPSTR printername,
 			    HANDLE handle)
@@ -561,6 +597,8 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_GetPrinterDriver(tctx, printername, architecture, handle);
 	ret &= test_EnumForms(tctx, printername, handle);
 	ret &= test_EnumJobs(tctx, printername, handle);
+	ret &= test_EnumPrinterKey(tctx, printername, handle, "");
+	ret &= test_EnumPrinterKey(tctx, printername, handle, "PrinterDriverData");
 	ret &= test_ClosePrinter(tctx, handle);
 
 	return ret;
@@ -731,7 +769,7 @@ int main(int argc, char *argv[])
 	BOOL ret = FALSE;
 	LPSTR servername;
 	LPSTR architecture = "Windows NT x86";
-	HANDLE handle;
+	HANDLE server_handle;
 	struct torture_context *tctx;
 
 	if (argc < 2) {
@@ -756,9 +794,10 @@ int main(int argc, char *argv[])
 
 	ret &= test_EnumPrinters(tctx, servername);
 	ret &= test_EnumDrivers(tctx, servername, architecture);
-	ret &= test_OpenPrinter(tctx, servername, &handle);
-	ret &= test_EnumForms(tctx, servername, handle);
-	ret &= test_ClosePrinter(tctx, handle);
+	ret &= test_OpenPrinter(tctx, servername, &server_handle);
+/*	ret &= test_EnumPrinterKey(tctx, servername, server_handle, ""); */
+	ret &= test_EnumForms(tctx, servername, server_handle);
+	ret &= test_ClosePrinter(tctx, server_handle);
 	ret &= test_EnumPorts(tctx, servername);
 	ret &= test_EnumMonitors(tctx, servername);
 	ret &= test_EnumPrintProcessors(tctx, servername, architecture);

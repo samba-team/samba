@@ -39,6 +39,7 @@ void print_driver_info_4 (PDRIVER_INFO_4 info);
 void print_driver_info_6 (PDRIVER_INFO_6 info);
 void print_doc_info_1 (PDOC_INFO_1 info);
 void print_printer_enum_values (PRINTER_ENUM_VALUES *info);
+void print_printer_keys(LPSTR buffer);
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 
