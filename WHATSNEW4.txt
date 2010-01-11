@@ -79,9 +79,12 @@ addressed:
 
 Any deployments of Samba4 before this alpha are very strongly
 encouraged to upgrade.  Assistance may be found in the
-upgradeprovision script, and the advise of the Samba Team should be
+upgradeprovision script, and the advice of the Samba Team should be
 sought to determine the impact of these issues in your particular
 deployment. 
+
+Our progress on DRS is being tracked in the Samba wiki:
+http://wiki.samba.org/index.php/Samba4_DRS_TODO_List
 
 CHANGES
 =======
