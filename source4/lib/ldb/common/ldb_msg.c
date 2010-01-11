@@ -820,7 +820,7 @@ time_t ldb_string_to_time(const char *s)
 	if (s == NULL) return 0;
 	
 	memset(&tm, 0, sizeof(tm));
-	if (sscanf(s, "%04u%02u%02u%02u%02u%02u", 
+	if (sscanf(s, "%04u%02u%02u%02u%02u%02u.0Z",
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
@@ -839,13 +839,13 @@ int ldb_val_to_time(const struct ldb_val *v, time_t *t)
 {
 	struct tm tm;
 
-	if (v == NULL || !v->data || v->length < 14) {
+	if (v == NULL || !v->data || v->length < 17) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
 	memset(&tm, 0, sizeof(tm));
 
-	if (sscanf((char *)v->data, "%04u%02u%02u%02u%02u%02u",
+	if (sscanf((char *)v->data, "%04u%02u%02u%02u%02u%02u.0Z",
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
@@ -899,7 +899,7 @@ time_t ldb_string_utc_to_time(const char *s)
 	if (s == NULL) return 0;
 	
 	memset(&tm, 0, sizeof(tm));
-	if (sscanf(s, "%02u%02u%02u%02u%02u%02u", 
+	if (sscanf(s, "%02u%02u%02u%02u%02u%02uZ",
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
