@@ -122,8 +122,8 @@ static BOOL test_EnumDrivers(struct torture_context *tctx,
 			     LPSTR servername,
 			     LPSTR architecture)
 {
-	DWORD levels[]  = { 1, 2, 3, 4, 5, 6, 8 };
-	DWORD success[] = { 1, 1, 1, 1, 1, 1, 1 };
+	DWORD levels[]  = { 1, 2, 3, 4, 5, 6 };
+	DWORD success[] = { 1, 1, 1, 1, 1, 1 };
 	DWORD i;
 	LPBYTE buffer = NULL;
 
@@ -455,8 +455,8 @@ static BOOL test_GetPrinterDriver(struct torture_context *tctx,
 				  LPSTR architecture,
 				  HANDLE handle)
 {
-	DWORD levels[]  = { 1, 2, 3, 4, 5, 6, 8, 101};
-	DWORD success[] = { 1, 1, 1, 1, 1, 1, 1, 1 };
+	DWORD levels[]  = { 1, 2, 3, 4, 5, 6, 8 };
+	DWORD success[] = { 1, 1, 1, 1, 1, 1, 1 };
 	DWORD i;
 	LPBYTE buffer = NULL;
 
