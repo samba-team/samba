@@ -607,25 +607,6 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL test_OneDriver(struct torture_context *tctx,
-			   LPSTR printername,
-			   LPSTR drivername)
-{
-	return TRUE;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL test_EachDriver(struct torture_context *tctx,
-			    LPSTR servername)
-{
-	return TRUE;
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static BOOL test_EachPrinter(struct torture_context *tctx,
 			     LPSTR servername,
 			     LPSTR architecture)
@@ -805,7 +786,6 @@ int main(int argc, char *argv[])
 	ret &= test_GetPrintProcessorDirectory(tctx, servername, architecture);
 	ret &= test_GetPrinterDriverDirectory(tctx, servername, architecture);
 	ret &= test_EachPrinter(tctx, servername, architecture);
-	ret &= test_EachDriver(tctx, servername);
 
 	if (!ret) {
 		if (tctx->last_reason) {
