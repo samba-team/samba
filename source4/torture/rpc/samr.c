@@ -2639,11 +2639,13 @@ static bool test_GetAliasMembership(struct dcerpc_pipe *p,
 	/* only true for w2k8 it seems
 	 * win7, xp, w2k3 will return a 0 length array pointer */
 
-	torture_assert(tctx, (rids.ids && !rids.count),
-		"samr_GetAliasMembership protocol misbehaviour");
+	if (rids.ids && (rids.count == 0)) {
+		torture_fail(tctx, "samr_GetAliasMembership returned 0 count and a rids array");
+	}
 #endif
-	torture_assert(tctx, (!rids.ids && rids.count),
-		"samr_GetAliasMembership protocol misbehaviour");
+	if (!rids.ids && rids.count) {
+		torture_fail(tctx, "samr_GetAliasMembership returned non-0 count but no rids");
+	}
 
 	return true;
 }
