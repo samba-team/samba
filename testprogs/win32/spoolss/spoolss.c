@@ -357,8 +357,7 @@ static BOOL test_EnumPrintProcessors(struct torture_context *tctx,
 ****************************************************************************/
 
 static BOOL test_EnumPrintProcessorDatatypes(struct torture_context *tctx,
-					     LPSTR servername,
-					     LPSTR architecture)
+					     LPSTR servername)
 {
 	DWORD levels[]  = { 1 };
 	DWORD success[] = { 1 };
@@ -374,13 +373,13 @@ static BOOL test_EnumPrintProcessorDatatypes(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing EnumPrintProcessorDatatypes level %d", levels[i]);
 
-		EnumPrintProcessorDatatypes(servername, architecture, levels[i], NULL, 0, &needed, &returned);
+		EnumPrintProcessorDatatypes(servername, "winprint", levels[i], NULL, 0, &needed, &returned);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
 			err = 0;
 			buffer = malloc(needed);
 			torture_assert(tctx, buffer, "malloc failed");
-			if (!EnumPrintProcessorDatatypes(servername, architecture, levels[i], buffer, needed, &needed, &returned)) {
+			if (!EnumPrintProcessorDatatypes(servername, "winprint", levels[i], buffer, needed, &needed, &returned)) {
 				err = GetLastError();
 			}
 		}
@@ -763,7 +762,7 @@ int main(int argc, char *argv[])
 	ret &= test_EnumPorts(tctx, servername);
 	ret &= test_EnumMonitors(tctx, servername);
 	ret &= test_EnumPrintProcessors(tctx, servername, architecture);
-	ret &= test_EnumPrintProcessorDatatypes(tctx, servername, architecture);
+	ret &= test_EnumPrintProcessorDatatypes(tctx, servername);
 	ret &= test_GetPrintProcessorDirectory(tctx, servername, architecture);
 	ret &= test_GetPrinterDriverDirectory(tctx, servername, architecture);
 	ret &= test_EachPrinter(tctx, servername, architecture);
