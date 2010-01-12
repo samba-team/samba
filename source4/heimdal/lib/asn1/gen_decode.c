@@ -56,33 +56,6 @@ decode_primitive (const char *typename, const char *name, const char *forwstr)
 #endif
 }
 
-static int
-is_primitive_type(int type)
-{
-    switch(type) {
-    case TInteger:
-    case TBoolean:
-    case TOctetString:
-    case TBitString:
-    case TEnumerated:
-    case TGeneralizedTime:
-    case TGeneralString:
-    case TTeletexString:
-    case TOID:
-    case TUTCTime:
-    case TUTF8String:
-    case TPrintableString:
-    case TIA5String:
-    case TBMPString:
-    case TUniversalString:
-    case TVisibleString:
-    case TNull:
-	return 1;
-    default:
-	return 0;
-    }
-}
-
 static void
 find_tag (const Type *t,
 	  Der_class *cl, Der_type *ty, unsigned *tag)
@@ -630,7 +603,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    fprintf(codefile,
 		    "else {\n"
 		    "(%s)->u.%s.data = calloc(1, len);\n"
-		    "if ((%s)->u.%s.data == NULL && len != 0) {\n"
+		    "if ((%s)->u.%s.data == NULL) {\n"
 		    "e = ENOMEM; %s;\n"
 		    "}\n"
 		    "(%s)->u.%s.length = len;\n"
@@ -694,11 +667,6 @@ generate_type_decode (const Symbol *s)
 {
     int preserve = preserve_type(s->name) ? TRUE : FALSE;
 
-    fprintf (headerfile,
-	     "int    "
-	     "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",
-	     s->gen_name, s->gen_name);
-
     fprintf (codefile, "int\n"
 	     "decode_%s(const unsigned char *p,"
 	     " size_t len, %s *data, size_t *size)\n"
@@ -744,7 +712,7 @@ generate_type_decode (const Symbol *s)
 	if (preserve)
 	    fprintf (codefile,
 		     "data->_save.data = calloc(1, ret);\n"
-		     "if (data->_save.data == NULL && ret != 0) { \n"
+		     "if (data->_save.data == NULL) { \n"
 		     "e = ENOMEM; goto fail; \n"
 		     "}\n"
 		     "data->_save.length = ret;\n"

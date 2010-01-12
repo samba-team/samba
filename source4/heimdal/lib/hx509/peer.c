@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -144,6 +146,7 @@ hx509_peer_info_add_cms_alg(hx509_context context,
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
+    peer->val = ptr;
     ret = copy_AlgorithmIdentifier(val, &peer->val[peer->len]);
     if (ret == 0)
 	peer->len += 1;

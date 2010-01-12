@@ -1023,9 +1023,12 @@ certificate_is_self_signed(hx509_context context,
     ret = _hx509_name_cmp(&cert->tbsCertificate.subject,
 			  &cert->tbsCertificate.issuer, &diff);
     *self_signed = (diff == 0);
-    if (ret)
+    if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to check if self signed");
+    } else
+	ret = _hx509_self_signed_valid(context, &cert->signatureAlgorithm);
+
     return ret;
 }
 
@@ -3251,7 +3254,7 @@ _hx509_cert_get_eku(hx509_context context,
  * @param context A hx509 context.
  * @param c the certificate to encode.
  * @param os the encode certificate, set to NULL, 0 on case of
- * error. Free the returned structure with hx509_xfree().
+ * error. Free the os->data with hx509_xfree().
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *

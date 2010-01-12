@@ -41,7 +41,7 @@
 
 /* strsep, but with const stringp, so return string in buf */
 
-ssize_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
 strsep_copy(const char **stringp, const char *delim, char *buf, size_t len)
 {
     const char *save = *stringp;

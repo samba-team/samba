@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -42,6 +44,34 @@ der_copy_general_string (const heim_general_string *from,
     *to = strdup(*from);
     if(*to == NULL)
 	return ENOMEM;
+    return 0;
+}
+
+int
+der_copy_integer (const int *from, int *to)
+{
+    *to = *from;
+    return 0;
+}
+
+int
+der_copy_unsigned (const unsigned *from, unsigned *to)
+{
+    *to = *from;
+    return 0;
+}
+
+int
+der_copy_generalized_time (const time_t *from, time_t *to)
+{
+    *to = *from;
+    return 0;
+}
+
+int
+der_copy_utctime (const time_t *from, time_t *to)
+{
+    *to = *from;
     return 0;
 }
 

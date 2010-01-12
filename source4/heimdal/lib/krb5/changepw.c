@@ -33,7 +33,7 @@
 
 #define KRB5_DEPRECATED
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 #undef __attribute__
 #define __attribute__(X)
@@ -602,7 +602,8 @@ change_password_loop (krb5_context	context,
 			goto out;
 		    }
 		}
-	
+
+#ifndef NO_LIMIT_FD_SETSIZE
 		if (sock >= FD_SETSIZE) {
 		    ret = ERANGE;
 		    krb5_set_error_message(context, ret,
@@ -610,6 +611,7 @@ change_password_loop (krb5_context	context,
 		    close (sock);
 		    goto out;
 		}
+#endif
 
 		FD_ZERO(&fdset);
 		FD_SET(sock, &fdset);
@@ -670,7 +672,7 @@ find_chpw_proto(const char *name)
 }
 
 /**
- * krb5_change_password() is deprecated, use krb5_set_password().
+ * Deprecated: krb5_change_password() is deprecated, use krb5_set_password().
  *
  * @param context a Keberos context
  * @param creds
@@ -684,14 +686,14 @@ find_chpw_proto(const char *name)
  * @ingroup @krb5_deprecated
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_DEPRECATED
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_change_password (krb5_context	context,
 		      krb5_creds	*creds,
 		      const char	*newpw,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string)
-    KRB5_DEPRECATED
 {
     struct kpwd_proc *p = find_chpw_proto("change password");
 
@@ -726,7 +728,7 @@ krb5_change_password (krb5_context	context,
  * @ingroup @krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_password(krb5_context context,
 		  krb5_creds *creds,
 		  const char *newpw,
@@ -769,7 +771,7 @@ krb5_set_password(krb5_context context,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_password_using_ccache(krb5_context context,
 			       krb5_ccache ccache,
 			       const char *newpw,
@@ -834,7 +836,7 @@ krb5_set_password_using_ccache(krb5_context context,
  *
  */
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_passwd_result_to_string (krb5_context context,
 			      int result)
 {

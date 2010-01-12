@@ -1491,7 +1491,7 @@ hx509_cms_create_signed(hx509_context context,
      * signatures).
      */
     if ((flags & HX509_CMS_SIGNATURE_NO_SIGNER) == 0) {
-	ret = hx509_certs_iter(context, certs, sig_process, &sigctx);
+	ret = hx509_certs_iter_f(context, certs, sig_process, &sigctx);
 	if (ret)
 	    goto out;
     }
@@ -1525,7 +1525,7 @@ hx509_cms_create_signed(hx509_context context,
 	    goto out;
 	}
 
-	ret = hx509_certs_iter(context, sigctx.certs, cert_process, &sigctx);
+	ret = hx509_certs_iter_f(context, sigctx.certs, cert_process, &sigctx);
 	if (ret)
 	    goto out;
     }

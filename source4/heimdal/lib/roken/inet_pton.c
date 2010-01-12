@@ -35,7 +35,64 @@
 
 #include "roken.h"
 
-int ROKEN_LIB_FUNCTION
+#ifdef HAVE_WINSOCK
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+inet_pton(int af, const char *src, void *dst)
+{
+    switch (af) {
+    case AF_INET:
+	{
+	    struct sockaddr_in  si4;
+	    INT r;
+	    INT s = sizeof(si4);
+
+	    si4.sin_family = AF_INET;
+	    r = WSAStringToAddress(src, AF_INET, NULL, (LPSOCKADDR) &si4, &s);
+
+	    if (r == 0) {
+		memcpy(dst, &si4.sin_addr, sizeof(si4.sin_addr));
+		return 1;
+	    }
+	}
+	break;
+
+    case AF_INET6:
+	{
+	    struct sockaddr_in6 si6;
+	    INT r;
+	    INT s = sizeof(si6);
+
+	    si6.sin6_family = AF_INET6;
+	    r = WSAStringToAddress(src, AF_INET6, NULL, (LPSOCKADDR) &si6, &s);
+
+	    if (r == 0) {
+		memcpy(dst, &si6.sin6_addr, sizeof(si6.sin6_addr));
+		return 1;
+	    }
+	}
+	break;
+
+    default:
+	_set_errno( EAFNOSUPPORT );
+	return -1;
+    }
+
+    /* the call failed */
+    {
+	int le = WSAGetLastError();
+
+	if (le == WSAEINVAL)
+	    return 0;
+
+	_set_errno(le);
+	return -1;
+    }
+}
+
+#else  /* !HAVE_WINSOCK */
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 inet_pton(int af, const char *src, void *dst)
 {
     if (af != AF_INET) {
@@ -44,3 +101,5 @@ inet_pton(int af, const char *src, void *dst)
     }
     return inet_aton (src, dst);
 }
+
+#endif

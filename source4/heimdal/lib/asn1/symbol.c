@@ -34,8 +34,6 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id$");
-
 static Hashtab *htab;
 
 static int
@@ -68,7 +66,7 @@ output_name(char *s)
     char *p;
 
     for (p = s; *p; ++p)
-	if (*p == '-')
+	if (*p == '-' || *p == '.')
 	    *p = '_';
 }
 

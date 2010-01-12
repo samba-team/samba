@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -250,7 +252,7 @@ ExtensionDefault: kw_EXTENSIBILITY kw_IMPLIED
 		| /* empty */
 		;
 
-ModuleBody	: /* Exports */ Imports AssignmentList
+ModuleBody	: Exports Imports AssignmentList
 		| /* empty */
 		;
 
@@ -272,9 +274,20 @@ SymbolsFromModule: referencenames kw_FROM IDENTIFIER objid_opt
 		    for(sl = $1; sl != NULL; sl = sl->next) {
 			Symbol *s = addsym(sl->string);
 			s->stype = Stype;
+			gen_template_import(s);
 		    }
 		    add_import($3);
 		}
+		;
+
+Exports		: kw_EXPORTS referencenames ';'
+		{
+		    struct string_list *sl;
+		    for(sl = $2; sl != NULL; sl = sl->next)
+			add_export(sl->string);
+		}
+		| kw_EXPORTS kw_ALL
+		| /* empty */
 		;
 
 AssignmentList	: Assignment

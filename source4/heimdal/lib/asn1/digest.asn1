@@ -100,6 +100,21 @@ NTLMResponse ::= SEQUENCE {
     tickets		[3] SEQUENCE OF OCTET STRING OPTIONAL
 }
 
+NTLMRequest2 ::= SEQUENCE {
+    loginUserName	[0] UTF8String,
+    loginDomainName	[1] UTF8String,
+    flags		[2] INTEGER (0..4294967295),
+    lmchallenge		[3] OCTET STRING SIZE (8),
+    ntChallengeResponce [4] OCTET STRING,
+    lmChallengeResponce [5] OCTET STRING
+}
+
+NTLMReply ::= SEQUENCE {
+    success		[0] BOOLEAN,
+    flags		[1] INTEGER (0..4294967295),
+    sessionkey		[2] OCTET STRING OPTIONAL
+}
+
 DigestReqInner ::= CHOICE {
     init		[0] DigestInit,
     digestRequest	[1] DigestRequest,

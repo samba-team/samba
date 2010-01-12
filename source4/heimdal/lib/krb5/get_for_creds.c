@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -100,7 +100,7 @@ fail:
  * @ingroup krb5_credential
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_fwd_tgt_creds (krb5_context	context,
 		    krb5_auth_context	auth_context,
 		    const char		*hostname,
@@ -183,7 +183,7 @@ krb5_fwd_tgt_creds (krb5_context	context,
  * @ingroup krb5_credential
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_forwarded_creds (krb5_context	    context,
 			  krb5_auth_context auth_context,
 			  krb5_ccache       ccache,

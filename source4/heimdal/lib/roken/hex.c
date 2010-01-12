@@ -50,7 +50,7 @@ pos(char c)
     return -1;
 }
 
-ssize_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
 hex_encode(const void *data, size_t size, char **str)
 {
     const unsigned char *q = data;
@@ -80,7 +80,7 @@ hex_encode(const void *data, size_t size, char **str)
     return i * 2;
 }
 
-ssize_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
 hex_decode(const char *str, void *data, size_t len)
 {
     size_t l;

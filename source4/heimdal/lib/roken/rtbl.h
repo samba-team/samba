@@ -37,9 +37,11 @@
 
 #ifndef ROKEN_LIB_FUNCTION
 #ifdef _WIN32
-#define ROKEN_LIB_FUNCTION _stdcall
+#define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL     __cdecl
 #else
 #define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL
 #endif
 #endif
 
@@ -60,55 +62,55 @@ typedef struct rtbl_data *rtbl_t;
 /* flags */
 #define RTBL_HEADER_STYLE_NONE	1
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column (rtbl_t, const char*, unsigned int);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_by_id (rtbl_t, unsigned int, const char*, unsigned int);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entryv_by_id (rtbl_t table, unsigned int id,
 			      const char *fmt, ...)
 	__attribute__ ((format (printf, 3, 0)));
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entry (rtbl_t, const char*, const char*);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entryv (rtbl_t, const char*, const char*, ...)
 	__attribute__ ((format (printf, 3, 0)));
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entry_by_id (rtbl_t, unsigned int, const char*);
 
-rtbl_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION rtbl_t ROKEN_LIB_CALL
 rtbl_create (void);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rtbl_destroy (rtbl_t);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_format (rtbl_t, FILE*);
 
-unsigned int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION unsigned int ROKEN_LIB_CALL
 rtbl_get_flags (rtbl_t);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_new_row (rtbl_t);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_set_column_affix_by_id (rtbl_t, unsigned int, const char*, const char*);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_set_column_prefix (rtbl_t, const char*, const char*);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rtbl_set_flags (rtbl_t, unsigned int);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_set_prefix (rtbl_t, const char*);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_set_separator (rtbl_t, const char*);
 
 #ifdef __cplusplus

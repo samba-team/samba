@@ -39,7 +39,7 @@
  * return a malloced copy of `h'
  */
 
-struct hostent * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
 copyhostent (const struct hostent *h)
 {
     struct hostent *res;

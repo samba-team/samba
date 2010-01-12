@@ -49,6 +49,7 @@
 #include <evp-cc.h>
 
 #include <krb5-types.h>
+#include <roken.h>
 
 #ifndef HCRYPTO_DEF_PROVIDER
 #define HCRYPTO_DEF_PROVIDER hcrypto

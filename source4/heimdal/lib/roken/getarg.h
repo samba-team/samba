@@ -40,9 +40,11 @@
 
 #ifndef ROKEN_LIB_FUNCTION
 #ifdef _WIN32
-#define ROKEN_LIB_FUNCTION _stdcall
+#define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL     __cdecl
 #else
 #define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL
 #endif
 #endif
 
@@ -86,17 +88,17 @@ typedef struct getarg_collect_info {
     void *data;
 } getarg_collect_info;
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 getarg(struct getargs *args, size_t num_args,
        int argc, char **argv, int *goptind);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 arg_printusage (struct getargs *args,
 		size_t num_args,
 		const char *progname,
 		const char *extra_string);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 arg_printusage_i18n (struct getargs *args,
 		     size_t num_args,
 		     const char *usage,
@@ -104,7 +106,7 @@ arg_printusage_i18n (struct getargs *args,
 		     const char *extra_string,
 		     char *(i18n)(const char *));
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 free_getarg_strings (getarg_strings *);
 
 #endif /* __GETARG_H__ */

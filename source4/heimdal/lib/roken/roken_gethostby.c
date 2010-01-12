@@ -104,7 +104,7 @@ split_spec(const char *spec, char **host, int *port, char **path, int def_port)
 }
 
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 roken_gethostby_setup(const char *proxy_spec, const char *dns_spec)
 {
     char *proxy_host = NULL;
@@ -207,7 +207,7 @@ roken_gethostby(const char *hostname)
     }
 }
 
-struct hostent*
+ROKEN_LIB_FUNCTION struct hostent* ROKEN_LIB_CALL
 roken_gethostbyname(const char *hostname)
 {
     struct hostent *he;
@@ -217,7 +217,7 @@ roken_gethostbyname(const char *hostname)
     return roken_gethostby(hostname);
 }
 
-struct hostent* ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION struct hostent* ROKEN_LIB_CALL
 roken_gethostbyaddr(const void *addr, size_t len, int type)
 {
     struct in_addr a;

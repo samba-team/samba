@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -65,9 +67,13 @@ static struct hdb_method methods[] = {
 #if HAVE_DB1 || HAVE_DB3
     { HDB_INTERFACE_VERSION, "db:",	hdb_db_create},
 #endif
+#if HAVE_DB1
+    { HDB_INTERFACE_VERSION, "mit-db:",	hdb_mdb_create},
+#endif
 #if HAVE_NDBM
     { HDB_INTERFACE_VERSION, "ndbm:",	hdb_ndbm_create},
 #endif
+    { HDB_INTERFACE_VERSION, "keytab:",	hdb_keytab_create},
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
     { HDB_INTERFACE_VERSION, "ldap:",	hdb_ldap_create},
     { HDB_INTERFACE_VERSION, "ldapi:",	hdb_ldapi_create},
@@ -409,6 +415,27 @@ hdb_list_builtin(krb5_context context, char **list)
     }
     *list = buf;
     return 0;
+}
+
+krb5_error_code
+_hdb_keytab2hdb_entry(krb5_context context,
+		      const krb5_keytab_entry *ktentry,
+		      hdb_entry_ex *entry)
+{
+    entry->entry.kvno = ktentry->vno;
+    entry->entry.created_by.time = ktentry->timestamp;
+
+    entry->entry.keys.val = calloc(1, sizeof(entry->entry.keys.val[0]));
+    if (entry->entry.keys.val == NULL)
+	return ENOMEM;
+    entry->entry.keys.len = 1;
+
+    entry->entry.keys.val[0].mkvno = NULL;
+    entry->entry.keys.val[0].salt = NULL;
+    
+    return krb5_copy_keyblock_contents(context,
+				       &ktentry->keyblock,
+				       &entry->entry.keys.val[0].key);
 }
 
 /**

@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -89,7 +91,7 @@ pk_copy_error(krb5_context context,
  *
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 _krb5_pk_cert_free(struct krb5_pk_cert *cert)
 {
     if (cert->cert) {
@@ -180,18 +182,26 @@ static krb5_error_code
 find_cert(krb5_context context, struct krb5_pk_identity *id,
 	  hx509_query *q, hx509_cert *cert)
 {
-    struct certfind cf[3] = {
+    struct certfind cf[4] = {
+	{ "MobileMe EKU" },
 	{ "PKINIT EKU" },
 	{ "MS EKU" },
 	{ "any (or no)" }
     };
-    int i, ret;
+    int i, ret, start = 1;
+    unsigned oids[] = { 1, 2, 840, 113635, 100, 3, 2, 1 };
+    const heim_oid mobileMe = { sizeof(oids)/sizeof(oids[0]), oids };
 
-    cf[0].oid = &asn1_oid_id_pkekuoid;
-    cf[1].oid = &asn1_oid_id_pkinit_ms_eku;
-    cf[2].oid = NULL;
 
-    for (i = 0; i < sizeof(cf)/sizeof(cf[0]); i++) {
+    if (id->flags & PKINIT_BTMM)
+	start = 0;
+
+    cf[0].oid = &mobileMe;
+    cf[1].oid = &asn1_oid_id_pkekuoid;
+    cf[2].oid = &asn1_oid_id_pkinit_ms_eku;
+    cf[3].oid = NULL;
+
+    for (i = start; i < sizeof(cf)/sizeof(cf[0]); i++) {
 	ret = hx509_query_match_eku(q, cf[i].oid);
 	if (ret) {
 	    pk_copy_error(context, context->hx509ctx, ret,
@@ -344,7 +354,7 @@ build_edi(krb5_context context,
 	  hx509_certs certs,
 	  ExternalPrincipalIdentifiers *ids)
 {
-    return hx509_certs_iter(hx509ctx, certs, cert2epi, ids);
+    return hx509_certs_iter_f(hx509ctx, certs, cert2epi, ids);
 }
 
 static krb5_error_code
@@ -607,7 +617,7 @@ build_auth_pack(krb5_context context,
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_pk_mk_ContentInfo(krb5_context context,
 			const krb5_data *buf,
 			const heim_oid *oid,
@@ -797,9 +807,11 @@ pk_mk_padata(krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_pk_mk_padata(krb5_context context,
 		   void *c,
+		   int ic_flags,
+		   int win2k,
 		   const KDC_REQ_BODY *req_body,
 		   unsigned nonce,
 		   METHOD_DATA *md)
@@ -814,7 +826,7 @@ _krb5_pk_mk_padata(krb5_context context,
     }
 
     win2k_compat = krb5_config_get_bool_default(context, NULL,
-						FALSE,
+						win2k,
 						"realms",
 						req_body->realm,
 						"pkinit_win2k",
@@ -823,7 +835,7 @@ _krb5_pk_mk_padata(krb5_context context,
     if (win2k_compat) {
 	ctx->require_binding =
 	    krb5_config_get_bool_default(context, NULL,
-					 FALSE,
+					 TRUE,
 					 "realms",
 					 req_body->realm,
 					 "pkinit_win2k_require_binding",
@@ -839,6 +851,11 @@ _krb5_pk_mk_padata(krb5_context context,
 				     req_body->realm,
 				     "pkinit_require_eku",
 				     NULL);
+    if (ic_flags & KRB5_INIT_CREDS_NO_C_NO_EKU_CHECK)
+	ctx->require_eku = 0;
+    if (ctx->id->flags & PKINIT_BTMM)
+	ctx->require_eku = 0;
+
     ctx->require_krbtgt_otherName =
 	krb5_config_get_bool_default(context, NULL,
 				     TRUE,
@@ -876,13 +893,20 @@ pk_verify_sign(krb5_context context,
 	       struct krb5_pk_cert **signer)
 {
     hx509_certs signer_certs;
-    int ret;
+    int ret, flags = 0;
+
+    /* BTMM is broken in Leo and SnowLeo */
+    if (id->flags & PKINIT_BTMM) {
+	flags |= HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH;
+	flags |= HX509_CMS_VS_NO_KU_CHECK;
+	flags |= HX509_CMS_VS_NO_VALIDATE;
+    }
 
     *signer = NULL;
 
     ret = hx509_cms_verify_signed(context->hx509ctx,
 				  id->verify_ctx,
-				  HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH|HX509_CMS_VS_NO_KU_CHECK,
+				  flags,
 				  data,
 				  length,
 				  NULL,
@@ -1510,7 +1534,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_pk_rd_pa_reply(krb5_context context,
 		     const char *realm,
 		     void *c,
@@ -1549,9 +1573,11 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 
 	switch (rep.element) {
 	case choice_PA_PK_AS_REP_dhInfo:
+	    _krb5_debug(context, 5, "krb5_get_init_creds: using pkinit dh");
 	    os = rep.u.dhInfo.dhSignedData;
 	    break;
 	case choice_PA_PK_AS_REP_encKeyPack:
+	    _krb5_debug(context, 5, "krb5_get_init_creds: using kinit enc reply key");
 	    os = rep.u.encKeyPack;
 	    break;
 	default: {
@@ -1559,6 +1585,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    free_PA_PK_AS_REP(&rep);
 	    memset(&rep, 0, sizeof(rep));
 	    
+	    _krb5_debug(context, 5, "krb5_get_init_creds: using BTMM kinit enc reply key");
+
 	    ret = decode_PA_PK_AS_REP_BTMM(pa->padata_value.data,
 					   pa->padata_value.length,
 					   &btmm,
@@ -1727,6 +1755,7 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
 
 static krb5_error_code
 _krb5_pk_set_user_id(krb5_context context,
+		     krb5_principal principal,
 		     krb5_pk_init_ctx ctx,
 		     struct hx509_certs_data *certs)
 {
@@ -1754,13 +1783,50 @@ _krb5_pk_set_user_id(krb5_context context,
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
 	
+    if (principal && strncmp("LKDC:SHA1.", krb5_principal_get_realm(context, principal), 9) == 0) {
+	ctx->id->flags |= PKINIT_BTMM;
+    }
+
     ret = find_cert(context, ctx->id, q, &ctx->id->cert);
     hx509_query_free(context->hx509ctx, q);
+
+    if (ret == 0 && _krb5_have_debug(context, 2)) {
+	hx509_name name;
+	char *str, *sn;
+	heim_integer i;
+
+	ret = hx509_cert_get_subject(ctx->id->cert, &name);
+	if (ret)
+	    goto out;
+    
+	ret = hx509_name_to_string(name, &str);
+	hx509_name_free(&name);
+	if (ret)
+	    goto out;
+
+	ret = hx509_cert_get_serialnumber(ctx->id->cert, &i);
+	if (ret) {
+	    free(str);
+	    goto out;
+	}
+
+	ret = der_print_hex_heim_integer(&i, &sn);
+	der_free_heim_integer(&i);
+	if (ret) {
+	    free(name);
+	    goto out;
+	}
+
+	_krb5_debug(context, 2, "using cert: subject: %s sn: %s", str, sn);
+	free(str);
+	free(sn);
+    }
+ out:
 
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_pk_load_id(krb5_context context,
 		 struct krb5_pk_identity **ret_id,
 		 const char *user_id,
@@ -1893,7 +1959,6 @@ _krb5_pk_load_id(krb5_context context,
 	hx509_certs_free(&id->anchors);
 	hx509_certs_free(&id->certpool);
 	hx509_revoke_free(&id->revokectx);
-	hx509_context_free(&context->hx509ctx);
 	free(id);
     } else
 	*ret_id = id;
@@ -2225,7 +2290,7 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 }
 #endif /* PKINIT */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 {
 #ifdef PKINIT
@@ -2269,7 +2334,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 #endif
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_get_init_creds_opt *opt,
 				   krb5_principal principal,
@@ -2344,6 +2409,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
     if (opt->opt_private->pk_init_ctx->id->certs) {
 	_krb5_pk_set_user_id(context,
+			     principal,
 			     opt->opt_private->pk_init_ctx,
 			     opt->opt_private->pk_init_ctx->id->certs);
     } else
@@ -2404,7 +2470,7 @@ _krb5_get_init_creds_opt_set_pkinit_user_certs(krb5_context context,
 	return EINVAL;
     }
     
-    _krb5_pk_set_user_id(context, opt->opt_private->pk_init_ctx, certs);
+    _krb5_pk_set_user_id(context, NULL, opt->opt_private->pk_init_ctx, certs);
 
     return 0;
 #else
@@ -2461,7 +2527,7 @@ find_ms_san(hx509_context context, hx509_cert cert, void *ctx)
  * Private since it need to be redesigned using krb5_get_init_creds()
  */
 
-krb5_error_code  KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code  KRB5_LIB_CALL
 _krb5_pk_enterprise_cert(krb5_context context,
 			 const char *user_id,
 			 krb5_const_realm realm,
@@ -2480,7 +2546,7 @@ _krb5_pk_enterprise_cert(krb5_context context,
 	*res = NULL;
     
     if (user_id == NULL) {
-	krb5_clear_error_message(context);
+	krb5_set_error_message(context, ENOENT, "no user id");
 	return ENOENT;
     }
 
@@ -2488,14 +2554,14 @@ _krb5_pk_enterprise_cert(krb5_context context,
     if (ret) {
 	pk_copy_error(context, context->hx509ctx, ret,
 		      "Failed to init cert certs");
-	return ret;
+	goto out;
     }
 
     ret = hx509_query_alloc(context->hx509ctx, &q);
     if (ret) {
 	krb5_set_error_message(context, ret, "out of memory");
 	hx509_certs_free(&certs);
-	return ret;
+	goto out;
     }
 
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);

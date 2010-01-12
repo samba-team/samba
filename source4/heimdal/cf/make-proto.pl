@@ -253,8 +253,14 @@ $private_h_trailer = "";
 
 foreach(sort keys %funcs){
     if(/^(main)$/) { next }
+    if ($funcs{$_} =~ /\^/) {
+	$beginblock = "#ifdef __BLOCKS__\n";
+	$endblock = "#endif /* __BLOCKS__ */\n";
+    } else {
+	$beginblock = $endblock = "";
+    }
     if(!defined($exported{$_}) && /$private_func_re/) {
-	$private_h .= $funcs{$_} . "\n\n";
+	$private_h .= $beginblock . $funcs{$_} . "\n" . $endblock . "\n";
 	if($funcs{$_} =~ /__attribute__/) {
 	    $private_attribute_seen = 1;
 	}
@@ -267,7 +273,7 @@ foreach(sort keys %funcs){
 		$public_h .= "#ifndef HAVE_$fupper\n";
 	    }
 	}
-	$public_h .= $funcs{$_} . "\n";
+	$public_h .= $beginblock . $funcs{$_} . "\n" . $endblock;
 	if($funcs{$_} =~ /__attribute__/) {
 	    $public_attribute_seen = 1;
 	}
@@ -310,24 +316,31 @@ extern \"C\" {
 }
 if ($opt_E) {
     $public_h_header .= "#ifndef $opt_E
+#ifndef ${opt_E}_FUNCTION
 #if defined(_WIN32)
-#define ${opt_E}_FUNCTION __stdcall __declspec(dllimport)
+#define ${opt_E}_FUNCTION __declspec(dllimport)
+#define ${opt_E}_CALL __stdcall
 #define ${opt_E}_VARIABLE __declspec(dllimport)
 #else
 #define ${opt_E}_FUNCTION
+#define ${opt_E}_CALL
 #define ${opt_E}_VARIABLE
 #endif
 #endif
-
+#endif
 ";
     
     $private_h_header .= "#ifndef $opt_E
+#ifndef ${opt_E}_FUNCTION
 #if defined(_WIN32)
-#define ${opt_E}_FUNCTION __stdcall __declspec(dllimport)
+#define ${opt_E}_FUNCTION __declspec(dllimport)
+#define ${opt_E}_CALL __stdcall
 #define ${opt_E}_VARIABLE __declspec(dllimport)
 #else
 #define ${opt_E}_FUNCTION
+#define ${opt_E}_CALL
 #define ${opt_E}_VARIABLE
+#endif
 #endif
 #endif
 

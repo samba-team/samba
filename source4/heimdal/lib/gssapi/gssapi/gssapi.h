@@ -45,10 +45,12 @@
 
 #ifndef BUILD_GSSAPI_LIB
 #if defined(_WIN32)
-#define GSSAPI_LIB_FUNCTION _stdcall __declspec(dllimport)
+#define GSSAPI_LIB_FUNCTION __declspec(dllimport)
+#define GSSAPI_LIB_CALL     __stdcall
 #define GSSAPI_LIB_VARIABLE __declspec(dllimport)
 #else
 #define GSSAPI_LIB_FUNCTION
+#define GSSAPI_LIB_CALL
 #define GSSAPI_LIB_VARIABLE
 #endif
 #endif
@@ -810,7 +812,8 @@ extern gss_OID GSSAPI_LIB_VARIABLE GSS_C_ATTR_STREAM_SIZES;
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_context_query_attributes(OM_uint32 * /* minor_status */,
-			     gss_OID /* attribute */,
+			     const gss_ctx_id_t /* context_handle */,
+			     const gss_OID /* attribute */,
 			     void * /*data*/,
 			     size_t /* len */);
 /*

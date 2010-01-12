@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_error(krb5_context context,
 	      const krb5_data *msg,
 	      KRB_ERROR *result)
@@ -51,7 +51,7 @@ krb5_rd_error(krb5_context context,
     return 0;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_error_contents (krb5_context context,
 			  krb5_error *error)
 {
@@ -59,7 +59,7 @@ krb5_free_error_contents (krb5_context context,
     memset(error, 0, sizeof(*error));
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_error (krb5_context context,
 		 krb5_error *error)
 {
@@ -67,7 +67,7 @@ krb5_free_error (krb5_context context,
     free (error);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_error_from_rd_error(krb5_context context,
 			 const krb5_error *error,
 			 const krb5_creds *creds)

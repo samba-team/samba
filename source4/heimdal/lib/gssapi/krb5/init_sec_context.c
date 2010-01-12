@@ -255,7 +255,7 @@ gsskrb5_initiator_ready(
 	krb5_cc_close(context, ctx->ccache);
     ctx->ccache = NULL;
 
-    krb5_auth_getremoteseqnumber (context, ctx->auth_context, &seq_number);
+    krb5_auth_con_getremoteseqnumber (context, ctx->auth_context, &seq_number);
 
     _gsskrb5i_is_cfx(context, ctx, 0);
     is_cfx = (ctx->more_flags & IS_CFX);
@@ -782,7 +782,7 @@ repl_mutual
 	 * for the gss_wrap calls.
 	 */
 
-	krb5_auth_getremoteseqnumber(context, ctx->auth_context, &remote_seq);
+	krb5_auth_con_getremoteseqnumber(context, ctx->auth_context, &remote_seq);
 	krb5_auth_con_getlocalseqnumber(context, ctx->auth_context, &local_seq);
 	krb5_auth_con_setlocalseqnumber(context, ctx->auth_context, remote_seq);
 

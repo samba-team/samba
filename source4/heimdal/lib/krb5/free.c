@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)
 {
     free_KDC_REP(&rep->kdc_rep);
@@ -43,7 +43,7 @@ krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_xfree (void *ptr)
 {
     free (ptr);

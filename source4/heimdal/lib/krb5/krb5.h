@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -301,7 +303,15 @@ typedef AP_REQ krb5_ap_req;
 
 struct krb5_cc_ops;
 
+#ifdef _WIN32
+#define KRB5_USE_PATH_TOKENS 1
+#endif
+
+#ifdef KRB5_USE_PATH_TOKENS
+#define KRB5_DEFAULT_CCFILE_ROOT "%{TEMP}/krb5cc_"
+#else
 #define KRB5_DEFAULT_CCFILE_ROOT "/tmp/krb5cc_"
+#endif
 
 #define KRB5_DEFAULT_CCROOT "FILE:" KRB5_DEFAULT_CCFILE_ROOT
 
@@ -311,7 +321,7 @@ struct krb5_cc_ops;
 				 NULL)
 
 typedef void *krb5_cc_cursor;
-typedef struct krb5_cccol_cursor *krb5_cccol_cursor;
+typedef struct krb5_cccol_cursor_data *krb5_cccol_cursor;
 
 typedef struct krb5_ccache_data {
     const struct krb5_cc_ops *ops;
@@ -412,7 +422,7 @@ typedef struct krb5_creds {
 
 typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 
-#define KRB5_CC_OPS_VERSION 2
+#define KRB5_CC_OPS_VERSION 3
 
 typedef struct krb5_cc_ops {
     int version;
@@ -442,6 +452,8 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*get_default_name)(krb5_context, char **);
     krb5_error_code (*set_default)(krb5_context, krb5_ccache);
     krb5_error_code (*lastchange)(krb5_context, krb5_ccache, krb5_timestamp *);
+    krb5_error_code (*set_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat);
+    krb5_error_code (*get_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat *);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -834,6 +846,7 @@ extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_scc_ops;
 
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_fkt_ops;

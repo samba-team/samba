@@ -989,7 +989,7 @@ hx509_ocsp_request(hx509_context context,
     ctx.digest = digest;
     ctx.parent = NULL;
 
-    ret = hx509_certs_iter(context, reqcerts, add_to_req, &ctx);
+    ret = hx509_certs_iter_f(context, reqcerts, add_to_req, &ctx);
     hx509_cert_free(ctx.parent);
     if (ret)
 	goto out;
@@ -1004,17 +1004,17 @@ hx509_ocsp_request(hx509_context context,
 
 	es = req.tbsRequest.requestExtensions;
 	
-	es->val = calloc(1, sizeof(es->val[0]));
+	es->val = calloc(es->len, sizeof(es->val[0]));
 	if (es->val == NULL) {
 	    ret = ENOMEM;
 	    goto out;
 	}
+	es->len = 1;
 	ret = der_copy_oid(&asn1_oid_id_pkix_ocsp_nonce, &es->val[0].extnID);
 	if (ret) {
 	    free_OCSPRequest(&req);
 	    return ret;
 	}
-	es->len = 1;
 
 	es->val[0].extnValue.data = malloc(10);
 	if (es->val[0].extnValue.data == NULL) {
@@ -1153,7 +1153,7 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 
     fprintf(out, "appended certs:\n");
     if (ocsp.certs)
-	ret = hx509_certs_iter(context, ocsp.certs, hx509_ci_print_names, out);
+	ret = hx509_certs_iter_f(context, ocsp.certs, hx509_ci_print_names, out);
 
     free_ocsp(&ocsp);
     return ret;
@@ -1486,7 +1486,7 @@ hx509_crl_sign(hx509_context context,
     }
     c.tbsCertList.crlExtensions = NULL;
 
-    ret = hx509_certs_iter(context, crl->revoked, add_revoked, &c.tbsCertList);
+    ret = hx509_certs_iter_f(context, crl->revoked, add_revoked, &c.tbsCertList);
     if (ret)
 	goto out;
 

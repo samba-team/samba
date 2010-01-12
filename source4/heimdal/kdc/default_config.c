@@ -1,8 +1,9 @@
 /*
  * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
- *
  * All rights reserved.
+ *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -215,7 +216,6 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 				      "kdc", "kdc_warn_pwexpire", NULL);
 
 
-#ifdef PKINIT
     c->enable_pkinit =
 	krb5_config_get_bool_default(context,
 				     NULL,
@@ -223,74 +223,73 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 				     "kdc",
 				     "enable-pkinit",
 				     NULL);
-    if (c->enable_pkinit) {
-	const char *user_id, *anchors, *file;
-	char **pool_list, **revoke_list;
-
-	user_id =
-	    krb5_config_get_string(context, NULL,
-				   "kdc", "pkinit_identity", NULL);
-	if (user_id == NULL)
-	    krb5_errx(context, 1, "pkinit enabled but no identity");
-
-	anchors = krb5_config_get_string(context, NULL,
-					 "kdc", "pkinit_anchors", NULL);
-	if (anchors == NULL)
-	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
-
-	pool_list =
-	    krb5_config_get_strings(context, NULL,
-				    "kdc", "pkinit_pool", NULL);
-
-	revoke_list =
-	    krb5_config_get_strings(context, NULL,
-				    "kdc", "pkinit_revoke", NULL);
-
-	file = krb5_config_get_string(context, NULL,
-				      "kdc", "pkinit_kdc_ocsp", NULL);
-	if (file) {
-	    c->pkinit_kdc_ocsp_file = strdup(file);
-	    if (c->pkinit_kdc_ocsp_file == NULL)
-		krb5_errx(context, 1, "out of memory");
-	}
-
-	file = krb5_config_get_string(context, NULL,
-				      "kdc", "pkinit_kdc_friendly_name", NULL);
-	if (file) {
-	    c->pkinit_kdc_friendly_name = strdup(file);
-	    if (c->pkinit_kdc_friendly_name == NULL)
-		krb5_errx(context, 1, "out of memory");
-	}
 
 
-	_kdc_pk_initialize(context, c, user_id, anchors,
-			   pool_list, revoke_list);
-
-	krb5_config_free_strings(pool_list);
-	krb5_config_free_strings(revoke_list);
-
-	c->pkinit_princ_in_cert =
-	    krb5_config_get_bool_default(context, NULL,
-					 c->pkinit_princ_in_cert,
-					 "kdc",
-					 "pkinit_principal_in_certificate",
-					 NULL);
-
-	c->pkinit_require_binding =
-	    krb5_config_get_bool_default(context, NULL,
-					 c->pkinit_require_binding,
-					 "kdc",
-					 "pkinit_win2k_require_binding",
-					 NULL);
-    }
-
+    c->pkinit_kdc_identity = 
+	krb5_config_get_string(context, NULL,
+			       "kdc", "pkinit_identity", NULL);
+    c->pkinit_kdc_anchors =
+	krb5_config_get_string(context, NULL,
+			       "kdc", "pkinit_anchors", NULL);
+    c->pkinit_kdc_cert_pool =
+	krb5_config_get_strings(context, NULL,
+				"kdc", "pkinit_pool", NULL);
+    c->pkinit_kdc_revoke =
+	krb5_config_get_strings(context, NULL,
+				"kdc", "pkinit_revoke", NULL);
+    c->pkinit_kdc_ocsp_file = 
+	krb5_config_get_string(context, NULL,
+			       "kdc", "pkinit_kdc_ocsp", NULL);
+    c->pkinit_kdc_friendly_name =
+	krb5_config_get_string(context, NULL,
+			       "kdc", "pkinit_kdc_friendly_name", NULL);
+    c->pkinit_princ_in_cert =
+	krb5_config_get_bool_default(context, NULL,
+				     c->pkinit_princ_in_cert,
+				     "kdc",
+				     "pkinit_principal_in_certificate",
+				     NULL);
+    c->pkinit_require_binding =
+	krb5_config_get_bool_default(context, NULL,
+				     c->pkinit_require_binding,
+				     "kdc",
+				     "pkinit_win2k_require_binding",
+				     NULL);
     c->pkinit_dh_min_bits =
 	krb5_config_get_int_default(context, NULL,
 				    0,
 				    "kdc", "pkinit_dh_min_bits", NULL);
 
+
+#ifdef __APPLE__
+    c->enable_pkinit = 1;
+
+    if (c->pkinit_kdc_identity == NULL) {
+	if (c->pkinit_kdc_friendly_name == NULL)
+	    c->pkinit_kdc_friendly_name = 
+		strdup("O=System Identity,CN=com.apple.kerberos.kdc");
+	c->pkinit_kdc_identity = strdup("KEYCHAIN:");
+    }
+    if (c->pkinit_kdc_anchors == NULL)
+	c->pkinit_kdc_anchors = strdup("KEYCHAIN:");
+
 #endif
 
+    if (c->enable_pkinit) {
+	if (c->pkinit_kdc_identity == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no identity");
+ 
+	if (c->pkinit_kdc_anchors == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
+
+	krb5_kdc_pk_initialize(context, c,
+			       c->pkinit_kdc_identity,
+			       c->pkinit_kdc_anchors,
+			       c->pkinit_kdc_cert_pool,
+			       c->pkinit_kdc_revoke);
+
+    }
+    
     *config = c;
 
     return 0;

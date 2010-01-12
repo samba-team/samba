@@ -35,6 +35,9 @@
 #include <stdlib.h>
 #include <rand.h>
 
+#ifdef KRB5
+#include <krb5-types.h>
+#endif
 #include <roken.h>
 
 #include "randi.h"
@@ -451,6 +454,7 @@ fortuna_reseed(void)
     if (!init_done)
 	abort();
 
+#ifndef NO_RAND_UNIX_METHOD
     {
 	unsigned char buf[INIT_BYTES];
 	if ((*hc_rand_unix_method.bytes)(buf, sizeof(buf)) == 1) {
@@ -459,6 +463,7 @@ fortuna_reseed(void)
 	    memset(buf, 0, sizeof(buf));
 	}
     }
+#endif
 #ifdef HAVE_ARC4RANDOM
     {
 	uint32_t buf[INIT_BYTES / sizeof(uint32_t)];
@@ -470,6 +475,7 @@ fortuna_reseed(void)
 	entropy_p = 1;
     }
 #endif
+#ifndef NO_RAND_EGD_METHOD
     /*
      * Only to get egd entropy if /dev/random or arc4rand failed since
      * it can be horribly slow to generate new bits.
@@ -482,6 +488,7 @@ fortuna_reseed(void)
 	    memset(buf, 0, sizeof(buf));
 	}
     }
+#endif
     /*
      * Fall back to gattering data from timer and secret files, this
      * is really the last resort.
@@ -521,10 +528,12 @@ fortuna_reseed(void)
 	gettimeofday(&tv, NULL);
 	add_entropy(&main_state, (void *)&tv, sizeof(tv));
     }
+#ifdef HAVE_GETUID
     {
 	uid_t u = getuid();
 	add_entropy(&main_state, (void *)&u, sizeof(u));
     }
+#endif
     return entropy_p;
 }
 

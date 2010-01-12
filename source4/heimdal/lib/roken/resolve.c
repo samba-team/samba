@@ -78,7 +78,7 @@ static struct stot{
 
 int _resolve_debug = 0;
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_dns_string_to_type(const char *name)
 {
     struct stot *p = stot;
@@ -88,7 +88,7 @@ rk_dns_string_to_type(const char *name)
     return -1;
 }
 
-const char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL
 rk_dns_type_to_string(int type)
 {
     struct stot *p = stot;
@@ -110,7 +110,7 @@ dns_free_rr(struct rk_resource_record *rr)
     free(rr);
 }
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_dns_free_data(struct rk_dns_reply *r)
 {
     struct rk_resource_record *rr;
@@ -584,7 +584,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     return r;
 }
 
-struct rk_dns_reply * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION struct rk_dns_reply * ROKEN_LIB_CALL
 rk_dns_lookup(const char *domain, const char *type_name)
 {
     int type;
@@ -614,7 +614,7 @@ compare_srv(const void *a, const void *b)
 #endif
 
 /* try to rearrange the srv-records by the algorithm in RFC2782 */
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_dns_srv_order(struct rk_dns_reply *r)
 {
     struct rk_resource_record **srvs, **ss, **headp;
@@ -704,18 +704,18 @@ rk_dns_srv_order(struct rk_dns_reply *r)
 
 #else /* NOT defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
 
-struct rk_dns_reply * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION struct rk_dns_reply * ROKEN_LIB_CALL
 rk_dns_lookup(const char *domain, const char *type_name)
 {
     return NULL;
 }
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_dns_free_data(struct rk_dns_reply *r)
 {
 }
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_dns_srv_order(struct rk_dns_reply *r)
 {
 }

@@ -205,7 +205,7 @@ load_plugins(krb5_context context)
 	d = opendir(*di);
 	if (d == NULL)
 	    continue;
-	rk_cloexec(dirfd(d));
+	rk_cloexec_dir(d);
 
 	while ((entry = readdir(d)) != NULL) {
 	    char *n = entry->d_name;

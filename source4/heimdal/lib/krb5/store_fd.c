@@ -85,12 +85,26 @@ fd_free(krb5_storage * sp)
  * @sa krb5_storage_from_data()
  */
 
-krb5_storage * KRB5_LIB_FUNCTION
-krb5_storage_from_fd(int fd)
+KRB5_LIB_FUNCTION krb5_storage * KRB5_LIB_CALL
+krb5_storage_from_fd(krb5_socket_t fd_in)
 {
     krb5_storage *sp;
+    int fd;
 
-    fd = dup(fd);
+#ifdef SOCKET_IS_NOT_AN_FD
+#ifdef _MSC_VER
+    if (_get_osfhandle(fd_in) != -1) {
+	fd = dup(fd_in);
+    } else {
+	fd = _open_osfhandle(fd_in, 0);
+    }
+#else
+#error Dont know how to deal with fd that may or may not be a socket.
+#endif
+#else  /* SOCKET_IS_NOT_AN_FD */
+    fd = dup(fd_in);
+#endif
+
     if (fd < 0)
 	return NULL;
 

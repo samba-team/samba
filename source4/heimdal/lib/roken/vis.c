@@ -106,17 +106,17 @@ static char *do_svis(char *, int, int, int, const char *);
 #define BELL '\007'
 #endif
 
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 	rk_vis (char *, int, int, int);
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 	rk_svis (char *, int, int, int, const char *);
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 	rk_strvis (char *, const char *, int);
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 	rk_strsvis (char *, const char *, int, const char *);
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 	rk_strvisx (char *, const char *, size_t, int);
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 	rk_strsvisx (char *, const char *, size_t, int, const char *);
 
 
@@ -249,7 +249,7 @@ do_svis(char *dst, int c, int flag, int nextc, const char *extra)
  * svis - visually encode characters, also encoding the characters
  *	  pointed to by `extra'
  */
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
 {
 	char *nextra = NULL;
@@ -286,7 +286,8 @@ rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
  *	Strsvisx encodes exactly len bytes from src into dst.
  *	This is useful for encoding a block of data.
  */
-int ROKEN_LIB_FUNCTION
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_strsvis(char *dst, const char *csrc, int flag, const char *extra)
 {
 	int c;
@@ -315,7 +316,7 @@ rk_strsvis(char *dst, const char *csrc, int flag, const char *extra)
 }
 
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_strsvisx(char *dst, const char *csrc, size_t len, int flag, const char *extra)
 {
 	unsigned char c;
@@ -353,7 +354,7 @@ rk_strsvisx(char *dst, const char *csrc, size_t len, int flag, const char *extra
 /*
  * vis - visually encode characters
  */
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 rk_vis(char *dst, int c, int flag, int nextc)
 {
 	char *extra = NULL;
@@ -386,7 +387,7 @@ rk_vis(char *dst, int c, int flag, int nextc)
  *	Strvisx encodes exactly len bytes from src into dst.
  *	This is useful for encoding a block of data.
  */
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_strvis(char *dst, const char *src, int flag)
 {
 	char *extra = NULL;
@@ -403,7 +404,7 @@ rk_strvis(char *dst, const char *src, int flag)
 }
 
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_strvisx(char *dst, const char *src, size_t len, int flag)
 {
 	char *extra = NULL;

@@ -44,7 +44,7 @@
  * @ingroup krb5_support
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_host_realm(krb5_context context,
 		     krb5_realm *realmlist)
 {

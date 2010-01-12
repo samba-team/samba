@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -41,6 +43,31 @@ der_free_general_string (heim_general_string *str)
     free(*str);
     *str = NULL;
 }
+
+void
+der_free_integer (int *i)
+{
+    *i = 0;
+}
+
+void
+der_free_unsigned (unsigned *u)
+{
+    *u = 0;
+}
+
+void
+der_free_generalized_time(time_t *t)
+{
+    *t = 0;
+}
+
+void
+der_free_utctime(time_t *t)
+{
+    *t = 0;
+}
+
 
 void
 der_free_utf8string (heim_utf8_string *str)

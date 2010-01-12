@@ -47,7 +47,7 @@ struct send_to_kdc {
  */
 
 static int
-recv_loop (int fd,
+recv_loop (krb5_socket_t fd,
 	   time_t tmout,
 	   int udp,
 	   size_t limit,
@@ -58,9 +58,11 @@ recv_loop (int fd,
      int ret;
      int nbytes;
 
+#ifndef NO_LIMIT_FD_SETSIZE
      if (fd >= FD_SETSIZE) {
 	 return -1;
      }
+#endif
 
      krb5_data_zero(rep);
      do {
@@ -78,7 +80,7 @@ recv_loop (int fd,
 	 } else {
 	     void *tmp;
 
-	     if (ioctl (fd, FIONREAD, &nbytes) < 0) {
+	     if (rk_SOCK_IOCTL (fd, FIONREAD, &nbytes) < 0) {
 		 krb5_data_free (rep);
 		 return -1;
 	     }
@@ -111,7 +113,7 @@ recv_loop (int fd,
  */
 
 static int
-send_and_recv_udp(int fd,
+send_and_recv_udp(krb5_socket_t fd,
 		  time_t tmout,
 		  const krb5_data *req,
 		  krb5_data *rep)
@@ -130,7 +132,7 @@ send_and_recv_udp(int fd,
  */
 
 static int
-send_and_recv_tcp(int fd,
+send_and_recv_tcp(krb5_socket_t fd,
 		  time_t tmout,
 		  const krb5_data *req,
 		  krb5_data *rep)
@@ -140,9 +142,9 @@ send_and_recv_tcp(int fd,
     krb5_data len_data;
 
     _krb5_put_int(len, req->length, 4);
-    if(net_write(fd, len, sizeof(len)) < 0)
+    if(net_write (fd, len, sizeof(len)) < 0)
 	return -1;
-    if(net_write(fd, req->data, req->length) < 0)
+    if(net_write (fd, req->data, req->length) < 0)
 	return -1;
     if (recv_loop (fd, tmout, 0, 4, &len_data) < 0)
 	return -1;
@@ -162,7 +164,7 @@ send_and_recv_tcp(int fd,
 }
 
 int
-_krb5_send_and_recv_tcp(int fd,
+_krb5_send_and_recv_tcp(krb5_socket_t fd,
 			time_t tmout,
 			const krb5_data *req,
 			krb5_data *rep)
@@ -175,7 +177,7 @@ _krb5_send_and_recv_tcp(int fd,
  */
 
 static int
-send_and_recv_http(int fd,
+send_and_recv_http(krb5_socket_t fd,
 		   time_t tmout,
 		   const char *prefix,
 		   const krb5_data *req,
@@ -264,7 +266,7 @@ send_via_proxy (krb5_context context,
     struct addrinfo hints;
     struct addrinfo *ai, *a;
     int ret;
-    int s = -1;
+    krb5_socket_t s = rk_INVALID_SOCKET;
     char portstr[NI_MAXSERV];
 		
     if (proxy == NULL)
@@ -291,7 +293,7 @@ send_via_proxy (krb5_context context,
 	    continue;
 	rk_cloexec(s);
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
-	    close (s);
+	    rk_closesocket (s);
 	    continue;
 	}
 	break;
@@ -309,7 +311,7 @@ send_via_proxy (krb5_context context,
     }
     ret = send_and_recv_http(s, context->kdc_timeout,
 			     prefix, send_data, receive);
-    close (s);
+    rk_closesocket (s);
     free(prefix);
     if(ret == 0 && receive->length != 0)
 	return 0;
@@ -361,14 +363,14 @@ send_via_plugin(krb5_context context,
  * in `receive'.
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sendto (krb5_context context,
 	     const krb5_data *send_data,
 	     krb5_krbhst_handle handle,	
 	     krb5_data *receive)
 {
      krb5_error_code ret;
-     int fd;
+     krb5_socket_t fd;
      int i;
 
      krb5_data_zero(receive);
@@ -414,11 +416,11 @@ krb5_sendto (krb5_context context,
 
 	     for (a = ai; a != NULL; a = a->ai_next) {
 		 fd = socket (a->ai_family, a->ai_socktype | SOCK_CLOEXEC, a->ai_protocol);
-		 if (fd < 0)
+		 if (rk_IS_BAD_SOCKET(fd))
 		     continue;
 		 rk_cloexec(fd);
 		 if (connect (fd, a->ai_addr, a->ai_addrlen) < 0) {
-		     close (fd);
+		     rk_closesocket (fd);
 		     continue;
 		 }
 		 switch (hi->proto) {
@@ -435,7 +437,7 @@ krb5_sendto (krb5_context context,
 					      send_data, receive);
 		     break;
 		 }
-		 close (fd);
+		 rk_closesocket (fd);
 		 if(ret == 0 && receive->length != 0)
 		     goto out;
 	     }
@@ -451,7 +453,7 @@ out:
      return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sendto_kdc(krb5_context context,
 		const krb5_data *send_data,
 		const krb5_realm *realm,
@@ -460,7 +462,7 @@ krb5_sendto_kdc(krb5_context context,
     return krb5_sendto_kdc_flags(context, send_data, realm, receive, 0);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sendto_kdc_flags(krb5_context context,
 		      const krb5_data *send_data,
 		      const krb5_realm *realm,
@@ -481,7 +483,7 @@ krb5_sendto_kdc_flags(krb5_context context,
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_send_to_kdc_func(krb5_context context,
 			  krb5_send_to_kdc_func func,
 			  void *data)
@@ -504,7 +506,7 @@ krb5_set_send_to_kdc_func(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_copy_send_to_kdc_func(krb5_context context, krb5_context to)
 {
     if (context->send_to_kdc)
@@ -524,7 +526,7 @@ struct krb5_sendto_ctx_data {
     void *data;
 };
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sendto_ctx_alloc(krb5_context context, krb5_sendto_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
@@ -536,26 +538,26 @@ krb5_sendto_ctx_alloc(krb5_context context, krb5_sendto_ctx *ctx)
     return 0;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_sendto_ctx_add_flags(krb5_sendto_ctx ctx, int flags)
 {
     ctx->flags |= flags;
 }
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_sendto_ctx_get_flags(krb5_sendto_ctx ctx)
 {
     return ctx->flags;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_sendto_ctx_set_type(krb5_sendto_ctx ctx, int type)
 {
     ctx->type = type;
 }
 
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_sendto_ctx_set_func(krb5_sendto_ctx ctx,
 			 krb5_sendto_ctx_func func,
 			 void *data)
@@ -564,14 +566,14 @@ krb5_sendto_ctx_set_func(krb5_sendto_ctx ctx,
     ctx->data = data;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_sendto_ctx_free(krb5_context context, krb5_sendto_ctx ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
     free(ctx);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sendto_context(krb5_context context,
 		    krb5_sendto_ctx ctx,
 		    const krb5_data *send_data,

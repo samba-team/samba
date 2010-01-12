@@ -58,7 +58,7 @@ check_ticket_flags(TicketFlags f)
  * @ingroup krb5_v4compat
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb524_convert_creds_kdc(krb5_context context,
 			 krb5_creds *in_cred,
 			 struct credentials *v4creds)
@@ -132,10 +132,9 @@ krb524_convert_creds_kdc(krb5_context context,
 	    goto out;
 	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
     } else {
-	krb5_set_error_message (context, ret,
-				N_("converting credentials: %s",
-				  "already localized"),
-				krb5_get_err_text(context, ret));
+	krb5_prepend_error_message(context, ret,
+				   N_("converting credentials",
+				      "already localized"));
     }
 out:
     krb5_storage_free(sp);
@@ -161,7 +160,7 @@ out2:
  * @ingroup krb5_v4compat
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb524_convert_creds_kdc_ccache(krb5_context context,
 				krb5_ccache ccache,
 				krb5_creds *in_cred,

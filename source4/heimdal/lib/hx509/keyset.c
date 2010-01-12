@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -323,7 +325,7 @@ hx509_certs_end_seq(hx509_context context,
  * @param certs certificate store to iterate over.
  * @param func function to call for each certificate. The function
  * should return non-zero to abort the iteration, that value is passed
- * back to te caller of hx509_certs_iter().
+ * back to the caller of hx509_certs_iter_f().
  * @param ctx context variable that will passed to the function.
  *
  * @return Returns an hx509 error code.
@@ -332,10 +334,10 @@ hx509_certs_end_seq(hx509_context context,
  */
 
 int
-hx509_certs_iter(hx509_context context,
-		 hx509_certs certs,
-		 int (*func)(hx509_context, void *, hx509_cert),
-		 void *ctx)
+hx509_certs_iter_f(hx509_context context,
+		   hx509_certs certs,
+		   int (*func)(hx509_context, void *, hx509_cert),
+		   void *ctx)
 {
     hx509_cursor cursor;
     hx509_cert c;
@@ -364,13 +366,46 @@ hx509_certs_iter(hx509_context context,
     return ret;
 }
 
-
 /**
- * Function to use to hx509_certs_iter() as a function argument, the
- * ctx variable to hx509_certs_iter() should be a FILE file descriptor.
+ * Iterate over all certificates in a keystore and call an function
+ * for each fo them.
  *
  * @param context a hx509 context.
- * @param ctx used by hx509_certs_iter().
+ * @param certs certificate store to iterate over.
+ * @param func function to call for each certificate. The function
+ * should return non-zero to abort the iteration, that value is passed
+ * back to the caller of hx509_certs_iter().
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
+
+#ifdef __BLOCKS__
+
+static int
+certs_iter(hx509_context context, void *ctx, hx509_cert cert)
+{
+    int (^func)(hx509_cert) = ctx;
+    return func(cert);
+}
+
+int
+hx509_certs_iter(hx509_context context,
+		 hx509_certs certs,
+		 int (^func)(hx509_cert))
+{
+    return hx509_certs_iter_f(context, certs, certs_iter, func);
+}
+#endif
+
+
+/**
+ * Function to use to hx509_certs_iter_f() as a function argument, the
+ * ctx variable to hx509_certs_iter_f() should be a FILE file descriptor.
+ *
+ * @param context a hx509 context.
+ * @param ctx used by hx509_certs_iter_f().
  * @param c a certificate
  *
  * @return Returns an hx509 error code.
@@ -587,7 +622,7 @@ hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 {
     if (from == NULL)
 	return 0;
-    return hx509_certs_iter(context, from, certs_merge_func, to);
+    return hx509_certs_iter_f(context, from, certs_merge_func, to);
 }
 
 /**

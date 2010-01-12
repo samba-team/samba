@@ -345,10 +345,24 @@ _kdc_do_kx509(krb5_context context,
 	ret = krb5_principal_compare(context, sprincipal, principal);
 	krb5_free_principal(context, principal);
 	if (ret != TRUE) {
+	    char *expected, *used;
+
+	    ret = krb5_unparse_name(context, sprincipal, &expected);
+	    if (ret)
+		goto out;
+	    ret = krb5_unparse_name(context, principal, &used);
+	    if (ret) {
+		krb5_xfree(expected);
+		goto out;
+	    }
+	    
 	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
 	    krb5_set_error_message(context, ret,
-				   "User %s used wrong Kx509 service principal",
-				   cname);
+				   "User %s used wrong Kx509 service "
+				   "principal, expected: %s, used %s",
+				   cname, expected, used);
+	    krb5_xfree(expected);
+	    krb5_xfree(used);
 	    goto out;
 	}
     }

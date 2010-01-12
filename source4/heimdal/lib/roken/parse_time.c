@@ -50,25 +50,25 @@ static struct units time_units[] = {
     {NULL, 0},
 };
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 parse_time (const char *s, const char *def_unit)
 {
     return parse_units (s, time_units, def_unit);
 }
 
-size_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION size_t ROKEN_LIB_CALL
 unparse_time (int t, char *s, size_t len)
 {
     return unparse_units (t, time_units, s, len);
 }
 
-size_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION size_t ROKEN_LIB_CALL
 unparse_time_approx (int t, char *s, size_t len)
 {
     return unparse_units_approx (t, time_units, s, len);
 }
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 print_time_table (FILE *f)
 {
     print_units_table (time_units, f);

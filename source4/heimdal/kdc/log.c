@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -36,13 +38,14 @@ RCSID("$Id$");
 
 void
 kdc_openlog(krb5_context context,
+	    const char *service,
 	    krb5_kdc_configuration *config)
 {
     char **s = NULL, **p;
     krb5_initlog(context, "kdc", &config->logf);
-    s = krb5_config_get_strings(context, NULL, "kdc", "logging", NULL);
+    s = krb5_config_get_strings(context, NULL, service, "logging", NULL);
     if(s == NULL)
-	s = krb5_config_get_strings(context, NULL, "logging", "kdc", NULL);
+	s = krb5_config_get_strings(context, NULL, "logging", service, NULL);
     if(s){
 	for(p = s; *p; p++)
 	    krb5_addlog_dest(context, config->logf, *p);

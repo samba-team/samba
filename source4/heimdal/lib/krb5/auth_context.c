@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_init(krb5_context context,
 		   krb5_auth_context *auth_context)
 {
@@ -64,7 +64,7 @@ krb5_auth_con_init(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_free(krb5_context context,
 		   krb5_auth_context auth_context)
 {
@@ -86,7 +86,7 @@ krb5_auth_con_free(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setflags(krb5_context context,
 		       krb5_auth_context auth_context,
 		       int32_t flags)
@@ -96,7 +96,7 @@ krb5_auth_con_setflags(krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getflags(krb5_context context,
 		       krb5_auth_context auth_context,
 		       int32_t *flags)
@@ -105,7 +105,7 @@ krb5_auth_con_getflags(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_addflags(krb5_context context,
 		       krb5_auth_context auth_context,
 		       int32_t addflags,
@@ -117,7 +117,7 @@ krb5_auth_con_addflags(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_removeflags(krb5_context context,
 			  krb5_auth_context auth_context,
 			  int32_t removeflags,
@@ -129,7 +129,7 @@ krb5_auth_con_removeflags(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setaddrs(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_address *local_addr,
@@ -154,10 +154,10 @@ krb5_auth_con_setaddrs(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_genaddrs(krb5_context context,
 		       krb5_auth_context auth_context,
-		       int fd, int flags)
+		       krb5_socket_t fd, int flags)
 {
     krb5_error_code ret;
     krb5_address local_k_address, remote_k_address;
@@ -170,10 +170,10 @@ krb5_auth_con_genaddrs(krb5_context context,
     if(flags & KRB5_AUTH_CONTEXT_GENERATE_LOCAL_ADDR) {
 	if (auth_context->local_address == NULL) {
 	    len = sizeof(ss_local);
-	    if(getsockname(fd, local, &len) < 0) {
+	    if(rk_IS_SOCKET_ERROR(getsockname(fd, local, &len))) {
 		char buf[128];
-		ret = errno;
-		strerror_r(ret, buf, sizeof(buf));
+		ret = rk_SOCK_ERRNO;
+		rk_strerror_r(ret, buf, sizeof(buf));
 		krb5_set_error_message(context, ret, "getsockname: %s", buf);
 		goto out;
 	    }
@@ -188,10 +188,10 @@ krb5_auth_con_genaddrs(krb5_context context,
     }
     if(flags & KRB5_AUTH_CONTEXT_GENERATE_REMOTE_ADDR) {
 	len = sizeof(ss_remote);
-	if(getpeername(fd, remote, &len) < 0) {
+	if(rk_IS_SOCKET_ERROR(getpeername(fd, remote, &len))) {
 	    char buf[128];
-	    ret = errno;
-	    strerror_r(ret, buf, sizeof(buf));
+	    ret = rk_SOCK_ERRNO;
+	    rk_strerror_r(ret, buf, sizeof(buf));
 	    krb5_set_error_message(context, ret, "getpeername: %s", buf);
 	    goto out;
 	}
@@ -216,12 +216,12 @@ krb5_auth_con_genaddrs(krb5_context context,
 
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setaddrs_from_fd (krb5_context context,
 				krb5_auth_context auth_context,
 				void *p_fd)
 {
-    int fd = *(int*)p_fd;
+    krb5_socket_t fd = *(krb5_socket_t *)p_fd;
     int flags = 0;
     if(auth_context->local_address == NULL)
 	flags |= KRB5_AUTH_CONTEXT_GENERATE_LOCAL_FULL_ADDR;
@@ -230,7 +230,7 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
     return krb5_auth_con_genaddrs(context, auth_context, fd, flags);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getaddrs(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_address **local_addr,
@@ -273,7 +273,7 @@ copy_key(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock)
@@ -281,7 +281,7 @@ krb5_auth_con_getkey(krb5_context context,
     return copy_key(context, auth_context->keyblock, keyblock);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getlocalsubkey(krb5_context context,
 			     krb5_auth_context auth_context,
 			     krb5_keyblock **keyblock)
@@ -289,7 +289,7 @@ krb5_auth_con_getlocalsubkey(krb5_context context,
     return copy_key(context, auth_context->local_subkey, keyblock);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getremotesubkey(krb5_context context,
 			      krb5_auth_context auth_context,
 			      krb5_keyblock **keyblock)
@@ -297,7 +297,7 @@ krb5_auth_con_getremotesubkey(krb5_context context,
     return copy_key(context, auth_context->remote_subkey, keyblock);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock *keyblock)
@@ -307,7 +307,7 @@ krb5_auth_con_setkey(krb5_context context,
     return copy_key(context, keyblock, &auth_context->keyblock);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setlocalsubkey(krb5_context context,
 			     krb5_auth_context auth_context,
 			     krb5_keyblock *keyblock)
@@ -317,7 +317,7 @@ krb5_auth_con_setlocalsubkey(krb5_context context,
     return copy_key(context, keyblock, &auth_context->local_subkey);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_generatelocalsubkey(krb5_context context,
 				  krb5_auth_context auth_context,
 				  krb5_keyblock *key)
@@ -337,7 +337,7 @@ krb5_auth_con_generatelocalsubkey(krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setremotesubkey(krb5_context context,
 			      krb5_auth_context auth_context,
 			      krb5_keyblock *keyblock)
@@ -347,7 +347,7 @@ krb5_auth_con_setremotesubkey(krb5_context context,
     return copy_key(context, keyblock, &auth_context->remote_subkey);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setcksumtype(krb5_context context,
 			   krb5_auth_context auth_context,
 			   krb5_cksumtype cksumtype)
@@ -356,7 +356,7 @@ krb5_auth_con_setcksumtype(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getcksumtype(krb5_context context,
 			   krb5_auth_context auth_context,
 			   krb5_cksumtype *cksumtype)
@@ -365,7 +365,7 @@ krb5_auth_con_getcksumtype(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setkeytype (krb5_context context,
 			  krb5_auth_context auth_context,
 			  krb5_keytype keytype)
@@ -374,7 +374,7 @@ krb5_auth_con_setkeytype (krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getkeytype (krb5_context context,
 			  krb5_auth_context auth_context,
 			  krb5_keytype *keytype)
@@ -384,7 +384,7 @@ krb5_auth_con_getkeytype (krb5_context context,
 }
 
 #if 0
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setenctype(krb5_context context,
 			 krb5_auth_context auth_context,
 			 krb5_enctype etype)
@@ -398,7 +398,7 @@ krb5_auth_con_setenctype(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getenctype(krb5_context context,
 			 krb5_auth_context auth_context,
 			 krb5_enctype *etype)
@@ -407,7 +407,7 @@ krb5_auth_con_getenctype(krb5_context context,
 }
 #endif
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getlocalseqnumber(krb5_context context,
 			    krb5_auth_context auth_context,
 			    int32_t *seqnumber)
@@ -416,7 +416,7 @@ krb5_auth_con_getlocalseqnumber(krb5_context context,
   return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setlocalseqnumber (krb5_context context,
 			     krb5_auth_context auth_context,
 			     int32_t seqnumber)
@@ -425,16 +425,16 @@ krb5_auth_con_setlocalseqnumber (krb5_context context,
   return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_auth_getremoteseqnumber(krb5_context context,
-			     krb5_auth_context auth_context,
-			     int32_t *seqnumber)
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_getremoteseqnumber(krb5_context context,
+				 krb5_auth_context auth_context,
+				 int32_t *seqnumber)
 {
   *seqnumber = auth_context->remote_seqnumber;
   return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setremoteseqnumber (krb5_context context,
 			      krb5_auth_context auth_context,
 			      int32_t seqnumber)
@@ -444,7 +444,7 @@ krb5_auth_con_setremoteseqnumber (krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getauthenticator(krb5_context context,
 			   krb5_auth_context auth_context,
 			   krb5_authenticator *authenticator)
@@ -461,7 +461,7 @@ krb5_auth_con_getauthenticator(krb5_context context,
 }
 
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_authenticator(krb5_context context,
 			krb5_authenticator *authenticator)
 {
@@ -471,7 +471,7 @@ krb5_free_authenticator(krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setuserkey(krb5_context context,
 			 krb5_auth_context auth_context,
 			 krb5_keyblock *keyblock)
@@ -481,7 +481,7 @@ krb5_auth_con_setuserkey(krb5_context context,
     return krb5_copy_keyblock(context, keyblock, &auth_context->keyblock);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_getrcache(krb5_context context,
 			krb5_auth_context auth_context,
 			krb5_rcache *rcache)
@@ -490,7 +490,7 @@ krb5_auth_con_getrcache(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setrcache(krb5_context context,
 			krb5_auth_context auth_context,
 			krb5_rcache rcache)
@@ -501,7 +501,7 @@ krb5_auth_con_setrcache(krb5_context context,
 
 #if 0 /* not implemented */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_initivector(krb5_context context,
 			  krb5_auth_context auth_context)
 {
@@ -509,7 +509,7 @@ krb5_auth_con_initivector(krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setivector(krb5_context context,
 			 krb5_auth_context auth_context,
 			 krb5_pointer ivector)

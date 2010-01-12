@@ -63,12 +63,14 @@ seq_type(const char *p)
 }
 
 int support_ber;
+int template_flag;
 int rfc1510_bitstring;
 int one_code_file;
 char *option_file;
 int version_flag;
 int help_flag;
 struct getargs args[] = {
+    { "template", 0, arg_flag, &template_flag },
     { "encode-rfc1510-bit-string", 0, arg_flag, &rfc1510_bitstring },
     { "decode-dce-ber", 0, arg_flag, &support_ber },
     { "support-ber", 0, arg_flag, &support_ber },

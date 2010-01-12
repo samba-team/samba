@@ -38,7 +38,7 @@ struct krb5_rcache_data {
     char *name;
 };
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_resolve(krb5_context context,
 		krb5_rcache id,
 		const char *name)
@@ -52,7 +52,7 @@ krb5_rc_resolve(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_resolve_type(krb5_context context,
 		     krb5_rcache *id,
 		     const char *type)
@@ -73,7 +73,7 @@ krb5_rc_resolve_type(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_resolve_full(krb5_context context,
 		     krb5_rcache *id,
 		     const char *string_name)
@@ -99,19 +99,19 @@ krb5_rc_resolve_full(krb5_context context,
     return ret;
 }
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_rc_default_name(krb5_context context)
 {
     return "FILE:/var/run/default_rcache";
 }
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_rc_default_type(krb5_context context)
 {
     return "FILE";
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_default(krb5_context context,
 		krb5_rcache *id)
 {
@@ -123,7 +123,7 @@ struct rc_entry{
     unsigned char data[16];
 };
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_initialize(krb5_context context,
 		   krb5_rcache id,
 		   krb5_deltat auth_lifespan)
@@ -135,7 +135,7 @@ krb5_rc_initialize(krb5_context context,
     if(f == NULL) {
 	char buf[128];
 	ret = errno;
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, "open(%s): %s", id->name, buf);
 	return ret;
     }
@@ -145,14 +145,14 @@ krb5_rc_initialize(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_recover(krb5_context context,
 		krb5_rcache id)
 {
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_destroy(krb5_context context,
 		krb5_rcache id)
 {
@@ -161,14 +161,14 @@ krb5_rc_destroy(krb5_context context,
     if(remove(id->name) < 0) {
 	char buf[128];
 	ret = errno;
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, "remove(%s): %s", id->name, buf);
 	return ret;
     }
     return krb5_rc_close(context, id);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_close(krb5_context context,
 	      krb5_rcache id)
 {
@@ -196,7 +196,7 @@ checksum_authenticator(Authenticator *auth, void *data)
     EVP_MD_CTX_destroy(m);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_store(krb5_context context,
 	      krb5_rcache id,
 	      krb5_donot_replay *rep)
@@ -212,7 +212,7 @@ krb5_rc_store(krb5_context context,
     if(f == NULL) {
 	char buf[128];
 	ret = errno;
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, "open(%s): %s", id->name, buf);
 	return ret;
     }
@@ -232,7 +232,7 @@ krb5_rc_store(krb5_context context,
 	char buf[128];
 	ret = errno;
 	fclose(f);
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, "%s: %s",
 			       id->name, buf);
 	return ret;
@@ -241,7 +241,7 @@ krb5_rc_store(krb5_context context,
     f = fopen(id->name, "a");
     if(f == NULL) {
 	char buf[128];
-	strerror_r(errno, buf, sizeof(buf));
+	rk_strerror_r(errno, buf, sizeof(buf));
 	krb5_set_error_message(context, KRB5_RC_IO_UNKNOWN,
 			       "open(%s): %s", id->name, buf);
 	return KRB5_RC_IO_UNKNOWN;
@@ -251,14 +251,14 @@ krb5_rc_store(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_expunge(krb5_context context,
 		krb5_rcache id)
 {
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rc_get_lifespan(krb5_context context,
 		     krb5_rcache id,
 		     krb5_deltat *auth_lifespan)
@@ -276,21 +276,21 @@ krb5_rc_get_lifespan(krb5_context context,
     return KRB5_RC_IO_UNKNOWN;
 }
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_rc_get_name(krb5_context context,
 		 krb5_rcache id)
 {
     return id->name;
 }
 		
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_rc_get_type(krb5_context context,
 		 krb5_rcache id)
 {
     return "FILE";
 }
 		
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_server_rcache(krb5_context context,
 		       const krb5_data *piece,
 		       krb5_rcache *id)

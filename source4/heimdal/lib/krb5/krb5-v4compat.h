@@ -105,7 +105,11 @@ struct credentials {
 #define 	CLOCK_SKEW	5*60
 
 #ifndef TKT_ROOT
+#ifdef KRB5_USE_PATH_TOKENS
+#define TKT_ROOT "%{TEMP}/tkt"
+#else
 #define TKT_ROOT "/tmp/tkt"
+#endif
 #endif
 
 struct _krb5_krb_auth_data {
@@ -120,11 +124,18 @@ struct _krb5_krb_auth_data {
     uint32_t address;		/* Address in ticket */
 };
 
-time_t		_krb5_krb_life_to_time (int, int);
-int		_krb5_krb_time_to_life (time_t, time_t);
-krb5_error_code	_krb5_krb_tf_setup (krb5_context, struct credentials *,
-				    const char *, int);
-krb5_error_code	_krb5_krb_dest_tkt(krb5_context, const char *);
+KRB5_LIB_FUNCTION time_t KRB5_LIB_CALL
+_krb5_krb_life_to_time (int, int);
+
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
+_krb5_krb_time_to_life (time_t, time_t);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_krb_tf_setup (krb5_context, struct credentials *,
+		    const char *, int);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_krb_dest_tkt(krb5_context, const char *);
 
 #define krb_time_to_life	_krb5_krb_time_to_life
 #define krb_life_to_time	_krb5_krb_life_to_time

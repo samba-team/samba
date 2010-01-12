@@ -266,7 +266,7 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
  * Only include loopback address if there are no other.
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
     int flags = LOOP_IF_NONE | EXTRA_ADDRESSES;
@@ -282,7 +282,7 @@ krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
  * If that fails, we return the address corresponding to `hostname'.
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_all_server_addrs (krb5_context context, krb5_addresses *res)
 {
     return get_addrs_int (context, res, LOOP | SCAN_INTERFACES);

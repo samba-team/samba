@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <time.h>
+#include <krb5-types.h>
 
 #ifndef __asn1_common_definitions__
 #define __asn1_common_definitions__

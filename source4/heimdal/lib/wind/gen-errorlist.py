@@ -77,6 +77,7 @@ extern const size_t _wind_errorlist_table_size;
 
 errorlist_c.file.write(
 '''
+#include <stdlib.h>
 #include "errorlist_table.h"
 
 const struct error_entry _wind_errorlist_table[] = {

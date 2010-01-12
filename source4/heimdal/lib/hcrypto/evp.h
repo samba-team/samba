@@ -214,24 +214,24 @@ HC_CPP_BEGIN
  */
 
 const EVP_MD *EVP_md_null(void);
-const EVP_MD *EVP_md2(void) HC_DEPRECATED_CRYPTO;
-const EVP_MD *EVP_md4(void) HC_DEPRECATED_CRYPTO;
-const EVP_MD *EVP_md5(void) HC_DEPRECATED_CRYPTO;
-const EVP_MD *EVP_sha(void) HC_DEPRECATED;
+HC_DEPRECATED_CRYPTO const EVP_MD *EVP_md2(void);
+HC_DEPRECATED_CRYPTO const EVP_MD *EVP_md4(void);
+HC_DEPRECATED_CRYPTO const EVP_MD *EVP_md5(void);
+const EVP_MD *EVP_sha(void);
 const EVP_MD *EVP_sha1(void);
 const EVP_MD *EVP_sha256(void);
 
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);
 const EVP_CIPHER * EVP_aes_256_cbc(void);
-const EVP_CIPHER * EVP_des_cbc(void) HC_DEPRECATED_CRYPTO;
+HC_DEPRECATED_CRYPTO const EVP_CIPHER * EVP_des_cbc(void);
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
-const EVP_CIPHER * EVP_rc2_40_cbc(void) HC_DEPRECATED_CRYPTO;
-const EVP_CIPHER * EVP_rc2_64_cbc(void) HC_DEPRECATED_CRYPTO;
-const EVP_CIPHER * EVP_rc2_cbc(void) HC_DEPRECATED_CRYPTO;
+HC_DEPRECATED_CRYPTO const EVP_CIPHER * EVP_rc2_40_cbc(void);
+HC_DEPRECATED_CRYPTO const EVP_CIPHER * EVP_rc2_64_cbc(void);
+HC_DEPRECATED_CRYPTO const EVP_CIPHER * EVP_rc2_cbc(void);
 const EVP_CIPHER * EVP_rc4(void);
-const EVP_CIPHER * EVP_rc4_40(void) HC_DEPRECATED_CRYPTO;
+HC_DEPRECATED_CRYPTO const EVP_CIPHER * EVP_rc4_40(void);
 const EVP_CIPHER * EVP_camellia_128_cbc(void);
 const EVP_CIPHER * EVP_camellia_192_cbc(void);
 const EVP_CIPHER * EVP_camellia_256_cbc(void);

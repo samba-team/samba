@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -32,6 +34,10 @@
  */
 
 #include "kuser_locl.h"
+
+#ifdef __APPLE__
+#include <Security/Security.h>
+#endif
 
 #ifndef HEIMDAL_SMALLER
 #include "krb5-v4compat.h"
@@ -113,7 +119,7 @@ static struct getargs args[] = {
     { "cache", 		'c', arg_string, &cred_cache,
       NP_("credentials cache", ""), "cachename" },
 
-    { "forwardable",	'f', arg_flag, &forwardable_flag,
+    { "forwardable",	'f', arg_negative_flag, &forwardable_flag,
       NP_("get forwardable tickets", "")},
 
     { "keytab",         't', arg_string, &keytab_str,
@@ -422,7 +428,7 @@ get_new_tickets(krb5_context context,
     char passwd[256];
     krb5_deltat start_time = 0;
     krb5_deltat renew = 0;
-    const char *renewstr = NULL;
+    char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
     krb5_ccache tempccache;
 #ifndef NO_NTLM
@@ -451,6 +457,33 @@ get_new_tickets(krb5_context context,
 	passwd[strcspn(passwd, "\n")] = '\0';
     }
 
+#ifdef __APPLE__
+    if (passwd[0] == '\0') {
+	const char *realm;
+	OSStatus osret;
+	UInt32 length;
+	void *buffer;
+	char *name;
+
+	realm = krb5_principal_get_realm(context, principal);
+
+	ret = krb5_unparse_name_flags(context, principal,
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &name);
+	if (ret)
+	    goto nopassword;
+
+	osret = SecKeychainFindGenericPassword(NULL, strlen(realm), realm,
+					       strlen(name), name,
+					       &length, &buffer, NULL);
+	free(name);
+	if (osret == noErr && length < sizeof(passwd) - 1) {
+	    memcpy(passwd, buffer, length);
+	    passwd[length] = '\0';
+	}
+    nopassword:
+	do { } while(0);
+    }
+#endif
 
     memset(&cred, 0, sizeof(cred));
 
@@ -472,7 +505,7 @@ get_new_tickets(krb5_context context,
 						pac_flag ? TRUE : FALSE);
     if (canonicalize_flag)
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
-    if (pk_enterprise_flag && windows_flag)
+    if ((pk_enterprise_flag || enterprise_flag || canonicalize_flag) && windows_flag)
 	krb5_get_init_creds_opt_set_win2k(context, opt, TRUE);
     if (pk_user_id || ent_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
@@ -881,8 +914,23 @@ main (int argc, char **argv)
 #endif
 	} else {
 	    ret = krb5_cc_cache_match(context, principal, &ccache);
-	    if (ret)
+	    if (ret) {
+		const char *type;
 		ret = krb5_cc_default (context, &ccache);
+		if (ret)
+		    krb5_err (context, 1, ret, N_("resolving credentials cache", ""));
+
+		/* 
+		 * Check if the type support switching, and we do,
+		 * then do that instead over overwriting the current
+		 * default credential
+		 */
+		type = krb5_cc_get_type(context, ccache);
+		if (krb5_cc_support_switch(context, type)) {
+		    krb5_cc_close(context, ccache);
+		    ret = krb5_cc_new_unique(context, type, NULL, &ccache);
+		}
+	    }
 	}
     }
     if (ret)

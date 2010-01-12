@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -58,7 +60,9 @@ init_method(void)
 {
     if (selected_meth != NULL)
 	return;
-#ifdef __APPLE__
+#if defined(_WIN32)
+    selected_meth = &hc_rand_w32crypto_method;
+#elif defined(__APPLE__)
     selected_meth = &hc_rand_unix_method;
 #else
     selected_meth = &hc_rand_fortuna_method;
@@ -95,6 +99,8 @@ RAND_seed(const void *indata, size_t size)
 int
 RAND_bytes(void *outdata, size_t size)
 {
+    if (size == 0)
+	return 1;
     init_method();
     return (*selected_meth->bytes)(outdata, size);
 }

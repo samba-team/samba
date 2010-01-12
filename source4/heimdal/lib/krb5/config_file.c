@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -34,6 +36,10 @@
 #define KRB5_DEPRECATED
 
 #include "krb5_locl.h"
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 /* Gaah! I want a portable funopen */
 struct fileptr {
@@ -233,6 +239,98 @@ parse_binding(struct fileptr *f, unsigned *lineno, char *p,
     return ret;
 }
 
+#ifdef __APPLE__
+static char *
+cfstring2cstring(CFStringRef string)
+{
+    CFIndex len;
+    char *str;
+    
+    str = (char *) CFStringGetCStringPtr(string, kCFStringEncodingUTF8);
+    if (str)
+	return strdup(str);
+
+    len = CFStringGetLength(string);
+    len = 1 + CFStringGetMaximumSizeForEncoding(len, kCFStringEncodingUTF8);
+    str = malloc(len);
+    if (str == NULL)
+	return NULL;
+	
+    if (!CFStringGetCString (string, str, len, kCFStringEncodingUTF8)) {
+	free (str);
+	return NULL;
+    }
+    return str;
+}
+
+static void
+convert_content(const void *key, const void *value, void *context)
+{
+    krb5_config_section *tmp, **parent = context;
+    char *k;
+
+    if (CFGetTypeID(key) != CFStringGetTypeID())
+	return;
+
+    k = cfstring2cstring(key);
+    if (k == NULL)
+	return;
+
+    if (CFGetTypeID(value) == CFStringGetTypeID()) {
+	tmp = get_entry(parent, k, krb5_config_string);
+	tmp->u.string = cfstring2cstring(value);
+    } else if (CFGetTypeID(value) == CFDictionaryGetTypeID()) {
+	tmp = get_entry(parent, k, krb5_config_list);
+	CFDictionaryApplyFunction(value, convert_content, &tmp->u.list);
+    } else {
+	/* log */
+    }
+    free(k);
+}
+
+static krb5_error_code
+parse_plist_config(krb5_context context, const char *path, krb5_config_section **parent)
+{
+    CFReadStreamRef s;
+    CFDictionaryRef d;
+    CFErrorRef e;
+    CFURLRef url;
+    
+    url = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (UInt8 *)path, strlen(path), FALSE);
+    if (url == NULL) {
+	krb5_clear_error_message(context);
+	return ENOMEM;
+    }
+
+    s = CFReadStreamCreateWithFile(kCFAllocatorDefault, url);
+    CFRelease(url);
+    if (s == NULL) {
+	krb5_clear_error_message(context);
+	return ENOMEM;
+    }
+
+    if (!CFReadStreamOpen(s)) {
+	CFRelease(s);
+	krb5_clear_error_message(context);
+	return ENOENT;
+    }
+
+    d = (CFDictionaryRef)CFPropertyListCreateWithStream (kCFAllocatorDefault, s, 0, kCFPropertyListImmutable, NULL, &e);
+    CFRelease(s);
+    if (d == NULL) {
+	krb5_clear_error_message(context);
+	return ENOENT;
+    }
+
+    CFDictionaryApplyFunction(d, convert_content, parent);
+    CFRelease(d);
+
+    return 0;
+}
+
+#endif
+
+
 /*
  * Parse the config file `fname', generating the structures into `res'
  * returning error messages in `error_message'
@@ -280,6 +378,18 @@ krb5_config_parse_debug (struct fileptr *f,
     return 0;
 }
 
+static int
+is_plist_file(const char *fname)
+{
+    size_t len = strlen(fname);
+    char suffix[] = ".plist";
+    if (len < sizeof(suffix))
+	return 0;
+    if (strcasecmp(&fname[len - (sizeof(suffix) - 1)], suffix) != 0)
+	return 0;
+    return 1;
+}
+
 /**
  * Parse a configuration file and add the result into res. This
  * interface can be used to parse several configuration files into one
@@ -293,7 +403,7 @@ krb5_config_parse_debug (struct fileptr *f,
  * @ingroup krb5_support
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_config_parse_file_multi (krb5_context context,
 			      const char *fname,
 			      krb5_config_section **res)
@@ -309,8 +419,15 @@ krb5_config_parse_file_multi (krb5_context context,
      * current users home directory. The behavior can be disabled and
      * enabled by calling krb5_set_home_dir_access().
      */
-    if (_krb5_homedir_access(context) && fname[0] == '~' && fname[1] == '/') {
+    if (fname[0] == '~' && fname[1] == '/') {
+#ifndef KRB5_USE_PATH_TOKENS
 	const char *home = NULL;
+
+	if (!_krb5_homedir_access(context)) {
+	    krb5_set_error_message(context, EPERM,
+				   "Access to home directory not allowed");
+	    return EPERM;
+	}
 
 	if(!issuid())
 	    home = getenv("HOME");
@@ -329,33 +446,73 @@ krb5_config_parse_file_multi (krb5_context context,
 	    }
 	    fname = newfname;
 	}
+#else  /* KRB5_USE_PATH_TOKENS */
+	asprintf(&newfname, "%%{USERCONFIG}/%s", &fname[1]);
+	if (newfname == NULL) {
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
+	    return ENOMEM;
+	}
+	fname = newfname;
+#endif
     }
 
-    f.f = fopen(fname, "r");
-    f.s = NULL;
-    if(f.f == NULL) {
-	ret = errno;
-	krb5_set_error_message (context, ret, "open %s: %s",
-				fname, strerror(ret));
-	if (newfname)
-	    free(newfname);
-	return ret;
-    }
+    if (is_plist_file(fname)) {
+#ifdef __APPLE__
+	ret = parse_plist_config(context, fname, res);
+	if (ret) {
+	    krb5_set_error_message(context, ret,
+				   "Failed to parse plist %s", fname);
+	    if (newfname)
+		free(newfname);
+	    return ret;
+	}
+#else
+	krb5_set_error_message(context, ENOENT, 
+			       "no support for plist configuration files");
+	return ENOENT;
+#endif
+    } else {
+#ifdef KRB5_USE_PATH_TOKENS
+	char * exp_fname = NULL;
 
-    ret = krb5_config_parse_debug (&f, res, &lineno, &str);
-    fclose(f.f);
-    if (ret) {
-	krb5_set_error_message (context, ret, "%s:%u: %s", fname, lineno, str);
+	ret = _krb5_expand_path_tokens(context, fname, &exp_fname);
+	if (ret) {
+	    if (newfname)
+		free(newfname);
+	    return ret;
+	}
+	
 	if (newfname)
 	    free(newfname);
-	return ret;
+	fname = newfname = exp_fname;
+#endif
+
+	f.f = fopen(fname, "r");
+	f.s = NULL;
+	if(f.f == NULL) {
+	    ret = errno;
+	    krb5_set_error_message (context, ret, "open %s: %s",
+				    fname, strerror(ret));
+	    if (newfname)
+		free(newfname);
+	    return ret;
+	}
+	
+	ret = krb5_config_parse_debug (&f, res, &lineno, &str);
+	fclose(f.f);
+	if (ret) {
+	    krb5_set_error_message (context, ret, "%s:%u: %s",
+				    fname, lineno, str);
+	    if (newfname)
+		free(newfname);
+	    return ret;
+	}
     }
-    if (newfname)
-	free(newfname);
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_config_parse_file (krb5_context context,
 			const char *fname,
 			krb5_config_section **res)
@@ -397,7 +554,7 @@ free_binding (krb5_context context, krb5_config_binding *b)
  * @ingroup krb5_support
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_config_file_free (krb5_context context, krb5_config_section *s)
 {
     free_binding (context, s);
@@ -406,7 +563,7 @@ krb5_config_file_free (krb5_context context, krb5_config_section *s)
 
 #ifndef HEIMDAL_SMALLER
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_config_copy(krb5_context context,
 		  krb5_config_section *c,
 		  krb5_config_section **head)
@@ -442,7 +599,7 @@ _krb5_config_copy(krb5_context context,
 
 #endif /* HEIMDAL_SMALLER */
 
-const void *
+KRB5_LIB_FUNCTION const void * KRB5_LIB_CALL
 _krb5_config_get_next (krb5_context context,
 		       const krb5_config_section *c,
 		       const krb5_config_binding **pointer,
@@ -481,7 +638,7 @@ vget_next(krb5_context context,
     return NULL;
 }
 
-const void *
+KRB5_LIB_FUNCTION const void * KRB5_LIB_CALL
 _krb5_config_vget_next (krb5_context context,
 			const krb5_config_section *c,
 			const krb5_config_binding **pointer,
@@ -517,7 +674,7 @@ _krb5_config_vget_next (krb5_context context,
     return NULL;
 }
 
-const void *
+KRB5_LIB_FUNCTION const void * KRB5_LIB_CALL
 _krb5_config_get (krb5_context context,
 		  const krb5_config_section *c,
 		  int type,
@@ -531,6 +688,7 @@ _krb5_config_get (krb5_context context,
     va_end(args);
     return ret;
 }
+
 
 const void *
 _krb5_config_vget (krb5_context context,
@@ -555,7 +713,7 @@ _krb5_config_vget (krb5_context context,
  * @ingroup krb5_support
  */
 
-const krb5_config_binding *
+KRB5_LIB_FUNCTION const krb5_config_binding * KRB5_LIB_CALL
 krb5_config_get_list (krb5_context context,
 		      const krb5_config_section *c,
 		      ...)
@@ -581,7 +739,7 @@ krb5_config_get_list (krb5_context context,
  * @ingroup krb5_support
  */
 
-const krb5_config_binding *
+KRB5_LIB_FUNCTION const krb5_config_binding * KRB5_LIB_CALL
 krb5_config_vget_list (krb5_context context,
 		       const krb5_config_section *c,
 		       va_list args)
@@ -604,7 +762,7 @@ krb5_config_vget_list (krb5_context context,
  * @ingroup krb5_support
  */
  
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_config_get_string (krb5_context context,
 			const krb5_config_section *c,
 			...)
@@ -630,7 +788,7 @@ krb5_config_get_string (krb5_context context,
  * @ingroup krb5_support
  */
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_config_vget_string (krb5_context context,
 			 const krb5_config_section *c,
 			 va_list args)
@@ -653,7 +811,7 @@ krb5_config_vget_string (krb5_context context,
  * @ingroup krb5_support
  */
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_config_vget_string_default (krb5_context context,
 				 const krb5_config_section *c,
 				 const char *def_value,
@@ -682,7 +840,7 @@ krb5_config_vget_string_default (krb5_context context,
  * @ingroup krb5_support
  */
 
-const char* KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_config_get_string_default (krb5_context context,
 				const krb5_config_section *c,
 				const char *def_value,
@@ -710,7 +868,7 @@ krb5_config_get_string_default (krb5_context context,
  * @ingroup krb5_support
  */
 
-char ** KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION char ** KRB5_LIB_CALL
 krb5_config_vget_strings(krb5_context context,
 			 const krb5_config_section *c,
 			 va_list args)
@@ -770,7 +928,7 @@ cleanup:
  * @ingroup krb5_support
  */
 
-char**
+KRB5_LIB_FUNCTION char** KRB5_LIB_CALL
 krb5_config_get_strings(krb5_context context,
 			const krb5_config_section *c,
 			...)
@@ -792,7 +950,7 @@ krb5_config_get_strings(krb5_context context,
  * @ingroup krb5_support
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_config_free_strings(char **strings)
 {
     char **s = strings;
@@ -821,7 +979,7 @@ krb5_config_free_strings(char **strings)
  * @ingroup krb5_support
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_config_vget_bool_default (krb5_context context,
 			       const krb5_config_section *c,
 			       krb5_boolean def_value,
@@ -851,7 +1009,7 @@ krb5_config_vget_bool_default (krb5_context context,
  * @ingroup krb5_support
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_config_vget_bool  (krb5_context context,
 			const krb5_config_section *c,
 			va_list args)
@@ -875,7 +1033,7 @@ krb5_config_vget_bool  (krb5_context context,
  * @ingroup krb5_support
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_config_get_bool_default (krb5_context context,
 			      const krb5_config_section *c,
 			      krb5_boolean def_value,
@@ -905,7 +1063,7 @@ krb5_config_get_bool_default (krb5_context context,
  * @ingroup krb5_support
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_config_get_bool (krb5_context context,
 		      const krb5_config_section *c,
 		      ...)
@@ -935,7 +1093,7 @@ krb5_config_get_bool (krb5_context context,
  * @ingroup krb5_support
  */
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_vget_time_default (krb5_context context,
 			       const krb5_config_section *c,
 			       int def_value,
@@ -964,10 +1122,10 @@ krb5_config_vget_time_default (krb5_context context,
  * @ingroup krb5_support
  */
 
-int KRB5_LIB_FUNCTION
-krb5_config_vget_time(krb5_context context,
-		      const krb5_config_section *c,
-		      va_list args)
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
+krb5_config_vget_time  (krb5_context context,
+			const krb5_config_section *c,
+			va_list args)
 {
     return krb5_config_vget_time_default (context, c, -1, args);
 }
@@ -986,7 +1144,7 @@ krb5_config_vget_time(krb5_context context,
  * @ingroup krb5_support
  */
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_get_time_default (krb5_context context,
 			      const krb5_config_section *c,
 			      int def_value,
@@ -1012,7 +1170,7 @@ krb5_config_get_time_default (krb5_context context,
  * @ingroup krb5_support
  */
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_get_time (krb5_context context,
 		      const krb5_config_section *c,
 		      ...)
@@ -1026,7 +1184,7 @@ krb5_config_get_time (krb5_context context,
 }
 
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_vget_int_default (krb5_context context,
 			      const krb5_config_section *c,
 			      int def_value,
@@ -1047,7 +1205,7 @@ krb5_config_vget_int_default (krb5_context context,
     }
 }
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_vget_int  (krb5_context context,
 		       const krb5_config_section *c,
 		       va_list args)
@@ -1055,7 +1213,7 @@ krb5_config_vget_int  (krb5_context context,
     return krb5_config_vget_int_default (context, c, -1, args);
 }
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_get_int_default (krb5_context context,
 			     const krb5_config_section *c,
 			     int def_value,
@@ -1069,7 +1227,7 @@ krb5_config_get_int_default (krb5_context context,
     return ret;
 }
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_config_get_int (krb5_context context,
 		     const krb5_config_section *c,
 		     ...)
@@ -1085,10 +1243,17 @@ krb5_config_get_int (krb5_context context,
 
 #ifndef HEIMDAL_SMALLER
 
+/**
+ * Deprecated: configuration files are not strings
+ *
+ * @ingroup krb5_deprecated
+ */
+
+KRB5_DEPRECATED
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_parse_string_multi(krb5_context context,
 			       const char *string,
-			       krb5_config_section **res) KRB5_DEPRECATED
+			       krb5_config_section **res)
 {
     const char *str;
     unsigned lineno = 0;

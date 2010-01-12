@@ -31,9 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_generate_seq_number(krb5_context context,
 			 const krb5_keyblock *key,
 			 uint32_t *seqno)

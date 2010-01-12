@@ -180,18 +180,14 @@ free_type (const char *name, const Type *t, int preserve)
 void
 generate_type_free (const Symbol *s)
 {
-  int preserve = preserve_type(s->name) ? TRUE : FALSE;
-
-  fprintf (headerfile,
-	   "void   free_%s  (%s *);\n",
-	   s->gen_name, s->gen_name);
-
-  fprintf (codefile, "void\n"
-	   "free_%s(%s *data)\n"
-	   "{\n",
-	   s->gen_name, s->gen_name);
-
-  free_type ("data", s->type, preserve);
-  fprintf (codefile, "}\n\n");
+    int preserve = preserve_type(s->name) ? TRUE : FALSE;
+   
+    fprintf (codefile, "void\n"
+	     "free_%s(%s *data)\n"
+	     "{\n",
+	     s->gen_name, s->gen_name);
+   
+    free_type ("data", s->type, preserve);
+    fprintf (codefile, "}\n\n");
 }
 

@@ -35,7 +35,5 @@
 
 /* this is just to get a version stamp in the library file */
 
-#define heimdal_version __heimdal_version
-#define heimdal_long_version __heimdal_long_version
 #include "version.h"
 

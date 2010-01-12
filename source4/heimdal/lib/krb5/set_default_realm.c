@@ -65,7 +65,7 @@ string_to_list (krb5_context context, const char *s, krb5_realm **list)
  * Otherwise, the realm(s) are figured out from configuration or DNS.
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_default_realm(krb5_context context,
 		       const char *realm)
 {

@@ -39,10 +39,10 @@
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
+#include <stdlib.h>
+
 #include <des.h>
 #include <rand.h>
-
-#include <stdlib.h>
 
 #undef __attribute__
 #define __attribute__(X)

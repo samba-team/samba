@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 /**
  * Generate subkey, from keyblock
@@ -46,7 +46,7 @@
 * @ingroup krb5_crypto
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_generate_subkey_extended(krb5_context context,
 			      const krb5_keyblock *key,
 			      krb5_enctype etype,

@@ -40,7 +40,7 @@ const char *__progname;
 #endif
 
 #ifndef HAVE_GETPROGNAME
-const char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL
 getprogname(void)
 {
     return __progname;

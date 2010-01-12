@@ -38,9 +38,11 @@
 
 #ifndef ROKEN_LIB_FUNCTION
 #ifdef _WIN32
-#define ROKEN_LIB_FUNCTION _stdcall
+#define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL     __cdecl
 #else
 #define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL
 #endif
 #endif
 
@@ -120,6 +122,8 @@
 #define O_ACCMODE	003
 #endif
 
+#ifndef _WIN32
+
 #ifndef _PATH_DEV
 #define _PATH_DEV "/dev/"
 #endif
@@ -142,6 +146,16 @@
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN (1024+4)
+#endif
+
+#endif	/* !_WIN32 */
+
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
+
+#ifndef RETSIGTYPE
+#define RETSIGTYPE void
 #endif
 
 #ifndef SIG_ERR
@@ -261,193 +275,215 @@
 ROKEN_CPP_START
 
 #ifndef IRIX4 /* fix for compiler bug */
+#ifndef _WIN32
 #ifdef RETSIGTYPE
 typedef RETSIGTYPE (*SigAction)(int);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
 #endif
+#endif
+
+#define SE_E_UNSPECIFIED (-1)
+#define SE_E_FORKFAILED  (-2)
+#define SE_E_WAITPIDFAILED (-3)
+#define SE_E_EXECTIMEOUT (-4)
+#define SE_E_NOEXEC   126
+#define SE_E_NOTFOUND 127
+
+#define SE_PROCSTATUS(st) (((st) >= 0 && (st) < 126)? st: -1)
+#define SE_PROCSIGNAL(st) (((st) >= 128)? (st) - 128: -1)
+#define SE_IS_ERROR(st) ((st) < 0 || (st) >= 126)
+
 
 #define simple_execve rk_simple_execve
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 simple_execve(const char*, char*const[], char*const[]);
 
 #define simple_execve_timed rk_simple_execve_timed
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 simple_execve_timed(const char *, char *const[],
 		    char *const [], time_t (*)(void *),
 		    void *, time_t);
 
 #define simple_execvp rk_simple_execvp
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 simple_execvp(const char*, char *const[]);
 
 #define simple_execvp_timed rk_simple_execvp_timed
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 simple_execvp_timed(const char *, char *const[],
 		    time_t (*)(void *), void *, time_t);
 
 #define simple_execlp rk_simple_execlp
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 simple_execlp(const char*, ...);
 
 #define simple_execle rk_simple_execle
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 simple_execle(const char*, ...);
 
 #define wait_for_process rk_wait_for_process
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 wait_for_process(pid_t);
 
 #define wait_for_process_timed rk_wait_for_process_timed
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 wait_for_process_timed(pid_t, time_t (*)(void *),
-					      void *, time_t);
+		       void *, time_t);
+
 #define pipe_execv rk_pipe_execv
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 pipe_execv(FILE**, FILE**, FILE**, const char*, ...);
 
 #define print_version rk_print_version
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 print_version(const char *);
 
 #define eread rk_eread
-ssize_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
 eread (int fd, void *buf, size_t nbytes);
 
 #define ewrite rk_ewrite
-ssize_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
 ewrite (int fd, const void *buf, size_t nbytes);
 
 struct hostent;
 
 #define hostent_find_fqdn rk_hostent_find_fqdn
-const char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL
 hostent_find_fqdn (const struct hostent *);
 
 #define esetenv rk_esetenv
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 esetenv(const char *, const char *, int);
 
 #define socket_set_address_and_port rk_socket_set_address_and_port
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_address_and_port (struct sockaddr *, const void *, int);
 
 #define socket_addr_size rk_socket_addr_size
-size_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION size_t ROKEN_LIB_CALL
 socket_addr_size (const struct sockaddr *);
 
 #define socket_set_any rk_socket_set_any
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_any (struct sockaddr *, int);
 
 #define socket_sockaddr_size rk_socket_sockaddr_size
-size_t ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION size_t ROKEN_LIB_CALL
 socket_sockaddr_size (const struct sockaddr *);
 
 #define socket_get_address rk_socket_get_address
-void * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void * ROKEN_LIB_CALL
 socket_get_address (const struct sockaddr *);
 
 #define socket_get_port rk_socket_get_port
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 socket_get_port (const struct sockaddr *);
 
 #define socket_set_port rk_socket_set_port
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_port (struct sockaddr *, int);
 
 #define socket_set_portrange rk_socket_set_portrange
-void ROKEN_LIB_FUNCTION
-socket_set_portrange (int, int, int);
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_portrange (rk_socket_t, int, int);
 
 #define socket_set_debug rk_socket_set_debug
-void ROKEN_LIB_FUNCTION
-socket_set_debug (int);
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_debug (rk_socket_t);
 
 #define socket_set_tos rk_socket_set_tos
-void ROKEN_LIB_FUNCTION
-socket_set_tos (int, int);
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_tos (rk_socket_t, int);
 
 #define socket_set_reuseaddr rk_socket_set_reuseaddr
-void ROKEN_LIB_FUNCTION
-socket_set_reuseaddr (int, int);
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_reuseaddr (rk_socket_t, int);
 
 #define socket_set_ipv6only rk_socket_set_ipv6only
-void ROKEN_LIB_FUNCTION
-socket_set_ipv6only (int, int);
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_ipv6only (rk_socket_t, int);
+
+#define socket_to_fd rk_socket_to_fd
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+socket_to_fd(rk_socket_t, int);
 
 #define vstrcollect rk_vstrcollect
-char ** ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char ** ROKEN_LIB_CALL
 vstrcollect(va_list *ap);
 
 #define strcollect rk_strcollect
-char ** ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char ** ROKEN_LIB_CALL
 strcollect(char *first, ...);
 
 #define timevalfix rk_timevalfix
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 timevalfix(struct timeval *t1);
 
 #define timevaladd rk_timevaladd
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 timevaladd(struct timeval *t1, const struct timeval *t2);
 
 #define timevalsub rk_timevalsub
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 timevalsub(struct timeval *t1, const struct timeval *t2);
 
 #define pid_file_write rk_pid_file_write
-char *ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 pid_file_write (const char *progname);
 
 #define pid_file_delete rk_pid_file_delete
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 pid_file_delete (char **);
 
 #define read_environment rk_read_environment
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 read_environment(const char *file, char ***env);
 
 #define free_environment rk_free_environment
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 free_environment(char **);
 
 #define warnerr rk_warnerr
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_warnerr(int doerrno, const char *fmt, va_list ap)
     __attribute__ ((format (printf, 2, 0)));
 
-void * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void * ROKEN_LIB_CALL
 rk_realloc(void *, size_t);
 
 struct rk_strpool;
 
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 rk_strpoolcollect(struct rk_strpool *);
 
-struct rk_strpool * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION struct rk_strpool * ROKEN_LIB_CALL
 rk_strpoolprintf(struct rk_strpool *, const char *, ...)
     __attribute__ ((format (printf, 2, 3)));
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_strpoolfree(struct rk_strpool *);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_dumpdata (const char *, const void *, size_t);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_undumpdata (const char *, void **, size_t *);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_xfree (void *);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_cloexec(int);
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_cloexec_file(FILE *);
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+rk_cloexec_dir(DIR *);
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 ct_memcmp(const void *, const void *, size_t);
 
 ROKEN_CPP_END

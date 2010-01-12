@@ -87,8 +87,9 @@ struct signature_alg {
     const heim_oid *key_oid;
     const AlgorithmIdentifier *digest_alg;
     int flags;
-#define PROVIDE_CONF 1
-#define REQUIRE_SIGNER 2
+#define PROVIDE_CONF	0x1
+#define REQUIRE_SIGNER	0x2
+#define SELF_SIGNED_OK	0x4
 
 #define SIG_DIGEST	0x100
 #define SIG_PUBLIC_SIG	0x200
@@ -1200,7 +1201,7 @@ static const struct signature_alg ecdsa_with_sha256_alg = {
     &_hx509_signature_ecdsa_with_sha256_data,
     &asn1_oid_id_ecPublicKey,
     &_hx509_signature_sha256_data,
-    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
     0,
     NULL,
     ecdsa_verify_signature,
@@ -1214,7 +1215,7 @@ static const struct signature_alg ecdsa_with_sha1_alg = {
     &_hx509_signature_ecdsa_with_sha1_data,
     &asn1_oid_id_ecPublicKey,
     &_hx509_signature_sha1_data,
-    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
     0,
     NULL,
     ecdsa_verify_signature,
@@ -1243,7 +1244,7 @@ static const struct signature_alg pkcs1_rsa_sha1_alg = {
     &_hx509_signature_rsa_with_sha1_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     NULL,
-    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
     0,
     NULL,
     rsa_verify_signature,
@@ -1256,7 +1257,7 @@ static const struct signature_alg rsa_with_sha256_alg = {
     &_hx509_signature_rsa_with_sha256_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     &_hx509_signature_sha256_data,
-    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
     0,
     NULL,
     rsa_verify_signature,
@@ -1269,7 +1270,7 @@ static const struct signature_alg rsa_with_sha1_alg = {
     &_hx509_signature_rsa_with_sha1_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     &_hx509_signature_sha1_data,
-    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
     0,
     NULL,
     rsa_verify_signature,
@@ -1480,6 +1481,27 @@ _hx509_signature_best_before(hx509_context context,
     }
     return 0;
 }
+
+int
+_hx509_self_signed_valid(hx509_context context,
+			 const AlgorithmIdentifier *alg)
+{
+    const struct signature_alg *md;
+
+    md = find_sig_alg(&alg->algorithm);
+    if (md == NULL) {
+	hx509_clear_error_string(context);
+	return HX509_SIG_ALG_NO_SUPPORTED;
+    }
+    if ((md->flags & SELF_SIGNED_OK) == 0) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_ALGORITHM_BEST_BEFORE,
+			       "Algorithm %s not trusted for self signatures",
+			       md->name);
+	return HX509_CRYPTO_ALGORITHM_BEST_BEFORE;
+    }
+    return 0;
+}
+
 
 int
 _hx509_verify_signature(hx509_context context,

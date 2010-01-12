@@ -42,7 +42,7 @@
  * Like strdup but never fails.
  */
 
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 estrdup (const char *str)
 {
     char *tmp = strdup (str);

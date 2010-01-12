@@ -58,7 +58,7 @@ static const int _tkt_lifetimes[TKTLIFENUMFIXED] = {
  1623226, 1735464, 1855462, 1983758, 2120925, 2267576, 2424367, 2592000
 };
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 _krb5_krb_time_to_life(time_t start, time_t end)
 {
     int i;
@@ -82,7 +82,7 @@ _krb5_krb_time_to_life(time_t start, time_t end)
 
 }
 
-time_t KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION time_t KRB5_LIB_CALL
 _krb5_krb_life_to_time(int start, int life_)
 {
     unsigned char life = (unsigned char) life_;
@@ -118,9 +118,15 @@ get_krb4_cc_name(const char *tkfile, char **cc)
 	    if (path)
 		*cc = strdup(path);
 	}
+#ifdef HAVE_GETUID
 	if(*cc == NULL)
 	    if (asprintf(cc, "%s%u", TKT_ROOT, (unsigned)getuid()) < 0)
 		return errno;
+#elif defined(KRB5_USE_PATH_TOKENS)
+	if(*cc == NULL)
+	    if (_krb5_expand_path_tokens(NULL, TKT_ROOT "%{uid}", cc))
+		return ENOMEM;
+#endif
     } else {
 	*cc = strdup(tkfile);
 	if (*cc == NULL)
@@ -232,7 +238,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_tf_setup(krb5_context context,
 		   struct credentials *v4creds,
 		   const char *tkfile,
@@ -288,7 +294,7 @@ _krb5_krb_tf_setup(krb5_context context,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_dest_tkt(krb5_context context, const char *tkfile)
 {
     krb5_error_code ret;
@@ -405,7 +411,7 @@ put_nir(krb5_storage *sp, const char *name,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_create_ticket(krb5_context context,
 			unsigned char flags,
 			const char *pname,
@@ -464,7 +470,7 @@ _krb5_krb_create_ticket(krb5_context context,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_create_ciph(krb5_context context,
 		      const krb5_keyblock *session,
 		      const char *service,
@@ -524,7 +530,7 @@ _krb5_krb_create_ciph(krb5_context context,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_create_auth_reply(krb5_context context,
 			    const char *pname,
 			    const char *pinst,
@@ -577,7 +583,7 @@ _krb5_krb_create_auth_reply(krb5_context context,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_cr_err_reply(krb5_context context,
 		       const char *name,
 		       const char *inst,
@@ -644,7 +650,7 @@ get_v4_stringz(krb5_storage *sp, char **str, size_t max_len)
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_decomp_ticket(krb5_context context,
 			const krb5_data *enc_ticket,
 			const krb5_keyblock *key,
@@ -738,7 +744,7 @@ _krb5_krb_decomp_ticket(krb5_context context,
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_krb_rd_req(krb5_context context,
 		 krb5_data *authent,
 		 const char *service,
@@ -938,7 +944,7 @@ _krb5_krb_rd_req(krb5_context context,
  *
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 _krb5_krb_free_auth_data(krb5_context context, struct _krb5_krb_auth_data *ad)
 {
     if (ad->pname)

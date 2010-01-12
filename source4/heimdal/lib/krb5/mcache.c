@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -44,6 +46,7 @@ typedef struct krb5_mcache {
     } *creds;
     struct krb5_mcache *next;
     time_t mtime;
+    krb5_deltat kdc_offset;
 } krb5_mcache;
 
 static HEIMDAL_MUTEX mcc_mutex = HEIMDAL_MUTEX_INITIALIZER;
@@ -93,6 +96,7 @@ mcc_alloc(const char *name)
     m->primary_principal = NULL;
     m->creds = NULL;
     m->mtime = time(NULL);
+    m->kdc_offset = 0;
     m->next = mcc_head;
     mcc_head = m;
     HEIMDAL_MUTEX_unlock(&mcc_mutex);
@@ -462,6 +466,22 @@ mcc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
     return 0;
 }
 
+static krb5_error_code
+mcc_set_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat kdc_offset)
+{
+    krb5_mcache *m = MCACHE(id);
+    m->kdc_offset = kdc_offset;
+    return 0;
+}
+
+static krb5_error_code
+mcc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *kdc_offset)
+{
+    krb5_mcache *m = MCACHE(id);
+    *kdc_offset = m->kdc_offset;
+    return 0;
+}
+
 
 /**
  * Variable containing the MEMORY based credential cache implemention.
@@ -493,5 +513,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops = {
     mcc_move,
     mcc_default_name,
     NULL,
-    mcc_lastchange
+    mcc_lastchange,
+    mcc_set_kdc_offset,
+    mcc_get_kdc_offset
 };

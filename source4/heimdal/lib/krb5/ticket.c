@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -45,7 +47,7 @@
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_ticket(krb5_context context,
 		 krb5_ticket *ticket)
 {
@@ -69,7 +71,7 @@ krb5_free_ticket(krb5_context context,
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_copy_ticket(krb5_context context,
 		 const krb5_ticket *from,
 		 krb5_ticket **to)
@@ -118,7 +120,7 @@ krb5_copy_ticket(krb5_context context,
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ticket_get_client(krb5_context context,
 		       const krb5_ticket *ticket,
 		       krb5_principal *client)
@@ -139,7 +141,7 @@ krb5_ticket_get_client(krb5_context context,
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ticket_get_server(krb5_context context,
 		       const krb5_ticket *ticket,
 		       krb5_principal *server)
@@ -158,7 +160,7 @@ krb5_ticket_get_server(krb5_context context,
  * @ingroup krb5
  */
 
-time_t KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION time_t KRB5_LIB_CALL
 krb5_ticket_get_endtime(krb5_context context,
 			const krb5_ticket *ticket)
 {
@@ -336,7 +338,7 @@ out:
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ticket_get_authorization_data_type(krb5_context context,
 					krb5_ticket *ticket,
 					int type,
@@ -761,6 +763,7 @@ _krb5_extract_ticket(krb5_context context,
 
     krb5_timeofday (context, &sec_now);
     if (rep->enc_part.flags.initial
+	&& (flags & EXTRACT_TICKET_TIMESYNC)
 	&& context->kdc_sec_offset == 0
 	&& krb5_config_get_bool (context, NULL,
 				 "libdefaults",

@@ -302,9 +302,9 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     if (ret) goto out;
     ret = krb5_store_uint32(sp, (uint32_t)number);
     if (ret) goto out;
-    krb5_auth_getremoteseqnumber (context,
-				  context_handle->auth_context,
-				  &number);
+    krb5_auth_con_getremoteseqnumber (context,
+				      context_handle->auth_context,
+				      &number);
     ret = krb5_store_uint32(sp, (uint32_t)0); /* store top half as zero */
     if (ret) goto out;
     ret = krb5_store_uint32(sp, (uint32_t)number);

@@ -42,7 +42,7 @@
  * Like realloc but never fails.
  */
 
-void * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void * ROKEN_LIB_CALL
 erealloc (void *ptr, size_t sz)
 {
     void *tmp = realloc (ptr, sz);

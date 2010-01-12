@@ -339,7 +339,7 @@ OM_uint32 _gsskrb5_acquire_cred
 
     if (desired_name != GSS_C_NO_NAME) {
 
-	ret = _gsskrb5_canon_name(minor_status, context, 0, NULL,
+	ret = _gsskrb5_canon_name(minor_status, context, 1, NULL,
 				  desired_name, &handle->principal);
 	if (ret) {
 	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);

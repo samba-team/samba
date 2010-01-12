@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_s4u2self_to_checksumdata(krb5_context context,
 			       const PA_S4U2Self *self,
 			       krb5_data *data)

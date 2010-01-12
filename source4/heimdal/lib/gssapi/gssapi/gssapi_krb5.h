@@ -106,27 +106,27 @@ gss_krb5_ccache_name(OM_uint32 * /*minor_status*/,
 		     const char ** /*out_name */);
 
 OM_uint32 GSSAPI_LIB_FUNCTION gsskrb5_register_acceptor_identity
-        (const char */*identity*/);
+        (const char * /*identity*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION krb5_gss_register_acceptor_identity
-	(const char */*identity*/);
+	(const char * /*identity*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION gss_krb5_copy_ccache
-	(OM_uint32 */*minor*/,
+	(OM_uint32 * /*minor*/,
 	 gss_cred_id_t /*cred*/,
-	 struct krb5_ccache_data */*out*/);
+	 struct krb5_ccache_data * /*out*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION
-gss_krb5_import_cred(OM_uint32 */*minor*/,
+gss_krb5_import_cred(OM_uint32 * /*minor*/,
 		     struct krb5_ccache_data * /*in*/,
 		     struct Principal * /*keytab_principal*/,
 		     struct krb5_keytab_data * /*keytab*/,
-		     gss_cred_id_t */*out*/);
+		     gss_cred_id_t * /*out*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION gss_krb5_get_tkt_flags
-	(OM_uint32 */*minor*/,
+	(OM_uint32 * /*minor*/,
 	 gss_ctx_id_t /*context_handle*/,
-	 OM_uint32 */*tkt_flags*/);
+	 OM_uint32 * /*tkt_flags*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_extract_authz_data_from_sec_context

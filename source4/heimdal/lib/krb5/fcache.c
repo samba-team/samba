@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -97,7 +99,7 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 	break;
     default: {
 	char buf[128];
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret,
 			       N_("error locking cache file %s: %s",
 				  "file, error"), filename, buf);
@@ -131,7 +133,7 @@ _krb5_xunlock(krb5_context context, int fd)
 	break;
     default: {
 	char buf[128];
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret,
 			       N_("Failed to unlock file: %s", ""), buf);
 	break;
@@ -224,7 +226,11 @@ scrub_file (int fd)
 	    return errno;
 	pos -= tmp;
     }
+#ifdef _MSC_VER
+    _commit (fd);
+#else
     fsync (fd);
+#endif
     return 0;
 }
 
@@ -318,6 +324,22 @@ fcc_gen_new(krb5_context context, krb5_ccache *id)
 			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
+#ifdef KRB5_USE_PATH_TOKENS
+    {
+	char * exp_file = NULL;
+	krb5_error_code ec;
+
+	ec = _krb5_expand_path_tokens(context, file, &exp_file);
+
+	if (ec == 0) {
+	    free(file);
+	    file = exp_file;
+	} else {
+	    free(file);
+	    return ec;
+	}
+    }
+#endif
     fd = mkstemp(file);
     if(fd < 0) {
 	int ret = errno;
@@ -374,18 +396,10 @@ fcc_open(krb5_context context,
     fd = open(filename, flags, mode);
     if(fd < 0) {
 	char buf[128];
-	char *estr;
 	ret = errno;
-	buf[0] = 0;
-	estr = (char *)strerror_r(ret, buf, sizeof(buf));
-	if (buf[0] != 0) {
-		/* we've got the BSD/XSI strerror_r, and it use the
-		 * buffer. Otherwise we have the GNU strerror_r, and
-		 * it used a static string. Ain't standards great? */
-		estr = buf;
-	}
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret, N_("open(%s): %s", "file, error"),
-			       filename, estr);
+			       filename, buf);
 	return ret;
     }
     rk_cloexec(fd);
@@ -447,7 +461,7 @@ fcc_initialize(krb5_context context,
 	if (ret == 0) {
 	    char buf[128];
 	    ret = errno;
-	    strerror_r(ret, buf, sizeof(buf));
+	    rk_strerror_r(ret, buf, sizeof(buf));
 	    krb5_set_error_message (context, ret, N_("close %s: %s", ""),
 				    FILENAME(id), buf);
 	}
@@ -502,7 +516,7 @@ fcc_store_cred(krb5_context context,
     if (close(fd) < 0) {
 	if (ret == 0) {
 	    char buf[128];
-	    strerror_r(ret, buf, sizeof(buf));
+	    rk_strerror_r(ret, buf, sizeof(buf));
 	    ret = errno;
 	    krb5_set_error_message (context, ret, N_("close %s: %s", ""),
 				    FILENAME(id), buf);
@@ -515,12 +529,16 @@ static krb5_error_code
 init_fcc (krb5_context context,
 	  krb5_ccache id,
 	  krb5_storage **ret_sp,
-	  int *ret_fd)
+	  int *ret_fd,
+	  krb5_deltat *kdc_offset)
 {
     int fd;
     int8_t pvno, tag;
     krb5_storage *sp;
     krb5_error_code ret;
+
+    if (kdc_offset)
+	*kdc_offset = 0;
 
     ret = fcc_open(context, id, &fd, O_RDONLY | O_BINARY | O_CLOEXEC, 0);
     if(ret)
@@ -597,8 +615,11 @@ init_fcc (krb5_context context,
 		goto out;
 	    }
 	    switch (dtag) {
-	    case FCC_TAG_DELTATIME :
-		ret = krb5_ret_int32 (sp, &context->kdc_sec_offset);
+	    case FCC_TAG_DELTATIME : {
+		int32_t offset;
+
+		ret = krb5_ret_int32 (sp, &offset);
+		ret |= krb5_ret_int32 (sp, &context->kdc_usec_offset);
 		if(ret) {
 		    ret = KRB5_CC_FORMAT;
 		    krb5_set_error_message(context, ret,
@@ -607,16 +628,11 @@ init_fcc (krb5_context context,
 					   FILENAME(id));
 		    goto out;
 		}
-		ret = krb5_ret_int32 (sp, &context->kdc_usec_offset);
-		if(ret) {
-		    ret = KRB5_CC_FORMAT;
-		    krb5_set_error_message(context, ret,
-					   N_("Error reading kdc_usec in "
-					      "cache file: %s", ""),
-					   FILENAME(id));
-		    goto out;
-		}
+		context->kdc_sec_offset = offset;
+		if (kdc_offset)
+		    *kdc_offset = offset;
 		break;
+	    }
 	    default :
 		for (i = 0; i < data_len; ++i) {
 		    ret = krb5_ret_int8 (sp, &dummy);
@@ -668,7 +684,7 @@ fcc_get_principal(krb5_context context,
     int fd;
     krb5_storage *sp;
 
-    ret = init_fcc (context, id, &sp, &fd);
+    ret = init_fcc (context, id, &sp, &fd, NULL);
     if (ret)
 	return ret;
     ret = krb5_ret_principal(sp, principal);
@@ -701,7 +717,7 @@ fcc_get_first (krb5_context context,
     memset(*cursor, 0, sizeof(struct fcc_cursor));
 
     ret = init_fcc (context, id, &FCC_CURSOR(*cursor)->sp,
-		    &FCC_CURSOR(*cursor)->fd);
+		    &FCC_CURSOR(*cursor)->fd, NULL);
     if (ret) {
 	free(*cursor);
 	*cursor = NULL;
@@ -871,7 +887,17 @@ fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
 	    return ret;
 	fn = expandedfn;
     }
+    /* check if file exists, don't return a non existant "next" */
+    if (strncasecmp(fn, "FILE:", 5) == 0) {
+	struct stat sb;
+	ret = stat(fn + 5, &sb);
+	if (ret) {
+	    ret = KRB5_CC_END;
+	    goto out;
+	}
+    }
     ret = krb5_cc_resolve(context, fn, id);
+ out:
     if (expandedfn)
 	free(expandedfn);
 
@@ -892,10 +918,19 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     krb5_error_code ret = 0;
 
     ret = rename(FILENAME(from), FILENAME(to));
+#ifdef RENAME_DOES_NOT_UNLINK
+    if (ret && (errno == EEXIST || errno == EACCES)) {
+	ret = unlink(FILENAME(to));
+	if (ret == 0) {
+	    ret = rename(FILENAME(from), FILENAME(to));
+	}
+    }
+#endif
+
     if (ret && errno != EXDEV) {
 	char buf[128];
 	ret = errno;
-	strerror_r(ret, buf, sizeof(buf));
+	rk_strerror_r(ret, buf, sizeof(buf));
 	krb5_set_error_message(context, ret,
 			       N_("Rename of file from %s "
 				  "to %s failed: %s", ""),
@@ -955,14 +990,14 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     {
 	krb5_storage *sp;
 	int fd;
-	ret = init_fcc (context, to, &sp, &fd);
+	ret = init_fcc (context, to, &sp, &fd, NULL);
 	if (sp)
 	    krb5_storage_free(sp);
 	fcc_unlock(context, fd);
 	close(fd);
     }
 
-    fcc_destroy(context, from);
+    fcc_close(context, from);
 
     return ret;
 }
@@ -996,6 +1031,28 @@ fcc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
     return 0;
 }
 
+static krb5_error_code
+fcc_set_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat kdc_offset)
+{
+    return 0;
+}
+
+static krb5_error_code
+fcc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *kdc_offset)
+{
+    krb5_error_code ret;
+    krb5_storage *sp;
+    int fd;
+    ret = init_fcc(context, id, &sp, &fd, kdc_offset);
+    if (sp)
+	krb5_storage_free(sp);
+    fcc_unlock(context, fd);
+    close(fd);
+
+    return ret;
+}
+
+
 /**
  * Variable containing the FILE based credential cache implemention.
  *
@@ -1026,5 +1083,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops = {
     fcc_move,
     fcc_get_default_name,
     NULL,
-    fcc_lastchange
+    fcc_lastchange,
+    fcc_set_kdc_offset,
+    fcc_get_kdc_offset
 };

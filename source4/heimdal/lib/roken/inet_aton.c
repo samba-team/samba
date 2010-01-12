@@ -38,7 +38,7 @@
 /* Minimal implementation of inet_aton.
  * Cannot distinguish between failure and a local broadcast address. */
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 inet_aton(const char *cp, struct in_addr *addr)
 {
   addr->s_addr = inet_addr(cp);

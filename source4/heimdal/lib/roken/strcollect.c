@@ -66,7 +66,7 @@ sub (char **argv, int i, int argc, va_list *ap)
  * terminated by NULL.
  */
 
-char ** ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char ** ROKEN_LIB_CALL
 vstrcollect(va_list *ap)
 {
     return sub (NULL, 0, 0, ap);
@@ -76,7 +76,7 @@ vstrcollect(va_list *ap)
  *
  */
 
-char ** ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char ** ROKEN_LIB_CALL
 strcollect(char *first, ...)
 {
     va_list ap;

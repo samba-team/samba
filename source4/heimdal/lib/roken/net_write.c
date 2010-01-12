@@ -33,29 +33,23 @@
 
 #include <config.h>
 
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-
 #include "roken.h"
 
 /*
  * Like write but never return partial data.
  */
 
-ssize_t ROKEN_LIB_FUNCTION
-net_write (int fd, const void *buf, size_t nbytes)
+#ifndef _WIN32
+
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
+net_write (rk_socket_t fd, const void *buf, size_t nbytes)
 {
     const char *cbuf = (const char *)buf;
     ssize_t count;
     size_t rem = nbytes;
 
     while (rem > 0) {
-#ifdef WIN32
-	count = send (fd, cbuf, rem, 0);
-#else
 	count = write (fd, cbuf, rem);
-#endif
 	if (count < 0) {
 	    if (errno == EINTR)
 		continue;
@@ -67,3 +61,28 @@ net_write (int fd, const void *buf, size_t nbytes)
     }
     return nbytes;
 }
+
+#else
+
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
+net_write(rk_socket_t sock, const void *buf, size_t nbytes)
+{
+    const char *cbuf = (const char *)buf;
+    ssize_t count;
+    size_t rem = nbytes;
+
+    while (rem > 0) {
+	count = send (sock, cbuf, rem, 0);
+	if (count < 0) {
+	    if (errno == EINTR)
+		continue;
+	    else
+		return count;
+	}
+	cbuf += count;
+	rem -= count;
+    }
+    return nbytes;
+}
+
+#endif

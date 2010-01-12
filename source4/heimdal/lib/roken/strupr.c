@@ -38,7 +38,7 @@
 #include "roken.h"
 
 #ifndef HAVE_STRUPR
-char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 strupr(char *str)
 {
   char *s;

@@ -63,7 +63,7 @@ copy_hostname(krb5_context context,
  * @ingroup krb5_support
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_expand_hostname (krb5_context context,
 		      const char *orig_hostname,
 		      char **new_hostname)
@@ -140,7 +140,7 @@ vanilla_hostname (krb5_context context,
  * @ingroup krb5_support
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_expand_hostname_realms (krb5_context context,
 			     const char *orig_hostname,
 			     char **new_hostname,

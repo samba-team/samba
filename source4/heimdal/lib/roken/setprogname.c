@@ -40,7 +40,7 @@ extern const char *__progname;
 #endif
 
 #ifndef HAVE_SETPROGNAME
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 setprogname(const char *argv0)
 {
 #ifndef HAVE___PROGNAME

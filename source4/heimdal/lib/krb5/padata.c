@@ -42,7 +42,7 @@ krb5_find_padata(PA_DATA *val, unsigned len, int type, int *idx)
     return NULL;
 }
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_padata_add(krb5_context context, METHOD_DATA *md,
 		int type, void *buf, size_t len)
 {

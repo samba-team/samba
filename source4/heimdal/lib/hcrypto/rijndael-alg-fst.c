@@ -31,11 +31,12 @@
 #include "config.h"
 
 
+#include <stdlib.h>
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
 
-#include <rijndael-alg-fst.h>
+#include "rijndael-alg-fst.h"
 
 /* the file should not be used from outside */
 typedef uint8_t			u8;

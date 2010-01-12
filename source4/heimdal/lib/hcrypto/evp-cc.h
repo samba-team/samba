@@ -41,7 +41,7 @@
 #define EVP_cc_md4 hc_EVP_cc_md4
 #define EVP_cc_md5 hc_EVP_cc_md5
 #define EVP_cc_sha1 hc_EVP_cc_sha1
-#define EVP_cc_sha256 hc_EVP__cc_sha256
+#define EVP_cc_sha256 hc_EVP_cc_sha256
 #define EVP_cc_des_cbc hc_EVP_cc_des_cbc
 #define EVP_cc_des_ede3_cbc hc_EVP_cc_des_ede3_cbc
 #define EVP_cc_aes_128_cbc hc_EVP_cc_aes_128_cbc

@@ -61,7 +61,7 @@
 #include <sys/sysctl.h>
 #endif
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 getdtablesize(void)
 {
   int files = -1;

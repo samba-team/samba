@@ -94,6 +94,8 @@ typedef struct heim_ber_time_t {
     int bt_zone;
 } heim_ber_time_t;
 
+struct asn1_template;
+
 #include <der-protos.h>
 
 int _heim_fix_dce(size_t reallen, size_t *len);

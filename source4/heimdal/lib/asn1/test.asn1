@@ -6,8 +6,11 @@ BEGIN
 
 IMPORTS heim_any FROM heim;
 
+TESTuint32 ::= INTEGER (0..4294967295)
+
 TESTLargeTag ::= SEQUENCE {
-	foo[127] INTEGER (-2147483648..2147483647)
+	foo[127] INTEGER (-2147483648..2147483647),
+	bar[128] INTEGER (-2147483648..2147483647)
 }
 
 TESTSeq ::= SEQUENCE {
@@ -57,6 +60,11 @@ TESTAlloc ::= SEQUENCE {
 	  tagless2 heim_any OPTIONAL
 }
 
+TESTOptional ::= SEQUENCE {
+	  zero [0] INTEGER (-2147483648..2147483647) OPTIONAL,
+	  one [1] INTEGER (-2147483648..2147483647) OPTIONAL
+}
+
 
 TESTCONTAINING ::= OCTET STRING ( CONTAINING INTEGER )
 TESTENCODEDBY ::= OCTET STRING ( ENCODED BY
@@ -91,5 +99,37 @@ TESTSeqSizeOf3 ::= SEQUENCE SIZE (1..MAX) OF TESTInteger
 TESTSeqSizeOf4 ::= SEQUENCE SIZE (MIN..2) OF TESTInteger
 
 TESTOSSize1 ::= OCTET STRING SIZE (1..2)
+
+TESTSeqOfSeq ::= SEQUENCE OF SEQUENCE {
+	zero [0] TESTInteger
+}
+
+TESTSeqOfSeq2 ::= SEQUENCE OF SEQUENCE {
+	string [0] GeneralString
+}
+
+TESTSeqOfSeq3 ::= SEQUENCE OF SEQUENCE {
+	zero [0] TESTInteger,
+	string [0] GeneralString
+}
+
+TESTSeqOf2 ::= SEQUENCE {
+	strings SEQUENCE OF GeneralString
+}
+
+TESTSeqOf3 ::= SEQUENCE {
+	strings SEQUENCE OF GeneralString OPTIONAL
+}
+
+TESTPreserve ::= SEQUENCE {
+	zero [0] TESTInteger,
+	one [1] TESTInteger
+}
+
+TESTBitString ::= BIT STRING {
+	      zero(0),
+	      eight(8),
+	      thirtyone(31)
+}
 
 END

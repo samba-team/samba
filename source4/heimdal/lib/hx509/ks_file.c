@@ -571,7 +571,7 @@ file_store(hx509_context context,
     rk_cloexec_file(sc.f);
     sc.format = ksf->format;
 
-    ret = hx509_certs_iter(context, ksf->certs, store_func, &sc);
+    ret = hx509_certs_iter_f(context, ksf->certs, store_func, &sc);
     fclose(sc.f);
     return ret;
 }

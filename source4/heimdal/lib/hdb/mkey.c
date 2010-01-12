@@ -185,7 +185,7 @@ read_master_mit(krb5_context context, const char *filename,
 	if(ret)
 	    goto out;
     }
-    ret = hdb_process_master_key(context, 0, &key, 0, mkey);
+    ret = hdb_process_master_key(context, 1, &key, 0, mkey);
     krb5_free_keyblock_contents(context, &key);
   out:
     krb5_storage_free(sp);

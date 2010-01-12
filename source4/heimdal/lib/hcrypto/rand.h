@@ -62,6 +62,7 @@ typedef struct RAND_METHOD RAND_METHOD;
 #define RAND_fortuna_method hc_RAND_fortuna_method
 #define RAND_egd_method hc_RAND_egd_method
 #define RAND_unix_method hc_RAND_unix_method
+#define RAND_w32crypto_method hc_RAND_w32crypto_method
 
 /*
  *

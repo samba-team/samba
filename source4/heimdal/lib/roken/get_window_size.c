@@ -57,7 +57,7 @@
 
 #include "roken.h"
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 get_window_size(int fd, struct winsize *wp)
 {
     int ret = -1;
@@ -84,6 +84,20 @@ get_window_size(int fd, struct winsize *wp)
 	wp->ws_row = dst[1];
 	wp->ws_col = dst[0];
 	ret = 0;
+    }
+#elif defined(_WIN32)
+    {
+        intptr_t fh = 0;
+        CONSOLE_SCREEN_BUFFER_INFO sb_info;
+
+        fh = _get_osfhandle(fd);
+        if (fh != (intptr_t) INVALID_HANDLE_VALUE &&
+            GetConsoleScreenBufferInfo((HANDLE) fh, &sb_info)) {
+            wp->ws_row = 1 + sb_info.srWindow.Bottom - sb_info.srWindow.Top;
+            wp->ws_col = 1 + sb_info.srWindow.Right - sb_info.srWindow.Left;
+
+            ret = 0;
+        }
     }
 #endif
     if (ret != 0) {

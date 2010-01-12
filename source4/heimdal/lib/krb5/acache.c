@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -37,8 +39,13 @@
 #include <dlfcn.h>
 #endif
 
+#ifndef KCM_IS_API_CACHE
+
 static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static cc_initialize_func init_func;
+static void (*set_target_uid)(uid_t);
+static void (*clear_target)(void);
+
 #ifdef HAVE_DLOPEN
 static void *cc_handle;
 #endif
@@ -82,18 +89,20 @@ translate_cc_error(krb5_context context, cc_int32 error)
 static krb5_error_code
 init_ccapi(krb5_context context)
 {
-    const char *lib;
+    const char *lib = NULL;
 
     HEIMDAL_MUTEX_lock(&acc_mutex);
     if (init_func) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	krb5_clear_error_message(context);
+	if (context)
+	    krb5_clear_error_message(context);
 	return 0;
     }
 
-    lib = krb5_config_get_string(context, NULL,
-				 "libdefaults", "ccapi_library",
-				 NULL);
+    if (context)
+	lib = krb5_config_get_string(context, NULL,
+				     "libdefaults", "ccapi_library",
+				     NULL);
     if (lib == NULL) {
 #ifdef __APPLE__
 	lib = "/System/Library/Frameworks/Kerberos.framework/Kerberos";
@@ -107,22 +116,29 @@ init_ccapi(krb5_context context)
 #ifndef RTLD_LAZY
 #define RTLD_LAZY 0
 #endif
+#ifndef RTLD_LOCAL
+#define RTLD_LOCAL 0
+#endif
 
-    cc_handle = dlopen(lib, RTLD_LAZY);
+    cc_handle = dlopen(lib, RTLD_LAZY|RTLD_LOCAL);
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       N_("Failed to load API cache module %s", "file"),
-			       lib);
+	if (context)
+	    krb5_set_error_message(context, KRB5_CC_NOSUPP,
+				   N_("Failed to load API cache module %s", "file"),
+				   lib);
 	return KRB5_CC_NOSUPP;
     }
 
     init_func = (cc_initialize_func)dlsym(cc_handle, "cc_initialize");
+    set_target_uid = dlsym(cc_handle, "krb5_ipc_client_set_target_uid");
+    clear_target = dlsym(cc_handle, "krb5_ipc_client_clear_target");
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       N_("Failed to find cc_initialize"
-				 "in %s: %s", "file, error"), lib, dlerror());
+	if (context)
+	    krb5_set_error_message(context, KRB5_CC_NOSUPP,
+				   N_("Failed to find cc_initialize"
+				      "in %s: %s", "file, error"), lib, dlerror());
 	dlclose(cc_handle);
 	return KRB5_CC_NOSUPP;
     }
@@ -130,10 +146,25 @@ init_ccapi(krb5_context context)
     return 0;
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
-    krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			   N_("no support for shared object", ""));
+    if (context)
+	krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			       N_("no support for shared object", ""));
     return KRB5_CC_NOSUPP;
 #endif
+}
+
+void
+_heim_krb5_ipc_client_set_target_uid(uid_t uid)
+{
+    init_ccapi(NULL);
+    (*set_target_uid)(uid);
+}
+
+void
+_heim_krb5_ipc_client_clear_target(void)
+{
+    init_ccapi(NULL);
+    (*clear_target)();
 }
 
 static krb5_error_code
@@ -1068,3 +1099,5 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops = {
     acc_set_default,
     acc_lastchange
 };
+
+#endif

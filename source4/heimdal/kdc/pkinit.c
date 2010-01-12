@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -1379,7 +1381,22 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	}
 
-	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
+#define use_btmm_with_enckey 0
+	if (use_btmm_with_enckey && rep.element == choice_PA_PK_AS_REP_encKeyPack) {
+	    PA_PK_AS_REP_BTMM btmm;
+	    heim_any any;
+
+	    any.data = rep.u.encKeyPack.data;
+	    any.length = rep.u.encKeyPack.length;
+
+	    btmm.dhSignedData = NULL;
+	    btmm.encKeyPack = &any;
+
+	    ASN1_MALLOC_ENCODE(PA_PK_AS_REP_BTMM, buf, len, &btmm, &size, ret);
+	} else {
+	    ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
+	}
+
 	free_PA_PK_AS_REP(&rep);
 	if (ret) {
 	    krb5_set_error_message(context, ret,
@@ -1928,12 +1945,12 @@ load_mappings(krb5_context context, const char *fn)
  */
 
 krb5_error_code
-_kdc_pk_initialize(krb5_context context,
-		   krb5_kdc_configuration *config,
-		   const char *user_id,
-		   const char *anchors,
-		   char **pool,
-		   char **revoke_list)
+krb5_kdc_pk_initialize(krb5_context context,
+		       krb5_kdc_configuration *config,
+		       const char *user_id,
+		       const char *anchors,
+		       char **pool,
+		       char **revoke_list)
 {
     const char *file;
     char *fn = NULL;

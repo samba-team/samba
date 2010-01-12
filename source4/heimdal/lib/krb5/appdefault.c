@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_appdefault_boolean(krb5_context context, const char *appname,
 			krb5_const_realm realm, const char *option,
 			krb5_boolean def_val, krb5_boolean *ret_val)
@@ -75,7 +75,7 @@ krb5_appdefault_boolean(krb5_context context, const char *appname,
     *ret_val = def_val;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_appdefault_string(krb5_context context, const char *appname,
 		       krb5_const_realm realm, const char *option,
 		       const char *def_val, char **ret_val)
@@ -119,7 +119,7 @@ krb5_appdefault_string(krb5_context context, const char *appname,
 	*ret_val = NULL;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_appdefault_time(krb5_context context, const char *appname,
 		     krb5_const_realm realm, const char *option,
 		     time_t def_val, time_t *ret_val)

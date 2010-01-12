@@ -44,6 +44,8 @@
 #include <sys/param.h>
 #endif
 
+#include <roken.h>
+
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -68,8 +70,6 @@
 #include "spnego_asn1.h"
 #include "utils.h"
 #include <der.h>
-
-#include <roken.h>
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 

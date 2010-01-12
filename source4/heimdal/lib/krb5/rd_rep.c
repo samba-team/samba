@@ -31,9 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_rep(krb5_context context,
 	    krb5_auth_context auth_context,
 	    const krb5_data *inbuf,
@@ -108,7 +108,7 @@ krb5_rd_rep(krb5_context context,
     return ret;
 }
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_ap_rep_enc_part (krb5_context context,
 			   krb5_ap_rep_enc_part *val)
 {

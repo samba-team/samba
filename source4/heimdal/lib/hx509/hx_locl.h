@@ -39,16 +39,19 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <assert.h>
 #include <stdarg.h>
 #include <err.h>
 #include <limits.h>
 
+#include <roken.h>
+
 #include <getarg.h>
 #include <base64.h>
 #include <hex.h>
-#include <roken.h>
 #include <com_err.h>
 #include <parse_units.h>
 #include <parse_bytes.h>

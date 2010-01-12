@@ -228,10 +228,6 @@ generate_type_copy (const Symbol *s)
 
   used_fail = 0;
 
-  fprintf (headerfile,
-	   "int    copy_%s  (const %s *, %s *);\n",
-	   s->gen_name, s->gen_name, s->gen_name);
-
   fprintf (codefile, "int\n"
 	   "copy_%s(const %s *from, %s *to)\n"
 	   "{\n"

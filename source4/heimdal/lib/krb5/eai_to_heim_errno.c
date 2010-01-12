@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 /**
  * Convert the getaddrinfo() error code to a Kerberos et error code.
@@ -44,7 +44,7 @@
  * @ingroup krb5_error
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_eai_to_heim_errno(int eai_errno, int system_error)
 {
     switch(eai_errno) {
@@ -74,8 +74,10 @@ krb5_eai_to_heim_errno(int eai_errno, int system_error)
 	return HEIM_EAI_SERVICE;
     case EAI_SOCKTYPE:
 	return HEIM_EAI_SOCKTYPE;
+#ifdef EAI_SYSTEM
     case EAI_SYSTEM:
 	return system_error;
+#endif
     default:
 	return HEIM_EAI_UNKNOWN; /* XXX */
     }
@@ -92,7 +94,7 @@ krb5_eai_to_heim_errno(int eai_errno, int system_error)
  * @ingroup krb5_error
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_h_errno_to_heim_errno(int eai_errno)
 {
     switch(eai_errno) {

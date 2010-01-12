@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 static krb5_error_code
 make_etypelist(krb5_context context,
@@ -99,14 +99,14 @@ make_etypelist(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_build_authenticator(krb5_context context,
-			  krb5_auth_context auth_context,
-			  krb5_enctype enctype,
-			  krb5_creds *cred,
-			  Checksum *cksum,
-			  krb5_data *result,
-			  krb5_key_usage usage)
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_build_authenticator (krb5_context context,
+			   krb5_auth_context auth_context,
+			   krb5_enctype enctype,
+			   krb5_creds *cred,
+			   Checksum *cksum,
+			   krb5_data *result,
+			   krb5_key_usage usage)
 {
     Authenticator auth;
     u_char *buf = NULL;

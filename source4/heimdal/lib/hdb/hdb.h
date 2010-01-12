@@ -194,6 +194,13 @@ typedef struct HDB{
      */
     krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
     /**
+     * Get the list of realms this backend handles.
+     * This call is optional to support. The returned realms are used
+     * for announcing the realms over bonjour. Free returned array
+     * with krb5_free_host_realm().
+     */
+    krb5_error_code (*hdb_get_realms)(krb5_context, struct HDB *, krb5_realm **);
+    /**
      * Change password.
      *
      * Will update keys for the entry when given password.  The new

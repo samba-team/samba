@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -223,13 +225,46 @@ cc_ops_register(krb5_context context)
     context->cc_ops = NULL;
     context->num_cc_ops = 0;
 
+#ifndef KCM_IS_API_CACHE
     krb5_cc_register(context, &krb5_acc_ops, TRUE);
+#endif
     krb5_cc_register(context, &krb5_fcc_ops, TRUE);
     krb5_cc_register(context, &krb5_mcc_ops, TRUE);
+#ifdef HAVE_SCC
     krb5_cc_register(context, &krb5_scc_ops, TRUE);
+#endif
 #ifdef HAVE_KCM
+#ifdef KCM_IS_API_CACHE
+    krb5_cc_register(context, &krb5_akcm_ops, TRUE);
+#endif
     krb5_cc_register(context, &krb5_kcm_ops, TRUE);
 #endif
+    return 0;
+}
+
+static krb5_error_code
+cc_ops_copy(krb5_context context, const krb5_context src_context)
+{
+    const krb5_cc_ops **cc_ops;
+
+    context->cc_ops = NULL;
+    context->num_cc_ops = 0;
+
+    if (src_context->num_cc_ops == 0)
+	return 0;
+
+    cc_ops = malloc(sizeof(cc_ops[0]) * src_context->num_cc_ops);
+    if (cc_ops == NULL) {
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
+	return KRB5_CC_NOMEM;
+    }
+
+    memcpy(cc_ops, src_context->cc_ops,
+	   sizeof(cc_ops[0]) * src_context->num_cc_ops);
+    context->cc_ops = cc_ops;
+    context->num_cc_ops = src_context->num_cc_ops;
+
     return 0;
 }
 
@@ -250,6 +285,28 @@ kt_ops_register(krb5_context context)
     return 0;
 }
 
+static krb5_error_code
+kt_ops_copy(krb5_context context, const krb5_context src_context)
+{
+    context->num_kt_types = 0;
+    context->kt_types     = NULL;
+
+    if (src_context->num_kt_types == 0)
+	return 0;
+
+    context->kt_types = malloc(sizeof(context->kt_types[0]) * src_context->num_kt_types);
+    if (context->kt_types == NULL) {
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
+	return ENOMEM;
+    }
+
+    context->num_kt_types = src_context->num_kt_types;
+    memcpy(context->kt_types, src_context->kt_types,
+	   sizeof(context->kt_types[0]) * src_context->num_kt_types);
+
+    return 0;
+}
 
 /**
  * Initializes the context structure and reads the configuration file
@@ -266,7 +323,7 @@ kt_ops_register(krb5_context context)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_init_context(krb5_context *context)
 {
     krb5_context p;
@@ -309,6 +366,8 @@ krb5_init_context(krb5_context *context)
     if (ret)
 	goto out;
 #endif	
+    if (rk_SOCK_INIT())
+	p->flags |= KRB5_CTX_F_SOCKETS_INITIALIZED;
 
 out:
     if(ret) {
@@ -359,7 +418,7 @@ copy_etypes (krb5_context context,
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_copy_context(krb5_context context, krb5_context *out)
 {
     krb5_error_code ret;
@@ -411,8 +470,9 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 
     /* XXX should copy */
     krb5_init_ets(p);
-    cc_ops_register(p);
-    kt_ops_register(p);
+
+    cc_ops_copy(p, context);
+    kt_ops_copy(p, context);
 
 #if 0 /* XXX */
     if(context->warn_dest != NULL)
@@ -451,7 +511,7 @@ krb5_copy_context(krb5_context context, krb5_context *out)
  * @ingroup krb5
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_context(krb5_context context)
 {
     if (context->default_cc_name)
@@ -480,6 +540,9 @@ krb5_free_context(krb5_context context)
 
     HEIMDAL_MUTEX_destroy(context->mutex);
     free(context->mutex);
+    if (context->flags & KRB5_CTX_F_SOCKETS_INITIALIZED) {
+ 	rk_SOCK_EXIT();
+    }
 
     memset(context, 0, sizeof(*context));
     free(context);
@@ -497,14 +560,14 @@ krb5_free_context(krb5_context context)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_config_files(krb5_context context, char **filenames)
 {
     krb5_error_code ret;
     krb5_config_binding *tmp = NULL;
     while(filenames != NULL && *filenames != NULL && **filenames != '\0') {
 	ret = krb5_config_parse_file_multi(context, *filenames, &tmp);
-	if(ret != 0 && ret != ENOENT && ret != EACCES) {
+	if(ret != 0 && ret != ENOENT && ret != EACCES && ret != EPERM) {
 	    krb5_config_file_free(context, tmp);
 	    return ret;
 	}
@@ -552,7 +615,7 @@ add_file(char ***pfilenames, int *len, char *file)
  *  `pq' isn't free, it's up the the caller
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
 {
     krb5_error_code ret;
@@ -617,7 +680,7 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
 {
     krb5_error_code ret;
@@ -647,7 +710,7 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_default_config_files(char ***pfilenames)
 {
     const char *files = NULL;
@@ -674,7 +737,7 @@ krb5_get_default_config_files(char ***pfilenames)
  * @ingroup krb5
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_config_files(char **filenames)
 {
     char **p;
@@ -696,7 +759,7 @@ krb5_free_config_files(char **filenames)
  * @ingroup krb5
  */
 
-const krb5_enctype * KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const krb5_enctype * KRB5_LIB_CALL
 krb5_kerberos_enctypes(krb5_context context)
 {
     static const krb5_enctype p[] = {
@@ -757,7 +820,7 @@ default_etypes(krb5_context context, krb5_enctype **etype)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_default_in_tkt_etypes(krb5_context context,
 			       const krb5_enctype *etypes)
 {
@@ -799,7 +862,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_default_in_tkt_etypes(krb5_context context,
 			       krb5_enctype **etypes)
 {
@@ -833,7 +896,7 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
  * @ingroup krb5
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_init_ets(krb5_context context)
 {
     if(context->et_list == NULL){
@@ -868,7 +931,7 @@ krb5_init_ets(krb5_context context)
  * @ingroup krb5
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
 {
     context->use_admin_kdc = flag;
@@ -884,7 +947,7 @@ krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
  * @ingroup krb5
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_get_use_admin_kdc (krb5_context context)
 {
     return context->use_admin_kdc;
@@ -903,7 +966,7 @@ krb5_get_use_admin_kdc (krb5_context context)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
 
@@ -927,7 +990,7 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
 {
     if(context->extra_addresses)
@@ -963,7 +1026,7 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
     if(context->extra_addresses == NULL) {
@@ -986,7 +1049,7 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
 
@@ -1010,7 +1073,7 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
 {
     if(context->ignore_addresses)
@@ -1045,7 +1108,7 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
     if(context->ignore_addresses == NULL) {
@@ -1067,7 +1130,7 @@ krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_fcache_version(krb5_context context, int version)
 {
     context->fcache_vno = version;
@@ -1086,7 +1149,7 @@ krb5_set_fcache_version(krb5_context context, int version)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_fcache_version(krb5_context context, int *version)
 {
     *version = context->fcache_vno;
@@ -1102,7 +1165,7 @@ krb5_get_fcache_version(krb5_context context, int *version)
  */
 
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_is_thread_safe(void)
 {
 #ifdef ENABLE_PTHREAD_SUPPORT
@@ -1121,7 +1184,7 @@ krb5_is_thread_safe(void)
  * @ingroup krb5
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
 {
     if (flag)
@@ -1140,7 +1203,7 @@ krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
  * @ingroup krb5
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_get_dns_canonicalize_hostname (krb5_context context)
 {
     return (context->flags & KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME) ? 1 : 0;
@@ -1158,7 +1221,7 @@ krb5_get_dns_canonicalize_hostname (krb5_context context)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
 {
     if (sec)
@@ -1180,7 +1243,7 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_kdc_sec_offset (krb5_context context, int32_t sec, int32_t usec)
 {
     context->kdc_sec_offset = sec;
@@ -1199,7 +1262,7 @@ krb5_set_kdc_sec_offset (krb5_context context, int32_t sec, int32_t usec)
  * @ingroup krb5
  */
 
-time_t KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION time_t KRB5_LIB_CALL
 krb5_get_max_time_skew (krb5_context context)
 {
     return context->max_skew;
@@ -1214,7 +1277,7 @@ krb5_get_max_time_skew (krb5_context context)
  * @ingroup krb5
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_set_max_time_skew (krb5_context context, time_t t)
 {
     context->max_skew = t;
@@ -1234,7 +1297,7 @@ krb5_set_max_time_skew (krb5_context context, time_t t)
  * @ingroup krb5
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_init_etype (krb5_context context,
 		 unsigned *len,
 		 krb5_enctype **val,
@@ -1282,9 +1345,11 @@ _krb5_homedir_access(krb5_context context)
 {
     krb5_boolean allow;
 
+#ifdef HAVE_GETEUID
     /* is never allowed for root */
     if (geteuid() == 0)
 	return FALSE;
+#endif
 
     if (context && (context->flags & KRB5_CTX_F_HOMEDIR_ACCESS) == 0)
 	return FALSE;

@@ -40,6 +40,7 @@
 #include <limits.h>
 
 #include <krb5-types.h>
+#include <roken.h>
 #include <rfc2459_asn1.h> /* XXX */
 #include <der.h>
 

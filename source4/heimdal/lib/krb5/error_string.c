@@ -44,7 +44,7 @@
  * @ingroup krb5_error
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_clear_error_message(krb5_context context)
 {
     HEIMDAL_MUTEX_lock(context->mutex);
@@ -67,7 +67,7 @@ krb5_clear_error_message(krb5_context context)
  * @ingroup krb5_error
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_set_error_message(krb5_context context, krb5_error_code ret,
 		       const char *fmt, ...)
     __attribute__ ((format (printf, 3, 4)))
@@ -91,7 +91,7 @@ krb5_set_error_message(krb5_context context, krb5_error_code ret,
  */
 
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_vset_error_message (krb5_context context, krb5_error_code ret,
 			 const char *fmt, va_list args)
     __attribute__ ((format (printf, 3, 0)))
@@ -124,7 +124,7 @@ krb5_prepend_error_message(krb5_context context, krb5_error_code ret,
     va_list ap;
 
     va_start(ap, fmt);
-    krb5_vset_error_message (context, ret, fmt, ap);
+    krb5_vprepend_error_message(context, ret, fmt, ap);
     va_end(ap);
 }
 
@@ -140,8 +140,8 @@ krb5_prepend_error_message(krb5_context context, krb5_error_code ret,
  */
 
 void KRB5_LIB_FUNCTION
-krb5_vprepend_error_message (krb5_context context, krb5_error_code ret,
-			     const char *fmt, va_list args)
+krb5_vprepend_error_message(krb5_context context, krb5_error_code ret,
+			    const char *fmt, va_list args)
     __attribute__ ((format (printf, 3, 0)))
 {
     char *str, *str2;
@@ -179,7 +179,7 @@ krb5_vprepend_error_message (krb5_context context, krb5_error_code ret,
  * @ingroup krb5_error
  */
 
-char * KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION char * KRB5_LIB_CALL
 krb5_get_error_string(krb5_context context)
 {
     char *ret = NULL;
@@ -191,7 +191,7 @@ krb5_get_error_string(krb5_context context)
     return ret;
 }
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_have_error_string(krb5_context context)
 {
     char *str;
@@ -214,7 +214,7 @@ krb5_have_error_string(krb5_context context)
  * @ingroup krb5_error
  */
 
-const char * KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION const char * KRB5_LIB_CALL
 krb5_get_error_message(krb5_context context, krb5_error_code code)
 {
     char *str;
@@ -258,7 +258,7 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
  * @ingroup krb5_error
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_error_message(krb5_context context, const char *msg)
 {
     free(rk_UNCONST(msg));
@@ -279,8 +279,9 @@ krb5_free_error_message(krb5_context context, const char *msg)
  * @ingroup krb5
  */
 
-const char* KRB5_LIB_FUNCTION
-krb5_get_err_text(krb5_context context, krb5_error_code code) KRB5_DEPRECATED
+KRB5_DEPRECATED
+KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
+krb5_get_err_text(krb5_context context, krb5_error_code code)
 {
     const char *p = NULL;
     if(context != NULL)

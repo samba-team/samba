@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -52,7 +52,7 @@ compare_addrs(krb5_context context,
     return KRB5KRB_AP_ERR_BADADDR;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_cred(krb5_context context,
 	     krb5_auth_context auth_context,
 	     krb5_data *in_data,
@@ -322,7 +322,7 @@ krb5_rd_cred(krb5_context context,
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_cred2 (krb5_context      context,
 	       krb5_auth_context auth_context,
 	       krb5_ccache       ccache,

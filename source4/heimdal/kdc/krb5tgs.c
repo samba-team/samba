@@ -1633,14 +1633,15 @@ server_lookup:
 	} else {
 	    Key *skey;
 	
-	    ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
-				  &skey, &etype);
+	    ret = _kdc_find_etype(context, server,
+				  b->etype.val, b->etype.len, &skey);
 	    if(ret) {
 		kdc_log(context, config, 0,
 			"Server (%s) has no support for etypes", spn);
 		goto out;
 	    }
 	    ekey = &skey->key;
+	    etype = skey->key.keytype;
 	    kvno = server->entry.kvno;
 	}
 	

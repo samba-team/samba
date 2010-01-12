@@ -207,9 +207,9 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
     int32_t seq_number;
     int is_cfx = 0;
 
-    krb5_auth_getremoteseqnumber (context,
-				  ctx->auth_context,
-				  &seq_number);
+    krb5_auth_con_getremoteseqnumber (context,
+				      ctx->auth_context,
+				      &seq_number);
 
     _gsskrb5i_is_cfx(context, ctx, 1);
     is_cfx = (ctx->more_flags & IS_CFX);
@@ -669,9 +669,9 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
 	    return GSS_S_FAILURE;
 	}
 
-	kret = krb5_auth_getremoteseqnumber(context,
-					    ctx->auth_context,
-					    &r_seq_number);
+	kret = krb5_auth_con_getremoteseqnumber(context,
+						ctx->auth_context,
+						&r_seq_number);
 	if (kret) {
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
@@ -749,9 +749,9 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
     {
 	int32_t tmp_r_seq_number, tmp_l_seq_number;
 
-	kret = krb5_auth_getremoteseqnumber(context,
-					    ctx->auth_context,
-					    &tmp_r_seq_number);
+	kret = krb5_auth_con_getremoteseqnumber(context,
+						ctx->auth_context,
+						&tmp_r_seq_number);
 	if (kret) {
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;

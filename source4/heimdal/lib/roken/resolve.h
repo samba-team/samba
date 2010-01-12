@@ -38,9 +38,11 @@
 
 #ifndef ROKEN_LIB_FUNCTION
 #ifdef _WIN32
-#define ROKEN_LIB_FUNCTION _stdcall
+#define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL     __cdecl
 #else
 #define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL
 #endif
 #endif
 
@@ -231,15 +233,15 @@ struct rk_dns_reply{
 extern "C" {
 #endif
 
-struct rk_dns_reply* ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION struct rk_dns_reply* ROKEN_LIB_CALL
 	rk_dns_lookup(const char *, const char *);
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 	rk_dns_free_data(struct rk_dns_reply *);
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 	rk_dns_string_to_type(const char *name);
-const char *ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL
 	rk_dns_type_to_string(int type);
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 	rk_dns_srv_order(struct rk_dns_reply*);
 
 #ifdef __cplusplus

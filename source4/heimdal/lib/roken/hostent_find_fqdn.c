@@ -39,7 +39,7 @@
  * Try to find a fqdn (with `.') in he if possible, else return h_name
  */
 
-const char * ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL
 hostent_find_fqdn (const struct hostent *he)
 {
     const char *ret = he->h_name;

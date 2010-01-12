@@ -42,9 +42,6 @@
 
 #include "randi.h"
 
-static int random_fd = -1;
-static HEIMDAL_MUTEX random_mutex = HEIMDAL_MUTEX_INITIALIZER;
-
 /*
  * Unix /dev/random
  */
@@ -93,44 +90,29 @@ static int
 unix_bytes(unsigned char *outdata, int size)
 {
     ssize_t count;
-    int once = 0;
+    int fd;
 
     if (size < 0)
 	return 0;
     else if (size == 0)
 	return 1;
 
-    HEIMDAL_MUTEX_lock(&random_mutex);
-    if (random_fd == -1) {
-    retry:
-	random_fd = get_device_fd(O_RDONLY);
-	if (random_fd < 0) {
-	    HEIMDAL_MUTEX_unlock(&random_mutex);
-	    return 0;
-	}
-    }
+    fd = get_device_fd(O_RDONLY);
+    if (fd < 0)
+	return 0;
 
     while (size > 0) {
-	HEIMDAL_MUTEX_unlock(&random_mutex);
-	count = read (random_fd, outdata, size);
-	HEIMDAL_MUTEX_lock(&random_mutex);
-	if (random_fd < 0) {
-	    if (errno == EINTR)
-		continue;
-	    else if (errno == EBADF && once++ == 0) {
-		close(random_fd);
-		random_fd = -1;
-		goto retry;
-	    }
-	    return 0;
-	} else if (count <= 0) {
-	    HEIMDAL_MUTEX_unlock(&random_mutex);
+	count = read(fd, outdata, size);
+	if (count < 0 && errno == EINTR)
+	    continue;
+	else if (count <= 0) {
+	    close(fd);
 	    return 0;
 	}
 	outdata += count;
 	size -= count;
     }
-    HEIMDAL_MUTEX_unlock(&random_mutex);
+    close(fd);
 
     return 1;
 }

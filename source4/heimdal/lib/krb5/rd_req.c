@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -31,7 +32,7 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -102,7 +103,7 @@ decrypt_authenticator (krb5_context context,
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_decode_ap_req(krb5_context context,
 		   const krb5_data *inbuf,
 		   krb5_ap_req *ap_req)
@@ -217,7 +218,7 @@ find_etypelist(krb5_context context,
     return ret;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_decrypt_ticket(krb5_context context,
 		    Ticket *ticket,
 		    krb5_keyblock *key,
@@ -266,7 +267,7 @@ krb5_decrypt_ticket(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_verify_authenticator_checksum(krb5_context context,
 				   krb5_auth_context ac,
 				   void *data,
@@ -308,7 +309,7 @@ out:
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_verify_ap_req(krb5_context context,
 		   krb5_auth_context *auth_context,
 		   krb5_ap_req *ap_req,
@@ -329,7 +330,7 @@ krb5_verify_ap_req(krb5_context context,
 				KRB5_KU_AP_REQ_AUTH);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_verify_ap_req2(krb5_context context,
 		    krb5_auth_context *auth_context,
 		    krb5_ap_req *ap_req,
@@ -538,7 +539,7 @@ struct krb5_rd_req_out_ctx_data {
  * @ingroup krb5_auth
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
 {
     *ctx = calloc(1, sizeof(**ctx));
@@ -565,7 +566,7 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
  * @ingroup krb5_auth
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_in_set_keytab(krb5_context context,
 			  krb5_rd_req_in_ctx in,
 			  krb5_keytab keytab)
@@ -586,7 +587,7 @@ krb5_rd_req_in_set_keytab(krb5_context context,
  * @ingroup krb5_auth
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_in_set_pac_check(krb5_context context,
 			     krb5_rd_req_in_ctx in,
 			     krb5_boolean flag)
@@ -596,7 +597,7 @@ krb5_rd_req_in_set_pac_check(krb5_context context,
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_in_set_keyblock(krb5_context context,
 			    krb5_rd_req_in_ctx in,
 			    krb5_keyblock *keyblock)
@@ -605,7 +606,7 @@ krb5_rd_req_in_set_keyblock(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_out_get_ap_req_options(krb5_context context,
 				   krb5_rd_req_out_ctx out,
 				   krb5_flags *ap_req_options)
@@ -614,7 +615,7 @@ krb5_rd_req_out_get_ap_req_options(krb5_context context,
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_out_get_ticket(krb5_context context,
 			    krb5_rd_req_out_ctx out,
 			    krb5_ticket **ticket)
@@ -622,7 +623,7 @@ krb5_rd_req_out_get_ticket(krb5_context context,
     return krb5_copy_ticket(context, out->ticket, ticket);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_out_get_keyblock(krb5_context context,
 			    krb5_rd_req_out_ctx out,
 			    krb5_keyblock **keyblock)
@@ -642,7 +643,7 @@ krb5_rd_req_out_get_keyblock(krb5_context context,
  * @ingroup krb5_auth
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_out_get_server(krb5_context context,
 			    krb5_rd_req_out_ctx out,
 			    krb5_principal *principal)
@@ -650,7 +651,7 @@ krb5_rd_req_out_get_server(krb5_context context,
     return krb5_copy_principal(context, out->server, principal);
 }
 
-void  KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_rd_req_in_ctx_free(krb5_context context, krb5_rd_req_in_ctx ctx)
 {
     free(ctx);
@@ -665,7 +666,7 @@ krb5_rd_req_in_ctx_free(krb5_context context, krb5_rd_req_in_ctx ctx)
  * @ingroup krb5_auth
  */
 
-void  KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_rd_req_out_ctx_free(krb5_context context, krb5_rd_req_out_ctx ctx)
 {
     if (ctx->ticket)
@@ -681,7 +682,7 @@ krb5_rd_req_out_ctx_free(krb5_context context, krb5_rd_req_out_ctx ctx)
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req(krb5_context context,
 	    krb5_auth_context *auth_context,
 	    const krb5_data *inbuf,
@@ -726,7 +727,7 @@ out:
  *
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_auth_context *auth_context,
 			  const krb5_data *inbuf,
@@ -834,7 +835,7 @@ out:
  * @ingroup krb5_auth
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_rd_req_ctx(krb5_context context,
 		krb5_auth_context *auth_context,
 		const krb5_data *inbuf,

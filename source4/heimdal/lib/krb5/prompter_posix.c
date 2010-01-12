@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-int KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION int
 krb5_prompter_posix (krb5_context context,
 		     void *data,
 		     const char *name,

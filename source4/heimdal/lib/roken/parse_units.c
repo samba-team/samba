@@ -70,7 +70,7 @@ parse_something (const char *s, const struct units *units,
 
     p = s;
     while (*p) {
-	double val;
+	int val;
 	char *next;
 	const struct units *u, *partial_unit;
 	size_t u_len;
@@ -80,7 +80,7 @@ parse_something (const char *s, const struct units *units,
 	while(isspace((unsigned char)*p) || *p == ',')
 	    ++p;
 
-	val = strtod (p, &next); /* strtol(p, &next, 0); */
+	val = strtol(p, &next, 0);
 	if (p == next) {
 	    val = 0;
 	    if(!accept_no_val_p)
@@ -149,7 +149,7 @@ acc_units(int res, int val, unsigned mult)
     return res + val * mult;
 }
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 parse_units (const char *s, const struct units *units,
 	     const char *def_unit)
 {
@@ -175,7 +175,7 @@ acc_flags(int res, int val, unsigned mult)
 	return -1;
 }
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 parse_flags (const char *s, const struct units *units,
 	     int orig)
 {
@@ -208,7 +208,7 @@ unparse_something (int num, const struct units *units, char *s, size_t len,
 	    tmp = (*print) (s, len, divisor, u->name, num);
 	    if (tmp < 0)
 		return tmp;
-	    if (tmp > len) {
+	    if (tmp > (int) len) {
 		len = 0;
 		s = NULL;
 	    } else {
@@ -245,7 +245,7 @@ update_unit_approx (int in, unsigned mult)
 	return update_unit (in, mult);
 }
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 unparse_units (int num, const struct units *units, char *s, size_t len)
 {
     return unparse_something (num, units, s, len,
@@ -254,7 +254,7 @@ unparse_units (int num, const struct units *units, char *s, size_t len)
 			      "0");
 }
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 unparse_units_approx (int num, const struct units *units, char *s, size_t len)
 {
     return unparse_something (num, units, s, len,
@@ -263,7 +263,7 @@ unparse_units_approx (int num, const struct units *units, char *s, size_t len)
 			      "0");
 }
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 print_units_table (const struct units *units, FILE *f)
 {
     const struct units *u, *u2;
@@ -308,7 +308,7 @@ update_flag (int in, unsigned mult)
     return in - mult;
 }
 
-int ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 unparse_flags (int num, const struct units *units, char *s, size_t len)
 {
     return unparse_something (num, units, s, len,
@@ -317,7 +317,7 @@ unparse_flags (int num, const struct units *units, char *s, size_t len)
 			      "");
 }
 
-void ROKEN_LIB_FUNCTION
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 print_flags_table (const struct units *units, FILE *f)
 {
     const struct units *u;

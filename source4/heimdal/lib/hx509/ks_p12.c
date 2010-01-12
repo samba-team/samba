@@ -571,7 +571,7 @@ p12_store(hx509_context context,
     memset(&as, 0, sizeof(as));
     memset(&pfx, 0, sizeof(pfx));
 
-    ret = hx509_certs_iter(context, p12->certs, store_func, &as);
+    ret = hx509_certs_iter_f(context, p12->certs, store_func, &as);
     if (ret)
 	goto out;
 

@@ -41,8 +41,8 @@
 #include <errno.h>
 #include <limits.h>
 
-#include <krb5.h>
 #include <roken.h>
+#include <krb5.h>
 
 #define HC_DEPRECATED_CRYPTO
 
@@ -422,9 +422,9 @@ heim_ntlm_decode_type1(const struct ntlm_buf *buf, struct ntlm_type1 *data)
     CHECK(krb5_ret_uint32(in, &type), 0);
     CHECK(type, 1);
     CHECK(krb5_ret_uint32(in, &data->flags), 0);
-    if (data->flags & NTLM_SUPPLIED_DOMAIN)
+    if (data->flags & NTLM_OEM_SUPPLIED_DOMAIN)
 	CHECK(ret_sec_buffer(in, &domain), 0);
-    if (data->flags & NTLM_SUPPLIED_WORKSTAION)
+    if (data->flags & NTLM_OEM_SUPPLIED_WORKSTAION)
 	CHECK(ret_sec_buffer(in, &hostname), 0);
 #if 0
     if (domain.offset > 32) {
@@ -432,9 +432,9 @@ heim_ntlm_decode_type1(const struct ntlm_buf *buf, struct ntlm_type1 *data)
 	CHECK(krb5_ret_uint32(in, &data->os[1]), 0);
     }
 #endif
-    if (data->flags & NTLM_SUPPLIED_DOMAIN)
+    if (data->flags & NTLM_OEM_SUPPLIED_DOMAIN)
 	CHECK(ret_string(in, 0, &domain, &data->domain), 0);
-    if (data->flags & NTLM_SUPPLIED_WORKSTAION)
+    if (data->flags & NTLM_OEM_SUPPLIED_WORKSTAION)
 	CHECK(ret_string(in, 0, &hostname, &data->hostname), 0);
 
 out:
@@ -472,11 +472,11 @@ heim_ntlm_encode_type1(const struct ntlm_type1 *type1, struct ntlm_buf *data)
 
     if (type1->domain) {
 	base += 8;
-	flags |= NTLM_SUPPLIED_DOMAIN;
+	flags |= NTLM_OEM_SUPPLIED_DOMAIN;
     }
     if (type1->hostname) {
 	base += 8;
-	flags |= NTLM_SUPPLIED_WORKSTAION;
+	flags |= NTLM_OEM_SUPPLIED_WORKSTAION;
     }
     if (type1->os[0])
 	base += 8;

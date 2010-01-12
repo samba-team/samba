@@ -3,6 +3,8 @@
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -110,6 +112,20 @@ der_length_len (size_t len)
 	} while (len);
 	return ret + 1;
     }
+}
+
+size_t
+der_length_tag(unsigned int tag)
+{
+    size_t len = 0;
+
+    if(tag <= 30)
+	return 1;
+    while(tag) {
+	tag /= 128;
+	len++;
+    }
+    return len + 1;
 }
 
 size_t

@@ -74,8 +74,12 @@ typedef struct krb5_kdc_configuration {
 
     krb5_boolean enable_pkinit;
     krb5_boolean pkinit_princ_in_cert;
-    char *pkinit_kdc_ocsp_file;
-    char *pkinit_kdc_friendly_name;
+    const char *pkinit_kdc_identity;
+    const char *pkinit_kdc_anchors;
+    const char *pkinit_kdc_friendly_name;
+    const char *pkinit_kdc_ocsp_file;
+    char **pkinit_kdc_cert_pool;
+    char **pkinit_kdc_revoke;
     int pkinit_dh_min_bits;
     int pkinit_require_binding;
     int pkinit_allow_proxy_certs;

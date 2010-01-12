@@ -43,6 +43,7 @@ OSStatus SecKeyGetCSPHandle(SecKeyRef, CSSM_CSP_HANDLE *);
 OSStatus SecKeyGetCredentials(SecKeyRef, CSSM_ACL_AUTHORIZATION_TAG,
 			      int, const CSSM_ACCESS_CREDENTIALS **);
 #define kSecCredentialTypeDefault 0
+#define CSSM_SIZE uint32_t
 #endif
 
 
