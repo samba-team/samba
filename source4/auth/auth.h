@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Standardised Authentication types
    Copyright (C) Andrew Bartlett   2001
    Copyright (C) Stefan Metzmacher 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -79,13 +79,13 @@ struct auth_usersupplied_info
 			struct samr_Password *lanman;
 			struct samr_Password *nt;
 		} hash;
-		
+
 		char *plaintext;
 	} password;
 	uint32_t flags;
 };
 
-struct auth_serversupplied_info 
+struct auth_serversupplied_info
 {
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
@@ -105,7 +105,7 @@ struct auth_serversupplied_info
 	const char *home_directory;
 	const char *home_drive;
 	const char *logon_server;
-	
+
 	NTTIME last_logon;
 	NTTIME last_logoff;
 	NTTIME acct_expiry;
@@ -149,7 +149,7 @@ struct auth_operations {
 				   struct auth_serversupplied_info **server_info);
 
 	/* Lookup a 'server info' return based only on the principal */
-	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx, 
+	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx,
 					      struct auth_context *auth_context,
 					      const char *principal,
 					      struct auth_serversupplied_info **server_info);
@@ -165,12 +165,12 @@ struct auth_method_context {
 
 struct auth_context {
 	struct {
-		/* Who set this up in the first place? */ 
+		/* Who set this up in the first place? */
 		const char *set_by;
 
 		bool may_be_modified;
 
-		DATA_BLOB data; 
+		DATA_BLOB data;
 	} challenge;
 
 	/* methods, in the order they should be called */
@@ -187,16 +187,16 @@ struct auth_context {
 
 	NTSTATUS (*check_password)(struct auth_context *auth_ctx,
 				   TALLOC_CTX *mem_ctx,
-				   const struct auth_usersupplied_info *user_info, 
+				   const struct auth_usersupplied_info *user_info,
 				   struct auth_serversupplied_info **server_info);
-	
+
 	NTSTATUS (*get_challenge)(struct auth_context *auth_ctx, uint8_t chal[8]);
 
 	bool (*challenge_may_be_modified)(struct auth_context *auth_ctx);
 
 	NTSTATUS (*set_challenge)(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
-	
-	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx, 
+
+	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx,
 					      struct auth_context *auth_context,
 					      const char *principal,
 					      struct auth_serversupplied_info **server_info);
@@ -213,7 +213,7 @@ struct auth_critical_sizes {
 	int sizeof_auth_serversupplied_info;
 };
 
- NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_context, 
+ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_context,
 			   enum auth_password_state to_state,
 			   const struct auth_usersupplied_info *user_info_in,
 			   const struct auth_usersupplied_info **user_info_encrypted);
@@ -240,22 +240,22 @@ struct auth_session_info *system_session(struct loadparm_context *lp_ctx);
 NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 					   const char *netbios_name,
 					   const char *domain_name,
-					   struct ldb_dn *domain_dn, 
+					   struct ldb_dn *domain_dn,
 					   struct ldb_message *msg,
 					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
 				  struct auth_serversupplied_info **_server_info);
-NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
+NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 					   struct loadparm_context *lp_ctx,
 					   struct auth_session_info **_session_info) ;
 NTSTATUS auth_nt_status_squash(NTSTATUS nt_status);
 
-NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
+NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods,
 				     struct tevent_context *ev,
 				     struct messaging_context *msg,
 				     struct loadparm_context *lp_ctx,
 				     struct auth_context **auth_ctx);
 
-NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
+NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
 			     struct messaging_context *msg,
 			     struct loadparm_context *lp_ctx,
@@ -263,7 +263,7 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 
 NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
-			     const struct auth_usersupplied_info *user_info, 
+			     const struct auth_usersupplied_info *user_info,
 			     struct auth_serversupplied_info **server_info);
 NTSTATUS auth_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
