@@ -115,6 +115,8 @@ _PUBLIC_ void call_backtrace(void)
 }
 
 _PUBLIC_ const char *panic_action = NULL;
+_PUBLIC_ void (*pre_panic_action_hook)(void) = NULL;
+_PUBLIC_ void (*post_panic_action_hook)(void) = NULL;
 
 /**
  Something really nasty happened - panic !
@@ -133,7 +135,16 @@ _PUBLIC_ void smb_panic(const char *why)
 			all_string_sub(cmdstring, "%PROG%", progname, sizeof(cmdstring));
 		}
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmdstring));
+
+		if (pre_panic_action_hook) {
+			pre_panic_action_hook();
+		}
+
 		result = system(cmdstring);
+
+		if (post_panic_action_hook) {
+			post_panic_action_hook();
+		}
 
 		if (result == -1)
 			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",

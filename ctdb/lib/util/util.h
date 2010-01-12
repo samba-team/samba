@@ -32,6 +32,8 @@ struct smbsrv_tcon;
 extern const char *logfile;
 #endif
 extern const char *panic_action;
+extern void (*pre_panic_action_hook)(void);
+extern void (*post_panic_action_hook)(void);
 
 /**
  * assert macros 
