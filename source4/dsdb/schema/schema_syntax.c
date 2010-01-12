@@ -83,18 +83,6 @@ static WERROR dsdb_syntax_FOOBAR_validate_ldb(struct ldb_context *ldb,
 	return WERR_FOOBAR;
 }
 
-static WERROR dsdb_syntax_ALLOW_validate_ldb(struct ldb_context *ldb,
-					     const struct dsdb_schema *schema,
-					     const struct dsdb_attribute *attr,
-					     const struct ldb_message_element *in)
-{
-	if (attr->attributeID_id == 0xFFFFFFFF) {
-		return WERR_FOOBAR;
-	}
-
-	return WERR_OK;
-}
-
 static WERROR dsdb_syntax_BOOL_drsuapi_to_ldb(struct ldb_context *ldb, 
 					      const struct dsdb_schema *schema,
 					      const struct dsdb_attribute *attr,
@@ -1287,6 +1275,55 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(struct ldb_context *ldb,
 	return _dsdb_syntax_auto_OID_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
 }
 
+static WERROR dsdb_syntax_OID_validate_ldb(struct ldb_context *ldb,
+					   const struct dsdb_schema *schema,
+					   const struct dsdb_attribute *attr,
+					   const struct ldb_message_element *in)
+{
+	WERROR status;
+	struct drsuapi_DsReplicaAttribute drs_tmp;
+	struct ldb_message_element ldb_tmp;
+	TALLOC_CTX *tmp_ctx;
+
+	if (attr->attributeID_id == 0xFFFFFFFF) {
+		return WERR_FOOBAR;
+	}
+
+	/*
+	 * TODO: optimize and verify this code
+	 */
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	status = dsdb_syntax_OID_ldb_to_drsuapi(ldb,
+						schema,
+						attr,
+						in,
+						tmp_ctx,
+						&drs_tmp);
+	if (!W_ERROR_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	status = dsdb_syntax_OID_drsuapi_to_ldb(ldb,
+						schema,
+						attr,
+						&drs_tmp,
+						tmp_ctx,
+						&ldb_tmp);
+	if (!W_ERROR_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	talloc_free(tmp_ctx);
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(struct ldb_context *ldb, 
 						 const struct dsdb_schema *schema,
 						 const struct dsdb_attribute *attr,
@@ -2237,7 +2274,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.2",
 		.drsuapi_to_ldb		= dsdb_syntax_OID_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_OID_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_ALLOW_validate_ldb,
+		.validate_ldb		= dsdb_syntax_OID_validate_ldb,
 		.equality               = "caseIgnoreMatch", /* Would use "objectIdentifierMatch" but most are ldap attribute/class names */
 		.comment                = "OID String",
 		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING
