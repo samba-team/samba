@@ -33,6 +33,10 @@
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
+#include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_proto.h"
+#include "../libcli/auth/schannel.h"
+#include "auth/gensec/schannel_state.h"
 
 #include <unistd.h>
 
@@ -2730,17 +2734,24 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
 static bool test_SamLogon(struct torture_context *tctx,
 			  struct dcerpc_pipe *p,
 			  struct cli_credentials *test_credentials,
-			  NTSTATUS expected_result)
+			  NTSTATUS expected_result,
+			  bool interactive)
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogonEx r;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
+	struct netr_IdentityInfo identity;
 	struct netr_NetworkInfo ninfo;
+	struct netr_PasswordInfo pinfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int flags = CLI_CRED_NTLM_AUTH;
 	uint32_t samlogon_flags = 0;
+	struct netlogon_creds_CredentialState *creds;
+	struct netr_Authenticator a;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_schannel_creds(p->conn->security_state.generic_state, tctx, &creds), "");
 
 	if (lp_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -2751,50 +2762,74 @@ static bool test_SamLogon(struct torture_context *tctx,
 	}
 
 	cli_credentials_get_ntlm_username_domain(test_credentials, tctx,
-						 &ninfo.identity_info.account_name.string,
-						 &ninfo.identity_info.domain_name.string);
+						 &identity.account_name.string,
+						 &identity.domain_name.string);
 
-	generate_random_buffer(ninfo.challenge,
-			       sizeof(ninfo.challenge));
-	chal = data_blob_const(ninfo.challenge,
-			       sizeof(ninfo.challenge));
-
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(test_credentials),
-						cli_credentials_get_domain(test_credentials));
-
-	status = cli_credentials_get_ntlm_response(test_credentials, tctx,
-						   &flags,
-						   chal,
-						   names_blob,
-						   &lm_resp, &nt_resp,
-						   NULL, NULL);
-	torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
-
-	ninfo.lm.data = lm_resp.data;
-	ninfo.lm.length = lm_resp.length;
-
-	ninfo.nt.data = nt_resp.data;
-	ninfo.nt.length = nt_resp.length;
-
-	ninfo.identity_info.parameter_control =
+	identity.parameter_control =
 		MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
-	ninfo.identity_info.logon_id_low = 0;
-	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(test_credentials);
+	identity.logon_id_low = 0;
+	identity.logon_id_high = 0;
+	identity.workstation.string = cli_credentials_get_workstation(test_credentials);
 
-	logon.network = &ninfo;
+	if (interactive) {
+		netlogon_creds_client_authenticator(creds, &a);
+
+		if (!E_deshash(cli_credentials_get_password(test_credentials), pinfo.lmpassword.hash)) {
+			ZERO_STRUCT(pinfo.lmpassword.hash);
+		}
+		E_md4hash(cli_credentials_get_password(test_credentials), pinfo.ntpassword.hash);
+
+		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			netlogon_creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
+			netlogon_creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
+		} else {
+			netlogon_creds_des_encrypt(creds, &pinfo.lmpassword);
+			netlogon_creds_des_encrypt(creds, &pinfo.ntpassword);
+		}
+
+		pinfo.identity_info = identity;
+		logon.password = &pinfo;
+
+		r.in.logon_level = NetlogonInteractiveInformation;
+	} else {
+		generate_random_buffer(ninfo.challenge,
+				       sizeof(ninfo.challenge));
+		chal = data_blob_const(ninfo.challenge,
+				       sizeof(ninfo.challenge));
+
+		names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(test_credentials),
+							cli_credentials_get_domain(test_credentials));
+
+		status = cli_credentials_get_ntlm_response(test_credentials, tctx,
+							   &flags,
+							   chal,
+							   names_blob,
+							   &lm_resp, &nt_resp,
+							   NULL, NULL);
+		torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
+
+		ninfo.lm.data = lm_resp.data;
+		ninfo.lm.length = lm_resp.length;
+
+		ninfo.nt.data = nt_resp.data;
+		ninfo.nt.length = nt_resp.length;
+
+		ninfo.identity_info = identity;
+		logon.network = &ninfo;
+
+		r.in.logon_level = NetlogonNetworkInformation;
+	}
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(test_credentials);
-	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.logon = &logon;
 	r.in.flags = &samlogon_flags;
 	r.out.flags = &samlogon_flags;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
 
-	torture_comment(tctx, "Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
+	torture_comment(tctx, "Testing LogonSamLogon with name %s\n", identity.account_name.string);
 
 	r.in.validation_level = 6;
 
@@ -2818,7 +2853,8 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 				     struct cli_credentials *machine_creds,
 				     const char *acct_name,
 				     char *password,
-				     NTSTATUS expected_samlogon_result)
+				     NTSTATUS expected_samlogon_result,
+				     bool interactive)
 {
 	bool ret = true;
 	struct cli_credentials *test_credentials;
@@ -2834,11 +2870,11 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 	cli_credentials_set_password(test_credentials,
 				     password, CRED_SPECIFIED);
 
-	torture_comment(tctx, "testing samlogon as %s password: %s\n",
-		acct_name, password);
+	torture_comment(tctx, "testing samlogon (%s) as %s password: %s\n",
+		interactive ? "interactive" : "network", acct_name, password);
 
 	if (!test_SamLogon(tctx, p, test_credentials,
-			   expected_samlogon_result)) {
+			    expected_samlogon_result, interactive)) {
 		torture_warning(tctx, "new password did not work\n");
 		ret = false;
 	}
@@ -2904,7 +2940,8 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 				      machine_creds,
 				      acct_name,
 				      *password,
-				      expected_samlogon_result)) {
+				      expected_samlogon_result,
+				      false)) {
 		ret = false;
 	}
 
