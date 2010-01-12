@@ -6394,9 +6394,8 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 
 	trim_char( uri, '\"', '\"' );
 	nt_status = pdb_init_ldapsam_common(pdb_method, uri);
-	if (uri) {
-		TALLOC_FREE(uri);
-	}
+
+	TALLOC_FREE(uri);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
