@@ -71,20 +71,23 @@ CHANGEALL =	0xff
 # do not exist in the destination object).
 # This is most probably because they are populated automatcally when object is
 # created
-hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1,"replPropertyMetaData": 1,"uSNChanged": 1,\
-						"uSNCreated": 1,"parentGUID": 1,"objectCategory": 1,"distinguishedName": 1,\
-						"showInAdvancedViewOnly": 1,"instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,\
-						"nTMixedDomain": 1,"versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,\
-						"dBCSPwd":1,"supplementalCredentials":1,"gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,\
+# This also apply to imported object from reference provision
+hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1,"replPropertyMetaData": 1,"uSNChanged": 1,
+						"uSNCreated": 1,"parentGUID": 1,"objectCategory": 1,"distinguishedName": 1,
+						"showInAdvancedViewOnly": 1,"instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,
+						"nTMixedDomain": 1,"versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,
+						"dBCSPwd":1,"supplementalCredentials":1,"gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,
 						"maxPwdAge":1, "mail":1, "secret":1,"possibleInferiors":1, "sAMAccountType":1}
 
 # Usually for an object that already exists we do not overwrite attributes as
 # they might have been changed for good reasons. Anyway for a few of them it's
 # mandatory to replace them otherwise the provision will be broken somehow.
-hashOverwrittenAtt = {	"prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,\
-			"mayContain":replace,  "systemFlags":replace,"description":replace,
-			"oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
-			"defaultSecurityDescriptor": replace,"wellKnownObjects":replace,"privilege":delete}
+hashOverwrittenAtt = {	"prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,
+						"mayContain":replace,  "systemFlags":replace,"description":replace,
+						"oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
+						"defaultSecurityDescriptor": replace,"wellKnownObjects":replace,"privilege":delete,"groupType":replace}
+
+
 backlinked = []
 
 def define_what_to_log(opts):
