@@ -46,6 +46,7 @@ import samba.getopt as options
 from samba.samdb import SamDB
 from samba import param
 from samba import glue
+from samba.misc import messageEltFlagToString
 from samba.provision import  ProvisionNames,provision_paths_from_lp,find_setup_dir,FILL_FULL,provision, get_domain_descriptor, get_config_descriptor, secretsdb_self_join
 from samba.provisionexceptions import ProvisioningError
 from samba.schema import get_dnsyntax_attributes, get_linked_attributes, Schema, get_schema_descriptor
@@ -604,13 +605,10 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 				if  handle_special_case(att,delta,reference,current,ischema)==0 and msgElt.flags()!=ldb.FLAG_MOD_ADD:
 					i = 0
 					if opts.debugchange:
-						message(CHANGE, "dn= "+str(dn)+ " "+att + " with flag "+str(msgElt.flags())+ " is not allowed to be changed/removed, I discard this change ...")
-						for e in range(0,len(current[0][att])):
-							message(CHANGE,"old %d : %s"%(i,str(current[0][att][e])))
-						if msgElt.flags() == 2:
-							i = 0
-							for e in range(0,len(reference[0][att])):
-								message(CHANGE,"new %d : %s"%(i,str(reference[0][att][e])))
+						try:
+							dump_denied_change(dn,att,messageEltFlagToString(msgElt.flags()),current[0][att],reference[0][att])
+						except:
+							dump_denied_change(dn,att,messageEltFlagToString(msgElt.flags()),current[0][att],None)
 					delta.remove(att)
 		delta.dn = dn
 		if len(delta.items()) >1:
