@@ -136,6 +136,7 @@ SMB_ENABLE(wbinfo, NO)
 
 m4_include(lib/tls/config.m4)
 m4_include(torture/libnetapi/config.m4)
+m4_include(torture/libsmbclient/config.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
 m4_include(auth/gensec/config.m4)

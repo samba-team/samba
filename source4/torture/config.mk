@@ -90,6 +90,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/raw/proto.h,$(TORTURE_RAW_O
 mkinclude smb2/config.mk
 mkinclude winbind/config.mk
 mkinclude libnetapi/config.mk
+mkinclude libsmbclient/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_DEPENDENCIES = torture SERVICE_SMB

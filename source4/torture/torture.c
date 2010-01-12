@@ -50,6 +50,13 @@ NTSTATUS torture_libnetapi_init(void)
 }
 #endif
 
+#ifndef ENABLE_LIBSMBCLIENT
+NTSTATUS torture_libsmbclient_init(void)
+{
+	return NT_STATUS_OK;
+}
+#endif
+
 _PUBLIC_ int torture_init(void)
 {
 	extern NTSTATUS torture_base_init(void);
@@ -63,6 +70,7 @@ _PUBLIC_ int torture_init(void)
 	extern NTSTATUS torture_smb2_init(void);
 	extern NTSTATUS torture_net_init(void);
 	extern NTSTATUS torture_libnetapi_init(void);
+	extern NTSTATUS torture_libsmbclient_init(void);
 	extern NTSTATUS torture_raw_init(void);
 	extern NTSTATUS torture_unix_init(void);
 	extern NTSTATUS torture_winbind_init(void);
