@@ -686,7 +686,7 @@ struct lsa_BinaryString samdb_result_parameters(TALLOC_CTX *mem_ctx,
 	if (!s.array) {
 		return s;
 	}
-	s.length = s.size = val->length/2;
+	s.length = s.size = val->length;
 	memcpy(s.array, val->data, val->length);
 
 	return s;
@@ -935,7 +935,7 @@ int samdb_msg_add_parameters(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, s
 			     const char *attr_name, struct lsa_BinaryString *parameters)
 {
 	struct ldb_val val;
-	val.length = parameters->length * 2;
+	val.length = parameters->length;
 	val.data = (uint8_t *)parameters->array;
 	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
