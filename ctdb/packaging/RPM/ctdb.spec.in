@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.111
+Version: 1.0.112
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
 
 %changelog
+* Tue Jan 12 2010 : Version 1.0.112
+  - Revert the use of wbinfo --ping-dc as it is proving too unreliable.
+  - Minor testsuite changes.
 * Fri Dec 18 2009 : Version 1.0.111
  - Fix a logging bug when an eventscript is aborted that could cause a crash.
  - Add back cb_status that was lost in a previous commit.
