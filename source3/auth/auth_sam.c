@@ -486,6 +486,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	become_root();
 	nt_status = make_server_info_sam(server_info, sampass);
 	unbecome_root();
+	/*
+	 * sampass has been stolen to server_info.
+	 * So NULL it out to prevent segfaults.
+	 */
 	sampass = NULL;
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
