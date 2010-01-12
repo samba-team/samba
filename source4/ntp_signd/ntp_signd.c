@@ -27,6 +27,8 @@
 #include "smbd/service_stream.h"
 #include "smbd/process_model.h"
 #include "lib/stream/packet.h"
+#include "lib/tsocket/tsocket.h"
+#include "libcli/util/tstream.h"
 #include "librpc/gen_ndr/ndr_ntp_signd.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
@@ -35,6 +37,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "../lib/crypto/md5.h"
+#include "system/network.h"
 #include "system/passwd.h"
 
 /*
@@ -55,67 +58,49 @@ struct ntp_signd_connection {
 	/* the ntp_signd_server the connection belongs to */
 	struct ntp_signd_server *ntp_signd;
 
-	struct packet_context *packet;
+	struct tstream_context *tstream;
+
+	struct tevent_queue *send_queue;
 };
 
-static void ntp_signd_terminate_connection(struct ntp_signd_connection *ntp_signdconn, const char *reason)
+static void ntp_signd_terminate_connection(struct ntp_signd_connection *ntp_signd_conn, const char *reason)
 {
-	stream_terminate_connection(ntp_signdconn->conn, reason);
+	stream_terminate_connection(ntp_signd_conn->conn, reason);
 }
 
 static NTSTATUS signing_failure(struct ntp_signd_connection *ntp_signdconn,
-				uint32_t packet_id) 
+				TALLOC_CTX *mem_ctx,
+				DATA_BLOB *output,
+				uint32_t packet_id)
 {
-	NTSTATUS status;
 	struct signed_reply signed_reply;
-	TALLOC_CTX *tmp_ctx = talloc_new(ntp_signdconn);
-	DATA_BLOB reply, blob;
 	enum ndr_err_code ndr_err;
-
-	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	signed_reply.op = SIGNING_FAILURE;
 	signed_reply.packet_id = packet_id;
 	signed_reply.signed_packet = data_blob(NULL, 0);
 	
-	ndr_err = ndr_push_struct_blob(&reply, tmp_ctx, 
+	ndr_err = ndr_push_struct_blob(output, mem_ctx,
 				       lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
 				       &signed_reply,
 				       (ndr_push_flags_fn_t)ndr_push_signed_reply);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1,("failed to push ntp error reply\n"));
-		talloc_free(tmp_ctx);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	blob = data_blob_talloc(ntp_signdconn, NULL, reply.length + 4);
-	if (!blob.data) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	RSIVAL(blob.data, 0, reply.length);
-	memcpy(blob.data + 4, reply.data, reply.length);	
-
-	status = packet_send(ntp_signdconn->packet, blob);
-
-	/* the call isn't needed any more */
-	talloc_free(tmp_ctx);
-	
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
   receive a full packet on a NTP_SIGND connection
 */
-static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
+static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
+				  TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *input,
+				  DATA_BLOB *output)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private_data,
-							     struct ntp_signd_connection);
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	TALLOC_CTX *tmp_ctx = talloc_new(ntp_signdconn);
-	DATA_BLOB input, output, wrapped_output;
 	const struct dom_sid *domain_sid;
 	struct dom_sid *sid;
 	struct sign_request sign_request;
@@ -128,100 +113,124 @@ static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 	uint32_t user_account_control;
 	int ret;
 
-	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-
-	talloc_steal(tmp_ctx, wrapped_input.data);
-
-	input = data_blob_const(wrapped_input.data + 4, wrapped_input.length - 4); 
-
-	ndr_err = ndr_pull_struct_blob_all(&input, tmp_ctx, 
-					   lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
+	ndr_err = ndr_pull_struct_blob_all(input, mem_ctx,
+					   lp_iconv_convenience(ntp_signd_conn->ntp_signd->task->lp_ctx),
 					   &sign_request,
 					   (ndr_pull_flags_fn_t)ndr_pull_sign_request);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1,("failed to parse ntp signing request\n"));
-		dump_data(1, input.data, input.length);
+		dump_data(1, input->data, input->length);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	/* We need to implement 'check signature' and 'request server
 	 * to sign' operations at some point */
 	if (sign_request.op != SIGN_TO_CLIENT) {
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
 	/* We need to implement 'check signature' and 'request server
 	 * to sign' operations at some point */
 	if (sign_request.version != NTP_SIGND_PROTOCOL_VERSION_0) {
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
-	domain_sid = samdb_domain_sid(ntp_signdconn->ntp_signd->samdb);
-	if (!domain_sid) {
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	domain_sid = samdb_domain_sid(ntp_signd_conn->ntp_signd->samdb);
+	if (domain_sid == NULL) {
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 	
 	/* The top bit is a 'key selector' */
-	sid = dom_sid_add_rid(tmp_ctx, domain_sid, sign_request.key_id & 0x7FFFFFFF);
-	if (!sid) {
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	sid = dom_sid_add_rid(mem_ctx, domain_sid,
+			      sign_request.key_id & 0x7FFFFFFF);
+	if (sid == NULL) {
+		talloc_free(mem_ctx);
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
-	ret = ldb_search(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
-				 &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
-				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=user))",
-				 dom_sid_string(tmp_ctx, sid));
+	ret = ldb_search(ntp_signd_conn->ntp_signd->samdb, mem_ctx,
+				 &res,
+				 samdb_base_dn(ntp_signd_conn->ntp_signd->samdb),
+				 LDB_SCOPE_SUBTREE,
+				 attrs,
+				 "(&(objectSid=%s)(objectClass=user))",
+				 dom_sid_string(mem_ctx, sid));
 	if (ret != LDB_SUCCESS) {
-		DEBUG(2, ("Failed to search for SID %s in SAM for NTP signing: %s\n", dom_sid_string(tmp_ctx, sid),
-			  ldb_errstring(ntp_signdconn->ntp_signd->samdb)));
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+		DEBUG(2, ("Failed to search for SID %s in SAM for NTP signing: "
+			  "%s\n",
+			  dom_sid_string(mem_ctx, sid),
+			  ldb_errstring(ntp_signd_conn->ntp_signd->samdb)));
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
 	if (res->count == 0) {
-		DEBUG(5, ("Failed to find SID %s in SAM for NTP signing\n", dom_sid_string(tmp_ctx, sid)));
+		DEBUG(5, ("Failed to find SID %s in SAM for NTP signing\n",
+			  dom_sid_string(mem_ctx, sid)));
 	} else if (res->count != 1) {
-		DEBUG(1, ("Found SID %s %u times in SAM for NTP signing\n", dom_sid_string(tmp_ctx, sid), res->count));
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+		DEBUG(1, ("Found SID %s %u times in SAM for NTP signing\n",
+			  dom_sid_string(mem_ctx, sid), res->count));
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
-	user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
+	user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0],
+							 "userAccountControl",
+							 0);
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
-		DEBUG(1, ("Account %s for SID [%s] is disabled\n", ldb_dn_get_linearized(res->msgs[0]->dn), dom_sid_string(tmp_ctx, sid)));
-		talloc_free(tmp_ctx);
+		DEBUG(1, ("Account %s for SID [%s] is disabled\n",
+			  ldb_dn_get_linearized(res->msgs[0]->dn),
+			  dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!(user_account_control & (UF_INTERDOMAIN_TRUST_ACCOUNT|UF_SERVER_TRUST_ACCOUNT|UF_WORKSTATION_TRUST_ACCOUNT))) {
-		DEBUG(1, ("Account %s for SID [%s] is not a trust account\n", ldb_dn_get_linearized(res->msgs[0]->dn), dom_sid_string(tmp_ctx, sid)));
-		talloc_free(tmp_ctx);
+		DEBUG(1, ("Account %s for SID [%s] is not a trust account\n",
+			  ldb_dn_get_linearized(res->msgs[0]->dn),
+			  dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	nt_hash = samdb_result_hash(tmp_ctx, res->msgs[0], "unicodePwd");
+	nt_hash = samdb_result_hash(mem_ctx, res->msgs[0], "unicodePwd");
 	if (!nt_hash) {
-		DEBUG(1, ("No unicodePwd found on record of SID %s for NTP signing\n", dom_sid_string(tmp_ctx, sid)));
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+		DEBUG(1, ("No unicodePwd found on record of SID %s "
+			  "for NTP signing\n", dom_sid_string(mem_ctx, sid)));
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
 	/* Generate the reply packet */
 	signed_reply.packet_id = sign_request.packet_id;
 	signed_reply.op = SIGNING_SUCCESS;
-	signed_reply.signed_packet = data_blob_talloc(tmp_ctx, 
+	signed_reply.signed_packet = data_blob_talloc(mem_ctx,
 						      NULL,
 						      sign_request.packet_to_sign.length + 20);
 
 	if (!signed_reply.signed_packet.data) {
-		talloc_free(tmp_ctx);
-		return signing_failure(ntp_signdconn, sign_request.packet_id);
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	}
 
 	memcpy(signed_reply.signed_packet.data, sign_request.packet_to_sign.data, sign_request.packet_to_sign.length);
@@ -235,51 +244,28 @@ static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 
 
 	/* Place it into the packet for the wire */
-	ndr_err = ndr_push_struct_blob(&output, tmp_ctx, 
-				       lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
+	ndr_err = ndr_push_struct_blob(output, mem_ctx,
+				       lp_iconv_convenience(ntp_signd_conn->ntp_signd->task->lp_ctx),
 				       &signed_reply,
 				       (ndr_push_flags_fn_t)ndr_push_signed_reply);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1,("failed to push ntp error reply\n"));
-		talloc_free(tmp_ctx);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	wrapped_output = data_blob_talloc(ntp_signdconn, NULL, output.length + 4);
-	if (!wrapped_output.data) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* The 'wire' transport for this is wrapped with a 4 byte network byte order length */
-	RSIVAL(wrapped_output.data, 0, output.length);
-	memcpy(wrapped_output.data + 4, output.data, output.length);	
-
-	status = packet_send(ntp_signdconn->packet, wrapped_output);
-
-	/* the call isn't needed any more */
-	talloc_free(tmp_ctx);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
-  receive some data on a NTP_SIGND connection
+  called on a tcp recv
 */
-static void ntp_signd_recv_handler(struct stream_connection *conn, uint16_t flags)
+static void ntp_signd_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(conn->private_data,
-							     struct ntp_signd_connection);
-	packet_recv(ntp_signdconn->packet);
-}
-
-/*
-  called on a tcp recv error
-*/
-static void ntp_signd_recv_error(void *private_data, NTSTATUS status)
-{
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private_data, struct ntp_signd_connection);
-	ntp_signd_terminate_connection(ntp_signdconn, nt_errstr(status));
+	struct ntp_signd_connection *ntp_signd_conn = talloc_get_type(conn->private_data,
+							struct ntp_signd_connection);
+	ntp_signd_terminate_connection(ntp_signd_conn,
+				       "ntp_signd_recv: called");
 }
 
 /*
@@ -287,9 +273,148 @@ static void ntp_signd_recv_error(void *private_data, NTSTATUS status)
 */
 static void ntp_signd_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(conn->private_data,
-							     struct ntp_signd_connection);
-	packet_queue_run(ntp_signdconn->packet);
+	struct ntp_signd_connection *ntp_signd_conn = talloc_get_type(conn->private_data,
+							struct ntp_signd_connection);
+	/* this should never be triggered! */
+	ntp_signd_terminate_connection(ntp_signd_conn,
+				       "ntp_signd_send: called");
+}
+
+struct ntp_signd_call {
+	struct ntp_signd_connection *ntp_signd_conn;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	uint8_t out_hdr[4];
+	struct iovec out_iov[2];
+};
+
+static void ntp_signd_call_writev_done(struct tevent_req *subreq);
+
+static void ntp_signd_call_loop(struct tevent_req *subreq)
+{
+	struct ntp_signd_connection *ntp_signd_conn = tevent_req_callback_data(subreq,
+				      struct ntp_signd_connection);
+	struct ntp_signd_call *call;
+	NTSTATUS status;
+
+	call = talloc(ntp_signd_conn, struct ntp_signd_call);
+	if (call == NULL) {
+		ntp_signd_terminate_connection(ntp_signd_conn,
+				"ntp_signd_call_loop: "
+				"no memory for ntp_signd_call");
+		return;
+	}
+	call->ntp_signd_conn = ntp_signd_conn;
+
+	status = tstream_read_pdu_blob_recv(subreq,
+					    call,
+					    &call->in);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ntp_signd_call_loop: "
+					 "tstream_read_pdu_blob_recv() - %s",
+					 nt_errstr(status));
+		if (reason == NULL) {
+			reason = nt_errstr(status);
+		}
+
+		ntp_signd_terminate_connection(ntp_signd_conn, reason);
+		return;
+	}
+
+	DEBUG(10,("Received NTP TCP packet of length %lu from %s\n",
+		 (long) call->in.length,
+		 tsocket_address_string(ntp_signd_conn->conn->remote_address, call)));
+
+	/* skip length header */
+	call->in.data +=4;
+	call->in.length -= 4;
+
+	status = ntp_signd_process(ntp_signd_conn,
+				     call,
+				     &call->in,
+				     &call->out);
+	if (! NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ntp_signd_process failed: %s",
+					 nt_errstr(status));
+		if (reason == NULL) {
+			reason = nt_errstr(status);
+		}
+
+		ntp_signd_terminate_connection(ntp_signd_conn, reason);
+		return;
+	}
+
+	/* First add the length of the out buffer */
+	RSIVAL(call->out_hdr, 0, call->out.length);
+	call->out_iov[0].iov_base = call->out_hdr;
+	call->out_iov[0].iov_len = 4;
+
+	call->out_iov[1].iov_base = call->out.data;
+	call->out_iov[1].iov_len = call->out.length;
+
+	subreq = tstream_writev_queue_send(call,
+					   ntp_signd_conn->conn->event.ctx,
+					   ntp_signd_conn->tstream,
+					   ntp_signd_conn->send_queue,
+					   call->out_iov, 2);
+	if (subreq == NULL) {
+		ntp_signd_terminate_connection(ntp_signd_conn, "ntp_signd_call_loop: "
+				"no memory for tstream_writev_queue_send");
+		return;
+	}
+
+	tevent_req_set_callback(subreq, ntp_signd_call_writev_done, call);
+
+	/*
+	 * The NTP tcp pdu's has the length as 4 byte (initial_read_size),
+	 * packet_full_request_u32 provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(ntp_signd_conn,
+					    ntp_signd_conn->conn->event.ctx,
+					    ntp_signd_conn->tstream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    ntp_signd_conn);
+	if (subreq == NULL) {
+		ntp_signd_terminate_connection(ntp_signd_conn, "ntp_signd_call_loop: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, ntp_signd_call_loop, ntp_signd_conn);
+}
+
+static void ntp_signd_call_writev_done(struct tevent_req *subreq)
+{
+	struct ntp_signd_call *call = tevent_req_callback_data(subreq,
+			struct ntp_signd_call);
+	int sys_errno;
+	int rc;
+
+	rc = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (rc == -1) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ntp_signd_call_writev_done: "
+					 "tstream_writev_queue_recv() - %d:%s",
+					 sys_errno, strerror(sys_errno));
+		if (!reason) {
+			reason = "ntp_signd_call_writev_done: "
+				 "tstream_writev_queue_recv() failed";
+		}
+
+		ntp_signd_terminate_connection(call->ntp_signd_conn, reason);
+		return;
+	}
+
+	/* We don't care about errors */
+
+	talloc_free(call);
 }
 
 /*
@@ -297,37 +422,65 @@ static void ntp_signd_send(struct stream_connection *conn, uint16_t flags)
 */
 static void ntp_signd_accept(struct stream_connection *conn)
 {
-	struct ntp_signd_server *ntp_signd = talloc_get_type(conn->private_data, struct ntp_signd_server);
-	struct ntp_signd_connection *ntp_signdconn;
+	struct ntp_signd_server *ntp_signd = talloc_get_type(conn->private_data,
+						struct ntp_signd_server);
+	struct ntp_signd_connection *ntp_signd_conn;
+	struct tevent_req *subreq;
+	int rc;
 
-	ntp_signdconn = talloc_zero(conn, struct ntp_signd_connection);
-	if (!ntp_signdconn) {
-		stream_terminate_connection(conn, "ntp_signd_accept: out of memory");
+	ntp_signd_conn = talloc_zero(conn, struct ntp_signd_connection);
+	if (ntp_signd_conn == NULL) {
+		stream_terminate_connection(conn,
+				"ntp_signd_accept: out of memory");
 		return;
 	}
-	ntp_signdconn->conn	 = conn;
-	ntp_signdconn->ntp_signd	 = ntp_signd;
-	conn->private_data    = ntp_signdconn;
 
-	ntp_signdconn->packet = packet_init(ntp_signdconn);
-	if (ntp_signdconn->packet == NULL) {
-		ntp_signd_terminate_connection(ntp_signdconn, "ntp_signd_accept: out of memory");
+	ntp_signd_conn->send_queue = tevent_queue_create(conn,
+			"ntp_signd_accept");
+	if (ntp_signd_conn->send_queue == NULL) {
+		stream_terminate_connection(conn,
+				"ntp_signd_accept: out of memory");
 		return;
 	}
-	packet_set_private(ntp_signdconn->packet, ntp_signdconn);
-	packet_set_socket(ntp_signdconn->packet, conn->socket);
-	packet_set_callback(ntp_signdconn->packet, ntp_signd_recv);
-	packet_set_full_request(ntp_signdconn->packet, packet_full_request_u32);
-	packet_set_error_handler(ntp_signdconn->packet, ntp_signd_recv_error);
-	packet_set_event_context(ntp_signdconn->packet, conn->event.ctx);
-	packet_set_fde(ntp_signdconn->packet, conn->event.fde);
-	packet_set_serialise(ntp_signdconn->packet);
+
+	TALLOC_FREE(conn->event.fde);
+
+	rc = tstream_bsd_existing_socket(ntp_signd_conn->tstream,
+			socket_get_fd(conn->socket),
+			&ntp_signd_conn->tstream);
+	if (rc < 0) {
+		stream_terminate_connection(conn,
+				"ntp_signd_accept: out of memory");
+		return;
+	}
+
+	ntp_signd_conn->conn = conn;
+	ntp_signd_conn->ntp_signd = ntp_signd;
+	conn->private_data = ntp_signd_conn;
+
+	/*
+	 * The NTP tcp pdu's has the length as 4 byte (initial_read_size),
+	 * packet_full_request_u32 provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(ntp_signd_conn,
+					    ntp_signd_conn->conn->event.ctx,
+					    ntp_signd_conn->tstream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    ntp_signd_conn);
+	if (subreq == NULL) {
+		ntp_signd_terminate_connection(ntp_signd_conn,
+				"ntp_signd_accept: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, ntp_signd_call_loop, ntp_signd_conn);
 }
 
 static const struct stream_server_ops ntp_signd_stream_ops = {
 	.name			= "ntp_signd",
 	.accept_connection	= ntp_signd_accept,
-	.recv_handler		= ntp_signd_recv_handler,
+	.recv_handler		= ntp_signd_recv,
 	.send_handler		= ntp_signd_send
 };
 

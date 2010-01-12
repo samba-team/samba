@@ -6,7 +6,8 @@
 INIT_FUNCTION = server_service_ntp_signd_init
 SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = \
-		SAMDB NDR_NTP_SIGND
+		SAMDB NDR_NTP_SIGND \
+		LIBTSOCKET LIBSAMBA_TSOCKET
 # End SUBSYSTEM NTP_SIGND
 #######################
 
