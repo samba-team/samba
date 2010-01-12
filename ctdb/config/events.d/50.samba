@@ -247,7 +247,7 @@ case "$1" in
 	# check winbind is OK
 	check_ctdb_manages_winbind
 	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
-		ctdb_check_command "winbind" "wbinfo --ping-dc"
+		ctdb_check_command "winbind" "wbinfo -p"
 	}
 	;;
 
