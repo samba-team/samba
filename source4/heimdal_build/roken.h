@@ -10,6 +10,8 @@
 /* path to sysconf - should we force this to samba LIBDIR ? */
 #define SYSCONFDIR "/etc"
 
+#define rk_PATH_DELIM '/'
+
 /* HDB module dir - set to Samba LIBDIR/hdb ? */
 #define HDBDIR "/usr/heimdal/lib"
 #define LIBDIR "/usr/heimdal/lib"
@@ -27,7 +29,7 @@
 #define VERSION "Samba"
 
 #define ROKEN_LIB_FUNCTION
-
+#define ROKEN_LIB_CALL
 #define GETHOSTBYADDR_PROTO_COMPATIBLE
 #define GETSERVBYNAME_PROTO_COMPATIBLE
 #define OPENLOG_PROTO_COMPATIBLE
@@ -103,6 +105,10 @@
 
 #ifndef HAVE_INET_ATON
 #define HAVE_INET_ATON
+#endif
+
+#ifndef HAVE_GETTIMEOFDAY
+#define HAVE_GETTIMEOFDAY
 #endif
 
 /* we lie about having pidfile() so that NetBSD5 can compile. Nothing

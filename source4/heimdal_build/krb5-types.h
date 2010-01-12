@@ -8,6 +8,7 @@
 #include "system/network.h"
 
 typedef socklen_t krb5_socklen_t;
+typedef int krb5_socket_t;
 typedef ssize_t krb5_ssize_t;
 
 #endif /* __krb5_types_h__ */

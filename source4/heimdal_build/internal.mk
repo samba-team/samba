@@ -91,6 +91,7 @@ HEIMDAL_HDB_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hdb/hdb.o \
 	$(heimdalsrcdir)/lib/hdb/ext.o \
 	$(heimdalsrcdir)/lib/hdb/keytab.o \
+	$(heimdalsrcdir)/lib/hdb/hdb-keytab.o \
 	$(heimdalsrcdir)/lib/hdb/mkey.o \
 	$(heimdalsrcdir)/lib/hdb/ndbm.o \
 	$(heimdalsrcdir)/lib/hdb/hdb_err.o \
@@ -109,6 +110,8 @@ $(eval $(call heimdal_proto_header_template, \
   $(HEIMDAL_HDB_OBJ_FILES:.o=.c), \
   $(HEIMDAL_HDB_OBJ_FILES) $(HEIMDAL_HDB_OBJ_FILES:.o=.d) \
 ))
+
+basics:: $(heimdalsrcdir)/lib/hdb/hdb-protos.h $(heimdalsrcdir)/lib/hdb/hdb-private.h
 
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
@@ -637,6 +640,7 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/erealloc.o \
 	$(heimdalsrcdir)/lib/roken/simple_exec.o \
 	$(heimdalsrcdir)/lib/roken/strcollect.o \
+	$(heimdalsrcdir)/lib/roken/strerror_r.o \
 	$(heimdalsrcdir)/lib/roken/rtbl.o \
 	$(heimdalsrcdir)/lib/roken/cloexec.o \
 	$(heimdalsrcdir)/lib/roken/xfree.o \
@@ -692,6 +696,7 @@ asn1_compile_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/gen_glue.ho \
 	$(heimdalsrcdir)/lib/asn1/gen_length.ho \
 	$(heimdalsrcdir)/lib/asn1/gen_seq.ho \
+	$(heimdalsrcdir)/lib/asn1/gen_template.ho \
 	$(heimdalsrcdir)/lib/asn1/hash.ho \
 	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/asn1/asn1parse.ho \
@@ -705,10 +710,18 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/vers/print_version.ho
 
 $(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1
+basics::  $(heimdalsrcdir)/lib/asn1/der-protos.h $(heimdalsrcdir)/lib/asn1/der-private.h
 
 $(eval $(call heimdal_proto_header_template, \
   $(heimdalsrcdir)/lib/asn1/der-protos.h, \
   -q -P comment -o, \
+  $(HEIMDAL_HEIM_ASN1_DER_OBJ_FILES:.o=.c), \
+  $(asn1_compile_ASN1_OBJ_FILES) $(asn1_compile_ASN1_OBJ_FILES:.ho=.hd) \
+))
+
+$(eval $(call heimdal_proto_header_template, \
+  $(heimdalsrcdir)/lib/asn1/der-private.h, \
+  -q -P comment -p, \
   $(HEIMDAL_HEIM_ASN1_DER_OBJ_FILES:.o=.c), \
   $(asn1_compile_ASN1_OBJ_FILES) $(asn1_compile_ASN1_OBJ_FILES:.ho=.hd) \
 ))

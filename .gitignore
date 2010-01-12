@@ -155,11 +155,14 @@ source4/gentest_seeds.dat
 source4/heimdal/kdc/kdc-private.h
 source4/heimdal/kdc/kdc-protos.h
 source4/heimdal/lib/asn1/asn1_*
+source4/heimdal/lib/asn1/*_asn1-priv.h*
 source4/heimdal/lib/asn1/der-protos.h
 source4/heimdal/lib/asn1/krb5_asn1_files
 source4/heimdal/lib/asn1/krb5_asn1.h
 source4/heimdal/lib/des/hcrypto
 source4/heimdal/lib/gssapi/asn1_*.c
+source4/heimdal/lib/gssapi/gssapi_asn1-priv.h
+source4/heimdal/lib/gssapi/spnego_asn1-priv.h
 source4/heimdal/lib/gssapi/krb5/gsskrb5-private.h
 source4/heimdal/lib/gssapi/spnego_asn1_files
 source4/heimdal/lib/gssapi/spnego_asn1.h
@@ -167,10 +170,12 @@ source4/heimdal/lib/gssapi/spnego/spnego-private.h
 source4/heimdal/lib/hdb/asn1_*.c
 source4/heimdal/lib/hdb/hdb_asn1_files
 source4/heimdal/lib/hdb/hdb_asn1.h
+source4/heimdal/lib/hdb/hdb_asn1-priv.h
 source4/heimdal/lib/hdb/hdb_err.?
 source4/heimdal/lib/hdb/hdb-private.h
 source4/heimdal/lib/hdb/hdb-protos.h
 source4/heimdal/lib/hx509/asn1_*.c
+source4/heimdal/lib/hx509/*asn1-priv.h
 source4/heimdal/lib/hx509/hx509-private.h
 source4/heimdal/lib/hx509/hx509-protos.h
 source4/heimdal/lib/krb5/heim_err.?

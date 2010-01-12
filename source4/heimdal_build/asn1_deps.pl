@@ -23,6 +23,8 @@ if (not defined $options) {
 
 my $header = "$dirname/$prefix.h";
 my $headerx = "$dirname/$prefix.hx";
+my $headerpriv = "$dirname/$prefix-priv.h";
+my $headerprivx = "$dirname/$prefix-priv.hx";
 my $o_file = "$dirname/asn1_$prefix.o";
 my $c_file = "$dirname/asn1_$prefix.c";
 my $x_file = "$dirname/asn1_$prefix.x";
@@ -35,7 +37,9 @@ print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname 
 print "$headerx: $output_file\n";
 print "$header: $headerx\n";
 print "\t\@cp $headerx $header\n";
-print "$x_file: $header\n";
+print "$headerpriv: $headerprivx\n";
+print "\t\@cp $headerprivx $headerpriv\n";
+print "$x_file: $header $headerpriv\n";
 print "$c_file: $x_file\n";
 print "\t\@echo \"#include \\\"config.h\\\"\" > $c_file && cat $x_file >> $c_file\n\n";
 
