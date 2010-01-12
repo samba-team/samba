@@ -28,6 +28,7 @@
 		<arg choice="opt">-D drive</arg>	
 		<arg choice="opt">-S script</arg>
 		<arg choice="opt">-p profile</arg>	
+		<arg choice="opt">-K</arg>
 		<arg choice="opt">-a</arg>	
 		<arg choice="opt">-t, --password-from-stdin</arg>
 		<arg choice="opt">-m</arg>	
