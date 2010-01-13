@@ -600,12 +600,13 @@ static char *capdecode(TALLOC_CTX *ctx, const char *from)
 	size_t len = 0;
 
 	for (p1 = from; *p1; len++) {
-		if (is_hex(from)) {
+		if (is_hex(p1)) {
 			p1 += 3;
 		} else {
 			p1++;
 		}
 	}
+	len++;
 
 	to = TALLOC_ARRAY(ctx, char, len);
 	if (!to) {
