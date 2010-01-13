@@ -114,3 +114,55 @@ class CredentialsOptions(optparse.OptionGroup):
         if not self.no_pass:
             self.creds.set_cmdline_callbacks()
         return self.creds
+
+class CredentialsOptionsDouble(CredentialsOptions):
+    """Command line options for specifying credentials of two servers."""
+    def __init__(self, parser):
+        CredentialsOptions.__init__(self, parser)
+        self.no_pass2 = False
+        self.add_option("--simple-bind-dn2", metavar="DN2", action="callback",
+                        callback=self._set_simple_bind_dn2, type=str,
+                        help="DN to use for a simple bind")
+        self.add_option("--password2", metavar="PASSWORD2", action="callback",
+                        help="Password", type=str, callback=self._set_password2)
+        self.add_option("--username2", metavar="USERNAME2",
+                        action="callback", type=str,
+                        help="Username for second server", callback=self._parse_username2)
+        self.add_option("--workgroup2", metavar="WORKGROUP2",
+                        action="callback", type=str,
+                        help="Workgroup for second server", callback=self._parse_workgroup2)
+        self.add_option("--no-pass2", action="store_true",
+                        help="Don't ask for a password for the second server")
+        self.add_option("--kerberos2", metavar="KERBEROS2",
+                        action="callback", type=str,
+                        help="Use Kerberos", callback=self._set_kerberos2)
+        self.creds2 = Credentials()
+
+    def _parse_username2(self, option, opt_str, arg, parser):
+        self.creds2.parse_string(arg)
+
+    def _parse_workgroup2(self, option, opt_str, arg, parser):
+        self.creds2.set_domain(arg)
+
+    def _set_password2(self, option, opt_str, arg, parser):
+        self.creds2.set_password(arg)
+
+    def _set_kerberos2(self, option, opt_str, arg, parser):
+        if bool(arg) or arg.lower() == "yes":
+            self.creds2.set_kerberos_state(MUST_USE_KERBEROS)
+        else:
+            self.creds2.set_kerberos_state(DONT_USE_KERBEROS)
+
+    def _set_simple_bind_dn2(self, option, opt_str, arg, parser):
+        self.creds2.set_bind_dn(arg)
+
+    def get_credentials2(self, lp):
+        """Obtain the credentials set on the command-line.
+
+        :param lp: Loadparm object to use.
+        :return: Credentials object
+        """
+        self.creds2.guess(lp)
+        if not self.no_pass2:
+            self.creds2.set_cmdline_callbacks()
+        return self.creds2
