@@ -204,7 +204,17 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
 		return ldb_next_request(module, req);
 	}
-	
+
+	/*
+	 * TODO:
+	 *
+	 * We should check "schemaInfo" if we really need to reload the schema!
+	 *
+	 * We should also for a new schema version at the start of each
+	 * "write" (add/modify/rename/delete) operation. And have tests
+	 * to prove that windows does the same.
+	 */
+
 	schema_dn = samdb_schema_dn(ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(ldb);
