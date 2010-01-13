@@ -224,7 +224,7 @@ static WERROR add_local_udv(struct dreplsrv_service *s,
 	uint64_t highest_usn;
 	int i;
 
-	ret = dsdb_load_partition_usn(s->samdb, p->dn, &highest_usn);
+	ret = dsdb_load_partition_usn(s->samdb, p->dn, &highest_usn, NULL);
 	if (ret != LDB_SUCCESS) {
 		/* nothing to add */
 		return WERR_OK;
