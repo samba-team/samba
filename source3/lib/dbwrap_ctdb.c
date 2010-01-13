@@ -840,7 +840,7 @@ again:
 done:
 	h->ctx->transaction = NULL;
 	talloc_free(h);
-	return 0;
+	return ret;
 }
 
 
