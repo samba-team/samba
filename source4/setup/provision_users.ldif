@@ -178,6 +178,9 @@ sAMAccountName: Denied RODC Password Replication Group
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
+# NOTICE: Some other users and groups which rely on automatic SIDs are located
+# in "provision_self_join_modify.ldif"
+
 # Add foreign security principals
 
 dn: CN=S-1-5-4,CN=ForeignSecurityPrincipals,${DOMAINDN}
