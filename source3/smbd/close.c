@@ -336,6 +336,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			become_user(conn, fsp->vuid);
 			became_user = True;
 		}
+		fsp->delete_on_close = true;
 		set_delete_on_close_lck(lck, True, &current_user.ut);
 		if (became_user) {
 			unbecome_user();
@@ -481,6 +482,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  	 * the delete on close flag. JRA.
  	 */
 
+	fsp->delete_on_close = false;
 	set_delete_on_close_lck(lck, False, NULL);
 
  done:
@@ -958,6 +960,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		}
 		send_stat_cache_delete_message(fsp->fsp_name->base_name);
 		set_delete_on_close_lck(lck, True, &current_user.ut);
+		fsp->delete_on_close = true;
 		if (became_user) {
 			unbecome_user();
 		}
