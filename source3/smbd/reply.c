@@ -5368,8 +5368,12 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	close_file(req, fsp, NORMAL_CLOSE);
-	reply_outbuf(req, 0, 0);
+	status = close_file(req, fsp, NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+	} else {
+		reply_outbuf(req, 0, 0);
+	}
 
 	dptr_closepath(sconn, smb_dname->base_name, req->smbpid);
 
