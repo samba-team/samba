@@ -945,7 +945,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
         message("Reopening sam.ldb with new schema");
         samdb.transaction_commit()
-        samdb = Ldb(session_info=session_info,
+        samdb = Ldb(session_info=admin_session_info,
                     credentials=provision_backend.credentials, lp=lp)
         samdb.connect(path)
         samdb.transaction_start()
