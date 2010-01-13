@@ -162,7 +162,9 @@ sub end_test($$$$$)
 		return;
 	}
 
-	$append = "UNEXPECTED($result): $testname\n";
+	chomp $reason;
+
+	$append = "UNEXPECTED($result): $testname\nREASON: $reason\n";
 
 	$self->{test_output}->{$self->{NAME}} .= $append;
 
