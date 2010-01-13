@@ -635,7 +635,8 @@ static bool torture_winbind_struct_list_users(struct torture_context *torture)
 	return true;
 }
 
-static bool get_group_list(struct torture_context *torture, char ***groups)
+static bool get_group_list(struct torture_context *torture, int *num_entries,
+			   char ***groups)
 {
 	struct winbindd_request req;
 	struct winbindd_response rep;
@@ -648,8 +649,17 @@ static bool get_group_list(struct torture_context *torture, char ***groups)
 	ZERO_STRUCT(rep);
 
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_GROUPS, &req, &rep);
-
 	extra_data = (char *)rep.extra_data.data;
+
+	*num_entries = rep.data.num_entries;
+
+	if (*num_entries == 0) {
+		torture_assert(torture, extra_data == NULL,
+			       "extra data is null for >0 reported entries\n");
+		*groups = NULL;
+		return true;
+	}
+
 	torture_assert(torture, extra_data, "NULL extra data");
 
 	for(count = 0;
@@ -663,6 +673,9 @@ static bool get_group_list(struct torture_context *torture, char ***groups)
 
 	SAFE_FREE(rep.extra_data.data);
 
+	torture_assert_int_equal(torture, *num_entries, count,
+				 "Wrong number of group entries reported.");
+
 	*groups = g;
 	return true;
 }
@@ -675,10 +688,8 @@ static bool torture_winbind_struct_list_groups(struct torture_context *torture)
 
 	torture_comment(torture, "Running WINBINDD_LIST_GROUPS (struct based)\n");
 
-	ok = get_group_list(torture, &groups);
+	ok = get_group_list(torture, &count, &groups);
 	torture_assert(torture, ok, "failed to get group list");
-
-	for (count = 0; groups[count]; count++) { }
 
 	torture_comment(torture, "got %d groups\n", count);
 
@@ -945,7 +956,7 @@ static bool name_is_in_list(const char *name, const char **list)
 {
 	uint32_t count;
 
-	for (count = 0; list[count]; count++) {
+	for (count = 0; list && list[count]; count++) {
 		if (strequal(name, list[count])) {
 			return true;
 		}
@@ -964,7 +975,7 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 	bool strict = torture_setting_bool(torture, "strict mode", false);
 	char **users;
 	char **groups;
-	uint32_t count;
+	uint32_t count, num_groups;
 	bool ok;
 
 	torture_comment(torture, "Running WINBINDD_LOOKUP_NAME_SID (struct based)\n");
@@ -973,9 +984,11 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 	torture_assert(torture, ok, "failed to retrieve list of users");
 	lookup_name_sid_list(torture, users);
 
-	ok = get_group_list(torture, &groups);
+	ok = get_group_list(torture, &num_groups, &groups);
 	torture_assert(torture, ok, "failed to retrieve list of groups");
-	lookup_name_sid_list(torture, groups);
+	if (num_groups > 0) {
+		lookup_name_sid_list(torture, groups);
+	}
 
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
