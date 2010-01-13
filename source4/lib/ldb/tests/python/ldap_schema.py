@@ -139,6 +139,16 @@ systemOnly: FALSE
         self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
         self.assertTrue("schemaIDGUID" in res[0])
 
+        # Samba requires a "schemaUpdateNow" here.
+        # TODO: remove this when Samba is fixed
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+
         class_name = "test-Class" + time.strftime("%s", time.gmtime())
         class_ldap_display_name = class_name.replace("-", "")
 
