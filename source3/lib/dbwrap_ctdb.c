@@ -763,6 +763,15 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 		return 0;
 	}
 
+	if (h->m_write == NULL) {
+		/*
+		 * No changes were made, so don't change the seqnum,
+		 * don't push to other node, just exit with success.
+		 */
+		ret = 0;
+		goto done;
+	}
+
 	DEBUG(5,(__location__ " Commit transaction on db 0x%08x\n", ctx->db_id));
 
 	/*
@@ -790,11 +799,6 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	}
 
 again:
-	if (h->m_write == NULL) {
-		/* no changes were made, potentially after a retry */
-		goto done;
-	}
-
 	/* tell ctdbd to commit to the other nodes */
 	rets = ctdbd_control_local(messaging_ctdbd_connection(),
 				   CTDB_CONTROL_TRANS3_COMMIT,
