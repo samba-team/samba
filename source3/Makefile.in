@@ -739,6 +739,7 @@ VFS_ONEFS_SHADOW_COPY_OBJ = modules/vfs_onefs_shadow_copy.o modules/onefs_shadow
 PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 PERFCOUNT_TEST_OBJ = modules/perfcount_test.o
 VFS_DIRSORT_OBJ = modules/vfs_dirsort.o
+VFS_SCANNEDONLY_OBJ = modules/vfs_scannedonly.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -2818,6 +2819,10 @@ bin/security.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/security.o
 bin/dirsort.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DIRSORT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_DIRSORT_OBJ)
+
+bin/scannedonly.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SCANNEDONLY_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_SCANNEDONLY_OBJ)
 
 #########################################################
 ## IdMap NSS plugins
