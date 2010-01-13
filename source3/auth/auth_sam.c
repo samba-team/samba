@@ -33,21 +33,23 @@
 
 static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
-				struct samu *sampass, 
-				const auth_usersupplied_info *user_info, 
+				const char *username,
+				uint32_t acct_ctrl,
+				const uint8_t *lm_pw,
+				const uint8_t *nt_pw,
+				const struct auth_usersupplied_info *user_info,
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
 {
-	uint32 acct_ctrl;
-	const uint8 *lm_pw, *nt_pw;
-	struct samr_Password lm_hash, nt_hash, client_lm_hash, client_nt_hash;
-	const char *username = pdb_get_username(sampass);
-	bool got_lm = false, got_nt = false;
+	struct samr_Password _lm_hash, _nt_hash, _client_lm_hash, _client_nt_hash;
+	struct samr_Password *lm_hash = NULL;
+	struct samr_Password *nt_hash = NULL;
+	struct samr_Password *client_lm_hash = NULL;
+	struct samr_Password *client_nt_hash = NULL;
 
-	*user_sess_key = data_blob(NULL, 0);
-	*lm_sess_key = data_blob(NULL, 0);
+	*user_sess_key = data_blob_null;
+	*lm_sess_key = data_blob_null;
 
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", username));
@@ -58,34 +60,35 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		}		
 	}
 
-	lm_pw = pdb_get_lanman_passwd(sampass);
-	nt_pw = pdb_get_nt_passwd(sampass);
 	if (lm_pw) {
-		memcpy(lm_hash.hash, lm_pw, sizeof(lm_hash.hash));
+		memcpy(_lm_hash.hash, lm_pw, sizeof(_lm_hash.hash));
+		lm_hash = &_lm_hash;
 	}
 	if (nt_pw) {
-		memcpy(nt_hash.hash, nt_pw, sizeof(nt_hash.hash));
+		memcpy(_nt_hash.hash, nt_pw, sizeof(_nt_hash.hash));
+		nt_hash = &_nt_hash;
 	}
-	if (user_info->lm_interactive_pwd.data && sizeof(client_lm_hash.hash) == user_info->lm_interactive_pwd.length) {
-		memcpy(client_lm_hash.hash, user_info->lm_interactive_pwd.data, sizeof(lm_hash.hash));
-		got_lm = true;
+	if (user_info->lm_interactive_pwd.data && sizeof(_client_lm_hash.hash) == user_info->lm_interactive_pwd.length) {
+		memcpy(_client_lm_hash.hash, user_info->lm_interactive_pwd.data, sizeof(_lm_hash.hash));
+		client_lm_hash = &_client_lm_hash;
 	}
-	if (user_info->nt_interactive_pwd.data && sizeof(client_nt_hash.hash) == user_info->nt_interactive_pwd.length) {
-		memcpy(client_nt_hash.hash, user_info->nt_interactive_pwd.data, sizeof(nt_hash.hash));
-		got_nt = true;
+	if (user_info->nt_interactive_pwd.data && sizeof(_client_nt_hash.hash) == user_info->nt_interactive_pwd.length) {
+		memcpy(_client_nt_hash.hash, user_info->nt_interactive_pwd.data, sizeof(_nt_hash.hash));
+		client_nt_hash = &_client_nt_hash;
 	}
-	if (got_lm || got_nt) {
-		*user_sess_key = data_blob(mem_ctx, 16);
+
+	if (client_lm_hash || client_nt_hash) {
+		*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (!user_sess_key->data) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
 		return hash_password_check(mem_ctx, lp_lanman_auth(),
-					   got_lm ? &client_lm_hash : NULL, 
-					   got_nt ? &client_nt_hash : NULL,
+					   client_lm_hash,
+					   client_nt_hash,
 					   username, 
-					   lm_pw ? &lm_hash: NULL, 
-					   nt_pw ? &nt_hash : NULL);
+					   lm_hash,
+					   nt_hash);
 	} else {
 		return ntlm_password_check(mem_ctx, lp_lanman_auth(),
 					   lp_ntlm_auth(),
@@ -95,8 +98,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					   username, 
 					   user_info->smb_name,
 					   user_info->client_domain,
-					   lm_pw ? &lm_hash: NULL, 
-					   nt_pw ? &nt_hash : NULL,
+					   lm_hash,
+					   nt_hash,
 					   user_sess_key, lm_sess_key);
 	}
 }
@@ -165,7 +168,7 @@ static bool logon_hours_ok(struct samu *sampass)
 
 static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       struct samu *sampass, 
-			       const auth_usersupplied_info *user_info)
+			       const struct auth_usersupplied_info *user_info)
 {
 	uint32	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
@@ -278,6 +281,75 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Check whether the given password is one of the last two
+ * password history entries. If so, the bad pwcount should
+ * not be incremented even thought the actual password check
+ * failed.
+ */
+static bool need_to_increment_bad_pw_count(
+	const struct auth_context *auth_context,
+	struct samu* sampass,
+	const struct auth_usersupplied_info *user_info)
+{
+	uint8_t i;
+	const uint8_t *pwhistory;
+	uint32_t pwhistory_len;
+	uint32_t policy_pwhistory_len;
+	uint32_t acct_ctrl;
+	const char *username;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	bool result = true;
+
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY,
+			       &policy_pwhistory_len);
+	if (policy_pwhistory_len == 0) {
+		goto done;
+	}
+
+	pwhistory = pdb_get_pw_history(sampass, &pwhistory_len);
+	if (!pwhistory || pwhistory_len == 0) {
+		goto done;
+	}
+
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	username = pdb_get_username(sampass);
+
+	for (i=1; i < MIN(MIN(3, policy_pwhistory_len), pwhistory_len); i++) {
+		static const uint8_t zero16[SALTED_MD5_HASH_LEN];
+		const uint8_t *salt;
+		const uint8_t *nt_pw;
+		NTSTATUS status;
+		DATA_BLOB user_sess_key = data_blob_null;
+		DATA_BLOB lm_sess_key = data_blob_null;
+
+		salt = &pwhistory[i*PW_HISTORY_ENTRY_LEN];
+		nt_pw = salt + PW_HISTORY_SALT_LEN;
+
+		if (memcmp(zero16, nt_pw, NT_HASH_LEN) == 0) {
+			/* skip zero password hash */
+			continue;
+		}
+
+		if (memcmp(zero16, salt, PW_HISTORY_SALT_LEN) != 0) {
+			/* skip nonzero salt (old format entry) */
+			continue;
+		}
+
+		status = sam_password_ok(auth_context, mem_ctx,
+					 username, acct_ctrl, NULL, nt_pw,
+					 user_info, &user_sess_key, &lm_sess_key);
+		if (NT_STATUS_IS_OK(status)) {
+			result = false;
+			break;
+		}
+	}
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return result;
+}
+
 /****************************************************************************
 check if a username/password is OK assuming the password is a 24 byte
 SMB hash supplied in the user_info structure
@@ -287,8 +359,8 @@ return an NT_STATUS constant.
 static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   void *my_private_data, 
 				   TALLOC_CTX *mem_ctx,
-				   const auth_usersupplied_info *user_info, 
-				   auth_serversupplied_info **server_info)
+				   const struct auth_usersupplied_info *user_info,
+				   struct auth_serversupplied_info **server_info)
 {
 	struct samu *sampass=NULL;
 	bool ret;
@@ -297,6 +369,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	DATA_BLOB user_sess_key = data_blob_null;
 	DATA_BLOB lm_sess_key = data_blob_null;
 	bool updated_autolock = False, updated_badpw = False;
+	uint32_t acct_ctrl;
+	const char *username;
+	const uint8_t *nt_pw;
+	const uint8_t *lm_pw;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -305,7 +381,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	/* the returned struct gets kept on the server_info, by means
 	   of a steal further down */
 
-	if ( !(sampass = samu_new( mem_ctx )) ) {
+	sampass = samu_new(mem_ctx);
+	if (sampass == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -322,16 +399,22 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	username = pdb_get_username(sampass);
+	nt_pw = pdb_get_nt_passwd(sampass);
+	lm_pw = pdb_get_lanman_passwd(sampass);
+
 	/* see if autolock flag needs to be updated */
-	if (pdb_get_acct_ctrl(sampass) & ACB_NORMAL)
+	if (acct_ctrl & ACB_NORMAL)
 		pdb_update_autolock_flag(sampass, &updated_autolock);
 	/* Quit if the account was locked out. */
-	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
-		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", pdb_get_username(sampass)));
+	if (acct_ctrl & ACB_AUTOLOCK) {
+		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", username));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
-	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, 
+	nt_status = sam_password_ok(auth_context, mem_ctx,
+				    username, acct_ctrl, lm_pw, nt_pw,
 				    user_info, &user_sess_key, &lm_sess_key);
 
 	/* Notify passdb backend of login success/failure. If not 
@@ -340,10 +423,19 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	update_login_attempts_status = pdb_update_login_attempts(sampass, NT_STATUS_IS_OK(nt_status));
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		bool increment_bad_pw_count = false;
+
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_WRONG_PASSWORD) && 
-		    pdb_get_acct_ctrl(sampass) &ACB_NORMAL &&
+		    acct_ctrl & ACB_NORMAL &&
 		    NT_STATUS_IS_OK(update_login_attempts_status)) 
-		{  
+		{
+			increment_bad_pw_count =
+				need_to_increment_bad_pw_count(auth_context,
+							       sampass,
+							       user_info);
+		}
+
+		if (increment_bad_pw_count) {
 			pdb_increment_bad_password_count(sampass);
 			updated_badpw = True;
 		} else {
@@ -351,18 +443,21 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 						      &updated_badpw);
 		}
 		if (updated_autolock || updated_badpw){
+			NTSTATUS status;
+
 			become_root();
-			if(!NT_STATUS_IS_OK(pdb_update_sam_account(sampass)))
-				DEBUG(1, ("Failed to modify entry.\n"));
+			status = pdb_update_sam_account(sampass);
 			unbecome_root();
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("Failed to modify entry: %s\n",
+					  nt_errstr(status)));
+			}
 		}
-		data_blob_free(&user_sess_key);
-		data_blob_free(&lm_sess_key);
-		TALLOC_FREE(sampass);
-		return nt_status;
+		goto done;
 	}
 
-	if ((pdb_get_acct_ctrl(sampass) & ACB_NORMAL) && 
+	if ((acct_ctrl & ACB_NORMAL) &&
 	    (pdb_get_bad_password_count(sampass) > 0)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
@@ -370,30 +465,36 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	if (updated_autolock || updated_badpw){
+		NTSTATUS status;
+
 		become_root();
-		if(!NT_STATUS_IS_OK(pdb_update_sam_account(sampass)))
-			DEBUG(1, ("Failed to modify entry.\n"));
+		status = pdb_update_sam_account(sampass);
 		unbecome_root();
- 	}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to modify entry: %s\n",
+				  nt_errstr(status)));
+		}
+	}
 
 	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(sampass);
-		data_blob_free(&user_sess_key);
-		data_blob_free(&lm_sess_key);
-		return nt_status;
+		goto done;
 	}
 
 	become_root();
 	nt_status = make_server_info_sam(server_info, sampass);
 	unbecome_root();
+	/*
+	 * sampass has been stolen to server_info.
+	 * So NULL it out to prevent segfaults.
+	 */
+	sampass = NULL;
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
-		data_blob_free(&user_sess_key);
-		data_blob_free(&lm_sess_key);
-		return nt_status;
+		goto done;
 	}
 
 	(*server_info)->user_session_key =
@@ -408,6 +509,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	(*server_info)->nss_token |= user_info->was_mapped;
 
+done:
+	TALLOC_FREE(sampass);
+	data_blob_free(&user_sess_key);
+	data_blob_free(&lm_sess_key);
 	return nt_status;
 }
 
@@ -431,8 +536,8 @@ Check SAM security (above) but with a few extra checks.
 static NTSTATUS check_samstrict_security(const struct auth_context *auth_context,
 					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info, 
-					 auth_serversupplied_info **server_info)
+					 const struct auth_usersupplied_info *user_info,
+					 struct auth_serversupplied_info **server_info)
 {
 	bool is_local_name, is_my_domain;
 

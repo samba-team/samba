@@ -1057,8 +1057,8 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 	NTSTATUS status = NT_STATUS_OK;
 	union netr_LogonLevel *logon = r->in.logon;
 	const char *nt_username, *nt_domain, *nt_workstation;
-	auth_usersupplied_info *user_info = NULL;
-	auth_serversupplied_info *server_info = NULL;
+	struct auth_usersupplied_info *user_info = NULL;
+	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context = NULL;
 	uint8_t pipe_session_key[16];
 	bool process_creds = true;

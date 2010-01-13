@@ -5398,8 +5398,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	if ( IS_DC ) {
 		DOM_SID domadmins_sid;
 
-		sid_copy(&domadmins_sid, get_global_sam_sid());
-		sid_append_rid(&domadmins_sid, DOMAIN_GROUP_RID_ADMINS);
+		sid_compose(&domadmins_sid, get_global_sam_sid(),
+			    DOMAIN_GROUP_RID_ADMINS);
 
 		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &domadmins_sid,

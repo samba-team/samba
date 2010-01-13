@@ -229,6 +229,8 @@ def __transform_entry(entry, objectClass):
     entry.insert(1, ["objectClass", ["top", objectClass]])
     entry.insert(2, ["cn", cn])
     entry.insert(2, ["objectGUID", str(uuid.uuid4())])
+    entry.insert(2, ["adminDescription", cn])
+    entry.insert(2, ["adminDisplayName", cn])
     
     for l in entry:
         key = l[0].lower()

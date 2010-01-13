@@ -28,6 +28,7 @@
  */
 
 #include "ldb_module.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 {
@@ -47,28 +48,28 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					      req->op.search.tree,
 					      req->op.search.attrs,
 					      req->controls,
-					      req->context, req->callback,
+					      req, dsdb_next_callback,
 					      req);
 		break;
 	case LDB_ADD:
 		ret = ldb_build_add_req(&new_req, ldb_module_get_ctx(module), req,
 					req->op.add.message,
 					req->controls,
-					req->context, req->callback,
+					req, dsdb_next_callback,
 					req);
 		break;
 	case LDB_MODIFY:
 		ret = ldb_build_mod_req(&new_req, ldb_module_get_ctx(module), req,
 					req->op.mod.message,
 					req->controls,
-					req->context, req->callback,
+					req, dsdb_next_callback,
 					req);
 		break;
 	case LDB_DELETE:
 		ret = ldb_build_del_req(&new_req, ldb_module_get_ctx(module), req,
 					req->op.del.dn,
 					req->controls,
-					req->context, req->callback,
+					req, dsdb_next_callback,
 					req);
 		break;
 	case LDB_RENAME:
@@ -76,7 +77,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					   req->op.rename.olddn,
 					   req->op.rename.newdn,
 					   req->controls,
-					   req->context, req->callback,
+					   req, dsdb_next_callback,
 					   req);
 		break;
 	case LDB_EXTENDED:
@@ -85,7 +86,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					     req->op.extended.oid,
 					     req->op.extended.data,
 					     req->controls,
-					     req->context, req->callback,
+					     req, dsdb_next_callback,
 					     req);
 		break;
 	default:

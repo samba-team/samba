@@ -138,53 +138,6 @@ static int prepare_modules_line(struct ldb_context *ldb,
 
 
 
-/*
-  initialise the invocationID for a standalone server
- */
-static int initialise_invocation_id(struct ldb_module *module, struct GUID *guid)
-{
-	struct ldb_message *msg;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int ret;
-
-	*guid = GUID_random();
-
-	msg = ldb_msg_new(module);
-	if (msg == NULL) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	msg->dn = ldb_dn_new(msg, ldb, "@SAMBA_DSDB");
-	if (!msg->dn) {
-		ldb_module_oom(module);
-		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ret = dsdb_msg_add_guid(msg, guid, "invocationID");
-	if (ret != LDB_SUCCESS) {
-		ldb_module_oom(module);
-		talloc_free(msg);
-		return ret;
-	}
-	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
-
-	ret = ldb_modify(ldb, msg);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "Failed to setup standalone invocationID - %s",
-				       ldb_errstring(ldb));
-		talloc_free(msg);
-		return ret;
-	}
-
-	DEBUG(1,("Initialised standalone invocationID to %s\n",
-		 GUID_string(msg, guid)));
-
-	talloc_free(msg);
-
-	return LDB_SUCCESS;
-}
-
-
 static int samba_dsdb_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -258,7 +211,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *openldap_backend_modules[] = {
 		"entryuuid", "paged_searches", NULL };
 
-	static const char *samba_dsdb_attrs[] = { "backendType", "serverRole", "invocationID", NULL };
+	static const char *samba_dsdb_attrs[] = { "backendType", "serverRole", NULL };
 	const char *backendType, *serverRole;
 
 	if (!tmp_ctx) {
@@ -291,34 +244,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 	} else {
 		talloc_free(tmp_ctx);
 		return ret;
-	}
-
-	if (strcmp(serverRole, "standalone") == 0 ||
-	    strcmp(serverRole, "member server") == 0) {
-		struct GUID *guid;
-
-		guid = talloc(module, struct GUID);
-		if (!guid) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		*guid = samdb_result_guid(res->msgs[0], "invocationID");
-		if (GUID_all_zero(guid)) {
-			ret = initialise_invocation_id(module, guid);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-		}
-
-		/* cache the domain_sid in the ldb. See the matching
-		 * code in samdb_ntds_invocation_id() */
-		ret = ldb_set_opaque(ldb, "cache.invocation_id", guid);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
 	}
 
 	backend_modules = NULL;

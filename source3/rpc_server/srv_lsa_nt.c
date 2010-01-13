@@ -335,8 +335,7 @@ static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
 
 	/* Add Full Access for Domain Admins */
-	sid_copy(&adm_sid, get_global_sam_sid());
-	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
+	sid_compose(&adm_sid, get_global_sam_sid(), DOMAIN_GROUP_RID_ADMINS);
 	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 			map->generic_all, 0);
 

@@ -32,6 +32,7 @@ struct messaging_context;
 #define MSG_IRPC                6
 #define MSG_PVFS_NOTIFY		7
 #define MSG_NTVFS_OPLOCK_BREAK	8
+#define MSG_DREPL_ALLOCATE_RID	9
 
 /* temporary messaging endpoints are allocated above this line */
 #define MSG_TMP_BASE		1000

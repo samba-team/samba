@@ -195,8 +195,8 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 		DOM_SID user_sid;
 		fstring sidstr;
 
-		sid_copy(&user_sid, info3->base.domain_sid);
-		sid_append_rid(&user_sid, info3->base.rid);
+		sid_compose(&user_sid, info3->base.domain_sid,
+			    info3->base.rid);
 		sid_to_fstring(sidstr, &user_sid);
 		afsname = talloc_string_sub(mem_ctx, afsname,
 					    "%s", sidstr);

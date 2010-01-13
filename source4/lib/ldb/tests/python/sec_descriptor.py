@@ -285,8 +285,30 @@ userAccountControl: %s""" % userAccountControl
 
 class OwnerGroupDescriptorTests(DescriptorTests):
 
+    def deleteAll(self):
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser1"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser2"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser3"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser4"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser5"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser6"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser7"))
+            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser8"))
+        # DOMAIN
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("test_domain_group1"))
+        self.delete_force(self.ldb_admin, "CN=test_domain_user1,OU=test_domain_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_domain_ou2,OU=test_domain_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
+        # SCHEMA
+        # CONFIGURATION
+        self.delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers," \
+                + self.configuration_dn)
+        self.delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
+
     def setUp(self):
         DescriptorTests.setUp(self)
+        self.deleteAll()
         if self.SAMBA:
             ### Create users
             # User 1
@@ -295,7 +317,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
             # User 2
@@ -304,7 +327,8 @@ member: """ + user_dn
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
             # User 3
@@ -313,7 +337,8 @@ member: """ + user_dn
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
             # User 4
@@ -326,11 +351,13 @@ member: """ + user_dn
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn + """
 
 dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
             # User 6
@@ -339,15 +366,18 @@ member: """ + user_dn
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn + """
 
 dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn + """
 
 dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
             # User 7
@@ -356,11 +386,13 @@ member: """ + user_dn
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn + """
 
 dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
             # User 8
@@ -369,11 +401,13 @@ member: """ + user_dn
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn + """
 
 dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
         self.results = {
@@ -490,25 +524,7 @@ member: """ + user_dn
             self.DS_BEHAVIOR = "ds_behavior_win2008"
 
     def tearDown(self):
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser1"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser2"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser3"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser4"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser5"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser6"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser7"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser8"))
-        # DOMAIN
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("test_domain_group1"))
-        self.delete_force(self.ldb_admin, "CN=test_domain_user1,OU=test_domain_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_domain_ou2,OU=test_domain_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
-        # SCHEMA
-        # CONFIGURATION
-        self.delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers," \
-                + self.configuration_dn)
-        self.delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
+        self.deleteAll()
 
     def check_user_belongs(self, user_dn, groups=[]):
         """ Test wether user is member of the expected group(s) """
@@ -1414,12 +1430,16 @@ member: """ + user_dn
 
 class DaclDescriptorTests(DescriptorTests):
 
-    def setUp(self):
-        DescriptorTests.setUp(self)
-
-    def tearDown(self):
+    def deleteAll(self):
         self.delete_force(self.ldb_admin, "CN=test_inherit_group,OU=test_inherit_ou," + self.base_dn)
         self.delete_force(self.ldb_admin, "OU=test_inherit_ou," + self.base_dn)
+
+    def setUp(self):
+        DescriptorTests.setUp(self)
+        self.deleteAll()
+
+    def tearDown(self):
+        self.deleteAll()
 
     def create_clean_ou(self, object_dn):
         """ Base repeating setup for unittests to follow """
@@ -1686,12 +1706,16 @@ class DaclDescriptorTests(DescriptorTests):
 
 
 class SdFlagsDescriptorTests(DescriptorTests):
+    def deleteAll(self):
+        self.delete_force(self.ldb_admin, "OU=test_sdflags_ou," + self.base_dn)
+
     def setUp(self):
         DescriptorTests.setUp(self)
         self.test_descr = "O:AUG:AUD:(D;;CC;;;LG)S:(OU;;WP;;;AU)"
+        self.deleteAll()
 
     def tearDown(self):
-        self.delete_force(self.ldb_admin, "OU=test_sdflags_ou," + self.base_dn)
+        self.deleteAll()
 
     def test_301(self):
         """ Modify a descriptor with OWNER_SECURITY_INFORMATION set.
@@ -1841,8 +1865,16 @@ class SdFlagsDescriptorTests(DescriptorTests):
 
 class RightsAttributesTests(DescriptorTests):
 
+    def deleteAll(self):
+        if self.SAMBA:
+           self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr"))
+           self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr2"))
+
+        self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
+
     def setUp(self):
         DescriptorTests.setUp(self)
+        self.deleteAll()
         if self.SAMBA:
             ### Create users
             # User 1
@@ -1855,17 +1887,13 @@ class RightsAttributesTests(DescriptorTests):
             self.enable_account(user_dn)
             ldif = """
 dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + user_dn
             self.ldb_admin.modify_ldif(ldif)
 
     def tearDown(self):
-
-        if self.SAMBA:
-           self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr"))
-           self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr2"))
-
-        self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
+        self.deleteAll()
 
     def test_sDRightsEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
@@ -1964,7 +1992,11 @@ member: """ + user_dn
         self.assertTrue("managedBy" in res[0]["allowedAttributesEffective"])
 
 if not "://" in host:
-    host = "ldap://%s" % host
+    if os.path.isfile(host):
+        host = "tdb://%s" % host
+    else:
+        host = "ldap://%s" % host
+
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=["modules:paged_searches"])
 
 runner = SubunitTestRunner()

@@ -103,7 +103,13 @@ struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
 	dn = talloc_zero(mem_ctx, struct ldb_dn);
 	LDB_DN_NULL_FAILED(dn);
 
-	dn->ldb = ldb;
+	dn->ldb = talloc_get_type(ldb, struct ldb_context);
+	if (dn->ldb == NULL) {
+		/* the caller probably got the arguments to
+		   ldb_dn_new() mixed up */
+		talloc_free(dn);
+		return NULL;
+	}
 
 	if (strdn->data && strdn->length) {
 		const char *data = (const char *)strdn->data;

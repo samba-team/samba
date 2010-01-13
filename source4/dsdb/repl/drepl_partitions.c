@@ -88,9 +88,9 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	return WERR_OK;
 }
 
-static WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
-					     const struct repsFromTo1 *rft,
-					     struct dreplsrv_out_connection **_conn)
+WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
+				      const struct repsFromTo1 *rft,
+				      struct dreplsrv_out_connection **_conn)
 {
 	struct dreplsrv_out_connection *cur, *conn = NULL;
 	const char *hostname;
@@ -188,6 +188,65 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	return WERR_OK;
 }
 
+/*
+  convert from one udv format to the other
+ */
+static WERROR udv_convert(TALLOC_CTX *mem_ctx,
+			  const struct replUpToDateVectorCtr2 *udv,
+			  struct drsuapi_DsReplicaCursorCtrEx *udv_ex)
+{
+	int i;
+
+	udv_ex->version = 2;
+	udv_ex->reserved1 = 0;
+	udv_ex->reserved2 = 0;
+	udv_ex->count = udv->count;
+	udv_ex->cursors = talloc_array(mem_ctx, struct drsuapi_DsReplicaCursor, udv->count);
+	W_ERROR_HAVE_NO_MEMORY(udv_ex->cursors);
+
+	for (i=0; i<udv->count; i++) {
+		udv_ex->cursors[i].source_dsa_invocation_id = udv->cursors[i].source_dsa_invocation_id;
+		udv_ex->cursors[i].highest_usn = udv->cursors[i].highest_usn;
+	}
+
+	return WERR_OK;
+}
+
+/*
+  add our local UDV element for the partition
+ */
+static WERROR add_local_udv(struct dreplsrv_service *s,
+			    struct dreplsrv_partition *p,
+			    const struct GUID *our_invocation_id,
+			    struct drsuapi_DsReplicaCursorCtrEx *udv)
+{
+	int ret;
+	uint64_t highest_usn;
+	int i;
+
+	ret = dsdb_load_partition_usn(s->samdb, p->dn, &highest_usn);
+	if (ret != LDB_SUCCESS) {
+		/* nothing to add */
+		return WERR_OK;
+	}
+
+	for (i=0; i<udv->count; i++) {
+		if (GUID_equal(our_invocation_id, &udv->cursors[i].source_dsa_invocation_id)) {
+			udv->cursors[i].highest_usn = highest_usn;
+			return WERR_OK;
+		}
+	}
+
+	udv->cursors = talloc_realloc(p, udv->cursors, struct drsuapi_DsReplicaCursor, udv->count+1);
+	W_ERROR_HAVE_NO_MEMORY(udv->cursors);
+
+	udv->cursors[udv->count].source_dsa_invocation_id = *our_invocation_id;
+	udv->cursors[udv->count].highest_usn = highest_usn;
+	udv->count++;
+
+	return WERR_OK;
+}
+
 static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 struct dreplsrv_partition *p)
 {
@@ -232,6 +291,11 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 		talloc_free(nc_sid);
 	}
 
+	talloc_free(p->uptodatevector.cursors);
+	talloc_free(p->uptodatevector_ex.cursors);
+	ZERO_STRUCT(p->uptodatevector);
+	ZERO_STRUCT(p->uptodatevector_ex);
+
 	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
 	if (ouv_value) {
 		enum ndr_err_code ndr_err;
@@ -251,14 +315,14 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 
 		p->uptodatevector.count		= ouv.ctr.ctr2.count;
 		p->uptodatevector.reserved	= ouv.ctr.ctr2.reserved;
-		talloc_free(p->uptodatevector.cursors);
 		p->uptodatevector.cursors	= talloc_steal(p, ouv.ctr.ctr2.cursors);
+
+		status = udv_convert(p, &p->uptodatevector, &p->uptodatevector_ex);
+		W_ERROR_NOT_OK_RETURN(status);
 	}
 
-	/*
-	 * TODO: add our own uptodatevector cursor
-	 */
-
+	status = add_local_udv(s, p, samdb_ntds_invocation_id(s->samdb), &p->uptodatevector_ex);
+	W_ERROR_NOT_OK_RETURN(status);
 
 	orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom");
 	if (orf_el) {

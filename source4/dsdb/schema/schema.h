@@ -62,6 +62,7 @@ struct dsdb_attribute {
 	uint32_t attributeID_id;
 	struct GUID schemaIDGUID;
 	uint32_t mAPIID;
+	uint32_t msDS_IntId;
 
 	struct GUID attributeSecurityGUID;
 	struct GUID objectGUID;

@@ -71,6 +71,16 @@ struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 	return ev;
 }
 
+static struct tevent_context *default_tevent_context;
+
+/* set a default event context that will be used for
+ * event_context_find() if a parent event context is not found
+ */
+void s4_event_context_set_default(struct tevent_context *ev)
+{
+	default_tevent_context = ev;
+}
+
 /*
   find an event context that is a parent of the given memory context,
   or create a new event context as a child of the given context if
@@ -83,7 +93,10 @@ struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 struct tevent_context *event_context_find(TALLOC_CTX *mem_ctx)
 {
 	struct tevent_context *ev = talloc_find_parent_bytype(mem_ctx, struct tevent_context);
-	if (ev == NULL) {		
+	if (ev == NULL) {
+		ev = default_tevent_context;
+	}
+	if (ev == NULL) {
 		ev = tevent_context_init(mem_ctx);
 	}
 	return ev;

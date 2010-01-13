@@ -75,8 +75,8 @@ static int pdc_fsmo_init(struct ldb_module *module)
 		return ldb_next_init(module);
 	} else if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "pdc_fsmo_init: failed to search the domain object: %d:%s",
-			      ret, ldb_strerror(ret));
+			      "pdc_fsmo_init: failed to search the domain object: %d:%s: %s",
+			      ret, ldb_strerror(ret), ldb_errstring(ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}

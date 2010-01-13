@@ -4,7 +4,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
-   Copyright (C) Guenther Deschner 2008,2009
+   Copyright (C) Guenther Deschner 2008-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +33,10 @@
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
+#include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_proto.h"
+#include "../libcli/auth/schannel.h"
+#include "auth/gensec/schannel_state.h"
 
 #include <unistd.h>
 
@@ -46,6 +50,7 @@
 enum torture_samr_choice {
 	TORTURE_SAMR_PASSWORDS,
 	TORTURE_SAMR_PASSWORDS_PWDLASTSET,
+	TORTURE_SAMR_PASSWORDS_BADPWDCOUNT,
 	TORTURE_SAMR_USER_ATTRIBUTES,
 	TORTURE_SAMR_USER_PRIVILEGES,
 	TORTURE_SAMR_OTHER,
@@ -2634,11 +2639,13 @@ static bool test_GetAliasMembership(struct dcerpc_pipe *p,
 	/* only true for w2k8 it seems
 	 * win7, xp, w2k3 will return a 0 length array pointer */
 
-	torture_assert(tctx, (rids.ids && !rids.count),
-		"samr_GetAliasMembership protocol misbehaviour");
+	if (rids.ids && (rids.count == 0)) {
+		torture_fail(tctx, "samr_GetAliasMembership returned 0 count and a rids array");
+	}
 #endif
-	torture_assert(tctx, (!rids.ids && rids.count),
-		"samr_GetAliasMembership protocol misbehaviour");
+	if (!rids.ids && rids.count) {
+		torture_fail(tctx, "samr_GetAliasMembership returned non-0 count but no rids");
+	}
 
 	return true;
 }
@@ -2730,17 +2737,24 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
 static bool test_SamLogon(struct torture_context *tctx,
 			  struct dcerpc_pipe *p,
 			  struct cli_credentials *test_credentials,
-			  NTSTATUS expected_result)
+			  NTSTATUS expected_result,
+			  bool interactive)
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogonEx r;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
+	struct netr_IdentityInfo identity;
 	struct netr_NetworkInfo ninfo;
+	struct netr_PasswordInfo pinfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int flags = CLI_CRED_NTLM_AUTH;
 	uint32_t samlogon_flags = 0;
+	struct netlogon_creds_CredentialState *creds;
+	struct netr_Authenticator a;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_schannel_creds(p->conn->security_state.generic_state, tctx, &creds), "");
 
 	if (lp_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -2751,50 +2765,74 @@ static bool test_SamLogon(struct torture_context *tctx,
 	}
 
 	cli_credentials_get_ntlm_username_domain(test_credentials, tctx,
-						 &ninfo.identity_info.account_name.string,
-						 &ninfo.identity_info.domain_name.string);
+						 &identity.account_name.string,
+						 &identity.domain_name.string);
 
-	generate_random_buffer(ninfo.challenge,
-			       sizeof(ninfo.challenge));
-	chal = data_blob_const(ninfo.challenge,
-			       sizeof(ninfo.challenge));
-
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(test_credentials),
-						cli_credentials_get_domain(test_credentials));
-
-	status = cli_credentials_get_ntlm_response(test_credentials, tctx,
-						   &flags,
-						   chal,
-						   names_blob,
-						   &lm_resp, &nt_resp,
-						   NULL, NULL);
-	torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
-
-	ninfo.lm.data = lm_resp.data;
-	ninfo.lm.length = lm_resp.length;
-
-	ninfo.nt.data = nt_resp.data;
-	ninfo.nt.length = nt_resp.length;
-
-	ninfo.identity_info.parameter_control =
+	identity.parameter_control =
 		MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
-	ninfo.identity_info.logon_id_low = 0;
-	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(test_credentials);
+	identity.logon_id_low = 0;
+	identity.logon_id_high = 0;
+	identity.workstation.string = cli_credentials_get_workstation(test_credentials);
 
-	logon.network = &ninfo;
+	if (interactive) {
+		netlogon_creds_client_authenticator(creds, &a);
+
+		if (!E_deshash(cli_credentials_get_password(test_credentials), pinfo.lmpassword.hash)) {
+			ZERO_STRUCT(pinfo.lmpassword.hash);
+		}
+		E_md4hash(cli_credentials_get_password(test_credentials), pinfo.ntpassword.hash);
+
+		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			netlogon_creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
+			netlogon_creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
+		} else {
+			netlogon_creds_des_encrypt(creds, &pinfo.lmpassword);
+			netlogon_creds_des_encrypt(creds, &pinfo.ntpassword);
+		}
+
+		pinfo.identity_info = identity;
+		logon.password = &pinfo;
+
+		r.in.logon_level = NetlogonInteractiveInformation;
+	} else {
+		generate_random_buffer(ninfo.challenge,
+				       sizeof(ninfo.challenge));
+		chal = data_blob_const(ninfo.challenge,
+				       sizeof(ninfo.challenge));
+
+		names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(test_credentials),
+							cli_credentials_get_domain(test_credentials));
+
+		status = cli_credentials_get_ntlm_response(test_credentials, tctx,
+							   &flags,
+							   chal,
+							   names_blob,
+							   &lm_resp, &nt_resp,
+							   NULL, NULL);
+		torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
+
+		ninfo.lm.data = lm_resp.data;
+		ninfo.lm.length = lm_resp.length;
+
+		ninfo.nt.data = nt_resp.data;
+		ninfo.nt.length = nt_resp.length;
+
+		ninfo.identity_info = identity;
+		logon.network = &ninfo;
+
+		r.in.logon_level = NetlogonNetworkInformation;
+	}
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(test_credentials);
-	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.logon = &logon;
 	r.in.flags = &samlogon_flags;
 	r.out.flags = &samlogon_flags;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
 
-	torture_comment(tctx, "Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
+	torture_comment(tctx, "Testing LogonSamLogon with name %s\n", identity.account_name.string);
 
 	r.in.validation_level = 6;
 
@@ -2818,7 +2856,8 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 				     struct cli_credentials *machine_creds,
 				     const char *acct_name,
 				     char *password,
-				     NTSTATUS expected_samlogon_result)
+				     NTSTATUS expected_samlogon_result,
+				     bool interactive)
 {
 	bool ret = true;
 	struct cli_credentials *test_credentials;
@@ -2834,11 +2873,11 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 	cli_credentials_set_password(test_credentials,
 				     password, CRED_SPECIFIED);
 
-	torture_comment(tctx, "testing samlogon as %s password: %s\n",
-		acct_name, password);
+	torture_comment(tctx, "testing samlogon (%s) as %s password: %s\n",
+		interactive ? "interactive" : "network", acct_name, password);
 
 	if (!test_SamLogon(tctx, p, test_credentials,
-			   expected_samlogon_result)) {
+			    expected_samlogon_result, interactive)) {
 		torture_warning(tctx, "new password did not work\n");
 		ret = false;
 	}
@@ -2904,7 +2943,8 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 				      machine_creds,
 				      acct_name,
 				      *password,
-				      expected_samlogon_result)) {
+				      expected_samlogon_result,
+				      false)) {
 		ret = false;
 	}
 
@@ -3333,6 +3373,428 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 #undef TEST_QUERY_LEVELS
 
 	talloc_free(np);
+
+	return ret;
+}
+
+static bool test_QueryUserInfo_badpwdcount(struct dcerpc_pipe *p,
+					   struct torture_context *tctx,
+					   struct policy_handle *handle,
+					   uint32_t *badpwdcount)
+{
+	union samr_UserInfo *info;
+	struct samr_QueryUserInfo r;
+
+	r.in.user_handle = handle;
+	r.in.level = 3;
+	r.out.info = &info;
+
+	torture_comment(tctx, "Testing QueryUserInfo level %d", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo(p, tctx, &r),
+		"failed to query userinfo");
+
+	*badpwdcount = info->info3.bad_password_count;
+
+	torture_comment(tctx, " (bad password count: %d)\n", *badpwdcount);
+
+	return true;
+}
+
+static bool test_reset_badpwdcount(struct dcerpc_pipe *p,
+				   struct torture_context *tctx,
+				   struct policy_handle *user_handle,
+				   uint32_t acct_flags,
+				   char **password)
+{
+	struct samr_SetUserInfo r;
+	union samr_UserInfo user_info;
+
+	torture_assert(tctx, test_SetUserPass(p, tctx, user_handle, password),
+		"failed to set password");
+
+	torture_comment(tctx, "Testing SetUserInfo level 16 (enable account)\n");
+
+	user_info.info16.acct_flags = acct_flags;
+	user_info.info16.acct_flags &= ~ACB_DISABLED;
+
+	r.in.user_handle = user_handle;
+	r.in.level = 16;
+	r.in.info = &user_info;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo(p, tctx, &r),
+		"failed to enable user");
+
+	torture_assert(tctx, test_SetUserPass(p, tctx, user_handle, password),
+		"failed to set password");
+
+	return true;
+}
+
+static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
+				      struct dcerpc_pipe *np,
+				      struct torture_context *tctx,
+				      uint32_t acct_flags,
+				      const char *acct_name,
+				      struct policy_handle *domain_handle,
+				      struct policy_handle *user_handle,
+				      char **password,
+				      struct cli_credentials *machine_credentials,
+				      const char *comment,
+				      bool disable,
+				      bool interactive,
+				      NTSTATUS expected_success_status,
+				      struct samr_DomInfo1 *info1,
+				      struct samr_DomInfo12 *info12)
+{
+	union samr_DomainInfo info;
+	char **passwords;
+	int i;
+	uint32_t badpwdcount, tmp;
+	uint32_t password_history_length = 12;
+	uint32_t lockout_threshold = 15;
+
+	torture_comment(tctx, "\nTesting bad pwd count with: %s\n", comment);
+
+	torture_assert(tctx, password_history_length < lockout_threshold,
+		"password history length needs to be smaller than account lockout threshold for this test");
+
+
+	/* set policies */
+
+	info.info1 = *info1;
+
+	info.info1.password_history_length = password_history_length;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainPasswordInformation;
+		r.in.info = &info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 1");
+	}
+
+	info.info12 = *info12;
+
+	info.info12.lockout_threshold = lockout_threshold;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.in.info = &info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 12");
+	}
+
+	/* reset bad pwd count */
+
+	torture_assert(tctx,
+		test_reset_badpwdcount(p, tctx, user_handle, acct_flags, password), "");
+
+
+	/* enable or disable account */
+	{
+		struct samr_SetUserInfo r;
+		union samr_UserInfo user_info;
+
+		torture_comment(tctx, "Testing SetUserInfo level 16 (%s account)\n",
+			disable ? "disable" : "enable");
+
+		user_info.info16.acct_flags = acct_flags;
+		if (disable) {
+			user_info.info16.acct_flags |= ACB_DISABLED;
+		} else {
+			user_info.info16.acct_flags &= ~ACB_DISABLED;
+		}
+
+		r.in.user_handle = user_handle;
+		r.in.level = 16;
+		r.in.info = &user_info;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo(p, tctx, &r),
+			"failed to enable user");
+	}
+
+
+	/* setup password history */
+
+	passwords = talloc_array(tctx, char *, password_history_length);
+
+	for (i=0; i < password_history_length; i++) {
+
+		torture_assert(tctx, test_SetUserPass(p, tctx, user_handle, password),
+			"failed to set password");
+		passwords[i] = talloc_strdup(tctx, *password);
+
+		if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+					      acct_name, passwords[i],
+					      expected_success_status, interactive)) {
+			torture_fail(tctx, "failed to auth with latest password");
+		}
+
+		torture_assert(tctx,
+			test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+
+		torture_assert_int_equal(tctx, badpwdcount, 0, "expected badpwdcount to be 0");
+	}
+
+
+	/* test with wrong password */
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+				      acct_name, "random_crap",
+				      NT_STATUS_WRONG_PASSWORD, interactive)) {
+		torture_fail(tctx, "succeeded to authenticate with wrong password");
+	}
+
+	torture_assert(tctx,
+		test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+
+	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
+
+
+	/* test with latest good password */
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials, acct_name,
+				      passwords[password_history_length-1],
+				      expected_success_status, interactive)) {
+		torture_fail(tctx, "succeeded to authenticate with wrong password");
+	}
+
+	torture_assert(tctx,
+		test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+
+	if (disable) {
+		torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
+	} else {
+		/* only enabled accounts get the bad pwd count reset upon
+		 * successful logon */
+		torture_assert_int_equal(tctx, badpwdcount, 0, "expected badpwdcount to be 0");
+	}
+
+	tmp = badpwdcount;
+
+
+	/* test password history */
+
+	for (i=0; i < password_history_length; i++) {
+
+		torture_comment(tctx, "Testing bad password count behavior with "
+				      "password #%d of #%d\n", i, password_history_length);
+
+		/* - network samlogon will succeed auth and not
+		 *   increase badpwdcount for 2 last entries
+		 * - interactive samlogon only for the last one */
+
+		if (i == password_history_length - 1 ||
+		    (i == password_history_length - 2 && !interactive)) {
+
+			if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+						      acct_name, passwords[i],
+						      expected_success_status, interactive)) {
+				torture_fail(tctx, talloc_asprintf(tctx, "succeeded to authenticate with old password (#%d of #%d in history)", i, password_history_length));
+			}
+
+			torture_assert(tctx,
+				test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+
+			if (disable) {
+				/* torture_comment(tctx, "expecting bad pwd count to *NOT INCREASE* for pwd history entry %d\n", i); */
+				torture_assert_int_equal(tctx, badpwdcount, tmp, "unexpected badpwdcount");
+			} else {
+				/* torture_comment(tctx, "expecting bad pwd count to be 0 for pwd history entry %d\n", i); */
+				torture_assert_int_equal(tctx, badpwdcount, 0, "expected badpwdcount to be 0");
+			}
+
+			tmp = badpwdcount;
+
+			continue;
+		}
+
+		if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+					      acct_name, passwords[i],
+					      NT_STATUS_WRONG_PASSWORD, interactive)) {
+			torture_fail(tctx, talloc_asprintf(tctx, "succeeded to authenticate with old password (#%d of #%d in history)", i, password_history_length));
+		}
+
+		torture_assert(tctx,
+			test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+
+		/* - network samlogon will fail auth but not increase
+		 *   badpwdcount for 3rd last entry
+		 * - interactive samlogon for 3rd and 2nd last entry */
+
+		if (i == password_history_length - 3 ||
+		    (i == password_history_length - 2 && interactive)) {
+			/* torture_comment(tctx, "expecting bad pwd count to *NOT INCREASE * by one for pwd history entry %d\n", i); */
+			torture_assert_int_equal(tctx, badpwdcount, tmp, "unexpected badpwdcount");
+		} else {
+			/* torture_comment(tctx, "expecting bad pwd count to increase by one for pwd history entry %d\n", i); */
+			torture_assert_int_equal(tctx, badpwdcount, tmp + 1, "unexpected badpwdcount");
+		}
+
+		tmp = badpwdcount;
+	}
+
+	return true;
+}
+
+static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
+					   struct torture_context *tctx,
+					   uint32_t acct_flags,
+					   const char *acct_name,
+					   struct policy_handle *domain_handle,
+					   struct policy_handle *user_handle,
+					   char **password,
+					   struct cli_credentials *machine_credentials)
+{
+	union samr_DomainInfo *q_info, s_info;
+	struct samr_DomInfo1 info1, _info1;
+	struct samr_DomInfo12 info12, _info12;
+	bool ret = true;
+	struct dcerpc_binding *b;
+	struct dcerpc_pipe *np;
+	int i;
+
+	struct {
+		const char *comment;
+		bool disabled;
+		bool interactive;
+		NTSTATUS expected_success_status;
+	} creds[] = {
+		{
+			.comment		= "network logon (disabled account)",
+			.disabled		= true,
+			.interactive		= false,
+			.expected_success_status= NT_STATUS_ACCOUNT_DISABLED
+		},
+		{
+			.comment		= "network logon (enabled account)",
+			.disabled		= false,
+			.interactive		= false,
+			.expected_success_status= NT_STATUS_OK
+		},
+		{
+			.comment		= "interactive logon (disabled account)",
+			.disabled		= true,
+			.interactive		= true,
+			.expected_success_status= NT_STATUS_ACCOUNT_DISABLED
+		},
+		{
+			.comment		= "interactive logon (enabled account)",
+			.disabled		= false,
+			.interactive		= true,
+			.expected_success_status= NT_STATUS_OK
+		},
+	};
+
+	/* setup netlogon schannel pipe */
+
+	torture_assert_ntstatus_ok(tctx, torture_rpc_binding(tctx, &b), "failed to obtain rpc binding");
+
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_pipe_connect_b(tctx, &np, b, &ndr_table_netlogon,
+							       machine_credentials, tctx->ev, tctx->lp_ctx),
+				   "failed to connect to NETLOGON pipe");
+
+	/* backup old policies */
+
+	{
+		struct samr_QueryDomainInfo2 r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainPasswordInformation;
+		r.out.info = &q_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
+			"failed to query domain info level 1");
+
+		info1 = q_info->info1;
+	}
+
+	{
+		struct samr_QueryDomainInfo2 r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.out.info = &q_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
+			"failed to query domain info level 12");
+
+		info12 = q_info->info12;
+	}
+
+	_info1 = info1;
+	_info12 = info12;
+
+	/* run tests */
+
+	for (i=0; i < ARRAY_SIZE(creds); i++) {
+
+		/* skip trust tests for now */
+		if (acct_flags & ACB_WSTRUST ||
+		    acct_flags & ACB_SVRTRUST ||
+		    acct_flags & ACB_DOMTRUST) {
+			continue;
+		}
+
+		ret &= test_Password_badpwdcount(p, np, tctx, acct_flags, acct_name,
+						 domain_handle, user_handle, password,
+						 machine_credentials,
+						 creds[i].comment,
+						 creds[i].disabled,
+						 creds[i].interactive,
+						 creds[i].expected_success_status,
+						 &_info1, &_info12);
+		if (!ret) {
+			torture_warning(tctx, "TEST #%d (%s) failed\n", i, creds[i].comment);
+		} else {
+			torture_comment(tctx, "TEST #%d (%s) succeeded\n", i, creds[i].comment);
+		}
+	}
+
+	/* restore policies */
+
+	s_info.info1 = info1;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainPasswordInformation;
+		r.in.info = &s_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 1");
+	}
+
+	s_info.info12 = info12;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.in.info = &s_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 12");
+	}
 
 	return ret;
 }
@@ -3832,6 +4294,25 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			torture_comment(tctx, "pwdLastSet test succeeded\n");
 		} else {
 			torture_warning(tctx, "pwdLastSet test failed\n");
+		}
+
+		break;
+
+	case TORTURE_SAMR_PASSWORDS_BADPWDCOUNT:
+
+		/* test bad pwd count change behaviour */
+		if (!test_Password_badpwdcount_wrap(p, tctx, base_acct_flags,
+						    base_acct_name,
+						    domain_handle,
+						    user_handle, &password,
+						    machine_credentials)) {
+			ret = false;
+		}
+
+		if (ret == true) {
+			torture_comment(tctx, "badPwdCount test succeeded\n");
+		} else {
+			torture_warning(tctx, "badPwdCount test failed\n");
 		}
 
 		break;
@@ -6527,12 +7008,13 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 		break;
 	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
+	case TORTURE_SAMR_PASSWORDS_BADPWDCOUNT:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, ctx->choice, ctx->machine_credentials);
 		}
 		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, ctx->choice, ctx->machine_credentials, true);
 		if (!ret) {
-			torture_warning(tctx, "Testing PASSWORDS PWDLASTSET on domain %s failed!\n", dom_sid_string(tctx, sid));
+			torture_warning(tctx, "Testing PASSWORDS PWDLASTSET or BADPWDCOUNT on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
 		break;
 	case TORTURE_SAMR_MANY_ACCOUNTS:
@@ -7120,6 +7602,49 @@ struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
 				      torture_rpc_samr_many_groups, ctx);
 	torture_rpc_tcase_add_test_ex(tcase, "many_accounts",
 				      torture_rpc_samr_many_accounts, ctx);
+
+	return suite;
+}
+
+static bool torture_rpc_samr_badpwdcount(struct torture_context *torture,
+					 struct dcerpc_pipe *p2,
+					 struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	bool ret = true;
+	struct torture_samr_context *ctx;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ctx = talloc_zero(torture, struct torture_samr_context);
+
+	ctx->choice = TORTURE_SAMR_PASSWORDS_BADPWDCOUNT;
+	ctx->machine_credentials = machine_credentials;
+
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_samr_passwords_badpwdcount(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-BADPWDCOUNT");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
+							  &ndr_table_samr,
+							  TEST_ACCOUNT_NAME_PWD);
+
+	torture_rpc_tcase_add_test_creds(tcase, "badPwdCount",
+					 torture_rpc_samr_badpwdcount);
 
 	return suite;
 }

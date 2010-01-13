@@ -32,7 +32,7 @@
 #include "includes.h"
 #include "ldb/include/ldb_module.h"
 #include "dsdb/samdb/samdb.h"
-
+#include "dsdb/samdb/ldb_modules/util.h"
 
 static int show_deleted_search(struct ldb_module *module, struct ldb_request *req)
 {
@@ -83,7 +83,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 				      new_tree,
 				      req->op.search.attrs,
 				      req->controls,
-				      req->context, req->callback,
+				      req, dsdb_next_callback,
 				      req);
 	if (ret != LDB_SUCCESS) {
 		return ret;

@@ -39,7 +39,14 @@ static int strcasecmp_with_ldb_val(const struct ldb_val *target, const char *str
 {
 	int ret = strncasecmp((const char *)target->data, str, target->length);
 	if (ret == 0) {
-		return (target->length - strlen(str));
+		size_t len = strlen(str);
+		if (target->length > len) {
+			if (target->data[len] == 0) {
+				return 0;
+			}
+			return 1;
+		}
+		return (target->length - len);
 	}
 	return ret;
 }
@@ -54,6 +61,15 @@ const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_
 	 * so don't try to match with it
 	 */
 	if (id == 0xFFFFFFFF) return NULL;
+
+	/* check for msDS-IntId type attribute */
+	if (dsdb_pfm_get_attid_type(id) == dsdb_attid_type_intid) {
+		for (c = schema->attributes; c; c = c->next) {
+			if (c->msDS_IntId == id) {
+				return c;
+			}
+		}
+	}
 
 	BINARY_ARRAY_SEARCH_P(schema->attributes_by_attributeID_id,
 			      schema->num_attributes, attributeID_id, id, uint32_cmp, c);
@@ -82,6 +98,18 @@ const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb
 	BINARY_ARRAY_SEARCH_P(schema->attributes_by_lDAPDisplayName,
 			      schema->num_attributes, lDAPDisplayName, name, strcasecmp, c);
 	return c;
+}
+
+const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName_ldb_val(const struct dsdb_schema *schema,
+								       const struct ldb_val *name)
+{
+	struct dsdb_attribute *a;
+
+	if (!name) return NULL;
+
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_lDAPDisplayName,
+			      schema->num_attributes, lDAPDisplayName, name, strcasecmp_with_ldb_val, a);
+	return a;
 }
 
 const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *schema,

@@ -431,7 +431,7 @@ dn: CN=RID Manager$,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: rIDManager
 systemFlags: -1946157056
-rIDAvailablePool: 4611686014132423217
+rIDAvailablePool: 1001-1073741823
 isCriticalSystemObject: TRUE
 
 dn: CN=RpcServices,CN=System,${DOMAINDN}

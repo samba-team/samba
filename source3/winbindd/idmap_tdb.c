@@ -97,8 +97,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 
 	rid = atoi(p);
 
-	sid_copy(&sid, &domain->sid);
-	sid_append_rid(&sid, rid);
+	sid_compose(&sid, &domain->sid, rid);
 
 	sid_to_fstring(keystr, &sid);
 	key2 = string_term_tdb_data(keystr);

@@ -439,6 +439,7 @@ default_shared_modules="$default_shared_modules vfs_acl_tdb"
 default_shared_modules="$default_shared_modules vfs_smb_traffic_analyzer"
 default_shared_modules="$default_shared_modules vfs_preopen"
 default_shared_modules="$default_shared_modules vfs_catia"
+default_shared_modules="$default_shared_modules vfs_scannedonly"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
@@ -6552,6 +6553,7 @@ SMB_MODULE(vfs_smb_traffic_analyzer, \$(VFS_SMB_TRAFFIC_ANALYZER_OBJ), "bin/smb_
 SMB_MODULE(vfs_onefs, \$(VFS_ONEFS), "bin/onefs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_onefs_shadow_copy, \$(VFS_ONEFS_SHADOW_COPY), "bin/onefs_shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_dirsort, \$(VFS_DIRSORT_OBJ), "bin/dirsort.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_scannedonly, \$(VFS_SCANNEDONLY_OBJ), "bin/scannedonly.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 

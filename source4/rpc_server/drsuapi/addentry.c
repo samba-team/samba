@@ -43,13 +43,15 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 	for (obj = first_object; obj; obj=obj->next_object) {
 		const char *dn_string = obj->object.identifier->dn;
 		struct ldb_dn *dn = ldb_dn_new(mem_ctx, b_state->sam_ctx, dn_string);
-		struct ldb_result *res;
+		struct ldb_result *res, *res2;
 		struct ldb_dn *ref_dn;
 		struct GUID ntds_guid;
 		struct ldb_message *msg;
 		struct ldb_message_element *el;
 		const char *ntds_guid_str;
 		const char *dom_string;
+		const char *attrs2[] = { "dNSHostName", "cn", NULL };
+		const char *dNSHostName, *cn;
 
 		DEBUG(6,(__location__ ": Adding SPNs for %s\n", 
 			 ldb_dn_get_linearized(dn)));
@@ -78,6 +80,18 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 
 		dom_string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 
+		/* get the dNSHostName and cn */
+		ret = ldb_search(b_state->sam_ctx, mem_ctx, &res2,
+				 ref_dn, LDB_SCOPE_BASE, attrs2, NULL);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find ref_dn '%s'\n",
+				 ldb_dn_get_linearized(ref_dn)));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		dNSHostName = ldb_msg_find_attr_as_string(res2->msgs[0], "dNSHostName", NULL);
+		cn = ldb_msg_find_attr_as_string(res2->msgs[0], "cn", NULL);
+
 		/*
 		 * construct a modify request to add the new SPNs to
 		 * the machine account
@@ -94,20 +108,25 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 			return WERR_NOMEM;
 		}
 
-		el->num_values = 2;
-		el->values = talloc_array(msg->elements, struct ldb_val, 2);
-		if (el->values == NULL) {
+
+		ldb_msg_add_steal_string(msg, "servicePrincipalName",
+					 talloc_asprintf(el->values,
+							 "E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s",
+							 ntds_guid_str, dom_string));
+		ldb_msg_add_steal_string(msg, "servicePrincipalName",
+					 talloc_asprintf(el->values, "ldap/%s._msdcs.%s",
+							 ntds_guid_str, dom_string));
+		if (cn) {
+			ldb_msg_add_steal_string(msg, "servicePrincipalName",
+						 talloc_asprintf(el->values, "ldap/%s", cn));
+		}
+		if (dNSHostName) {
+			ldb_msg_add_steal_string(msg, "servicePrincipalName",
+						 talloc_asprintf(el->values, "ldap/%s", dNSHostName));
+		}
+		if (el->num_values < 2) {
 			return WERR_NOMEM;
 		}
-		/* the magic constant is the GUID of the DRSUAPI RPC
-		   interface */
-		el->values[0].data = (uint8_t *)talloc_asprintf(el->values, 
-								"E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s", 
-								ntds_guid_str, dom_string);
-		el->values[0].length = strlen((char *)el->values[0].data);
-		el->values[1].data = (uint8_t *)talloc_asprintf(el->values, "ldap/%s._msdcs.%s", 
-								ntds_guid_str, dom_string);
-		el->values[1].length = strlen((char *)el->values[1].data);
 
 		ret = ldb_modify(b_state->sam_ctx, msg);
 		if (ret != LDB_SUCCESS) {

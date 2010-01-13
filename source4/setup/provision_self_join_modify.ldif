@@ -33,3 +33,18 @@ changetype: modify
 add: servicePrincipalName
 servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/${NTDSGUID}/${DNSDOMAIN}
 servicePrincipalName: ldap/${NTDSGUID}._msdcs.${DNSDOMAIN}
+
+# NOTE: This account is SAMBA4 specific!
+dn: CN=dns,CN=Users,${DOMAINDN}
+changetype: add
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+description: DNS Service Account
+userAccountControl: 514
+accountExpires: 9223372036854775807
+sAMAccountName: dns
+servicePrincipalName: DNS/${DNSDOMAIN}
+userPassword:: ${DNSPASS_B64}
+isCriticalSystemObject: TRUE

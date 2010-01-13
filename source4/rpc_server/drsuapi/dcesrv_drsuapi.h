@@ -47,6 +47,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct drsuapi_DsGetNCChanges *r);
 WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct drsuapi_DsAddEntry *r);
+WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct drsuapi_DsWriteAccountSpn *r);
 
 char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
 				     struct drsuapi_DsReplicaObjectIdentifier *nc);

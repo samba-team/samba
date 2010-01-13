@@ -1196,9 +1196,16 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	return domain_sid;
 
 failed:
-	DEBUG(1,("Failed to find domain_sid for open ldb\n"));
 	talloc_free(tmp_ctx);
 	return NULL;
+}
+
+/*
+  get domain sid from cache
+*/
+const struct dom_sid *samdb_domain_sid_cache_only(struct ldb_context *ldb)
+{
+	return (struct dom_sid *)ldb_get_opaque(ldb, "cache.domain_sid");
 }
 
 bool samdb_set_domain_sid(struct ldb_context *ldb, const struct dom_sid *dom_sid_in)
@@ -1519,6 +1526,86 @@ struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 
 	talloc_free(server_dn);
 	return server_site_dn;
+}
+
+/*
+  find a 'reference' DN that points at another object
+  (eg. serverReference, rIDManagerReference etc)
+ */
+int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *base,
+		       const char *attribute, struct ldb_dn **dn)
+{
+	const char *attrs[2];
+	struct ldb_result *res;
+	int ret;
+
+	attrs[0] = attribute;
+	attrs[1] = NULL;
+
+	ret = ldb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		talloc_free(res);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	*dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0], attribute);
+	if (!*dn) {
+		talloc_free(res);
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	talloc_free(res);
+	return LDB_SUCCESS;
+}
+
+/*
+  find our machine account via the serverReference attribute in the
+  server DN
+ */
+int samdb_server_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	struct ldb_dn *server_dn;
+	int ret;
+
+	server_dn = samdb_server_dn(ldb, mem_ctx);
+	if (server_dn == NULL) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	ret = samdb_reference_dn(ldb, mem_ctx, server_dn, "serverReference", dn);
+	talloc_free(server_dn);
+
+	return ret;
+}
+
+/*
+  find the RID Manager$ DN via the rIDManagerReference attribute in the
+  base DN
+ */
+int samdb_rid_manager_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	return samdb_reference_dn(ldb, mem_ctx, samdb_base_dn(ldb), "rIDManagerReference", dn);
+}
+
+/*
+  find the RID Set DN via the rIDSetReferences attribute in our
+  machine account DN
+ */
+int samdb_rid_set_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	struct ldb_dn *server_ref_dn;
+	int ret;
+
+	ret = samdb_server_reference_dn(ldb, mem_ctx, &server_ref_dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = samdb_reference_dn(ldb, mem_ctx, server_ref_dn, "rIDSetReferences", dn);
+	talloc_free(server_ref_dn);
+	return ret;
 }
 
 const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
@@ -2353,15 +2440,19 @@ int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
 
 
 /*
-  use a DN to find a GUID
+  use a DN to find a GUID with a given attribute name
  */
-int dsdb_find_guid_by_dn(struct ldb_context *ldb, 
-			 struct ldb_dn *dn, struct GUID *guid)
+int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
+			      struct ldb_dn *dn, const char *attribute,
+			      struct GUID *guid)
 {
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "objectGUID", NULL };
+	const char *attrs[2];
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+
+	attrs[0] = attribute;
+	attrs[1] = NULL;
 
 	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, dn, attrs);
 	if (ret != LDB_SUCCESS) {
@@ -2372,9 +2463,18 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-	*guid = samdb_result_guid(res->msgs[0], "objectGUID");
+	*guid = samdb_result_guid(res->msgs[0], attribute);
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
+}
+
+/*
+  use a DN to find a GUID
+ */
+int dsdb_find_guid_by_dn(struct ldb_context *ldb,
+			 struct ldb_dn *dn, struct GUID *guid)
+{
+	return dsdb_find_guid_attr_by_dn(ldb, dn, "objectGUID", guid);
 }
 
 
@@ -2713,6 +2813,12 @@ again:
 
 int drsuapi_DsReplicaCursor2_compare(const struct drsuapi_DsReplicaCursor2 *c1,
 						   const struct drsuapi_DsReplicaCursor2 *c2)
+{
+	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
+}
+
+int drsuapi_DsReplicaCursor_compare(const struct drsuapi_DsReplicaCursor *c1,
+				    const struct drsuapi_DsReplicaCursor *c2)
 {
 	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
 }
@@ -3098,4 +3204,20 @@ int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
 	*lifetime = samdb_search_uint(ldb, dn, 180, dn, "tombstoneLifetime", "objectClass=nTDSService");
 	talloc_free(dn);
 	return LDB_SUCCESS;
+}
+
+/*
+  compare a ldb_val to a string case insensitively
+ */
+int samdb_ldb_val_case_cmp(const char *s, struct ldb_val *v)
+{
+	size_t len = strlen(s);
+	int ret;
+	if (len > v->length) return 1;
+	ret = strncasecmp(s, (const char *)v->data, v->length);
+	if (ret != 0) return ret;
+	if (v->length > len && v->data[len] != 0) {
+		return -1;
+	}
+	return 0;
 }

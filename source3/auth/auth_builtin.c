@@ -34,8 +34,8 @@
 static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 				     void *my_private_data, 
 				     TALLOC_CTX *mem_ctx,
-				     const auth_usersupplied_info *user_info, 
-				     auth_serversupplied_info **server_info)
+				     const struct auth_usersupplied_info *user_info,
+				     struct auth_serversupplied_info **server_info)
 {
 	/* mark this as 'not for me' */
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
@@ -77,8 +77,8 @@ static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *o
 static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_context,
 						void *my_private_data, 
 						TALLOC_CTX *mem_ctx,
-						const auth_usersupplied_info *user_info, 
-						auth_serversupplied_info **server_info)
+						const struct auth_usersupplied_info *user_info,
+						struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	fstring user;
@@ -130,8 +130,8 @@ static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, co
 static NTSTATUS check_fixed_challenge_security(const struct auth_context *auth_context,
 					       void *my_private_data, 
 					       TALLOC_CTX *mem_ctx,
-					       const auth_usersupplied_info *user_info, 
-					       auth_serversupplied_info **server_info)
+					       const struct auth_usersupplied_info *user_info,
+					       struct auth_serversupplied_info **server_info)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

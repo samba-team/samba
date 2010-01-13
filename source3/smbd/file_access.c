@@ -54,6 +54,17 @@ bool can_access_file_acl(struct connection_struct *conn,
 	status = se_access_check(secdesc, conn->server_info->ptok,
 				 access_mask, &access_granted);
 	ret = NT_STATUS_IS_OK(status);
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("can_access_file_acl for file %s "
+			"access_mask 0x%x, access_granted 0x%x "
+			"access %s\n",
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)access_mask,
+			(unsigned int)access_granted,
+			ret ? "ALLOWED" : "DENIED" ));
+		NDR_PRINT_DEBUG(security_descriptor, secdesc);
+	}
  out:
 	TALLOC_FREE(secdesc);
 	return ret;

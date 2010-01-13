@@ -880,8 +880,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	sid_copy(&primary_group, &domain->sid);
-	sid_append_rid(&primary_group, primary_group_rid);
+	sid_compose(&primary_group, &domain->sid, primary_group_rid);
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
 

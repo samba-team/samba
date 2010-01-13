@@ -122,7 +122,6 @@ int conn_ctx_stack_ndx = 0;
 
 struct vfs_init_function_entry *backends = NULL;
 char *sparse_buf = NULL;
-char *LastDir = NULL;
 
 /* Current number of oplocks we have outstanding. */
 int32_t exclusive_oplocks_open = 0;

@@ -109,6 +109,8 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 	/* the KCC might have changed repsFrom */
 	dreplsrv_refresh_partitions(service);
 
+	dreplsrv_ridalloc_check_rid_pool(service);
+
 	dreplsrv_run_pending_ops(service);
 	dreplsrv_notify_run_ops(service);
 }

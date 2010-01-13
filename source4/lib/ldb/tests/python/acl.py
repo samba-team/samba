@@ -164,7 +164,8 @@ replace: nTSecurityDescriptor
         """
         ldif = """
 dn: """ + group_dn + """
-changetype: add
+changetype: modify
+add: member
 member: """ + member_dn
         _ldb.modify_ldif(ldif)
     

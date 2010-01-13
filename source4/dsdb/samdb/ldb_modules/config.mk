@@ -1,9 +1,11 @@
 ################################################
 # Start SUBSYSTEM DSDB_MODULE_HELPERS
 [SUBSYSTEM::DSDB_MODULE_HELPERS]
-PRIVATE_DEPENDENCIES = LIBLDB LIBNDR SAMDB_SCHEMA
+PRIVATE_DEPENDENCIES = LIBLDB LIBNDR SAMDB_SCHEMA MESSAGING
 
-DSDB_MODULE_HELPERS_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/util.o
+DSDB_MODULE_HELPERS_OBJ_FILES = \
+	$(dsdbsrcdir)/samdb/ldb_modules/util.o \
+	$(dsdbsrcdir)/samdb/ldb_modules/ridalloc.o
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/util_proto.h,$(DSDB_MODULE_HELPERS_OBJ_FILES:.o=.c)))
 
@@ -135,11 +137,24 @@ SUBSYSTEM = LIBLDB
 INIT_FUNCTION = LDB_MODULE(samba3sam)
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBLDB SMBPASSWD \
 			NSS_WRAPPER LIBSECURITY NDR_SECURITY
-# End MODULE ldb_samldb
+# End MODULE ldb_samba3sam
 ################################################
 
 ldb_samba3sam_OBJ_FILES = \
 		$(dsdbsrcdir)/samdb/ldb_modules/samba3sam.o
+
+################################################
+# Start MODULE ldb_samba3sid
+[MODULE::ldb_samba3sid]
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(samba3sid)
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBLDB SMBPASSWD \
+			NSS_WRAPPER LIBSECURITY NDR_SECURITY
+# End MODULE ldb_samba3sid
+################################################
+
+ldb_samba3sid_OBJ_FILES = \
+		$(dsdbsrcdir)/samdb/ldb_modules/samba3sid.o
 
 ################################################
 # Start MODULE ldb_simple_ldap_map
@@ -337,7 +352,7 @@ ldb_subtree_delete_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_delete.o
 [MODULE::ldb_linked_attributes]
 INIT_FUNCTION = LDB_MODULE(linked_attributes)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS SAMDB DSDB_MODULE_HELPERS
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_linked_attributes
 ################################################

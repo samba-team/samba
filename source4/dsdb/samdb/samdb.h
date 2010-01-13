@@ -142,4 +142,12 @@ struct dsdb_extended_dn_store_format {
 
 #define DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME "DSDB_OPAQUE_PARTITION_MODULE_MSG"
 
+/* this takes a struct dsdb_fsmo_extended_op */
+#define DSDB_EXTENDED_ALLOCATE_RID_POOL "1.3.6.1.4.1.7165.4.4.5"
+
+struct dsdb_fsmo_extended_op {
+	uint64_t fsmo_info;
+	struct GUID destination_dsa_guid;
+};
+
 #endif /* __SAMDB_H__ */

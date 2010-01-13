@@ -35,16 +35,20 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import os
 
 def get_schema_descriptor(domain_sid):
-    sddl = "O:SAG:SAD:(A;CI;RPLCLORC;;;AU)(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)" \
-           "(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
-           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
-           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)" \
-           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
-           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)" \
-           "S:(AU;SA;WPCCDCWOWDSDDTSW;;;WD)" \
-           "(AU;CISA;WP;;;WD)(AU;SA;CR;;;BA)" \
-           "(AU;SA;CR;;;DU)(OU;SA;CR;e12b56b6-0a95-11d1-adbb-00c04fd8d5cd;;WD)" \
-           "(OU;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)"
+    sddl = "O:SAG:SAD:AI(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c" \
+           ";;ER)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ER)(OA;;CR;1131f6ad-9c07-1" \
+           "1d1-f79f-00c04fc2dcd2;;ER)(OA;;CR;e12b56b6-0a95-11d1-adbb-00c04fd8d5cd;;SA)(O" \
+           "A;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)(OA;;CR;1131f6aa-9c07-11d1-f79" \
+           "f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1" \
+           "131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04" \
+           "fc2dcd2;;BA)(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)(OA;;CR;1131f6aa" \
+           "-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2" \
+           ";;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ad-9c07-1" \
+           "1d1-f79f-00c04fc2dcd2;;ED)(A;;RPWPCCDCLCLORCWOWDSDDTSW;;;LA)(A;CI;RPWPCRCCLCL" \
+           "ORCWOWDSW;;;SA)(A;CI;RPLCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:(O" \
+           "U;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)(OU;SA;CR;e12b56b6-0a95-11d1" \
+           "-adbb-00c04fd8d5cd;;WD)(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPCCDCWOWDSDDTSW;" \
+           ";;WD)(AU;CISA;WP;;;WD)"
     sec = security.descriptor.from_sddl(sddl, domain_sid)
     return ndr_pack(sec)
 
@@ -64,8 +68,8 @@ class Schema(object):
 
         self.schemadn = schemadn
         self.ldb = Ldb()
-        self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_Attributes.txt'),
-                                          setup_path('ad-schema/MS-AD_Schema_2K8_Classes.txt'))
+        self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
+                                          setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
 
         if files is not None:
             for file in files:

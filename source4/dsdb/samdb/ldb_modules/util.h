@@ -19,9 +19,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct dsdb_schema; /* predeclare schema struct */
+/* predeclare some structures used by utility functions */
+struct dsdb_schema;
 struct GUID;
 struct dsdb_attribute;
+struct dsdb_fsmo_extended_op;
 
 #include "dsdb/samdb/ldb_modules/util_proto.h"
 
@@ -32,3 +34,4 @@ struct dsdb_attribute;
 #define DSDB_SEARCH_SHOW_EXTENDED_DN          0x0010
 #define DSDB_MODIFY_RELAX		      0x0020
 #define DSDB_FLAG_OWN_MODULE		      0x0040
+#define DSDB_FLAG_TOP_MODULE		      0x0080

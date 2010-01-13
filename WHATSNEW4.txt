@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha10
+What's new in Samba 4 alpha11
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,13 +6,13 @@ developed in parallel to the stable 3.x series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha10 follows on from the alpha release series we have been
+Samba4 alpha11 follows on from the alpha release series we have been
 publishing since September 2007
 
 WARNINGS
 ========
 
-Samba4 alpha10 is not a final Samba release.  That is more a reference
+Samba4 alpha11 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -62,12 +62,29 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE alpha9
+CHANGES SINCE alpha10
 =====================
 
-Alpha9 was released last week, but in the time since the release we
-have found and fixed an important segfault, and improved the
-experimental DRS replication. 
+Since the alpha10 release, we have fixed a number of serious bugs in
+the implementation of AD-compatible 'Directory Replication Services'.
+We can now join an AD domain as a read-write DC
+
+Importantly, since alpha10, the following serious issues were
+addressed:
+ - We now allocate RID values safely (previous implementations would
+ add users and groups without regard to allocated RID pools, possibly
+ creating duplicates)
+ - In previous Samba4 versions, a failure to 'prepare' a transaction
+ would silently commit the transaction. 
+
+Any deployments of Samba4 before this alpha are very strongly
+encouraged to upgrade.  Assistance may be found in the
+upgradeprovision script, and the advice of the Samba Team should be
+sought to determine the impact of these issues in your particular
+deployment. 
+
+Our progress on DRS is being tracked in the Samba wiki:
+http://wiki.samba.org/index.php/Samba4_DRS_TODO_List
 
 CHANGES
 =======
@@ -103,7 +120,7 @@ KNOWN ISSUES
   since it's completely experimental!
 
 - ACL are not set by default on shares created by the provision.
-  Work is underway on this subject and it should be fixed in Alpha10.
+  Work is underway on this subject and it should be fixed in Alpha12.
 
 RUNNING Samba4
 ==============

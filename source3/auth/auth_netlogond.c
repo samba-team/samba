@@ -27,7 +27,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 				   const struct auth_context *auth_context,
 				   const char *ncalrpc_sockname,
 				   uint8_t schannel_key[16],
-				   const auth_usersupplied_info *user_info,
+				   const struct auth_usersupplied_info *user_info,
 				   struct netr_SamInfo3 **pinfo3,
 				   NTSTATUS *schannel_bind_result)
 {
@@ -153,8 +153,8 @@ static char *mymachinepw(TALLOC_CTX *mem_ctx)
 static NTSTATUS check_netlogond_security(const struct auth_context *auth_context,
 					 void *my_private_data,
 					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info,
-					 auth_serversupplied_info **server_info)
+					 const struct auth_usersupplied_info *user_info,
+					 struct auth_serversupplied_info **server_info)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct netr_SamInfo3 *info3 = NULL;

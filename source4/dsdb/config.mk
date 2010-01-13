@@ -64,7 +64,8 @@ DREPL_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/repl/, \
 		drepl_partitions.o \
 		drepl_out_pull.o \
 		drepl_out_helpers.o \
-		drepl_notify.o)
+		drepl_notify.o \
+		drepl_ridalloc.o)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/repl/drepl_service_proto.h,$(DREPL_SRV_OBJ_FILES:.o=.c)))
 

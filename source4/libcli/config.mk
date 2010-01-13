@@ -8,6 +8,11 @@ LIBSAMBA-ERRORS_OBJ_FILES = $(addprefix ../libcli/util/, doserr.o ) $(libclisrcd
 
 PUBLIC_HEADERS += $(addprefix ../libcli/util/, error.h ntstatus.h doserr.h werror.h)
 
+[SUBSYSTEM::LIBSAMBA_TSOCKET]
+PUBLIC_DEPENDENCIES = LIBTSOCKET UTIL_TEVENT
+
+LIBSAMBA_TSOCKET_OBJ_FILES = $(addprefix ../libcli/util/, tstream.o)
+
 [SUBSYSTEM::LIBCLI_LSA]
 PUBLIC_DEPENDENCIES = RPC_NDR_LSA
 PRIVATE_DEPENDENCIES = LIBSECURITY

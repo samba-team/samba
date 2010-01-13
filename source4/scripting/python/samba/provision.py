@@ -793,9 +793,9 @@ def setup_self_join(samdb, names,
               "DEFAULTSITE": names.sitename,
               "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
               "MACHINEPASS_B64": b64encode(machinepass),
-              "DNSPASS_B64": b64encode(dnspass),
               "REALM": names.realm,
               "DOMAIN": names.domain,
+              "DOMAINSID": str(domainsid),
               "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
               "NTDSGUID": ntdsguid_line,
@@ -824,7 +824,8 @@ def setup_self_join(samdb, names,
               "DEFAULTSITE": names.sitename,
               "SERVERDN": names.serverdn,
               "NETBIOSNAME": names.netbiosname,
-              "NTDSGUID": names.ntdsguid
+              "NTDSGUID": names.ntdsguid,
+              "DNSPASS_B64": b64encode(dnspass),
               })
 
 
@@ -892,10 +893,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
 
         samdb.set_domain_sid(str(domainsid))
-        if serverrole == "domain controller":
-            samdb.set_invocation_id(invocationid)
-        # NOTE: the invocationid for standalone and member server
-        # cases is setup in the sambd_dsdb module init function
+        samdb.set_invocation_id(invocationid)
 
         message("Adding DomainDN: %s" % names.domaindn)
 
@@ -944,6 +942,14 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         samdb.add_ldif(schema.schema_data, controls=["relax:0"])
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
+
+        message("Reopening sam.ldb with new schema");
+        samdb.transaction_commit()
+        samdb = Ldb(session_info=session_info,
+                    credentials=provision_backend.credentials, lp=lp)
+        samdb.connect(path)
+        samdb.transaction_start()
+        samdb.set_invocation_id(invocationid)
 
         message("Setting up sam.ldb configuration data")
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
@@ -1003,21 +1009,20 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                 "KRBTGTPASS_B64": b64encode(krbtgtpass),
                 })
 
-            if serverrole == "domain controller":
-                message("Setting up self join")
-                setup_self_join(samdb, names=names, invocationid=invocationid, 
-                                dnspass=dnspass,  
-                                machinepass=machinepass, 
-                                domainsid=domainsid, policyguid=policyguid,
-                                policyguid_dc=policyguid_dc,
-                                setup_path=setup_path,
-                                domainControllerFunctionality=domainControllerFunctionality,
-                                ntdsguid=ntdsguid)
+            message("Setting up self join")
+            setup_self_join(samdb, names=names, invocationid=invocationid,
+                            dnspass=dnspass,
+                            machinepass=machinepass,
+                            domainsid=domainsid, policyguid=policyguid,
+                            policyguid_dc=policyguid_dc,
+                            setup_path=setup_path,
+                            domainControllerFunctionality=domainControllerFunctionality,
+                            ntdsguid=ntdsguid)
 
-                ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
-                names.ntdsguid = samdb.searchone(basedn=ntds_dn,
-                  attribute="objectGUID", expression="", scope=SCOPE_BASE)
-                assert isinstance(names.ntdsguid, str)
+            ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
+            names.ntdsguid = samdb.searchone(basedn=ntds_dn,
+                                             attribute="objectGUID", expression="", scope=SCOPE_BASE)
+            assert isinstance(names.ntdsguid, str)
 
     except:
         samdb.transaction_cancel()
@@ -1136,7 +1141,7 @@ def provision(setup_dir, message, session_info,
         serverrole = lp.get("server role")
 
     assert serverrole in ("domain controller", "member server", "standalone")
-    if invocationid is None and serverrole == "domain controller":
+    if invocationid is None:
         invocationid = str(uuid.uuid4())
 
     if not os.path.exists(paths.private_dir):

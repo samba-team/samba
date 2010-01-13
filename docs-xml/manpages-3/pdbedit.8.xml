@@ -32,6 +32,7 @@
 		<arg choice="opt">-h homedir</arg>
 		<arg choice="opt">-i passdb-backend</arg>
 		<arg choice="opt">-I domain</arg>
+		<arg choice="opt">-K</arg>
 		<arg choice="opt">-L </arg>
 		<arg choice="opt">-m</arg>
 		<arg choice="opt">-M SID|RID</arg>

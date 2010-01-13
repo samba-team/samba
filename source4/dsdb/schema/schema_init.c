@@ -558,21 +558,19 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		/* set an invalid value */
 		attr->attributeID_id = 0xFFFFFFFF;
 	} else {
-		/* check if msDS-IntId element is set */
-		attr->attributeID_id = samdb_result_uint(msg, "msDS-IntId", 0xFFFFFFFF);
-		if (attr->attributeID_id == 0xFFFFFFFF) {
-			/* msDS-IntId is not set, make */
-			status = dsdb_schema_pfm_make_attid(schema->prefixmap,
-							    attr->attributeID_oid,
-							    &attr->attributeID_id);
-			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
-					__location__, attr->lDAPDisplayName, attr->attributeID_oid,
-					win_errstr(status)));
-				return status;
-			}
+		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
+						    attr->attributeID_oid,
+						    &attr->attributeID_id);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
+				__location__, attr->lDAPDisplayName, attr->attributeID_oid,
+				win_errstr(status)));
+			return status;
 		}
 	}
+	/* fetch msDS-IntId to be used in resolving ATTRTYP values */
+	GET_UINT32_LDB(msg, "msDS-IntId", attr, msDS_IntId);
+
 	GET_GUID_LDB(msg, "schemaIDGUID", attr, schemaIDGUID);
 	GET_UINT32_LDB(msg, "mAPIID", attr, mAPIID);
 
@@ -621,10 +619,14 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
 	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
@@ -833,6 +835,7 @@ static const struct {
 	{ "mayContain",				"1.2.840.113556.1.2.25" },
 	{ "defaultSecurityDescriptor",		"1.2.840.113556.1.4.224" },
 	{ "defaultHidingValue",			"1.2.840.113556.1.4.518" },
+	{ "msDS-IntId",				"1.2.840.113556.1.4.1716" },
 };
 
 static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb_schema *schema,
@@ -945,7 +948,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 } while (0)
 
-#define GET_UINT32_DS(s, r, attr, p, elem) do { \
+#define GET_UINT32_DS(s, r, attr, p, elem, def_val) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	if (_a && _a->value_ctr.num_values >= 1 \
@@ -953,7 +956,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	    && _a->value_ctr.values[0].blob->length == 4) { \
 		(p)->elem = IVAL(_a->value_ctr.values[0].blob->data,0);\
 	} else { \
-		(p)->elem = 0; \
+		(p)->elem = def_val; \
 	} \
 } while (0)
 
@@ -1011,7 +1014,7 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 
 	GET_STRING_DS(schema, r, "name", mem_ctx, attr, cn, true);
 	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, true);
-	GET_UINT32_DS(schema, r, "attributeID", attr, attributeID_id);
+	GET_UINT32_DS(schema, r, "attributeID", attr, attributeID_id, 0xFFFFFFFF);
 	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attr->attributeID_id,
 						mem_ctx, &attr->attributeID_oid);
 	if (!W_ERROR_IS_OK(status)) {
@@ -1020,19 +1023,22 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 			win_errstr(status)));
 		return status;
 	}
+	/* fetch msDS-IntId to be used in resolving ATTRTYP values */
+	GET_UINT32_DS(schema, r, "msDS-IntId", attr, msDS_IntId, 0);
+
 	GET_GUID_DS(schema, r, "schemaIDGUID", mem_ctx, attr, schemaIDGUID);
-	GET_UINT32_DS(schema, r, "mAPIID", attr, mAPIID);
+	GET_UINT32_DS(schema, r, "mAPIID", attr, mAPIID, 0);
 
 	GET_GUID_DS(schema, r, "attributeSecurityGUID", mem_ctx, attr, attributeSecurityGUID);
 
 	attr->objectGUID = r->identifier->guid;
 
-	GET_UINT32_DS(schema, r, "searchFlags", attr, searchFlags);
-	GET_UINT32_DS(schema, r, "systemFlags", attr, systemFlags);
+	GET_UINT32_DS(schema, r, "searchFlags", attr, searchFlags, 0);
+	GET_UINT32_DS(schema, r, "systemFlags", attr, systemFlags, 0);
 	GET_BOOL_DS(schema, r, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, false);
-	GET_UINT32_DS(schema, r, "linkID", attr, linkID);
+	GET_UINT32_DS(schema, r, "linkID", attr, linkID, 0);
 
-	GET_UINT32_DS(schema, r, "attributeSyntax", attr, attributeSyntax_id);
+	GET_UINT32_DS(schema, r, "attributeSyntax", attr, attributeSyntax_id, 0xFFFFFFFF);
 	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attr->attributeSyntax_id,
 						mem_ctx, &attr->attributeSyntax_oid);
 	if (!W_ERROR_IS_OK(status)) {
@@ -1041,7 +1047,7 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 			win_errstr(status)));
 		return status;
 	}
-	GET_UINT32_DS(schema, r, "oMSyntax", attr, oMSyntax);
+	GET_UINT32_DS(schema, r, "oMSyntax", attr, oMSyntax, 0);
 	GET_BLOB_DS(schema, r, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
 	GET_BOOL_DS(schema, r, "isSingleValued", attr, isSingleValued, true);
@@ -1049,7 +1055,7 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 	GET_UINT32_PTR_DS(schema, r, "rangeUpper", attr, rangeUpper);
 	GET_BOOL_DS(schema, r, "extendedCharsAllowed", attr, extendedCharsAllowed, false);
 
-	GET_UINT32_DS(schema, r, "schemaFlagsEx", attr, schemaFlagsEx);
+	GET_UINT32_DS(schema, r, "schemaFlagsEx", attr, schemaFlagsEx, 0);
 	GET_BLOB_DS(schema, r, "msDs-Schema-Extensions", mem_ctx, attr, msDs_Schema_Extensions);
 
 	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, false);
@@ -1062,10 +1068,14 @@ WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
 	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
+			 attr->lDAPDisplayName));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
@@ -1084,7 +1094,7 @@ WERROR dsdb_class_from_drsuapi(struct ldb_context *ldb,
 
 	GET_STRING_DS(schema, r, "name", mem_ctx, obj, cn, true);
 	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
-	GET_UINT32_DS(schema, r, "governsID", obj, governsID_id);
+	GET_UINT32_DS(schema, r, "governsID", obj, governsID_id, 0xFFFFFFFF);
 	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, obj->governsID_id,
 						mem_ctx, &obj->governsID_oid);
 	if (!W_ERROR_IS_OK(status)) {
@@ -1097,7 +1107,7 @@ WERROR dsdb_class_from_drsuapi(struct ldb_context *ldb,
 
 	obj->objectGUID = r->identifier->guid;
 
-	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory);
+	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory, 0);
 	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, false);
 
 	attr = dsdb_find_object_attr_name(schema, r, "defaultObjectCategory", NULL); 
@@ -1114,7 +1124,7 @@ WERROR dsdb_class_from_drsuapi(struct ldb_context *ldb,
 	}
 	obj->defaultObjectCategory = (char *)blob.data;
 
-	GET_UINT32_DS(schema, r, "subClassOf", obj, subClassOf_id);
+	GET_UINT32_DS(schema, r, "subClassOf", obj, subClassOf_id, 0);
 
 	GET_UINT32_LIST_DS(schema, r, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass_ids);
 	GET_UINT32_LIST_DS(schema, r, "auxiliaryClass", mem_ctx, obj, auxiliaryClass_ids);
@@ -1129,7 +1139,7 @@ WERROR dsdb_class_from_drsuapi(struct ldb_context *ldb,
 
 	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 
-	GET_UINT32_DS(schema, r, "schemaFlagsEx", obj, schemaFlagsEx);
+	GET_UINT32_DS(schema, r, "schemaFlagsEx", obj, schemaFlagsEx, 0);
 	GET_BLOB_DS(schema, r, "msDs-Schema-Extensions", mem_ctx, obj, msDs_Schema_Extensions);
 
 	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, false);

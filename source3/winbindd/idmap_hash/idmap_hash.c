@@ -193,8 +193,7 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		if (!hashed_domains[h_domain].sid)
 			continue;
 
-		sid_copy(ids[i]->sid, hashed_domains[h_domain].sid);
-		sid_append_rid(ids[i]->sid, h_rid);
+		sid_compose(ids[i]->sid, hashed_domains[h_domain].sid, h_rid);
 		ids[i]->status = ID_MAPPED;
 	}
 

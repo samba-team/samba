@@ -66,8 +66,10 @@ GUESS = 	0x04
 PROVISION =	0x08
 CHANGEALL =	0xff
 
-# Attributes that not copied from the reference provision even if they do not exists in the destination object
-# This is most probably because they are populated automatcally when object is created
+# Attributes that are never copied from the reference provision (even if they
+# do not exist in the destination object).
+# This is most probably because they are populated automatcally when object is
+# created
 hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1,"replPropertyMetaData": 1,"uSNChanged": 1,\
 						"uSNCreated": 1,"parentGUID": 1,"objectCategory": 1,"distinguishedName": 1,\
 						"showInAdvancedViewOnly": 1,"instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,\
@@ -75,8 +77,9 @@ hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1
 						"dBCSPwd":1,"supplementalCredentials":1,"gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,\
 						"maxPwdAge":1, "mail":1, "secret":1,"possibleInferiors":1, "sAMAccountType":1}
 
-# Usually for an object that already exists we do not overwrite attributes as they might have been changed for good
-# reasons. Anyway for a few of thems it's mandatory to replace them otherwise the provision will be broken somehow.
+# Usually for an object that already exists we do not overwrite attributes as
+# they might have been changed for good reasons. Anyway for a few of them it's
+# mandatory to replace them otherwise the provision will be broken somehow.
 hashOverwrittenAtt = {	"prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,\
 			"mayContain":replace,  "systemFlags":replace,"description":replace,
 			"oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
@@ -167,11 +170,13 @@ def get_paths(targetdir=None,smbconf=None):
 
 	lp = param.LoadParm()
 	lp.load(smbconf)
-# Normaly we need the domain name for this function but for our needs it's pointless
+# Normally we need the domain name for this function but for our needs it's
+# pointless
 	paths = provision_paths_from_lp(lp,"foo")
 	return paths
 
-# This function guess(fetch) informations needed to make a fresh provision from the current provision
+# This function guesses (fetches) informations needed to make a fresh provision
+# from the current provision
 # It includes: realm, workgroup, partitions, netbiosname, domain guid, ...
 def guess_names_from_current_provision(credentials,session_info,paths):
 	lp = param.LoadParm()
@@ -191,11 +196,13 @@ def guess_names_from_current_provision(credentials,session_info,paths):
 	names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
 	names.smbconf = smbconf
-	#It's important here to let ldb load with the old module or it's quite certain that the LDB won't load ...
+	# It's important here to let ldb load with the old module or it's quite
+	# certain that the LDB won't load ...
 	samdb = Ldb(paths.samdb, session_info=session_info,
 		    credentials=credentials, lp=lp, options=["modules:samba_dsdb"])
 
-	# That's a bit simplistic but it's ok as long as we have only 3 partitions
+	# That's a bit simplistic but it's ok as long as we have only 3
+	# partitions
 	attrs2 = ["defaultNamingContext", "schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
 	current = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
 
@@ -311,9 +318,10 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 		ldap_dryrun_mode=None)
 	return provdir
 
-# This function sorts two dn in the lexicographical order and put higher level DN before
-# So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller (-1) as it has less
-# level
+# This function sorts two DNs in the lexicographical order and put higher level
+# DN before.
+# So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller
+# (-1) as it has less level
 def dn_sort(x,y):
 	p = re.compile(r'(?<!\\),')
 	tab1 = p.split(str(x))
@@ -343,7 +351,7 @@ def dn_sort(x,y):
 					return -1
 	return ret
 
-# check from security descriptors modifications return 1 if it is 0 otherwise
+# Check for security descriptors modifications return 1 if it is and 0 otherwise
 # it also populate hash structure for later use in the upgrade process
 def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
 	if ischema == 1 and att == "defaultSecurityDescriptor"  and msgElt.flags() == ldb.FLAG_MOD_REPLACE:
@@ -361,8 +369,8 @@ def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
 		return 1
 	return 0
 
-# Hangle special cases ... That's when we want to update an attribute only
-# if it has a certain value or if it's for a certain object or
+# Handle special cases ... That's when we want to update a particular attribute
+# only, e.g. if it has a certain value or if it's for a certain object or
 # a class of object.
 # It can be also if we want to do a merge of value instead of a simple replace
 def handle_special_case(att,delta,new,old,ischema):
@@ -431,7 +439,8 @@ def update_secrets(newpaths,paths,creds,session):
 	for i in range(0,len(reference)):
 		hash_new[str(reference[i]["dn"]).lower()] = reference[i]["dn"]
 
-	# Create a hash for speeding the search of existing object in the current provision
+	# Create a hash for speeding the search of existing object in the
+	# current provision
 	for i in range(0,len(current)):
 		hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
 
@@ -486,9 +495,9 @@ def update_secrets(newpaths,paths,creds,session):
 
 
 # Check difference between the current provision and the reference provision.
-# It looks for all object which base DN is name if ischema is false then scan is done in
-# cross partition mode.
-# If ischema is true, then special handling is done for dealing with schema
+# It looks for all objects which base DN is name. If ischema is "false" then
+# the scan is done in cross partition mode.
+# If "ischema" is true, then special handling is done for dealing with schema
 def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	hash_new = {}
 	hash = {}
@@ -497,7 +506,8 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	listPresent = []
 	reference = []
 	current = []
-	# Connect to the reference provision and get all the attribute in the partition referred by name
+	# Connect to the reference provision and get all the attribute in the
+	# partition referred by name
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
 	sam_ldb.transaction_start()
@@ -513,7 +523,8 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	for i in range(0,len(reference)):
 		hash_new[str(reference[i]["dn"]).lower()] = reference[i]["dn"]
 
-	# Create a hash for speeding the search of existing object in the current provision
+	# Create a hash for speeding the search of existing object in the
+	# current provision
 	for i in range(0,len(current)):
 		hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
 
@@ -523,40 +534,78 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 		else:
 			listPresent.append(hash_new[k])
 
-	# Sort the missing object in order to have object of the lowest level first (which can be
-	# containers for higher level objects)
+	# Sort the missing object in order to have object of the lowest level
+	# first (which can be containers for higher level objects)
 	listMissing.sort(dn_sort)
 	listPresent.sort(dn_sort)
 
 	if ischema:
-		# The following lines (up to the for loop) is to load the up to date schema into our current LDB
-		# a complete schema is needed as the insertion of attributes and class is done against it
+		# The following lines (up to the for loop) is to load the up to
+		# date schema into our current LDB
+		# a complete schema is needed as the insertion of attributes
+		# and class is done against it
 		# and the schema is self validated
-		# The double ldb open and schema validation is taken from the initial provision script
+		# The double ldb open and schema validation is taken from the
+		# initial provision script
 		# it's not certain that it is really needed ....
 		sam_ldb = Ldb(session_info=session, credentials=creds, lp=lp)
 		schema = Schema(setup_path, names.domainsid, schemadn=basedn, serverdn=str(names.serverdn))
 		# Load the schema from the one we computed earlier
 		sam_ldb.set_schema_from_ldb(schema.ldb)
-		# And now we can connect to the DB - the schema won't be loaded from the DB
+		# And now we can connect to the DB - the schema won't be loaded
+		# from the DB
 		sam_ldb.connect(paths.samdb)
 	else:
 		sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
 
 	sam_ldb.transaction_start()
 
-	empty = ldb.Message()
-	message(SIMPLE,"There are %d missing objects"%(len(listMissing)))
-	for dn in listMissing:
-		reference = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn, scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
-		delta = sam_ldb.msg_diff(empty,reference[0])
-		for att in hashAttrNotCopied.keys():
-			delta.remove(att)
-		for att in backlinked:
-			delta.remove(att)
-		delta.dn = dn
+	err_num = 0
+	err_msg = ""
+	while len(listMissing) > 0:
+		listMissing2 = []
 
-		sam_ldb.add(delta,["relax:0"])
+		empty = ldb.Message()
+		message(SIMPLE,"There are still %d objects missing"%(len(listMissing)))
+
+		for dn in listMissing:
+			reference = newsam_ldb.search(expression="dn=%s" % (str(dn)),
+						      base=basedn, scope=SCOPE_SUBTREE,
+						      controls=["search_options:1:2"])
+			delta = sam_ldb.msg_diff(empty,reference[0])
+			for att in hashAttrNotCopied.keys():
+				delta.remove(att)
+			for att in backlinked:
+				delta.remove(att)
+			delta.dn = dn
+
+			try:
+				sam_ldb.add(delta,["relax:0"])
+				# This is needed here since otherwise the
+				# "replmd_meta_data" module doesn't see the
+				# updated data
+				sam_ldb.transaction_commit()
+				sam_ldb.transaction_start()
+			except LdbError, (num, msg):
+				# An exception can happen if a linked object
+				# doesn't exist which can happen if it is also
+				# to be added
+				err_num = num
+				err_msg = msg
+				listMissing2.append(dn)
+
+		if len(listMissing2) == len(listMissing):
+			# We couldn't add any object in this iteration ->
+			# we have to resign and hope that the user manually
+			# fixes the damage
+
+			message(ERROR, "The script isn't capable to do the upgrade fully automatically!")
+			message(ERROR, "Often this happens when important system objects moved their location. Please look for them (for example doable using the displayed 'sAMAccountName' attribute), backup if personally changed and remove them.")
+			message(ERROR, "Reinvoke this script and reapply eventual modifications done before. It is possible to get this error more than once (for each problematic object).")
+
+			raise LdbError(err_num, err_msg)
+
+		listMissing = listMissing2
 
 	changed = 0
 	for dn in listPresent:
@@ -626,7 +675,8 @@ def check_updated_sd(newpaths,paths,creds,session,names):
 				print "%s new sddl/sddl in ref"%key
 				print "%s\n%s"%(sddl,hash_new[key])
 
-# Simple update method for updating the SD that rely on the fact that nobody should have modified the SD
+# Simple update method for updating the SD that rely on the fact that nobody
+# should have modified the SD
 # This assumption is safe right now (alpha9) but should be removed asap
 def update_sd(paths,creds,session,names):
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp,options=["modules:samba_dsdb"])
@@ -748,7 +798,7 @@ def update_machine_account_password(paths,creds,session,names):
 
 		secretsdb_self_join(secrets_ldb, domain=names.domain,
 				    realm=names.realm,
-					domainsid=names.domainsid,
+				    domainsid=names.domainsid,
 				    dnsdomain=names.dnsdomain,
 				    netbiosname=names.netbiosname,
 				    machinepass=machinepass,

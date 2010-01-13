@@ -38,7 +38,9 @@ NTSTATUS auth_builtin_init(void);
 
 /* The following definitions come from auth/auth_compat.c  */
 
-NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_password, auth_serversupplied_info **server_info);
+NTSTATUS check_plaintext_password(const char *smb_name,
+				  DATA_BLOB plaintext_password,
+				  struct auth_serversupplied_info **server_info);
 bool password_ok(struct auth_context *actx, bool global_encrypted,
 		 const char *session_workgroup,
 		 const char *smb_name, DATA_BLOB password_blob);
@@ -71,7 +73,7 @@ NTSTATUS auth_unix_init(void);
 
 /* The following definitions come from auth/auth_util.c  */
 
-NTSTATUS make_user_info_map(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *smb_name, 
 			    const char *client_domain, 
 			    const char *wksta_name, 
@@ -79,7 +81,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
  			    DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
 			    DATA_BLOB *plaintext, 
 			    bool encrypted);
-bool make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
@@ -88,7 +90,7 @@ bool make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				     int lm_pwd_len,
 				     const uchar *nt_network_pwd,
 				     int nt_pwd_len);
-bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
@@ -97,19 +99,19 @@ bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 const uchar lm_interactive_pwd[16], 
 					 const uchar nt_interactive_pwd[16], 
 					 const uchar *dc_sess_key);
-bool make_user_info_for_reply(auth_usersupplied_info **user_info, 
+bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const uint8 chal[8],
 			      DATA_BLOB plaintext_password);
-NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
                                       const char *smb_name,
                                       const char *client_domain, 
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp);
-bool make_user_info_guest(auth_usersupplied_info **user_info) ;
-NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info, 
+bool make_user_info_guest(struct auth_usersupplied_info **user_info) ;
+NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 			      struct samu *sampass);
-NTSTATUS create_local_token(auth_serversupplied_info *server_info);
+NTSTATUS create_local_token(struct auth_serversupplied_info *server_info);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
@@ -117,7 +119,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    struct nt_user_token **token);
 bool user_in_group_sid(const char *username, const DOM_SID *group_sid);
 bool user_in_group(const char *username, const char *groupname);
-NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, 
+NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
                              char *unix_username,
 			     struct passwd *pwd);
 NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
@@ -125,26 +127,26 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 				       bool is_guest,
 				       struct auth_serversupplied_info **presult);
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
-						 const auth_serversupplied_info *src);
+						 const struct auth_serversupplied_info *src);
 bool init_guest_info(void);
 bool server_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key);
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
-				auth_serversupplied_info **server_info);
+				struct auth_serversupplied_info **server_info);
 bool copy_current_user(struct current_user *dst, struct current_user *src);
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 			     fstring save_username, bool create );
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
 				const char *sent_nt_username,
 				const char *domain,
-				auth_serversupplied_info **server_info, 
+				struct auth_serversupplied_info **server_info,
 				struct netr_SamInfo3 *info3);
 NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const char *sent_nt_username,
 					  const char *domain,
 					  const struct wbcAuthUserInfo *info,
-					  auth_serversupplied_info **server_info);
-void free_user_info(auth_usersupplied_info **user_info);
+					  struct auth_serversupplied_info **server_info);
+void free_user_info(struct auth_usersupplied_info **user_info);
 bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) ;
 bool is_trusted_domain(const char* dom_name);
 
@@ -1286,7 +1288,6 @@ void security_acl_map_generic(struct security_acl *sa, const struct generic_mapp
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
 NTSTATUS se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted);
-NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size);
 
 /* The following definitions come from lib/util_sec.c  */
 
@@ -6116,6 +6117,9 @@ NTSTATUS pass_oem_change(char *user,
 			 uchar password_encrypted_with_nt_hash[516],
 			 const uchar old_nt_hash_encrypted[16],
 			 enum samPwdChangeReason *reject_reason);
+bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
+			 uint32_t pw_history_len,
+			 const uint8_t *pw_history);
 NTSTATUS check_password_complexity(const char *username,
 				   const char *password,
 				   enum samPwdChangeReason *samr_reject_reason);
@@ -6713,7 +6717,7 @@ void invalidate_all_vuids(struct smbd_server_connection *sconn);
 int register_initial_vuid(struct smbd_server_connection *sconn);
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
-			auth_serversupplied_info *server_info,
+			struct auth_serversupplied_info *server_info,
 			DATA_BLOB response_blob,
 			const char *smb_name);
 void add_session_user(struct smbd_server_connection *sconn, const char *user);

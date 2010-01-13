@@ -85,7 +85,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
 		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
-	auth_usersupplied_info *user_info = NULL;
+	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
 	bool username_was_mapped;
 

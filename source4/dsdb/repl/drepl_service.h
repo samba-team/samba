@@ -100,6 +100,8 @@ struct dreplsrv_partition {
 	struct dreplsrv_partition_source_dsa *sources;
 };
 
+typedef void (*dreplsrv_fsmo_callback_t)(struct dreplsrv_service *, WERROR );
+
 struct dreplsrv_out_operation {
 	struct dreplsrv_out_operation *prev, *next;
 
@@ -107,7 +109,9 @@ struct dreplsrv_out_operation {
 
 	struct dreplsrv_partition_source_dsa *source_dsa;
 
-	struct composite_context *creq;
+	enum drsuapi_DsExtendedOperation extended_op;
+	uint64_t fsmo_info;
+	dreplsrv_fsmo_callback_t callback;
 };
 
 struct dreplsrv_notify_operation {
@@ -204,6 +208,11 @@ struct dreplsrv_service {
 		/* an active notify operation */
 		struct dreplsrv_notify_operation *n_current;
 	} ops;
+
+	struct {
+		bool in_progress;
+		struct dreplsrv_partition_source_dsa *rid_manager_source_dsa;
+	} ridalloc;
 };
 
 #include "dsdb/repl/drepl_out_helpers.h"

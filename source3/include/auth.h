@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-typedef struct auth_usersupplied_info {
+struct auth_usersupplied_info {
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
  	DATA_BLOB lm_interactive_pwd;
@@ -38,9 +38,9 @@ typedef struct auth_usersupplied_info {
 
 	uint32 logon_parameters;
 
-} auth_usersupplied_info;
+};
 
-typedef struct auth_serversupplied_info {
+struct auth_serversupplied_info {
 	bool guest;
 
 	DOM_SID *sids; 	/* These SIDs are preliminary between
@@ -77,7 +77,7 @@ typedef struct auth_serversupplied_info {
 	 * smb request. See set_current_user_info.
 	 */
 	char *sanitized_username;
-} auth_serversupplied_info;
+};
 
 struct auth_context {
 	DATA_BLOB challenge; 
@@ -110,7 +110,7 @@ typedef struct auth_methods
 			 void *my_private_data, 
 			 TALLOC_CTX *mem_ctx,
 			 const struct auth_usersupplied_info *user_info, 
-			 auth_serversupplied_info **server_info);
+			 struct auth_serversupplied_info **server_info);
 
 	/* If you are using this interface, then you are probably
 	 * getting something wrong.  This interface is only for

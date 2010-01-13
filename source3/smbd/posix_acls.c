@@ -1109,6 +1109,10 @@ uint32_t map_canon_ace_perms(int snum,
 		}
 	}
 
+	if ((perms & S_IWUSR) && lp_dos_filemode(snum)) {
+		nt_mask |= (SEC_STD_WRITE_DAC|SEC_STD_WRITE_OWNER|DELETE_ACCESS);
+	}
+
 	DEBUG(10,("map_canon_ace_perms: Mapped (UNIX) %x to (NT) %x\n",
 			(unsigned int)perms, (unsigned int)nt_mask ));
 

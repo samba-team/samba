@@ -100,13 +100,9 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_out[16])
 {
 	struct MD5Context tctx;
-	uint8_t array[32];
-
-	memset(hash_out, '\0', 16);
-	memcpy(array, salt, 16);
-	memcpy(&array[16], nthash, 16);
 	MD5Init(&tctx);
-	MD5Update(&tctx, array, 32);
+	MD5Update(&tctx, salt, 16);
+	MD5Update(&tctx, nthash, 16);
 	MD5Final(hash_out, &tctx);
 }
 

@@ -26,6 +26,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "util.h"
+#include "libcli/security/security.h"
 
 /*
   add a set of controls to a ldb_request structure based on a set of
@@ -214,6 +215,8 @@ int dsdb_module_search(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->search(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
 		ret = ldb_next_request(module, req);
 	}
@@ -332,6 +335,8 @@ int dsdb_module_modify(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->modify(module, mod_req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), mod_req);
 	} else {
 		ret = ldb_next_request(module, mod_req);
 	}
@@ -380,6 +385,8 @@ int dsdb_module_rename(struct ldb_module *module,
 	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		ret = ops->rename(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
 		ret = ldb_next_request(module, req);
 	}
@@ -390,6 +397,54 @@ int dsdb_module_rename(struct ldb_module *module,
 	talloc_free(tmp_ctx);
 	return ret;
 }
+
+/*
+  a ldb_add request operating on modules below the
+  current module
+ */
+int dsdb_module_add(struct ldb_module *module,
+		    const struct ldb_message *message,
+		    uint32_t dsdb_flags)
+{
+	struct ldb_request *req;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+
+	ret = ldb_build_add_req(&req, ldb, tmp_ctx,
+				message,
+				NULL,
+				NULL,
+				ldb_op_default_callback,
+				NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(module, req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* Run the new request */
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->add(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
+	} else {
+		ret = ldb_next_request(module, req);
+	}
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 
 const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element)
 {
@@ -445,4 +500,141 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
 	}
 
 	return LDB_SUCCESS;
+}
+
+
+/*
+  find a 'reference' DN that points at another object
+  (eg. serverReference, rIDManagerReference etc)
+ */
+int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *base,
+			     const char *attribute, struct ldb_dn **dn)
+{
+	const char *attrs[2];
+	struct ldb_result *res;
+	int ret;
+
+	attrs[0] = attribute;
+	attrs[1] = NULL;
+
+	ret = dsdb_module_search_dn(module, mem_ctx, &res, base, attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	*dn = ldb_msg_find_attr_as_dn(ldb_module_get_ctx(module),
+				      mem_ctx, res->msgs[0], attribute);
+	if (!*dn) {
+		talloc_free(res);
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	talloc_free(res);
+	return LDB_SUCCESS;
+}
+
+/*
+  find the RID Manager$ DN via the rIDManagerReference attribute in the
+  base DN
+ */
+int dsdb_module_rid_manager_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	return dsdb_module_reference_dn(module, mem_ctx,
+					samdb_base_dn(ldb_module_get_ctx(module)),
+					"rIDManagerReference", dn);
+}
+
+
+/*
+  update an integer attribute safely via a constrained delete/add
+ */
+int dsdb_module_constrainted_update_integer(struct ldb_module *module, struct ldb_dn *dn,
+					    const char *attr, uint64_t old_val, uint64_t new_val)
+{
+	struct ldb_message *msg;
+	struct ldb_message_element *el;
+	struct ldb_val v1, v2;
+	int ret;
+	char *vstring;
+
+	msg = ldb_msg_new(module);
+	msg->dn = dn;
+
+	ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_DELETE, &el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	el->num_values = 1;
+	el->values = &v1;
+	vstring = talloc_asprintf(msg, "%llu", (unsigned long long)old_val);
+	if (!vstring) {
+		ldb_module_oom(module);
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	v1 = data_blob_string_const(vstring);
+
+	ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_ADD, &el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	el->num_values = 1;
+	el->values = &v2;
+	vstring = talloc_asprintf(msg, "%llu", (unsigned long long)new_val);
+	if (!vstring) {
+		ldb_module_oom(module);
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	v2 = data_blob_string_const(vstring);
+
+	ret = dsdb_module_modify(module, msg, 0);
+	talloc_free(msg);
+	return ret;
+}
+
+/*
+  used to chain to the callers callback
+ */
+int dsdb_next_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct ldb_request *up_req = talloc_get_type(req->context, struct ldb_request);
+
+	talloc_steal(up_req, req);
+	return up_req->callback(up_req, ares);
+}
+
+
+/*
+  set an integer attribute
+ */
+int dsdb_module_set_integer(struct ldb_module *module, struct ldb_dn *dn,
+			    const char *attr, uint64_t new_val)
+{
+	struct ldb_message *msg;
+	int ret;
+
+	msg = ldb_msg_new(module);
+	msg->dn = dn;
+
+	ret = ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)new_val);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = dsdb_module_modify(module, msg, 0);
+	talloc_free(msg);
+	return ret;
+}
+
+bool dsdb_module_am_system(struct ldb_module *module)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct auth_session_info *session_info
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	return security_session_user_level(session_info) == SECURITY_SYSTEM;
 }

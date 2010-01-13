@@ -1569,7 +1569,9 @@ static bool check_share_info(int uLevel, char* id)
 			}
 			break;
 		case 1:
-			if (strcmp(id,"B13BWz") != 0) {
+			/* Level-2 descriptor is allowed (and ignored) */
+			if (strcmp(id,"B13BWz") != 0 &&
+			    strcmp(id,"B13BWzWWWzB9B") != 0) {
 				return False;
 			}
 			break;
@@ -2616,7 +2618,7 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 	 */
 
 	{
-		auth_serversupplied_info *server_info = NULL;
+		struct auth_serversupplied_info *server_info = NULL;
 		DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
 
 		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {

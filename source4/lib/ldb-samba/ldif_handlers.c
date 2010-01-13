@@ -406,7 +406,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 		talloc_free(sd);
 		return -1;
 	}
-	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, NULL);
+	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, samdb_domain_sid_cache_only(ldb));
 	talloc_free(sd);
 	if (out->data == NULL) {
 		return -1;
@@ -700,6 +700,26 @@ static int val_to_int32(const struct ldb_val *in, int32_t *v)
 	return LDB_SUCCESS;
 }
 
+/* length limited conversion of a ldb_val to a int64_t */
+static int val_to_int64(const struct ldb_val *in, int64_t *v)
+{
+	char *end;
+	char buf[64];
+
+	/* make sure we don't read past the end of the data */
+	if (in->length > sizeof(buf)-1) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	strncpy(buf, (char *)in->data, in->length);
+	buf[in->length] = 0;
+
+	*v = (int64_t) strtoll(buf, &end, 0);
+	if (*end != 0) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	return LDB_SUCCESS;
+}
+
 /* Canonicalisation of two 32-bit integers */
 static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *in, struct ldb_val *out)
@@ -727,6 +747,37 @@ static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
 	int32_t i1=0, i2=0;
 	val_to_int32(v1, &i1);
 	val_to_int32(v2, &i2);
+	if (i1 == i2) return 0;
+	return i1 > i2? 1 : -1;
+}
+
+/* Canonicalisation of two 64-bit integers */
+static int ldif_canonicalise_int64(struct ldb_context *ldb, void *mem_ctx,
+				   const struct ldb_val *in, struct ldb_val *out)
+{
+	int64_t i;
+	int ret;
+
+	ret = val_to_int64(in, &i);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	out->data = (uint8_t *) talloc_asprintf(mem_ctx, "%lld", (long long)i);
+	if (out->data == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	out->length = strlen((char *)out->data);
+	return 0;
+}
+
+/* Comparison of two 64-bit integers */
+static int ldif_comparison_int64(struct ldb_context *ldb, void *mem_ctx,
+				 const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	int64_t i1=0, i2=0;
+	val_to_int64(v1, &i1);
+	val_to_int64(v2, &i2);
 	if (i1 == i2) return 0;
 	return i1 > i2? 1 : -1;
 }
@@ -776,6 +827,64 @@ static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 	return 0;
+}
+
+
+/*
+  write a 64 bit 2-part range
+*/
+static int ldif_write_range64(struct ldb_context *ldb, void *mem_ctx,
+			      const struct ldb_val *in, struct ldb_val *out)
+{
+	int64_t v;
+	int ret;
+	ret = val_to_int64(in, &v);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	out->data = (uint8_t *)talloc_asprintf(mem_ctx, "%lu-%lu",
+					       (unsigned long)(v&0xFFFFFFFF),
+					       (unsigned long)(v>>32));
+	if (out->data == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	out->length = strlen((char *)out->data);
+	return LDB_SUCCESS;
+}
+
+/*
+  read a 64 bit 2-part range
+*/
+static int ldif_read_range64(struct ldb_context *ldb, void *mem_ctx,
+			      const struct ldb_val *in, struct ldb_val *out)
+{
+	unsigned long high, low;
+	char buf[64];
+
+	if (memchr(in->data, '-', in->length) == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	if (in->length > sizeof(buf)-1) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	strncpy(buf, (const char *)in->data, in->length);
+	buf[in->length] = 0;
+
+	if (sscanf(buf, "%lu-%lu", &low, &high) != 2) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	out->data = (uint8_t *)talloc_asprintf(mem_ctx, "%llu",
+					       (unsigned long long)(((uint64_t)high)<<32) | (low));
+
+	if (out->data == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	out->length = strlen((char *)out->data);
+	return LDB_SUCCESS;
 }
 
 static const struct ldb_schema_syntax samba_syntaxes[] = {
@@ -845,6 +954,12 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = dsdb_dn_string_canonicalise,
 		.comparison_fn	  = dsdb_dn_string_comparison
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_RANGE64,
+		.ldif_read_fn	  = ldif_read_range64,
+		.ldif_write_fn	  = ldif_write_range64,
+		.canonicalise_fn  = ldif_canonicalise_int64,
+		.comparison_fn	  = ldif_comparison_int64
 	},
 };
 
@@ -928,6 +1043,9 @@ static const struct {
 	{ "repsTo",                     LDB_SYNTAX_SAMBA_REPSFROMTO },
 	{ "replPropertyMetaData",       LDB_SYNTAX_SAMBA_REPLPROPERTYMETADATA },
 	{ "replUpToDateVector",         LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR },
+	{ "rIDAllocationPool",		LDB_SYNTAX_SAMBA_RANGE64 },
+	{ "rIDPreviousAllocationPool",	LDB_SYNTAX_SAMBA_RANGE64 },
+	{ "rIDAvailablePool",		LDB_SYNTAX_SAMBA_RANGE64 },
 };
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)

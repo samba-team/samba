@@ -915,9 +915,9 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		if ((pwhist = TALLOC_ARRAY(ctx, uint8,
-					pwHistLen * PW_HISTORY_ENTRY_LEN)) ==
-				NULL){
+		pwhist = TALLOC_ARRAY(ctx, uint8,
+				      pwHistLen * PW_HISTORY_ENTRY_LEN);
+		if (pwhist == NULL) {
 			DEBUG(0, ("init_sam_from_ldap: talloc failed!\n"));
 			goto fn_exit;
 		}
@@ -6394,9 +6394,8 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 
 	trim_char( uri, '\"', '\"' );
 	nt_status = pdb_init_ldapsam_common(pdb_method, uri);
-	if (uri) {
-		TALLOC_FREE(uri);
-	}
+
+	TALLOC_FREE(uri);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

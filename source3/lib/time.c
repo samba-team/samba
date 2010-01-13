@@ -198,17 +198,17 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 
 void srv_put_dos_date(char *buf,int offset,time_t unixdate)
 {
-	push_dos_date(buf, offset, unixdate, server_zone_offset);
+	push_dos_date((uint8_t *)buf, offset, unixdate, server_zone_offset);
 }
 
 void srv_put_dos_date2(char *buf,int offset, time_t unixdate)
 {
-	push_dos_date2(buf, offset, unixdate, server_zone_offset);
+	push_dos_date2((uint8_t *)buf, offset, unixdate, server_zone_offset);
 }
 
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate)
 {
-	push_dos_date3(buf, offset, unixdate, server_zone_offset);
+	push_dos_date3((uint8_t *)buf, offset, unixdate, server_zone_offset);
 }
 
 void round_timespec(enum timestamp_set_resolution res, struct timespec *ts)
@@ -439,17 +439,17 @@ struct timespec interpret_long_date(const char *p)
 
 void cli_put_dos_date(struct cli_state *cli, char *buf, int offset, time_t unixdate)
 {
-	push_dos_date(buf, offset, unixdate, cli->serverzone);
+	push_dos_date((uint8_t *)buf, offset, unixdate, cli->serverzone);
 }
 
 void cli_put_dos_date2(struct cli_state *cli, char *buf, int offset, time_t unixdate)
 {
-	push_dos_date2(buf, offset, unixdate, cli->serverzone);
+	push_dos_date2((uint8_t *)buf, offset, unixdate, cli->serverzone);
 }
 
 void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unixdate)
 {
-	push_dos_date3(buf, offset, unixdate, cli->serverzone);
+	push_dos_date3((uint8_t *)buf, offset, unixdate, cli->serverzone);
 }
 
 time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr)

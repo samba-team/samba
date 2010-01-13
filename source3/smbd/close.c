@@ -336,6 +336,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			become_user(conn, fsp->vuid);
 			became_user = True;
 		}
+		fsp->delete_on_close = true;
 		set_delete_on_close_lck(lck, True, &current_user.ut);
 		if (became_user) {
 			unbecome_user();
@@ -481,6 +482,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  	 * the delete on close flag. JRA.
  	 */
 
+	fsp->delete_on_close = false;
 	set_delete_on_close_lck(lck, False, NULL);
 
  done:
@@ -924,6 +926,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	struct share_mode_lock *lck = NULL;
 	bool delete_dir = False;
 	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status1 = NT_STATUS_OK;
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -958,6 +961,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		}
 		send_stat_cache_delete_message(fsp->fsp_name->base_name);
 		set_delete_on_close_lck(lck, True, &current_user.ut);
+		fsp->delete_on_close = true;
 		if (became_user) {
 			unbecome_user();
 		}
@@ -1022,9 +1026,9 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			fsp, NT_STATUS_OK);
 	}
 
-	status = fd_close(fsp);
+	status1 = fd_close(fsp);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status1)) {
 		DEBUG(0, ("Could not close dir! fname=%s, fd=%d, err=%d=%s\n",
 			  fsp_str_dbg(fsp), fsp->fh->fd, errno,
 			  strerror(errno)));
@@ -1042,6 +1046,9 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 
  out:
 	TALLOC_FREE(lck);
+	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(status1)) {
+		status = status1;
+	}
 	return status;
 }
 

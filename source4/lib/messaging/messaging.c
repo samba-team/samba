@@ -119,8 +119,15 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 */
 static char *messaging_path(struct messaging_context *msg, struct server_id server_id)
 {
-	return talloc_asprintf(msg, "%s/msg.%s", msg->base_path, 
-			       cluster_id_string(msg, server_id));
+	TALLOC_CTX *tmp_ctx = talloc_new(msg);
+	const char *id = cluster_id_string(tmp_ctx, server_id);
+	char *s;
+	if (id == NULL) {
+		return NULL;
+	}
+	s = talloc_asprintf(msg, "%s/msg.%s", msg->base_path, id);
+	talloc_steal(s, tmp_ctx);
+	return s;
 }
 
 /*
@@ -261,11 +268,13 @@ static void messaging_send_handler(struct messaging_context *msg)
 		}
 		rec->retries = 0;
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_CTX *tmp_ctx = talloc_new(msg);
 			DEBUG(1,("messaging: Lost message from %s to %s of type %u - %s\n", 
-				 cluster_id_string(debug_ctx(), rec->header->from), 
-				 cluster_id_string(debug_ctx(), rec->header->to), 
+				 cluster_id_string(tmp_ctx, rec->header->from),
+				 cluster_id_string(tmp_ctx, rec->header->to),
 				 rec->header->msg_type, 
 				 nt_errstr(status)));
+			talloc_free(tmp_ctx);
 		}
 		DLIST_REMOVE(msg->pending, rec);
 		talloc_free(rec);

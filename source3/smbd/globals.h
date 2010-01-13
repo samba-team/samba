@@ -131,7 +131,6 @@ extern int conn_ctx_stack_ndx;
 struct vfs_init_function_entry;
 extern struct vfs_init_function_entry *backends;
 extern char *sparse_buf;
-extern char *LastDir;
 
 /* Current number of oplocks we have outstanding. */
 extern int32_t exclusive_oplocks_open;

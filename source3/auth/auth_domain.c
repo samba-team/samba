@@ -251,10 +251,10 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 ************************************************************************/
 
 static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
-					const auth_usersupplied_info *user_info, 
+					const struct auth_usersupplied_info *user_info,
 					const char *domain,
 					uchar chal[8],
-					auth_serversupplied_info **server_info, 
+					struct auth_serversupplied_info **server_info,
 					const char *dc_name,
 					struct sockaddr_storage *dc_ss)
 
@@ -372,8 +372,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					void *my_private_data, 
 					TALLOC_CTX *mem_ctx,
-					const auth_usersupplied_info *user_info, 
-					auth_serversupplied_info **server_info)
+					const struct auth_usersupplied_info *user_info,
+					struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	const char *domain = lp_workgroup();
@@ -441,8 +441,8 @@ static NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char
 static NTSTATUS check_trustdomain_security(const struct auth_context *auth_context,
 					   void *my_private_data, 
 					   TALLOC_CTX *mem_ctx,
-					   const auth_usersupplied_info *user_info, 
-					   auth_serversupplied_info **server_info)
+					   const struct auth_usersupplied_info *user_info,
+					   struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	unsigned char trust_md4_password[16];

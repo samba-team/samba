@@ -299,8 +299,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 
 	/* append the rid to our own domain/machine SID if we don't have a full SID */
 	if ( !string_sid[0] ) {
-		sid_copy(&sid, get_global_sam_sid());
-		sid_append_rid(&sid, rid);
+		sid_compose(&sid, get_global_sam_sid(), rid);
 		sid_to_fstring(string_sid, &sid);
 	}
 
@@ -610,8 +609,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 			}
 		}
 
-		sid_copy(&map.sid, get_global_sam_sid());
-		sid_append_rid(&map.sid, c->opt_rid);
+		sid_compose(&map.sid, get_global_sam_sid(), c->opt_rid);
 
 		map.sid_name_use = SID_NAME_DOM_GRP;
 		fstrcpy(map.nt_name, ntgroup);
@@ -795,8 +793,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < num_alias_rids; i++) {
 		DOM_SID alias;
-		sid_copy(&alias, domain_sid);
-		sid_append_rid(&alias, alias_rids[i]);
+		sid_compose(&alias, domain_sid, alias_rids[i]);
 		printf("%s\n", sid_string_tos(&alias));
 	}
 

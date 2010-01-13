@@ -3889,8 +3889,8 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 						 sid_array.sids[j].sid);
 			}
 
-			sid_copy(&alias.sid, domain_sid);
-			sid_append_rid(&alias.sid, groups->entries[i].idx);
+			sid_compose(&alias.sid, domain_sid,
+				    groups->entries[i].idx);
 
 			push_alias(mem_ctx, &alias);
 		}
@@ -5450,8 +5450,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	}
 
 	/* append the rid to the domain sid */
-	sid_copy(&trust_acct_sid, domain_sid);
-	if (!sid_append_rid(&trust_acct_sid, user_rids.ids[0])) {
+	if (!sid_compose(&trust_acct_sid, domain_sid, user_rids.ids[0])) {
 		goto done;
 	}
 

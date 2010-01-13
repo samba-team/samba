@@ -75,8 +75,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 		/* It's our own domain, lookup the name in passdb */
 		if (lookup_global_sam_name(name, flags, &rid, &type)) {
-			sid_copy(&sid, get_global_sam_sid());
-			sid_append_rid(&sid, rid);
+			sid_compose(&sid, get_global_sam_sid(), rid);
 			goto ok;
 		}
 		TALLOC_FREE(tmp_ctx);
@@ -96,8 +95,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 		/* Explicit request for a name in BUILTIN */
 		if (lookup_builtin_name(name, &rid)) {
-			sid_copy(&sid, &global_sid_Builtin);
-			sid_append_rid(&sid, rid);
+			sid_compose(&sid, &global_sid_Builtin, rid);
 			type = SID_NAME_ALIAS;
 			goto ok;
 		}
@@ -215,8 +213,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	    lookup_builtin_name(name, &rid))
 	{
 		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
-		sid_copy(&sid, &global_sid_Builtin);
-		sid_append_rid(&sid, rid);
+		sid_compose(&sid, &global_sid_Builtin, rid);
 		type = SID_NAME_ALIAS;
 		goto ok;
 	}
@@ -230,8 +227,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	    lookup_global_sam_name(name, flags, &rid, &type))
 	{
 		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
-		sid_copy(&sid, get_global_sam_sid());
-		sid_append_rid(&sid, rid);
+		sid_compose(&sid, get_global_sam_sid(), rid);
 		goto ok;
 	}
 
@@ -544,8 +540,7 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	if (sid_check_is_wellknown_domain(domain_sid, NULL)) {
 		for (i=0; i<num_rids; i++) {
 			DOM_SID sid;
-			sid_copy(&sid, domain_sid);
-			sid_append_rid(&sid, rids[i]);
+			sid_compose(&sid, domain_sid, rids[i]);
 			if (lookup_wellknown_sid(mem_ctx, &sid,
 						 domain_name, &(*names)[i])) {
 				if ((*names)[i] == NULL) {
@@ -1192,9 +1187,8 @@ static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 static bool legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	enum lsa_SidType type;
-	uint32 rid;
 
-	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+	if (sid_check_is_in_our_domain(psid)) {
 		union unid_t id;
 		bool ret;
 
@@ -1235,7 +1229,6 @@ done:
 
 static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
-	uint32 rid;
 	GROUP_MAP map;
 	union unid_t id;
 	enum lsa_SidType type;
@@ -1257,7 +1250,7 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		return false;
 	}
 
-	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+	if (sid_check_is_in_our_domain(psid)) {
 		bool ret;
 
 		become_root();
