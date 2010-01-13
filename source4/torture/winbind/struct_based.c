@@ -914,6 +914,9 @@ static bool lookup_name_sid_list(struct torture_context *torture, char **list)
 		struct winbindd_response rep;
 		char *sid;
 		char *name;
+		const char *domain_name = torture_setting_string(torture,
+						"winbindd netbios domain",
+						lp_workgroup(torture->lp_ctx));
 
 		ZERO_STRUCT(req);
 		ZERO_STRUCT(rep);
@@ -932,10 +935,15 @@ static bool lookup_name_sid_list(struct torture_context *torture, char **list)
 
 		DO_STRUCT_REQ_REP(WINBINDD_LOOKUPSID, &req, &rep);
 
-		name = talloc_asprintf(torture, "%s%c%s",
-				       rep.data.name.dom_name,
-				       winbind_separator(torture),
-				       rep.data.name.name);
+		if (strequal(rep.data.name.dom_name, domain_name)) {
+			name = talloc_asprintf(torture, "%s",
+					       rep.data.name.name);
+		} else {
+			name = talloc_asprintf(torture, "%s%c%s",
+					       rep.data.name.dom_name,
+					       winbind_separator(torture),
+					       rep.data.name.name);
+		}
 
 		torture_assert_casestr_equal(torture, list[count], name,
 					 "LOOKUP_SID after LOOKUP_NAME != id");
