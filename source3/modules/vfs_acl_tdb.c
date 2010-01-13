@@ -265,7 +265,7 @@ static int unlink_acl_tdb(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
+	ret = unlink_acl_common(handle, smb_fname_tmp);
 
 	if (ret == -1) {
 		goto out;
@@ -413,6 +413,7 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
 	.opendir = opendir_acl_common,
 	.mkdir = mkdir_acl_common,
+	.rmdir = rmdir_acl_common,
 	.open = open_acl_common,
 	.create_file = create_file_acl_common,
 	.unlink = unlink_acl_tdb,

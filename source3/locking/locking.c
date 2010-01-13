@@ -1459,6 +1459,9 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 	}
 
 	TALLOC_FREE(lck);
+
+	fsp->delete_on_close = delete_on_close;
+
 	return True;
 }
 

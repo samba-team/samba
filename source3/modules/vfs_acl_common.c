@@ -760,6 +760,108 @@ static SMB_STRUCT_DIR *opendir_acl_common(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
+static int acl_common_remove_object(vfs_handle_struct *handle,
+					const char *path,
+					bool is_directory)
+{
+	connection_struct *conn = handle->conn;
+	struct file_id id;
+	files_struct *fsp = NULL;
+	int ret = 0;
+	char *parent_dir = NULL;
+	const char *final_component = NULL;
+	struct smb_filename local_fname;
+	int saved_errno = 0;
+
+	if (!parent_dirname(talloc_tos(), path,
+			&parent_dir, &final_component)) {
+		saved_errno = ENOMEM;
+		goto out;
+	}
+
+	DEBUG(10,("acl_common_remove_object: removing %s %s/%s\n",
+		is_directory ? "directory" : "file",
+		parent_dir, final_component ));
+
+	/* cd into the parent dir to pin it. */
+	ret = SMB_VFS_CHDIR(conn, parent_dir);
+	if (ret == -1) {
+		saved_errno = errno;
+		goto out;
+	}
+
+	ZERO_STRUCT(local_fname);
+	local_fname.base_name = CONST_DISCARD(char *,final_component);
+
+	/* Must use lstat here. */
+	ret = SMB_VFS_LSTAT(conn, &local_fname);
+	if (ret == -1) {
+		saved_errno = errno;
+		goto out;
+	}
+
+	/* Ensure we have this file open with DELETE access. */
+	id = vfs_file_id_from_sbuf(conn, &local_fname.st);
+	for (fsp = file_find_di_first(id); fsp; file_find_di_next(fsp)) {
+		if (fsp->access_mask & DELETE_ACCESS &&
+				fsp->delete_on_close) {
+			/* We did open this for delete,
+			 * allow the delete as root.
+			 */
+			break;
+		}
+	}
+
+	if (!fsp) {
+		DEBUG(10,("acl_common_remove_object: %s %s/%s "
+			"not an open file\n",
+			is_directory ? "directory" : "file",
+			parent_dir, final_component ));
+		saved_errno = EACCES;
+		goto out;
+	}
+
+	if (is_directory) {
+		ret = SMB_VFS_NEXT_RMDIR(handle, final_component);
+	} else {
+		ret = SMB_VFS_NEXT_UNLINK(handle, &local_fname);
+	}
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+
+  out:
+
+	TALLOC_FREE(parent_dir);
+
+	vfs_ChDir(conn, conn->connectpath);
+	if (saved_errno) {
+		errno = saved_errno;
+	}
+	return ret;
+}
+
+static int rmdir_acl_common(struct vfs_handle_struct *handle,
+				const char *path)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	if (!(ret == -1 && (errno == EACCES || errno == EPERM))) {
+		DEBUG(10,("rmdir_acl_common: unlink of %s failed %s\n",
+			path,
+			strerror(errno) ));
+		return ret;
+	}
+
+	become_root();
+	ret = acl_common_remove_object(handle,
+					path,
+					true);
+	unbecome_root();
+	return ret;
+}
+
 static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 				struct smb_request *req,
 				uint16_t root_dir_fid,
@@ -856,4 +958,29 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 	smb_panic("create_file_acl_common: logic error.\n");
 	/* NOTREACHED */
 	return status;
+}
+
+static int unlink_acl_common(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	if (!(ret == -1 && (errno == EACCES || errno == EPERM))) {
+		DEBUG(10,("unlink_acl_common: unlink of %s failed %s\n",
+			smb_fname->base_name,
+			strerror(errno) ));
+		return ret;
+	}
+	/* Don't do anything fancy for streams. */
+	if (smb_fname->stream_name) {
+		return ret;
+	}
+
+	become_root();
+	ret = acl_common_remove_object(handle,
+					smb_fname->base_name,
+					false);
+	unbecome_root();
+	return ret;
 }
