@@ -200,7 +200,7 @@ static int connect_to_scanner(vfs_handle_struct * handle)
 		}
 		saun.sun_family = AF_UNIX;
 		strncpy(saun.sun_path, so->socketname,
-			strlen(so->socketname) + 1);
+			sizeof(saun.sun_path) - 1);
 		if (connect(so->socket, (struct sockaddr *)(void *)&saun,
 			    SUN_LEN(&saun)) < 0) {
 			DEBUG(2, ("failed to connect to socket %s\n",
@@ -323,8 +323,8 @@ static void notify_scanner(vfs_handle_struct * handle, const char *scanfile)
 	if (gsendlen + tmplen >= SENDBUFFERSIZE) {
 		flush_sendbuffer(handle);
 	}
-	strncat(so->gsendbuffer, tmp, tmplen);
-	strncat(so->gsendbuffer, "\n", 1);
+	strlcat(so->gsendbuffer, tmp, SENDBUFFERSIZE + 1);
+	strlcat(so->gsendbuffer, "\n", SENDBUFFERSIZE + 1);
 }
 
 static bool is_scannedonly_file(struct Tscannedonly *so, const char *shortname)
