@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.3.10
-		          2009
+		         January 14, 2010
                    ==============================
 
 
@@ -8,7 +8,12 @@ This is the latest bugfix release of the Samba 3.3 series.
 
 Major enhancements in Samba 3.3.10 include:
 
-   o
+   o Fix changing of ACLs on writable file with "dos filemode=yes" (bug #5202).
+   o Fix smbd crashes in dns_register_smbd_reply (bug #6696).
+   o Fix Winbind crashes when queried from nss (bug #6889).
+   o Fix Winbind crash when retrieving empty group members (bug #7014).
+   o Fix interdomain trusts with Win2008R2 (bug #6697).
+
 
 ######################################################################
 Changes
@@ -17,6 +22,79 @@ Changes
 Changes since 3.3.9
 -------------------
 
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 6910: Fix "idmap backend" with multiple LDAP servers specified.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5202: Fix changing of ACLs on writable file with "dos filemode=yes".
+    * BUG 6696: Fix smbd crashes (signal 11) in dns_register_smbd_reply.
+    * BUG 6828: Fix infinite timeout when byte lock held outside of Samba.
+    * BUG 6829: Fix special characters in smbclient output.
+    * BUG 6867: trans2findnext returns reply_nterror(req, ntstatus) in a
+      directory with a lot of files.
+    * BUG 6875: Fix operations on OS/2 clients.
+    * BUG 6880: Fix listing of workgroup servers.
+    * BUG 6939: Fix long filenames when "mangling method = hash" is set.
+    * BUG 7005: "mangling method = hash" truncates files with dot '. '
+      character.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 6805: Correctly handle aio_error() and errno.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6697: Fix interdomain trusts with Win2008R2.
+    * BUG 6868: Support building of cifs.upcall with Heimdal as well with MIT.
+    * BUG 6889: Fix Winbind crashes when queried from nss.
+    * BUG 6929: Fix build with recent Heimdal.
+    * Fix the build of the winbind krb5 locator plugin.
+    * Fix compile of winbind_krb5_locator with recent Heimdal versions.
+    * Fix the build on Mac OS X 10.6.2.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * BUG 6810: Backport support for finding alternate credcaches.
+    * Use pid value from kernel to determine KRB5CCNAME to use in cifs.upcall.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 6338: 'net rpc trustdom list' always displays "none".
+    * BUG 6793: Fix segfault in winbindd_pam_auth.
+    * BUG 6850: Fix shadow copy display on Windows 7.
+    * BUG 6973: Fix a segfault in 'net'.
+    * Fix the build of cifs.upcall.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 7014: Fix Winbind crash when retrieving empty group members.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6157: Restore Samba 3.0.x behavior and use the first "uid" value.
+    * BUG 6642: Fix opening the quota magic file.
+    * BUG 6919: Fix remote quota management.
+
+
+o   Timothy Miller <theosib@gmail.com>
+    * BUG 6696: Fix smbd crashes when using mdns (not avahi) support.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * BUG 6918: Fix krb5 build problem on Ubuntu Karmic.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * 6918: Fix the build with krb5-client-1.7-6.1.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 6811: pam_winbind references freed memory.
+    * BUG 6826: Don't fail authentication when one or some group of
+      require-membership-of is invalid.
+    * BUG 6840: Fix crash in pam_winbind.
 
 
 ######################################################################
