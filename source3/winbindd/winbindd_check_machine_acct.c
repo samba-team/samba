@@ -93,5 +93,8 @@ static void winbindd_check_machine_acct_done(struct tevent_req *subreq)
 NTSTATUS winbindd_check_machine_acct_recv(struct tevent_req *req,
 					  struct winbindd_response *presp)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	NTSTATUS status = tevent_req_simple_recv_ntstatus(req);
+
+	set_auth_errors(presp, status);
+	return status;
 }
