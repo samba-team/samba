@@ -51,7 +51,7 @@ rpc="$rpc RPC-SCHANNEL RPC-SCHANNEL2 RPC-BENCH-SCHANNEL1 RPC-JOIN"
 
 local="LOCAL-NSS-WRAPPER LOCAL-NDR"
 
-winbind="WINBIND-WBCLIENT"
+winbind="WINBIND-STRUCT WINBIND-WBCLIENT"
 
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
