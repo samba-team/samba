@@ -479,6 +479,8 @@ sub provision($$$$$$)
 	winbindd:socket dir = $wbsockdir
 	idmap uid = 100000-200000
 	idmap gid = 100000-200000
+	winbind enum users = yes
+	winbind enum groups = yes
 
 #	min receivefile size = 4000
 

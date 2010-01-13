@@ -626,7 +626,7 @@ static bool torture_winbind_struct_list_users(struct torture_context *torture)
 	torture_comment(torture, "Running WINBINDD_LIST_USERS (struct based)\n");
 
 	ok = get_user_list(torture, &users);
-	torture_assert(torture, ok, "failed to get group list");
+	torture_assert(torture, ok, "failed to get user list");
 
 	for (count = 0; users[count]; count++) { }
 
