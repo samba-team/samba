@@ -473,6 +473,9 @@ static bool torture_winbind_struct_getdcname(struct torture_context *torture)
 {
 	bool ok;
 	bool strict = torture_setting_bool(torture, "strict mode", false);
+	const char *domain_name = torture_setting_string(torture,
+					"winbindd netbios domain",
+					lp_workgroup(torture->lp_ctx));
 	struct torture_trust_domain *listd = NULL;
 	uint32_t i, count = 0;
 
@@ -484,6 +487,13 @@ static bool torture_winbind_struct_getdcname(struct torture_context *torture)
 	for (i=0; listd && listd[i].netbios_name; i++) {
 		struct winbindd_request req;
 		struct winbindd_response rep;
+
+		/* getdcname is not expected to work on "BUILTIN" or our own
+		 * domain */
+		if (strequal(listd[i].netbios_name, "BUILTIN") ||
+		    strequal(listd[i].netbios_name, domain_name)) {
+			continue;
+		}
 
 		ZERO_STRUCT(req);
 		ZERO_STRUCT(rep);
