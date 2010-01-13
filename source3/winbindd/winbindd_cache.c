@@ -2715,12 +2715,13 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	old_status = domain->online;
 	trusts->count = 0;
 	trusts->array = NULL;
-	if (domain->online) {
-		goto do_query;
-	}
 
 	cache = get_cache(domain);
 	if (!cache || !cache->tdb) {
+		goto do_query;
+	}
+
+	if (domain->online) {
 		goto do_query;
 	}
 
