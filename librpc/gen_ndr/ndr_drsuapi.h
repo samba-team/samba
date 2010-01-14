@@ -171,17 +171,13 @@ void ndr_print_drsuapi_DsGetNCChangesCompressedCtr(struct ndr_print *ndr, const 
 void ndr_print_drsuapi_DsGetNCChangesCtr2(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr2 *r);
 void ndr_print_drsuapi_DsGetNCChangesCtr7(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr7 *r);
 void ndr_print_drsuapi_DsGetNCChangesCtr(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetNCChangesCtr *r);
-void ndr_print_drsuapi_DsReplicaUpdateRefsOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsReplicaUpdateRefsRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaUpdateRefsRequest1 *r);
 void ndr_print_drsuapi_DsReplicaUpdateRefsRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsReplicaUpdateRefsRequest *r);
-void ndr_print_drsuapi_DsReplicaAddOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsReplicaAddRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaAddRequest1 *r);
 void ndr_print_drsuapi_DsReplicaAddRequest2(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaAddRequest2 *r);
 void ndr_print_drsuapi_DsReplicaAddRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsReplicaAddRequest *r);
-void ndr_print_drsuapi_DsReplicaDeleteOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsReplicaDelRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaDelRequest1 *r);
 void ndr_print_drsuapi_DsReplicaDelRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsReplicaDelRequest *r);
-void ndr_print_drsuapi_DsReplicaModifyOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsReplicaModRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaModRequest1 *r);
 void ndr_print_drsuapi_DsReplicaModRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsReplicaModRequest *r);
 void ndr_print_drsuapi_DsMembershipType(struct ndr_print *ndr, const char *name, enum drsuapi_DsMembershipType r);
@@ -255,7 +251,6 @@ void ndr_print_drsuapi_DsReplicaObjMetaDataCtr(struct ndr_print *ndr, const char
 void ndr_print_drsuapi_DsReplicaKccDsaFailure(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaKccDsaFailure *r);
 void ndr_print_drsuapi_DsReplicaKccDsaFailuresCtr(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaKccDsaFailuresCtr *r);
 void ndr_print_drsuapi_DsReplicaOpType(struct ndr_print *ndr, const char *name, enum drsuapi_DsReplicaOpType r);
-void ndr_print_drsuapi_DsRplicaOpOptions(struct ndr_print *ndr, const char *name, const union drsuapi_DsRplicaOpOptions *r);
 void ndr_print_drsuapi_DsReplicaOp(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaOp *r);
 void ndr_print_drsuapi_DsReplicaOpCtr(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaOpCtr *r);
 void ndr_print_drsuapi_DsReplicaAttrValMetaData(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaAttrValMetaData *r);

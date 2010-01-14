@@ -18,6 +18,7 @@
 /* bitmap drsuapi_DrsOptions */
 #define DRSUAPI_DRS_ASYNC_OP ( 0x00000001 )
 #define DRSUAPI_DRS_GETCHG_CHECK ( 0x00000002 )
+#define DRSUAPI_DRS_UPDATE_NOTIFICATION ( 0x00000002 )
 #define DRSUAPI_DRS_ADD_REF ( 0x00000004 )
 #define DRSUAPI_DRS_SYNC_ALL ( 0x00000008 )
 #define DRSUAPI_DRS_DEL_REF ( 0x00000008 )
@@ -36,9 +37,16 @@
 #define DRSUAPI_DRS_REF_OK ( 0x00004000 )
 #define DRSUAPI_DRS_FULL_SYNC_NOW ( 0x00008000 )
 #define DRSUAPI_DRS_NO_SOURCE ( 0x00008000 )
+#define DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS ( 0x00010000 )
 #define DRSUAPI_DRS_FULL_SYNC_PACKET ( 0x00020000 )
+#define DRSUAPI_DRS_SYNC_REQUEUE ( 0x00040000 )
+#define DRSUAPI_DRS_SYNC_URGENT ( 0x00080000 )
 #define DRSUAPI_DRS_REF_GCSPN ( 0x00100000 )
-#define DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING ( 0x00800000 )
+#define DRSUAPI_DRS_NO_DISCARD ( 0x00100000 )
+#define DRSUAPI_DRS_NEVER_SYNCED ( 0x00200000 )
+#define DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING ( 0x00400000 )
+#define DRSUAPI_DRS_INIT_SYNC_NOW ( 0x00800000 )
+#define DRSUAPI_DRS_PREEMPTED ( 0x01000000 )
 #define DRSUAPI_DRS_SYNC_FORCED ( 0x02000000 )
 #define DRSUAPI_DRS_DISABLE_AUTO_SYNC ( 0x04000000 )
 #define DRSUAPI_DRS_DISABLE_PERIODIC_SYNC ( 0x08000000 )
@@ -726,13 +734,6 @@ union drsuapi_DsGetNCChangesCtr {
 	struct drsuapi_DsGetNCChangesCtr7 ctr7;/* [case(7)] */
 }/* [switch_type(int32)] */;
 
-/* bitmap drsuapi_DsReplicaUpdateRefsOptions */
-#define DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK ( 0x00000002 )
-#define DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE ( 0x00000004 )
-#define DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE ( 0x00000008 )
-#define DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE ( 0x00000010 )
-
 struct drsuapi_DsReplicaUpdateRefsRequest1 {
 	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
 	const char *dest_dsa_dns_name;/* [ref,charset(DOS)] */
@@ -743,10 +744,6 @@ struct drsuapi_DsReplicaUpdateRefsRequest1 {
 union drsuapi_DsReplicaUpdateRefsRequest {
 	struct drsuapi_DsReplicaUpdateRefsRequest1 req1;/* [case] */
 }/* [switch_type(int32)] */;
-
-/* bitmap drsuapi_DsReplicaAddOptions */
-#define DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_ADD_WRITEABLE ( 0x00000002 )
 
 struct drsuapi_DsReplicaAddRequest1 {
 	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
@@ -769,10 +766,6 @@ union drsuapi_DsReplicaAddRequest {
 	struct drsuapi_DsReplicaAddRequest2 req2;/* [case(2)] */
 }/* [switch_type(int32)] */;
 
-/* bitmap drsuapi_DsReplicaDeleteOptions */
-#define DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_ADD_WRITEABLE ( 0x00000002 )
-
 struct drsuapi_DsReplicaDelRequest1 {
 	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
 	const char *source_dsa_address;/* [unique,charset(UTF16)] */
@@ -782,10 +775,6 @@ struct drsuapi_DsReplicaDelRequest1 {
 union drsuapi_DsReplicaDelRequest {
 	struct drsuapi_DsReplicaDelRequest1 req1;/* [case] */
 }/* [switch_type(int32)] */;
-
-/* bitmap drsuapi_DsReplicaModifyOptions */
-#define DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION ( 0x00000001 )
-#define DRSUAPI_DS_REPLICA_ADD_WRITEABLE ( 0x00000002 )
 
 struct drsuapi_DsReplicaModRequest1 {
 	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
@@ -1396,21 +1385,12 @@ enum drsuapi_DsReplicaOpType
 #endif
 ;
 
-union drsuapi_DsRplicaOpOptions {
-	uint32_t sync;/* [case(DRSUAPI_DS_REPLICA_OP_TYPE_SYNC)] */
-	uint32_t add;/* [case(DRSUAPI_DS_REPLICA_OP_TYPE_ADD)] */
-	uint32_t op_delete;/* [case(DRSUAPI_DS_REPLICA_OP_TYPE_DELETE)] */
-	uint32_t modify;/* [case(DRSUAPI_DS_REPLICA_OP_TYPE_MODIFY)] */
-	uint32_t update_refs;/* [case(DRSUAPI_DS_REPLICA_OP_TYPE_UPDATE_REFS)] */
-	uint32_t unknown;/* [default] */
-}/* [switch_type(drsuapi_DsReplicaOpType)] */;
-
 struct drsuapi_DsReplicaOp {
 	NTTIME operation_start;
 	uint32_t serial_num;
 	uint32_t priority;
 	enum drsuapi_DsReplicaOpType operation_type;
-	union drsuapi_DsRplicaOpOptions options;/* [switch_is(operation_type)] */
+	uint32_t options;
 	const char *nc_dn;/* [unique,charset(UTF16)] */
 	const char *remote_dsa_obj_dn;/* [unique,charset(UTF16)] */
 	const char *remote_dsa_address;/* [unique,charset(UTF16)] */

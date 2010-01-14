@@ -223,7 +223,7 @@ interface drsuapi
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		GUID source_dsa_guid;
 		astring *other_info; /* I assume this is related to the repsFromTo1OtherInfo dns_name */
-		drsuapi_DsReplicaSyncOptions options;
+		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaSyncRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -789,19 +789,12 @@ interface drsuapi
 	/*****************/
         /* Function 0x04 */
 	/* [MS-DRSR] 4.1.26 */
-	typedef bitmap {
-		DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION	= 0x00000001,
-		DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK			= 0x00000002,
-		DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE			= 0x00000004,
-		DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE		= 0x00000008,
-		DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE			= 0x00000010
-	} drsuapi_DsReplicaUpdateRefsOptions;
 
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		[ref,charset(DOS),string] uint8 *dest_dsa_dns_name;
 		GUID dest_dsa_guid;
-		drsuapi_DsReplicaUpdateRefsOptions options;
+		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaUpdateRefsRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -816,18 +809,12 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x05 */
-	typedef bitmap {
-		DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION	= 0x00000001,
-		DRSUAPI_DS_REPLICA_ADD_WRITEABLE		= 0x00000002
-		/* TODO ... */
-	} drsuapi_DsReplicaAddOptions;
-
 
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		[charset(UTF16),string] uint16 *source_dsa_address;
 		uint8 schedule[84];
-		drsuapi_DsReplicaAddOptions options;
+		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaAddRequest1;
 
 	typedef struct {
@@ -836,7 +823,7 @@ interface drsuapi
 		drsuapi_DsReplicaObjectIdentifier *transport_dn;
 		[charset(UTF16),string] uint16 *source_dsa_address;
 		uint8 schedule[84];
-		drsuapi_DsReplicaAddOptions options;
+		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaAddRequest2;
 
 	typedef [switch_type(int32)] union {
@@ -853,17 +840,10 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x06 */
-	typedef bitmap {
-		DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION	= 0x00000001,
-		DRSUAPI_DS_REPLICA_ADD_WRITEABLE		= 0x00000002
-		/* TODO ... */
-	} drsuapi_DsReplicaDeleteOptions;
-
-
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		[charset(UTF16),string] uint16 *source_dsa_address;
-		drsuapi_DsReplicaDeleteOptions options;
+		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaDelRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -878,12 +858,6 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x07 */
-	typedef bitmap {
-		DRSUAPI_DS_REPLICA_ADD_ASYNCHRONOUS_OPERATION	= 0x00000001,
-		DRSUAPI_DS_REPLICA_ADD_WRITEABLE		= 0x00000002
-		/* TODO ... */
-	} drsuapi_DsReplicaModifyOptions;
-
 
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
@@ -892,7 +866,7 @@ interface drsuapi
 		uint8 schedule[84];
 		uint32 replica_flags;
 		uint32 modify_fields;
-		drsuapi_DsReplicaModifyOptions options;
+		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaModRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -1521,21 +1495,12 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_OP_TYPE_UPDATE_REFS	= 4
 	} drsuapi_DsReplicaOpType;
 
-	typedef [switch_type(drsuapi_DsReplicaOpType)] union {
-		[case(DRSUAPI_DS_REPLICA_OP_TYPE_SYNC)]		drsuapi_DsReplicaSyncOptions sync;
-		[case(DRSUAPI_DS_REPLICA_OP_TYPE_ADD)]		drsuapi_DsReplicaAddOptions add;
-		[case(DRSUAPI_DS_REPLICA_OP_TYPE_DELETE)]	drsuapi_DsReplicaDeleteOptions op_delete;
-		[case(DRSUAPI_DS_REPLICA_OP_TYPE_MODIFY)]	drsuapi_DsReplicaModifyOptions modify;
-		[case(DRSUAPI_DS_REPLICA_OP_TYPE_UPDATE_REFS)]	drsuapi_DsReplicaUpdateRefsOptions update_refs;
-		[default] uint32 unknown;
-	} drsuapi_DsRplicaOpOptions;
-
 	typedef struct {
 		NTTIME operation_start;
 		uint32 serial_num; /* unique till reboot */
 		uint32 priority;
 		drsuapi_DsReplicaOpType operation_type;
-		[switch_is(operation_type)] drsuapi_DsRplicaOpOptions options;
+		drsuapi_DrsOptions options;
 		[charset(UTF16),string] uint16 *nc_dn;
 		[charset(UTF16),string] uint16 *remote_dsa_obj_dn;
 		[charset(UTF16),string] uint16 *remote_dsa_address;
