@@ -24,7 +24,6 @@ Prereq: fileutils sed /etc/init.d
 
 Requires: pam >= 0.64 %{auth} 
 Requires: samba-common = %{version}-%{release}
-Requires: logrotate >= 3.4 initscripts >= 5.54-1
 Provides: samba = %{version}
 
 Prefix: /usr
@@ -300,8 +299,8 @@ mkdir -p $RPM_BUILD_ROOT%{_mandir}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib
 mkdir -p $RPM_BUILD_ROOT/sbin
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{logrotate.d,pam.d,samba}
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{pam.d,logrotate.d}
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{pam.d,samba}
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{pam.d}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{samba,sysconfig}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
@@ -351,7 +350,6 @@ rm -rf %{_32bit_tmp_dir}
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
-install -m644 setup/samba.log $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/samba
 install -m644 setup/swat $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
 install -m644 setup/samba.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
 install -m755 setup/smb.init $RPM_BUILD_ROOT%{initdir}/smb
@@ -450,7 +448,6 @@ exit 0
 %config(noreplace) %{_sysconfdir}/sysconfig/samba
 %config(noreplace) %{_sysconfdir}/samba/smbusers
 %attr(755,root,root) %config %{initdir}/smb
-%config(noreplace) %{_sysconfdir}/logrotate.d/samba
 %config(noreplace) %{_sysconfdir}/pam.d/samba
 
 %attr(0755,root,root) %dir /var/log/samba
