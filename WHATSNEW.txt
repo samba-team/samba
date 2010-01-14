@@ -75,6 +75,7 @@ o   Jim McDonough <jmcd@samba.org>
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 6157: Restore Samba 3.0.x behavior and use the first "uid" value.
     * BUG 6642: Fix opening the quota magic file.
+    * BUG 6856: Fix the build of the GPFS VFS module with headers only.
     * BUG 6919: Fix remote quota management.
 
 
