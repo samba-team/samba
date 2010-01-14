@@ -110,9 +110,9 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 	r->in.req.req1.naming_context = &partition->nc;
 	r->in.req.req1.source_dsa_guid = state->op->service->ntds_guid;
 	r->in.req.req1.options = 
-		DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_OPERATION |
-		DRSUAPI_DS_REPLICA_SYNC_WRITEABLE |
-		DRSUAPI_DS_REPLICA_SYNC_ALL_SOURCES;
+		DRSUAPI_DRS_ASYNC_OP |
+		DRSUAPI_DRS_UPDATE_NOTIFICATION |
+		DRSUAPI_DRS_WRIT_REP;
 
 	rreq = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);
 	if (tevent_req_nomem(rreq, req)) {

@@ -547,11 +547,9 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 	r->in.req.req1.naming_context	  = &partition->nc;
 	r->in.req.req1.dest_dsa_dns_name  = ntds_dns_name;
 	r->in.req.req1.dest_dsa_guid	  = service->ntds_guid;
-	r->in.req.req1.options	          =
-		DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE |
-		DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	r->in.req.req1.options	          = DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_DEL_REF;
 	if (!samdb_rodc(service->task->lp_ctx)) {
-		r->in.req.req1.options |= DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE;
+		r->in.req.req1.options |= DRSUAPI_DRS_WRIT_REP;
 	}
 
 	rreq = dcerpc_drsuapi_DsReplicaUpdateRefs_send(drsuapi->pipe, r, r);
