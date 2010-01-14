@@ -586,6 +586,12 @@ static NTSTATUS rpc_getsid_internals(struct net_context *c,
 
 int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 {
+	int conn_flags = NET_FLAGS_PDC;
+
+	if (!c->opt_user_specified) {
+		conn_flags |= NET_FLAGS_ANONYMOUS;
+	}
+
 	if (c->display_usage) {
 		d_printf("Usage:\n"
 			 "net rpc getsid\n"
@@ -594,7 +600,7 @@ int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 	}
 
 	return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id,
-			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
+			       conn_flags,
 			       rpc_getsid_internals,
 			       argc, argv);
 }
