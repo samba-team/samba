@@ -482,7 +482,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 
 	/* 1. deleting replica dest should fail */
 	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
-	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_DS_DRA_REF_NOT_FOUND, &r,
@@ -490,7 +490,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 
 	/* 2. hopefully adding random replica dest should succeed */
 	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
-	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE;
+	r.in.req.req1.options		= DRSUAPI_DRS_ADD_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_OK, &r,
@@ -498,7 +498,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 
 	/* 3. try adding same replica dest - should fail */
 	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
-	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE;
+	r.in.req.req1.options		= DRSUAPI_DRS_ADD_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_DS_DRA_REF_ALREADY_EXISTS, &r,
@@ -506,7 +506,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 
 	/* 4. delete random replicate added at step 2. */
 	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
-	r.in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE;
+	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_OK, &r,
