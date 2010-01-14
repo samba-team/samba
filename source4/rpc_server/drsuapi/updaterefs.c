@@ -48,7 +48,7 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	for (i=0; i<reps.count; i++) {
 		if (GUID_compare(&dest->source_dsa_obj_guid, 
 				 &reps.r[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
-			if (options & DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK) {
+			if (options & DRSUAPI_DRS_GETCHG_CHECK) {
 				return WERR_OK;
 			} else {
 				return WERR_DS_DRA_REF_ALREADY_EXISTS;
@@ -106,8 +106,8 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!found &&
-	    !(options & DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK) &&
-	    !(options & DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE)) {
+	    !(options & DRSUAPI_DRS_GETCHG_CHECK) &&
+	    !(options & DRSUAPI_DRS_ADD_REF)) {
 		return WERR_DS_DRA_REF_NOT_FOUND;
 	}
 
@@ -138,7 +138,7 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
-	if (req->options & DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE) {
+	if (req->options & DRSUAPI_DRS_DEL_REF) {
 		werr = uref_del_dest(b_state->sam_ctx, mem_ctx, dn, &req->dest_dsa_guid, req->options);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to delete repsTo for %s\n",
@@ -147,7 +147,7 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		}
 	}
 
-	if (req->options & DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE) {
+	if (req->options & DRSUAPI_DRS_ADD_REF) {
 		struct repsFromTo1 dest;
 		struct repsFromTo1OtherInfo oi;
 		

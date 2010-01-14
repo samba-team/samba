@@ -1052,9 +1052,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_NOMEM;
 		}
 		ureq.dest_dsa_guid = req8->destination_dsa_guid;
-		ureq.options = DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE |
-			DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION |
-			DRSUAPI_DS_REPLICA_UPDATE_GETCHG_CHECK;
+		ureq.options = DRSUAPI_DRS_ADD_REF |
+			DRSUAPI_DRS_ASYNC_OP |
+			DRSUAPI_DRS_GETCHG_CHECK;
 		werr = drsuapi_UpdateRefs(b_state, mem_ctx, &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed UpdateRefs in DsGetNCChanges - %s\n",
