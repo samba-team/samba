@@ -153,12 +153,6 @@ static char *cachefile_name_f_fullpath(TALLOC_CTX *ctx,
 	return cachefile;
 }
 
-static char *path_plus_name(TALLOC_CTX *ctx, const char *base,
-			    const char *filename)
-{
-	return talloc_asprintf(ctx, "%s%s", base,filename);
-}
-
 static char *construct_full_path(TALLOC_CTX *ctx, vfs_handle_struct * handle,
 				 const char *somepath, bool ending_slash)
 {
@@ -179,10 +173,10 @@ static char *construct_full_path(TALLOC_CTX *ctx, vfs_handle_struct * handle,
 	}
 	/* vfs_GetWd() seems to return a path with a slash */
 	if (ending_slash) {
-		return talloc_asprintf(ctx, "%s%s/",
+		return talloc_asprintf(ctx, "%s/%s/",
 				       vfs_GetWd(ctx, handle->conn),tmp);
 	}
-	return talloc_asprintf(ctx, "%s%s",
+	return talloc_asprintf(ctx, "%s/%s",
 			       vfs_GetWd(ctx, handle->conn),tmp);
 }
 
@@ -450,7 +444,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 		while (dire) {
 			char *fpath2;
 			struct smb_filename *smb_fname2;
-			fpath2 = path_plus_name(ctx,base_name, dire->d_name);
+			fpath2 = talloc_asprintf(ctx, "%s%s", base_name,dire->d_name);
 			DEBUG(SCANNEDONLY_DEBUG,
 			      ("scannedonly_allow_access in loop, "
 			       "found %s\n", fpath2));
@@ -520,6 +514,8 @@ static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
 	} else {
 		sDIR->base = name_w_ending_slash(sDIR, fname);
 	}
+	DEBUG(SCANNEDONLY_DEBUG,
+			("scannedonly_opendir, fname=%s, base=%s\n",fname,sDIR->base));
 	sDIR->DIR = DIRp;
 	sDIR->notify_loop_done = 0;
 	return (SMB_STRUCT_DIR *) sDIR;
@@ -554,8 +550,7 @@ static SMB_STRUCT_DIRENT *scannedonly_readdir(vfs_handle_struct *handle,
 		       "skip to next entry\n", result->d_name));
 		return scannedonly_readdir(handle, dirp, NULL);
 	}
-
-	tmp = path_plus_name(ctx,sDIR->base, result->d_name);
+	tmp = talloc_asprintf(ctx, "%s%s", sDIR->base, result->d_name);
 	DEBUG(SCANNEDONLY_DEBUG,
 	      ("scannedonly_readdir, check access to %s (sbuf=%p)\n",
 	       tmp,sbuf));
@@ -844,7 +839,7 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 			}
 			/* stat the file and see if it is a
 			   special file */
-			fullpath = path_plus_name(ctx,path_w_slash,
+			fullpath = talloc_asprintf(ctx, "%s%s", path_w_slash,
 						  dire->d_name);
 			create_synthetic_smb_fname(ctx, fullpath,NULL,NULL,
 						   &smb_fname);
@@ -873,7 +868,7 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 			if (ISDOT(dire->d_name) || ISDOTDOT(dire->d_name)) {
 				continue;
 			}
-			fullpath = path_plus_name(ctx,path_w_slash,
+			fullpath = talloc_asprintf(ctx, "%s%s", path_w_slash,
 						  dire->d_name);
 			create_synthetic_smb_fname(ctx, fullpath,NULL,NULL,
 						   &smb_fname);
