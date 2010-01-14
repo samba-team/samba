@@ -15,10 +15,11 @@ interface drsuapi
 {
 	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
 
-	/* see MS-DRSR section 5.37 */
+	/* see MS-DRSR section 5.39 */
 	typedef [public,bitmap32bit] bitmap {
 		DRSUAPI_DRS_ASYNC_OP                  = 0x00000001,
 		DRSUAPI_DRS_GETCHG_CHECK              = 0x00000002,
+		DRSUAPI_DRS_UPDATE_NOTIFICATION       = 0x00000002,
 		DRSUAPI_DRS_ADD_REF                   = 0x00000004,
 		DRSUAPI_DRS_SYNC_ALL                  = 0x00000008,
 		DRSUAPI_DRS_DEL_REF                   = 0x00000008,
@@ -37,9 +38,16 @@ interface drsuapi
 		DRSUAPI_DRS_REF_OK                    = 0x00004000,
 		DRSUAPI_DRS_FULL_SYNC_NOW             = 0x00008000,
 		DRSUAPI_DRS_NO_SOURCE                 = 0x00008000,
+		DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS     = 0x00010000,
 		DRSUAPI_DRS_FULL_SYNC_PACKET          = 0x00020000,
+		DRSUAPI_DRS_SYNC_REQUEUE              = 0x00040000,
+		DRSUAPI_DRS_SYNC_URGENT               = 0x00080000,
 		DRSUAPI_DRS_REF_GCSPN                 = 0x00100000,
-		DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING = 0x00800000,
+		DRSUAPI_DRS_NO_DISCARD                = 0x00100000,
+		DRSUAPI_DRS_NEVER_SYNCED              = 0x00200000,
+		DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING = 0x00400000,
+		DRSUAPI_DRS_INIT_SYNC_NOW             = 0x00800000,
+		DRSUAPI_DRS_PREEMPTED                 = 0x01000000,
 		DRSUAPI_DRS_SYNC_FORCED               = 0x02000000,
 		DRSUAPI_DRS_DISABLE_AUTO_SYNC         = 0x04000000,
 		DRSUAPI_DRS_DISABLE_PERIODIC_SYNC     = 0x08000000,
