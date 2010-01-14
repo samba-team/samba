@@ -244,6 +244,8 @@ cat >$SERVERCONFFILE<<EOF
 	winbindd:socket dir = $WINBINDD_SOCKET_DIR
 	idmap uid = 100000-200000
 	idmap gid = 100000-200000
+	winbind enum users = yes
+	winbind enum groups = yes
 
 #	min receivefile size = 4000
 
@@ -347,6 +349,7 @@ TORTURE4_OPTIONS="$SAMBA4CONFIGURATION"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --target=samba3"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:localdir=$SHRDIR"
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:winbindd_netbios_name=$SERVER"
 export TORTURE4_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
