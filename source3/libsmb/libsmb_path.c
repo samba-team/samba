@@ -308,7 +308,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 		if (!*pp_server) {
 			return -1;
 		}
-               	*pp_server[wl] = '\0';
+		(*pp_server)[wl] = '\0';
 		return 0;
 	}
         
