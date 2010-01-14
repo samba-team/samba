@@ -22,77 +22,45 @@
 #include "includes.h"
 #include "torture/smbtorture.h"
 #include <tevent.h>
-#include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
+#include "lib/tsocket/tsocket.h"
+#include "libcli/util/tstream.h"
 #include "torture/rpc/rpc.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_ntp_signd.h"
 #include "param/param.h"
+#include "system/network.h"
 
 #define TEST_MACHINE_NAME "ntpsigndtest"
 
-struct signd_client_socket {
-	struct socket_context *sock;
-	
-	/* the fd event */
-	struct tevent_fd *fde;
-	
+struct signd_client_state {
+	struct tsocket_address *local_address;
+	struct tsocket_address *remote_address;
+
+	struct tstream_context *tstream;
+	struct tevent_queue *send_queue;
+
+	uint8_t request_hdr[4];
+	struct iovec request_iov[2];
+
+	DATA_BLOB reply;
+
 	NTSTATUS status;
-	DATA_BLOB request, reply;
-	
-	struct packet_context *packet;
-		
-	size_t partial_read;
 };
 
-static NTSTATUS signd_client_full_packet(void *private_data, DATA_BLOB data)
-{
-	struct signd_client_socket *signd_client = talloc_get_type(private_data, struct signd_client_socket);
-	talloc_steal(signd_client, data.data);
-	signd_client->reply = data;
-	signd_client->reply.length -= 4;
-	signd_client->reply.data += 4;
-	return NT_STATUS_OK;
-}
-
-static void signd_client_error_handler(void *private_data, NTSTATUS status)
-{
-	struct signd_client_socket *signd_client = talloc_get_type(private_data, struct signd_client_socket);
-	signd_client->status = status;
-}
-
 /*
-  handle fd events on a signd_client_socket
-*/
-static void signd_client_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-				 uint16_t flags, void *private_data)
-{
-	struct signd_client_socket *signd_client = talloc_get_type(private_data, struct signd_client_socket);
-	if (flags & TEVENT_FD_READ) {
-		packet_recv(signd_client->packet);
-		return;
-	}
-	if (flags & TEVENT_FD_WRITE) {
-		packet_queue_run(signd_client->packet);
-		return;
-	}
-	/* not reached */
-	return;
-}
-
-/* A torture test to show that the unix domain socket protocol is
- * operating correctly, and the signatures are as expected */
-
-static bool test_ntp_signd(struct torture_context *tctx, 
+ * A torture test to show that the unix domain socket protocol is
+ * operating correctly, and the signatures are as expected
+ */
+static bool test_ntp_signd(struct torture_context *tctx,
 			   struct dcerpc_pipe *p,
 			   struct cli_credentials *credentials)
 {
 	struct netlogon_creds_CredentialState *creds;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 
-	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate3 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
@@ -105,12 +73,18 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	struct signed_reply signed_reply;
 	DATA_BLOB sign_req_blob;
 
-	struct signd_client_socket *signd_client;
-	char *signd_socket_address;
+	struct signd_client_state *signd_client;
+	struct tevent_req *req;
+	char *unix_address;
+	int sys_errno;
+
+	NTSTATUS status;
 
 	struct MD5Context ctx;
 	uint8_t sig[16];
 	enum ndr_err_code ndr_err;
+	bool ok;
+	int rc;
 
 	machine_name = cli_credentials_get_workstation(credentials);
 
@@ -148,101 +122,161 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	status = dcerpc_netr_ServerAuthenticate3(p, tctx, &a);
 	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate3");
-	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3), "Credential chaining failed");
+	torture_assert(tctx,
+		       netlogon_creds_client_check(creds, &credentials3),
+		       "Credential chaining failed");
 
 	sign_req.op = SIGN_TO_CLIENT;
 	sign_req.packet_id = 1;
 	sign_req.key_id = rid;
 	sign_req.packet_to_sign = data_blob_string_const("I am a tea pot");
 	
-	ndr_err = ndr_push_struct_blob(&sign_req_blob, mem_ctx, NULL, &sign_req, (ndr_push_flags_fn_t)ndr_push_sign_request);
-	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "Failed to push sign_req");
-	
-	signd_client = talloc(mem_ctx, struct signd_client_socket);
+	ndr_err = ndr_push_struct_blob(&sign_req_blob,
+				       mem_ctx,
+				       NULL,
+				       &sign_req,
+				       (ndr_push_flags_fn_t)ndr_push_sign_request);
+	torture_assert(tctx,
+		       NDR_ERR_CODE_IS_SUCCESS(ndr_err),
+		       "Failed to push sign_req");
 
-	status = socket_create("unix", SOCKET_TYPE_STREAM, &signd_client->sock, 0);
-	
-	signd_socket_address = talloc_asprintf(signd_client, "%s/socket", 
-					       lp_ntp_signd_socket_directory(tctx->lp_ctx));
+	signd_client = talloc(mem_ctx, struct signd_client_state);
 
-	status = socket_connect_ev(signd_client->sock, NULL, 
-				   socket_address_from_strings(signd_client, 
-							       "unix", signd_socket_address, 0), 0, tctx->ev);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to connect to signd!");
-	
-	/* Setup the FDE, start listening for read events
-	 * from the start (otherwise we may miss a socket
-	 * drop) and mark as AUTOCLOSE along with the fde */
-	
-	/* Ths is equivilant to EVENT_FD_READABLE(signd_client->fde) */
-	signd_client->fde = tevent_add_fd(tctx->ev, signd_client->sock,
-			    socket_get_fd(signd_client->sock),
-			    TEVENT_FD_READ,
-			    signd_client_socket_handler, signd_client);
-	/* its now the job of the event layer to close the socket */
-	tevent_fd_set_close_fn(signd_client->fde, socket_tevent_fd_close_fn);
-	socket_set_flags(signd_client->sock, SOCKET_FLAG_NOCLOSE);
-	
-	signd_client->status = NT_STATUS_OK;
-	signd_client->reply = data_blob(NULL, 0);
+	/* Create socket addresses */
+	torture_comment(tctx, "Creating the socket addresses\n");
+	rc = tsocket_address_unix_from_path(signd_client, "",
+				       &signd_client->local_address);
+	torture_assert(tctx, rc == 0,
+		       "Failed to create local address from unix path.");
 
-	signd_client->packet = packet_init(signd_client);
-	if (signd_client->packet == NULL) {
-		talloc_free(signd_client);
-		return ENOMEM;
-	}
-	packet_set_private(signd_client->packet, signd_client);
-	packet_set_socket(signd_client->packet, signd_client->sock);
-	packet_set_callback(signd_client->packet, signd_client_full_packet);
-	packet_set_full_request(signd_client->packet, packet_full_request_u32);
-	packet_set_error_handler(signd_client->packet, signd_client_error_handler);
-	packet_set_event_context(signd_client->packet, tctx->ev);
-	packet_set_fde(signd_client->packet, signd_client->fde);
-	
-	signd_client->request = data_blob_talloc(signd_client, NULL, sign_req_blob.length + 4);
-	RSIVAL(signd_client->request.data, 0, sign_req_blob.length);
-	memcpy(signd_client->request.data+4, sign_req_blob.data, sign_req_blob.length);
-	packet_send(signd_client->packet, signd_client->request);
+	unix_address = talloc_asprintf(signd_client,
+					"%s/socket",
+					lp_ntp_signd_socket_directory(tctx->lp_ctx));
+	rc = tsocket_address_unix_from_path(mem_ctx,
+					    unix_address,
+					    &signd_client->remote_address);
+	torture_assert(tctx, rc == 0,
+		       "Failed to create remote address from unix path.");
 
-	while ((NT_STATUS_IS_OK(signd_client->status)) && !signd_client->reply.length) {
-		if (tevent_loop_once(tctx->ev) != 0) {
-			talloc_free(signd_client);
-			return EINVAL;
-		}
-	}
+	/* Connect to the unix socket */
+	torture_comment(tctx, "Connecting to the unix socket\n");
+	req = tstream_unix_connect_send(signd_client,
+					tctx->ev,
+					signd_client->local_address,
+					signd_client->remote_address);
+	torture_assert(tctx, req != NULL,
+		       "Failed to create a tstream unix connect request.");
 
-	torture_assert_ntstatus_ok(tctx, signd_client->status, "Error reading signd_client reply packet");
+	ok = tevent_req_poll(req, tctx->ev);
+	torture_assert(tctx, ok == true,
+		       "Failed to poll for tstream_unix_connect_send.");
 
-	ndr_err = ndr_pull_struct_blob_all(&signd_client->reply, mem_ctx, 
+	rc = tstream_unix_connect_recv(req,
+				       &sys_errno,
+				       signd_client,
+				       &signd_client->tstream);
+	TALLOC_FREE(req);
+	torture_assert(tctx, rc == 0, "Failed to connect to signd!");
+
+	/* Allocate the send queue */
+	signd_client->send_queue = tevent_queue_create(signd_client,
+						       "signd_client_queue");
+	torture_assert(tctx, signd_client->send_queue != NULL,
+		       "Failed to create send queue!");
+
+	/*
+	 * Create the request buffer.
+	 * First add the length of the request buffer
+	 */
+	RSIVAL(signd_client->request_hdr, 0, sign_req_blob.length);
+	signd_client->request_iov[0].iov_base = signd_client->request_hdr;
+	signd_client->request_iov[0].iov_len = 4;
+
+	signd_client->request_iov[1].iov_base = sign_req_blob.data;
+	signd_client->request_iov[1].iov_len = sign_req_blob.length;
+
+	/* Fire the request buffer */
+	torture_comment(tctx, "Sending the request\n");
+	req = tstream_writev_queue_send(signd_client,
+					tctx->ev,
+					signd_client->tstream,
+					signd_client->send_queue,
+					signd_client->request_iov, 2);
+	torture_assert(tctx, req != NULL,
+		       "Failed to send the signd request.");
+
+	ok = tevent_req_poll(req, tctx->ev);
+	torture_assert(tctx, ok == true,
+		       "Failed to poll for tstream_writev_queue_send.");
+
+	rc = tstream_writev_queue_recv(req, &sys_errno);
+	TALLOC_FREE(req);
+	torture_assert(tctx, rc > 0, "Failed to send data");
+
+	/* Wait for a reply */
+	torture_comment(tctx, "Waiting for the reply\n");
+	req = tstream_read_pdu_blob_send(signd_client,
+					 tctx->ev,
+					 signd_client->tstream,
+					 4, /*initial_read_size */
+					 packet_full_request_u32,
+					 NULL);
+	torture_assert(tctx, req != NULL,
+		       "Failed to setup a read for pdu_blob.");
+
+	ok = tevent_req_poll(req, tctx->ev);
+	torture_assert(tctx, ok == true,
+		       "Failed to poll for tstream_read_pdu_blob_send.");
+
+	signd_client->status = tstream_read_pdu_blob_recv(req,
+							  signd_client,
+							  &signd_client->reply);
+	torture_assert_ntstatus_ok(tctx, signd_client->status,
+				   "Error reading signd_client reply packet");
+
+	/* Skip length header */
+	signd_client->reply.data += 4;
+	signd_client->reply.length -= 4;
+
+	/* Check if the reply buffer is valid */
+	torture_comment(tctx, "Validating the reply buffer\n");
+	ndr_err = ndr_pull_struct_blob_all(&signd_client->reply,
+					   mem_ctx,
 					   lp_iconv_convenience(tctx->lp_ctx),
 					   &signed_reply,
 					   (ndr_pull_flags_fn_t)ndr_pull_signed_reply);
-	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), ndr_map_error2string(ndr_err));
+	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err),
+			ndr_map_error2string(ndr_err));
 
-	torture_assert_u64_equal(tctx, signed_reply.version, 
-				 NTP_SIGND_PROTOCOL_VERSION_0, "Invalid Version");
-	torture_assert_u64_equal(tctx, signed_reply.packet_id, 
+	torture_assert_u64_equal(tctx, signed_reply.version,
+				 NTP_SIGND_PROTOCOL_VERSION_0,
+				 "Invalid Version");
+	torture_assert_u64_equal(tctx, signed_reply.packet_id,
 				 sign_req.packet_id, "Invalid Packet ID");
-	torture_assert_u64_equal(tctx, signed_reply.op, 
-				 SIGNING_SUCCESS, "Should have replied with signing success");
-	torture_assert_u64_equal(tctx, signed_reply.signed_packet.length, 
-				 sign_req.packet_to_sign.length + 20, "Invalid reply length from signd");
-	torture_assert_u64_equal(tctx, rid, 
-				 IVAL(signed_reply.signed_packet.data, sign_req.packet_to_sign.length), 
+	torture_assert_u64_equal(tctx, signed_reply.op,
+				 SIGNING_SUCCESS,
+				 "Should have replied with signing success");
+	torture_assert_u64_equal(tctx, signed_reply.signed_packet.length,
+				 sign_req.packet_to_sign.length + 20,
+				 "Invalid reply length from signd");
+	torture_assert_u64_equal(tctx, rid,
+				 IVAL(signed_reply.signed_packet.data,
+				 sign_req.packet_to_sign.length),
 				 "Incorrect RID in reply");
 
 	/* Check computed signature */
-
 	MD5Init(&ctx);
 	MD5Update(&ctx, pwhash->hash, sizeof(pwhash->hash));
-	MD5Update(&ctx, sign_req.packet_to_sign.data, sign_req.packet_to_sign.length);
+	MD5Update(&ctx, sign_req.packet_to_sign.data,
+		  sign_req.packet_to_sign.length);
 	MD5Final(sig, &ctx);
 
-	torture_assert_mem_equal(tctx, &signed_reply.signed_packet.data[sign_req.packet_to_sign.length + 4],
+	torture_assert_mem_equal(tctx,
+				 &signed_reply.signed_packet.data[sign_req.packet_to_sign.length + 4],
 				 sig, 16, "Signature on reply was incorrect!");
-	
+
 	talloc_free(mem_ctx);
-		
+
 	return true;
 }
 
