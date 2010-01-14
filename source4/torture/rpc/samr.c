@@ -2951,6 +2951,29 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool setup_schannel_netlogon_pipe(struct torture_context *tctx,
+					 struct cli_credentials *credentials,
+					 struct dcerpc_pipe **p)
+{
+	struct dcerpc_binding *b;
+
+	torture_assert_ntstatus_ok(tctx, torture_rpc_binding(tctx, &b),
+		"failed to get rpc binding");
+
+	/* We have to use schannel, otherwise the SamLogonEx fails
+	 * with INTERNAL_ERROR */
+
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_pipe_connect_b(tctx, p, b, &ndr_table_netlogon,
+				      credentials, tctx->ev, tctx->lp_ctx),
+		"failed to bind to netlogon");
+
+	return true;
+}
+
 static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct torture_context *tctx,
 					uint32_t acct_flags,
@@ -2960,7 +2983,6 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct cli_credentials *machine_credentials)
 {
 	int s = 0, q = 0, f = 0, l = 0, z = 0;
-	struct dcerpc_binding *b;
 	bool ret = true;
 	int delay = 50000;
 	bool set_levels[] = { false, true };
@@ -2981,7 +3003,6 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		SAMR_FIELD_NT_PASSWORD_PRESENT | SAMR_FIELD_LM_PASSWORD_PRESENT | SAMR_FIELD_EXPIRED_FLAG,
 		SAMR_FIELD_NT_PASSWORD_PRESENT | SAMR_FIELD_LM_PASSWORD_PRESENT | SAMR_FIELD_LAST_PWD_CHANGE | SAMR_FIELD_EXPIRED_FLAG
 	};
-	NTSTATUS status;
 	struct dcerpc_pipe *np = NULL;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
@@ -2990,27 +3011,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			delay);
 	}
 
-	status = torture_rpc_binding(tctx, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-		return ret;
-	}
-
-	/* We have to use schannel, otherwise the SamLogonEx fails
-	 * with INTERNAL_ERROR */
-
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
-
-	status = dcerpc_pipe_connect_b(tctx, &np, b,
-				       &ndr_table_netlogon,
-				       machine_credentials, tctx->ev, tctx->lp_ctx);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_warning(tctx, "RPC pipe connect as domain member failed: %s\n", nt_errstr(status));
-		ret = false;
-		return ret;
-	}
+	torture_assert(tctx, setup_schannel_netlogon_pipe(tctx, machine_credentials, &np), "");
 
 	/* set to 1 to enable testing for all possible opcode
 	   (SetUserInfo, SetUserInfo2, QueryUserInfo, QueryUserInfo2)
@@ -3660,7 +3661,6 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 	struct samr_DomInfo1 info1, _info1;
 	struct samr_DomInfo12 info12, _info12;
 	bool ret = true;
-	struct dcerpc_binding *b;
 	struct dcerpc_pipe *np;
 	int i;
 
@@ -3696,16 +3696,7 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 		},
 	};
 
-	/* setup netlogon schannel pipe */
-
-	torture_assert_ntstatus_ok(tctx, torture_rpc_binding(tctx, &b), "failed to obtain rpc binding");
-
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_pipe_connect_b(tctx, &np, b, &ndr_table_netlogon,
-							       machine_credentials, tctx->ev, tctx->lp_ctx),
-				   "failed to connect to NETLOGON pipe");
+	torture_assert(tctx, setup_schannel_netlogon_pipe(tctx, machine_credentials, &np), "");
 
 	/* backup old policies */
 
