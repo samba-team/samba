@@ -1,6 +1,6 @@
 # net message translation (german).
 # Copyright (C) 2009 Kai Blin  <kai@samba.org>
-# Copyright (C) 2009 André Hentschel  <nerv@dawncrow.de>
+# Copyright (C) 2009, 2010 André Hentschel  <nerv@dawncrow.de>
 # This file is distributed under the same license as the samba package.
 #
 #, fuzzy
@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: @PACKAGE@\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2010-01-05 09:23+0100\n"
-"PO-Revision-Date: 2009-12-26 19:20+0100\n"
+"PO-Revision-Date: 2010-01-14 18:55+0100\n"
 "Last-Translator: André Hentschel <nerv@dawncrow.de>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -96,41 +96,41 @@ msgstr ""
 #: ../../utils/net.c:268 ../../utils/net.c:356
 #, c-format
 msgid "SID for domain %s is: %s\n"
-msgstr ""
+msgstr "SID der Domäne %s ist: %s\n"
 
 #: ../../utils/net.c:280
 msgid "usage: net setlocalsid S-1-5-21-x-y-z\n"
-msgstr ""
+msgstr "Aufruf: net setlocalsid S-1-5-21-x-y-z\n"
 
 #: ../../utils/net.c:300
 msgid "usage: net setdomainsid S-1-5-21-x-y-z\n"
-msgstr ""
+msgstr "Aufruf: net setdomainsid S-1-5-21-x-y-z\n"
 
 #: ../../utils/net.c:318
 msgid "usage: net getdomainsid\n"
-msgstr ""
+msgstr "Aufruf: net getdomainsid\n"
 
 #: ../../utils/net.c:343
 msgid "Could not fetch local SID\n"
-msgstr ""
+msgstr "Lokale SID nicht abrufbar\n"
 
 #: ../../utils/net.c:347
 #, c-format
 msgid "SID for local machine %s is: %s\n"
-msgstr ""
+msgstr "SID des lokalen Rechners %s ist: %s\n"
 
 #: ../../utils/net.c:351
 msgid "Could not fetch domain SID\n"
-msgstr ""
+msgstr "SID der Domäne nicht abrufbar\n"
 
 #: ../../utils/net.c:368
 #, c-format
 msgid "get_maxrid: Could not search %s\n"
-msgstr ""
+msgstr "get_maxrid: Konnte %s nicht suchen\n"
 
 #: ../../utils/net.c:402
 msgid "usage: net maxrid\n"
-msgstr ""
+msgstr "Aufruf: net maxrid\n"
 
 #: ../../utils/net.c:407
 msgid "can't get current maximum rid\n"
@@ -207,7 +207,7 @@ msgstr ""
 
 #: ../../utils/net.c:488
 msgid "Modify printer queue"
-msgstr ""
+msgstr "Druckerwarteschlange ändern"
 
 #: ../../utils/net.c:489
 msgid "  Use 'net help printq' to get more information about 'net printq' commands."
@@ -239,7 +239,7 @@ msgstr ""
 
 #: ../../utils/net.c:520
 msgid "Functions on the SAM database"
-msgstr ""
+msgstr "SAM Datenbank nutzen"
 
 #: ../../utils/net.c:521
 msgid "  Use 'net help sam' to get more information about 'net sam' commands."
@@ -247,7 +247,7 @@ msgstr ""
 
 #: ../../utils/net.c:528
 msgid "Validate username and password"
-msgstr ""
+msgstr "Benutzername und Passwort prüfen"
 
 #: ../../utils/net.c:529
 msgid "  Use 'net help validate' to get more information about 'net validate' commands."
@@ -278,8 +278,9 @@ msgid "  Use 'net help service' to get more information about 'net service' comm
 msgstr ""
 
 #: ../../utils/net.c:558
+#, fuzzy
 msgid "Change user password on target server"
-msgstr ""
+msgstr "Passwort auf Zielserver ändern"
 
 #: ../../utils/net.c:559
 msgid "  Use 'net help password' to get more information about 'net password' commands."
@@ -287,7 +288,7 @@ msgstr ""
 
 #: ../../utils/net.c:565
 msgid "Change the trust password"
-msgstr ""
+msgstr "Passwort von Vertrauenskonto ändern"
 
 #: ../../utils/net.c:566
 msgid "  Use 'net help changetrustpw' to get more information about 'net changetrustpw'."
@@ -307,7 +308,7 @@ msgstr ""
 
 #: ../../utils/net.c:583
 msgid "Set the winbind auth user"
-msgstr ""
+msgstr "Winbind Authentfikationseinstellungen setzten"
 
 #: ../../utils/net.c:584
 #, c-format
@@ -321,7 +322,7 @@ msgstr ""
 
 #: ../../utils/net.c:594
 msgid "Get the winbind auth user settings"
-msgstr ""
+msgstr "Winbind Authentfikationseinstellungen lesen"
 
 #: ../../utils/net.c:595
 msgid ""
@@ -339,7 +340,7 @@ msgstr ""
 
 #: ../../utils/net.c:608
 msgid "Look up host names/IP addresses"
-msgstr ""
+msgstr "Hostname/IP-Adresse nachschlagen"
 
 #: ../../utils/net.c:609
 msgid "  Use 'net help lookup' to get more information about 'net lookup' commands."
@@ -355,15 +356,16 @@ msgstr ""
 
 #: ../../utils/net.c:622
 msgid "Join/unjoin (remote) machines to/from a domain/AD"
-msgstr ""
+msgstr "Domäne/AD betreten/verlassen"
 
 #: ../../utils/net.c:623
 msgid "  Use 'net help dom' to get more information about 'net dom' commands."
 msgstr ""
 
 #: ../../utils/net.c:629
+#, fuzzy
 msgid "Operate on the cache tdb file"
-msgstr ""
+msgstr "Cache tdb Datei nutzen"
 
 #: ../../utils/net.c:630
 msgid "  Use 'net help cache' to get more information about 'net cache' commands."
@@ -371,7 +373,7 @@ msgstr ""
 
 #: ../../utils/net.c:636
 msgid "Get the SID for the local domain"
-msgstr ""
+msgstr "SID der lokalen Domäne anzeigen"
 
 #: ../../utils/net.c:637
 msgid "  net getlocalsid"
@@ -379,7 +381,7 @@ msgstr ""
 
 #: ../../utils/net.c:642
 msgid "Set the SID for the local domain"
-msgstr ""
+msgstr "SID der lokalen Domäne ändern"
 
 #: ../../utils/net.c:643
 msgid "  net setlocalsid S-1-5-21-x-y-z"
@@ -387,15 +389,16 @@ msgstr ""
 
 #: ../../utils/net.c:648
 msgid "Set domain SID on member servers"
-msgstr ""
+msgstr "SID der Domäne ändern (wenn zugehörig)"
 
 #: ../../utils/net.c:649
 msgid "  net setdomainsid S-1-5-21-x-y-z"
 msgstr ""
 
 #: ../../utils/net.c:654
+#, fuzzy
 msgid "Get domain SID on member servers"
-msgstr ""
+msgstr "SID der Domäne anzeigen (wenn zugehörig)"
 
 #: ../../utils/net.c:655
 msgid "  net getdomainsid"
@@ -403,7 +406,7 @@ msgstr ""
 
 #: ../../utils/net.c:660
 msgid "Display the maximul RID currently used"
-msgstr ""
+msgstr "Die höchste verwendete RID anzeigen"
 
 #: ../../utils/net.c:661
 msgid "  net maxrid"
@@ -411,7 +414,7 @@ msgstr ""
 
 #: ../../utils/net.c:666
 msgid "IDmap functions"
-msgstr ""
+msgstr "IDmap nutzen"
 
 #: ../../utils/net.c:667
 msgid "  Use 'net help idmap to get more information about 'net idmap' commands."
@@ -451,7 +454,7 @@ msgstr ""
 
 #: ../../utils/net.c:701
 msgid "Manage the Samba registry"
-msgstr ""
+msgstr "Die Sambaregistrierung verwalten"
 
 #: ../../utils/net.c:702
 msgid "  Use 'net help registry' to get more information about 'net registry' commands."
@@ -467,7 +470,7 @@ msgstr ""
 
 #: ../../utils/net.c:717
 msgid "Manage AFS tokens"
-msgstr ""
+msgstr "AFS Tickets verwalten"
 
 #: ../../utils/net.c:718
 msgid "  Use 'net help afs' to get more information about 'net afs' commands."
@@ -483,7 +486,7 @@ msgstr ""
 
 #: ../../utils/net.c:756
 msgid "Encrypt SMB transport (UNIX extended servers only)"
-msgstr ""
+msgstr "SMB Übertragung verschlüsseln (nur UNIX erweiterte Server)"
 
 #: ../../utils/net.c:824
 msgid ""
@@ -576,7 +579,7 @@ msgstr ""
 #: ../../utils/net_ads.c:109
 #, c-format
 msgid "User name:\t%s\n"
-msgstr ""
+msgstr "Benutzername:\t%s\n"
 
 #: ../../utils/net_ads.c:111
 #, c-format
@@ -1199,7 +1202,7 @@ msgstr ""
 
 #: ../../utils/net_ads.c:1827
 msgid "Search for a printer"
-msgstr ""
+msgstr "Drucker suchen"
 
 #: ../../utils/net_ads.c:1828
 msgid ""
@@ -1219,7 +1222,7 @@ msgstr ""
 
 #: ../../utils/net_ads.c:1843
 msgid "Publish a printer"
-msgstr ""
+msgstr "Drucker freigeben"
 
 #: ../../utils/net_ads.c:1844
 msgid ""
@@ -1229,7 +1232,7 @@ msgstr ""
 
 #: ../../utils/net_ads.c:1851
 msgid "Delete a printer"
-msgstr ""
+msgstr "Drucker löschen"
 
 #: ../../utils/net_ads.c:1852
 msgid ""
@@ -1919,7 +1922,7 @@ msgstr ""
 
 #: ../../utils/net_afs.c:38
 msgid "usage: 'net afs key <keyfile> cell'\n"
-msgstr ""
+msgstr "Aufruf: 'net afs key <keyfile> cell'\n"
 
 #: ../../utils/net_afs.c:43
 msgid "Could not open secrets.tdb\n"
@@ -1941,7 +1944,7 @@ msgstr ""
 #: ../../utils/net_afs.c:71
 #, c-format
 msgid "Usage: net afs impersonate <user> <cell>\n"
-msgstr ""
+msgstr "Aufruf: net afs impersonate <user> <cell>\n"
 
 #: ../../utils/net_afs.c:78
 #, c-format
@@ -2037,7 +2040,7 @@ msgstr ""
 
 #: ../../utils/net_cache.c:250
 msgid "Usage: net cache search <pattern>\n"
-msgstr ""
+msgstr "Aufruf: net cache search <Muster>\n"
 
 #: ../../utils/net_cache.c:272
 msgid ""
@@ -2131,7 +2134,7 @@ msgstr ""
 
 #: ../../utils/net_conf.c:42
 msgid "USAGE: net conf list\n"
-msgstr ""
+msgstr "Aufruf: net conf list\n"
 
 #: ../../utils/net_conf.c:49
 msgid ""
@@ -2142,15 +2145,15 @@ msgstr ""
 
 #: ../../utils/net_conf.c:61
 msgid "USAGE: net conf listshares\n"
-msgstr ""
+msgstr "Aufruf: net conf listshares\n"
 
 #: ../../utils/net_conf.c:68
 msgid "USAGE: net conf drop\n"
-msgstr ""
+msgstr "Aufruf: net conf drop\n"
 
 #: ../../utils/net_conf.c:75
 msgid "USAGE: net conf showshare <sharename>\n"
-msgstr ""
+msgstr "Aufruf: net conf showshare <sharename>\n"
 
 #: ../../utils/net_conf.c:82
 msgid ""
@@ -2168,7 +2171,7 @@ msgstr ""
 
 #: ../../utils/net_conf.c:104
 msgid "USAGE: net conf setparm <section> <param> <value>\n"
-msgstr ""
+msgstr "Aufruf: net conf setparm <section> <param> <value>\n"
 
 #: ../../utils/net_conf.c:111
 msgid "USAGE: net conf getparm <section> <param>\n"
@@ -2720,17 +2723,17 @@ msgstr ""
 #: ../../utils/net_groupmap.c:67
 #, c-format
 msgid "\tUnix group: %s\n"
-msgstr ""
+msgstr "\tUnix Gruppe: %s\n"
 
 #: ../../utils/net_groupmap.c:68
 #, c-format
 msgid "\tGroup type: %s\n"
-msgstr ""
+msgstr "\tGruppentyp: %s\n"
 
 #: ../../utils/net_groupmap.c:70
 #, c-format
 msgid "\tComment   : %s\n"
-msgstr ""
+msgstr "\tKommentar   : %s\n"
 
 #: ../../utils/net_groupmap.c:84
 msgid ""
@@ -2787,7 +2790,7 @@ msgstr ""
 #: ../../utils/net_groupmap.c:259
 #, c-format
 msgid "unknown group type %s\n"
-msgstr ""
+msgstr "Unbekannter Gruppentyp %s\n"
 
 #: ../../utils/net_groupmap.c:276
 #, c-format
@@ -2881,7 +2884,7 @@ msgstr ""
 
 #: ../../utils/net_groupmap.c:563
 msgid "Can only specify -L or -D, not both\n"
-msgstr ""
+msgstr "Entweder -L oder -D angeben, aber nicht beides\n"
 
 #: ../../utils/net_groupmap.c:573
 #, c-format
@@ -3100,68 +3103,68 @@ msgstr ""
 
 #: ../../utils/net_help_common.c:35
 msgid "Valid targets: choose one (none defaults to localhost)\n"
-msgstr ""
+msgstr "Mögliche Zielangaben: (ohne Angabe wird localhost angenommen)\n"
 
 #: ../../utils/net_help_common.c:36
 msgid "\t-S or --server=<server>\t\tserver name\n"
-msgstr ""
+msgstr "\t-S oder --server=<server>\t\tServer Name\n"
 
 #: ../../utils/net_help_common.c:37
 msgid "\t-I or --ipaddress=<ipaddr>\taddress of target server\n"
-msgstr ""
+msgstr "\t-I oder --ipaddress=<ipaddr>\tAdresse des Zielservers\n"
 
 #: ../../utils/net_help_common.c:38
 msgid "\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n"
-msgstr ""
+msgstr "\t-w oder --workgroup=<wg>\t\tZielarbeitsgruppe oder -domäne\n"
 
 #: ../../utils/net_help_common.c:41
 msgid "Valid miscellaneous options are:\n"
-msgstr ""
+msgstr "Diverse Optionen:\n"
 
 #. misc options
 #: ../../utils/net_help_common.c:42
 msgid "\t-p or --port=<port>\t\tconnection port on target\n"
-msgstr ""
+msgstr "\t-p oder --port=<port>\t\tPortnummer\n"
 
 #: ../../utils/net_help_common.c:43
 msgid "\t-W or --myworkgroup=<wg>\tclient workgroup\n"
-msgstr ""
+msgstr "\t-W oder --myworkgroup=<wg>\tzu nutzende Arbeitsgruppe\n"
 
 #: ../../utils/net_help_common.c:44
 msgid "\t-d or --debuglevel=<level>\tdebug level (0-10)\n"
-msgstr ""
+msgstr "\t-d oder --debuglevel=<level>\tDebug Level (0-10)\n"
 
 #: ../../utils/net_help_common.c:45
 msgid "\t-n or --myname=<name>\t\tclient name\n"
-msgstr ""
+msgstr "\t-n oder --myname=<name>\t\tzu nutzender Name\n"
 
 #: ../../utils/net_help_common.c:46
 msgid "\t-U or --user=<name>\t\tuser name\n"
-msgstr ""
+msgstr "\t-U oder --user=<name>\t\tBenutzername\n"
 
 #: ../../utils/net_help_common.c:47
 msgid "\t-s or --configfile=<path>\tpathname of smb.conf file\n"
-msgstr ""
+msgstr "\t-s oder --configfile=<path>\tPfad zur smb.conf Datei\n"
 
 #: ../../utils/net_help_common.c:48
 msgid "\t-l or --long\t\t\tDisplay full information\n"
-msgstr ""
+msgstr "\t-l oder --long\t\t\tAlle Informationen anzeigen\n"
 
 #: ../../utils/net_help_common.c:49
 msgid "\t-V or --version\t\t\tPrint samba version information\n"
-msgstr ""
+msgstr "\t-V oder --version\t\t\tSamba Versionsinformationen ausgeben\n"
 
 #: ../../utils/net_help_common.c:50
 msgid "\t-P or --machine-pass\t\tAuthenticate as machine account\n"
-msgstr ""
+msgstr "\t-P oder --machine-pass\t\tMit Rechnerkonto authentifizieren\n"
 
 #: ../../utils/net_help_common.c:52
 msgid "\t-e or --encrypt\t\t\tEncrypt SMB transport (UNIX extended servers only)\n"
-msgstr ""
+msgstr "\t-e oder --encrypt\t\t\tSMB Übertragung verschlüsseln  (nur UNIX erweiterte Server)\n"
 
 #: ../../utils/net_help_common.c:54
 msgid "\t-k or --kerberos\t\tUse kerberos (active directory) authentication\n"
-msgstr ""
+msgstr "\t-k oder --kerberos\t\tKerberos benutzen (active directory) authentication\n"
 
 #: ../../utils/net_idmap.c:25
 msgid "Out of memory!\n"
@@ -3229,7 +3232,7 @@ msgstr ""
 
 #: ../../utils/net_idmap.c:196 ../../utils/net_idmap.c:202
 msgid "Not Implemented yet\n"
-msgstr ""
+msgstr "Noch nicht implementiert\n"
 
 #: ../../utils/net_idmap.c:240
 msgid ""
@@ -3330,7 +3333,7 @@ msgstr ""
 
 #: ../../utils/net_idmap.c:418 ../../utils/net_idmap.c:426
 msgid "Not implemented yet"
-msgstr ""
+msgstr "Noch nicht implementiert"
 
 #: ../../utils/net_idmap.c:419
 msgid ""
@@ -3447,6 +3450,8 @@ msgid ""
 "\n"
 "Not implemented\n"
 msgstr ""
+"\n"
+"Nicht implementiert\n"
 
 #: ../../utils/net_rap.c:61
 #, c-format
@@ -3663,7 +3668,7 @@ msgstr ""
 #: ../../utils/net_rap.c:521
 #, c-format
 msgid "Server name = %s\n"
-msgstr ""
+msgstr "Servername = %s\n"
 
 #: ../../utils/net_rap.c:535
 msgid ""
@@ -3760,7 +3765,7 @@ msgstr ""
 
 #: ../../utils/net_rap.c:666
 msgid "Waiting\n"
-msgstr ""
+msgstr "Wartend\n"
 
 #: ../../utils/net_rap.c:669
 msgid "Held in queue\n"
@@ -3772,7 +3777,7 @@ msgstr ""
 
 #: ../../utils/net_rap.c:675
 msgid "Printing\n"
-msgstr ""
+msgstr "Druckend\n"
 
 #: ../../utils/net_rap.c:683
 #, c-format
@@ -4327,20 +4332,20 @@ msgstr ""
 
 #: ../../utils/net_registry_util.c:32
 msgid "None"
-msgstr ""
+msgstr "Kein"
 
 #: ../../utils/net_registry_util.c:39
 #, c-format
 msgid "Type       = %s\n"
-msgstr ""
+msgstr "Typ        = %s\n"
 
 #: ../../utils/net_registry_util.c:45 ../../utils/net_registry_util.c:76 ../../utils/net_registry_util.c:82
 msgid "Value      = "
-msgstr ""
+msgstr "Wert      = "
 
 #: ../../utils/net_registry_util.c:52
 msgid "Value      = \""
-msgstr ""
+msgstr "Wert      = \""
 
 #: ../../utils/net_registry_util.c:64
 #, c-format
@@ -4350,16 +4355,16 @@ msgstr ""
 #: ../../utils/net_registry_util.c:78
 #, c-format
 msgid "%d bytes\n"
-msgstr ""
+msgstr "%d Bytes\n"
 
 #: ../../utils/net_registry_util.c:84
 msgid "<unprintable>\n"
-msgstr ""
+msgstr "<nicht druckbar>\n"
 
 #: ../../utils/net_registry_util.c:92
 #, c-format
 msgid "Valuename  = %s\n"
-msgstr ""
+msgstr "Wertname  = %s\n"
 
 #: ../../utils/net_rpc.c:73 ../../utils/net_util.c:45
 msgid "Could not initialise lsa pipe\n"
@@ -4433,12 +4438,12 @@ msgstr ""
 #: ../../utils/net_rpc.c:527
 #, c-format
 msgid "Domain Name: %s\n"
-msgstr ""
+msgstr "Domänenname: %s\n"
 
 #: ../../utils/net_rpc.c:529
 #, c-format
 msgid "Domain SID: %s\n"
-msgstr ""
+msgstr "Domänen SID: %s\n"
 
 #: ../../utils/net_rpc.c:530
 #, c-format
@@ -4861,7 +4866,7 @@ msgstr ""
 
 #: ../../utils/net_rpc.c:2574 ../../utils/net_rpc.c:2575
 msgid "*unknown*"
-msgstr ""
+msgstr "*unbekannt*"
 
 #: ../../utils/net_rpc.c:2649 ../../utils/net_rpc.c:2662 ../../utils/net_rpc.c:2669
 #, c-format
@@ -4990,7 +4995,7 @@ msgstr ""
 #: ../../utils/net_rpc.c:3192
 #, c-format
 msgid "           [%s] does already exist\n"
-msgstr ""
+msgstr "           [%s] existiert bereits\n"
 
 #: ../../utils/net_rpc.c:3198
 #, c-format
@@ -5062,11 +5067,11 @@ msgstr ""
 
 #: ../../utils/net_rpc.c:3497 ../../utils/net_rpc.c:3498
 msgid "including"
-msgstr ""
+msgstr "inklusive"
 
 #: ../../utils/net_rpc.c:3497 ../../utils/net_rpc.c:3498 ../../utils/net_rpc_printer.c:370 ../../utils/net_rpc_printer.c:371
 msgid "without"
-msgstr ""
+msgstr "ohne"
 
 #: ../../utils/net_rpc.c:3499 ../../utils/net_rpc_printer.c:372
 msgid "(preserving timestamps)"
@@ -5249,22 +5254,22 @@ msgstr ""
 #: ../../utils/net_rpc.c:4744
 #, c-format
 msgid "Name:     %s\n"
-msgstr ""
+msgstr "Name:     %s\n"
 
 #: ../../utils/net_rpc.c:4745
 #, c-format
 msgid "Comment:  %s\n"
-msgstr ""
+msgstr "Kommentar:  %s\n"
 
 #: ../../utils/net_rpc.c:4746
 #, c-format
 msgid "Path:     %s\n"
-msgstr ""
+msgstr "Pfad:     %s\n"
 
 #: ../../utils/net_rpc.c:4747
 #, c-format
 msgid "Password: %s\n"
-msgstr ""
+msgstr "Passwort: %s\n"
 
 #: ../../utils/net_rpc.c:4759
 msgid "List available shares"
@@ -5450,7 +5455,7 @@ msgstr ""
 #.
 #: ../../utils/net_rpc.c:5996 ../../utils/net_rpc.c:6150
 msgid "none\n"
-msgstr ""
+msgstr "kein\n"
 
 #: ../../utils/net_rpc.c:6042
 msgid ""
@@ -6141,16 +6146,16 @@ msgstr ""
 
 #: ../../utils/net_rpc_audit.c:45 ../../utils/net_util.c:613
 msgid "Unknown"
-msgstr ""
+msgstr "Unbekannt"
 
 #: ../../utils/net_rpc_audit.c:48
 msgid "Invalid"
-msgstr ""
+msgstr "Ungültig"
 
 #: ../../utils/net_rpc_audit.c:51
 #, c-format
 msgid "\t%-30s%s\n"
-msgstr ""
+msgstr "\t%-30s%s\n"
 
 #: ../../utils/net_rpc_audit.c:73 ../../utils/net_rpc_audit.c:140
 msgid "insufficient arguments\n"
@@ -6207,7 +6212,7 @@ msgstr ""
 #: ../../utils/net_rpc_audit.c:337
 #, c-format
 msgid "unknown (%d)"
-msgstr ""
+msgstr "unbekannt (%d)"
 
 #: ../../utils/net_rpc_audit.c:343
 #, c-format
@@ -6354,27 +6359,27 @@ msgstr ""
 #: ../../utils/net_rpc_printer.c:56
 #, c-format
 msgid "\tVersion: [%x]\n"
-msgstr ""
+msgstr "\tVersion: [%x]\n"
 
 #: ../../utils/net_rpc_printer.c:57
 #, c-format
 msgid "\tDriver Name: [%s]\n"
-msgstr ""
+msgstr "\tTreibername: [%s]\n"
 
 #: ../../utils/net_rpc_printer.c:58
 #, c-format
 msgid "\tArchitecture: [%s]\n"
-msgstr ""
+msgstr "\tArchitektur: [%s]\n"
 
 #: ../../utils/net_rpc_printer.c:59
 #, c-format
 msgid "\tDriver Path: [%s]\n"
-msgstr ""
+msgstr "\tTreiberpfad: [%s]\n"
 
 #: ../../utils/net_rpc_printer.c:60
 #, c-format
 msgid "\tDatafile: [%s]\n"
-msgstr ""
+msgstr "\tDatendatei: [%s]\n"
 
 #: ../../utils/net_rpc_printer.c:61
 #, c-format
@@ -6382,6 +6387,8 @@ msgid ""
 "\tConfigfile: [%s]\n"
 "\n"
 msgstr ""
+"\tKonfigurationsdatei: [%s]\n"
+"\n"
 
 #: ../../utils/net_rpc_printer.c:62
 #, c-format
@@ -6389,16 +6396,18 @@ msgid ""
 "\tHelpfile: [%s]\n"
 "\n"
 msgstr ""
+"\tHilfedatei: [%s]\n"
+"\n"
 
 #: ../../utils/net_rpc_printer.c:65
 #, c-format
 msgid "\tDependentfiles: [%s]\n"
-msgstr ""
+msgstr "\tAbhängigkeiten: [%s]\n"
 
 #: ../../utils/net_rpc_printer.c:70
 #, c-format
 msgid "\tMonitorname: [%s]\n"
-msgstr ""
+msgstr "\tMonitorname: [%s]\n"
 
 #: ../../utils/net_rpc_printer.c:71
 #, c-format
@@ -6406,22 +6415,23 @@ msgid ""
 "\tDefaultdatatype: [%s]\n"
 "\n"
 msgstr ""
+"\tStandard Datentyp: [%s]\n"
+"\n"
 
 #: ../../utils/net_rpc_printer.c:81
 #, c-format
 msgid "\t[%s:%s]: REG_DWORD: 0x%08x\n"
-msgstr ""
+msgstr "\t[%s:%s]: REG_DWORD: 0x%08x\n"
 
 #: ../../utils/net_rpc_printer.c:91
 #, c-format
 msgid "\t[%s:%s]: REG_SZ: %s\n"
-msgstr ""
+msgstr "\t[%s:%s]: REG_SZ: %s\n"
 
 #: ../../utils/net_rpc_printer.c:96
 #, c-format
 msgid "\t[%s:%s]: REG_BINARY: unknown length value not displayed\n"
 msgstr ""
-
 #: ../../utils/net_rpc_printer.c:120
 #, c-format
 msgid "\t%s: unknown type %d\n"
@@ -6449,12 +6459,12 @@ msgstr ""
 
 #: ../../utils/net_rpc_printer.c:370 ../../utils/net_rpc_printer.c:371
 msgid "with"
-msgstr ""
+msgstr "mit"
 
 #: ../../utils/net_rpc_printer.c:390
 #, c-format
 msgid "Error writing file: %s\n"
-msgstr ""
+msgstr "Datei konnte nicht gespeichert werden: %s\n"
 
 #: ../../utils/net_rpc_printer.c:414
 #, c-format
@@ -6625,7 +6635,7 @@ msgstr ""
 #: ../../utils/net_rpc_printer.c:1458
 #, c-format
 msgid "unkown state: %d\n"
-msgstr ""
+msgstr "unbekannter Status: %d\n"
 
 #: ../../utils/net_rpc_printer.c:1528 ../../utils/net_rpc_printer.c:1675 ../../utils/net_rpc_printer.c:1858 ../../utils/net_rpc_printer.c:2047 ../../utils/net_rpc_printer.c:2214
 #, c-format
@@ -6766,7 +6776,7 @@ msgstr ""
 
 #: ../../utils/net_rpc_registry.c:976
 msgid "unknown"
-msgstr ""
+msgstr "unbekannt"
 
 #: ../../utils/net_rpc_registry.c:1083
 msgid "Usage:    net rpc registry dump <file> \n"
@@ -6808,7 +6818,6 @@ msgstr ""
 #, c-format
 msgid "Closing %s..."
 msgstr ""
-
 #: ../../utils/net_rpc_registry.c:1199
 msgid "Usage:    net rpc registry getsd <path> <secinfo>\n"
 msgstr ""
@@ -7611,7 +7620,7 @@ msgstr ""
 
 #: ../../utils/net_sam.c:58 ../../utils/net_sam.c:68 ../../utils/net_sam.c:163 ../../utils/net_sam.c:255
 msgid "Internal error\n"
-msgstr ""
+msgstr "interner Fehler\n"
 
 #: ../../utils/net_sam.c:63 ../../utils/net_sam.c:168 ../../utils/net_sam.c:260
 #, c-format
@@ -9109,7 +9118,7 @@ msgstr ""
 #: ../../utils/net_util.c:118
 #, c-format
 msgid "Could not connect to server %s\n"
-msgstr ""
+msgstr "Verbindung mit Server %s gescheitert\n"
 
 #: ../../utils/net_util.c:126
 msgid "The username or password was not correct.\n"
