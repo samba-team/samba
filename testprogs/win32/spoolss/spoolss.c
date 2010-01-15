@@ -167,6 +167,54 @@ static BOOL test_EnumDrivers(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_GetForm(struct torture_context *tctx,
+			 LPSTR servername,
+			 HANDLE handle,
+			 LPSTR formname)
+{
+	DWORD levels[]  = { 1, 2 };
+	DWORD success[] = { 1, 0 };
+	DWORD i;
+	LPBYTE buffer = NULL;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		DWORD needed = 0;
+		DWORD err = 0;
+		char tmp[1024];
+
+		torture_comment(tctx, "Testing GetForm(%s) level %d", formname, levels[i]);
+
+		GetForm(handle, formname, levels[i], NULL, 0, &needed);
+		err = GetLastError();
+		if (err == ERROR_INSUFFICIENT_BUFFER) {
+			err = 0;
+			buffer = malloc(needed);
+			torture_assert(tctx, buffer, "malloc failed");
+			if (!GetForm(handle, formname, levels[i], buffer, needed, &needed)) {
+				err = GetLastError();
+			}
+		}
+		if (err) {
+			sprintf(tmp, "GetForm failed level %d on [%s] (buffer size = %d), error: %s\n",
+				levels[i], servername, needed, errstr(err));
+			if (success[i]) {
+				torture_fail(tctx, tmp);
+			} else {
+				torture_warning(tctx, tmp);
+			}
+		}
+
+		free(buffer);
+		buffer = NULL;
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_EnumForms(struct torture_context *tctx,
 			   LPSTR servername,
 			   HANDLE handle)
