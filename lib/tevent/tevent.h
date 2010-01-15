@@ -124,9 +124,6 @@ void tevent_set_default_backend(const char *backend);
 /**
  * @brief Add a file descriptor based event.
  *
- * If flags contains TEVENT_FD_AUTOCLOSE then the fd will be closed when
- * the returned fd_event context is freed.
- *
  * @param[in]  ev       The event context to work on.
  *
  * @param[in]  mem_ctx  The talloc memory context to use.

@@ -262,9 +262,6 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx)
 /*
   add a fd based event
   return NULL on failure (memory allocation error)
-
-  if flags contains TEVENT_FD_AUTOCLOSE then the fd will be closed when
-  the returned fd_event context is freed
 */
 struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
 				 TALLOC_CTX *mem_ctx,
