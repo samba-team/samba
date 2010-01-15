@@ -1,9 +1,9 @@
                    ================================
-                   Release Notes for Samba 3.5.0rc1
-			   January 7, 2010
+                   Release Notes for Samba 3.5.0rc2
+			   January 26, 2010
                    ================================
 
-This is the first release candidate of Samba 3.5.  This is *not*
+This is the second release candidate of Samba 3.5.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -22,6 +22,9 @@ o Add encryption support for connections to a CUPS server
 Winbind changes:
 o Major refactoring
 o Asynchronous
+
+VFS modules:
+o New vfs_scannedonly module has been added.
 
 
 General changes:
@@ -50,6 +53,13 @@ Winbind changes
 
 The Winbind daemon has been refactored internally to be asynchronous. The new
 Winbind will not be blocked by running 'wbinfo -g' or 'wbinfo -u'.
+
+VFS modules
+===========
+
+A new VFS module "scannedonly" has been added. This is a filter that
+talks to an antivirus-engine and stores whether a file is clean or not.
+Users do only see clean files on their filesystem.
 
 
 ######################################################################
@@ -95,6 +105,13 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * Implement the new SMB2 protocol (experimental).
+
+
+Changes since 3.5.0rc1
+----------------------
+
+o   Olivier Sessink <oliviersessink@gmail.com>
+    * BUG 7028: Add new scannedonly VFS module.
 
 
 Changes since 3.5.0pre2
