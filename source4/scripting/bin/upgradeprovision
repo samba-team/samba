@@ -189,6 +189,23 @@ def get_paths(targetdir=None,smbconf=None):
 	paths = provision_paths_from_lp(lp,"foo")
 	return paths
 
+
+def sanitychecks(credentials,session_info,names,paths):
+	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp,options=["modules:samba_dsdb"])
+	# First update the SD for the rootdn
+	sam_ldb.set_session_info(session)
+	res = sam_ldb.search(expression="objectClass=ntdsdsa",base=str(names.configdn), scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
+	if len(res) == 0:
+		print "No DC found, your provision is most probalby hardly broken !"
+		return 0
+	elif len(res) != 1:
+		print "Found %d domain controllers, for the moment upgradeprovision is not able to handle upgrade on \
+domain with more than one DC, please demote the other DC before upgrading"%len(res)
+		return 0
+	else:
+		return 1
+
+
 # This function guesses (fetches) informations needed to make a fresh provision
 # from the current provision
 # It includes: realm, workgroup, partitions, netbiosname, domain guid, ...
@@ -891,6 +908,9 @@ def setup_path(file):
 # Guess all the needed names (variables in fact) from the current
 # provision.
 names = guess_names_from_current_provision(creds,session,paths)
+if not sanitychecks(creds,session,names,paths):
+	print "Sanity checks for the upgrade fails, checks messages and correct it before rerunning upgradeprovision"
+	sys.exit(1)
 # Let's see them
 print_names(names)
 # With all this information let's create a fresh new provision used as reference
