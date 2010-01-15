@@ -30,11 +30,12 @@
 
 static BOOL test_OpenPrinter(struct torture_context *tctx,
 			     LPSTR printername,
-			     HANDLE handle)
+			     LPPRINTER_DEFAULTS defaults,
+			     LPHANDLE handle)
 {
 	torture_comment(tctx, "Testing OpenPrinter(%s)", printername);
 
-	if (!OpenPrinter(printername, handle, NULL)) {
+	if (!OpenPrinter(printername, handle, defaults)) {
 		char tmp[1024];
 		sprintf(tmp, "failed to open printer %s, error was: 0x%08x\n",
 			printername, GetLastError());
@@ -585,14 +586,15 @@ static BOOL test_EnumJobs(struct torture_context *tctx,
 
 static BOOL test_OnePrinter(struct torture_context *tctx,
 			    LPSTR printername,
-			    LPSTR architecture)
+			    LPSTR architecture,
+			    LPPRINTER_DEFAULTS defaults)
 {
 	HANDLE handle;
 	BOOL ret = TRUE;
 
 	torture_comment(tctx, "Testing Printer %s", printername);
 
-	ret &= test_OpenPrinter(tctx, printername, &handle);
+	ret &= test_OpenPrinter(tctx, printername, defaults, &handle);
 	ret &= test_GetPrinter(tctx, printername, handle);
 	ret &= test_GetPrinterDriver(tctx, printername, architecture, handle);
 	ret &= test_EnumForms(tctx, printername, handle);
@@ -609,7 +611,8 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 
 static BOOL test_EachPrinter(struct torture_context *tctx,
 			     LPSTR servername,
-			     LPSTR architecture)
+			     LPSTR architecture,
+			     LPPRINTER_DEFAULTS defaults)
 {
 	DWORD needed = 0;
 	DWORD returned = 0;
@@ -639,7 +642,7 @@ static BOOL test_EachPrinter(struct torture_context *tctx,
 	}
 
 	for (i=0; i < returned; i++) {
-		ret &= test_OnePrinter(tctx, buffer[i].pName, architecture);
+		ret &= test_OnePrinter(tctx, buffer[i].pName, architecture, defaults);
 	}
 
 	free(buffer);
@@ -751,6 +754,7 @@ int main(int argc, char *argv[])
 	LPSTR servername;
 	LPSTR architecture = "Windows NT x86";
 	HANDLE server_handle;
+	PRINTER_DEFAULTS defaults_admin, defaults_use;
 	struct torture_context *tctx;
 
 	if (argc < 2) {
@@ -773,9 +777,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	defaults_admin.pDatatype = NULL;
+	defaults_admin.pDevMode = NULL;
+	defaults_admin.DesiredAccess = PRINTER_ACCESS_ADMINISTER;
+
+	defaults_use.pDatatype = NULL;
+	defaults_use.pDevMode = NULL;
+	defaults_use.DesiredAccess = PRINTER_ACCESS_USE;
+
 	ret &= test_EnumPrinters(tctx, servername);
 	ret &= test_EnumDrivers(tctx, servername, architecture);
-	ret &= test_OpenPrinter(tctx, servername, &server_handle);
+	ret &= test_OpenPrinter(tctx, servername, NULL, &server_handle);
 /*	ret &= test_EnumPrinterKey(tctx, servername, server_handle, ""); */
 	ret &= test_EnumForms(tctx, servername, server_handle);
 	ret &= test_ClosePrinter(tctx, server_handle);
@@ -785,7 +797,7 @@ int main(int argc, char *argv[])
 	ret &= test_EnumPrintProcessorDatatypes(tctx, servername);
 	ret &= test_GetPrintProcessorDirectory(tctx, servername, architecture);
 	ret &= test_GetPrinterDriverDirectory(tctx, servername, architecture);
-	ret &= test_EachPrinter(tctx, servername, architecture);
+	ret &= test_EachPrinter(tctx, servername, architecture, NULL);
 
 	if (!ret) {
 		if (tctx->last_reason) {
