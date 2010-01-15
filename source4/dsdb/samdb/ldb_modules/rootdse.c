@@ -364,6 +364,18 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
+	if (do_attribute_explicit(attrs, "isGlobalCatalogReady")) {
+		/* MS-ADTS 3.1.1.3.2.10
+		   Note, we should only return true here is we have
+		   completed at least one synchronisation. As both
+		   provision and vampire do a full sync, this means we
+		   can return true is the gc bit is set in the NTDSDSA
+		   options */
+		if (ldb_msg_add_fmt(msg, "isGlobalCatalogReady",
+				    "%s", samdb_is_gc(ldb)?"TRUE":"FALSE") != 0) {
+			goto failed;
+		}
+	}
 
 	/* TODO: lots more dynamic attributes should be added here */
 
