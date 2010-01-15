@@ -743,7 +743,17 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaGetInfo *r)
 {
-	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaGetInfo);
+	WERROR status;
+	status = drs_security_level_check(dce_call, "DsReplicaGetInfo");
+
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICAGETINFO,
+								&ndr_table_drsuapi, "kccsrv", "DsReplicaGetInfo");
+
+	return WERR_OK;
 }
 
 
