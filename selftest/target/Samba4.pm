@@ -556,6 +556,7 @@ sub provision_raw_step1($$)
 [global]
 	netbios name = $ctx->{netbiosname}
 	netbios aliases = $ctx->{netbiosalias}
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	workgroup = $ctx->{domain}
 	realm = $ctx->{realm}
 	private dir = $ctx->{privatedir}
@@ -732,7 +733,6 @@ sub provision($$$$$$$)
 	path = $ctx->{tmpdir}
 	read only = no
 	posix:sharedelay = 10000
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 500000
 
@@ -740,7 +740,6 @@ sub provision($$$$$$$)
 	path = $ctx->{tmpdir}/test1
 	read only = no
 	posix:sharedelay = 10000
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 50000
 
@@ -748,7 +747,6 @@ sub provision($$$$$$$)
 	path = $ctx->{tmpdir}/test2
 	read only = no
 	posix:sharedelay = 10000
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 50000
 
