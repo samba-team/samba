@@ -743,15 +743,17 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaGetInfo *r)
 {
-	WERROR status;
-	status = drs_security_level_check(dce_call, "DsReplicaGetInfo");
+	enum security_user_level level;
 
-	if (!W_ERROR_IS_OK(status)) {
-		return status;
+	level = security_session_user_level(dce_call->conn->auth_state.session_info);
+	if (level < SECURITY_ADMINISTRATOR) {
+		DEBUG(1,(__location__ ": Administrator access required for DsReplicaGetInfo\n"));
+		security_token_debug(2, dce_call->conn->auth_state.session_info->security_token);
+		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICAGETINFO,
-								&ndr_table_drsuapi, "kccsrv", "DsReplicaGetInfo");
+				     &ndr_table_drsuapi, "kccsrv", "DsReplicaGetInfo");
 
 	return WERR_OK;
 }
