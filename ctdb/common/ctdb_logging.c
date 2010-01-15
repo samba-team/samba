@@ -24,7 +24,8 @@
 #include "../include/ctdb_private.h"
 #include "../include/ctdb.h"
 
-#define MAX_LOG_ENTRIES 500000
+int log_ringbuf_size;
+
 #define MAX_LOG_SIZE 128
 
 static int first_entry;
@@ -37,7 +38,7 @@ struct ctdb_log_entry {
 };
 
 
-static struct ctdb_log_entry log_entries[MAX_LOG_ENTRIES];
+static struct ctdb_log_entry *log_entries;
 
 /*
  * this function logs all messages for all levels to a ringbuffer
@@ -45,6 +46,14 @@ static struct ctdb_log_entry log_entries[MAX_LOG_ENTRIES];
 static void log_ringbuffer_v(const char *format, va_list ap)
 {
 	int ret;
+
+	if (log_entries == NULL && log_ringbuf_size != 0) {
+		/* Hope this works. We cant log anything if it doesnt anyway */
+		log_entries = malloc(sizeof(struct ctdb_log_entry) * log_ringbuf_size);
+	}
+	if (log_entries == NULL) {
+		return;
+	}
 
 	log_entries[last_entry].message[0] = '\0';
 
@@ -57,13 +66,13 @@ static void log_ringbuffer_v(const char *format, va_list ap)
 	log_entries[last_entry].t = timeval_current();
 
 	last_entry++;
-	if (last_entry >= MAX_LOG_ENTRIES) {
+	if (last_entry >= log_ringbuf_size) {
 		last_entry = 0;
 	}
 	if (first_entry == last_entry) {
 		first_entry++;
 	}
-	if (first_entry >= MAX_LOG_ENTRIES) {
+	if (first_entry >= log_ringbuf_size) {
 		first_entry = 0;
 	}
 }
@@ -100,9 +109,13 @@ static void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr
 		struct tm *tm;
 		char tbuf[100];
 
+		if (log_entries == NULL) {
+			break;
+		}
+
 		if (log_entries[tmp_entry].level > log_addr->level) {
 			tmp_entry++;
-			if (tmp_entry >= MAX_LOG_ENTRIES) {
+			if (tmp_entry >= log_ringbuf_size) {
 				tmp_entry = 0;
 			}
 		 	continue;
@@ -116,7 +129,7 @@ static void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr
 		}
 
 		tmp_entry++;
-		if (tmp_entry >= MAX_LOG_ENTRIES) {
+		if (tmp_entry >= log_ringbuf_size) {
 			tmp_entry = 0;
 		}
 	}

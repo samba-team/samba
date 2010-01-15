@@ -208,6 +208,13 @@ CTDB_DEBUGLEVEL=ERR
 # "-1" means wait forever.
 # CTDB_MAX_PERSISTENT_CHECK_ERRORS=0
 
+# All log entries up to level 9 are also collected into a in-memory ringbuffer
+# in addition to the log that is written to the log file.
+# This parameter controls how many entries we allow for this in memory log
+# CTDB_LOG_RINGBUF_SIZE=500000
+
+# 
+#
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning
 # variable

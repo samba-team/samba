@@ -143,6 +143,7 @@ int main(int argc, const char *argv[])
 		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
+		{ "log-ringbuf-size", 0, POPT_ARG_INT, &log_ringbuf_size, DEBUG_ERR, "Number of log messages we can store in the memory ringbuffer", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
