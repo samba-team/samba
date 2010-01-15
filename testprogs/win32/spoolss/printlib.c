@@ -21,6 +21,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <assert.h>
 
 void print_devmode(DEVMODE *pDevModeIn)
 {
@@ -588,25 +589,6 @@ void print_doc_info_1(PDOC_INFO_1 info)
 	return;
 }
 
-void print_printer_enum_values(PRINTER_ENUM_VALUES *info)
-{
-	DWORD i = 0;
-
-	printf("\tValue Name\t= %s [0x%x]\n",	info->pValueName, info->cbValueName);
-	printf("\tType\t\t= 0x%x\n",		info->dwType);
-	printf("\tSize\t\t= 0x%x\n",		info->cbData);
-
-	while (i < info->cbData) {
-		printf("\t0x%x", *(info->pData++));
-		if (i%4 == 3)
-			printf("\n");
-		i++;
-	}
-	printf("\n");
-
-	return;
-}
-
 void print_printer_keys(LPSTR buffer)
 {
 	LPSTR p = NULL;
@@ -620,3 +602,68 @@ void print_printer_keys(LPSTR buffer)
 		}
 	}
 }
+
+static LPSTR reg_type_str(DWORD type)
+{
+	switch (type) {
+	case REG_DWORD:
+		return "REG_DWORD";
+	case REG_SZ:
+		return "REG_SZ";
+	case REG_MULTI_SZ:
+		return "REG_MULTI_SZ";
+	case REG_BINARY:
+		return "REG_BINARY";
+	default:
+		return NULL;
+	}
+}
+
+void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffer, DWORD type)
+{
+	DWORD i = 0;
+	LPSTR p = NULL;
+
+	if (keyname) {
+		printf("\tKey Name:\t%s\n", keyname);
+	}
+
+	printf("\tValue Name:\t%s\n", valuename);
+	printf("\tSize: 0x%x (%d)\n", size, size);
+	printf("\tType:\t\t%s\n", reg_type_str(type));
+
+	switch (type) {
+	case REG_SZ:
+		printf("\t\t%s\n", (LPSTR)buffer);
+		break;
+	case REG_MULTI_SZ:
+		p = (LPSTR)buffer;
+		while (p && *p) {
+			printf("%s\n", p);
+			for (; *p; p = CharNext(p)) {
+				p = CharNext(p);
+			}
+		}
+		break;
+	case REG_DWORD:
+		assert(size == 4);
+		printf("\t\t0x%08x\n", (DWORD)*buffer);
+		break;
+	case REG_BINARY:
+		for (i=0; i < size; i++) {
+			printf("\t0x%x", buffer[i]);
+			if (i%4 == 3) {
+				printf("\n");
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void print_printer_enum_values(PRINTER_ENUM_VALUES *info)
+{
+	print_printer_data(NULL, info->pValueName, info->cbData, info->pData, info->dwType);
+}
+

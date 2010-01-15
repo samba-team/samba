@@ -113,6 +113,8 @@ const char *errstr(DWORD error)
 		return "ERROR_CANCELLED";
 	case RPC_S_SERVER_UNAVAILABLE:
 		return "RPC_S_SERVER_UNAVAILABLE";
+	case RPC_S_INVALID_NET_ADDR:
+		return "RPC_S_INVALID_NET_ADDR";
 	default:
 		break;
 	}

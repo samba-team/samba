@@ -632,6 +632,58 @@ static BOOL test_EnumJobs(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_EnumPrinterDataEx(struct torture_context *tctx,
+				   LPSTR servername,
+				   LPSTR keyname,
+				   HANDLE handle,
+				   LPBYTE *buffer_p,
+				   DWORD *returned_p)
+{
+	LPBYTE buffer = NULL;
+	DWORD needed = 0;
+	DWORD returned = 0;
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing EnumPrinterDataEx(%s)", keyname);
+
+	err = EnumPrinterDataEx(handle, keyname, NULL, 0, &needed, &returned);
+	if (err == ERROR_MORE_DATA) {
+		buffer = malloc(needed);
+		torture_assert(tctx, buffer, "malloc failed");
+		err = EnumPrinterDataEx(handle, keyname, buffer, needed, &needed, &returned);
+	}
+	if (err) {
+		sprintf(tmp, "EnumPrinterDataEx(%s) failed on [%s] (buffer size = %d), error: %s\n",
+			keyname, servername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		DWORD i;
+		LPPRINTER_ENUM_VALUES v = (LPPRINTER_ENUM_VALUES)buffer;
+		for (i=0; i < returned; i++) {
+			print_printer_enum_values(&v[i]);
+		}
+	}
+
+	if (returned_p) {
+		*returned_p = returned;
+	}
+
+	if (buffer_p) {
+		*buffer_p = buffer;
+	} else {
+		free(buffer);
+	}
+
+	return TRUE;
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_OnePrinter(struct torture_context *tctx,
 			    LPSTR printername,
 			    LPSTR architecture,
@@ -649,6 +701,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EnumJobs(tctx, printername, handle);
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "");
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "PrinterDriverData");
+	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
 	ret &= test_ClosePrinter(tctx, handle);
 
 	return ret;
@@ -792,6 +845,145 @@ static BOOL test_GetPrinterDriverDirectory(struct torture_context *tctx,
 	return TRUE;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_GetPrinterData(struct torture_context *tctx,
+				LPSTR servername,
+				LPSTR valuename,
+				HANDLE handle,
+				DWORD *type_p,
+				LPBYTE *buffer_p,
+				DWORD *size_p)
+{
+	LPBYTE buffer = NULL;
+	DWORD needed = 0;
+	DWORD type;
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing GetPrinterData(%s)", valuename);
+
+	err = GetPrinterData(handle, valuename, &type, NULL, 0, &needed);
+	if (err == ERROR_MORE_DATA) {
+		buffer = (LPBYTE)malloc(needed);
+		torture_assert(tctx, buffer, "malloc failed");
+		err = GetPrinterData(handle, valuename, &type, buffer, needed, &needed);
+	}
+	if (err) {
+		sprintf(tmp, "GetPrinterData(%s) failed on [%s] (buffer size = %d), error: %s\n",
+			valuename, servername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_printer_data("PrinterDriverData", valuename, needed, buffer, type);
+	}
+
+	if (type_p) {
+		*type_p = type;
+	}
+
+	if (size_p) {
+		*size_p = needed;
+	}
+
+	if (buffer_p) {
+		*buffer_p = buffer;
+	} else {
+		free(buffer);
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_GetPrinterDataEx(struct torture_context *tctx,
+				  LPSTR servername,
+				  LPSTR keyname,
+				  LPSTR valuename,
+				  HANDLE handle,
+				  DWORD *type_p,
+				  LPBYTE *buffer_p,
+				  DWORD *size_p)
+{
+	LPBYTE buffer = NULL;
+	DWORD needed = 0;
+	DWORD type;
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing GetPrinterDataEx(%s - %s)", keyname, valuename);
+
+	err = GetPrinterDataEx(handle, keyname, valuename, &type, NULL, 0, &needed);
+	if (err == ERROR_MORE_DATA) {
+		buffer = (LPBYTE)malloc(needed);
+		torture_assert(tctx, buffer, "malloc failed");
+		err = GetPrinterDataEx(handle, keyname, valuename, &type, buffer, needed, &needed);
+	}
+	if (err) {
+		sprintf(tmp, "GetPrinterDataEx(%s) failed on [%s] (buffer size = %d), error: %s\n",
+			valuename, servername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_printer_data(keyname, valuename, needed, buffer, type);
+	}
+
+	if (type_p) {
+		*type_p = type;
+	}
+
+	if (size_p) {
+		*size_p = needed;
+	}
+
+	if (buffer_p) {
+		*buffer_p = buffer;
+	} else {
+		free(buffer);
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_PrinterData(struct torture_context *tctx,
+			     LPSTR servername,
+			     HANDLE handle)
+{
+	BOOL ret = TRUE;
+	DWORD i;
+	DWORD type, type_ex;
+	LPBYTE buffer, buffer_ex;
+	DWORD size, size_ex;
+	LPSTR valuenames[] = {
+		SPLREG_DEFAULT_SPOOL_DIRECTORY,
+		SPLREG_MAJOR_VERSION,
+		SPLREG_MINOR_VERSION,
+		SPLREG_DS_PRESENT,
+		SPLREG_DNS_MACHINE_NAME,
+		SPLREG_ARCHITECTURE,
+		SPLREG_OS_VERSION
+	};
+
+	for (i=0; i < ARRAY_SIZE(valuenames); i++) {
+		ret &= test_GetPrinterData(tctx, servername, valuenames[i], handle, &type, &buffer, &size);
+		ret &= test_GetPrinterDataEx(tctx, servername, "random", valuenames[i], handle, &type_ex, &buffer_ex, &size_ex);
+		torture_assert_int_equal(tctx, type, type_ex, "type mismatch");
+		torture_assert_int_equal(tctx, size, size_ex, "size mismatch");
+		torture_assert_mem_equal(tctx, buffer, buffer_ex, size, "buffer mismatch");
+		free(buffer);
+		free(buffer_ex);
+	}
+
+	return ret;
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -837,6 +1029,7 @@ int main(int argc, char *argv[])
 	ret &= test_EnumDrivers(tctx, servername, architecture);
 	ret &= test_OpenPrinter(tctx, servername, NULL, &server_handle);
 /*	ret &= test_EnumPrinterKey(tctx, servername, server_handle, ""); */
+	ret &= test_PrinterData(tctx, servername, server_handle);
 	ret &= test_EnumForms(tctx, servername, server_handle);
 	ret &= test_ClosePrinter(tctx, server_handle);
 	ret &= test_EnumPorts(tctx, servername);
