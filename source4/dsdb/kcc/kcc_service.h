@@ -82,6 +82,8 @@ struct kccsrv_service {
 	time_t last_deleted_check;
 };
 
+struct kcc_connection_list;
+
 #include "dsdb/kcc/kcc_service_proto.h"
 
 #endif /* _DSDB_REPL_KCC_SERVICE_H_ */
