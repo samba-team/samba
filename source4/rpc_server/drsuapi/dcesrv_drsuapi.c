@@ -29,6 +29,12 @@
 #include "libcli/security/security.h"
 #include "auth/auth.h"
 
+#define DRSUAPI_UNSUPPORTED(fname) do { \
+	DEBUG(1,(__location__ ": Unsupported DRS call %s\n", #fname)); \
+	if (DEBUGLVL(2)) NDR_PRINT_IN_DEBUG(fname, r); \
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR); \
+} while (0)
+
 /* 
   drsuapi_DsBind 
 */
@@ -259,7 +265,7 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_drsuapi_DsReplicaAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaAdd *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaAdd);
 }
 
 
@@ -269,7 +275,7 @@ static WERROR dcesrv_drsuapi_DsReplicaAdd(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaDel *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaDel);
 }
 
 
@@ -279,7 +285,7 @@ static WERROR dcesrv_drsuapi_DsReplicaDel(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaMod(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaMod *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaMod);
 }
 
 
@@ -289,7 +295,7 @@ static WERROR dcesrv_drsuapi_DsReplicaMod(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_DRSUAPI_VERIFY_NAMES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_VERIFY_NAMES *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(DRSUAPI_VERIFY_NAMES);
 }
 
 
@@ -299,7 +305,7 @@ static WERROR dcesrv_DRSUAPI_VERIFY_NAMES(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsGetMemberships(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetMemberships *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsGetMemberships);
 }
 
 
@@ -309,7 +315,7 @@ static WERROR dcesrv_drsuapi_DsGetMemberships(struct dcesrv_call_state *dce_call
 static WERROR dcesrv_DRSUAPI_INTER_DOMAIN_MOVE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_INTER_DOMAIN_MOVE *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(DRSUAPI_INTER_DOMAIN_MOVE);
 }
 
 
@@ -319,7 +325,7 @@ static WERROR dcesrv_DRSUAPI_INTER_DOMAIN_MOVE(struct dcesrv_call_state *dce_cal
 static WERROR dcesrv_drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetNT4ChangeLog *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsGetNT4ChangeLog);
 }
 
 
@@ -442,7 +448,7 @@ static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call
 static WERROR dcesrv_DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REMOVE_DS_DOMAIN *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(DRSUAPI_REMOVE_DS_DOMAIN);
 }
 
 /* Obtain the site name from a server DN */
@@ -737,7 +743,7 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsReplicaGetInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaGetInfo);
 }
 
 
@@ -747,7 +753,7 @@ static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call
 static WERROR dcesrv_DRSUAPI_ADD_SID_HISTORY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_ADD_SID_HISTORY *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(DRSUAPI_ADD_SID_HISTORY);
 }
 
 /* 
@@ -756,7 +762,7 @@ static WERROR dcesrv_DRSUAPI_ADD_SID_HISTORY(struct dcesrv_call_state *dce_call,
 static WERROR dcesrv_drsuapi_DsGetMemberships2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsGetMemberships2 *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_DsGetMemberships2);
 }
 
 /* 
@@ -765,7 +771,7 @@ static WERROR dcesrv_drsuapi_DsGetMemberships2(struct dcesrv_call_state *dce_cal
 static WERROR dcesrv_DRSUAPI_REPLICA_VERIFY_OBJECTS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_REPLICA_VERIFY_OBJECTS *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(DRSUAPI_REPLICA_VERIFY_OBJECTS);
 }
 
 
@@ -775,7 +781,7 @@ static WERROR dcesrv_DRSUAPI_REPLICA_VERIFY_OBJECTS(struct dcesrv_call_state *dc
 static WERROR dcesrv_DRSUAPI_GET_OBJECT_EXISTENCE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct DRSUAPI_GET_OBJECT_EXISTENCE *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(DRSUAPI_GET_OBJECT_EXISTENCE);
 }
 
 
@@ -785,7 +791,7 @@ static WERROR dcesrv_DRSUAPI_GET_OBJECT_EXISTENCE(struct dcesrv_call_state *dce_
 static WERROR dcesrv_drsuapi_QuerySitesByCost(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_QuerySitesByCost *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	DRSUAPI_UNSUPPORTED(drsuapi_QuerySitesByCost);
 }
 
 
