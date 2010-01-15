@@ -51,6 +51,7 @@ enum torture_samr_choice {
 	TORTURE_SAMR_PASSWORDS,
 	TORTURE_SAMR_PASSWORDS_PWDLASTSET,
 	TORTURE_SAMR_PASSWORDS_BADPWDCOUNT,
+	TORTURE_SAMR_PASSWORDS_LOCKOUT,
 	TORTURE_SAMR_USER_ATTRIBUTES,
 	TORTURE_SAMR_USER_PRIVILEGES,
 	TORTURE_SAMR_OTHER,
@@ -3790,6 +3791,390 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool test_QueryUserInfo_acct_flags(struct dcerpc_pipe *p,
+					  struct torture_context *tctx,
+					  struct policy_handle *handle,
+					  uint32_t *acct_flags)
+{
+	union samr_UserInfo *info;
+	struct samr_QueryUserInfo r;
+
+	r.in.user_handle = handle;
+	r.in.level = 16;
+	r.out.info = &info;
+
+	torture_comment(tctx, "Testing QueryUserInfo level %d", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo(p, tctx, &r),
+		"failed to query userinfo");
+
+	*acct_flags = info->info16.acct_flags;
+
+	torture_comment(tctx, "  (acct_flags: 0x%08x)\n", *acct_flags);
+
+	return true;
+}
+
+static bool test_Password_lockout(struct dcerpc_pipe *p,
+				  struct dcerpc_pipe *np,
+				  struct torture_context *tctx,
+				  uint32_t acct_flags,
+				  const char *acct_name,
+				  struct policy_handle *domain_handle,
+				  struct policy_handle *user_handle,
+				  char **password,
+				  struct cli_credentials *machine_credentials,
+				  const char *comment,
+				  bool disable,
+				  bool interactive,
+				  NTSTATUS expected_success_status,
+				  struct samr_DomInfo1 *info1,
+				  struct samr_DomInfo12 *info12)
+{
+	union samr_DomainInfo info;
+	uint32_t badpwdcount;
+	uint32_t password_history_length = 1;
+	uint64_t lockout_threshold = 1;
+	uint32_t lockout_seconds = 5;
+	uint64_t delta_time_factor = 10 * 1000 * 1000;
+
+	torture_comment(tctx, "\nTesting account lockout: %s\n", comment);
+
+	/* set policies */
+
+	info.info1 = *info1;
+
+	torture_comment(tctx, "setting password history lenght.\n");
+	info.info1.password_history_length = password_history_length;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainPasswordInformation;
+		r.in.info = &info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 1");
+	}
+
+	info.info12 = *info12;
+
+	info.info12.lockout_threshold = lockout_threshold;
+
+	/* set lockout duration < lockout window: should fail */
+	info.info12.lockout_duration = ~(lockout_seconds * delta_time_factor);
+	info.info12.lockout_window = ~((lockout_seconds + 1) * delta_time_factor);
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.in.info = &info;
+
+		torture_assert_ntstatus_equal(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			NT_STATUS_INVALID_PARAMETER,
+			"succeeded setting lockout duration < lockout window");
+	}
+
+	info.info12.lockout_duration = 0;
+	info.info12.lockout_window = 0;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.in.info = &info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set lockout window and duration to 0");
+	}
+
+	/* set lockout duration of 5 seconds */
+	info.info12.lockout_duration = ~(lockout_seconds * delta_time_factor);
+	info.info12.lockout_window = ~(lockout_seconds * delta_time_factor);
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.in.info = &info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 12");
+	}
+
+	/* reset bad pwd count */
+
+	torture_assert(tctx,
+		test_reset_badpwdcount(p, tctx, user_handle, acct_flags, password), "");
+
+
+	/* enable or disable account */
+	{
+		struct samr_SetUserInfo r;
+		union samr_UserInfo user_info;
+
+		torture_comment(tctx, "Testing SetUserInfo level 16 (%s account)\n",
+			disable ? "disable" : "enable");
+
+		user_info.info16.acct_flags = acct_flags;
+		if (disable) {
+			user_info.info16.acct_flags |= ACB_DISABLED;
+		} else {
+			user_info.info16.acct_flags &= ~ACB_DISABLED;
+		}
+
+		r.in.user_handle = user_handle;
+		r.in.level = 16;
+		r.in.info = &user_info;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo(p, tctx, &r),
+			"failed to enable user");
+	}
+
+	/* test logon with right password */
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+				      acct_name, *password,
+				      expected_success_status, interactive)) {
+		torture_fail(tctx, "failed to auth with latest password");
+	}
+
+	torture_assert(tctx,
+		test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+	torture_assert_int_equal(tctx, badpwdcount, 0, "expected badpwdcount to be 0");
+
+
+	/* test with wrong password ==> lockout */
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+				      acct_name, "random_crap",
+				      NT_STATUS_WRONG_PASSWORD, interactive)) {
+		torture_fail(tctx, "succeeded to authenticate with wrong password");
+	}
+
+	torture_assert(tctx,
+		test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
+
+	torture_assert(tctx,
+		test_QueryUserInfo_acct_flags(p, tctx, user_handle, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
+				 "expected account to be locked");
+
+
+	/* test with good password */
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials, acct_name,
+				     *password,
+				     NT_STATUS_ACCOUNT_LOCKED_OUT, interactive))
+	{
+		torture_fail(tctx, "authenticate did not return NT_STATUS_ACCOUNT_LOCKED_OUT");
+	}
+
+	/* bad pwd count should not get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
+
+	/* curiously, windows does _not_ set the autlock flag */
+	torture_assert(tctx,
+		test_QueryUserInfo_acct_flags(p, tctx, user_handle, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
+				 "expected account to be locked");
+
+
+	/* with bad password */
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials,
+				      acct_name, "random_crap2",
+				      NT_STATUS_ACCOUNT_LOCKED_OUT, interactive))
+	{
+		torture_fail(tctx, "authenticate did not return NT_STATUS_ACCOUNT_LOCKED_OUT");
+	}
+
+	/* bad pwd count should not get updated */
+	torture_assert(tctx,
+		test_QueryUserInfo_badpwdcount(p, tctx, user_handle, &badpwdcount), "");
+	torture_assert_int_equal(tctx, badpwdcount, 1, "expected badpwdcount to be 1");
+
+	/* curiously, windows does _not_ set the autlock flag */
+	torture_assert(tctx,
+		test_QueryUserInfo_acct_flags(p, tctx, user_handle, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
+				 "expected account to be locked");
+
+
+	/* let lockout duration expire ==> unlock */
+
+	torture_comment(tctx, "let lockout duration expire...\n");
+	sleep(lockout_seconds + 1);
+
+	if (!test_SamLogon_with_creds(tctx, np, machine_credentials, acct_name,
+				     *password,
+				     expected_success_status, interactive))
+	{
+		torture_fail(tctx, "failed to authenticate after lockout expired");
+	}
+
+	torture_assert(tctx,
+		test_QueryUserInfo_acct_flags(p, tctx, user_handle, &acct_flags), "");
+	torture_assert_int_equal(tctx, acct_flags & ACB_AUTOLOCK, 0,
+				 "expected account not to be locked");
+
+	return true;
+}
+
+static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
+				       struct torture_context *tctx,
+				       uint32_t acct_flags,
+				       const char *acct_name,
+				       struct policy_handle *domain_handle,
+				       struct policy_handle *user_handle,
+				       char **password,
+				       struct cli_credentials *machine_credentials)
+{
+	union samr_DomainInfo *q_info, s_info;
+	struct samr_DomInfo1 info1, _info1;
+	struct samr_DomInfo12 info12, _info12;
+	bool ret = true;
+	struct dcerpc_pipe *np;
+	int i;
+
+	struct {
+		const char *comment;
+		bool disabled;
+		bool interactive;
+		NTSTATUS expected_success_status;
+	} creds[] = {
+		{
+			.comment		= "network logon (disabled account)",
+			.disabled		= true,
+			.interactive		= false,
+			.expected_success_status= NT_STATUS_ACCOUNT_DISABLED
+		},
+		{
+			.comment		= "network logon (enabled account)",
+			.disabled		= false,
+			.interactive		= false,
+			.expected_success_status= NT_STATUS_OK
+		},
+		{
+			.comment		= "interactive logon (disabled account)",
+			.disabled		= true,
+			.interactive		= true,
+			.expected_success_status= NT_STATUS_ACCOUNT_DISABLED
+		},
+		{
+			.comment		= "interactive logon (enabled account)",
+			.disabled		= false,
+			.interactive		= true,
+			.expected_success_status= NT_STATUS_OK
+		},
+	};
+
+	torture_assert(tctx, setup_schannel_netlogon_pipe(tctx, machine_credentials, &np), "");
+
+	/* backup old policies */
+
+	{
+		struct samr_QueryDomainInfo2 r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainPasswordInformation;
+		r.out.info = &q_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
+			"failed to query domain info level 1");
+
+		info1 = q_info->info1;
+	}
+
+	{
+		struct samr_QueryDomainInfo2 r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.out.info = &q_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
+			"failed to query domain info level 12");
+
+		info12 = q_info->info12;
+	}
+
+	_info1 = info1;
+	_info12 = info12;
+
+	/* run tests */
+
+	for (i=0; i < ARRAY_SIZE(creds); i++) {
+
+		/* skip trust tests for now */
+		if (acct_flags & ACB_WSTRUST ||
+		    acct_flags & ACB_SVRTRUST ||
+		    acct_flags & ACB_DOMTRUST) {
+			continue;
+		}
+
+		ret &= test_Password_lockout(p, np, tctx, acct_flags, acct_name,
+					     domain_handle, user_handle, password,
+					     machine_credentials,
+					     creds[i].comment,
+					     creds[i].disabled,
+					     creds[i].interactive,
+					     creds[i].expected_success_status,
+					     &_info1, &_info12);
+		if (!ret) {
+			torture_warning(tctx, "TEST #%d (%s) failed\n", i, creds[i].comment);
+		} else {
+			torture_comment(tctx, "TEST #%d (%s) succeeded\n", i, creds[i].comment);
+		}
+	}
+
+	/* restore policies */
+
+	s_info.info1 = info1;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainPasswordInformation;
+		r.in.info = &s_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 1");
+	}
+
+	s_info.info12 = info12;
+
+	{
+		struct samr_SetDomainInfo r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = DomainLockoutInformation;
+		r.in.info = &s_info;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_SetDomainInfo(p, tctx, &r),
+			"failed to set domain info level 12");
+	}
+
+	return ret;
+}
+
 static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 				       struct dcerpc_pipe *lp,
 				       struct torture_context *tctx,
@@ -4307,6 +4692,26 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		}
 
 		break;
+
+	case TORTURE_SAMR_PASSWORDS_LOCKOUT:
+
+		if (!test_Password_lockout_wrap(p, tctx, base_acct_flags,
+						base_acct_name,
+						domain_handle,
+						user_handle, &password,
+						machine_credentials))
+		{
+			ret = false;
+		}
+
+		if (ret == true) {
+			torture_comment(tctx, "lockout test succeeded\n");
+		} else {
+			torture_warning(tctx, "lockout test failed\n");
+		}
+
+		break;
+
 
 	case TORTURE_SAMR_USER_PRIVILEGES: {
 
@@ -7000,6 +7405,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		break;
 	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
 	case TORTURE_SAMR_PASSWORDS_BADPWDCOUNT:
+	case TORTURE_SAMR_PASSWORDS_LOCKOUT:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, ctx->choice, ctx->machine_credentials);
 		}
@@ -7639,3 +8045,48 @@ struct torture_suite *torture_rpc_samr_passwords_badpwdcount(TALLOC_CTX *mem_ctx
 
 	return suite;
 }
+
+static bool torture_rpc_samr_lockout(struct torture_context *torture,
+				     struct dcerpc_pipe *p2,
+				     struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	bool ret = true;
+	struct torture_samr_context *ctx;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ctx = talloc_zero(torture, struct torture_samr_context);
+
+	ctx->choice = TORTURE_SAMR_PASSWORDS_LOCKOUT;
+	ctx->machine_credentials = machine_credentials;
+
+	ret &= test_Connect(p, torture, &ctx->handle);
+
+	ret &= test_EnumDomains(p, torture, ctx);
+
+	ret &= test_samr_handle_Close(p, torture, &ctx->handle);
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_samr_passwords_lockout(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-LOCKOUT");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
+							  &ndr_table_samr,
+							  TEST_ACCOUNT_NAME_PWD);
+
+	torture_rpc_tcase_add_test_creds(tcase, "lockout",
+					 torture_rpc_samr_lockout);
+
+	return suite;
+}
+
+
