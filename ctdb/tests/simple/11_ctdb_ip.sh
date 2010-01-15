@@ -33,8 +33,15 @@ cluster_is_healthy
 
 echo "Getting list of public IPs..."
 try_command_on_node -v 1 $CTDB ip -n all
-ips=$(echo "$out" | sed -e '1d')
-colons=$(echo "$ips" | sed -e 's@^@:@' -e 's@$@:@' -e 's@ @:@')
+ips=$(echo "$out" | sed \
+	-e '1d')
+machineout1=":Public IP:Node:"
+machineout2=$(echo "$out" | sed \
+	-e '1d' \
+	-e 's@^@:@' \
+	-e 's@ @:@' \
+	-e 's@$@:@')
+machineout=`echo -e "$machineout1\n$machineout2"`
 
 while read ip pnn ; do
     try_command_on_node $pnn "ip addr show"
@@ -48,14 +55,16 @@ done <<<"$ips" # bashism to avoid problem setting variable in pipeline.
 
 [ "$testfailures" != 1 ] && echo "Looks good!"
 
-cmd="$CTDB -Y ip -n all | sed -e '1d'"
+cmd="$CTDB -Y ip -n all"
 echo "Checking that \"$cmd\" produces expected output..."
 
 try_command_on_node 1 "$cmd"
-if [ "$out" = "$colons" ] ; then
+if [ "$out" = "$machineout" ] ; then
     echo "Yep, looks good!"
 else
     echo "Nope, it looks like this:"
     echo "$out"
+    echo "Should be like this:"
+    echo "$machineout"
     testfailures=1
 fi
