@@ -339,6 +339,8 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	if (req->in.level != DRSUAPI_DS_REPLICA_GET_INFO &&
 	    req->in.level != DRSUAPI_DS_REPLICA_GET_INFO2)
 	{
+		DEBUG(1,(__location__ ": Unsupported DsReplicaGetInfo level %u\n",
+			 req->in.level));
 		status = WERR_REVISION_MISMATCH;
 		goto DONE;
 	}
@@ -365,7 +367,6 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	}
 
 	/* TODO: Perform the necessary access permission checking here according to the infoType requested */
-
 	switch (info_type) {
 	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS:
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS:
@@ -384,7 +385,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	case DRSUAPI_DS_REPLICA_INFO_06:
 		break;
 	default:
-		DEBUG(0,(__location__ ": infoType requested is invalid."));
+		DEBUG(0,(__location__ ": infoType %u requested is invalid.", (unsigned)info_type));
 		status = WERR_INVALID_PARAMETER; /* infoType is invalid */
 		goto DONE;
 	}
@@ -398,11 +399,11 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	*tmp_p_info_type = info_type;
 	req->out.info_type = tmp_p_info_type;
 
-	/* Based on the infoType requested, retrieve the corresponding information and construct the response message */
+	/* Based on the infoType requested, retrieve the corresponding
+	 * information and construct the response message */
 	switch (info_type) {
 
 	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS:
-	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* DS_REPL_INFO_REPSTO */
 		if (object_dn != NULL) { /* ncs := { object_dn } */
 			nc_list = NULL;
 			nc_dn = ldb_dn_new(mem_ctx, samdb, object_dn);
@@ -413,7 +414,9 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 
 		} else {
 			/* ncs := getNCs() from ldb database.
-			 * getNCs() must return an array containing the DSNames of all NCs hosted by this server.
+			 * getNCs() must return an array containing
+			 * the DSNames of all NCs hosted by this
+			 * server.
 			 */
 			char *ntds_guid_str = GUID_string(mem_ctx, &service->ntds_guid);
 			NT_STATUS_HAVE_NO_MEMORY(ntds_guid_str);
@@ -423,71 +426,32 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 			}
 		}
 
-		if (info_type == DRSUAPI_DS_REPLICA_INFO_NEIGHBORS) {
-			status = kccdrs_replica_get_info_neighbours(mem_ctx, samdb, req,
-								    reply, base_index,
-								    req_src_dsa_guid, nc_list);
-
-		} else { /* info_type == DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02 */
-			status = WERR_FOOBAR;
-			goto DONE;
-		}
-
+		status = kccdrs_replica_get_info_neighbours(mem_ctx, samdb, req,
+							    reply, base_index,
+							    req_src_dsa_guid, nc_list);
 		break;
 
+	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* DS_REPL_INFO_REPSTO */
 	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
 	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_FOR_NC */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS2: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_2_FOR_NC */
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS3: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_3_FOR_NC */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS05: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_ATTR_VALUE */
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_2_FOR_ATTR_VALUE */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_LINK_FAILURES */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_PENDING_OPS: /* On MS-DRSR it is DS_REPL_INFO_PENDING_OPS */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04: /* On MS-DRSR it is DS_REPL_INFO_CLIENT_CONTEXTS */
-		status = WERR_FOOBAR;
-		goto DONE;
-		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_06: /* On MS-DRSR it is DS_REPL_INFO_SERVER_OUTGOING_CALLS */
-		status = WERR_FOOBAR;
-		goto DONE;
+	default:
+		DEBUG(1,(__location__ ": Unsupported DsReplicaGetInfo info_type %u\n",
+			 info_type));
+		status = WERR_INVALID_LEVEL;
 		break;
 	}
+
 DONE:
 	/* put the status on the result field of the reply */
 	req->out.result = status;
