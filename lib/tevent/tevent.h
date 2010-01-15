@@ -45,27 +45,49 @@ struct tevent_signal;
  *
  * The tevent low-level API
  *
- * @todo description
+ * This API provides the public interface to manage events in the tevent
+ * mainloop. Functions are provided for managing low-level events such
+ * as timer events, fd events and signal handling.
  *
  * @{
  */
 
 /* event handler types */
+/**
+ * Called when a file descriptor monitored by tevent has
+ * data to be read or written on it.
+ */
 typedef void (*tevent_fd_handler_t)(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
 				    void *private_data);
+
+/**
+ * Called when tevent is ceasing the monitoring of a file descriptor.
+ */
 typedef void (*tevent_fd_close_fn_t)(struct tevent_context *ev,
 				     struct tevent_fd *fde,
 				     int fd,
 				     void *private_data);
+
+/**
+ * Called when a tevent timer has fired.
+ */
 typedef void (*tevent_timer_handler_t)(struct tevent_context *ev,
 				       struct tevent_timer *te,
 				       struct timeval current_time,
 				       void *private_data);
+
+/**
+ * Called when a tevent immediate event is invoked.
+ */
 typedef void (*tevent_immediate_handler_t)(struct tevent_context *ctx,
 					   struct tevent_immediate *im,
 					   void *private_data);
+
+/**
+ * Called after tevent detects the specified signal.
+ */
 typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
 					struct tevent_signal *se,
 					int signum,
@@ -120,7 +142,7 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
  */
 void tevent_set_default_backend(const char *backend);
 
-#if DOXYGEN
+#ifdef DOXYGEN
 /**
  * @brief Add a file descriptor based event.
  *
@@ -130,25 +152,23 @@ void tevent_set_default_backend(const char *backend);
  *
  * @param[in]  fd       The file descriptor to base the event on.
  *
- * @param[in]  flags
+ * @param[in]  flags    #TEVENT_FD_READ or #TEVENT_FD_WRITE
  *
  * @param[in]  handler  The callback handler for the event.
  *
  * @param[in]  private_data  The private data passed to the callback handler.
  *
- * @param[in]  handler_name  The name to identify the callback handler.
- *
  * @return              The file descriptor based event, NULL on error.
  *
- * @todo Document flags
+ * @note To cancel the monitoring of a file descriptor, call talloc_free()
+ * on the object returned by this function.
  */
 struct tevent_fd *tevent_add_fd(struct tevent_context *ev,
 				TALLOC_CTX *mem_ctx,
 				int fd,
 				uint16_t flags,
 				tevent_fd_handler_t handler,
-				void *private_data,
-				const char *handler_name);
+				void *private_data);
 #else
 struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
 				 TALLOC_CTX *mem_ctx,
@@ -163,6 +183,42 @@ struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
 		       #handler, __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Add a timed event
+ *
+ * @param[in]  ev       The event context to work on.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  next_event  Timeval specifying the absolute time to fire this
+ * event. This is not an offset.
+ *
+ * @param[in]  handler  The callback handler for the event.
+ *
+ * @param[in]  private_data  The private data passed to the callback handler.
+ *
+ * @return The newly-created timer event, or NULL on error.
+ *
+ * @note To cancel a timer event before it fires, call talloc_free() on the
+ * event returned from this function. This event is automatically
+ * talloc_free()-ed after its event handler files, if it hasn't been freed yet.
+ *
+ * @note Unlike some mainloops, tevent timers are one-time events. To set up
+ * a recurring event, it is necessary to call tevent_add_timer() again during
+ * the handler processing.
+ *
+ * @note Due to the internal mainloop processing, a timer set to run
+ * immediately will do so after any other pending timers fire, but before
+ * any further file descriptor or signal handling events fire. Callers should
+ * not rely on this behavior!
+ */
+struct tevent_timer *tevent_add_timer(struct tevent_context *ev,
+                                      TALLOC_CTX *mem_ctx,
+                                      struct timeval next_event,
+                                      tevent_timer_handler_t handler,
+                                      void *private_data);
+#else
 struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 				       TALLOC_CTX *mem_ctx,
 				       struct timeval next_event,
@@ -173,12 +229,47 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 #define tevent_add_timer(ev, mem_ctx, next_event, handler, private_data) \
 	_tevent_add_timer(ev, mem_ctx, next_event, handler, private_data, \
 			  #handler, __location__)
+#endif
 
+#ifdef DOXYGEN
+/**
+ * Initialize an immediate event object
+ *
+ * This object can be used to trigger an event to occur immediately after
+ * returning from the current event (before any other event occurs)
+ *
+ * @param[in] mem_ctx  The talloc memory context to use as the parent
+ *
+ * @return An empty tevent_immediate object. Use tevent_schedule_immediate
+ * to populate and use it.
+ *
+ * @note Available as of tevent 0.9.8
+ */
+struct tevent_immediate *tevent_create_immediate(TALLOC_CTX *mem_ctx);
+#else
 struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
 						  const char *location);
 #define tevent_create_immediate(mem_ctx) \
 	_tevent_create_immediate(mem_ctx, __location__)
+#endif
 
+#ifdef DOXYGEN
+
+/**
+ * Schedule an event for immediate execution. This event will occur
+ * immediately after returning from the current event (before any other
+ * event occurs)
+ *
+ * @param[in] im       The tevent_immediate object to populate and use
+ * @param[in] ctx      The tevent_context to run this event
+ * @param[in] handler  The event handler to run when this event fires
+ * @param[in] private_data  Data to pass to the event handler
+ */
+void tevent_schedule_immediate(struct tevent_immediate *im,
+                struct tevent_context *ctx,
+                tevent_immediate_handler_t handler,
+                void *private_data);
+#else
 void _tevent_schedule_immediate(struct tevent_immediate *im,
 				struct tevent_context *ctx,
 				tevent_immediate_handler_t handler,
@@ -188,7 +279,40 @@ void _tevent_schedule_immediate(struct tevent_immediate *im,
 #define tevent_schedule_immediate(im, ctx, handler, private_data) \
 	_tevent_schedule_immediate(im, ctx, handler, private_data, \
 				   #handler, __location__);
+#endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Add a tevent signal handler
+ *
+ * tevent_add_signal() creates a new event for handling a signal the next
+ * time through the mainloop. It implements a very simple traditional signal
+ * handler whose only purpose is to add the handler event into the mainloop.
+ *
+ * @param[in]  ev       The event context to work on.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  signum   The signal to trap
+ *
+ * @param[in]  handler  The callback handler for the signal.
+ *
+ * @param[in]  sa_flags sigaction flags for this signal handler.
+ *
+ * @param[in]  private_data  The private data passed to the callback handler.
+ *
+ * @return The newly-created signal handler event, or NULL on error.
+ *
+ * @note To cancel a signal handler, call talloc_free() on the event returned
+ * from this function.
+ */
+struct tevent_signal *tevent_add_signal(struct tevent_context *ev,
+                     TALLOC_CTX *mem_ctx,
+                     int signum,
+                     int sa_flags,
+                     tevent_signal_handler_t handler,
+                     void *private_data);
+#else
 struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 					 TALLOC_CTX *mem_ctx,
 					 int signum,
@@ -200,36 +324,128 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 #define tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data) \
 	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
 			   #handler, __location__)
+#endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Pass a single time through the mainloop
+ *
+ * This will process any appropriate signal, immediate, fd and timer events
+ *
+ * @param[in]  ev The event context to process
+ *
+ * @return Zero on success, nonzero if an internal error occurred
+ */
+int tevent_loop_once(struct tevent_context *ev);
+#else
 int _tevent_loop_once(struct tevent_context *ev, const char *location);
 #define tevent_loop_once(ev) \
-	_tevent_loop_once(ev, __location__) \
+	_tevent_loop_once(ev, __location__)
+#endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Run the mainloop
+ *
+ * The mainloop will run until there are no events remaining to be processed
+ *
+ * @param[in]  ev The event context to process
+ *
+ * @return Zero if all events have been processed. Nonzero if an internal
+ * error occurred.
+ */
+int tevent_loop_wait(struct tevent_context *ev);
+#else
 int _tevent_loop_wait(struct tevent_context *ev, const char *location);
 #define tevent_loop_wait(ev) \
-	_tevent_loop_wait(ev, __location__) \
+	_tevent_loop_wait(ev, __location__)
+#endif
 
+
+/**
+ * Assign a function to run when a tevent_fd is freed
+ *
+ * This function is a destructor for the tevent_fd. It does not automatically
+ * close the file descriptor. If this is the desired behavior, then it must be
+ * performed by the close_fn.
+ *
+ * @param[in] fde       File descriptor event on which to set the destructor
+ * @param[in] close_fn  Destructor to execute when fde is freed
+ */
 void tevent_fd_set_close_fn(struct tevent_fd *fde,
 			    tevent_fd_close_fn_t close_fn);
+
+/**
+ * Automatically close the file descriptor when the tevent_fd is freed
+ *
+ * This function calls close(fd) internally.
+ *
+ * @param[in] fde  File descriptor event to auto-close
+ */
 void tevent_fd_set_auto_close(struct tevent_fd *fde);
+
+/**
+ * Return the flags set on this file descriptor event
+ *
+ * @param[in] fde  File descriptor event to query
+ *
+ * @return The flags set on the event. See #TEVENT_FD_READ and
+ * #TEVENT_FD_WRITE
+ */
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
+
+/**
+ * Set flags on a file descriptor event
+ *
+ * @param[in] fde    File descriptor event to set
+ * @param[in] flags  Flags to set on the event. See #TEVENT_FD_READ and
+ * #TEVENT_FD_WRITE
+ */
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
+/**
+ * Query whether tevent supports signal handling
+ *
+ * @param[in] ev  An initialized tevent context
+ *
+ * @return True if this platform and tevent context support signal handling
+ */
 bool tevent_signal_support(struct tevent_context *ev);
 
 void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
 
 /* bits for file descriptor event flags */
+
+/**
+ * Monitor a file descriptor for write availability
+ */
 #define TEVENT_FD_READ 1
+/**
+ * Monitor a file descriptor for data to be read
+ */
 #define TEVENT_FD_WRITE 2
 
+/**
+ * Convenience function for declaring a tevent_fd writable
+ */
 #define TEVENT_FD_WRITEABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) | TEVENT_FD_WRITE)
+
+/**
+ * Convenience function for declaring a tevent_fd readable
+ */
 #define TEVENT_FD_READABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) | TEVENT_FD_READ)
 
+/**
+ * Convenience function for declaring a tevent_fd non-writable
+ */
 #define TEVENT_FD_NOT_WRITEABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) & ~TEVENT_FD_WRITE)
+
+/**
+ * Convenience function for declaring a tevent_fd non-readable
+ */
 #define TEVENT_FD_NOT_READABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) & ~TEVENT_FD_READ)
 
@@ -243,12 +459,32 @@ enum tevent_debug_level {
 	TEVENT_DEBUG_TRACE
 };
 
+/**
+ * Set destination for tevent debug messages
+ *
+ * @param[in] ev     Event context to debug
+ * @param[in] debug  Function to handle output printing
+ *
+ * @return Always returns 0 as of version 0.9.8
+ *
+ * @note Default is to emit no debug messages
+ */
 int tevent_set_debug(struct tevent_context *ev,
 		     void (*debug)(void *context,
 				   enum tevent_debug_level level,
 				   const char *fmt,
 				   va_list ap) PRINTF_ATTRIBUTE(3,0),
 		     void *context);
+
+/**
+ * Designate stderr for debug message output
+ *
+ * @param[in] ev     Event context to debug
+ *
+ * @note This function will only output TEVENT_DEBUG_FATAL, TEVENT_DEBUG_ERROR
+ * and TEVENT_DEBUG_WARNING messages. For TEVENT_DEBUG_TRACE, please define a
+ * function for tevent_set_debug()
+ */
 int tevent_set_debug_stderr(struct tevent_context *ev);
 
 /**
@@ -414,7 +650,7 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location);
 	_tevent_req_cancel(req, __location__)
 #endif
 
-#if DOXYGEN
+#ifdef DOXYGEN
 /**
  * @brief Create an async tevent request.
  *
