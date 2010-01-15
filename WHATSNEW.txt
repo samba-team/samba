@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.4.5
-			 January , 2010
+			 January 19, 2010
                    =============================
 
 
@@ -8,7 +8,8 @@ This is the latest stable release of Samba 3.4.
 
 Major enhancements in Samba 3.4.5 include:
 
-   o 
+   o Fix memory in leak in smbd (bug #7020).
+   o Fix changing of ACLs on writable files with "dos filemode=yes" (bug #5202).
 
 
 ######################################################################
@@ -18,6 +19,24 @@ Changes
 Changes since 3.4.4
 -------------------
 
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5202: Fix changing of ACLs on writable files with "dos filemode=yes".
+    * BUG 7020: Fix memory leak in smbd.
+    * BUG 7036: Fix 'net rpc getsid' in hardened Windows environments.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7043: Fix SIGSEGV in "SMBC_parse_path".
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6642: Fix opening the quota magic file.
+    * BUG 6919: Fix remote quota management.
+
+
+o   SASAJIMA Toshihiro <sasajima_t@jp.fujitsu.com>
+    * BUG 7034: Fix internal error caused by vfs_cap.
 
 
 ######################################################################
