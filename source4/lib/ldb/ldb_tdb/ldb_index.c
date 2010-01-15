@@ -103,12 +103,12 @@ static struct dn_list *ltdb_index_idxptr(struct ldb_module *module, TDB_DATA rec
 				       "Bad data size for idxptr %u", (unsigned)rec.dsize);
 		return NULL;
 	}
-	
-	list = talloc_get_type(*(struct dn_list **)rec.dptr, struct dn_list);
+	memcpy(&list, rec.dptr, sizeof(void *));
+	list = talloc_get_type(list, struct dn_list);
 	if (list == NULL) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 				       "Bad type '%s' for idxptr", 
-				       talloc_get_name(*(struct dn_list **)rec.dptr));
+				       talloc_get_name(list));
 		return NULL;
 	}
 	if (check_parent && list->dn && talloc_parent(list->dn) != list) {
