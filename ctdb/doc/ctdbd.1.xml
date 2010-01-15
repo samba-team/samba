@@ -42,6 +42,7 @@
 		<arg choice="opt">--start-as-disabled</arg>
 		<arg choice="opt">--start-as-stopped</arg>
 		<arg choice="opt">--syslog</arg>
+		<arg choice="opt">--log-ringbuf-size=&lt;num-entries&gt;</arg>
 		<arg choice="opt">--torture</arg>
 		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
 		<arg choice="opt">--usage</arg>
@@ -337,6 +338,33 @@
           </para>
         </listitem>
       </varlistentry>
+
+      <varlistentry><term>--log-ringbuf-size=&lt;num-entries&gt;</term>
+        <listitem>
+          <para>
+	    In addition to the normal loggign to a log file,
+	    CTDBD also keeps a in-memory ringbuffer containing the most recent
+	    log entries for all log levels (except DEBUG).
+          </para>
+          <para>
+	    This is useful since it allows for keeping continous logs to a file
+	    at a reasonable non-verbose level, but shortly after an incident has
+	    occured, a much more detailed log can be pulled from memory. This
+	    can allow you to avoid having to reproduce an issue due to the
+	    on-disk logs being of insufficient detail.
+          </para>
+          <para>
+	    This in-memory ringbuffer contains a fixed number of the most recent
+	    entries. This is settable at startup either through the
+	    --log-ringbuf-size argument, or preferably by using
+	    CTDB_LOG_RINGBUF_SIZE in the sysconfig file.
+          </para>
+          <para>
+	    Use the "ctdb getlog" command to access this log.
+          </para>
+        </listitem>
+      </varlistentry>
+
 
       <varlistentry><term>--torture</term>
         <listitem>

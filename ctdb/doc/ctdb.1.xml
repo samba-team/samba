@@ -950,6 +950,30 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
   </refsect1>
 
 
+    <refsect2><title>getlog &lt;level&gt;</title>
+      <para>
+	In addition to the normal loggign to a log file,
+	CTDBD also keeps a in-memory ringbuffer containing the most recent
+	log entries for all log levels (except DEBUG).
+      </para><para>
+	This is useful since it allows for keeping continous logs to a file
+	at a reasonable non-verbose level, but shortly after an incident has
+	occured, a much more detailed log can be pulled from memory. This
+	can allow you to avoid having to reproduce an issue due to the
+	on-disk logs being of insufficient detail.
+      </para><para>
+	This command extracts all messages of level or lower log level from
+	memory and prints it to the screen.
+      </para>
+    </refsect2>
+
+    <refsect2><title>clearlog</title>
+      <para>
+	This command clears the in-memory logging ringbuffer.
+      </para>
+    </refsect2>
+
+
   <refsect1><title>Debugging Commands</title>
     <para>
       These commands are primarily used for CTDB development and testing and

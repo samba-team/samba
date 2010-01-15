@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 12/04/2009
+.\"      Date: 01/15/2010
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "12/04/2009" "" ""
+.TH "CTDBD" "1" "01/15/2010" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdbd - The CTDB cluster daemon
 .HP 6
 \fBctdbd\fR
 .HP 6
-\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] {\-\-notification\-script=<filename>} [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-start\-as\-stopped] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
+\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] {\-\-notification\-script=<filename>} [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-start\-as\-stopped] [\-\-syslog] [\-\-log\-ringbuf\-size=<num\-entries>] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
 .SH "DESCRIPTION"
 .PP
 ctdbd is the main ctdb daemon\.
@@ -177,6 +177,17 @@ A node that is STOPPED will not host any services and will not be reachable/used
 \-\-syslog
 .RS 4
 Send all log messages to syslog instead of to the ctdb logfile\.
+.RE
+.PP
+\-\-log\-ringbuf\-size=<num\-entries>
+.RS 4
+In addition to the normal loggign to a log file, CTDBD also keeps a in\-memory ringbuffer containing the most recent log entries for all log levels (except DEBUG)\.
+.sp
+This is useful since it allows for keeping continous logs to a file at a reasonable non\-verbose level, but shortly after an incident has occured, a much more detailed log can be pulled from memory\. This can allow you to avoid having to reproduce an issue due to the on\-disk logs being of insufficient detail\.
+.sp
+This in\-memory ringbuffer contains a fixed number of the most recent entries\. This is settable at startup either through the \-\-log\-ringbuf\-size argument, or preferably by using CTDB_LOG_RINGBUF_SIZE in the sysconfig file\.
+.sp
+Use the "ctdb getlog" command to access this log\.
 .RE
 .PP
 \-\-torture
