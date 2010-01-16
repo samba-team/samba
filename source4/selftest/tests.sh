@@ -413,9 +413,9 @@ done
 
 WB_OPTS="--option=\"torture:strict mode=no\""
 WB_OPTS="${WB_OPTS} --option=\"torture:timelimit=1\""
-WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=/\""
-WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios name=\$SERVER\""
-WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios domain=\$DOMAIN\""
+WB_OPTS="${WB_OPTS} --option=\"torture:winbindd_separator=/\""
+WB_OPTS="${WB_OPTS} --option=\"torture:winbindd_netbios_name=\$SERVER\""
+WB_OPTS="${WB_OPTS} --option=\"torture:winbindd_netbios_domain=\$DOMAIN\""
 
 WINBIND_STRUCT_TESTS=`$smb4torture --list | grep "^WINBIND-STRUCT" | xargs`
 WINBIND_NDR_TESTS=`$smb4torture --list | grep "^WINBIND-NDR" | xargs`

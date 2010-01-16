@@ -122,8 +122,9 @@ static bool torture_winbind_struct_info(struct torture_context *torture)
 	DO_STRUCT_REQ_REP(WINBINDD_INFO, NULL, &rep);
 
 	separator = torture_setting_string(torture,
-					   "winbindd separator",
+					   "winbindd_separator",
 					   lp_winbind_separator(torture->lp_ctx));
+
 	torture_assert_int_equal(torture,
 				 rep.data.info.winbind_separator,
 				 *separator,
@@ -199,7 +200,7 @@ static bool torture_winbind_struct_domain_name(struct torture_context *torture)
 	torture_comment(torture, "Running WINBINDD_DOMAIN_NAME (struct based)\n");
 
 	expected = torture_setting_string(torture,
-					  "winbindd netbios domain",
+					  "winbindd_netbios_domain",
 					  lp_workgroup(torture->lp_ctx));
 
 	get_winbind_domain(torture, &domain);
@@ -474,7 +475,7 @@ static bool torture_winbind_struct_getdcname(struct torture_context *torture)
 	bool ok;
 	bool strict = torture_setting_bool(torture, "strict mode", false);
 	const char *domain_name = torture_setting_string(torture,
-					"winbindd netbios domain",
+					"winbindd_netbios_domain",
 					lp_workgroup(torture->lp_ctx));
 	struct torture_trust_domain *listd = NULL;
 	uint32_t i, count = 0;
@@ -915,7 +916,7 @@ static bool lookup_name_sid_list(struct torture_context *torture, char **list)
 		char *sid;
 		char *name;
 		const char *domain_name = torture_setting_string(torture,
-						"winbindd netbios domain",
+						"winbindd_netbios_domain",
 						lp_workgroup(torture->lp_ctx));
 
 		ZERO_STRUCT(req);
