@@ -61,7 +61,7 @@ static const struct ntlmssp_callbacks {
  * @param neg_flags The flags from the packet
  */
 
-void debug_ntlmssp_flags(uint32 neg_flags)
+void debug_ntlmssp_flags(uint32_t neg_flags)
 {
 	DEBUG(3,("Got NTLMSSP neg_flags=0x%08x\n", neg_flags));
 
@@ -161,12 +161,12 @@ NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *u
  *
  */
 NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
-		const unsigned char lm_hash[16],
-		const unsigned char nt_hash[16])
+			    const uint8_t lm_hash[16],
+			    const uint8_t nt_hash[16])
 {
-	ntlmssp_state->lm_hash = (unsigned char *)
+	ntlmssp_state->lm_hash = (uint8_t *)
 		TALLOC_MEMDUP(ntlmssp_state, lm_hash, 16);
-	ntlmssp_state->nt_hash = (unsigned char *)
+	ntlmssp_state->nt_hash = (uint8_t *)
 		TALLOC_MEMDUP(ntlmssp_state, nt_hash, 16);
 	if (!ntlmssp_state->lm_hash || !ntlmssp_state->nt_hash) {
 		TALLOC_FREE(ntlmssp_state->lm_hash);
@@ -186,8 +186,8 @@ NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *p
 		ntlmssp_state->lm_hash = NULL;
 		ntlmssp_state->nt_hash = NULL;
 	} else {
-		unsigned char lm_hash[16];
-		unsigned char nt_hash[16];
+		uint8_t lm_hash[16];
+		uint8_t nt_hash[16];
 
 		E_deshash(password, lm_hash);
 		E_md4hash(password, nt_hash);
@@ -243,7 +243,7 @@ void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *featur
  * @param ntlmssp_state NTLMSSP state
  * @param feature Bit flag specifying the requested feature
  */
-void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature)
+void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature)
 {
 	/* As per JRA's comment above */
 	if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
@@ -272,7 +272,7 @@ void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature)
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB input, DATA_BLOB *out)
 {
-	uint32 ntlmssp_command;
+	uint32_t ntlmssp_command;
 	int i;
 
 	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
@@ -349,7 +349,7 @@ void ntlmssp_end(struct ntlmssp_state **ntlmssp_state)
  */
 
 static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
-				       uint32 neg_flags, uint32 *chal_flags)
+				       uint32_t neg_flags, uint32_t *chal_flags)
 {
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
 		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
@@ -367,7 +367,7 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 }
 
 static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
-				      uint32 neg_flags, bool allow_lm) {
+				     uint32_t neg_flags, bool allow_lm) {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
@@ -438,8 +438,8 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 					 const DATA_BLOB request, DATA_BLOB *reply)
 {
 	DATA_BLOB struct_blob;
-	uint32 neg_flags = 0;
-	uint32 ntlmssp_command, chal_flags;
+	uint32_t neg_flags = 0;
+	uint32_t ntlmssp_command, chal_flags;
 	uint8_t cryptkey[8];
 	const char *target_name;
 	struct NEGOTIATE_MESSAGE negotiate;
@@ -569,15 +569,15 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB user_session_key = data_blob_null;
 	DATA_BLOB lm_session_key = data_blob_null;
 	DATA_BLOB session_key = data_blob_null;
-	uint32 ntlmssp_command, auth_flags;
+	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status = NT_STATUS_OK;
 	struct AUTHENTICATE_MESSAGE authenticate;
 
 	/* used by NTLM2 */
 	bool doing_ntlm2 = False;
 
-	uchar session_nonce[16];
-	uchar session_nonce_hash[16];
+	uint8_t session_nonce[16];
+	uint8_t session_nonce_hash[16];
 
 	const char *parse_string;
 
@@ -740,7 +740,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 							  session_key.data);
 				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			} else {
-				static const uint8 zeros[24] = {0, };
+				static const uint8_t zeros[24] = {0, };
 				session_key = data_blob_talloc(
 					ntlmssp_state, NULL, 16);
 				if (session_key.data == NULL) {
@@ -956,7 +956,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 					 const DATA_BLOB reply, DATA_BLOB *next_request)
 {
-	uint32 chal_flags, ntlmssp_command, unkn1, unkn2;
+	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
 	DATA_BLOB struct_blob = data_blob_null;
@@ -1132,9 +1132,9 @@ noccache:
 		}
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		struct MD5Context md5_session_nonce_ctx;
-		uchar session_nonce[16];
-		uchar session_nonce_hash[16];
-		uchar user_session_key[16];
+		uint8_t session_nonce[16];
+		uint8_t session_nonce_hash[16];
+		uint8_t user_session_key[16];
 
 		lm_response = data_blob_talloc(ntlmssp_state, NULL, 24);
 		generate_random_buffer(lm_response.data, 8);
@@ -1192,7 +1192,7 @@ noccache:
 	   the password-derived key */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 		/* Make up a new session key */
-		uint8 client_session_key[16];
+		uint8_t client_session_key[16];
 		generate_random_buffer(client_session_key, sizeof(client_session_key));
 
 		/* Encrypt the new session key with the old one */

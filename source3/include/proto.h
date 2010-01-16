@@ -3199,12 +3199,12 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status);
 void debug_ntlmssp_flags(uint32 neg_flags);
 NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
 NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
-		const unsigned char lm_hash[16],
-		const unsigned char nt_hash[16]) ;
+			    const uint8_t lm_hash[16],
+			    const uint8_t nt_hash[16]) ;
 NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
 NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
 void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);
-void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32 feature);
+void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature);
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
 void ntlmssp_end(struct ntlmssp_state **ntlmssp_state);

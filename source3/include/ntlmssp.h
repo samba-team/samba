@@ -54,8 +54,8 @@ struct ntlmssp_state
 	bool use_ccache;
 	const char *user;
 	const char *domain;
-	unsigned char *nt_hash;
-	unsigned char *lm_hash;
+	uint8_t *nt_hash;
+	uint8_t *lm_hash;
 
 	struct {
 		const char *netbios_name;
