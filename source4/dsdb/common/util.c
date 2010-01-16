@@ -3237,3 +3237,85 @@ int samdb_ldb_val_case_cmp(const char *s, struct ldb_val *v)
 	}
 	return 0;
 }
+
+
+/*
+  load the UDV for a partition in v2 format
+ */
+int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *mem_ctx,
+		     struct drsuapi_DsReplicaCursor2 **cursors, uint32_t *count)
+{
+	static const char *attrs[] = { "replUpToDateVector", NULL };
+	struct ldb_result *r;
+	const struct ldb_val *ouv_value;
+	enum ndr_err_code ndr_err;
+	struct replUpToDateVectorBlob ouv;
+	int ret;
+
+	ret = ldb_search(samdb, mem_ctx, &r, dn, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
+	if (!ouv_value) {
+		talloc_free(r);
+		*count = 0;
+		*cursors = NULL;
+		return LDB_SUCCESS;
+	}
+
+	ndr_err = ndr_pull_struct_blob(ouv_value, r,
+				       lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")), &ouv,
+				       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	if (ouv.version != 2) {
+		/* we always store as version 2, and
+		 * replUpToDateVector is not replicated
+		 */
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	*count = ouv.ctr.ctr2.count;
+	*cursors = talloc_steal(mem_ctx, ouv.ctr.ctr2.cursors);
+	talloc_free(r);
+
+	return LDB_SUCCESS;
+}
+
+/*
+  load the UDV for a partition in version 1 format
+ */
+int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *mem_ctx,
+		     struct drsuapi_DsReplicaCursor **cursors, uint32_t *count)
+{
+	struct drsuapi_DsReplicaCursor2 *v2;
+	int ret, i;
+
+	ret = dsdb_load_udv_v2(samdb, dn, mem_ctx, &v2, count);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (*count == 0) {
+		talloc_free(v2);
+		*cursors = NULL;
+		return LDB_SUCCESS;
+	}
+
+	*cursors = talloc_array(mem_ctx, struct drsuapi_DsReplicaCursor, *count);
+	if (*cursors == NULL) {
+		talloc_free(v2);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i<*count; i++) {
+		(*cursors)[i].source_dsa_invocation_id = v2[i].source_dsa_invocation_id;
+		(*cursors)[i].highest_usn = v2[i].highest_usn;
+	}
+	talloc_free(v2);
+	return LDB_SUCCESS;
+}
