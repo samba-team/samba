@@ -34,6 +34,34 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 
+
+/*
+  get cursors info for a specified DN
+*/
+static WERROR kccdrs_replica_get_info_cursors(TALLOC_CTX *mem_ctx,
+					      struct ldb_context *samdb,
+					      struct drsuapi_DsReplicaGetInfo *r,
+					      union drsuapi_DsReplicaInfo *reply,
+					      struct ldb_dn *dn)
+{
+	int ret;
+
+	if (!ldb_dn_validate(dn)) {
+		return WERR_INVALID_PARAMETER;
+	}
+	reply->cursors = talloc(mem_ctx, struct drsuapi_DsReplicaCursorCtr);
+	W_ERROR_HAVE_NO_MEMORY(reply->cursors);
+
+	reply->cursors->reserved = 0;
+
+	ret = dsdb_load_udv_v1(samdb, dn, reply->cursors, &reply->cursors->array, &reply->cursors->count);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_BAD_NC;
+	}
+	return WERR_OK;
+}
+
+
 struct ncList {
 	struct ldb_dn *dn;
 	struct ncList *prev, *next;
@@ -431,13 +459,16 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 							    req_src_dsa_guid, nc_list);
 		break;
 
-	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* DS_REPL_INFO_REPSTO */
-	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
-	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_FOR_NC */
+		status = kccdrs_replica_get_info_cursors(mem_ctx, samdb, req, reply,
+							 ldb_dn_new(mem_ctx, samdb, object_dn));
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS2: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_2_FOR_NC */
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS3: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_3_FOR_NC */
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS05: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
+	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* DS_REPL_INFO_REPSTO */
+	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
+	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_ATTR_VALUE */
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_2_FOR_ATTR_VALUE */
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES */
