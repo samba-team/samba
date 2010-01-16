@@ -317,14 +317,19 @@ struct takeover_callback_state {
 	struct ctdb_vnn *vnn;
 };
 
+struct ctdb_do_takeip_state {
+	struct ctdb_req_control *c;
+	struct ctdb_vnn *vnn;
+};
+
 /*
   called when takeip event finishes
  */
-static void takeover_ip_callback(struct ctdb_context *ctdb, int status, 
-				 void *private_data)
+static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
+				    void *private_data)
 {
-	struct takeover_callback_state *state = 
-		talloc_get_type(private_data, struct takeover_callback_state);
+	struct ctdb_do_takeip_state *state =
+		talloc_get_type(private_data, struct ctdb_do_takeip_state);
 	int32_t ret;
 
 	if (status != 0) {
@@ -332,8 +337,8 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 			ctdb_ban_self(ctdb);
 		}
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
-			ctdb_addr_to_str(state->addr),
-			ctdb_vnn_iface_string(state->vnn)));
+				 ctdb_addr_to_str(&state->vnn->public_address),
+				 ctdb_vnn_iface_string(state->vnn)));
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 		talloc_free(state);
 		return;
@@ -350,6 +355,58 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
 	return;
+}
+
+/*
+  take over an ip address
+ */
+static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
+			      struct ctdb_req_control *c,
+			      struct ctdb_vnn *vnn)
+{
+	int ret;
+	struct ctdb_do_takeip_state *state;
+
+	ret = ctdb_vnn_assign_iface(ctdb, vnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Takeover of IP %s/%u failed to "
+				 "assin a usable interface\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				 vnn->public_netmask_bits));
+		return -1;
+	}
+
+	state = talloc(vnn, struct ctdb_do_takeip_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c = talloc_steal(ctdb, c);
+	state->vnn   = vnn;
+
+	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n",
+			    ctdb_addr_to_str(&vnn->public_address),
+			    vnn->public_netmask_bits,
+			    ctdb_vnn_iface_string(vnn)));
+
+	ret = ctdb_event_script_callback(ctdb,
+					 state,
+					 ctdb_do_takeip_callback,
+					 state,
+					 false,
+					 CTDB_EVENT_TAKE_IP,
+					 "%s %s %u",
+					 ctdb_vnn_iface_string(vnn),
+					 ctdb_addr_to_str(&vnn->public_address),
+					 vnn->public_netmask_bits);
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
+			ctdb_addr_to_str(&vnn->public_address),
+			ctdb_vnn_iface_string(vnn)));
+		talloc_free(state);
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
@@ -372,69 +429,42 @@ static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, ctdb_sock_
 /*
   take over an ip address
  */
-int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
+int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
-				 TDB_DATA indata, 
+				 TDB_DATA indata,
 				 bool *async_reply)
 {
 	int ret;
-	struct takeover_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
+	bool have_ip = false;
+	bool do_takeip = false;
 
 	/* update out vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_INFO,("takeoverip called for an ip '%s' that is not a public address\n", 
+		DEBUG(DEBUG_INFO,("takeoverip called for an ip '%s' that is not a public address\n",
 			ctdb_addr_to_str(&pip->addr)));
 		return 0;
 	}
 	vnn->pnn = pip->pnn;
 
-	/* if our kernel already has this IP, do nothing */
-	if (ctdb_sys_have_ip(&pip->addr)) {
+	have_ip = ctdb_sys_have_ip(&pip->addr);
+	if (!have_ip) {
+		do_takeip = true;
+	}
+
+	if (do_takeip) {
+		ret = ctdb_do_takeip(ctdb, c, vnn);
+		if (ret != 0) {
+			return -1;
+		}
+	} else {
+		/*
+		 * The interface is up and the kernel known the ip
+		 * => do nothing
+		 */
 		return 0;
-	}
-
-	ret = ctdb_vnn_assign_iface(ctdb, vnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Takeover of IP %s/%u failed to "
-				 "assin a usable interface\n",
-				 ctdb_addr_to_str(&pip->addr),
-				 vnn->public_netmask_bits));
-		return -1;
-	}
-
-	state = talloc(vnn, struct takeover_callback_state);
-	CTDB_NO_MEMORY(ctdb, state);
-
-	state->c = talloc_steal(ctdb, c);
-	state->addr = talloc(ctdb, ctdb_sock_addr);
-	CTDB_NO_MEMORY(ctdb, state->addr);
-
-	*state->addr = pip->addr;
-	state->vnn   = vnn;
-
-	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n", 
-		ctdb_addr_to_str(&pip->addr),
-		vnn->public_netmask_bits, 
-		ctdb_vnn_iface_string(vnn)));
-
-	ret = ctdb_event_script_callback(ctdb, 
-					 state, takeover_ip_callback, state,
-					 false,
-					 CTDB_EVENT_TAKE_IP,
-					 "%s %s %u",
-					 ctdb_vnn_iface_string(vnn),
-					 ctdb_addr_to_str(&pip->addr),
-					 vnn->public_netmask_bits);
-
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
-			ctdb_addr_to_str(&pip->addr),
-			ctdb_vnn_iface_string(vnn)));
-		talloc_free(state);
-		return -1;
 	}
 
 	/* tell ctdb_control.c that we will be replying asynchronously */
