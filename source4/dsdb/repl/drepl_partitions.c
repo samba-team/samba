@@ -251,8 +251,6 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 struct dreplsrv_partition *p)
 {
 	WERROR status;
-	const struct ldb_val *ouv_value;
-	struct replUpToDateVectorBlob ouv;
 	struct dom_sid *nc_sid;
 	struct ldb_message_element *orf_el = NULL;
 	struct ldb_result *r;
@@ -262,7 +260,6 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	static const char *attrs[] = {
 		"objectSid",
 		"objectGUID",
-		"replUpToDateVector",
 		"repsFrom",
 		NULL
 	};
@@ -273,9 +270,6 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	ret = ldb_search(s->samdb, mem_ctx, &r, p->dn, LDB_SCOPE_BASE, attrs,
 			 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return WERR_FOOBAR;
-	} else if (r->count != 1) {
 		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
@@ -296,27 +290,8 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	ZERO_STRUCT(p->uptodatevector);
 	ZERO_STRUCT(p->uptodatevector_ex);
 
-	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
-	if (ouv_value) {
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(ouv_value, mem_ctx, 
-					       lp_iconv_convenience(s->task->lp_ctx), &ouv,
-					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
-			talloc_free(mem_ctx);
-			return ntstatus_to_werror(nt_status);
-		}
-		/* NDR_PRINT_DEBUG(replUpToDateVectorBlob, &ouv); */
-		if (ouv.version != 2) {
-			talloc_free(mem_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		p->uptodatevector.count		= ouv.ctr.ctr2.count;
-		p->uptodatevector.reserved	= ouv.ctr.ctr2.reserved;
-		p->uptodatevector.cursors	= talloc_steal(p, ouv.ctr.ctr2.cursors);
-
+	ret = dsdb_load_udv_v2(s->samdb, p->dn, p, &p->uptodatevector.cursors, &p->uptodatevector.count);
+	if (ret == LDB_SUCCESS) {
 		status = udv_convert(p, &p->uptodatevector, &p->uptodatevector_ex);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
