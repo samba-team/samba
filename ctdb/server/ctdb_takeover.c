@@ -273,6 +273,44 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 			ctdb_control_send_arp, arp);
 }
 
+static int32_t ctdb_announce_vnn_iface(struct ctdb_context *ctdb,
+				       struct ctdb_vnn *vnn)
+{
+	struct ctdb_takeover_arp *arp;
+	struct ctdb_tcp_array *tcparray;
+
+	if (!vnn->takeover_ctx) {
+		vnn->takeover_ctx = talloc_new(vnn);
+		if (!vnn->takeover_ctx) {
+			return -1;
+		}
+	}
+
+	arp = talloc_zero(vnn->takeover_ctx, struct ctdb_takeover_arp);
+	if (!arp) {
+		return -1;
+	}
+
+	arp->ctdb = ctdb;
+	arp->addr = vnn->public_address;
+	arp->vnn  = vnn;
+
+	tcparray = vnn->tcp_array;
+	if (tcparray) {
+		/* add all of the known tcp connections for this IP to the
+		   list of tcp connections to send tickle acks for */
+		arp->tcparray = talloc_steal(arp, tcparray);
+
+		vnn->tcp_array = NULL;
+		vnn->tcp_update_needed = true;
+	}
+
+	event_add_timed(arp->ctdb->ev, vnn->takeover_ctx,
+			timeval_zero(), ctdb_control_send_arp, arp);
+
+	return 0;
+}
+
 struct takeover_callback_state {
 	struct ctdb_req_control *c;
 	ctdb_sock_addr *addr;
@@ -287,8 +325,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 {
 	struct takeover_callback_state *state = 
 		talloc_get_type(private_data, struct takeover_callback_state);
-	struct ctdb_takeover_arp *arp;
-	struct ctdb_tcp_array *tcparray;
+	int32_t ret;
 
 	if (status != 0) {
 		if (status == -ETIME) {
@@ -302,40 +339,15 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 		return;
 	}
 
-	if (!state->vnn->takeover_ctx) {
-		state->vnn->takeover_ctx = talloc_new(state->vnn);
-		if (!state->vnn->takeover_ctx) {
-			goto failed;
-		}
+	ret = ctdb_announce_vnn_iface(ctdb, state->vnn);
+	if (ret != 0) {
+		ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
+		talloc_free(state);
+		return;
 	}
-
-	arp = talloc_zero(state->vnn->takeover_ctx, struct ctdb_takeover_arp);
-	if (!arp) goto failed;
-	
-	arp->ctdb = ctdb;
-	arp->addr = *state->addr;
-	arp->vnn  = state->vnn;
-
-	tcparray = state->vnn->tcp_array;
-	if (tcparray) {
-		/* add all of the known tcp connections for this IP to the
-		   list of tcp connections to send tickle acks for */
-		arp->tcparray = talloc_steal(arp, tcparray);
-
-		state->vnn->tcp_array = NULL;
-		state->vnn->tcp_update_needed = true;
-	}
-
-	event_add_timed(arp->ctdb->ev, state->vnn->takeover_ctx, 
-			timeval_zero(), ctdb_control_send_arp, arp);
 
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
-	talloc_free(state);
-	return;
-
-failed:
-	ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
 	talloc_free(state);
 	return;
 }
