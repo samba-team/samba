@@ -417,13 +417,9 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
  */
 static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 				 struct ldb_dn *ncRoot_dn,
-				 struct drsuapi_DsReplicaCursor2CtrEx *udv,
-				 uint64_t highestUSN)
+				 struct drsuapi_DsReplicaCursor2CtrEx *udv)
 {
-	struct drsuapi_DsReplicaCursor2 *tmp_cursor;
-	NTTIME now;
-	time_t t = time(NULL);
-	int i, ret;
+	int ret;
 
 	udv->version = 2;
 	udv->reserved1 = 0;
@@ -436,32 +432,6 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 	
-	tmp_cursor = talloc(udv, struct drsuapi_DsReplicaCursor2);
-	tmp_cursor->source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
-	tmp_cursor->highest_usn = highestUSN;
-	unix_to_nt_time(&now, t);
-	tmp_cursor->last_sync_success = now;
-
-	for (i=0; i<udv->count; i++) {
-		if (GUID_equal(&tmp_cursor->source_dsa_invocation_id,
-			       &udv->cursors[i].source_dsa_invocation_id)) {
-			udv->cursors[i] = *tmp_cursor;
-			break;
-		}
-	}
-	if (i == udv->count) {
-		udv->cursors = talloc_realloc(udv, udv->cursors, struct drsuapi_DsReplicaCursor2, udv->count+1);
-		if (!udv->cursors) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-		udv->cursors[udv->count] = *tmp_cursor;
-		udv->count++;
-	}
-	
-	qsort(udv->cursors, udv->count,
-	      sizeof(struct drsuapi_DsReplicaCursor2),
-	      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
-
 	return WERR_OK;
 }
 
@@ -1030,8 +1000,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
 
 		werr = get_nc_changes_udv(b_state->sam_ctx, getnc_state->ncRoot_dn, 
-					  r->out.ctr->ctr6.uptodateness_vector,
-					  getnc_state->highest_usn);
+					  r->out.ctr->ctr6.uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
