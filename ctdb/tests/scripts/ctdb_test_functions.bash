@@ -239,7 +239,7 @@ sanity_check_output ()
 
 sanity_check_ips ()
 {
-    local ips="$1" # Output of "ctdb ip -n all"
+    local ips="$1" # list of "ip node" lines
 
     echo "Sanity checking IPs..."
 
@@ -259,9 +259,16 @@ sanity_check_ips ()
     return 1
 }
 
+# This returns a list of "ip node" lines in $out
+all_ips_on_node()
+{
+    local node=$@
+    try_command_on_node $node "$CTDB ip -Y -n all | cut -d ':' -f1-3 | sed -e '1d' -e 's@^:@@' -e 's@:@ @g'"
+}
+
 select_test_node_and_ips ()
 {
-    try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
+    all_ips_on_node 0
 
     # When selecting test_node we just want a node that has public
     # IPs.  This will work and is economically semi-random.  :-)
@@ -450,7 +457,7 @@ ips_are_on_nodeglob ()
 
     local out
 
-    try_command_on_node 1 ctdb ip -n all
+    all_ips_on_node 1
 
     while read ip pnn ; do
 	for check in $ips ; do

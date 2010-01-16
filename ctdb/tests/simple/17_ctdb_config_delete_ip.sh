@@ -21,7 +21,7 @@ Steps:
 3. Delete one public IP address being be served by the node, using
    'ctdb delip'.
 4. Verify that the delete IP address is no longer listed using the
-   'ctdb ip' command.
+   all_ips_on_node helper function.
 
 Expected results:
 
@@ -42,7 +42,7 @@ cluster_is_healthy
 ctdb_restart_when_done
 
 echo "Getting list of public IPs..."
-try_command_on_node -v 0 "$CTDB ip -n all | sed -e '1d'"
+all_ips_on_node -v 0
 
 # Select an IP/node to remove.
 num_ips=$(echo "$out" | wc -l)

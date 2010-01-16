@@ -50,7 +50,7 @@ if [ $num_nodes -lt 2 ] ; then
 fi
 
 echo "Getting list of public IPs..."
-try_command_on_node -v 0 "$CTDB ip -n all | sed -e '1d'"
+all_ips_on_node -v 0
 
 sanity_check_ips "$out"
 
