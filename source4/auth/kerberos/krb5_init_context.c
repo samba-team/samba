@@ -71,7 +71,7 @@ static void smb_krb5_debug_close(void *private_data) {
 
 static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private_data)
 {
-	DEBUG(2, ("Kerberos: %s\n", msg));
+	DEBUG(3, ("Kerberos: %s\n", msg));
 }
 
 /*
