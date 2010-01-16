@@ -28,6 +28,7 @@
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 #define DRSUAPI_UNSUPPORTED(fname) do { \
 	DEBUG(1,(__location__ ": Unsupported DRS call %s\n", #fname)); \
@@ -745,11 +746,14 @@ static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call
 {
 	enum security_user_level level;
 
-	level = security_session_user_level(dce_call->conn->auth_state.session_info);
-	if (level < SECURITY_ADMINISTRATOR) {
-		DEBUG(1,(__location__ ": Administrator access required for DsReplicaGetInfo\n"));
-		security_token_debug(2, dce_call->conn->auth_state.session_info->security_token);
-		return WERR_DS_DRA_ACCESS_DENIED;
+	if (!lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
+			 "drs", "disable_sec_check", false)) {
+		level = security_session_user_level(dce_call->conn->auth_state.session_info);
+		if (level < SECURITY_ADMINISTRATOR) {
+			DEBUG(1,(__location__ ": Administrator access required for DsReplicaGetInfo\n"));
+			security_token_debug(2, dce_call->conn->auth_state.session_info->security_token);
+			return WERR_DS_DRA_ACCESS_DENIED;
+		}
 	}
 
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICAGETINFO,
