@@ -382,13 +382,13 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 
 	} else { /* r->in.level == DRSUAPI_DS_REPLICA_GET_INFO2 */
 		req2 = &req->in.req->req2;
-		if (req2->unknown2 == 0xffffffff) {
+		if (req2->enumeration_context == 0xffffffff) {
 			/* no more data is available */
 			status = WERR_NO_MORE_ITEMS; /* on MS-DRSR it is ERROR_NO_MORE_ITEMS */
 			goto DONE;
 		}
 
-		base_index = req2->unknown2; /* Note: This is dwEnumerationContext on MS-DRSR 4.1.13.1.3 */
+		base_index = req2->enumeration_context;
 		info_type = req2->info_type;
 		object_dn = req2->object_dn;
 		req_src_dsa_guid = req2->guid1;

@@ -9708,10 +9708,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaInfoType(ndr, NDR_SCALARS, r->info_type));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->object_dn));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string1));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -9755,7 +9755,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 			r->object_dn = NULL;
 		}
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->guid1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string1));
 		if (_ptr_string1) {
 			NDR_PULL_ALLOC(ndr, r->string1);
@@ -9768,7 +9768,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 		} else {
 			r->string2 = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -9824,7 +9824,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaGetInfoRequest2(struct ndr_print *ndr, 
 	}
 	ndr->depth--;
 	ndr_print_GUID(ndr, "guid1", &r->guid1);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_ptr(ndr, "string1", r->string1);
 	ndr->depth++;
 	if (r->string1) {
@@ -9837,7 +9837,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaGetInfoRequest2(struct ndr_print *ndr, 
 		ndr_print_string(ndr, "string2", r->string2);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
 	ndr->depth--;
 }
 
@@ -10969,7 +10969,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaAttrValMetaDataCtr(struct ndr
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->enumeration_context));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaAttrValMetaData(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
@@ -10991,7 +10991,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaAttrValMetaDataCtr(struct ndr
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->enumeration_context));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
 		_mem_save_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
@@ -11021,7 +11021,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttrValMetaDataCtr(struct ndr_print *nd
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaAttrValMetaDataCtr");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
+	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
 	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
@@ -11042,7 +11042,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaCursor2Ctr(struct ndr_push *n
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->enumeration_context));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursor2(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
@@ -11061,7 +11061,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor2Ctr(struct ndr_pull *n
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->enumeration_context));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
 		_mem_save_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
@@ -11085,7 +11085,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursor2Ctr(struct ndr_print *ndr, const
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaCursor2Ctr");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
+	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
 	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
@@ -11177,7 +11177,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaCursor3Ctr(struct ndr_push *n
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->enumeration_context));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursor3(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
@@ -11199,7 +11199,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor3Ctr(struct ndr_pull *n
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->enumeration_context));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
 		_mem_save_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
@@ -11229,7 +11229,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursor3Ctr(struct ndr_print *ndr, const
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaCursor3Ctr");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
+	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
 	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
@@ -11360,7 +11360,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaObjMetaData2Ctr(struct ndr_pu
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->enumeration_context));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaObjMetaData2(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
@@ -11382,7 +11382,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjMetaData2Ctr(struct ndr_pu
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->enumeration_context));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
 		_mem_save_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
@@ -11412,7 +11412,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjMetaData2Ctr(struct ndr_print *ndr, 
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjMetaData2Ctr");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
+	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
 	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {
@@ -11609,7 +11609,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaAttrValMetaData2Ctr(struct nd
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->enumeration_context));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaAttrValMetaData2(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
@@ -11631,7 +11631,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaAttrValMetaData2Ctr(struct nd
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->enumeration_context));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
 		_mem_save_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
@@ -11661,7 +11661,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttrValMetaData2Ctr(struct ndr_print *n
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaAttrValMetaData2Ctr");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_int32(ndr, "enumeration_context", r->enumeration_context);
+	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
 	ndr->print(ndr, "%s: ARRAY(%d)", "array", (int)r->count);
 	ndr->depth++;
 	for (cntr_array_0=0;cntr_array_0<r->count;cntr_array_0++) {

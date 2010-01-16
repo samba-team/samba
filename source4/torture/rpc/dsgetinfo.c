@@ -267,10 +267,10 @@ static bool test_getinfo(struct torture_context *tctx,
 			r.in.req->req2.info_type	= array[i].infotype;
 			r.in.req->req2.object_dn	= object_dn;
 			ZERO_STRUCT(r.in.req->req2.guid1);
-			r.in.req->req2.unknown1	= 0;
+			r.in.req->req2.flags	= 0;
 			r.in.req->req2.string1	= NULL;
 			r.in.req->req2.string2	= NULL;
-			r.in.req->req2.unknown2	= 0;
+			r.in.req->req2.enumeration_context = 0;
 			break;
 		}
 

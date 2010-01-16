@@ -1416,10 +1416,10 @@ interface drsuapi
 		drsuapi_DsReplicaInfoType info_type;
 		[charset(UTF16),string] uint16 *object_dn;
 		GUID guid1;
-		uint32 unknown1;
+		uint32 flags;
 		[charset(UTF16),string] uint16 *string1;
 		[charset(UTF16),string] uint16 *string2;
-		uint32 unknown2;
+		uint32 enumeration_context;
 	} drsuapi_DsReplicaGetInfoRequest2;
 
 	typedef [switch_type(drsuapi_DsReplicaGetInfoLevel)] union {
@@ -1530,13 +1530,13 @@ interface drsuapi
 
 	typedef struct {
 		uint32 count;
-		int32 enumeration_context;
+		uint32 enumeration_context;
 		[size_is(count)] drsuapi_DsReplicaAttrValMetaData array[];
 	} drsuapi_DsReplicaAttrValMetaDataCtr;
 
 	typedef struct {
 		uint32 count;
-		int32 enumeration_context;
+		uint32 enumeration_context;
 		[size_is(count)] drsuapi_DsReplicaCursor2 array[];
 	} drsuapi_DsReplicaCursor2Ctr;
 
@@ -1549,7 +1549,7 @@ interface drsuapi
 
 	typedef struct {
 		uint32 count;
-		int32 enumeration_context;
+		uint32 enumeration_context;
 		[size_is(count)] drsuapi_DsReplicaCursor3 array[];
 	} drsuapi_DsReplicaCursor3Ctr;
 
@@ -1565,7 +1565,7 @@ interface drsuapi
 
 	typedef struct {
 		uint32 count;
-		int32 enumeration_context;
+		uint32 enumeration_context;
 		[size_is(count)] drsuapi_DsReplicaObjMetaData2 array[];
 	} drsuapi_DsReplicaObjMetaData2Ctr;
 
@@ -1586,7 +1586,7 @@ interface drsuapi
 
 	typedef struct {
 		uint32 count;
-		int32 enumeration_context;
+		uint32 enumeration_context;
 		[size_is(count)] drsuapi_DsReplicaAttrValMetaData2 array[];
 	} drsuapi_DsReplicaAttrValMetaData2Ctr;
 

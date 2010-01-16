@@ -1295,10 +1295,10 @@ struct drsuapi_DsReplicaGetInfoRequest2 {
 	enum drsuapi_DsReplicaInfoType info_type;
 	const char *object_dn;/* [unique,charset(UTF16)] */
 	struct GUID guid1;
-	uint32_t unknown1;
+	uint32_t flags;
 	const char *string1;/* [unique,charset(UTF16)] */
 	const char *string2;/* [unique,charset(UTF16)] */
-	uint32_t unknown2;
+	uint32_t enumeration_context;
 };
 
 union drsuapi_DsReplicaGetInfoRequest {
@@ -1420,13 +1420,13 @@ struct drsuapi_DsReplicaAttrValMetaData {
 
 struct drsuapi_DsReplicaAttrValMetaDataCtr {
 	uint32_t count;
-	int32_t enumeration_context;
+	uint32_t enumeration_context;
 	struct drsuapi_DsReplicaAttrValMetaData *array;/* [size_is(count)] */
 };
 
 struct drsuapi_DsReplicaCursor2Ctr {
 	uint32_t count;
-	int32_t enumeration_context;
+	uint32_t enumeration_context;
 	struct drsuapi_DsReplicaCursor2 *array;/* [size_is(count)] */
 };
 
@@ -1439,7 +1439,7 @@ struct drsuapi_DsReplicaCursor3 {
 
 struct drsuapi_DsReplicaCursor3Ctr {
 	uint32_t count;
-	int32_t enumeration_context;
+	uint32_t enumeration_context;
 	struct drsuapi_DsReplicaCursor3 *array;/* [size_is(count)] */
 };
 
@@ -1455,7 +1455,7 @@ struct drsuapi_DsReplicaObjMetaData2 {
 
 struct drsuapi_DsReplicaObjMetaData2Ctr {
 	uint32_t count;
-	int32_t enumeration_context;
+	uint32_t enumeration_context;
 	struct drsuapi_DsReplicaObjMetaData2 *array;/* [size_is(count)] */
 };
 
@@ -1476,7 +1476,7 @@ struct drsuapi_DsReplicaAttrValMetaData2 {
 
 struct drsuapi_DsReplicaAttrValMetaData2Ctr {
 	uint32_t count;
-	int32_t enumeration_context;
+	uint32_t enumeration_context;
 	struct drsuapi_DsReplicaAttrValMetaData2 *array;/* [size_is(count)] */
 };
 
