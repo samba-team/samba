@@ -12,6 +12,9 @@ from testtools.matchers import (
     Equals,
     DocTestMatches,
     MatchesAny,
+    MatchesAll,
+    Not,
+    NotEquals,
     )
 
 
@@ -81,6 +84,31 @@ class TestEqualsInterface(TestCase, TestMatchersInterface):
     describe_examples = [("1 != 2", 2, Equals(1))]
 
 
+class TestNotEqualsInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = NotEquals(1)
+    matches_matches = [2]
+    matches_mismatches = [1]
+
+    str_examples = [
+        ("NotEquals(1)", NotEquals(1)), ("NotEquals('1')", NotEquals('1'))]
+
+    describe_examples = [("1 == 1", 1, NotEquals(1))]
+
+
+class TestNotInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = Not(Equals(1))
+    matches_matches = [2]
+    matches_mismatches = [1]
+
+    str_examples = [
+        ("Not(Equals(1))", Not(Equals(1))),
+        ("Not(Equals('1'))", Not(Equals('1')))]
+
+    describe_examples = [('1 matches Equals(1)', 1, Not(Equals(1)))]
+
+
 class TestMatchersAnyInterface(TestCase, TestMatchersInterface):
 
     matches_matcher = MatchesAny(DocTestMatches("1"), DocTestMatches("2"))
@@ -106,6 +134,23 @@ Got:
 ]
 """,
         "3", MatchesAny(DocTestMatches("1"), DocTestMatches("2")))]
+
+
+class TestMatchesAllInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = MatchesAll(NotEquals(1), NotEquals(2))
+    matches_matches = [3, 4]
+    matches_mismatches = [1, 2]
+
+    str_examples = [
+        ("MatchesAll(NotEquals(1), NotEquals(2))",
+         MatchesAll(NotEquals(1), NotEquals(2)))]
+
+    describe_examples = [("""Differences: [
+1 == 1
+]
+""",
+                          1, MatchesAll(NotEquals(1), NotEquals(2)))]
 
 
 def test_suite():

@@ -223,6 +223,12 @@ class TestAssertions(TestCase):
         self.assertFails('None is not 42', self.assertIs, None, 42)
         self.assertFails('[42] is not [42]', self.assertIs, [42], [42])
 
+    def test_assertIs_fails_with_message(self):
+        # assertIs raises assertion errors if one object is not identical to
+        # another, and includes a user-supplied message, if it's provided.
+        self.assertFails(
+            'None is not 42: foo bar', self.assertIs, None, 42, 'foo bar')
+
     def test_assertIsNot(self):
         # assertIsNot asserts that an object is not identical to another
         # object.
@@ -237,6 +243,12 @@ class TestAssertions(TestCase):
         some_list = [42]
         self.assertFails(
             '[42] is [42]', self.assertIsNot, some_list, some_list)
+
+    def test_assertIsNot_fails_with_message(self):
+        # assertIsNot raises assertion errors if one object is identical to
+        # another, and includes a user-supplied message if it's provided.
+        self.assertFails(
+            'None is None: foo bar', self.assertIsNot, None, None, "foo bar")
 
     def test_assertThat_matches_clean(self):
         class Matcher:
@@ -303,12 +315,12 @@ class TestAddCleanup(TestCase):
         self.assertEqual(messages, [call[0] for call in self._result_calls])
 
     def assertTestLogEqual(self, messages):
-        """Assert that the call log equals `messages`."""
+        """Assert that the call log equals 'messages'."""
         case = self._result_calls[0][1]
         self.assertEqual(messages, case._calls)
 
     def logAppender(self, message):
-        """A cleanup that appends `message` to the tests log.
+        """A cleanup that appends 'message' to the tests log.
 
         Cleanups are callables that are added to a test by addCleanup. To
         verify that our cleanups run in the right order, we add strings to a

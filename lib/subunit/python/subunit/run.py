@@ -22,7 +22,7 @@
 
 import sys
 
-from subunit import TestProtocolClient
+from subunit import TestProtocolClient, get_default_formatter
 
 
 class SubunitTestRunner(object):
@@ -41,6 +41,7 @@ if __name__ == '__main__':
     from unittest import TestProgram
     parser = optparse.OptionParser(__doc__)
     args = parser.parse_args()[1]
-    runner = SubunitTestRunner()
+    stream = get_default_formatter()
+    runner = SubunitTestRunner(stream)
     program = TestProgram(module=None, argv=[sys.argv[0]] + args,
                           testRunner=runner)

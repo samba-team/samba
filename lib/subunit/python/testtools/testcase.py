@@ -203,15 +203,26 @@ class TestCase(unittest.TestCase):
         self.assertTrue(
             needle in haystack, '%r not in %r' % (needle, haystack))
 
-    def assertIs(self, expected, observed):
-        """Assert that `expected` is `observed`."""
-        self.assertTrue(
-            expected is observed, '%r is not %r' % (expected, observed))
+    def assertIs(self, expected, observed, message=''):
+        """Assert that 'expected' is 'observed'.
 
-    def assertIsNot(self, expected, observed):
-        """Assert that `expected` is not `observed`."""
+        :param expected: The expected value.
+        :param observed: The observed value.
+        :param message: An optional message describing the error.
+        """
+        if message:
+            message = ': ' + message
         self.assertTrue(
-            expected is not observed, '%r is %r' % (expected, observed))
+            expected is observed,
+            '%r is not %r%s' % (expected, observed, message))
+
+    def assertIsNot(self, expected, observed, message=''):
+        """Assert that 'expected' is not 'observed'."""
+        if message:
+            message = ': ' + message
+        self.assertTrue(
+            expected is not observed,
+            '%r is %r%s' % (expected, observed, message))
 
     def assertNotIn(self, needle, haystack):
         """Assert that needle is not in haystack."""
@@ -358,7 +369,11 @@ class TestCase(unittest.TestCase):
         """
         self.setUp()
         if not self.__setup_called:
-            raise ValueError("setUp was not called")
+            raise ValueError(
+                "TestCase.setUp was not called. Have you upcalled all the "
+                "way up the hierarchy from your setUp? e.g. Call "
+                "super(%s, self).setUp() from your setUp()."
+                % self.__class__.__name__)
 
     def _run_teardown(self, result):
         """Run the tearDown function for this test.
@@ -369,7 +384,11 @@ class TestCase(unittest.TestCase):
         """
         self.tearDown()
         if not self.__teardown_called:
-            raise ValueError("teardown was not called")
+            raise ValueError(
+                "TestCase.tearDown was not called. Have you upcalled all the "
+                "way up the hierarchy from your tearDown? e.g. Call "
+                "super(%s, self).tearDown() from your tearDown()."
+                % self.__class__.__name__)
 
     def _run_test_method(self, result):
         """Run the test method for this test.
@@ -395,14 +414,19 @@ class TestCase(unittest.TestCase):
         self.__teardown_called = True
 
 
-# Python 2.4 did not know how to deep copy functions.
-if types.FunctionType not in copy._deepcopy_dispatch:
-    copy._deepcopy_dispatch[types.FunctionType] = copy._deepcopy_atomic
+# Python 2.4 did not know how to copy functions.
+if types.FunctionType not in copy._copy_dispatch:
+    copy._copy_dispatch[types.FunctionType] = copy._copy_immutable
+
 
 
 def clone_test_with_new_id(test, new_id):
-    """Copy a TestCase, and give the copied test a new id."""
-    newTest = copy.deepcopy(test)
+    """Copy a TestCase, and give the copied test a new id.
+    
+    This is only expected to be used on tests that have been constructed but
+    not executed.
+    """
+    newTest = copy.copy(test)
     newTest.id = lambda: new_id
     return newTest
 

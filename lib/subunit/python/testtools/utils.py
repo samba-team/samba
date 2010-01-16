@@ -28,7 +28,7 @@ else:
 
 
 def iterate_tests(test_suite_or_case):
-    """Iterate through all of the test cases in `test_suite_or_case`."""
+    """Iterate through all of the test cases in 'test_suite_or_case'."""
     try:
         suite = iter(test_suite_or_case)
     except TypeError:

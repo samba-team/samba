@@ -9,7 +9,7 @@ class ContentType(object):
     :ivar type: The primary type, e.g. "text" or "application"
     :ivar subtype: The subtype, e.g. "plain" or "octet-stream"
     :ivar parameters: A dict of additional parameters specific to the
-    content type.
+        content type.
     """
 
     def __init__(self, primary_type, sub_type, parameters=None):

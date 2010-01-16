@@ -44,7 +44,7 @@ class Content(object):
         no charset parameter is present in the MIME type. (This is somewhat
         arbitrary, but consistent with RFC2617 3.7.1).
 
-        :raises: ValueError If the content type is not text/*.
+        :raises ValueError: If the content type is not text/\*.
         """
         if self.content_type.type != "text":
             raise ValueError("Not a text type %r" % self.content_type)

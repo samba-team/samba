@@ -213,10 +213,10 @@ class _ParserState(object):
     def lineReceived(self, line):
         """a line has been received."""
         parts = line.split(None, 1)
-        if len(parts) == 2:
+        if len(parts) == 2 and line.startswith(parts[0]):
             cmd, rest = parts
             offset = len(cmd) + 1
-            cmd = cmd.strip(':')
+            cmd = cmd.rstrip(':')
             if cmd in ('test', 'testing'):
                 self.startTest(offset, line)
             elif cmd == 'error':
@@ -1111,3 +1111,16 @@ class TestResultStats(unittest.TestResult):
     def wasSuccessful(self):
         """Tells whether or not this result was a success"""
         return self.failed_tests == 0
+
+
+def get_default_formatter():
+    """Obtain the default formatter to write to.
+    
+    :return: A file-like object.
+    """
+    formatter = os.getenv("SUBUNIT_FORMATTER")
+    if formatter:
+        return os.popen(formatter, "w")
+    else:
+        return sys.stdout
+

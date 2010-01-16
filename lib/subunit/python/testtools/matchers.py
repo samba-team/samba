@@ -14,7 +14,10 @@ __metaclass__ = type
 __all__ = [
     'DocTestMatches',
     'Equals',
+    'MatchesAll',
     'MatchesAny',
+    'NotEquals',
+    'Not',
     ]
 
 import doctest
@@ -135,6 +138,36 @@ class EqualsMismatch:
         return "%r != %r" % (self.expected, self.other)
 
 
+class NotEquals:
+    """Matches if the items are not equal.
+
+    In most cases, this is equivalent to `Not(Equals(foo))`. The difference
+    only matters when testing `__ne__` implementations.
+    """
+
+    def __init__(self, expected):
+        self.expected = expected
+
+    def __str__(self):
+        return 'NotEquals(%r)' % (self.expected,)
+
+    def match(self, other):
+        if self.expected != other:
+            return None
+        return NotEqualsMismatch(self.expected, other)
+
+
+class NotEqualsMismatch:
+    """Two things are the same."""
+
+    def __init__(self, expected, other):
+        self.expected = expected
+        self.other = other
+
+    def describe(self):
+        return '%r == %r' % (self.expected, self.other)
+
+
 class MatchesAny:
     """Matches if any of the matchers it is created with match."""
 
@@ -155,6 +188,27 @@ class MatchesAny:
             str(matcher) for matcher in self.matchers])
 
 
+class MatchesAll:
+    """Matches if all of the matchers it is created with match."""
+
+    def __init__(self, *matchers):
+        self.matchers = matchers
+
+    def __str__(self):
+        return 'MatchesAll(%s)' % ', '.join(map(str, self.matchers))
+
+    def match(self, matchee):
+        results = []
+        for matcher in self.matchers:
+            mismatch = matcher.match(matchee)
+            if mismatch is not None:
+                results.append(mismatch)
+        if results:
+            return MismatchesAll(results)
+        else:
+            return None
+
+
 class MismatchesAll:
     """A mismatch with many child mismatches."""
 
@@ -167,3 +221,31 @@ class MismatchesAll:
             descriptions.append(mismatch.describe())
         descriptions.append("]\n")
         return '\n'.join(descriptions)
+
+
+class Not:
+    """Inverts a matcher."""
+
+    def __init__(self, matcher):
+        self.matcher = matcher
+
+    def __str__(self):
+        return 'Not(%s)' % (self.matcher,)
+
+    def match(self, other):
+        mismatch = self.matcher.match(other)
+        if mismatch is None:
+            return MatchedUnexpectedly(self.matcher, other)
+        else:
+            return None
+
+
+class MatchedUnexpectedly:
+    """A thing matched when it wasn't supposed to."""
+
+    def __init__(self, matcher, other):
+        self.matcher = matcher
+        self.other = other
+
+    def describe(self):
+        return "%r matches %s" % (self.other, self.matcher)

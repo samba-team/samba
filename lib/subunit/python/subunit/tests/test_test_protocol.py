@@ -124,6 +124,10 @@ class TestTestProtocolServerStartTest(unittest.TestCase):
         self.assertEqual(self.client._events,
             [('startTest', subunit.RemotedTestCase("old mcdonald"))])
 
+    def test_indented_test_colon_ignored(self):
+        self.protocol.lineReceived(" test: old mcdonald\n")
+        self.assertEqual([], self.client._events)
+
     def test_start_testing_colon(self):
         self.protocol.lineReceived("testing: old mcdonald\n")
         self.assertEqual(self.client._events,

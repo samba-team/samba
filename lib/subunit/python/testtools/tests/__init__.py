@@ -1,3 +1,5 @@
+"""Tests for testtools itself."""
+
 # See README for copyright and licensing details.
 
 import unittest
