@@ -364,7 +364,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (do_attribute_explicit(attrs, "isGlobalCatalogReady")) {
+	if (do_attribute(attrs, "isGlobalCatalogReady")) {
 		/* MS-ADTS 3.1.1.3.2.10
 		   Note, we should only return true here is we have
 		   completed at least one synchronisation. As both
