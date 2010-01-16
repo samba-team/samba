@@ -413,49 +413,6 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 }
 
 /*
-  load replUpToDateVector from a DN
- */
-static WERROR load_udv(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
-		       struct ldb_dn *dn, struct replUpToDateVectorBlob *ouv)
-{
-	const char *attrs[] = { "replUpToDateVector", NULL };
-	struct ldb_result *res = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	struct ldb_message_element *el;
-	enum ndr_err_code ndr_err;
-
-	ZERO_STRUCTP(ouv);
-
-	if (ldb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL) != LDB_SUCCESS ||
-	    res->count < 1) {
-		DEBUG(0,("load_udv: failed to read partition object\n"));
-		talloc_free(tmp_ctx);
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	el = ldb_msg_find_element(res->msgs[0], "replUpToDateVector");
-	if (el == NULL || el->num_values < 1) {
-		talloc_free(tmp_ctx);
-		ouv->version = 2;
-		return WERR_OK;
-	}
-
-	ndr_err = ndr_pull_struct_blob(&el->values[0], 
-				       mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
-				       ouv, 
-				       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
-	talloc_free(tmp_ctx);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,(__location__ ": Failed to parse replUpToDateVector for %s\n",
-			 ldb_dn_get_linearized(dn)));
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-	
-	return WERR_OK;
-	
-}
-
-/*
   fill in the cursors return based on the replUpToDateVector for the ncRoot_dn
  */
 static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
@@ -463,20 +420,20 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 				 struct drsuapi_DsReplicaCursor2CtrEx *udv,
 				 uint64_t highestUSN)
 {
-	WERROR werr;
 	struct drsuapi_DsReplicaCursor2 *tmp_cursor;
 	NTTIME now;
 	time_t t = time(NULL);
-	struct replUpToDateVectorBlob ouv;
-	int i;
+	int i, ret;
 
 	udv->version = 2;
 	udv->reserved1 = 0;
 	udv->reserved2 = 0;
 
-	werr = load_udv(sam_ctx, udv, ncRoot_dn, &ouv);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	ret = dsdb_load_udv_v2(sam_ctx, ncRoot_dn, udv, &udv->cursors, &udv->count);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to load UDV for %s - %s\n",
+			 ldb_dn_get_linearized(ncRoot_dn), ldb_errstring(sam_ctx)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 	
 	tmp_cursor = talloc(udv, struct drsuapi_DsReplicaCursor2);
@@ -484,9 +441,6 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 	tmp_cursor->highest_usn = highestUSN;
 	unix_to_nt_time(&now, t);
 	tmp_cursor->last_sync_success = now;
-
-	udv->count = ouv.ctr.ctr2.count;
-	udv->cursors = talloc_steal(udv, ouv.ctr.ctr2.cursors);
 
 	for (i=0; i<udv->count; i++) {
 		if (GUID_equal(&tmp_cursor->source_dsa_invocation_id,
