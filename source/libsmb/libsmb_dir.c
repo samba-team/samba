@@ -303,7 +303,7 @@ net_share_enum_rpc(struct cli_state *cli,
         }
 
         /* For each returned entry... */
-        for (i = 0; i < total_entries; i++) {
+        for (i = 0; i < info_ctr.ctr.ctr1->count; i++) {
 
                 /* pull out the share name */
 		fstrcpy(name, info_ctr.ctr.ctr1->array[i].name);
