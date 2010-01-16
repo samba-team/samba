@@ -87,6 +87,31 @@ static WERROR kccdrs_replica_get_info_cursors2(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+/*
+  get pending ops info for a specified DN
+*/
+static WERROR kccdrs_replica_get_info_pending_ops(TALLOC_CTX *mem_ctx,
+						  struct ldb_context *samdb,
+						  struct drsuapi_DsReplicaGetInfo *r,
+						  union drsuapi_DsReplicaInfo *reply,
+						  struct ldb_dn *dn)
+{
+	struct timeval now = timeval_current();
+
+	if (!ldb_dn_validate(dn)) {
+		return WERR_INVALID_PARAMETER;
+	}
+	reply->pendingops = talloc(mem_ctx, struct drsuapi_DsReplicaOpCtr);
+	W_ERROR_HAVE_NO_MEMORY(reply->pendingops);
+
+	/* claim no pending ops for now */
+	reply->pendingops->time = timeval_to_nttime(&now);
+	reply->pendingops->count = 0;
+	reply->pendingops->array = NULL;
+
+	return WERR_OK;
+}
+
 
 struct ncList {
 	struct ldb_dn *dn;
@@ -493,6 +518,11 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		status = kccdrs_replica_get_info_cursors2(mem_ctx, samdb, req, reply,
 							  ldb_dn_new(mem_ctx, samdb, object_dn));
 		break;
+	case DRSUAPI_DS_REPLICA_INFO_PENDING_OPS: /* On MS-DRSR it is DS_REPL_INFO_PENDING_OPS */
+		status = kccdrs_replica_get_info_pending_ops(mem_ctx, samdb, req, reply,
+							     ldb_dn_new(mem_ctx, samdb, object_dn));
+		break;
+
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS3: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_3_FOR_NC */
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS05: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
 	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* DS_REPL_INFO_REPSTO */
@@ -502,7 +532,6 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_2_FOR_ATTR_VALUE */
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES */
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_LINK_FAILURES */
-	case DRSUAPI_DS_REPLICA_INFO_PENDING_OPS: /* On MS-DRSR it is DS_REPL_INFO_PENDING_OPS */
 	case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04: /* On MS-DRSR it is DS_REPL_INFO_CLIENT_CONTEXTS */
 	case DRSUAPI_DS_REPLICA_INFO_06: /* On MS-DRSR it is DS_REPL_INFO_SERVER_OUTGOING_CALLS */
 	default:
