@@ -1813,8 +1813,7 @@ objectclass: user
 sAMAccountName: """ + user_name + """
 nTSecurityDescriptor:: """ + desc_base64)
             res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
-            print res
-            self.assertRaises(KeyError, lambda: res[0]["nTSecurityDescriptor"])
+            self.assertTrue("nTSecurityDescriptor" in res[0])
         finally:
             self.delete_force(self.ldb, user_dn)
 
