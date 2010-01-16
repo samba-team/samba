@@ -61,6 +61,32 @@ static WERROR kccdrs_replica_get_info_cursors(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+/*
+  get cursors2 info for a specified DN
+*/
+static WERROR kccdrs_replica_get_info_cursors2(TALLOC_CTX *mem_ctx,
+					       struct ldb_context *samdb,
+					       struct drsuapi_DsReplicaGetInfo *r,
+					       union drsuapi_DsReplicaInfo *reply,
+					       struct ldb_dn *dn)
+{
+	int ret;
+
+	if (!ldb_dn_validate(dn)) {
+		return WERR_INVALID_PARAMETER;
+	}
+	reply->cursors2 = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2Ctr);
+	W_ERROR_HAVE_NO_MEMORY(reply->cursors2);
+
+	ret = dsdb_load_udv_v2(samdb, dn, reply->cursors2, &reply->cursors2->array, &reply->cursors2->count);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_BAD_NC;
+	}
+
+	reply->cursors2->enumeration_context = reply->cursors2->count;
+	return WERR_OK;
+}
+
 
 struct ncList {
 	struct ldb_dn *dn;
@@ -464,6 +490,9 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 							 ldb_dn_new(mem_ctx, samdb, object_dn));
 		break;
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS2: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_2_FOR_NC */
+		status = kccdrs_replica_get_info_cursors2(mem_ctx, samdb, req, reply,
+							  ldb_dn_new(mem_ctx, samdb, object_dn));
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS3: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_3_FOR_NC */
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS05: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
 	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* DS_REPL_INFO_REPSTO */
