@@ -40,7 +40,9 @@ void
 smbc_setNetbiosName(SMBCCTX *c, char * netbios_name)
 {
 	SAFE_FREE(c->netbios_name);
-	c->netbios_name = SMB_STRDUP(netbios_name);
+	if (netbios_name) {
+		c->netbios_name = SMB_STRDUP(netbios_name);
+	}
 }
 
 /** Get the workgroup used for making connections */
@@ -55,7 +57,9 @@ void
 smbc_setWorkgroup(SMBCCTX *c, char * workgroup)
 {
 	SAFE_FREE(c->workgroup);
-	c->workgroup = SMB_STRDUP(workgroup);
+	if (workgroup) {
+		c->workgroup = SMB_STRDUP(workgroup);
+	}
 }
 
 /** Get the username used for making connections */
@@ -70,7 +74,9 @@ void
 smbc_setUser(SMBCCTX *c, char * user)
 {
 	SAFE_FREE(c->user);
-	c->user = SMB_STRDUP(user);
+	if (user) {
+		c->user = SMB_STRDUP(user);
+	}
 }
 
 /** Get the debug level */
