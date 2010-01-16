@@ -291,13 +291,8 @@ smbc_free_context(SMBCCTX *context,
         }
         
         /* Things we have to clean up */
-        free(smbc_getWorkgroup(context));
         smbc_setWorkgroup(context, NULL);
-
-        free(smbc_getNetbiosName(context));
         smbc_setNetbiosName(context, NULL);
-
-        free(smbc_getUser(context));
         smbc_setUser(context, NULL);
         
         DEBUG(3, ("Context %p successfully freed\n", context));
@@ -533,7 +528,6 @@ SMBCCTX *
 smbc_init_context(SMBCCTX *context)
 {
         int pid;
-        char *user = NULL;
         
         if (!context) {
                 errno = EBADF;
@@ -569,7 +563,7 @@ smbc_init_context(SMBCCTX *context)
                 /*
                  * FIXME: Is this the best way to get the user info?
                  */
-                user = getenv("USER");
+        	char *user = getenv("USER");
                 /* walk around as "guest" if no username can be found */
                 if (!user) {
                         user = SMB_STRDUP("guest");
@@ -583,6 +577,12 @@ smbc_init_context(SMBCCTX *context)
                 }
 
                 smbc_setUser(context, user);
+		SAFE_FREE(user);
+
+        	if (!smbc_getUser(context)) {
+                        errno = ENOMEM;
+                        return NULL;
+                }
         }
         
         if (!smbc_getNetbiosName(context)) {
@@ -615,6 +615,12 @@ smbc_init_context(SMBCCTX *context)
                 }
                 
                 smbc_setNetbiosName(context, netbios_name);
+		SAFE_FREE(netbios_name);
+
+                if (!smbc_getNetbiosName(context)) {
+                        errno = ENOMEM;
+                        return NULL;
+                }
         }
         
         DEBUG(1, ("Using netbios name %s.\n", smbc_getNetbiosName(context)));
@@ -636,6 +642,12 @@ smbc_init_context(SMBCCTX *context)
                 }
 
                 smbc_setWorkgroup(context, workgroup);
+		SAFE_FREE(workgroup);
+
+		if (!smbc_getWorkgroup(context)) {
+			errno = ENOMEM;
+			return NULL;
+		}
         }
         
         DEBUG(1, ("Using workgroup %s.\n", smbc_getWorkgroup(context)));
