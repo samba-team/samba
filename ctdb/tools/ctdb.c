@@ -1658,7 +1658,7 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (options.machinereadable){
-		printf(":Public IP:Node:\n");
+		printf(":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:\n");
 	} else {
 		if (options.pnn == CTDB_BROADCAST_ALL) {
 			printf("Public IPs on ALL nodes\n");
@@ -1668,11 +1668,71 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	for (i=1;i<=ips->num;i++) {
-		if (options.machinereadable){
-			printf(":%s:%d:\n", ctdb_addr_to_str(&ips->ips[ips->num-i].addr), ips->ips[ips->num-i].pnn);
+		struct ctdb_control_public_ip_info *info = NULL;
+		int32_t pnn;
+		char *aciface = NULL;
+		char *avifaces = NULL;
+		char *cifaces = NULL;
+
+		if (options.pnn == CTDB_BROADCAST_ALL) {
+			pnn = ips->ips[ips->num-i].pnn;
 		} else {
-			printf("%s %d\n", ctdb_addr_to_str(&ips->ips[ips->num-i].addr), ips->ips[ips->num-i].pnn);
+			pnn = options.pnn;
 		}
+
+		if (pnn != -1) {
+			ret = ctdb_ctrl_get_public_ip_info(ctdb, TIMELIMIT(), pnn, ctdb,
+						   &ips->ips[ips->num-i].addr, &info);
+		} else {
+			ret = -1;
+		}
+
+		if (ret == 0) {
+			int j;
+			for (j=0; j < info->num; j++) {
+				if (cifaces == NULL) {
+					cifaces = talloc_strdup(info,
+								info->ifaces[j].name);
+				} else {
+					cifaces = talloc_asprintf_append(cifaces,
+									 ",%s",
+									 info->ifaces[j].name);
+				}
+
+				if (info->active_idx == j) {
+					aciface = info->ifaces[j].name;
+				}
+
+				if (info->ifaces[j].link_state == 0) {
+					continue;
+				}
+
+				if (avifaces == NULL) {
+					avifaces = talloc_strdup(info, info->ifaces[j].name);
+				} else {
+					avifaces = talloc_asprintf_append(avifaces,
+									  ",%s",
+									  info->ifaces[j].name);
+				}
+			}
+		}
+
+		if (options.machinereadable){
+			printf(":%s:%d:%s:%s:%s:\n",
+			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+			       ips->ips[ips->num-i].pnn,
+			       aciface?aciface:"",
+			       avifaces?avifaces:"",
+			       cifaces?cifaces:"");
+		} else {
+			printf("%s node[%d] active[%s] available[%s] configured[%s]\n",
+			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+			       ips->ips[ips->num-i].pnn,
+			       aciface?aciface:"",
+			       avifaces?avifaces:"",
+			       cifaces?cifaces:"");
+		}
+		talloc_free(info);
 	}
 
 	talloc_free(tmp_ctx);

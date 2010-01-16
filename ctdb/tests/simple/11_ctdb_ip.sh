@@ -34,13 +34,18 @@ cluster_is_healthy
 echo "Getting list of public IPs..."
 try_command_on_node -v 1 $CTDB ip -n all
 ips=$(echo "$out" | sed \
-	-e '1d')
-machineout1=":Public IP:Node:"
+	-e '1d' \
+	-e 's@ node\[@ @' \
+	-e 's@\].*$@:@')
+machineout1=":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
 machineout2=$(echo "$out" | sed \
 	-e '1d' \
 	-e 's@^@:@' \
-	-e 's@ @:@' \
-	-e 's@$@:@')
+	-e 's@ node\[@:@' \
+	-e 's@\] active\[@:@' \
+	-e 's@\] available\[@:@' \
+	-e 's@\] configured\[@:@' \
+	-e 's@\]$@:@')
 machineout=`echo -e "$machineout1\n$machineout2"`
 
 while read ip pnn ; do
