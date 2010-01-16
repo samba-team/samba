@@ -409,6 +409,124 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 	return 0;
 }
 
+struct ctdb_do_updateip_state {
+	struct ctdb_req_control *c;
+	struct ctdb_iface *old;
+	struct ctdb_vnn *vnn;
+};
+
+/*
+  called when updateip event finishes
+ */
+static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
+				      void *private_data)
+{
+	struct ctdb_do_updateip_state *state =
+		talloc_get_type(private_data, struct ctdb_do_updateip_state);
+	int32_t ret;
+
+	if (status != 0) {
+		if (status == -ETIME) {
+			ctdb_ban_self(ctdb);
+		}
+		DEBUG(DEBUG_ERR,(__location__ " Failed to move IP %s from interface %s to %s\n",
+			ctdb_addr_to_str(&state->vnn->public_address),
+			state->old->name,
+			ctdb_vnn_iface_string(state->vnn)));
+
+		/*
+		 * All we can do is reset the old interface
+		 * and let the next run fix it
+		 */
+		ctdb_vnn_unassign_iface(ctdb, state->vnn);
+		state->vnn->iface = state->old;
+		state->vnn->iface->references++;
+
+		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+		talloc_free(state);
+		return;
+	}
+
+	ret = ctdb_announce_vnn_iface(ctdb, state->vnn);
+	if (ret != 0) {
+		ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
+		talloc_free(state);
+		return;
+	}
+
+	/* the control succeeded */
+	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
+	talloc_free(state);
+	return;
+}
+
+/*
+  update (move) an ip address
+ */
+static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				struct ctdb_vnn *vnn)
+{
+	int ret;
+	struct ctdb_do_updateip_state *state;
+	struct ctdb_iface *old = vnn->iface;
+
+	ctdb_vnn_unassign_iface(ctdb, vnn);
+	ret = ctdb_vnn_assign_iface(ctdb, vnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("update of IP %s/%u failed to "
+				 "assin a usable interface (old iface '%s')\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				 vnn->public_netmask_bits,
+				 old->name));
+		return -1;
+	}
+
+	if (vnn->iface == old) {
+		DEBUG(DEBUG_ERR,("update of IP %s/%u trying to "
+				 "assin a same interface '%s'\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				 vnn->public_netmask_bits,
+				 old->name));
+		return -1;
+	}
+
+	state = talloc(vnn, struct ctdb_do_updateip_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c = talloc_steal(ctdb, c);
+	state->old = old;
+	state->vnn = vnn;
+
+	DEBUG(DEBUG_NOTICE,("Update of IP %s/%u from "
+			    "interface %s to %s\n",
+			    ctdb_addr_to_str(&vnn->public_address),
+			    vnn->public_netmask_bits,
+			    old->name,
+			    ctdb_vnn_iface_string(vnn)));
+
+	ret = ctdb_event_script_callback(ctdb,
+					 state,
+					 ctdb_do_updateip_callback,
+					 state,
+					 false,
+					 CTDB_EVENT_UPDATE_IP,
+					 "%s %s %s %u",
+					 state->old->name,
+					 ctdb_vnn_iface_string(vnn),
+					 ctdb_addr_to_str(&vnn->public_address),
+					 vnn->public_netmask_bits);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed update IP %s from interface %s to %s\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				 old->name, ctdb_vnn_iface_string(vnn)));
+		talloc_free(state);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   Find the vnn of the node that has a public ip address
   returns -1 if the address is not known as a public address
@@ -438,6 +556,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
 	bool have_ip = false;
+	bool do_updateip = false;
 	bool do_takeip = false;
 
 	/* update out vnn list */
@@ -450,12 +569,35 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	vnn->pnn = pip->pnn;
 
 	have_ip = ctdb_sys_have_ip(&pip->addr);
+
+	if (vnn->iface) {
+		if (vnn->iface->link_up) {
+			struct ctdb_iface *best;
+			best = ctdb_vnn_best_iface(ctdb, vnn);
+			/* only move when the rebalance gains something */
+			if (best && vnn->iface->references > (best->references + 1)) {
+				do_updateip = true;
+			}
+		} else if (vnn->iface != best_iface) {
+			do_updateip = true;
+		}
+	}
+
 	if (!have_ip) {
+		if (do_updateip) {
+			ctdb_vnn_unassign_iface(ctdb, vnn);
+			do_updateip = false;
+		}
 		do_takeip = true;
 	}
 
 	if (do_takeip) {
 		ret = ctdb_do_takeip(ctdb, c, vnn);
+		if (ret != 0) {
+			return -1;
+		}
+	} else if (do_updateip) {
+		ret = ctdb_do_updateip(ctdb, c, vnn);
 		if (ret != 0) {
 			return -1;
 		}
