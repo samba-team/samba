@@ -3241,6 +3241,7 @@ int samdb_ldb_val_case_cmp(const char *s, struct ldb_val *v)
 
 /*
   load the UDV for a partition in v2 format
+  The list is returned sorted, and with our local cursor added
  */
 int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *mem_ctx,
 		     struct drsuapi_DsReplicaCursor2 **cursors, uint32_t *count)
@@ -3248,9 +3249,10 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	static const char *attrs[] = { "replUpToDateVector", NULL };
 	struct ldb_result *r;
 	const struct ldb_val *ouv_value;
-	enum ndr_err_code ndr_err;
-	struct replUpToDateVectorBlob ouv;
-	int ret;
+	int ret, i;
+	uint64_t highest_usn;
+	const struct GUID *our_invocation_id;
+	struct timeval now = timeval_current();
 
 	ret = ldb_search(samdb, mem_ctx, &r, dn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
@@ -3258,36 +3260,80 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	}
 
 	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
-	if (!ouv_value) {
-		talloc_free(r);
+	if (ouv_value) {
+		enum ndr_err_code ndr_err;
+		struct replUpToDateVectorBlob ouv;
+
+		ndr_err = ndr_pull_struct_blob(ouv_value, r,
+					       lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")), &ouv,
+					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(r);
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		if (ouv.version != 2) {
+			/* we always store as version 2, and
+			 * replUpToDateVector is not replicated
+			 */
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		*count = ouv.ctr.ctr2.count;
+		*cursors = talloc_steal(mem_ctx, ouv.ctr.ctr2.cursors);
+	} else {
 		*count = 0;
 		*cursors = NULL;
+	}
+
+	talloc_free(r);
+
+	our_invocation_id = samdb_ntds_invocation_id(samdb);
+	if (!our_invocation_id) {
+		DEBUG(0,(__location__ ": No invocationID on samdb - %s\n", ldb_errstring(samdb)));
+		talloc_free(*cursors);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_load_partition_usn(samdb, dn, &highest_usn, NULL);
+	if (ret != LDB_SUCCESS) {
+		/* nothing to add - this can happen after a vampire */
+		qsort(*cursors, *count,
+		      sizeof(struct drsuapi_DsReplicaCursor2),
+		      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
 		return LDB_SUCCESS;
 	}
 
-	ndr_err = ndr_pull_struct_blob(ouv_value, r,
-				       lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")), &ouv,
-				       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(r);
-		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
-	}
-	if (ouv.version != 2) {
-		/* we always store as version 2, and
-		 * replUpToDateVector is not replicated
-		 */
-		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	for (i=0; i<*count; i++) {
+		if (GUID_equal(our_invocation_id, &(*cursors)[i].source_dsa_invocation_id)) {
+			(*cursors)[i].highest_usn = highest_usn;
+			(*cursors)[i].last_sync_success = timeval_to_nttime(&now);
+			qsort(*cursors, *count,
+			      sizeof(struct drsuapi_DsReplicaCursor2),
+			      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
+			return LDB_SUCCESS;
+		}
 	}
 
-	*count = ouv.ctr.ctr2.count;
-	*cursors = talloc_steal(mem_ctx, ouv.ctr.ctr2.cursors);
-	talloc_free(r);
+	(*cursors) = talloc_realloc(mem_ctx, *cursors, struct drsuapi_DsReplicaCursor2, (*count)+1);
+	if (! *cursors) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	(*cursors)[*count].source_dsa_invocation_id = *our_invocation_id;
+	(*cursors)[*count].highest_usn = highest_usn;
+	(*cursors)[*count].last_sync_success = timeval_to_nttime(&now);
+	(*count)++;
+
+	qsort(*cursors, *count,
+	      sizeof(struct drsuapi_DsReplicaCursor2),
+	      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
 
 	return LDB_SUCCESS;
 }
 
 /*
   load the UDV for a partition in version 1 format
+  The list is returned sorted, and with our local cursor added
  */
 int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *mem_ctx,
 		     struct drsuapi_DsReplicaCursor **cursors, uint32_t *count)
