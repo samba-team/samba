@@ -51,6 +51,23 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
 		return;
 	}
 
+	if (strcmp(name, "char") == 0) {
+		/*
+		 * Print out the first 50 bytes of the string
+		 */
+		sprintf_append(state->mem_ctx, &state->s, &state->len,
+			       &state->buflen,
+			       "%*s%-30s contains %6lu bytes in %3lu blocks "
+			       "(ref %d): %*s\n", depth*4, "",
+			       name,
+			       (unsigned long)talloc_total_size(ptr),
+			       (unsigned long)talloc_total_blocks(ptr),
+			       talloc_reference_count(ptr),
+			       MIN(50, talloc_get_size(ptr)),
+			       (char *)ptr);
+		return;
+	}
+
 	sprintf_append(state->mem_ctx, &state->s, &state->len, &state->buflen,
 		       "%*s%-30s contains %6lu bytes in %3lu blocks (ref %d)\n", 
 		       depth*4, "",
