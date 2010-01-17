@@ -100,7 +100,9 @@ struct wbsrv_connection {
 	/* how many calls are pending */
 	uint32_t pending_calls;
 
-	struct packet_context *packet;
+	struct tstream_context *tstream;
+
+	struct tevent_queue *send_queue;
 
 	struct loadparm_context *lp_ctx;
 };
@@ -148,9 +150,6 @@ struct wbsrv_samba3_call {
 	/* the connection the call belongs to */
 	struct wbsrv_connection *wbconn;
 
-	/* the backend should use this event context */
-	struct tevent_context *event_ctx;
-
 	/* here the backend can store stuff like composite_context's ... */
 	void *private_data;
 
@@ -159,6 +158,10 @@ struct wbsrv_samba3_call {
 	
 	/* the response structure of the samba3 protocol*/
 	struct winbindd_response response;
+
+	DATA_BLOB in;
+	DATA_BLOB out;
+	struct iovec out_iov[1];
 };
 
 struct netr_LMSessionKey;

@@ -23,6 +23,7 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
+#include "lib/tsocket/tsocket.h"
 
 /*
   work out if a packet is complete for protocols that use a 32 bit host byte
@@ -43,28 +44,18 @@ NTSTATUS wbsrv_samba3_packet_full_request(void *private_data, DATA_BLOB blob, si
 }
 
 
-NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, struct wbsrv_connection *wbconn,
-				   struct wbsrv_samba3_call **_call)
+NTSTATUS wbsrv_samba3_pull_request(struct wbsrv_samba3_call *call)
 {
-	struct wbsrv_samba3_call *call;
-
-	if (blob.length != sizeof(call->request)) {
+	if (call->in.length != sizeof(call->request)) {
 		DEBUG(0,("wbsrv_samba3_pull_request: invalid blob length %lu should be %lu\n"
 			 " make sure you use the correct winbind client tools!\n",
-			 (long)blob.length, (long)sizeof(call->request)));
+			 (long)call->in.length, (long)sizeof(call->request)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	call = talloc_zero(wbconn, struct wbsrv_samba3_call);
-	NT_STATUS_HAVE_NO_MEMORY(call);
-
 	/* the packet layout is the same as the in memory layout of the request, so just copy it */
-	memcpy(&call->request, blob.data, sizeof(call->request));
+	memcpy(&call->request, call->in.data, sizeof(call->request));
 
-	call->wbconn = wbconn;
-	call->event_ctx = call->wbconn->conn->event.ctx;
-	
-	*_call = call;
 	return NT_STATUS_OK;
 }
 
@@ -216,9 +207,8 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call, TALLOC_CTX *mem_ctx, DATA_BLOB *_blob)
+static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call)
 {
-	DATA_BLOB blob;
 	uint8_t *extra_data;
 	size_t extra_data_len = 0;
 
@@ -228,24 +218,27 @@ static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call, TALLOC_C
 			sizeof(call->response);
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, call->response.length);
-	NT_STATUS_HAVE_NO_MEMORY(blob.data);
+	call->out = data_blob_talloc(call, NULL, call->response.length);
+	NT_STATUS_HAVE_NO_MEMORY(call->out.data);
 
 	/* don't push real pointer values into sockets */
 	if (extra_data) {
 		call->response.extra_data.data = (void *)0xFFFFFFFF;
 	}
-	memcpy(blob.data, &call->response, sizeof(call->response));
+	memcpy(call->out.data, &call->response, sizeof(call->response));
 	/* set back the pointer */
 	call->response.extra_data.data = extra_data;
 
 	if (extra_data) {
-		memcpy(blob.data + sizeof(call->response), extra_data, extra_data_len);
+		memcpy(call->out.data + sizeof(call->response),
+		       extra_data,
+		       extra_data_len);
 	}
 
-	*_blob = blob;
 	return NT_STATUS_OK;
 }
+
+static void wbsrv_samba3_send_reply_done(struct tevent_req *subreq);
 
 /*
  * queue a wbsrv_call reply on a wbsrv_connection
@@ -255,38 +248,68 @@ static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call, TALLOC_C
  */
 NTSTATUS wbsrv_samba3_send_reply(struct wbsrv_samba3_call *call)
 {
-	struct wbsrv_connection *wbconn = call->wbconn;
-	DATA_BLOB rep;
+	struct wbsrv_connection *wbsrv_conn = call->wbconn;
+	struct tevent_req *subreq;
 	NTSTATUS status;
 
-	status = wbsrv_samba3_push_reply(call, call, &rep);
+	status = wbsrv_samba3_push_reply(call);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = packet_send(call->wbconn->packet, rep);
-	
-	talloc_free(call);
+	call->out_iov[0].iov_base = call->out.data;
+	call->out_iov[0].iov_len = call->out.length;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(wbconn,
-					   "failed to packet_send winbindd reply");
-		return status;
+	subreq = tstream_writev_queue_send(call,
+					   wbsrv_conn->conn->event.ctx,
+					   wbsrv_conn->tstream,
+					   wbsrv_conn->send_queue,
+					   call->out_iov, 1);
+	if (subreq == NULL) {
+		wbsrv_terminate_connection(wbsrv_conn, "wbsrv_call_loop: "
+				"no memory for tstream_writev_queue_send");
+		return NT_STATUS_NO_MEMORY;
 	}
-	/* the call isn't needed any more */
+	tevent_req_set_callback(subreq, wbsrv_samba3_send_reply_done, call);
+
 	return status;
 }
 
-NTSTATUS wbsrv_samba3_process(void *private_data, DATA_BLOB blob)
+static void wbsrv_samba3_send_reply_done(struct tevent_req *subreq)
+{
+	struct wbsrv_samba3_call *call = tevent_req_callback_data(subreq,
+			struct wbsrv_samba3_call);
+	int sys_errno;
+	int rc;
+
+	rc = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (rc == -1) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "wbsrv_samba3_send_reply_done: "
+					 "tstream_writev_queue_recv() - %d:%s",
+					 sys_errno, strerror(sys_errno));
+		if (reason == NULL) {
+			reason = "wbsrv_samba3_send_reply_done: "
+				 "tstream_writev_queue_recv() failed";
+		}
+
+		wbsrv_terminate_connection(call->wbconn, reason);
+		return;
+	}
+
+	talloc_free(call);
+}
+
+NTSTATUS wbsrv_samba3_process(struct wbsrv_samba3_call *call)
 {
 	NTSTATUS status;
-	struct wbsrv_connection *wbconn = talloc_get_type(private_data,
-							  struct wbsrv_connection);
-	struct wbsrv_samba3_call *call;
-	status = wbsrv_samba3_pull_request(blob, wbconn, &call);
+
+	status = wbsrv_samba3_pull_request(call);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	status = wbsrv_samba3_handle_call(call);
 
 	if (!NT_STATUS_IS_OK(status)) {

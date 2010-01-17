@@ -23,6 +23,8 @@
 #include "smbd/process_model.h"
 #include "winbind/wb_server.h"
 #include "lib/stream/packet.h"
+#include "lib/tsocket/tsocket.h"
+#include "libcli/util/tstream.h"
 #include "param/param.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
@@ -30,55 +32,139 @@ void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *rea
 	stream_terminate_connection(wbconn->conn, reason);
 }
 
-/*
-  called on a tcp recv error
-*/
-static void wbsrv_recv_error(void *private_data, NTSTATUS status)
+static void wbsrv_call_loop(struct tevent_req *subreq)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(private_data, struct wbsrv_connection);
-	wbsrv_terminate_connection(wbconn, nt_errstr(status));
+	struct wbsrv_connection *wbsrv_conn = tevent_req_callback_data(subreq,
+				      struct wbsrv_connection);
+	struct wbsrv_samba3_call *call;
+	NTSTATUS status;
+
+	call = talloc_zero(wbsrv_conn, struct wbsrv_samba3_call);
+	if (call == NULL) {
+		wbsrv_terminate_connection(wbsrv_conn, "wbsrv_call_loop: "
+				"no memory for wbsrv_samba3_call");
+		return;
+	}
+	call->wbconn = wbsrv_conn;
+
+	status = tstream_read_pdu_blob_recv(subreq,
+					    call,
+					    &call->in);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "wbsrv_call_loop: "
+					 "tstream_read_pdu_blob_recv() - %s",
+					 nt_errstr(status));
+		if (!reason) {
+			reason = nt_errstr(status);
+		}
+
+		wbsrv_terminate_connection(wbsrv_conn, reason);
+		return;
+	}
+
+	DEBUG(10,("Received winbind TCP packet of length %lu from %s\n",
+		 (long) call->in.length,
+		 tsocket_address_string(wbsrv_conn->conn->remote_address, call)));
+
+	status = wbsrv_samba3_process(call);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "wbsrv_call_loop: "
+					 "tstream_read_pdu_blob_recv() - %s",
+					 nt_errstr(status));
+		if (!reason) {
+			reason = nt_errstr(status);
+		}
+
+		wbsrv_terminate_connection(wbsrv_conn, reason);
+		return;
+	}
+
+	/*
+	 * The winbind pdu's has the length as 4 byte (initial_read_size),
+	 * wbsrv_samba3_packet_full_request provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(wbsrv_conn,
+					    wbsrv_conn->conn->event.ctx,
+					    wbsrv_conn->tstream,
+					    4, /* initial_read_size */
+					    wbsrv_samba3_packet_full_request,
+					    wbsrv_conn);
+	if (subreq == NULL) {
+		wbsrv_terminate_connection(wbsrv_conn, "wbsrv_call_loop: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, wbsrv_call_loop, wbsrv_conn);
 }
 
 static void wbsrv_accept(struct stream_connection *conn)
 {
-	struct wbsrv_listen_socket *listen_socket = talloc_get_type(conn->private_data,
-								    struct wbsrv_listen_socket);
-	struct wbsrv_connection *wbconn;
+	struct wbsrv_listen_socket *wbsrv_socket = talloc_get_type(conn->private_data,
+								   struct wbsrv_listen_socket);
+	struct wbsrv_connection *wbsrv_conn;
+	struct tevent_req *subreq;
+	int rc;
 
-	wbconn = talloc_zero(conn, struct wbsrv_connection);
-	if (!wbconn) {
+	wbsrv_conn = talloc_zero(conn, struct wbsrv_connection);
+	if (wbsrv_conn == NULL) {
 		stream_terminate_connection(conn, "wbsrv_accept: out of memory");
 		return;
 	}
-	wbconn->conn	      = conn;
-	wbconn->listen_socket = listen_socket;
-	wbconn->lp_ctx        = listen_socket->service->task->lp_ctx;
-	conn->private_data    = wbconn;
 
-	wbconn->packet = packet_init(wbconn);
-	if (wbconn->packet == NULL) {
-		wbsrv_terminate_connection(wbconn, "wbsrv_accept: out of memory");
+	wbsrv_conn->send_queue = tevent_queue_create(conn, "wbsrv_accept");
+	if (wbsrv_conn->send_queue == NULL) {
+		stream_terminate_connection(conn,
+				"wbsrv_accept: out of memory");
 		return;
 	}
-	packet_set_private(wbconn->packet, wbconn);
-	packet_set_socket(wbconn->packet, conn->socket);
-	packet_set_callback(wbconn->packet, wbsrv_samba3_process);
-	packet_set_full_request(wbconn->packet, wbsrv_samba3_packet_full_request);
-	packet_set_error_handler(wbconn->packet, wbsrv_recv_error);
-	packet_set_event_context(wbconn->packet, conn->event.ctx);
-	packet_set_fde(wbconn->packet, conn->event.fde);
-	packet_set_serialise(wbconn->packet);
+
+	TALLOC_FREE(conn->event.fde);
+
+	rc = tstream_bsd_existing_socket(wbsrv_conn->tstream,
+			socket_get_fd(conn->socket),
+			&wbsrv_conn->tstream);
+	if (rc < 0) {
+		stream_terminate_connection(conn,
+				"wbsrv_accept: out of memory");
+		return;
+	}
+
+	wbsrv_conn->conn = conn;
+	wbsrv_conn->listen_socket = wbsrv_socket;
+	wbsrv_conn->lp_ctx = wbsrv_socket->service->task->lp_ctx;
+	conn->private_data = wbsrv_conn;
+
+	/*
+	 * The winbind pdu's has the length as 4 byte (initial_read_size),
+	 * wbsrv_samba3_packet_full_request provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(wbsrv_conn,
+					    wbsrv_conn->conn->event.ctx,
+					    wbsrv_conn->tstream,
+					    4, /* initial_read_size */
+					    wbsrv_samba3_packet_full_request,
+					    wbsrv_conn);
+	if (subreq == NULL) {
+		wbsrv_terminate_connection(wbsrv_conn, "wbsrv_accept: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, wbsrv_call_loop, wbsrv_conn);
 }
 
 /*
-  receive some data on a winbind connection
+  called on a tcp recv
 */
 static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(conn->private_data,
-							  struct wbsrv_connection);
-	packet_recv(wbconn->packet);
-
+	struct wbsrv_connection *wbsrv_conn = talloc_get_type(conn->private_data,
+							struct wbsrv_connection);
+	wbsrv_terminate_connection(wbsrv_conn, "wbsrv_recv: called");
 }
 
 /*
@@ -86,9 +172,10 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 */
 static void wbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(conn->private_data,
-							  struct wbsrv_connection);
-	packet_queue_run(wbconn->packet);
+	struct wbsrv_connection *wbsrv_conn = talloc_get_type(conn->private_data,
+							struct wbsrv_connection);
+	/* this should never be triggered! */
+	wbsrv_terminate_connection(wbsrv_conn, "wbsrv_send: called");
 }
 
 static const struct stream_server_ops wbsrv_ops = {
