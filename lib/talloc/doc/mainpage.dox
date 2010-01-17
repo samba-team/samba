@@ -1,0 +1,36 @@
+/**
+ * @mainpage
+ *
+ * talloc is a hierarchical, reference counted memory pool system with
+ * destructors. It is the core memory allocator used in Samba.
+ *
+ * @section talloc_download Download
+ *
+ * You can download the latest releases of talloc from the
+ * <a href="http://samba.org/ftp/talloc" target="_blank">talloc directory</a>
+ * on the samba public source archive.
+ *
+ * @section talloc_bugs Discussion and bug reports
+ *
+ * talloc does not currently have its own mailing list or bug tracking system.
+ * For now, please use the
+ * <a href="https://lists.samba.org/mailman/listinfo/samba-technical" target="_blank">samba-technical</a>
+ * mailing list, and the
+ * <a href="http://bugzilla.samba.org/" target="_blank">Samba bugzilla</a>
+ * bug tracking system.
+ *
+ * @section talloc_devel Development
+ * You can download the latest code either via git or rsync.
+ *
+ * To fetch via git see the following guide:
+ *
+ * <a href="http://wiki.samba.org/index.php/Using_Git_for_Samba_Development" target="_blank">Using Git for Samba Development</a>
+ *
+ * Once you have cloned the tree switch to the master branch and cd into the
+ * lib/tevent directory.
+ *
+ * To fetch via rsync use this command:
+ *
+ * rsync -Pavz samba.org::ftp/unpacked/standalone_projects/lib/talloc .
+ *
+ */
