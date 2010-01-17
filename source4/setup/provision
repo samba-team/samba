@@ -214,11 +214,12 @@ if opts.use_xattrs == "yes":
 elif opts.use_xattrs == "auto":
 	file=tempfile.NamedTemporaryFile()
 	try:
-		samba.ntacls.setntacl(lp,file.name,"O:S-1-5-32G:S-1-5-32","native")
+		samba.ntacls.setntacl(lp,file.name,"O:S-1-5-32G:S-1-5-32","S-1-5-32","native")
 		eadb = False
 	except:
-		print "Notice: you are not root or your system do not support xattr, tdb backend for attributes has been selected"
-		print " if you intend to use this provision in production you'd better rerun the script as root on a system supporting xattr"
+		if lp.get("posix:eadb") == None:
+			message("Notice: you are not root or your system do not support xattr, tdb backend for attributes has been selected")
+			message(" if you intend to use this provision in production you'd better rerun the script as root on a system supporting xattr")
 	file.close()
 
 
