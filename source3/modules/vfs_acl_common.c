@@ -821,11 +821,14 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 		goto out;
 	}
 
+	become_root();
 	if (is_directory) {
 		ret = SMB_VFS_NEXT_RMDIR(handle, final_component);
 	} else {
 		ret = SMB_VFS_NEXT_UNLINK(handle, &local_fname);
 	}
+	unbecome_root();
+
 	if (ret == -1) {
 		saved_errno = errno;
 	}
@@ -854,12 +857,9 @@ static int rmdir_acl_common(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	become_root();
-	ret = acl_common_remove_object(handle,
+	return acl_common_remove_object(handle,
 					path,
 					true);
-	unbecome_root();
-	return ret;
 }
 
 static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
@@ -977,10 +977,7 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	become_root();
-	ret = acl_common_remove_object(handle,
+	return acl_common_remove_object(handle,
 					smb_fname->base_name,
 					false);
-	unbecome_root();
-	return ret;
 }
