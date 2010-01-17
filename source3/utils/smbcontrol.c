@@ -122,7 +122,7 @@ static void print_string_cb(struct messaging_context *msg,
 			    struct server_id pid,
 			    DATA_BLOB *data)
 {
-	printf("%.*s", (int)data->length, (const char *)data->data);
+	printf("%*s", (int)data->length, (const char *)data->data);
 	num_replies++;
 }
 
