@@ -205,9 +205,9 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	s_dsa->replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
+	s_dsa->replica_flags		= DRSUAPI_DRS_WRIT_REP
+					| DRSUAPI_DRS_INIT_SYNC
+					| DRSUAPI_DRS_PER_SYNC;
 	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
@@ -512,9 +512,9 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	s_dsa->replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
+	s_dsa->replica_flags		= DRSUAPI_DRS_WRIT_REP
+					| DRSUAPI_DRS_INIT_SYNC
+					| DRSUAPI_DRS_PER_SYNC;
 	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);

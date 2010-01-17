@@ -726,7 +726,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 
-	if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_SYNC_PACKET) {
+	if (req8->replica_flags & DRSUAPI_DRS_FULL_SYNC_PACKET) {
 		/* Ignore the _in_ uptpdateness vector*/
 		req8->uptodateness_vector = NULL;
 	} 
@@ -817,13 +817,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
 		}
 
-		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_CRITICAL_ONLY) {
+		if (req8->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
 			search_filter = talloc_asprintf(mem_ctx,
 							"(&%s(isCriticalSystemObject=TRUE))",
 							search_filter);
 		}
 		
-		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_ASYNC_REP) {
+		if (req8->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
 			scope = LDB_SCOPE_BASE;
 		}
 		
@@ -840,7 +840,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
-		if (req8->replica_flags & DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS) {
+		if (req8->replica_flags & DRSUAPI_DRS_GET_ANC) {
 			qsort(getnc_state->site_res->msgs,
 			      getnc_state->site_res->count,
 			      sizeof(getnc_state->site_res->msgs[0]),

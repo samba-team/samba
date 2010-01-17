@@ -312,11 +312,11 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsReplicaObjectIdentifier *nc = NULL;
 	struct drsuapi_DsReplicaCursorCtrEx *cursors = NULL;
 
-	uint32_t replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
-				  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
-				  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
-				  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
-				  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
+	uint32_t replica_flags	= DRSUAPI_DRS_WRIT_REP |
+				  DRSUAPI_DRS_INIT_SYNC |
+				  DRSUAPI_DRS_PER_SYNC |
+				  DRSUAPI_DRS_GET_ANC |
+				  DRSUAPI_DRS_NEVER_SYNCED;
 
 	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);

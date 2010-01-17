@@ -523,7 +523,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->result_last_attempt));
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->other_info));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags)));
-			NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
+			NDR_CHECK(ndr_push_drsuapi_DrsOptions(ndr, NDR_SCALARS, r->replica_flags));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
@@ -565,7 +565,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo1(struct ndr_pull *ndr, int ndr_fl
 				r->other_info = NULL;
 			}
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->other_info_length));
-			NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, &r->replica_flags));
+			NDR_CHECK(ndr_pull_drsuapi_DrsOptions(ndr, NDR_SCALARS, &r->replica_flags));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
 			NDR_CHECK(ndr_pull_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
@@ -613,7 +613,7 @@ _PUBLIC_ void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, con
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags):r->other_info_length);
-		ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
+		ndr_print_drsuapi_DrsOptions(ndr, "replica_flags", r->replica_flags);
 		ndr_print_array_uint8(ndr, "schedule", r->schedule, 84);
 		ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 		ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);
@@ -802,7 +802,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->result_last_attempt));
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->other_info));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo2OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags)));
-			NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
+			NDR_CHECK(ndr_push_drsuapi_DrsOptions(ndr, NDR_SCALARS, r->replica_flags));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
@@ -845,7 +845,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2(struct ndr_pull *ndr, int ndr_fl
 				r->other_info = NULL;
 			}
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->other_info_length));
-			NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, &r->replica_flags));
+			NDR_CHECK(ndr_pull_drsuapi_DrsOptions(ndr, NDR_SCALARS, &r->replica_flags));
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
 			NDR_CHECK(ndr_pull_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
@@ -894,7 +894,7 @@ _PUBLIC_ void ndr_print_repsFromTo2(struct ndr_print *ndr, const char *name, con
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo2OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags):r->other_info_length);
-		ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
+		ndr_print_drsuapi_DrsOptions(ndr, "replica_flags", r->replica_flags);
 		ndr_print_array_uint8(ndr, "schedule", r->schedule, 84);
 		ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved);
 		ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);

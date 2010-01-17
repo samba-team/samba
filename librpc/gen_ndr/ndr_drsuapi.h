@@ -90,9 +90,6 @@ enum ndr_err_code ndr_push_drsuapi_DsReplicaCursor(struct ndr_push *ndr, int ndr
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaCursor *r);
 void ndr_print_drsuapi_DsReplicaCursor(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaCursor *r);
 void ndr_print_drsuapi_DsReplicaCursorCtrEx(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaCursorCtrEx *r);
-enum ndr_err_code ndr_push_drsuapi_DsReplicaNeighbourFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-enum ndr_err_code ndr_pull_drsuapi_DsReplicaNeighbourFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-void ndr_print_drsuapi_DsReplicaNeighbourFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsExtendedOperation(struct ndr_print *ndr, const char *name, enum drsuapi_DsExtendedOperation r);
 void ndr_print_drsuapi_DsExtendedError(struct ndr_print *ndr, const char *name, enum drsuapi_DsExtendedError r);
 void ndr_print_drsuapi_DsGetNCChangesRequest5(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesRequest5 *r);

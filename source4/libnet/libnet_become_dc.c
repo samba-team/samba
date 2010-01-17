@@ -2576,12 +2576,12 @@ static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
 
 	s->schema_part.destination_dsa_guid	= s->drsuapi2.bind_guid;
 
-	s->schema_part.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+	s->schema_part.replica_flags	= DRSUAPI_DRS_WRIT_REP
+					| DRSUAPI_DRS_INIT_SYNC
+					| DRSUAPI_DRS_PER_SYNC
+					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
+					| DRSUAPI_DRS_NEVER_SYNCED
+					| DRSUAPI_DRS_USE_COMPRESSION;
 
 	s->schema_part.store_chunk	= s->callbacks.schema_chunk;
 
@@ -2640,12 +2640,12 @@ static void becomeDC_drsuapi3_pull_config_send(struct libnet_BecomeDC_state *s)
 
 	s->config_part.destination_dsa_guid	= s->drsuapi2.bind_guid;
 
-	s->config_part.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+	s->config_part.replica_flags	= DRSUAPI_DRS_WRIT_REP
+					| DRSUAPI_DRS_INIT_SYNC
+					| DRSUAPI_DRS_PER_SYNC
+					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
+					| DRSUAPI_DRS_NEVER_SYNCED
+					| DRSUAPI_DRS_USE_COMPRESSION;
 
 	s->config_part.store_chunk	= s->callbacks.config_chunk;
 
@@ -2702,12 +2702,12 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 
 	s->domain_part.destination_dsa_guid	= s->drsuapi2.bind_guid;
 
-	s->domain_part.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+	s->domain_part.replica_flags	= DRSUAPI_DRS_WRIT_REP
+					| DRSUAPI_DRS_INIT_SYNC
+					| DRSUAPI_DRS_PER_SYNC
+					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
+					| DRSUAPI_DRS_NEVER_SYNCED
+					| DRSUAPI_DRS_USE_COMPRESSION;
 
 	s->domain_part.store_chunk	= s->callbacks.domain_chunk;
 
