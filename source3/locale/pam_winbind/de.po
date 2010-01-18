@@ -49,7 +49,7 @@ msgstr "Ihr Passwort ist abgelaufen"
 
 #: ../../nsswitch/pam_winbind.c:595
 msgid "You need to change your password now"
-msgstr "Sie müssen Ihr Passwort unmittelbar ändern"
+msgstr "Sie müssen Ihr Passwort jetzt ändern"
 
 #: ../../nsswitch/pam_winbind.c:597
 msgid "You are not allowed to logon from this workstation"
@@ -102,14 +102,14 @@ msgstr "Kulanzanmeldung. Bitte ändern sie ihr Passwort sobald sie wieder online
 
 #: ../../nsswitch/pam_winbind.c:1263
 msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
-msgstr "Domänen-Controller unerreichbar. Anmeldung erfolgte mit gespeicherten Anmeldedaten. Netzwerk Ressourcen können momentan nicht verfügbar sein"
+msgstr "Domänen-Controller unerreichbar. Anmeldung erfolgte mit gespeicherten Anmeldedaten. Netzwerk-Ressourcen können momentan nicht verfügbar sein"
 
 #: ../../nsswitch/pam_winbind.c:1288
 msgid ""
 "Failed to establish your Kerberos Ticket cache due time differences\n"
 "with the domain controller.  Please verify the system time.\n"
 msgstr ""
-"Anforderung eines Kerberos Tickets aufgrund Zeitunterscheid zum \n"
+"Anforderung eines Kerberos-Tickets wegen Zeitunterschied zum \n"
 "Domänen-Controller fehlgeschlagen. Bitte überprüfen Sie die Systemzeit.\n"
 
 #: ../../nsswitch/pam_winbind.c:1356
@@ -137,7 +137,7 @@ msgstr "Bitte wählen Sie ein anderes Passwort. Geben Sie ein geeignetes Passwor
 #: ../../nsswitch/pam_winbind.c:1419
 #, c-format
 msgid "Creating directory: %s failed: %s"
-msgstr "Anlegen des Verzeichnis: %s fehlgeschlagen: %s"
+msgstr "Anlegen des Verzeichnisses: %s fehlgeschlagen: %s"
 
 #: ../../nsswitch/pam_winbind.c:1877
 msgid "Password does not meet complexity requirements"
