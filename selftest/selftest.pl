@@ -445,7 +445,7 @@ if ($opt_socket_wrapper_pcap) {
 
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {
-	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w", $opt_socket_wrapper_pcap);
+	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix_abs/w", $opt_socket_wrapper_pcap);
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 } else {
 	 unless ($< == 0) { 
