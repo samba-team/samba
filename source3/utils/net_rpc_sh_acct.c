@@ -155,7 +155,7 @@ static int account_show(struct net_context *c,
 			int argc, const char **argv)
 {
 	if (argc != 0) {
-		d_fprintf(stderr, _("usage: %s\n"), ctx->whoami);
+		d_fprintf(stderr, _("usage:")," %s\n"), ctx->whoami;
 		return -1;
 	}
 
@@ -226,7 +226,7 @@ static int account_set_badpw(struct net_context *c,
 			     int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("usage:")," %s <count>\n"), ctx->whoami;
 		return -1;
 	}
 

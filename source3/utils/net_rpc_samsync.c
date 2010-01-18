@@ -252,9 +252,9 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc vampire passdb\n"
-			   "    Dump remote SAM database to passdb\n"));
+			   "    ",_("Dump remote SAM database to passdb\n"));
 		return 0;
 	}
 
@@ -333,9 +333,9 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc vampire ldif\n"
-			   "    Dump remote SAM database to LDIF file or "
+			   "    ",_("Dump remote SAM database to LDIF file or "
 			   "stdout\n"));
 		return 0;
 	}
@@ -477,8 +477,8 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 	struct net_dc_info dc_info;
 
 	if (c->display_usage || (argc < 1)) {
-		d_printf(_("Usage:\n"
-			   "net rpc vampire keytab <keytabfile>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc vampire keytab <keytabfile>\n"
 			   "    Dump remote SAM database to Kerberos keytab "
 			   "file\n"));
 		return 0;

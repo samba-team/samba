@@ -37,9 +37,9 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	struct nt_user_token *token = NULL;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net ads gpo refresh <username|machinename>\n"
-			   "  Lists all GPOs assigned to an account and "
+		d_printf(_("Usage:\n"),
+			   _("net ads gpo refresh <username|machinename>\n"),
+			   _("  Lists all GPOs assigned to an account and "
 			   "downloads them\n"
 			   "    username\tUser to refresh GPOs for\n"
 			   "    machinename\tMachine to refresh GPOs for\n"));
@@ -223,9 +223,9 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 	};
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net ads gpo listall\n"
-			   "    List all GPOs on the DC\n"));
+			   "    ", _("List all GPOs on the DC\n"));
 		return 0;
 	}
 
@@ -297,9 +297,9 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 	struct nt_user_token *token = NULL;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net ads gpo list <username|machinename>\n"
-			   "  Lists all GPOs for machine/user\n"
+		d_printf(_("Usage:\n"),
+			   _("net ads gpo list <username|machinename>\n"),
+			   _("  Lists all GPOs for machine/user\n"
 			   "    username\tUser to list GPOs for\n"
 			   "    machinename\tMachine to list GPOs for\n"));
 		return -1;
@@ -448,9 +448,9 @@ static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **ar
 	struct GP_LINK gp_link;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net ads gpo linkget <container>\n"
-			   "  Lists gPLink of a containter\n"
+		d_printf(_("Usage:\n"),
+			   _("net ads gpo linkget <container>\n"),
+			   _("  Lists gPLink of a containter\n"
 			   "    container\tContainer to get link for\n"));
 		return -1;
 	}
@@ -489,9 +489,9 @@ static int net_ads_gpo_link_add(struct net_context *c, int argc, const char **ar
 	TALLOC_CTX *mem_ctx;
 
 	if (argc < 2 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net ads gpo linkadd <linkdn> <gpodn> [options]\n"
-			   "  Link a container to a GPO\n"
+		d_printf(_("Usage:\n"),
+			   _("net ads gpo linkadd <linkdn> <gpodn> [options]\n"),
+			   _("  Link a container to a GPO\n"
 			   "    linkdn\tContainer to link to a GPO\n"
 			   "    gpodn\tGPO to link container to\n"));
 		d_printf(_("note: DNs must be provided properly escaped.\n"
@@ -576,9 +576,9 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 	struct GROUP_POLICY_OBJECT gpo;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net ads gpo getgpo <gpo>\n"
-			   "  List speciefied GPO\n"
+		d_printf(_("Usage:\n"),
+			   _("net ads gpo getgpo <gpo>\n"),
+			   _("  List speciefied GPO\n"
 			   "    gpo\t\tGPO to list\n"));
 		return -1;
 	}
