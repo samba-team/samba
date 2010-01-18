@@ -745,7 +745,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%u\n", 
+	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
 		ctdb_addr_to_str(&pip->addr),
 		vnn->public_netmask_bits, 
 		ctdb_vnn_iface_string(vnn),
