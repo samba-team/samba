@@ -136,7 +136,7 @@ plantest "blackbox.net_s3" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERV
 (
 	shift $#
 	testitprefix="posix_s3."
-	testitenv="dc:local"
+	testitenv="dc"
 
 	SMBTORTURE4BINARY=$SMBTORTURE4
 	TORTURE4_OPTIONS=""
