@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/service_rpc.h"
 #include "smbd/process_model.h"
@@ -76,6 +77,23 @@ static struct received_packet {
 	struct received_packet *prev, *next;
 } *received_packets = NULL;
 
+static WERROR _spoolss_ReplyOpenPrinter(struct dcesrv_call_state *dce_call,
+					TALLOC_CTX *mem_ctx,
+					struct spoolss_ReplyOpenPrinter *r)
+{
+	DEBUG(1,("_spoolss_ReplyOpenPrinter\n"));
+
+	NDR_PRINT_IN_DEBUG(spoolss_ReplyOpenPrinter, r);
+
+	r->out.handle = talloc(r, struct policy_handle);
+	r->out.handle->handle_type = 42;
+	r->out.handle->uuid = GUID_random();
+	r->out.result = WERR_OK;
+
+	NDR_PRINT_OUT_DEBUG(spoolss_ReplyOpenPrinter, r);
+
+	return WERR_OK;
+}
 
 static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
@@ -91,7 +109,7 @@ static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_
 	switch (opnum) {
 	case 58: {
 		struct spoolss_ReplyOpenPrinter *r2 = (struct spoolss_ReplyOpenPrinter *)r;
-		r2->out.result = WERR_OK;
+		r2->out.result = _spoolss_ReplyOpenPrinter(dce_call, mem_ctx, r2);
 		break;
 	}
 
