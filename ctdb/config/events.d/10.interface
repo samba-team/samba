@@ -81,13 +81,13 @@ monitor_interfaces()
 		;;
 	    *)
 		[ -z "$IFACE" ] || {
-		    /usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
+		    ethtool $IFACE | grep -q 'Link detected: yes' || {
 			# On some systems, this is not successful when a
 			# cable is plugged but the interface has not been
 			# brought up previously. Bring the interface up and
 			# try again...
 			/sbin/ip link set $IFACE up
-			/usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
+			ethtool $IFACE | grep -q 'Link detected: yes' || {
 			    echo "ERROR: No link on the public network interface $IFACE"
 			    fail=1
 			    test -n "$OLDLINK" && {
