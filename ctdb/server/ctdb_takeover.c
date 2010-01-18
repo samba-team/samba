@@ -733,7 +733,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	vnn->takeover_ctx = NULL;
 
 	if (!ctdb_sys_have_ip(&pip->addr)) {
-		DEBUG(DEBUG_NOTICE,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
+		DEBUG(DEBUG_INFO,("Redundant release of IP %s/%u on interface %s (ip not held)\n",
 			ctdb_addr_to_str(&pip->addr),
 			vnn->public_netmask_bits, 
 			ctdb_vnn_iface_string(vnn)));
