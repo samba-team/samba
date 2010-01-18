@@ -575,11 +575,9 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 			ctdb_addr_to_str(&pip->addr)));
 		return 0;
 	}
-	vnn->pnn = pip->pnn;
 
 	have_ip = ctdb_sys_have_ip(&pip->addr);
 	best_iface = ctdb_vnn_best_iface(ctdb, vnn);
-
 	if (best_iface == NULL) {
 		DEBUG(DEBUG_ERR,("takeoverip of IP %s/%u failed to find"
 				 "a usable interface (old %s, have_ip %d)\n",
@@ -587,6 +585,25 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 				 vnn->public_netmask_bits,
 				 ctdb_vnn_iface_string(vnn),
 				 have_ip));
+		return -1;
+	}
+
+	if (vnn->iface == NULL && have_ip) {
+		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
+				  "but we have no interface assigned, has someone manually configured it?"
+				  "banning ourself\n",
+				 ctdb_addr_to_str(&vnn->public_address)));
+		ctdb_ban_self(ctdb);
+		return -1;
+	}
+
+	if (vnn->pnn != ctdb->pnn && have_ip) {
+		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
+				  "and we have it on iface[%s], but it was assigned to node %d"
+				  "and we are node %d, banning ourself\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				 ctdb_vnn_iface_string(vnn), vnn->pnn, ctdb->pnn));
+		ctdb_ban_self(ctdb);
 		return -1;
 	}
 
@@ -761,6 +778,15 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 			ctdb_vnn_iface_string(vnn)));
 		ctdb_vnn_unassign_iface(ctdb, vnn);
 		return 0;
+	}
+
+	if (vnn->iface == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " release_ip of IP %s is known to the kernel, "
+				  "but we have no interface assigned, has someone manually configured it?"
+				  "banning ourself\n",
+				 ctdb_addr_to_str(&vnn->public_address)));
+		ctdb_ban_self(ctdb);
+		return -1;
 	}
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
