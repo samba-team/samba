@@ -24,10 +24,16 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5202: Fix changing of ACLs on writable files with "dos filemode=yes".
     * BUG 7020: Fix memory leak in smbd.
     * BUG 7036: Fix 'net rpc getsid' in hardened Windows environments.
+    * BUG 7045: Fix bad (non memory copying) interfaces in smbc_setXXXX calls.
 
 
 o   Günther Deschner <gd@samba.org>
-    * BUG 7043: Fix SIGSEGV in "SMBC_parse_path".
+    * BUG 7043: Fix crash bug in "SMBC_parse_path".
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7046: Fix a crash in libsmbclient used against the OpenSolaris CIFS
+      server.
 
 
 o   Stefan Metzmacher <metze@samba.org>
