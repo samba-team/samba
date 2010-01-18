@@ -364,9 +364,9 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc audit get\n"
-			   "    View configured audit setting\n"));
+			   "    ",_("View configured audit setting\n"));
 		return 0;
 	}
 
@@ -380,9 +380,9 @@ static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc audit set\n"
-			   "    Set audit policies\n"));
+			   "    ",_("Set audit policies\n"));
 		return 0;
 	}
 
@@ -396,9 +396,9 @@ static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc audit enable\n"
-			   "    Enable auditing\n"));
+			   "    ",_("Enable auditing\n"));
 		return 0;
 	}
 
@@ -412,9 +412,9 @@ static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc audit disable\n"
-			   "    Disable auditing\n"));
+			   "    ",_("Disable auditing\n"));
 		return 0;
 	}
 
@@ -428,9 +428,9 @@ static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc audit list\n"
-			   "    List auditing settings\n"));
+			   "    ",_("List auditing settings\n"));
 		return 0;
 	}
 

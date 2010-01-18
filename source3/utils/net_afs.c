@@ -35,7 +35,7 @@ int net_afs_key(struct net_context *c, int argc, const char **argv)
 	struct afs_keyfile keyfile;
 
 	if (argc != 2) {
-		d_printf(_("usage: 'net afs key <keyfile> cell'\n"));
+		d_printf(_("usage:")," net afs key <keyfile> cell\n");
 		return -1;
 	}
 
@@ -68,7 +68,7 @@ int net_afs_impersonate(struct net_context *c, int argc,
 	char *token;
 
 	if (argc != 2) {
-		fprintf(stderr, _("Usage: net afs impersonate <user> <cell>\n"));
+		fprintf(stderr, _("Usage:")," net afs impersonate <user> <cell>\n");
 	        exit(1);
 	}
 

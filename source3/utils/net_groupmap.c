@@ -88,7 +88,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 				         "    sid\tSID of group to list");
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n%s\n"), list_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", list_usage_str);
 		return 0;
 	}
 
@@ -116,7 +116,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 		}
 		else {
 			d_fprintf(stderr, _("Bad option: %s\n"), argv[i]);
-			d_printf("Usage:\n%s\n", list_usage_str);
+			d_printf(_("Usage:\n"),"%s\n", list_usage_str);
 			return -1;
 		}
 	}
@@ -192,7 +192,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	name_type = "domain group";
 
 	if (c->display_usage) {
-		d_printf(_("Usage\n%s\n"), add_usage_str);
+		d_printf(_("Usage\n"),"%s\n", add_usage_str);
 		return 0;
 	}
 
@@ -268,7 +268,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	if ( !unixgrp[0] ) {
-		d_printf(_("Usage:\n%s\n"), add_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", add_usage_str);
 		return -1;
 	}
 
@@ -353,7 +353,7 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 					   "[type=<domain|local>]");
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n%s\n"), modify_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", modify_usage_str);
 		return 0;
 	}
 
@@ -409,7 +409,7 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 	}
 
 	if ( !ntgroup[0] && !sid_string[0] ) {
-		d_printf(_("Usage:\n%s\n"), modify_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", modify_usage_str);
 		return -1;
 	}
 
@@ -492,7 +492,7 @@ static int net_groupmap_delete(struct net_context *c, int argc, const char **arg
 					   "{ntgroup=<string>|sid=<SID>}");
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n%s\n"), delete_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", delete_usage_str);
 		return 0;
 	}
 
@@ -519,7 +519,7 @@ static int net_groupmap_delete(struct net_context *c, int argc, const char **arg
 	}
 
 	if ( !ntgroup[0] && !sid_string[0]) {
-		d_printf(_("Usage:\n%s\n"), delete_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", delete_usage_str);
 		return -1;
 	}
 
@@ -554,7 +554,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 	bool have_map = false;
 
 	if ((argc < 1) || (argc > 2) || c->display_usage) {
-		d_printf(_("Usage: net groupmap set \"NT Group\" "
+		d_printf(_("Usage:"), _(" net groupmap set \"NT Group\" "
 			 "[\"unix group\"] [-C \"comment\"] [-L] [-D]\n"));
 		return -1;
 	}
@@ -671,9 +671,9 @@ static int net_groupmap_cleanup(struct net_context *c, int argc, const char **ar
 	size_t i, entries;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net groupmap cleanup\n"
-			   "    Delete all group mappings\n"));
+			   "    ",_("Delete all group mappings\n"));
 		return 0;
 	}
 
@@ -709,7 +709,7 @@ static int net_groupmap_addmem(struct net_context *c, int argc, const char **arg
 	     c->display_usage ||
 	     !string_to_sid(&alias, argv[0]) ||
 	     !string_to_sid(&member, argv[1]) ) {
-		d_printf(_("Usage: net groupmap addmem alias-sid member-sid\n"));
+		d_printf(_("Usage:"), _("net groupmap addmem alias-sid member-sid\n"));
 		return -1;
 	}
 
@@ -730,7 +730,7 @@ static int net_groupmap_delmem(struct net_context *c, int argc, const char **arg
 	     c->display_usage ||
 	     !string_to_sid(&alias, argv[0]) ||
 	     !string_to_sid(&member, argv[1]) ) {
-		d_printf(_("Usage: net groupmap delmem alias-sid member-sid\n"));
+		d_printf(_("Usage:"), _(" net groupmap delmem alias-sid member-sid\n"));
 		return -1;
 	}
 
@@ -752,7 +752,7 @@ static int net_groupmap_listmem(struct net_context *c, int argc, const char **ar
 	if ( (argc != 1) ||
 	     c->display_usage ||
 	     !string_to_sid(&alias, argv[0]) ) {
-		d_printf(_("Usage: net groupmap listmem alias-sid\n"));
+		d_printf(_("Usage:"), _(" net groupmap listmem alias-sid\n"));
 		return -1;
 	}
 
@@ -811,7 +811,7 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
 	if ( (argc != 1) ||
 	     c->display_usage ||
 	     !string_to_sid(&member, argv[0]) ) {
-		d_printf(_("Usage: net groupmap memberof sid\n"));
+		d_printf(_("Usage:"), _(" net groupmap memberof sid\n"));
 		return -1;
 	}
 

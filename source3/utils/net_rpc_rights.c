@@ -413,8 +413,8 @@ static NTSTATUS rpc_rights_list_internal(struct net_context *c,
 	/* backward comaptibility: if no keyword provided, treat the key
 	   as an account name */
 	if (argc > 1) {
-		d_printf(_("Usage: net rpc rights list [[accounts|privileges] "
-			   "[name|SID]]\n"));
+		d_printf(_("Usage:")," net rpc rights list [[accounts|privileges] "
+			   "[name|SID]]\n");
 		result = NT_STATUS_OK;
 		goto done;
 	}
@@ -451,7 +451,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 	DOM_SID sid;
 
 	if (argc < 2 ) {
-		d_printf(_("Usage: net rpc rights grant <name|SID> "
+		d_printf(_("Usage:"),_(" net rpc rights grant <name|SID> "
 			   "<rights...>\n"));
 		return NT_STATUS_OK;
 	}
@@ -521,7 +521,7 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 	int i;
 
 	if (argc < 2 ) {
-		d_printf(_("Usage: net rpc rights revoke <name|SID> "
+		d_printf(_("Usage:"),_(" net rpc rights revoke <name|SID> "
 			   "<rights...>\n"));
 		return NT_STATUS_OK;
 	}
@@ -577,8 +577,8 @@ done:
 static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc rights list [{accounts|privileges} "
+		d_printf(_("Usage:\n"),
+			   _("net rpc rights list [{accounts|privileges} "
 			   "[name|SID]]\n"
 			   "    View available/assigned privileges\n"));
 		return 0;
@@ -594,8 +594,8 @@ static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc rights grant <name|SID> <right>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc rights grant <name|SID> <right>\n"
 			   "    Assign privilege[s]\n"));
 		d_printf(_("For example:\n"
 			   "    net rpc rights grant 'VALE\\biddle' "
@@ -615,8 +615,8 @@ static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 static int rpc_rights_revoke(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc rights revoke <name|SID> <right>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc rights revoke <name|SID> <right>\n"
 			   "    Revoke privilege[s]\n"));
 		d_printf(_("For example:\n"
 			   "    net rpc rights revoke 'VALE\\biddle' "
