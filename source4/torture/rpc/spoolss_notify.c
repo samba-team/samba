@@ -95,6 +95,22 @@ static WERROR _spoolss_ReplyOpenPrinter(struct dcesrv_call_state *dce_call,
 	return WERR_OK;
 }
 
+static WERROR _spoolss_ReplyClosePrinter(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct spoolss_ReplyClosePrinter *r)
+{
+	DEBUG(1,("_spoolss_ReplyClosePrinter\n"));
+
+	NDR_PRINT_IN_DEBUG(spoolss_ReplyClosePrinter, r);
+
+	ZERO_STRUCTP(r->out.handle);
+	r->out.result = WERR_OK;
+
+	NDR_PRINT_OUT_DEBUG(spoolss_ReplyClosePrinter, r);
+
+	return WERR_OK;
+}
+
 static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
@@ -110,6 +126,11 @@ static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_
 	case 58: {
 		struct spoolss_ReplyOpenPrinter *r2 = (struct spoolss_ReplyOpenPrinter *)r;
 		r2->out.result = _spoolss_ReplyOpenPrinter(dce_call, mem_ctx, r2);
+		break;
+	}
+	case 60: {
+		struct spoolss_ReplyClosePrinter *r2 = (struct spoolss_ReplyClosePrinter *)r;
+		r2->out.result = _spoolss_ReplyClosePrinter(dce_call, mem_ctx, r2);
 		break;
 	}
 
@@ -210,6 +231,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	struct dcesrv_endpoint *e;
 	struct spoolss_NotifyOption t1;
 	struct spoolss_ClosePrinter cp;
+	struct received_packet *rp;
 
 	struct policy_handle handle;
 	const char *address;
@@ -313,9 +335,21 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	status = dcerpc_spoolss_ClosePrinter(p, tctx, &cp);
 	torture_assert_ntstatus_ok(tctx, status, "ClosePrinter failed");
 
-	/* We should've had an incoming packet 58 (ReplyOpenPrinter) */
+	/* We should've had an incoming packet 58 (ReplyOpenPrinter) or 60
+	 * (ReplyClosePrinter) */
+
 	torture_assert(tctx, received_packets != NULL, "no packets received");
-	torture_assert_int_equal(tctx, received_packets->opnum, 58, "invalid opnum");
+
+	for (rp = received_packets; rp; rp = rp->next) {
+		switch (rp->opnum) {
+		case 58:
+		case 60:
+			continue;
+		default:
+			torture_fail(tctx,
+				talloc_asprintf(tctx, "unexpected packet opnum %d received", rp->opnum));
+		}
+	}
 
 	/* Shut down DCE/RPC server */
 	talloc_free(dce_ctx);
