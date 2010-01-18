@@ -123,6 +123,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 			     void *dummy)
 {
 	char           *utf8_fname;
+	char           *utf8_sharepath;
 	int deny_mode;
 	size_t converted_size;
 
@@ -172,8 +173,10 @@ static void print_share_mode(const struct share_mode_entry *e,
 	printf("</td>");
 
 	push_utf8_talloc(talloc_tos(), &utf8_fname, fname, &converted_size);
-	printf("<td>%s</td><td>%s</td></tr>\n",
-	       utf8_fname,tstring(talloc_tos(),e->time.tv_sec));
+	push_utf8_talloc(talloc_tos(), &utf8_sharepath, sharepath,
+			 &converted_size);
+	printf("<td>%s</td><td>%s</td><td>%s</td></tr>\n",
+	       utf8_sharepath,utf8_fname,tstring(talloc_tos(),e->time.tv_sec));
 	TALLOC_FREE(utf8_fname);
 }
 
@@ -427,8 +430,8 @@ void status_page(void)
 
 	printf("<h3>%s</h3>\n", _("Open Files"));
 	printf("<table border=1>\n");
-	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n",
-		_("PID"), _("UID"), _("Sharing"), _("R/W"), _("Oplock"), _("File"), _("Date"));
+	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n",
+		_("PID"), _("UID"), _("Sharing"), _("R/W"), _("Oplock"), _("Share"), _("File"), _("Date"));
 
 	locking_init_readonly();
 	share_mode_forall(print_share_mode, NULL);
