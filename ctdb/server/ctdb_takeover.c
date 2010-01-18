@@ -606,6 +606,10 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		 * The interface is up and the kernel known the ip
 		 * => do nothing
 		 */
+		DEBUG(DEBUG_INFO,("Redundant takeover of IP %s/%u on interface %s (ip already held)\n",
+			ctdb_addr_to_str(&pip->addr),
+			vnn->public_netmask_bits,
+			ctdb_vnn_iface_string(vnn)));
 		return 0;
 	}
 
