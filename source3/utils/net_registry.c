@@ -130,8 +130,8 @@ static int net_registry_enumerate(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:    net registry enumerate <path>\n"));
-		d_printf(_("Example:  net registry enumerate "
+		d_printf(_("Usage:"),_("    net registry enumerate <path>\n"));
+		d_printf(_("Example:"), _("  net registry enumerate "
 			 "'HKLM\\Software\\Samba'\n"));
 		goto done;
 	}
@@ -182,8 +182,8 @@ static int net_registry_createkey(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:    net registry createkey <path>\n"));
-		d_printf(_("Example:  net registry createkey "
+		d_printf(_("Usage:"),_("    net registry createkey <path>\n"));
+		d_printf(_("Example:"), _("  net registry createkey "
 			 "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n"));
 		goto done;
 	}
@@ -235,8 +235,8 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:    net registry deletekey <path>\n"));
-		d_printf(_("Example:  net registry deletekey "
+		d_printf(_("Usage:"),_("    net registry deletekey <path>\n"));
+		d_printf(_("Example:"),_("  net registry deletekey "
 			   "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n"));
 		goto done;
 	}
@@ -247,14 +247,14 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 
 	werr = open_hive(ctx, argv[0], REG_KEY_WRITE, &hivekey, &subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("open_hive failed: %s\n"),
-			  win_errstr(werr));
+		d_fprintf(stderr, "open_hive ", _("failed"),
+			": %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_deletekey(hivekey, subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("reg_deletekey failed: %s\n"),
+		d_fprintf(stderr, "reg_deletekey ", _("failed"), ": %s\n",
 			  win_errstr(werr));
 		goto done;
 	}
@@ -276,7 +276,7 @@ static int net_registry_getvalue_internal(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry getvalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry getvalue <key> "
 				    "<valuename>\n"));
 		goto done;
 	}
@@ -325,7 +325,7 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (argc < 4 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry setvalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry setvalue <key> "
 			  "<valuename> <type> [<val>]+\n"));
 		goto done;
 	}
@@ -380,7 +380,7 @@ static int net_registry_deletevalue(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry deletevalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry deletevalue <key> "
 			  "<valuename>\n"));
 		goto done;
 	}
@@ -424,8 +424,8 @@ static int net_registry_getsd(struct net_context *c, int argc,
 	access_mask = REG_KEY_READ;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:    net registry getsd <path>\n"));
-		d_printf(_("Example:  net registry getsd "
+		d_printf(_("Usage:"),_("    net registry getsd <path>\n"));
+		d_printf(_("Example:"),_("  net registry getsd "
 			   "'HKLM\\Software\\Samba'\n"));
 		goto done;
 	}

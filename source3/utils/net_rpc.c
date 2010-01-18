@@ -78,8 +78,8 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, _("open_policy failed: %s\n"),
-			  nt_errstr(result));
+		d_fprintf(stderr, "open_policy ",_("failed"),": %s\n"),
+			  nt_errstr(result);
 		return result;
 	}
 
@@ -88,8 +88,8 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
 					    &info);
 	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, _("lsaquery failed: %s\n"),
-			  nt_errstr(result));
+		d_fprintf(stderr, "lsaquery ",_("failed"),": %s\n"),
+			  nt_errstr(result);
 		return result;
 	}
 
@@ -272,9 +272,9 @@ static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
 int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc changetrustpw\n"
-			   "    Change the machine trust password\n"));
+			   "    ",_("Change the machine trust password\n"));
 		return 0;
 	}
 
@@ -403,9 +403,9 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 	int rc = -1;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc oldjoin\n"
-			   "    Join a domain the old way\n"));
+			   "    ",_("Join a domain the old way\n"));
 		return 0;
 	}
 
@@ -433,8 +433,8 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 int net_rpc_join(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc join -U <username>[%%password] <type>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc join -U <username>[%%password] <type>\n"
 			   "  Join a domain\n"
 			   "    username\tName of the admin user"
 			   "    password\tPassword of the admin user, will "
@@ -548,9 +548,9 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 int net_rpc_info(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc info\n"
-			   "  Display information about the domain\n"));
+			   "  ",_("Display information about the domain\n"));
 		return 0;
 	}
 
@@ -614,9 +614,9 @@ int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc getsid\n"
-			   "    Fetch domain SID into local secrets.tdb\n"));
+			   "    ",_("Fetch domain SID into local secrets.tdb\n"));
 		return 0;
 	}
 
@@ -982,9 +982,9 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 
 	if (argc == 0) {
 		if (c->display_usage) {
-			d_printf(_("Usage:\n"));
-			d_printf(_("net rpc user\n"
-				   "    List all users\n"));
+			d_printf(_("Usage:\n"),
+				   "net rpc user\n"
+				   "    ",_("List all users\n"));
 			net_display_usage_from_functable(func);
 			return 0;
 		}
@@ -1033,7 +1033,7 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 	enum lsa_SidType type;
 
 	if (argc == 0) {
-		d_fprintf(stderr, _("usage: %s <username>\n"), ctx->whoami);
+		d_fprintf(stderr, _("usage:")," %s <username>\n"), ctx->whoami;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1114,7 +1114,7 @@ static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
 	union samr_UserInfo *info = NULL;
 
 	if (argc != 0) {
-		d_fprintf(stderr, _("usage: %s show <username>\n"),ctx->whoami);
+		d_fprintf(stderr, _("usage:")," %s show <username>\n"),ctx->whoami;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1167,7 +1167,7 @@ static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
 	union samr_UserInfo *info = NULL;
 
 	if (argc > 1) {
-		d_fprintf(stderr, _("usage: %s <username> [new value|NULL]\n"),
+		d_fprintf(stderr, _("usage:")," %s <username> [new value|NULL]\n",
 			  ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1571,7 +1571,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 					d_printf(_("ok\n"));
 			} else {
 				if (c->opt_verbose)
-					d_printf(_("failed\n"));
+					d_printf(_("failed"),"\n");
 				goto done;
 			}
 		}
@@ -1914,8 +1914,8 @@ static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
 	enum lsa_SidType group_type;
 
 	if (argc != 2 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc group addmem <group> <member>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc group addmem <group> <member>\n"
 			   "  Add a member to a group\n"
 			   "    group\tGroup to add member to\n"
 			   "    member\tMember to add to group\n"));
@@ -2116,8 +2116,8 @@ static NTSTATUS rpc_group_delmem_internals(struct net_context *c,
 	enum lsa_SidType group_type;
 
 	if (argc != 2 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc group delmem <group> <member>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc group delmem <group> <member>\n"
 			   "  Delete a member from a group\n"
 			   "    group\tGroup to delete member from\n"
 			   "    member\tMember to delete from group\n"));
@@ -2200,8 +2200,8 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	bool builtin = false;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc group list [global] [local] [builtin]\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc group list [global] [local] [builtin]\n"
 			   "  List groups on RPC server\n"
 			   "    global\tList global groups\n"
 			   "    local\tList local groups\n"
@@ -2709,7 +2709,7 @@ static int rpc_group_rename_internals(struct net_context *c, int argc, const cha
 	uint32_t parm_err;
 
 	if (argc != 2) {
-		d_printf(_("Usage: 'net rpc group rename group newname'\n"));
+		d_printf(_("Usage:\n"), "net rpc group rename group newname\n");
 		return -1;
 	}
 
@@ -3047,9 +3047,9 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 	uint32_t i, level = 1;
 
 	if (c->display_usage) {
-		d_printf(_("Usage\n"
+		d_printf(_("Usage\n"),
 			   "net rpc share list\n"
-			   "    List shares on remote server\n"));
+			   "    ",_("List shares on remote server\n"));
 		return 0;
 	}
 
@@ -3231,9 +3231,9 @@ static int rpc_share_migrate_shares(struct net_context *c, int argc,
 				    const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc share migrate shares\n"
-			   "    Migrate shares to local server\n"));
+			   "    ",_("Migrate shares to local server\n"));
 		return 0;
 	}
 
@@ -3564,9 +3564,9 @@ done:
 static int rpc_share_migrate_files(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net share migrate files\n"
-			   "    Migrate files to local server\n"));
+			   "    ",_("Migrate files to local server\n"));
 		return 0;
 	}
 
@@ -3689,9 +3689,9 @@ static int rpc_share_migrate_security(struct net_context *c, int argc,
 				      const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc share migrate security\n"
-			   "    Migrate share-acls to local server\n"));
+			   "    ",_("Migrate share-acls to local server\n"));
 		return 0;
 	}
 
@@ -3722,9 +3722,9 @@ static int rpc_share_migrate_all(struct net_context *c, int argc,
 	int ret;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc share migrate all\n"
-			   "    Migrates shares including all share settings\n"));
+			   "    ",_("Migrates shares including all share settings\n"));
 		return 0;
 	}
 
@@ -4019,7 +4019,7 @@ static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
 	token->num_sids = 4;
 
 	if (!(token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4))) {
-		d_fprintf(stderr, _("malloc failed\n"));
+		d_fprintf(stderr, "malloc ",_("failed"),"\n");
 		token->num_sids = 0;
 		return;
 	}
@@ -4525,9 +4525,9 @@ static int rpc_share_allowedusers(struct net_context *c, int argc,
 	int result;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc share allowedusers\n"
-			    "    List allowed users\n"));
+			    "    ",_("List allowed users\n"));
 		return 0;
 	}
 
@@ -4651,8 +4651,8 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 
 	if (argc == 0) {
 		if (c->display_usage) {
-			d_printf(_("Usage:\n"
-				   "net rpc share\n"
+			d_printf(_("Usage:\n"),
+				   _("net rpc share\n"
 				   "    List shares\n"
 				   "    Alias for net rpc share list\n"));
 			net_display_usage_from_functable(func);
@@ -4715,7 +4715,7 @@ static NTSTATUS rpc_sh_share_delete(struct net_context *c,
 				    int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <share>\n"), ctx->whoami);
+		d_fprintf(stderr, _("usage:")," %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5033,9 +5033,9 @@ static int rpc_shutdown_abort(struct net_context *c, int argc,
 	int rc = -1;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc abortshutdown\n"
-			   "    Abort a scheduled shutdown\n"));
+			   "    ",_("Abort a scheduled shutdown\n"));
 		return 0;
 	}
 
@@ -5180,9 +5180,9 @@ static int rpc_shutdown(struct net_context *c, int argc, const char **argv)
 	int rc =  -1;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc shutdown\n"
-			   "    Shut down a remote RPC server\n"));
+			   "    ",_("Shut down a remote RPC server\n"));
 		return 0;
 	}
 
@@ -5239,7 +5239,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	unsigned int orig_timeout;
 
 	if (argc != 2) {
-		d_printf(_("Usage: net rpc trustdom add <domain_name> "
+		d_printf(_("Usage:"),_(" net rpc trustdom add <domain_name> "
 			   "<trust password>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -5352,8 +5352,8 @@ static int rpc_trustdom_add(struct net_context *c, int argc, const char **argv)
 		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_trustdom_add_internals, argc, argv);
 	} else {
-		d_printf(_("Usage:\n"
-			   "net rpc trustdom add <domain_name> <trust "
+		d_printf(_("Usage:\n"),
+			   _("net rpc trustdom add <domain_name> <trust "
 			   "password>\n"));
 		return -1;
 	}
@@ -5393,7 +5393,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	struct lsa_String lsa_acct_name;
 
 	if (argc != 1) {
-		d_printf(_("Usage: net rpc trustdom del <domain_name>\n"));
+		d_printf(_("Usage:"),_(" net rpc trustdom del <domain_name>\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5509,8 +5509,8 @@ static int rpc_trustdom_del(struct net_context *c, int argc, const char **argv)
 		return run_rpc_command(c, NULL, &ndr_table_samr.syntax_id, 0,
 				       rpc_trustdom_del_internals, argc, argv);
 	} else {
-		d_printf(_("Usage:\n"
-			   "net rpc trustdom del <domain>\n"));
+		d_printf(_("Usage:\n"),
+			   _("net rpc trustdom del <domain>\n"));
 		return -1;
 	}
 }
@@ -5592,8 +5592,8 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 */
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc trustdom establish <domain_name>\n"));
+		d_printf(_("Usage:\n"),
+			   _("net rpc trustdom establish <domain_name>\n"));
 		return -1;
 	}
 
@@ -5756,8 +5756,8 @@ static int rpc_trustdom_revoke(struct net_context *c, int argc,
 	int rc = -1;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc trustdom revoke <domain_name>\n"
+		d_printf(_("Usage:\n"),
+			   _("net rpc trustdom revoke <domain_name>\n"
 			   "  Revoke trust relationship\n"
 			   "    domain_name\tName of domain to revoke trust\n"));
 		return -1;
@@ -5887,9 +5887,9 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	fstring pdc_name;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc trustdom vampire\n"
-			   "  Vampire trust relationship from remote server\n"));
+			   "  ",_("Vampire trust relationship from remote server\n"));
 		return 0;
 	}
 
@@ -6044,9 +6044,9 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	struct samr_SamArray *trusts = NULL;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc trustdom list\n"
-			   "    List in- and outgoing trust relationships\n"));
+			   "    ",_("List in- and outgoing trust relationships\n"));
 		return 0;
 	}
 
@@ -6417,9 +6417,9 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 /* dump sam database via samsync rpc calls */
 static int rpc_samdump(struct net_context *c, int argc, const char **argv) {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc samdump\n"
-			   "    Dump remote SAM database\n"));
+			   "    ",_("Dump remote SAM database\n"));
 		return 0;
 	}
 
@@ -6464,9 +6464,9 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 
 	if (argc == 0) {
 		if (c->display_usage) {
-			d_printf(_("Usage:\n"
+			d_printf(_("Usage:\n"),
 				   "net rpc vampire\n"
-				   "    Vampire remote SAM database\n"));
+				   "    ",_("Vampire remote SAM database\n"));
 			return 0;
 		}
 
@@ -6500,9 +6500,9 @@ static int rpc_printer_migrate_all(struct net_context *c, int argc,
 	int ret;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer migrate all\n"
-			   "    Migrate everything from a print server\n"));
+			   "    ",_("Migrate everything from a print server\n"));
 		return 0;
 	}
 
@@ -6554,9 +6554,9 @@ static int rpc_printer_migrate_drivers(struct net_context *c, int argc,
 				       const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer migrate drivers\n"
-			   "     Migrate print-drivers from a print-server\n"));
+			   "     ",_("Migrate print-drivers from a print-server\n"));
 		return 0;
 	}
 
@@ -6584,9 +6584,9 @@ static int rpc_printer_migrate_forms(struct net_context *c, int argc,
 				     const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer migrate forms\n"
-			   "    Migrate print-forms from a print-server\n"));
+			   "    ",_("Migrate print-forms from a print-server\n"));
 		return 0;
 	}
 
@@ -6614,9 +6614,9 @@ static int rpc_printer_migrate_printers(struct net_context *c, int argc,
 					const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer migrate printers\n"
-			   "    Migrate printers from a print-server\n"));
+			   "    ",_("Migrate printers from a print-server\n"));
 		return 0;
 	}
 
@@ -6644,9 +6644,9 @@ static int rpc_printer_migrate_security(struct net_context *c, int argc,
 					const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer migrate security\n"
-			   "    Migrate printer-ACLs from a print-server\n"));
+			   "    ",_("Migrate printer-ACLs from a print-server\n"));
 		return 0;
 	}
 
@@ -6674,9 +6674,9 @@ static int rpc_printer_migrate_settings(struct net_context *c, int argc,
 					const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer migrate settings\n"
-			    "    Migrate printer-settings from a "
+			    "    ",_("Migrate printer-settings from a "
 			    "print-server\n"));
 		return 0;
 	}
@@ -6776,9 +6776,9 @@ int rpc_printer_migrate(struct net_context *c, int argc, const char **argv)
 static int rpc_printer_list(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer list\n"
-			   "    List printers on a remote RPC server\n"));
+			   "    ",_("List printers on a remote RPC server\n"));
 		return 0;
 	}
 
@@ -6801,9 +6801,9 @@ static int rpc_printer_driver_list(struct net_context *c, int argc,
 				   const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer driver\n"
-			   "    List printer-drivers on a remote RPC server\n"));
+			   "    ",_("List printer-drivers on a remote RPC server\n"));
 		return 0;
 	}
 
@@ -6826,9 +6826,9 @@ static int rpc_printer_publish_publish(struct net_context *c, int argc,
 				       const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer publish publish\n"
-			   "     Publish printer in ADS via MSRPC\n"));
+			   "     ",_("Publish printer in ADS via MSRPC\n"));
 		return 0;
 	}
 
@@ -6850,9 +6850,9 @@ static int rpc_printer_publish_publish(struct net_context *c, int argc,
 static int rpc_printer_publish_update(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer publish update\n"
-			   "    Update printer in ADS via MSRPC\n"));
+			   "    ",_("Update printer in ADS via MSRPC\n"));
 		return 0;
 	}
 
@@ -6875,9 +6875,9 @@ static int rpc_printer_publish_unpublish(struct net_context *c, int argc,
 					 const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer publish unpublish\n"
-			   "    UnPublish printer in ADS via MSRPC\n"));
+			   "    ",_("UnPublish printer in ADS via MSRPC\n"));
 		return 0;
 	}
 
@@ -6900,9 +6900,9 @@ static int rpc_printer_publish_list(struct net_context *c, int argc,
 				    const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc printer publish list\n"
-			   "    List published printers via MSRPC\n"));
+			   "    ",_("List published printers via MSRPC\n"));
 		return 0;
 	}
 

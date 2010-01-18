@@ -471,7 +471,7 @@ static int rpc_registry_setvalue(struct net_context *c, int argc,
 				 const char **argv )
 {
 	if (argc < 4 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry setvalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry setvalue <key> "
 			  "<valuename> <type> [<val>]+\n"));
 		return -1;
 	}
@@ -524,7 +524,7 @@ static int rpc_registry_deletevalue(struct net_context *c, int argc,
 				    const char **argv )
 {
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry deletevalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry deletevalue <key> "
 			  "<valuename>\n"));
 		return -1;
 	}
@@ -639,7 +639,7 @@ static int rpc_registry_getvalue(struct net_context *c, int argc,
 				 const char **argv)
 {
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry getvalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry getvalue <key> "
 			  "<valuename>\n"));
 		return -1;
 	}
@@ -666,7 +666,7 @@ static int rpc_registry_getvalueraw(struct net_context *c, int argc,
 				    const char **argv)
 {
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage: net rpc registry getvalue <key> "
+		d_fprintf(stderr, _("usage:"),_(" net rpc registry getvalue <key> "
 			  "<valuename>\n"));
 		return -1;
 	}
@@ -740,7 +740,7 @@ static int rpc_registry_createkey(struct net_context *c, int argc,
 {
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr,
-			  _("usage: net rpc registry createkey <key>\n"));
+			  _("usage:"),_(" net rpc registry createkey <key>\n"));
 		return -1;
 	}
 
@@ -790,7 +790,7 @@ static int rpc_registry_deletekey(struct net_context *c, int argc, const char **
 {
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr,
-			  _("usage: net rpc registry deletekey <key>\n"));
+			  _("usage:"),_(" net rpc registry deletekey <key>\n"));
 		return -1;
 	}
 
@@ -820,9 +820,9 @@ static NTSTATUS rpc_registry_enumerate_internal(struct net_context *c,
 	struct registry_value **values = NULL;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:    net rpc registry enumerate <path>\n"));
-		d_printf(_("Example:  net rpc registry enumerate "
-			   "'HKLM\\Software\\Samba'\n"));
+		d_printf(_("Usage:"),_("    net rpc registry enumerate <path>\n"));
+		d_printf(_("Example:"),"  net rpc registry enumerate "
+			   "'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -892,7 +892,7 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 	struct winreg_String filename;
 
 	if (argc != 2 || c->display_usage) {
-		d_printf(_("Usage:    net rpc registry backup <path> "
+		d_printf(_("Usage:"),_("    net rpc registry backup <path> "
 			   "<file> \n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1080,7 +1080,7 @@ static int rpc_registry_dump(struct net_context *c, int argc, const char **argv)
 	REGF_NK_REC *nk;
 
 	if (argc != 1 || c->display_usage) {
-		d_printf(_("Usage:    net rpc registry dump <file> \n"));
+		d_printf(_("Usage:"),_("    net rpc registry dump <file> \n"));
 		return -1;
 	}
 
@@ -1124,7 +1124,7 @@ static int rpc_registry_copy(struct net_context *c, int argc, const char **argv 
 	int result = 1;
 
 	if (argc != 2 || c->display_usage) {
-		d_printf(_("Usage:    net rpc registry copy <srcfile> "
+		d_printf(_("Usage:"),_("    net rpc registry copy <srcfile> "
 			   "<newfile>\n"));
 		return -1;
 	}
@@ -1196,10 +1196,10 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 			       SEC_FLAG_SYSTEM_SECURITY;
 
 	if (argc <1 || argc > 2 || c->display_usage) {
-		d_printf(_("Usage:    net rpc registry getsd <path> "
+		d_printf(_("Usage:"),_("    net rpc registry getsd <path> "
 			   "<secinfo>\n"));
-		d_printf(_("Example:  net rpc registry getsd "
-			   "'HKLM\\Software\\Samba'\n"));
+		d_printf(_("Example:"),"  net rpc registry getsd "
+			   "'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

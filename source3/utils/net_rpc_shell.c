@@ -214,8 +214,8 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 	struct rpc_sh_ctx *ctx;
 
 	if (argc != 0 || c->display_usage) {
-		d_printf(_("Usage:\n"
-			   "net rpc shell\n"));
+		d_printf(_("Usage:\n"),
+			   "net rpc shell\n");
 		return -1;
 	}
 

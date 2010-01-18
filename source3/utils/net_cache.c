@@ -155,7 +155,8 @@ static int net_cache_add(struct net_context *c, int argc, const char **argv)
 	time_t timeout;
 
 	if (argc < 3 || c->display_usage) {
-		d_printf(_("\nUsage:\nnet cache add <key string> <data string> "
+		d_printf("\n",_("Usage:\n"),
+			   _("net cache add <key string> <data string> "
 			   "<timeout>\n"));
 		return -1;
 	}
@@ -192,7 +193,7 @@ static int net_cache_del(struct net_context *c, int argc, const char **argv)
 	const char *keystr = argv[0];
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("\nUsage: net cache del <key string>\n"));
+		d_printf("\n",_("Usage:"), _(" net cache del <key string>\n"));
 		return -1;
 	}
 
@@ -220,7 +221,7 @@ static int net_cache_get(struct net_context *c, int argc, const char **argv)
 	time_t timeout;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("\nUsage: net cache get <key>\n"));
+		d_printf("\n", _("Usage:"), _(" net cache get <key>\n"));
 		return -1;
 	}
 
@@ -247,7 +248,7 @@ static int net_cache_search(struct net_context *c, int argc, const char **argv)
 	const char* pattern;
 
 	if (argc < 1 || c->display_usage) {
-		d_printf(_("Usage: net cache search <pattern>\n"));
+		d_printf(_("Usage:"), _(" net cache search <pattern>\n"));
 		return -1;
 	}
 
@@ -269,9 +270,9 @@ static int net_cache_list(struct net_context *c, int argc, const char **argv)
 	const char* pattern = "*";
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net cache list\n"
-			   "    List all cache entries.\n"));
+			   "    ", _("List all cache entries.\n"));
 		return 0;
 	}
 	gencache_iterate(print_cache_entry, NULL, pattern);
@@ -290,9 +291,9 @@ static int net_cache_flush(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern = "*";
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net cache flush\n"
-			   "    Delete all cache entries.\n"));
+			   "    ", _("Delete all cache entries.\n"));
 		return 0;
 	}
 	gencache_iterate(delete_cache_entry, NULL, pattern);
@@ -303,9 +304,9 @@ static int net_cache_stabilize(struct net_context *c, int argc,
 			       const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net cache flush\n"
-			   "    Delete all cache entries.\n"));
+			   "    ", _("Delete all cache entries.\n"));
 		return 0;
 	}
 

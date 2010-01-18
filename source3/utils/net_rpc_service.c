@@ -215,7 +215,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 	uint32_t resume_handle = 0;
 
 	if (argc != 0 ) {
-		d_printf(_("Usage: net rpc service list\n"));
+		d_printf(_("Usage:")," net rpc service list\n");
 		return NT_STATUS_OK;
 	}
 
@@ -324,7 +324,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	uint32_t ret_size = 0;
 
 	if (argc != 1 ) {
-		d_printf(_("Usage: net rpc service status <service>\n"));
+		d_printf(_("Usage:")," net rpc service status <service>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -456,7 +456,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 	fstring servicename;
 
 	if (argc != 1 ) {
-		d_printf(_("Usage: net rpc service status <service>\n"));
+		d_printf(_("Usage:")," net rpc service status <service>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -502,7 +502,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 	fstring servicename;
 
 	if (argc != 1 ) {
-		d_printf(_("Usage: net rpc service status <service>\n"));
+		d_printf(_("Usage:")," net rpc service status <service>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -548,7 +548,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 	fstring servicename;
 
 	if (argc != 1 ) {
-		d_printf(_("Usage: net rpc service status <service>\n"));
+		d_printf(_("Usage:")," net rpc service status <service>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -594,7 +594,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 	uint32 state = 0;
 
 	if (argc != 1 ) {
-		d_printf(_("Usage: net rpc service status <service>\n"));
+		d_printf(_("Usage:")," net rpc service status <service>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -674,7 +674,7 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 	NTSTATUS status;
 
 	if (argc != 1 ) {
-		d_printf(_("Usage: net rpc service delete <service>\n"));
+		d_printf(_("Usage:")," net rpc service delete <service>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -752,8 +752,8 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 	const char *binary_path;
 
 	if (argc != 3) {
-		d_printf(_("Usage: net rpc service create <service> "
-			   "<displayname> <binarypath>\n"));
+		d_printf(_("Usage:")," net rpc service create <service> "
+			   "<displayname> <binarypath>\n");
 		return NT_STATUS_OK;
 	}
 
@@ -821,9 +821,9 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service list\n"
-			   "    View configured Win32 services\n"));
+			   "    ",_("View configured Win32 services\n"));
 		return 0;
 	}
 
@@ -837,9 +837,9 @@ static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 static int rpc_service_start(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service start <service>\n"
-			   "    Start a Win32 service\n"));
+			   "    ",_("Start a Win32 service\n"));
 		return 0;
 	}
 
@@ -853,9 +853,9 @@ static int rpc_service_start(struct net_context *c, int argc, const char **argv 
 static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service stop <service>\n"
-			   "    Stop a Win32 service\n"));
+			   "    ",_("Stop a Win32 service\n"));
 		return 0;
 	}
 
@@ -869,9 +869,9 @@ static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 static int rpc_service_resume(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service resume <service>\n"
-			   "    Resume a Win32 service\n"));
+			   "    ",_("Resume a Win32 service\n"));
 		return 0;
 	}
 
@@ -885,9 +885,9 @@ static int rpc_service_resume(struct net_context *c, int argc, const char **argv
 static int rpc_service_pause(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service pause <service>\n"
-			   "    Pause a Win32 service\n"));
+			   "    ",_("Pause a Win32 service\n"));
 		return 0;
 	}
 
@@ -901,9 +901,9 @@ static int rpc_service_pause(struct net_context *c, int argc, const char **argv 
 static int rpc_service_status(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service status <service>\n"
-			   "     Show the current status of a service\n"));
+			   "     ",_("Show the current status of a service\n"));
 		return 0;
 	}
 
@@ -917,9 +917,9 @@ static int rpc_service_status(struct net_context *c, int argc, const char **argv
 static int rpc_service_delete(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service delete <service>\n"
-			   "    Delete a Win32 service\n"));
+			   "    ",_("Delete a Win32 service\n"));
 		return 0;
 	}
 
@@ -933,9 +933,9 @@ static int rpc_service_delete(struct net_context *c, int argc, const char **argv
 static int rpc_service_create(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"
+		d_printf(_("Usage:\n"),
 			   "net rpc service create <service>\n"
-			   "    Create a Win32 service\n"));
+			   "    ",_("Create a Win32 service\n"));
 		return 0;
 	}
 
