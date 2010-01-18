@@ -119,7 +119,7 @@ msgstr "Ihr Passwort "
 #: ../../nsswitch/pam_winbind.c:1363
 #, c-format
 msgid "must be at least %d characters; "
-msgstr "muß mindestens %d Zeichen lang sein; "
+msgstr "muss mindestens %d Zeichen lang sein; "
 
 #: ../../nsswitch/pam_winbind.c:1372
 #, c-format
@@ -128,7 +128,7 @@ msgstr "kann keines der %d vorherigen Passwörter enthalten; "
 
 #: ../../nsswitch/pam_winbind.c:1382
 msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
-msgstr "muß Großbuchstaben, Ziffern oder Punktzeichen enthalten; kann nicht den Benutzer- oder vollen Namen enthalten; "
+msgstr "muss Großbuchstaben, Ziffern oder Punktzeichen enthalten; kann nicht den Benutzer- oder vollen Namen enthalten; "
 
 #: ../../nsswitch/pam_winbind.c:1392
 msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
