@@ -2340,27 +2340,30 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	NTSTATUS ret;
 	struct cli_state *the_cli;
 	struct sockaddr_storage rm_addr;
+	char addr[INET6_ADDRSTRLEN];
 
 	if ( is_zero_addr((struct sockaddr *)client_ss) ) {
+		DEBUG(2,("spoolss_connect_to_client: resolving %s\n",
+			remote_machine));
 		if ( !resolve_name( remote_machine, &rm_addr, 0x20, false) ) {
 			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return false;
 		}
-
-		if (ismyaddr((struct sockaddr *)&rm_addr)) {
-			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
-			return false;
-		}
+		print_sockaddr(addr, sizeof(addr), &rm_addr);
 	} else {
-		char addr[INET6_ADDRSTRLEN];
 		rm_addr = *client_ss;
 		print_sockaddr(addr, sizeof(addr), &rm_addr);
 		DEBUG(5,("spoolss_connect_to_client: Using address %s (no name resolution necessary)\n",
 			addr));
 	}
 
-	/* setup the connection */
+	if (ismyaddr((struct sockaddr *)&rm_addr)) {
+		DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n",
+			addr));
+		return false;
+	}
 
+	/* setup the connection */
 	ret = cli_full_connection( &the_cli, global_myname(), remote_machine,
 		&rm_addr, 0, "IPC$", "IPC",
 		"", /* username */
@@ -2548,6 +2551,9 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
 	else if ( (Printer->printer_type == SPLHND_PRINTER) &&
 			!get_printer_snum(p, r->in.handle, &snum, NULL) )
 		return WERR_BADFID;
+
+	DEBUG(10,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
+		"client_address is %s\n", p->client_address));
 
 	if (!interpret_string_addr(&client_ss, p->client_address,
 				   AI_NUMERICHOST)) {
