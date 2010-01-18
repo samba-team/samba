@@ -315,6 +315,10 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	struct spoolss_ReplyClosePrinter s;
 	struct policy_handle h;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping ReplyOpenPrinter server implementation test against s3\n");
+	}
+
 	r.in.server_name = "earth";
 	r.in.printer_local = 2;
 	r.in.type = REG_DWORD;
