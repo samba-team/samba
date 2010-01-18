@@ -558,6 +558,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	bool have_ip = false;
 	bool do_updateip = false;
 	bool do_takeip = false;
+	struct ctdb_iface *best_iface = NULL;
 
 	/* update out vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
@@ -569,13 +570,22 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	vnn->pnn = pip->pnn;
 
 	have_ip = ctdb_sys_have_ip(&pip->addr);
+	best_iface = ctdb_vnn_best_iface(ctdb, vnn);
+
+	if (best_iface == NULL) {
+		DEBUG(DEBUG_ERR,("takeoverip of IP %s/%u failed to find"
+				 "a usable interface (old %s, have_ip %d)\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				 vnn->public_netmask_bits,
+				 ctdb_vnn_iface_string(vnn),
+				 have_ip));
+		return -1;
+	}
 
 	if (vnn->iface) {
 		if (vnn->iface->link_up) {
-			struct ctdb_iface *best;
-			best = ctdb_vnn_best_iface(ctdb, vnn);
 			/* only move when the rebalance gains something */
-			if (best && vnn->iface->references > (best->references + 1)) {
+			if (vnn->iface->references > (best_iface->references + 1)) {
 				do_updateip = true;
 			}
 		} else if (vnn->iface != best_iface) {
