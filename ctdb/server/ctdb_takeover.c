@@ -560,6 +560,14 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	bool do_takeip = false;
 	struct ctdb_iface *best_iface = NULL;
 
+	if (pip->pnn != ctdb->pnn) {
+		DEBUG(DEBUG_ERR,(__location__" takeoverip called for an ip '%s' "
+				 "with pnn %d, but we're node %d\n",
+				 ctdb_addr_to_str(&pip->addr),
+				 pip->pnn, ctdb->pnn));
+		return -1;
+	}
+
 	/* update out vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
 	if (vnn == NULL) {
