@@ -688,8 +688,7 @@ static NTSTATUS db_ctdb_fetch_db_seqnum_from_db(struct db_ctdb_ctx *db,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	key.dptr = (uint8_t *)discard_const(keyname);
-	key.dsize = strlen(keyname) + 1;
+	key = string_term_tdb_data(keyname);
 
 	status = db_ctdb_ltdb_fetch(db, key, &header, mem_ctx, &data);
 	if (!NT_STATUS_IS_OK(status) &&
@@ -723,8 +722,7 @@ static NTSTATUS db_ctdb_store_db_seqnum(struct db_ctdb_transaction_handle *h,
 	TDB_DATA key;
 	TDB_DATA data;
 
-	key.dptr = (uint8_t *)discard_const(keyname);
-	key.dsize = strlen(keyname);
+	key = string_term_tdb_data(keyname);
 
 	data.dptr = (uint8_t *)&seqnum;
 	data.dsize = sizeof(uint64_t);
