@@ -41,14 +41,6 @@ struct epoll_event_context {
 	/* number of registered fd event handlers */
 	int num_fd_events;
 
-	/* this is changed by the destructors for the fd event
-	   type. It is used to detect event destruction by event
-	   handlers, which means the code that is calling the event
-	   handler needs to assume that the linked list is no longer
-	   valid
-	*/
-	uint32_t destruction_count;
-
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
 
@@ -260,7 +252,6 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	int ret, i;
 #define MAXEVENTS 32
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = ++epoll_ev->destruction_count;
 	int timeout = -1;
 
 	if (epoll_ev->epoll_fd == -1) return -1;
@@ -358,7 +349,6 @@ static int epoll_event_fd_destructor(struct fd_event *fde)
 	epoll_check_reopen(epoll_ev);
 
 	epoll_ev->num_fd_events--;
-	epoll_ev->destruction_count++;
 
 	epoll_del_event(epoll_ev, fde);
 
