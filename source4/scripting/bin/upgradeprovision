@@ -315,7 +315,7 @@ def newprovision(names,setup_dir,creds,session,smbconf):
 		setup_ds_path=None,
 		nosync=None,
 		dom_for_fun_level=names.domainlevel,
-		ldap_dryrun_mode=None)
+		ldap_dryrun_mode=None,useeadb=True)
 	return provdir
 
 # This function sorts two DNs in the lexicographical order and put higher level
