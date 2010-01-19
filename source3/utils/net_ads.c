@@ -1470,8 +1470,8 @@ static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char
 
 	if (argc != 2 || c->display_usage) {
 		d_printf(_("Usage:\n"),
-			   _("net ads dns gethostbyname <server> <name>\n"),
-			   "  Look up hostname from the AD\n"
+			 _("net ads dns gethostbyname <server> <name>\n"),
+			 _("  Look up hostname from the AD\n"
 			   "    server\tName server to use\n"
 			   "    name\tName to look up\n"));
 		return -1;
