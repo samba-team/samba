@@ -1791,11 +1791,9 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 				break;
 			}
 		}
-		/* Free data, if any */
-		if (!(vk.data_length & 0x80000000)) {
-			hbin_free(regf, vk.data_offset);
-		}
 	}
+
+	/* If it's new, create the vk struct, if it's old, free the old data. */
 	if (old_vk_offset == -1) {
 		vk.header = "vk";
 		vk.name_length = strlen(name);
@@ -1806,7 +1804,13 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 			vk.data_name = NULL;
 			vk.flag = 0;
 		}
+	} else {
+		/* Free data, if any */
+		if (!(vk.data_length & 0x80000000)) {
+			hbin_free(regf, vk.data_offset);
+		}
 	}
+
 	/* Set the type and data */
 	vk.data_length = data.length;
 	vk.data_type = type;
