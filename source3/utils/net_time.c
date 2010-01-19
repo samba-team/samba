@@ -133,10 +133,12 @@ static int net_time_system(struct net_context *c, int argc, const char **argv)
 	time_t t;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net time system\n"
-			   "    ",_("Output remote time server time in a format "
-			   "ready for /bin/date\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Output remote time server time in a format "
+			   "ready for /bin/date"));
 		return 0;
 	}
 
@@ -157,10 +159,12 @@ static int net_time_zone(struct net_context *c, int argc, const char **argv)
 	time_t t;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net time zone\n"
-			   "   ",_("Display the remote time server's offset to "
-			   "UTC\n"));
+			   "   %s\n",
+			 _("Usage:"),
+			 _("Display the remote time server's offset to "
+			   "UTC"));
 		return 0;
 	}
 
@@ -217,9 +221,11 @@ int net_time(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 		           "net time\n"
-			   "    ",_("Display the remote time server's time\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Display the remote time server's time"));
 		net_display_usage_from_functable(func);
 		return 0;
 	}

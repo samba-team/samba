@@ -61,8 +61,9 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 	TDB_CONTEXT *idmap_tdb;
 
 	if ( argc != 1  || c->display_usage) {
-		d_printf(_("Usage:\n"),
-			   _("net idmap dump <inputfile>\n"
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap dump <inputfile>\n"
 			   "  Dump current ID mapping.\n"
 			   "    inputfile\tTDB file to read mappings from.\n"));
 		return c->display_usage?0:-1;
@@ -92,8 +93,9 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 	FILE *input;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
-			   _("net idmap restore [inputfile]\n"
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap restore [inputfile]\n"
 			   "  Restore ID mappings from file\n"
 			   "    inputfile\tFile to load ID mappings from. If "
 			   "not given, load data from stdin.\n"));
@@ -194,13 +196,13 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
  **********************************************************/
 static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 {
-	d_printf(_("Not implemented yet"),"\n");
+	d_printf("%s\n", _("Not implemented yet"));
 	return -1;
 }
 
 static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 {
-	d_printf(_("Not implemented yet"),"\n");
+	d_printf("%s\n", _("Not implemented yet"));
 	return -1;
 }
 bool idmap_store_secret(const char *backend, bool alloc,
@@ -238,8 +240,9 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	bool ret;
 
 	if (argc != 2 || c->display_usage) {
-		d_printf(_("Usage:\n"),
-			   _("net idmap secret {<DOMAIN>|alloc} <secret>\n"
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap secret {<DOMAIN>|alloc} <secret>\n"
 			   "  Set the secret for the specified domain "
 			   "(or alloc module)\n"
 			   "    DOMAIN\tDomain to set secret for.\n"
@@ -337,8 +340,8 @@ static int net_idmap_aclmapset(struct net_context *c, int argc, const char **arg
 	NTSTATUS status;
 
 	if (argc != 3 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:")," net idmap aclmapset <tdb> "
-				    "<src-sid> <dst-sid>\n");
+		d_fprintf(stderr, "%s net idmap aclmapset <tdb> "
+			  "<src-sid> <dst-sid>\n", _("Usage:"));
 		return -1;
 	}
 

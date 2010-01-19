@@ -50,8 +50,8 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "open_policy ",_("failed"),": %s\n"),
-			  nt_errstr(result);
+		d_fprintf(stderr, "open_policy %s: %s\n", _("failed"),
+			  nt_errstr(result));
 		return result;
 	}
 
