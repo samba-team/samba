@@ -177,6 +177,28 @@ interface drsblobs {
 		);
 
 	/*
+	 * MS w2k3 and w2k8 prefixMap format
+	 * There is no version number. Format is:
+	 *   uint32 - number of entries in the map
+	 *   uint32 - total bytes that structure occupies
+	 *   ENTRIES:
+	 *     uint16 - prefix ID (OID's last sub-id encoded. see prefixMap)
+	 *     uint16 - number of bytes in prefix N
+	 *     uint8[N] - BER encoded prefix
+	 */
+	typedef [noprint,flag(NDR_NOALIGN)] struct {
+		uint16 entryID;
+		uint16 length;
+		uint8 binary_oid[length];
+	} drsuapi_MSPrefixMap_Entry;
+
+	typedef [public,gensize] struct {
+		uint32 num_entries;
+		[value(ndr_size_drsuapi_MSPrefixMap_Ctr(r, ndr->iconv_convenience, ndr->flags))] uint32 __ndr_size;
+		drsuapi_MSPrefixMap_Entry entries[num_entries];
+	} drsuapi_MSPrefixMap_Ctr;
+
+	/*
 	 * prefixMap
 	 * w2k  unknown
 	 * w2k3 unknown
