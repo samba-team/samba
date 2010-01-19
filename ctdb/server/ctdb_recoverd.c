@@ -3264,6 +3264,7 @@ again:
 			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
 			ctdb_set_culprit(rec, ctdb->pnn);
 			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			goto again;
 		}
 
 		ret = ctdb_takeover_run(ctdb, nodemap);
@@ -3271,6 +3272,7 @@ again:
 			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
 			ctdb_set_culprit(rec, ctdb->pnn);
 			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			goto again;
 		}
 
 		/* execute the "recovered" event script on all nodes */
