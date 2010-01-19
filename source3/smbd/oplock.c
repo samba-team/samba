@@ -685,7 +685,6 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id, (unsigned int)msg.op_mid));
 
-	/* Here's the hack from open.c, store the mid in the 'port' field */
 	schedule_deferred_open_smb_message(msg.op_mid);
 }
 
