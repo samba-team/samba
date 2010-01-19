@@ -192,7 +192,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	name_type = "domain group";
 
 	if (c->display_usage) {
-		d_printf(_("Usage\n"),"%s\n", add_usage_str);
+		d_printf(_("Usage:\n"),"%s\n", add_usage_str);
 		return 0;
 	}
 

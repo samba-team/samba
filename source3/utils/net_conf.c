@@ -94,7 +94,7 @@ static int net_conf_addshare_usage(struct net_context *c, int argc,
 static int net_conf_delshare_usage(struct net_context *c, int argc,
 				   const char **argv)
 {
-	d_printf(_("Usage: "), _(" net conf delshare <sharename>\n"));
+	d_printf(_("Usage:"), _(" net conf delshare <sharename>\n"));
 	return -1;
 }
 

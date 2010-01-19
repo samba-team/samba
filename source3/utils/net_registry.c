@@ -276,7 +276,7 @@ static int net_registry_getvalue_internal(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry getvalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry getvalue <key> "
 				    "<valuename>\n"));
 		goto done;
 	}
@@ -325,7 +325,7 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (argc < 4 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry setvalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry setvalue <key> "
 			  "<valuename> <type> [<val>]+\n"));
 		goto done;
 	}
@@ -380,7 +380,7 @@ static int net_registry_deletevalue(struct net_context *c, int argc,
 	int ret = -1;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry deletevalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry deletevalue <key> "
 			  "<valuename>\n"));
 		goto done;
 	}
