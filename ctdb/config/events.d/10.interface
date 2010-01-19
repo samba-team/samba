@@ -20,7 +20,7 @@ loadconfig
 case "$1" in 
      #############################
      # called when ctdbd starts up
-     startup)
+     init)
 	# make sure that we only respond to ARP messages from the NIC where
 	# a particular ip address is associated.
 	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {

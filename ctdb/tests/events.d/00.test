@@ -16,6 +16,10 @@ case $cmd in
 	exit 0;	
 	;;
 
+     init)
+	echo "ctdb init event"
+	exit 0;
+	;;
      startup)
 	echo "ctdb startup event"
 	exit 0;	

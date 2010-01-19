@@ -679,7 +679,8 @@ struct ctdb_scripts_wire {
 
 /* different calls to event scripts. */
 enum ctdb_eventscript_call {
-	CTDB_EVENT_STARTUP,		/* CTDB starting up: no args. */
+	CTDB_EVENT_INIT,		/* CTDB starting up: no args */
+	CTDB_EVENT_STARTUP,		/* CTDB starting up after initial recovery: no args. */
 	CTDB_EVENT_START_RECOVERY,	/* CTDB recovery starting: no args. */
 	CTDB_EVENT_RECOVERED,		/* CTDB recovery finished: no args. */
 	CTDB_EVENT_TAKE_IP,		/* IP taken: interface, IP address, netmask bits. */

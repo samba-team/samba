@@ -5,7 +5,7 @@
 loadconfig
 
 case "$1" in 
-    startup)
+    init)
 	ctdb_counter_init
 	;;
     

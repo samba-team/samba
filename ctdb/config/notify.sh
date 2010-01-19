@@ -33,7 +33,12 @@ case $event in
 #               or do something else ...
 		;;
 	startup)
-#		do some extra magic when ctdb has started?
+	#		do some extra magic when ctdb has finished the initial
+	#		recovery?
+		;;
+
+	init)
+	#		do some extra magic when ctdb has started?
 		;;
 
 esac

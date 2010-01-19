@@ -1564,5 +1564,7 @@ int ctdb_update_persistent_health(struct ctdb_context *ctdb,
 				  int num_healthy_nodes);
 int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 
+void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
+
 void ctdb_fault_setup(void);
 #endif

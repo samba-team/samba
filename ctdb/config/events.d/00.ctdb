@@ -13,7 +13,7 @@
 loadconfig
 
 case "$1" in 
-     startup)
+     init)
         # make sure we have a blank state directory for the scripts to work with
 	/bin/rm -rf $CTDB_BASE/state
 	/bin/mkdir -p $CTDB_BASE/state
