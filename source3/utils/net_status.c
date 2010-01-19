@@ -63,11 +63,13 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	bool parseable;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net status sessions [parseable]\n"
-			   "    ",_("Display open user sessions.\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Display open user sessions.\n"
 			   "    If parseable is specified, output is machine-"
-			   "readable.\n"));
+			   "readable."));
 		return 0;
 	}
 
@@ -213,11 +215,13 @@ static int net_status_shares_parseable(struct net_context *c, int argc, const ch
 static int net_status_shares(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net status shares [parseable]\n"
-			   "    ",_("Display open user shares.\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Display open user shares.\n"
 			   "    If parseable is specified, output is machine-"
-			   "readable.\n"));
+			   "readable."));
 		return 0;
 	}
 

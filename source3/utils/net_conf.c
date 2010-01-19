@@ -39,14 +39,16 @@
 static int net_conf_list_usage(struct net_context *c, int argc,
 			       const char **argv)
 {
-	d_printf(_("Usage:"), " net conf list\n");
+	d_printf("%s net conf list\n", _("Usage:"));
 	return -1;
 }
 
 static int net_conf_import_usage(struct net_context *c, int argc,
 				 const char**argv)
 {
-	d_printf(_("Usage:"), _(" net conf import [--test|-T] <filename> "
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf import [--test|-T] <filename> "
 		   "[<servicename>]\n"
 		   "\t[--test|-T]    testmode - do not act, just print "
 			"what would be done\n"
@@ -58,28 +60,32 @@ static int net_conf_import_usage(struct net_context *c, int argc,
 static int net_conf_listshares_usage(struct net_context *c, int argc,
 				     const char **argv)
 {
-	d_printf(_("Usage:"), " net conf listshares\n");
+	d_printf("%s\nnet conf listshares\n", _("Usage:"));
 	return -1;
 }
 
 static int net_conf_drop_usage(struct net_context *c, int argc,
 			       const char **argv)
 {
-	d_printf(_("Usage:"), " net conf drop\n");
+	d_printf("%s\nnet conf drop\n", _("Usage:"));
 	return -1;
 }
 
 static int net_conf_showshare_usage(struct net_context *c, int argc,
 				    const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf showshare <sharename>\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _("net conf showshare <sharename>\n"));
 	return -1;
 }
 
 static int net_conf_addshare_usage(struct net_context *c, int argc,
 				   const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf addshare <sharename> <path> "
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf addshare <sharename> <path> "
 		   "[writeable={y|N} [guest_ok={y|N} [<comment>]]\n"
 		   "\t<sharename>      the new share name.\n"
 		   "\t<path>           the path on the filesystem to export.\n"
@@ -94,49 +100,63 @@ static int net_conf_addshare_usage(struct net_context *c, int argc,
 static int net_conf_delshare_usage(struct net_context *c, int argc,
 				   const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf delshare <sharename>\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _("net conf delshare <sharename>\n"));
 	return -1;
 }
 
 static int net_conf_setparm_usage(struct net_context *c, int argc,
 				  const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf setparm <section> <param> <value>\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf setparm <section> <param> <value>\n"));
 	return -1;
 }
 
 static int net_conf_getparm_usage(struct net_context *c, int argc,
 				  const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf getparm <section> <param>\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf getparm <section> <param>\n"));
 	return -1;
 }
 
 static int net_conf_delparm_usage(struct net_context *c, int argc,
 				  const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf delparm <section> <param>\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf delparm <section> <param>\n"));
 	return -1;
 }
 
 static int net_conf_getincludes_usage(struct net_context *c, int argc,
 				      const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf getincludes <section>\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf getincludes <section>\n"));
 	return -1;
 }
 
 static int net_conf_setincludes_usage(struct net_context *c, int argc,
 				      const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf setincludes <section> [<filename>]*\n"));
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net conf setincludes <section> [<filename>]*\n"));
 	return -1;
 }
 
 static int net_conf_delincludes_usage(struct net_context *c, int argc,
 				      const char **argv)
 {
-	d_printf(_("Usage:"), _(" net conf delincludes <section>\n"));
+	d_printf("%s\n%s",
+		_("Usage:"),
+		_(" net conf delincludes <section>\n"));
 	return -1;
 }
 
