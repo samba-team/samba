@@ -1227,7 +1227,73 @@ static void reload_nodes_file(struct ctdb_context *ctdb)
 	ctdb_load_nodes_file(ctdb);
 }
 
-	
+static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
+					 struct ctdb_node_map *nodemap,
+					 uint32_t *culprit)
+{
+	int j;
+	int ret;
+
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) invalid param\n",
+				  ctdb->num_nodes, nodemap->num));
+		if (culprit) {
+			*culprit = ctdb->pnn;
+		}
+		return -1;
+	}
+
+	for (j=0; j<nodemap->num; j++) {
+		/* release any existing data */
+		if (ctdb->nodes[j]->known_public_ips) {
+			talloc_free(ctdb->nodes[j]->known_public_ips);
+			ctdb->nodes[j]->known_public_ips = NULL;
+		}
+		if (ctdb->nodes[j]->available_public_ips) {
+			talloc_free(ctdb->nodes[j]->available_public_ips);
+			ctdb->nodes[j]->available_public_ips = NULL;
+		}
+
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		/* grab a new shiny list of public ips from the node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
+					CONTROL_TIMEOUT(),
+					ctdb->nodes[j]->pnn,
+					ctdb->nodes,
+					0,
+					&ctdb->nodes[j]->known_public_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read known public ips from node : %u\n",
+				ctdb->nodes[j]->pnn));
+			if (culprit) {
+				*culprit = ctdb->nodes[j]->pnn;
+			}
+			return -1;
+		}
+
+		/* grab a new shiny list of public ips from the node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
+					CONTROL_TIMEOUT(),
+					ctdb->nodes[j]->pnn,
+					ctdb->nodes,
+					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
+					&ctdb->nodes[j]->available_public_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read available public ips from node : %u\n",
+				ctdb->nodes[j]->pnn));
+			if (culprit) {
+				*culprit = ctdb->nodes[j]->pnn;
+			}
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
@@ -1242,6 +1308,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	TDB_DATA data;
 	uint32_t *nodes;
 	struct timeval start_time;
+	uint32_t culprit = (uint32_t)-1;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
@@ -1501,6 +1568,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/*
 	  tell nodes to takeover their public IPs
 	 */
+	ret = ctdb_reload_remote_public_ips(ctdb, nodemap, &culprit);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
+				 culprit));
+		return -1;
+	}
 	rec->need_takeover_run = false;
 	ret = ctdb_takeover_run(ctdb, nodemap);
 	if (ret != 0) {
@@ -1881,9 +1954,28 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 	TDB_DATA result;
 	int32_t ret;
 	struct ip_reallocate_list *callers;
+	uint32_t culprit;
 
 	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
-	ret = ctdb_takeover_run(ctdb, rec->nodemap);
+
+	/* update the list of public ips that a node can handle for
+	   all connected nodes
+	*/
+	ret = ctdb_reload_remote_public_ips(ctdb, rec->nodemap, &culprit);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
+				 culprit));
+		rec->need_takeover_run = true;
+	}
+	if (ret == 0) {
+		ret = ctdb_takeover_run(ctdb, rec->nodemap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
+					 culprit));
+			rec->need_takeover_run = true;
+		}
+	}
+
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
 
@@ -3023,56 +3115,11 @@ again:
 		goto again;
 	}
 
-	/* update the list of public ips that a node can handle for
-	   all connected nodes
-	*/
 	if (ctdb->num_nodes != nodemap->num) {
 		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
 		reload_nodes_file(ctdb);
 		goto again;
 	}
-	for (j=0; j<nodemap->num; j++) {
-		/* release any existing data */
-		if (ctdb->nodes[j]->known_public_ips) {
-			talloc_free(ctdb->nodes[j]->known_public_ips);
-			ctdb->nodes[j]->known_public_ips = NULL;
-		}
-		if (ctdb->nodes[j]->available_public_ips) {
-			talloc_free(ctdb->nodes[j]->available_public_ips);
-			ctdb->nodes[j]->available_public_ips = NULL;
-		}
-
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		/* grab a new shiny list of public ips from the node */
-		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
-					CONTROL_TIMEOUT(),
-					ctdb->nodes[j]->pnn,
-					ctdb->nodes,
-					0,
-					&ctdb->nodes[j]->known_public_ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read known public ips from node : %u\n",
-				ctdb->nodes[j]->pnn));
-			goto again;
-		}
-
-		/* grab a new shiny list of public ips from the node */
-		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
-					CONTROL_TIMEOUT(),
-					ctdb->nodes[j]->pnn,
-					ctdb->nodes,
-					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
-					&ctdb->nodes[j]->available_public_ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read available public ips from node : %u\n",
-				ctdb->nodes[j]->pnn));
-			goto again;
-		}
-	}
-
 
 	/* verify that all active nodes agree that we are the recmaster */
 	switch (verify_recmaster(rec, nodemap, pnn)) {
@@ -3299,7 +3346,21 @@ again:
 
 	/* we might need to change who has what IP assigned */
 	if (rec->need_takeover_run) {
+		uint32_t culprit = (uint32_t)-1;
+
 		rec->need_takeover_run = false;
+
+		/* update the list of public ips that a node can handle for
+		   all connected nodes
+		*/
+		ret = ctdb_reload_remote_public_ips(ctdb, nodemap, &culprit);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
+					 culprit));
+			ctdb_set_culprit(rec, culprit);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			goto again;
+		}
 
 		/* execute the "startrecovery" event script on all nodes */
 		ret = run_startrecovery_eventscript(rec, nodemap);
