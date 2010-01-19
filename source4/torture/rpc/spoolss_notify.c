@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for spoolss rpc notify operations
 
    Copyright (C) Jelmer Vernooij 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -68,7 +68,7 @@ static NTSTATUS spoolss__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_
 	return NT_STATUS_OK;
 }
 
-/* Note that received_packets are allocated in talloc_autofree_context(), 
+/* Note that received_packets are allocated in talloc_autofree_context(),
  * because no other context appears to stay around long enough. */
 static struct received_packet {
 	uint16_t opnum;
@@ -159,7 +159,7 @@ static bool spoolss__op_interface_by_name(struct dcesrv_interface *iface, const 
 		return true;
 	}
 
-	return false;	
+	return false;
 }
 
 static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
@@ -180,7 +180,7 @@ static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const st
 	return NT_STATUS_OK;
 }
 
-static bool test_RFFPCNEx(struct torture_context *tctx, 
+static bool test_RFFPCNEx(struct torture_context *tctx,
 			  struct dcerpc_pipe *p)
 {
 	struct spoolss_OpenPrinter q;
@@ -240,7 +240,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
 	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints, &dce_ctx);
-	torture_assert_ntstatus_ok(tctx, status, 
+	torture_assert_ntstatus_ok(tctx, status,
 				   "unable to initialize DCE/RPC server");
 
 	/* Make sure the directory for NCALRPC exists */
@@ -284,7 +284,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	status = dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "FFPCNEx failed");
-	
+
 	torture_assert_werr_ok(tctx, r.out.result, "error return code for FFPCNEx");
 
 	cp.in.handle = &handle;
@@ -343,12 +343,12 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 struct torture_suite *torture_rpc_spoolss_notify(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-NOTIFY");
-	
-	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
+
+	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
 							"notify", &ndr_table_spoolss);
 
 	torture_rpc_tcase_add_test(tcase, "testRFFPCNEx", test_RFFPCNEx);
 	torture_rpc_tcase_add_test(tcase, "testReplyOpenPrinter", test_ReplyOpenPrinter);
-	
+
 	return suite;
 }
