@@ -277,7 +277,7 @@ static int net_setlocalsid(struct net_context *c, int argc, const char **argv)
 	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
 	     || (!string_to_sid(&sid, argv[0]))
 	     || (sid.num_auths != 4)) {
-		d_printf(_("usage:")," net setlocalsid S-1-5-21-x-y-z\n");
+		d_printf(_("Usage:")," net setlocalsid S-1-5-21-x-y-z\n");
 		return 1;
 	}
 
@@ -297,7 +297,7 @@ static int net_setdomainsid(struct net_context *c, int argc, const char **argv)
 	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
 	     || (!string_to_sid(&sid, argv[0]))
 	     || (sid.num_auths != 4)) {
-		d_printf(_("usage:")," net setdomainsid S-1-5-21-x-y-z\n");
+		d_printf(_("Usage:")," net setdomainsid S-1-5-21-x-y-z\n");
 		return 1;
 	}
 
@@ -315,7 +315,7 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	fstring sid_str;
 
 	if (argc > 0) {
-		d_printf(_("usage:")," net getdomainsid\n");
+		d_printf(_("Usage:")," net getdomainsid\n");
 		return 1;
 	}
 
@@ -399,7 +399,7 @@ static int net_maxrid(struct net_context *c, int argc, const char **argv)
 	uint32 rid;
 
 	if (argc != 0) {
-	        d_fprintf(stderr, _("usage:")," net maxrid\n");
+	        d_fprintf(stderr, _("Usage:")," net maxrid\n");
 		return 1;
 	}
 

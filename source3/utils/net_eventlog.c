@@ -43,7 +43,7 @@ static int net_eventlog_dump(struct net_context *c, int argc,
 	char *s;
 
 	if (argc < 1 || c->display_usage) {
-		d_fprintf(stderr, _("usage:")," net eventlog dump <file.evt>\n");
+		d_fprintf(stderr, _("Usage:")," net eventlog dump <file.evt>\n");
 		goto done;
 	}
 
@@ -99,7 +99,7 @@ static int net_eventlog_import(struct net_context *c, int argc,
 
 	if (argc < 2 || c->display_usage) {
 		d_fprintf(stderr,
-			  _("usage:")," net eventlog import <file> <eventlog>\n");
+			  _("Usage:")," net eventlog import <file> <eventlog>\n");
 		goto done;
 	}
 
@@ -194,7 +194,7 @@ static int net_eventlog_export(struct net_context *c, int argc,
 
 	if (argc < 2 || c->display_usage) {
 		d_fprintf(stderr,
-			  _("usage:")," net eventlog export <file> <eventlog>\n");
+			  _("Usage:")," net eventlog export <file> <eventlog>\n");
 		goto done;
 	}
 

@@ -1033,7 +1033,7 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 	enum lsa_SidType type;
 
 	if (argc == 0) {
-		d_fprintf(stderr, _("usage:")," %s <username>\n"), ctx->whoami;
+		d_fprintf(stderr, _("Usage:")," %s <username>\n"), ctx->whoami;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1114,7 +1114,7 @@ static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
 	union samr_UserInfo *info = NULL;
 
 	if (argc != 0) {
-		d_fprintf(stderr, _("usage:")," %s show <username>\n"),ctx->whoami;
+		d_fprintf(stderr, _("Usage:")," %s show <username>\n"),ctx->whoami;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1167,7 +1167,7 @@ static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
 	union samr_UserInfo *info = NULL;
 
 	if (argc > 1) {
-		d_fprintf(stderr, _("usage:")," %s <username> [new value|NULL]\n",
+		d_fprintf(stderr, _("Usage:")," %s <username> [new value|NULL]\n",
 			  ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1258,7 +1258,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 	     !strequal(argv[0], "no"))) {
 		/* TRANSATORS: The yes|no here are program keywords. Please do
 		   not translate. */
-		d_fprintf(stderr, _("usage: %s <username> [yes|no]\n"),
+		d_fprintf(stderr, _("Usage: %s <username> [yes|no]\n"),
 			  ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -3047,7 +3047,7 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 	uint32_t i, level = 1;
 
 	if (c->display_usage) {
-		d_printf(_("Usage\n"),
+		d_printf(_("Usage:\n"),
 			   "net rpc share list\n"
 			   "    ",_("List shares on remote server\n"));
 		return 0;
@@ -4680,7 +4680,7 @@ static NTSTATUS rpc_sh_share_add(struct net_context *c,
 	struct SHARE_INFO_2 i2;
 
 	if ((argc < 2) || (argc > 3)) {
-		d_fprintf(stderr, _("usage: %s <share> <path> [comment]\n"),
+		d_fprintf(stderr, _("Usage: %s <share> <path> [comment]\n"),
 			  ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -4709,7 +4709,7 @@ static NTSTATUS rpc_sh_share_delete(struct net_context *c,
 				    int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage:")," %s <share>\n", ctx->whoami);
+		d_fprintf(stderr, _("Usage:")," %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -4727,7 +4727,7 @@ static NTSTATUS rpc_sh_share_info(struct net_context *c,
 	NTSTATUS status;
 
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <share>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <share>\n"), ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

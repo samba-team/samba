@@ -337,7 +337,7 @@ static int net_idmap_aclmapset(struct net_context *c, int argc, const char **arg
 	NTSTATUS status;
 
 	if (argc != 3 || c->display_usage) {
-		d_fprintf(stderr, _("usage:")," net idmap aclmapset <tdb> "
+		d_fprintf(stderr, _("Usage:")," net idmap aclmapset <tdb> "
 				    "<src-sid> <dst-sid>\n");
 		return -1;
 	}
