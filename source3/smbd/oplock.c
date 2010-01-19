@@ -484,7 +484,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	fsp = initial_break_processing(msg.id, msg.share_file_id);
 
 	if (fsp == NULL) {
-		/* a We hit race here. Break messages are sent, and before we
+		/* We hit a race here. Break messages are sent, and before we
 		 * get to process this message, we have closed the file. Reply
 		 * with 'ok, oplock broken' */
 		DEBUG(3, ("Did not find fsp\n"));
