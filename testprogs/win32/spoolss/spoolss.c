@@ -157,6 +157,10 @@ static BOOL test_EnumDrivers(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_driver_info_bylevel(levels[i], buffer, returned);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}
@@ -571,6 +575,10 @@ static BOOL test_GetPrinterDriver(struct torture_context *tctx,
 			} else {
 				torture_warning(tctx, tmp);
 			}
+		}
+
+		if (tctx->print) {
+			print_driver_info_bylevel(levels[i], buffer, 1);
 		}
 
 		free(buffer);

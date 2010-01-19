@@ -532,6 +532,21 @@ void print_driver_info_4(PDRIVER_INFO_4 info)
 	return;
 }
 
+void print_driver_info_5(PDRIVER_INFO_5 info)
+{
+	printf("\tDriver Name\t= %s\n",		info->pName);
+	printf("\tEnvironment\t= %s\n",		info->pEnvironment);
+	printf("\tVersion\t\t= %d\n",		info->cVersion);
+	printf("\tDriver Path\t= %s\n",		info->pDriverPath);
+	printf("\tData File\t= %s\n",		info->pDataFile);
+	printf("\tConfig File\t= %s\n",		info->pConfigFile);
+	printf("\tDriver Attributes\t= %d\n",	info->dwDriverAttributes);
+	printf("\tConfig Version\t= %d\n",	info->dwConfigVersion);
+	printf("\tDriver Version\t= %d\n",	info->dwDriverVersion);
+
+	return;
+}
+
 void print_driver_info_6(PDRIVER_INFO_6 info)
 {
 	char *ptr = NULL;
@@ -579,6 +594,152 @@ void print_driver_info_6(PDRIVER_INFO_6 info)
 	printf("\tHardware ID\t= %s\n",		info->pszHardwareID);
 	printf("\tProvider\t= %s\n",		info->pszProvider);
 	return;
+}
+
+static void print_multi_sz(LPSTR multisz)
+{
+	char *ptr = NULL;
+
+	ptr = (char *)multisz;
+
+	if (!ptr) {
+		printf("(null)\n");
+		return;
+	}
+
+	while (*ptr != '\0') {
+		printf("%s\n", ptr);
+		for (; *ptr != '\0'; ptr++) {
+			/* printf("%s\n", ptr); */
+			;
+		}
+		ptr++;
+	}
+}
+
+void print_driver_info_8(PDRIVER_INFO_8 info)
+{
+	printf("\tDriver Name\t= %s\n",		info->pName);
+	printf("\tEnvironment\t= %s\n",		info->pEnvironment);
+	printf("\tVersion\t\t= %d\n",		info->cVersion);
+	printf("\tDriver Path\t= %s\n",		info->pDriverPath);
+	printf("\tData File\t= %s\n",		info->pDataFile);
+	printf("\tConfig File\t= %s\n",		info->pConfigFile);
+	printf("\tHelp Path\t= %s\n",		info->pHelpFile);
+	printf("\tMonitor Name\t= %s\n",	info->pMonitorName);
+	printf("\tData Type\t= %s\n",		info->pDefaultDataType);
+	printf("\tPrevious Names\t=\n");
+	print_multi_sz(info->pszzPreviousNames);
+	printf("\tDependent Files\t=\n");
+	print_multi_sz(info->pDependentFiles);
+	printf("\tDriver Date\t= %d\n",		info->ftDriverDate);
+	printf("\tDriver Version\t= %d\n",	info->dwlDriverVersion);
+	printf("\tManufacture Name = %s\n",	info->pszMfgName);
+	printf("\tOEM URL\t\t= %s\n",		info->pszOEMUrl);
+	printf("\tHardware ID\t= %s\n",		info->pszHardwareID);
+	printf("\tProvider\t= %s\n",		info->pszProvider);
+	printf("\tPrint Processor\t= %s\n",	info->pszPrintProcessor);
+	printf("\tVendor Setup\t= %s\n",	info->pszVendorSetup);
+	printf("\tColor Profiles\t=\n");
+	print_multi_sz(info->pszzColorProfiles);
+	printf("\tInf Path\t= %s\n",		info->pszInfPath);
+	printf("\tPrinter Driver Attributes = %d\n", info->dwPrinterDriverAttributes);
+	printf("\tCore Driver Dependencies\t=\n");
+	print_multi_sz(info->pszzCoreDriverDependencies);
+	printf("\tMin Inbox Driver VerDate\t= %d\n", info->ftMinInboxDriverVerDate);
+	printf("\tMin Inbox Driver VerVersion\t= %d\n", info->dwlMinInboxDriverVerVersion);
+	return;
+}
+
+void print_driver_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PDRIVER_INFO_1	buffer1 = NULL;
+	PDRIVER_INFO_2	buffer2 = NULL;
+	PDRIVER_INFO_3	buffer3 = NULL;
+	PDRIVER_INFO_4	buffer4 = NULL;
+	PDRIVER_INFO_5	buffer5 = NULL;
+	PDRIVER_INFO_6	buffer6 = NULL;
+	PDRIVER_INFO_8	buffer8 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PDRIVER_INFO_1)buffer;
+		break;
+	case 2:
+		buffer2 = (PDRIVER_INFO_2)buffer;
+		break;
+	case 3:
+		buffer3 = (PDRIVER_INFO_3)buffer;
+		break;
+	case 4:
+		buffer4 = (PDRIVER_INFO_4)buffer;
+		break;
+	case 5:
+		buffer5 = (PDRIVER_INFO_5)buffer;
+		break;
+	case 6:
+		buffer6 = (PDRIVER_INFO_6)buffer;
+		break;
+	case 8:
+		buffer8 = (PDRIVER_INFO_8)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("Driver Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_driver_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	case 2:
+		for (i=0; i<count; i++) {
+			print_driver_info_2(&buffer2[i]);
+			printf("\n");
+		}
+		break;
+	case 3:
+		for (i=0; i<count; i++) {
+			print_driver_info_3(&buffer3[i]);
+			printf("\n");
+		}
+		break;
+	case 4:
+		for (i=0; i<count; i++) {
+			print_driver_info_4(&buffer4[i]);
+			printf("\n");
+		}
+		break;
+	case 5:
+		for (i=0; i<count; i++) {
+			print_driver_info_5(&buffer5[i]);
+			printf("\n");
+		}
+		break;
+	case 6:
+		for (i=0; i<count; i++) {
+			print_driver_info_6(&buffer6[i]);
+			printf("\n");
+		}
+		break;
+	case 8:
+		for (i=0; i<count; i++) {
+			print_driver_info_8(&buffer8[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 void print_doc_info_1(PDOC_INFO_1 info)
