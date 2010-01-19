@@ -503,8 +503,9 @@ static int net_rap_server_name(struct net_context *c, int argc, const char *argv
 	char *name;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
-			   _("net rap server name\n"
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net rap server name\n"
 			   "    Get the name of the server\n"));
 		return 0;
 	}
@@ -532,8 +533,9 @@ static int net_rap_server_domain(struct net_context *c, int argc,
 	int ret;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
-			   _("net rap server domain\n"
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net rap server domain\n"
 			   "    Enumerate servers in this domain/workgroup\n"));
 		return 0;
 	}

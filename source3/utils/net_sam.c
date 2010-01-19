@@ -37,7 +37,8 @@ static int net_sam_userset(struct net_context *c, int argc, const char **argv,
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam set %s <user> <value>\n"),
+		d_fprintf(stderr, "%s\n", _("Usage:"));
+		d_fprintf(stderr, _("net sam set %s <user> <value>\n"),
 			  field);
 		return -1;
 	}
@@ -142,7 +143,8 @@ static int net_sam_set_userflag(struct net_context *c, int argc,
 	if ((argc != 2) || c->display_usage ||
 	    (!strequal(argv[1], "yes") &&
 	     !strequal(argv[1], "no"))) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam set %s <user> [yes|no]\n"),
+		d_fprintf(stderr, "%s\n", _("Usage:"));
+		d_fprintf(stderr, _("net sam set %s <user> [yes|no]\n"),
 			  field);
 		return -1;
 	}
@@ -233,9 +235,9 @@ static int net_sam_set_pwdmustchangenow(struct net_context *c, int argc,
 	if ((argc != 2) || c->display_usage ||
 	    (!strequal(argv[1], "yes") &&
 	     !strequal(argv[1], "no"))) {
-		d_fprintf(stderr,
-			  _("Usage:"),_(" net sam set pwdmustchangenow <user> "
-			    "[yes|no]\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam set pwdmustchangenow <user> [yes|no]\n"));
 		return -1;
 	}
 
@@ -297,8 +299,9 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam set comment <name> "
-			  "<comment>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam set comment <name> <comment>\n"));
 		return -1;
 	}
 
@@ -461,8 +464,9 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	char *endptr;
 
         if (argc != 2 || c->display_usage) {
-                d_fprintf(stderr, _("Usage:"),_(" net sam policy set "
-			  "\"<account policy>\" <value> \n"));
+                d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam policy set \"<account policy>\" <value>\n"));
                 return -1;
         }
 
@@ -527,8 +531,9 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
         enum pdb_policy_type field;
 
         if (argc != 1 || c->display_usage) {
-                d_fprintf(stderr, _("Usage:"),_(" net sam policy show"
-			  " \"<account policy>\" \n"));
+                d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam policy show \"<account policy>\"\n"));
                 return -1;
         }
 
@@ -572,9 +577,11 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 	int i;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net sam policy list\n"
-			   "    ",_("List account policies\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("List account policies"));
 		return 0;
 	}
 
@@ -631,8 +638,9 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 	SE_PRIV mask;
 
 	if (argc > 1 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),
-			_(" net sam rights list [privilege name]\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam rights list [privilege name]\n"));
 		return -1;
 	}
 
@@ -687,8 +695,9 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	int i;
 
 	if (argc < 2 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam rights grant <name> "
-			"<rights> ...\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam rights grant <name> <rights> ...\n"));
 		return -1;
 	}
 
@@ -725,8 +734,9 @@ static int net_sam_rights_revoke(struct net_context *c, int argc,
 	int i;
 
 	if (argc < 2 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam rights revoke <name> "
-			"<rights>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam rights revoke <name> <rights>\n"));
 		return -1;
 	}
 
@@ -852,7 +862,9 @@ static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **ar
 	struct group *grp;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam mapunixgroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam mapunixgroup <name>\n"));
 		return -1;
 	}
 
@@ -914,7 +926,9 @@ static int net_sam_unmapunixgroup(struct net_context *c, int argc, const char **
 	struct group *grp;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam unmapunixgroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam unmapunixgroup <name>\n"));
 		return -1;
 	}
 
@@ -949,8 +963,9 @@ static int net_sam_createdomaingroup(struct net_context *c, int argc,
 	uint32 rid;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr,
-			  _("Usage:"),_(" net sam createdomaingroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam createdomaingroup <name>\n"));
 		return -1;
 	}
 
@@ -981,7 +996,9 @@ static int net_sam_deletedomaingroup(struct net_context *c, int argc,
 	NTSTATUS status;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr,_("Usage:"),_(" net sam deletelocalgroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam deletelocalgroup <name>\n"));
 		return -1;
 	}
 
@@ -1022,7 +1039,9 @@ static int net_sam_createlocalgroup(struct net_context *c, int argc, const char 
 	uint32 rid;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr,_("Usage:"),_(" net sam createlocalgroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam createlocalgroup <name>\n"));
 		return -1;
 	}
 
@@ -1057,7 +1076,9 @@ static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char 
 	NTSTATUS status;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr,_("Usage:"),_(" net sam deletelocalgroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam deletelocalgroup <name>\n"));
 		return -1;
 	}
 
@@ -1099,8 +1120,9 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 	DOM_SID sid;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr,
-			  _("Usage:"),_(" net sam createbuiltingroup <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam createbuiltingroup <name>\n"));
 		return -1;
 	}
 
@@ -1152,7 +1174,9 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr,_("Usage:"),_(" net sam addmem <group> <member>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam addmem <group> <member>\n"));
 		return -1;
 	}
 
@@ -1239,7 +1263,9 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr,_("Usage:"),_(" net sam delmem <group> <member>\n"));
+		d_fprintf(stderr,"%s\n%s",
+			  _("Usage:"),
+			  _("net sam delmem <group> <member>\n"));
 		return -1;
 	}
 
@@ -1311,7 +1337,9 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam listmem <group>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam listmem <group>\n"));
 		return -1;
 	}
 
@@ -1385,7 +1413,8 @@ static int net_sam_do_list(struct net_context *c, int argc, const char **argv,
 
 	if ((argc > 1) || c->display_usage ||
 	    ((argc == 1) && !strequal(argv[0], "verbose"))) {
-		d_fprintf(stderr,_("Usage:"),_(" net sam list %s [verbose]\n"), what);
+		d_fprintf(stderr, "%s\n", _("Usage:"));
+		d_fprintf(stderr, _("net sam list %s [verbose]\n"), what);
 		return -1;
 	}
 
@@ -1518,7 +1547,9 @@ static int net_sam_show(struct net_context *c, int argc, const char **argv)
 	const char *dom, *name;
 
 	if (argc != 1 || c->display_usage) {
-		d_fprintf(stderr, _("Usage:"),_(" net sam show <name>\n"));
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net sam show <name>\n"));
 		return -1;
 	}
 
@@ -1556,10 +1587,11 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 	struct passwd *pwd;
 
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net sam provision\n"
-			    "    ",_("Init an LDAP tree with default "
-			    "users/groups\n"));
+			    "    %s\n",
+			  _("Usage:"),
+			  _("Init an LDAP tree with default users/groups"));
 		return 0;
 	}
 

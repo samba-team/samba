@@ -364,9 +364,11 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net rpc audit get\n"
-			   "    ",_("View configured audit setting\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("View configured audit setting"));
 		return 0;
 	}
 
@@ -380,9 +382,11 @@ static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net rpc audit set\n"
-			   "    ",_("Set audit policies\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Set audit policies"));
 		return 0;
 	}
 
@@ -396,9 +400,11 @@ static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net rpc audit enable\n"
-			   "    ",_("Enable auditing\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Enable auditing"));
 		return 0;
 	}
 
@@ -412,9 +418,11 @@ static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf(  "%s\n"
 			   "net rpc audit disable\n"
-			   "    ",_("Disable auditing\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Disable auditing"));
 		return 0;
 	}
 
@@ -428,9 +436,11 @@ static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 {
 	if (c->display_usage) {
-		d_printf(_("Usage:\n"),
+		d_printf( "%s\n"
 			   "net rpc audit list\n"
-			   "    ",_("List auditing settings\n"));
+			   "    %s\n",
+			 _("Usage:"),
+			 _("List auditing settings"));
 		return 0;
 	}
 
