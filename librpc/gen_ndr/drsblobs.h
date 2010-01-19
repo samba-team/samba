@@ -134,6 +134,18 @@ struct partialAttributeSetBlob {
 	union partialAttributeSetCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
+struct drsuapi_MSPrefixMap_Entry {
+	uint16_t entryID;
+	uint16_t length;
+	uint8_t *binary_oid;
+}/* [noprint,flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct drsuapi_MSPrefixMap_Ctr {
+	uint32_t num_entries;
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_MSPrefixMap_Ctr(r,ndr->iconv_convenience,ndr->flags))] */
+	struct drsuapi_MSPrefixMap_Entry *entries;
+}/* [gensize,public] */;
+
 enum prefixMapVersion
 #ifndef USE_UINT_ENUMS
  {

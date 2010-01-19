@@ -1213,6 +1213,109 @@ _PUBLIC_ void ndr_print_partialAttributeSetBlob(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_drsuapi_MSPrefixMap_Entry(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_MSPrefixMap_Entry *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 2));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->entryID));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->binary_oid, r->length));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 2));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_MSPrefixMap_Entry(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_MSPrefixMap_Entry *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 2));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->entryID));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
+			NDR_PULL_ALLOC_N(ndr, r->binary_oid, r->length);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->binary_oid, r->length));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_drsuapi_MSPrefixMap_Ctr(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_MSPrefixMap_Ctr *r)
+{
+	uint32_t cntr_entries_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_entries));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_MSPrefixMap_Ctr(r, ndr->iconv_convenience, ndr->flags)));
+		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
+			NDR_CHECK(ndr_push_drsuapi_MSPrefixMap_Entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
+		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_MSPrefixMap_Ctr(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_MSPrefixMap_Ctr *r)
+{
+	uint32_t cntr_entries_0;
+	TALLOC_CTX *_mem_save_entries_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_entries));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__ndr_size));
+		NDR_PULL_ALLOC_N(ndr, r->entries, r->num_entries);
+		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
+			NDR_CHECK(ndr_pull_drsuapi_MSPrefixMap_Entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Ctr(struct ndr_print *ndr, const char *name, const struct drsuapi_MSPrefixMap_Ctr *r)
+{
+	uint32_t cntr_entries_0;
+	ndr_print_struct(ndr, name, "drsuapi_MSPrefixMap_Ctr");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "num_entries", r->num_entries);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_MSPrefixMap_Ctr(r, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
+	ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->num_entries);
+	ndr->depth++;
+	for (cntr_entries_0=0;cntr_entries_0<r->num_entries;cntr_entries_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
+			ndr_print_drsuapi_MSPrefixMap_Entry(ndr, "entries", &r->entries[cntr_entries_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_drsuapi_MSPrefixMap_Ctr(const struct drsuapi_MSPrefixMap_Ctr *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_MSPrefixMap_Ctr, ic);
+}
+
 static enum ndr_err_code ndr_push_prefixMapVersion(struct ndr_push *ndr, int ndr_flags, enum prefixMapVersion r)
 {
 	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
