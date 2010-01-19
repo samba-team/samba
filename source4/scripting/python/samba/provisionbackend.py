@@ -704,7 +704,7 @@ class FDSBackend(LDAPBackend):
             os.path.join(self.paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", self.sambadn, "-i", self.samba_ldif],
             close_fds=True, shell=False)
         if retcode != 0:
-            raise("ldif2db failed")
+            raise ProvisioningError("ldif2db failed")
 
     def post_setup(self):
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
@@ -717,16 +717,16 @@ class FDSBackend(LDAPBackend):
             dn = str(res[i]["dn"])
             ldapi_db.delete(dn)
             
-            aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % self.sambadn
+        aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % self.sambadn
         
-            m = ldb.Message()
-            m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")
+        m = ldb.Message()
+        m["aci"] = ldb.MessageElement([aci], ldb.FLAG_MOD_REPLACE, "aci")
 
-            m.dn = ldb.Dn(1, self.names.domaindn)
-            ldapi_db.modify(m)
+        m.dn = ldb.Dn(ldapi_db, self.names.domaindn)
+        ldapi_db.modify(m)
             
-            m.dn = ldb.Dn(1, self.names.configdn)
-            ldapi_db.modify(m)
+        m.dn = ldb.Dn(ldapi_db, self.names.configdn)
+        ldapi_db.modify(m)
             
-            m.dn = ldb.Dn(1, self.names.schemadn)
-            ldapi_db.modify(m)
+        m.dn = ldb.Dn(ldapi_db, self.names.schemadn)
+        ldapi_db.modify(m)
