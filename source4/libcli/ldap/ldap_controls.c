@@ -1309,6 +1309,10 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "2.16.840.1.113730.3.4.10", decode_vlv_response, encode_vlv_response },
 /* DSDB_CONTROL_CURRENT_PARTITION_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.3.2", NULL, NULL },
+/* DSDB_CONTROL_DN_STORAGE_FORMAT_OID is internal only, and has no network representation */
+	{ "1.3.6.1.4.1.7165.4.3.4", NULL, NULL },
+/* LDB_CONTROL_AS_SYSTEM_OID is internal only, and has no network representation */
+	{ "1.3.6.1.4.1.7165.4.3.7", NULL, NULL },
 /* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
 	{ LDB_CONTROL_RECALCULATE_SD_OID,  decode_recalculate_sd_request, encode_recalculate_sd_request},
