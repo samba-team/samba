@@ -12,6 +12,7 @@ Major enhancements in Samba 3.5.0 include:
 
 General changes:
 o Add support for full Windows timestamp resolution
+o The Using Samba HTML book has been removed.
 
 Protocol changes:
 o Experimental implementation of SMB2
@@ -34,6 +35,9 @@ Support for full Windows timestamp resolution has been added. This effectively
 makes us use Windows' full 100ns timestamp resolution if supported by the
 kernel (2.6.22 and higher) and the glibc (2.6 and higher).
 
+The Using Samba HTML book has been removed from the Samba tarball.
+It is still available at http://www.samba.org/samba/docs/using_samba/toc.html.
+
 Protocol changes
 ================
 
@@ -52,7 +56,7 @@ Winbind changes
 ===============
 
 The Winbind daemon has been refactored internally to be asynchronous. The new
-Winbind will not be blocked by running 'wbinfo -g' or 'wbinfo -u'.
+Winbind will not be blocked by running 'getent group' or 'getent passwd'.
 
 VFS modules
 ===========
