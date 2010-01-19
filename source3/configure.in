@@ -4200,7 +4200,7 @@ PASSDB_LIBS="$PASSDB_LIBS $NSCD_LIBS"
 ########################################################
 # Compile with DNS Updates support?
 
-with_dnsupdate_support=no
+with_dnsupdate_support=auto
 AC_MSG_CHECKING([whether to enable DNS Updates support])
 
 AC_ARG_WITH(dnsupdate,
