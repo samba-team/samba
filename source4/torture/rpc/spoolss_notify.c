@@ -3,6 +3,7 @@
    test suite for spoolss rpc notify operations
 
    Copyright (C) Jelmer Vernooij 2007
+   Copyright (C) Guenther Deschner 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -219,45 +220,100 @@ static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const st
 	return NT_STATUS_OK;
 }
 
-static bool test_RFFPCNEx(struct torture_context *tctx,
-			  struct dcerpc_pipe *p)
+static bool test_OpenPrinter(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *handle)
 {
-	struct spoolss_OpenPrinter q;
+	struct spoolss_OpenPrinter r;
+
+	ZERO_STRUCT(r);
+
+	r.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.datatype		= NULL;
+	r.in.devmode_ctr.devmode= NULL;
+	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle		= handle;
+
+	torture_comment(tctx, "Testing OpenPrinter(%s)\n", r.in.printername);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_OpenPrinter(p, tctx, &r), "OpenPrinter failed");
+	torture_assert_werr_ok(tctx, r.out.result, "OpenPrinter failed");
+
+	return true;
+}
+
+static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tctx,
+						      struct dcerpc_pipe *p,
+						      struct policy_handle *handle,
+						      const char *address)
+{
 	struct spoolss_RemoteFindFirstPrinterChangeNotifyEx r;
+	struct spoolss_NotifyOption t1;
+
+	torture_comment(tctx, "Testing RemoteFindFirstPrinterChangeNotifyEx\n");
+
+	t1.version = 2;
+	t1.flags = 0;
+	t1.count = 2;
+	t1.types = talloc_zero_array(tctx, struct spoolss_NotifyOptionType, 2);
+	t1.types[0].type = PRINTER_NOTIFY_TYPE;
+	t1.types[0].count = 1;
+	t1.types[0].fields = talloc_array(t1.types, union spoolss_Field, 1);
+	t1.types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
+
+	t1.types[1].type = JOB_NOTIFY_TYPE;
+	t1.types[1].count = 1;
+	t1.types[1].fields = talloc_array(t1.types, union spoolss_Field, 1);
+	t1.types[1].fields[0].field = PRINTER_NOTIFY_FIELD_PRINTER_NAME;
+
+	r.in.flags = 0;
+	r.in.local_machine = talloc_asprintf(tctx, "\\\\%s", address);
+	r.in.options = 0;
+	r.in.printer_local = 123;
+	r.in.notify_options = &t1;
+	r.in.handle = handle;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r),
+		"RemoteFindFirstPrinterChangeNotifyEx failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"error return code for RemoteFindFirstPrinterChangeNotifyEx");
+
+	return true;
+}
+
+static bool test_ClosePrinter(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle)
+{
+	struct spoolss_ClosePrinter r;
+
+	r.in.handle = handle;
+	r.out.handle = handle;
+
+	torture_comment(tctx, "Testing ClosePrinter\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_ClosePrinter(p, tctx, &r),
+		"ClosePrinter failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"ClosePrinter failed");
+
+	return true;
+}
+
+static bool test_start_dcerpc_server(struct torture_context *tctx,
+				     struct tevent_context *event_ctx,
+				     struct dcesrv_context **dce_ctx_p,
+				     const char **address_p)
+{
 	struct dcesrv_endpoint_server ep_server;
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	const char *endpoints[] = { "spoolss", NULL };
 	struct dcesrv_endpoint *e;
-	struct spoolss_NotifyOption t1;
-	struct spoolss_ClosePrinter cp;
-	struct received_packet *rp;
-
-	struct policy_handle handle;
 	const char *address;
 	struct interface *ifaces;
 
-	received_packets = NULL;
-
 	ntvfs_init(tctx->lp_ctx);
-
-	ZERO_STRUCT(q);
-
-	q.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	q.in.datatype		= NULL;
-	q.in.devmode_ctr.devmode= NULL;
-	q.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
-	q.out.handle		= &handle;
-
-	torture_comment(tctx, "Testing OpenPrinter(%s)\n", q.in.printername);
-
-	status = dcerpc_spoolss_OpenPrinter(p, tctx, &q);
-
-	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
-
-	torture_assert_werr_ok(tctx, q.out.result, "OpenPrinter failed");
-
-	/* Start DCE/RPC server */
 
 	/* fill in our name */
 	ep_server.name = "spoolss";
@@ -275,8 +331,10 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 
 	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
 	address = iface_n_ip(ifaces, 0);
+
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);
-	status = smbsrv_add_socket(p->conn->event_ctx, tctx->lp_ctx, &single_ops, address);
+
+	status = smbsrv_add_socket(event_ctx, tctx->lp_ctx, &single_ops, address);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
 	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints, &dce_ctx);
@@ -290,56 +348,33 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 				"unable listen on dcerpc endpoint server");
 	}
 
-	r.in.flags = 0;
-	r.in.local_machine = talloc_asprintf(tctx, "\\\\%s", address);
-	r.in.options = 0;
-	r.in.printer_local = 123;
-	t1.version = 2;
-	t1.flags = 0;
-	t1.count = 2;
-	t1.types = talloc_zero_array(tctx, struct spoolss_NotifyOptionType, 2);
-	t1.types[0].type = PRINTER_NOTIFY_TYPE;
-	t1.types[0].count = 1;
-	t1.types[0].fields = talloc_array(t1.types, union spoolss_Field, 1);
-	t1.types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
+	*dce_ctx_p = dce_ctx;
+	*address_p = address;
 
-	t1.types[1].type = JOB_NOTIFY_TYPE;
-	t1.types[1].count = 1;
-	t1.types[1].fields = talloc_array(t1.types, union spoolss_Field, 1);
-	t1.types[1].fields[0].field = PRINTER_NOTIFY_FIELD_PRINTER_NAME;
+	return true;
+}
 
-	r.in.notify_options = &t1;
-	r.in.handle = &handle;
+static bool test_RFFPCNEx(struct torture_context *tctx,
+			  struct dcerpc_pipe *p)
+{
+	struct dcesrv_context *dce_ctx;
+	struct policy_handle handle;
+	const char *address;
 
-	status = dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r);
+	received_packets = NULL;
 
-	torture_assert_ntstatus_ok(tctx, status, "FFPCNEx failed");
+	/* Start DCE/RPC server */
+	torture_assert(tctx, test_start_dcerpc_server(tctx, p->conn->event_ctx, &dce_ctx, &address), "");
 
-	torture_assert_werr_ok(tctx, r.out.result, "error return code for FFPCNEx");
-
-	cp.in.handle = &handle;
-	cp.out.handle = &handle;
-
-	torture_comment(tctx, "Testing ClosePrinter\n");
-
-	status = dcerpc_spoolss_ClosePrinter(p, tctx, &cp);
-	torture_assert_ntstatus_ok(tctx, status, "ClosePrinter failed");
-
-	/* We should've had an incoming packet 58 (ReplyOpenPrinter) or 60
-	 * (ReplyClosePrinter) */
-
-	torture_assert(tctx, received_packets != NULL, "no packets received");
-
-	for (rp = received_packets; rp; rp = rp->next) {
-		switch (rp->opnum) {
-		case 58:
-		case 60:
-			continue;
-		default:
-			torture_fail(tctx,
-				talloc_asprintf(tctx, "unexpected packet opnum %d received", rp->opnum));
-		}
-	}
+	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle), "");
+	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, p, &handle, address), "");
+	torture_assert(tctx, received_packets, "no packets received");
+	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
+		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
+	torture_assert(tctx, test_ClosePrinter(tctx, p, &handle), "");
+	torture_assert(tctx, received_packets, "no packets received");
+	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
+		"no ReplyClosePrinter packet after ClosePrinter");
 
 	/* Shut down DCE/RPC server */
 	talloc_free(dce_ctx);
