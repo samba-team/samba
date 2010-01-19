@@ -277,6 +277,7 @@ systemMayContain: netbootSCPBL
 systemMayContain: ownerBL
 systemMayContain: msDS-ReplValueMetaData
 systemMayContain: msDS-ReplAttributeMetaData
+systemMayContain: msDS-NcType
 systemMayContain: msDS-NonMembersBL
 systemMayContain: msDS-NCReplOutboundNeighbors
 systemMayContain: msDS-NCReplInboundNeighbors
