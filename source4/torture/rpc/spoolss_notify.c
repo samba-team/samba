@@ -283,16 +283,6 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "unable to initialize DCE/RPC server");
 
-	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(lp_ncalrpc_dir(tctx->lp_ctx))) {
-		int ret;
-		ret = mkdir(lp_ncalrpc_dir(tctx->lp_ctx), 0755);
-		torture_assert(tctx, (ret == 0), talloc_asprintf(tctx,
-			       "failed to mkdir(%s) ret[%d] errno[%d - %s]",
-			       lp_ncalrpc_dir(tctx->lp_ctx), ret,
-			       errno, strerror(errno)));
-	}
-
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		status = dcesrv_add_ep(dce_ctx, tctx->lp_ctx,
 				       e, tctx->ev, &single_ops);
