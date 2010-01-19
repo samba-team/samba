@@ -155,7 +155,7 @@ static int account_show(struct net_context *c,
 			int argc, const char **argv)
 {
 	if (argc != 0) {
-		d_fprintf(stderr, _("usage:")," %s\n"), ctx->whoami;
+		d_fprintf(stderr, _("Usage:")," %s\n"), ctx->whoami;
 		return -1;
 	}
 
@@ -226,7 +226,7 @@ static int account_set_badpw(struct net_context *c,
 			     int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage:")," %s <count>\n"), ctx->whoami;
+		d_fprintf(stderr, _("Usage:")," %s <count>\n"), ctx->whoami;
 		return -1;
 	}
 
@@ -256,7 +256,7 @@ static int account_set_lockduration(struct net_context *c,
 				    int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <count>\n"), ctx->whoami);
 		return -1;
 	}
 
@@ -286,7 +286,7 @@ static int account_set_resetduration(struct net_context *c,
 				     int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <count>\n"), ctx->whoami);
 		return -1;
 	}
 
@@ -316,7 +316,7 @@ static int account_set_minpwage(struct net_context *c,
 				int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <count>\n"), ctx->whoami);
 		return -1;
 	}
 
@@ -346,7 +346,7 @@ static int account_set_maxpwage(struct net_context *c,
 				int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <count>\n"), ctx->whoami);
 		return -1;
 	}
 
@@ -376,7 +376,7 @@ static int account_set_minpwlen(struct net_context *c,
 				int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <count>\n"), ctx->whoami);
 		return -1;
 	}
 
@@ -406,7 +406,7 @@ static int account_set_pwhistlen(struct net_context *c,
 				 int argc, const char **argv)
 {
 	if (argc != 1) {
-		d_fprintf(stderr, _("usage: %s <count>\n"), ctx->whoami);
+		d_fprintf(stderr, _("Usage: %s <count>\n"), ctx->whoami);
 		return -1;
 	}
 

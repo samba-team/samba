@@ -471,7 +471,7 @@ static int rpc_registry_setvalue(struct net_context *c, int argc,
 				 const char **argv )
 {
 	if (argc < 4 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry setvalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry setvalue <key> "
 			  "<valuename> <type> [<val>]+\n"));
 		return -1;
 	}
@@ -524,7 +524,7 @@ static int rpc_registry_deletevalue(struct net_context *c, int argc,
 				    const char **argv )
 {
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry deletevalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry deletevalue <key> "
 			  "<valuename>\n"));
 		return -1;
 	}
@@ -639,7 +639,7 @@ static int rpc_registry_getvalue(struct net_context *c, int argc,
 				 const char **argv)
 {
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry getvalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry getvalue <key> "
 			  "<valuename>\n"));
 		return -1;
 	}
@@ -666,7 +666,7 @@ static int rpc_registry_getvalueraw(struct net_context *c, int argc,
 				    const char **argv)
 {
 	if (argc != 2 || c->display_usage) {
-		d_fprintf(stderr, _("usage:"),_(" net rpc registry getvalue <key> "
+		d_fprintf(stderr, _("Usage:"),_(" net rpc registry getvalue <key> "
 			  "<valuename>\n"));
 		return -1;
 	}
@@ -740,7 +740,7 @@ static int rpc_registry_createkey(struct net_context *c, int argc,
 {
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr,
-			  _("usage:"),_(" net rpc registry createkey <key>\n"));
+			  _("Usage:"),_(" net rpc registry createkey <key>\n"));
 		return -1;
 	}
 
@@ -790,7 +790,7 @@ static int rpc_registry_deletekey(struct net_context *c, int argc, const char **
 {
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr,
-			  _("usage:"),_(" net rpc registry deletekey <key>\n"));
+			  _("Usage:"),_(" net rpc registry deletekey <key>\n"));
 		return -1;
 	}
 
