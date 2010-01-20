@@ -53,7 +53,7 @@
         <para> The Name Service Switch allows user
 	and system information to be obtained from different databases
 	services such as NIS or DNS.  The exact behaviour can be configured
-	throught the <filename>/etc/nsswitch.conf</filename> file.
+	through the <filename>/etc/nsswitch.conf</filename> file.
 	Users and groups are allocated as they are resolved to a range
 	of user and group ids specified by the administrator of the
 	Samba system.</para>
