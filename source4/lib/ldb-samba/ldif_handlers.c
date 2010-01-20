@@ -37,12 +37,18 @@
 
 /*
   use ndr_print_* to convert a NDR formatted blob to a ldif formatted blob
+
+  If mask_errors is true, then function succeeds but out data
+  is set to "<Unable to decode binary data>" message
+
+  \return 0 on success; -1 on error
 */
 static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
 			  const struct ldb_val *in, struct ldb_val *out,
 			  size_t struct_size,
 			  ndr_pull_flags_fn_t pull_fn,
-			  ndr_print_fn_t print_fn)
+			  ndr_print_fn_t print_fn,
+			  bool mask_errors)
 {
 	uint8_t *p;
 	enum ndr_err_code err;
@@ -54,6 +60,10 @@ static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
 				   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 				   p, pull_fn);
 	if (err != NDR_ERR_SUCCESS) {
+		/* fail in not in mask_error mode */
+		if (!mask_errors) {
+			return -1;
+		}
 		talloc_free(p);
 		out->data = (uint8_t *)talloc_strdup(mem_ctx, "<Unable to decode binary data>");
 		out->length = strlen((const char *)out->data);
@@ -391,7 +401,8 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 		return ldif_write_NDR(ldb, mem_ctx, in, out, 
 				      sizeof(struct security_descriptor),
 				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor,
-				      (ndr_print_fn_t)ndr_print_security_descriptor);
+				      (ndr_print_fn_t)ndr_print_security_descriptor,
+				      true);
 				      
 	}
 
@@ -589,7 +600,8 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		return ldif_write_NDR(ldb, mem_ctx, in, out, 
 				      sizeof(struct prefixMapBlob),
 				      (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob,
-				      (ndr_print_fn_t)ndr_print_prefixMapBlob);
+				      (ndr_print_fn_t)ndr_print_prefixMapBlob,
+				      true);
 				      
 	}
 
@@ -791,7 +803,8 @@ static int ldif_write_repsFromTo(struct ldb_context *ldb, void *mem_ctx,
 	return ldif_write_NDR(ldb, mem_ctx, in, out, 
 			      sizeof(struct repsFromToBlob),
 			      (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob,
-			      (ndr_print_fn_t)ndr_print_repsFromToBlob);
+			      (ndr_print_fn_t)ndr_print_repsFromToBlob,
+			      true);
 }
 
 /*
@@ -803,7 +816,8 @@ static int ldif_write_replPropertyMetaData(struct ldb_context *ldb, void *mem_ct
 	return ldif_write_NDR(ldb, mem_ctx, in, out, 
 			      sizeof(struct replPropertyMetaDataBlob),
 			      (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob,
-			      (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob);
+			      (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob,
+			      true);
 }
 
 /*
@@ -815,7 +829,8 @@ static int ldif_write_replUpToDateVector(struct ldb_context *ldb, void *mem_ctx,
 	return ldif_write_NDR(ldb, mem_ctx, in, out, 
 			      sizeof(struct replUpToDateVectorBlob),
 			      (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob,
-			      (ndr_print_fn_t)ndr_print_replUpToDateVectorBlob);
+			      (ndr_print_fn_t)ndr_print_replUpToDateVectorBlob,
+			      true);
 }
 
 
