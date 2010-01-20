@@ -16,7 +16,7 @@
 	parameter is used in conjunction with <smbconfoption name="domain master">yes</smbconfoption>, so that
 	<command moreinfo="none">nmbd</command> can guarantee becoming a domain master.
 	</para>
-		
+
 	<para>
 	Use this option with caution, because if there are several hosts (whether Samba servers, Windows 95 or NT)
 	that are preferred  master browsers on the same subnet, they will each periodically  and continuously attempt

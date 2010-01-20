@@ -35,7 +35,7 @@
 	users using NT/LM authentication. It returns 0 if the users is authenticated
 	successfully and 1 if access was denied. ntlm_auth uses winbind to access 
 	the user and authentication data for a domain.  This utility 
-	is only indended to be used by other programs (currently
+	is only intended to be used by other programs (currently
 	<ulink url="http://www.squid-cache.org/">Squid</ulink>
 	and <ulink url="http://download.samba.org/ftp/unpacked/lorikeet/trunk/mod_ntlm_winbind/">mod_ntlm_winbind</ulink>)
 	</para>
