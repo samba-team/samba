@@ -31,6 +31,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/time.h"
 #include "lib/util/tsort.h"
+#include "lib/stream/packet.h" /* FIXME */
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -341,23 +342,31 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	struct wreplsrv_out_connection *wrepl_out;
 	struct wrepl_table *update_in = &call->req_packet.message.replication.info.table;
 	struct wreplsrv_in_update_state *update_state;
-	uint16_t fde_flags;
+	struct packet_context *packet;
 
 	DEBUG(2,("WREPL_REPL_UPDATE: partner[%s] initiator[%s] num_owners[%u]\n",
 		call->wreplconn->partner->address,
 		update_in->initiator, update_in->partner_count));
 
-	/* 
-	 * we need to flip the connection into a client connection
-	 * and do a WREPL_REPL_SEND_REQUEST's on the that connection
-	 * and then stop this connection
-	 */
-	fde_flags = event_get_fd_flags(wrepl_in->conn->event.fde);
-	talloc_free(wrepl_in->conn->event.fde);
-	wrepl_in->conn->event.fde = NULL;
-
 	update_state = talloc(wrepl_in, struct wreplsrv_in_update_state);
 	NT_STATUS_HAVE_NO_MEMORY(update_state);
+
+	/*
+	 * We need to flip the connection into a client connection
+	 * and do a WREPL_REPL_SEND_REQUEST's on the that connection
+	 * and then stop this connection.
+	 */
+	packet = packet_init(wrepl_in);
+	if (packet == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * TODO We can free the tstream here as we don't use it in the client
+	 * yet.
+	 */
+	TALLOC_FREE(wrepl_in->send_queue);
+	TALLOC_FREE(wrepl_in->tstream);
 
 	wrepl_out = talloc(update_state, struct wreplsrv_out_connection);
 	NT_STATUS_HAVE_NO_MEMORY(wrepl_out);
@@ -368,10 +377,8 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	wrepl_out->sock			= wrepl_socket_merge(wrepl_out,
 							     wrepl_in->conn->event.ctx,
 							     wrepl_in->conn->socket,
-							     wrepl_in->packet);
+							     packet);
 	NT_STATUS_HAVE_NO_MEMORY(wrepl_out->sock);
-
-	event_set_fd_flags(wrepl_out->sock->event.fde, fde_flags);
 
 	update_state->wrepl_in			= wrepl_in;
 	update_state->wrepl_out			= wrepl_out;

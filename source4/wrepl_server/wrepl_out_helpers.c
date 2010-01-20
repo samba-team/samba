@@ -855,8 +855,6 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	struct wreplsrv_in_connection *wrepl_in;
 	NTSTATUS status;
 	struct socket_context *sock;
-	struct packet_context *packet;
-	uint16_t fde_flags;
 
 	/* prepare the outgoing request */
 	req->opcode	= WREPL_OPCODE_BITS;
@@ -885,21 +883,12 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	state->wreplconn->sock->sock = NULL;
 	talloc_steal(state, sock);
 
-	/* 
-	 * steal the packet_context
-	 * note the request DATA_BLOB we just send on the
-	 * wrepl_socket (client connection) is still unter the 
-	 * packet context and will be send to the wire
-	 */
-	packet = state->wreplconn->sock->packet;
-	state->wreplconn->sock->packet = NULL;
-	talloc_steal(state, packet);
-
 	/*
-	 * get the fde_flags of the old fde event,
-	 * so that we can later set the same flags to the new one
+	 * TODO: steal the tstream if we switch the client to tsocket.
+	 * This is just to get a compiler error as soon as we remove
+	 * packet_context.
 	 */
-	fde_flags = event_get_fd_flags(state->wreplconn->sock->event.fde);
+	state->wreplconn->sock->packet = NULL;
 
 	/*
 	 * free the wrepl_socket (client connection)
@@ -915,17 +904,14 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	 *       wreplsrv_in_connection_merge()
 	 */
 	status = wreplsrv_in_connection_merge(state->io->in.partner,
-					      sock, packet, &wrepl_in);
+					      sock, &wrepl_in);
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	event_set_fd_flags(wrepl_in->conn->event.fde, fde_flags);
 
 	wrepl_in->assoc_ctx.peer_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
 	wrepl_in->assoc_ctx.our_ctx	= 0;
 
 	/* now we can free the wreplsrv_out_connection */
-	talloc_free(state->wreplconn);
-	state->wreplconn = NULL;
+	TALLOC_FREE(state->wreplconn);
 
 	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_DONE;
 
