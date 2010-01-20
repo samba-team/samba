@@ -20,7 +20,7 @@
 	  version.  Please refer to the manpage for the configured
 	  idmap and nss_info plugin for the specifics on how to configure
 	  name aliasing for a specific configuration.  Name aliasing takes
-	  precendence (and is mutually exclusive) over the whitespace
+	  precedence (and is mutually exclusive) over the whitespace
 	  replacement mechanism discussed previsouly.
 	  </para>
 

@@ -7,7 +7,7 @@
     <para>This parameter determines whether or not
     <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> supports the new 64k
-    streaming read and write varient SMB requests introduced with
+    streaming read and write variant SMB requests introduced with
     Windows 2000. Note that due to Windows 2000 client redirector bugs
     this requires Samba to be running on a 64-bit capable operating
     system such as IRIX, Solaris or a Linux 2.4 kernel. Can improve
