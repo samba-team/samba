@@ -41,6 +41,7 @@
 /*                                                   */
 /*****************************************************/
 
+#include <Python.h>
 #include "includes.h"
 #include "utils/net/net.h"
 #include "lib/cmdline/popt_common.h"
@@ -49,7 +50,6 @@
 #include "param/param.h"
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
-#include <Python.h>
 #include "scripting/python/modules.h"
 
 static PyObject *py_tuple_from_argv(int argc, const char *argv[])
