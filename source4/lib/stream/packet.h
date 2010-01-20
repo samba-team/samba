@@ -23,6 +23,7 @@
 struct packet_context;
 struct tevent_context;
 struct tevent_fd;
+struct socket_context;
 
 typedef NTSTATUS (*packet_full_request_fn_t)(void *private_data,
 					     DATA_BLOB blob, size_t *packet_size);

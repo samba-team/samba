@@ -68,7 +68,7 @@ static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 	if (ldb_mod == NULL)
 		return NULL;
 
-	ldb_ctx_type = PyObject_GetAttrString(ldb_mod, "Ldb");
+	ldb_ctx_type = (PyTypeObject *)PyObject_GetAttrString(ldb_mod, "Ldb");
 
 	ret = (PyLdbObject *)ldb_ctx_type->tp_alloc(ldb_ctx_type, 0);
 	if (ret == NULL) {

@@ -3551,7 +3551,6 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
-	bool ret;
 	struct samr_Connect2 c;
 	struct samr_OpenDomain o;
 	struct dom_sid sid;

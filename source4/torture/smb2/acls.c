@@ -47,13 +47,13 @@
 	status = smb2_getinfo_file(tree, tctx, &_q); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	/* Handle a Vista bug where SEC_STD_SYNCHRONIZE doesn't come back. */ \
-	if (((flags & CHECK_ACCESS_IGNORE) == CHECK_ACCESS_IGNORE) && \
+	if ((((flags) & CHECK_ACCESS_IGNORE) == CHECK_ACCESS_IGNORE) && \
 	    ((_q.access_information.out.access_flags & CHECK_ACCESS_IGNORE) != CHECK_ACCESS_IGNORE)) { \
 		torture_comment(tctx, "SKIPPING (Vista bug): (%s) Incorrect access_flags 0x%08x - should be 0x%08x\n", \
 		       __location__, _q.access_information.out.access_flags, (flags)); \
 	} \
 	if ((_q.access_information.out.access_flags & ~CHECK_ACCESS_IGNORE) != \
-	    ((flags & ~CHECK_ACCESS_IGNORE))) { \
+	    (((flags) & ~CHECK_ACCESS_IGNORE))) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s) Incorrect access_flags 0x%08x - should be 0x%08x\n", \
 		       __location__, _q.access_information.out.access_flags, (flags)); \
 		ret = false; \

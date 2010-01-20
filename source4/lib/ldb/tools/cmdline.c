@@ -33,6 +33,8 @@
 #include "auth/auth.h"
 #include "ldb_wrap.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/drsblobs.h"
+#include "dsdb/schema/schema.h"
 #include "dsdb/common/proto.h"
 #endif
 
