@@ -25,6 +25,7 @@ cert_dir= ${LDAPDIR}/slapd-samba4
 
 start_server= 0
 install_full_schema= 0
+InstallLdifFile= none
 SchemaFile=${LDAPDIR}/99_ad.ldif
 ConfigFile = ${LDAPDIR}/fedorads-partitions.ldif
 ConfigFile = ${LDAPDIR}/fedorads-sasl.ldif
