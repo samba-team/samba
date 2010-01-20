@@ -421,9 +421,7 @@ startstop_nfslock() {
 	esac
 }
 
-########################################################
-# remove an ip address from an interface
-########################################################
+# better use delete_ip_from_iface() together with add_ip_to_iface
 remove_ip() {
 	# the ip tool will delete all secondary IPs if this is the primary.
 	# To work around this _very_ annoying behaviour we have to keep a
@@ -443,6 +441,36 @@ remove_ip() {
 		fi
 	    done
 	}
+}
+
+add_ip_to_iface()
+{
+	local _iface=$1
+	local _ip=$2
+	local _maskbits=$3
+	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+
+	test -f $_lockfile || {
+		touch $_lockfile
+	}
+
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh add "$_iface" "$_ip" "$_maskbits"
+	return $?
+}
+
+delete_ip_from_iface()
+{
+	local _iface=$1
+	local _ip=$2
+	local _maskbits=$3
+	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+
+	test -f $_lockfile || {
+		touch $_lockfile
+	}
+
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh delete "$_iface" "$_ip" "$_maskbits"
+	return $?
 }
 
 ########################################################
