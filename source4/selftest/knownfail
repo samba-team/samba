@@ -41,6 +41,7 @@ rpc.netlogon.*.ServerGetTrustInfo
 rpc.netlogon.*.GetDomainInfo # Also fails against W2K8 (but in a different way)
 samba4.rpc.samr.passwords.pwdlastset # Not provided by Samba 4 yet
 samba4.rpc.samr.passwords.badpwdcount # Not provided by Samba 4 yet
+samba4.rpc.samr.passwords.lockout
 samba4.rpc.samr.users.privileges
 samba4.rpc.spoolss # Not provided by Samba 4 yet
 base.charset.*.Testing partial surrogate
