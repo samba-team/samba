@@ -597,12 +597,22 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	uint32_t i;
 
 	if (ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY) {
-		return ldif_write_NDR(ldb, mem_ctx, in, out, 
-				      sizeof(struct prefixMapBlob),
-				      (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob,
-				      (ndr_print_fn_t)ndr_print_prefixMapBlob,
-				      true);
-				      
+		int err;
+		/* try to decode the blob as S4 prefixMap */
+		err = ldif_write_NDR(ldb, mem_ctx, in, out,
+		                     sizeof(struct prefixMapBlob),
+		                     (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob,
+		                     (ndr_print_fn_t)ndr_print_prefixMapBlob,
+		                     false);
+		if (0 == err) {
+			return err;
+		}
+		/* try parsing it as Windows PrefixMap value */
+		return ldif_write_NDR(ldb, mem_ctx, in, out,
+		                      sizeof(struct drsuapi_MSPrefixMap_Ctr),
+		                      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_MSPrefixMap_Ctr,
+		                      (ndr_print_fn_t)ndr_print_drsuapi_MSPrefixMap_Ctr,
+		                      true);
 	}
 
 	blob = talloc(mem_ctx, struct prefixMapBlob);
