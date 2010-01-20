@@ -942,7 +942,28 @@ static NTSTATUS dcesrv_samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TA
 		return NT_STATUS_OK;
 
 	case 12:
-		
+		/*
+		 * It is not possible to set lockout_duration < lockout_window.
+		 * (The test is the other way around since the negative numbers
+		 *  are stored...)
+		 *
+		 * TODO:
+		 *   This check should be moved to the backend, i.e. to some
+		 *   ldb module under dsdb/samdb/ldb_modules/ .
+		 *
+		 * This constraint is documented here for the samr rpc service:
+		 * MS-SAMR 3.1.1.6 Attribute Constraints for Originating Updates
+		 * http://msdn.microsoft.com/en-us/library/cc245667%28PROT.10%29.aspx
+		 *
+		 * And here for the ldap backend:
+		 * MS-ADTS 3.1.1.5.3.2 Constraints
+		 * http://msdn.microsoft.com/en-us/library/cc223462(PROT.10).aspx
+		 */
+		if (r->in.info->info12.lockout_duration >
+		    r->in.info->info12.lockout_window)
+		{
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		SET_INT64  (msg, info12.lockout_duration,      "lockoutDuration");
 		SET_INT64  (msg, info12.lockout_window,        "lockOutObservationWindow");
 		SET_INT64  (msg, info12.lockout_threshold,     "lockoutThreshold");
