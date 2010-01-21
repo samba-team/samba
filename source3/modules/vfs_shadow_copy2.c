@@ -39,6 +39,9 @@
      client.  This is beneficial for filesystems that don't read
      directories alphabetically (the default unix).
 
+     4) vanity naming for snapshots. Snapshots can be named in any
+     format compatible with str[fp]time conversions.
+
   Module options:
 
       shadow:snapdir = <directory where snapshots are kept>
@@ -71,10 +74,17 @@
       not listed alphabetically sorted.  If enabled, you typically
       want to specify descending order.
 
-  Note that the directory names in the snapshot directory must take the form
-  @GMT-YYYY.MM.DD-HH.MM.SS
-  
-  The following command would generate a correctly formatted directory name:
+      shadow:format = <format specification for snapshot names>
+
+      This is an optional parameter that specifies the format
+      specification for the naming of snapshots.  The format must
+      be compatible with the conversion specifications recognized
+      by str[fp]time.  The default value is "@GMT-%Y.%m.%d-%H.%M.%S".
+
+
+
+  The following command would generate a correctly formatted directory name
+  for use with the default parameters:
      date -u +@GMT-%Y.%m.%d-%H.%M.%S
   
  */
@@ -85,8 +95,10 @@ static int vfs_shadow_copy2_debug_level = DBGC_VFS;
 #define DBGC_CLASS vfs_shadow_copy2_debug_level
 
 #define GMT_NAME_LEN 24 /* length of a @GMT- name */
+#define SHADOW_COPY2_GMT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
 
 #define SHADOW_COPY2_DEFAULT_SORT NULL
+#define SHADOW_COPY2_DEFAULT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
 
 /*
   make very sure it is one of our special names 
@@ -112,6 +124,30 @@ static inline bool shadow_copy2_match_name(const char *name, const char **gmt_st
 		(*gmt_start) = p;
 	}
 	return True;
+}
+
+static char *shadow_copy2_snapshot_to_gmt(TALLOC_CTX *mem_ctx,
+				vfs_handle_struct *handle, const char *name)
+{
+	struct tm timestamp;
+	time_t timestamp_t;
+	char gmt[GMT_NAME_LEN + 1];
+	const char *fmt;
+
+	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
+				   "format", SHADOW_COPY2_DEFAULT_FORMAT);
+
+	ZERO_STRUCT(timestamp);
+	if (strptime(name, fmt, &timestamp) == NULL) {
+		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: no match %s: %s\n",
+			   fmt, name));
+		return NULL;
+	}
+
+	DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n", fmt, name));
+	strftime(gmt, sizeof(gmt), SHADOW_COPY2_GMT_FORMAT, &timestamp);
+
+	return talloc_strdup(mem_ctx, gmt);
 }
 
 /*
@@ -362,6 +398,14 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 	size_t baselen;
 	char *ret;
 
+	struct tm timestamp;
+	time_t timestamp_t;
+	char snapshot[MAXPATHLEN];
+	const char *fmt;
+
+	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
+				   "format", SHADOW_COPY2_DEFAULT_FORMAT);
+
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle);
 	if (snapdir == NULL) {
 		DEBUG(2,("no snapdir found for share at %s\n", handle->conn->connectpath));
@@ -384,7 +428,17 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 		}
 	}
 
-	relpath = fname + GMT_NAME_LEN;
+	ZERO_STRUCT(timestamp);
+	relpath = strptime(fname, SHADOW_COPY2_GMT_FORMAT, &timestamp);
+	if (relpath == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	/* relpath is the remaining portion of the path after the @GMT-xxx */
+
+	strftime(snapshot, MAXPATHLEN, fmt, &timestamp);
+
 	baselen = strlen(basedir);
 	baseoffset = handle->conn->connectpath + baselen;
 
@@ -400,9 +454,9 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 	if (*relpath == '/') relpath++;
 	if (*baseoffset == '/') baseoffset++;
 
-	ret = talloc_asprintf(handle->data, "%s/%.*s/%s/%s", 
+	ret = talloc_asprintf(handle->data, "%s/%s/%s/%s",
 			      snapdir, 
-			      GMT_NAME_LEN, fname, 
+			      snapshot,
 			      baseoffset, 
 			      relpath);
 	DEBUG(6,("convert_shadow2_name: '%s' -> '%s'\n", fname, ret));
@@ -779,6 +833,7 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 	const char *snapdir;
 	SMB_STRUCT_DIRENT *d;
 	TALLOC_CTX *tmp_ctx = talloc_new(handle->data);
+	char *snapshot;
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle);
 	if (snapdir == NULL) {
@@ -799,8 +854,6 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	talloc_free(tmp_ctx);
-
 	shadow_copy2_data->num_volumes = 0;
 	shadow_copy2_data->labels      = NULL;
 
@@ -808,7 +861,11 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 		SHADOW_COPY_LABEL *tlabels;
 
 		/* ignore names not of the right form in the snapshot directory */
-		if (!shadow_copy2_match_name(d->d_name, NULL)) {
+		snapshot = shadow_copy2_snapshot_to_gmt(tmp_ctx, handle,
+							d->d_name);
+		DEBUG(6,("shadow_copy2_get_shadow_copy2_data: %s -> %s\n",
+			 d->d_name, snapshot));
+		if (!snapshot) {
 			continue;
 		}
 
@@ -824,10 +881,14 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 		if (tlabels == NULL) {
 			DEBUG(0,("shadow_copy2: out of memory\n"));
 			SMB_VFS_NEXT_CLOSEDIR(handle, p);
+			talloc_free(tmp_ctx);
 			return -1;
 		}
 
-		strlcpy(tlabels[shadow_copy2_data->num_volumes], d->d_name, sizeof(*tlabels));
+		strlcpy(tlabels[shadow_copy2_data->num_volumes], snapshot,
+			sizeof(*tlabels));
+		talloc_free(snapshot);
+
 		shadow_copy2_data->num_volumes++;
 		shadow_copy2_data->labels = tlabels;
 	}
@@ -836,6 +897,7 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 
 	shadow_copy2_sort_data(handle, shadow_copy2_data);
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
