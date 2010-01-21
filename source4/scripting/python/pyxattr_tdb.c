@@ -33,11 +33,7 @@
 
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
-#if !defined(HAVE_XATTR_SUPPORT)
-	return Py_False;
-#else
 	return Py_True;
-#endif
 }
 
 static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
@@ -63,7 +59,8 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	status = push_xattr_blob_tdb_raw(eadb,mem_ctx,attribute,filename,-1,&blob);
+	status = push_xattr_blob_tdb_raw(eadb, mem_ctx, attribute, filename, -1,
+									 &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_FromNTSTATUS(status);
 		talloc_free(mem_ctx);

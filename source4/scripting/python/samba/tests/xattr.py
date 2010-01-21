@@ -19,77 +19,85 @@
 
 import samba.xattr_native, samba.xattr_tdb
 from samba.dcerpc import xattr
-from samba.ndr import ndr_pack, ndr_unpack
-from unittest import TestCase
+from samba.ndr import ndr_pack
+from testtools import TestCase, TestSkipped
 import random
 import os
-import tdb
-import sys
 
 class XattrTests(TestCase):
 
     def test_set_xattr_native(self):
-        if samba.xattr_native.is_xattr_supported():
-            random.seed()
-            path=os.environ['SELFTEST_PREFIX']
-            tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
-            ntacl=xattr.NTACL()
-            ntacl.version = 1
-            open(tempf, 'w').write("empty")
-            try:
-                samba.xattr_native.wrap_setxattr(tempf,"user.unittests",ndr_pack(ntacl))
-            except IOError:
-                print >>sys.stderr, "WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
-            os.unlink(tempf)
-        else:
-            print >>sys.stderr, "WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
+        if not samba.xattr_native.is_xattr_supported():
+            raise TestSkipped()
+        random.seed()
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        ntacl = xattr.NTACL()
+        ntacl.version = 1
+        open(tempf, 'w').write("empty")
+        try:
+            samba.xattr_native.wrap_setxattr(tempf, "user.unittests", 
+                ndr_pack(ntacl))
+        except IOError:
+            raise TestSkipped("the filesystem where the tests are runned do not support XATTR")
+        os.unlink(tempf)
 
     def test_set_and_get_native(self):
-        if samba.xattr_native.is_xattr_supported():
-            random.seed()
-            path = os.environ['SELFTEST_PREFIX']
-            tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
-            reftxt="this is a test"
-            open(tempf, 'w').write("empty")
-            try:
-                samba.xattr_native.wrap_setxattr(tempf,"user.unittests",reftxt)
-                text = samba.xattr_native.wrap_getxattr(tempf,"user.unittests")
-                self.assertEquals(text,reftxt)
-            except IOError:
-                print >>sys.stderr,"WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
-            os.unlink(tempf)
-        else:
-            print >>sys.stderr,"WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
+        if not samba.xattr_native.is_xattr_supported():
+            raise TestSkipped()
+        random.seed()
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        reftxt = "this is a test"
+        open(tempf, 'w').write("empty")
+        try:
+            samba.xattr_native.wrap_setxattr(tempf, "user.unittests", reftxt)
+            text = samba.xattr_native.wrap_getxattr(tempf, "user.unittests")
+            self.assertEquals(text, reftxt)
+        except IOError:
+            raise TestSkipped("the filesystem where the tests are runned do not support XATTR")
+        os.unlink(tempf)
 
     def test_set_xattr_tdb(self):
-        path=os.environ['SELFTEST_PREFIX']
+        path = os.environ['SELFTEST_PREFIX']
         random.seed()
-        tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl=xattr.NTACL()
+        tempf = os.path.join(path, "pytests"+str(int(100000*random.random())))
+        ntacl = xattr.NTACL()
         ntacl.version = 1
         open(tempf, 'w').write("empty")
-        samba.xattr_tdb.wrap_setxattr(os.path.join(path,"eadb.tdb"),tempf,"user.unittests",ndr_pack(ntacl))
-        os.unlink(tempf)
-        os.unlink(os.path.join(path,"eadb.tdb"))
+        try:
+            samba.xattr_tdb.wrap_setxattr(os.path.join(path, "eadb.tdb"),
+                tempf, "user.unittests", ndr_pack(ntacl))
+        finally:
+            os.unlink(tempf)
+        os.unlink(os.path.join(path, "eadb.tdb"))
 
     def test_set_tdb_not_open(self):
-        path=os.environ['SELFTEST_PREFIX']
+        path = os.environ['SELFTEST_PREFIX']
         random.seed()
-        tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl=xattr.NTACL()
+        tempf = os.path.join(path, "pytests"+str(int(100000*random.random())))
+        ntacl = xattr.NTACL()
         ntacl.version = 1
         open(tempf, 'w').write("empty")
-        self.assertRaises(IOError,samba.xattr_tdb.wrap_setxattr,os.path.join(path,os.path.join("nonexistent","eadb.tdb")),tempf,"user.unittests",ndr_pack(ntacl))
-        os.unlink(tempf)
+        try:
+            self.assertRaises(IOError, samba.xattr_tdb.wrap_setxattr, 
+                    os.path.join(path, "nonexistent","eadb.tdb"), tempf,
+                    "user.unittests", ndr_pack(ntacl))
+        finally:
+            os.unlink(tempf)
 
     def test_set_and_get_tdb(self):
-        path=os.environ['SELFTEST_PREFIX']
+        path = os.environ['SELFTEST_PREFIX']
         random.seed()
-        tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
-        reftxt="this is a test"
+        tempf = os.path.join(path, "pytests"+str(int(100000*random.random())))
+        reftxt = "this is a test"
         open(tempf, 'w').write("empty")
-        samba.xattr_tdb.wrap_setxattr(os.path.join(path,"eadb.tdb"),tempf,"user.unittests",reftxt)
-        text = samba.xattr_tdb.wrap_getxattr(os.path.join(path,"eadb.tdb"),tempf,"user.unittests")
-        self.assertEquals(text,reftxt)
-        os.unlink(tempf)
-        os.unlink(os.path.join(path,"eadb.tdb"))
+        try:
+            samba.xattr_tdb.wrap_setxattr(os.path.join(path, "eadb.tdb"),
+                tempf, "user.unittests", reftxt)
+            text = samba.xattr_tdb.wrap_getxattr(
+                os.path.join(path, "eadb.tdb"), tempf, "user.unittests")
+            self.assertEquals(text, reftxt)
+        finally:
+            os.unlink(tempf)
+        os.unlink(os.path.join(path, "eadb.tdb"))
