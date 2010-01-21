@@ -13,7 +13,7 @@
 
 main()
 {
-	int buf[7];
+	char buf[7];
 	int ret;
 	ssize_t rl_ret;
 
