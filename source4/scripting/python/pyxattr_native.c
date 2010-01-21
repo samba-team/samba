@@ -27,7 +27,7 @@
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-static PyObject  *py_is_xattr_supported(PyObject *self)
+static PyObject *py_is_xattr_supported(PyObject *self)
 {
 #if !defined(HAVE_XATTR_SUPPORT)
 	return Py_False;
@@ -49,9 +49,9 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	ret = wrap_setxattr(filename,attribute,blob.data,blob.length,0);
 	if( ret < 0 ) {
 		if (errno == ENOTSUP) {
-			PyErr_SetString(PyExc_IOError, strerror(errno));
+			PyErr_SetFromErrno(PyExc_IOError);
 		} else {
-			PyErr_SetString(PyExc_TypeError, strerror(errno));
+			PyErr_SetFromErrno(PyExc_TypeError);
 		}
 		return NULL;
 	}
@@ -63,7 +63,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 	char *filename, *attribute;
 	int len;
 	TALLOC_CTX *mem_ctx;
-	uint8_t *buf;
+	char *buf;
 	PyObject *ret;
 	if (!PyArg_ParseTuple(args, "ss", &filename,&attribute))
 		return NULL;
@@ -71,24 +71,24 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 	len = wrap_getxattr(filename,attribute,NULL,0);
 	if( len < 0 ) {
 		if (errno == ENOTSUP) {
-			PyErr_SetString(PyExc_IOError, strerror(errno));
+			PyErr_SetFromErrno(PyExc_IOError);
 		} else {
-			PyErr_SetString(PyExc_TypeError, strerror(errno));
+			PyErr_SetFromErrno(PyExc_TypeError);
 		}
 		return NULL;
 	}
 	/* check length ... */
-	buf = talloc_zero_array(mem_ctx, uint8_t, len);
-	len = wrap_getxattr(filename,attribute,buf,len);
+	buf = talloc_zero_array(mem_ctx, char, len);
+	len = wrap_getxattr(filename, attribute, buf, len);
 	if( len < 0 ) {
 		if (errno == ENOTSUP) {
-			PyErr_SetString(PyExc_IOError, strerror(errno));
+			PyErr_SetFromErrno(PyExc_IOError);
 		} else {
-			PyErr_SetString(PyExc_TypeError, strerror(errno));
+			PyErr_SetFromErrno(PyExc_TypeError);
 		}
 		return NULL;
 	}
-	ret = PyString_FromStringAndSize(buf,len);
+	ret = PyString_FromStringAndSize(buf, len);
 	talloc_free(buf);
 	return ret;
 }

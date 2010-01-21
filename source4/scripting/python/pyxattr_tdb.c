@@ -20,17 +20,18 @@
 
 #include <Python.h>
 #include "includes.h"
-#include "../tdb/include/tdb.h"
+#include <tdb.h>
 #include "tdb_wrap.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/util/wrap_xattr.h"
 #include "ntvfs/posix/vfs_posix.h"
+#include "libcli/util/pyerrors.h"
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-static PyObject  *py_is_xattr_supported(PyObject *self)
+static PyObject *py_is_xattr_supported(PyObject *self)
 {
 #if !defined(HAVE_XATTR_SUPPORT)
 	return Py_False;
@@ -38,12 +39,13 @@ static PyObject  *py_is_xattr_supported(PyObject *self)
 	return Py_True;
 #endif
 }
+
 static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 {
 	char *filename, *attribute, *tdbname;
 	DATA_BLOB blob;
 	int blobsize;
-        NTSTATUS status;
+	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct tdb_wrap *eadb;
 
@@ -58,9 +60,10 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
 		return NULL;
-	}	status = push_xattr_blob_tdb_raw(eadb,mem_ctx,attribute,filename,-1,&blob);
+	}
+	status = push_xattr_blob_tdb_raw(eadb,mem_ctx,attribute,filename,-1,&blob);
 	if( !NT_STATUS_IS_OK(status) ) {
-		PyErr_SetString(PyExc_TypeError, strerror(errno));
+		PyErr_SetFromErrno(PyExc_TypeError);
 		return NULL;
 	}
 	Py_RETURN_NONE;
@@ -75,23 +78,22 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 	NTSTATUS status;
 	struct tdb_wrap *eadb = NULL;
 
-	if (!PyArg_ParseTuple(args, "sss", &tdbname,&filename,&attribute))
+	if (!PyArg_ParseTuple(args, "sss", &tdbname, &filename, &attribute))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
 	eadb = tdb_wrap_open(mem_ctx, tdbname, 50000,
 				TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (eadb == NULL) {
-
 		PyErr_SetFromErrno(PyExc_IOError);
 		return NULL;
 	}
 	status = pull_xattr_blob_tdb_raw(eadb,mem_ctx,attribute,filename,-1,100,&blob);
-	if( !NT_STATUS_IS_OK(status) || blob.length < 0 ) {
-		PyErr_SetString(PyExc_TypeError, get_friendly_nt_error_msg(status));
+	if (!NT_STATUS_IS_OK(status) || blob.length < 0) {
+		PyErr_FromNTSTATUS(status);
 		return NULL;
 	}
-	ret = PyString_FromStringAndSize(blob.data,blob.length);
+	ret = PyString_FromStringAndSize((char *)blob.data, blob.length);
 	return ret;
 }
 
