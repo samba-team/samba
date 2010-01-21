@@ -3466,6 +3466,27 @@ static bool test_SetDomainInfo(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SetDomainInfo_ntstatus(struct dcerpc_pipe *p,
+					struct torture_context *tctx,
+					struct policy_handle *domain_handle,
+					enum samr_DomainInfoClass level,
+					union samr_DomainInfo *info,
+					NTSTATUS expected)
+{
+	struct samr_SetDomainInfo r;
+
+	r.in.domain_handle = domain_handle;
+	r.in.level = level;
+	r.in.info = info;
+
+	torture_assert_ntstatus_equal(tctx,
+				      dcerpc_samr_SetDomainInfo(p, tctx, &r),
+				      expected,
+				      "");
+
+	return true;
+}
+
 
 static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 				      struct dcerpc_pipe *np,
@@ -3853,18 +3874,11 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 	info.info12.lockout_duration = ~(lockout_seconds * delta_time_factor);
 	info.info12.lockout_window = ~((lockout_seconds + 1) * delta_time_factor);
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.in.info = &info;
-
-		torture_assert_ntstatus_equal(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			NT_STATUS_INVALID_PARAMETER,
-			"succeeded setting lockout duration < lockout window");
-	}
+	torture_assert(tctx,
+		test_SetDomainInfo_ntstatus(p, tctx, domain_handle,
+					    DomainLockoutInformation, &info,
+					    NT_STATUS_INVALID_PARAMETER),
+		"setting lockout duration < lockout window gave unexpected result");
 
 	info.info12.lockout_duration = 0;
 	info.info12.lockout_window = 0;
