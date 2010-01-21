@@ -349,52 +349,52 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	} else if ( strcmp( protocol_version, "V2") == 0) {
 
 		switch( vfs_operation ) {
-			case vfs_id_mkdir: ;
-				str = smb_traffic_analyzer_create_string( tm, \
-					seconds, handle, username, 3,\
-					((struct mkdir_data *) data)->path, \
-					talloc_asprintf( talloc_tos(), "%u", \
-					((struct mkdir_data *) data)->mode), \
-					talloc_asprintf( talloc_tos(), "%u", \
-					((struct mkdir_data *) data)->result ));
-				break;
-			case vfs_id_rmdir: ;
-				str = smb_traffic_analyzer_create_string( tm, \
-					seconds, handle, username, 2,\
-					((struct rmdir_data *) data)->path, \
-					talloc_asprintf( talloc_tos(), "%u", \
-					((struct rmdir_data *) data)->result ));
-				break;
-			case vfs_id_rename: ;
-				str = smb_traffic_analyzer_create_string( tm, \
-					seconds, handle, username, 3,\
-					((struct rename_data *) data)->src, \
-					((struct rename_data *) data)->dst,
-					talloc_asprintf(talloc_tos(), "%u", \
-					((struct rename_data *) data)->result));
-				break;
-			case vfs_id_chdir: ;
-				str = smb_traffic_analyzer_create_string( tm, \
-					seconds, handle, username, 2,\
-					((struct chdir_data *) data)->path, \
-					talloc_asprintf(talloc_tos(), "%u", \
-					((struct chdir_data *) data)->result));
-				break;
+		case vfs_id_mkdir: ;
+			str = smb_traffic_analyzer_create_string( tm, \
+				seconds, handle, username, 3,\
+				((struct mkdir_data *) data)->path, \
+				talloc_asprintf( talloc_tos(), "%u", \
+				((struct mkdir_data *) data)->mode), \
+				talloc_asprintf( talloc_tos(), "%u", \
+				((struct mkdir_data *) data)->result ));
+			break;
+		case vfs_id_rmdir: ;
+			str = smb_traffic_analyzer_create_string( tm, \
+				seconds, handle, username, 2,\
+				((struct rmdir_data *) data)->path, \
+				talloc_asprintf( talloc_tos(), "%u", \
+				((struct rmdir_data *) data)->result ));
+			break;
+		case vfs_id_rename: ;
+			str = smb_traffic_analyzer_create_string( tm, \
+				seconds, handle, username, 3,\
+				((struct rename_data *) data)->src, \
+				((struct rename_data *) data)->dst,
+				talloc_asprintf(talloc_tos(), "%u", \
+				((struct rename_data *) data)->result));
+			break;
+		case vfs_id_chdir: ;
+			str = smb_traffic_analyzer_create_string( tm, \
+				seconds, handle, username, 2,\
+				((struct chdir_data *) data)->path, \
+				talloc_asprintf(talloc_tos(), "%u", \
+				((struct chdir_data *) data)->result));
+			break;
 
-			case vfs_id_write:
-			case vfs_id_pwrite:
-			case vfs_id_read:
-			case vfs_id_pread: ;
-				str = smb_traffic_analyzer_create_string( tm, \
-					seconds, handle, username, 2,\
-					((struct rw_data *) data)->filename, \
-					talloc_asprintf(talloc_tos(), "%u", \
-					((struct rw_data *) data)->len));
-				break;
-			default:
-				DEBUG(1, ("smb_traffic_analyzer: error! "
-					"wrong VFS operation id detected!\n"));
-				return;
+		case vfs_id_write:
+		case vfs_id_pwrite:
+		case vfs_id_read:
+		case vfs_id_pread: ;
+			str = smb_traffic_analyzer_create_string( tm, \
+				seconds, handle, username, 2,\
+				((struct rw_data *) data)->filename, \
+				talloc_asprintf(talloc_tos(), "%u", \
+				((struct rw_data *) data)->len));
+			break;
+		default:
+			DEBUG(1, ("smb_traffic_analyzer: error! "
+				"wrong VFS operation id detected!\n"));
+			return;
 		}
 
 	} else {
