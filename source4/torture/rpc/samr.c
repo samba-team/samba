@@ -3487,6 +3487,24 @@ static bool test_SetDomainInfo_ntstatus(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_QueryDomainInfo2_level(struct dcerpc_pipe *p,
+					struct torture_context *tctx,
+					struct policy_handle *domain_handle,
+					enum samr_DomainInfoClass level,
+					union samr_DomainInfo **q_info)
+{
+	struct samr_QueryDomainInfo2 r;
+
+	r.in.domain_handle = domain_handle;
+	r.in.level = level;
+	r.out.info = q_info;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
+		"failed to query domain info");
+
+	return true;
+}
 
 static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 				      struct dcerpc_pipe *np,
@@ -3730,35 +3748,20 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 
 	/* backup old policies */
 
-	{
-		struct samr_QueryDomainInfo2 r;
+	torture_assert(tctx,
+		test_QueryDomainInfo2_level(p, tctx, domain_handle,
+					    DomainPasswordInformation, &q_info),
+		"failed to query domain info level 1");
 
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainPasswordInformation;
-		r.out.info = &q_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
-			"failed to query domain info level 1");
-
-		info1 = q_info->info1;
-	}
-
-	{
-		struct samr_QueryDomainInfo2 r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.out.info = &q_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
-			"failed to query domain info level 12");
-
-		info12 = q_info->info12;
-	}
-
+	info1 = q_info->info1;
 	_info1 = info1;
+
+	torture_assert(tctx,
+		test_QueryDomainInfo2_level(p, tctx, domain_handle,
+					    DomainLockoutInformation, &q_info),
+		"failed to query domain info level 12");
+
+	info12 = q_info->info12;
 	_info12 = info12;
 
 	/* run tests */
@@ -4064,35 +4067,20 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 
 	/* backup old policies */
 
-	{
-		struct samr_QueryDomainInfo2 r;
+	torture_assert(tctx,
+		test_QueryDomainInfo2_level(p, tctx, domain_handle,
+					    DomainPasswordInformation, &q_info),
+		"failed to query domain info level 1");
 
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainPasswordInformation;
-		r.out.info = &q_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
-			"failed to query domain info level 1");
-
-		info1 = q_info->info1;
-	}
-
-	{
-		struct samr_QueryDomainInfo2 r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.out.info = &q_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_QueryDomainInfo2(p, tctx, &r),
-			"failed to query domain info level 12");
-
-		info12 = q_info->info12;
-	}
-
+	info1 = q_info->info1;
 	_info1 = info1;
+
+	torture_assert(tctx,
+		test_QueryDomainInfo2_level(p, tctx, domain_handle,
+					    DomainLockoutInformation, &q_info),
+		"failed to query domain info level 12");
+
+	info12 = q_info->info12;
 	_info12 = info12;
 
 	/* run tests */
