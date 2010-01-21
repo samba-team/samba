@@ -29,8 +29,8 @@ import sys
 class XattrTests(TestCase):
 
     def test_set_xattr_native(self):
-		if samba.xattr_native.is_xattr_supported():
-			random.seed()
+        if samba.xattr_native.is_xattr_supported():
+            random.seed()
             path=os.environ['SELFTEST_PREFIX']
             tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
             ntacl=xattr.NTACL()
@@ -41,12 +41,12 @@ class XattrTests(TestCase):
             except IOError:
                 print >>sys.stderr, "WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
             os.unlink(tempf)
-		else:
-			print >>sys.stderr, "WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
+        else:
+            print >>sys.stderr, "WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
 
     def test_set_and_get_native(self):
-		if samba.xattr_native.is_xattr_supported():
-			random.seed()
+        if samba.xattr_native.is_xattr_supported():
+            random.seed()
             path = os.environ['SELFTEST_PREFIX']
             tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
             reftxt="this is a test"
@@ -58,8 +58,8 @@ class XattrTests(TestCase):
             except IOError:
                 print >>sys.stderr,"WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
             os.unlink(tempf)
-		else:
-			print >>sys.stderr,"WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
+        else:
+            print >>sys.stderr,"WARNING: the filesystem where the tests are runned do not support XATTR, tests SKIPED"
 
     def test_set_xattr_tdb(self):
         path=os.environ['SELFTEST_PREFIX']
