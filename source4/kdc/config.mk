@@ -36,4 +36,3 @@ PRIVATE_DEPENDENCIES = \
 #######################
 
 PAC_GLUE_OBJ_FILES = $(addprefix $(kdcsrcdir)/, pac-glue.o)
-$(eval $(call proto_header_template,$(kdcsrcdir)/pac-glue_proto.h,$(HDB_SAMBA4_OBJ_FILES:.o=.c)))

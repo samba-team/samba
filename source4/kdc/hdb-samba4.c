@@ -1451,9 +1451,10 @@ static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
  *
  * This is currently a very nasty hack - allowing only delegation to itself.
  */
-krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
-							hdb_entry_ex *entry,
-							krb5_const_principal target_principal)
+static krb5_error_code
+hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
+					hdb_entry_ex *entry,
+					krb5_const_principal target_principal)
 {
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb_ctx, "loadparm"),
@@ -1525,9 +1526,10 @@ krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HD
  * database.  Allow a mismatch where they both refer to the same
  * SID */
 
-krb5_error_code hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
-						     hdb_entry_ex *entry,
-						     krb5_const_principal certificate_principal)
+static krb5_error_code
+hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
+				     hdb_entry_ex *entry,
+				     krb5_const_principal certificate_principal)
 {
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb_ctx, "loadparm"),
