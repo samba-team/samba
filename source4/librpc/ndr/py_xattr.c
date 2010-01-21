@@ -22,6 +22,7 @@
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
+
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 {
         PyObject *dict;
@@ -69,7 +70,11 @@ static PyObject *py_ntacl_print(PyObject *self, PyObject *args)
 	mem_ctx = talloc_new(NULL);
 
 	pr = talloc_zero(mem_ctx, struct ndr_print);
-	if (!pr) return;
+	if (!pr) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 	pr->print = ntacl_print_debug_helper;
 	ndr_print_xattr_NTACL(pr, "file", ntacl);
 
