@@ -63,7 +63,6 @@ class XattrTests(TestCase):
 
     def test_set_xattr_tdb(self):
         path=os.environ['SELFTEST_PREFIX']
-        eadb=tdb.Tdb(os.path.join(path,"eadb.tdb"), 50000, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
         random.seed()
         tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
         ntacl=xattr.NTACL()
@@ -75,7 +74,6 @@ class XattrTests(TestCase):
 
     def test_set_tdb_not_open(self):
         path=os.environ['SELFTEST_PREFIX']
-        eadb=tdb.Tdb(os.path.join(path,"eadb.tdb"), 50000, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
         random.seed()
         tempf=os.path.join(path,"pytests"+str(int(100000*random.random())))
         ntacl=xattr.NTACL()
