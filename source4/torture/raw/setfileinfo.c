@@ -79,7 +79,11 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
 	sfinfo.generic.in.file.fnum = fnum; \
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo); \
-	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) { \
+                torture_warning(torture, \
+			"(%s) %s - %s", __location__, #call, \
+                        nt_errstr(status)); \
+        } else if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
 		ret = false; \
@@ -87,7 +91,11 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
 	finfo1.generic.in.file.fnum = fnum; \
 	status2 = smb_raw_fileinfo(cli->tree, torture, &finfo1); \
-	if (!NT_STATUS_IS_OK(status2)) { \
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) { \
+                torture_warning(torture, \
+			"(%s) %s - %s", __location__, #call, \
+                        nt_errstr(status)); \
+        } else if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
 		ret = false; \
 	}} while (0)
@@ -102,7 +110,11 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 		sfinfo.generic.in.file.path = path_fname_new; \
 		status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	} \
-	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) { \
+                torture_warning(torture, \
+			"(%s) %s - %s", __location__, #call, \
+                        nt_errstr(status)); \
+        } else if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
 		ret = false; \
@@ -114,7 +126,11 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 		finfo1.generic.in.file.path = path_fname_new; \
 		status2 = smb_raw_pathinfo(cli->tree, torture, &finfo1); \
 	} \
-	if (!NT_STATUS_IS_OK(status2)) { \
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) { \
+                torture_warning(torture, \
+			"(%s) %s - %s", __location__, #call, \
+                        nt_errstr(status)); \
+        } else if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status2)); \
 		ret = false; \
 	}} while (0)
@@ -276,6 +292,10 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_TIME(ALL_INFO, all_info, write_time,  basetime + 300);
 	CHECK_TIME(ALL_INFO, all_info, change_time, basetime + 400);
 	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_NORMAL);
+
+	torture_comment(torture, "try to change a file to a directory\n");
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	CHECK_CALL_FNUM(BASIC_INFO, NT_STATUS_INVALID_PARAMETER);
 
 	printf("a zero time means don't change\n");
 	unix_to_nt_time(&sfinfo.basic_info.in.create_time, 0);
