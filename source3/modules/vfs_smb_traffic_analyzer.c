@@ -66,12 +66,12 @@ typedef struct chdir_data {
 	const char *path;
 	int result;
 } t_chdir;
-
+	
 /* rw_data used for read/write/pread/pwrite 				*/
-struct rw_data {
+typedef struct rw_data {
 	char *filename;
 	size_t len;
-};
+} t_rw;
 
 
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
@@ -379,6 +379,17 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 					2, ((t_chdir *) data)->path, \
 					talloc_asprintf(talloc_tos(), "%u", \
 						((t_chdir *) data)->result));
+				break;
+
+			case vfs_id_write:
+			case vfs_id_pwrite:
+			case vfs_id_read:
+			case vfs_id_pread: ;
+				str = smb_traffic_analyzer_create_string( tm, \
+					seconds, handle, username, \
+					2, ((t_rw *) data)->filename, \
+					talloc_asprintf(talloc_tos(), "%u", \
+						((t_rw *) data)->len));
 				break;
 			default:
 				DEBUG(1, ("smb_traffic_analyzer: error! "
