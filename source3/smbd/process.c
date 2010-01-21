@@ -366,10 +366,8 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
  * Initialize a struct smb_request from an inbuf
  */
 
-void init_smb_request(struct smb_request *req,
-			const uint8 *inbuf,
-			size_t unread_bytes,
-			bool encrypted)
+static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
+			     size_t unread_bytes, bool encrypted)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	size_t req_size = smb_len(inbuf) + 4;

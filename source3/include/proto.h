@@ -6784,10 +6784,6 @@ int srv_set_message(char *buf,
                         int num_words,
                         int num_bytes,
                         bool zero);
-void init_smb_request(struct smb_request *req,
-			const uint8 *inbuf,
-			size_t unread_bytes,
-			bool encrypted);
 void remove_deferred_open_smb_message(uint16 mid);
 void schedule_deferred_open_smb_message(uint16 mid);
 bool open_was_deferred(uint16 mid);
