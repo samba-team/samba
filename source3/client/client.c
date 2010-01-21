@@ -163,6 +163,24 @@ const char *client_set_cur_dir(const char *newdir)
 }
 
 /****************************************************************************
+ Put up a yes/no prompt.
+****************************************************************************/
+
+static bool yesno(const char *p)
+{
+	char ans[20];
+	printf("%s",p);
+
+	if (!fgets(ans,sizeof(ans)-1,stdin))
+		return(False);
+
+	if (*ans == 'y' || *ans == 'Y')
+		return(True);
+
+	return(False);
+}
+
+/****************************************************************************
  Write to a local file with CR/LF->LF translation if appropriate. Return the
  number taken from the buffer. This may not equal the number written.
 ****************************************************************************/

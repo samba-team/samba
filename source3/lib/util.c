@@ -940,24 +940,6 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 	return status;
 }
 
-/****************************************************************************
- Put up a yes/no prompt.
-****************************************************************************/
-
-bool yesno(const char *p)
-{
-	char ans[20];
-	printf("%s",p);
-
-	if (!fgets(ans,sizeof(ans)-1,stdin))
-		return(False);
-
-	if (*ans == 'y' || *ans == 'Y')
-		return(True);
-
-	return(False);
-}
-
 #if defined(PARANOID_MALLOC_CHECKER)
 
 /****************************************************************************

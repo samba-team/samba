@@ -1140,7 +1140,6 @@ void smb_msleep(unsigned int t);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		       struct event_context *ev_ctx,
 		       bool parent_longlived);
-bool yesno(const char *p);
 void *malloc_(size_t size);
 void *memalign_array(size_t el_size, size_t align, unsigned int count);
 void *calloc_array(size_t size, size_t nmemb);
