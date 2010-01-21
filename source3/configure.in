@@ -3186,7 +3186,7 @@ with_ldap_support=auto
 AC_MSG_CHECKING([for LDAP support])
 
 AC_ARG_WITH(ldap,
-[AS_HELP_STRING([--with-ldap], [LDAP support (default yes)])],
+[AS_HELP_STRING([--with-ldap], [LDAP support (default=yes)])],
 [ case "$withval" in
     yes|no)
 	with_ldap_support=$withval
@@ -3336,7 +3336,7 @@ with_ads_support=auto
 AC_MSG_CHECKING([for Active Directory and krb5 support])
 
 AC_ARG_WITH(ads,
-[AS_HELP_STRING([--with-ads], [Active Directory support (default auto)])],
+[AS_HELP_STRING([--with-ads], [Active Directory support (default=auto)])],
 [ case "$withval" in
     yes|no)
 	with_ads_support="$withval"
@@ -4206,7 +4206,7 @@ with_dnsupdate_support=auto
 AC_MSG_CHECKING([whether to enable DNS Updates support])
 
 AC_ARG_WITH(dnsupdate,
-[AS_HELP_STRING([--with-dnsupdate], [Enable DNS Updates support (default no)])],
+[AS_HELP_STRING([--with-dnsupdate], [Enable DNS Updates support (default=auto)])],
 [ case "$withval" in
     yes|no)
 	with_dnsupdate_support=$withval
@@ -4218,24 +4218,29 @@ AC_MSG_RESULT($with_dnsupdate_support)
 if test x"$with_dnsupdate_support" != x"no"; then
 
   ################################################################
-  # first test for Active Directory support being enabled
-  #if test x"$with_ads_support" = x"no"; then
-  #		AC_MSG_ERROR(Active Directory support is required to enable DNS Update support)
-  #		with_dnsupdate_support=no
-  #fi	  	
+  # first test for AD / GSSAPI support being enabled
+	if test x"$have_gssapi" != xyes ; then
+		if test x"$with_dnsupdate_support" = x"yes" ; then
+			AC_MSG_ERROR(DNS Updates support only possible with AD and GSSAPI support)
+		else
+			AC_MSG_NOTICE(DNS Updates support only possible with AD and GSSAPI support)
+			with_dnsupdate_support=no
+		fi
+	fi
   ##################################################################
   # then test for uuid.h (necessary to generate unique DNS keynames
   # (uuid.h is required for this test)
-  AC_CHECK_HEADERS(uuid/uuid.h)
+	AC_CHECK_HEADERS(uuid/uuid.h)
 
-  if test x"$ac_cv_header_uuid_uuid_h" != x"yes"; then
-	if test x"$with_dnsupdate_support" = x"yes"; then
-	 AC_MSG_ERROR(uuid.h is needed to enable DNS Updates support)
-	else
-	 AC_MSG_WARN(uuid.h is needed to enable DNS Updates support)
+	
+	if test x"$ac_cv_header_uuid_uuid_h" != x"yes"; then
+		if test x"$with_dnsupdate_support" = x"yes"; then
+			AC_MSG_ERROR(uuid.h is needed to enable DNS Updates support)
+		else
+			AC_MSG_NOTICE(uuid.h is needed to enable DNS Updates support)
+		fi
+		with_dnsupdate_support=no
 	fi
-	with_dnsupdate_support=no
-  fi
 fi
 
 if test x"$with_dnsupdate_support" != x"no"; then
@@ -4267,6 +4272,10 @@ if test x"$with_dnsupdate_support" != x"no"; then
 	    with_dnsupdate_support=no
 	])
 fi
+  # finally print out the result:
+AC_MSG_CHECKING(whether DNS Updates support is used)
+AC_MSG_RESULT([$with_dnsupdate_support])
+
 
 #################################################
 # check for automount support
