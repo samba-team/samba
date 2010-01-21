@@ -121,6 +121,7 @@ struct dreplsrv_notify_operation {
 	uint64_t uSN;
 
 	struct dreplsrv_partition_source_dsa *source_dsa;
+	bool is_urgent;
 };
 
 struct dreplsrv_service {

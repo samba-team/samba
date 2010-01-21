@@ -114,6 +114,10 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 		DRSUAPI_DRS_UPDATE_NOTIFICATION |
 		DRSUAPI_DRS_WRIT_REP;
 
+	if (state->op->is_urgent) {
+		r->in.req.req1.options |= DRSUAPI_DRS_SYNC_URGENT;
+	}
+
 	rreq = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);
 	if (tevent_req_nomem(rreq, req)) {
 		return;
@@ -269,7 +273,8 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 					    struct dreplsrv_partition *p,
 					    struct repsFromToBlob *reps,
 					    TALLOC_CTX *mem_ctx,
-					    uint64_t uSN)
+					    uint64_t uSN,
+					    bool is_urgent)
 {
 	struct dreplsrv_notify_operation *op;
 	struct dreplsrv_partition_source_dsa *s;
@@ -287,6 +292,7 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 	op->service	= service;
 	op->source_dsa	= s;
 	op->uSN         = uSN;
+	op->is_urgent	= is_urgent;
 
 	DLIST_ADD_END(service->ops.notifies, op, struct dreplsrv_notify_operation *);
 	talloc_steal(service, op);
@@ -304,7 +310,8 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 	uint32_t count=0;
 	struct repsFromToBlob *reps;
 	WERROR werr;
-	uint64_t uSN;
+	uint64_t uSNHighest;
+	uint64_t uSNUrgent;
 	int ret, i;
 
 	werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps, &count);
@@ -317,9 +324,9 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 		return werr;
 	}
 
-	/* loads the partition uSNHighest */
-	ret = dsdb_load_partition_usn(s->samdb, p->dn, &uSN, NULL);
-	if (ret != LDB_SUCCESS || uSN == 0) {
+	/* loads the partition uSNHighest and uSNUrgent */
+	ret = dsdb_load_partition_usn(s->samdb, p->dn, &uSNHighest, &uSNUrgent);
+	if (ret != LDB_SUCCESS || uSNHighest == 0) {
 		/* nothing to do */
 		return WERR_OK;
 	}
@@ -329,10 +336,19 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 		struct dreplsrv_partition_source_dsa *sdsa;
 		sdsa = dreplsrv_find_source_dsa(p, &reps[i].ctr.ctr1.source_dsa_obj_guid);
 		if (sdsa == NULL) continue;
-		if (sdsa->notify_uSN < uSN) {
+		if (sdsa->notify_uSN < uSNHighest) {
 			/* we need to tell this partner to replicate
 			   with us */
-			werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx, uSN);
+
+			/* check if urgent replication is needed */
+			if (sdsa->notify_uSN < uSNUrgent) {
+				werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
+									uSNHighest, true);
+			} else {
+				werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
+									uSNHighest, false);
+			}
+
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,(__location__ ": Failed to setup notify to %s for %s\n",
 					 reps[i].ctr.ctr1.other_info->dns_name,
