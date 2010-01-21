@@ -3403,29 +3403,43 @@ static bool test_QueryUserInfo_badpwdcount(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_reset_badpwdcount(struct dcerpc_pipe *p,
-				   struct torture_context *tctx,
-				   struct policy_handle *user_handle,
-				   uint32_t acct_flags,
-				   char **password)
+static bool test_SetUserInfo_acct_flags(struct dcerpc_pipe *p,
+					struct torture_context *tctx,
+					struct policy_handle *user_handle,
+					uint32_t acct_flags)
 {
 	struct samr_SetUserInfo r;
 	union samr_UserInfo user_info;
 
-	torture_assert(tctx, test_SetUserPass(p, tctx, user_handle, password),
-		"failed to set password");
-
-	torture_comment(tctx, "Testing SetUserInfo level 16 (enable account)\n");
+	torture_comment(tctx, "Testing SetUserInfo level 16\n");
 
 	user_info.info16.acct_flags = acct_flags;
-	user_info.info16.acct_flags &= ~ACB_DISABLED;
 
 	r.in.user_handle = user_handle;
 	r.in.level = 16;
 	r.in.info = &user_info;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo(p, tctx, &r),
-		"failed to enable user");
+		"failed to set account flags");
+
+	return true;
+}
+
+static bool test_reset_badpwdcount(struct dcerpc_pipe *p,
+				   struct torture_context *tctx,
+				   struct policy_handle *user_handle,
+				   uint32_t acct_flags,
+				   char **password)
+{
+	torture_assert(tctx, test_SetUserPass(p, tctx, user_handle, password),
+		"failed to set password");
+
+	torture_comment(tctx, "Testing SetUserInfo level 16 (enable account)\n");
+
+	torture_assert(tctx,
+		       test_SetUserInfo_acct_flags(p, tctx, user_handle,
+						   acct_flags & ~ACB_DISABLED),
+		       "failed to enable user");
 
 	torture_assert(tctx, test_SetUserPass(p, tctx, user_handle, password),
 		"failed to set password");
@@ -3503,26 +3517,16 @@ static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 
 
 	/* enable or disable account */
-	{
-		struct samr_SetUserInfo r;
-		union samr_UserInfo user_info;
-
-		torture_comment(tctx, "Testing SetUserInfo level 16 (%s account)\n",
-			disable ? "disable" : "enable");
-
-		user_info.info16.acct_flags = acct_flags;
-		if (disable) {
-			user_info.info16.acct_flags |= ACB_DISABLED;
-		} else {
-			user_info.info16.acct_flags &= ~ACB_DISABLED;
-		}
-
-		r.in.user_handle = user_handle;
-		r.in.level = 16;
-		r.in.info = &user_info;
-
-		torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo(p, tctx, &r),
-			"failed to enable user");
+	if (disable) {
+		torture_assert(tctx,
+			       test_SetUserInfo_acct_flags(p, tctx, user_handle,
+						acct_flags | ACB_DISABLED),
+			       "failed to disable user");
+	} else {
+		torture_assert(tctx,
+			       test_SetUserInfo_acct_flags(p, tctx, user_handle,
+						acct_flags & ~ACB_DISABLED),
+			       "failed to enable user");
 	}
 
 
@@ -3918,27 +3922,19 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 
 
 	/* enable or disable account */
-	{
-		struct samr_SetUserInfo r;
-		union samr_UserInfo user_info;
 
-		torture_comment(tctx, "Testing SetUserInfo level 16 (%s account)\n",
-			disable ? "disable" : "enable");
-
-		user_info.info16.acct_flags = acct_flags;
-		if (disable) {
-			user_info.info16.acct_flags |= ACB_DISABLED;
-		} else {
-			user_info.info16.acct_flags &= ~ACB_DISABLED;
-		}
-
-		r.in.user_handle = user_handle;
-		r.in.level = 16;
-		r.in.info = &user_info;
-
-		torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo(p, tctx, &r),
-			"failed to enable user");
+	if (disable) {
+		torture_assert(tctx,
+			       test_SetUserInfo_acct_flags(p, tctx, user_handle,
+						acct_flags | ACB_DISABLED),
+			       "failed to disable user");
+	} else {
+		torture_assert(tctx,
+			       test_SetUserInfo_acct_flags(p, tctx, user_handle,
+						acct_flags & ~ACB_DISABLED),
+			       "failed to enable user");
 	}
+
 
 	/* test logon with right password */
 
