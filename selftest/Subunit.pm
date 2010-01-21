@@ -38,7 +38,7 @@ sub parse_results($$$)
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n/) {
 			$msg_ops->report_time(mktime($6, $5, $4, $3, $2-1, $1-1900));
-		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-xfail|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-xfail|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)( multipart)?\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
 			my $testname = $2;
