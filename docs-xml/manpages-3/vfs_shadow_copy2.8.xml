@@ -107,6 +107,42 @@
                 </varlistentry>
 
 		<varlistentry>
+                <term>shadow:sort = asc/desc, or not specified for unsorted (default)
+                </term>
+                <listitem>
+                <para>By this parameter one can specify that the shadow
+		copy directories should be sorted before they are sent to the
+		client.  This can be beneficial as unix filesystems are usually
+		not listed alphabetically sorted. If enabled, you typically
+		want to specify descending order.
+                </para>
+                </listitem>
+                </varlistentry>
+
+		<varlistentry>
+                <term>shadow:localtime = yes/no
+                </term>
+                <listitem>
+                <para>This is an optional parameter that indicates whether the
+		snapshot names are in UTC/GMT or in local time. By default
+		UTC is expected.
+                </para>
+                </listitem>
+                </varlistentry>
+
+		<varlistentry>
+                <term>shadow:format = <format specification for snapshot names>
+                </term>
+                <listitem>
+                <para>This is an optional parameter that specifies the format
+		specification for the naming of snapshots.  The format must
+		be compatible with the conversion specifications recognized
+		by str[fp]time.  The default value is "@GMT-%Y.%m.%d-%H.%M.%S".
+                </para>
+                </listitem>
+                </varlistentry>
+
+		<varlistentry>
                 <term>shadow:fixinodes = yes/no
                 </term>
                 <listitem>
@@ -133,6 +169,7 @@
 	<smbconfoption name="vfs objects">shadow_copy2</smbconfoption>
 	<smbconfoption name="shadow:snapdir">/data/snaphots</smbconfoption>
 	<smbconfoption name="shadow:basedir">/data/home</smbconfoption>
+	<smbconfoption name="shadow:sort">desc</smbconfoption>
 </programlisting>
 
 </refsect1>
