@@ -231,8 +231,21 @@ get_nodes ()
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then 
 	all_nodes="$CTDB_NODES_SOCKETS"
     else
-	[ -e "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE="${ctdb_base}/nodes"
-	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' $CTDB_NODES_FILE)
+	local f="${ctdb_base}/nodes"
+	if [ -n "$CTDB_NODES_FILE" ] ; then
+	    f="$CTDB_NODES_FILE"
+	    if [ ! -e "$f" -a "${f#/}" = "$f" ] ; then
+		# $f is relative, try in $ctdb_base
+		f="${ctdb_base}/${f}"
+	    fi
+	fi
+
+	if [ ! -r "$f" ] ; then
+	    echo "${prog}: unable to open nodes file  \"${f}\"" >&2
+	    exit 1
+	fi
+
+	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' "$f")
     fi
 
     local nodes=""
