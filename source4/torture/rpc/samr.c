@@ -3447,6 +3447,26 @@ static bool test_reset_badpwdcount(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SetDomainInfo(struct dcerpc_pipe *p,
+			       struct torture_context *tctx,
+			       struct policy_handle *domain_handle,
+			       enum samr_DomainInfoClass level,
+			       union samr_DomainInfo *info)
+{
+	struct samr_SetDomainInfo r;
+
+	r.in.domain_handle = domain_handle;
+	r.in.level = level;
+	r.in.info = info;
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_samr_SetDomainInfo(p, tctx, &r),
+				   "failed to set domain info");
+
+	return true;
+}
+
+
 static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 				      struct dcerpc_pipe *np,
 				      struct torture_context *tctx,
@@ -3479,36 +3499,20 @@ static bool test_Password_badpwdcount(struct dcerpc_pipe *p,
 	/* set policies */
 
 	info.info1 = *info1;
-
 	info.info1.password_history_length = password_history_length;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainPasswordInformation;
-		r.in.info = &info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 1");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainPasswordInformation, &info),
+		       "failed to set password history length");
 
 	info.info12 = *info12;
-
 	info.info12.lockout_threshold = lockout_threshold;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.in.info = &info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 12");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainLockoutInformation, &info),
+		       "failed to set lockout threshold");
 
 	/* reset bad pwd count */
 
@@ -3766,31 +3770,17 @@ static bool test_Password_badpwdcount_wrap(struct dcerpc_pipe *p,
 
 	s_info.info1 = info1;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainPasswordInformation;
-		r.in.info = &s_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 1");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainPasswordInformation, &s_info),
+		       "failed to set password information");
 
 	s_info.info12 = info12;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.in.info = &s_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 12");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainLockoutInformation, &s_info),
+		       "failed to set lockout information");
 
 	return ret;
 }
@@ -3851,20 +3841,12 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 	torture_comment(tctx, "setting password history lenght.\n");
 	info.info1.password_history_length = password_history_length;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainPasswordInformation;
-		r.in.info = &info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 1");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainPasswordInformation, &info),
+		       "failed to set password history length");
 
 	info.info12 = *info12;
-
 	info.info12.lockout_threshold = lockout_threshold;
 
 	/* set lockout duration < lockout window: should fail */
@@ -3887,33 +3869,20 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 	info.info12.lockout_duration = 0;
 	info.info12.lockout_window = 0;
 
-	{
-		struct samr_SetDomainInfo r;
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainLockoutInformation, &info),
+		       "failed to set lockout window and duration to 0");
 
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.in.info = &info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set lockout window and duration to 0");
-	}
 
 	/* set lockout duration of 5 seconds */
 	info.info12.lockout_duration = ~(lockout_seconds * delta_time_factor);
 	info.info12.lockout_window = ~(lockout_seconds * delta_time_factor);
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.in.info = &info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 12");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainLockoutInformation, &info),
+		       "failed to set lockout window and duration to 5 seconds");
 
 	/* reset bad pwd count */
 
@@ -4142,31 +4111,17 @@ static bool test_Password_lockout_wrap(struct dcerpc_pipe *p,
 
 	s_info.info1 = info1;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainPasswordInformation;
-		r.in.info = &s_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 1");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainPasswordInformation, &s_info),
+		       "failed to set password information");
 
 	s_info.info12 = info12;
 
-	{
-		struct samr_SetDomainInfo r;
-
-		r.in.domain_handle = domain_handle;
-		r.in.level = DomainLockoutInformation;
-		r.in.info = &s_info;
-
-		torture_assert_ntstatus_ok(tctx,
-			dcerpc_samr_SetDomainInfo(p, tctx, &r),
-			"failed to set domain info level 12");
-	}
+	torture_assert(tctx,
+		       test_SetDomainInfo(p, tctx, domain_handle,
+					  DomainLockoutInformation, &s_info),
+		       "failed to set lockout information");
 
 	return ret;
 }
