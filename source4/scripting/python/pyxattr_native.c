@@ -19,7 +19,6 @@
 */
 
 #include <Python.h>
-#include "version.h"
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/util/wrap_xattr.h"
@@ -112,19 +111,8 @@ void initxattr_native(void)
 
 	m = Py_InitModule3("xattr_native", py_xattr_methods,
 			   "Python bindings for xattr manipulation.");
+
 	if (m == NULL)
 		return;
-
-	PyModule_AddObject(m, "version", PyString_FromString(SAMBA_VERSION_STRING));
-
-	/* one of the most annoying things about python scripts is
-	   that they don't die when you hit control-C. This fixes that
-	   sillyness. As we do all database operations using
-	   transactions, this is also safe. In fact, not dying
-	   immediately is unsafe as we could end up treating the
-	   control-C exception as a different error and try to modify
-	   as database incorrectly
-	*/
-	signal(SIGINT, SIG_DFL);
 }
 
