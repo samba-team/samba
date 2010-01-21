@@ -77,3 +77,14 @@ ntvfs_posix_OBJ_FILES = $(addprefix $(ntvfssrcdir)/posix/, \
 
 $(eval $(call proto_header_template,$(ntvfssrcdir)/posix/vfs_posix_proto.h,$(ntvfs_posix_OBJ_FILES:.o=.c)))
 
+[PYTHON::python_xattr_native]
+LIBRARY_REALNAME = samba/xattr_native.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS python_dcerpc_security pyparam_util WRAP_XATTR
+
+python_xattr_native_OBJ_FILES = $(ntvfssrcdir)/posix/python/pyxattr_native.o
+
+[PYTHON::python_xattr_tdb]
+LIBRARY_REALNAME = samba/xattr_tdb.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = LIBNDR LIBLDB python_dcerpc_security pyparam_util share
+
+python_xattr_tdb_OBJ_FILES = $(ntvfssrcdir)/posix/python/pyxattr_tdb.o $(ntvfssrcdir)/posix/xattr_tdb.o
