@@ -35,6 +35,7 @@ static PyObject *py_is_xattr_supported(PyObject *self)
 	return Py_True;
 #endif
 }
+
 static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 {
 	char *filename, *attribute;
@@ -42,11 +43,12 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	int blobsize;
 	DATA_BLOB blob;
 
-	if (!PyArg_ParseTuple(args, "sss#", &filename,&attribute,&blob.data,&blobsize))
+	if (!PyArg_ParseTuple(args, "sss#", &filename, &attribute, &blob.data, 
+        &blobsize))
 		return NULL;
 
 	blob.length = blobsize;
-	ret = wrap_setxattr(filename,attribute,blob.data,blob.length,0);
+	ret = wrap_setxattr(filename, attribute, blob.data, blob.length, 0);
 	if( ret < 0 ) {
 		if (errno == ENOTSUP) {
 			PyErr_SetFromErrno(PyExc_IOError);
@@ -65,7 +67,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	char *buf;
 	PyObject *ret;
-	if (!PyArg_ParseTuple(args, "ss", &filename,&attribute))
+	if (!PyArg_ParseTuple(args, "ss", &filename, &attribute))
 		return NULL;
 	mem_ctx = talloc_new(NULL);
 	len = wrap_getxattr(filename,attribute,NULL,0);
@@ -75,6 +77,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		} else {
 			PyErr_SetFromErrno(PyExc_TypeError);
 		}
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	/* check length ... */
@@ -86,10 +89,11 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		} else {
 			PyErr_SetFromErrno(PyExc_TypeError);
 		}
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	ret = PyString_FromStringAndSize(buf, len);
-	talloc_free(buf);
+	talloc_free(mem_ctx);
 	return ret;
 }
 

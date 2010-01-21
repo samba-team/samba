@@ -49,7 +49,8 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	struct tdb_wrap *eadb;
 
-	if (!PyArg_ParseTuple(args, "ssss#", &tdbname,&filename,&attribute,&blob.data,&blobsize))
+	if (!PyArg_ParseTuple(args, "ssss#", &tdbname, &filename, &attribute, 
+						  &blob.data, &blobsize))
 		return NULL;
 
 	blob.length = blobsize;
@@ -59,13 +60,16 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	status = push_xattr_blob_tdb_raw(eadb,mem_ctx,attribute,filename,-1,&blob);
-	if( !NT_STATUS_IS_OK(status) ) {
-		PyErr_SetFromErrno(PyExc_TypeError);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_FromNTSTATUS(status);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
+	talloc_free(mem_ctx);
 	Py_RETURN_NONE;
 }
 
@@ -86,14 +90,18 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 				TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
-	status = pull_xattr_blob_tdb_raw(eadb,mem_ctx,attribute,filename,-1,100,&blob);
+	status = pull_xattr_blob_tdb_raw(eadb, mem_ctx, attribute, filename, 
+									 -1, 100, &blob);
 	if (!NT_STATUS_IS_OK(status) || blob.length < 0) {
 		PyErr_FromNTSTATUS(status);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	ret = PyString_FromStringAndSize((char *)blob.data, blob.length);
+	talloc_free(mem_ctx);
 	return ret;
 }
 

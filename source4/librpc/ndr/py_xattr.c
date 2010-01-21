@@ -78,7 +78,7 @@ static PyObject *py_ntacl_print(PyObject *self, PyObject *args)
 	pr->print = ntacl_print_debug_helper;
 	ndr_print_xattr_NTACL(pr, "file", ntacl);
 
-	talloc_free(pr);
+	talloc_free(mem_ctx);
 
 	Py_RETURN_NONE;
 }
