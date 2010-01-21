@@ -367,7 +367,8 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
  */
 
 static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
-			     size_t unread_bytes, bool encrypted)
+			     size_t unread_bytes, bool encrypted,
+			     uint32_t seqnum)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	size_t req_size = smb_len(inbuf) + 4;
@@ -381,7 +382,7 @@ static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);
 	req->mid    = SVAL(inbuf, smb_mid);
-	req->seqnum = 0;
+	req->seqnum = seqnum;
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
@@ -1414,9 +1415,8 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		smb_panic("could not allocate smb_request");
 	}
 
-	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
+	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted, seqnum);
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
-	req->seqnum = seqnum;
 
 	/* we popped this message off the queue - keep original perf data */
 	if (deferred_pcd)
