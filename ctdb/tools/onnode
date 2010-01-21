@@ -63,6 +63,8 @@ quiet=false
 prefix=""
 names_ok=false
 
+ctdb_base="${CTDB_BASE:-/etc/ctdb}"
+
 parse_options ()
 {
     # $POSIXLY_CORRECT means that the command passed to onnode can
@@ -165,7 +167,7 @@ get_nodes_with_status ()
 	    # Succeeded.  Get address.  NOTE: this is an optimisation.
 	    # It might be better to get the node number and then get
 	    # the nth node to get the address.  This would make things
-	    # more consistent if /etc/ctdb/nodes actually contained
+	    # more consistent if $ctdb_base/nodes actually contained
 	    # hostnames.
 	    nodes="${nodes} ${t##*:}"
 	fi
@@ -229,7 +231,7 @@ get_nodes ()
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then 
 	all_nodes="$CTDB_NODES_SOCKETS"
     else
-	[ -e "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
+	[ -e "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE="${ctdb_base}/nodes"
 	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' $CTDB_NODES_FILE)
     fi
 
@@ -305,7 +307,7 @@ if [ -n "$CTDB_NODES_SOCKETS" ] ; then
     SSH=fakessh
 else 
     # Could "2>/dev/null || true" but want to see errors from typos in file.
-    [ -r /etc/ctdb/onnode.conf ] && . /etc/ctdb/onnode.conf
+    [ -r "${ctdb_base}/onnode.conf" ] && . "${ctdb_base}/onnode.conf"
     [ -n "$SSH" ] || SSH=ssh
     if [ "$SSH" = "ssh" ] ; then
 	ssh_opts="-n"
