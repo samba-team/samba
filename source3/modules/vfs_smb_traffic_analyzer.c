@@ -73,7 +73,6 @@ struct rw_data {
 	size_t len;
 };
 
-
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
 static enum sock_type smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
@@ -212,6 +211,7 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	char *buf = NULL;
 	char *timestr = NULL;
 	char *opstr = NULL;
+	char *userSID = NULL;
 
 	/* first create the data that is transfered with any VFS op	*/
 	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
@@ -219,6 +219,10 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	buf = talloc_asprintf(talloc_tos(), "%04u%s", len, opstr);
 	len = strlen( username );
 	buf = talloc_asprintf_append(buf, "%04u%s", len, username);
+	userSID = dom_sid_string( talloc_tos(),
+		&handle->conn->server_info->ptok->user_sids[0]);
+	len = strlen( userSID );
+	buf = talloc_asprintf_append(buf, "%04u%s", len, userSID);
 	len = strlen( handle->conn->connectpath );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
 		handle->conn->connectpath );
@@ -316,7 +320,6 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	if (!username) {
 		return;
 	}
-
 	protocol_version = lp_parm_const_string(SNUM(handle->conn),
 		"smb_traffic_analyzer",
 		"protocol_version", NULL );
