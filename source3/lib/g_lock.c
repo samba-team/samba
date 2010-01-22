@@ -309,10 +309,6 @@ again:
 		goto done;
 	}
 
-	if (retry) {
-		goto again;
-	}
-
 	DEBUG(10, ("g_lock_trylock: Did not get lock, waiting...\n"));
 
 	if (te == NULL) {
