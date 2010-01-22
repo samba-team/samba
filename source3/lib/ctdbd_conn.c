@@ -519,6 +519,11 @@ struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn)
 	return conn->msg_ctx;
 }
 
+int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
+{
+	return packet_get_fd(conn->pkt);
+}
+
 /*
  * Packet handler to receive and handle a ctdb message
  */
