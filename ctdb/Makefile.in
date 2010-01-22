@@ -35,7 +35,8 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
 
 UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o \
-	lib/util/util_time.o lib/util/util_file.o
+	lib/util/util_time.o lib/util/util_file.o lib/util/fault.o lib/util/substitute.o \
+	lib/util/signal.o
 
 CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
@@ -210,6 +211,7 @@ install: all
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 755 config/interface_modify.sh $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(docdir)/ctdb/README.eventscripts
 	${INSTALLCMD} -m 644 doc/recovery-process.txt $(DESTDIR)$(docdir)/ctdb/recovery-process.txt
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
@@ -217,6 +219,7 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.natgw $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.routing $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/13.per_ip_routing $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 644 config/events.d/20.multipathd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 644 config/events.d/31.clamd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d

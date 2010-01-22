@@ -22,11 +22,20 @@ All of the events except the 'shutdown' and 'startrecovery' events will be
 called with the ctdb daemon in NORMAL mode (ie. not in recovery)
 
 The events currently implemented are
-startup
+init
 	This event does not take any additional arguments.
 	This event is only invoked once, when ctdb is starting up.
-	This event is used to wait for the service to start and all
-	resources for the service becoming available.
+	This event is used to do some cleanup work from earlier runs
+	and prepare the basic setup.
+
+	Example: 00.ctdb cleans up $CTDB_BASE/state
+
+startup
+	This event does not take any additional arguments.
+	This event is only invoked once, when ctdb has finished
+	the initial recoveries. This event is used to wait for
+	the service to start and all resources for the service
+	becoming available.
 
 	This is used to prevent ctdb from starting up and advertize its
 	services until all dependent services have become available.
@@ -104,6 +113,14 @@ releaseip
 	In all other regards this event is analog to the 'takeip' event above.
 
 	Example: 60.nfs
+
+updateip
+	This event is triggered everytime the node moves a public ip
+	address between interfaces
+	This event takes four additional arguments :
+	'old-interface' 'new-interface' 'ipaddress' and 'netmask'
+
+	Example: 10.interface
 
 startrecovery
 	This event is triggered everytime we start a recovery process

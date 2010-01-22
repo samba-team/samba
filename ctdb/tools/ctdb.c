@@ -502,18 +502,40 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:\n");
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:PartiallyOnline:\n");
 		for(i=0;i<nodemap->num;i++){
+			int partially_online = 0;
+			int j;
+
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			if (nodemap->nodes[i].flags == 0) {
+				struct ctdb_control_get_ifaces *ifaces;
+
+				ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(),
+							   nodemap->nodes[i].pnn,
+							   ctdb, &ifaces);
+				if (ret == 0) {
+					for (j=0; j < ifaces->num; j++) {
+						if (ifaces->ifaces[j].link_state != 0) {
+							continue;
+						}
+						partially_online = 1;
+						break;
+					}
+					talloc_free(ifaces);
+				}
+			}
+			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED));
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
+			       partially_online);
 		}
 		return 0;
 	}
@@ -530,12 +552,30 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
 			{ NODE_FLAGS_DELETED,               "DELETED" },
 			{ NODE_FLAGS_STOPPED,               "STOPPED" },
+			{ NODE_FLAGS_INACTIVE,              "INACTIVE" },
 		};
 		char *flags_str = NULL;
 		int j;
 
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
+		}
+		if (nodemap->nodes[i].flags == 0) {
+			struct ctdb_control_get_ifaces *ifaces;
+
+			ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(),
+						   nodemap->nodes[i].pnn,
+						   ctdb, &ifaces);
+			if (ret == 0) {
+				for (j=0; j < ifaces->num; j++) {
+					if (ifaces->ifaces[j].link_state != 0) {
+						continue;
+					}
+					flags_str = talloc_strdup(ctdb, "PARTIALLYONLINE");
+					break;
+				}
+				talloc_free(ifaces);
+			}
 		}
 		for (j=0;j<ARRAY_SIZE(flag_names);j++) {
 			if (nodemap->nodes[i].flags & flag_names[j].flag) {
@@ -1656,7 +1696,7 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (options.machinereadable){
-		printf(":Public IP:Node:\n");
+		printf(":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:\n");
 	} else {
 		if (options.pnn == CTDB_BROADCAST_ALL) {
 			printf("Public IPs on ALL nodes\n");
@@ -1666,11 +1706,215 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	for (i=1;i<=ips->num;i++) {
-		if (options.machinereadable){
-			printf(":%s:%d:\n", ctdb_addr_to_str(&ips->ips[ips->num-i].addr), ips->ips[ips->num-i].pnn);
+		struct ctdb_control_public_ip_info *info = NULL;
+		int32_t pnn;
+		char *aciface = NULL;
+		char *avifaces = NULL;
+		char *cifaces = NULL;
+
+		if (options.pnn == CTDB_BROADCAST_ALL) {
+			pnn = ips->ips[ips->num-i].pnn;
 		} else {
-			printf("%s %d\n", ctdb_addr_to_str(&ips->ips[ips->num-i].addr), ips->ips[ips->num-i].pnn);
+			pnn = options.pnn;
 		}
+
+		if (pnn != -1) {
+			ret = ctdb_ctrl_get_public_ip_info(ctdb, TIMELIMIT(), pnn, ctdb,
+						   &ips->ips[ips->num-i].addr, &info);
+		} else {
+			ret = -1;
+		}
+
+		if (ret == 0) {
+			int j;
+			for (j=0; j < info->num; j++) {
+				if (cifaces == NULL) {
+					cifaces = talloc_strdup(info,
+								info->ifaces[j].name);
+				} else {
+					cifaces = talloc_asprintf_append(cifaces,
+									 ",%s",
+									 info->ifaces[j].name);
+				}
+
+				if (info->active_idx == j) {
+					aciface = info->ifaces[j].name;
+				}
+
+				if (info->ifaces[j].link_state == 0) {
+					continue;
+				}
+
+				if (avifaces == NULL) {
+					avifaces = talloc_strdup(info, info->ifaces[j].name);
+				} else {
+					avifaces = talloc_asprintf_append(avifaces,
+									  ",%s",
+									  info->ifaces[j].name);
+				}
+			}
+		}
+
+		if (options.machinereadable){
+			printf(":%s:%d:%s:%s:%s:\n",
+			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+			       ips->ips[ips->num-i].pnn,
+			       aciface?aciface:"",
+			       avifaces?avifaces:"",
+			       cifaces?cifaces:"");
+		} else {
+			printf("%s node[%d] active[%s] available[%s] configured[%s]\n",
+			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+			       ips->ips[ips->num-i].pnn,
+			       aciface?aciface:"",
+			       avifaces?avifaces:"",
+			       cifaces?cifaces:"");
+		}
+		talloc_free(info);
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  public ip info
+ */
+static int control_ipinfo(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	ctdb_sock_addr addr;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_control_public_ip_info *info;
+
+	if (argc != 1) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+	/* read the public ip info from this node */
+	ret = ctdb_ctrl_get_public_ip_info(ctdb, TIMELIMIT(), options.pnn,
+					   tmp_ctx, &addr, &info);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ip[%s]info from node %u\n",
+				  argv[0], options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	printf("Public IP[%s] info on node %u\n",
+	       ctdb_addr_to_str(&info->ip.addr),
+	       options.pnn);
+
+	printf("IP:%s\nCurrentNode:%d\nNumInterfaces:%u\n",
+	       ctdb_addr_to_str(&info->ip.addr),
+	       info->ip.pnn, info->num);
+
+	for (i=0; i<info->num; i++) {
+		info->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
+
+		printf("Interface[%u]: Name:%s Link:%s References:%u%s\n",
+		       i+1, info->ifaces[i].name,
+		       info->ifaces[i].link_state?"up":"down",
+		       (unsigned int)info->ifaces[i].references,
+		       (i==info->active_idx)?" (active)":"");
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  display interfaces status
+ */
+static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_control_get_ifaces *ifaces;
+
+	/* read the public ip list from this node */
+	ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(), options.pnn,
+				   tmp_ctx, &ifaces);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get interfaces from node %u\n",
+				  options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (options.machinereadable){
+		printf(":Name:LinkStatus:References:\n");
+	} else {
+		printf("Interfaces on node %u\n", options.pnn);
+	}
+
+	for (i=0; i<ifaces->num; i++) {
+		if (options.machinereadable){
+			printf(":%s:%s:%u\n",
+			       ifaces->ifaces[i].name,
+			       ifaces->ifaces[i].link_state?"1":"0",
+			       (unsigned int)ifaces->ifaces[i].references);
+		} else {
+			printf("name:%s link:%s references:%u\n",
+			       ifaces->ifaces[i].name,
+			       ifaces->ifaces[i].link_state?"up":"down",
+			       (unsigned int)ifaces->ifaces[i].references);
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+
+/*
+  set link status of an interface
+ */
+static int control_setifacelink(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_control_iface_info info;
+
+	ZERO_STRUCT(info);
+
+	if (argc != 2) {
+		usage();
+	}
+
+	if (strlen(argv[0]) > CTDB_IFACE_SIZE) {
+		DEBUG(DEBUG_ERR, ("interfaces name '%s' too long\n",
+				  argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	strcpy(info.name, argv[0]);
+
+	if (strcmp(argv[1], "up") == 0) {
+		info.link_state = 1;
+	} else if (strcmp(argv[1], "down") == 0) {
+		info.link_state = 0;
+	} else {
+		DEBUG(DEBUG_ERR, ("link state invalid '%s' should be 'up' or 'down'\n",
+				  argv[1]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	/* read the public ip list from this node */
+	ret = ctdb_ctrl_set_iface_link(ctdb, TIMELIMIT(), options.pnn,
+				   tmp_ctx, &info);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to set link state for interfaces %s node %u\n",
+				  argv[0], options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	talloc_free(tmp_ctx);
@@ -4002,6 +4246,9 @@ static const struct {
 	{ "statistics",      control_statistics,        false,	false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,	false,  "reset statistics"},
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
+	{ "ipinfo",          control_ipinfo,            true,	false,  "show details about a public ip that ctdb manages", "<ip>" },
+	{ "ifaces",          control_ifaces,            true,	false,  "show which interfaces that ctdb manages" },
+	{ "setifacelink",    control_setifacelink,      true,	false,  "set interface link status", "<iface> <status>" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
 	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },

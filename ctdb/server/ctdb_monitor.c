@@ -75,7 +75,7 @@ static int ctdb_run_notification_script_child(struct ctdb_context *ctdb, const c
 	return ret;
 }
 
-static void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event)
+void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event)
 {
 	pid_t child;
 

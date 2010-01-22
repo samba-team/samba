@@ -46,7 +46,7 @@ cluster_is_healthy
 ctdb_restart_when_done
 
 echo "Getting list of public IPs..."
-try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
+all_ips_on_node 0
 
 # When selecting test_node we just want a node that has public IPs.
 # This will work and is economically semi-randomly.  :-)

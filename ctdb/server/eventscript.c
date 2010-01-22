@@ -589,6 +589,7 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 {
 	switch (call) {
 	/* These all take no arguments. */
+	case CTDB_EVENT_INIT:
 	case CTDB_EVENT_STARTUP:
 	case CTDB_EVENT_START_RECOVERY:
 	case CTDB_EVENT_RECOVERED:
@@ -602,6 +603,9 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	case CTDB_EVENT_TAKE_IP: /* interface, IP address, netmask bits. */
 	case CTDB_EVENT_RELEASE_IP:
 		return count_words(options) == 3;
+
+	case CTDB_EVENT_UPDATE_IP: /* old interface, new interface, IP address, netmask bits. */
+		return count_words(options) == 4;
 
 	default:
 		DEBUG(DEBUG_ERR,(__location__ "Unknown ctdb_eventscript_call %u\n", call));
@@ -649,7 +653,12 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		/* we guarantee that only some specifically allowed event scripts are run
 		   while in recovery */
 		const enum ctdb_eventscript_call allowed_calls[] = {
-			CTDB_EVENT_START_RECOVERY, CTDB_EVENT_SHUTDOWN, CTDB_EVENT_RELEASE_IP, CTDB_EVENT_STOPPED };
+			CTDB_EVENT_INIT,
+			CTDB_EVENT_START_RECOVERY,
+			CTDB_EVENT_SHUTDOWN,
+			CTDB_EVENT_RELEASE_IP,
+			CTDB_EVENT_STOPPED
+		};
 		int i;
 		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
 			if (call == allowed_calls[i]) break;

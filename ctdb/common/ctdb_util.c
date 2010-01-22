@@ -367,7 +367,7 @@ bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 	return true;
 }
 
-static bool parse_ipv6(const char *s, const char *iface, unsigned port, ctdb_sock_addr *saddr)
+static bool parse_ipv6(const char *s, const char *ifaces, unsigned port, ctdb_sock_addr *saddr)
 {
 	saddr->ip6.sin6_family   = AF_INET6;
 	saddr->ip6.sin6_port     = htons(port);
@@ -379,8 +379,14 @@ static bool parse_ipv6(const char *s, const char *iface, unsigned port, ctdb_soc
 		return false;
 	}
 
-	if (iface && IN6_IS_ADDR_LINKLOCAL(&saddr->ip6.sin6_addr)) {
-		saddr->ip6.sin6_scope_id = if_nametoindex(iface);
+	if (ifaces && IN6_IS_ADDR_LINKLOCAL(&saddr->ip6.sin6_addr)) {
+		if (strchr(ifaces, ',')) {
+			DEBUG(DEBUG_ERR, (__location__ " Link local address %s "
+					  "is specified for multiple ifaces %s\n",
+					  s, ifaces));
+			return false;
+		}
+		saddr->ip6.sin6_scope_id = if_nametoindex(ifaces);
 	}
 
 	return true;
@@ -430,7 +436,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 /*
   parse an ip
  */
-bool parse_ip(const char *addr, const char *iface, unsigned port, ctdb_sock_addr *saddr)
+bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_addr *saddr)
 {
 	char *p;
 	bool ret;
@@ -440,7 +446,7 @@ bool parse_ip(const char *addr, const char *iface, unsigned port, ctdb_sock_addr
 	if (p == NULL) {
 		ret = parse_ipv4(addr, port, &saddr->ip);
 	} else {
-		ret = parse_ipv6(addr, iface, port, saddr);
+		ret = parse_ipv6(addr, ifaces, port, saddr);
 	}
 
 	return ret;
@@ -449,7 +455,7 @@ bool parse_ip(const char *addr, const char *iface, unsigned port, ctdb_sock_addr
 /*
   parse a ip/mask pair
  */
-bool parse_ip_mask(const char *str, const char *iface, ctdb_sock_addr *addr, unsigned *mask)
+bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr, unsigned *mask)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	char *s, *p;
@@ -482,7 +488,7 @@ bool parse_ip_mask(const char *str, const char *iface, ctdb_sock_addr *addr, uns
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	ret = parse_ip(s, iface, 0, addr);
+	ret = parse_ip(s, ifaces, 0, addr);
 
 	talloc_free(tmp_ctx);
 	return ret;
@@ -653,6 +659,7 @@ void ctdb_lockdown_memory(struct ctdb_context *ctdb)
 }
 
 const char *ctdb_eventscript_call_names[] = {
+	"init",
 	"startup",
 	"startrecovery",
 	"recovered",
@@ -662,5 +669,6 @@ const char *ctdb_eventscript_call_names[] = {
 	"monitor",
 	"status",
 	"shutdown",
-	"reload"
+	"reload",
+	"updateip"
 };

@@ -181,12 +181,14 @@ struct ctdb_client {
 	struct ctdb_client_notify_list *notify;
 };
 
+struct ctdb_iface;
 
 /* state associated with a public ip address */
 struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
 
-	const char *iface;
+	struct ctdb_iface *iface;
+	const char **ifaces;
 	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
 
@@ -244,7 +246,8 @@ struct ctdb_node {
 	   across the nodes.  it needs to know which public ip's can be handled
 	   by each node.
 	*/
-	struct ctdb_all_public_ips *public_ips;
+	struct ctdb_all_public_ips *known_public_ips;
+	struct ctdb_all_public_ips *available_public_ips;
 	/* used by the recovery dameon to track when a node should be banned */
 	struct ctdb_banning_state *ban_state; 
 };
@@ -424,6 +427,7 @@ struct ctdb_context {
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
 	struct ctdb_vnn *single_ip_vnn; /* a structure for the single ip */
+	struct ctdb_iface *ifaces; /* list of local interfaces */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
@@ -634,6 +638,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_DB_SEQNUM           = 120,
 		    CTDB_CONTROL_DB_SET_HEALTHY		 = 121,
 		    CTDB_CONTROL_DB_GET_HEALTH		 = 122,
+		    CTDB_CONTROL_GET_PUBLIC_IP_INFO	 = 123,
+		    CTDB_CONTROL_GET_IFACES		 = 124,
+		    CTDB_CONTROL_SET_IFACE_LINK_STATE	 = 125,
 };	
 
 /*
@@ -841,6 +848,7 @@ struct ctdb_req_control {
 	uint64_t srvid;
 	uint32_t client_id;
 #define CTDB_CTRL_FLAG_NOREPLY   1
+#define CTDB_CTRL_FLAG_OPCODE_SPECIFIC   0xFFFF0000
 	uint32_t flags;
 	uint32_t datalen;
 	uint8_t data[1];
@@ -1301,12 +1309,67 @@ struct ctdb_all_public_ips {
 int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
-			struct timeval timeout, uint32_t destnode, 
-			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
+			     struct timeval timeout,
+			     uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_all_public_ips **ips);
+#define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
+int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
+				   struct timeval timeout, uint32_t destnode,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t flags,
+				   struct ctdb_all_public_ips **ips);
 int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb, 
 			struct timeval timeout, uint32_t destnode, 
 			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
 
+#ifdef IFNAMSIZ
+#define CTDB_IFACE_SIZE IFNAMSIZ
+#else
+#define CTDB_IFACE_SIZE 16
+#endif
+
+struct ctdb_control_iface_info {
+	char name[CTDB_IFACE_SIZE+2];
+	uint16_t link_state;
+	uint32_t references;
+};
+
+struct ctdb_control_public_ip_info {
+	struct ctdb_public_ip ip;
+	uint32_t active_idx;
+	uint32_t num;
+	struct ctdb_control_iface_info ifaces[1];
+};
+
+struct ctdb_control_get_ifaces {
+	uint32_t num;
+	struct ctdb_control_iface_info ifaces[1];
+};
+
+int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA indata,
+					TDB_DATA *outdata);
+int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				TDB_DATA *outdata);
+int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
+				    struct ctdb_req_control *c,
+				    TDB_DATA indata);
+int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
+				 struct timeval timeout, uint32_t destnode,
+				 TALLOC_CTX *mem_ctx,
+				 const ctdb_sock_addr *addr,
+				 struct ctdb_control_public_ip_info **info);
+int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_control_get_ifaces **ifaces);
+int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ctdb_control_iface_info *info);
 
 /* from takeover/system.c */
 uint32_t uint16_checksum(uint16_t *data, size_t n);
@@ -1317,6 +1380,9 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      uint32_t seq, uint32_t ack, int rst);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
+int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
+			      const char *iface,
+			      const char *ip);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
@@ -1564,4 +1630,7 @@ int ctdb_update_persistent_health(struct ctdb_context *ctdb,
 				  int num_healthy_nodes);
 int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 
+void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
+
+void ctdb_fault_setup(void);
 #endif

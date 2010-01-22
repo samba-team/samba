@@ -1,13 +1,5 @@
 AC_PREREQ(2.50)
 AC_INIT(ctdb, m4_esyscmd([grep 'Version:' ./packaging/RPM/ctdb.spec 2>/dev/null | head -1 | sed -e 's/[ \t]*Version:[ \t]*\([^ \t]*\)[ \t]*.*/\1/' | tr -d '\n']))
-AC_DEFUN([AC_CHECK_LIB_EXT], [
-	AC_CHECK_LIB([$1],[$3],[$4],[$5],[$7])
-	ac_cv_lib_ext_$1_$3=$ac_cv_lib_$1_$3
-])
-AC_DEFUN([AC_CHECK_FUNC_EXT], [
-	AC_CHECK_FUNC([$1],[$3],[$4])
-	ac_cv_func_ext_$1=$ac_cv_func_$1
-])
 AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
@@ -68,6 +60,8 @@ m4_include(libtalloc.m4)
 m4_include(libtdb.m4)
 m4_include(libevents.m4)
 m4_include(ib/config.m4)
+m4_include(lib/util/signal.m4)
+m4_include(lib/util/fault.m4)
 
 AC_CHECK_HEADERS(sched.h)
 AC_CHECK_FUNCS(sched_setscheduler)

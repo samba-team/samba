@@ -2318,16 +2318,18 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 }
 
 
-int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
-			struct timeval timeout, uint32_t destnode, 
-			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips)
+int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
+				   struct timeval timeout, uint32_t destnode,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t flags,
+				   struct ctdb_all_public_ips **ips)
 {
 	int ret;
 	TDB_DATA outdata;
 	int32_t res;
 
 	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_PUBLIC_IPS, 0, tdb_null, 
+			   CTDB_CONTROL_GET_PUBLIC_IPS, flags, tdb_null,
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret == 0 && res == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control to get public ips failed, falling back to ipv4-only version\n"));
@@ -2342,6 +2344,16 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 	talloc_free(outdata.dptr);
 		    
 	return 0;
+}
+
+int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_all_public_ips **ips)
+{
+	return ctdb_ctrl_get_public_ips_flags(ctdb, timeout,
+					      destnode, mem_ctx,
+					      0, ips);
 }
 
 int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb, 
@@ -2374,6 +2386,162 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 
 	talloc_free(outdata.dptr);
 		    
+	return 0;
+}
+
+int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
+				 struct timeval timeout, uint32_t destnode,
+				 TALLOC_CTX *mem_ctx,
+				 const ctdb_sock_addr *addr,
+				 struct ctdb_control_public_ip_info **_info)
+{
+	int ret;
+	TDB_DATA indata;
+	TDB_DATA outdata;
+	int32_t res;
+	struct ctdb_control_public_ip_info *info;
+	uint32_t len;
+	uint32_t i;
+
+	indata.dptr = discard_const_p(uint8_t, addr);
+	indata.dsize = sizeof(*addr);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_GET_PUBLIC_IP_INFO, 0, indata,
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"failed ret:%d res:%d\n",
+				ret, res));
+		return -1;
+	}
+
+	len = offsetof(struct ctdb_control_public_ip_info, ifaces);
+	if (len > outdata.dsize) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"returned invalid data with size %u > %u\n",
+				(unsigned int)outdata.dsize,
+				(unsigned int)len));
+		dump_data(DEBUG_DEBUG, outdata.dptr, outdata.dsize);
+		return -1;
+	}
+
+	info = (struct ctdb_control_public_ip_info *)outdata.dptr;
+	len += info->num*sizeof(struct ctdb_control_iface_info);
+
+	if (len > outdata.dsize) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"returned invalid data with size %u > %u\n",
+				(unsigned int)outdata.dsize,
+				(unsigned int)len));
+		dump_data(DEBUG_DEBUG, outdata.dptr, outdata.dsize);
+		return -1;
+	}
+
+	/* make sure we null terminate the returned strings */
+	for (i=0; i < info->num; i++) {
+		info->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
+	}
+
+	*_info = (struct ctdb_control_public_ip_info *)talloc_memdup(mem_ctx,
+								outdata.dptr,
+								outdata.dsize);
+	talloc_free(outdata.dptr);
+	if (*_info == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
+				"talloc_memdup size %u failed\n",
+				(unsigned int)outdata.dsize));
+		return -1;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_control_get_ifaces **_ifaces)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+	struct ctdb_control_get_ifaces *ifaces;
+	uint32_t len;
+	uint32_t i;
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_GET_IFACES, 0, tdb_null,
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get ifaces "
+				"failed ret:%d res:%d\n",
+				ret, res));
+		return -1;
+	}
+
+	len = offsetof(struct ctdb_control_get_ifaces, ifaces);
+	if (len > outdata.dsize) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get ifaces "
+				"returned invalid data with size %u > %u\n",
+				(unsigned int)outdata.dsize,
+				(unsigned int)len));
+		dump_data(DEBUG_DEBUG, outdata.dptr, outdata.dsize);
+		return -1;
+	}
+
+	ifaces = (struct ctdb_control_get_ifaces *)outdata.dptr;
+	len += ifaces->num*sizeof(struct ctdb_control_iface_info);
+
+	if (len > outdata.dsize) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get ifaces "
+				"returned invalid data with size %u > %u\n",
+				(unsigned int)outdata.dsize,
+				(unsigned int)len));
+		dump_data(DEBUG_DEBUG, outdata.dptr, outdata.dsize);
+		return -1;
+	}
+
+	/* make sure we null terminate the returned strings */
+	for (i=0; i < ifaces->num; i++) {
+		ifaces->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
+	}
+
+	*_ifaces = (struct ctdb_control_get_ifaces *)talloc_memdup(mem_ctx,
+								  outdata.dptr,
+								  outdata.dsize);
+	talloc_free(outdata.dptr);
+	if (*_ifaces == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get ifaces "
+				"talloc_memdup size %u failed\n",
+				(unsigned int)outdata.dsize));
+		return -1;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ctdb_control_iface_info *info)
+{
+	int ret;
+	TDB_DATA indata;
+	int32_t res;
+
+	indata.dptr = discard_const_p(uint8_t, info);
+	indata.dsize = sizeof(*info);
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_SET_IFACE_LINK_STATE, 0, indata,
+			   mem_ctx, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set iface link "
+				"failed ret:%d res:%d\n",
+				ret, res));
+		return -1;
+	}
+
 	return 0;
 }
 

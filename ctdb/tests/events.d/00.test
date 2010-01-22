@@ -16,9 +16,18 @@ case $cmd in
 	exit 0;	
 	;;
 
+     init)
+	echo "ctdb init event"
+	exit 0;
+	;;
      startup)
 	echo "ctdb startup event"
-	exit 0;	
+	IFACES=`ctdb ifaces -Y | grep -v '^:Name:LinkStatus:References:'`
+	for I in $IFACES; do
+		IFACE=`echo -n "$I" | cut -d ':' -f2`
+		ctdb setifacelink $IFACE up
+	done
+	exit 0;
 	;;
 	
      takeip)

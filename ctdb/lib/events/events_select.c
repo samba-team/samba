@@ -48,10 +48,6 @@ struct select_event_context {
 
 	/* information for exiting from the event loop */
 	int exit_code;
-
-	/* this is incremented when the loop over events causes something which
-	   could change the events yet to be processed */
-	uint32_t destruction_count;
 };
 
 /*
@@ -104,7 +100,6 @@ static int select_event_fd_destructor(struct fd_event *fde)
 	}
 
 	DLIST_REMOVE(select_ev->fd_events, fde);
-	select_ev->destruction_count++;
 
 	if (fde->flags & EVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
@@ -180,7 +175,6 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	fd_set r_fds, w_fds;
 	struct fd_event *fde;
 	int selrtn;
-	uint32_t destruction_count = ++select_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (select_ev->maxfd == EVENT_INVALID_MAXFD) {
