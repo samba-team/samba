@@ -205,7 +205,6 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	
 	va_list ap;
 	char *arg = NULL;
-	char *str = NULL;
 	int len;
 	char *header = NULL;
 	char *buf = NULL;
@@ -252,12 +251,7 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 		buf = talloc_asprintf_append( buf, "%04u%s", len, arg);
 	}
 	va_end( ap );
-
-	/* now create the protocol v2 header.	*/
-	len = strlen( buf );
-	str = talloc_asprintf_append( str, "V2,%017u%s", len, buf);
-	DEBUG(10, ("smb_traffic_analyzer_create_string: %s\n",str));
-	return str;
+	return buf;
 }
 
 static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
@@ -271,11 +265,13 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	int seconds;
 	char *str = NULL;
 	char *username = NULL;
+	char *header = NULL;
 	const char *anon_prefix = NULL;
 	const char *total_anonymization = NULL;
 	const char *protocol_version = NULL;
 	bool Write = false;
 	size_t len;
+	char state_flags[9] = "000000\0";
 
 	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
 
@@ -301,6 +297,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	anon_prefix=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",\
 					"anonymize_prefix", NULL );
 	if (anon_prefix!=NULL) {
+		state_flags[1] = 'A';
 		if (total_anonymization!=NULL) {
 			username = talloc_asprintf(talloc_tos(),
 				"%s",
@@ -330,7 +327,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 		/* in case of protocol v1, ignore any vfs operations	*/
 		/* except read,pread,write,pwrite, and set the "Write"	*/
-		/* bool accordingly.					*/
+		/* bool accordingly, send data and return.		*/
 
 		if ( vfs_operation > vfs_id_pwrite ) return;
 
@@ -353,6 +350,12 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			tm->tm_min,
 			tm->tm_sec,
 			(int)seconds);
+		if (write_data(rf_sock->sock, str, len) != len) {
+                	DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
+			"error sending V1 protocol data to socket!\n"));
+		return;
+		}
+
 	} else if ( strcmp( protocol_version, "V2") == 0) {
 
 		switch( vfs_operation ) {
@@ -416,22 +419,32 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		return;
 	}
 
-	len = strlen(str);
 
-	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: going to send "
-		"%s\n", str));
 	/* If configured, optain the key and run AES encryption	*/
 	/* over the data.					*/
 	size_t size;
 	char *akey = secrets_fetch("smb_traffic_analyzer_key", &size);
 	if ( akey != NULL ) {
 		char *crypted;
+		state_flags[2] = 'E';
 		DEBUG(10, ("smb_traffic_analyzer: a key was found, encrypting "
 			"data!"));
 		AES_KEY *key;
 		samba_AES_set_encrypt_key(akey, 128, key);
 		samba_AES_encrypt( str, crypted, key );
 		len = strlen( crypted );
+		header = talloc_asprintf( talloc_tos(), "V2.%s%017u",
+						state_flags, len);
+
+		DEBUG(10, ("smb_traffic_analyzer_send_data_socket:"
+			" header created for crypted data: %s", header));
+		len = strlen(header);
+		if (write_data(rf_sock->sock, header, len) != len) {
+			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
+						"error sending the header"
+						 " over the socket!\n"));
+		}
+		len = strlen(crypted);
 		if (write_data(rf_sock->sock, crypted, len) != len) {
 			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 				"error sending crypted data to socket!\n"));
@@ -439,6 +452,19 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		return ;
 		}
 	}
+
+        len = strlen(str);
+        header = talloc_asprintf(talloc_tos(), "V2.%s%017u", state_flags, len);
+        DEBUG(10, ("smb_traffic_analyzer_send_data_socket: header created:"
+                                                        "%s\n", header));
+        len = strlen(header);
+        if (write_data(rf_sock->sock, header, len) != len) {
+                DEBUG(1, ("smb_traffic_analyzer_send_data_socket: error "
+                        "sending the header over the socket!\n"));
+        }
+        len = strlen(str);
+	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: going to send "
+			"data block: %s\n",str));
 	if (write_data(rf_sock->sock, str, len) != len) {
 		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 			"error sending data to socket!\n"));
