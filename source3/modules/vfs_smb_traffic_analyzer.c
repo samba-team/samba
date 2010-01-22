@@ -201,7 +201,7 @@ struct refcounted_sock {
 /* The marshaller for the protocol version 2.		*/
 static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	int seconds, vfs_handle_struct *handle, \
-	char *username, int count, ... )
+	char *username, int vfs_operation, int count, ... )
 {
 	
 	va_list ap;
@@ -211,10 +211,14 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	char *header = NULL;
 	char *buf = NULL;
 	char *timestr = NULL;
+	char *opstr = NULL;
 
 	/* first create the data that is transfered with any VFS op	*/
+	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
+	len = strlen(opstr);
+	buf = talloc_asprintf(talloc_tos(), "%04u%s", len, opstr);
 	len = strlen( username );
-	buf = talloc_asprintf(talloc_tos(),"%04u%s", len, username);
+	buf = talloc_asprintf_append(buf, "%04u%s", len, username);
 	len = strlen( handle->conn->connectpath );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
 		handle->conn->connectpath );
@@ -351,7 +355,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		switch( vfs_operation ) {
 		case vfs_id_mkdir: ;
 			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, 3,\
+				seconds, handle, username, vfs_id_mkdir, 3,\
 				((struct mkdir_data *) data)->path, \
 				talloc_asprintf( talloc_tos(), "%u", \
 				((struct mkdir_data *) data)->mode), \
@@ -360,14 +364,14 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			break;
 		case vfs_id_rmdir: ;
 			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, 2,\
+				seconds, handle, username, vfs_id_rmdir, 2,\
 				((struct rmdir_data *) data)->path, \
 				talloc_asprintf( talloc_tos(), "%u", \
 				((struct rmdir_data *) data)->result ));
 			break;
 		case vfs_id_rename: ;
 			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, 3,\
+				seconds, handle, username, vfs_id_rename, 3,\
 				((struct rename_data *) data)->src, \
 				((struct rename_data *) data)->dst,
 				talloc_asprintf(talloc_tos(), "%u", \
@@ -375,7 +379,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			break;
 		case vfs_id_chdir: ;
 			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, 2,\
+				seconds, handle, username, vfs_id_chdir, 2,\
 				((struct chdir_data *) data)->path, \
 				talloc_asprintf(talloc_tos(), "%u", \
 				((struct chdir_data *) data)->result));
@@ -386,7 +390,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		case vfs_id_read:
 		case vfs_id_pread: ;
 			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, 2,\
+				seconds, handle, username, vfs_operation, 2,\
 				((struct rw_data *) data)->filename, \
 				talloc_asprintf(talloc_tos(), "%u", \
 				((struct rw_data *) data)->len));
