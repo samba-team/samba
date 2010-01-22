@@ -26,7 +26,7 @@
 
 /**********************************************************************
  It is safe to assume that every registry path passed into on of 
- the exported functions here begins with KEY_PRINTING else
+ the exported functions here begins with KEY_SHARES else
  these functions would have never been called.  This is a small utility
  function to strip the beginning of the path and make a copy that the 
  caller can modify.  Note that the caller is responsible for releasing
