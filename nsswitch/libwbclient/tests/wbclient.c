@@ -314,6 +314,39 @@ static bool test_wbc_lookupdcex(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_resolve_winsbyname(struct torture_context *tctx)
+{
+	const char *name;
+	char *ip;
+	wbcErr ret;
+
+	name = torture_setting_string(tctx, "host", NULL);
+
+	ret = wbcResolveWinsByName(name, &ip);
+
+	if (is_ipaddress(name)) {
+		torture_assert_wbc_equal(tctx, ret, WBC_ERR_DOMAIN_NOT_FOUND, "wbcResolveWinsByName failed");
+	} else {
+		torture_assert_wbc_ok(tctx, ret, "wbcResolveWinsByName failed");
+	}
+
+	return true;
+}
+
+static bool test_wbc_resolve_winsbyip(struct torture_context *tctx)
+{
+	const char *ip;
+	char *name;
+	wbcErr ret;
+
+	ip = torture_setting_string(tctx, "host", NULL);
+
+	ret = wbcResolveWinsByIP(ip, &name);
+
+	torture_assert_wbc_ok(tctx, ret, "wbcResolveWinsByIP failed");
+
+	return true;
+}
 
 struct torture_suite *torture_wbclient(void)
 {
@@ -332,6 +365,8 @@ struct torture_suite *torture_wbclient(void)
 	torture_suite_add_simple_test(suite, "wbcListTrusts", test_wbc_trusts);
 	torture_suite_add_simple_test(suite, "wbcLookupDomainController", test_wbc_lookupdc);
 	torture_suite_add_simple_test(suite, "wbcLookupDomainControllerEx", test_wbc_lookupdcex);
+	torture_suite_add_simple_test(suite, "wbcResolveWinsByName", test_wbc_resolve_winsbyname);
+	torture_suite_add_simple_test(suite, "wbcResolveWinsByIP", test_wbc_resolve_winsbyip);
 
 	return suite;
 }
