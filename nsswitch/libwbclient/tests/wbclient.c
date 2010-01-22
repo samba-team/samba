@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    SMB torture tester
-   Copyright (C) Guenther Deschner 2009
+   Copyright (C) Guenther Deschner 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,6 +39,16 @@ static bool test_wbc_ping(struct torture_context *tctx)
 {
 	torture_assert_wbc_ok(tctx, wbcPing(),
 		"wbcPing failed");
+
+	return true;
+}
+
+static bool test_wbc_pingdc(struct torture_context *tctx)
+{
+	torture_assert_wbc_equal(tctx, wbcPingDc("random_string", NULL), WBC_ERR_NOT_IMPLEMENTED,
+		"wbcPingDc failed");
+	torture_assert_wbc_ok(tctx, wbcPingDc(NULL, NULL),
+		"wbcPingDc failed");
 
 	return true;
 }
@@ -310,6 +320,7 @@ struct torture_suite *torture_wbclient(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
 
 	torture_suite_add_simple_test(suite, "wbcPing", test_wbc_ping);
+	torture_suite_add_simple_test(suite, "wbcPingDc", test_wbc_pingdc);
 	torture_suite_add_simple_test(suite, "wbcLibraryDetails", test_wbc_library_details);
 	torture_suite_add_simple_test(suite, "wbcInterfaceDetails", test_wbc_interface_details);
 	torture_suite_add_simple_test(suite, "wbcSidTypeString", test_wbc_sidtypestring);
