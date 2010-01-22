@@ -178,7 +178,7 @@ start() {
 
     check_persistent_databases || return $?
 
-    if [ yes == "$CTDB_SUPPRESS_COREFILE" ]; then
+    if [ "$CTDB_SUPPRESS_COREFILE" = "yes" ]; then
 	ulimit -c 0
     else
 	ulimit -c unlimited
