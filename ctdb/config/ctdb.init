@@ -65,7 +65,7 @@ build_ctdb_options () {
 	# then return
 	[ -z "$2" -o \( -n "$3" -a "$3" != "$2" \) ] && return
 
-	val="$2"
+	val="'$2'"
 	case "$1" in
 	    --*) sep="=" ;;
 	    -*)  sep=" " ;;
@@ -186,25 +186,26 @@ start() {
 
     case $init_style in
 	valgrind)
-	    valgrind -q --log-file=/var/log/ctdb_valgrind \
-		$ctdbd --valgrinding $CTDB_OPTIONS
+	    eval valgrind -q --log-file=/var/log/ctdb_valgrind \
+		$ctdbd --valgrinding "$CTDB_OPTIONS"
 	    RETVAL=$?
 	    echo
 	    ;;
 	suse)
-	    startproc $ctdbd $CTDB_OPTIONS
+	    eval startproc $ctdbd "$CTDB_OPTIONS"
 	    rc_status -v
 	    RETVAL=$?
 	    ;;
 	redhat)
-	    daemon $ctdbd $CTDB_OPTIONS
+	    eval $ctdbd "$CTDB_OPTIONS"
 	    RETVAL=$?
+	    [ $RETVAL -eq 0 ] && success || failure
 	    echo
 	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
 	    ;;
 	debian)
-	    start-stop-daemon --start --quiet --background \
-		--exec $ctdbd -- $CTDB_OPTIONS
+	    eval start-stop-daemon --start --quiet --background \
+		--exec $ctdbd -- "$CTDB_OPTIONS"
 	    RETVAL=$?
 	    ;;
     esac
