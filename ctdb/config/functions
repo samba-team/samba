@@ -6,16 +6,15 @@ PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
 # pull in a system config file, if any
 loadconfig() {
 
-    if [ "$1" != "ctdb" ] ; then
-	loadconfig "ctdb"
-    fi
-
     if [ -z "$1" ] ; then
 	foo="${service_config:-${service_name}}"
 	if [ -n "$foo" ] ; then
 	    loadconfig "$foo"
 	fi
+    elif [ "$1" != "ctdb" ] ; then
+	loadconfig "ctdb"
     fi
+
 
     if [ -f /etc/sysconfig/$1 ]; then
 	. /etc/sysconfig/$1
