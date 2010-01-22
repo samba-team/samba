@@ -3,13 +3,12 @@
 
 . $CTDB_BASE/functions
 
-. /etc/sysconfig/nfs
-
 service_name="nfs"
-service_start="mkdir -p $CTDB_BASE/state/nfstickle;mkdir -p $NFS_TICKLE_SHARED_DIRECTORY/`hostname`;echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle"
-service_reconfigure=$service_start
 
 loadconfig
+
+service_start="mkdir -p $CTDB_BASE/state/nfstickle;mkdir -p $NFS_TICKLE_SHARED_DIRECTORY/`hostname`;echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle"
+service_reconfigure=$service_start
 
 ctdb_start_stop_service
 
