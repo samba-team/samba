@@ -266,7 +266,9 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	struct tevent_timer *te = NULL;
 	NTSTATUS status;
 	bool retry = false;
-	bool timedout = false;
+	struct timeval timeout_end;
+	struct timeval timeout_remaining;
+	struct timeval time_now;
 
 	DEBUG(10, ("Trying to acquire lock %d for %s\n", (int)lock_type,
 		   name));
@@ -295,52 +297,113 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 			   nt_errstr(status)));
 		return status;
 	}
-again:
-	retry = false;
 
-	status = g_lock_trylock(ctx, name, lock_type);
-	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Got lock %s\n", name));
-		goto done;
-	}
-	if (!NT_STATUS_EQUAL(status, STATUS_PENDING)) {
-		DEBUG(10, ("g_lock_trylock failed: %s\n",
-			   nt_errstr(status)));
-		goto done;
-	}
-
-	DEBUG(10, ("g_lock_trylock: Did not get lock, waiting...\n"));
-
-	if (te == NULL) {
-		te = tevent_add_timer(
-			ctx->msg->event_ctx, talloc_tos(),
-			timeval_current_ofs(timeout.tv_sec, timeout.tv_usec),
-			g_lock_timedout, &timedout);
-		if (te == NULL) {
-			DEBUG(10, ("tevent_add_timer failed\n"));
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	}
+	time_now = timeval_current();
+	timeout_end = timeval_sum(&time_now, &timeout);
 
 	while (true) {
-		if (tevent_loop_once(ctx->msg->event_ctx) == -1) {
-			DEBUG(1, ("tevent_loop_once failed\n"));
+		fd_set _r_fds;
+		fd_set *r_fds = NULL;
+		int max_fd = 0;
+		int ret;
+
+		status = g_lock_trylock(ctx, name, lock_type);
+		if (NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("Got lock %s\n", name));
+			break;
+		}
+		if (!NT_STATUS_EQUAL(status, STATUS_PENDING)) {
+			DEBUG(10, ("g_lock_trylock failed: %s\n",
+				   nt_errstr(status)));
+			break;
+		}
+
+		DEBUG(10, ("g_lock_trylock: Did not get lock, waiting...\n"));
+
+		/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		 *             !!! HACK ALERT --- FIX ME !!!
+		 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		 * What we really want to do here is to react to
+		 * MSG_DBWRAP_G_LOCK_RETRY messages that are either sent
+		 * by a client doing g_lock_unlock or by ourselves when
+		 * we receive a CTDB_SRVID_SAMBA_NOTIFY or
+		 * CTDB_SRVID_RECONFIGURE message from ctdbd, i.e. when
+		 * either a client holding a lock or a complete node
+		 * has died.
+		 *
+		 * Doing this properly involves calling tevent_loop_once(),
+		 * but doing this here with the main ctdbd messaging context
+		 * creates a nested event loop when g_lock_lock() is called
+		 * from the main event loop, e.g. in a tcon_and_X where the
+		 * share_info.tdb needs to be initialized and is locked by
+		 * another process, or when the remore registry is accessed
+		 * for writing and some other process already holds a lock
+		 * on the registry.tdb.
+		 *
+		 * So as a quick fix, we act a little corasely here: we do
+		 * a select on the ctdb connection fd and when it is readable
+		 * or we get EINTR, then we retry without actually parsing
+		 * any ctdb packages or dispatching messages. This means that
+		 * we retry more often than intended by design, but this does
+		 * not harm and it is unobtrusive. When we have finished,
+		 * the main loop will pick up all the messages and ctdb
+		 * packets. The only extra twist is that we cannot use timed
+		 * events here but have to handcode a timeout.
+		 */
+
+#ifdef CLUSTER_SUPPORT
+		if (lp_clustering()) {
+			struct ctdbd_connection *conn = messaging_ctdbd_connection();
+
+			r_fds = &_r_fds;
+			FD_ZERO(r_fds);
+			max_fd = ctdbd_conn_get_fd(conn);
+			FD_SET(max_fd, r_fds);
+		}
+#endif
+
+		time_now = timeval_current();
+		timeout_remaining = timeval_until(&time_now, &timeout_end);
+
+		ret = sys_select(max_fd + 1, r_fds, NULL, NULL,
+				 &timeout_remaining);
+
+		if (ret == -1) {
+			if (errno != EINTR) {
+				DEBUG(1, ("error calling select: %s\n",
+					  strerror(errno)));
+				status = NT_STATUS_INTERNAL_ERROR;
+				break;
+			}
+			/*
+			 * errno == EINTR:
+			 * This means a signal was received.
+			 * It might have been a MSG_DBWRAP_G_LOCK_RETRY message.
+			 * ==> retry
+			 */
+		} else if (ret == 0) {
+			if (timeval_expired(&timeout_end)) {
+				DEBUG(10, ("g_lock_lock timed out\n"));
+				status = NT_STATUS_LOCK_NOT_GRANTED;
+				break;
+			} else {
+				DEBUG(10, ("select returned 0 but timeout not "
+					   "not expired: strange - retrying\n"));
+			}
+		} else if (ret != 1) {
+			DEBUG(1, ("invalid return code of select: %d\n", ret));
 			status = NT_STATUS_INTERNAL_ERROR;
-			goto done;
+			break;
 		}
-		if (retry) {
-			goto again;
-		}
-		if (timedout) {
-			DEBUG(10, ("g_lock_lock timed out\n"));
-
-			te = NULL;
-
-			status = NT_STATUS_LOCK_NOT_GRANTED;
-			goto done;
-		}
+		/*
+		 * ret == 1:
+		 * This means ctdbd has sent us some data.
+		 * Might be a CTDB_SRVID_RECONFIGURE or a
+		 * CTDB_SRVID_SAMBA_NOTIFY message.
+		 * ==> retry
+		 */
 	}
+
 done:
 
 	if (!NT_STATUS_IS_OK(status)) {
