@@ -813,7 +813,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 static int net_groupmap_memberships(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
-	DOM_SID *domain_sid, *builtin_sid, member;
+	DOM_SID *domain_sid, member;
 
 	if ( (argc != 1) ||
 	     c->display_usage ||
@@ -831,14 +831,13 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
 	}
 
 	domain_sid = get_global_sam_sid();
-	builtin_sid = string_sid_talloc(mem_ctx, "S-1-5-32");
-	if ((domain_sid == NULL) || (builtin_sid == NULL)) {
+	if (domain_sid == NULL) {
 		d_fprintf(stderr, _("Could not get domain sid\n"));
 		return -1;
 	}
 
 	if (!print_alias_memberships(mem_ctx, domain_sid, &member) ||
-	    !print_alias_memberships(mem_ctx, builtin_sid, &member))
+	    !print_alias_memberships(mem_ctx, &global_sid_Builtin, &member))
 		return -1;
 
 	talloc_destroy(mem_ctx);
