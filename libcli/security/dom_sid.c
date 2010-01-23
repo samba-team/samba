@@ -96,11 +96,19 @@ bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 
 	sidstr += 2;
 
+	if (!isdigit(sidstr[0])) {
+		return false;
+	}
+
 	rev = strtoul(sidstr, &p, 10);
 	if (*p != '-') {
 		return false;
 	}
 	sidstr = p+1;
+
+	if (!isdigit(sidstr[0])) {
+		return false;
+	}
 
 	ia = strtoul(sidstr, &p, 10);
 	if (p == sidstr) {
@@ -131,6 +139,11 @@ bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 			return false;
 		}
 		sidstr++;
+
+		if (!isdigit(sidstr[0])) {
+			return false;
+		}
+
 		ret->sub_auths[i] = strtoul(sidstr, &p, 10);
 		if (p == sidstr) {
 			return false;
