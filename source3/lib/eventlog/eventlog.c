@@ -940,7 +940,7 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_SID;
 		}
 		if (len > 0) {
-			e->UserSid = *string_sid_talloc(mem_ctx, sid_str);
+			string_to_sid(&e->UserSid, sid_str);
 		}
 	}
 

@@ -1843,6 +1843,7 @@ static NTSTATUS cmd_lsa_create_trusted_domain(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status;
 	struct policy_handle handle, trustdom_handle;
+	struct dom_sid sid;
 	struct lsa_DomainInfo info;
 
 	if (argc < 3) {
@@ -1859,7 +1860,8 @@ static NTSTATUS cmd_lsa_create_trusted_domain(struct rpc_pipe_client *cli,
 	}
 
 	init_lsa_StringLarge(&info.name, argv[1]);
-	info.sid = string_sid_talloc(mem_ctx, argv[2]);
+	info.sid = &sid;
+	string_to_sid(&sid, argv[2]);
 
 	status = rpccli_lsa_CreateTrustedDomain(cli, mem_ctx,
 						&handle,

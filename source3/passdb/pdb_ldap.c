@@ -5012,7 +5012,7 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	LDAPMessage *entry = NULL;
 	bool ret = false;
 	char *user_sid_string;
-	DOM_SID *user_sid;
+	struct dom_sid user_sid;
 	int rc;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
@@ -5051,14 +5051,13 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 		goto done;
 	}
 
-	user_sid = string_sid_talloc(tmp_ctx, user_sid_string);
-	if (user_sid == NULL) {
+	if (!string_to_sid(&user_sid, user_sid_string)) {
 		DEBUG(3, ("Error calling sid_string_talloc for sid '%s'\n",
 			  user_sid_string));
 		goto done;
 	}
 
-	sid_copy(sid, user_sid);
+	sid_copy(sid, &user_sid);
 
 	store_uid_sid_cache(sid, uid);
 	idmap_cache_set_sid2uid(sid, uid);
@@ -6048,18 +6047,17 @@ static bool ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
 	/* domain sid */
 	if (sid != NULL) {
 		char *sid_str;
-		DOM_SID *dom_sid;
+		struct dom_sid dom_sid;
 		sid_str = smbldap_talloc_single_attribute(priv2ld(ldap_state),
 							  entry, "sambaSID",
 							  talloc_tos());
 		if (sid_str == NULL) {
 			return False;
 		}
-		dom_sid = string_sid_talloc(talloc_tos(), sid_str);
-		if (dom_sid == NULL) {
+		if (!string_to_sid(&dom_sid, sid_str)) {
 			return False;
 		}
-		sid_copy(sid, dom_sid);
+		sid_copy(sid, &dom_sid);
 	}
 
 	return True;
