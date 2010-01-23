@@ -451,8 +451,8 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < sids.num_sids; i++) {
-		sids.sids[0].sid = string_sid_talloc(sids.sids, argv[i + 1]);
-		if (!sids.sids[0].sid) {
+		sids.sids[i].sid = string_sid_talloc(sids.sids, argv[i + 1]);
+		if (!sids.sids[i].sid) {
 			result = NT_STATUS_INVALID_SID;
 			goto done;
 		}
