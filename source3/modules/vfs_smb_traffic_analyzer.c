@@ -27,6 +27,68 @@ enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
 
 #define LOCAL_PATHNAME "/var/tmp/stadsocket"
 
+
+/*
+ * Protocol version 2.0 description
+ *
+ * The following table shows the exact assembly of the 2.0 protocol.
+ *
+ * -->Header<--
+ * The protocol header is always send first, and contains various
+ * information about the data block to come.
+ * The header is always of fixed length, and will be send unencrypted.
+ *
+ * Byte Number/Bytes	Description
+ * 00-02		Contains always the string "V2."
+ * 03			This byte contains a possible subrelease number of the
+ *			protocol. This enables the receiver to make a version
+ * 			check to ensure the compatibility and allows us to
+ *			release 2.x versions of the protocol with bugfixes or
+ *			enhancements.
+ * 04			Usually, this byte contains the character '0'. If the
+ *			VFS module is configured for anonymization, this is
+ *			set to 'A'. This information can be useful for the
+ * 			receiver.
+ * 05			Usually, this byte contains the character '0'. If the
+ *			VFS module is configured for encryption of the data,
+ *			this byte is set to 'E'.
+ * 06-09		These bytes contain the character '0' by default, and
+ *			are reserved for possible future extensions. They have
+ *			no function in 2.0.
+ * 10-27		17 bytes containing a string representation of the
+ *			number of bytes to come in the following data block.
+ *			It is right aligned and filled from the left with '0'.
+ * 
+ * -->Data Block<--
+ * The data block is send immediately after the header was send. It's length
+ * is exactly what was given in bytes 11-28 from in the header.
+ *
+ * The data block may be send encrypted.
+ * 
+ * To make the data block easy for the receiver to read, it is divided into
+ * several sub-blocks, each with it's own header of four byte length. In each
+ * of the sub-headers, a string representation of the length of this block is
+ * to be found.
+ *
+ * Thus the formal structure is very simple:
+ *
+ * [HEADER]data[HEADER]data[HEADER]data[END]
+ *
+ * whereas [END] is exactly at the position given in bytes 11-28 of the
+ * header.
+ *
+ * Some data the VFS module is capturing is of use for any VFS operation.
+ * Therefore, there is a "common set" of data, that will be send with any
+ * data block. The following provides a list of this data.
+ * - the VFS function identifier (see VFS function ifentifier table below).
+ * - a timestamp to the millisecond.
+ * - the username (as text) who runs the VFS operation.
+ * - the SID of the user who run the VFS operation.
+ * - the domain under which the VFS operation has happened.
+ *
+ */
+
+ 
 /* VFS Functions identifier table. In protocol version 2, every vfs     */
 /* function is given a unique id.                                       */
 enum vfs_id {
