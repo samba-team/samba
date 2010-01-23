@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "nsswitch/libwbclient/wbc_async.h"
 #include "torture/proto.h"
+#include "libcli/security/dom_sid.h"
 
 extern char *optarg;
 extern int optind;
@@ -6670,6 +6671,22 @@ static bool run_local_talloc_dict(int dummy)
 	return true;
 }
 
+static bool run_local_dom_sid_parse(int dummy) {
+	struct dom_sid sid;
+
+	if (dom_sid_parse("S--1-5-32-545", &sid)) {
+		return false;
+	}
+	if (dom_sid_parse("S-1-5-32-+545", &sid)) {
+		return false;
+	}
+	if (dom_sid_parse("S-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5-6-7-8-9-0", &sid)) {
+		return false;
+	}
+
+	return true;
+}
+
 /* Split a path name into filename and stream name components. Canonicalise
  * such that an implicit $DATA token is always explicit.
  *
@@ -7228,6 +7245,7 @@ static struct {
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
 	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
+	{ "LOCAL-dom_sid_parse", run_local_dom_sid_parse, 0},
 	{NULL, NULL, 0}};
 
 
