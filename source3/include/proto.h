@@ -1317,7 +1317,6 @@ char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
 char *sid_string_dbg(const DOM_SID *sid);
 char *sid_string_tos(const DOM_SID *sid);
 bool string_to_sid(DOM_SID *sidout, const char *sidstr);
-DOM_SID *string_sid_talloc(TALLOC_CTX *mem_ctx, const char *sidstr);
 bool sid_append_rid(DOM_SID *sid, uint32 rid);
 bool sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid);
 bool sid_split_rid(DOM_SID *sid, uint32 *rid);

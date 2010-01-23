@@ -271,19 +271,6 @@ bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 	return True;
 }
 
-DOM_SID *string_sid_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
-{
-	DOM_SID *result = TALLOC_P(mem_ctx, DOM_SID);
-
-	if (result == NULL)
-		return NULL;
-
-	if (!string_to_sid(result, sidstr))
-		return NULL;
-
-	return result;
-}
-
 /*****************************************************************
  Add a rid to the end of a sid
 *****************************************************************/  
