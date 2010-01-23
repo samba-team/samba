@@ -28,7 +28,7 @@ enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
 #define LOCAL_PATHNAME "/var/tmp/stadsocket"
 
 
-/*
+/**
  * Protocol version 2.0 description
  *
  * The following table shows the exact assembly of the 2.0 protocol.
@@ -89,24 +89,30 @@ enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
  */
 
  
-/* VFS Functions identifier table. In protocol version 2, every vfs     */
-/* function is given a unique id.                                       */
+/** 
+ * VFS Functions identifier table. In protocol version 2, every vfs
+ * function is given a unique id.
+ */
 enum vfs_id {
-	/* care for the order here, required for compatibility	*/
-	/* with protocol version 1.				*/
+	/*
+	 * care for the order here, required for compatibility
+	 * with protocol version 1.
+	 */
         vfs_id_read,
         vfs_id_pread,
         vfs_id_write,
         vfs_id_pwrite,
-	/* end of protocol version 1 identifiers.		*/
+	/* end of protocol version 1 identifiers. */
 	vfs_id_mkdir,
 	vfs_id_rmdir,
 	vfs_id_rename,
 	vfs_id_chdir
 };
 
-/* Specific data sets for the VFS functions.				*/
-
+/*
+ * Specific data sets for the VFS functions.
+ * A compatible receiver has to have the exact same dataset.
+ */
 struct mkdir_data {
 	const char *path;
 	mode_t mode;
@@ -129,7 +135,7 @@ struct chdir_data {
 	int result;
 };
 	
-/* rw_data used for read/write/pread/pwrite 				*/
+/* rw_data used for read/write/pread/pwrite */
 struct rw_data {
 	char *filename;
 	size_t len;
@@ -152,7 +158,6 @@ static enum sock_type smb_traffic_analyzer_connMode(vfs_handle_struct *handle)
 
 
 /* Connect to an internet socket */
-
 static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
 					const char *name, uint16_t port)
 {
@@ -216,7 +221,6 @@ static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
 }
 
 /* Connect to a unix domain socket */
-
 static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle,
 						const char *name)
 {
@@ -248,8 +252,7 @@ static int smb_traffic_analyzer_connect_unix_socket(vfs_handle_struct *handle,
 	return sock;
 }
 
-/* Private data allowing shared connection sockets. 	*/
-
+/* Private data allowing shared connection sockets. */
 struct refcounted_sock {
 	struct refcounted_sock *next, *prev;
 	char *name;
@@ -259,7 +262,7 @@ struct refcounted_sock {
 };
 
 
-/* The marshaller for the protocol version 2.		*/
+/* The marshaller for the protocol version 2. */
 static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	int seconds, vfs_handle_struct *handle, \
 	char *username, int vfs_operation, int count, ... )
@@ -274,7 +277,7 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	char *opstr = NULL;
 	char *userSID = NULL;
 
-	/* first create the data that is transfered with any VFS op	*/
+	/* first create the data that is transfered with any VFS op */
 	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
 	len = strlen(opstr);
 	buf = talloc_asprintf(talloc_tos(), "%04u%s", len, opstr);
@@ -305,10 +308,12 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	va_start( ap, count );
 	while ( count-- ) {
 		arg = va_arg( ap, char * );
-		/* protocol v2 sends a four byte string	*/
-		/* as a header to each block, including	*/
-		/* the numbers of bytes to come in the	*/
-		/* next string.				*/
+		/*
+		 *  protocol v2 sends a four byte string
+		 * as a header to each block, including
+		 * the numbers of bytes to come in the
+		 * next string.
+		 */
 		len = strlen( arg );
 		buf = talloc_asprintf_append( buf, "%04u%s", len, arg);
 	}
@@ -352,7 +357,6 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	seconds=(float) (tv.tv_usec / 1000);
 
 	/* check if anonymization is required */
-
 	total_anonymization=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",
 					"total_anonymization", NULL);
 
@@ -387,10 +391,11 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 		struct rw_data *s_data = (struct rw_data *) data;
 
-		/* in case of protocol v1, ignore any vfs operations	*/
-		/* except read,pread,write,pwrite, and set the "Write"	*/
-		/* bool accordingly, send data and return.		*/
-
+		/*
+		 * in case of protocol v1, ignore any vfs operations
+		 * except read,pread,write,pwrite, and set the "Write"
+		 * bool accordingly, send data and return.
+		 */
 		if ( vfs_operation > vfs_id_pwrite ) return;
 
 		if ( vfs_operation <= vfs_id_pread ) Write=false;
@@ -482,8 +487,10 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	}
 
 
-	/* If configured, optain the key and run AES encryption	*/
-	/* over the data.					*/
+	/*
+	 * If configured, optain the key and run AES encryption
+	 * over the data.
+	 */
 	size_t size;
 	char *akey = secrets_fetch("smb_traffic_analyzer_key", &size);
 	if ( akey != NULL ) {
@@ -756,7 +763,6 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 };
 
 /* Module initialization */
-
 NTSTATUS vfs_smb_traffic_analyzer_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
