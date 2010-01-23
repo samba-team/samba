@@ -25,6 +25,7 @@
 
 #include "replace.h"
 #include "libwbclient.h"
+#include "../winbind_client.h"
 
 /* Authenticate a username/password pair */
 wbcErr wbcAuthenticateUser(const char *username,
@@ -487,8 +488,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 	}
 
 done:
-	if (response.extra_data.data)
-		free(response.extra_data.data);
+	winbindd_free_response(&response);
 
 	talloc_free(request.extra_data.data);
 
@@ -1107,8 +1107,7 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 	}
 
 done:
-	if (response.extra_data.data)
-		free(response.extra_data.data);
+	winbindd_free_response(&response);
 
 	return wbc_status;
 }

@@ -24,7 +24,7 @@
 
 #include "replace.h"
 #include "libwbclient.h"
-
+#include "../winbind_client.h"
 
 /* Convert a binary SID to a character string */
 wbcErr wbcSidToString(const struct wbcDomainSid *sid,
@@ -396,9 +396,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (response.extra_data.data) {
-		free(response.extra_data.data);
-	}
+	winbindd_free_response(&response);
 
 	if (WBC_ERROR_IS_OK(wbc_status)) {
 		*pp_domain_name = domain_name;
@@ -486,9 +484,7 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (response.extra_data.data) {
-		free(response.extra_data.data);
-	}
+	winbindd_free_response(&response);
 	if (sids) {
 		talloc_free(sids);
 	}
@@ -624,9 +620,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	if (extra_data) {
 		talloc_free(extra_data);
 	}
-	if (response.extra_data.data) {
-		free(response.extra_data.data);
-	}
+	winbindd_free_response(&response);
 	if (rids) {
 		talloc_free(rids);
 	}
@@ -694,9 +688,7 @@ wbcErr wbcListUsers(const char *domain_name,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (response.extra_data.data) {
-		free(response.extra_data.data);
-	}
+	winbindd_free_response(&response);
 	if (users) {
 		talloc_free(users);
 	}
@@ -762,9 +754,7 @@ wbcErr wbcListGroups(const char *domain_name,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (response.extra_data.data) {
-		free(response.extra_data.data);
-	}
+	winbindd_free_response(&response);
 	if (groups) {
 		talloc_free(groups);
 	}

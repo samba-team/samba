@@ -24,6 +24,7 @@
 
 #include "replace.h"
 #include "libwbclient.h"
+#include "../winbind_client.h"
 
 /** @brief The maximum number of pwent structs to get from winbindd
  *
@@ -261,8 +262,7 @@ wbcErr wbcGetgrnam(const char *name, struct group **grp)
 	BAIL_ON_PTR_ERROR(*grp, wbc_status);
 
  done:
-	if (response.extra_data.data)
-		free(response.extra_data.data);
+	winbindd_free_response(&response);
 
 	return wbc_status;
 }
@@ -296,8 +296,7 @@ wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 	BAIL_ON_PTR_ERROR(*grp, wbc_status);
 
  done:
-	if (response.extra_data.data)
-		free(response.extra_data.data);
+	winbindd_free_response(&response);
 
 	return wbc_status;
 }
@@ -324,9 +323,7 @@ wbcErr wbcSetpwent(void)
 
 	if (pw_cache_size > 0) {
 		pw_cache_idx = pw_cache_size = 0;
-		if (pw_response.extra_data.data) {
-			free(pw_response.extra_data.data);
-		}
+		winbindd_free_response(&pw_response);
 	}
 
 	ZERO_STRUCT(pw_response);
@@ -346,9 +343,7 @@ wbcErr wbcEndpwent(void)
 
 	if (pw_cache_size > 0) {
 		pw_cache_idx = pw_cache_size = 0;
-		if (pw_response.extra_data.data) {
-			free(pw_response.extra_data.data);
-		}
+		winbindd_free_response(&pw_response);
 	}
 
 	wbc_status = wbcRequestResponse(WINBINDD_ENDPWENT,
@@ -375,10 +370,7 @@ wbcErr wbcGetpwent(struct passwd **pwd)
 
 	pw_cache_idx = 0;
 
-	if (pw_response.extra_data.data) {
-		free(pw_response.extra_data.data);
-		ZERO_STRUCT(pw_response);
-	}
+	winbindd_free_response(&pw_response);
 
 	ZERO_STRUCT(request);
 	request.data.num_entries = MAX_GETPWENT_USERS;
@@ -426,9 +418,7 @@ wbcErr wbcSetgrent(void)
 
 	if (gr_cache_size > 0) {
 		gr_cache_idx = gr_cache_size = 0;
-		if (gr_response.extra_data.data) {
-			free(gr_response.extra_data.data);
-		}
+		winbindd_free_response(&gr_response);
 	}
 
 	ZERO_STRUCT(gr_response);
@@ -448,9 +438,7 @@ wbcErr wbcEndgrent(void)
 
 	if (gr_cache_size > 0) {
 		gr_cache_idx = gr_cache_size = 0;
-		if (gr_response.extra_data.data) {
-			free(gr_response.extra_data.data);
-		}
+		winbindd_free_response(&gr_response);
 	}
 
 	wbc_status = wbcRequestResponse(WINBINDD_ENDGRENT,
@@ -478,10 +466,7 @@ wbcErr wbcGetgrent(struct group **grp)
 
 	gr_cache_idx = 0;
 
-	if (gr_response.extra_data.data) {
-		free(gr_response.extra_data.data);
-		ZERO_STRUCT(gr_response);
-	}
+	winbindd_free_response(&gr_response);
 
 	ZERO_STRUCT(request);
 	request.data.num_entries = MAX_GETGRENT_GROUPS;
@@ -527,10 +512,8 @@ wbcErr wbcGetgrlist(struct group **grp)
 
 	gr_cache_idx = 0;
 
-	if (gr_response.extra_data.data) {
-		free(gr_response.extra_data.data);
-		ZERO_STRUCT(gr_response);
-	}
+	winbindd_free_response(&gr_response);
+	ZERO_STRUCT(gr_response);
 
 	ZERO_STRUCT(request);
 	request.data.num_entries = MAX_GETGRENT_GROUPS;
@@ -600,9 +583,7 @@ wbcErr wbcGetGroups(const char *account,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (response.extra_data.data) {
-		free(response.extra_data.data);
-	}
+	winbindd_free_response(&response);
 	if (groups) {
 		talloc_free(groups);
 	}
