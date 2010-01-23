@@ -19,6 +19,3 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
 
 #define winbind_on() \
 	(setenv(WINBINDD_DONT_ENV, "0", 1) == 0)
-
-
-const char *nss_err_str(NSS_STATUS ret);

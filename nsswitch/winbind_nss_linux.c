@@ -71,6 +71,31 @@ NSS_STATUS _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 NSS_STATUS _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 				 size_t buflen, int *errnop);
 
+/*************************************************************************
+ ************************************************************************/
+
+#ifdef DEBUG_NSS
+static const char *nss_err_str(NSS_STATUS ret)
+{
+	switch (ret) {
+		case NSS_STATUS_TRYAGAIN:
+			return "NSS_STATUS_TRYAGAIN";
+		case NSS_STATUS_SUCCESS:
+			return "NSS_STATUS_SUCCESS";
+		case NSS_STATUS_NOTFOUND:
+			return "NSS_STATUS_NOTFOUND";
+		case NSS_STATUS_UNAVAIL:
+			return "NSS_STATUS_UNAVAIL";
+#ifdef NSS_STATUS_RETURN
+		case NSS_STATUS_RETURN:
+			return "NSS_STATUS_RETURN";
+#endif
+		default:
+			return "UNKNOWN RETURN CODE!!!!!!!";
+	}
+}
+#endif
+
 /* Prototypes from wb_common.c */
 
 /* Allocate some space from the nss static buffer.  The buffer and buflen
