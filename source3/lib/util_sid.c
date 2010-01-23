@@ -7,17 +7,17 @@
    Copyright (C) Stefan (metze) Metzmacher 	2002
    Copyright (C) Simo Sorce 			2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -216,14 +216,14 @@ char *sid_string_tos(const DOM_SID *sid)
 /*****************************************************************
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
-   
+
 bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
 	const char *p;
 	char *q;
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 	uint32 conv;
-  
+
 	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
 		DEBUG(3,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
 		return False;
@@ -267,7 +267,7 @@ bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 			break;
 		q++;
 	}
-		
+
 	return True;
 }
 
@@ -325,7 +325,7 @@ bool sid_peek_rid(const DOM_SID *sid, uint32 *rid)
 {
 	if (!sid || !rid)
 		return False;		
-	
+
 	if (sid->num_auths > 0) {
 		*rid = sid->sub_auths[sid->num_auths - 1];
 		return True;
@@ -342,7 +342,7 @@ bool sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
 {
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
-			
+
 	if (sid->num_auths != (exp_dom_sid->num_auths+1)) {
 		return False;
 	}
@@ -351,7 +351,7 @@ bool sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
 		*rid=(-1);
 		return False;
 	}
-	
+
 	return sid_peek_rid(sid, rid);
 }
 
@@ -635,7 +635,7 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
 
 	for ( ; i<*num; i++ ) 
 		sid_copy( &sid_list[i], &sid_list[i+1] );
-	
+
 	return;
 }
 
@@ -648,7 +648,7 @@ bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 		if ((*pp_rids)[i] == rid)
 			return True;
 	}
-	
+
 	*pp_rids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_rids, uint32, *p_num+1);
 
 	if (*pp_rids == NULL) {

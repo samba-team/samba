@@ -1552,7 +1552,7 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf)
 {
 	srv_set_message(outbuf,0,0,false);
-	
+
 	SCVAL(outbuf, smb_com, req->cmd);
 	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
@@ -2059,11 +2059,11 @@ void check_reload(time_t t)
 	}
 
 	/* 'printcap cache time = 0' disable the feature */
-	
+
 	if ( printcap_cache_time != 0 )
 	{ 
 		/* see if it's time to reload or if the clock has been set back */
-		
+
 		if ( (t >= last_printer_reload_time+printcap_cache_time) 
 			|| (t-last_printer_reload_time  < 0) ) 
 		{

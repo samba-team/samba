@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -173,7 +173,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
-			
+
 		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
 						     &pol,
 						     info_class,
@@ -186,7 +186,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
-		
+
 		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
 						    &pol,
 						    info_class,
@@ -726,7 +726,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	struct policy_handle user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 des_access = 0x000f000f;
-	
+
 	DOM_SID sid;
 
 	if (argc != 2 ) {
@@ -1072,14 +1072,14 @@ static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
 				     uint8_t session_key[16])
 {
 	char *pwd, *pwd_old;
-	
+
 	DATA_BLOB data 	   = data_blob_const(p->password->data, p->password->length);
 	DATA_BLOB data_old = data_blob_const(p->old_password->data, p->old_password->length);
 	DATA_BLOB session_key_blob = data_blob_const(session_key, sizeof(session_key));
 
 	pwd 	= sess_decrypt_string(talloc_tos(), &data, &session_key_blob);
 	pwd_old = sess_decrypt_string(talloc_tos(), &data_old, &session_key_blob);
-	
+
 	d_printf("Password:\t%s\n", pwd);
 	d_printf("Old Password:\t%s\n", pwd_old);
 
