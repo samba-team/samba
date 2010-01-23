@@ -96,13 +96,13 @@ bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 
 	sidstr += 2;
 
-	rev = strtol(sidstr, &p, 10);
+	rev = strtoul(sidstr, &p, 10);
 	if (*p != '-') {
 		return false;
 	}
 	sidstr = p+1;
 
-	ia = strtol(sidstr, &p, 10);
+	ia = strtoul(sidstr, &p, 10);
 	if (p == sidstr) {
 		return false;
 	}
