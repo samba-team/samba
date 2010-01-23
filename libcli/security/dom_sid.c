@@ -85,16 +85,12 @@ bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 	return dom_sid_compare(sid1, sid2) == 0;
 }
 
-/* Yes, I did think about multibyte issues here, and for all I can see there's
- * none of those for parsing a SID. */
-#undef strncasecmp
-
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 {
 	uint_t rev, ia, num_sub_auths, i;
 	char *p;
 
-	if (strncasecmp(sidstr, "S-", 2)) {
+	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
 		return false;
 	}
 
