@@ -154,6 +154,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	c->use_kerberos = get_cmdline_auth_info_use_kerberos(auth_info);
 	c->fallback_after_kerberos =
 		get_cmdline_auth_info_fallback_after_kerberos(auth_info);
+	c->use_ccache = get_cmdline_auth_info_use_ccache(auth_info);
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
