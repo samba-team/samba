@@ -70,7 +70,7 @@ struct net_context {
 	const char *opt_exclude;
 	const char *opt_destination;
 	int opt_testmode;
-	bool opt_kerberos;
+	int opt_kerberos;
 	int opt_force_full_repl;
 	int opt_single_obj_repl;
 	int opt_clean_old_entries;
