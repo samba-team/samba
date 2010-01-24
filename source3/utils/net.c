@@ -770,6 +770,7 @@ static struct functable net_func[] = {
 		{"machine-pass",'P', POPT_ARG_NONE,   &c->opt_machine_pass},
 		{"kerberos",    'k', POPT_ARG_NONE,   &c->opt_kerberos},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &c->opt_workgroup},
+		{"use-ccache",    0, POPT_ARG_NONE,   &c->opt_ccache},
 		{"verbose",	'v', POPT_ARG_NONE,   &c->opt_verbose},
 		{"test",	'T', POPT_ARG_NONE,   &c->opt_testmode},
 		/* Options for 'net groupmap set' */
