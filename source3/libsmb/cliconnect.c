@@ -866,6 +866,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		return nt_status;
 	}
 	ntlmssp_want_feature(ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+	if (cli->use_ccache) {
+		ntlmssp_want_feature(ntlmssp_state, NTLMSSP_FEATURE_CCACHE);
+	}
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
 		return nt_status;
