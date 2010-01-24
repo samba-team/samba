@@ -1006,6 +1006,10 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	}
 	ntlmssp_want_feature(state->ntlmssp_state,
 			     NTLMSSP_FEATURE_SESSION_KEY);
+	if (cli->use_ccache) {
+		ntlmssp_want_feature(state->ntlmssp_state,
+				     NTLMSSP_FEATURE_CCACHE);
+	}
 	status = ntlmssp_set_username(state->ntlmssp_state, user);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
