@@ -7362,6 +7362,9 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 	if (c->opt_kerberos) {
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
+	if (c->opt_ccache) {
+		libnetapi_set_use_ccache(c->netapi_ctx);
+	}
 
 	return net_run_function(c, argc, argv, "net rpc", func);
 }
