@@ -263,10 +263,13 @@ typedef struct _SMBCCTX SMBCCTX;
  *   smbc_getOptionFallbackAFterKerberos()
  *   smbc_setOptionNoAutoAnonymousLogin()
  *   smbc_getOptionNoAutoAnonymousLogin()
+ *   smbc_setOptionUseCCache()
+ *   smbc_getOptionUseCCache()
  */
 # define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
 # define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
 # define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2)
+# define SMB_CTX_FLAG_USE_CCACHE (1 << 3)
 
 
 
@@ -731,6 +734,14 @@ smbc_getOptionNoAutoAnonymousLogin(SMBCCTX *c);
 /** Set whether to automatically select anonymous login */
 void
 smbc_setOptionNoAutoAnonymousLogin(SMBCCTX *c, smbc_bool b);
+
+/** Get whether to enable use of the winbind ccache */
+smbc_bool
+smbc_getOptionUseCCache(SMBCCTX *c);
+
+/** Set whether to enable use of the winbind ccache */
+void
+smbc_setOptionUseCCache(SMBCCTX *c, smbc_bool b);
 
 
 
