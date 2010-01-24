@@ -1267,7 +1267,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 	struct samu *sampass = NULL;
 	DOM_SID guest_sid;
 	bool ret;
-	char zeros[16];
+	static const char zeros[16] = {0, };
 	fstring tmp;
 
 	if ( !(sampass = samu_new( NULL )) ) {
@@ -1302,7 +1302,6 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
-	ZERO_STRUCT(zeros);
 	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
 	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 
@@ -1622,7 +1621,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info,
 				struct netr_SamInfo3 *info3)
 {
-	char zeros[16];
+	static const char zeros[16] = {0, };
 
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *found_username = NULL;
@@ -1838,8 +1837,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* ensure we are never given NULL session keys */
 
-	ZERO_STRUCT(zeros);
-
 	if (memcmp(info3->base.key.key, zeros, sizeof(zeros)) == 0) {
 		result->user_session_key = data_blob_null;
 	} else {
@@ -1873,7 +1870,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const struct wbcAuthUserInfo *info,
 					  struct auth_serversupplied_info **server_info)
 {
-	char zeros[16];
+	static const char zeros[16] = {0, };
 
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *found_username = NULL;
@@ -2082,8 +2079,6 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	sort_sid_array_for_smbd(result, &group_sid);
 
 	/* ensure we are never given NULL session keys */
-
-	ZERO_STRUCT(zeros);
 
 	if (memcmp(info->user_session_key, zeros, sizeof(zeros)) == 0) {
 		result->user_session_key = data_blob_null;

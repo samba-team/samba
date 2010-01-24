@@ -803,8 +803,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 							  session_key.data);
 				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			} else {
-				uint8 zeros[24];
-				ZERO_STRUCT(zeros);
+				static const uint8 zeros[24] = {0, };
 				session_key = data_blob_talloc(
 					ntlmssp_state, NULL, 16);
 				if (session_key.data == NULL) {
@@ -1062,10 +1061,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (!ntlmssp_state->nt_hash || !ntlmssp_state->lm_hash) {
-		uchar zeros[16];
+		static const uint8_t zeros[16] = {0, };
 		/* do nothing - blobs are zero length */
-
-		ZERO_STRUCT(zeros);
 
 		/* session key is all zeros */
 		session_key = data_blob_talloc(ntlmssp_state, zeros, 16);
