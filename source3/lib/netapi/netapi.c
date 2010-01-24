@@ -250,6 +250,12 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 	return NET_API_STATUS_SUCCESS;
 }
 
+NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
+{
+	ctx->use_ccache = true;
+	return NET_API_STATUS_SUCCESS;
+}
+
 /****************************************************************
 ****************************************************************/
 
