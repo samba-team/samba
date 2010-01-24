@@ -257,6 +257,9 @@ void ntlmssp_want_feature_list(NTLMSSP_STATE *ntlmssp_state, char *feature_list)
 	if(in_list("NTLMSSP_FEATURE_SEAL", feature_list, True)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
+	if (in_list("NTLMSSP_FEATURE_CCACHE", feature_list, true)) {
+		ntlmssp_state->use_ccache = true;
+	}
 }
 
 /**
@@ -276,6 +279,9 @@ void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature)
 	}
 	if (feature & NTLMSSP_FEATURE_SEAL) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+	if (feature & NTLMSSP_FEATURE_CCACHE) {
+		ntlmssp_state->use_ccache = true;
 	}
 }
 
@@ -1017,6 +1023,58 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	struct CHALLENGE_MESSAGE challenge;
 	struct AUTHENTICATE_MESSAGE authenticate;
 
+	if (ntlmssp_state->use_ccache) {
+		struct wbcCredentialCacheParams params;
+		struct wbcCredentialCacheInfo *info = NULL;
+		struct wbcAuthErrorInfo *error = NULL;
+		struct wbcNamedBlob auth_blob;
+		struct wbcBlob *wbc_next = NULL;
+		struct wbcBlob *wbc_session_key = NULL;
+		wbcErr wbc_status;
+		int i;
+
+		params.account_name = ntlmssp_state->user;
+		params.domain_name = ntlmssp_state->domain;
+		params.level = WBC_CREDENTIAL_CACHE_LEVEL_NTLMSSP;
+
+		auth_blob.name = "challenge_blob";
+		auth_blob.flags = 0;
+		auth_blob.blob.data = reply.data;
+		auth_blob.blob.length = reply.length;
+		params.num_blobs = 1;
+		params.blobs = &auth_blob;
+
+		wbc_status = wbcCredentialCache(&params, &info, &error);
+		if (error != NULL) {
+			wbcFreeMemory(error);
+		}
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto noccache;
+		}
+
+		for (i=0; i<info->num_blobs; i++) {
+			if (strequal(info->blobs[i].name, "auth_blob")) {
+				wbc_next = &info->blobs[i].blob;
+			}
+			if (strequal(info->blobs[i].name, "session_key")) {
+				wbc_session_key = &info->blobs[i].blob;
+			}
+		}
+		if ((wbc_next == NULL) || (wbc_session_key == NULL)) {
+			wbcFreeMemory(info);
+			goto noccache;
+		}
+
+		*next_request = data_blob(wbc_next->data, wbc_next->length);
+		ntlmssp_state->session_key = data_blob(
+			wbc_session_key->data, wbc_session_key->length);
+
+		wbcFreeMemory(info);
+		goto done;
+	}
+
+noccache:
+
 	if (!msrpc_parse(ntlmssp_state, &reply, "CdBd",
 			 "NTLMSSP",
 			 &ntlmssp_command,
@@ -1229,6 +1287,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_state->chal = challenge_blob;
 	ntlmssp_state->lm_resp = lm_response;
 	ntlmssp_state->nt_resp = nt_response;
+
+done:
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
