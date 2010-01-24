@@ -2553,6 +2553,9 @@ again:
 	     cli->use_kerberos) {
 		cli->fallback_after_kerberos = true;
 	}
+	if (flags & CLI_FULL_CONNECTION_USE_CCACHE) {
+		cli->use_ccache = true;
+	}
 
 	nt_status = cli_negprot(cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
