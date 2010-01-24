@@ -109,6 +109,10 @@ NTSTATUS connect_to_service(struct net_context *c,
 		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
+	if (c->opt_ccache) {
+		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
+	}
+
 	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
 					server_ss, c->opt_port,
 					service_name, service_type,
