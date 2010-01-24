@@ -1118,7 +1118,135 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
                           struct wbcCredentialCacheInfo **info,
                           struct wbcAuthErrorInfo **error)
 {
-	return WBC_ERR_NOT_IMPLEMENTED;
+	wbcErr status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcCredentialCacheInfo *result = NULL;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	struct wbcNamedBlob *initial_blob = NULL;
+	struct wbcNamedBlob *challenge_blob = NULL;
+	int i;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (info != NULL) {
+		*info = NULL;
+	}
+	if (error != NULL) {
+		*error = NULL;
+	}
+	if ((params == NULL)
+	    || (params->account_name == NULL)
+	    || (params->level != WBC_CREDENTIAL_CACHE_LEVEL_NTLMSSP)) {
+		status = WBC_ERR_INVALID_PARAM;
+		goto fail;
+	}
+
+	if (params->domain_name != NULL) {
+		status = wbcRequestResponse(WINBINDD_INFO, NULL, &response);
+		if (!WBC_ERROR_IS_OK(status)) {
+			goto fail;
+		}
+		snprintf(request.data.ccache_ntlm_auth.user,
+			 sizeof(request.data.ccache_ntlm_auth.user)-1,
+			 "%s%c%s", params->domain_name,
+			 response.data.info.winbind_separator,
+			 params->account_name);
+	} else {
+		strncpy(request.data.ccache_ntlm_auth.user,
+			params->account_name,
+			sizeof(request.data.ccache_ntlm_auth.user)-1);
+	}
+	request.data.ccache_ntlm_auth.uid = getuid();
+
+	for (i=0; i<params->num_blobs; i++) {
+		if (strcasecmp(params->blobs[i].name, "initial_blob") == 0) {
+			initial_blob = &params->blobs[i];
+			break;
+		}
+		if (strcasecmp(params->blobs[i].name, "challenge_blob") == 0) {
+			challenge_blob = &params->blobs[i];
+			break;
+		}
+	}
+
+	request.data.ccache_ntlm_auth.initial_blob_len = 0;
+	request.data.ccache_ntlm_auth.challenge_blob_len = 0;
+	request.extra_len = 0;
+
+	if (initial_blob != NULL) {
+		request.data.ccache_ntlm_auth.initial_blob_len =
+			initial_blob->blob.length;
+		request.extra_len += initial_blob->blob.length;
+	}
+	if (challenge_blob != NULL) {
+		request.data.ccache_ntlm_auth.challenge_blob_len =
+			challenge_blob->blob.length;
+		request.extra_len += challenge_blob->blob.length;
+	}
+
+	if (request.extra_len != 0) {
+		request.extra_data.data = talloc_array(
+			NULL, char, request.extra_len);
+		if (request.extra_data.data == NULL) {
+			status = WBC_ERR_NO_MEMORY;
+			goto fail;
+		}
+	}
+	if (initial_blob != NULL) {
+		memcpy(request.extra_data.data,
+		       initial_blob->blob.data, initial_blob->blob.length);
+	}
+	if (challenge_blob != NULL) {
+		memcpy(request.extra_data.data
+		       + request.data.ccache_ntlm_auth.initial_blob_len,
+		       challenge_blob->blob.data,
+		       challenge_blob->blob.length);
+	}
+
+	status = wbcRequestResponse(WINBINDD_CCACHE_NTLMAUTH, &request,
+				    &response);
+	if (!WBC_ERROR_IS_OK(status)) {
+		goto fail;
+	}
+
+	result = talloc(NULL, struct wbcCredentialCacheInfo);
+	if (result == NULL) {
+		status = WBC_ERR_NO_MEMORY;
+		goto fail;
+	}
+	result->num_blobs = 0;
+	result->blobs = talloc(result, struct wbcNamedBlob);
+	if (result->blobs == NULL) {
+		status = WBC_ERR_NO_MEMORY;
+		goto fail;
+	}
+	status = wbcAddNamedBlob(&result->num_blobs, &result->blobs,
+				 "auth_blob", 0,
+				 (uint8_t *)response.extra_data.data,
+				 response.data.ccache_ntlm_auth.auth_blob_len);
+	if (!WBC_ERROR_IS_OK(status)) {
+		goto fail;
+	}
+	status = wbcAddNamedBlob(
+		&result->num_blobs, &result->blobs, "session_key", 0,
+		response.data.ccache_ntlm_auth.session_key,
+		sizeof(response.data.ccache_ntlm_auth.session_key));
+	if (!WBC_ERROR_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (response.extra_data.data)
+		free(response.extra_data.data);
+	*info = result;
+	return WBC_ERR_SUCCESS;
+
+fail:
+	TALLOC_FREE(request.extra_data.data);
+	if (response.extra_data.data)
+		free(response.extra_data.data);
+	talloc_free(result);
+	return status;
 }
 
 /* Authenticate a user with cached credentials */
