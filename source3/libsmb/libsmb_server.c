@@ -413,6 +413,10 @@ again:
 		c->fallback_after_kerberos = True;
 	}
 
+        if (smbc_getOptionUseCCache(context)) {
+		c->use_ccache = True;
+	}
+
 	c->timeout = smbc_getTimeout(context);
 
         /*
@@ -758,6 +762,9 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 flags = 0;
                 if (smbc_getOptionUseKerberos(context)) {
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+                }
+                if (smbc_getOptionUseCCache(context)) {
+                        flags |= CLI_FULL_CONNECTION_USE_CCACHE;
                 }
 
                 zero_sockaddr(&ss);

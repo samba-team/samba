@@ -420,6 +420,24 @@ smbc_setOptionNoAutoAnonymousLogin(SMBCCTX *c, smbc_bool b)
         }
 }
 
+/** Get whether to enable use of kerberos */
+smbc_bool
+smbc_getOptionUseCCache(SMBCCTX *c)
+{
+        return c->flags & SMB_CTX_FLAG_USE_CCACHE ? True : False;
+}
+
+/** Set whether to enable use of kerberos */
+void
+smbc_setOptionUseCCache(SMBCCTX *c, smbc_bool b)
+{
+        if (b) {
+                c->flags |= SMB_CTX_FLAG_USE_CCACHE;
+        } else {
+                c->flags &= ~SMB_CTX_FLAG_USE_CCACHE;
+        }
+}
+
 /** Get the function for obtaining authentication data */
 smbc_get_auth_data_fn
 smbc_getFunctionAuthData(SMBCCTX *c)
