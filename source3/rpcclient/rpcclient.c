@@ -988,6 +988,9 @@ out_free:
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
+	if (get_cmdline_auth_info_use_ccache(rpcclient_auth_info)) {
+		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
+	}
 
 	user = talloc_strdup(frame, get_cmdline_auth_info_username(rpcclient_auth_info));
 	SMB_ASSERT(user != NULL);
