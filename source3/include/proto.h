@@ -1105,6 +1105,9 @@ const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_inf
 bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 					 const char *arg);
 int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info,
+				      bool b);
+bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 					bool b);
 bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info);
