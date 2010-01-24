@@ -40,6 +40,7 @@ enum ntlmssp_message_type
 #define NTLMSSP_FEATURE_SESSION_KEY        0x00000001
 #define NTLMSSP_FEATURE_SIGN               0x00000002
 #define NTLMSSP_FEATURE_SEAL               0x00000004
+#define NTLMSSP_FEATURE_CCACHE		   0x00000008
 
 struct ntlmssp_state
 {
@@ -49,6 +50,7 @@ struct ntlmssp_state
 
 	bool unicode;
 	bool use_ntlmv2;
+	bool use_ccache;
 	char *user;
 	char *domain;
 	char *workstation;
