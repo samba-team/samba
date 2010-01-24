@@ -382,6 +382,16 @@ int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
 	return auth_info->signing_state;
 }
 
+void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info, bool b)
+{
+        auth_info->use_ccache = b;
+}
+
+bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info)
+{
+	return auth_info->use_ccache;
+}
+
 void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 					bool b)
 {
