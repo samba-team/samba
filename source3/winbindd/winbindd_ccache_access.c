@@ -46,7 +46,8 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 					const unsigned char nt_hash[NT_HASH_LEN],
 					const DATA_BLOB initial_msg,
 					const DATA_BLOB challenge_msg,
-					DATA_BLOB *auth_msg)
+					DATA_BLOB *auth_msg,
+					uint8_t session_key[16])
 {
 	NTSTATUS status;
 	NTLMSSP_STATE *ntlmssp_state = NULL;
@@ -84,6 +85,8 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		goto done;
 	}
 
+	ntlmssp_want_feature(ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+
 	/* We need to get our protocol handler into the right state. So first
 	   we ask it to generate the initial message. Actually the client has already
 	   sent its own initial message, so we're going to drop this one on the floor.
@@ -115,7 +118,16 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		data_blob_free(&reply);
 		goto done;
 	}
+
+	if (ntlmssp_state->session_key.length != 16) {
+		DEBUG(1, ("invalid session key length %d\n",
+			  (int)ntlmssp_state->session_key.length));
+		data_blob_free(&reply);
+		goto done;
+	}
+
 	*auth_msg = data_blob(reply.data, reply.length);
+	memcpy(session_key, ntlmssp_state->session_key.data, 16);
 	status = NT_STATUS_OK;
 
 done:
@@ -257,9 +269,10 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 	if (!initial.data || !challenge.data) {
 		result = NT_STATUS_NO_MEMORY;
 	} else {
-		result = do_ntlm_auth_with_hashes(name_user, name_domain,
-						entry->lm_hash, entry->nt_hash,
-						initial, challenge, &auth);
+		result = do_ntlm_auth_with_hashes(
+			name_user, name_domain, entry->lm_hash, entry->nt_hash,
+			initial, challenge, &auth,
+			state->response->data.ccache_ntlm_auth.session_key);
 	}
 
 	data_blob_free(&initial);

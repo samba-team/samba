@@ -48,7 +48,8 @@ typedef char fstring[FSTRING_LEN];
  * 21: added WINBINDD_GETPWSID
  *     added WINBINDD_GETSIDALIASES
  * 22: added WINBINDD_PING_DC
- * 23: added WINBINDD_CCACHE_SAVE
+ * 23: added session_key to ccache_ntlm_auth response
+ *     added WINBINDD_CCACHE_SAVE
  */
 #define WINBIND_INTERFACE_VERSION 23
 
@@ -485,6 +486,7 @@ struct winbindd_response {
 			uint32_t group_rid;
 		} user_info;
 		struct {
+			uint8_t session_key[16];
 			uint32_t auth_blob_len; /* blob in extra_data */
 		} ccache_ntlm_auth;
 		struct {
