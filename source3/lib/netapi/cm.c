@@ -55,6 +55,10 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		set_cmdline_auth_info_fallback_after_kerberos(auth_info, true);
 	}
 
+	if (ctx->use_ccache) {
+		set_cmdline_auth_info_use_ccache(auth_info, true);
+	}
+
 	cli_ipc = cli_cm_open(ctx, NULL,
 				server_name, "IPC$",
 				auth_info,
