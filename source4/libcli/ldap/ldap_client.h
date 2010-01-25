@@ -37,6 +37,10 @@ struct ldap_request {
 	int num_replies;
 	struct ldap_message **replies;
 
+	/* mark while we are processing replies
+	 * in request of type LDAP_TAG_SearchRequest */
+	bool in_dispatch_replies;
+
 	NTSTATUS status;
 	DATA_BLOB data;
 	struct {

@@ -278,6 +278,13 @@ static void ildb_callback(struct ldap_request *req)
 		break;
 
 	case LDAP_TAG_SearchRequest:
+		/* check if we are already processing this request */
+		if (req->in_dispatch_replies) {
+			return;
+		}
+
+		req->in_dispatch_replies = true;
+
 		/* loop over all messages */
 		for (i = 0; i < req->num_replies; i++) {
 
@@ -327,6 +334,7 @@ static void ildb_callback(struct ldap_request *req)
 				if (ret != LDB_SUCCESS) {
 					callback_failed = true;
 				}
+
 				break;
 
 			case LDAP_TAG_SearchResultReference:
@@ -337,6 +345,7 @@ static void ildb_callback(struct ldap_request *req)
 				if (ret != LDB_SUCCESS) {
 					callback_failed = true;
 				}
+
 				break;
 
 			default:
@@ -349,6 +358,8 @@ static void ildb_callback(struct ldap_request *req)
 				break;
 			}
 		}
+
+		req->in_dispatch_replies = false;
 
 		talloc_free(req->replies);
 		req->replies = NULL;
