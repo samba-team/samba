@@ -200,7 +200,8 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_LDAP
 #################################
 
-TORTURE_LDAP_OBJ_FILES = $(addprefix $(torturesrcdir)/ldap/, common.o basic.o schema.o uptodatevector.o cldap.o cldapbench.o ldap_sort.o)
+TORTURE_LDAP_OBJ_FILES = $(addprefix $(torturesrcdir)/ldap/, common.o basic.o schema.o uptodatevector.o \
+	cldap.o cldapbench.o ldap_sort.o nested_search.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/ldap/proto.h,$(TORTURE_LDAP_OBJ_FILES:.o=.c)))
 
