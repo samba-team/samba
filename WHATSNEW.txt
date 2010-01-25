@@ -114,6 +114,59 @@ o   Stefan Metzmacher <metze@samba.org>
 Changes since 3.5.0rc1
 ----------------------
 
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5202: Fix changing of ACLs on writable file with "dos filemode=yes".
+    * BUG 6876: Fix deletion of an object whose parent folder does not have delete
+      rights fails even if the delete right is set on the object in
+      vfs_acl_xattr and vfs_acl_tdb.
+    * BUG 7033: Fix SMBrmdir error message when deleting a directory fails.
+    * BUG 7036: Fix 'net rpc getsid' in hardened Windows environments.
+    * BUG 7045: Fix bad (non memory copying) interfaces in smbc_setXXXX calls.
+
+
+o   Giovanni Bajo <rasky@develer.com>
+    * BUG 7029: Disable sanity check in NetShareEnum for better compatibility
+      with Windows.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 7039: Fix compile error with WITH_DNS_UPDATE. Update .po files.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7043: Fix crash bug in libsmbclient.
+
+
+o   André Hentschel <nerv@dawncrow.de>
+    * BUG 7039: Complete German translation of 'net'.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7039: Improve some German translations in 'net'.
+
+
+o   William Jojo <w.jojo@hvcc.edu>
+    * BUG 7052: Fix DFS on AIX.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 6981: Fix large paged search with DirX LDAP servers.
+    * BUG 7027: Fix a segfault in winbindd_dual_ccache_ntlm_auth().
+    * BUG 7037: Fix a Winbind segfault in "trusted_domains".
+    * BUG 7046: Fix libsmbclient crash against OpenSolaris CIFS server.
+    * Lock down some srvsvc calls according to what w2k3 seems to do.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6157: Restore Samba 3.0.x behavior and use the first "uid" value in
+      pdb_ldap.
+
+
+o   SASAJIMA Toshihiro <sasajima_t@jp.fujitsu.com>
+    * BUG 7034: Fix segfault in vfs_cap.
+
+
 o   Olivier Sessink <oliviersessink@gmail.com>
     * BUG 7028: Add new scannedonly VFS module.
 
