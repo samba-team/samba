@@ -251,7 +251,6 @@ strptime_internal (rp, fmt, tm, decided, era_cnt)
      enum locale_status *decided;
      int era_cnt;
 {
-  const char *rp_backup;
   int cnt;
   size_t val;
   int have_I, is_pm;
@@ -261,6 +260,7 @@ strptime_internal (rp, fmt, tm, decided, era_cnt)
   int have_yday;
   int have_mon, have_mday;
 #ifdef _NL_CURRENT
+  const char *rp_backup;
   size_t num_eras;
 #endif
   struct era_entry *era;
@@ -297,10 +297,10 @@ strptime_internal (rp, fmt, tm, decided, era_cnt)
 #ifndef _NL_CURRENT
       /* We need this for handling the `E' modifier.  */
     start_over:
-#endif
 
       /* Make back up of current processing pointer.  */
       rp_backup = rp;
+#endif
 
       switch (*fmt++)
 	{
