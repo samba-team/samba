@@ -12,7 +12,7 @@ popt is used by rpm, the Red Hat install program, and many other Red Hat
 utilities, all of which provide excellent examples of how to use popt. 
 Complete documentation on popt is available in popt.ps (included in this
 tarball), which is excerpted with permission from the book "Linux
-Application Development" by Michael K. Johnson and Erik Troan (availble
+Application Development" by Michael K. Johnson and Erik Troan (available
 from Addison Wesley in May, 1998).
 
 Comments on popt should be addressed to ewt@redhat.com.
