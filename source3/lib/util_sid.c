@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "libcli/security/dom_sid.h"
 
 /*
  * Some useful sids, more well known sids can be found at
@@ -218,14 +217,58 @@ char *sid_string_tos(const DOM_SID *sid)
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
 
-bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
+bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
-	if (!dom_sid_parse(sidstr, sidout)) {
-		DEBUG(3, ("string_to_sid: Sid %s is not in a valid format.\n",
-			  sidstr));
-		return false;
+	const char *p;
+	char *q;
+	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+	uint32 conv;
+
+	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
+		DEBUG(3,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
+		return False;
 	}
-	return true;
+
+	ZERO_STRUCTP(sidout);
+
+	/* Get the revision number. */
+	p = sidstr + 2;
+	conv = (uint32) strtoul(p, &q, 10);
+	if (!q || (*q != '-')) {
+		DEBUG(3,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		return False;
+	}
+	sidout->sid_rev_num = (uint8) conv;
+	q++;
+
+	/* get identauth */
+	conv = (uint32) strtoul(q, &q, 10);
+	if (!q || (*q != '-')) {
+		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		return False;
+	}
+	/* identauth in decimal should be <  2^32 */
+	/* NOTE - the conv value is in big-endian format. */
+	sidout->id_auth[0] = 0;
+	sidout->id_auth[1] = 0;
+	sidout->id_auth[2] = (conv & 0xff000000) >> 24;
+	sidout->id_auth[3] = (conv & 0x00ff0000) >> 16;
+	sidout->id_auth[4] = (conv & 0x0000ff00) >> 8;
+	sidout->id_auth[5] = (conv & 0x000000ff);
+
+	q++;
+	sidout->num_auths = 0;
+
+	for(conv = (uint32) strtoul(q, &q, 10);
+	    q && (*q =='-' || *q =='\0') && (sidout->num_auths < MAXSUBAUTHS);
+	    conv = (uint32) strtoul(q, &q, 10)) {
+		sid_append_rid(sidout, conv);
+		if (*q == '\0')
+			break;
+		q++;
+	}
+
+	return True;
 }
 
 /*****************************************************************
