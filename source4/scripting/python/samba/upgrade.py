@@ -9,14 +9,14 @@
 
 __docformat__ = "restructuredText"
 
-from provision import provision
 import grp
 import ldb
 import time
 import pwd
-import registry
-from samba import Ldb
+
+from samba import Ldb, registry
 from samba.param import LoadParm
+from samba.provision import provision
 
 def import_sam_policy(samldb, policy, dn):
     """Import a Samba 3 policy database."""

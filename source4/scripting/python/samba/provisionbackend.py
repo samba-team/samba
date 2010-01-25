@@ -33,15 +33,14 @@ import uuid
 import time
 import shutil
 import subprocess
-
-from samba import read_and_sub_file
-from samba import Ldb
 import urllib
+
 from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError, timestring
-from credentials import Credentials, DONT_USE_KERBEROS
-from samba import setup_file
-from schema import Schema
-from provisionexceptions import ProvisioningError
+
+from samba import Ldb, read_and_sub_file, setup_file
+from samba.credentials import Credentials, DONT_USE_KERBEROS
+from samba.schema import Schema
+from samba.provisionexceptions import ProvisioningError
 
 def setup_db_config(setup_path, dbdir):
     """Setup a Berkeley database.

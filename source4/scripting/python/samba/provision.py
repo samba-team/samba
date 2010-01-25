@@ -27,36 +27,31 @@
 
 from base64 import b64encode
 import os
-import sys
 import pwd
 import grp
 import time
-import uuid, glue
+import uuid
 import socket
 import param
 import registry
-import samba
-import subprocess
+import urllib
+
 import ldb
 
-
-from auth import system_session, admin_session
-from samba import version, Ldb, substitute_var, valid_netbios_name, setup_file
-from samba import check_all_substituted, read_and_sub_file
-from samba import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008, DS_DC_FUNCTION_2008
-from samba.samdb import SamDB
-from samba.idmap import IDmapDB
+from samba.auth import system_session, admin_session
+from samba import glue, version, Ldb, substitute_var, valid_netbios_name
+from samba import check_all_substituted, read_and_sub_file, setup_file
+from samba import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008
 from samba.dcerpc import security
-from samba.ntacls import setntacl,dsacl2fsacl
+from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
+from samba.idmap import IDmapDB
+from samba.ntacls import setntacl, dsacl2fsacl
 from samba.ndr import ndr_pack,ndr_unpack
-import urllib
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from samba.schema import Schema
 from ms_display_specifiers import read_ms_ldif
-from schema import Schema
-from provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
+from samba.provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
 from provisionexceptions import ProvisioningError, InvalidNetbiosName
-from signal import SIGTERM
-from dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
+
 __docformat__ = "restructuredText"
 
 def find_setup_dir():
@@ -626,13 +621,13 @@ def secretsdb_self_join(secretsdb, domain,
     res = secretsdb.search(base="cn=Primary Domains", 
                            attrs=attrs, 
                            expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain))" % (domain, realm, str(domainsid))), 
-                           scope=SCOPE_ONELEVEL)
+                           scope=ldb.SCOPE_ONELEVEL)
     
     for del_msg in res:
       if del_msg.dn is not msg.dn:
         secretsdb.delete(del_msg.dn)
 
-    res = secretsdb.search(base=msg.dn, attrs=attrs, scope=SCOPE_BASE)
+    res = secretsdb.search(base=msg.dn, attrs=attrs, scope=ldb.SCOPE_BASE)
 
     if len(res) == 1:
       msg["priorSecret"] = res[0]["secret"]
@@ -816,7 +811,7 @@ def setup_self_join(samdb, names,
     # add the NTDSGUID based SPNs
     ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
     names.ntdsguid = samdb.searchone(basedn=ntds_dn, attribute="objectGUID",
-                                     expression="", scope=SCOPE_BASE)
+                                     expression="", scope=ldb.SCOPE_BASE)
     assert isinstance(names.ntdsguid, str)
 
     # Setup fSMORoleOwner entries to point at the newly created DC entry
@@ -1044,7 +1039,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
             ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
             names.ntdsguid = samdb.searchone(basedn=ntds_dn,
-                                             attribute="objectGUID", expression="", scope=SCOPE_BASE)
+                attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
             assert isinstance(names.ntdsguid, str)
 
     except:
@@ -1094,7 +1089,7 @@ def setsysvolacl(samdb,names,netlogon,sysvol,gid,domainsid,lp):
 	set_gpo_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
 	res = samdb.search(base="CN=Policies,CN=System,%s"%(names.domaindn),
 						attrs=["cn","nTSecurityDescriptor"],
-						expression="", scope=SCOPE_ONELEVEL)
+						expression="", scope=ldb.SCOPE_ONELEVEL)
 	for policy in res:
 		acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
 		policy_path = os.path.join(sysvol, names.dnsdomain, "Policies",
