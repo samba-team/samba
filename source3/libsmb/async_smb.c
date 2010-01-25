@@ -608,7 +608,6 @@ static void cli_smb_received(struct tevent_req *subreq)
 		subreq, struct cli_state);
 	struct tevent_req *req;
 	struct cli_smb_state *state;
-	struct tevent_context *ev;
 	NTSTATUS status;
 	uint8_t *inbuf;
 	ssize_t received;
@@ -697,7 +696,6 @@ static void cli_smb_received(struct tevent_req *subreq)
 
 	req = cli->pending[i];
 	state = tevent_req_data(req, struct cli_smb_state);
-	ev = state->ev;
 
 	if (!oplock_break /* oplock breaks are not signed */
 	    && !cli_check_sign_mac(cli, (char *)inbuf, state->seqnum+1)) {
