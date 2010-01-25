@@ -88,7 +88,6 @@ struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_read_andx_state *state;
-	bool bigoffset = False;
 	uint8_t wct = 10;
 
 	if (size > cli_read_max_bufsize(cli)) {
@@ -116,7 +115,6 @@ struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv + 9, 0, 0);
 
 	if ((uint64_t)offset >> 32) {
-		bigoffset = true;
 		SIVAL(state->vwv + 10, 0,
 		      (((uint64_t)offset)>>32) & 0xffffffff);
 		wct += 2;
