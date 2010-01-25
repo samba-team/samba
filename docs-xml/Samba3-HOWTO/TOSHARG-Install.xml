@@ -197,7 +197,7 @@
 			<entry><para>
 				Exists only when the tdbsam passwd backend is used. This file stores the
 				SambaSAMAccount information. Note: This file requires that user POSIX account information is
-				availble from either the /etc/passwd file, or from an alternative system source.
+				available from either the /etc/passwd file, or from an alternative system source.
 			</para></entry>
 		</row>
 		<row>
