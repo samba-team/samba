@@ -657,7 +657,7 @@ AUTH_LIBS="${AUTH_LIBS} ${CRYPT_LIBS}"
 
 AC_CHECK_HEADERS(aio.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h grp.h sys/id.h memory.h alloca.h)
-AC_CHECK_HEADERS(limits.h float.h pthread.h libintl.h)
+AC_CHECK_HEADERS(limits.h float.h libintl.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/prctl.h sys/sysctl.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h)
@@ -5985,7 +5985,6 @@ WINBIND_NSS="../nsswitch/libnss_winbind.$SHLIBEXT"
 WINBIND_WINS_NSS="../nsswitch/libnss_wins.$SHLIBEXT"
 WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
 NSSSONAMEVERSIONSUFFIX=""
-WINBIND_NSS_PTHREAD=""
 
 case "$host_os" in
 	*linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
@@ -6127,12 +6126,6 @@ else
         AC_MSG_RESULT(no$winbind_no_reason)
 fi
 
-AC_CHECK_LIB(pthread, pthread_mutex_lock, [WINBIND_NSS_PTHREAD="-lpthread"
-			AC_DEFINE(HAVE_PTHREAD, 1, [whether pthread exists])
-			samba_cv_HAVE_PTHREAD=yes],
-			samba_cv_HAVE_PTHREAD=no)
-
-AC_SUBST(WINBIND_NSS_PTHREAD)
 AC_SUBST(WINBIND_NSS)
 AC_SUBST(WINBIND_WINS_NSS)
 AC_SUBST(WINBIND_NSS_LDSHFLAGS)
@@ -6288,16 +6281,65 @@ if test x"$enable_avahi" != x"no"; then
     fi
 fi
 
+
+#################################################
+# Set pthread stuff
+
+PTHREAD_CFLAGS=error
+PTHREAD_LDFLAGS=error
+
+# If it's error, then the user didn't 
+# define it.
+if test "x$PTHREAD_LDFLAGS" = xerror; then
+  AC_CHECK_LIB(pthread, pthread_attr_init, [
+	     PTHREAD_CFLAGS="-D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS"
+	     PTHREAD_LDFLAGS="-lpthread" ])
+fi
+
+if test "x$PTHREAD_LDFLAGS" = xerror; then
+  AC_CHECK_LIB(pthreads, pthread_attr_init, [
+	     PTHREAD_CFLAGS="-D_THREAD_SAFE"
+	     PTHREAD_LDFLAGS="-lpthreads" ])
+fi
+
+if test "x$PTHREAD_LDFLAGS" = xerror; then
+   AC_CHECK_LIB(c_r, pthread_attr_init, [
+		PTHREAD_CFLAGS="-D_THREAD_SAFE -pthread"
+		PTHREAD_LDFLAGS="-pthread" ])
+fi
+
+if test "x$PTHREAD_LDFLAGS" = xerror; then
+   AC_CHECK_FUNC(pthread_attr_init, [
+		 PTHREAD_CFLAGS="-D_REENTRANT"
+		 PTHREAD_LDFLAGS="-lpthread" ])
+fi
+
+AC_SUBST(PTHREAD_CFLAGS)
+AC_SUBST(PTHREAD_LDFLAGS)
+
+samba_cv_HAVE_PTHREAD=no
+if test x"$PTHREAD_CFLAGS" != xerror -a x"$PTHREAD_LDFLAGS" != xerror; then
+	samba_cv_HAVE_PTHREAD=yes
+	# now check for pthread.h with pthread-correct CFLAGS:
+	ac_save_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+	AC_CHECK_HEADERS(pthread.h)
+	CFLAGS=$ac_save_CFLAGS
+fi
+
 #################################################
 # Check if user wants pthreadpool support
+
+if test x"$enable_pthreadpool" = xyes -a x"$samba_cv_HAVE_PTHREAD" != x"yes"; then
+	AC_MSG_ERROR([pthread support cannot be enabled when pthread header file not found])
+fi
 
 AC_ARG_ENABLE(pthreadpool,
 [AS_HELP_STRING([--enable-pthreadpool], [Enable pthreads pool helper support (default=auto)])])
 
 if test x"$enable_pthreadpool" != x"no" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; then
-    AC_TRY_LINK([#include "pthread.h"],
-    [pthread_create(NULL, NULL, NULL, NULL)],
-		    ,LIBS="$LIBS -lpthread")
+    LIBS="$LIBS $PTHREAD_LDFLAGS"
+    CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
     AC_SUBST(PTHREADPOOL_OBJ, "lib/pthreadpool.o")
 fi

@@ -17,8 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #include "includes.h"
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 
@@ -47,3 +50,4 @@ smbc_thread_posix(void)
 {
         smb_thread_set_functions(&tf);
 }
+
