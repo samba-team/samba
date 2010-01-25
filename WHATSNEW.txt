@@ -115,6 +115,10 @@ Changes since 3.5.0rc1
 ----------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 4347: Check password history before increasing "badPasswordCount".
+
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 5202: Fix changing of ACLs on writable file with "dos filemode=yes".
     * BUG 6876: Fix deletion of an object whose parent folder does not have delete
