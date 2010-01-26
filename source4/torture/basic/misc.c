@@ -231,6 +231,69 @@ bool torture_holdcon(struct torture_context *tctx)
 }
 
 /*
+  open a file N times on the server and just hold them open
+  used for testing performance when there are N file handles
+  alopenn
+ */
+bool torture_holdopen(struct torture_context *tctx,
+		      struct smbcli_state *cli)
+{
+	int i, fnum;
+	const char *fname = "\\holdopen.dat";
+	NTSTATUS status;
+
+	smbcli_unlink(cli->tree, fname);
+
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		return false;
+	}
+
+	smbcli_close(cli->tree, fnum);
+
+	for (i=0;i<torture_numops;i++) {
+		union smb_open op;
+
+		op.generic.level = RAW_OPEN_NTCREATEX;
+		op.ntcreatex.in.root_fid.fnum = 0;
+		op.ntcreatex.in.flags = 0;
+		op.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+		op.ntcreatex.in.create_options = 0;
+		op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+		op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+		op.ntcreatex.in.alloc_size = 0;
+		op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+		op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+		op.ntcreatex.in.security_flags = 0;
+		op.ntcreatex.in.fname = fname;
+		status = smb_raw_open(cli->tree, tctx, &op);
+		if (!NT_STATUS_IS_OK(status)) {
+			torture_warning(tctx, "open %d failed\n", i);
+			continue;
+		}
+
+		if (torture_setting_bool(tctx, "progress", true)) {
+			torture_comment(tctx, "opened %d file\r", i);
+			fflush(stdout);
+		}
+	}
+
+	torture_comment(tctx, "\nStarting pings\n");
+
+	while (1) {
+		struct smb_echo ec;
+
+		status = smb_raw_echo(cli->transport, &ec);
+		torture_comment(tctx, ".");
+		fflush(stdout);
+		sleep(15);
+	}
+
+	return true;
+}
+
+/*
 test how many open files this server supports on the one socket
 */
 bool run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int dummy)

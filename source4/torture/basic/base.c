@@ -1771,6 +1771,7 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_1smb_test(suite, "MAXIMUM_ALLOWED", torture_maximum_allowed);
 
 	torture_suite_add_simple_test(suite, "BENCH-HOLDCON", torture_holdcon);
+	torture_suite_add_1smb_test(suite, "BENCH-HOLDOPEN", torture_holdopen);
 	torture_suite_add_simple_test(suite, "BENCH-READWRITE", run_benchrw);
 	torture_suite_add_smb_multi_test(suite, "BENCH-TORTURE", run_torture);
 	torture_suite_add_1smb_test(suite, "SCAN-PIPE_NUMBER", run_pipe_number);
