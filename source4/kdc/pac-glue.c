@@ -46,11 +46,10 @@ static void	samba_kdc_plugin_fini(void *ptr)
 	return;
 }
 
-static NTSTATUS
-get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
-			struct smb_iconv_convenience *ic,
-			struct auth_serversupplied_info *info,
-			DATA_BLOB *pac_data)
+NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
+				       struct smb_iconv_convenience *ic,
+				       struct auth_serversupplied_info *info,
+				       DATA_BLOB *pac_data)
 {
 	struct netr_SamInfo3 *info3;
 	union PAC_INFO pac_info;
@@ -86,9 +85,9 @@ get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static krb5_error_code make_krb5_pac(krb5_context context,
-				     DATA_BLOB *pac_blob,
-				     krb5_pac *pac)
+krb5_error_code samba_make_krb5_pac(krb5_context context,
+				    DATA_BLOB *pac_blob,
+				    krb5_pac *pac)
 {
 	krb5_data pac_data;
 	krb5_error_code ret;
@@ -113,7 +112,7 @@ static krb5_error_code make_krb5_pac(krb5_context context,
 	return ret;
 }
 
-static bool princ_needs_pac(struct hdb_entry_ex *princ)
+bool samba_princ_needs_pac(struct hdb_entry_ex *princ)
 {
 
 	struct hdb_samba4_private *p = talloc_get_type(princ->ctx, struct hdb_samba4_private);
@@ -129,9 +128,9 @@ static bool princ_needs_pac(struct hdb_entry_ex *princ)
 	return true;
 }
 
-static NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
-				       struct hdb_entry_ex *client,
-				       DATA_BLOB **_pac_blob)
+NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
+				struct hdb_entry_ex *client,
+				DATA_BLOB **_pac_blob)
 {
 	struct hdb_samba4_private *p = talloc_get_type(client->ctx, struct hdb_samba4_private);
 	struct auth_serversupplied_info *server_info;
@@ -139,7 +138,7 @@ static NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 
 	/* The user account may be set not to want the PAC */
-	if ( ! princ_needs_pac(client)) {
+	if ( ! samba_princ_needs_pac(client)) {
 		*_pac_blob = NULL;
 		return NT_STATUS_OK;
 	}
@@ -163,9 +162,9 @@ static NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	nt_status = get_logon_info_pac_blob(mem_ctx,
-					    p->iconv_convenience,
-					    server_info, pac_blob);
+	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
+						  p->iconv_convenience,
+						  server_info, pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",
 			  nt_errstr(nt_status)));
@@ -176,10 +175,10 @@ static NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
-					  krb5_context context,
-					  struct smb_iconv_convenience *ic,
-					  krb5_pac *pac, DATA_BLOB *pac_blob)
+NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
+				   krb5_context context,
+				   struct smb_iconv_convenience *ic,
+				   krb5_pac *pac, DATA_BLOB *pac_blob)
 {
 	struct auth_serversupplied_info *server_info;
 	krb5_error_code ret;
@@ -218,7 +217,7 @@ static krb5_error_code samba_kdc_get_pac(void *priv, krb5_context context,
 		return EINVAL;
 	}
 
-	ret = make_krb5_pac(context, pac_blob, pac);
+	ret = samba_make_krb5_pac(context, pac_blob, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -248,7 +247,7 @@ static krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	}
 
 	/* The user account may be set not to want the PAC */
-	if ( ! princ_needs_pac(server)) {
+	if ( ! samba_princ_needs_pac(server)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
 	}
@@ -266,14 +265,14 @@ static krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	/* We now completly regenerate this pac */
 	krb5_pac_free(context, *pac);
 
-	ret = make_krb5_pac(context, pac_blob, pac);
+	ret = samba_make_krb5_pac(context, pac_blob, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
 }
 
-static void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
-				       NTSTATUS nt_status)
+void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
+				 NTSTATUS nt_status)
 {
 	PA_DATA pa;
 	unsigned char *buf;
