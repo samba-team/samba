@@ -11,7 +11,10 @@
 
 import "nbt.idl";
 
-interface wrepl
+[
+	uuid("915f5653-bac1-431c-97ee-9ffb34526921"),
+	helpstring("WINS Replication PDUs")
+] interface wrepl
 {
 	const int WINS_REPLICATION_PORT = 42;
 
