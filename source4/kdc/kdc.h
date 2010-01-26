@@ -30,8 +30,6 @@
 struct kdc_server;
 struct tsocket_address;
 
-extern struct krb5plugin_windc_ftable windc_plugin_table;
-
 bool kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx,
 		      DATA_BLOB *input,
