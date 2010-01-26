@@ -22,7 +22,8 @@ if test x$use_libsmbclient != xno; then
 	AC_CHECK_LIB_EXT(smbclient, SMBCLIENT_LIBS, smbc_new_context)
 	AC_CHECK_LIB_EXT(smbclient, SMBCLIENT_LIBS, smbc_getOptionNoAutoAnonymousLogin)
 	AC_CHECK_LIB_EXT(smbclient, SMBCLIENT_LIBS, smbc_setOptionCaseSensitive)
-	if test x"$ac_cv_header_libsmbclient_h" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_new_context" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_getOptionNoAutoAnonymousLogin" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_setOptionCaseSensitive" = x"yes"; then
+	AC_CHECK_LIB_EXT(smbclient, SMBCLIENT_LIBS, smbc_setOptionUseCCache)
+	if test x"$ac_cv_header_libsmbclient_h" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_new_context" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_getOptionNoAutoAnonymousLogin" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_setOptionCaseSensitive" = x"yes" -a x"$ac_cv_lib_ext_smbclient_smbc_setOptionUseCCache" = x"yes"; then
 		AC_DEFINE(ENABLE_LIBSMBCLIENT,1,[Whether we have libsmbclient on the host system])
 		SMB_ENABLE(SMBCLIENT,YES)
 		SMB_ENABLE(TORTURE_LIBSMBCLIENT,YES)

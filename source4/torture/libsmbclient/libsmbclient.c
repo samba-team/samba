@@ -194,6 +194,7 @@ bool torture_libsmbclient_options(struct torture_context *tctx)
 	TEST_OPTION_INT(OptionUseKerberos, false);
 	TEST_OPTION_INT(OptionFallbackAfterKerberos, false);
 	TEST_OPTION_INT(OptionNoAutoAnonymousLogin, true);
+	TEST_OPTION_INT(OptionUseCCache, true);
 
 	smbc_free_context(ctx, 1);
 
