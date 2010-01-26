@@ -159,6 +159,7 @@ NTSTATUS smb_raw_ntcancel(struct smbcli_request *oldreq)
 		talloc_free(req);
 		return NT_STATUS_NO_MEMORY;
 	}
+	req->do_not_free = true;
 
 	smbcli_request_send(req);
 
