@@ -39,10 +39,11 @@
 #include <mntent.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <fstab.h>
 #include "mount.h"
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "12"
+#define MOUNT_CIFS_VERSION_MINOR "13"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
  #ifdef _SAMBA_BUILD_
@@ -69,6 +70,10 @@
 #define MS_BIND 4096
 #endif
 
+/* private flags - clear these before passing to kernel */
+#define MS_USERS	0x40000000
+#define MS_USER		0x80000000
+
 #define MAX_UNC_LEN 1024
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
@@ -82,6 +87,27 @@
 
 /* currently maximum length of IPv6 address string */
 #define MAX_ADDRESS_LEN INET6_ADDRSTRLEN
+
+/*
+ * By default, mount.cifs follows the conventions set forth by /bin/mount
+ * for user mounts. That is, it requires that the mount be listed in
+ * /etc/fstab with the "user" option when run as an unprivileged user and
+ * mount.cifs is setuid root.
+ *
+ * Older versions of mount.cifs however were "looser" in this regard. When
+ * made setuid root, a user could run mount.cifs directly and mount any share
+ * on a directory owned by that user.
+ *
+ * The legacy behavior is now disabled by default. To reenable it, set the
+ * following #define to true.
+ */
+#define CIFS_LEGACY_SETUID_CHECK 0
+
+/*
+ * When an unprivileged user runs a setuid mount.cifs, we set certain mount
+ * flags by default. These defaults can be changed here.
+ */
+#define CIFS_SETUID_FLAGS (MS_NOSUID|MS_NODEV)
 
 const char *thisprogram;
 int verboseflag = 0;
@@ -141,6 +167,99 @@ static size_t strlcat(char *d, const char *s, size_t bufsize)
 	return ret;
 }
 #endif
+
+/*
+ * If an unprivileged user is doing the mounting then we need to ensure
+ * that the entry is in /etc/fstab.
+ */
+static int
+check_mountpoint(const char *progname, char *mountpoint)
+{
+	int err;
+	struct stat statbuf;
+
+	/* does mountpoint exist and is it a directory? */
+	err = stat(mountpoint, &statbuf);
+	if (err) {
+		fprintf(stderr, "%s: failed to stat %s: %s\n", progname,
+				mountpoint, strerror(errno));
+		return EX_USAGE;
+	}
+
+	if (!S_ISDIR(statbuf.st_mode)) {
+		fprintf(stderr, "%s: %s is not a directory!", progname,
+				mountpoint);
+		return EX_USAGE;
+	}
+
+#if CIFS_LEGACY_SETUID_CHECK
+	/* do extra checks on mountpoint for legacy setuid behavior */
+	if (!getuid() || geteuid())
+		return 0;
+
+	if (statbuf.st_uid != getuid()) {
+		fprintf(stderr, "%s: %s is not owned by user\n", progname,
+			mountpoint);
+		return EX_USAGE;
+	}
+
+	if ((statbuf.st_mode & S_IRWXU) != S_IRWXU) {
+		fprintf(stderr, "%s: invalid permissions on %s\n", progname,
+			mountpoint);
+		return EX_USAGE;
+	}
+#endif /* CIFS_LEGACY_SETUID_CHECK */
+
+	return 0;
+}
+
+#if CIFS_LEGACY_SETUID_CHECK
+static int
+check_fstab(const char *progname, char *mountpoint, char *devname,
+	    char **options)
+{
+	return 0;
+}
+#else /* CIFS_LEGACY_SETUID_CHECK */
+static int
+check_fstab(const char *progname, char *mountpoint, char *devname,
+	    char **options)
+{
+	FILE *fstab;
+	struct mntent *mnt;
+
+	/* make sure this mount is listed in /etc/fstab */
+	fstab = setmntent(_PATH_FSTAB, "r");
+	if (!fstab) {
+		fprintf(stderr, "Couldn't open %s for reading!\n",
+				_PATH_FSTAB);
+		return EX_FILEIO;
+	}
+
+	while((mnt = getmntent(fstab))) {
+		if (!strcmp(mountpoint, mnt->mnt_dir))
+			break;
+	}
+	endmntent(fstab);
+
+	if (mnt == NULL || strcmp(mnt->mnt_fsname, devname)) {
+		fprintf(stderr, "%s: permission denied: no match for "
+				"%s found in %s\n", progname, mountpoint,
+				_PATH_FSTAB);
+		return EX_USAGE;
+	}
+
+	/*
+	 * 'mount' munges the options from fstab before passing them
+	 * to us. It is non-trivial to test that we have the correct
+	 * set of options. We don't want to trust what the user
+	 * gave us, so just take whatever is in /etc/fstab.
+	 */
+	free(*options);
+	*options = strdup(mnt->mnt_opts);
+	return 0;
+}
+#endif /* CIFS_LEGACY_SETUID_CHECK */
 
 /* BB finish BB
 
@@ -373,7 +492,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	return rc;
 }
 
-static int parse_options(char ** optionsp, int * filesys_flags)
+static int parse_options(char ** optionsp, unsigned long * filesys_flags)
 {
 	const char * data;
 	char * percent_char = NULL;
@@ -423,6 +542,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 
 		if (strncmp(data, "users",5) == 0) {
 			if(!value || !*value) {
+				*filesys_flags |= MS_USERS;
 				goto nocopy;
 			}
 		} else if (strncmp(data, "user_xattr",10) == 0) {
@@ -431,10 +551,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 
 			if (!value || !*value) {
 				if(data[4] == '\0') {
-					if(verboseflag)
-						printf("\nskipping empty user mount parameter\n");
-					/* remove the parm since it would otherwise be confusing
-					to the kernel code which would think it was a real username */
+					*filesys_flags |= MS_USER;
 					goto nocopy;
 				} else {
 					printf("username specified with no parameter\n");
@@ -1046,7 +1163,7 @@ static void print_cifs_mount_version(void)
 int main(int argc, char ** argv)
 {
 	int c;
-	int flags = MS_MANDLOCK; /* no need to set legacy MS_MGC_VAL */
+	unsigned long flags = MS_MANDLOCK;
 	char * orgoptions = NULL;
 	char * share_name = NULL;
 	const char * ipaddr = NULL;
@@ -1069,7 +1186,6 @@ int main(int argc, char ** argv)
 	size_t current_len;
 	int retry = 0; /* set when we have to retry mount with uppercase */
 	struct addrinfo *addrhead = NULL, *addr;
-	struct stat statbuf;
 	struct utsname sysinfo;
 	struct mntent mountent;
 	struct sockaddr_in *addr4;
@@ -1127,8 +1243,8 @@ int main(int argc, char ** argv)
 		exit(EX_USAGE);
 	}
 
-	/* add sharename in opts string as unc= parm */
 
+	/* add sharename in opts string as unc= parm */
 	while ((c = getopt_long (argc, argv, "afFhilL:no:O:rsSU:vVwt:",
 			 longopts, NULL)) != -1) {
 		switch (c) {
@@ -1266,6 +1382,22 @@ int main(int argc, char ** argv)
 		exit(EX_USAGE);
 	}
 
+	/* make sure mountpoint is legit */
+	rc = check_mountpoint(thisprogram, mountpoint);
+	if (rc)
+		goto mount_exit;
+
+	/* sanity check for unprivileged mounts */
+	if (getuid()) {
+		rc = check_fstab(thisprogram, mountpoint, dev_name,
+				 &orgoptions);
+		if (rc)
+			goto mount_exit;
+
+		/* enable any default user mount flags */
+		flags |= CIFS_SETUID_FLAGS;
+	}
+
 	if (getenv("PASSWD")) {
 		if(mountpassword == NULL)
 			mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
@@ -1283,6 +1415,27 @@ int main(int argc, char ** argv)
                 rc = EX_USAGE;
 		goto mount_exit;
 	}
+
+	if (getuid()) {
+#if !CIFS_LEGACY_SETUID_CHECK
+		if (!(flags & (MS_USERS|MS_USER))) {
+			fprintf(stderr, "%s: permission denied\n", thisprogram);
+			rc = EX_USAGE;
+			goto mount_exit;
+		}
+#endif /* !CIFS_LEGACY_SETUID_CHECK */
+
+		if (geteuid()) {
+			fprintf(stderr, "%s: not installed setuid - \"user\" "
+					"CIFS mounts not supported.",
+					thisprogram);
+			rc = EX_FAIL;
+			goto mount_exit;
+		}
+	}
+
+	flags &= ~(MS_USERS|MS_USER);
+
 	addrhead = addr = parse_server(&share_name);
 	if((addrhead == NULL) && (got_ip == 0)) {
 		printf("No ip address specified and hostname not found\n");
@@ -1299,37 +1452,6 @@ int main(int argc, char ** argv)
 			mountpoint = resolved_path; 
 		}
 	}
-	if(chdir(mountpoint)) {
-		printf("mount error: can not change directory into mount target %s\n",mountpoint);
-		rc = EX_USAGE;
-		goto mount_exit;
-	}
-
-	if(stat (".", &statbuf)) {
-		printf("mount error: mount point %s does not exist\n",mountpoint);
-		rc = EX_USAGE;
-		goto mount_exit;
-	}
-
-	if (S_ISDIR(statbuf.st_mode) == 0) {
-		printf("mount error: mount point %s is not a directory\n",mountpoint);
-		rc = EX_USAGE;
-		goto mount_exit;
-	}
-
-	if((getuid() != 0) && (geteuid() == 0)) {
-		if((statbuf.st_uid == getuid()) && (S_IRWXU == (statbuf.st_mode & S_IRWXU))) {
-#ifndef CIFS_ALLOW_USR_SUID
-			/* Do not allow user mounts to control suid flag
-			for mount unless explicitly built that way */
-			flags |= MS_NOSUID | MS_NODEV;
-#endif						
-		} else {
-			printf("mount error: permission denied or not superuser and mount.cifs not installed SUID\n"); 
-			exit(EX_USAGE);
-		}
-	}
-
 	if(got_user == 0) {
 		/* Note that the password will not be retrieved from the
 		   USER env variable (ie user%password form) as there is
