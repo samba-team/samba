@@ -61,7 +61,7 @@ class cmd_acl_set(Command):
             credopts=None, sambaopts=None, versionopts=None):
 		lp = sambaopts.get_loadparm()
 		creds = credopts.get_credentials(lp)
-		path = os.path.join(lp.get("private dir"), lp.get("sam database") or "samdb.ldb")
+		path = os.path.join(lp.get("private dir"), lp.get("secrets database") or "secrets.ldb")
 		creds = credopts.get_credentials(lp)
 		creds.set_kerberos_state(DONT_USE_KERBEROS)
 		try:
@@ -71,7 +71,7 @@ class cmd_acl_set(Command):
 			sys.exit(1)
 		attrs = ["objectSid"]
 		print lp.get("realm")
-		res = ldb.search(expression="(objectClass=*)",base="DC=%s"%lp.get("realm").lower().replace(".",",DC="), scope=SCOPE_BASE, attrs=attrs)
+		res = ldb.search(expression="(objectClass=*)",base="flatname=%s,cn=Primary Domains"%lp.get("workgroup"), scope=SCOPE_BASE, attrs=attrs)
 		if len(res) !=0:
 			domainsid = ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 			setntacl(lp,file,acl,str(domainsid),xattr_backend,eadb_file)
