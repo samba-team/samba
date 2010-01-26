@@ -264,6 +264,14 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &dosattrib,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
 
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1,("get_ea_dos_attributes: bad ndr decode "
+			 "from EA on file %s: Error = %s\n",
+			 smb_fname_str_dbg(smb_fname),
+			 ndr_errstr(ndr_err)));
+		return false;
+	}
+
 	DEBUG(10,("get_ea_dos_attribute: %s attr = %s\n",
 		  smb_fname_str_dbg(smb_fname), dosattrib.attrib_hex));
 
