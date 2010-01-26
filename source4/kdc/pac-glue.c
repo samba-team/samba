@@ -4,6 +4,7 @@
    PAC Glue between Samba and the KDC
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
+   Copyright (C) Simo Sorce <idra@samba.org> 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,41 +46,61 @@ static void	samba_kdc_plugin_fini(void *ptr)
 	return;
 }
 
+static NTSTATUS
+get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
+			struct smb_iconv_convenience *ic,
+			struct auth_serversupplied_info *info,
+			DATA_BLOB pac_data)
+{
+	struct netr_SamInfo3 *info3;
+	union PAC_INFO pac_info;
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+
+	ZERO_STRUCT(pac_info);
+
+	nt_status = auth_convert_server_info_saminfo3(mem_ctx, info, &info3);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("Getting Samba info failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	pac_info.logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pac_info.logon_info.info->info3 = *info3;
+
+	ndr_err = ndr_push_union_blob(&pac_data, mem_ctx, ic, &pac_info,
+				      PAC_TYPE_LOGON_INFO,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static krb5_error_code make_pac(krb5_context context,
 				TALLOC_CTX *mem_ctx,
 				struct smb_iconv_convenience *iconv_convenience,
 				struct auth_serversupplied_info *server_info,
 				krb5_pac *pac)
 {
-	union PAC_INFO info;
-	struct netr_SamInfo3 *info3;
 	krb5_data pac_data;
-	NTSTATUS nt_status;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB pac_out;
+	NTSTATUS nt_status;
 	krb5_error_code ret;
 
-	ZERO_STRUCT(info);
-
-	nt_status = auth_convert_server_info_saminfo3(mem_ctx, server_info, &info3);
+	nt_status = get_logon_info_pac_blob(mem_ctx,
+					    iconv_convenience,
+					    server_info, pac_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("Getting Samba info failed: %s\n", nt_errstr(nt_status)));
-		return EINVAL;
-	}
-
-	info.logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
-
-	info.logon_info.info->info3 = *info3;
-
-	ndr_err = ndr_push_union_blob(&pac_out, mem_ctx, iconv_convenience, &info,
-				      PAC_TYPE_LOGON_INFO,
-				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		nt_status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
 		return EINVAL;
 	}
 
