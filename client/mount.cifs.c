@@ -1164,6 +1164,36 @@ static void print_cifs_mount_version(void)
 		MOUNT_CIFS_VENDOR_SUFFIX);
 }
 
+/*
+ * This function borrowed from fuse-utils...
+ *
+ * glibc's addmntent (at least as of 2.10 or so) doesn't properly encode
+ * newlines embedded within the text fields. To make sure no one corrupts
+ * the mtab, fail the mount if there are embedded newlines.
+ */
+static int check_newline(const char *progname, const char *name)
+{
+    char *s;
+    for (s = "\n"; *s; s++) {
+        if (strchr(name, *s)) {
+            fprintf(stderr, "%s: illegal character 0x%02x in mount entry\n",
+                    progname, *s);
+            return EX_USAGE;
+        }
+    }
+    return 0;
+}
+
+static int check_mtab(const char *progname, const char *devname,
+			const char *dir)
+{
+	if (check_newline(progname, devname) == -1 ||
+	    check_newline(progname, dir) == -1)
+		return EX_USAGE;
+	return 0;
+}
+
+
 int main(int argc, char ** argv)
 {
 	int c;
@@ -1606,6 +1636,10 @@ mount_retry:
 
 	if (verboseflag)
 		fprintf(stderr, "\n");
+
+	rc = check_mtab(thisprogram, dev_name, mountpoint);
+	if (rc)
+		goto mount_exit;
 
 	if (!fakemnt && mount(dev_name, ".", cifs_fstype, flags, options)) {
 		switch (errno) {
