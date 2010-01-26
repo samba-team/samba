@@ -178,7 +178,7 @@ check_mountpoint(const char *progname, char *mountpoint)
 	struct stat statbuf;
 
 	/* does mountpoint exist and is it a directory? */
-	err = stat(mountpoint, &statbuf);
+	err = stat(".", &statbuf);
 	if (err) {
 		fprintf(stderr, "%s: failed to stat %s: %s\n", progname,
 				mountpoint, strerror(errno));
@@ -1377,6 +1377,14 @@ int main(int argc, char ** argv)
 	}
 
 	/* make sure mountpoint is legit */
+	rc = chdir(mountpoint);
+	if (rc) {
+		fprintf(stderr, "Couldn't chdir to %s: %s\n", mountpoint,
+				strerror(errno));
+		rc = EX_USAGE;
+		goto mount_exit;
+	}
+
 	rc = check_mountpoint(thisprogram, mountpoint);
 	if (rc)
 		goto mount_exit;
@@ -1439,13 +1447,23 @@ int main(int argc, char ** argv)
 	
 	/* BB save off path and pop after mount returns? */
 	resolved_path = (char *)malloc(PATH_MAX+1);
-	if(resolved_path) {
-		/* Note that if we can not canonicalize the name, we get
-		another chance to see if it is valid when we chdir to it */
-		if (realpath(mountpoint, resolved_path)) {
-			mountpoint = resolved_path; 
-		}
+	if (!resolved_path) {
+		fprintf(stderr, "Unable to allocate memory.\n");
+		rc = EX_SYSERR;
+		goto mount_exit;
 	}
+
+	/* Note that if we can not canonicalize the name, we get
+	   another chance to see if it is valid when we chdir to it */
+	if(!realpath(".", resolved_path)) {
+		fprintf(stderr, "Unable to resolve %s to canonical path: %s\n",
+				mountpoint, strerror(errno));
+		rc = EX_SYSERR;
+		goto mount_exit;
+	}
+
+	mountpoint = resolved_path; 
+
 	if(got_user == 0) {
 		/* Note that the password will not be retrieved from the
 		   USER env variable (ie user%password form) as there is
@@ -1589,7 +1607,7 @@ mount_retry:
 	if (verboseflag)
 		fprintf(stderr, "\n");
 
-	if (!fakemnt && mount(dev_name, mountpoint, cifs_fstype, flags, options)) {
+	if (!fakemnt && mount(dev_name, ".", cifs_fstype, flags, options)) {
 		switch (errno) {
 		case ECONNREFUSED:
 		case EHOSTUNREACH:
