@@ -1065,8 +1065,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 FILL_FULL = "FULL"
 FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
-SYSVOL_ACL = "O:${DOMAINSID}-500G:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;S-1-5-32-549)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
-POLICIES_ACL = "O:${DOMAINSID}-500G:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;S-1-5-32-549)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;${DOMAINSID}-520)"
+SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
+POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 
 def set_gpo_acl(path,acl,lp,domsid):
 	setntacl(lp,path,acl,domsid)
@@ -1078,27 +1078,25 @@ def set_gpo_acl(path,acl,lp,domsid):
 
 def setsysvolacl(samdb,names,netlogon,sysvol,gid,domainsid,lp):
 	canchown = 1
-	acl = SYSVOL_ACL.replace("${DOMAINSID}",str(domainsid))
 	try:
 		os.chown(sysvol,-1,gid)
 	except:
 		canchown = 0
 
-	setntacl(lp,sysvol,acl,str(domainsid))
+	setntacl(lp,sysvol,SYSVOL_ACL,str(domainsid))
 	for root, dirs, files in os.walk(sysvol, topdown=False):
 		for name in files:
 			if canchown:
 				os.chown(os.path.join(root, name),-1,gid)
-			setntacl(lp,os.path.join(root, name),acl,str(domainsid))
+			setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
 		for name in dirs:
 			if canchown:
 				os.chown(os.path.join(root, name),-1,gid)
-			setntacl(lp,os.path.join(root, name),acl,str(domainsid))
+			setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
 
 	# Set ACL for GPO
 	policy_path = os.path.join(sysvol, names.dnsdomain, "Policies")
-	acl = POLICIES_ACL.replace("${DOMAINSID}",str(domainsid))
-	set_gpo_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
+	set_gpo_acl(policy_path,dsacl2fsacl(POLICIES_ACL,str(domainsid)),lp,str(domainsid))
 	res = samdb.search(base="CN=Policies,CN=System,%s"%(names.domaindn),
 						attrs=["cn","nTSecurityDescriptor"],
 						expression="", scope=ldb.SCOPE_ONELEVEL)
