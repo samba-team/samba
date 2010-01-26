@@ -43,7 +43,7 @@
 #include "mount.h"
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "13"
+#define MOUNT_CIFS_VERSION_MINOR "14"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
  #ifdef _SAMBA_BUILD_
@@ -87,6 +87,17 @@
 
 /* currently maximum length of IPv6 address string */
 #define MAX_ADDRESS_LEN INET6_ADDRSTRLEN
+
+/*
+ * mount.cifs has been the subject of many "security" bugs that have arisen
+ * because of users and distributions installing it as a setuid root program.
+ * mount.cifs has not been audited for security. Thus, we strongly recommend
+ * that it not be installed setuid root. To make that abundantly clear,
+ * mount.cifs now check whether it's running setuid root and exit with an
+ * error if it is. If you wish to disable this check, then set the following
+ * #define to 1, but please realize that you do so at your own peril.
+ */
+#define CIFS_DISABLE_SETUID_CHECK 0
 
 /*
  * By default, mount.cifs follows the conventions set forth by /bin/mount
@@ -212,6 +223,29 @@ check_mountpoint(const char *progname, char *mountpoint)
 
 	return 0;
 }
+
+#if CIFS_DISABLE_SETUID_CHECK
+static int
+check_setuid(void)
+{
+	return 0;
+}
+#else /* CIFS_DISABLE_SETUID_CHECK */
+static int
+check_setuid(void)
+{
+	if (getuid() && !geteuid()) {
+		printf("This mount.cifs program has been built with the "
+			"ability to run as a setuid root program disabled.\n"
+			"mount.cifs has not been well audited for security "
+			"holes. Therefore the Samba team does not recommend "
+			"installing it as a setuid root program.\n");
+		return 1;
+	}
+
+	return 0;
+}
+#endif /* CIFS_DISABLE_SETUID_CHECK */
 
 #if CIFS_LEGACY_SETUID_CHECK
 static int
@@ -1226,6 +1260,9 @@ int main(int argc, char ** argv)
 	struct sockaddr_in *addr4;
 	struct sockaddr_in6 *addr6;
 	FILE * pmntfile;
+
+	if (check_setuid())
+		return EX_USAGE;
 
 	/* setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
