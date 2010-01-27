@@ -2052,12 +2052,14 @@ installlibwbclient:: installdirs libwbclient
 		ln -f -s `basename $(LIBWBCLIENT_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET)` ; \
 	fi
+	-$(INSTALLLIBCMD_A) bin/libwbclient.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBWBCLIENT_HEADERS) $(DESTDIR)${prefix}/include
 
 uninstalllibwbclient::
 	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET)`
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET_SONAME)`
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/wbclient.h
 
 libs:: libwbclient
