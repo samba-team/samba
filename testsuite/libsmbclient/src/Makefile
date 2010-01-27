@@ -1,6 +1,6 @@
 CC	=	gcc
-CFLAGS	=	-Wall -W -O2 -g -I../../../source/include
-LFLAGS	=	-L../../../source/bin
+CFLAGS	=	-Wall -W -O2 -g -I../../../source3/include
+LFLAGS	=	-L../../../source3/bin
 
 LIBS=	-L/usr/lib -lsmbclient -ltalloc -ltdb -lwbclient
 INCPATH= -I. -I/usr/include -I./include
