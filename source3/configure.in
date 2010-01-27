@@ -6314,17 +6314,28 @@ if test "x$PTHREAD_LDFLAGS" = xerror; then
 		 PTHREAD_LDFLAGS="-lpthread" ])
 fi
 
+# especially for HP-UX, where the AC_CHECK_FUNC macro fails to test for
+# pthread_attr_init. On pthread_mutex_lock it works there...
+if test "x$PTHREAD_LDFLAGS" = xerror; then
+   AC_CHECK_LIB(pthread, pthread_mutex_lock, [
+		PTHREAD_CFLAGS=="-D_REENTRANT"
+		PTHREAD_LDFLAGS="-lpthread" ])
+fi
+
 AC_SUBST(PTHREAD_CFLAGS)
 AC_SUBST(PTHREAD_LDFLAGS)
 
 samba_cv_HAVE_PTHREAD=no
 if test x"$PTHREAD_CFLAGS" != xerror -a x"$PTHREAD_LDFLAGS" != xerror; then
 	samba_cv_HAVE_PTHREAD=yes
-	# now check for pthread.h with pthread-correct CFLAGS:
+	# now check for pthread.h with pthread-correct CFLAGS and LDFLAGS:
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+	ac_save_LDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS $PTHREAD_LDFLAGS"
 	AC_CHECK_HEADERS(pthread.h)
 	CFLAGS=$ac_save_CFLAGS
+	LDFLAGS=$ac_save_LDFLAGS
 fi
 
 #################################################
