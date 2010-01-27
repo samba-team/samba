@@ -155,11 +155,8 @@ NTSTATUS smb_raw_ntcancel(struct smbcli_request *oldreq)
 	 * smbcli_request_send() free's oneway requests
 	 * but we want to keep it under oldreq->ntcancel
 	 */
-	if (!talloc_reference(oldreq, req)) {
-		talloc_free(req);
-		return NT_STATUS_NO_MEMORY;
-	}
 	req->do_not_free = true;
+	talloc_steal(oldreq, req);
 
 	smbcli_request_send(req);
 
