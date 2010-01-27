@@ -1027,6 +1027,14 @@ extern void build_options(bool screen);
 	gain_root_privilege();
 	gain_root_group_privilege();
 
+	/*
+	 * Ensure we have CAP_KILL capability set on Linux,
+	 * where we need this to communicate with threads.
+	 * This is inherited by new threads, but not by new
+	 * processes across exec().
+	 */
+	set_effective_capability(KILL_CAPABILITY);
+
 	fault_setup((void (*)(void *))exit_server_fault);
 	dump_core_setup("smbd");
 
