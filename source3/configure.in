@@ -6365,7 +6365,7 @@ fi
 # pthread_attr_init. On pthread_mutex_lock it works there...
 if test "x$PTHREAD_LDFLAGS" = xerror; then
    AC_CHECK_LIB(pthread, pthread_mutex_lock, [
-		PTHREAD_CFLAGS=="-D_REENTRANT"
+		PTHREAD_CFLAGS="-D_REENTRANT"
 		PTHREAD_LDFLAGS="-lpthread" ])
 fi
 
