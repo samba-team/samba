@@ -354,12 +354,20 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 	return true;
 }
 
+static struct received_packet *last_packet(struct received_packet *p)
+{
+	struct received_packet *tmp;
+	for (tmp = p; tmp->next; tmp = tmp->next) ;;
+	return tmp;
+}
+
 static bool test_RFFPCNEx(struct torture_context *tctx,
 			  struct dcerpc_pipe *p)
 {
 	struct dcesrv_context *dce_ctx;
 	struct policy_handle handle;
 	const char *address;
+	struct received_packet *tmp;
 
 	received_packets = NULL;
 
@@ -372,8 +380,8 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
 		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
 	torture_assert(tctx, test_ClosePrinter(tctx, p, &handle), "");
-	torture_assert(tctx, received_packets, "no packets received");
-	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
+	tmp = last_packet(received_packets);
+	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
 		"no ReplyClosePrinter packet after ClosePrinter");
 
 	/* Shut down DCE/RPC server */
