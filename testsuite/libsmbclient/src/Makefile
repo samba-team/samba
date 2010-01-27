@@ -2,7 +2,7 @@ CC	=	gcc
 CFLAGS	=	-Wall -W -O2 -g -I../../../source/include
 LFLAGS	=	-L../../../source/bin
 
-LIBS=	-L/usr/lib -lsmbclient -ltalloc
+LIBS=	-L/usr/lib -lsmbclient -ltalloc -ltdb -lwbclient
 INCPATH= -I. -I/usr/include -I./include
 BIN_DIR=bin
 
