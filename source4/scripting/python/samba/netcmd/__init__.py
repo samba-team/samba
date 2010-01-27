@@ -145,3 +145,5 @@ from samba.netcmd.newuser import cmd_newuser
 commands["newuser"] = cmd_newuser()
 from samba.netcmd.ntacl import cmd_acl
 commands["acl"] = cmd_acl()
+from samba.netcmd.fsmo import cmd_fsmo
+commands["fsmo"] = cmd_fsmo()
