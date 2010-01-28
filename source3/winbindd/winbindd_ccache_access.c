@@ -308,7 +308,7 @@ void winbindd_ccache_save(struct winbindd_cli_state *state)
 	state->request->data.ccache_save.pass[
 		sizeof(state->request->data.ccache_save.pass)-1]='\0';
 
-	DEBUG(3, ("[%5lu]: save passord of user %s\n",
+	DEBUG(3, ("[%5lu]: save password of user %s\n",
 		  (unsigned long)state->pid,
 		  state->request->data.ccache_save.user));
 
