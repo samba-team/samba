@@ -975,11 +975,10 @@ struct tevent_req *tstream_readv_pdu_send(TALLOC_CTX *mem_ctx,
 int tstream_readv_pdu_recv(struct tevent_req *req, int *perrno);
 
 /**
- * @brief Queue a dgram blob for sending through the socket.
+ * @brief Queue a read request for a PDU on the socket.
  *
- * This function queues a blob for sending to destination through an existing
- * dgram socket. The async callback is triggered when the whole blob is
- * delivered to the underlying system socket.
+ * This function queues a read request for a PDU on a stream socket. The async
+ * callback is triggered when a full PDU has been read from the socket.
  *
  * The caller needs to make sure that all non-scalar input parameters hang
  * arround for the whole lifetime of the request.
@@ -1008,14 +1007,14 @@ struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
 				void *next_vector_private);
 
 /**
- * @brief Receive the result of the sent dgram blob.
+ * @brief Receive the PDU blob read from the stream.
  *
  * @param[in]  req      The tevent request from tstream_readv_pdu_queue_send().
  *
  * @param[out] perrno   The error set to the actual errno.
  *
- * @return              The length of the datagram (0 is never returned!), -1 on
- *                      error with perrno set to the actual errno.
+ * @return              The number of bytes read on success, -1 on error with
+ *                      perrno set to the actual errno.
  */
 int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
 
