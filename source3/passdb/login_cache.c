@@ -68,6 +68,7 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	char *keystr;
 	TDB_DATA databuf;
 	LOGIN_CACHE *entry;
+	uint32_t entry_timestamp = 0, bad_password_time = 0;
 
 	if (!login_cache_init())
 		return NULL;
@@ -92,16 +93,22 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 		SAFE_FREE(databuf.dptr);
 		return NULL;
 	}
+	ZERO_STRUCTP(entry);
 
 	if (tdb_unpack (databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
-			&entry->entry_timestamp, &entry->acct_ctrl, 
-			&entry->bad_password_count, 
-			&entry->bad_password_time) == -1) {
+			&entry_timestamp,
+			&entry->acct_ctrl,
+			&entry->bad_password_count,
+			&bad_password_time) == -1) {
 		DEBUG(7, ("No cache entry found\n"));
 		SAFE_FREE(entry);
 		SAFE_FREE(databuf.dptr);
 		return NULL;
 	}
+
+	/* Deal with possible 64-bit time_t. */
+	entry->entry_timestamp = (time_t)entry_timestamp;
+	entry->bad_password_time = (time_t)bad_password_time;
 
 	SAFE_FREE(databuf.dptr);
 
@@ -116,6 +123,8 @@ bool login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 	char *keystr;
 	TDB_DATA databuf;
 	bool ret;
+	uint32_t entry_timestamp;
+	uint32_t bad_password_time = (uint32_t)entry.bad_password_time;
 
 	if (!login_cache_init())
 		return False;
@@ -130,14 +139,14 @@ bool login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 		return False;
 	}
 
-	entry.entry_timestamp = time(NULL);
+	entry_timestamp = (uint32_t)time(NULL);
 
 	databuf.dsize = 
 		tdb_pack(NULL, 0, SAM_CACHE_FORMAT,
-			 entry.entry_timestamp,
+			 entry_timestamp,
 			 entry.acct_ctrl,
 			 entry.bad_password_count,
-			 entry.bad_password_time);
+			 bad_password_time);
 	databuf.dptr = SMB_MALLOC_ARRAY(uint8, databuf.dsize);
 	if (!databuf.dptr) {
 		SAFE_FREE(keystr);
@@ -145,10 +154,10 @@ bool login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 	}
 			 
 	if (tdb_pack(databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
-			 entry.entry_timestamp,
+			 entry_timestamp,
 			 entry.acct_ctrl,
 			 entry.bad_password_count,
-			 entry.bad_password_time)
+			 bad_password_time)
 	    != databuf.dsize) {
 		SAFE_FREE(keystr);
 		SAFE_FREE(databuf.dptr);
