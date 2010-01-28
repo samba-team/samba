@@ -443,13 +443,14 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 	local_ip = &((const struct sockaddr_in *)pss)->sin_addr;
 	subrec = FIRST_SUBNET;
 
-	p->fd = (p->packet_type == NMB_PACKET) ?
+	p->recv_fd = -1;
+	p->send_fd = (p->packet_type == NMB_PACKET) ?
 		subrec->nmb_sock : subrec->dgram_sock;
 
 	for (subrec = FIRST_SUBNET; subrec != NULL;
 	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		if (ip_equal_v4(*local_ip, subrec->myip)) {
-			p->fd = (p->packet_type == NMB_PACKET) ?
+			p->send_fd = (p->packet_type == NMB_PACKET) ?
 				subrec->nmb_sock : subrec->dgram_sock;
 			break;
 		}

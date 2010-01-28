@@ -601,6 +601,8 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 
 	/* Ensure this copy is not locked. */
 	pkt_copy->locked = False;
+	pkt_copy->recv_fd = -1;
+	pkt_copy->send_fd = -1;
 
 	/* Ensure this copy has no resource records. */
 	nmb = &packet->packet.nmb;
@@ -666,6 +668,8 @@ static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
 
 	/* Ensure this copy is not locked. */
 	pkt_copy->locked = False;
+	pkt_copy->recv_fd = -1;
+	pkt_copy->send_fd = -1;
 
 	/* There are no additional pointers in a dgram packet,
 		we are finished. */
@@ -791,7 +795,8 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 	if (!packet)
 		return NULL;
 
-	packet->fd = fd;
+	packet->recv_fd = fd;
+	packet->send_fd = -1;
 
 	DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
 		 length, inet_ntoa(packet->ip), packet->port ) );
@@ -1075,7 +1080,7 @@ bool send_packet(struct packet_struct *p)
 	if (!len)
 		return(False);
 
-	return(send_udp(p->fd,buf,len,p->ip,p->port));
+	return(send_udp(p->send_fd,buf,len,p->ip,p->port));
 }
 
 /****************************************************************************
