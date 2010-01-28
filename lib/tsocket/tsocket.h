@@ -1019,11 +1019,11 @@ struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
 int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
 
 /**
- * @brief Queue a dgram blob for sending through the socket
+ * @brief Queue an iovector for sending through the socket
  *
- * This function queues a blob for sending to destination through an existing
- * dgram socket. The async callback is triggered when the whole blob is
- * delivered to the underlying system socket.
+ * This function queues an iovector for sending to destination through an
+ * existing stream socket. The async callback is triggered when the whole
+ * vectror has been delivered to the underlying system socket.
  *
  * The caller needs to make sure that all non-scalar input parameters hang
  * arround for the whole lifetime of the request.
@@ -1050,13 +1050,13 @@ struct tevent_req *tstream_writev_queue_send(TALLOC_CTX *mem_ctx,
 					     size_t count);
 
 /**
- * @brief Receive the result of the sent dgram blob.
+ * @brief Receive the result of the sent iovector.
  *
  * @param[in]  req      The tevent request from tstream_writev_queue_send().
  *
  * @param[out] perrno   The error set to the actual errno.
  *
- * @return              The length of the datagram (0 is never returned!), -1 on
+ * @return              The length of the iovector (0 is never returned!), -1 on
  *                      error with perrno set to the actual errno.
  */
 int tstream_writev_queue_recv(struct tevent_req *req, int *perrno);
