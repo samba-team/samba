@@ -96,7 +96,8 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	ZERO_STRUCTP(entry);
 
 	if (tdb_unpack (databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
-			&entry->entry_timestamp, &entry->acct_ctrl, 
+			&entry_timestamp,
+			&entry->acct_ctrl,
 			&entry->bad_password_count,
 			&bad_password_time) == -1) {
 		DEBUG(7, ("No cache entry found\n"));
