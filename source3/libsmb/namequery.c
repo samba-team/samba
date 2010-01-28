@@ -289,7 +289,8 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 
 	p.ip = ((const struct sockaddr_in *)to_ss)->sin_addr;
 	p.port = NMB_PORT;
-	p.fd = fd;
+	p.recv_fd = -1;
+	p.send_fd = fd;
 	p.timestamp = time(NULL);
 	p.packet_type = NMB_PACKET;
 
@@ -698,7 +699,8 @@ struct sockaddr_storage *name_query(int fd,
 
 	p.ip = ((struct sockaddr_in *)to_ss)->sin_addr;
 	p.port = NMB_PORT;
-	p.fd = fd;
+	p.recv_fd = -1;
+	p.send_fd = fd;
 	p.timestamp = time(NULL);
 	p.packet_type = NMB_PACKET;
 
