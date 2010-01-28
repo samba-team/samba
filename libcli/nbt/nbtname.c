@@ -517,6 +517,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr
 	NDR_PULL_ALLOC_N(ndr, namebuf, namebuf_len);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
 
+	if ((namebuf_len % 4) == 0) {
+		/*
+		 * [MS-WINSRA] — v20091104 was wrong
+		 * regarding section "2.2.10.1 Name Record"
+		 *
+		 * If the name buffer is already 4 byte aligned
+		 * Windows (at least 2003 SP1 and 2008) add 4 extra
+		 * bytes. This can happen when the name has a scope.
+		 */
+		uint32_t pad;
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &pad));
+	}
+
 	NDR_PULL_ALLOC(ndr, r);
 
 	/* oh wow, what a nasty bug in windows ... */
@@ -614,6 +627,18 @@ _PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, namebuf_len));
 	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
+
+	if ((namebuf_len % 4) == 0) {
+		/*
+		 * [MS-WINSRA] — v20091104 was wrong
+		 * regarding section "2.2.10.1 Name Record"
+		 *
+		 * If the name buffer is already 4 byte aligned
+		 * Windows (at least 2003 SP1 and 2008) add 4 extra
+		 * bytes. This can happen when the name has a scope.
+		 */
+		NDR_CHECK(ndr_push_zero(ndr, 4));
+	}
 
 	talloc_free(namebuf);
 	return NDR_ERR_SUCCESS;
