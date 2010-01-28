@@ -591,8 +591,10 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		/* use 'whenCreated' */
 		entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
-		/* use '???' */
-		entry_ex->entry.created_by.principal = NULL;
+		/* use 'kadmin' for now (needed by mit_samba) */
+		krb5_make_principal(context,
+				    &entry_ex->entry.created_by.principal,
+				    realm, "kadmin", NULL);
 
 		entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
 		if (entry_ex->entry.modified_by == NULL) {
@@ -603,8 +605,10 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		/* use 'whenChanged' */
 		entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
-		/* use '???' */
-		entry_ex->entry.modified_by->principal = NULL;
+		/* use 'kadmin' for now (needed by mit_samba) */
+		krb5_make_principal(context,
+				    &entry_ex->entry.modified_by->principal,
+				    realm, "kadmin", NULL);
 	}
 
 
