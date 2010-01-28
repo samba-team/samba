@@ -118,6 +118,8 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 	free(wgtmp); free(usertmp);
 }
 
+/* Return 1 on error, 0 on success. */
+
 static int smb_download_dir(const char *base, const char *name, int resume)
 {
 	char path[SMB_MAXPATHLEN];
@@ -126,6 +128,8 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 	const char *relname = name;
 	char *tmpname;
 	struct stat remotestat;
+	int ret = 0;
+
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base, (base[0] && name[0] && name[0] != '/' && base[strlen(base)-1] != '/')?"/":"", name);
 
 	/* List files in directory and call smb_download_file on them */
@@ -133,7 +137,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 	if(dirhandle < 1) {
 		if(errno == ENOTDIR) return smb_download_file(base, name, 1, resume, NULL);
 		fprintf(stderr, "Can't open directory %s: %s\n", path, strerror(errno));
-		return 0;
+		return 1;
 	}
 
 	while(*relname == '/')relname++;
@@ -145,27 +149,27 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		char *newname;
 		if(!strcmp(dirent->name, ".") || !strcmp(dirent->name, ".."))continue;
 		if (asprintf(&newname, "%s/%s", tmpname, dirent->name) == -1) {
-			return 0;
+			return 1;
 		}
 		switch(dirent->smbc_type) {
 		case SMBC_DIR:
-			smb_download_dir(base, newname, resume);
+			ret = smb_download_dir(base, newname, resume);
 			break;
 
 		case SMBC_WORKGROUP:
-			smb_download_dir("smb://", dirent->name, resume);
+			ret = smb_download_dir("smb://", dirent->name, resume);
 			break;
 
 		case SMBC_SERVER:
-			smb_download_dir("smb://", dirent->name, resume);
+			ret = smb_download_dir("smb://", dirent->name, resume);
 			break;
 
 		case SMBC_FILE:
-			smb_download_file(base, newname, 1, resume, NULL);
+			ret = smb_download_file(base, newname, 1, resume, NULL);
 			break;
 
 		case SMBC_FILE_SHARE:
-			smb_download_dir(base, newname, resume);
+			ret = smb_download_dir(base, newname, resume);
 			break;
 
 		case SMBC_PRINTER_SHARE:
@@ -192,19 +196,19 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		if(smbc_fstat(dirhandle, &remotestat) < 0) {
 			fprintf(stderr, "Unable to get stats on %s on remote server\n", path);
 			smbc_closedir(dirhandle);
-			return 0;
+			return 1;
 		}
 		
 		if(chmod(relname, remotestat.st_mode) < 0) {
 			fprintf(stderr, "Unable to change mode of local dir %s to %o\n", relname,
 				(unsigned int)remotestat.st_mode);
 			smbc_closedir(dirhandle);
-			return 0;
+			return 1;
 		}
 	}
 
 	smbc_closedir(dirhandle);
-	return 1;
+	return ret;
 }
 
 static char *print_time(long t)
@@ -260,6 +264,8 @@ static void print_progress(const char *name, time_t start, time_t now, off_t sta
 	free(filename); free(status);
 }
 
+/* Return 1 on error, 0 on success. */
+
 static int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile) {
 	int remotehandle, localhandle;
 	time_t start_time = time(NULL);
@@ -279,37 +285,35 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 		case EISDIR: 
 			if(!recursive) {
 				fprintf(stderr, "%s is a directory. Specify -R to download recursively\n", path);
-				return 0;
+				return 1;
 			}
-			smb_download_dir(base, name, resume);
-			return 0;
+			return smb_download_dir(base, name, resume);
 
 		case ENOENT:
 			fprintf(stderr, "%s can't be found on the remote server\n", path);
-			return 0;
+			return 1;
 
 		case ENOMEM:
 			fprintf(stderr, "Not enough memory\n");
-			exit(1);
-			return 0;
+			return 1;
 
 		case ENODEV:
 			fprintf(stderr, "The share name used in %s does not exist\n", path);
-			return 0;
+			return 1;
 
 		case EACCES:
 			fprintf(stderr, "You don't have enough permissions to access %s\n", path);
-			return 0;
+			return 1;
 
 		default:
 			perror("smbc_open");
-			return 0;
+			return 1;
 		}
 	} 
 
 	if(smbc_fstat(remotehandle, &remotestat) < 0) {
 		fprintf(stderr, "Can't stat %s: %s\n", path, strerror(errno));
-		return 0;
+		return 1;
 	}
 
 	if(outfile) newpath = outfile;
@@ -336,7 +340,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			fprintf(stderr, "Can't open %s : %s\n", newpath,
 					strerror(errno));
 			smbc_close(remotehandle);
-			return 0;
+			return 1;
 		}
 		/* no offset */
 	} else if(!send_stdout) {
@@ -344,14 +348,14 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 		if(localhandle < 0) {
 			fprintf(stderr, "Can't open %s: %s\n", newpath, strerror(errno));
 			smbc_close(remotehandle);
-			return 0;
+			return 1;
 		}
 	
 		if (fstat(localhandle, &localstat) != 0) {
 			fprintf(stderr, "Can't fstat %s: %s\n", newpath, strerror(errno));
 			smbc_close(remotehandle);
 			close(localhandle);
-			return 0;
+			return 1;
 		}
 
 		start_offset = localstat.st_size;
@@ -361,7 +365,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			else if(!quiet)fprintf(stderr, "%s\n", path);
 			smbc_close(remotehandle);
 			close(localhandle);
-			return 1;
+			return 0;
 		}
 
 		if(localstat.st_size > RESUME_CHECK_OFFSET && remotestat.st_size > RESUME_CHECK_OFFSET) {
@@ -382,7 +386,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in local file %s\n",
 					(OFF_T_FORMAT_CAST)offset_check, newpath);
 				smbc_close(remotehandle); close(localhandle);
-				return 0;
+				return 1;
 			}
 
 			off2 = smbc_lseek(remotehandle, offset_check, SEEK_SET); 
@@ -390,26 +394,26 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in remote file %s\n",
 					(OFF_T_FORMAT_CAST)offset_check, newpath);
 				smbc_close(remotehandle); close(localhandle);
-				return 0;
+				return 1;
 			}
 
 			if(off1 != off2) {
 				fprintf(stderr, "Offset in local and remote files is different (local: "OFF_T_FORMAT", remote: "OFF_T_FORMAT")\n",
 					(OFF_T_FORMAT_CAST)off1,
 					(OFF_T_FORMAT_CAST)off2);
-				return 0;
+				return 1;
 			}
 
 			if(smbc_read(remotehandle, checkbuf[0], RESUME_CHECK_SIZE) != RESUME_CHECK_SIZE) {
 				fprintf(stderr, "Can't read %d bytes from remote file %s\n", RESUME_CHECK_SIZE, path);
 				smbc_close(remotehandle); close(localhandle);
-				return 0;
+				return 1;
 			}
 
 			if(read(localhandle, checkbuf[1], RESUME_CHECK_SIZE) != RESUME_CHECK_SIZE) {
 				fprintf(stderr, "Can't read %d bytes from local file %s\n", RESUME_CHECK_SIZE, name);
 				smbc_close(remotehandle); close(localhandle);
-				return 0;
+				return 1;
 			}
 
 			if(memcmp(checkbuf[0], checkbuf[1], RESUME_CHECK_SIZE) == 0) {
@@ -417,7 +421,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			} else {
 				fprintf(stderr, "Local and remote file appear to be different, not doing resume for %s\n", path);
 				smbc_close(remotehandle); close(localhandle);
-				return 0;
+				return 1;
 			}
 		}
 	} else {
@@ -437,7 +441,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			smbc_close(remotehandle);
 			if (localhandle != STDOUT_FILENO) close(localhandle);
 			free(readbuf);
-			return 0;
+			return 1;
 		}
 
 		total_bytes += bytesread;
@@ -447,7 +451,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			free(readbuf);
 			smbc_close(remotehandle);
 			if (localhandle != STDOUT_FILENO) close(localhandle);
-			return 0;
+			return 1;
 		}
 
 		if(dots)fputc('.', stderr);
@@ -478,13 +482,13 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 				(unsigned int)remotestat.st_mode);
 			smbc_close(remotehandle);
 			close(localhandle);
-			return 0;
+			return 1;
 		}
 	}
 
 	smbc_close(remotehandle);
 	if (localhandle != STDOUT_FILENO) close(localhandle);
-	return 1;
+	return 0;
 }
 
 static void clean_exit(void)
@@ -566,6 +570,7 @@ int main(int argc, const char **argv)
 	bool smb_encrypt = false;
 	int resume = 0, recursive = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
+	int ret = 0;
 	struct poptOption long_options[] = {
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
 		{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },	
@@ -654,12 +659,14 @@ int main(int argc, const char **argv)
 
 	while ( (file = poptGetArg(pc)) ) {
 		if (!recursive) 
-			return smb_download_file(file, "", recursive, resume, outputfile);
+			ret = smb_download_file(file, "", recursive, resume, outputfile);
 		else 
-			return smb_download_dir(file, "", resume);
+			ret = smb_download_dir(file, "", resume);
 	}
 
-	clean_exit();
 	TALLOC_FREE(frame);
-	return 0;
+	if ( ret == 0){
+		clean_exit();
+	}
+	return ret;
 }
