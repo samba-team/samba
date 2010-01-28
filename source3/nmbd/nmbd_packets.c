@@ -207,7 +207,8 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 
 	packet->ip = to_ip;
 	packet->port = NMB_PORT;
-	packet->fd = ClientNMB;
+	packet->recv_fd = -1;
+	packet->send_fd = ClientNMB;
 	packet->timestamp = time(NULL);
 	packet->packet_type = NMB_PACKET;
 	packet->locked = False;
@@ -258,7 +259,8 @@ static bool create_and_init_additional_record(struct packet_struct *packet,
 	   our standard refresh cycle for that name which copes nicely
 	   with disconnected networks.
 	*/
-	packet->fd = find_subnet_fd_for_address(*register_ip);
+	packet->recv_fd = -1;
+	packet->send_fd = find_subnet_fd_for_address(*register_ip);
 
 	return True;
 }
@@ -743,7 +745,7 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 			}
 
 			DEBUG(10,("queue_query_name: using source IP %s\n",inet_ntoa(*ifip)));
-				p->fd = find_subnet_fd_for_address( *ifip );
+				p->send_fd = find_subnet_fd_for_address( *ifip );
 				break;
 		}
 	}
@@ -979,9 +981,14 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 	}
 
 	packet.packet_type = NMB_PACKET;
+	packet.recv_fd = -1;
 	/* Ensure we send out on the same fd that the original
 		packet came in on to give the correct source IP address. */
-	packet.fd = orig_packet->fd;
+	if (orig_packet->send_fd != -1) {
+		packet.send_fd = orig_packet->send_fd;
+	} else {
+		packet.send_fd = orig_packet->recv_fd;
+	}
 	packet.timestamp = time(NULL);
 
 	debug_nmb_packet(&packet);
@@ -1679,50 +1686,74 @@ static bool create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_n
 		return True;
 	}
 
+	/* The Client* sockets */
+	count++;
+
 	/* Check that we can add all the fd's we need. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
 		count++;
 
-	if((count*2) + 2 > FD_SETSIZE) {
+	/* each interface gets 4 sockets */
+	count *= 4;
+
+	if(count > FD_SETSIZE) {
 		DEBUG(0,("create_listen_fdset: Too many file descriptors needed (%d). We can \
-only use %d.\n", (count*2) + 2, FD_SETSIZE));
+only use %d.\n", count, FD_SETSIZE));
 		SAFE_FREE(pset);
 		return True;
 	}
 
-	if((sock_array = SMB_MALLOC_ARRAY(int, (count*2) + 2)) == NULL) {
-		DEBUG(0,("create_listen_fdset: malloc fail for socket array.\n"));
+	if((sock_array = SMB_MALLOC_ARRAY(int, count)) == NULL) {
+		DEBUG(0,("create_listen_fdset: malloc fail for socket array. size %d\n", count));
 		SAFE_FREE(pset);
 		return True;
 	}
 
 	FD_ZERO(pset);
 
-	/* Add in the broadcast socket on 137. */
+	/* Add in the lp_socket_address() interface on 137. */
 	FD_SET(ClientNMB,pset);
 	sock_array[num++] = ClientNMB;
 	*maxfd = MAX( *maxfd, ClientNMB);
+
+	/* the lp_socket_address() interface has only one socket */
+	sock_array[num++] = -1;
 
 	/* Add in the 137 sockets on all the interfaces. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		FD_SET(subrec->nmb_sock,pset);
 		sock_array[num++] = subrec->nmb_sock;
 		*maxfd = MAX( *maxfd, subrec->nmb_sock);
+
+		sock_array[num++] = subrec->nmb_bcast;
+		if (subrec->nmb_bcast != -1) {
+			FD_SET(subrec->nmb_bcast,pset);
+			*maxfd = MAX( *maxfd, subrec->nmb_bcast);
+		}
 	}
 
-	/* Add in the broadcast socket on 138. */
+	/* Add in the lp_socket_address() interface on 138. */
 	FD_SET(ClientDGRAM,pset);
 	sock_array[num++] = ClientDGRAM;
 	*maxfd = MAX( *maxfd, ClientDGRAM);
+
+	/* the lp_socket_address() interface has only one socket */
+	sock_array[num++] = -1;
 
 	/* Add in the 138 sockets on all the interfaces. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		FD_SET(subrec->dgram_sock,pset);
 		sock_array[num++] = subrec->dgram_sock;
 		*maxfd = MAX( *maxfd, subrec->dgram_sock);
+
+		sock_array[num++] = subrec->dgram_bcast;
+		if (subrec->dgram_bcast != -1) {
+			FD_SET(subrec->dgram_bcast,pset);
+			*maxfd = MAX( *maxfd, subrec->dgram_bcast);
+		}
 	}
 
-	*listen_number = (count*2) + 2;
+	*listen_number = count;
 
 	SAFE_FREE(*ppset);
 	SAFE_FREE(*psock_array);
@@ -1811,61 +1842,90 @@ bool listen_for_packets(bool run_election)
 #endif
 
 	for(i = 0; i < listen_number; i++) {
+		enum packet_type packet_type;
+		struct packet_struct *packet;
+		const char *packet_name;
+		int client_fd;
+		int client_port;
+
+		if (sock_array[i] == -1) {
+			continue;
+		}
+
+		if (!FD_ISSET(sock_array[i],&r_fds)) {
+			continue;
+		}
+
 		if (i < (listen_number/2)) {
-			/* Processing a 137 socket. */
-			if (FD_ISSET(sock_array[i],&r_fds)) {
-				struct packet_struct *packet = read_packet(sock_array[i], NMB_PACKET);
-				if (packet) {
-					/*
-					 * If we got a packet on the broadcast socket and interfaces
-					 * only is set then check it came from one of our local nets. 
-					 */
-					if(lp_bind_interfaces_only() && (sock_array[i] == ClientNMB) && 
-								(!is_local_net_v4(packet->ip))) {
-						DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
-							inet_ntoa(packet->ip),packet->port));	  
-						free_packet(packet);
-					} else if ((is_loopback_ip_v4(packet->ip) || 
-								ismyip_v4(packet->ip)) && packet->port == global_nmb_port &&
-								packet->packet.nmb.header.nm_flags.bcast) {
-						DEBUG(7,("discarding own bcast packet from %s:%d\n",
-							inet_ntoa(packet->ip),packet->port));	  
-						free_packet(packet);
-					} else {
-						/* Save the file descriptor this packet came in on. */
-						packet->fd = sock_array[i];
-						queue_packet(packet);
-					}
-				}
-			}
+			/* Port 137 */
+			packet_type = NMB_PACKET;
+			packet_name = "nmb";
+			client_fd = ClientNMB;
+			client_port = global_nmb_port;
 		} else {
-			/* Processing a 138 socket. */
-				if (FD_ISSET(sock_array[i],&r_fds)) {
-				struct packet_struct *packet = read_packet(sock_array[i], DGRAM_PACKET);
-				if (packet) {
-					/*
-					 * If we got a packet on the broadcast socket and interfaces
-					 * only is set then check it came from one of our local nets. 
-					 */
-					if(lp_bind_interfaces_only() && (sock_array[i] == ClientDGRAM) && 
-								(!is_local_net_v4(packet->ip))) {
-						DEBUG(7,("discarding dgram packet sent to broadcast socket from %s:%d\n",
-						inet_ntoa(packet->ip),packet->port));	  
-						free_packet(packet);
-					} else if ((is_loopback_ip_v4(packet->ip) || 
-							ismyip_v4(packet->ip)) && packet->port == DGRAM_PORT) {
-						DEBUG(7,("discarding own dgram packet from %s:%d\n",
-							inet_ntoa(packet->ip),packet->port));	  
-						free_packet(packet);
-					} else {
-						/* Save the file descriptor this packet came in on. */
-						packet->fd = sock_array[i];
-						queue_packet(packet);
-					}
-				}
+			/* Port 137 */
+			packet_type = DGRAM_PACKET;
+			packet_name = "dgram";
+			client_fd = ClientDGRAM;
+			client_port = DGRAM_PORT;
+		}
+
+		packet = read_packet(sock_array[i], packet_type);
+		if (!packet) {
+			continue;
+		}
+
+		/*
+		 * If we got a packet on the broadcast socket and interfaces
+		 * only is set then check it came from one of our local nets.
+		 */
+		if (lp_bind_interfaces_only() &&
+		    (sock_array[i] == client_fd) &&
+		    (!is_local_net_v4(packet->ip))) {
+			DEBUG(7,("discarding %s packet sent to broadcast socket from %s:%d\n",
+				packet_name, inet_ntoa(packet->ip), packet->port));
+			free_packet(packet);
+			continue;
+		}
+
+		if ((is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
+		    packet->port == client_port)
+		{
+			if (client_port == DGRAM_PORT) {
+				DEBUG(7,("discarding own dgram packet from %s:%d\n",
+					inet_ntoa(packet->ip),packet->port));
+				free_packet(packet);
+				continue;
 			}
-		} /* end processing 138 socket. */
-	} /* end for */
+
+			if (packet->packet.nmb.header.nm_flags.bcast) {
+				DEBUG(7,("discarding own nmb bcast packet from %s:%d\n",
+					inet_ntoa(packet->ip),packet->port));
+				free_packet(packet);
+				continue;
+			}
+		}
+
+		/*
+		 * 0,2,4,... are unicast sockets
+		 * 1,3,5,... are broadcast sockets
+		 *
+		 * on broadcast socket we only receive packets
+		 * and send replies via the unicast socket.
+		 *
+		 * 0,1 and 2,3 and ... belong together.
+		 */
+		if ((i % 2) != 0) {
+			/* this is a broadcast socket */
+			packet->send_fd = sock_array[i-1];
+		} else {
+			/* this is already a unicast socket */
+			packet->send_fd = sock_array[i];
+		}
+
+		queue_packet(packet);
+	}
+
 	return False;
 }
 
@@ -1946,7 +2006,8 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 
 	p.ip = dest_ip;
 	p.port = dest_port;
-	p.fd = find_subnet_mailslot_fd_for_address( src_ip );
+	p.recv_fd = -1;
+	p.send_fd = find_subnet_mailslot_fd_for_address( src_ip );
 	p.timestamp = time(NULL);
 	p.packet_type = DGRAM_PACKET;
 

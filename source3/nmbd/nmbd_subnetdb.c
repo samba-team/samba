@@ -76,18 +76,21 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 					 struct in_addr mask_ip)
 {
 	struct subnet_record *subrec = NULL;
-	int nmb_sock, dgram_sock;
+	int nmb_sock = -1;
+	int dgram_sock = -1;
+	int nmb_bcast = -1;
+	int dgram_bcast = -1;
+	bool bind_bcast = lp_parm_bool(-1, "nmbd", "bind explicit broadcast", false);
 
 	/* Check if we are creating a non broadcast subnet - if so don't create
 		sockets.  */
 
-	if(type != NORMAL_SUBNET) {
-		nmb_sock = -1;
-		dgram_sock = -1;
-	} else {
+	if (type == NORMAL_SUBNET) {
 		struct sockaddr_storage ss;
+		struct sockaddr_storage ss_bcast;
 
 		in_addr_to_sockaddr_storage(&ss, myip);
+		in_addr_to_sockaddr_storage(&ss_bcast, bcast_ip);
 
 		/*
 		 * Attempt to open the sockets on port 137/138 for this interface
@@ -95,60 +98,74 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 		 * Fail the subnet creation if this fails.
 		 */
 
-		if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, &ss,true)) == -1) {
-			if( DEBUGLVL( 0 ) ) {
-				Debug1( "nmbd_subnetdb:make_subnet()\n" );
-				Debug1( "  Failed to open nmb socket on interface %s ", inet_ntoa(myip) );
-				Debug1( "for port %d.  ", global_nmb_port );
-				Debug1( "Error was %s\n", strerror(errno) );
-			}
-			return NULL;
+		nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,
+					  0, &ss, true);
+		if (nmb_sock == -1) {
+			DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
+			DEBUGADD(0,("  Failed to open nmb socket on interface %s ",
+				    inet_ntoa(myip)));
+			DEBUGADD(0,("for port %d.  ", global_nmb_port));
+			DEBUGADD(0,("Error was %s\n", strerror(errno)));
+			goto failed;
 		}
-
-		if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, &ss, true)) == -1) {
-			if( DEBUGLVL( 0 ) ) {
-				Debug1( "nmbd_subnetdb:make_subnet()\n" );
-				Debug1( "  Failed to open dgram socket on interface %s ", inet_ntoa(myip) );
-				Debug1( "for port %d.  ", DGRAM_PORT );
-				Debug1( "Error was %s\n", strerror(errno) );
-			}
-			return NULL;
-		}
-
-		/* Make sure we can broadcast from these sockets. */
 		set_socket_options(nmb_sock,"SO_BROADCAST");
-		set_socket_options(dgram_sock,"SO_BROADCAST");
+		set_blocking(nmb_sock, false);
 
-		/* Set them non-blocking. */
-		set_blocking(nmb_sock, False);
-		set_blocking(dgram_sock, False);
+		if (bind_bcast) {
+			nmb_bcast = open_socket_in(SOCK_DGRAM, global_nmb_port,
+						   0, &ss_bcast, true);
+			if (nmb_bcast == -1) {
+				DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
+				DEBUGADD(0,("  Failed to open nmb bcast socket on interface %s ",
+					    inet_ntoa(bcast_ip)));
+				DEBUGADD(0,("for port %d.  ", global_nmb_port));
+				DEBUGADD(0,("Error was %s\n", strerror(errno)));
+				goto failed;
+			}
+			set_socket_options(nmb_bcast, "SO_BROADCAST");
+			set_blocking(nmb_bcast, false);
+		}
+
+		dgram_sock = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
+					    3, &ss, true);
+		if (dgram_sock == -1) {
+			DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
+			DEBUGADD(0,("  Failed to open dgram socket on interface %s ",
+				    inet_ntoa(myip)));
+			DEBUGADD(0,("for port %d.  ", DGRAM_PORT));
+			DEBUGADD(0,("Error was %s\n", strerror(errno)));
+			goto failed;
+		}
+		set_socket_options(dgram_sock, "SO_BROADCAST");
+		set_blocking(dgram_sock, false);
+
+		if (bind_bcast) {
+			dgram_bcast = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
+						     3, &ss_bcast, true);
+			if (dgram_bcast == -1) {
+				DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
+				DEBUGADD(0,("  Failed to open dgram bcast socket on interface %s ",
+					    inet_ntoa(bcast_ip)));
+				DEBUGADD(0,("for port %d.  ", DGRAM_PORT));
+				DEBUGADD(0,("Error was %s\n", strerror(errno)));
+				goto failed;
+			}
+			set_socket_options(dgram_bcast, "SO_BROADCAST");
+			set_blocking(dgram_bcast, false);
+		}
 	}
 
 	subrec = SMB_MALLOC_P(struct subnet_record);
 	if (!subrec) {
 		DEBUG(0,("make_subnet: malloc fail !\n"));
-		if (nmb_sock != -1) {
-			close(nmb_sock);
-		}
-		if (dgram_sock != -1) {
-			close(dgram_sock);
-		}
-		return(NULL);
+		goto failed;
 	}
   
 	ZERO_STRUCTP(subrec);
 
 	if((subrec->subnet_name = SMB_STRDUP(name)) == NULL) {
 		DEBUG(0,("make_subnet: malloc fail for subnet name !\n"));
-		if (nmb_sock != -1) {
-			close(nmb_sock);
-		}
-		if (dgram_sock != -1) {
-			close(dgram_sock);
-		}
-		ZERO_STRUCTP(subrec);
-		SAFE_FREE(subrec);
-		return(NULL);
+		goto failed;
 	}
 
 	DEBUG(2, ("making subnet name:%s ", name ));
@@ -163,9 +180,27 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 	subrec->myip = myip;
 	subrec->type = type;
 	subrec->nmb_sock = nmb_sock;
+	subrec->nmb_bcast = nmb_bcast;
 	subrec->dgram_sock = dgram_sock;
-  
+	subrec->dgram_bcast = dgram_bcast;
+
 	return subrec;
+
+failed:
+	SAFE_FREE(subrec);
+	if (nmb_sock != -1) {
+		close(nmb_sock);
+	}
+	if (nmb_bcast != -1) {
+		close(nmb_bcast);
+	}
+	if (dgram_sock != -1) {
+		close(dgram_sock);
+	}
+	if (dgram_bcast != -1) {
+		close(dgram_bcast);
+	}
+	return NULL;
 }
 
 /****************************************************************************
