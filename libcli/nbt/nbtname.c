@@ -558,8 +558,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr
 	r->name = talloc_strdup(r, (char *)namebuf);
 	if (!r->name) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
 
-	if (namebuf_len > 18) {
-		r->scope = talloc_strndup(r, (char *)(namebuf+17), namebuf_len-17);
+	if (namebuf_len > 17) {
+		r->scope = talloc_strndup(r, (char *)(namebuf+16), namebuf_len-17);
 		if (!r->scope) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
 	} else {
 		r->scope = NULL;
