@@ -101,7 +101,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 bool samba_princ_needs_pac(struct hdb_entry_ex *princ)
 {
 
-	struct hdb_samba4_private *p = talloc_get_type(princ->ctx, struct hdb_samba4_private);
+	struct samba_kdc_entry *p = talloc_get_type(princ->ctx, struct samba_kdc_entry);
 	unsigned int userAccountControl;
 
 
@@ -118,7 +118,7 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct hdb_entry_ex *client,
 				DATA_BLOB **_pac_blob)
 {
-	struct hdb_samba4_private *p = talloc_get_type(client->ctx, struct hdb_samba4_private);
+	struct samba_kdc_entry *p = talloc_get_type(client->ctx, struct samba_kdc_entry);
 	struct auth_serversupplied_info *server_info;
 	DATA_BLOB *pac_blob;
 	NTSTATUS nt_status;
@@ -134,9 +134,9 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = authsam_make_server_info(mem_ctx, p->samdb,
-					     lp_netbios_name(p->lp_ctx),
-					     lp_sam_name(p->lp_ctx),
+	nt_status = authsam_make_server_info(mem_ctx, p->kdc_db_ctx->samdb,
+					     lp_netbios_name(p->kdc_db_ctx->lp_ctx),
+					     lp_sam_name(p->kdc_db_ctx->lp_ctx),
 					     p->realm_dn,
 					     p->msg,
 					     data_blob(NULL, 0),
@@ -149,7 +149,7 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
-						  p->iconv_convenience,
+						  p->kdc_db_ctx->ic_ctx,
 						  server_info, pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",

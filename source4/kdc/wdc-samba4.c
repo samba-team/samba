@@ -62,7 +62,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 					   struct hdb_entry_ex *client,
 					   struct hdb_entry_ex *server, krb5_pac *pac)
 {
-	struct hdb_samba4_private *p = talloc_get_type(server->ctx, struct hdb_samba4_private);
+	struct samba_kdc_entry *p = talloc_get_type(server->ctx, struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac context");
 	DATA_BLOB *pac_blob;
 	krb5_error_code ret;
@@ -85,7 +85,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	}
 
 	nt_status = samba_kdc_update_pac_blob(mem_ctx, context,
-					      p->iconv_convenience,
+					      p->kdc_db_ctx->ic_ctx,
 					      pac, pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",
@@ -116,14 +116,14 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx;
-	struct hdb_samba4_private *p;
+	struct samba_kdc_entry *p;
 	char *workstation = NULL;
 	HostAddresses *addresses = req->req_body.addresses;
 	int i;
 	bool password_change;
 
 	tmp_ctx = talloc_new(client_ex->ctx);
-	p = talloc_get_type(client_ex->ctx, struct hdb_samba4_private);
+	p = talloc_get_type(client_ex->ctx, struct samba_kdc_entry);
 
 	if (!tmp_ctx) {
 		return ENOMEM;
@@ -152,7 +152,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 
 	/* we allow all kinds of trusts here */
 	nt_status = authsam_account_ok(tmp_ctx,
-				       p->samdb,
+				       p->kdc_db_ctx->samdb,
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 				       p->realm_dn,
 				       p->msg,

@@ -181,7 +181,7 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
-static int hdb_samba4_destructor(struct hdb_samba4_private *p)
+static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 {
     hdb_entry_ex *entry_ex = p->entry_ex;
     free_hdb_entry(&entry_ex->entry);
@@ -505,7 +505,7 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context,
 	krb5_boolean is_computer = FALSE;
 	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
 
-	struct hdb_samba4_private *p;
+	struct samba_kdc_entry *p;
 	NTTIME acct_expiry;
 	NTSTATUS status;
 
@@ -536,22 +536,21 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context,
 		goto out;
 	}
 
-	p = talloc(mem_ctx, struct hdb_samba4_private);
+	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
 	}
 
+	p->kdc_db_ctx = kdc_db_ctx;
 	p->entry_ex = entry_ex;
-	p->iconv_convenience = lp_iconv_convenience(lp_ctx);
-	p->lp_ctx = lp_ctx;
 	p->realm_dn = talloc_reference(p, realm_dn);
 	if (!p->realm_dn) {
 		ret = ENOMEM;
 		goto out;
 	}
 
-	talloc_set_destructor(p, hdb_samba4_destructor);
+	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
 	entry_ex->ctx = p;
 	entry_ex->free_entry = hdb_samba4_free_entry;
@@ -697,7 +696,8 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = hdb_samba4_message2entry_keys(context, p->iconv_convenience, p, msg, userAccountControl, entry_ex);
+	ret = hdb_samba4_message2entry_keys(context, p->kdc_db_ctx->ic_ctx, p,
+					    msg, userAccountControl, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;
@@ -722,7 +722,6 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context,
 
 
 	p->msg = talloc_steal(p, msg);
-	p->samdb = kdc_db_ctx->samdb;
 
 out:
 	if (ret != 0) {
@@ -754,23 +753,22 @@ static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context,
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
-	struct hdb_samba4_private *p;
+	struct samba_kdc_entry *p;
 
 	enum ndr_err_code ndr_err;
 	int i, ret, trust_direction_flags;
 
-	p = talloc(mem_ctx, struct hdb_samba4_private);
+	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
 	}
 
+	p->kdc_db_ctx = kdc_db_ctx;
 	p->entry_ex = entry_ex;
-	p->iconv_convenience = lp_iconv_convenience(lp_ctx);
-	p->lp_ctx = lp_ctx;
 	p->realm_dn = realm_dn;
 
-	talloc_set_destructor(p, hdb_samba4_destructor);
+	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
 	entry_ex->ctx = p;
 	entry_ex->free_entry = hdb_samba4_free_entry;
@@ -799,7 +797,7 @@ static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, p->iconv_convenience, &password_blob,
+	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, p->kdc_db_ctx->ic_ctx, &password_blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ret = EINVAL;
@@ -903,7 +901,6 @@ static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context,
 
 
 	p->msg = talloc_steal(p, msg);
-	p->samdb = kdc_db_ctx->samdb;
 
 out:
 	if (ret != 0) {
@@ -1474,7 +1471,7 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;
-	struct hdb_samba4_private *p = talloc_get_type(entry->ctx, struct hdb_samba4_private);
+	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 	const char *delegation_check_attrs[] = {
 		"objectSid", NULL
 	};
@@ -1547,7 +1544,7 @@ hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;
-	struct hdb_samba4_private *p = talloc_get_type(entry->ctx, struct hdb_samba4_private);
+	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 	const char *ms_upn_check_attrs[] = {
 		"objectSid", NULL
 	};
@@ -1641,6 +1638,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	}
 	kdc_db_ctx->ev_ctx = base_ctx->ev_ctx;
 	kdc_db_ctx->lp_ctx = base_ctx->lp_ctx;
+	kdc_db_ctx->ic_ctx = lp_iconv_convenience(base_ctx->lp_ctx);
 
 	/* Setup the link to LDB */
 	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx, base_ctx->ev_ctx,
