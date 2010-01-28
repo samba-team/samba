@@ -16,7 +16,7 @@ from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT
 from samba import Ldb
 
-from subunit import SubunitTestRunner
+from subunit.run import SubunitTestRunner
 import unittest
 
 parser = optparse.OptionParser("deletetest.py [options] <host|file>")
