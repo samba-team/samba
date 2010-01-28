@@ -19,7 +19,7 @@ KDC_OBJ_FILES = $(addprefix $(kdcsrcdir)/, kdc.o kpasswdd.o)
 CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
 PRIVATE_DEPENDENCIES = \
 		LIBLDB auth_sam auth_sam_reply CREDENTIALS \
-		HEIMDAL_HDB LIBSAMBA-HOSTCONFIG
+		HEIMDAL_HDB DB_GLUE LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM HDB
 #######################
 
@@ -48,3 +48,15 @@ PRIVATE_DEPENDENCIES = \
 #######################
 
 PAC_GLUE_OBJ_FILES = $(addprefix $(kdcsrcdir)/, pac-glue.o)
+
+#######################
+# Start SUBSYSTEM KDC
+[SUBSYSTEM::DB_GLUE]
+CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
+PRIVATE_DEPENDENCIES = \
+		LIBLDB auth_sam auth_sam_reply CREDENTIALS \
+		HEIMDAL_HDB LIBSAMBA-HOSTCONFIG
+# End SUBSYSTEM KDC
+#######################
+
+DB_GLUE_OBJ_FILES = $(addprefix $(kdcsrcdir)/, db-glue.o)

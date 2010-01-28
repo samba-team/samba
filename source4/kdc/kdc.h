@@ -25,7 +25,7 @@
 #include <hdb.h>
 #include <kdc.h>
 #include <krb5/windc_plugin.h>
-#include "kdc/hdb-samba4.h"
+#include "kdc/samba_kdc.h"
 
 struct tsocket_address;
 

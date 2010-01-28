@@ -49,6 +49,7 @@ TALLOC_CTX *hdb_samba4_mem_ctx;
 struct tevent_context *hdb_samba4_ev_ctx;
 struct loadparm_context *hdb_samba4_lp_ctx;
 extern struct krb5plugin_windc_ftable windc_plugin_table;
+extern struct hdb_method hdb_samba4;
 
 typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
 				 TALLOC_CTX *mem_ctx,

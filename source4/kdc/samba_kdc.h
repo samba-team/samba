@@ -33,9 +33,8 @@ struct samba_kdc_db_context {
 	struct loadparm_context *lp_ctx;
 	struct smb_iconv_convenience *ic_ctx;
 	struct ldb_context *samdb;
+	struct samba_kdc_seq *seq_ctx;
 };
-
-extern struct hdb_method hdb_samba4;
 
 struct samba_kdc_entry {
 	struct samba_kdc_db_context *kdc_db_ctx;

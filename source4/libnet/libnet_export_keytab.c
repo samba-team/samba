@@ -2,8 +2,10 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include <hdb.h>
-#include "kdc/hdb-samba4.h"
+#include "kdc/samba_kdc.h"
 #include "libnet/libnet.h"
+
+extern struct hdb_method hdb_samba4;
 
 NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_export_keytab *r)
 {
