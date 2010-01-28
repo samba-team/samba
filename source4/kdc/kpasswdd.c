@@ -482,7 +482,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	cli_credentials_set_krb5_context(server_credentials, kdc->smb_krb5_context);
 	cli_credentials_set_conf(server_credentials, kdc->task->lp_ctx);
 
-	keytab_name = talloc_asprintf(server_credentials, "HDB:samba4&%p", kdc->hdb_samba4_context);
+	keytab_name = talloc_asprintf(server_credentials, "HDB:samba4&%p", kdc->base_ctx);
 
 	cli_credentials_set_username(server_credentials, "kadmin/changepw", CRED_SPECIFIED);
 	ret = cli_credentials_set_keytab_name(server_credentials, kdc->task->event_ctx, kdc->task->lp_ctx, keytab_name, CRED_SPECIFIED);

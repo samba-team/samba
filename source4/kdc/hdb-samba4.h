@@ -20,9 +20,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct hdb_samba4_context {
+struct samba_kdc_base_context {
 	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp_ctx;
+};
+
+struct samba_kdc_seq;
+
+struct samba_kdc_db_context {
+	struct tevent_context *ev_ctx;
+	struct loadparm_context *lp_ctx;
+	struct ldb_context *samdb;
 };
 
 extern struct hdb_method hdb_samba4;

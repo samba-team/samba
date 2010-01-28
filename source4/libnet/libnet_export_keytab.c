@@ -13,15 +13,15 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 
 	/* Register hdb-samba4 hooks for use as a keytab */
 
-	struct hdb_samba4_context *hdb_samba4_context = talloc(mem_ctx, struct hdb_samba4_context);
-	if (!hdb_samba4_context) {
+	struct samba_kdc_base_context *base_ctx = talloc_zero(mem_ctx, struct samba_kdc_base_context);
+	if (!base_ctx) {
 		return NT_STATUS_NO_MEMORY; 
 	}
 
-	hdb_samba4_context->ev_ctx = ctx->event_ctx;
-	hdb_samba4_context->lp_ctx = ctx->lp_ctx;
+	base_ctx->ev_ctx = ctx->event_ctx;
+	base_ctx->lp_ctx = ctx->lp_ctx;
 
-	from_keytab = talloc_asprintf(hdb_samba4_context, "HDB:samba4&%p", hdb_samba4_context);
+	from_keytab = talloc_asprintf(base_ctx, "HDB:samba4&%p", base_ctx);
 	if (!from_keytab) {
 		return NT_STATUS_NO_MEMORY;
 	}
