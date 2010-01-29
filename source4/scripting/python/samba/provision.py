@@ -167,16 +167,6 @@ class ProvisionPaths(object):
         self.dns = None
         self.winsdb = None
         self.private_dir = None
-        self.ldapdir = None
-        self.slapdconf = None
-        self.modulesconf = None
-        self.memberofconf = None
-        self.olmmron = None
-        self.olmmrserveridsconf = None
-        self.olmmrsyncreplconf = None
-        self.olcdir = None
-        self.olslapd = None
-        self.olcseedldif = None
 
 
 class ProvisionNames(object):
@@ -305,24 +295,6 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
     paths.phpldapadminconfig = os.path.join(paths.private_dir, 
                                             "phpldapadmin-config.php")
-    paths.ldapdir = os.path.join(paths.private_dir, 
-                                 "ldap")
-    paths.slapdconf = os.path.join(paths.ldapdir, 
-                                   "slapd.conf")
-    paths.slapdpid = os.path.join(paths.ldapdir, 
-                                   "slapd.pid")
-    paths.modulesconf = os.path.join(paths.ldapdir, 
-                                     "modules.conf")
-    paths.memberofconf = os.path.join(paths.ldapdir, 
-                                      "memberof.conf")
-    paths.olmmrserveridsconf = os.path.join(paths.ldapdir, 
-                                            "mmr_serverids.conf")
-    paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
-                                           "mmr_syncrepl.conf")
-    paths.olcdir = os.path.join(paths.ldapdir, 
-                                 "slapd.d")
-    paths.olcseedldif = os.path.join(paths.ldapdir, 
-                                 "olc_seed.ldif")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -1256,7 +1228,8 @@ def provision(setup_dir, message, session_info,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message)
+                                         message=message,
+                                         ldapi_url=ldapi_url)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
@@ -1445,7 +1418,7 @@ def provision(setup_dir, message, session_info,
             # now display slapd_command_file.txt to show how slapd must be started next time
             message("Use later the following commandline to start slapd, then Samba:")
             message(provision_backend.slapd_command_escaped)
-            message("This slapd-Commandline is also stored under: " + paths.ldapdir + "/ldap_backend_startup.sh")
+            message("This slapd-Commandline is also stored under: " + provision_backend.ldapdir + "/ldap_backend_startup.sh")
 
 
     result = ProvisionResult()

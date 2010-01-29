@@ -105,7 +105,8 @@ class LDBBackend(ProvisionBackend):
 
 class ExistingBackend(ProvisionBackend):
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
-                 names=None, message=None):
+                 names=None, message=None,
+                 ldapi_uri=None):
 
         super(ExistingBackend, self).__init__(
                 backend_type=backend_type,
@@ -114,7 +115,7 @@ class ExistingBackend(ProvisionBackend):
                 names=names,
                 message=message)
 
-        self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
+        self.ldapi_uri = ldapi_uri
 
     def init(self):
         #Check to see that this 'existing' LDAP backend in fact exists
@@ -150,19 +151,22 @@ class LDAPBackend(ProvisionBackend):
         self.domainsid = domainsid
         self.schema = schema
         self.hostname = hostname
+
+        self.ldapdir = os.path.join(paths.private_dir, "ldap")
         self.ldapadminpass = ldapadminpass
 
         self.slapd_path = slapd_path
         self.slapd_command = None
         self.slapd_command_escaped = None
+        self.slapd_pid = os.path.join(self.ldapdir, "slapd.pid")
 
         self.ldap_backend_extra_port = ldap_backend_extra_port
         self.ldap_dryrun_mode = ldap_dryrun_mode
 
-        self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.ldapdir, "ldapi"), safe="")
+        self.ldapi_uri = "ldapi://" + urllib.quote(os.path.join(self.ldapdir, "ldapi"), safe="")
 
-        if not os.path.exists(self.paths.ldapdir):
-            os.mkdir(self.paths.ldapdir)
+        if not os.path.exists(self.ldapdir):
+            os.mkdir(self.ldapdir)
 
     def init(self):
         # we will shortly start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via self.ldapi_uri
@@ -172,7 +176,7 @@ class LDAPBackend(ProvisionBackend):
             ldapi_db.search(base="", scope=SCOPE_BASE,
                 expression="(objectClass=OpenLDAProotDSE)")
             try:
-                f = open(self.paths.slapdpid, "r")
+                f = open(self.slapd_pid, "r")
                 p = f.read()
                 f.close()
                 self.message("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
@@ -192,13 +196,13 @@ class LDAPBackend(ProvisionBackend):
             raise ProvisioningError("Warning: Given Path to slapd does not exist!")
 
 
-        if not os.path.isdir(self.paths.ldapdir):
-            os.makedirs(self.paths.ldapdir, 0700)
+        if not os.path.isdir(self.ldapdir):
+            os.makedirs(self.ldapdir, 0700)
 
         # Put the LDIF of the schema into a database so we can search on
         # it to generate schema-dependent configurations in Fedora DS and
         # OpenLDAP
-        schemadb_path = os.path.join(self.paths.ldapdir, "schema-tmp.ldb")
+        schemadb_path = os.path.join(self.ldapdir, "schema-tmp.ldb")
         try:
             os.unlink(schemadb_path)
         except OSError:
@@ -226,7 +230,7 @@ class LDAPBackend(ProvisionBackend):
 
     def start(self):
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
-        open(self.paths.ldapdir + "/ldap_backend_startup.sh", 'w').write("#!/bin/sh\n" + self.slapd_command_escaped + "\n")
+        open(self.ldapdir + "/ldap_backend_startup.sh", 'w').write("#!/bin/sh\n" + self.slapd_command_escaped + "\n")
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful
@@ -291,6 +295,14 @@ class OpenLDAPBackend(LDAPBackend):
         self.ol_mmr_urls = ol_mmr_urls
         self.nosync = nosync
 
+        self.slapdconf          = os.path.join(self.ldapdir, "slapd.conf")
+        self.modulesconf        = os.path.join(self.ldapdir, "modules.conf")
+        self.memberofconf       = os.path.join(self.ldapdir, "memberof.conf")
+        self.olmmrserveridsconf = os.path.join(self.ldapdir, "mmr_serverids.conf")
+        self.olmmrsyncreplconf  = os.path.join(self.ldapdir, "mmr_syncrepl.conf")
+        self.olcdir             = os.path.join(self.ldapdir, "slapd.d")
+        self.olcseedldif        = os.path.join(self.ldapdir, "olc_seed.ldif")
+
         self.schema = Schema(
                 self.setup_path,
                 self.domainsid,
@@ -300,7 +312,7 @@ class OpenLDAPBackend(LDAPBackend):
 
     def provision(self):
         # Wipe the directories so we can start
-        shutil.rmtree(os.path.join(self.paths.ldapdir, "db"), True)
+        shutil.rmtree(os.path.join(self.ldapdir, "db"), True)
 
         #Allow the test scripts to turn off fsync() for OpenLDAP as for TDB and LDB
         nosync_config = ""
@@ -405,15 +417,15 @@ class OpenLDAPBackend(LDAPBackend):
                                                           {  "RID" : str(rid),
                                                              "LDAPSERVER" : url})
                 
-            setup_file(self.setup_path("olc_seed.ldif"), self.paths.olcseedldif,
+            setup_file(self.setup_path("olc_seed.ldif"), self.olcseedldif,
                        {"OLC_SERVER_ID_CONF": olc_serverids_config,
                         "OLC_PW": self.ldapadminpass,
                         "OLC_SYNCREPL_CONF": olc_syncrepl_seed_config})
         # end olc
                 
-        setup_file(self.setup_path("slapd.conf"), self.paths.slapdconf,
+        setup_file(self.setup_path("slapd.conf"), self.slapdconf,
                    {"DNSDOMAIN": self.names.dnsdomain,
-                    "LDAPDIR": self.paths.ldapdir,
+                    "LDAPDIR": self.ldapdir,
                     "DOMAINDN": self.names.domaindn,
                     "CONFIGDN": self.names.configdn,
                     "SCHEMADN": self.names.schemadn,
@@ -430,26 +442,26 @@ class OpenLDAPBackend(LDAPBackend):
                     "INDEX_CONFIG": index_config,
                     "NOSYNC": nosync_config})
         
-        setup_db_config(self.setup_path, os.path.join(self.paths.ldapdir, "db", "user"))
-        setup_db_config(self.setup_path, os.path.join(self.paths.ldapdir, "db", "config"))
-        setup_db_config(self.setup_path, os.path.join(self.paths.ldapdir, "db", "schema"))
+        setup_db_config(self.setup_path, os.path.join(self.ldapdir, "db", "user"))
+        setup_db_config(self.setup_path, os.path.join(self.ldapdir, "db", "config"))
+        setup_db_config(self.setup_path, os.path.join(self.ldapdir, "db", "schema"))
     
-        if not os.path.exists(os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba")):
-            os.makedirs(os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba"), 0700)
+        if not os.path.exists(os.path.join(self.ldapdir, "db", "samba",  "cn=samba")):
+            os.makedirs(os.path.join(self.ldapdir, "db", "samba",  "cn=samba"), 0700)
         
         setup_file(self.setup_path("cn=samba.ldif"), 
-                   os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba.ldif"),
+                   os.path.join(self.ldapdir, "db", "samba",  "cn=samba.ldif"),
                    { "UUID": str(uuid.uuid4()), 
                      "LDAPTIME": timestring(int(time.time()))} )
         setup_file(self.setup_path("cn=samba-admin.ldif"), 
-                   os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba", "cn=samba-admin.ldif"),
+                   os.path.join(self.ldapdir, "db", "samba",  "cn=samba", "cn=samba-admin.ldif"),
                    {"LDAPADMINPASS_B64": b64encode(self.ldapadminpass),
                     "UUID": str(uuid.uuid4()), 
                     "LDAPTIME": timestring(int(time.time()))} )
     
         if self.ol_mmr_urls is not None:
             setup_file(self.setup_path("cn=replicator.ldif"),
-                       os.path.join(self.paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
+                       os.path.join(self.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
                        {"MMR_PASSWORD_B64": b64encode(mmr_pass),
                         "UUID": str(uuid.uuid4()),
                         "LDAPTIME": timestring(int(time.time()))} )
@@ -460,7 +472,7 @@ class OpenLDAPBackend(LDAPBackend):
 
         backend_schema_data = self.schema.ldb.convert_schema_to_openldap("openldap", open(self.setup_path(mapping), 'r').read())
         assert backend_schema_data is not None
-        open(os.path.join(self.paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
+        open(os.path.join(self.ldapdir, backend_schema), 'w').write(backend_schema_data)
 
         # now we generate the needed strings to start slapd automatically,
         # first ldapi_uri...
@@ -478,7 +490,7 @@ class OpenLDAPBackend(LDAPBackend):
         # Prepare the 'result' information - the commands to return in particular
         self.slapd_provision_command = [self.slapd_path]
 
-        self.slapd_provision_command.append("-F" + self.paths.olcdir)
+        self.slapd_provision_command.append("-F" + self.olcdir)
 
         self.slapd_provision_command.append("-h")
 
@@ -504,10 +516,10 @@ class OpenLDAPBackend(LDAPBackend):
             sys.exit(0)
 
         # Finally, convert the configuration into cn=config style!
-        if not os.path.isdir(self.paths.olcdir):
-            os.makedirs(self.paths.olcdir, 0770)
+        if not os.path.isdir(self.olcdir):
+            os.makedirs(self.olcdir, 0770)
 
-            retcode = subprocess.call([self.slapd_path, "-Ttest", "-f", self.paths.slapdconf, "-F", self.paths.olcdir], close_fds=True, shell=False)
+            retcode = subprocess.call([self.slapd_path, "-Ttest", "-f", self.slapdconf, "-F", self.olcdir], close_fds=True, shell=False)
 
 #            We can't do this, as OpenLDAP is strange.  It gives an error
 #            output to the above, but does the conversion sucessfully...
@@ -515,11 +527,11 @@ class OpenLDAPBackend(LDAPBackend):
 #            if retcode != 0:
 #                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
-            if not os.path.exists(os.path.join(self.paths.olcdir, "cn=config.ldif")):
+            if not os.path.exists(os.path.join(self.olcdir, "cn=config.ldif")):
                 raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
             # Don't confuse the admin by leaving the slapd.conf around
-            os.remove(self.paths.slapdconf)        
+            os.remove(self.slapdconf)        
 
 
 class FDSBackend(LDAPBackend):
@@ -555,18 +567,18 @@ class FDSBackend(LDAPBackend):
 
         self.sambadn = "CN=Samba"
 
-        self.fedoradsinf = os.path.join(paths.ldapdir, "fedorads.inf")
-        self.partitions_ldif = os.path.join(paths.ldapdir, "fedorads-partitions.ldif")
-        self.sasl_ldif = os.path.join(paths.ldapdir, "fedorads-sasl.ldif")
-        self.dna_ldif = os.path.join(paths.ldapdir, "fedorads-dna.ldif")
-        self.pam_ldif = os.path.join(paths.ldapdir, "fedorads-pam.ldif")
-        self.refint_ldif = os.path.join(paths.ldapdir, "fedorads-refint.ldif")
-        self.linked_attrs_ldif = os.path.join(paths.ldapdir, "fedorads-linked-attributes.ldif")
-        self.index_ldif = os.path.join(paths.ldapdir, "fedorads-index.ldif")
-        self.samba_ldif = os.path.join(paths.ldapdir, "fedorads-samba.ldif")
+        self.fedoradsinf = os.path.join(self.ldapdir, "fedorads.inf")
+        self.partitions_ldif = os.path.join(self.ldapdir, "fedorads-partitions.ldif")
+        self.sasl_ldif = os.path.join(self.ldapdir, "fedorads-sasl.ldif")
+        self.dna_ldif = os.path.join(self.ldapdir, "fedorads-dna.ldif")
+        self.pam_ldif = os.path.join(self.ldapdir, "fedorads-pam.ldif")
+        self.refint_ldif = os.path.join(self.ldapdir, "fedorads-refint.ldif")
+        self.linked_attrs_ldif = os.path.join(self.ldapdir, "fedorads-linked-attributes.ldif")
+        self.index_ldif = os.path.join(self.ldapdir, "fedorads-index.ldif")
+        self.samba_ldif = os.path.join(self.ldapdir, "fedorads-samba.ldif")
 
         self.samba3_schema = self.setup_path("../../examples/LDAP/samba.schema")
-        self.samba3_ldif = os.path.join(self.paths.ldapdir, "samba3.ldif")
+        self.samba3_ldif = os.path.join(self.ldapdir, "samba3.ldif")
 
         self.retcode = subprocess.call(["bin/oLschema2ldif", "-H", "NONE",
                 "-I", self.samba3_schema,
@@ -595,7 +607,7 @@ class FDSBackend(LDAPBackend):
                    {"ROOT": self.root,
                     "HOSTNAME": self.hostname,
                     "DNSDOMAIN": self.names.dnsdomain,
-                    "LDAPDIR": self.paths.ldapdir,
+                    "LDAPDIR": self.ldapdir,
                     "DOMAINDN": self.names.domaindn,
                     "LDAP_INSTANCE": self.ldap_instance,
                     "LDAPMANAGERDN": self.names.ldapmanagerdn,
@@ -667,20 +679,20 @@ class FDSBackend(LDAPBackend):
         # Build a schema file in Fedora DS format
         backend_schema_data = self.schema.ldb.convert_schema_to_openldap("fedora-ds", open(self.setup_path(mapping), 'r').read())
         assert backend_schema_data is not None
-        open(os.path.join(self.paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
+        open(os.path.join(self.ldapdir, backend_schema), 'w').write(backend_schema_data)
 
         self.credentials.set_bind_dn(self.names.ldapmanagerdn)
 
         # Destory the target directory, or else setup-ds.pl will complain
-        fedora_ds_dir = os.path.join(self.paths.ldapdir, "slapd-" + self.ldap_instance)
+        fedora_ds_dir = os.path.join(self.ldapdir, "slapd-" + self.ldap_instance)
         shutil.rmtree(fedora_ds_dir, True)
 
-        self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir, "-i", self.paths.slapdpid]
+        self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir, "-i", self.slapd_pid]
         #In the 'provision' command line, stay in the foreground so we can easily kill it
         self.slapd_provision_command.append("-d0")
 
         #the command for the final run is the normal script
-        self.slapd_command = [os.path.join(self.paths.ldapdir, "slapd-" + self.ldap_instance, "start-slapd")]
+        self.slapd_command = [os.path.join(self.ldapdir, "slapd-" + self.ldap_instance, "start-slapd")]
 
         # If we were just looking for crashes up to this point, it's a
         # good time to exit before we realise we don't have Fedora DS on
@@ -701,7 +713,7 @@ class FDSBackend(LDAPBackend):
 
         # Load samba-admin
         retcode = subprocess.call([
-            os.path.join(self.paths.ldapdir, "slapd-" + self.ldap_instance, "ldif2db"), "-s", self.sambadn, "-i", self.samba_ldif],
+            os.path.join(self.ldapdir, "slapd-" + self.ldap_instance, "ldif2db"), "-s", self.sambadn, "-i", self.samba_ldif],
             close_fds=True, shell=False)
         if retcode != 0:
             raise ProvisioningError("ldif2db failed")
