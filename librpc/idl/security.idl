@@ -264,6 +264,13 @@ interface security
 	const string SID_BUILTIN_NETWORK_CONF_OPERATORS = "S-1-5-32-556";
 	const string SID_BUILTIN_INCOMING_FOREST_TRUST  = "S-1-5-32-557";
 
+	/* SECURITY_NT_SERVICE */
+	const string NAME_NT_SERVICE            = "NT SERVICE";
+
+	const string SID_NT_NT_SERVICE          = "S-1-5-80";
+	const string SID_NT_TRUSTED_INSTALLER =
+		"S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
+
 	/* well-known domain RIDs */
 	const int DOMAIN_RID_LOGON                   = 9;
 	const int DOMAIN_RID_ENTERPRISE_READONLY_DCS = 498;
