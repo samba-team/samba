@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/libwbclient/wbc_async.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
 
@@ -42,6 +43,24 @@ static bool test_wbc_ping(struct torture_context *tctx)
 
 	return true;
 }
+
+static bool test_wbc_ping_async(struct torture_context *tctx)
+{
+	struct wb_context *wb_ctx;
+	struct tevent_req *req;
+
+	wb_ctx = wb_context_init(tctx, NULL);
+
+	req = wbcPing_send(tctx, tctx->ev, wb_ctx);
+	torture_assert(tctx, req, "wbcPing_send failed");
+
+	if(!tevent_req_poll(req, tctx->ev)) {
+		return false;
+	}
+	torture_assert_wbc_ok(tctx, wbcPing_recv(req), "wbcPing_recv failed");
+	return true;
+}
+
 
 static bool test_wbc_pingdc(struct torture_context *tctx)
 {
@@ -353,6 +372,7 @@ struct torture_suite *torture_wbclient(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
 
 	torture_suite_add_simple_test(suite, "wbcPing", test_wbc_ping);
+	torture_suite_add_simple_test(suite, "wbcPing_async", test_wbc_ping_async);
 	torture_suite_add_simple_test(suite, "wbcPingDc", test_wbc_pingdc);
 	torture_suite_add_simple_test(suite, "wbcLibraryDetails", test_wbc_library_details);
 	torture_suite_add_simple_test(suite, "wbcInterfaceDetails", test_wbc_interface_details);
