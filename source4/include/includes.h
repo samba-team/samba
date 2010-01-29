@@ -33,7 +33,6 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/locale.h"
-#include "system/network.h"
 
 /* only do the C++ reserved word check when we compile
    to include --with-developer since too many systems
