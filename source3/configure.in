@@ -6388,14 +6388,14 @@ fi
 #################################################
 # Check if user wants pthreadpool support
 
+AC_ARG_ENABLE(pthreadpool,
+[AS_HELP_STRING([--enable-pthreadpool], [Enable pthreads pool helper support (default=no)])])
+
 if test x"$enable_pthreadpool" = xyes -a x"$samba_cv_HAVE_PTHREAD" != x"yes"; then
-	AC_MSG_ERROR([pthread support cannot be enabled when pthread header file not found])
+	AC_MSG_ERROR([pthreadpool support cannot be enabled when pthread support was found])
 fi
 
-AC_ARG_ENABLE(pthreadpool,
-[AS_HELP_STRING([--enable-pthreadpool], [Enable pthreads pool helper support (default=auto)])])
-
-if test x"$enable_pthreadpool" != x"no" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; then
+if test x"$enable_pthreadpool" = x"yes" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; then
     LIBS="$LIBS $PTHREAD_LDFLAGS"
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
