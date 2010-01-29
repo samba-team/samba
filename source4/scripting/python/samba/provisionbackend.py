@@ -42,19 +42,6 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.schema import Schema
 from samba.provisionexceptions import ProvisioningError
 
-def setup_db_config(setup_path, dbdir):
-    """Setup a Berkeley database.
-    
-    :param setup_path: Setup path function.
-    :param dbdir: Database directory."""
-    if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
-        os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700)
-        if not os.path.isdir(os.path.join(dbdir, "tmp")):
-            os.makedirs(os.path.join(dbdir, "tmp"), 0700)
-
-    setup_file(setup_path("DB_CONFIG"), os.path.join(dbdir, "DB_CONFIG"),
-               {"LDAPDBDIR": dbdir})
-
 class ProvisionBackend(object):
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
                  names=None, message=None):
@@ -310,6 +297,19 @@ class OpenLDAPBackend(LDAPBackend):
                 serverdn=self.names.serverdn,
                 files=[setup_path("schema_samba4.ldif")])
 
+    def setup_db_config(self, dbdir):
+        """Setup a Berkeley database.
+    
+        :param setup_path: Setup path function.
+        :param dbdir: Database directory."""
+        if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
+            os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700)
+            if not os.path.isdir(os.path.join(dbdir, "tmp")):
+                os.makedirs(os.path.join(dbdir, "tmp"), 0700)
+
+        setup_file(self.setup_path("DB_CONFIG"), os.path.join(dbdir, "DB_CONFIG"),
+                   {"LDAPDBDIR": dbdir})
+
     def provision(self):
         # Wipe the directories so we can start
         shutil.rmtree(os.path.join(self.ldapdir, "db"), True)
@@ -442,9 +442,9 @@ class OpenLDAPBackend(LDAPBackend):
                     "INDEX_CONFIG": index_config,
                     "NOSYNC": nosync_config})
         
-        setup_db_config(self.setup_path, os.path.join(self.ldapdir, "db", "user"))
-        setup_db_config(self.setup_path, os.path.join(self.ldapdir, "db", "config"))
-        setup_db_config(self.setup_path, os.path.join(self.ldapdir, "db", "schema"))
+        self.setup_db_config(os.path.join(self.ldapdir, "db", "user"))
+        self.setup_db_config(os.path.join(self.ldapdir, "db", "config"))
+        self.setup_db_config(os.path.join(self.ldapdir, "db", "schema"))
     
         if not os.path.exists(os.path.join(self.ldapdir, "db", "samba",  "cn=samba")):
             os.makedirs(os.path.join(self.ldapdir, "db", "samba",  "cn=samba"), 0700)
