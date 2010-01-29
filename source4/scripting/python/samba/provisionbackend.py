@@ -551,6 +551,7 @@ class FDSBackend(LDAPBackend):
 
         self.root = root
         self.setup_ds_path = setup_ds_path
+        self.ldap_instance = self.names.netbiosname.lower()
 
         self.sambadn = "CN=Samba"
 
@@ -596,6 +597,7 @@ class FDSBackend(LDAPBackend):
                     "DNSDOMAIN": self.names.dnsdomain,
                     "LDAPDIR": self.paths.ldapdir,
                     "DOMAINDN": self.names.domaindn,
+                    "LDAP_INSTANCE": self.ldap_instance,
                     "LDAPMANAGERDN": self.names.ldapmanagerdn,
                     "LDAPMANAGERPASS": self.ldapadminpass, 
                     "SERVERPORT": serverport})
@@ -670,7 +672,7 @@ class FDSBackend(LDAPBackend):
         self.credentials.set_bind_dn(self.names.ldapmanagerdn)
 
         # Destory the target directory, or else setup-ds.pl will complain
-        fedora_ds_dir = os.path.join(self.paths.ldapdir, "slapd-samba4")
+        fedora_ds_dir = os.path.join(self.paths.ldapdir, "slapd-" + self.ldap_instance)
         shutil.rmtree(fedora_ds_dir, True)
 
         self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir, "-i", self.paths.slapdpid]
@@ -678,7 +680,7 @@ class FDSBackend(LDAPBackend):
         self.slapd_provision_command.append("-d0")
 
         #the command for the final run is the normal script
-        self.slapd_command = [os.path.join(self.paths.ldapdir, "slapd-samba4", "start-slapd")]
+        self.slapd_command = [os.path.join(self.paths.ldapdir, "slapd-" + self.ldap_instance, "start-slapd")]
 
         # If we were just looking for crashes up to this point, it's a
         # good time to exit before we realise we don't have Fedora DS on
@@ -699,7 +701,7 @@ class FDSBackend(LDAPBackend):
 
         # Load samba-admin
         retcode = subprocess.call([
-            os.path.join(self.paths.ldapdir, "slapd-samba4", "ldif2db"), "-s", self.sambadn, "-i", self.samba_ldif],
+            os.path.join(self.paths.ldapdir, "slapd-" + self.ldap_instance, "ldif2db"), "-s", self.sambadn, "-i", self.samba_ldif],
             close_fds=True, shell=False)
         if retcode != 0:
             raise ProvisioningError("ldif2db failed")

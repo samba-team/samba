@@ -67,7 +67,7 @@ sub slapd_stop($$)
 {
 	my ($self, $envvars) = @_;
 	if ($self->{ldap} eq "fedora-ds") {
-		system("$envvars->{LDAPDIR}/slapd-samba4/stop-slapd");
+		system("$envvars->{LDAPDIR}/slapd-$envvars->{LDAP_INSTANCE}/stop-slapd");
 	} elsif ($self->{ldap} eq "openldap") {
 		open(IN, "<$envvars->{OPENLDAP_PIDFILE}") or 
 			die("unable to open slapd pid file: $envvars->{OPENLDAP_PIDFILE}");
@@ -211,22 +211,22 @@ type: 0x3
 
 sub mk_fedora_ds($$)
 {
-	my ($self, $ldapdir) = @_;
+	my ($self, $ctx) = @_;
 
 	#Make the subdirectory be as fedora DS would expect
-	my $fedora_ds_dir = "$ldapdir/slapd-samba4";
+	my $fedora_ds_dir = "$ctx->{ldapdir}/slapd-$ctx->{ldap_instance}";
 
-	my $pidfile = "$fedora_ds_dir/logs/slapd-samba4.pid";
+	my $pidfile = "$fedora_ds_dir/logs/slapd-$ctx->{ldap_instance}.pid";
 
 	return ($fedora_ds_dir, $pidfile);
 }
 
 sub mk_openldap($$)
 {
-	my ($self, $ldapdir) = @_;
+	my ($self, $ctx) = @_;
 
-	my $slapd_conf_d = "$ldapdir/slapd.d";
-	my $pidfile = "$ldapdir/slapd.pid";
+	my $slapd_conf_d = "$ctx->{ldapdir}/slapd.d";
+	my $pidfile = "$ctx->{ldapdir}/slapd.pid";
 
 	return ($slapd_conf_d, $pidfile);
 }
@@ -683,6 +683,7 @@ nogroup:x:65534:nobody
 		REALM => $ctx->{realm},
 		PASSWORD => $ctx->{password},
 		LDAPDIR => $ctx->{ldapdir},
+		LDAP_INSTANCE => $ctx->{ldap_instance},
 		WINBINDD_SOCKET_DIR => $ctx->{winbindd_socket_dir},
 		NCALRPCDIR => $ctx->{ncalrpcdir},
 		LOCKDIR => $ctx->{lockdir},
@@ -792,6 +793,8 @@ sub provision($$$$$$$)
                 if ($self->{ldap} eq "fedora-ds") {
 			$ctx->{sid_generator} = "backend";
 		}
+
+		$ctx->{ldap_instance} = lc($ctx->{netbiosname});
 	}
 
 	my $ret = $self->provision_raw_step1($ctx);
@@ -801,12 +804,12 @@ sub provision($$$$$$$)
 		push (@{$ctx->{provision_options}}, "--ldap-backend-type=" . $self->{ldap});
 		if ($self->{ldap} eq "openldap") {
  		        push (@{$ctx->{provision_options}}, "--slapd-path=" . $ENV{OPENLDAP_SLAPD});
-			($ret->{SLAPD_CONF_D}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx->{ldapdir}) or die("Unable to create openldap directories");
+			($ret->{SLAPD_CONF_D}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx) or die("Unable to create openldap directories");
 
                 } elsif ($self->{ldap} eq "fedora-ds") {
  		        push (@{$ctx->{provision_options}}, "--slapd-path=" . "$ENV{FEDORA_DS_ROOT}/sbin/ns-slapd");
  		        push (@{$ctx->{provision_options}}, "--setup-ds-path=" . "$ENV{FEDORA_DS_ROOT}/sbin/setup-ds.pl");
-			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx->{ldapdir}) or die("Unable to create fedora ds directories");
+			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx) or die("Unable to create fedora ds directories");
 		}
 
 	}
