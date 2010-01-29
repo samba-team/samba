@@ -45,10 +45,7 @@ enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
  * 			check to ensure the compatibility and allows us to
  *			release 2.x versions of the protocol with bugfixes or
  *			enhancements.
- * 04			Usually, this byte contains the character '0'. If the
- *			VFS module is configured for anonymization, this is
- *			set to 'A'. This information can be useful for the
- * 			receiver.
+ * 04			This byte is reserved for possible future extensions.
  * 05			Usually, this byte contains the character '0'. If the
  *			VFS module is configured for encryption of the data,
  *			this byte is set to 'E'.
@@ -275,7 +272,11 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	char *buf = NULL;
 	char *timestr = NULL;
 	char *opstr = NULL;
-	char *userSID = NULL;
+	char *sidstr = NULL;
+	char *userstr = NULL;
+	char *usersid = NULL;
+	const char *total_anonymization = NULL;
+	const char *anon_prefix = NULL;
 
 	/* first create the data that is transfered with any VFS op */
 	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
@@ -283,10 +284,43 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	buf = talloc_asprintf(talloc_tos(), "%04u%s", len, opstr);
 	len = strlen( username );
 	buf = talloc_asprintf_append(buf, "%04u%s", len, username);
-	userSID = dom_sid_string( talloc_tos(),
+
+	/*
+	 * Handle anonymization. In protocol v2, we have to anonymize
+	 * both the SID and the username.
+	 */
+	total_anonymization=lp_parm_const_string(SNUM(handle->conn),
+					"smb_traffic_analyzer",
+					"total_anonymization", NULL);
+
+	anon_prefix=lp_parm_const_string(SNUM(handle->conn),
+					"smb_traffic_analyzer",
+					"anonymize_prefix", NULL );
+	usersid = dom_sid_string(talloc_tos(),
 		&handle->conn->server_info->ptok->user_sids[0]);
-	len = strlen( userSID );
-	buf = talloc_asprintf_append(buf, "%04u%s", len, userSID);
+	if (anon_prefix != NULL) {
+		if (total_anonymization != NULL) {
+			userstr = talloc_asprintf(talloc_tos(), "%s",
+							anon_prefix);			
+			sidstr = talloc_asprintf(talloc_tos(), "%s",
+							anon_prefix);
+		} else {
+			userstr = talloc_asprintf(talloc_tos(), "%s%i",
+				anon_prefix,
+				str_checksum(username));
+			sidstr = talloc_asprintf(talloc_tos(), "%s%i",
+				anon_prefix,
+				str_checksum(usersid));
+		}
+	} else {
+		userstr = username;
+		sidstr = usersid;
+	}
+
+	len = strlen( userstr );
+	buf = talloc_asprintf_append(buf, "%04u%s", len, userstr);
+	len = strlen( sidstr );
+	buf = talloc_asprintf_append(buf, "%04u%s", len, sidstr);
 	len = strlen( handle->conn->connectpath );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
 		handle->conn->connectpath );
@@ -356,14 +390,22 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	}
 	seconds=(float) (tv.tv_usec / 1000);
 
-	/* check if anonymization is required */
+	/*
+	 * Check if anonymization is required, and if yes do this only if
+	 * we run on protocol version 1. Anonynization for protocol v2 is
+	 * handled in it's marshaller function.
+	 */
 	total_anonymization=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",
 					"total_anonymization", NULL);
 
 	anon_prefix=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",\
 					"anonymize_prefix", NULL );
-	if (anon_prefix!=NULL) {
-		state_flags[1] = 'A';
+
+	protocol_version = lp_parm_const_string(SNUM(handle->conn),
+					"smb_traffic_analyzer",
+					"protocol_version", NULL );
+
+	if (anon_prefix!=NULL && strcmp(protocol_version,"V2") != 0) {
 		if (total_anonymization!=NULL) {
 			username = talloc_asprintf(talloc_tos(),
 				"%s",
@@ -383,9 +425,6 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	if (!username) {
 		return;
 	}
-	protocol_version = lp_parm_const_string(SNUM(handle->conn),
-		"smb_traffic_analyzer",
-		"protocol_version", NULL );
 
 	if ( protocol_version == NULL || strcmp( protocol_version,"V1") == 0) {
 
