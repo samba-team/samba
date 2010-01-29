@@ -43,11 +43,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 
 
-/* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when
- * used as a keytab */
-TALLOC_CTX *hdb_samba4_mem_ctx;
-struct tevent_context *hdb_samba4_ev_ctx;
-struct loadparm_context *hdb_samba4_lp_ctx;
 extern struct krb5plugin_windc_ftable windc_plugin_table;
 extern struct hdb_method hdb_samba4;
 
