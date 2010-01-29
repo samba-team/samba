@@ -531,34 +531,54 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	 * over the data.
 	 */
 	size_t size;
-	char *akey = secrets_fetch("smb_traffic_analyzer_key", &size);
+	become_root();
+	char *akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
+	unbecome_root();
 	if ( akey != NULL ) {
-		char *crypted;
+		char crypted[18], *filler, *output;
+		int h,d,s1,s2;
 		state_flags[2] = 'E';
-		DEBUG(10, ("smb_traffic_analyzer: a key was found, encrypting "
-			"data!"));
-		AES_KEY *key;
-		samba_AES_set_encrypt_key(akey, 128, key);
-		samba_AES_encrypt( str, crypted, key );
-		len = strlen( crypted );
+		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: a key was"
+			" found, encrypting data!\n"));
+		AES_KEY key;
+		samba_AES_set_encrypt_key(akey, 128, &key);
+		s1 = strlen(str) / 16;
+		s2 = strlen(str) % 16;
+		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: found %i"
+			" blocks, %i missing bytes.\n",
+			s1,s2));
+		filler = talloc_asprintf( talloc_tos(), "................" );
+		for (h = 0; h < s2; h++) {
+			*(filler+h)=*(str+(s1*16)+h);
+		}
+		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: created %s"
+			" as filling block.\n", filler));
+		output = talloc_array(talloc_tos(), char, (s1*16)+17 );
+		d=0;
+		for (h = 0; h < s1; h++) {
+			samba_AES_encrypt(str+(16*h), crypted, &key);
+			for (d = 0; d<16; d++) output[d+(16*h)]=crypted[d];
+		}
+		samba_AES_encrypt( str+(16*h), filler, &key );
+		for (d = 0;d < 16; d++) output[d+(16*h)]=*(filler+d);
+		len = (s1*16)+16;
 		header = talloc_asprintf( talloc_tos(), "V2.%s%017u",
 						state_flags, len);
 
 		DEBUG(10, ("smb_traffic_analyzer_send_data_socket:"
-			" header created for crypted data: %s", header));
+			" header created for crypted data: %s\n", header));
 		len = strlen(header);
 		if (write_data(rf_sock->sock, header, len) != len) {
 			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 						"error sending the header"
 						 " over the socket!\n"));
 		}
-		len = strlen(crypted);
-		if (write_data(rf_sock->sock, crypted, len) != len) {
+		len = (s1*16)+16;
+		if (write_data(rf_sock->sock, output, len) != len) {
 			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 				"error sending crypted data to socket!\n"));
-		free( crypted );
-		return ;
 		}
+	return;
 	}
 
         len = strlen(str);
