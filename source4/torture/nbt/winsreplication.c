@@ -1008,14 +1008,16 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 									 struct test_wrepl_conflict_conn *ctx)
 {
 	static bool ret = true;
-	struct nbt_name	name;
 	struct wrepl_wins_name wins_name1;
 	struct wrepl_wins_name wins_name2;
 	struct wrepl_wins_name *wins_name_tmp;
 	struct wrepl_wins_name *wins_name_last;
 	struct wrepl_wins_name *wins_name_cur;
 	uint32_t i,j;
-	uint8_t types[] = { 0x00, 0x1C };
+	struct nbt_name names[] = {
+		_NBT_NAME("_SAME_OWNER_A", 0x00, NULL),
+		_NBT_NAME("_SAME_OWNER_A", 0x1C, NULL),
+	};
 	struct {
 		enum wrepl_name_type type;
 		enum wrepl_name_state state;
@@ -1112,18 +1114,13 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 		}
 	};
 
-	name.name	= "_SAME_OWNER_A";
-	name.type	= 0;
-	name.scope	= NULL;
-
 	wins_name_tmp	= NULL;
 	wins_name_last	= &wins_name2;
 	wins_name_cur	= &wins_name1;
 
-	for (j=0; ret && j < ARRAY_SIZE(types); j++) {
-		name.type = types[j];
+	for (j=0; ret && j < ARRAY_SIZE(names); j++) {
 		torture_comment(tctx, "Test Replica Conflicts with same owner[%s] for %s\n",
-			nbt_name_string(ctx, &name), ctx->a.address);
+			nbt_name_string(ctx, &names[j]), ctx->a.address);
 
 		for(i=0; ret && i < ARRAY_SIZE(records); i++) {
 			wins_name_tmp	= wins_name_last;
@@ -1142,7 +1139,7 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 					"REPLACE");
 			}
 
-			wins_name_cur->name	= &name;
+			wins_name_cur->name	= &names[j];
 			wins_name_cur->flags	= WREPL_NAME_FLAGS(records[i].type,
 								   records[i].state,
 								   records[i].node,
