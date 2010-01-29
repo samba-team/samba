@@ -104,7 +104,7 @@ all=all of the above"""),
         elif role == "naming":
             m.dn = ldb.Dn(samdb, self.naming_dn)
         elif role == "infrastructure":
-            m.dn = ldb.Dn(samdb, self.indrastructure_dn)
+            m.dn = ldb.Dn(samdb, self.infrastructure_dn)
         elif role == "schema":
             m.dn = ldb.Dn(samdb, self.schema_dn)
         else:
