@@ -1147,7 +1147,8 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 			wins_name_cur->id	= ++ctx->a.max_version;
 			if (wins_name_cur->flags & 2) {
 				wins_name_cur->addresses.addresses.num_ips = records[i].num_ips;
-				wins_name_cur->addresses.addresses.ips     = discard_const(records[i].ips);
+				wins_name_cur->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+									     records[i].ips);
 			} else {
 				wins_name_cur->addresses.ip = records[i].ips[0].ip;
 			}
@@ -4830,7 +4831,8 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		wins_name_r1->id	= ++records[i].r1.owner->max_version;
 		if (wins_name_r1->flags & 2) {
 			wins_name_r1->addresses.addresses.num_ips = records[i].r1.num_ips;
-			wins_name_r1->addresses.addresses.ips     = discard_const(records[i].r1.ips);
+			wins_name_r1->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+								    records[i].r1.ips);
 		} else {
 			wins_name_r1->addresses.ip = records[i].r1.ips[0].ip;
 		}
@@ -4852,7 +4854,8 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		wins_name_r2->id	= ++records[i].r2.owner->max_version;
 		if (wins_name_r2->flags & 2) {
 			wins_name_r2->addresses.addresses.num_ips = records[i].r2.num_ips;
-			wins_name_r2->addresses.addresses.ips     = discard_const(records[i].r2.ips);
+			wins_name_r2->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+								    records[i].r2.ips);
 		} else {
 			wins_name_r2->addresses.ip = records[i].r2.ips[0].ip;
 		}
@@ -4929,7 +4932,8 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 								   WREPL_NODE_B, false);
 			wins_name_r2->id	= ++records[i].r2.owner->max_version;
 			wins_name_r2->addresses.addresses.num_ips = ARRAY_SIZE(addresses_B_1);
-			wins_name_r2->addresses.addresses.ips     = discard_const(addresses_B_1);
+			wins_name_r2->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+								    addresses_B_1);
 			wins_name_r2->unknown	= "255.255.255.255";
 			ret &= test_wrepl_update_one(tctx, ctx, records[i].r2.owner, wins_name_r2);
 			ret &= test_wrepl_is_applied(tctx, ctx, records[i].r2.owner, wins_name_r2, true);
@@ -4941,7 +4945,8 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 								   WREPL_NODE_B, false);
 			wins_name_r2->id	= ++records[i].r2.owner->max_version;
 			wins_name_r2->addresses.addresses.num_ips = ARRAY_SIZE(addresses_B_1);
-			wins_name_r2->addresses.addresses.ips     = discard_const(addresses_B_1);
+			wins_name_r2->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+								    addresses_B_1);
 			wins_name_r2->unknown	= "255.255.255.255";
 			ret &= test_wrepl_update_one(tctx, ctx, records[i].r2.owner, wins_name_r2);
 			ret &= test_wrepl_is_applied(tctx, ctx, records[i].r2.owner, wins_name_r2, true);
@@ -6589,7 +6594,8 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 		wins_name->id		= ++ctx->b.max_version;
 		if (wins_name->flags & 2) {
 			wins_name->addresses.addresses.num_ips = records[i].replica.num_ips;
-			wins_name->addresses.addresses.ips     = discard_const(records[i].replica.ips);
+			wins_name->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+								 records[i].replica.ips);
 		} else {
 			wins_name->addresses.ip = records[i].replica.ips[0].ip;
 		}
@@ -9286,7 +9292,8 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 		wins_name->id		= ++ctx->b.max_version;
 		if (wins_name->flags & 2) {
 			wins_name->addresses.addresses.num_ips = records[i].replica.num_ips;
-			wins_name->addresses.addresses.ips     = discard_const(records[i].replica.ips);
+			wins_name->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+								 records[i].replica.ips);
 		} else {
 			wins_name->addresses.ip = records[i].replica.ips[0].ip;
 		}
@@ -9401,7 +9408,8 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 									   WREPL_NODE_B, false);
 				wins_name->id		= ++ctx->b.max_version;
 				wins_name->addresses.addresses.num_ips = ARRAY_SIZE(addresses_B_1);
-				wins_name->addresses.addresses.ips     = discard_const(addresses_B_1);
+				wins_name->addresses.addresses.ips     = discard_const_p(struct wrepl_ip,
+									 addresses_B_1);
 				wins_name->unknown	= "255.255.255.255";
 				ret &= test_wrepl_update_one(tctx, ctx, &ctx->b, wins_name);
 				ret &= test_wrepl_is_applied(tctx, ctx, &ctx->b, wins_name, true);
