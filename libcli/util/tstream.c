@@ -20,6 +20,7 @@
 #include "includes.h"
 #include <tevent.h>
 #include "system/filesys.h"
+#include "system/network.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/util/tstream.h"
 #include "../lib/util/tevent_ntstatus.h"
