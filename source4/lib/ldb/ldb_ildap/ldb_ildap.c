@@ -61,6 +61,10 @@ struct ildb_context {
 	struct ildb_private *ildb;
 	struct ldap_request *ireq;
 
+	/* indicate we are already processing
+	 * the ldap_request in ildb_callback() */
+	bool in_ildb_callback;
+
 	bool done;
 
 	struct ildb_destructor_ctx *dc;
@@ -223,6 +227,13 @@ static void ildb_callback(struct ldap_request *req)
 	request_done = false;
 	controls = NULL;
 
+	/* check if we are already processing this request */
+	if (ac->in_ildb_callback) {
+		return;
+	}
+	/* mark the request as being in process */
+	ac->in_ildb_callback = true;
+
 	if (!NT_STATUS_IS_OK(req->status)) {
 		ret = ildb_map_error(ac->module, req->status);
 		ildb_request_done(ac, NULL, ret);
@@ -278,13 +289,6 @@ static void ildb_callback(struct ldap_request *req)
 		break;
 
 	case LDAP_TAG_SearchRequest:
-		/* check if we are already processing this request */
-		if (req->in_dispatch_replies) {
-			return;
-		}
-
-		req->in_dispatch_replies = true;
-
 		/* loop over all messages */
 		for (i = 0; i < req->num_replies; i++) {
 
@@ -359,8 +363,6 @@ static void ildb_callback(struct ldap_request *req)
 			}
 		}
 
-		req->in_dispatch_replies = false;
-
 		talloc_free(req->replies);
 		req->replies = NULL;
 		req->num_replies = 0;
@@ -384,6 +386,10 @@ static void ildb_callback(struct ldap_request *req)
 	if (request_done) {
 		ildb_request_done(ac, controls, ret);
 	}
+
+	/* unmark the request as beign in progress */
+	ac->in_ildb_callback = false;
+
 	return;
 }
 
