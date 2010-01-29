@@ -721,14 +721,7 @@ class FDSBackend(LDAPBackend):
     def post_setup(self):
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
 
-        # delete default SASL mappings
-        res = ldapi_db.search(expression="(!(cn=samba-admin mapping))", base="cn=mapping,cn=sasl,cn=config", scope=SCOPE_ONELEVEL, attrs=["dn"])
-    
         # configure in-directory access control on Fedora DS via the aci attribute (over a direct ldapi:// socket)
-        for i in range (0, len(res)):
-            dn = str(res[i]["dn"])
-            ldapi_db.delete(dn)
-            
         aci = """(targetattr = "*") (version 3.0;acl "full access to all by samba-admin";allow (all)(userdn = "ldap:///CN=samba-admin,%s");)""" % self.sambadn
         
         m = ldb.Message()

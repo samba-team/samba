@@ -7,3 +7,14 @@ nsSaslMapRegexString: ^samba-admin$
 nsSaslMapBaseDNTemplate: CN=samba-admin,${SAMBADN}
 nsSaslMapFilterTemplate: (objectclass=*)
 
+dn: cn=Kerberos uid mapping,cn=mapping,cn=sasl,cn=config
+changetype: delete
+
+dn: cn=rfc 2829 dn syntax,cn=mapping,cn=sasl,cn=config
+changetype: delete
+
+dn: cn=rfc 2829 u syntax,cn=mapping,cn=sasl,cn=config
+changetype: delete
+
+dn: cn=uid mapping,cn=mapping,cn=sasl,cn=config
+changetype: delete
