@@ -1207,7 +1207,7 @@ static void print_cifs_mount_version(void)
  */
 static int check_newline(const char *progname, const char *name)
 {
-    char *s;
+    const char *s;
     for (s = "\n"; *s; s++) {
         if (strchr(name, *s)) {
             fprintf(stderr, "%s: illegal character 0x%02x in mount entry\n",
