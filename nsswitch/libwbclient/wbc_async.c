@@ -192,7 +192,7 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx, const char* dir)
 {
 	struct wb_context *result;
 
-	result = talloc(mem_ctx, struct wb_context);
+	result = talloc_zero(mem_ctx, struct wb_context);
 	if (result == NULL) {
 		return NULL;
 	}
