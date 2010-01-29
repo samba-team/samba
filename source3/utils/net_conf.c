@@ -691,6 +691,17 @@ static int net_conf_addshare(struct net_context *c,
 	}
 
 	/*
+	 * start a transaction
+	 */
+
+	werr = smbconf_transaction_start(conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error starting transaction: %s\n",
+			 win_errstr(werr));
+		goto done;
+	}
+
+	/*
 	 * create the share
 	 */
 
@@ -698,7 +709,7 @@ static int net_conf_addshare(struct net_context *c,
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("Error creating share %s: %s\n"),
 			  sharename, win_errstr(werr));
-		goto done;
+		goto cancel;
 	}
 
 	/*
@@ -709,7 +720,7 @@ static int net_conf_addshare(struct net_context *c,
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
 			  "path", win_errstr(werr));
-		goto done;
+		goto cancel;
 	}
 
 	if (comment != NULL) {
@@ -718,7 +729,7 @@ static int net_conf_addshare(struct net_context *c,
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
 				  "comment", win_errstr(werr));
-			goto done;
+			goto cancel;
 		}
 	}
 
@@ -726,7 +737,7 @@ static int net_conf_addshare(struct net_context *c,
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
 			  "'guest ok'", win_errstr(werr));
-		goto done;
+		goto cancel;
 	}
 
 	werr = smbconf_set_parameter(conf_ctx, sharename, "writeable",
@@ -734,10 +745,29 @@ static int net_conf_addshare(struct net_context *c,
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
 			  "writeable", win_errstr(werr));
-		goto done;
+		goto cancel;
 	}
 
-	ret = 0;
+	/*
+	 * commit the whole thing
+	 */
+
+	werr = smbconf_transaction_commit(conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error committing transaction: %s\n",
+			 win_errstr(werr));
+	} else {
+		ret = 0;
+	}
+
+	goto done;
+
+cancel:
+	werr = smbconf_transaction_cancel(conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error cancelling transaction: %s\n",
+			 win_errstr(werr));
+	}
 
 done:
 	TALLOC_FREE(mem_ctx);
