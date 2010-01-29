@@ -246,7 +246,7 @@ static void flush_sendbuffer(vfs_handle_struct * handle)
 	do {
 		loop--;
 		len = strlen(so->gsendbuffer);
-		ret = send(so->socket, so->gsendbuffer, len, MSG_DONTWAIT);
+		ret = send(so->socket, so->gsendbuffer, len, 0);
 		if (ret == len) {
 			so->gsendbuffer[0] = '\0';
 			break;
