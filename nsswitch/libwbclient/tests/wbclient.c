@@ -36,6 +36,17 @@
 #define torture_assert_wbc_ok(torture_ctx,expr,cmt) \
 		torture_assert_wbc_equal(torture_ctx,expr,WBC_ERR_SUCCESS,cmt)
 
+
+static void wbc_debug_torture(void *private_data, enum wbcDebugLevel level,
+			      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+static void wbc_debug_torture(void *private_data, enum wbcDebugLevel level,
+			      const char *fmt, va_list ap)
+{
+	struct torture_context *tctx = talloc_get_type_abort(private_data,
+					struct torture_context);
+	torture_comment(tctx, "%s", talloc_vasprintf(tctx, fmt, ap));
+}
+
 static bool test_wbc_ping(struct torture_context *tctx)
 {
 	torture_assert_wbc_ok(tctx, wbcPing(),
@@ -221,6 +232,73 @@ static bool test_wbc_users(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_users_async(struct torture_context *tctx)
+{
+	struct wb_context *wb_ctx;
+	struct tevent_req *req;
+	const char *domain_name = NULL;
+	uint32_t num_users;
+	const char **users;
+	int i;
+	struct wbcInterfaceDetails *details;
+
+	wb_ctx = wb_context_init(tctx, NULL);
+	wbcSetDebug(wb_ctx, wbc_debug_torture, tctx);
+
+	req = wbcInterfaceDetails_send(tctx, tctx->ev, wb_ctx);
+	torture_assert(tctx, req, "wbcInterfaceDetails_send failed");
+
+	if(!tevent_req_poll(req, tctx->ev)) {
+		return false;
+	}
+	torture_assert_wbc_ok(tctx,
+			      wbcInterfaceDetails_recv(req, tctx, &details),
+			      "wbcInterfaceDetails_recv failed");
+
+	domain_name = talloc_strdup(tctx, details->netbios_domain);
+	wbcFreeMemory(details);
+
+	/* No async implementation of this yet. */
+	torture_assert_wbc_ok(tctx, wbcListUsers(domain_name, &num_users, &users),
+		"wbcListUsers failed");
+	torture_assert(tctx, !(num_users > 0 && !users),
+		"wbcListUsers returned invalid results");
+
+	for (i=0; i < MIN(num_users,100); i++) {
+
+		struct wbcDomainSid sid, *sids;
+		enum wbcSidType name_type;
+		char *domain;
+		char *name;
+		uint32_t num_sids;
+
+		req = wbcLookupName_send(tctx, tctx->ev, wb_ctx, domain_name,
+					 users[i]);
+		torture_assert(tctx, req, "wbcLookupName_send failed");
+
+		if(!tevent_req_poll(req, tctx->ev)) {
+			return false;
+		}
+
+		torture_assert_wbc_ok(tctx,
+				      wbcLookupName_recv(req, &sid, &name_type),
+				      "wbcLookupName_recv failed");
+
+		torture_assert_int_equal(tctx, name_type, WBC_SID_NAME_USER,
+			"wbcLookupName expected WBC_SID_NAME_USER");
+		torture_assert_wbc_ok(tctx, wbcLookupSid(&sid, &domain, &name, &name_type),
+			"wbcLookupSid failed");
+		torture_assert_int_equal(tctx, name_type, WBC_SID_NAME_USER,
+			"wbcLookupSid expected WBC_SID_NAME_USER");
+		torture_assert(tctx, name,
+			"wbcLookupSid returned no name");
+		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
+			"wbcLookupUserSids failed");
+	}
+
+	return true;
+}
+
 static bool test_wbc_groups(struct torture_context *tctx)
 {
 	const char *domain_name = NULL;
@@ -381,6 +459,7 @@ struct torture_suite *torture_wbclient(void)
 	torture_suite_add_simple_test(suite, "wbcGuidToString", test_wbc_guidtostring);
 	torture_suite_add_simple_test(suite, "wbcDomainInfo", test_wbc_domain_info);
 	torture_suite_add_simple_test(suite, "wbcListUsers", test_wbc_users);
+	torture_suite_add_simple_test(suite, "wbcListUsers_async", test_wbc_users_async);
 	torture_suite_add_simple_test(suite, "wbcListGroups", test_wbc_groups);
 	torture_suite_add_simple_test(suite, "wbcListTrusts", test_wbc_trusts);
 	torture_suite_add_simple_test(suite, "wbcLookupDomainController", test_wbc_lookupdc);
