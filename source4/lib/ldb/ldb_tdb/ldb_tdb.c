@@ -659,6 +659,13 @@ int ltdb_modify_internal(struct ldb_module *module,
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_ADD:
 
+			if (el->num_values == 0) {
+				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
+						       el->name, ldb_dn_get_linearized(msg2->dn));
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				goto done;
+			}
+
 			/* make a copy of the array so that a permissive
 			 * control can remove duplicates without changing the
 			 * original values, but do not copy data as we do not
@@ -673,15 +680,12 @@ int ltdb_modify_internal(struct ldb_module *module,
 				el->name = msg->elements[i].name;
 				el->num_values = msg->elements[i].num_values;
 				el->values = talloc_array(el, struct ldb_val, el->num_values);
+				if (el->values == NULL) {
+					ret = LDB_ERR_OTHER;
+					goto done;
+				}
 				for (j = 0; j < el->num_values; j++) {
 					el->values[j] = msg->elements[i].values[j];
-				}
-
-				if (el->num_values == 0) {
-					ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
-							       el->name, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_CONSTRAINT_VIOLATION;
-					goto done;
 				}
 			}
 
