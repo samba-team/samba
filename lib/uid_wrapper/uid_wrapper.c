@@ -15,10 +15,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _SAMBA_BUILD_
+
 #define UID_WRAPPER_NOT_REPLACE
-#include "includes.h"
+#include "../replace/replace.h"
+#include <talloc.h>
 #include "system/passwd.h"
-#include "system/filesys.h"
+
+#else /* _SAMBA_BUILD_ */
+
+#error uid_wrapper_only_supported_in_samba_yet
+
+#endif
 
 #ifndef _PUBLIC_
 #define _PUBLIC_
