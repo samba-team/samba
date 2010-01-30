@@ -60,7 +60,8 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 		return false;
 	}
 
-	destname = SMB_STRDUP(connectpath);
+	/* Allocate for strlen + '\0' + possible leading '/' */
+	destname = SMB_MALLOC(strlen(connectpath) + 2);
 	if (!destname) {
 		return false;
 	}
