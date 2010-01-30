@@ -29,6 +29,16 @@
 #define TEVENT_DEPRECATED
 #include <tevent.h>
 
+#if defined(UID_WRAPPER)
+#if !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)
+#define UID_WRAPPER_REPLACE
+#include "../uid_wrapper/uid_wrapper.h"
+#endif
+#else
+#define uwrap_enabled() 0
+#endif
+
+
 struct unixuid_private {
 	struct wbc_context *wbc_ctx;
 	struct unix_sec_ctx *last_sec_ctx;

@@ -27,15 +27,6 @@
 
 #undef HAVE_KRB5_ENCRYPT_BLOCK
 
-#if defined(UID_WRAPPER)
-#if !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)
-#define UID_WRAPPER_REPLACE
-#include "../uid_wrapper/uid_wrapper.h"
-#endif
-#else
-#define uwrap_enabled() 0
-#endif
-
 /*Workaround for heimdal define vs samba define*/
 #ifdef HAVE_LIBINTL_H
 #define LIBINTL
