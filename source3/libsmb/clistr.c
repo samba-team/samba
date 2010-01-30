@@ -34,12 +34,12 @@ size_t clistr_push_fn(const char *function,
 			DEBUG(0, ("Pushing string of 'unlimited' length into non-SMB buffer!\n"));
 			return push_string_base(function, line,
 						cli->outbuf,
-						SVAL(cli->outbuf, smb_flg2),
+						(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
 						dest, src, -1, flags);
 		}
 		return push_string_base(function, line, 
 					cli->outbuf,
-					SVAL(cli->outbuf, smb_flg2),
+					(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
 					dest, src, cli->bufsize - buf_used,
 					flags);
 	}
@@ -47,7 +47,7 @@ size_t clistr_push_fn(const char *function,
 	/* 'normal' push into size-specified buffer */
 	return push_string_base(function, line, 
 				cli->outbuf,
-				SVAL(cli->outbuf, smb_flg2),
+				(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
 				dest, src, dest_len, flags);
 }
 
