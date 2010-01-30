@@ -799,9 +799,16 @@ static bool test_wrepl_is_applied(struct torture_context *tctx,
 						  names[0].state,
 						  names[0].node,
 						  names[0].is_static);
+		char *expected_scope = NULL;
 		CHECK_VALUE(tctx, names[0].name.type, name->name->type);
 		CHECK_VALUE_STRING(tctx, names[0].name.name, name->name->name);
-		CHECK_VALUE_STRING(tctx, names[0].name.scope, name->name->scope);
+
+		if (names[0].name.scope) {
+			expected_scope = talloc_strndup(tctx,
+							name->name->scope,
+							237);
+		}
+		CHECK_VALUE_STRING(tctx, names[0].name.scope, expected_scope);
 		CHECK_VALUE(tctx, flags, name->flags);
 		CHECK_VALUE_UINT64(tctx, names[0].version_id, name->id);
 
@@ -1004,6 +1011,27 @@ static bool test_wrepl_sgroup_merged(struct torture_context *tctx,
 	return true;
 }
 
+static char *test_nbt_winsrepl_scope_string(TALLOC_CTX *mem_ctx, uint8_t count)
+{
+	char *res;
+	uint8_t i;
+
+	res = talloc_array(mem_ctx, char, count+1);
+	if (res == NULL) {
+		return NULL;
+	}
+
+	for (i=0; i < count; i++) {
+		res[i] = '0' + (i%10);
+	}
+
+	res[count] = '\0';
+
+	talloc_set_name_const(res, res);
+
+	return res;
+}
+
 static bool test_conflict_same_owner(struct torture_context *tctx, 
 									 struct test_wrepl_conflict_conn *ctx)
 {
@@ -1016,6 +1044,28 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 	uint32_t i,j;
 	struct nbt_name names[] = {
 		_NBT_NAME("_SAME_OWNER_A", 0x00, NULL),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 1)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 2)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 3)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 4)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 5)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 6)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 7)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 8)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 9)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 237)),
+		_NBT_NAME("_SAME_OWNER_A", 0x00,
+			  test_nbt_winsrepl_scope_string(tctx, 238)),
 		_NBT_NAME("_SAME_OWNER_A", 0x1C, NULL),
 	};
 	struct {
