@@ -512,7 +512,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
-		return -1;
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 	i = el - msg->elements;
 
@@ -529,13 +529,13 @@ static int msg_delete_attribute(struct ldb_module *module,
 	msg->elements = talloc_realloc(msg, msg->elements,
 				       struct ldb_message_element,
 				       msg->num_elements);
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
   delete all elements matching an attribute name/value
 
-  return 0 on success, -1 on failure
+  return LDB Error on failure
 */
 static int msg_delete_element(struct ldb_module *module,
 			      struct ldb_message *msg,
@@ -550,7 +550,7 @@ static int msg_delete_element(struct ldb_module *module,
 
 	found = find_element(msg, name);
 	if (found == -1) {
-		return -1;
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
 	el = &msg->elements[found];
@@ -566,7 +566,7 @@ static int msg_delete_element(struct ldb_module *module,
 
 			ret = ltdb_index_del_value(module, msg->dn, el, i);
 			if (ret != LDB_SUCCESS) {
-				return -1;
+				return ret;
 			}
 
 			if (i<el->num_values-1) {
@@ -578,12 +578,12 @@ static int msg_delete_element(struct ldb_module *module,
 
 			/* per definition we find in a canonicalised message an
 			   attribute value only once. So we are finished here */
-			return 0;
+			return LDB_SUCCESS;
 		}
 	}
 
 	/* Not found */
-	return -1;
+	return LDB_ERR_NO_SUCH_ATTRIBUTE;
 }
 
 
@@ -605,8 +605,14 @@ int ltdb_modify_internal(struct ldb_module *module,
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message *msg2;
-	unsigned i, j;
+	unsigned i, j, k;
 	int ret = LDB_SUCCESS, idx;
+	struct ldb_control *control_permissive = NULL;
+
+	if (req) {
+		control_permissive = ldb_request_get_control(req,
+					LDB_CONTROL_PERMISSIVE_MODIFY_OID);
+	}
 
 	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
@@ -652,11 +658,31 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_ADD:
-			if (el->num_values == 0) {
-				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
-						       el->name, ldb_dn_get_linearized(msg2->dn));
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
-				goto done;
+
+			/* make a copy of the array so that a permissive
+			 * control can remove duplicates without changing the
+			 * original values, but do not copy data as we do not
+			 * need to keep it around once the operation is
+			 * finished */
+			if (control_permissive) {
+				el = talloc(msg2, struct ldb_message_element);
+				if (!el) {
+					ret = LDB_ERR_OTHER;
+					goto done;
+				}
+				el->name = msg->elements[i].name;
+				el->num_values = msg->elements[i].num_values;
+				el->values = talloc_array(el, struct ldb_val, el->num_values);
+				for (j = 0; j < el->num_values; j++) {
+					el->values[j] = msg->elements[i].values[j];
+				}
+
+				if (el->num_values == 0) {
+					ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
+							       el->name, ldb_dn_get_linearized(msg2->dn));
+					ret = LDB_ERR_CONSTRAINT_VIOLATION;
+					goto done;
+				}
 			}
 
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
@@ -693,8 +719,19 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 				/* Check that values don't exist yet on multi-
 				   valued attributes or aren't provided twice */
-				for (j=0; j<el->num_values; j++) {
+				for (j = 0; j < el->num_values; j++) {
 					if (ldb_msg_find_val(el2, &el->values[j]) != NULL) {
+						if (control_permissive) {
+							/* remove this one as if it was never added */
+							el->num_values--;
+							for (k = j; k < el->num_values; k++) {
+								el->values[k] = el->values[k + 1];
+							}
+							j--; /* rewind */
+
+							continue;
+						}
+
 						ldb_asprintf_errstring(ldb, "%s: value #%d already exists", el->name, j);
 						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 						goto done;
@@ -734,6 +771,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			break;
 
 		case LDB_FLAG_MOD_REPLACE:
+
 			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
 				/* the RELAX control overrides this
 				   check for replace. This is needed as
@@ -797,23 +835,33 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 			if (msg->elements[i].num_values == 0) {
 				/* Delete the whole attribute */
-				if (msg_delete_attribute(module, ldb, msg2,
-							 msg->elements[i].name) != 0) {
+				ret = msg_delete_attribute(module, ldb, msg2,
+							   msg->elements[i].name);
+				if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE &&
+				    control_permissive) {
+					ret = LDB_SUCCESS;
+				} else {
 					ldb_asprintf_errstring(ldb, "No such attribute: %s for delete on %s",
 							       msg->elements[i].name, dn);
-					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
+				}
+				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
 			} else {
 				/* Delete specified values from an attribute */
 				for (j=0; j < msg->elements[i].num_values; j++) {
-					if (msg_delete_element(module,
-							       msg2,
-							       msg->elements[i].name,
-							       &msg->elements[i].values[j]) != 0) {
+					ret = msg_delete_element(module,
+							         msg2,
+							         msg->elements[i].name,
+							         &msg->elements[i].values[j]);
+					if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE &&
+					    control_permissive) {
+						ret = LDB_SUCCESS;
+					} else {
 						ldb_asprintf_errstring(ldb, "No matching attribute value when deleting attribute: %s on %s",
 								       msg->elements[i].name, dn);
-						ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
+					}
+					if (ret != LDB_SUCCESS) {
 						goto done;
 					}
 				}
@@ -1244,6 +1292,7 @@ static int ltdb_request_destructor(void *ptr)
 static int ltdb_handle_request(struct ldb_module *module,
 			       struct ldb_request *req)
 {
+	struct ldb_control *control_permissive;
 	struct ldb_context *ldb;
 	struct tevent_context *ev;
 	struct ltdb_context *ac;
@@ -1253,8 +1302,12 @@ static int ltdb_handle_request(struct ldb_module *module,
 
 	ldb = ldb_module_get_ctx(module);
 
+	control_permissive = ldb_request_get_control(req,
+					LDB_CONTROL_PERMISSIVE_MODIFY_OID);
+
 	for (i = 0; req->controls && req->controls[i]; i++) {
-		if (req->controls[i]->critical) {
+		if (req->controls[i]->critical &&
+		    req->controls[i] != control_permissive) {
 			ldb_asprintf_errstring(ldb, "Unsupported critical extension %s",
 					       req->controls[i]->oid);
 			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
@@ -1306,8 +1359,27 @@ static int ltdb_handle_request(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+static int ltdb_init_rootdse(struct ldb_module *module)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	ret = ldb_mod_register_control(module,
+				       LDB_CONTROL_PERMISSIVE_MODIFY_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb_tdb: "
+			  "Unable to register control with rootdse!");
+	}
+
+	/* there can be no module beyond the backend, just return */
+	return LDB_SUCCESS;
+}
+
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
+	.init_context      = ltdb_init_rootdse,
 	.search            = ltdb_handle_request,
 	.add               = ltdb_handle_request,
 	.modify            = ltdb_handle_request,
@@ -1401,5 +1473,5 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 const struct ldb_backend_ops ldb_tdb_backend_ops = {
 	.name = "tdb",
-	.connect_fn = ltdb_connect
+	.connect_fn = ltdb_connect,
 };
