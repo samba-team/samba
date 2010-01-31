@@ -60,3 +60,28 @@ PRIVATE_DEPENDENCIES = \
 #######################
 
 DB_GLUE_OBJ_FILES = $(addprefix $(kdcsrcdir)/, db-glue.o)
+
+###############################################################
+# MIT KDC Plugin
+
+#######################
+# Start SUBSYSTEM MIT plugin
+[SUBSYSTEM::MIT_SAMBA]
+PRIVATE_DEPENDENCIES = \
+		LIBLDB auth_sam auth_sam_reply CREDENTIALS \
+		HEIMDAL_HDB DB_GLUE PAC_GLUE LIBSAMBA-HOSTCONFIG
+# End SUBSYSTEM MIT plugin
+#######################
+
+MIT_SAMBA_OBJ_FILES = $(addprefix $(kdcsrcdir)/, mit_samba.o)
+
+###################################
+# Start Library mit_samba
+[LIBRARY::mit_samba]
+PRIVATE_DEPENDENCIES = MIT_SAMBA
+LIBRARY_REALNAME = mit_samba.$(SHLIBEXT)
+OUTPUT_TYPE = SHARED_LIBRARY
+ENABLE = YES
+# End Library mit_samba
+###################################
+
