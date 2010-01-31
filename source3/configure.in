@@ -3660,6 +3660,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_get_creds_opt_set_impersonate, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_creds, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_credentials_for_user, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_host_realm, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_host_realm, $KRB5_LIBS)
+
   # MIT krb5 1.8 does not expose this call (yet)
   AC_CHECK_DECLS(krb5_get_credentials_for_user, [], [], [#include <krb5.h>])
 
@@ -4000,6 +4003,18 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_WRFILE_KEYTAB" = x"yes"; then
       AC_DEFINE(HAVE_WRFILE_KEYTAB,1,
                [Whether the WRFILE:-keytab is supported])
+  fi
+
+  AC_CACHE_CHECK([for krb5_realm type],
+                samba_cv_HAVE_KRB5_REALM_TYPE,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_realm realm;],
+      samba_cv_HAVE_KRB5_REALM_TYPE=yes,
+      samba_cv_HAVE_KRB5_REALM_TYPE=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_REALM_TYPE" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_REALM_TYPE,1,
+               [Whether the type krb5_realm exists])
   fi
 
   AC_CACHE_CHECK([for krb5_princ_realm returns krb5_realm or krb5_data],
