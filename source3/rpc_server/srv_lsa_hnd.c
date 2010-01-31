@@ -109,7 +109,7 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 		}
 		ZERO_STRUCTP(hl);
 
-		DEBUG(10,("init_pipe_handles: created handle list for "
+		DEBUG(10,("init_pipe_handle_list: created handle list for "
 			  "pipe %s\n",
 			  get_pipe_name_from_syntax(talloc_tos(), syntax)));
 	}
@@ -126,8 +126,8 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 
 	p->pipe_handles = hl;
 
-	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %lu for pipe %s\n",
-		  (unsigned long)p->pipe_handles->pipe_ref_count,
+	DEBUG(10,("init_pipe_handle_list: pipe_handles ref count = %lu for "
+		  "pipe %s\n", (unsigned long)p->pipe_handles->pipe_ref_count,
 		  get_pipe_name_from_syntax(talloc_tos(), syntax)));
 
 	return True;
