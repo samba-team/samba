@@ -1358,6 +1358,20 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	bool replica_vs_replica = false;
 	bool local_vs_replica = false;
 
+	if (replica->name.scope) {
+		TALLOC_CTX *parent;
+		const char *scope;
+
+		/*
+		 * Windows 2008 truncates the scope to 237 bytes,
+		 * so we do...
+		 */
+		parent = talloc_parent(replica->name.scope);
+		scope = talloc_strndup(parent, replica->name.scope, 237);
+		NT_STATUS_HAVE_NO_MEMORY(scope);
+		replica->name.scope = scope;
+	}
+
 	status = winsdb_lookup(partner->service->wins_db,
 			       &replica->name, mem_ctx, &rec);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
