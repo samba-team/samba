@@ -292,6 +292,29 @@ static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tc
 	return true;
 }
 
+static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
+						  struct dcerpc_pipe *p,
+						  struct policy_handle *handle,
+						  struct spoolss_NotifyOption *options)
+{
+	struct spoolss_RouterRefreshPrinterChangeNotify r;
+	struct spoolss_NotifyInfo *info;
+
+	torture_comment(tctx, "Testing RouterRefreshPrinterChangeNotify\n");
+
+	r.in.handle = handle;
+	r.in.change_low = 0;
+	r.in.options = options;
+	r.out.info = &info;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RouterRefreshPrinterChangeNotify(p, tctx, &r),
+		"RouterRefreshPrinterChangeNotify failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"error return code for RouterRefreshPrinterChangeNotify");
+
+	return true;
+}
+
 static bool test_ClosePrinter(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
@@ -391,6 +414,8 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert(tctx, received_packets, "no packets received");
 	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
 		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, NULL), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, server_option), "");
 	torture_assert(tctx, test_ClosePrinter(tctx, p, &handle), "");
 	tmp = last_packet(received_packets);
 	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
