@@ -2077,6 +2077,10 @@ bool pdb_copy_sam_account(struct samu *dst, struct samu *src )
 		}
 	}
 
+	if (src->group_sid) {
+		pdb_set_group_sid(dst, src->group_sid, PDB_SET);
+	}
+
 	free(buf);
 	return True;
 }
