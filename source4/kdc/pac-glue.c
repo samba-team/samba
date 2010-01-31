@@ -182,8 +182,9 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
-				 NTSTATUS nt_status)
+/* this function allocates 'data' using malloc.
+ * The caller is responsible for freeing it */
+void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 {
 	PA_DATA pa;
 	unsigned char *buf;
@@ -213,5 +214,58 @@ void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
 	e_data->length = len;
 
 	return;
+}
+
+/* function to map policy errors */
+krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status)
+{
+	krb5_error_code ret;
+
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE))
+		ret = KRB5KDC_ERR_KEY_EXPIRED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED))
+		ret = KRB5KDC_ERR_KEY_EXPIRED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_EXPIRED))
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED))
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_LOGON_HOURS))
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_LOCKED_OUT))
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_WORKSTATION))
+		ret = KRB5KDC_ERR_POLICY;
+	else
+		ret = KRB5KDC_ERR_POLICY;
+
+	return ret;
+}
+
+/* Given a kdc entry, consult the account_ok routine in auth/auth_sam.c
+ * for consistency */
+NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
+				       const char *client_name,
+				       const char *workstation,
+				       bool password_change)
+{
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS nt_status;
+
+	tmp_ctx = talloc_named(NULL, 0, "samba_kdc_check_client_access");
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* we allow all kinds of trusts here */
+	nt_status = authsam_account_ok(tmp_ctx,
+				       kdc_entry->kdc_db_ctx->samdb,
+				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
+				       MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
+				       kdc_entry->realm_dn, kdc_entry->msg,
+				       workstation, client_name,
+				       true, password_change);
+
+	talloc_free(tmp_ctx);
+	return nt_status;
 }
 
