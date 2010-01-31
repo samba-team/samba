@@ -1074,6 +1074,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 			host = strchr_m(cli->desthost, '.');
 			if (host) {
+				/* We had a '.' in the name. */
 				machine = SMB_STRNDUP(cli->desthost,
 					host - cli->desthost);
 			} else {
@@ -1087,11 +1088,29 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 				realm = SMB_STRDUP(dest_realm);
 				strupper_m(realm);
 			} else {
-				realm = kerberos_get_default_realm_from_ccache();
+				if (host) {
+					/* DNS name. */
+					realm = kerberos_get_realm_from_hostname(cli->desthost);
+				} else {
+					/* NetBIOS name - use our realm. */
+					realm = kerberos_get_default_realm_from_ccache();
+				}
 			}
+
 			if (realm && *realm) {
-				principal = talloc_asprintf(NULL, "%s$@%s",
-							machine, realm);
+				if (host) {
+					/* DNS name. */
+					principal = talloc_asprintf(talloc_tos(),
+							"cifs/%s@%s",
+							cli->desthost,
+							realm);
+				} else {
+					/* NetBIOS name, use machine account. */
+					principal = talloc_asprintf(talloc_tos(),
+							"%s$@%s",
+							machine,
+							realm);
+				}
 				if (!principal) {
 					SAFE_FREE(machine);
 					SAFE_FREE(realm);
