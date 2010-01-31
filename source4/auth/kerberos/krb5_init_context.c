@@ -49,18 +49,12 @@ struct smb_krb5_socket {
 	krb5_krbhst_info *hi;
 };
 
-static krb5_error_code smb_krb5_context_destroy_1(struct smb_krb5_context *ctx)
-{
-	krb5_free_context(ctx->krb5_context);
-	return 0;
-}
-
-static krb5_error_code smb_krb5_context_destroy_2(struct smb_krb5_context *ctx)
+static krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx)
 {
 	/* Otherwise krb5_free_context will try and close what we have already free()ed */
 	krb5_set_warn_dest(ctx->krb5_context, NULL);
 	krb5_closelog(ctx->krb5_context, ctx->logf);
-	smb_krb5_context_destroy_1(ctx);
+	krb5_free_context(ctx->krb5_context);
 	return 0;
 }
 
@@ -360,6 +354,65 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	return KRB5_KDC_UNREACH;
 }
 
+krb5_error_code
+smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
+			    struct tevent_context *ev,
+			    struct loadparm_context *lp_ctx,
+			    krb5_context *_krb5_context)
+{
+	krb5_error_code ret;
+	char **config_files;
+	const char *config_file, *realm;
+	krb5_context krb5_ctx;
+
+	initialize_krb5_error_table();
+
+	ret = krb5_init_context(&krb5_ctx);
+	if (ret) {
+		DEBUG(1,("krb5_init_context failed (%s)\n",
+			 error_message(ret)));
+		return ret;
+	}
+
+	config_file = config_path(tmp_ctx, lp_ctx, "krb5.conf");
+	if (!config_file) {
+		krb5_free_context(krb5_ctx);
+		return ENOMEM;
+	}
+
+	/* Use our local krb5.conf file by default */
+	ret = krb5_prepend_config_files_default(config_file == NULL?"":config_file, &config_files);
+	if (ret) {
+		DEBUG(1,("krb5_prepend_config_files_default failed (%s)\n",
+			 smb_get_krb5_error_message(krb5_ctx, ret, tmp_ctx)));
+		krb5_free_context(krb5_ctx);
+		return ret;
+	}
+
+	ret = krb5_set_config_files(krb5_ctx, config_files);
+	krb5_free_config_files(config_files);
+	if (ret) {
+		DEBUG(1,("krb5_set_config_files failed (%s)\n",
+			 smb_get_krb5_error_message(krb5_ctx, ret, tmp_ctx)));
+		krb5_free_context(krb5_ctx);
+		return ret;
+	}
+
+	realm = lp_realm(lp_ctx);
+	if (realm != NULL) {
+		ret = krb5_set_default_realm(krb5_ctx, realm);
+		if (ret) {
+			DEBUG(1,("krb5_set_default_realm failed (%s)\n",
+				 smb_get_krb5_error_message(krb5_ctx, ret, tmp_ctx)));
+			krb5_free_context(krb5_ctx);
+			return ret;
+		}
+	}
+
+	*_krb5_context = krb5_ctx;
+	return 0;
+}
+
 krb5_error_code smb_krb5_init_context(void *parent_ctx,
 				      struct tevent_context *ev,
 				      struct loadparm_context *lp_ctx,
@@ -367,8 +420,6 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 {
 	krb5_error_code ret;
 	TALLOC_CTX *tmp_ctx;
-	char **config_files;
-	const char *config_file, *realm;
 
 	initialize_krb5_error_table();
 
@@ -380,50 +431,13 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ENOMEM;
 	}
 
-	ret = krb5_init_context(&(*smb_krb5_context)->krb5_context);
+	ret = smb_krb5_init_context_basic(tmp_ctx, ev, lp_ctx,
+					  &(*smb_krb5_context)->krb5_context);
 	if (ret) {
-		DEBUG(1,("krb5_init_context failed (%s)\n",
+		DEBUG(1,("smb_krb5_context_init_basic failed (%s)\n",
 			 error_message(ret)));
 		talloc_free(tmp_ctx);
 		return ret;
-	}
-
-	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destroy_1);
-
-	config_file = config_path(tmp_ctx, lp_ctx, "krb5.conf");
-	if (!config_file) {
-		talloc_free(tmp_ctx);
-		return ENOMEM;
-	}
-
-	/* Use our local krb5.conf file by default */
-	ret = krb5_prepend_config_files_default(config_file == NULL?"":config_file, &config_files);
-	if (ret) {
-		DEBUG(1,("krb5_prepend_config_files_default failed (%s)\n",
-			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	ret = krb5_set_config_files((*smb_krb5_context)->krb5_context,
-				    config_files);
-	krb5_free_config_files(config_files);
-	if (ret) {
-		DEBUG(1,("krb5_set_config_files failed (%s)\n",
-			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	realm = lp_realm(lp_ctx);
-	if (realm != NULL) {
-		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, realm);
-		if (ret) {
-			DEBUG(1,("krb5_set_default_realm failed (%s)\n",
-				 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-			talloc_free(tmp_ctx);
-			return ret;
-		}
 	}
 
 	/* TODO: Should we have a different name here? */
@@ -432,11 +446,12 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	if (ret) {
 		DEBUG(1,("krb5_initlog failed (%s)\n",
 			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
+		krb5_free_context((*smb_krb5_context)->krb5_context);
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destroy_2);
+	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destroy);
 
 	ret = krb5_addlog_func((*smb_krb5_context)->krb5_context, (*smb_krb5_context)->logf, 0 /* min */, -1 /* max */,
 			       smb_krb5_debug_wrapper, smb_krb5_debug_close, NULL);

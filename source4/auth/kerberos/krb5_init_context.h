@@ -24,10 +24,16 @@ struct smb_krb5_context {
 	
 struct tevent_context;
 struct loadparm_context;
+
+krb5_error_code
+smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
+			    struct tevent_context *ev,
+			    struct loadparm_context *lp_ctx,
+			    krb5_context *_krb5_context);
+
 krb5_error_code smb_krb5_init_context(void *parent_ctx, struct tevent_context *ev,
 				      struct loadparm_context *lp_ctx,
 				      struct smb_krb5_context **smb_krb5_context); 
-void smb_krb5_free_context(struct smb_krb5_context *smb_krb5_context);
 
 krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 					    void *data,
