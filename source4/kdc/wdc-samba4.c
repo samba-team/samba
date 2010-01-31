@@ -131,8 +131,8 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 
 	if (addresses) {
 		for (i=0; i < addresses->len; i++) {
-			if (addresses->val->addr_type == KRB5_ADDRESS_NETBIOS) {
-				workstation = talloc_strndup(tmp_ctx, addresses->val->address.data, MIN(addresses->val->address.length, 15));
+			if (addresses->val[i].addr_type == KRB5_ADDRESS_NETBIOS) {
+				workstation = talloc_strndup(tmp_ctx, addresses->val[i].address.data, MIN(addresses->val[i].address.length, 15));
 				if (workstation) {
 					break;
 				}
