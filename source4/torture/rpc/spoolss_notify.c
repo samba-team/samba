@@ -242,35 +242,46 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 	return true;
 }
 
+static struct spoolss_NotifyOption *setup_printserver_NotifyOption(struct torture_context *tctx)
+{
+	struct spoolss_NotifyOption *o;
+
+	o = talloc_zero(tctx, struct spoolss_NotifyOption);
+
+	o->version = 2;
+	o->flags = PRINTER_NOTIFY_OPTIONS_REFRESH;
+
+	o->count = 2;
+	o->types = talloc_zero_array(o, struct spoolss_NotifyOptionType, o->count);
+
+	o->types[0].type = PRINTER_NOTIFY_TYPE;
+	o->types[0].count = 1;
+	o->types[0].fields = talloc_array(o->types, union spoolss_Field, o->types[0].count);
+	o->types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
+
+	o->types[1].type = JOB_NOTIFY_TYPE;
+	o->types[1].count = 1;
+	o->types[1].fields = talloc_array(o->types, union spoolss_Field, o->types[1].count);
+	o->types[1].fields[0].field = JOB_NOTIFY_FIELD_MACHINE_NAME;
+
+	return o;
+}
+
 static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tctx,
 						      struct dcerpc_pipe *p,
 						      struct policy_handle *handle,
-						      const char *address)
+						      const char *address,
+						      struct spoolss_NotifyOption *option)
 {
 	struct spoolss_RemoteFindFirstPrinterChangeNotifyEx r;
-	struct spoolss_NotifyOption t1;
 
 	torture_comment(tctx, "Testing RemoteFindFirstPrinterChangeNotifyEx\n");
-
-	t1.version = 2;
-	t1.flags = 0;
-	t1.count = 2;
-	t1.types = talloc_zero_array(tctx, struct spoolss_NotifyOptionType, 2);
-	t1.types[0].type = PRINTER_NOTIFY_TYPE;
-	t1.types[0].count = 1;
-	t1.types[0].fields = talloc_array(t1.types, union spoolss_Field, 1);
-	t1.types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
-
-	t1.types[1].type = JOB_NOTIFY_TYPE;
-	t1.types[1].count = 1;
-	t1.types[1].fields = talloc_array(t1.types, union spoolss_Field, 1);
-	t1.types[1].fields[0].field = PRINTER_NOTIFY_FIELD_PRINTER_NAME;
 
 	r.in.flags = 0;
 	r.in.local_machine = talloc_asprintf(tctx, "\\\\%s", address);
 	r.in.options = 0;
-	r.in.printer_local = 123;
-	r.in.notify_options = &t1;
+	r.in.printer_local = 0;
+	r.in.notify_options = option;
 	r.in.handle = handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r),
@@ -368,6 +379,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	struct policy_handle handle;
 	const char *address;
 	struct received_packet *tmp;
+	struct spoolss_NotifyOption *server_option = setup_printserver_NotifyOption(tctx);
 
 	received_packets = NULL;
 
@@ -375,7 +387,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert(tctx, test_start_dcerpc_server(tctx, p->conn->event_ctx, &dce_ctx, &address), "");
 
 	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle), "");
-	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, p, &handle, address), "");
+	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, p, &handle, address, server_option), "");
 	torture_assert(tctx, received_packets, "no packets received");
 	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
 		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
