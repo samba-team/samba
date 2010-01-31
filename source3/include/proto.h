@@ -1797,6 +1797,8 @@ char* kerberos_standard_des_salt( void );
 bool kerberos_secrets_store_des_salt( const char* salt );
 char* kerberos_secrets_fetch_des_salt( void );
 char *kerberos_get_default_realm_from_ccache( void );
+char *kerberos_get_realm_from_hostname(const char *hostname);
+
 bool kerberos_secrets_store_salting_principal(const char *service,
 					      int enctype,
 					      const char *principal);
