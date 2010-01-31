@@ -1373,7 +1373,7 @@ static int ltdb_init_rootdse(struct ldb_module *module)
 	ret = ldb_mod_register_control(module,
 				       LDB_CONTROL_PERMISSIVE_MODIFY_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb_tdb: "
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_tdb: "
 			  "Unable to register control with rootdse!");
 	}
 
