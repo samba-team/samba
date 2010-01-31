@@ -529,6 +529,10 @@ static BOOL test_GetPrinter(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_printer_info_bylevel(levels[i], buffer, 1);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}
