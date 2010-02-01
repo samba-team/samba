@@ -173,9 +173,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_fla
 		complen = strcspn(s, ".");
 
 		/* we need to make sure the length fits into 6 bytes */
-		if (complen >= 0x3F) {
+		if (complen > 0x3F) {
 			return ndr_push_error(ndr, NDR_ERR_STRING,
-					      "component length %u[%08X] > 0x00003F",
+					      "component length %u[%08X] > 0x0000003F",
 					      (unsigned)complen, (unsigned)complen);
 		}
 
