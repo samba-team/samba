@@ -126,7 +126,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	NTSTATUS status;
 
 	/* access check */
-	if (geteuid() == sec_initial_uid()) {
+	if (geteuid() != sec_initial_uid()) {
 		DEBUG(3, ("open_fake_file_shared: access_denied to "
 			  "service[%s] file[%s] user[%s]\n",
 			  lp_servicename(SNUM(conn)),
