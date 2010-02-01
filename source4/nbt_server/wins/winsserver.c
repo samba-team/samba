@@ -496,6 +496,11 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		goto done;
 	}
 
+	if (name->scope && strlen(name->scope) > 237) {
+		rcode = NBT_RCODE_SVR;
+		goto done;
+	}
+
 	duplicate_packet = wins_check_wack_queue(iface, packet, src);
 	if (duplicate_packet) {
 		/* just ignore the packet */
@@ -871,6 +876,10 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	uint8_t ret;
 
 	if (name->type == NBT_NAME_MASTER) {
+		goto done;
+	}
+
+	if (name->scope && strlen(name->scope) > 237) {
 		goto done;
 	}
 
