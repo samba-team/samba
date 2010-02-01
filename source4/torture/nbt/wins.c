@@ -405,6 +405,35 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 }
 
 
+static char *test_nbt_wins_scope_string(TALLOC_CTX *mem_ctx, uint8_t count)
+{
+	char *res;
+	uint8_t i;
+
+	res = talloc_array(mem_ctx, char, count+1);
+	if (res == NULL) {
+		return NULL;
+	}
+
+	for (i=0; i < count; i++) {
+		switch (i) {
+		case 63:
+		case 63 + 1 + 63:
+		case 63 + 1 + 63 + 1 + 63:
+			res[i] = '.';
+			break;
+		default:
+			res[i] = '0' + (i%10);
+			break;
+		}
+	}
+
+	res[count] = '\0';
+
+	talloc_set_name_const(res, res);
+
+	return res;
+}
 
 /*
   test operations against a WINS server
@@ -487,6 +516,14 @@ static bool nbt_test_wins(struct torture_context *tctx)
 	name.name = talloc_asprintf(tctx, "%5u-\377\200\300FOO", r);
 	ret &= nbt_test_wins_name(tctx, address, &name,
 				  NBT_NODE_H, false, NBT_RCODE_OK);
+
+	name.scope = test_nbt_wins_scope_string(tctx, 237);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
+
+	name.scope = test_nbt_wins_scope_string(tctx, 238);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_SVR);
 
 	return ret;
 }
