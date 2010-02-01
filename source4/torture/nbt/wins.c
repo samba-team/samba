@@ -49,7 +49,8 @@
 */
 static bool nbt_test_wins_name(struct torture_context *tctx, const char *address,
 			       struct nbt_name *name, uint16_t nb_flags,
-			       bool try_low_port)
+			       bool try_low_port,
+			       uint8_t register_rcode)
 {
 	struct nbt_name_register_wins io;
 	struct nbt_name_register name_register;
@@ -200,7 +201,11 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, "Bad response from %s for name register", address));
 	
 	CHECK_STRING(tctx, io.out.wins_server, address);
-	CHECK_VALUE(tctx, io.out.rcode, 0);
+	CHECK_VALUE(tctx, io.out.rcode, register_rcode);
+
+	if (register_rcode != NBT_RCODE_OK) {
+		return true;
+	}
 
 	if (name->type != NBT_NAME_MASTER &&
 	    name->type != NBT_NAME_LOGON && 
@@ -418,54 +423,70 @@ static bool nbt_test_wins(struct torture_context *tctx)
 
 	name.type = NBT_NAME_CLIENT;
 	name.scope = NULL;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, true);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, true, NBT_RCODE_OK);
 
 	name.type = NBT_NAME_MASTER;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H | NBT_NM_GROUP, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H | NBT_NM_GROUP, false, NBT_RCODE_OK);
 
 	name.type = NBT_NAME_SERVER;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, true);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, true, NBT_RCODE_OK);
 
 	name.type = NBT_NAME_LOGON;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H | NBT_NM_GROUP, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H | NBT_NM_GROUP, false, NBT_RCODE_OK);
 
 	name.type = NBT_NAME_BROWSER;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H | NBT_NM_GROUP, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H | NBT_NM_GROUP, false, NBT_RCODE_OK);
 
 	name.type = NBT_NAME_PDC;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, true);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, true, NBT_RCODE_OK);
 
 	name.type = 0xBF;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, true);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, true, NBT_RCODE_OK);
 
 	name.type = 0xBE;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
 	name.scope = "example";
 	name.type = 0x72;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, true);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, true, NBT_RCODE_OK);
 
 	name.scope = "example";
 	name.type = 0x71;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H | NBT_NM_GROUP, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H | NBT_NM_GROUP, false, NBT_RCODE_OK);
 
 	name.scope = "foo.example.com";
 	name.type = 0x72;
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
 	name.name = talloc_asprintf(tctx, "_T\01-%5u.foo", r);
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
 	name.name = "";
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
 	name.name = talloc_asprintf(tctx, ".");
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
 	name.name = talloc_asprintf(tctx, "%5u-\377\200\300FOO", r);
-	ret &= nbt_test_wins_name(tctx, address, &name, NBT_NODE_H, false);
+	ret &= nbt_test_wins_name(tctx, address, &name,
+				  NBT_NODE_H, false, NBT_RCODE_OK);
 
 	return ret;
 }
