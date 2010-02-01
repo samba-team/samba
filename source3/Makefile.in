@@ -209,15 +209,16 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
 
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
-	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
+	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@ \
+	bin/smbta-util@EXEEXT@
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ $(TDBBACKUP) \
 	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ $(TDBDUMP) \
 	$(TDBTOOL)
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ bin/sharesec@EXEEXT@ \
-	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@
+	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@ 
 BIN_PROGS4 = bin/ldbedit@EXEEXT@ bin/ldbsearch@EXEEXT@ bin/ldbadd@EXEEXT@ \
-	bin/ldbdel@EXEEXT@ bin/ldbmodify@EXEEXT@ bin/ldbrename@EXEEXT@
+	bin/ldbdel@EXEEXT@ bin/ldbmodify@EXEEXT@ bin/ldbrename@EXEEXT@ 
 
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
@@ -881,6 +882,10 @@ SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	       $(LIBSMB_ERR_OBJ)
+
+SMBTA_UTIL_OBJ = utils/smbta-util.o $(PARAM_OBJ) $(POPT_LIB_OBJ) \
+	$(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) \
+	$(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
 
 TEST_LP_LOAD_OBJ = param/test_lp_load.o \
 		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1619,6 +1624,11 @@ bin/testparm@EXEEXT@: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@ $(LIBTALLOC
 	@$(CC) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
+bin/smbta-util@EXEEXT@: $(BINARY_PREREQS) $(SMBTA_UTIL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+	@echo Linking $@
+	@$(CC) -o $@ $(SMBTA_UTIL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
+		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+
 bin/smbstatus@EXEEXT@: $(BINARY_PREREQS) $(STATUS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
@@ -1854,7 +1864,6 @@ $(LIBTALLOC_SHARED_TARGET): $(LIBTALLOC_SHARED_TARGET_SONAME)
 $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
-
 libtalloc: $(LIBTALLOC)
 
 cleanlibtalloc::

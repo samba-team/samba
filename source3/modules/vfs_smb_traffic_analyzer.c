@@ -542,6 +542,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			" found, encrypting data!\n"));
 		AES_KEY key;
 		samba_AES_set_encrypt_key(akey, 128, &key);
+		free(akey);
 		s1 = strlen(str) / 16;
 		s2 = strlen(str) % 16;
 		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: found %i"
