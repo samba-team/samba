@@ -1035,7 +1035,7 @@ static char *test_nbt_winsrepl_scope_string(TALLOC_CTX *mem_ctx, uint8_t count)
 static bool test_conflict_same_owner(struct torture_context *tctx, 
 									 struct test_wrepl_conflict_conn *ctx)
 {
-	static bool ret = true;
+	bool ret = true;
 	struct wrepl_wins_name wins_name1;
 	struct wrepl_wins_name wins_name2;
 	struct wrepl_wins_name *wins_name_tmp;
