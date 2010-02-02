@@ -6340,6 +6340,92 @@ static bool run_tldap(int dummy)
 	return true;
 }
 
+/* Torture test to ensure no regression of :
+https://bugzilla.samba.org/show_bug.cgi?id=7084
+*/
+
+static bool run_dir_createtime(int dummy)
+{
+	struct cli_state *cli;
+	const char *dname = "\\testdir";
+	const char *fname = "\\testdir\\testfile";
+	NTSTATUS status;
+	struct timespec create_time;
+	struct timespec create_time1;
+	uint16_t fnum;
+	bool ret = false;
+
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
+	cli_rmdir(cli, dname);
+
+	status = cli_mkdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("mkdir failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	if (!cli_qpathinfo2(cli,
+			dname,
+			&create_time,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL)) {
+		status = cli_nt_error(cli);
+		printf("cli_qpathinfo2 returned %s\n",
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* Sleep 3 seconds, then create a file. */
+	sleep(3);
+
+	status = cli_open(cli, fname, O_RDWR | O_CREAT | O_EXCL,
+                         DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_open failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	if (!cli_qpathinfo2(cli,
+			dname,
+			&create_time1,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL)) {
+		status = cli_nt_error(cli);
+		printf("cli_qpathinfo2 (2) returned %s\n",
+		       nt_errstr(status));
+		goto out;
+	}
+
+	if (timespec_compare(&create_time1, &create_time)) {
+		printf("run_dir_createtime: create time was updated (error)\n");
+	} else {
+		printf("run_dir_createtime: create time was not updated (correct)\n");
+		ret = true;
+	}
+
+  out:
+
+	cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
+	cli_rmdir(cli, dname);
+	if (!torture_close_connection(cli)) {
+		ret = false;
+	}
+	return ret;
+}
+
+
 static bool run_streamerror(int dummy)
 {
 	struct cli_state *cli;
@@ -7195,6 +7281,7 @@ static struct {
 	{"OPLOCK3",  run_oplock3, 0},
 	{"DIR",  run_dirtest, 0},
 	{"DIR1",  run_dirtest1, 0},
+	{"DIR-CREATETIME",  run_dir_createtime, 0},
 	{"DENY1",  torture_denytest1, 0},
 	{"DENY2",  torture_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
