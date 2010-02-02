@@ -1398,7 +1398,7 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 AC_CHECK_FUNCS(strsignal)
 
 ############################################
-# Check if we have libattr
+# Check for EA implementations
 case "$host_os" in
   *osf*)
 	AC_SEARCH_LIBS(getproplist, [proplist])
@@ -1406,23 +1406,26 @@ case "$host_os" in
 	AC_CHECK_FUNCS(delproplist fdelproplist add_proplist_entry get_proplist_entry)
 	AC_CHECK_FUNCS(sizeof_proplist_entry)
   ;;
-  *)
-	AC_SEARCH_LIBS(getxattr, [attr])
-	AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
-	AC_CHECK_FUNCS(getea fgetea lgetea listea flistea llistea)
-	AC_CHECK_FUNCS(removeea fremoveea lremoveea setea fsetea lsetea)
-	AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
-	AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
-	AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
-	AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+  *freebsd4* | *dragonfly* )
+	AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
   ;;
-esac
-
-########################################################
-# Check if attropen() is present if this is Solaris
-case "$host_os" in
   *solaris*)
 	AC_CHECK_FUNCS(attropen)
+  ;;
+  *)
+	AC_SEARCH_LIBS(getxattr, [attr])
+	AC_CHECK_FUNCS(getxattr,[
+		AC_CHECK_FUNCS(lgetxattr fgetxattr listxattr llistxattr flistxattr removexattr lremovexattr fremovexattr setxattr lsetxattr fsetxattr)
+		])
+	AC_CHECK_FUNCS(getea,[
+		AC_CHECK_FUNCS(fgetea lgetea listea flistea llistea removeea fremoveea lremoveea setea fsetea lsetea)
+		])
+	AC_CHECK_FUNCS(attr_get,[
+		AC_CHECK_FUNCS(attr_list attr_set attr_remove attr_getf attr_listf attr_setf attr_removef)
+		])
+	AC_CHECK_FUNCS(extattr_delete_file,[
+		AC_CHECK_FUNCS(extattr_delete_fd extattr_delete_link extattr_get_fd extattr_get_file extattr_get_link extattr_list_fd extattr_list_file extattr_list_link extattr_set_fd extattr_set_file extattr_set_link)
+		])
   ;;
 esac
 
@@ -1449,19 +1452,6 @@ if test x"$ac_cv_func_getxattr" = x"yes" ; then
 		AC_DEFINE(XATTR_ADD_OPT, 1, [xattr functions have additional options])
 	fi
 fi
-
-# Check if we have extattr
-case "$host_os" in
-  *freebsd4* | *dragonfly* )
-    AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
-    ;;
-  *)
-    AC_CHECK_FUNCS(extattr_delete_fd extattr_delete_file extattr_delete_link)
-    AC_CHECK_FUNCS(extattr_get_fd extattr_get_file extattr_get_link)
-    AC_CHECK_FUNCS(extattr_list_fd extattr_list_file extattr_list_link)
-    AC_CHECK_FUNCS(extattr_set_fd extattr_set_file extattr_set_link)
-    ;;
-esac
 
 AC_DISABLE_STATIC
 AC_ENABLE_SHARED
