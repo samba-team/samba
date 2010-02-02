@@ -176,7 +176,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_00100000;
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V5;
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
