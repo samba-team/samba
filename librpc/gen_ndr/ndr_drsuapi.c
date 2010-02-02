@@ -91,7 +91,7 @@ _PUBLIC_ void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS", DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1", DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION", DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_00000080", DRSUAPI_SUPPORTED_EXTENSION_00000080, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY", DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE", DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2", DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION", DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION, r);
@@ -104,7 +104,7 @@ _PUBLIC_ void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP", DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY", DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3", DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_00100000", DRSUAPI_SUPPORTED_EXTENSION_00100000, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V5", DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V5, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2", DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6", DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS", DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS, r);
@@ -115,7 +115,7 @@ _PUBLIC_ void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7", DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT", DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS", DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_20000000", DRSUAPI_SUPPORTED_EXTENSION_20000000, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10", DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_40000000", DRSUAPI_SUPPORTED_EXTENSION_40000000, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_80000000", DRSUAPI_SUPPORTED_EXTENSION_80000000, r);
 	ndr->depth--;
@@ -141,6 +141,7 @@ _PUBLIC_ void ndr_print_drsuapi_SupportedExtensionsExt(struct ndr_print *ndr, co
 	ndr->depth++;
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_ADAM", DRSUAPI_SUPPORTED_EXTENSION_ADAM, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2", DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_RECYCLE_BIN", DRSUAPI_SUPPORTED_EXTENSION_RECYCLE_BIN, r);
 	ndr->depth--;
 }
 
