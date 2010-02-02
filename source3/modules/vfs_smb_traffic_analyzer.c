@@ -170,18 +170,24 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	/*
 	 * first create the data that is transfered with any VFS op
 	 * These are, in the following order:
-	 * number of data to come [6 in v2.0]
+	 *(0) number of data to come [6 in v2.0]
 	 * 1.vfs_operation identifier
 	 * 2.username
 	 * 3.user-SID
-	 * 4.affected file + full path
+	 * 4.affected share
 	 * 5.domain
 	 * 6.timestamp
 	 */
 
-	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
+	/* number of common data blocks to come */
+	opstr = talloc_asprintf(talloc_tos(), "%i", SMBTA_COMMON_DATA_COUNT);
 	len = strlen(opstr);
 	buf = talloc_asprintf(talloc_tos(), "%04u%s", len, opstr);
+
+	/* vfs operation identifier */
+	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
+	len = strlen(opstr);
+	buf = talloc_asprintf_append(talloc_tos(), "%04u%s", len, opstr);
 
 	/*
 	 * Handle anonymization. In protocol v2, we have to anonymize
@@ -215,16 +221,21 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 		sidstr = usersid;
 	}
 
+	/* username */
 	len = strlen( userstr );
 	buf = talloc_asprintf_append(buf, "%04u%s", len, userstr);
+	/* user SID */
 	len = strlen( sidstr );
 	buf = talloc_asprintf_append(buf, "%04u%s", len, sidstr);
+	/* affected share */
 	len = strlen( handle->conn->connectpath );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
 		handle->conn->connectpath );
+	/* user's domain */
 	len = strlen( pdb_get_domain(handle->conn->server_info->sam_account) );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
 		pdb_get_domain(handle->conn->server_info->sam_account) );
+	/* time stamp */
 	timestr = talloc_asprintf(talloc_tos(), \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
 		tm->tm_year+1900, \
@@ -236,7 +247,8 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 		(int)seconds);
 	len = strlen( timestr );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, timestr);
-	
+
+	/* data blocks depending on the VFS function */	
 	va_start( ap, count );
 	while ( count-- ) {
 		arg = va_arg( ap, char * );
@@ -270,6 +282,13 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	const char *protocol_version = NULL;
 	bool Write = false;
 	size_t len;
+
+	/*
+	 * The state flags are part of the header
+	 * and are descripted in the protocol description
+	 * in vfs_smb_traffic_analyzer.h. They begin at byte
+	 * 03 of the header.
+	 */
 	char state_flags[9] = "000000\0";
 
 	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);

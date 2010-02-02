@@ -19,12 +19,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-
-/*
- * Protocol V2.0 definition
- *
-/
-
 /**
  * Protocol version 2.0 description
  *
@@ -82,6 +76,16 @@
  *
  */
 
+/* Protocol subrelease number */
+#define SMBTA_SUBRELEASE 0
+
+/*
+ * Every data block sends a number of blocks sending common data
+ * we send the number of "common data blocks" to come very first
+ * so that if the receiver is using an older version of the protocol
+ * it knows which blocks it can ignore.
+ */
+#define SMBTA_COMMON_DATA_COUNT 6
 
 /*
  * VFS Functions identifier table. In protocol version 2, every vfs
