@@ -372,6 +372,11 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 	unix_timespec_to_nt_time(&dosattrib.info.info3.create_time,
 				smb_fname->st.st_ex_btime);
 
+	DEBUG(10,("set_ea_dos_attributes: set attribute 0x%x, btime = %s on file %s\n",
+		(unsigned int)dosmode,
+		time_to_asc(convert_timespec_to_time_t(smb_fname->st.st_ex_btime)),
+		smb_fname_str_dbg(smb_fname) ));
+
 	ndr_err = ndr_push_struct_blob(
 			&blob, talloc_tos(), NULL, &dosattrib,
 			(ndr_push_flags_fn_t)ndr_push_xattr_DOSATTRIB);
