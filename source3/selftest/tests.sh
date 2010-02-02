@@ -144,6 +144,8 @@ plantest "blackbox.net_s3" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERV
 	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --maximum-runtime=$SELFTEST_MAXTIME"
 	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --target=$SELFTEST_TARGET"
 	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --basedir=$SELFTEST_PREFIX"
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"torture:winbindd_netbios_name=\$SERVER\""
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"torture:winbindd_netbios_domain=\$DOMAIN\""
 	if [ -n "$SELFTEST_VERBOSE" ]; then
 		TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:progress=no"
 	fi
