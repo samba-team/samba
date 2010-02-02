@@ -731,13 +731,6 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	dosmode  &= ~FILE_ATTRIBUTE_OFFLINE;
 	old_mode &= ~FILE_ATTRIBUTE_OFFLINE;
 
-	if (old_mode == dosmode &&
-			(timespec_compare(&new_create_timespec,
-				&smb_fname->st.st_ex_btime) == 0)) {
-		smb_fname->st.st_ex_mode = unixmode;
-		return(0);
-	}
-
 	smb_fname->st.st_ex_btime = new_create_timespec;
 
 #ifdef HAVE_STAT_DOS_FLAGS
