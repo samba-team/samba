@@ -7634,8 +7634,15 @@ WERROR _spoolss_EnumPrinterData(pipes_struct *p,
 
 		/* data - counted in bytes */
 
-		if (r->out.data && regval_size(val)) {
-			memcpy(r->out.data, regval_data_p(val), regval_size(val));
+		/*
+		 * See the section "Dynamically Typed Query Parameters"
+ 		 * in MS-RPRN.
+ 		 */
+
+		if (r->out.data && regval_data_p(val) &&
+				regval_size(val) && r->in.data_offered) {
+			memcpy(r->out.data, regval_data_p(val),
+				MIN(regval_size(val),r->in.data_offered));
 		}
 
 		*r->out.data_needed = regval_size(val);
