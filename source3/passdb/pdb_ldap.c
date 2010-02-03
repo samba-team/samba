@@ -3791,8 +3791,11 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	int rc;
 	char *filter;
 	enum lsa_SidType type = SID_NAME_USE_NONE;
+	bool is_builtin = false;
+	bool sid_added = false;
 
 	if (sid_check_is_builtin(domain_sid)) {
+		is_builtin = true;
 		type = SID_NAME_ALIAS;
 	}
 
@@ -3822,11 +3825,20 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
-			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
-
-	if (rc != LDAP_SUCCESS)
-		return NT_STATUS_UNSUCCESSFUL;
+	if (is_builtin &&
+	    ldap_state->search_cache.filter &&
+	    strcmp(ldap_state->search_cache.filter, filter) == 0) {
+		filter = talloc_move(filter, &ldap_state->search_cache.filter);
+		result = ldap_state->search_cache.result;
+		ldap_state->search_cache.result = NULL;
+	} else {
+		rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
+		if (rc != LDAP_SUCCESS) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		talloc_autofree_ldapmsg(filter, result);
+	}
 
 	ldap_struct = ldap_state->smbldap_state->ldap_struct;
 
@@ -3850,14 +3862,24 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		if (!sid_peek_check_rid(domain_sid, &sid, &rid))
 			continue;
 
+		sid_added = true;
+
 		if (!add_rid_to_array_unique(mem_ctx, rid, pp_alias_rids,
 					p_num_alias_rids)) {
-			ldap_msgfree(result);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	ldap_msgfree(result);
+	if (!is_builtin && !sid_added) {
+		TALLOC_FREE(ldap_state->search_cache.filter);
+		/*
+		 * Note: result is a talloc child of filter because of the
+		 * talloc_autofree_ldapmsg() usage
+		 */
+		ldap_state->search_cache.filter = talloc_move(ldap_state, &filter);
+		ldap_state->search_cache.result = result;
+	}
+
 	return NT_STATUS_OK;
 }
 

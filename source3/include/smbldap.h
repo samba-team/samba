@@ -196,6 +196,11 @@ struct ldapsam_privates {
 
 	/* ldap server location parameter */
 	char *location;
+
+	struct {
+		char *filter;
+		LDAPMessage *result;
+	} search_cache;
 };
 
 /* Functions shared between pdb_ldap.c and pdb_nds.c. */
