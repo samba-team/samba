@@ -2085,6 +2085,16 @@ static int control_disable(struct ctdb_context *ctdb, int argc, const char **arg
 	int ret;
 	struct ctdb_node_map *nodemap=NULL;
 
+	/* check if the node is already disabled */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
+		DEBUG(DEBUG_ERR,("Node %d is already disabled.\n", options.pnn));
+		return 0;
+	}
+
 	do {
 		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
 		if (ret != 0) {
@@ -2118,6 +2128,16 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 	int ret;
 
 	struct ctdb_node_map *nodemap=NULL;
+
+	/* check if the node is already enabled */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+	if (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED)) {
+		DEBUG(DEBUG_ERR,("Node %d is already enabled.\n", options.pnn));
+		return 0;
+	}
 
 	do {
 		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
