@@ -46,6 +46,12 @@ struct ctdb_queue {
 	struct ctdb_context *ctdb;
 	struct ctdb_partial partial; /* partial input packet */
 	struct ctdb_queue_pkt *out_queue;
+	/* This field is used to track the last added item so we
+	   can append new items to the end cheaply.
+	   This relies of that items are always appended to the tail
+	   and that when reamoving items we only remove the head.
+	*/
+	struct ctdb_queue_pkt *out_queue_last_added;
 	uint32_t out_queue_length;
 	struct fd_event *fde;
 	int fd;
@@ -294,7 +300,18 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 		EVENT_FD_WRITEABLE(queue->fde);
 	}
 
-	DLIST_ADD_END(queue->out_queue, pkt, struct ctdb_queue_pkt *);
+	/* This relies on that when adding items to the queue, we always add
+	   them to the tail and that when removing items we only remove
+	   the head of queue item.
+	   The last_added item thus allows non n^2 behaviour when appending to
+	   very long queues.
+	*/
+	if (queue->out_queue == NULL) {
+		DLIST_ADD(queue->out_queue, pkt);
+	} else {
+		DLIST_ADD_END(queue->out_queue_last_added, pkt, struct ctdb_queue_pkt *);
+	}
+	queue->out_queue_last_added = pkt;
 	queue->out_queue_length++;
 
 	if (queue->ctdb->tunable.verbose_memory_names != 0) {
