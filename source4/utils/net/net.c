@@ -52,6 +52,11 @@
 #include "auth/credentials/credentials.h"
 #include "scripting/python/modules.h"
 
+/* There's no Py_ssize_t in 2.4, apparently */
+#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
+typedef int Py_ssize_t;
+#endif
+
 static PyObject *py_tuple_from_argv(int argc, const char *argv[])
 {
 	PyObject *l;
