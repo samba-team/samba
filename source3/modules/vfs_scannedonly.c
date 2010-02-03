@@ -53,6 +53,12 @@
 
 #define SENDBUFFERSIZE 1450
 
+#ifndef       SUN_LEN
+#define       SUN_LEN(sunp)   ((size_t)((struct sockaddr_un *)0)->sun_path \
+				+ strlen((sunp)->sun_path))
+#endif
+
+
 struct Tscannedonly {
 	int socket;
 	int domain_socket;
