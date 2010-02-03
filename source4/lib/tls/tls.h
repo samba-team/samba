@@ -65,4 +65,50 @@ bool tls_support(struct tls_params *parms);
 
 const struct socket_ops *socket_tls_ops(enum socket_type type);
 
-#endif
+struct tstream_context;
+struct tstream_tls_params;
+
+NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
+				   const char *ca_file,
+				   const char *crl_file,
+				   struct tstream_tls_params **_tlsp);
+
+NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
+				   const char *dns_host_name,
+				   bool disable,
+				   const char *key_file,
+				   const char *cert_file,
+				   const char *ca_file,
+				   const char *crl_file,
+				   const char *dhp_file,
+				   struct tstream_tls_params **_params);
+
+bool tstream_tls_params_enabled(struct tstream_tls_params *params);
+
+struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct tstream_context *plain_stream,
+					     struct tstream_tls_params *tls_params,
+					     const char *location);
+#define tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params); \
+	_tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params, __location__)
+
+int tstream_tls_connect_recv(struct tevent_req *req,
+			     int *perrno,
+			     TALLOC_CTX *mem_ctx,
+			     struct tstream_context **tls_stream);
+
+struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct tstream_context *plain_stream,
+					    struct tstream_tls_params *tls_params,
+					    const char *location);
+#define tstream_tls_accept_send(mem_ctx, ev, plain_stream, tls_params) \
+	_tstream_tls_accept_send(mem_ctx, ev, plain_stream, tls_params, __location__)
+
+int tstream_tls_accept_recv(struct tevent_req *req,
+			    int *perrno,
+			    TALLOC_CTX *mem_ctx,
+			    struct tstream_context **tls_stream);
+
+#endif /* _TLS_H_ */
