@@ -173,11 +173,17 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 	TALLOC_CTX *ctx = talloc_tos();
 	int result;
 	char *target = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
+	size_t len;
 
 	if (!target) {
 		errno = ENOMEM;
 		return -1;
 	}
+	if (bufsiz == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	result = SMB_VFS_NEXT_READLINK(handle, path, target,
 				       PATH_MAX);
 
@@ -186,7 +192,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 	target[result] = '\0';
 
-	if ((strncmp(target, "msdfs:", strlen("msdfs:")) == 0) &&
+	if ((strncmp(target, "msdfs:", 6) == 0) &&
 	    (strchr_m(target, '@') != NULL)) {
 		target = expand_msdfs_target(ctx, handle->conn, target);
 		if (!target) {
@@ -195,8 +201,15 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 		}
 	}
 
-	safe_strcpy(buf, target, bufsiz-1);
-	return strlen(buf);
+	len = MIN(bufsiz, strlen(target));
+	if (len) {
+		memcpy(buf, target, len);
+	} else {
+		errno = ENOENT;
+		return -1;
+	}
+	TALLOC_FREE(target);
+	return len;
 }
 
 static struct vfs_fn_pointers vfs_expand_msdfs_fns = {
