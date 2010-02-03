@@ -50,7 +50,7 @@ attributetypes=( 1.3.6.1.4.1.7165.2.1.41 NAME 'sambaShareName' DESC 'Share Name'
 
 attributetypes=( 1.3.6.1.4.1.7165.2.1.42 NAME 'sambaOptionName' DESC 'Option Name' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{256} )
 
-attributetypes=( 1.3.6.1.4.1.7165.2.1.43 NAME 'sambaBoolOption' DESC 'A boolean option' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
+attributetypes=( 1.3.6.1.4.1.7165.2.1.43 NAME 'sambaBoolOption' DESC 'A boolean option' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
 
 attributetypes=( 1.3.6.1.4.1.7165.2.1.44 NAME 'sambaIntegerOption' DESC 'An integer option' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
@@ -68,7 +68,7 @@ attributetypes=( 1.3.6.1.4.1.7165.2.1.51 NAME 'sambaSIDList' DESC 'Security ID L
 
 attributetypes=( 1.3.6.1.4.1.7165.2.1.53 NAME 'sambaTrustFlags' DESC 'Trust Password Flags' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
 
-attributetypes=( 1.3.6.1.4.1.7165.2.1.54 NAME 'sambaPasswordHistory' DESC 'Concatenated MD4 hashes of the unicode passwords used on this account' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} )
+attributetypes=( 1.3.6.1.4.1.7165.2.1.54 NAME 'sambaPasswordHistory' DESC 'Concatenated MD4 hashes of the unicode passwords used on this account' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} )
 IBMAttributetypes=( 1.3.6.1.4.1.7165.2.1.54 DBNAME( 'sambaPasswordHistory'  'sambaPasswordHistory' ) ACCESS-CLASS critical )
 
 attributetypes=( 1.3.6.1.4.1.7165.2.1.55 NAME 'sambaLogonHours' DESC 'Logon Hours' EQUALITY caseIgnoreIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{42} SINGLE-VALUE )
