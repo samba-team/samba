@@ -186,7 +186,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 	  setup a packet queue between the child and the parent. This
 	  copes with all the async and packet boundary issues
 	 */
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d to child traverse\n", h->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child traverse\n", h->fd[0]));
 
 	h->queue = ctdb_queue_setup(ctdb_db->ctdb, h, h->fd[0], 0, ctdb_traverse_local_handler, h);
 	if (h->queue == NULL) {

@@ -867,7 +867,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		timeval_current_ofs(ctdb->tunable.vacuum_max_run_time, 0),
 		vacuum_child_timeout, child_ctx);
 
-	DEBUG(DEBUG_INFO, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
 
 	event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
 		EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
