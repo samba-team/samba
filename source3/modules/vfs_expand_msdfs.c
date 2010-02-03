@@ -187,7 +187,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_READLINK(handle, path, target,
 				       PATH_MAX);
 
-	if (result < 0)
+	if (result <= 0)
 		return result;
 
 	target[result] = '\0';
@@ -202,12 +202,9 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 	}
 
 	len = MIN(bufsiz, strlen(target));
-	if (len) {
-		memcpy(buf, target, len);
-	} else {
-		errno = ENOENT;
-		return -1;
-	}
+
+	memcpy(buf, target, len);
+
 	TALLOC_FREE(target);
 	return len;
 }
