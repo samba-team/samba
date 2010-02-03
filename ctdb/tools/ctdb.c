@@ -4119,6 +4119,69 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 }
 
 /*
+  send a message to a srvid
+ */
+static int control_msgsend(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	unsigned long srvid;
+	int ret;
+	TDB_DATA data;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	srvid      = strtoul(argv[0], NULL, 0);
+
+	data.dptr = (uint8_t *)discard_const(argv[1]);
+	data.dsize= strlen(argv[1]);
+
+	ret = ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, srvid, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send memdump request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  handler for msglisten
+*/
+static void msglisten_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	int i;
+
+	printf("Message received: ");
+	for (i=0;i<data.dsize;i++) {
+		printf("%c", data.dptr[i]);
+	}
+	printf("\n");
+}
+
+/*
+  listen for messages on a messageport
+ */
+static int control_msglisten(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint64_t srvid;
+
+	srvid = getpid();
+
+	/* register a message port and listen for messages
+	*/
+	ctdb_set_message_handler(ctdb, srvid, msglisten_handler, NULL);
+	printf("Listening for messages on srvid:%d\n", (int)srvid);
+
+	while (1) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+/*
   list all nodes in the cluster
   if the daemon is running, we read the data from the daemon.
   if the daemon is not running we parse the nodes file directly
@@ -4316,6 +4379,8 @@ static const struct {
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
+	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
+	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 };
 
 /*
