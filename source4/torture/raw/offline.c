@@ -317,7 +317,8 @@ static void echo_completion(struct smbcli_request *req)
 	struct offline_state *state = (struct offline_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
+	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
 		talloc_free(state->tree);
 		state->tree = NULL;
 		num_connected--;	

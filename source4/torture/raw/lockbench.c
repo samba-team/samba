@@ -226,7 +226,8 @@ static void lock_completion(struct smbcli_request *req)
 	state->req = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
-		    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
+		    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
 			talloc_free(state->tree);
 			state->tree = NULL;
 			num_connected--;	
@@ -264,7 +265,8 @@ static void echo_completion(struct smbcli_request *req)
 	struct benchlock_state *state = (struct benchlock_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
+	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
 		talloc_free(state->tree);
 		state->tree = NULL;
 		num_connected--;	
