@@ -1132,10 +1132,6 @@ sub Parse($$$$$)
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 ");
 
 	foreach my $x (@$ndr) {
