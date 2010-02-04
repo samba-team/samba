@@ -1399,7 +1399,7 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules:: SHOWFLAGS $(MODULES)
 
-$(LIBSMBCLIENT_THREAD_OBJ): EXTRA_FLAGS := $(PTHREAD_CFLAGS)
+$(LIBSMBCLIENT_THREAD_OBJ) ../nsswitch/wins.o ../nsswitch/winbind_nss_linux.o: EXTRA_FLAGS := $(PTHREAD_CFLAGS)
 
 #####################################################################
 ## Perl IDL Compiler
