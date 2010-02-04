@@ -438,6 +438,54 @@ static PyObject *py_dsdb_make_schema_global(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
+{
+	PyObject *py_dn, *py_ldb, *result;
+	struct ldb_dn *dn;
+	uint64_t highest_uSN, urgent_uSN;
+	struct ldb_context *ldb;
+	TALLOC_CTX *mem_ctx;
+	int ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+	   PyErr_NoMemory();
+	   return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_dn)) {
+	   talloc_free(mem_ctx);
+	   return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	if (!PyObject_AsDn(mem_ctx, py_dn, ldb, &dn)) {
+	   talloc_free(mem_ctx);
+	   return NULL;
+	}
+
+	ret = dsdb_load_partition_usn(ldb, dn, &highest_uSN, &urgent_uSN);
+	if (ret != LDB_SUCCESS) {
+	   char *errstr = talloc_asprintf(mem_ctx, "Failed to load partition uSN - %s", ldb_errstring(ldb));
+	   PyErr_SetString(PyExc_RuntimeError, errstr);
+	   talloc_free(mem_ctx);
+	   return NULL;
+	}
+
+	talloc_free(mem_ctx);
+
+	result = PyDict_New();
+
+	PyDict_SetItemString(result, "uSNHighest", PyInt_FromLong((uint64_t)highest_uSN));
+	PyDict_SetItemString(result, "uSNUrgent", PyInt_FromLong((uint64_t)urgent_uSN));
+
+
+	return result;
+
+}
+
+
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"random_password(len) -> string\n"
@@ -483,6 +531,8 @@ static PyMethodDef py_misc_methods[] = {
 		NULL },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
 		"set debug level" },
+	{ "dsdb_load_partition_usn", (PyCFunction)py_dsdb_load_partition_usn, METH_VARARGS,
+		"get uSNHighest and uSNUrgent from the partition @REPLCHANGED"},
 	{ NULL }
 };
 
