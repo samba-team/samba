@@ -342,6 +342,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				const char *p1;
 				char *s1, *s2;
 				TALLOC_CTX *frame = talloc_stackframe();
+				uint32_t entry_stype;
 
 				if (p + 26 > rdata_end) {
 					TALLOC_FREE(frame);
@@ -365,7 +366,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 					len++;
 				}
 
-				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
+				entry_stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
 				pull_string_talloc(frame,rdata,0,
 					&s1,sname,16,STR_ASCII);
@@ -377,7 +378,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 					continue;
 				}
 
-				fn(s1, stype, s2, state);
+				fn(s1, entry_stype, s2, state);
 				TALLOC_FREE(frame);
 			}
 
