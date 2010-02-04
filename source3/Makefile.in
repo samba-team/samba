@@ -73,6 +73,7 @@ UUID_LIBS=@UUID_LIBS@
 LIBWBCLIENT=@LIBWBCLIENT_STATIC@ @LIBWBCLIENT_SHARED@
 LIBWBCLIENT_LIBS=@LIBWBCLIENT_LIBS@
 PTHREAD_LDFLAGS=@PTHREAD_LDFLAGS@
+PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
 DNSSD_LIBS=@DNSSD_LIBS@
 AVAHI_LIBS=@AVAHI_LIBS@
 POPT_LIBS=@POPTLIBS@
@@ -1398,6 +1399,8 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules:: SHOWFLAGS $(MODULES)
 
+$(LIBSMBCLIENT_THREAD_OBJ): EXTRA_FLAGS := $(PTHREAD_CFLAGS)
+
 #####################################################################
 ## Perl IDL Compiler
 samba3-idl::
@@ -1456,11 +1459,11 @@ MAKEDIR = || exec false; \
 	  exec false; fi || exec false
 
 # Run a static checker.
-CHECK_CC = $(CC_CHECKER) $(CFLAGS) $(PICFLAG) -c $< -o $@
+CHECK_CC = $(CC_CHECKER) $(CFLAGS) $(EXTRA_FLAGS) $(PICFLAG) -c $< -o $@
 # Compile a source file.
-COMPILE_CC = $(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC = $(CC) $(CFLAGS) $(EXTRA_FLAGS) $(PICFLAG) -c $< -o $@
 # Compile a source file with the installation paths defined.
-COMPILE_CC_PATH = $(CC) $(PATH_FLAGS) $(CFLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC_PATH = $(CC) $(PATH_FLAGS) $(CFLAGS) $(EXTRA_FLAGS) $(PICFLAG) -c $< -o $@
 
 COMPILE = $(COMPILE_CC)
 
