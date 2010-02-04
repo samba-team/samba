@@ -92,7 +92,7 @@ struct replmd_replicated_request {
 
 enum urgent_situation {
 	REPL_URGENT_ON_CREATE = 1,
-	REPL_URGENT_ON_UPDATE = 3, /* activated on creating as well*/
+	REPL_URGENT_ON_UPDATE = 2,
 	REPL_URGENT_ON_DELETE = 4
 };
 
@@ -103,10 +103,10 @@ static const struct {
 } urgent_objects[] = {
 		{"nTDSDSA", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_DELETE)},
 		{"crossRef", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_DELETE)},
-		{"attributeSchema", REPL_URGENT_ON_UPDATE},
-		{"classSchema", REPL_URGENT_ON_UPDATE},
-		{"secret", REPL_URGENT_ON_UPDATE},
-		{"rIDManager", REPL_URGENT_ON_UPDATE},
+		{"attributeSchema", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_UPDATE)},
+		{"classSchema", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_UPDATE)},
+		{"secret", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_UPDATE)},
+		{"rIDManager", (REPL_URGENT_ON_CREATE | REPL_URGENT_ON_UPDATE)},
 		{NULL, 0}
 };
 
@@ -1077,6 +1077,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	struct ldb_result *res;
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
+	enum urgent_situation situation;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1098,9 +1099,17 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* if isDeleted is present and is TRUE, then we consider we are deleting,
+	 * otherwise we consider we are updating */
+	if (ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")) {
+		situation = REPL_URGENT_ON_DELETE;
+	} else {
+		situation = REPL_URGENT_ON_UPDATE;
+	}
+
 	objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
 	if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
-							REPL_URGENT_ON_UPDATE)) {
+							situation)) {
 		*is_urgent = true;
 	}
 
@@ -1133,7 +1142,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return ret;
 		}
 
-		if (is_urgent && !*is_urgent) {
+		if (is_urgent && !*is_urgent && (situation == REPL_URGENT_ON_UPDATE)) {
 			*is_urgent = replmd_check_urgent_attribute(&msg->elements[i]);
 		}
 
