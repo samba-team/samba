@@ -441,6 +441,11 @@ static int acl_allowedAttributes(struct ldb_module *module,
 		struct dom_sid *sid = NULL;
 		struct ldb_control *as_system = ldb_request_get_control(ac->req,
 									LDB_CONTROL_AS_SYSTEM_OID);
+
+		if (as_system != NULL) {
+			as_system->critical = 0;
+		}
+
 		ldb_msg_remove_attr(msg, "allowedAttributesEffective");
 		if (ac->am_system || as_system) {
 			for (i=0; attr_list && attr_list[i]; i++) {
@@ -558,6 +563,10 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	struct dom_sid *sid = NULL;
 	int i, j, ret;
 
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
+
 	if (ac->am_system || as_system) {
 		return acl_childClasses(module, sd_msg, msg, "allowedChildClassesEffective");
 	}
@@ -636,6 +645,10 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	struct dom_sid *sid = NULL;
 	uint32_t flags = 0;
 
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
+
 	/* Must remove any existing attribute, or else confusion reins */
 	ldb_msg_remove_attr(msg, "sDRightsEffective");
 	ret = ldb_msg_add_empty(msg, "sDRightsEffective", 0, &rightsEffective);
@@ -699,6 +712,10 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	struct object_tree *new_node = NULL;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
+
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
@@ -759,6 +776,10 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		"objectSid",
 		NULL
 	};
+
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
 
 	/* Don't print this debug statement if elements[0].name is going to be NULL */
 	if(req->op.mod.message->num_elements > 0)
@@ -892,6 +913,10 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
+
 	DEBUG(10, ("ldb:acl_delete: %s\n", ldb_dn_get_linearized(req->op.del.dn)));
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
@@ -945,6 +970,10 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		"objectSid",
 		NULL
 	};
+
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
 
 	DEBUG(10, ("ldb:acl_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn)));
 	if (dsdb_module_am_system(module) || as_system) {
