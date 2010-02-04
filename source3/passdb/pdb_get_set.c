@@ -192,7 +192,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 
 	/* generate the group SID from the user's primary Unix group */
 
-	if ( !(gsid  = TALLOC_P( sampass, DOM_SID )) ) {
+	if ( !(gsid  = TALLOC_ZERO_P( sampass, DOM_SID )) ) {
 		return NULL;
 	}
 
@@ -212,14 +212,37 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 		return NULL;
 	}
 
-	if ( pdb_gid_to_sid(pwd->pw_gid, gsid) ) {
+	gid_to_sid(gsid, pwd->pw_gid);
+	if (!is_null_sid(gsid)) {
 		enum lsa_SidType type = SID_NAME_UNKNOWN;
-		TALLOC_CTX *mem_ctx = talloc_init("pdb_get_group_sid");
+		TALLOC_CTX *mem_ctx;
 		bool lookup_ret;
+		const DOM_SID *usid = pdb_get_user_sid(sampass);
+		DOM_SID dgsid;
+		uint32_t rid;
 
+		sid_copy(&dgsid, gsid);
+		sid_split_rid(&dgsid, &rid);
+		if (sid_equal(&dgsid, get_global_sam_sid())) {
+			/*
+			 * As shortcut for the expensive lookup_sid call
+			 * compare the domain sid part
+			 */
+			switch (rid) {
+			case DOMAIN_RID_ADMINS:
+			case DOMAIN_RID_USERS:
+				sampass->group_sid = gsid;
+				return sampass->group_sid;
+			}
+		}
+
+		mem_ctx = talloc_init("pdb_get_group_sid");
 		if (!mem_ctx) {
 			return NULL;
 		}
+
+		DEBUG(10,("do lookup_sid(%s) for group of user %s\n",
+			  sid_string_dbg(gsid), sid_string_dbg(usid)));
 
 		/* Now check that it's actually a domain group and not something else */
 
@@ -232,8 +255,8 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 			return sampass->group_sid;
 		}
 
-		DEBUG(3, ("Primary group for user %s is a %s and not a domain group\n", 
-			pwd->pw_name, sid_type_lookup(type)));
+		DEBUG(3, ("Primary group %s for user %s is a %s and not a domain group\n",
+			sid_string_dbg(gsid), pwd->pw_name, sid_type_lookup(type)));
 	}
 
 	/* Just set it to the 'Domain Users' RID of 512 which will 
