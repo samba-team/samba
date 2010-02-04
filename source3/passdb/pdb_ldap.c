@@ -1029,6 +1029,17 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	}
 
 	if (lp_parm_bool(-1, "ldapsam", "trusted", False)) {
+		struct passwd unix_pw;
+		bool have_uid = false;
+		bool have_gid = false;
+		DOM_SID mapped_gsid;
+		const DOM_SID *primary_gsid;
+
+		ZERO_STRUCT(unix_pw);
+
+		unix_pw.pw_name = username;
+		unix_pw.pw_passwd = discard_const_p(char, "x");
+
 		temp = smbldap_talloc_single_attribute(
 				priv2ld(ldap_state),
 				entry,
@@ -1036,9 +1047,68 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				ctx);
 		if (temp) {
 			/* We've got a uid, feed the cache */
-			uid_t uid = strtoul(temp, NULL, 10);
-			store_uid_sid_cache(pdb_get_user_sid(sampass), uid);
-			idmap_cache_set_sid2uid(pdb_get_user_sid(sampass), uid);
+			unix_pw.pw_uid = strtoul(temp, NULL, 10);
+			have_uid = true;
+		}
+		temp = smbldap_talloc_single_attribute(
+				priv2ld(ldap_state),
+				entry,
+				"gidNumber",
+				ctx);
+		if (temp) {
+			/* We've got a uid, feed the cache */
+			unix_pw.pw_gid = strtoul(temp, NULL, 10);
+			have_gid = true;
+		}
+		unix_pw.pw_gecos = smbldap_talloc_single_attribute(
+				priv2ld(ldap_state),
+				entry,
+				"gecos",
+				ctx);
+		if (unix_pw.pw_gecos) {
+			unix_pw.pw_gecos = fullname;
+		}
+		unix_pw.pw_dir = smbldap_talloc_single_attribute(
+				priv2ld(ldap_state),
+				entry,
+				"homeDirectory",
+				ctx);
+		if (unix_pw.pw_dir) {
+			unix_pw.pw_dir = discard_const_p(char, "");
+		}
+		unix_pw.pw_shell = smbldap_talloc_single_attribute(
+				priv2ld(ldap_state),
+				entry,
+				"loginShell",
+				ctx);
+		if (unix_pw.pw_shell) {
+			unix_pw.pw_shell = discard_const_p(char, "");
+		}
+
+		if (have_uid && have_gid) {
+			sampass->unix_pw = tcopy_passwd(sampass, &unix_pw);
+		} else {
+			sampass->unix_pw = Get_Pwnam_alloc(sampass, unix_pw.pw_name);
+		}
+
+		if (sampass->unix_pw == NULL) {
+			DEBUG(0,("init_sam_from_ldap: Failed to find Unix account for %s\n",
+				 pdb_get_username(sampass)));
+			goto fn_exit;
+		}
+
+		store_uid_sid_cache(pdb_get_user_sid(sampass),
+				    sampass->unix_pw->pw_uid);
+		idmap_cache_set_sid2uid(pdb_get_user_sid(sampass),
+					sampass->unix_pw->pw_uid);
+
+		gid_to_sid(&mapped_gsid, sampass->unix_pw->pw_gid);
+		primary_gsid = pdb_get_group_sid(sampass);
+		if (primary_gsid && sid_equal(primary_gsid, &mapped_gsid)) {
+			store_gid_sid_cache(primary_gsid,
+					    sampass->unix_pw->pw_gid);
+			idmap_cache_set_sid2uid(primary_gsid,
+						sampass->unix_pw->pw_gid);
 		}
 	}
 
@@ -1489,6 +1559,16 @@ static void append_attr(TALLOC_CTX *mem_ctx, const char ***attr_list,
 	(*attr_list)[i+1] = NULL;
 }
 
+static void ldapsam_add_unix_attributes(TALLOC_CTX *mem_ctx,
+					const char ***attr_list)
+{
+	append_attr(mem_ctx, attr_list, "uidNumber");
+	append_attr(mem_ctx, attr_list, "gidNumber");
+	append_attr(mem_ctx, attr_list, "homeDirectory");
+	append_attr(mem_ctx, attr_list, "loginShell");
+	append_attr(mem_ctx, attr_list, "gecos");
+}
+
 /**********************************************************************
 Get struct samu entry from LDAP by username.
 *********************************************************************/
@@ -1507,7 +1587,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 	append_attr(user, &attr_list,
 		    get_userattr_key2string(ldap_state->schema_ver,
 					    LDAP_ATTR_MOD_TIMESTAMP));
-	append_attr(user, &attr_list, "uidNumber");
+	ldapsam_add_unix_attributes(user, &attr_list);
 	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result,
 					   attr_list);
 	TALLOC_FREE( attr_list );
@@ -1564,7 +1644,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 				    get_userattr_key2string(
 					    ldap_state->schema_ver,
 					    LDAP_ATTR_MOD_TIMESTAMP));
-			append_attr(tmp_ctx, &attr_list, "uidNumber");
+			ldapsam_add_unix_attributes(tmp_ctx, &attr_list);
 			rc = ldapsam_search_suffix_by_sid(ldap_state, sid,
 							  result, attr_list);
 			TALLOC_FREE(tmp_ctx);
