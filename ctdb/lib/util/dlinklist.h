@@ -110,4 +110,50 @@ do { \
 		} \
 } while (0)
 
+/*
+   The TLIST_*() macros are meant for when you have two list pointers,
+   one pointing at the head of the list and one pointing at the tail
+   of the list. This makes the common case of adding to the end of the
+   list and removing from the front of the list efficient
+
+   TLIST stands for "tailed list"
+
+   Note: When initialising the structure containing your lists, make
+   sure that you set both head and tail to NULL
+
+   Also, do not mix the TLIST_*() macros with the DLIST_* macros!
+*/
+
+/* TLIST_ADD_FRONT adds elements to the front of the list. */
+#define TLIST_ADD_FRONT(listhead, listtail, p) \
+do { \
+	DLIST_ADD(listhead, p); \
+	if (NULL == (listtail)) { \
+		(listtail) = (p); \
+	} \
+} while (0)
+
+/* TLIST_ADD_END adds elements to the end of the list. */
+#define TLIST_ADD_END(listhead, listtail, p) \
+do { \
+	if ((listtail) == NULL) { \
+		DLIST_ADD(listhead, p); \
+		(listtail) = (listhead); \
+	} else { \
+		(listtail)->next = (p); \
+		(p)->prev = (listtail); \
+		(p)->next = NULL; \
+		(listtail) = (p); \
+	} \
+} while (0)
+
+/* TLIST_REMOVE removes an element from the list */
+#define TLIST_REMOVE(listhead, listtail, p) \
+do { \
+	if ((p) == (listtail)) { \
+		(listtail) = (p)->prev; \
+	} \
+	DLIST_REMOVE(listhead, p); \
+} while (0)
+
 #endif /* _DLINKLIST_H */
