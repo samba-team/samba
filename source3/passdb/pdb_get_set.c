@@ -236,7 +236,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 			pwd->pw_name, sid_type_lookup(type)));
 	}
 
-	/* Just set it to the 'Domain Users' RID of 512 which will 
+	/* Just set it to the 'Domain Users' RID of 513 which will
 	   always resolve to a name */
 
 	sid_compose(gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
