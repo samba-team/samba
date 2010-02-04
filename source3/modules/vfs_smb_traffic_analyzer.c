@@ -149,9 +149,88 @@ struct refcounted_sock {
 };
 
 
+/**
+ * Encryption of a data block with AES
+ * TALLOC_CTX *ctx	Talloc context to work on
+ * const char *akey	128bit key for the encryption
+ * const char *str	Data buffer to encrypt, \0 terminated
+ * int *len		Will be set to the length of the
+ *			resulting data block
+ * The caller has to take care for the memory
+ * allocated on the context.
+ */
+static char *smb_traffic_analyzer_encrypt( TALLOC_CTX *ctx,
+	const char *akey, const char *str, size_t *len)
+{
+	int s1,s2,h,d;
+	AES_KEY key;
+	char filler[17]= "................";
+	char *output;
+	char crypted[18];
+	if (akey == NULL) return NULL;
+	samba_AES_set_encrypt_key(akey, 128, &key);
+	s1 = strlen(str) / 16;
+	s2 = strlen(str) % 16;
+	for (h = 0; h < s2; h++) *(filler+h)=*(str+(s1*16)+h);
+	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: created %s"
+		" as filling block.\n", filler));
+	output = talloc_array(ctx, char, (s1*16)+17 );
+	d=0;
+	for (h = 0; h < s1; h++) {
+		samba_AES_encrypt(str+(16*h), crypted, &key);
+		for (d = 0; d<16; d++) output[d+(16*h)]=crypted[d];
+	}
+	samba_AES_encrypt( str+(16*h), filler, &key );
+	for (d = 0;d < 16; d++) output[d+(16*h)]=*(filler+d);
+	*len = (s1*16)+16;
+	return output;	
+}
+
+/**
+ * Create a v2 header.
+ * TALLLOC_CTX *ctx		Talloc context to work on
+ * const char *state_flags 	State flag string
+ * int len			length of the data block
+ */
+static char *smb_traffic_analyzer_create_header( TALLOC_CTX *ctx,
+	const char *state_flags, size_t data_len)
+{
+	char *header = talloc_asprintf( ctx, "V2.%s%017u",
+					state_flags, data_len);
+	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: created Header:\n"));
+	dump_data(10, header, strlen(header));
+	return header;
+}
+
+
+/**
+ * Actually send header and data over the network
+ * char *header 	Header data
+ * char *data		Data Block
+ * int dlength		Length of data block
+ * int socket
+ */
+static void smb_traffic_analyzer_write_data( char *header, char *data,
+			int dlength, int socket)
+{
+		int len = strlen(header);
+		if (write_data( socket, header, len) != len) {
+			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
+						"error sending the header"
+						" over the socket!\n"));
+                }
+		DEBUG(10,("smb_traffic_analyzer_write_data: sending data:\n"));
+		dump_data( 10, data, dlength);
+
+                if (write_data( socket, data, dlength) != dlength) {
+                        DEBUG(1, ("smb_traffic_analyzer_write_data: "
+                                "error sending crypted data to socket!\n"));
+                }
+}
+
 /* The marshaller for the protocol version 2. */
-static char *smb_traffic_analyzer_create_string( struct tm *tm, \
-	int seconds, vfs_handle_struct *handle, \
+static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
+	struct tm *tm, int seconds, vfs_handle_struct *handle, \
 	char *username, int vfs_operation, int count, ... )
 {
 	
@@ -180,15 +259,15 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	 */
 
 	/* number of common data blocks to come */
-	opstr = talloc_asprintf(talloc_tos(), "%i", SMBTA_COMMON_DATA_COUNT);
+	opstr = talloc_asprintf( ctx, "%i", SMBTA_COMMON_DATA_COUNT);
 	len = strlen(opstr);
-	buf = talloc_asprintf(talloc_tos(), "%04u%s", len, opstr);
-
+	buf = talloc_asprintf( ctx, "%04u%s", len, opstr);
+	talloc_free(opstr);
 	/* vfs operation identifier */
-	opstr = talloc_asprintf(talloc_tos(), "%i", vfs_operation);
+	opstr = talloc_asprintf( ctx, "%i", vfs_operation);
 	len = strlen(opstr);
-	buf = talloc_asprintf_append(talloc_tos(), "%04u%s", len, opstr);
-
+	buf = talloc_asprintf_append( buf, "%04u%s", len, opstr);
+	talloc_free(opstr);
 	/*
 	 * Handle anonymization. In protocol v2, we have to anonymize
 	 * both the SID and the username.
@@ -200,19 +279,19 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	anon_prefix=lp_parm_const_string(SNUM(handle->conn),
 					"smb_traffic_analyzer",
 					"anonymize_prefix", NULL );
-	usersid = dom_sid_string(talloc_tos(),
+	usersid = dom_sid_string( ctx,
 		&handle->conn->server_info->ptok->user_sids[0]);
 	if (anon_prefix != NULL) {
 		if (total_anonymization != NULL) {
-			userstr = talloc_asprintf(talloc_tos(), "%s",
+			userstr = talloc_asprintf(ctx, "%s",
 							anon_prefix);			
-			sidstr = talloc_asprintf(talloc_tos(), "%s",
+			sidstr = talloc_asprintf(ctx, "%s",
 							anon_prefix);
 		} else {
-			userstr = talloc_asprintf(talloc_tos(), "%s%i",
+			userstr = talloc_asprintf(ctx, "%s%i",
 				anon_prefix,
 				str_checksum(username));
-			sidstr = talloc_asprintf(talloc_tos(), "%s%i",
+			sidstr = talloc_asprintf(ctx, "%s%i",
 				anon_prefix,
 				str_checksum(usersid));
 		}
@@ -224,9 +303,11 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	/* username */
 	len = strlen( userstr );
 	buf = talloc_asprintf_append(buf, "%04u%s", len, userstr);
+	if (anon_prefix != NULL) talloc_free(userstr);
 	/* user SID */
 	len = strlen( sidstr );
 	buf = talloc_asprintf_append(buf, "%04u%s", len, sidstr);
+	if (anon_prefix != NULL) talloc_free(sidstr);
 	/* affected share */
 	len = strlen( handle->conn->connectpath );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
@@ -236,7 +317,7 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 	buf = talloc_asprintf_append( buf, "%04u%s", len, \
 		pdb_get_domain(handle->conn->server_info->sam_account) );
 	/* time stamp */
-	timestr = talloc_asprintf(talloc_tos(), \
+	timestr = talloc_asprintf( ctx, \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
 		tm->tm_year+1900, \
 		tm->tm_mon+1, \
@@ -247,7 +328,7 @@ static char *smb_traffic_analyzer_create_string( struct tm *tm, \
 		(int)seconds);
 	len = strlen( timestr );
 	buf = talloc_asprintf_append( buf, "%04u%s", len, timestr);
-
+	talloc_free(timestr);
 	/* data blocks depending on the VFS function */	
 	va_start( ap, count );
 	while ( count-- ) {
@@ -383,33 +464,33 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 		switch( vfs_operation ) {
 		case vfs_id_mkdir: ;
-			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, vfs_id_mkdir, 3,\
-				((struct mkdir_data *) data)->path, \
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_id_mkdir, \
+				3, ((struct mkdir_data *) data)->path, \
 				talloc_asprintf( talloc_tos(), "%u", \
 				((struct mkdir_data *) data)->mode), \
 				talloc_asprintf( talloc_tos(), "%u", \
 				((struct mkdir_data *) data)->result ));
 			break;
 		case vfs_id_rmdir: ;
-			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, vfs_id_rmdir, 2,\
-				((struct rmdir_data *) data)->path, \
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_id_rmdir,
+				2, ((struct rmdir_data *) data)->path, \
 				talloc_asprintf( talloc_tos(), "%u", \
 				((struct rmdir_data *) data)->result ));
 			break;
 		case vfs_id_rename: ;
-			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, vfs_id_rename, 3,\
-				((struct rename_data *) data)->src, \
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_id_rename,
+				3, ((struct rename_data *) data)->src, \
 				((struct rename_data *) data)->dst,
 				talloc_asprintf(talloc_tos(), "%u", \
 				((struct rename_data *) data)->result));
 			break;
 		case vfs_id_chdir: ;
-			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, vfs_id_chdir, 2,\
-				((struct chdir_data *) data)->path, \
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_id_chdir,
+				2, ((struct chdir_data *) data)->path, \
 				talloc_asprintf(talloc_tos(), "%u", \
 				((struct chdir_data *) data)->result));
 			break;
@@ -418,9 +499,9 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 		case vfs_id_pwrite:
 		case vfs_id_read:
 		case vfs_id_pread: ;
-			str = smb_traffic_analyzer_create_string( tm, \
-				seconds, handle, username, vfs_operation, 2,\
-				((struct rw_data *) data)->filename, \
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_operation,
+				2, ((struct rw_data *) data)->filename, \
 				talloc_asprintf(talloc_tos(), "%u", \
 				((struct rw_data *) data)->len));
 			break;
@@ -452,70 +533,28 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	char *akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
 	unbecome_root();
 	if ( akey != NULL ) {
-		char crypted[18], *filler, *output;
-		int h,d,s1,s2;
 		state_flags[2] = 'E';
 		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: a key was"
 			" found, encrypting data!\n"));
-		AES_KEY key;
-		samba_AES_set_encrypt_key(akey, 128, &key);
-		free(akey);
-		s1 = strlen(str) / 16;
-		s2 = strlen(str) % 16;
-		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: found %i"
-			" blocks, %i missing bytes.\n",
-			s1,s2));
-		filler = talloc_asprintf( talloc_tos(), "................" );
-		for (h = 0; h < s2; h++) {
-			*(filler+h)=*(str+(s1*16)+h);
-		}
-		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: created %s"
-			" as filling block.\n", filler));
-		output = talloc_array(talloc_tos(), char, (s1*16)+17 );
-		d=0;
-		for (h = 0; h < s1; h++) {
-			samba_AES_encrypt(str+(16*h), crypted, &key);
-			for (d = 0; d<16; d++) output[d+(16*h)]=crypted[d];
-		}
-		samba_AES_encrypt( str+(16*h), filler, &key );
-		for (d = 0;d < 16; d++) output[d+(16*h)]=*(filler+d);
-		len = (s1*16)+16;
-		header = talloc_asprintf( talloc_tos(), "V2.%s%017u",
+		char *output = smb_traffic_analyzer_encrypt( talloc_tos(),
+						akey, str, &len);
+		header = smb_traffic_analyzer_create_header( talloc_tos(),
 						state_flags, len);
 
 		DEBUG(10, ("smb_traffic_analyzer_send_data_socket:"
 			" header created for crypted data: %s\n", header));
-		len = strlen(header);
-		if (write_data(rf_sock->sock, header, len) != len) {
-			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
-						"error sending the header"
-						 " over the socket!\n"));
-		}
-		len = (s1*16)+16;
-		if (write_data(rf_sock->sock, output, len) != len) {
-			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
-				"error sending crypted data to socket!\n"));
-		}
-	return;
+		smb_traffic_analyzer_write_data(header, output, len,
+							rf_sock->sock);
+		return;
+
 	}
 
         len = strlen(str);
-        header = talloc_asprintf(talloc_tos(), "V2.%s%017u", state_flags, len);
-        DEBUG(10, ("smb_traffic_analyzer_send_data_socket: header created:"
-                                                        "%s\n", header));
-        len = strlen(header);
-        if (write_data(rf_sock->sock, header, len) != len) {
-                DEBUG(1, ("smb_traffic_analyzer_send_data_socket: error "
-                        "sending the header over the socket!\n"));
-        }
-        len = strlen(str);
-	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: going to send "
-			"data block: %s\n",str));
-	if (write_data(rf_sock->sock, str, len) != len) {
-		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
-			"error sending data to socket!\n"));
-		return ;
-	}
+	header = smb_traffic_analyzer_create_header( talloc_tos(),
+				state_flags, len);
+	smb_traffic_analyzer_write_data(header, str, strlen(str),
+				rf_sock->sock);
+
 }
 
 static struct refcounted_sock *sock_list;
