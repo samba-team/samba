@@ -23,10 +23,6 @@
 #include "librpc/ndr/libndr.h"
 #include "lib/util/wrap_xattr.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
 #if !defined(HAVE_XATTR_SUPPORT)

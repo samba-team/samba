@@ -26,10 +26,6 @@
 #include "param/pyparam.h"
 #include "auth/credentials/pycredentials.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface,
 					const struct PyNdrRpcMethodDef *md,
 					PyObject *args, PyObject *kwargs)

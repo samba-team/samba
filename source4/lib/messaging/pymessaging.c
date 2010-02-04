@@ -31,10 +31,6 @@
 #include "param/param.h"
 #include "param/pyparam.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 PyAPI_DATA(PyTypeObject) messaging_Type;
 PyAPI_DATA(PyTypeObject) irpc_ClientConnectionType;
 

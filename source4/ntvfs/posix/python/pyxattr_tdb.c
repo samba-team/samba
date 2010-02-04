@@ -27,10 +27,6 @@
 #include "ntvfs/posix/vfs_posix.h"
 #include "libcli/util/pyerrors.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
 	return Py_True;

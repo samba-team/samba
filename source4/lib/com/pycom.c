@@ -23,10 +23,6 @@
 #include "librpc/ndr/libndr.h"
 #include "libcli/util/pyerrors.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static struct com_context *py_com_ctx = NULL; /* FIXME: evil global */
 
 static PyObject *py_get_class_object(PyObject *self, PyObject *args)

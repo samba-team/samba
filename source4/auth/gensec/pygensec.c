@@ -25,10 +25,6 @@
 #include "pytalloc.h"
 #include <tevent.h>
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *py_get_name_by_authtype(PyObject *self, PyObject *args)
 {
 	int type;

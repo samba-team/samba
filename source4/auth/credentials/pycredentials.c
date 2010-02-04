@@ -25,10 +25,6 @@
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 static PyObject *PyString_FromStringOrNULL(const char *str)
 {
 	if (str == NULL)
