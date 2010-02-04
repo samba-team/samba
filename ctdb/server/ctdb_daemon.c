@@ -100,8 +100,9 @@ static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header 
 	client->ctdb->statistics.client_packets_sent++;
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
 		if (ctdb_queue_length(client->queue) > client->ctdb->tunable.max_queue_depth_drop_msg) {
-			DEBUG(DEBUG_ERR,("Drop CTDB_REQ_MESSAGE to client. Queue full.\n"));
-			return 0;
+			DEBUG(DEBUG_ERR,("CTDB_REQ_MESSAGE queue full - killing client connection.\n"));
+			talloc_free(client);
+			return -1;
 		}
 	}
 	return ctdb_queue_send(client->queue, (uint8_t *)hdr, hdr->length);
@@ -280,6 +281,10 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
 
 	res = daemon_queue_send(client, &r->hdr);
+	if (res == -1) {
+		/* client is dead - return immediately */
+		return;
+	}
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to queue packet from daemon to client\n"));
 	}
@@ -890,6 +895,7 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	struct ctdb_client *client = state->client;
 	struct ctdb_reply_control *r;
 	size_t len;
+	int ret;
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_reply_control, data) + data.dsize;
@@ -910,9 +916,10 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 		memcpy(&r->data[r->datalen], errormsg, r->errorlen);
 	}
 
-	daemon_queue_send(client, &r->hdr);
-
-	talloc_free(state);
+	ret = daemon_queue_send(client, &r->hdr);
+	if (ret != -1) {
+		talloc_free(state);
+	}
 }
 
 /*
