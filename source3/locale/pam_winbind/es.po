@@ -136,8 +136,8 @@ msgid "Password: "
 msgstr "Contraseña:"
 
 #: pam_winbind.c:2013
-msgid "Changing password for "
-msgstr "Cambiando la contraseña para "
+msgid "Changing password for"
+msgstr "Cambiando la contraseña para"
 
 #: pam_winbind.c:2027
 msgid "(current) NT password: "
