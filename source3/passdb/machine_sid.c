@@ -5,17 +5,17 @@
    Copyright (C) Andrew Tridgell		2002
    Copyright (C) Gerald (Jerry) Carter		2000
    Copyright (C) Stefan (metze) Metzmacher	2002
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -42,12 +42,12 @@ static bool read_sid_from_file(const char *fname, DOM_SID *sid)
 	bool ret;
 
 	lines = file_lines_load(fname, &numlines,0, NULL);
-	
+
 	if (!lines || numlines < 1) {
 		if (lines) TALLOC_FREE(lines);
 		return False;
 	}
-	
+
 	ret = string_to_sid(sid, lines[0]);
 	TALLOC_FREE(lines);
 	return ret;
@@ -81,7 +81,7 @@ static DOM_SID *pdb_generate_sam_sid(void)
 	DOM_SID domain_sid;
 	char *fname = NULL;
 	DOM_SID *sam_sid;
-	
+
 	if(!(sam_sid=SMB_MALLOC_P(DOM_SID)))
 		return NULL;
 
@@ -124,7 +124,6 @@ static DOM_SID *pdb_generate_sam_sid(void)
 		}
 
 		return sam_sid;
-		
 	}
 
 	/* check for an old MACHINE.SID file for backwards compatibility */
@@ -185,7 +184,7 @@ DOM_SID *get_global_sam_sid(void)
 
 	if (global_sam_sid != NULL)
 		return global_sam_sid;
-	
+
 	/*
 	 * memory for global_sam_sid is allocated in
 	 * pdb_generate_sam_sid() as needed
