@@ -44,7 +44,7 @@ static bool read_sid_from_file(const char *fname, DOM_SID *sid)
 	lines = file_lines_load(fname, &numlines,0, NULL);
 
 	if (!lines || numlines < 1) {
-		if (lines) TALLOC_FREE(lines);
+		TALLOC_FREE(lines);
 		return False;
 	}
 
