@@ -3496,7 +3496,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 		exit(1);
 	}
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d to recovery daemon\n", fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to recovery daemon\n", fd[0]));
 
 	event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 		     ctdb_recoverd_parent, &fd[0]);	

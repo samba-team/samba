@@ -748,7 +748,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 	talloc_set_destructor(state, set_recmode_destructor);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created PIPE FD:%d for setrecmode\n", state->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for setrecmode\n", state->fd[0]));
 
 	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0),
 				    ctdb_set_recmode_timeout, state);

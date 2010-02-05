@@ -258,7 +258,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	set_nonblocking(in->fd);
 	set_close_on_exec(in->fd);
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));
 
         setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 

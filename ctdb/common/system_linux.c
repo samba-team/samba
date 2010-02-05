@@ -186,7 +186,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			return -1;
 		}
 
-		DEBUG(DEBUG_NOTICE, (__location__ " Created SOCKET FD:%d for sending arp\n", s));
+		DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d for sending arp\n", s));
 		strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
 		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
 			DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
@@ -427,7 +427,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 		return -1;
 	}
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Created RAW SOCKET FD:%d for tcp tickle\n", s));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created RAW SOCKET FD:%d for tcp tickle\n", s));
 
 	set_nonblocking(s);
 	set_close_on_exec(s);
