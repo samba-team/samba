@@ -13,7 +13,8 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 net_drs_OBJ_FILES = $(addprefix $(utilssrcdir)/net/drs/,  \
-		net_drs.o)
+		net_drs.o \
+		net_drs_bind.o)
 
 $(eval $(call proto_header_template,$(utilssrcdir)/net/drs/net_drs_proto.h,$(net_drs_OBJ_FILES:.o=.c)))
 
