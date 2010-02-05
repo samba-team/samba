@@ -156,8 +156,8 @@ msgstr "Käyttäjänimi: "
 
 #. instruct user what is happening
 #: ../../nsswitch/pam_winbind.c:2589
-msgid "Changing password for "
-msgstr "Vaihdetaan salasana käyttäjälle "
+msgid "Changing password for"
+msgstr "Vaihdetaan salasana käyttäjälle"
 
 #: ../../nsswitch/pam_winbind.c:2604
 msgid "(current) NT password: "
