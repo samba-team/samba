@@ -10,6 +10,9 @@
     by supporting features such as symbolic links, hard links, etc...
     These extensions require a similarly enabled client, and are of
     no current use to Windows clients.</para>
+    <para>
+    Note if this parameter is turned on, the <smbconfoption name="wide links"/>
+    parameter will automatically be disabled.
 </description>
 
 <value type="default">yes</value>
