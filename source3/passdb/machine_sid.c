@@ -61,7 +61,8 @@ static void generate_random_sid(DOM_SID *sid)
 	int i;
 	uchar raw_sid_data[12];
 
-	memset((char *)sid, '\0', sizeof(*sid));
+	ZERO_STRUCTP(sid);
+
 	sid->sid_rev_num = 1;
 	sid->id_auth[5] = 5;
 	sid->num_auths = 0;
