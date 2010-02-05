@@ -51,6 +51,7 @@
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
 #include "scripting/python/modules.h"
+#include "drs/net_drs.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -204,6 +205,7 @@ static const struct net_functable net_functable[] = {
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"user", "manage user accounts\n", net_user, net_user_usage},
 	{"machinepw", "Get a machine password out of our SAM\n", net_machinepw, net_machinepw_usage},
+	{"drs", "Implements functionality offered by repadmin.exe utility in Windows\n", net_drs, net_drs_usage},
 	{NULL, NULL, NULL, NULL}
 };
 

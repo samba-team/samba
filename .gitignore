@@ -309,6 +309,7 @@ source4/torture.tdb
 source4/torture/unix/proto.h
 source4/torture/winbind/proto.h
 source4/utils/net/net_proto.h
+source4/utils/net/drs/net_drs_proto.h
 source4/version.h
 source4/web_server/proto.h
 source4/winbind/idmap_proto.h
