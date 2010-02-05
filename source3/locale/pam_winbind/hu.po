@@ -150,7 +150,7 @@ msgid "Password: "
 msgstr "Jelszó: "
 
 #: pam_winbind.c:2013
-msgid "Changing password for "
+msgid "Changing password for"
 msgstr "Jelszómódosítás"
 
 #: pam_winbind.c:2027
