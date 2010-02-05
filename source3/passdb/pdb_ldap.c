@@ -609,7 +609,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		}
 	}
 
-	if (pdb_get_init_flags(sampass,PDB_USERSID) == PDB_DEFAULT) {
+	if (IS_SAM_DEFAULT(sampass, PDB_USERSID)) {
 		DEBUG(1, ("init_sam_from_ldap: no %s or %s attribute found for this user %s\n", 
 			get_userattr_key2string(ldap_state->schema_ver,
 				LDAP_ATTR_USER_SID),

@@ -85,7 +85,7 @@ time_t pdb_get_pass_can_change_time(const struct samu *sampass)
 	   to indicate that the user cannot change their password.  jmcd
 	*/
 	if (sampass->pass_can_change_time == get_time_t_max() &&
-	    pdb_get_init_flags(sampass, PDB_CANCHANGETIME) == PDB_CHANGED)
+	    IS_SAM_CHANGED(sampass, PDB_CANCHANGETIME))
 		return sampass->pass_can_change_time;
 
 	if (!pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &allow))
