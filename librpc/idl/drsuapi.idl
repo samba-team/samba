@@ -34,6 +34,7 @@ interface drsuapi
 		DRSUAPI_DRS_GET_ANC                   = 0x00000800,
 		DRSUAPI_DRS_GET_NC_SIZE               = 0x00001000,
 		DRSUAPI_DRS_LOCAL_ONLY                = 0x00001000,
+		DRSUAPI_DRS_NONGC_RO_REP	      = 0x00002000,
 		DRSUAPI_DRS_SYNC_BYNAME               = 0x00004000,
 		DRSUAPI_DRS_REF_OK                    = 0x00004000,
 		DRSUAPI_DRS_FULL_SYNC_NOW             = 0x00008000,
