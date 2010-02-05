@@ -1362,7 +1362,7 @@ static bool srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
  extracted from lists saved by nmbd on the local host.
 ****************************************************************************/
 
-static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
+static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt, char **rdata, 
@@ -1507,7 +1507,7 @@ static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 
 	SAFE_FREE(servers);
 
-	DEBUG(3,("NetServerEnum domain = %s uLevel=%d counted=%d total=%d\n",
+	DEBUG(3,("NetServerEnum2 domain = %s uLevel=%d counted=%d total=%d\n",
 		domain,uLevel,counted,counted+missed));
 
 	return True;
@@ -4628,7 +4628,7 @@ static const struct {
 	{"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
 	{"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
 	{"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
-	{"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum}, /* anon OK */
+	{"NetServerEnum2",	RAP_NetServerEnum2,	api_RNetServerEnum2}, /* anon OK */
 	{"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
 	{"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
 	{"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
