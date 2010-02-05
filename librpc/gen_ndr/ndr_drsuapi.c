@@ -116,8 +116,8 @@ _PUBLIC_ void ndr_print_drsuapi_SupportedExtensions(struct ndr_print *ndr, const
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT", DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS", DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10", DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_40000000", DRSUAPI_SUPPORTED_EXTENSION_40000000, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_80000000", DRSUAPI_SUPPORTED_EXTENSION_80000000, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART2", DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART3", DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART3, r);
 	ndr->depth--;
 }
 
