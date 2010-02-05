@@ -153,7 +153,7 @@ msgstr "Brugernavn: "
 
 #. instruct user what is happening
 #: ../../nsswitch/pam_winbind.c:2589
-msgid "Changing password for "
+msgid "Changing password for"
 msgstr "Ændrer adgangskode for"
 
 #: ../../nsswitch/pam_winbind.c:2604
