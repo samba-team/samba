@@ -822,6 +822,9 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 
 	path_w_slash = name_w_ending_slash(ctx,path);
 	dirp = SMB_VFS_NEXT_OPENDIR(handle, path, NULL, 0);
+	if (!dirp) {
+		return -1;
+	}
 	while ((dire = SMB_VFS_NEXT_READDIR(handle, dirp, NULL)) != NULL) {
 		if (ISDOT(dire->d_name) || ISDOTDOT(dire->d_name)) {
 			continue;
@@ -878,7 +881,8 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 			TALLOC_FREE(smb_fname);
 		}
 	}
-	return SMB_VFS_NEXT_CLOSEDIR(handle, dirp);
+	SMB_VFS_NEXT_CLOSEDIR(handle, dirp);
+	return SMB_VFS_NEXT_RMDIR(handle, path);
 }
 
 static void free_scannedonly_data(void **data)
