@@ -248,7 +248,7 @@ bool pdb_getsampwnam(struct samu *sam_acct, const char *username)
 /**********************************************************************
 **********************************************************************/
 
-bool guest_user_info( struct samu *user )
+static bool guest_user_info( struct samu *user )
 {
 	struct passwd *pwd;
 	NTSTATUS result;

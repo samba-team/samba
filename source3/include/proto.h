@@ -4575,7 +4575,6 @@ struct event_context *pdb_get_event_context(void);
 NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected);
 struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx);
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) ;
-bool guest_user_info( struct samu *user );
 bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid) ;
 NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32 flags,
 			 uint32 *rid);
