@@ -2926,46 +2926,50 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	if (escape_name == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	/* retrieve the users primary gid */
-	filter = talloc_asprintf(mem_ctx,
-				 "(&(objectClass=%s)(uid=%s))",
-				 LDAP_OBJ_SAMBASAMACCOUNT,
-				 escape_name);
-	if (filter == NULL) {
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	if (user->unix_pw) {
+		primary_gid = user->unix_pw->pw_gid;
+	} else {
+		/* retrieve the users primary gid */
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(objectClass=%s)(uid=%s))",
+					 LDAP_OBJ_SAMBASAMACCOUNT,
+					 escape_name);
+		if (filter == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
-	rc = smbldap_search(conn, lp_ldap_suffix(),
-			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
+		rc = smbldap_search(conn, lp_ldap_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
-	if (rc != LDAP_SUCCESS)
-		goto done;
+		if (rc != LDAP_SUCCESS)
+			goto done;
 
-	talloc_autofree_ldapmsg(mem_ctx, result);
+		talloc_autofree_ldapmsg(mem_ctx, result);
 
-	count = ldap_count_entries(priv2ld(ldap_state), result);
+		count = ldap_count_entries(priv2ld(ldap_state), result);
 
-	switch (count) {
-	case 0:	
-		DEBUG(1, ("User account [%s] not found!\n", pdb_get_username(user)));
-		ret = NT_STATUS_NO_SUCH_USER;
-		goto done;
-	case 1:
-		entry = ldap_first_entry(priv2ld(ldap_state), result);
+		switch (count) {
+		case 0:
+			DEBUG(1, ("User account [%s] not found!\n", pdb_get_username(user)));
+			ret = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		case 1:
+			entry = ldap_first_entry(priv2ld(ldap_state), result);
 
-		gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
-		if (!gidstr) {
-			DEBUG (1, ("Unable to find the member's gid!\n"));
+			gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
+			if (!gidstr) {
+				DEBUG (1, ("Unable to find the member's gid!\n"));
+				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+			primary_gid = strtoul(gidstr, NULL, 10);
+			break;
+		default:
+			DEBUG(1, ("found more than one account with the same user name ?!\n"));
 			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto done;
 		}
-		primary_gid = strtoul(gidstr, NULL, 10);
-		break;
-	default:
-		DEBUG(1, ("found more than one account with the same user name ?!\n"));
-		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto done;
 	}
 
 	filter = talloc_asprintf(mem_ctx,
