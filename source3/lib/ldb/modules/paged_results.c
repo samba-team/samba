@@ -78,17 +78,7 @@ int store_destructor(struct results_store *store);
 
 int store_destructor(struct results_store *store)
 {
-	if (store->prev) {
-		store->prev->next = store->next;
-	}
-	if (store->next) {
-		store->next->prev = store->prev;
-	}
-
-	if (store == store->priv->store) {
-		store->priv->store = NULL;
-	}
-
+	DLIST_REMOVE(store->priv->store, store);
 	return 0;
 }
 
@@ -120,10 +110,7 @@ static struct results_store *new_store(struct private_data *priv)
 	newr->controls = NULL;
 
 	/* put this entry as first */
-	newr->prev = NULL;
-	newr->next = priv->store;
-	if (priv->store != NULL) priv->store->prev = newr;
-	priv->store = newr;
+	DLIST_ADD(priv->store, newr);
 
 	talloc_set_destructor(newr, store_destructor);
 

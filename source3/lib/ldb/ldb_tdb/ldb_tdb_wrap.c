@@ -45,15 +45,7 @@ static struct ltdb_wrap *tdb_list;
 static int ltdb_wrap_destructor(struct ltdb_wrap *w)
 {
 	tdb_close(w->tdb);
-	if (w->next) {
-		w->next->prev = w->prev;
-	}
-	if (w->prev) {
-		w->prev->next = w->next;
-	}
-	if (w == tdb_list) {
-		tdb_list = w->next;
-	}
+	DLIST_REMOVE(tdb_list, w);
 	return 0;
 }				 
 
@@ -142,12 +134,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(w, ltdb_wrap_destructor);
 
-	w->next = tdb_list;
-	w->prev = NULL;
-	if (tdb_list) {
-		tdb_list->prev = w;
-	}
-	tdb_list = w;
+	DLIST_ADD(tdb_list, w);
 	
 	return w->tdb;
 }
