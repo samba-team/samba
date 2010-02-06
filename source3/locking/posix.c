@@ -908,12 +908,8 @@ new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
 
 				/*
 				 * Add into the dlink list after the l_curr point - NOT at lhead. 
-				 * Note we can't use DLINK_ADD here as this inserts at the head of the given list.
 				 */
-
-				l_new->prev = l_curr;
-				l_new->next = l_curr->next;
-				l_curr->next = l_new;
+				DLIST_ADD_AFTER(lhead, l_new, l_curr);
 
 				/* And move after the link we added. */
 				l_curr = l_new->next;
