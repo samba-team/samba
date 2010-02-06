@@ -1039,6 +1039,14 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	}
 #endif
 
+	if (lp_unix_extensions() && lp_widelinks(snum)) {
+		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
+			"These parameters are incompatible. "
+			"Disabling wide links for this share.\n",
+			lp_servicename(snum) ));
+		lp_do_parameter(snum, "wide links", "False");
+	}
+
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted withing a share path have
 	 * the same characteristics, which is likely but not guaranteed.
