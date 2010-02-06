@@ -122,6 +122,18 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 	return user;
 }
 
+static int count_commas(const char *str)
+{
+	int num_commas = 0;
+	const char *comma = str;
+
+	while ((comma = strchr(comma, ',')) != NULL) {
+		comma += 1;
+		num_commas += 1;
+	}
+	return num_commas;
+}
+
 /*********************************************************************
  Initialize a struct samu from a struct passwd including the user 
  and group SIDs.  The *user structure is filled out with the Unix
@@ -132,6 +144,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 {
 	const char *guest_account = lp_guestaccount();
 	const char *domain = global_myname();
+	char *fullname;
 	uint32 urid;
 
 	if ( !pwd ) {
@@ -141,7 +154,27 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	/* Basic properties based upon the Unix account information */
 
 	pdb_set_username(user, pwd->pw_name, PDB_SET);
-	pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
+
+	fullname = NULL;
+
+	if (count_commas(pwd->pw_gecos) == 3) {
+		/*
+		 * Heuristic: This seems to be a gecos field that has been
+		 * edited by chfn(1). Only use the part before the first
+		 * comma. Fixes bug 5198.
+		 */
+		fullname = talloc_strndup(
+			talloc_tos(), pwd->pw_gecos,
+			strchr(pwd->pw_gecos, ',') - pwd->pw_gecos);
+	}
+
+	if (fullname != NULL) {
+		pdb_set_fullname(user, fullname, PDB_SET);
+	} else {
+		pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
+	}
+	TALLOC_FREE(fullname);
+
 	pdb_set_domain (user, get_global_sam_name(), PDB_DEFAULT);
 #if 0
 	/* This can lead to a primary group of S-1-22-2-XX which 
