@@ -542,15 +542,7 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
 		messaging_send(conn->msg_ctx, procid_self(),
 			       MSG_SMB_BRL_VALIDATE, &data_blob_null);
 
-		/*
-		 * it's possible that we have just rejoined the cluster after
-		 * an outage. In that case our pending locks could have been
-		 * removed from the lockdb, so retry them once more
-		 */
-		message_send_all(conn->msg_ctx, MSG_SMB_UNLOCK, NULL, 0, NULL);
-
 		TALLOC_FREE(buf);
-
 		return NT_STATUS_OK;
 	}
 
