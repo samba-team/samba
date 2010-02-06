@@ -1013,20 +1013,7 @@ void queue_packet(struct packet_struct *packet)
 {
 	struct packet_struct *p;
 
-	if (!packet_queue) {
-		packet->prev = NULL;
-		packet->next = NULL;
-		packet_queue = packet;
-		return;
-	}
-
-	/* find the bottom */
-	for (p=packet_queue;p->next;p=p->next)
-		;
-
-	p->next = packet;
-	packet->next = NULL;
-	packet->prev = p;
+	DLIST_ADD_END(packet_queue, packet, struct packet_struct *);
 }
 
 /****************************************************************************
@@ -1582,10 +1569,7 @@ void run_packet_queue(void)
 	struct packet_struct *p;
 
 	while ((p = packet_queue)) {
-		packet_queue = p->next;
-		if (packet_queue)
-			packet_queue->prev = NULL;
-		p->next = p->prev = NULL;
+		DLIST_REMOVE(packet_queue, p);
 
 		switch (p->packet_type) {
 			case NMB_PACKET:

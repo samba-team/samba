@@ -36,15 +36,7 @@ void remove_all_servers(struct work_record *work)
 	for (servrec = work->serverlist; servrec; servrec = nexts) {
 		DEBUG(7,("remove_all_servers: Removing server %s\n",servrec->serv.name));
 		nexts = servrec->next;
-
-		if (servrec->prev)
-			servrec->prev->next = servrec->next;
-		if (servrec->next)
-			servrec->next->prev = servrec->prev;
-
-		if (work->serverlist == servrec)
-			work->serverlist = servrec->next;
-
+		DLIST_REMOVE(work->serverlist, servrec);
 		ZERO_STRUCTP(servrec);
 		SAFE_FREE(servrec);
 	}
@@ -59,21 +51,7 @@ void remove_all_servers(struct work_record *work)
 static void add_server_to_workgroup(struct work_record *work,
                              struct server_record *servrec)
 {
-	struct server_record *servrec2;
-
-	if (!work->serverlist) {
-		work->serverlist = servrec;
-		servrec->prev = NULL;
-		servrec->next = NULL;
-		return;
-	}
-
-	for (servrec2 = work->serverlist; servrec2->next; servrec2 = servrec2->next)
-		;
-
-	servrec2->next = servrec;
-	servrec->next = NULL;
-	servrec->prev = servrec2;
+	DLIST_ADD_END(work->serverlist, servrec, struct server_record *);
 	work->subnet->work_changed = True;
 }
 
@@ -99,14 +77,7 @@ struct server_record *find_server_in_workgroup(struct work_record *work, const c
 
 void remove_server_from_workgroup(struct work_record *work, struct server_record *servrec)
 {
-	if (servrec->prev)
-		servrec->prev->next = servrec->next;
-	if (servrec->next)
-		servrec->next->prev = servrec->prev;
-
-	if (work->serverlist == servrec) 
-		work->serverlist = servrec->next; 
-
+	DLIST_REMOVE(work->serverlist, servrec);
 	ZERO_STRUCTP(servrec);
 	SAFE_FREE(servrec);
 	work->subnet->work_changed = True;

@@ -258,13 +258,8 @@ void run_dns_queue(void)
 			in_dns = 0;
 			p->locked = False;
 
-			if (p->prev)
-				p->prev->next = p->next;
-			else
-				dns_queue = p->next;
-			if (p->next)
-				p->next->prev = p->prev;
 			p2 = p->next;
+			DLIST_REMOVE(dns_queue, p);
 			free_packet(p);
 			p = p2;
 		} else {
@@ -274,10 +269,7 @@ void run_dns_queue(void)
 
 	if (dns_queue) {
 		dns_current = dns_queue;
-		dns_queue = dns_queue->next;
-		if (dns_queue)
-			dns_queue->prev = NULL;
-		dns_current->next = NULL;
+		DLIST_REMOVE(dns_queue, dns_queue);
 
 		if (!write_child(dns_current)) {
 			DEBUG(3,("failed to send DNS query to child!\n"));
@@ -304,11 +296,7 @@ bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 		p->locked = True;
 	} else {
 		p->locked = True;
-		p->next = dns_queue;
-		p->prev = NULL;
-		if (p->next)
-			p->next->prev = p;
-		dns_queue = p;
+		DLIST_ADD(dns_queue, p);
 	}
 
 	DEBUG(3,("added DNS query for %s\n", nmb_namestr(question)));
