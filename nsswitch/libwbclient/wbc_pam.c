@@ -255,14 +255,13 @@ done:
 	return wbc_status;
 }
 
-static wbcErr wbc_create_logon_info(TALLOC_CTX *mem_ctx,
-				    struct winbindd_response *resp,
+static wbcErr wbc_create_logon_info(struct winbindd_response *resp,
 				    struct wbcLogonUserInfo **_i)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcLogonUserInfo *i;
 
-	i = talloc_zero(mem_ctx, struct wbcLogonUserInfo);
+	i = talloc_zero(NULL, struct wbcLogonUserInfo);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
 	wbc_status = wbc_create_auth_info(i, resp, &i->info);
@@ -1083,8 +1082,7 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	if (info) {
-		wbc_status = wbc_create_logon_info(NULL,
-						   &response,
+		wbc_status = wbc_create_logon_info(&response,
 						   info);
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
