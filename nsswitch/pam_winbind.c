@@ -1144,7 +1144,7 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 	}
 
 	search_location = name_list;
-	while ((comma = strstr(search_location, ",")) != NULL) {
+	while ((comma = strchr(search_location, ',')) != NULL) {
 		current_name = strndup(search_location,
 				       comma - search_location);
 		if (NULL == current_name) {
