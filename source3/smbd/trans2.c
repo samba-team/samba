@@ -5815,7 +5815,6 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 {
 	char *link_target = NULL;
 	const char *newname = smb_fname->base_name;
-	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* Set a symbolic link. */
