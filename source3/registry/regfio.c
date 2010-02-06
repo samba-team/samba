@@ -1815,8 +1815,8 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 			   if this is the first record, then just set the next and prev
 			   offsets to ourself. */
 
-			if ( nk->sec_desc->prev ) {
-				REGF_SK_REC *prev = nk->sec_desc->prev;
+			if ( DLIST_PREV(nk->sec_desc) ) {
+				REGF_SK_REC *prev = DLIST_PREV(nk->sec_desc);
 
 				nk->sec_desc->prev_sk_off = prev->hbin_off + prev->hbin->first_hbin_off - HBIN_HDR_SIZE;
 				prev->next_sk_off = nk->sec_desc->sk_off;
