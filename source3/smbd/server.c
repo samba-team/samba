@@ -239,7 +239,7 @@ static void cleanup_timeout_fn(struct event_context *event_ctx,
 
 	DEBUG(1,("Cleaning up brl and lock database after unclean shutdown\n"));
 	message_send_all(smbd_messaging_context(), MSG_SMB_UNLOCK, NULL, 0, NULL);
-	messaging_send_buf(smbd_messaging_context(), procid_self(), 
+	messaging_send_buf(smbd_messaging_context(), procid_self(),
 				MSG_SMB_BRL_VALIDATE, NULL, 0);
 	/* mark the cleanup as having been done */
 	(*cleanup_te) = NULL;
@@ -255,14 +255,14 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		   processes to see if they can grab any of the
 		   pending locks
                 */
-		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", 
+		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n",
 			(unsigned int)pid));
 		if (!cleanup_te) {
 			/* call the cleanup timer, but not too often */
 			int cleanup_time = lp_parm_int(-1, "smbd", "cleanuptime", 20);
 			cleanup_te = event_add_timed(smbd_event_context(), NULL,
 						timeval_current_ofs(cleanup_time, 0),
-						cleanup_timeout_fn, 
+						cleanup_timeout_fn,
 						&cleanup_te);
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}

@@ -76,7 +76,7 @@ static bool recalc_brl_timeout(void)
 
 	TALLOC_FREE(brl_timeout);
 
-	next_timeout = timeval_zero();	
+	next_timeout = timeval_zero();
 
 	for (blr = blocking_lock_queue; blr; blr = blr->next) {
 		if (timeval_is_zero(&blr->expire_time)) {
@@ -117,7 +117,7 @@ static bool recalc_brl_timeout(void)
 
 	if (max_brl_timeout > 0) {
 		struct timeval min_to = timeval_current_ofs(max_brl_timeout, 0);
-		next_timeout = timeval_min(&next_timeout, &min_to);             
+		next_timeout = timeval_min(&next_timeout, &min_to);
 	}
 
 	if (DEBUGLVL(10)) {
