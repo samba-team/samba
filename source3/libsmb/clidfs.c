@@ -351,7 +351,7 @@ static struct cli_state *cli_cm_find(struct cli_state *cli,
 	}
 
 	/* Search to the start of the list. */
-	for (p = cli; p; p = p->prev) {
+	for (p = cli; p; p = DLIST_PREV(p)) {
 		if (strequal(server, p->desthost) &&
 				strequal(share,p->share)) {
 			return p;

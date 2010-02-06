@@ -693,29 +693,8 @@ void cli_nt_pipes_close(struct cli_state *cli)
  Shutdown a client structure.
 ****************************************************************************/
 
-void cli_shutdown(struct cli_state *cli)
+static void _cli_shutdown(struct cli_state *cli)
 {
-	if (cli->prev == NULL) {
-		/*
-		 * Possible head of a DFS list,
-		 * shutdown all subsidiary DFS
-		 * connections.
-		 */
-		struct cli_state *p, *next;
-
-		for (p = cli->next; p; p = next) {
-			next = p->next;
-			cli_shutdown(p);
-		}
-	} else {
-		/*
-		 * We're a subsidiary connection.
-		 * Just remove ourselves from the
-		 * DFS list.
-		 */
-		DLIST_REMOVE(cli->prev, cli);
-	}
-
 	cli_nt_pipes_close(cli);
 
 	/*
@@ -753,6 +732,29 @@ void cli_shutdown(struct cli_state *cli)
 		talloc_free(cli->pending[0]);
 	}
 	TALLOC_FREE(cli);
+}
+
+void cli_shutdown(struct cli_state *cli)
+{
+	struct cli_state *cli_head;
+	DLIST_HEAD(cli, cli_head);
+	if (cli_head == cli) {
+		/*
+		 * head of a DFS list, shutdown all subsidiary DFS
+		 * connections.
+		 */
+		struct cli_state *p, *next;
+
+		for (p = cli_head->next; p; p = next) {
+			next = p->next;
+			DLIST_REMOVE(cli_head, p);
+			_cli_shutdown(p);
+		}
+	} else {
+		DLIST_REMOVE(cli_head, cli);
+	}
+
+	_cli_shutdown(cli);
 }
 
 /****************************************************************************
