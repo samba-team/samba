@@ -232,14 +232,13 @@ done:
 	return wbc_status;
 }
 
-static wbcErr wbc_create_password_policy_info(TALLOC_CTX *mem_ctx,
-					      const struct winbindd_response *resp,
+static wbcErr wbc_create_password_policy_info(const struct winbindd_response *resp,
 					      struct wbcUserPasswordPolicyInfo **_i)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcUserPasswordPolicyInfo *i;
 
-	i = talloc(mem_ctx, struct wbcUserPasswordPolicyInfo);
+	i = talloc(NULL, struct wbcUserPasswordPolicyInfo);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
 	i->min_passwordage	= resp->data.auth.policy.min_passwordage;
@@ -918,8 +917,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 	}
 
 	if (policy) {
-		wbc_status = wbc_create_password_policy_info(NULL,
-							     &response,
+		wbc_status = wbc_create_password_policy_info(&response,
 							     policy);
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
@@ -1092,8 +1090,7 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 	}
 
 	if (policy) {
-		wbc_status = wbc_create_password_policy_info(NULL,
-							     &response,
+		wbc_status = wbc_create_password_policy_info(&response,
 							     policy);
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
