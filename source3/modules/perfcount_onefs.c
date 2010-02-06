@@ -335,7 +335,7 @@ static void onefs_smb_statistics_end(struct smb_perfcount_data *pcd)
 			onefs_stat_debug(&tmp->iod), uid,
 			tmp->iod.in_bytes, tmp->iod.out_bytes));
 #endif
-		SAFE_FREE(tmp->prev);
+		SAFE_FREE(DLIST_PREV(tmp));
 	}
 
 	isc_cookie_init(&ctxt->iod.cookie, rem_addr, loc_addr, uid);

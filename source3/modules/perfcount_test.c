@@ -179,8 +179,7 @@ static void perfcount_test_dump_counters(void)
 	for (i=0; i < 256; i++) {
 	       for (head = g_list[i]; head != NULL; head = head->next) {
 		       perfcount_test_dump_counter(head, 0);
-		       head->prev = NULL;
-		       SAFE_FREE(head->prev);
+		       SAFE_FREE(DLIST_PREV(head));
 	       }
 	       SAFE_FREE(head);
 	}
