@@ -219,17 +219,53 @@ static void add_child_pid(pid_t pid)
 	num_children += 1;
 }
 
+/*
+  at most every smbd:cleanuptime seconds (default 20), we scan the BRL
+  and locking database for entries to cleanup. As a side effect this
+  also cleans up dead entries in the connections database (due to the
+  traversal in message_send_all()
+
+  Using a timer for this prevents a flood of traversals when a large
+  number of clients disconnect at the same time (perhaps due to a
+  network outage).  
+*/
+
+static void cleanup_timeout_fn(struct event_context *event_ctx,
+				struct timed_event *te,
+				struct timeval now,
+				void *private_data)
+{
+	struct timed_event **cleanup_te = (struct timed_event **)private_data;
+
+	DEBUG(1,("Cleaning up brl and lock database after unclean shutdown\n"));
+	message_send_all(smbd_messaging_context(), MSG_SMB_UNLOCK, NULL, 0, NULL);
+	messaging_send_buf(smbd_messaging_context(), procid_self(), 
+				MSG_SMB_BRL_VALIDATE, NULL, 0);
+	/* mark the cleanup as having been done */
+	(*cleanup_te) = NULL;
+}
+
 static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 {
 	struct child_pid *child;
+	static struct timed_event *cleanup_te;
 
 	if (unclean_shutdown) {
-		/* a child terminated uncleanly so tickle all processes to see 
-		   if they can grab any of the pending locks
-		*/
-		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", (unsigned int)pid));
-		messaging_send_buf(smbd_messaging_context(), procid_self(), 
-				   MSG_SMB_BRL_VALIDATE, NULL, 0);
+		/* a child terminated uncleanly so tickle all
+		   processes to see if they can grab any of the
+		   pending locks
+                */
+		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", 
+			(unsigned int)pid));
+		if (!cleanup_te) {
+			/* call the cleanup timer, but not too often */
+			int cleanup_time = lp_parm_int(-1, "smbd", "cleanuptime", 20);
+			cleanup_te = event_add_timed(smbd_event_context(), NULL,
+						timeval_current_ofs(cleanup_time, 0),
+						cleanup_timeout_fn, 
+						&cleanup_te);
+			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
+		}
 	}
 
 	for (child = children; child != NULL; child = child->next) {
