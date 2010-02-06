@@ -207,14 +207,13 @@ done:
 	return wbc_status;
 }
 
-static wbcErr wbc_create_error_info(TALLOC_CTX *mem_ctx,
-				  const struct winbindd_response *resp,
-				  struct wbcAuthErrorInfo **_e)
+static wbcErr wbc_create_error_info(const struct winbindd_response *resp,
+				    struct wbcAuthErrorInfo **_e)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcAuthErrorInfo *e;
 
-	e = talloc(mem_ctx, struct wbcAuthErrorInfo);
+	e = talloc(NULL, struct wbcAuthErrorInfo);
 	BAIL_ON_PTR_ERROR(e, wbc_status);
 
 	e->nt_status = resp->data.auth.nt_status;
@@ -469,8 +468,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 					&response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -518,8 +516,7 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 					&response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -556,8 +553,7 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
 					&response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -600,8 +596,7 @@ wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error)
 					&response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -687,8 +682,7 @@ wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 	/* Take the response above and return it to the caller */
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -916,8 +910,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -1081,8 +1074,7 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
-			wbc_status = wbc_create_error_info(NULL,
-							   &response,
+			wbc_status = wbc_create_error_info(&response,
 							   error);
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
