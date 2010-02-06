@@ -153,8 +153,7 @@ static void dptr_idleoldest(struct smbd_server_connection *sconn)
 	/*
 	 * Go to the end of the list.
 	 */
-	for(dptr = sconn->smb1.searches.dirptrs; dptr && dptr->next; dptr = dptr->next)
-		;
+	dptr = DLIST_TAIL(sconn->smb1.searches.dirptrs);
 
 	if(!dptr) {
 		DEBUG(0,("No dptrs available to idle ?\n"));
@@ -165,7 +164,7 @@ static void dptr_idleoldest(struct smbd_server_connection *sconn)
 	 * Idle the oldest pointer.
 	 */
 
-	for(; dptr; dptr = dptr->prev) {
+	for(; dptr; dptr = DLIST_PREV(dptr)) {
 		if (dptr->dir_hnd) {
 			dptr_idle(dptr);
 			return;
@@ -394,7 +393,7 @@ static void dptr_close_oldest(struct smbd_server_connection *sconn,
 	 * one of the new dnum handles.
 	 */
 
-	for(; dptr; dptr = dptr->prev) {
+	for(; dptr; dptr = DLIST_PREV(dptr)) {
 		if ((old && (dptr->dnum < 256) && !dptr->expect_close) ||
 			(!old && (dptr->dnum > 255))) {
 				dptr_close_internal(dptr);

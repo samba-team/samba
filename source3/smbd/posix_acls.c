@@ -2094,11 +2094,11 @@ static void process_deny_list( canon_ace **pp_ace_list )
 			 * list at this point including this entry.
 			 */
 
-			canon_ace *prev_entry = curr_ace->prev;
+			canon_ace *prev_entry = DLIST_PREV(curr_ace);
 
 			free_canon_ace_list( curr_ace );
 			if (prev_entry)
-				prev_entry->next = NULL;
+				DLIST_REMOVE(ace_list, prev_entry);
 			else {
 				/* We deleted the entire list. */
 				ace_list = NULL;
