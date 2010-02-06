@@ -1199,10 +1199,8 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 		 * It is malformated parameter here, overwrite the last ','.
 		 */
 		len = strlen(sid_list_buffer);
-		if (len) {
-			if (sid_list_buffer[len - 1] == ',') {
-				sid_list_buffer[len - 1] = '\0';
-			}
+		if ((len != 0) && (sid_list_buffer[len - 1] == ',')) {
+			sid_list_buffer[len - 1] = '\0';
 		}
 	}
 
