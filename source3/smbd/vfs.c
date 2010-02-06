@@ -946,7 +946,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 	/* Check for widelinks allowed. */
 	if (!lp_widelinks(SNUM(conn)) && (strncmp(conn->connectpath, resolved_name, con_path_len) != 0)) {
-		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
+		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path\n", fname));
 		if (free_resolved_name) {
 			SAFE_FREE(resolved_name);
 		}
