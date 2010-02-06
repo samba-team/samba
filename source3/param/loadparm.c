@@ -598,7 +598,7 @@ static struct service sDefault = {
 	True,			/* bLevel2OpLocks */
 	False,			/* bOnlyUser */
 	True,			/* bMangledNames */
-	True,			/* bWidelinks */
+	false,			/* bWidelinks */
 	True,			/* bSymlinks */
 	False,			/* bSyncAlways */
 	False,			/* bStrictAllocate */
