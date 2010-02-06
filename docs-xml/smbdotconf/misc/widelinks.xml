@@ -9,10 +9,15 @@
 	server are always allowed; this parameter controls access only 
 	to areas that are outside the directory tree being exported.</para>
 
-	<para>Note that setting this parameter can have a negative 
-	effect on your server performance due to the extra system calls 
-	that Samba has to  do in order to perform the link checks.</para>
+	<para>Note: Turning this parameter on when UNIX extensions are enabled
+	will allow UNIX clients to create symbolic links on the share that
+	can point to files or directories outside restricted path exported
+	by the share definition. This can cause access to areas outside of
+	the share. Due to this problem, this parameter will be automatically
+	disabled (with a message in the log file) if the
+	<smbconfoption name="unix extensions"/> option is on.
+	</para>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
