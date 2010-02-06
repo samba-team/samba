@@ -72,6 +72,7 @@ static bool recalc_brl_timeout(void)
 {
 	struct blocking_lock_record *blr;
 	struct timeval next_timeout;
+	int max_brl_timeout = lp_parm_int(-1, "brl", "recalctime", 5);
 
 	TALLOC_FREE(brl_timeout);
 
@@ -98,6 +99,25 @@ static bool recalc_brl_timeout(void)
 	if (timeval_is_zero(&next_timeout)) {
 		DEBUG(10, ("Next timeout = Infinite.\n"));
 		return True;
+	}
+
+	/* 
+	 to account for unclean shutdowns by clients we need a
+	 maximum timeout that we use for checking pending locks. If
+	 we have any pending locks at all, then check if the pending
+	 lock can continue at least every brl:recalctime seconds
+	 (default 5 seconds).
+
+	 This saves us needing to do a message_send_all() in the
+	 SIGCHLD handler in the parent daemon. That
+	 message_send_all() caused O(n^2) work to be done when IP
+	 failovers happened in clustered Samba, which could make the
+	 entire system unusable for many minutes.
+	*/
+
+	if (max_brl_timeout > 0) {
+		struct timeval min_to = timeval_current_ofs(max_brl_timeout, 0);
+		next_timeout = timeval_min(&next_timeout, &min_to);             
 	}
 
 	if (DEBUGLVL(10)) {
