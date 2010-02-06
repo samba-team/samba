@@ -34,6 +34,8 @@
  */
 static const struct net_functable net_drs_functable[] = {
 	{ "bind", "Display replication features for a domain controller\n", net_drs_bind_cmd, net_drs_bind_usage },
+	{ "kcc", "Forces the KCC to recalculate replication topology for a specified domain controller\n",
+		  net_drs_kcc_cmd, net_drs_kcc_usage },
 	{ NULL, NULL }
 };
 
@@ -53,7 +55,8 @@ int net_drs_usage(struct net_context *ctx, int argc, const char **argv)
 	d_printf("net drs <command> [options]\n");
 	d_printf("\n");
 	d_printf("Currently implemented commands:\n");
-	d_printf("  bind - Display DC replication features");
+	d_printf("  bind - Display DC replication features\n");
+	d_printf("  kcc - Forces the KCC to recalculate replication topology for a specified domain controller\n");
 	return 0;
 }
 
