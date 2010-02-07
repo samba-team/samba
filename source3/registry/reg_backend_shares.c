@@ -71,7 +71,7 @@ static int shares_subkey_info( const char *key, struct regsubkey_ctr *subkey_ctr
 	bool		top_level = False;
 	int		num_subkeys = 0;
 
-	DEBUG(10,("printing_subkey_info: key=>[%s]\n", key));
+	DEBUG(10, ("shares_subkey_info: key=>[%s]\n", key));
 
 	path = trim_reg_path( key );
 
@@ -105,7 +105,7 @@ static int shares_value_info(const char *key, struct regval_ctr *val)
 	bool		top_level = False;
 	int		num_values = 0;
 
-	DEBUG(10,("printing_value_info: key=>[%s]\n", key));
+	DEBUG(10, ("shares_value_info: key=>[%s]\n", key));
 
 	path = trim_reg_path( key );
 
