@@ -266,8 +266,8 @@ static bool test_fixed(struct torture_context *tctx,
 				continue;
 
 			torture_result(tctx, TORTURE_FAIL,
-			    "(%s): didn't expect %s\n",
-			    __location__, found);
+				       "(%s): didn't expect %s (count=%u)\n",
+				       __location__, found, count);
 			ret = false;
 			goto done;
 		}
