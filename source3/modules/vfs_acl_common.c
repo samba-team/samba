@@ -169,7 +169,7 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 	struct connection_struct *conn = handle->conn;
 	int num_aces = (psd->dacl ? psd->dacl->num_aces : 0);
 	struct smb_filename smb_fname;
-	enum security_ace_type acl_type;
+	enum security_ace_type acltype;
 	uint32_t access_mask;
 	mode_t dir_mode;
 	mode_t file_mode;
@@ -203,30 +203,30 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 		memcpy(new_ace_list, psd->dacl->aces,
 			num_aces * sizeof(struct security_ace));
 	}
-	access_mask = map_canon_ace_perms(SNUM(conn), &acl_type,
+	access_mask = map_canon_ace_perms(SNUM(conn), &acltype,
 				mode & 0700, false);
 
 	init_sec_ace(&new_ace_list[num_aces],
 			&global_sid_Creator_Owner,
-			acl_type,
+			acltype,
 			access_mask,
 			SEC_ACE_FLAG_CONTAINER_INHERIT|
 				SEC_ACE_FLAG_OBJECT_INHERIT|
 				SEC_ACE_FLAG_INHERIT_ONLY);
-	access_mask = map_canon_ace_perms(SNUM(conn), &acl_type,
+	access_mask = map_canon_ace_perms(SNUM(conn), &acltype,
 				(mode << 3) & 0700, false);
 	init_sec_ace(&new_ace_list[num_aces+1],
 			&global_sid_Creator_Group,
-			acl_type,
+			acltype,
 			access_mask,
 			SEC_ACE_FLAG_CONTAINER_INHERIT|
 				SEC_ACE_FLAG_OBJECT_INHERIT|
 				SEC_ACE_FLAG_INHERIT_ONLY);
-	access_mask = map_canon_ace_perms(SNUM(conn), &acl_type,
+	access_mask = map_canon_ace_perms(SNUM(conn), &acltype,
 				(mode << 6) & 0700, false);
 	init_sec_ace(&new_ace_list[num_aces+2],
 			&global_sid_World,
-			acl_type,
+			acltype,
 			access_mask,
 			SEC_ACE_FLAG_CONTAINER_INHERIT|
 				SEC_ACE_FLAG_OBJECT_INHERIT|
