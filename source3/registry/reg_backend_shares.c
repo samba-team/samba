@@ -129,7 +129,7 @@ static int shares_value_info(const char *key, struct regval_ctr *val)
 
 /**********************************************************************
  Stub function which always returns failure since we don't want
- people storing printing information directly via regostry calls
+ people storing share information directly via registry calls
  (for now at least)
  *********************************************************************/
 
@@ -140,7 +140,7 @@ static bool shares_store_subkey( const char *key, struct regsubkey_ctr *subkeys 
 
 /**********************************************************************
  Stub function which always returns failure since we don't want
- people storing printing information directly via regostry calls
+ people storing share information directly via registry calls
  (for now at least)
  *********************************************************************/
 
