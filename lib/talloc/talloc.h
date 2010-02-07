@@ -739,7 +739,7 @@ void *talloc_get_name(const void *ptr, #type);
  *
  * @param[in]  type     The type that this chunk contains
  *
- * @return              The ame value as ptr, type-checked and properly cast.
+ * @return              The same value as ptr, type-checked and properly cast.
  */
 void *talloc_get_type_abort(const void *ptr, #type);
 #else
