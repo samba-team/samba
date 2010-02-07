@@ -75,11 +75,11 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 			ret = data_blob_hex_string_upper(mem_ctx, &data);
 			break;
 		case REG_DWORD:
-			if (*(int *)data.data == 0) {
+			if (IVAL(data.data, 0) == 0) {
 				ret = talloc_strdup(mem_ctx, "0");
 			} else {
 				ret = talloc_asprintf(mem_ctx, "0x%x",
-						      *(int *)data.data);
+						      IVAL(data.data, 0));
 			}
 			break;
 		case REG_NONE:
@@ -147,7 +147,8 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 			break;
 		case REG_DWORD: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
-			*data = data_blob_talloc(mem_ctx, &tmp, 4);
+			*data = data_blob_talloc(mem_ctx, NULL, 4);
+			SIVAL(data->data, 0, tmp);
 			}
 			break;
 		case REG_NONE:

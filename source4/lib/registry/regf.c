@@ -1816,7 +1816,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	vk.data_type = type;
 	if (type == REG_DWORD) {
 		vk.data_length |= 0x80000000;
-		vk.data_offset = *(uint32_t *)data.data;
+		vk.data_offset = IVAL(data.data, 0);
 	} else {
 		/* Store data somewhere */
 		vk.data_offset = hbin_store(regf, data);

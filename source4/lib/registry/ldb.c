@@ -80,7 +80,8 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 
 	case REG_DWORD: {
 		uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-		*data = data_blob_talloc(mem_ctx, &tmp, 4);
+		*data = data_blob_talloc(mem_ctx, NULL, 4);
+		SIVAL(data->data, 0, tmp);
 		}
 		break;
 
