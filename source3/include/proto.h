@@ -2846,8 +2846,8 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
                    struct timespec *write_time,
 		   struct timespec *change_time,
                    SMB_INO_T *ino);
-bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
-                          SMB_STRUCT_STAT *sbuf, uint32 *attributes );
+NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
+			     SMB_STRUCT_STAT *sbuf, uint32 *attributes);
 bool cli_qfileinfo_test(struct cli_state *cli, uint16_t fnum, int level, char **poutdata, uint32 *poutlen);
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name);
 

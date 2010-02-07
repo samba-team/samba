@@ -408,8 +408,12 @@ static int do_cd(const char *new_dir)
 	   Except Win9x doesn't support the qpathinfo_basic() call..... */
 
 	if (targetcli->protocol > PROTOCOL_LANMAN2 && !targetcli->win95) {
-		if (!cli_qpathinfo_basic( targetcli, targetpath, &sbuf, &attributes ) ) {
-			d_printf("cd %s: %s\n", new_cd, cli_errstr(targetcli));
+		NTSTATUS status;
+
+		status = cli_qpathinfo_basic(targetcli, targetpath, &sbuf,
+					     &attributes);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("cd %s: %s\n", new_cd, nt_errstr(status));
 			client_set_cur_dir(saved_dir);
 			goto out;
 		}

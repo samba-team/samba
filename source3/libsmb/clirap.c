@@ -1047,24 +1047,24 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
  Send a qpathinfo BASIC_INFO call.
 ****************************************************************************/
 
-bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
-                          SMB_STRUCT_STAT *sbuf, uint32 *attributes )
+NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
+			     SMB_STRUCT_STAT *sbuf, uint32 *attributes)
 {
 	unsigned int param_len = 0;
-	unsigned int data_len = 0;
-	uint16 setup = TRANSACT2_QPATHINFO;
-	char *param;
-	char *rparam=NULL, *rdata=NULL;
-	char *p;
+	uint32_t rdata_len;
+	uint16_t setup[1];
+	uint8_t *param, *rdata;
+	uint8_t *p;
 	char *path;
 	int len;
 	size_t nlen;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	path = talloc_strdup(frame, name);
 	if (!path) {
 		TALLOC_FREE(frame);
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 	/* cleanup */
 
@@ -1074,54 +1074,41 @@ bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 	}
 	nlen = 2*(strlen(path)+1);
 
-	param = TALLOC_ARRAY(frame,char,6+nlen+2);
+	param = TALLOC_ARRAY(frame, uint8_t, 6+nlen+2);
 	if (!param) {
-		return false;
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
 	}
 	p = param;
 	memset(param, '\0', 6);
 
+	SSVAL(setup, 0, TRANSACT2_QPATHINFO);
 	SSVAL(p, 0, SMB_QUERY_FILE_BASIC_INFO);
 	p += 6;
 	p += clistr_push(cli, p, path, nlen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
-
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                       /* fid, flags */
-			&setup, 1, 0,                /* setup, length, max */
-			param, param_len, 2,         /* param, length, max */
-			NULL,  0, cli->max_xmit      /* data, length, max */
-			)) {
+	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, -1, 0, 0,
+			   setup, 1, 0,
+			   param, param_len, 2,
+			   NULL, 0, cli->max_xmit,
+			   NULL, 0, NULL,
+			   NULL, 0, NULL,
+			   &rdata, 36, &rdata_len);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		return False;
+		return status;
 	}
 
-	TALLOC_FREE(frame);
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-		&rparam, &param_len,
-		&rdata, &data_len)) {
-			return False;
-	}
-
-	if (data_len < 36) {
-		SAFE_FREE(rdata);
-		SAFE_FREE(rparam);
-		return False;
-	}
-
-	sbuf->st_ex_atime = interpret_long_date( rdata+8 ); /* Access time. */
-	sbuf->st_ex_mtime = interpret_long_date( rdata+16 ); /* Write time. */
-	sbuf->st_ex_ctime = interpret_long_date( rdata+24 ); /* Change time. */
+	sbuf->st_ex_atime = interpret_long_date((char *)rdata+8);
+	sbuf->st_ex_mtime = interpret_long_date((char *)rdata+16);
+	sbuf->st_ex_ctime = interpret_long_date((char *)rdata+24);
 
 	*attributes = IVAL( rdata, 32 );
 
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rdata);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

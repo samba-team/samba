@@ -772,6 +772,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	char *ppath = NULL;
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
+	NTSTATUS status;
 
 	if ( !rootcli || !path || !targetcli ) {
 		return false;
@@ -802,7 +803,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	if (cli_qpathinfo_basic( rootcli, dfs_path, &sbuf, &attributes)) {
+	status = cli_qpathinfo_basic( rootcli, dfs_path, &sbuf, &attributes);
+	if (NT_STATUS_IS_OK(status)) {
 		/* This is an ordinary path, just return it. */
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
