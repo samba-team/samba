@@ -49,7 +49,8 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	int ret;
 	struct addrinfo hints;
 
-	memset(&hints, '\0', sizeof(hints));
+	ZERO_STRUCT(hints);
+
 	/* By default make sure it supports TCP. */
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = flags;
