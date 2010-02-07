@@ -226,6 +226,31 @@ ret = getnameinfo(&sa, sizeof(sa),
 
 ],
 libreplace_cv_HAVE_GETADDRINFO=yes,libreplace_cv_HAVE_GETADDRINFO=no)])
+
+if test x"$libreplace_cv_HAVE_GETADDRINFO" = x"yes"; then
+	# getaddrinfo is broken on some AIX systems
+	# see bug 5910, use our replacements if we detect
+	# a broken system.
+	AC_TRY_RUN([
+		#include <stddef.h>
+		#include <sys/types.h>
+		#include <sys/socket.h>
+		#include <netdb.h>
+		int main(int argc, const char *argv[])
+		{
+			struct addrinfo hints = {0,};
+			struct addrinfo *ppres;
+			const char hostname[] = "0.0.0.0";
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_family = AF_INET;
+			hints.ai_flags =
+				AI_NUMERICHOST|AI_PASSIVE|AI_ADDRCONFIG;
+			return getaddrinfo(hostname, NULL, &hints, &ppres) != 0 ? 1 : 0;
+		}],
+		libreplace_cv_HAVE_GETADDRINFO=yes,
+		libreplace_cv_HAVE_GETADDRINFO=no)
+fi
+
 if test x"$libreplace_cv_HAVE_GETADDRINFO" = x"yes"; then
 	AC_DEFINE(HAVE_GETADDRINFO,1,[Whether the system has getaddrinfo])
 	AC_DEFINE(HAVE_GETNAMEINFO,1,[Whether the system has getnameinfo])
