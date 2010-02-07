@@ -50,12 +50,14 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
  for comparision of two children
  *************************************************************************/
 
- SORTED_TREE* pathtree_init( void *data_p, int (cmp_fn)(void*, void*) )
+struct sorted_tree *pathtree_init( void *data_p, int (cmp_fn)(void*, void*) )
 {
-	SORTED_TREE *tree = NULL;
+	struct sorted_tree *tree = NULL;
 
-	if ( !(tree = TALLOC_ZERO_P(NULL, SORTED_TREE)) )
+	tree = talloc_zero(NULL, struct sorted_tree);
+	if (tree == NULL) {
 		return NULL;
+	}
 
 	tree->compare = cmp_fn;
 
@@ -196,7 +198,7 @@ static struct tree_node *pathtree_find_child(struct tree_node *node,
  Add a new node into the tree given a key path and a blob of data
  *************************************************************************/
 
- WERROR pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
+WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 {
 	char *str, *base, *path2;
 	struct tree_node *current, *next;
@@ -324,7 +326,7 @@ static void pathtree_print_children(TALLOC_CTX *ctx,
  Dump the kys for a tree to the log file
  *************************************************************************/
 
- void pathtree_print_keys( SORTED_TREE *tree, int debug )
+void pathtree_print_keys(struct sorted_tree *tree, int debug )
 {
 	int i;
 	int num_children = tree->root->num_children;
@@ -348,7 +350,7 @@ static void pathtree_print_children(TALLOC_CTX *ctx,
  the tree
  *************************************************************************/
 
- void* pathtree_find( SORTED_TREE *tree, char *key )
+void* pathtree_find(struct sorted_tree *tree, char *key )
 {
 	char *keystr, *base = NULL, *str = NULL, *p;
 	struct tree_node *current;

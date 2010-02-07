@@ -25,7 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-static SORTED_TREE *cache_tree = NULL;
+static struct sorted_tree *cache_tree = NULL;
 extern struct registry_ops regdb_ops;		/* these are the default */
 
 static WERROR keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname,
@@ -76,7 +76,7 @@ WERROR reghook_cache_init(void)
 
 /**********************************************************************
  Add a new registry hook to the cache.  Note that the keyname
- is not in the exact format that a SORTED_TREE expects.
+ is not in the exact format that a struct sorted_tree expects.
  *********************************************************************/
 
 WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops)

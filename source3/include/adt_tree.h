@@ -30,12 +30,12 @@ struct tree_node {
 	void			*data_p;
 };
 
-typedef struct _tree_root {
+struct sorted_tree {
 	struct tree_node *root;
 
 	/* not used currently (is it needed?) */
 	int 		(*compare)(void* x, void *y);
-} SORTED_TREE;
+};
 
 /* 
  * API
@@ -43,19 +43,19 @@ typedef struct _tree_root {
 
 /* create a new tree, talloc_free() to throw it away */
 
-SORTED_TREE*  pathtree_init( void *data_p, int (cmp_fn)(void*, void*) );
+struct sorted_tree *pathtree_init( void *data_p, int (cmp_fn)(void*, void*) );
 
 /* add a new path component */
 
-WERROR        pathtree_add( SORTED_TREE *tree, const char *path, void *data_p );
+WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p );
 
 /* search path */
 
-void*         pathtree_find( SORTED_TREE *tree, char *key );
+void *pathtree_find(struct sorted_tree *tree, char *key );
 
 /* debug (print) functions */
 
-void          pathtree_print_keys( SORTED_TREE *tree, int debug );
+void pathtree_print_keys(struct sorted_tree *tree, int debug );
 
 
 #endif
