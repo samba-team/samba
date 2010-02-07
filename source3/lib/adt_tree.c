@@ -59,7 +59,8 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
 
 	tree->compare = cmp_fn;
 
-	if ( !(tree->root = TALLOC_ZERO_P(tree, TREE_NODE)) ) {
+	tree->root = talloc_zero(tree, struct tree_node);
+	if (tree->root == NULL) {
 		TALLOC_FREE( tree );
 		return NULL;
 	}
@@ -74,19 +75,23 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
  Find the next child given a key string
  *************************************************************************/
 
-static TREE_NODE* pathtree_birth_child( TREE_NODE *node, char* key )
+static struct tree_node *pathtree_birth_child(struct tree_node *node,
+					      char* key )
 {
-	TREE_NODE *infant = NULL;
-	TREE_NODE **siblings;
+	struct tree_node *infant = NULL;
+	struct tree_node **siblings;
 	int i;
 
-	if ( !(infant = TALLOC_ZERO_P( node, TREE_NODE)) )
+	infant = talloc_zero(node, struct tree_node);
+	if (infant == NULL) {
 		return NULL;
+	}
 
 	infant->key = talloc_strdup( infant, key );
 	infant->parent = node;
 
-	siblings = TALLOC_REALLOC_ARRAY( node, node->children, TREE_NODE *, node->num_children+1 );
+	siblings = talloc_realloc(node, node->children, struct tree_node *,
+				  node->num_children+1);
 
 	if ( siblings )
 		node->children = siblings;
@@ -147,9 +152,10 @@ static TREE_NODE* pathtree_birth_child( TREE_NODE *node, char* key )
  Find the next child given a key string
  *************************************************************************/
 
-static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
+static struct tree_node *pathtree_find_child(struct tree_node *node,
+					     char *key )
 {
-	TREE_NODE *next = NULL;
+	struct tree_node *next = NULL;
 	int i, result;
 
 	if ( !node ) {
@@ -193,7 +199,7 @@ static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
  WERROR pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
 {
 	char *str, *base, *path2;
-	TREE_NODE *current, *next;
+	struct tree_node *current, *next;
 	WERROR ret = WERR_OK;
 
 	DEBUG(8,("pathtree_add: Enter\n"));
@@ -274,11 +280,11 @@ done:
 
 
 /**************************************************************************
- Recursive routine to print out all children of a TREE_NODE
+ Recursive routine to print out all children of a struct tree_node
  *************************************************************************/
 
 static void pathtree_print_children(TALLOC_CTX *ctx,
-				TREE_NODE *node,
+				struct tree_node *node,
 				int debug,
 				const char *path )
 {
@@ -345,7 +351,7 @@ static void pathtree_print_children(TALLOC_CTX *ctx,
  void* pathtree_find( SORTED_TREE *tree, char *key )
 {
 	char *keystr, *base = NULL, *str = NULL, *p;
-	TREE_NODE *current;
+	struct tree_node *current;
 	void *result = NULL;
 
 	DEBUG(10,("pathtree_find: Enter [%s]\n", key ? key : "NULL" ));
