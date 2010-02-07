@@ -148,9 +148,9 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	key = regkey->key;
 	talloc_set_destructor(key, regkey_destructor);
-		
+
 	/* initialization */
-	
+
 	key->type = REG_KEY_GENERIC;
 
 	if (name[0] == '\0') {
@@ -182,7 +182,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	if( StrnCaseCmp(key->name, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
 		key->type = REG_KEY_HKPD;
-	
+
 	/* Look up the table of registry I/O operations */
 
 	if ( !(key->ops = reghook_cache_find( key->name )) ) {
@@ -215,7 +215,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	*pregkey = regkey;
 	result = WERR_OK;
-	
+
 done:
 	if ( !W_ERROR_IS_OK(result) ) {
 		TALLOC_FREE(regkey);

@@ -255,17 +255,17 @@ static int key_printers_fetch_keys( const char *key, struct regsubkey_ctr *subke
 	}
 
 	num_subkeys = get_printer_subkeys( printer->info_2->data, printerdatakey?printerdatakey:"", &subkey_names );
-	
+
 	for ( i=0; i<num_subkeys; i++ )
 		regsubkey_ctr_addkey( subkeys, subkey_names[i] );
-	
+
 	free_a_printer( &printer, 2 );
-			
+
 	/* no other subkeys below here */
 
 done:	
 	SAFE_FREE( subkey_names );
-	
+
 	return num_subkeys;
 }
 
@@ -281,17 +281,17 @@ static bool add_printers_by_registry( struct regsubkey_ctr *subkeys )
 	char *printername;
 	NT_PRINTER_INFO_LEVEL_2 info2;
 	NT_PRINTER_INFO_LEVEL printer;
-	
+
 	ZERO_STRUCT( info2 );
 	printer.info_2 = &info2;
-	
+
 	num_keys = regsubkey_ctr_numkeys( subkeys );
-	
+
 	become_root();
 	for ( i=0; i<num_keys; i++ ) {
 		printername = regsubkey_ctr_specific_key( subkeys, i );
 		snum = find_service( printername );
-		
+
 		/* just verify a valied snum for now */
 		if ( snum == -1 ) {
 			fstrcpy( info2.printername, printername );
@@ -318,34 +318,34 @@ static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subk
 	int i, num_subkeys, num_existing_keys;
 	char *subkeyname;
 	fstring *existing_subkeys = NULL;
-	
+
 	printers_key = strip_printers_prefix( key );
-	
+
 	if ( !printers_key ) {
 		/* have to deal with some new or deleted printer */
 		return add_printers_by_registry( subkeys );
 	}
-	
+
 	if (!reg_split_path( printers_key, &printername, &printerdatakey )) {
 		return False;
 	}
-	
+
 	/* lookup the printer */
-	
+
 	if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, printername)) ) {
 		DEBUG(0,("key_printers_store_keys: Tried to store subkey for bad printername %s\n", 
 			printername));
 		return False;
 	}
-	
+
 	/* get the top level printer keys */
-	
+
 	num_existing_keys = get_printer_subkeys( printer->info_2->data, "", &existing_subkeys );
-	
+
 	for ( i=0; i<num_existing_keys; i++ ) {
-	
+
 		/* remove the key if it has been deleted */
-		
+
 		if ( !regsubkey_ctr_key_exists( subkeys, existing_subkeys[i] ) ) {
 			DEBUG(5,("key_printers_store_keys: deleting key %s\n", 
 				existing_subkeys[i]));
@@ -366,13 +366,13 @@ static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subk
 			}
 		}
 	}
-	
+
 	/* write back to disk */
-	
+
 	mod_a_printer( printer, 2 );
-	
+
 	/* cleanup */
-	
+
 	free_a_printer( &printer, 2 );
 
 	SAFE_FREE( existing_subkeys );
@@ -388,12 +388,12 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 	struct spoolss_DeviceMode *devmode;
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
-	
+
 	regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
 	regval_ctr_addvalue( values, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
 	regval_ctr_addvalue( values, "ChangeID",         REG_DWORD, (char*)&info2->changeid,         sizeof(info2->changeid) );
 	regval_ctr_addvalue( values, "Default Priority", REG_DWORD, (char*)&info2->default_priority, sizeof(info2->default_priority) );
-	
+
 	/* lie and say everything is ok since we don't want to call print_queue_length() to get the real status */
 	regval_ctr_addvalue( values, "Status",           REG_DWORD, (char*)&printer_status,          sizeof(info2->status) );
 
@@ -464,32 +464,32 @@ static int key_printers_fetch_values(const char *key, struct regval_ctr *values)
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	NT_PRINTER_DATA	*p_data;
 	int		i, key_index;
-	
+
 	printers_key = strip_printers_prefix( key );	
-	
+
 	/* top level key values stored in the registry has no values */
-	
+
 	if ( !printers_key ) {
 		/* normalize to the 'HKLM\SOFTWARE\...\Print\Printers' key */
 		return regdb_fetch_values( KEY_WINNT_PRINTERS, values );
 	}
-	
+
 	/* lookup the printer object */
-	
+
 	if (!reg_split_path( printers_key, &printername, &printerdatakey )) {
 		return -1;
 	}
-	
+
 	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 		goto done;
-		
+
 	if ( !printerdatakey ) {
 		fill_in_printer_values( printer->info_2, values );
 		goto done;
 	}
-		
+
 	/* iterate over all printer data keys and fill the regval container */
-	
+
 	p_data = printer->info_2->data;
 	if ( (key_index = lookup_printerkey( p_data, printerdatakey )) == -1  ) {
 		/* failure....should never happen if the client has a valid open handle first */
@@ -497,16 +497,16 @@ static int key_printers_fetch_values(const char *key, struct regval_ctr *values)
 		free_a_printer( &printer, 2 );
 		return -1;
 	}
-	
+
 	num_values = regval_ctr_numvals( p_data->keys[key_index].values );	
 	for ( i=0; i<num_values; i++ )
 		regval_ctr_copyvalue( values, regval_ctr_specific_value(p_data->keys[key_index].values, i) );
-			
+
 
 done:
 	if ( printer )
 		free_a_printer( &printer, 2 );
-		
+
 	return regval_ctr_numvals( values );
 }
 
@@ -563,12 +563,12 @@ struct {
 static int find_valuename_index( const char *valuename )
 {
 	int i;
-	
+
 	for ( i=0; printer_values_map[i].name; i++ ) {
 		if ( strequal( valuename, printer_values_map[i].name ) )
 			return printer_values_map[i].index;
 	}
-	
+
 	return -1;
 }
 
@@ -590,14 +590,14 @@ static void convert_values_to_printer_info_2(TALLOC_CTX *mem_ctx,
 	uint32 value_index;
 	struct regval_blob *val;
 	int i;
-	
+
 	for ( i=0; i<num_values; i++ ) {
 		DATA_BLOB blob;
 		val = regval_ctr_specific_value( values, i );
 		value_index = find_valuename_index( regval_name( val ) );
 
 		blob = data_blob_const(regval_data_p(val), regval_size(val));
-		
+
 		switch( value_index ) {
 			case REG_IDX_ATTRIBUTES:
 				printer2->attributes = (uint32)(*regval_data_p(val));
@@ -657,7 +657,7 @@ static void convert_values_to_printer_info_2(TALLOC_CTX *mem_ctx,
 					regval_name( val ) ));
 		}
 	}
-	
+
 	return;
 }	
 
@@ -671,16 +671,16 @@ static bool key_printers_store_values(const char *key, struct regval_ctr *values
 	NT_PRINTER_INFO_LEVEL   *printer = NULL;
 	WERROR result;
 	TALLOC_CTX *mem_ctx = talloc_init("key_printers_store_values");
-	
+
 	printers_key = strip_printers_prefix( key );
-	
+
 	/* values in the top level key get stored in the registry */
 
 	if ( !printers_key ) {
 		/* normalize on the 'HKLM\SOFTWARE\....\Print\Printers' key */
 		return regdb_store_values( KEY_WINNT_PRINTERS, values );
 	}
-	
+
 	if (!reg_split_path( printers_key, &printername, &keyname )) {
 		return False;
 	}
@@ -697,9 +697,9 @@ static bool key_printers_store_values(const char *key, struct regval_ctr *values
 		int num_values = regval_ctr_numvals( values );
 		int i;
 		struct regval_blob *val;
-		
+
 		delete_printer_key( printer->info_2->data, keyname );
-		
+
 		/* deal with any subkeys */
 		for ( i=0; i<num_values; i++ ) {
 			val = regval_ctr_specific_value( values, i );
