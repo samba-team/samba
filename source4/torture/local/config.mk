@@ -35,6 +35,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../lib/messaging/tests/irpc.o \
 		$(torturesrcdir)/../librpc/tests/binding_string.o \
 		$(torturesrcdir)/../../lib/util/tests/idtree.o \
+		$(torturesrcdir)/../../lib/util/tests/dlinklist.o \
 		$(torturesrcdir)/../lib/socket/testsuite.o \
 		$(torturesrcdir)/../../lib/socket_wrapper/testsuite.o \
 		$(torturesrcdir)/../../lib/nss_wrapper/testsuite.o \
