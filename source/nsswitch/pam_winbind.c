@@ -1036,6 +1036,7 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 	char *current_name = NULL;
 	const char *search_location;
 	const char *comma;
+	int len;
 
 	if (sid_list_buffer_size > 0) {
 		sid_list_buffer[0] = 0;
@@ -1091,6 +1092,17 @@ static bool winbind_name_list_to_sid_string_list(struct pwb_context *ctx,
 		_make_remark_format(ctx, PAM_TEXT_INFO, _("Cannot convert group %s "
 				"to sid, please contact your administrator to see "
 				"if group %s is valid."), search_location, search_location);
+		/*
+		 * The lookup of the last name failed..
+		 * It results in require_member_of_sid ends with ','
+		 * It is malformated parameter here, overwrite the last ','.
+		 */
+		len = strlen(sid_list_buffer);
+		if (len) {
+			if (sid_list_buffer[len - 1] == ',') {
+				sid_list_buffer[len - 1] = '\0';
+			}
+		}
 	}
 
 	result = true;
