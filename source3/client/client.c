@@ -3376,9 +3376,12 @@ static int cmd_volume(void)
 	fstring volname;
 	uint32 serial_num;
 	time_t create_date;
+	NTSTATUS status;
 
-	if (!cli_get_fs_volume_info(cli, volname, &serial_num, &create_date)) {
-		d_printf("Errr %s getting volume info\n",cli_errstr(cli));
+	status = cli_get_fs_volume_info(cli, volname, &serial_num,
+					&create_date);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Error %s getting volume info\n", nt_errstr(status));
 		return 1;
 	}
 

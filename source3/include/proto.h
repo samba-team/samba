@@ -2708,7 +2708,8 @@ struct tevent_req *cli_get_fs_attr_info_send(TALLOC_CTX *mem_ctx,
 					     struct cli_state *cli);
 NTSTATUS cli_get_fs_attr_info_recv(struct tevent_req *req, uint32_t *fs_attr);
 NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr);
-bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate);
+NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
+				uint32 *pserial_number, time_t *pdate);
 bool cli_get_fs_full_size_info(struct cli_state *cli,
                                uint64_t *total_allocation_units,
                                uint64_t *caller_allocation_units,

@@ -348,48 +348,34 @@ fail:
 	return status;
 }
 
-bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate)
+NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
+				uint32 *pserial_number, time_t *pdate)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	NTSTATUS status;
+	uint16 setup[1];
+	uint8_t param[2];
+	uint8_t *rdata;
+	uint32_t rdata_count;
 	unsigned int nlen;
 
-	setup = TRANSACT2_QFSINFO;
-
+	SSVAL(setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(param,0,SMB_QUERY_FS_VOLUME_INFO);
 
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-	if (rdata_count < 19) {
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBtrans2,
+			   NULL, 0, 0, 0,
+			   setup, 1, 0,
+			   param, 2, 0,
+			   NULL, 0, 560,
+			   NULL, 0, NULL,
+			   NULL, 0, NULL,
+			   &rdata, 10, &rdata_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (pdate) {
 		struct timespec ts;
-		ts = interpret_long_date(rdata);
+		ts = interpret_long_date((char *)rdata);
 		*pdate = ts.tv_sec;
 	}
 	if (pserial_number) {
@@ -403,11 +389,8 @@ bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *
 	 *       return the other stuff
 	 */
 
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
+	TALLOC_FREE(rdata);
+	return NT_STATUS_OK;
 }
 
 bool cli_get_fs_full_size_info(struct cli_state *cli,
