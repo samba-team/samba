@@ -1658,6 +1658,17 @@ DSO_EXPORTS=""
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
+			for flags in "-expect_unresolved '*'" "-Wl,-expect_unresolved,'*'" ; do
+				saved_ldflags="$LDFLAGS"
+				AC_MSG_CHECKING([if $flags works])
+				LDFLAGS="$flags $saved_ldflags"
+				AC_TRY_LINK([],[],
+					[AC_MSG_RESULT([yes])
+					LDSHFLAGS_Z_NODEFS=$flags],
+					AC_MSG_RESULT([no]))
+				LDFLAGS="$saved_ldflags"
+				test x"$LDSHFLAGS_Z_NODEFS" != x && break
+			done
 			;;
 		*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix])
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
