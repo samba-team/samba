@@ -961,3 +961,39 @@ bool is_andx_req(uint8_t cmd)
 
 	return false;
 }
+
+NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+		 uint8_t smb_command, uint8_t additional_flags,
+		 uint8_t wct, uint16_t *vwv,
+		 uint32_t num_bytes, const uint8_t *bytes,
+		 struct tevent_req **result_parent,
+		 uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
+		 uint32_t *pnum_bytes, uint8_t **pbytes)
+{
+        struct tevent_context *ev;
+        struct tevent_req *req = NULL;
+        NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+        if (cli_has_async_calls(cli)) {
+                return NT_STATUS_INVALID_PARAMETER;
+        }
+        ev = tevent_context_init(mem_ctx);
+        if (ev == NULL) {
+                goto fail;
+        }
+        req = cli_smb_send(mem_ctx, ev, cli, smb_command, additional_flags,
+			   wct, vwv, num_bytes, bytes);
+        if (req == NULL) {
+                goto fail;
+        }
+        if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+                goto fail;
+        }
+        status = cli_smb_recv(req, min_wct, pwct, pvwv, pnum_bytes, pbytes);
+fail:
+        TALLOC_FREE(ev);
+	if (NT_STATUS_IS_OK(status)) {
+		*result_parent = req;
+	}
+        return status;
+}
