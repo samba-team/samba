@@ -4153,28 +4153,20 @@ NTSTATUS cli_ctemp(struct cli_state *cli,
 */
 NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA_BLOB *blob)
 {
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	uint16_t vwv[3];
+	NTSTATUS status;
+	struct tevent_req *result_parent;
 
-	cli_set_message(cli->outbuf, 3, 0, True);
-	SCVAL(cli->outbuf,smb_com,SMBioctl);
-	cli_setup_packet(cli);
+	SSVAL(vwv+0, 0, fnum);
+	SSVAL(vwv+1, 0, code>>16);
+	SSVAL(vwv+2, 0, (code&0xFFFF));
 
-	SSVAL(cli->outbuf, smb_vwv0, fnum);
-	SSVAL(cli->outbuf, smb_vwv1, code>>16);
-	SSVAL(cli->outbuf, smb_vwv2, (code&0xFFFF));
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	status = cli_smb(talloc_tos(), cli, SMBioctl, 0, 3, vwv, 0, NULL,
+			 &result_parent, 0, NULL, NULL, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	if (cli_is_error(cli)) {
-		return cli_nt_error(cli);
-	}
-
 	*blob = data_blob_null;
-
 	return NT_STATUS_OK;
 }
 
