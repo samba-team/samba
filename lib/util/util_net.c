@@ -35,7 +35,7 @@
 
 void zero_sockaddr(struct sockaddr_storage *pss)
 {
-	memset(pss, '\0', sizeof(*pss));
+	ZERO_STRUCTP(pss);
 	/* Ensure we're at least a valid sockaddr-storage. */
 	pss->ss_family = AF_INET;
 }
