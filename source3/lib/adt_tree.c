@@ -20,6 +20,20 @@
 #include "includes.h"
 #include "adt_tree.h"
 
+struct tree_node {
+	struct tree_node	*parent;
+	struct tree_node	**children;
+	int 			num_children;
+	char			*key;
+	void			*data_p;
+};
+
+struct sorted_tree {
+	struct tree_node *root;
+
+	/* not used currently (is it needed?) */
+	int 		(*compare)(void* x, void *y);
+};
 
 /**************************************************************************
  *************************************************************************/
