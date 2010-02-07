@@ -64,7 +64,7 @@ WERROR reghook_cache_init(void)
 		return WERR_OK;
 	}
 
-	cache_tree = pathtree_init(&regdb_ops, NULL);
+	cache_tree = pathtree_init(&regdb_ops);
 	if (cache_tree == NULL) {
 		return WERR_NOMEM;
 	}

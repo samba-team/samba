@@ -30,9 +30,6 @@ struct tree_node {
 
 struct sorted_tree {
 	struct tree_node *root;
-
-	/* not used currently (is it needed?) */
-	int 		(*compare)(void* x, void *y);
 };
 
 /**************************************************************************
@@ -60,11 +57,10 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
 }
 
 /**************************************************************************
- Initialize the tree's root.  The cmp_fn is a callback function used
- for comparision of two children
+ Initialize the tree's root.
  *************************************************************************/
 
-struct sorted_tree *pathtree_init( void *data_p, int (cmp_fn)(void*, void*) )
+struct sorted_tree *pathtree_init(void *data_p)
 {
 	struct sorted_tree *tree = NULL;
 
@@ -72,8 +68,6 @@ struct sorted_tree *pathtree_init( void *data_p, int (cmp_fn)(void*, void*) )
 	if (tree == NULL) {
 		return NULL;
 	}
-
-	tree->compare = cmp_fn;
 
 	tree->root = talloc_zero(tree, struct tree_node);
 	if (tree->root == NULL) {

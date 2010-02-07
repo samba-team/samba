@@ -28,7 +28,7 @@ struct sorted_tree;
 
 /* create a new tree, talloc_free() to throw it away */
 
-struct sorted_tree *pathtree_init( void *data_p, int (cmp_fn)(void*, void*) );
+struct sorted_tree *pathtree_init(void *data_p);
 
 /* add a new path component */
 
