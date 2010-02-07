@@ -269,7 +269,21 @@ static char *smb_traffic_analyzer_anonymize( TALLOC_CTX *ctx,
 }
 
 
-/* The marshaller for the protocol version 2. */
+/**
+ * The marshalling function for protocol v2.
+ * TALLOC_CTX *ctx		Talloc context to work on
+ * struct tm *tm		tm struct for the timestamp
+ * int seconds			milliseconds of the timestamp
+ * vfs_handle_struct *handle	vfs_handle_struct
+ * char *username		Name of the user
+ * int vfs_operation		VFS operation identifier
+ * int count			Number of the common data blocks
+ * [...] variable args		data blocks taken from the individual
+ *				VFS data structures
+ *
+ * Returns the complete data block to send. The caller has to
+ * take care for freeing the allocated buffer.
+ */
 static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	struct tm *tm, int seconds, vfs_handle_struct *handle, \
 	char *username, int vfs_operation, int count, ... )
@@ -279,11 +293,12 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	char *arg = NULL;
 	int len;
 	char *header = NULL;
-	char *buf = NULL;
+	char *common_data_count_str = NULL;
 	char *timestr = NULL;
-	char *opstr = NULL;
 	char *sidstr = NULL;
 	char *usersid = NULL;
+	char *buf = NULL;
+	char *vfs_operation_str = NULL;
 	/*
 	 * first create the data that is transfered with any VFS op
 	 * These are, in the following order:
@@ -296,42 +311,30 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	 * 6.timestamp
 	 */
 
-	/* number of common data blocks to come */
-	opstr = talloc_asprintf( ctx, "%i", SMBTA_COMMON_DATA_COUNT);
-	len = strlen(opstr);
-	buf = talloc_asprintf( ctx, "%04u%s", len, opstr);
-	talloc_free(opstr);
+	/*
+	 * number of common data blocks to come,
+	 * this is a #define in vfs_smb_traffic_anaylzer.h,
+	 * it's length is known at compile time
+	 */
+	common_data_count_str = talloc_strdup( ctx, SMBTA_COMMON_DATA_COUNT);
 	/* vfs operation identifier */
-	opstr = talloc_asprintf( ctx, "%i", vfs_operation);
-	len = strlen(opstr);
-	buf = talloc_asprintf_append( buf, "%04u%s", len, opstr);
-	talloc_free(opstr);
+	vfs_operation_str = talloc_asprintf( common_data_count_str, "%i",
+							vfs_operation);
 	/*
 	 * Handle anonymization. In protocol v2, we have to anonymize
 	 * both the SID and the username. The name is already
 	 * anonymized if needed, by the calling function.
 	 */
-	usersid = dom_sid_string( ctx,
+	usersid = dom_sid_string( common_data_count_str,
 		&handle->conn->server_info->ptok->user_sids[0]);
-	sidstr = smb_traffic_analyzer_anonymize(ctx, usersid, handle);
-	talloc_free(usersid);
-	/* username */
-	len = strlen( username );
-	buf = talloc_asprintf_append(buf, "%04u%s", len, username);
-	/* user SID */
-	len = strlen( sidstr );
-	buf = talloc_asprintf_append(buf, "%04u%s", len, sidstr);
-	talloc_free(sidstr);
-	/* affected share */
-	len = strlen( handle->conn->connectpath );
-	buf = talloc_asprintf_append( buf, "%04u%s", len, \
-		handle->conn->connectpath );
-	/* user's domain */
-	len = strlen( pdb_get_domain(handle->conn->server_info->sam_account) );
-	buf = talloc_asprintf_append( buf, "%04u%s", len, \
-		pdb_get_domain(handle->conn->server_info->sam_account) );
+
+	sidstr = smb_traffic_analyzer_anonymize(
+		common_data_count_str,
+		usersid,
+		handle);
+	
 	/* time stamp */
-	timestr = talloc_asprintf( ctx, \
+	timestr = talloc_asprintf( common_data_count_str, \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
 		tm->tm_year+1900, \
 		tm->tm_mon+1, \
@@ -341,8 +344,25 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		tm->tm_sec, \
 		(int)seconds);
 	len = strlen( timestr );
-	buf = talloc_asprintf_append( buf, "%04u%s", len, timestr);
-	talloc_free(timestr);
+	/* create the string of common data */
+	buf = talloc_asprintf(ctx,
+		"%s%04u%s%04u%s%04u%s%04u%s%04u%s%04u%s",
+		common_data_count_str,
+		strlen(vfs_operation_str),
+		vfs_operation_str,
+		strlen(username),
+		username,
+		strlen(sidstr),
+		sidstr,
+		strlen(handle->conn->connectpath),
+		handle->conn->connectpath,
+		strlen(pdb_get_domain(handle->conn->server_info->sam_account)),
+		pdb_get_domain(handle->conn->server_info->sam_account),
+		strlen(timestr),
+		timestr);
+
+	talloc_free(common_data_count_str);
+
 	/* data blocks depending on the VFS function */	
 	va_start( ap, count );
 	while ( count-- ) {
