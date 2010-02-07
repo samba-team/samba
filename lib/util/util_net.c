@@ -54,7 +54,7 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = flags;
 
-	/* Linux man page on getaddinfo() says port will be
+	/* Linux man page on getaddrinfo() says port will be
 	   uninitialized when service string in NULL */
 
 	ret = getaddrinfo(str, NULL,
