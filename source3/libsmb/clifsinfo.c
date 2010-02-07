@@ -348,63 +348,6 @@ fail:
 	return status;
 }
 
-bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number)
-{
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
-	unsigned char nlen;
-
-	setup = TRANSACT2_QFSINFO;
-
-	SSVAL(param,0,SMB_INFO_VOLUME);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-	if (rdata_count < 5) {
-		goto cleanup;
-	}
-
-	if (pserial_number) {
-		*pserial_number = IVAL(rdata,0);
-	}
-	nlen = CVAL(rdata,l2_vol_cch);
-	clistr_pull(cli->inbuf, volume_name, rdata + l2_vol_szVolLabel,
-		    sizeof(fstring), nlen, STR_NOALIGN);
-
-	/* todo: but not yet needed
-	 *       return the other stuff
-	 */
-
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
-}
-
 bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate)
 {
 	bool ret = False;
