@@ -46,8 +46,9 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* see if we have any children */
-	ret = dsdb_module_search(module, req, &res, req->op.del.dn, LDB_SCOPE_ONELEVEL, attrs,
-				 DSDB_SEARCH_SHOW_DELETED, NULL);
+	ret = dsdb_module_search(module, req, &res, req->op.del.dn,
+				 LDB_SCOPE_ONELEVEL, attrs,
+				 DSDB_SEARCH_SHOW_DELETED, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
 		return ret;
