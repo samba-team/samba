@@ -1368,13 +1368,30 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 	if (state.scanned) {
 		result = state.found;
 	} else {
-		if (!create_sorted_subkeys(path, key)) {
+		res = db->transaction_start(db);
+		if (res != 0) {
+			DEBUG(0, ("error starting transacion\n"));
 			goto fail;
 		}
+
+		if (!create_sorted_subkeys(path, key)) {
+			res = db->transaction_cancel(db);
+			if (res != 0) {
+				smb_panic("Failed to cancel transaction.");
+			}
+			goto fail;
+		}
+
 		res = db->parse_record(db, string_term_tdb_data(key),
 				       parent_subkey_scanner, &state);
 		if ((res == 0) && (state.scanned)) {
 			result = state.found;
+		}
+
+		res = db->transaction_commit(db);
+		if (res != 0) {
+			DEBUG(0, ("error committing transaction\n"));
+			result = false;
 		}
 	}
 
