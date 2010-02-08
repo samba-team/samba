@@ -1,0 +1,16 @@
+<samba:parameter name="nmbd bind explicit broadcast"
+	         context="G"
+		 advanced="1" developer="1"
+		 type="boolean"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This option allows you to setup <citerefentry><refentrytitle>nmbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> to explicit bind to the
+	broadcast address of the local subnets. This is only useful in
+	combination with the <smbconfoption name="socket address"/> option.
+	</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
