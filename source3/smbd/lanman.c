@@ -26,6 +26,7 @@
    */
 
 #include "includes.h"
+#include "../lib/util/binsearch.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
@@ -1354,7 +1355,8 @@ static int fill_srv_info(struct srv_info_struct *service,
 
 static bool srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
 {
-	return(strcmp(s1->name,s2->name));
+#undef strcasecmp
+	return strcasecmp(s1->name,s2->name);
 }
 
 /****************************************************************************
@@ -1511,6 +1513,214 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 
 	DEBUG(3,("NetServerEnum2 domain = %s uLevel=%d counted=%d total=%d\n",
 		domain,uLevel,counted,counted+missed));
+
+	return True;
+}
+
+static bool srv_name_match(const char *n1, const char *n2)
+{
+	/*
+	 * [MS-RAP] footnote <88> for Section 3.2.5.15 says:
+	 *
+	 *  In Windows, FirstNameToReturn need not be an exact match:
+	 *  the server will return a list of servers that exist on
+	 *  the network greater than or equal to the FirstNameToReturn.
+	 */
+	int ret = strcasecmp(n1, n2);
+
+	if (ret <= 0) {
+		return 0;
+	}
+
+	return ret;
+}
+
+static bool api_RNetServerEnum3(connection_struct *conn, uint16 vuid,
+				char *param, int tpscnt,
+				char *data, int tdscnt,
+				int mdrcnt, int mprcnt, char **rdata,
+				char **rparam, int *rdata_len, int *rparam_len)
+{
+	char *str1 = get_safe_str_ptr(param, tpscnt, param, 2);
+	char *str2 = skip_string(param,tpscnt,str1);
+	char *p = skip_string(param,tpscnt,str2);
+	int uLevel = get_safe_SVAL(param, tpscnt, p, 0, -1);
+	int buf_len = get_safe_SVAL(param,tpscnt, p, 2, 0);
+	uint32 servertype = get_safe_IVAL(param,tpscnt,p,4, 0);
+	char *p2;
+	int data_len, fixed_len, string_len;
+	int f_len = 0, s_len = 0;
+	struct srv_info_struct *servers=NULL;
+	int counted=0,first=0,total=0;
+	int i,missed;
+	fstring domain;
+	fstring first_name;
+	bool domain_request;
+	bool local_request;
+
+	if (!str1 || !str2 || !p) {
+		return False;
+	}
+
+	/* If someone sets all the bits they don't really mean to set
+	   DOMAIN_ENUM and LOCAL_LIST_ONLY, they just want all the
+	   known servers. */
+
+	if (servertype == SV_TYPE_ALL) {
+		servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
+	}
+
+	/* If someone sets SV_TYPE_LOCAL_LIST_ONLY but hasn't set
+	   any other bit (they may just set this bit on its own) they
+	   want all the locally seen servers. However this bit can be
+	   set on its own so set the requested servers to be
+	   ALL - DOMAIN_ENUM. */
+
+	if ((servertype & SV_TYPE_LOCAL_LIST_ONLY) && !(servertype & SV_TYPE_DOMAIN_ENUM)) {
+		servertype = SV_TYPE_ALL & ~(SV_TYPE_DOMAIN_ENUM);
+	}
+
+	domain_request = ((servertype & SV_TYPE_DOMAIN_ENUM) != 0);
+	local_request = ((servertype & SV_TYPE_LOCAL_LIST_ONLY) != 0);
+
+	p += 8;
+
+	if (strcmp(str1, "WrLehDzz") != 0) {
+		return false;
+	}
+	if (!check_server_info(uLevel,str2)) {
+		return False;
+	}
+
+	DEBUG(4, ("server request level: %s %8x ", str2, servertype));
+	DEBUG(4, ("domains_req:%s ", BOOLSTR(domain_request)));
+	DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
+
+	if (skip_string(param,tpscnt,p) == NULL) {
+		return False;
+	}
+	pull_ascii_fstring(domain, p);
+	if (domain[0] == '\0') {
+		fstrcpy(domain, lp_workgroup());
+	}
+	p = skip_string(param,tpscnt,p);
+	if (skip_string(param,tpscnt,p) == NULL) {
+		return False;
+	}
+	pull_ascii_fstring(first_name, p);
+
+	DEBUG(4, ("domain: '%s' first_name: '%s'\n",
+		  domain, first_name));
+
+	if (lp_browse_list()) {
+		total = get_server_info(servertype,&servers,domain);
+	}
+
+	data_len = fixed_len = string_len = 0;
+	missed = 0;
+
+	if (total > 0) {
+		qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
+	}
+
+	if (first_name[0] != '\0') {
+		struct srv_info_struct *first_server = NULL;
+
+		BINARY_ARRAY_SEARCH(servers, total, name, first_name,
+				    srv_name_match, first_server);
+		if (first_server) {
+			first = PTR_DIFF(first_server, servers) / sizeof(*servers);
+			/*
+			 * The binary search may not find the exact match
+			 * so we need to search backward to find the first match
+			 *
+			 * This implements the strange matching windows
+			 * implements. (see the comment in srv_name_match().
+			 */
+			for (;first > 0;) {
+				int ret;
+				ret = strcasecmp(first_name,
+						 servers[first-1].name);
+				if (ret > 0) {
+					break;
+				}
+				first--;
+			}
+		} else {
+			/* we should return no entries */
+			first = total;
+		}
+	}
+
+	{
+		char *lastname=NULL;
+
+		for (i=first;i<total;i++) {
+			struct srv_info_struct *s = &servers[i];
+
+			if (lastname && strequal(lastname,s->name)) {
+				continue;
+			}
+			lastname = s->name;
+			data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
+			DEBUG(4,("fill_srv_info[%d] %20s %8x %25s %15s\n",
+				i, s->name, s->type, s->comment, s->domain));
+
+			if (data_len <= buf_len) {
+				counted++;
+				fixed_len += f_len;
+				string_len += s_len;
+			} else {
+				missed++;
+			}
+		}
+	}
+
+	*rdata_len = fixed_len + string_len;
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
+
+	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
+	p = *rdata;
+	f_len = fixed_len;
+	s_len = string_len;
+
+	{
+		char *lastname=NULL;
+		int count2 = counted;
+
+		for (i = first; i < total && count2;i++) {
+			struct srv_info_struct *s = &servers[i];
+
+			if (lastname && strequal(lastname,s->name)) {
+				continue;
+			}
+			lastname = s->name;
+			fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
+			DEBUG(4,("fill_srv_info[%d] %20s %8x %25s %15s\n",
+				i, s->name, s->type, s->comment, s->domain));
+			count2--;
+		}
+	}
+
+	*rparam_len = 8;
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
+	SSVAL(*rparam,0,(missed == 0 ? NERR_Success : ERRmoredata));
+	SSVAL(*rparam,2,0);
+	SSVAL(*rparam,4,counted);
+	SSVAL(*rparam,6,counted+missed);
+
+	DEBUG(3,("NetServerEnum3 domain = %s uLevel=%d first=%d[%s => %s] counted=%d total=%d\n",
+		domain,uLevel,first,first_name,
+		first < total ? servers[first].name : "",
+		counted,counted+missed));
+
+	SAFE_FREE(servers);
 
 	return True;
 }
@@ -4631,6 +4841,7 @@ static const struct {
 	{"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
 	{"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
 	{"NetServerEnum2",	RAP_NetServerEnum2,	api_RNetServerEnum2}, /* anon OK */
+	{"NetServerEnum3",	RAP_NetServerEnum3,	api_RNetServerEnum3}, /* anon OK */
 	{"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
 	{"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
 	{"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
