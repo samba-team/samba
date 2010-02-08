@@ -1863,7 +1863,7 @@ bool listen_for_packets(bool run_election)
 			client_fd = ClientNMB;
 			client_port = global_nmb_port;
 		} else {
-			/* Port 137 */
+			/* Port 138 */
 			packet_type = DGRAM_PACKET;
 			packet_name = "dgram";
 			client_fd = ClientDGRAM;
