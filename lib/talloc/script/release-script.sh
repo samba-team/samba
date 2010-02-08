@@ -10,19 +10,6 @@ if [ ! -d "lib/talloc" ]; then
     exit 1
 fi
 
-# Check exports and signatures are up to date
-pushd lib/talloc
-./script/abi_checks.sh talloc talloc.h
-abicheck=$?
-popd
-if [ ! "$abicheck" = "0" ]; then
-    echo "ERROR: ABI Checks produced warnings!"
-    exit 1
-fi
-
-git clean -f -x -d lib/talloc
-git clean -f -x -d lib/replace
-
 curbranch=`git branch |grep "^*" | tr -d "* "`
 
 version=$1
@@ -35,14 +22,35 @@ if [ ! "$?" = "0" ];  then
     exit 1
 fi
 
+function cleanquit {
+    #Clean up
+    git checkout $curbranch
+    git branch -d talloc-release-script-${strver}
+    exit $1
+}
+
+# NOTE: use cleanquit after this point
 git checkout talloc-release-script-${strver}
 
 # Test configure agrees with us
 confver=`grep "^AC_INIT" lib/talloc/configure.ac | tr -d "AC_INIT(talloc, " | tr -d ")"`
 if [ ! "$confver" = "$version" ]; then
     echo "Wrong version, requested release for ${version}, found ${confver}"
-    exit 1
+    cleanquit 1
 fi
+
+# Check exports and signatures are up to date
+pushd lib/talloc
+./script/abi_checks.sh talloc talloc.h
+abicheck=$?
+popd
+if [ ! "$abicheck" = "0" ]; then
+    echo "ERROR: ABI Checks produced warnings!"
+    cleanquit 1
+fi
+
+git clean -f -x -d lib/talloc
+git clean -f -x -d lib/replace
 
 # Now build tarball
 cp -a lib/talloc talloc-${version}
@@ -53,6 +61,5 @@ popd
 tar cvzf talloc-${version}.tar.gz talloc-${version}
 rm -fr talloc-${version}
 
-#Clean up
-git checkout $curbranch
-git branch -d talloc-release-script-${strver}
+cleanquit 0
+
