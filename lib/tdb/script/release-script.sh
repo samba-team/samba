@@ -1,7 +1,7 @@
 #!/bin/bash
 
-LNAME=talloc
-LINCLUDE=talloc.h
+LNAME=tdb
+LINCLUDE=include/tdb.h
 
 if [ "$1" = "" ]; then
     echo "Please provide version string, eg: 1.2.0"
@@ -39,7 +39,7 @@ git checkout ${LNAME}-release-script-${strver}
 confver=`grep "^AC_INIT" lib/${LNAME}/configure.ac | tr -d "AC_INIT(${LNAME}, " | tr -d ")"`
 if [ ! "$confver" = "$version" ]; then
     echo "Wrong version, requested release for ${version}, found ${confver}"
-    cleanquit 1
+    exit 1
 fi
 
 # Check exports and signatures are up to date
@@ -65,4 +65,3 @@ tar cvzf ${LNAME}-${version}.tar.gz ${LNAME}-${version}
 rm -fr ${LNAME}-${version}
 
 cleanquit 0
-
