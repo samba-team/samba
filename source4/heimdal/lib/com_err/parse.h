@@ -67,7 +67,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 51 "parse.y"
+#line 51 "heimdal/lib/com_err/parse.y"
 
   char *string;
   int number;
@@ -75,7 +75,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 79 "parse.h"
+#line 79 "heimdal/lib/com_err/parse.y"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

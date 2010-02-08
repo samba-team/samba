@@ -69,7 +69,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 45 "sel-gram.y"
+#line 45 "heimdal/lib/hx509/sel-gram.y"
 
     char *string;
     struct hx_expr *expr;
@@ -77,7 +77,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 81 "sel-gram.h"
+#line 81 "heimdal/lib/hx509/sel-gram.y"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

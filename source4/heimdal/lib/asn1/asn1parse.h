@@ -225,7 +225,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 65 "asn1parse.y"
+#line 65 "heimdal/lib/asn1/asn1parse.y"
 
     int constant;
     struct value *value;
@@ -243,7 +243,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 247 "asn1parse.h"
+#line 247 "heimdal/lib/asn1/asn1parse.y"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

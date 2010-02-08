@@ -68,7 +68,7 @@
 /* Copy the first part of user declarations.  */
 
 /* Line 189 of yacc.c  */
-#line 36 "asn1parse.y"
+#line 36 "heimdal/lib/asn1/asn1parse.y"
 
 
 #include <config.h>
@@ -99,11 +99,11 @@ struct string_list {
 
 
 /* Line 189 of yacc.c  */
-#line 103 "asn1parse.c"
+#line 103 "heimdal/lib/asn1/asn1parse.y"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+# define YYDEBUG 0
 #endif
 
 /* Enabling verbose error messages.  */
@@ -312,7 +312,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 65 "asn1parse.y"
+#line 65 "heimdal/lib/asn1/asn1parse.y"
 
     int constant;
     struct value *value;
@@ -330,7 +330,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 334 "asn1parse.c"
+#line 334 "heimdal/lib/asn1/asn1parse.y"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -342,7 +342,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 346 "asn1parse.c"
+#line 346 "heimdal/lib/asn1/asn1parse.y"
 
 #ifdef short
 # undef short
@@ -1776,7 +1776,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 235 "asn1parse.y"
+#line 235 "heimdal/lib/asn1/asn1parse.y"
     {
 			checkundefined();
 		}
@@ -1785,28 +1785,28 @@ yyreduce:
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 242 "asn1parse.y"
+#line 242 "heimdal/lib/asn1/asn1parse.y"
     { error_message("implicit tagging is not supported"); }
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 244 "asn1parse.y"
+#line 244 "heimdal/lib/asn1/asn1parse.y"
     { error_message("automatic tagging is not supported"); }
     break;
 
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 249 "asn1parse.y"
+#line 249 "heimdal/lib/asn1/asn1parse.y"
     { error_message("no extensibility options supported"); }
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 270 "asn1parse.y"
+#line 270 "heimdal/lib/asn1/asn1parse.y"
     {
 		    struct string_list *sl;
 		    for(sl = (yyvsp[(1) - (4)].sl); sl != NULL; sl = sl->next) {
@@ -1820,7 +1820,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 289 "asn1parse.y"
+#line 289 "heimdal/lib/asn1/asn1parse.y"
     {
 		    (yyval.sl) = emalloc(sizeof(*(yyval.sl)));
 		    (yyval.sl)->string = (yyvsp[(1) - (3)].name);
@@ -1831,7 +1831,7 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 295 "asn1parse.y"
+#line 295 "heimdal/lib/asn1/asn1parse.y"
     {
 		    (yyval.sl) = emalloc(sizeof(*(yyval.sl)));
 		    (yyval.sl)->string = (yyvsp[(1) - (1)].name);
@@ -1842,7 +1842,7 @@ yyreduce:
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 303 "asn1parse.y"
+#line 303 "heimdal/lib/asn1/asn1parse.y"
     {
 		    Symbol *s = addsym ((yyvsp[(1) - (3)].name));
 		    s->stype = Stype;
@@ -1855,7 +1855,7 @@ yyreduce:
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 334 "asn1parse.y"
+#line 334 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Boolean,
 				     TE_EXPLICIT, new_type(TBoolean));
@@ -1865,7 +1865,7 @@ yyreduce:
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 341 "asn1parse.y"
+#line 341 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if((yyvsp[(2) - (5)].value)->type != integervalue)
 			error_message("Non-integer used in first part of range");
@@ -1880,7 +1880,7 @@ yyreduce:
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 351 "asn1parse.y"
+#line 351 "heimdal/lib/asn1/asn1parse.y"
     {	
 		    if((yyvsp[(2) - (5)].value)->type != integervalue)
 			error_message("Non-integer in first part of range");
@@ -1893,7 +1893,7 @@ yyreduce:
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 359 "asn1parse.y"
+#line 359 "heimdal/lib/asn1/asn1parse.y"
     {	
 		    if((yyvsp[(4) - (5)].value)->type != integervalue)
 			error_message("Non-integer in second part of range");
@@ -1906,7 +1906,7 @@ yyreduce:
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 367 "asn1parse.y"
+#line 367 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if((yyvsp[(2) - (3)].value)->type != integervalue)
 			error_message("Non-integer used in limit");
@@ -1919,7 +1919,7 @@ yyreduce:
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 378 "asn1parse.y"
+#line 378 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Integer,
 				     TE_EXPLICIT, new_type(TInteger));
@@ -1929,7 +1929,7 @@ yyreduce:
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 383 "asn1parse.y"
+#line 383 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_type(TInteger);
 			(yyval.type)->range = (yyvsp[(2) - (2)].range);
@@ -1940,7 +1940,7 @@ yyreduce:
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 389 "asn1parse.y"
+#line 389 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TInteger);
 		  (yyval.type)->members = (yyvsp[(3) - (4)].members);
@@ -1951,7 +1951,7 @@ yyreduce:
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 397 "asn1parse.y"
+#line 397 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.members) = emalloc(sizeof(*(yyval.members)));
 			ASN1_TAILQ_INIT((yyval.members));
@@ -1962,7 +1962,7 @@ yyreduce:
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 403 "asn1parse.y"
+#line 403 "heimdal/lib/asn1/asn1parse.y"
     {
 			ASN1_TAILQ_INSERT_TAIL((yyvsp[(1) - (3)].members), (yyvsp[(3) - (3)].member), members);
 			(yyval.members) = (yyvsp[(1) - (3)].members);
@@ -1972,14 +1972,14 @@ yyreduce:
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 408 "asn1parse.y"
+#line 408 "heimdal/lib/asn1/asn1parse.y"
     { (yyval.members) = (yyvsp[(1) - (3)].members); }
     break;
 
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 412 "asn1parse.y"
+#line 412 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.member) = emalloc(sizeof(*(yyval.member)));
 			(yyval.member)->name = (yyvsp[(1) - (4)].name);
@@ -1995,7 +1995,7 @@ yyreduce:
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 425 "asn1parse.y"
+#line 425 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TInteger);
 		  (yyval.type)->members = (yyvsp[(3) - (4)].members);
@@ -2006,7 +2006,7 @@ yyreduce:
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 436 "asn1parse.y"
+#line 436 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TBitString);
 		  (yyval.type)->members = emalloc(sizeof(*(yyval.type)->members));
@@ -2018,7 +2018,7 @@ yyreduce:
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 443 "asn1parse.y"
+#line 443 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TBitString);
 		  (yyval.type)->members = (yyvsp[(4) - (5)].members);
@@ -2029,7 +2029,7 @@ yyreduce:
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 451 "asn1parse.y"
+#line 451 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_OID,
 				     TE_EXPLICIT, new_type(TOID));
@@ -2039,7 +2039,7 @@ yyreduce:
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 457 "asn1parse.y"
+#line 457 "heimdal/lib/asn1/asn1parse.y"
     {
 		    Type *t = new_type(TOctetString);
 		    t->range = (yyvsp[(3) - (3)].range);
@@ -2051,7 +2051,7 @@ yyreduce:
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 466 "asn1parse.y"
+#line 466 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Null,
 				     TE_EXPLICIT, new_type(TNull));
@@ -2061,21 +2061,21 @@ yyreduce:
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 473 "asn1parse.y"
+#line 473 "heimdal/lib/asn1/asn1parse.y"
     { (yyval.range) = NULL; }
     break;
 
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 475 "asn1parse.y"
+#line 475 "heimdal/lib/asn1/asn1parse.y"
     { (yyval.range) = (yyvsp[(2) - (2)].range); }
     break;
 
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 480 "asn1parse.y"
+#line 480 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TSequence);
 		  (yyval.type)->members = (yyvsp[(3) - (4)].members);
@@ -2086,7 +2086,7 @@ yyreduce:
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 486 "asn1parse.y"
+#line 486 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TSequence);
 		  (yyval.type)->members = NULL;
@@ -2097,7 +2097,7 @@ yyreduce:
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 494 "asn1parse.y"
+#line 494 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TSequenceOf);
 		  (yyval.type)->range = (yyvsp[(2) - (4)].range);
@@ -2109,7 +2109,7 @@ yyreduce:
   case 66:
 
 /* Line 1455 of yacc.c  */
-#line 503 "asn1parse.y"
+#line 503 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TSet);
 		  (yyval.type)->members = (yyvsp[(3) - (4)].members);
@@ -2120,7 +2120,7 @@ yyreduce:
   case 67:
 
 /* Line 1455 of yacc.c  */
-#line 509 "asn1parse.y"
+#line 509 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TSet);
 		  (yyval.type)->members = NULL;
@@ -2131,7 +2131,7 @@ yyreduce:
   case 68:
 
 /* Line 1455 of yacc.c  */
-#line 517 "asn1parse.y"
+#line 517 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TSetOf);
 		  (yyval.type)->subtype = (yyvsp[(3) - (3)].type);
@@ -2142,7 +2142,7 @@ yyreduce:
   case 69:
 
 /* Line 1455 of yacc.c  */
-#line 525 "asn1parse.y"
+#line 525 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.type) = new_type(TChoice);
 		  (yyval.type)->members = (yyvsp[(3) - (4)].members);
@@ -2152,7 +2152,7 @@ yyreduce:
   case 72:
 
 /* Line 1455 of yacc.c  */
-#line 536 "asn1parse.y"
+#line 536 "heimdal/lib/asn1/asn1parse.y"
     {
 		  Symbol *s = addsym((yyvsp[(1) - (1)].name));
 		  (yyval.type) = new_type(TType);
@@ -2166,7 +2166,7 @@ yyreduce:
   case 73:
 
 /* Line 1455 of yacc.c  */
-#line 547 "asn1parse.y"
+#line 547 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralizedTime,
 				     TE_EXPLICIT, new_type(TGeneralizedTime));
@@ -2176,7 +2176,7 @@ yyreduce:
   case 74:
 
 /* Line 1455 of yacc.c  */
-#line 552 "asn1parse.y"
+#line 552 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTCTime,
 				     TE_EXPLICIT, new_type(TUTCTime));
@@ -2186,7 +2186,7 @@ yyreduce:
   case 75:
 
 /* Line 1455 of yacc.c  */
-#line 559 "asn1parse.y"
+#line 559 "heimdal/lib/asn1/asn1parse.y"
     {
 		    /* if (Constraint.type == contentConstrant) {
 		       assert(Constraint.u.constraint.type == octetstring|bitstring-w/o-NamedBitList); // remember to check type reference too
@@ -2204,7 +2204,7 @@ yyreduce:
   case 76:
 
 /* Line 1455 of yacc.c  */
-#line 575 "asn1parse.y"
+#line 575 "heimdal/lib/asn1/asn1parse.y"
     {
 		    (yyval.constraint_spec) = (yyvsp[(2) - (3)].constraint_spec);
 		}
@@ -2213,7 +2213,7 @@ yyreduce:
   case 80:
 
 /* Line 1455 of yacc.c  */
-#line 588 "asn1parse.y"
+#line 588 "heimdal/lib/asn1/asn1parse.y"
     {
 		    (yyval.constraint_spec) = new_constraint_spec(CT_CONTENTS);
 		    (yyval.constraint_spec)->u.content.type = (yyvsp[(2) - (2)].type);
@@ -2224,7 +2224,7 @@ yyreduce:
   case 81:
 
 /* Line 1455 of yacc.c  */
-#line 594 "asn1parse.y"
+#line 594 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if ((yyvsp[(3) - (3)].value)->type != objectidentifiervalue)
 			error_message("Non-OID used in ENCODED BY constraint");
@@ -2237,7 +2237,7 @@ yyreduce:
   case 82:
 
 /* Line 1455 of yacc.c  */
-#line 602 "asn1parse.y"
+#line 602 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if ((yyvsp[(5) - (5)].value)->type != objectidentifiervalue)
 			error_message("Non-OID used in ENCODED BY constraint");
@@ -2250,7 +2250,7 @@ yyreduce:
   case 83:
 
 /* Line 1455 of yacc.c  */
-#line 612 "asn1parse.y"
+#line 612 "heimdal/lib/asn1/asn1parse.y"
     {
 		    (yyval.constraint_spec) = new_constraint_spec(CT_USER);
 		}
@@ -2259,7 +2259,7 @@ yyreduce:
   case 84:
 
 /* Line 1455 of yacc.c  */
-#line 618 "asn1parse.y"
+#line 618 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_type(TTag);
 			(yyval.type)->tag = (yyvsp[(1) - (3)].tag);
@@ -2275,7 +2275,7 @@ yyreduce:
   case 85:
 
 /* Line 1455 of yacc.c  */
-#line 631 "asn1parse.y"
+#line 631 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.tag).tagclass = (yyvsp[(2) - (4)].constant);
 			(yyval.tag).tagvalue = (yyvsp[(3) - (4)].constant);
@@ -2286,7 +2286,7 @@ yyreduce:
   case 86:
 
 /* Line 1455 of yacc.c  */
-#line 639 "asn1parse.y"
+#line 639 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = ASN1_C_CONTEXT;
 		}
@@ -2295,7 +2295,7 @@ yyreduce:
   case 87:
 
 /* Line 1455 of yacc.c  */
-#line 643 "asn1parse.y"
+#line 643 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = ASN1_C_UNIV;
 		}
@@ -2304,7 +2304,7 @@ yyreduce:
   case 88:
 
 /* Line 1455 of yacc.c  */
-#line 647 "asn1parse.y"
+#line 647 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = ASN1_C_APPL;
 		}
@@ -2313,7 +2313,7 @@ yyreduce:
   case 89:
 
 /* Line 1455 of yacc.c  */
-#line 651 "asn1parse.y"
+#line 651 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = ASN1_C_PRIVATE;
 		}
@@ -2322,7 +2322,7 @@ yyreduce:
   case 90:
 
 /* Line 1455 of yacc.c  */
-#line 657 "asn1parse.y"
+#line 657 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = TE_EXPLICIT;
 		}
@@ -2331,7 +2331,7 @@ yyreduce:
   case 91:
 
 /* Line 1455 of yacc.c  */
-#line 661 "asn1parse.y"
+#line 661 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = TE_EXPLICIT;
 		}
@@ -2340,7 +2340,7 @@ yyreduce:
   case 92:
 
 /* Line 1455 of yacc.c  */
-#line 665 "asn1parse.y"
+#line 665 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.constant) = TE_IMPLICIT;
 		}
@@ -2349,7 +2349,7 @@ yyreduce:
   case 93:
 
 /* Line 1455 of yacc.c  */
-#line 672 "asn1parse.y"
+#line 672 "heimdal/lib/asn1/asn1parse.y"
     {
 			Symbol *s;
 			s = addsym ((yyvsp[(1) - (4)].name));
@@ -2363,7 +2363,7 @@ yyreduce:
   case 95:
 
 /* Line 1455 of yacc.c  */
-#line 686 "asn1parse.y"
+#line 686 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralString,
 				     TE_EXPLICIT, new_type(TGeneralString));
@@ -2373,7 +2373,7 @@ yyreduce:
   case 96:
 
 /* Line 1455 of yacc.c  */
-#line 691 "asn1parse.y"
+#line 691 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_TeletexString,
 				     TE_EXPLICIT, new_type(TTeletexString));
@@ -2383,7 +2383,7 @@ yyreduce:
   case 97:
 
 /* Line 1455 of yacc.c  */
-#line 696 "asn1parse.y"
+#line 696 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTF8String,
 				     TE_EXPLICIT, new_type(TUTF8String));
@@ -2393,7 +2393,7 @@ yyreduce:
   case 98:
 
 /* Line 1455 of yacc.c  */
-#line 701 "asn1parse.y"
+#line 701 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_PrintableString,
 				     TE_EXPLICIT, new_type(TPrintableString));
@@ -2403,7 +2403,7 @@ yyreduce:
   case 99:
 
 /* Line 1455 of yacc.c  */
-#line 706 "asn1parse.y"
+#line 706 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_VisibleString,
 				     TE_EXPLICIT, new_type(TVisibleString));
@@ -2413,7 +2413,7 @@ yyreduce:
   case 100:
 
 /* Line 1455 of yacc.c  */
-#line 711 "asn1parse.y"
+#line 711 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_IA5String,
 				     TE_EXPLICIT, new_type(TIA5String));
@@ -2423,7 +2423,7 @@ yyreduce:
   case 101:
 
 /* Line 1455 of yacc.c  */
-#line 716 "asn1parse.y"
+#line 716 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_BMPString,
 				     TE_EXPLICIT, new_type(TBMPString));
@@ -2433,7 +2433,7 @@ yyreduce:
   case 102:
 
 /* Line 1455 of yacc.c  */
-#line 721 "asn1parse.y"
+#line 721 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UniversalString,
 				     TE_EXPLICIT, new_type(TUniversalString));
@@ -2443,7 +2443,7 @@ yyreduce:
   case 103:
 
 /* Line 1455 of yacc.c  */
-#line 729 "asn1parse.y"
+#line 729 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.members) = emalloc(sizeof(*(yyval.members)));
 			ASN1_TAILQ_INIT((yyval.members));
@@ -2454,7 +2454,7 @@ yyreduce:
   case 104:
 
 /* Line 1455 of yacc.c  */
-#line 735 "asn1parse.y"
+#line 735 "heimdal/lib/asn1/asn1parse.y"
     {
 			ASN1_TAILQ_INSERT_TAIL((yyvsp[(1) - (3)].members), (yyvsp[(3) - (3)].member), members);
 			(yyval.members) = (yyvsp[(1) - (3)].members);
@@ -2464,7 +2464,7 @@ yyreduce:
   case 105:
 
 /* Line 1455 of yacc.c  */
-#line 740 "asn1parse.y"
+#line 740 "heimdal/lib/asn1/asn1parse.y"
     {
 		        struct member *m = ecalloc(1, sizeof(*m));
 			m->name = estrdup("...");
@@ -2478,7 +2478,7 @@ yyreduce:
   case 106:
 
 /* Line 1455 of yacc.c  */
-#line 751 "asn1parse.y"
+#line 751 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.member) = emalloc(sizeof(*(yyval.member)));
 		  (yyval.member)->name = (yyvsp[(1) - (2)].name);
@@ -2492,7 +2492,7 @@ yyreduce:
   case 107:
 
 /* Line 1455 of yacc.c  */
-#line 762 "asn1parse.y"
+#line 762 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.member) = (yyvsp[(1) - (1)].member);
 			(yyval.member)->optional = 0;
@@ -2503,7 +2503,7 @@ yyreduce:
   case 108:
 
 /* Line 1455 of yacc.c  */
-#line 768 "asn1parse.y"
+#line 768 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.member) = (yyvsp[(1) - (2)].member);
 			(yyval.member)->optional = 1;
@@ -2514,7 +2514,7 @@ yyreduce:
   case 109:
 
 /* Line 1455 of yacc.c  */
-#line 774 "asn1parse.y"
+#line 774 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.member) = (yyvsp[(1) - (3)].member);
 			(yyval.member)->optional = 0;
@@ -2525,7 +2525,7 @@ yyreduce:
   case 110:
 
 /* Line 1455 of yacc.c  */
-#line 782 "asn1parse.y"
+#line 782 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.members) = emalloc(sizeof(*(yyval.members)));
 			ASN1_TAILQ_INIT((yyval.members));
@@ -2536,7 +2536,7 @@ yyreduce:
   case 111:
 
 /* Line 1455 of yacc.c  */
-#line 788 "asn1parse.y"
+#line 788 "heimdal/lib/asn1/asn1parse.y"
     {
 			ASN1_TAILQ_INSERT_TAIL((yyvsp[(1) - (3)].members), (yyvsp[(3) - (3)].member), members);
 			(yyval.members) = (yyvsp[(1) - (3)].members);
@@ -2546,7 +2546,7 @@ yyreduce:
   case 112:
 
 /* Line 1455 of yacc.c  */
-#line 795 "asn1parse.y"
+#line 795 "heimdal/lib/asn1/asn1parse.y"
     {
 		  (yyval.member) = emalloc(sizeof(*(yyval.member)));
 		  (yyval.member)->name = (yyvsp[(1) - (4)].name);
@@ -2562,14 +2562,14 @@ yyreduce:
   case 114:
 
 /* Line 1455 of yacc.c  */
-#line 808 "asn1parse.y"
+#line 808 "heimdal/lib/asn1/asn1parse.y"
     { (yyval.objid) = NULL; }
     break;
 
   case 115:
 
 /* Line 1455 of yacc.c  */
-#line 812 "asn1parse.y"
+#line 812 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.objid) = (yyvsp[(2) - (3)].objid);
 		}
@@ -2578,7 +2578,7 @@ yyreduce:
   case 116:
 
 /* Line 1455 of yacc.c  */
-#line 818 "asn1parse.y"
+#line 818 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.objid) = NULL;
 		}
@@ -2587,7 +2587,7 @@ yyreduce:
   case 117:
 
 /* Line 1455 of yacc.c  */
-#line 822 "asn1parse.y"
+#line 822 "heimdal/lib/asn1/asn1parse.y"
     {
 		        if ((yyvsp[(2) - (2)].objid)) {
 				(yyval.objid) = (yyvsp[(2) - (2)].objid);
@@ -2601,7 +2601,7 @@ yyreduce:
   case 118:
 
 /* Line 1455 of yacc.c  */
-#line 833 "asn1parse.y"
+#line 833 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.objid) = new_objid((yyvsp[(1) - (4)].name), (yyvsp[(3) - (4)].constant));
 		}
@@ -2610,7 +2610,7 @@ yyreduce:
   case 119:
 
 /* Line 1455 of yacc.c  */
-#line 837 "asn1parse.y"
+#line 837 "heimdal/lib/asn1/asn1parse.y"
     {
 		    Symbol *s = addsym((yyvsp[(1) - (1)].name));
 		    if(s->stype != SValue ||
@@ -2626,7 +2626,7 @@ yyreduce:
   case 120:
 
 /* Line 1455 of yacc.c  */
-#line 848 "asn1parse.y"
+#line 848 "heimdal/lib/asn1/asn1parse.y"
     {
 		    (yyval.objid) = new_objid(NULL, (yyvsp[(1) - (1)].constant));
 		}
@@ -2635,7 +2635,7 @@ yyreduce:
   case 130:
 
 /* Line 1455 of yacc.c  */
-#line 871 "asn1parse.y"
+#line 871 "heimdal/lib/asn1/asn1parse.y"
     {
 			Symbol *s = addsym((yyvsp[(1) - (1)].name));
 			if(s->stype != SValue)
@@ -2649,7 +2649,7 @@ yyreduce:
   case 131:
 
 /* Line 1455 of yacc.c  */
-#line 882 "asn1parse.y"
+#line 882 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = stringvalue;
@@ -2660,7 +2660,7 @@ yyreduce:
   case 132:
 
 /* Line 1455 of yacc.c  */
-#line 890 "asn1parse.y"
+#line 890 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = booleanvalue;
@@ -2671,7 +2671,7 @@ yyreduce:
   case 133:
 
 /* Line 1455 of yacc.c  */
-#line 896 "asn1parse.y"
+#line 896 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = booleanvalue;
@@ -2682,7 +2682,7 @@ yyreduce:
   case 134:
 
 /* Line 1455 of yacc.c  */
-#line 904 "asn1parse.y"
+#line 904 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = integervalue;
@@ -2693,7 +2693,7 @@ yyreduce:
   case 136:
 
 /* Line 1455 of yacc.c  */
-#line 915 "asn1parse.y"
+#line 915 "heimdal/lib/asn1/asn1parse.y"
     {
 		}
     break;
@@ -2701,7 +2701,7 @@ yyreduce:
   case 137:
 
 /* Line 1455 of yacc.c  */
-#line 920 "asn1parse.y"
+#line 920 "heimdal/lib/asn1/asn1parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = objectidentifiervalue;
@@ -2712,7 +2712,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 2716 "asn1parse.c"
+#line 2716 "heimdal/lib/asn1/asn1parse.y"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2924,7 +2924,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 927 "asn1parse.y"
+#line 927 "heimdal/lib/asn1/asn1parse.y"
 
 
 void

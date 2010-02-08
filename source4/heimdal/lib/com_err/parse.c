@@ -68,7 +68,7 @@
 /* Copy the first part of user declarations.  */
 
 /* Line 189 of yacc.c  */
-#line 1 "parse.y"
+#line 1 "heimdal/lib/com_err/parse.y"
 
 /*
  * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
@@ -120,7 +120,7 @@ extern char *yytext;
 
 
 /* Line 189 of yacc.c  */
-#line 124 "parse.c"
+#line 124 "heimdal/lib/com_err/parse.y"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -175,7 +175,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 51 "parse.y"
+#line 51 "heimdal/lib/com_err/parse.y"
 
   char *string;
   int number;
@@ -183,7 +183,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 187 "parse.c"
+#line 187 "heimdal/lib/com_err/parse.y"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -195,7 +195,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 199 "parse.c"
+#line 199 "heimdal/lib/com_err/parse.y"
 
 #ifdef short
 # undef short
@@ -1393,7 +1393,7 @@ yyreduce:
         case 6:
 
 /* Line 1455 of yacc.c  */
-#line 71 "parse.y"
+#line 71 "heimdal/lib/com_err/parse.y"
     {
 		    id_str = (yyvsp[(2) - (2)].string);
 		}
@@ -1402,7 +1402,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 77 "parse.y"
+#line 77 "heimdal/lib/com_err/parse.y"
     {
 		    base_id = name2number((yyvsp[(2) - (2)].string));
 		    strlcpy(name, (yyvsp[(2) - (2)].string), sizeof(name));
@@ -1413,7 +1413,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 83 "parse.y"
+#line 83 "heimdal/lib/com_err/parse.y"
     {
 		    base_id = name2number((yyvsp[(2) - (3)].string));
 		    strlcpy(name, (yyvsp[(3) - (3)].string), sizeof(name));
@@ -1425,7 +1425,7 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 96 "parse.y"
+#line 96 "heimdal/lib/com_err/parse.y"
     {
 			number = (yyvsp[(2) - (2)].number);
 		}
@@ -1434,7 +1434,7 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 100 "parse.y"
+#line 100 "heimdal/lib/com_err/parse.y"
     {
 		    free(prefix);
 		    asprintf (&prefix, "%s_", (yyvsp[(2) - (2)].string));
@@ -1447,7 +1447,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 108 "parse.y"
+#line 108 "heimdal/lib/com_err/parse.y"
     {
 		    prefix = realloc(prefix, 1);
 		    if (prefix == NULL)
@@ -1459,7 +1459,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 115 "parse.y"
+#line 115 "heimdal/lib/com_err/parse.y"
     {
 		    struct error_code *ec = malloc(sizeof(*ec));
 		
@@ -1484,7 +1484,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 135 "parse.y"
+#line 135 "heimdal/lib/com_err/parse.y"
     {
 			YYACCEPT;
 		}
@@ -1493,7 +1493,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 1497 "parse.c"
+#line 1497 "heimdal/lib/com_err/parse.y"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1705,7 +1705,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 140 "parse.y"
+#line 140 "heimdal/lib/com_err/parse.y"
 
 
 static long
