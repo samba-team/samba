@@ -1431,6 +1431,8 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 		fstrcpy(domain, lp_workgroup());
 	}
 
+	DEBUG(4, ("domain [%s]\n", domain));
+
 	if (lp_browse_list()) {
 		total = get_server_info(servertype,&servers,domain);
 	}
@@ -1453,8 +1455,8 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 			}
 			lastname = s->name;
 			data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
-			DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
-				s->name, s->type, s->comment, s->domain));
+			DEBUG(4,("fill_srv_info[%d] %20s %8x %25s %15s\n",
+				i, s->name, s->type, s->comment, s->domain));
 
 			if (data_len <= buf_len) {
 				counted++;
@@ -1489,8 +1491,8 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 			}
 			lastname = s->name;
 			fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
-			DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
-				s->name, s->type, s->comment, s->domain));
+			DEBUG(4,("fill_srv_info[%d] %20s %8x %25s %15s\n",
+				i, s->name, s->type, s->comment, s->domain));
 			count2--;
 		}
 	}
