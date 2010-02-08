@@ -460,20 +460,34 @@ enum tevent_debug_level {
 };
 
 /**
+ * @brief The tevent debug callbac.
+ *
+ * @param[in]  context  The memory context to use.
+ *
+ * @param[in]  level    The debug level.
+ *
+ * @param[in]  fmt      The format string.
+ *
+ * @param[in]  ap       The arguments for the format string.
+ */
+typedef void (*tevent_debug_fn)(void *context,
+				enum tevent_debug_level level,
+				const char *fmt,
+				va_list ap) PRINTF_ATTRIBUTE(3,0);
+
+/**
  * Set destination for tevent debug messages
  *
- * @param[in] ev     Event context to debug
- * @param[in] debug  Function to handle output printing
+ * @param[in] ev        Event context to debug
+ * @param[in] debug     Function to handle output printing
+ * @param[in] context   The context to pass to the debug function.
  *
  * @return Always returns 0 as of version 0.9.8
  *
  * @note Default is to emit no debug messages
  */
 int tevent_set_debug(struct tevent_context *ev,
-		     void (*debug)(void *context,
-				   enum tevent_debug_level level,
-				   const char *fmt,
-				   va_list ap) PRINTF_ATTRIBUTE(3,0),
+		     tevent_debug_fn debug,
 		     void *context);
 
 /**
