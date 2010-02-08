@@ -101,10 +101,12 @@ char *rep_getpass(const char *prompt);
 #endif
 
 #ifdef NSS_WRAPPER
+#ifndef NSS_WRAPPER_DISABLE
 #ifndef NSS_WRAPPER_NOT_REPLACE
 #define NSS_WRAPPER_REPLACE
-#endif
+#endif /* NSS_WRAPPER_NOT_REPLACE */
 #include "../nss_wrapper/nss_wrapper.h"
-#endif
+#endif /* NSS_WRAPPER_DISABLE */
+#endif /* NSS_WRAPPER */
 
 #endif
