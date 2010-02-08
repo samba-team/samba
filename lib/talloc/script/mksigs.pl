@@ -27,6 +27,7 @@ use strict;
 use warnings;
 
 my $in_comment = 0;
+my $in_doxygen = 0;
 my $extern_C_block = 0;
 
 while (my $LINE = <>) {
@@ -39,6 +40,14 @@ while (my $LINE = <>) {
 			# whole line within comment
 			next;
 		}
+	}
+
+	# find end of DOXYGEN section
+	if ($in_doxygen) {
+		if ($LINE =~ /^#\s*else(?:\s+.*)?$/) {
+			$in_doxygen = 0;
+		}
+		next;
 	}
 
 	# strip C++-style comments
@@ -68,6 +77,13 @@ while (my $LINE = <>) {
 		$LINE2 =~ s/^\s*(.*)$/$1/;
 		$LINE .= " " . $LINE2;
 	}
+
+        # remove DOXYGEN sections
+	if ($LINE =~ /^#\s*ifdef\s+DOXYGEN(?:\s+.*)?$/) {
+		$in_doxygen = 1;
+                next;
+	}
+
 
 	# remove all preprocessor directives
 	next if ($LINE =~ /^#/);

@@ -8,6 +8,7 @@
 #
 BEGIN {
 	inheader=0;
+	indoxygen=0;
 }
 
 END {
@@ -20,9 +21,15 @@ END {
 		}
 		next;
 	}
+	if (indoxygen) {
+		if (match($0,"^#[ \t]*else[ \t]*.*$")) {
+			indoxygen = 0;
+		}
+		next;
+	}
 }
 
-/^static/ || /^[ \t]*typedef/ || !/^[a-zA-Z\_]/ {
+/^static/ || /^[ \t]*typedef/ || !/^[a-zA-Z\_\#]/ {
 	next;
 }
 
@@ -33,11 +40,16 @@ END {
 	next;
 }
 
+/^#[ \t]*ifdef[ \t]*DOXYGEN[ \t]*.*$/ {
+	indoxygen=1;
+	next;
+}
+
 # look for function headers:
 {
 	gotstart = 0;
 	if ($0 ~ /^[A-Za-z_][A-Za-z0-9_]+/) {
-	gotstart = 1;
+		gotstart = 1;
 	}
 	if(!gotstart) {
 		next;

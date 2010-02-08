@@ -222,7 +222,7 @@ int _talloc_free(void *ptr, const char *location);
  */
 void talloc_free_children(void *ptr);
 
-#if DOXYGEN
+#ifdef DOXYGEN
 /**
  * @brief Assign a destructor function to be called when a chunk is freed.
  *
@@ -1191,7 +1191,7 @@ void *talloc_realloc(const void *ctx, void *ptr, #type, size_t count);
 void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
 #endif
 
-#if DOXYGEN
+#ifdef DOXYGEN
 /**
  * @brief Untyped realloc to change the size of a talloc array.
  *
