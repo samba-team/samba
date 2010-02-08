@@ -3963,6 +3963,7 @@ const char *lp_logon_drive(void);
 const char *lp_logon_home(void);
 char *lp_remote_announce(void);
 char *lp_remote_browse_sync(void);
+bool lp_nmbd_bind_explicit_broadcast(void);
 const char **lp_wins_server_list(void);
 const char **lp_interfaces(void);
 const char *lp_socket_address(void);

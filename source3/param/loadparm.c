@@ -160,6 +160,7 @@ struct global {
 	char *szRemoteAnnounce;
 	char *szRemoteBrowseSync;
 	char *szSocketAddress;
+	bool bNmbdBindExplicitBroadcast;
 	char *szNISHomeMapName;
 	char *szAnnounceVersion;	/* This is initialised in init_globals */
 	char *szWorkgroup;
@@ -3991,6 +3992,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "nmbd bind explicit broadcast",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bNmbdBindExplicitBroadcast,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "homedir map",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -5347,6 +5357,7 @@ FN_GLOBAL_CONST_STRING(lp_logon_drive, &Globals.szLogonDrive)
 FN_GLOBAL_CONST_STRING(lp_logon_home, &Globals.szLogonHome)
 FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
+FN_GLOBAL_BOOL(lp_nmbd_bind_explicit_broadcast, &Globals.bNmbdBindExplicitBroadcast)
 FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
