@@ -247,11 +247,9 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	        p = param;
 		SIVAL(p,0,func); /* api number */
 	        p += 2;
-	        /* Next time through we need to use the continue api */
-	        func = RAP_NetServerEnum3;
 
-		if (last_entry) {
-			strlcpy(p,"WrLehDOz", sizeof(param)-PTR_DIFF(p,param));
+		if (func == RAP_NetServerEnum3) {
+			strlcpy(p,"WrLehDzz", sizeof(param)-PTR_DIFF(p,param));
 		} else {
 			strlcpy(p,"WrLehDz", sizeof(param)-PTR_DIFF(p,param));
 		}
@@ -270,7 +268,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		 * to continue from.
 		 */
 		len = push_ascii(p,
-				last_entry ? last_entry : workgroup,
+				workgroup,
 				sizeof(param) - PTR_DIFF(p,param) - 1,
 				STR_TERMINATE|STR_UPPER);
 
@@ -279,6 +277,22 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 			return false;
 		}
 		p += len;
+
+		if (func == RAP_NetServerEnum3) {
+			len = push_ascii(p,
+					last_entry ? last_entry : "",
+					sizeof(param) - PTR_DIFF(p,param) - 1,
+					STR_TERMINATE);
+
+			if (len == (size_t)-1) {
+				SAFE_FREE(last_entry);
+				return false;
+			}
+			p += len;
+		}
+
+		/* Next time through we need to use the continue api */
+		func = RAP_NetServerEnum3;
 
 		if (!cli_api(cli,
 			param, PTR_DIFF(p,param), 8, /* params, length, max */
