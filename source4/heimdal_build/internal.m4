@@ -218,6 +218,7 @@ LEX_YACC_COMBINATIONS=""
 LEX_YACC_COMBINATIONS="$LEX_YACC_COMBINATIONS flex-2.5.33:bison-2.3"
 LEX_YACC_COMBINATIONS="$LEX_YACC_COMBINATIONS flex-2.5.34:bison-2.3"
 LEX_YACC_COMBINATIONS="$LEX_YACC_COMBINATIONS flex-2.5.35:bison-2.3"
+LEX_YACC_COMBINATIONS="$LEX_YACC_COMBINATIONS flex-2.5.35:bison-2.4.1"
 
 AC_PROG_LEX
 LEX_BASENAME=`basename "$LEX"`
@@ -237,13 +238,20 @@ AC_PROG_YACC
 YACC_BASENAME=`basename "$YACC"`
 if test x"$YACC_BASENAME" = x"bison -y"; then
 	# bison (GNU Bison) 2.3
+	# or
+	# bison (GNU Bison) 2.4.1
 	BISON_VERSION=`$YACC --version | head -1 | cut -d ' ' -f4`
 	AC_MSG_CHECKING(bison version)
 	AC_MSG_RESULT($BISON_VERSION)
 	BISON_MAJOR=`echo $BISON_VERSION | cut -d '.' -f1`
 	BISON_MINOR=`echo $BISON_VERSION | cut -d '.' -f2`
+	BISON_RELEASE=`echo $BISON_VERSION | cut -d '.' -f3`
 
-	YACC_VERSION="bison-$BISON_MAJOR.$BISON_MINOR"
+	if test x"$BISON_RELEASE" != x""; then
+		YACC_VERSION="bison-$BISON_MAJOR.$BISON_MINOR.$BISON_RELEASE"
+	else
+		YACC_VERSION="bison-$BISON_MAJOR.$BISON_MINOR"
+	fi
 fi
 
 AC_MSG_CHECKING(working LEX YACC combination)
