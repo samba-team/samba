@@ -299,7 +299,7 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	ret = rmdir_acl_common(handle, path);
 	if (ret == -1) {
 		return -1;
 	}
@@ -413,7 +413,6 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
 	.opendir = opendir_acl_common,
 	.mkdir = mkdir_acl_common,
-	.rmdir = rmdir_acl_common,
 	.open = open_acl_common,
 	.create_file = create_file_acl_common,
 	.unlink = unlink_acl_tdb,
