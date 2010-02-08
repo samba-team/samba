@@ -80,7 +80,7 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 	int dgram_sock = -1;
 	int nmb_bcast = -1;
 	int dgram_bcast = -1;
-	bool bind_bcast = lp_parm_bool(-1, "nmbd", "bind explicit broadcast", false);
+	bool bind_bcast = lp_nmbd_bind_explicit_broadcast();
 
 	/* Check if we are creating a non broadcast subnet - if so don't create
 		sockets.  */
