@@ -389,7 +389,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
 				cmnt = comment_offset?(rdata+comment_offset):"";
 
-				if (comment_offset < 0 || comment_offset > (int)rdrcnt) {
+				if (comment_offset < 0 || comment_offset >= (int)rdrcnt) {
 					TALLOC_FREE(frame);
 					continue;
 				}
