@@ -30,7 +30,8 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure -C \
 	--prefix=${_prefix} \
 	--localstatedir=/var \
 	--with-configdir=${_sysconfdir}/samba \
-	--with-libdir=${_libarchdir}/samba \
+	--libdir=${_libarchdir} \
+	--with-modulesdir=${_libarchdir}/samba \
 	--with-pammodulesdir=/${_libarch}/security \
 	--with-lockdir=/var/lib/samba \
 	--with-logfilebase=/var/log/samba \
