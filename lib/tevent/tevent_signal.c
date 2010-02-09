@@ -133,7 +133,9 @@ static void tevent_common_signal_handler_info(int signum, siginfo_t *info,
 
 static int tevent_common_signal_list_destructor(struct tevent_common_signal_list *sl)
 {
-	DLIST_REMOVE(sig_state->sig_handlers[sl->se->signum], sl);
+	if (sig_state->sig_handlers[sl->se->signum]) {
+		DLIST_REMOVE(sig_state->sig_handlers[sl->se->signum], sl);
+	}
 	return 0;
 }
 
@@ -154,12 +156,16 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 
 	if (sig_state->sig_handlers[se->signum] == NULL) {
 		/* restore old handler, if any */
-		sigaction(se->signum, sig_state->oldact[se->signum], NULL);
-		sig_state->oldact[se->signum] = NULL;
+		if (sig_state->oldact[se->signum]) {
+			sigaction(se->signum, sig_state->oldact[se->signum], NULL);
+			sig_state->oldact[se->signum] = NULL;
+		}
 #ifdef SA_SIGINFO
 		if (se->sa_flags & SA_SIGINFO) {
-			talloc_free(sig_state->sig_info[se->signum]);
-			sig_state->sig_info[se->signum] = NULL;
+			if (sig_state->sig_info[se->signum]) {
+				talloc_free(sig_state->sig_info[se->signum]);
+				sig_state->sig_info[se->signum] = NULL;
+			}
 		}
 #endif
 	}
@@ -395,4 +401,21 @@ int tevent_common_check_signal(struct tevent_context *ev)
 	}
 
 	return 1;
+}
+
+void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se)
+{
+	struct tevent_common_signal_list *sl;
+	sl = talloc_get_type(se->additional_data,
+			     struct tevent_common_signal_list);
+
+	tevent_common_signal_list_destructor(sl);
+
+	if (sig_state->sig_handlers[se->signum] == NULL) {
+		if (sig_state->oldact[se->signum]) {
+			sigaction(se->signum, sig_state->oldact[se->signum], NULL);
+			sig_state->oldact[se->signum] = NULL;
+		}
+	}
+	return;
 }
