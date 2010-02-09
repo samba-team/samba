@@ -33,7 +33,11 @@ enum ndr_err_code ndr_push_security_acl(struct ndr_push *ndr, int ndr_flags, con
 enum ndr_err_code ndr_pull_security_acl(struct ndr_pull *ndr, int ndr_flags, struct security_acl *r);
 void ndr_print_security_acl(struct ndr_print *ndr, const char *name, const struct security_acl *r);
 size_t ndr_size_security_acl(const struct security_acl *r, struct smb_iconv_convenience *ic, int flags);
+enum ndr_err_code ndr_push_security_descriptor_revision(struct ndr_push *ndr, int ndr_flags, enum security_descriptor_revision r);
+enum ndr_err_code ndr_pull_security_descriptor_revision(struct ndr_pull *ndr, int ndr_flags, enum security_descriptor_revision *r);
 void ndr_print_security_descriptor_revision(struct ndr_print *ndr, const char *name, enum security_descriptor_revision r);
+enum ndr_err_code ndr_push_security_descriptor_type(struct ndr_push *ndr, int ndr_flags, uint16_t r);
+enum ndr_err_code ndr_pull_security_descriptor_type(struct ndr_pull *ndr, int ndr_flags, uint16_t *r);
 void ndr_print_security_descriptor_type(struct ndr_print *ndr, const char *name, uint16_t r);
 enum ndr_err_code ndr_push_security_descriptor(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor *r);
 enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor *r);
