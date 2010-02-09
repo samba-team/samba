@@ -163,6 +163,9 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
 					   rparam, tot_param_sent, this_lparam,
 					   rdata, tot_data_sent, this_ldata);
 
+		SSVAL(outbuf,smb_vwv0,lparam);
+		SSVAL(outbuf,smb_vwv1,ldata);
+
 		SSVAL(outbuf,smb_vwv3,this_lparam);
 		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
 		SSVAL(outbuf,smb_vwv5,tot_param_sent);
