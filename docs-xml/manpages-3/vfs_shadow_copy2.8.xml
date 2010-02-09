@@ -131,7 +131,7 @@
                 </varlistentry>
 
 		<varlistentry>
-                <term>shadow:format = <format specification for snapshot names>
+                <term>shadow:format = format specification for snapshot names
                 </term>
                 <listitem>
                 <para>This is an optional parameter that specifies the format
