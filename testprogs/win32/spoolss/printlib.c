@@ -276,6 +276,65 @@ void print_form_info_1(PFORM_INFO_1 info)
 	return;
 }
 
+void print_form_info_2(PFORM_INFO_2 info)
+{
+	printf("\tForm Name\t= %s\n",	info->pName);
+	printf("\tFlags\t\t= 0x%x\n",	info->Flags);
+	printf("\tSize\t\t= %d x %d\n", info->Size.cx, info->Size.cy);
+	printf("\tRectangle\t= [left]%d [right]%d [top]%d [bottom]%d\n",
+			info->ImageableArea.left, info->ImageableArea.right,
+			info->ImageableArea.top, info->ImageableArea.bottom);
+	printf("\tKeyword\t= %s\n",	info->pKeyword);
+	printf("\tString Type\t= 0x%08x\n", info->StringType);
+	printf("\tMui DLL\t= %s\n",	info->pMuiDll);
+	printf("\tResource Id\t= 0x%08x\n", info->dwResourceId);
+	printf("\tDisplay Name\t= %s\n",info->pDisplayName);
+	printf("\tLang Id\t= 0x%04x\n", info->wLangId);
+
+	return;
+}
+
+void print_form_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PFORM_INFO_1 buffer1 = NULL;
+	PFORM_INFO_2 buffer2 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PFORM_INFO_1)buffer;
+		break;
+	case 2:
+		buffer2 = (PFORM_INFO_2)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("Form Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_form_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	case 2:
+		for (i=0; i<count; i++) {
+			print_form_info_2(&buffer2[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void print_printer_info_1(PPRINTER_INFO_1 info)
 {
 	printf("\tPrinter Name\t= %s\n",	info->pName);

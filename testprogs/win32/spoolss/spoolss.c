@@ -209,6 +209,10 @@ static BOOL test_GetForm(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_form_info_bylevel(levels[i], buffer, 1);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}
@@ -255,6 +259,10 @@ static BOOL test_EnumForms(struct torture_context *tctx,
 			} else {
 				torture_warning(tctx, tmp);
 			}
+		}
+
+		if (tctx->print) {
+			print_form_info_bylevel(levels[i], buffer, returned);
 		}
 
 		free(buffer);
