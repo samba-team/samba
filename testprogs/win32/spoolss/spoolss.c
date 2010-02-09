@@ -415,6 +415,10 @@ static BOOL test_EnumPrintProcessors(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_printprocessor_info_bylevel(levels[i], buffer, returned);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}

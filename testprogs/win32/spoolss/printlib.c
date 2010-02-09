@@ -637,6 +637,37 @@ void print_printprocessor_info_1(PPRINTPROCESSOR_INFO_1 info)
 	return;
 }
 
+void print_printprocessor_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PPRINTPROCESSOR_INFO_1 buffer1 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PPRINTPROCESSOR_INFO_1)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("Print Processor Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_printprocessor_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void print_driver_info_1(PDRIVER_INFO_1 info)
 {
 	printf("\tDriver Name\t= %s\n\n",	info->pName);
