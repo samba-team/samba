@@ -248,6 +248,103 @@ void print_job_info_3(PJOB_INFO_3 info)
 	return;
 }
 
+void print_job_info_4(PJOB_INFO_4 info)
+{
+	printf("\tJob ID\t\t= %d\n",		info->JobId);
+	printf("\tPrinter Name\t= %s\n",	info->pPrinterName);
+	printf("\tMachine Name\t= %s\n",	info->pMachineName);
+	printf("\tUser Name\t= %s\n",		info->pUserName);
+	printf("\tDocument\t= %s\n",		info->pDocument);
+	printf("\tDatatype\t= %s\n",		info->pDatatype);
+	printf("\tNotify Name\t= %s\n",		info->pNotifyName);
+	printf("\tPrint Processor\t= %s\n",	info->pPrintProcessor);
+	printf("\tDriver Name\t= %s\n",		info->pDriverName);
+	printf("\tStatus\t\t= %s\n",		info->pStatus);
+	printf("\tStatus\t\t= %d\n",		info->Status);
+	printf("\tPriority\t= %d\n",		info->Priority);
+	printf("\tPosition\t= %d\n",		info->Position);
+	printf("\tTotal Pages\t= %d\n",		info->TotalPages);
+	printf("\tPages Printed\t= %d\n",	info->PagesPrinted);
+	printf("\tStart Time\t= %d\n",		info->StartTime);
+	printf("\tUntil Time\t= %d\n",		info->UntilTime);
+	printf("\tTime\t\t= %d\n",		info->Time);
+	printf("\tSize\t\t= %d\n",		info->Size);
+	printf("\tSize High\t\t= 0x%016x\n",	info->SizeHigh);
+	printf("\tSubmitted (DD:MM:YY HH:MM:SS)\t= %d:%d:%d %d:%d:%d UTC\n",
+		info->Submitted.wDay, info->Submitted.wMonth,
+		info->Submitted.wYear, info->Submitted.wHour,
+		info->Submitted.wMinute, info->Submitted.wSecond);
+	printf("\tDevice Mode Information\n");
+	printf("\t-----------------------\n");
+	print_devmode(info->pDevMode);
+	printf("\tSecurity Descriptor Information\n");
+	printf("\t-------------------------------\n");
+	print_secdesc(info->pSecurityDescriptor);
+
+	return;
+}
+
+void print_job_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PJOB_INFO_1	buffer1 = NULL;
+	PJOB_INFO_2	buffer2 = NULL;
+	PJOB_INFO_3	buffer3 = NULL;
+	PJOB_INFO_4	buffer4 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PJOB_INFO_1)buffer;
+		break;
+	case 2:
+		buffer2 = (PJOB_INFO_2)buffer;
+		break;
+	case 3:
+		buffer3 = (PJOB_INFO_3)buffer;
+		break;
+	case 4:
+		buffer4 = (PJOB_INFO_4)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("Job Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_job_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	case 2:
+		for (i=0; i<count; i++) {
+			print_job_info_2(&buffer2[i]);
+			printf("\n");
+		}
+		break;
+	case 3:
+		for (i=0; i<count; i++) {
+			print_job_info_3(&buffer3[i]);
+			printf("\n");
+		}
+		break;
+	case 4:
+		for (i=0; i<count; i++) {
+			print_job_info_4(&buffer4[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void print_monitor_info_1(PMONITOR_INFO_1 info)
 {
 	printf("\tMonitor Name\t= %s\n",	info->pName);
