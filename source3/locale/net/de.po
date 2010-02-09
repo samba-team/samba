@@ -4270,7 +4270,7 @@ msgstr "Konnte Passwort für Vertrauenskonto nicht ändern: %s\n"
 
 #: ../../utils/net_rpc.c:281
 msgid "Change the machine trust password"
-msgstr "Passwort von Vertrauenskonto ändern\n"
+msgstr "Passwort von Vertrauenskonto ändern"
 
 #: ../../utils/net_rpc.c:364 ../../utils/net_rpc_join.c:477
 #, c-format
@@ -5354,7 +5354,7 @@ msgstr ""
 
 #: ../../utils/net_rpc.c:6472
 msgid "Dump remote SAM database"
-msgstr "Entfernte SAM Datenbank ausgeben\n"
+msgstr "Entfernte SAM Datenbank ausgeben"
 
 #: ../../utils/net_rpc.c:6489
 msgid "Dump remote SAM database to ldif"
@@ -5388,7 +5388,7 @@ msgstr ""
 
 #: ../../utils/net_rpc.c:6521
 msgid "Vampire remote SAM database"
-msgstr "Entfernte SAM Datenbank übernehmen\n"
+msgstr "Entfernte SAM Datenbank übernehmen"
 
 #: ../../utils/net_rpc.c:6559
 msgid "Migrate everything from a print server"
@@ -5484,19 +5484,19 @@ msgstr ""
 
 #: ../../utils/net_rpc.c:6901
 msgid "Publish printer in ADS via MSRPC"
-msgstr "Drucker in AD über MSRPC freigeben\n"
+msgstr "Drucker in AD über MSRPC freigeben"
 
 #: ../../utils/net_rpc.c:6927
 msgid "Update printer in ADS via MSRPC"
-msgstr "Drucker in AD über MSRPC aktualisieren\n"
+msgstr "Drucker in AD über MSRPC aktualisieren"
 
 #: ../../utils/net_rpc.c:6954
 msgid "UnPublish printer in ADS via MSRPC"
-msgstr "Freigabe eines Druckers in AD über MSRPC entfernen\n"
+msgstr "Freigabe eines Druckers in AD über MSRPC entfernen"
 
 #: ../../utils/net_rpc.c:6981
 msgid "List published printers via MSRPC"
-msgstr "Freigegebene Drucker in AD über MSRPC auflisten\n"
+msgstr "Freigegebene Drucker in AD über MSRPC auflisten"
 
 #: ../../utils/net_rpc.c:7010 ../../utils/net_rpc.c:7139
 msgid "Publish printer in AD"
@@ -6770,7 +6770,7 @@ msgstr ""
 
 #: ../../utils/net_rpc_samsync.c:342
 msgid "Dump remote SAM database to LDIF file or stdout"
-msgstr "Entfernte SAM Datenbank in LDIF-Datei oder Standardausgabe ausgeben\n"
+msgstr "Entfernte SAM Datenbank in LDIF-Datei oder Standardausgabe ausgeben"
 
 #: ../../utils/net_rpc_samsync.c:486
 msgid ""
