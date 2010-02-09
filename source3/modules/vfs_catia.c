@@ -235,7 +235,7 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 	}
 
 	if ((push_ucs2_talloc(ctx, &tmpbuf, name_in,
-			      &converted_size)) == -1) {
+			      &converted_size)) == false) {
 		return map_nt_error_from_unix(errno);
 	}
 	ptr = tmpbuf;
@@ -252,7 +252,7 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 	}
 
 	if ((pull_ucs2_talloc(ctx, mapped_name, tmpbuf,
-			      &converted_size)) == -1) {
+			      &converted_size)) == false) {
 		TALLOC_FREE(tmpbuf);
 		return map_nt_error_from_unix(errno);
 	}
