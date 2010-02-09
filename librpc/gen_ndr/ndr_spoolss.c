@@ -228,13 +228,13 @@ _PUBLIC_ void ndr_print_spoolss_MinorVersion(struct ndr_print *ndr, const char *
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -1248,13 +1248,13 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinterFlags(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -1530,7 +1530,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, i
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->location));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+			ndr->flags = _flags_save_spoolss_DeviceMode;
+		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -1555,7 +1560,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, i
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->parameters));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+			ndr->flags = _flags_save_security_descriptor;
+		}
 		NDR_CHECK(ndr_push_spoolss_PrinterAttributes(ndr, NDR_SCALARS, r->attributes));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->defaultpriority));
@@ -1637,15 +1647,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, i
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->devmode) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
-			{
-				struct ndr_push *_ndr_devmode;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_devmode, 0, -1));
-				NDR_CHECK(ndr_push_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_devmode, 0, -1));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
+				{
+					struct ndr_push *_ndr_devmode;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_push_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
 			}
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -1687,15 +1702,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, i
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
-			{
-				struct ndr_push *_ndr_secdesc;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-				NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
+				{
+					struct ndr_push *_ndr_secdesc;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
 			}
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -1815,12 +1835,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-		if (_ptr_devmode) {
-			NDR_PULL_ALLOC(ndr, r->devmode);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
-		} else {
-			r->devmode = NULL;
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
+			if (_ptr_devmode) {
+				NDR_PULL_ALLOC(ndr, r->devmode);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
+			} else {
+				r->devmode = NULL;
+			}
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -1870,12 +1895,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
-		} else {
-			r->secdesc = NULL;
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
+			if (_ptr_secdesc) {
+				NDR_PULL_ALLOC(ndr, r->secdesc);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
+			} else {
+				r->secdesc = NULL;
+			}
+			ndr->flags = _flags_save_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_spoolss_PrinterAttributes(ndr, NDR_SCALARS, &r->attributes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
@@ -2017,23 +2047,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->devmode) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
-			_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-			{
-				struct ndr_pull *_ndr_devmode;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_devmode, 0, -1));
-				NDR_CHECK(ndr_pull_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_devmode, 0, -1));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
+				_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
+				{
+					struct ndr_pull *_ndr_devmode;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_pull_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
-			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -2107,23 +2142,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->secdesc) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			{
-				struct ndr_pull *_ndr_secdesc;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-				NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
+				_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
+				{
+					struct ndr_pull *_ndr_secdesc;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
-			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2231,19 +2271,29 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo3(struct ndr_push *ndr, i
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+			ndr->flags = _flags_save_security_descriptor;
+		}
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
-			{
-				struct ndr_push *_ndr_secdesc;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-				NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
+				{
+					struct ndr_push *_ndr_secdesc;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
 			}
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2255,33 +2305,43 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, i
 	TALLOC_CTX *_mem_save_secdesc_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
-		} else {
-			r->secdesc = NULL;
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
+			if (_ptr_secdesc) {
+				NDR_PULL_ALLOC(ndr, r->secdesc);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
+			} else {
+				r->secdesc = NULL;
+			}
+			ndr->flags = _flags_save_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->secdesc) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			{
-				struct ndr_pull *_ndr_secdesc;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-				NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
+				_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
+				{
+					struct ndr_pull *_ndr_secdesc;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
-			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2759,19 +2819,29 @@ static enum ndr_err_code ndr_push_spoolss_DeviceModeInfo(struct ndr_push *ndr, i
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+			ndr->flags = _flags_save_spoolss_DeviceMode;
+		}
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->devmode) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
-			{
-				struct ndr_push *_ndr_devmode;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_devmode, 0, -1));
-				NDR_CHECK(ndr_push_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_devmode, 0, -1));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
+				{
+					struct ndr_push *_ndr_devmode;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_push_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
 			}
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2783,33 +2853,43 @@ static enum ndr_err_code ndr_pull_spoolss_DeviceModeInfo(struct ndr_pull *ndr, i
 	TALLOC_CTX *_mem_save_devmode_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-		if (_ptr_devmode) {
-			NDR_PULL_ALLOC(ndr, r->devmode);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
-		} else {
-			r->devmode = NULL;
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
+			if (_ptr_devmode) {
+				NDR_PULL_ALLOC(ndr, r->devmode);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
+			} else {
+				r->devmode = NULL;
+			}
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->devmode) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
-			_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-			{
-				struct ndr_pull *_ndr_devmode;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_devmode, 0, -1));
-				NDR_CHECK(ndr_pull_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_devmode, 0, -1));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
+				_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
+				{
+					struct ndr_pull *_ndr_devmode;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_pull_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
-			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2831,122 +2911,127 @@ _PUBLIC_ void ndr_print_spoolss_DeviceModeInfo(struct ndr_print *ndr, const char
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrinterInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 0: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo0(ndr, NDR_SCALARS, &r->info0));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 0: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo0(ndr, NDR_SCALARS, &r->info0));
+				break; }
 
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 4: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo4(ndr, NDR_SCALARS, &r->info4));
-			break; }
+				case 4: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo4(ndr, NDR_SCALARS, &r->info4));
+				break; }
 
-			case 5: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
-			break; }
+				case 5: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
+				break; }
 
-			case 6: {
-				NDR_CHECK(ndr_push_align(ndr, 4));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
-			break; }
+				case 6: {
+					NDR_CHECK(ndr_push_align(ndr, 4));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
+				break; }
 
-			case 7: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
-			break; }
+				case 7: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
+				break; }
 
-			case 8: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info8));
-			break; }
+				case 8: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info8));
+				break; }
 
-			case 9: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info9));
-			break; }
+				case 9: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info9));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 0:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo0(ndr, NDR_BUFFERS, &r->info0));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 0:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo0(ndr, NDR_BUFFERS, &r->info0));
+				break;
 
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo3(ndr, NDR_BUFFERS, &r->info3));
-			break;
+				case 3:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo3(ndr, NDR_BUFFERS, &r->info3));
+				break;
 
-			case 4:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo4(ndr, NDR_BUFFERS, &r->info4));
-			break;
+				case 4:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo4(ndr, NDR_BUFFERS, &r->info4));
+				break;
 
-			case 5:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
-			break;
+				case 5:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
+				break;
 
-			case 6:
-			break;
+				case 6:
+				break;
 
-			case 7:
-				NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_BUFFERS, &r->info7));
-			break;
+				case 7:
+					NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_BUFFERS, &r->info7));
+				break;
 
-			case 8:
-				NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info8));
-			break;
+				case 8:
+					NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info8));
+				break;
 
-			case 9:
-				NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info9));
-			break;
+				case 9:
+					NDR_CHECK(ndr_push_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info9));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -2956,121 +3041,126 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, in
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 0: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo0(ndr, NDR_SCALARS, &r->info0));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 0: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo0(ndr, NDR_SCALARS, &r->info0));
+				break; }
 
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 4: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo4(ndr, NDR_SCALARS, &r->info4));
-			break; }
+				case 4: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo4(ndr, NDR_SCALARS, &r->info4));
+				break; }
 
-			case 5: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
-			break; }
+				case 5: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
+				break; }
 
-			case 6: {
-				NDR_CHECK(ndr_pull_align(ndr, 4));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
-			break; }
+				case 6: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
+				break; }
 
-			case 7: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
-			break; }
+				case 7: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
+				break; }
 
-			case 8: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info8));
-			break; }
+				case 8: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info8));
+				break; }
 
-			case 9: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info9));
-			break; }
+				case 9: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_SCALARS, &r->info9));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 0:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo0(ndr, NDR_BUFFERS, &r->info0));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 0:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo0(ndr, NDR_BUFFERS, &r->info0));
+				break;
 
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo3(ndr, NDR_BUFFERS, &r->info3));
-			break;
+				case 3:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo3(ndr, NDR_BUFFERS, &r->info3));
+				break;
 
-			case 4:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo4(ndr, NDR_BUFFERS, &r->info4));
-			break;
+				case 4:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo4(ndr, NDR_BUFFERS, &r->info4));
+				break;
 
-			case 5:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
-			break;
+				case 5:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
+				break;
 
-			case 6:
-			break;
+				case 6:
+				break;
 
-			case 7:
-				NDR_CHECK(ndr_pull_spoolss_PrinterInfo7(ndr, NDR_BUFFERS, &r->info7));
-			break;
+				case 7:
+					NDR_CHECK(ndr_pull_spoolss_PrinterInfo7(ndr, NDR_BUFFERS, &r->info7));
+				break;
 
-			case 8:
-				NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info8));
-			break;
+				case 8:
+					NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info8));
+				break;
 
-			case 9:
-				NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info9));
-			break;
+				case 9:
+					NDR_CHECK(ndr_pull_spoolss_DeviceModeInfo(ndr, NDR_BUFFERS, &r->info9));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -3079,57 +3169,63 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, in
 _PUBLIC_ void ndr_print_spoolss_PrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrinterInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_PrinterInfo");
-	switch (level) {
-		case 0:
-			ndr_print_spoolss_PrinterInfo0(ndr, "info0", &r->info0);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_PrinterInfo");
+		switch (level) {
+			case 0:
+				ndr_print_spoolss_PrinterInfo0(ndr, "info0", &r->info0);
+			break;
 
-		case 1:
-			ndr_print_spoolss_PrinterInfo1(ndr, "info1", &r->info1);
-		break;
+			case 1:
+				ndr_print_spoolss_PrinterInfo1(ndr, "info1", &r->info1);
+			break;
 
-		case 2:
-			ndr_print_spoolss_PrinterInfo2(ndr, "info2", &r->info2);
-		break;
+			case 2:
+				ndr_print_spoolss_PrinterInfo2(ndr, "info2", &r->info2);
+			break;
 
-		case 3:
-			ndr_print_spoolss_PrinterInfo3(ndr, "info3", &r->info3);
-		break;
+			case 3:
+				ndr_print_spoolss_PrinterInfo3(ndr, "info3", &r->info3);
+			break;
 
-		case 4:
-			ndr_print_spoolss_PrinterInfo4(ndr, "info4", &r->info4);
-		break;
+			case 4:
+				ndr_print_spoolss_PrinterInfo4(ndr, "info4", &r->info4);
+			break;
 
-		case 5:
-			ndr_print_spoolss_PrinterInfo5(ndr, "info5", &r->info5);
-		break;
+			case 5:
+				ndr_print_spoolss_PrinterInfo5(ndr, "info5", &r->info5);
+			break;
 
-		case 6:
-			ndr_print_spoolss_PrinterInfo6(ndr, "info6", &r->info6);
-		break;
+			case 6:
+				ndr_print_spoolss_PrinterInfo6(ndr, "info6", &r->info6);
+			break;
 
-		case 7:
-			ndr_print_spoolss_PrinterInfo7(ndr, "info7", &r->info7);
-		break;
+			case 7:
+				ndr_print_spoolss_PrinterInfo7(ndr, "info7", &r->info7);
+			break;
 
-		case 8:
-			ndr_print_spoolss_DeviceModeInfo(ndr, "info8", &r->info8);
-		break;
+			case 8:
+				ndr_print_spoolss_DeviceModeInfo(ndr, "info8", &r->info8);
+			break;
 
-		case 9:
-			ndr_print_spoolss_DeviceModeInfo(ndr, "info9", &r->info9);
-		break;
+			case 9:
+				ndr_print_spoolss_DeviceModeInfo(ndr, "info9", &r->info9);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
 _PUBLIC_ size_t ndr_size_spoolss_PrinterInfo(const union spoolss_PrinterInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
+	flags |= LIBNDR_FLAG_RELATIVE_REVERSE;
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo, ic);
 }
 
@@ -3640,14 +3736,24 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int n
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->driver_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+			ndr->flags = _flags_save_spoolss_DeviceMode;
+		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->text_status));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+			ndr->flags = _flags_save_security_descriptor;
+		}
 		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->position));
@@ -3751,10 +3857,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->devmode) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
-			NDR_CHECK(ndr_push_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
+				{
+					struct ndr_push *_ndr_devmode;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_push_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
+			}
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -3766,10 +3882,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
-			NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
+				{
+					struct ndr_push *_ndr_secdesc;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
+			}
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3912,12 +4038,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-		if (_ptr_devmode) {
-			NDR_PULL_ALLOC(ndr, r->devmode);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
-		} else {
-			r->devmode = NULL;
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
+			if (_ptr_devmode) {
+				NDR_PULL_ALLOC(ndr, r->devmode);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
+			} else {
+				r->devmode = NULL;
+			}
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -3931,12 +4062,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
-		} else {
-			r->secdesc = NULL;
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
+			if (_ptr_secdesc) {
+				NDR_PULL_ALLOC(ndr, r->secdesc);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
+			} else {
+				r->secdesc = NULL;
+			}
+			ndr->flags = _flags_save_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
@@ -4116,18 +4252,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->devmode) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
-			_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-			NDR_CHECK(ndr_pull_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
+				_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
+				{
+					struct ndr_pull *_ndr_devmode;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_pull_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -4147,18 +4293,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->secdesc) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
+				_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
+				{
+					struct ndr_pull *_ndr_secdesc;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4361,14 +4517,24 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int n
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->driver_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->devmode));
+			ndr->flags = _flags_save_spoolss_DeviceMode;
+		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->text_status));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
+			ndr->flags = _flags_save_security_descriptor;
+		}
 		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->position));
@@ -4473,10 +4639,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->devmode) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
-			NDR_CHECK(ndr_push_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->devmode));
+				{
+					struct ndr_push *_ndr_devmode;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_push_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->devmode));
+			}
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -4488,10 +4664,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
-			NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
+				{
+					struct ndr_push *_ndr_secdesc;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
+			}
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4634,12 +4820,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-		if (_ptr_devmode) {
-			NDR_PULL_ALLOC(ndr, r->devmode);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
-		} else {
-			r->devmode = NULL;
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
+			if (_ptr_devmode) {
+				NDR_PULL_ALLOC(ndr, r->devmode);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->devmode, _ptr_devmode));
+			} else {
+				r->devmode = NULL;
+			}
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -4653,12 +4844,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
-		} else {
-			r->secdesc = NULL;
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
+			if (_ptr_secdesc) {
+				NDR_PULL_ALLOC(ndr, r->secdesc);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->secdesc, _ptr_secdesc));
+			} else {
+				r->secdesc = NULL;
+			}
+			ndr->flags = _flags_save_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
@@ -4839,18 +5035,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->devmode) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
-			_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-			NDR_CHECK(ndr_pull_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
+		{
+			uint32_t _flags_save_spoolss_DeviceMode = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->devmode) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->devmode));
+				_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
+				{
+					struct ndr_pull *_ndr_devmode;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_devmode, 0, -1));
+					NDR_CHECK(ndr_pull_spoolss_DeviceMode(_ndr_devmode, NDR_SCALARS, r->devmode));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_devmode, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_spoolss_DeviceMode;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -4870,18 +5076,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->secdesc) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
+		{
+			uint32_t _flags_save_security_descriptor = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			if (r->secdesc) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->secdesc));
+				_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
+				{
+					struct ndr_pull *_ndr_secdesc;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
+					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4986,62 +5202,67 @@ _PUBLIC_ size_t ndr_size_spoolss_JobInfo4(const struct spoolss_JobInfo4 *r, stru
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_JobInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_JobInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_JobInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_JobInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_JobInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_push_align(ndr, 4));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_JobInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_push_align(ndr, 4));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_JobInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 4: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_JobInfo4(ndr, NDR_SCALARS, &r->info4));
-			break; }
+				case 4: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_JobInfo4(ndr, NDR_SCALARS, &r->info4));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_JobInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_JobInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_push_spoolss_JobInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_push_spoolss_JobInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-			break;
+				case 3:
+				break;
 
-			case 4:
-				NDR_CHECK(ndr_push_spoolss_JobInfo4(ndr, NDR_BUFFERS, &r->info4));
-			break;
+				case 4:
+					NDR_CHECK(ndr_push_spoolss_JobInfo4(ndr, NDR_BUFFERS, &r->info4));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -5051,61 +5272,66 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo(struct ndr_pull *ndr, int nd
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_JobInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_JobInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_JobInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_JobInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_pull_align(ndr, 4));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_JobInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_JobInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 4: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_JobInfo4(ndr, NDR_SCALARS, &r->info4));
-			break; }
+				case 4: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_JobInfo4(ndr, NDR_SCALARS, &r->info4));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_JobInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_JobInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_spoolss_JobInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_pull_spoolss_JobInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-			break;
+				case 3:
+				break;
 
-			case 4:
-				NDR_CHECK(ndr_pull_spoolss_JobInfo4(ndr, NDR_BUFFERS, &r->info4));
-			break;
+				case 4:
+					NDR_CHECK(ndr_pull_spoolss_JobInfo4(ndr, NDR_BUFFERS, &r->info4));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -5114,33 +5340,39 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo(struct ndr_pull *ndr, int nd
 _PUBLIC_ void ndr_print_spoolss_JobInfo(struct ndr_print *ndr, const char *name, const union spoolss_JobInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_JobInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_JobInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_JobInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_JobInfo1(ndr, "info1", &r->info1);
+			break;
 
-		case 2:
-			ndr_print_spoolss_JobInfo2(ndr, "info2", &r->info2);
-		break;
+			case 2:
+				ndr_print_spoolss_JobInfo2(ndr, "info2", &r->info2);
+			break;
 
-		case 3:
-			ndr_print_spoolss_JobInfo3(ndr, "info3", &r->info3);
-		break;
+			case 3:
+				ndr_print_spoolss_JobInfo3(ndr, "info3", &r->info3);
+			break;
 
-		case 4:
-			ndr_print_spoolss_JobInfo4(ndr, "info4", &r->info4);
-		break;
+			case 4:
+				ndr_print_spoolss_JobInfo4(ndr, "info4", &r->info4);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
 _PUBLIC_ size_t ndr_size_spoolss_JobInfo(const union spoolss_JobInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
+	flags |= LIBNDR_FLAG_RELATIVE_REVERSE;
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_JobInfo, ic);
 }
 
@@ -14728,113 +14960,118 @@ _PUBLIC_ size_t ndr_size_spoolss_DriverInfo101(const struct spoolss_DriverInfo10
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 8));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 8));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 4: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo4(ndr, NDR_SCALARS, &r->info4));
-			break; }
+				case 4: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo4(ndr, NDR_SCALARS, &r->info4));
+				break; }
 
-			case 5: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo5(ndr, NDR_SCALARS, &r->info5));
-			break; }
+				case 5: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo5(ndr, NDR_SCALARS, &r->info5));
+				break; }
 
-			case 6: {
-				NDR_CHECK(ndr_push_align(ndr, 8));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo6(ndr, NDR_SCALARS, &r->info6));
-			break; }
+				case 6: {
+					NDR_CHECK(ndr_push_align(ndr, 8));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo6(ndr, NDR_SCALARS, &r->info6));
+				break; }
 
-			case 7: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo7(ndr, NDR_SCALARS, &r->info7));
-			break; }
+				case 7: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo7(ndr, NDR_SCALARS, &r->info7));
+				break; }
 
-			case 8: {
-				NDR_CHECK(ndr_push_align(ndr, 8));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo8(ndr, NDR_SCALARS, &r->info8));
-			break; }
+				case 8: {
+					NDR_CHECK(ndr_push_align(ndr, 8));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo8(ndr, NDR_SCALARS, &r->info8));
+				break; }
 
-			case 101: {
-				NDR_CHECK(ndr_push_align(ndr, 8));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverInfo101(ndr, NDR_SCALARS, &r->info101));
-			break; }
+				case 101: {
+					NDR_CHECK(ndr_push_align(ndr, 8));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverInfo101(ndr, NDR_SCALARS, &r->info101));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo3(ndr, NDR_BUFFERS, &r->info3));
-			break;
+				case 3:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo3(ndr, NDR_BUFFERS, &r->info3));
+				break;
 
-			case 4:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo4(ndr, NDR_BUFFERS, &r->info4));
-			break;
+				case 4:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo4(ndr, NDR_BUFFERS, &r->info4));
+				break;
 
-			case 5:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo5(ndr, NDR_BUFFERS, &r->info5));
-			break;
+				case 5:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo5(ndr, NDR_BUFFERS, &r->info5));
+				break;
 
-			case 6:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo6(ndr, NDR_BUFFERS, &r->info6));
-			break;
+				case 6:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo6(ndr, NDR_BUFFERS, &r->info6));
+				break;
 
-			case 7:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo7(ndr, NDR_BUFFERS, &r->info7));
-			break;
+				case 7:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo7(ndr, NDR_BUFFERS, &r->info7));
+				break;
 
-			case 8:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo8(ndr, NDR_BUFFERS, &r->info8));
-			break;
+				case 8:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo8(ndr, NDR_BUFFERS, &r->info8));
+				break;
 
-			case 101:
-				NDR_CHECK(ndr_push_spoolss_DriverInfo101(ndr, NDR_BUFFERS, &r->info101));
-			break;
+				case 101:
+					NDR_CHECK(ndr_push_spoolss_DriverInfo101(ndr, NDR_BUFFERS, &r->info101));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -14844,112 +15081,117 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 8));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 8));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 4: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo4(ndr, NDR_SCALARS, &r->info4));
-			break; }
+				case 4: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo4(ndr, NDR_SCALARS, &r->info4));
+				break; }
 
-			case 5: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo5(ndr, NDR_SCALARS, &r->info5));
-			break; }
+				case 5: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo5(ndr, NDR_SCALARS, &r->info5));
+				break; }
 
-			case 6: {
-				NDR_CHECK(ndr_pull_align(ndr, 8));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo6(ndr, NDR_SCALARS, &r->info6));
-			break; }
+				case 6: {
+					NDR_CHECK(ndr_pull_align(ndr, 8));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo6(ndr, NDR_SCALARS, &r->info6));
+				break; }
 
-			case 7: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo7(ndr, NDR_SCALARS, &r->info7));
-			break; }
+				case 7: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo7(ndr, NDR_SCALARS, &r->info7));
+				break; }
 
-			case 8: {
-				NDR_CHECK(ndr_pull_align(ndr, 8));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo8(ndr, NDR_SCALARS, &r->info8));
-			break; }
+				case 8: {
+					NDR_CHECK(ndr_pull_align(ndr, 8));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo8(ndr, NDR_SCALARS, &r->info8));
+				break; }
 
-			case 101: {
-				NDR_CHECK(ndr_pull_align(ndr, 8));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo101(ndr, NDR_SCALARS, &r->info101));
-			break; }
+				case 101: {
+					NDR_CHECK(ndr_pull_align(ndr, 8));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo101(ndr, NDR_SCALARS, &r->info101));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo3(ndr, NDR_BUFFERS, &r->info3));
-			break;
+				case 3:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo3(ndr, NDR_BUFFERS, &r->info3));
+				break;
 
-			case 4:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo4(ndr, NDR_BUFFERS, &r->info4));
-			break;
+				case 4:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo4(ndr, NDR_BUFFERS, &r->info4));
+				break;
 
-			case 5:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo5(ndr, NDR_BUFFERS, &r->info5));
-			break;
+				case 5:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo5(ndr, NDR_BUFFERS, &r->info5));
+				break;
 
-			case 6:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo6(ndr, NDR_BUFFERS, &r->info6));
-			break;
+				case 6:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo6(ndr, NDR_BUFFERS, &r->info6));
+				break;
 
-			case 7:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo7(ndr, NDR_BUFFERS, &r->info7));
-			break;
+				case 7:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo7(ndr, NDR_BUFFERS, &r->info7));
+				break;
 
-			case 8:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo8(ndr, NDR_BUFFERS, &r->info8));
-			break;
+				case 8:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo8(ndr, NDR_BUFFERS, &r->info8));
+				break;
 
-			case 101:
-				NDR_CHECK(ndr_pull_spoolss_DriverInfo101(ndr, NDR_BUFFERS, &r->info101));
-			break;
+				case 101:
+					NDR_CHECK(ndr_pull_spoolss_DriverInfo101(ndr, NDR_BUFFERS, &r->info101));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -14958,53 +15200,59 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int
 _PUBLIC_ void ndr_print_spoolss_DriverInfo(struct ndr_print *ndr, const char *name, const union spoolss_DriverInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_DriverInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_DriverInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_DriverInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_DriverInfo1(ndr, "info1", &r->info1);
+			break;
 
-		case 2:
-			ndr_print_spoolss_DriverInfo2(ndr, "info2", &r->info2);
-		break;
+			case 2:
+				ndr_print_spoolss_DriverInfo2(ndr, "info2", &r->info2);
+			break;
 
-		case 3:
-			ndr_print_spoolss_DriverInfo3(ndr, "info3", &r->info3);
-		break;
+			case 3:
+				ndr_print_spoolss_DriverInfo3(ndr, "info3", &r->info3);
+			break;
 
-		case 4:
-			ndr_print_spoolss_DriverInfo4(ndr, "info4", &r->info4);
-		break;
+			case 4:
+				ndr_print_spoolss_DriverInfo4(ndr, "info4", &r->info4);
+			break;
 
-		case 5:
-			ndr_print_spoolss_DriverInfo5(ndr, "info5", &r->info5);
-		break;
+			case 5:
+				ndr_print_spoolss_DriverInfo5(ndr, "info5", &r->info5);
+			break;
 
-		case 6:
-			ndr_print_spoolss_DriverInfo6(ndr, "info6", &r->info6);
-		break;
+			case 6:
+				ndr_print_spoolss_DriverInfo6(ndr, "info6", &r->info6);
+			break;
 
-		case 7:
-			ndr_print_spoolss_DriverInfo7(ndr, "info7", &r->info7);
-		break;
+			case 7:
+				ndr_print_spoolss_DriverInfo7(ndr, "info7", &r->info7);
+			break;
 
-		case 8:
-			ndr_print_spoolss_DriverInfo8(ndr, "info8", &r->info8);
-		break;
+			case 8:
+				ndr_print_spoolss_DriverInfo8(ndr, "info8", &r->info8);
+			break;
 
-		case 101:
-			ndr_print_spoolss_DriverInfo101(ndr, "info101", &r->info101);
-		break;
+			case 101:
+				ndr_print_spoolss_DriverInfo101(ndr, "info101", &r->info101);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
 _PUBLIC_ size_t ndr_size_spoolss_DriverInfo(const union spoolss_DriverInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
+	flags |= LIBNDR_FLAG_RELATIVE_REVERSE;
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_DriverInfo, ic);
 }
 
@@ -15058,35 +15306,40 @@ _PUBLIC_ size_t ndr_size_spoolss_DriverDirectoryInfo1(const struct spoolss_Drive
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverDirectoryInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 4));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 4));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 4));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 4));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-				NDR_CHECK(ndr_push_align(ndr, 4));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+				default: {
+					NDR_CHECK(ndr_push_align(ndr, 4));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -15096,34 +15349,39 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo(struct ndr_pull 
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 4));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 4));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 4));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-				NDR_CHECK(ndr_pull_align(ndr, 4));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+				default: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_DriverDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -15132,22 +15390,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo(struct ndr_pull 
 _PUBLIC_ void ndr_print_spoolss_DriverDirectoryInfo(struct ndr_print *ndr, const char *name, const union spoolss_DriverDirectoryInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_DriverDirectoryInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_DriverDirectoryInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_DriverDirectoryInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_DriverDirectoryInfo1(ndr, "info1", &r->info1);
+			break;
 
-		default:
-			ndr_print_spoolss_DriverDirectoryInfo1(ndr, "info1", &r->info1);
-		break;
+			default:
+				ndr_print_spoolss_DriverDirectoryInfo1(ndr, "info1", &r->info1);
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
 _PUBLIC_ size_t ndr_size_spoolss_DriverDirectoryInfo(const union spoolss_DriverDirectoryInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
+	flags |= LIBNDR_FLAG_RELATIVE_REVERSE;
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_DriverDirectoryInfo, ic);
 }
 
@@ -15242,33 +15506,38 @@ _PUBLIC_ size_t ndr_size_spoolss_PrintProcessorInfo1(const struct spoolss_PrintP
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcessorInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrintProcessorInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrintProcessorInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_PrintProcessorInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_PrintProcessorInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -15278,32 +15547,37 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorInfo(struct ndr_pull *
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrintProcessorInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrintProcessorInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_PrintProcessorInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_PrintProcessorInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -15312,16 +15586,21 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorInfo(struct ndr_pull *
 _PUBLIC_ void ndr_print_spoolss_PrintProcessorInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcessorInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_PrintProcessorInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_PrintProcessorInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_PrintProcessorInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_PrintProcessorInfo1(ndr, "info1", &r->info1);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
@@ -15375,35 +15654,40 @@ _PUBLIC_ size_t ndr_size_spoolss_PrintProcessorDirectoryInfo1(const struct spool
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorDirectoryInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcessorDirectoryInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 4));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 4));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 4));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 4));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-				NDR_CHECK(ndr_push_align(ndr, 4));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+				default: {
+					NDR_CHECK(ndr_push_align(ndr, 4));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -15413,34 +15697,39 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorDirectoryInfo(struct n
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 4));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 4));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 4));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-				NDR_CHECK(ndr_pull_align(ndr, 4));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+				default: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -15449,22 +15738,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorDirectoryInfo(struct n
 _PUBLIC_ void ndr_print_spoolss_PrintProcessorDirectoryInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcessorDirectoryInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_PrintProcessorDirectoryInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_PrintProcessorDirectoryInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_PrintProcessorDirectoryInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_PrintProcessorDirectoryInfo1(ndr, "info1", &r->info1);
+			break;
 
-		default:
-			ndr_print_spoolss_PrintProcessorDirectoryInfo1(ndr, "info1", &r->info1);
-		break;
+			default:
+				ndr_print_spoolss_PrintProcessorDirectoryInfo1(ndr, "info1", &r->info1);
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
 _PUBLIC_ size_t ndr_size_spoolss_PrintProcessorDirectoryInfo(const union spoolss_PrintProcessorDirectoryInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
+	flags |= LIBNDR_FLAG_RELATIVE_REVERSE;
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_PrintProcessorDirectoryInfo, ic);
 }
 
@@ -16569,43 +16864,48 @@ _PUBLIC_ size_t ndr_size_spoolss_FormInfo2(const struct spoolss_FormInfo2 *r, st
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_FormInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_FormInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_FormInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_FormInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_FormInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_FormInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_FormInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_FormInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_push_spoolss_FormInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_push_spoolss_FormInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -16615,42 +16915,47 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_FormInfo(struct ndr_pull *ndr, int n
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_FormInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_FormInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_FormInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_FormInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_FormInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_FormInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_spoolss_FormInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_pull_spoolss_FormInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -16659,25 +16964,31 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_FormInfo(struct ndr_pull *ndr, int n
 _PUBLIC_ void ndr_print_spoolss_FormInfo(struct ndr_print *ndr, const char *name, const union spoolss_FormInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_FormInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_FormInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_FormInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_FormInfo1(ndr, "info1", &r->info1);
+			break;
 
-		case 2:
-			ndr_print_spoolss_FormInfo2(ndr, "info2", &r->info2);
-		break;
+			case 2:
+				ndr_print_spoolss_FormInfo2(ndr, "info2", &r->info2);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
 _PUBLIC_ size_t ndr_size_spoolss_FormInfo(const union spoolss_FormInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
+	flags |= LIBNDR_FLAG_RELATIVE_REVERSE;
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_FormInfo, ic);
 }
 
@@ -17631,63 +17942,68 @@ _PUBLIC_ size_t ndr_size_spoolss_PortInfoFF(const struct spoolss_PortInfoFF *r, 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PortInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PortInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PortInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PortInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PortInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PortInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PortInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 0xff: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PortInfoFF(ndr, NDR_SCALARS, &r->infoFF));
-			break; }
+				case 0xff: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PortInfoFF(ndr, NDR_SCALARS, &r->infoFF));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_PortInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_PortInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_push_spoolss_PortInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_push_spoolss_PortInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-				NDR_CHECK(ndr_push_spoolss_PortInfo3(ndr, NDR_BUFFERS, &r->info3));
-			break;
+				case 3:
+					NDR_CHECK(ndr_push_spoolss_PortInfo3(ndr, NDR_BUFFERS, &r->info3));
+				break;
 
-			case 0xff:
-				NDR_CHECK(ndr_push_spoolss_PortInfoFF(ndr, NDR_BUFFERS, &r->infoFF));
-			break;
+				case 0xff:
+					NDR_CHECK(ndr_push_spoolss_PortInfoFF(ndr, NDR_BUFFERS, &r->infoFF));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -17697,62 +18013,67 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfo(struct ndr_pull *ndr, int n
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PortInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PortInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PortInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PortInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			case 3: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PortInfo3(ndr, NDR_SCALARS, &r->info3));
-			break; }
+				case 3: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PortInfo3(ndr, NDR_SCALARS, &r->info3));
+				break; }
 
-			case 0xff: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PortInfoFF(ndr, NDR_SCALARS, &r->infoFF));
-			break; }
+				case 0xff: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PortInfoFF(ndr, NDR_SCALARS, &r->infoFF));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_PortInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_PortInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_spoolss_PortInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_pull_spoolss_PortInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			case 3:
-				NDR_CHECK(ndr_pull_spoolss_PortInfo3(ndr, NDR_BUFFERS, &r->info3));
-			break;
+				case 3:
+					NDR_CHECK(ndr_pull_spoolss_PortInfo3(ndr, NDR_BUFFERS, &r->info3));
+				break;
 
-			case 0xff:
-				NDR_CHECK(ndr_pull_spoolss_PortInfoFF(ndr, NDR_BUFFERS, &r->infoFF));
-			break;
+				case 0xff:
+					NDR_CHECK(ndr_pull_spoolss_PortInfoFF(ndr, NDR_BUFFERS, &r->infoFF));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -17761,28 +18082,33 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfo(struct ndr_pull *ndr, int n
 _PUBLIC_ void ndr_print_spoolss_PortInfo(struct ndr_print *ndr, const char *name, const union spoolss_PortInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_PortInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_PortInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_PortInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_PortInfo1(ndr, "info1", &r->info1);
+			break;
 
-		case 2:
-			ndr_print_spoolss_PortInfo2(ndr, "info2", &r->info2);
-		break;
+			case 2:
+				ndr_print_spoolss_PortInfo2(ndr, "info2", &r->info2);
+			break;
 
-		case 3:
-			ndr_print_spoolss_PortInfo3(ndr, "info3", &r->info3);
-		break;
+			case 3:
+				ndr_print_spoolss_PortInfo3(ndr, "info3", &r->info3);
+			break;
 
-		case 0xff:
-			ndr_print_spoolss_PortInfoFF(ndr, "infoFF", &r->infoFF);
-		break;
+			case 0xff:
+				ndr_print_spoolss_PortInfoFF(ndr, "infoFF", &r->infoFF);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
@@ -18073,43 +18399,48 @@ _PUBLIC_ size_t ndr_size_spoolss_MonitorInfo2(const struct spoolss_MonitorInfo2 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_MonitorInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_MonitorInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_MonitorInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_MonitorInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_MonitorInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_MonitorInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_MonitorInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_push_spoolss_MonitorInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_push_spoolss_MonitorInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -18119,42 +18450,47 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorInfo(struct ndr_pull *ndr, in
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_MonitorInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_MonitorInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			case 2: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_MonitorInfo2(ndr, NDR_SCALARS, &r->info2));
-			break; }
+				case 2: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_MonitorInfo2(ndr, NDR_SCALARS, &r->info2));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_MonitorInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_MonitorInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			case 2:
-				NDR_CHECK(ndr_pull_spoolss_MonitorInfo2(ndr, NDR_BUFFERS, &r->info2));
-			break;
+				case 2:
+					NDR_CHECK(ndr_pull_spoolss_MonitorInfo2(ndr, NDR_BUFFERS, &r->info2));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -18163,20 +18499,25 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorInfo(struct ndr_pull *ndr, in
 _PUBLIC_ void ndr_print_spoolss_MonitorInfo(struct ndr_print *ndr, const char *name, const union spoolss_MonitorInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_MonitorInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_MonitorInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_MonitorInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_MonitorInfo1(ndr, "info1", &r->info1);
+			break;
 
-		case 2:
-			ndr_print_spoolss_MonitorInfo2(ndr, "info2", &r->info2);
-		break;
+			case 2:
+				ndr_print_spoolss_MonitorInfo2(ndr, "info2", &r->info2);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
@@ -18271,33 +18612,38 @@ _PUBLIC_ size_t ndr_size_spoolss_PrintProcDataTypesInfo1(const struct spoolss_Pr
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcDataTypesInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcDataTypesInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
-	if (ndr_flags & NDR_SCALARS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_push_align(ndr, 5));
-				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_push_align(ndr, 5));
+					NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -18307,32 +18653,37 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcDataTypesInfo(struct ndr_pu
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	int level;
-	level = ndr_pull_get_switch_value(ndr, r);
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_union_align(ndr, 5));
-		switch (level) {
-			case 1: {
-				NDR_CHECK(ndr_pull_align(ndr, 5));
-				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
-				NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo1(ndr, NDR_SCALARS, &r->info1));
-			break; }
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_pull_get_switch_value(ndr, r);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_union_align(ndr, 5));
+			switch (level) {
+				case 1: {
+					NDR_CHECK(ndr_pull_align(ndr, 5));
+					NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+					NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo1(ndr, NDR_SCALARS, &r->info1));
+				break; }
 
-			default: {
-			break; }
+				default: {
+				break; }
 
+			}
 		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
-		switch (level) {
-			case 1:
-				NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo1(ndr, NDR_BUFFERS, &r->info1));
-			break;
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+			switch (level) {
+				case 1:
+					NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo1(ndr, NDR_BUFFERS, &r->info1));
+				break;
 
-			default:
-			break;
+				default:
+				break;
 
+			}
 		}
+		ndr->flags = _flags_save_UNION;
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
 	return NDR_ERR_SUCCESS;
@@ -18341,16 +18692,21 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcDataTypesInfo(struct ndr_pu
 _PUBLIC_ void ndr_print_spoolss_PrintProcDataTypesInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcDataTypesInfo *r)
 {
 	int level;
-	level = ndr_print_get_switch_value(ndr, r);
-	ndr_print_union(ndr, name, level, "spoolss_PrintProcDataTypesInfo");
-	switch (level) {
-		case 1:
-			ndr_print_spoolss_PrintProcDataTypesInfo1(ndr, "info1", &r->info1);
-		break;
+	{
+		uint32_t _flags_save_UNION = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_RELATIVE_REVERSE);
+		level = ndr_print_get_switch_value(ndr, r);
+		ndr_print_union(ndr, name, level, "spoolss_PrintProcDataTypesInfo");
+		switch (level) {
+			case 1:
+				ndr_print_spoolss_PrintProcDataTypesInfo1(ndr, "info1", &r->info1);
+			break;
 
-		default:
-		break;
+			default:
+			break;
 
+		}
+		ndr->flags = _flags_save_UNION;
 	}
 }
 
