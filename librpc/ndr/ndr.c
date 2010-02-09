@@ -367,6 +367,9 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	if (new_flags & LIBNDR_ALIGN_FLAGS) {
 		(*pflags) &= ~LIBNDR_FLAG_REMAINING;
 	}
+	if (new_flags & LIBNDR_FLAG_NO_RELATIVE_REVERSE) {
+		(*pflags) &= ~LIBNDR_FLAG_RELATIVE_REVERSE;
+	}
 	(*pflags) |= new_flags;
 }
 
