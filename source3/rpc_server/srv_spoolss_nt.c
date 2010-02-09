@@ -9955,7 +9955,10 @@ WERROR _spoolss_XcvData(pipes_struct *p,
 
 	*r->out.status_code = 0;
 
-	memcpy(r->out.out_data, out_data.data, out_data.length);
+	if (r->out.out_data && r->in.out_data_size && out_data.length) {
+		memcpy(r->out.out_data, out_data.data,
+			MIN(r->in.out_data_size, out_data.length));
+	}
 
 	return WERR_OK;
 }
