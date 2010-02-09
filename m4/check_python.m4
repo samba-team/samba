@@ -76,6 +76,11 @@ AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 
 	if test x$PYTHON != x
 	then
+		if `$PYTHON -c "import sys; sys.exit(sys.version_info.__getslice__(0, 2) >= (2, 4))"`
+		then
+			AC_MSG_ERROR([Python ($PYTHON) is too old. At least version 2.4 is required])
+		fi
+
 		DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; \
 					      print '-I%s -I%s %s' % ( \
 							sysconfig.get_python_inc(), \
