@@ -141,6 +141,29 @@ static void flush_caches(void)
 	}
 }
 
+static void flush_caches_noinit(void)
+{
+	/*
+	 * We need to invalidate cached user list entries on a SIGHUP
+         * otherwise cached access denied errors due to restrict anonymous
+         * hang around until the sequence number changes.
+	 * NB
+	 * Skip uninitialized domains when flush cache.
+	 * If domain is not initialized, it means it is never
+	 * used or never become online. look, wcache_invalidate_cache()
+	 * -> get_cache() -> init_dc_connection(). It causes a lot of traffic
+	 * for unused domains and large traffic for primay domain's DC if there
+	 * are many domains..
+	 */
+
+	if (!wcache_invalidate_cache_noinit()) {
+		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
+		if (!winbindd_cache_validate_and_initialize()) {
+			exit(1);
+		}
+	}
+}
+
 /* Handle the signal by unlinking socket and exiting */
 
 static void terminate(bool is_parent)
@@ -254,7 +277,7 @@ static void winbindd_sig_hup_handler(struct tevent_context *ev,
 	const char *file = (const char *)private_data;
 
 	DEBUG(1,("Reloading services after SIGHUP\n"));
-	flush_caches();
+	flush_caches_noinit();
 	reload_services_file(file);
 }
 

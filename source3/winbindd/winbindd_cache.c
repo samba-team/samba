@@ -3023,6 +3023,33 @@ bool wcache_invalidate_cache(void)
 	return true;
 }
 
+bool wcache_invalidate_cache_noinit(void)
+{
+	struct winbindd_domain *domain;
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		struct winbind_cache *cache;
+
+		/* Skip uninitialized domains. */
+		if (!domain->initialized && !domain->internal) {
+			continue;
+		}
+
+		cache = get_cache(domain);
+
+		DEBUG(10, ("wcache_invalidate_cache: invalidating cache "
+			   "entries for %s\n", domain->name));
+		if (cache) {
+			if (cache->tdb) {
+				tdb_traverse(cache->tdb, traverse_fn, NULL);
+			} else {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 bool init_wcache(void)
 {
 	if (wcache == NULL) {
