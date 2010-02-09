@@ -363,6 +363,10 @@ static BOOL test_EnumMonitors(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_monitor_info_bylevel(levels[i], buffer, returned);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}

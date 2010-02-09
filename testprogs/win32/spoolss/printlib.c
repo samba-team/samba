@@ -264,6 +264,47 @@ void print_monitor_info_2(PMONITOR_INFO_2 info)
 	return;
 }
 
+void print_monitor_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PMONITOR_INFO_1 buffer1 = NULL;
+	PMONITOR_INFO_2 buffer2 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PMONITOR_INFO_1)buffer;
+		break;
+	case 2:
+		buffer2 = (PMONITOR_INFO_2)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("Monitor Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_monitor_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	case 2:
+		for (i=0; i<count; i++) {
+			print_monitor_info_2(&buffer2[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void print_port_info_1(PPORT_INFO_1 info)
 {
 	printf("\tPort Name\t= %s\n",	info->pName);
