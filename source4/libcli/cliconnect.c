@@ -238,12 +238,12 @@ bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 {
 	char *p;
 
-	*hostname = *sharename = NULL;
-
 	if (strncmp(unc_name, "\\\\", 2) &&
 	    strncmp(unc_name, "//", 2)) {
 		return false;
 	}
+
+	*hostname = *sharename = NULL;
 
 	*hostname = talloc_strdup(mem_ctx, &unc_name[2]);
 	p = terminate_path_at_separator(*hostname);

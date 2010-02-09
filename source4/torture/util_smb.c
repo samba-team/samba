@@ -548,8 +548,11 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 		return false;
 	}
 
-	if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
-			      mem_ctx, host, share)) {
+	p = unc_list[conn_index % num_unc_names];
+	if (p[0] != '/' && p[0] != '\\') {
+		/* allow UNC lists of hosts */
+		(*host) = talloc_strdup(mem_ctx, p);
+	} else if (!smbcli_parse_unc(p, mem_ctx, host, share)) {
 		DEBUG(0, ("Failed to parse UNC name %s\n",
 			  unc_list[conn_index % num_unc_names]));
 		return false;
