@@ -184,6 +184,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 {
 	DOM_SID *gsid;
 	struct passwd *pwd;
+	bool need_lookup_sid = false;
 
 	/* Return the cached group SID if we have that */
 	if ( sampass->group_sid ) {
@@ -214,10 +215,6 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 
 	gid_to_sid(gsid, pwd->pw_gid);
 	if (!is_null_sid(gsid)) {
-		enum lsa_SidType type = SID_NAME_UNKNOWN;
-		TALLOC_CTX *mem_ctx;
-		bool lookup_ret;
-		const DOM_SID *usid = pdb_get_user_sid(sampass);
 		DOM_SID dgsid;
 		uint32_t rid;
 
@@ -233,8 +230,23 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 			case DOMAIN_RID_USERS:
 				sampass->group_sid = gsid;
 				return sampass->group_sid;
+			default:
+				need_lookup_sid = true;
+				break;
+			}
+		} else {
+			ZERO_STRUCTP(gsid);
+			if (pdb_gid_to_sid(pwd->pw_gid, gsid)) {
+				need_lookup_sid = true;
 			}
 		}
+	}
+
+	if (need_lookup_sid) {
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
+		TALLOC_CTX *mem_ctx;
+		bool lookup_ret;
+		const DOM_SID *usid = pdb_get_user_sid(sampass);
 
 		mem_ctx = talloc_init("pdb_get_group_sid");
 		if (!mem_ctx) {
