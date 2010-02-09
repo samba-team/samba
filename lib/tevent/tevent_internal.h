@@ -299,6 +299,7 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 					       const char *handler_name,
 					       const char *location);
 int tevent_common_check_signal(struct tevent_context *ev);
+void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se);
 
 bool tevent_standard_init(void);
 bool tevent_select_init(void);
