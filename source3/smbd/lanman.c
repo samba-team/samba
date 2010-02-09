@@ -1351,7 +1351,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 }
 
 
-static bool srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
+static int srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
 {
 #undef strcasecmp
 	return strcasecmp(s1->name,s2->name);
@@ -1515,7 +1515,7 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 	return True;
 }
 
-static bool srv_name_match(const char *n1, const char *n2)
+static int srv_name_match(const char *n1, const char *n2)
 {
 	/*
 	 * [MS-RAP] footnote <88> for Section 3.2.5.15 says:
