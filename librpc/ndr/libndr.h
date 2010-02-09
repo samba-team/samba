@@ -123,6 +123,9 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_UTF8		(1<<12)
 #define LIBNDR_STRING_FLAGS		(0x7FFC)
 
+/* set if relative pointers should *not* be marshalled in reverse order */
+#define LIBNDR_FLAG_NO_RELATIVE_REVERSE	(1<<18)
+
 /* set if relative pointers are marshalled in reverse order */
 #define LIBNDR_FLAG_RELATIVE_REVERSE	(1<<19)
 
