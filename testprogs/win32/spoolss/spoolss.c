@@ -312,6 +312,10 @@ static BOOL test_EnumPorts(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			print_port_info_bylevel(levels[i], buffer, returned);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}

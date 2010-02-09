@@ -264,6 +264,81 @@ void print_monitor_info_2(PMONITOR_INFO_2 info)
 	return;
 }
 
+void print_port_info_1(PPORT_INFO_1 info)
+{
+	printf("\tPort Name\t= %s\n",	info->pName);
+	return;
+}
+
+void print_port_info_2(PPORT_INFO_2 info)
+{
+	printf("\tPort Name\t= %s\n",	info->pPortName);
+	printf("\tMonitor Name\t= %s\n",info->pMonitorName);
+	printf("\tDescription\t= %s\n",	info->pDescription);
+	printf("\tPort Type\t= 0x%08x\n", info->fPortType);
+	printf("\tReserved\t= 0x%08x\n", info->Reserved);
+	return;
+}
+
+void print_port_info_3(PPORT_INFO_3 info)
+{
+	printf("\tStatus\t= 0x%08x\n", info->dwStatus);
+	printf("\tStatus String\t= %s\n", info->pszStatus);
+	printf("\tSeverity\t= 0x%08x\n", info->dwSeverity);
+	return;
+}
+
+void print_port_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PPORT_INFO_1 buffer1 = NULL;
+	PPORT_INFO_2 buffer2 = NULL;
+	PPORT_INFO_3 buffer3 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PPORT_INFO_1)buffer;
+		break;
+	case 2:
+		buffer2 = (PPORT_INFO_2)buffer;
+		break;
+	case 3:
+		buffer3 = (PPORT_INFO_3)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("Port Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_port_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	case 2:
+		for (i=0; i<count; i++) {
+			print_port_info_2(&buffer2[i]);
+			printf("\n");
+		}
+		break;
+	case 3:
+		for (i=0; i<count; i++) {
+			print_port_info_3(&buffer3[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void print_form_info_1(PFORM_INFO_1 info)
 {
 	printf("\tForm Name\t= %s\n",	info->pName);
