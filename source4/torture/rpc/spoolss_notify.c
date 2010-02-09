@@ -22,9 +22,9 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#include "torture/rpc/rpc.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/service_rpc.h"
 #include "smbd/process_model.h"
@@ -391,57 +391,39 @@ static bool test_SetPrinter(struct torture_context *tctx,
 			    struct dcerpc_pipe *p,
 			    struct policy_handle *handle)
 {
-	struct spoolss_GetPrinter g;
+	union spoolss_PrinterInfo info;
 	struct spoolss_SetPrinter r;
 	struct spoolss_SetPrinterInfo2 info2;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
 
-	{
-		uint32_t needed;
-
-		g.in.handle = handle;
-		g.in.level = 2;
-		g.in.buffer = NULL;
-		g.in.offered = 0;
-		g.out.needed = &needed;
-
-		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinter(p, tctx, &g), "GetPrinter failed");
-		if (W_ERROR_EQUAL(g.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
-			g.in.offered = needed;
-			g.in.buffer = &blob;
-			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinter(p, tctx, &g), "GetPrinter failed");
-		}
-		torture_assert_werr_ok(tctx, g.out.result, "GetPrinter failed");
-	}
-
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
 
-	info2.servername	= g.out.info->info2.servername;
-	info2.printername	= g.out.info->info2.printername;
-	info2.sharename		= g.out.info->info2.sharename;
-	info2.portname		= g.out.info->info2.portname;
-	info2.drivername	= g.out.info->info2.drivername;
+	info2.servername	= info.info2.servername;
+	info2.printername	= info.info2.printername;
+	info2.sharename		= info.info2.sharename;
+	info2.portname		= info.info2.portname;
+	info2.drivername	= info.info2.drivername;
 	info2.comment		= talloc_asprintf(tctx, "torture_comment %d\n", (int)time(NULL));
-	info2.location		= g.out.info->info2.location;
+	info2.location		= info.info2.location;
 	info2.devmode_ptr	= 0;
-	info2.sepfile		= g.out.info->info2.sepfile;
-	info2.printprocessor	= g.out.info->info2.printprocessor;
-	info2.datatype		= g.out.info->info2.datatype;
-	info2.parameters	= g.out.info->info2.parameters;
+	info2.sepfile		= info.info2.sepfile;
+	info2.printprocessor	= info.info2.printprocessor;
+	info2.datatype		= info.info2.datatype;
+	info2.parameters	= info.info2.parameters;
 	info2.secdesc_ptr	= 0;
-	info2.attributes	= g.out.info->info2.attributes;
-	info2.priority		= g.out.info->info2.priority;
-	info2.defaultpriority	= g.out.info->info2.defaultpriority;
-	info2.starttime		= g.out.info->info2.starttime;
-	info2.untiltime		= g.out.info->info2.untiltime;
-	info2.status		= g.out.info->info2.status;
-	info2.cjobs		= g.out.info->info2.cjobs;
-	info2.averageppm	= g.out.info->info2.averageppm;
+	info2.attributes	= info.info2.attributes;
+	info2.priority		= info.info2.priority;
+	info2.defaultpriority	= info.info2.defaultpriority;
+	info2.starttime		= info.info2.starttime;
+	info2.untiltime		= info.info2.untiltime;
+	info2.status		= info.info2.status;
+	info2.cjobs		= info.info2.cjobs;
+	info2.averageppm	= info.info2.averageppm;
 
 	info_ctr.level = 2;
 	info_ctr.info.info2 = &info2;

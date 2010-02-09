@@ -23,10 +23,10 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "torture/rpc/rpc.h"
 #include "param/param.h"
 
 #define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
@@ -865,11 +865,11 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   const char *driver_name);
 
-static bool test_GetPrinter_level(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  struct policy_handle *handle,
-				  uint32_t level,
-				  union spoolss_PrinterInfo *info)
+bool test_GetPrinter_level(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
+			   struct policy_handle *handle,
+			   uint32_t level,
+			   union spoolss_PrinterInfo *info)
 {
 	struct spoolss_GetPrinter r;
 	uint32_t needed;
