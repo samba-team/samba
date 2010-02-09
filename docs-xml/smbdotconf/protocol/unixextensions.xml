@@ -13,6 +13,7 @@
     <para>
     Note if this parameter is turned on, the <smbconfoption name="wide links"/>
     parameter will automatically be disabled.
+    </para>
 </description>
 
 <value type="default">yes</value>
