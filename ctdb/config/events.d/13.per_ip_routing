@@ -207,6 +207,7 @@ generate_per_ip_routing()
 
 	table_id=""
 	release_script="$_ipdir/release_script.sh"
+	setup_script="$_ipdir/setup_script.sh"
 
 	test x"$_readonly" = x"yes" && {
 		test -d $_ipdir || {
@@ -227,10 +228,63 @@ generate_per_ip_routing()
 		generate_auto_link_local $_ip $_maskbits
 	}
 
-	release_script="$_ipdir/release_script.sh"
 	run_release_script_once $release_script
 
+	echo -e "#!/bin/sh\n#\n" > $setup_script
+	chmod +x $setup_script
+
 	return 0;
+}
+
+setup_per_ip_routing()
+{
+	local _ip=$1
+	local _iface=$2
+	local _table_id=$3
+	local _release_script=$4
+	local _setup_script=$5
+
+	local _config=`cat $CTDB_PER_IP_ROUTING_CONF`
+	local _lines=`echo -n "$_config" | grep -n "^$_ip " | cut -d ':' -f1 | xargs`
+
+	local _pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
+
+	test -n "$_lines" && {
+		echo "ip rule del from $_ip pref $_pref table $_table_id" >> $_release_script
+		echo "ip route flush table $_table_id 2>/dev/null" >> $_release_script
+
+		cmd="ip rule del from $_ip pref $_pref 2>/dev/null"
+		echo "$cmd" >> $_setup_script
+
+		cmd="ip route flush table $_table_id 2>/dev/null"
+		echo "$cmd" >> $_setup_script
+
+		cmd="ip rule add from $_ip pref $_pref table $_table_id"
+		echo "$cmd || {" >> $_setup_script
+		echo "    echo \"$cmd - failed \$ret\"" >> $_setup_script
+		echo "    exit \$ret" >> $_setup_script
+		echo "}" >> $_setup_script
+	}
+	local _l
+	for _l in $_lines; do
+		local _line=`echo -n "$_config" | head -n $_l | tail -n 1`
+		local _dest=`echo -n "$_line" | cut -d ' ' -f 2`
+		local _gw=`echo -n "$_line" | cut -d ' ' -f 3`
+
+		local _via=""
+		test -n "$_gw" && {
+			_via="via $_gw"
+		}
+
+		cmd="ip route add $_dest $_via dev $_iface table $_table_id"
+		echo "$cmd || {" >> $_setup_script
+		echo "    echo \"$cmd - failed \$ret\"" >> $_setup_script
+		echo "    exit \$ret" >> $_setup_script
+		echo "}" >> $_setup_script
+	done
+
+	$_setup_script
+	return $?;
 }
 
 case "$1" in
@@ -298,31 +352,10 @@ case "$1" in
 		exit 1;
 	}
 
-	config=`cat $CTDB_PER_IP_ROUTING_CONF`
-	lines=`echo -n "$config" | grep -n "^$ip " | cut -d ':' -f1 | xargs`
-
-	pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
-
-	test -n "$lines" && {
-		echo "ip rule del from $ip pref $pref table $table_id" >> $release_script
-		echo "ip route flush table $table_id 2>/dev/null" >> $release_script
-
-		ip rule del from $ip pref $pref 2>/dev/null
-		ip rule add from $ip pref $pref table $table_id
-		ip route flush table $table_id 2>/dev/null
+	setup_per_ip_routing $ip $iface $table_id $release_script $setup_script || {
+		echo "$0: $1: setup_per_ip_routing $ip $iface $table_id $release_script $setup_script - failed"
+		exit 1;
 	}
-	for l in $lines; do
-		line=`echo -n "$config" | head -n $l | tail -n 1`
-		dest=`echo -n "$line" | cut -d ' ' -f 2`
-		gw=`echo -n "$line" | cut -d ' ' -f 3`
-
-		via=""
-		test -n "$gw" && {
-			via="via $gw"
-		}
-
-		ip route add $dest $via dev $iface table $table_id
-	done
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
@@ -357,32 +390,10 @@ case "$1" in
 		exit 1;
 	}
 
-	config=`cat $CTDB_PER_IP_ROUTING_CONF`
-	lines=`echo -n "$config" | grep -n "^$ip " | cut -d ':' -f1 | xargs`
-
-	pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
-
-	test -n "$lines" && {
-		echo "ip rule del from $ip pref $pref table $table_id" >> $release_script
-		echo "ip route flush table $table_id 2>/dev/null" >> $release_script
-
-		ip rule del from $ip pref $pref 2>/dev/null
-		ip rule add from $ip pref $pref table $table_id
-		ip route flush table $table_id 2>/dev/null
+	setup_per_ip_routing $ip $niface $table_id $release_script $setup_script || {
+		echo "$0: $1: setup_per_ip_routing $ip $iface $table_id $release_script $setup_script - failed"
+		exit 1;
 	}
-	for l in $lines; do
-		line=`echo -n "$config" | head -n $l | tail -n 1`
-		dest=`echo -n "$line" | cut -d ' ' -f 2`
-		gw=`echo -n "$line" | cut -d ' ' -f 3`
-
-		via=""
-		test -n "$gw" && {
-			via="via $gw"
-		}
-
-		ip route add $dest $via dev $niface table $table_id
-	done
-
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
 
