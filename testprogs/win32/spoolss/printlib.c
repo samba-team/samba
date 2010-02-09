@@ -668,6 +668,44 @@ void print_printprocessor_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
 	}
 }
 
+void print_datatypes_info_1(PDATATYPES_INFO_1 info)
+{
+	printf("\tDataTypes Name\t= %s\n", info->pName);
+
+	return;
+}
+
+void print_datatypes_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
+{
+	DWORD i;
+	PDATATYPES_INFO_1 buffer1 = NULL;
+
+	if (!buffer) {
+		return;
+	}
+
+	switch (level) {
+	case 1:
+		buffer1 = (PDATATYPES_INFO_1)buffer;
+		break;
+	default:
+		break;
+	}
+
+	printf("DataTypes Info Level %d:\n", level);
+
+	switch (level) {
+	case 1:
+		for (i=0; i<count; i++) {
+			print_datatypes_info_1(&buffer1[i]);
+			printf("\n");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void print_driver_info_1(PDRIVER_INFO_1 info)
 {
 	printf("\tDriver Name\t= %s\n\n",	info->pName);
