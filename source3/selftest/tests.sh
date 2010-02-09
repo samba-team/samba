@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # This script generates a list of testsuites that should be run as part of 
 # the Samba 3 test suite.
 
