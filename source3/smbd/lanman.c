@@ -1459,7 +1459,7 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 			DEBUG(4,("fill_srv_info[%d] %20s %8x %25s %15s\n",
 				i, s->name, s->type, s->comment, s->domain));
 
-			if (data_len <= buf_len) {
+			if (data_len < buf_len) {
 				counted++;
 				fixed_len += f_len;
 				string_len += s_len;
@@ -1665,7 +1665,7 @@ static bool api_RNetServerEnum3(connection_struct *conn, uint16 vuid,
 			DEBUG(4,("fill_srv_info[%d] %20s %8x %25s %15s\n",
 				i, s->name, s->type, s->comment, s->domain));
 
-			if (data_len <= buf_len) {
+			if (data_len < buf_len) {
 				counted++;
 				fixed_len += f_len;
 				string_len += s_len;
@@ -2030,7 +2030,7 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 		if( lp_browseable( i ) && lp_snum_ok( i ) && (strlen(servicename_dos) < 13)) {
 			total++;
 			data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
-			if (data_len <= buf_len) {
+			if (data_len < buf_len) {
 				counted++;
 				fixed_len += f_len;
 				string_len += s_len;
