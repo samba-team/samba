@@ -45,6 +45,7 @@ static struct {
 } options;
 
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
+#define LONGTIMELIMIT() timeval_current_ofs(options.timelimit*10, 0)
 
 #ifdef CTDB_VERS
 static int control_version(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -996,7 +997,6 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 }
 
 
-
 static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn)
 {
 	struct ctdb_all_public_ips *ips;
@@ -1055,7 +1055,7 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
        	nodes = list_of_active_nodes_except_pnn(ctdb, nodemap, tmp_ctx, pnn);
 	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
 					nodes, 0,
-					TIMELIMIT(),
+					LONGTIMELIMIT(),
 					false, data,
 					NULL, NULL,
 					NULL);
@@ -1065,7 +1065,7 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 		return -1;
 	}
 
-	ret = ctdb_ctrl_takeover_ip(ctdb, TIMELIMIT(), pnn, &ip);
+	ret = ctdb_ctrl_takeover_ip(ctdb, LONGTIMELIMIT(), pnn, &ip);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to take over IP on node %d\n", pnn));
 		talloc_free(tmp_ctx);
