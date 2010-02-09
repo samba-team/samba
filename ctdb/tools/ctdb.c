@@ -1939,13 +1939,15 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+static uint32_t ipreallocate_finished;
+
 /*
   handler for receiving the response to ipreallocate
 */
 static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
-	exit(0);
+	ipreallocate_finished = 1;
 }
 
 static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
@@ -2056,6 +2058,7 @@ again:
 		goto again;
 	} 
 
+	ipreallocate_finished = 0;
 	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
@@ -2066,6 +2069,9 @@ again:
 	/* this loop will terminate when we have received the reply */
 	while (timeval_elapsed(&tv) < 3.0) {	
 		event_loop_once(ctdb->ev);
+	}
+	if (ipreallocate_finished == 1) {
+		return 0;
 	}
 
 	DEBUG(DEBUG_INFO,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
@@ -2129,6 +2135,7 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 
 	struct ctdb_node_map *nodemap=NULL;
 
+
 	/* check if the node is already enabled */
 	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
@@ -2155,6 +2162,7 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 		}
 
 	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED);
+
 	ret = control_ipreallocate(ctdb, argc, argv);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
