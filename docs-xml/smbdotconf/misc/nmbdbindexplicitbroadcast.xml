@@ -7,11 +7,10 @@
 	<para>
 	This option causes <citerefentry><refentrytitle>nmbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> to explicitly bind to the
-	broadcast address of the local subnets. This is needed to make nmbd
+	broadcast address of the local subnets. This can be used to make nmbd
 	work correctly in combination with the <smbconfoption name="socket address"/> option.
-	You should not need to unset this option.
 	</para>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
