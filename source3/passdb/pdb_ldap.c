@@ -3833,7 +3833,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	}
 
 	filter = talloc_asprintf(mem_ctx,
-				 "(&(|(objectclass=%s)(sambaGroupType=%d))(|",
+				 "(&(objectclass=%s)(sambaGroupType=%d)(|",
 				 LDAP_OBJ_GROUPMAP, type);
 
 	for (i=0; i<num_members; i++)
