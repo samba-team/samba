@@ -1765,6 +1765,83 @@ only use %d.\n", count, FD_SETSIZE));
 }
 
 /****************************************************************************
+ List of packets we're processing this select.
+***************************************************************************/
+
+struct processed_packet {
+	struct processed_packet *next;
+	struct processed_packet *prev;
+	enum packet_type packet_type;
+	struct in_addr ip;
+	int packet_id;
+};
+
+/****************************************************************************
+ Have we seen this before ?
+***************************************************************************/
+
+static bool is_processed_packet(struct processed_packet *processed_packet_list,
+				struct packet_struct *packet)
+{
+	struct processed_packet *p = NULL;
+
+	for (p = processed_packet_list; p; p = p->next) {
+		if (ip_equal_v4(p->ip, packet->ip) && p->packet_type == packet->packet_type) {
+			if ((p->packet_type == NMB_PACKET) &&
+				(p->packet_id ==
+					packet->packet.nmb.header.name_trn_id)) {
+				return true;
+			} else if ((p->packet_type == DGRAM_PACKET) &&
+				(p->packet_id ==
+					packet->packet.dgram.header.dgm_id)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/****************************************************************************
+ Keep a list of what we've seen before.
+***************************************************************************/
+
+static bool store_processed_packet(struct processed_packet **pp_processed_packet_list,
+				struct packet_struct *packet)
+{
+	struct processed_packet *p = SMB_MALLOC_P(struct processed_packet);
+	if (!p) {
+		return false;
+	}
+	p->packet_type = packet->packet_type;
+	p->ip = packet->ip;
+	if (packet->packet_type == NMB_PACKET) {
+		p->packet_id = packet->packet.nmb.header.name_trn_id;
+	} else if (packet->packet_type == DGRAM_PACKET) {
+		p->packet_id = packet->packet.dgram.header.dgm_id;
+	} else {
+		return false;
+	}
+
+	DLIST_ADD(*pp_processed_packet_list, p);
+	return true;
+}
+
+/****************************************************************************
+ Throw away what we've seen before.
+***************************************************************************/
+
+static void free_processed_packet_list(struct processed_packet **pp_processed_packet_list)
+{
+	struct processed_packet *p = NULL, *next = NULL;
+
+	for (p = *pp_processed_packet_list; p; p = next) {
+		next = p->next;
+		DLIST_REMOVE(*pp_processed_packet_list, p);
+		SAFE_FREE(p);
+	}
+}
+
+/****************************************************************************
   Listens for NMB or DGRAM packets, and queues them.
   return True if the socket is dead
 ***************************************************************************/
@@ -1784,6 +1861,7 @@ bool listen_for_packets(bool run_election)
 #ifndef SYNC_DNS
 	int dns_fd;
 #endif
+	struct processed_packet *processed_packet_list = NULL;
 
 	if(listen_set == NULL || rescan_listen_set) {
 		if(create_listen_fdset(&listen_set, &sock_array, &listen_number, &maxfd)) {
@@ -1906,6 +1984,16 @@ bool listen_for_packets(bool run_election)
 			}
 		}
 
+
+		if (is_processed_packet(processed_packet_list, packet)) {
+			DEBUG(7,("discarding duplicate packet from %s:%d\n",
+				inet_ntoa(packet->ip),packet->port));
+			free_packet(packet);
+			continue;
+		}
+
+		store_processed_packet(&processed_packet_list, packet);
+
 		/*
 		 * 0,2,4,... are unicast sockets
 		 * 1,3,5,... are broadcast sockets
@@ -1926,6 +2014,7 @@ bool listen_for_packets(bool run_election)
 		queue_packet(packet);
 	}
 
+	free_processed_packet_list(&processed_packet_list);
 	return False;
 }
 
