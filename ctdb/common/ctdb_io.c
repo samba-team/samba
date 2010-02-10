@@ -194,8 +194,7 @@ static void queue_io_write(struct ctdb_queue *queue)
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			if (pkt->length != pkt->full_length) {
 				/* partial packet sent - we have to drop it */
-				TLIST_REMOVE(queue->out_queue, queue->out_queue_tail,
-					     pkt);
+				DLIST_REMOVE(queue->out_queue, pkt);
 				queue->out_queue_length--;
 				talloc_free(pkt);
 			}
@@ -214,7 +213,7 @@ static void queue_io_write(struct ctdb_queue *queue)
 			return;
 		}
 
-		TLIST_REMOVE(queue->out_queue, queue->out_queue_tail, pkt);
+		DLIST_REMOVE(queue->out_queue, pkt);
 		queue->out_queue_length--;
 		talloc_free(pkt);
 	}
@@ -295,7 +294,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 		EVENT_FD_WRITEABLE(queue->fde);
 	}
 
-	TLIST_ADD_END(queue->out_queue, queue->out_queue_tail, pkt);
+	DLIST_ADD_END(queue->out_queue, pkt, NULL);
 
 	queue->out_queue_length++;
 

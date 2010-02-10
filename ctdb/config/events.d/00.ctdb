@@ -29,11 +29,21 @@ case "$1" in
 	;;
 
     monitor)
+	# We should never enter swap, so SwapTotal == SwapFree.
+	if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
+	    echo We are swapping:
+	    cat /proc/meminfo
+	    ps auxfww
+	fi
+
 	# monitor that we are not running out of memory
 	[ -z "$CTDB_MONITOR_FREE_MEMORY" ] || {
 		FREE_MEM=`free -m | grep "buffers/cache" | while read A B C D ;do /bin/echo -n $D ; done`
 		[ `expr "$FREE_MEM" "<" "$CTDB_MONITOR_FREE_MEMORY"` != "0" ] && {
 			echo "OOM. Free:$FREE_MEM while CTDB treshold is $CTDB_MONITOR_FREE_MEMORY"
+			cat /proc/meminfo
+			ps auxfww
+			echo m > /proc/sysrq-trigger
 			ctdb disable
 			sleep 3
 			ctdb shutdown
