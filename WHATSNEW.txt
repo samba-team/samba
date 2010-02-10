@@ -142,6 +142,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 7084: Fix storing of create time on directories in an EA in new
       create time code.
     * BUG 7104: "wide links" and "unix extensions" are incompatible.
+    * BUG 7122: Fix reading of large browselist.
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -160,6 +161,7 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 7098: Fix results of 'smbclient -L' with a large browse list.
+    * BUG 7116: Add pdb_ldap performance fixes.
     * BUG 7119: Support large browselist.
 
 
