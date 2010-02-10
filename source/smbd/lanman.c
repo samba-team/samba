@@ -1352,7 +1352,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 }
 
 
-static bool srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
+static int srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
 {
 	return(strcmp(s1->name,s2->name));
 }
