@@ -41,6 +41,8 @@ const char *errstr(DWORD error)
 		return "ERROR_INVALID_NAME";
 	case ERROR_INVALID_LEVEL:
 		return "ERROR_INVALID_LEVEL";
+	case ERROR_INVALID_DATA:
+		return "ERROR_INVALID_DATA";
 	case ERROR_MORE_DATA:
 		return "ERROR_MORE_DATA";
 #ifdef ERROR_INVALID_DATATYPE
