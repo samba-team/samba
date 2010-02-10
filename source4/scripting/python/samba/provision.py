@@ -1172,9 +1172,17 @@ def provision(setup_dir, message, session_info,
         smbconf = param.default_path()
 
     # only install a new smb.conf if there isn't one there already
-    if not os.path.exists(smbconf):
+    if os.path.exists(smbconf):
+        # JHT calls me up often enough with weird errors, because he
+        # uses an empty smb.conf. --abartlet
+        data = open(smbconf, 'r').read()
+        data = data.lstrip()
+        if data is None or data == "":
+            make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
+                         targetdir, sid_generator, useeadb)
+    else: 
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                     targetdir, sid_generator,useeadb)
+                     targetdir, sid_generator, useeadb)
 
     lp = param.LoadParm()
     lp.load(smbconf)
