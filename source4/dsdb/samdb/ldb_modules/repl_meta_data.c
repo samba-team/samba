@@ -3783,8 +3783,7 @@ static int replmd_prepare_commit(struct ldb_module *module)
 	/* walk the list backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
 	 * start of the list */
-	DLIST_TAIL(replmd_private->la_list,la);
-	for (; la; la=prev) {
+	for (la = DLIST_TAIL(replmd_private->la_list); la; la=prev) {
 		prev = DLIST_PREV(la);
 		DLIST_REMOVE(replmd_private->la_list, la);
 		ret = replmd_process_linked_attribute(module, la);
