@@ -51,6 +51,22 @@ do { \
 	if ((p) && ((p) != (list))) (p)->next = (p)->prev = NULL; \
 } while (0)
 
+#define DLIST_HEAD(p, result_head) \
+do { \
+	(result_head) = (p); \
+	while (DLIST_PREV(result_head)) (result_head) = (result_head)->prev; \
+} while(0)
+
+/* return the last element in the list */
+#define DLIST_TAIL(list, result_tail) \
+do { \
+	(result_tail) = (list); \
+	while ((result_tail) && (result_tail)->next) (result_tail) = (result_tail)->next; \
+} while (0);
+
+/* return the previous element in the list. */
+#define DLIST_PREV(p) ((p)?(p)->prev:NULL)
+
 /* promote an element to the top of the list */
 #define DLIST_PROMOTE(list, p) \
 do { \
