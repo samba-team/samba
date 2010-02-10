@@ -4969,10 +4969,10 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	/*
-	 * By default don't support explicit binding to broadcast
- 	 * addresses (until the nmbd "process twice" bug is fixed).
+	 * By default support explicit binding to broadcast
+ 	 * addresses.
  	 */
-	Globals.bNmbdBindExplicitBroadcast = false;
+	Globals.bNmbdBindExplicitBroadcast = true;
 
 	if (asprintf(&s, "Samba %s", samba_version_string()) < 0) {
 		smb_panic("init_globals: ENOMEM");
