@@ -159,6 +159,7 @@ void print_secdesc(SECURITY_DESCRIPTOR *secdesc)
 
 	printf("\tRevision\t= 0x%x\n", secdesc->Revision);
 	printf("\tSbz1\t\t= 0x%x\n", secdesc->Sbz1);
+	printf("\tControl\t\t= 0x%x\n", secdesc->Control);
 #if 0
 	print_sid("\tOwner\t\t= ", secdesc->Owner);
 	print_sid("\tGroup\t\t= ",secdesc->Group);
@@ -587,11 +588,9 @@ void print_printer_info_2(PPRINTER_INFO_2 info)
 	printf("\tDevice Mode Information\n");
 	printf("\t-----------------------\n");
 	print_devmode(info->pDevMode);
-#if 0
 	printf("\tSecurity Descriptor Information\n");
 	printf("\t-------------------------------\n");
 	print_secdesc(info->pSecurityDescriptor);
-#endif
 	return;
 }
 
