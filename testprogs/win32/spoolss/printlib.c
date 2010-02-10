@@ -22,6 +22,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <assert.h>
+#include <sddl.h>
 
 void print_devmode(DEVMODE *pDevModeIn)
 {
@@ -125,23 +126,26 @@ void print_acl(const char* str, ACL *acl)
 	return;
 }
 
-void print_sid(const char* str, SID *sid)
+void PrintLastError();
+
+void print_sid(LPSTR str, PSID sid)
 {
-	DWORD	i = 0;
+	LPSTR sid_string;
 
 	printf("%s\n", str);
-	printf("0x%x\n", sid);
-	if (sid == NULL)
+
+	if (sid == NULL) {
+		printf("(null sid)\n");
 		return;
-	printf("\t\tRevision\t\t0x%x\n", sid->Revision);
-	printf("\t\tSubAuthorityCount\t0x%x\n", sid->SubAuthorityCount);
-	printf("\t\tSubAuthority\n\t");
-	while (i < sid->SubAuthorityCount) {
-		printf("\t0x%x", sid->SubAuthority[i]);
-		if (i%4 == 3)
-			printf("\n\t");
-		i++;
 	}
+
+	if (!ConvertSidToStringSid(sid, &sid_string)) {
+		PrintLastError();
+		return;
+	}
+
+	printf("%s\n", sid_string);
+	LocalFree(sid_string);
 
 	return;
 }
