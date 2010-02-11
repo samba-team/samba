@@ -85,7 +85,8 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	int ret;
 	struct ldb_result *res;
 	const char *tmp_path, *path;
-	int fd, i;
+	int fd;
+	unsigned int i;
 	const char *attrs[] = { "sAMAccountName", NULL };
 	const char *realm = lp_realm(service->task->lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
