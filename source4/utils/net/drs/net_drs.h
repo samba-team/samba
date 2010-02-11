@@ -24,6 +24,26 @@
 
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 
+
+/**
+ * Check for critical error
+ */
+#define NET_DRS_CHECK_GOTO(_condition,_label,_msg) \
+	do { \
+	if (!(_condition)) { \
+		d_printf(__location__": "#_condition" - %s\n", _msg); \
+		goto _label; \
+	} \
+	} while (0)
+
+/**
+ * check allocated memory macro
+ */
+#define NET_DRS_NOMEM_GOTO(_ptr,_label) \
+	NET_DRS_CHECK_GOTO(_ptr, _label, "Not enough memory!")
+
+
+
 /* net drs commands context */
 struct net_drs_context {
 	struct net_context 	*net_ctx;
