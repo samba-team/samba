@@ -145,7 +145,7 @@ static bool check_executable(const char *dir, const char *name)
 	}
 
 	if (!(st.st_mode & S_IXUSR)) {
-		DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", full));
+		DEBUG(DEBUG_DEBUG,("Event script %s is not executable. Ignoring this event script\n", full));
 		errno = ENOEXEC;
 		talloc_free(full);
 		return false;
@@ -365,7 +365,7 @@ static int child_run_script(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, cmdstr);
 	child_state.script_running = cmdstr;
 
-	DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
+	DEBUG(DEBUG_DEBUG,("Executing event script %s\n",cmdstr));
 
 	if (current->status) {
 		ret = current->status;
