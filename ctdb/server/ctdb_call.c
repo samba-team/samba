@@ -246,7 +246,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_ltdb_header header;
 
-	DEBUG(DEBUG_INFO,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
+	DEBUG(DEBUG_DEBUG,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
 
 	ZERO_STRUCT(header);
 	header.rsn = rsn + 1;
@@ -332,7 +332,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		ctdb_fatal(ctdb, "ctdb_req_dmaster to non-lmaster");
 	}
 
-	DEBUG(DEBUG_INFO,("pnn %u dmaster request on %08x for %u from %u\n", 
+	DEBUG(DEBUG_DEBUG,("pnn %u dmaster request on %08x for %u from %u\n", 
 		 ctdb->pnn, ctdb_hash(&key), c->dmaster, c->hdr.srcnode));
 
 	/* its a protocol error if the sending node is not the current dmaster */
