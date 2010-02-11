@@ -30,11 +30,13 @@ case "$1" in
 
     monitor)
 	# We should never enter swap, so SwapTotal == SwapFree.
-	if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
-	    echo We are swapping:
-	    cat /proc/meminfo
-	    ps auxfww
-	fi
+	[ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] && {
+	    if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
+		echo We are swapping:
+		cat /proc/meminfo
+		ps auxfww
+	    fi
+	}
 
 	# monitor that we are not running out of memory
 	[ -z "$CTDB_MONITOR_FREE_MEMORY" ] || {
