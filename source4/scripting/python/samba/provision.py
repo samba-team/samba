@@ -35,6 +35,7 @@ import socket
 import param
 import registry
 import urllib
+import shutil
 
 import ldb
 
@@ -294,7 +295,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.idmapdb = os.path.join(paths.private_dir, lp.get("idmap database") or "idmap.ldb")
     paths.secrets = os.path.join(paths.private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
-    paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
+    paths.dns = os.path.join(paths.private_dir, "dns", dnsdomain + ".zone")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
     paths.krb5conf = os.path.join(paths.private_dir, "krb5.conf")
@@ -646,7 +647,8 @@ def secretsdb_self_join(secretsdb, domain,
       secretsdb.add(msg)
 
 
-def secretsdb_setup_dns(secretsdb, setup_path, realm, dnsdomain, 
+def secretsdb_setup_dns(secretsdb, setup_path, private_dir,
+                        realm, dnsdomain,
                         dns_keytab_path, dnspass):
     """Add DNS specific bits to a secrets database.
     
@@ -654,6 +656,11 @@ def secretsdb_setup_dns(secretsdb, setup_path, realm, dnsdomain,
     :param setup_path: Setup path function
     :param machinepass: Machine password
     """
+    try:
+        os.unlink(os.path.join(private_dir, dns_keytab_path))
+    except OSError:
+        pass
+
     setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), { 
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
@@ -1163,6 +1170,10 @@ def provision(setup_dir, message, session_info,
         wheel_gid = findnss_gid(["wheel", "adm"])
     else:
         wheel_gid = findnss_gid([wheel])
+    try:
+        bind_gid = findnss_gid(["bind", "named"])
+    except KeyError:
+        bind_gid = None
 
     if targetdir is not None:
         if (not os.path.exists(os.path.join(targetdir, "etc"))):
@@ -1194,6 +1205,8 @@ def provision(setup_dir, message, session_info,
                         serverdn=serverdn, sitename=sitename)
 
     paths = provision_paths_from_lp(lp, names.dnsdomain)
+
+    paths.bind_gid = bind_gid
 
     if hostip is None:
         try:
@@ -1348,7 +1361,8 @@ def provision(setup_dir, message, session_info,
                             secure_channel_type=SEC_CHAN_BDC)
 
         if serverrole == "domain controller":
-            secretsdb_setup_dns(secrets_ldb, setup_path, 
+            secretsdb_setup_dns(secrets_ldb, setup_path,
+                                paths.private_dir,
                                 realm=names.realm, dnsdomain=names.dnsdomain,
                                 dns_keytab_path=paths.dns_keytab,
                                 dnspass=dnspass)
@@ -1358,13 +1372,13 @@ def provision(setup_dir, message, session_info,
 
             # Only make a zone file on the first DC, it should be replicated
             # with DNS replication
-            create_zone_file(paths.dns, setup_path, dnsdomain=names.dnsdomain,
+            create_zone_file(message, paths, setup_path, dnsdomain=names.dnsdomain,
                              hostip=hostip,
                              hostip6=hostip6, hostname=names.hostname,
                              realm=names.realm,
                              domainguid=domainguid, ntdsguid=names.ntdsguid)
 
-            create_named_conf(paths.namedconf, setup_path, realm=names.realm,
+            create_named_conf(paths, setup_path, realm=names.realm,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
 
             create_named_txt(paths.namedtxt, setup_path, realm=names.realm,
@@ -1386,6 +1400,16 @@ def provision(setup_dir, message, session_info,
 
     #Now commit the secrets.ldb to disk
     secrets_ldb.transaction_commit()
+
+    # the commit creates the dns.keytab, now chown it
+    dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
+    if (os.path.isfile(dns_keytab_path) and paths.bind_gid is not None):
+        try:
+            os.chmod(dns_keytab_path, 0640)
+            os.chown(dns_keytab_path, -1, paths.bind_gid)
+        except OSError:
+            message("Failed to chown %s to bind gid %u" % (dns_keytab_path, paths.bind_gid))
+
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
@@ -1459,12 +1483,12 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
             {"S4_LDAPI_URI": ldapi_uri})
 
 
-def create_zone_file(path, setup_path, dnsdomain, 
+def create_zone_file(message, paths, setup_path, dnsdomain,
                      hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid):
     """Write out a DNS zone file, from the info in the current database.
 
-    :param path: Path of the new zone file.
+    :param paths: paths object
     :param setup_path: Setup path function.
     :param dnsdomain: DNS Domain name
     :param domaindn: DN of the Domain
@@ -1491,7 +1515,22 @@ def create_zone_file(path, setup_path, dnsdomain,
         hostip_base_line = ""
         hostip_host_line = ""
 
-    setup_file(setup_path("provision.zone"), path, {
+    dns_dir = os.path.dirname(paths.dns)
+
+    try:
+        shutil.rmtree(dns_dir, True)
+    except OSError:
+        pass
+
+    os.mkdir(dns_dir, 0770)
+
+    if paths.bind_gid is not None:
+        try:
+            os.chown(dns_dir, -1, paths.bind_gid)
+        except OSError:
+            message("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
+
+    setup_file(setup_path("provision.zone"), paths.dns, {
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
             "REALM": realm,
@@ -1506,12 +1545,12 @@ def create_zone_file(path, setup_path, dnsdomain,
         })
 
 
-def create_named_conf(path, setup_path, realm, dnsdomain,
+def create_named_conf(paths, setup_path, realm, dnsdomain,
                       private_dir):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
     
-    :param path: Path of the new named.conf file.
+    :param paths: all paths
     :param setup_path: Setup path function.
     :param realm: Realm name
     :param dnsdomain: DNS Domain name
@@ -1519,11 +1558,12 @@ def create_named_conf(path, setup_path, realm, dnsdomain,
     :param keytab_name: File name of DNS keytab file
     """
 
-    setup_file(setup_path("named.conf"), path, {
+    setup_file(setup_path("named.conf"), paths.namedconf, {
             "DNSDOMAIN": dnsdomain,
             "REALM": realm,
+            "ZONE_FILE": paths.dns,
             "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
-            "PRIVATE_DIR": private_dir
+            "NAMED_CONF": paths.namedconf
             })
 
 def create_named_txt(path, setup_path, realm, dnsdomain,
