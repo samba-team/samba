@@ -1617,7 +1617,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		me->values[0].length = PyString_Size(set_obj);
 		me->values[0].data = talloc_memdup(me, 
-			(uint8_t *)PyString_AsString(set_obj), me->values[0].length);
+			(uint8_t *)PyString_AsString(set_obj), me->values[0].length+1);
 	} else if (PySequence_Check(set_obj)) {
 		int i;
 		me->num_values = PySequence_Size(set_obj);
@@ -1627,7 +1627,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 
 			me->values[i].length = PyString_Size(obj);
 			me->values[i].data = talloc_memdup(me, 
-				(uint8_t *)PyString_AsString(obj), me->values[i].length);
+				(uint8_t *)PyString_AsString(obj), me->values[i].length+1);
 		}
 	} else {
 		talloc_free(me);
@@ -1772,7 +1772,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 			el->values = talloc_array(el, struct ldb_val, 1);
 			el->values[0].length = PyString_Size(py_elements);
 			el->values[0].data = talloc_memdup(el, 
-				(uint8_t *)PyString_AsString(py_elements), el->values[0].length);
+				(uint8_t *)PyString_AsString(py_elements), el->values[0].length+1);
 		} else if (PySequence_Check(py_elements)) {
 			el->num_values = PySequence_Size(py_elements);
 			el->values = talloc_array(el, struct ldb_val, el->num_values);
@@ -1787,7 +1787,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 				}
 				el->values[i].length = PyString_Size(item);
 				el->values[i].data = talloc_memdup(el, 
-					(uint8_t *)PyString_AsString(item), el->values[i].length);
+					(uint8_t *)PyString_AsString(item), el->values[i].length+1);
 			}
 		} else {
 			PyErr_SetString(PyExc_TypeError, 
