@@ -850,25 +850,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		return NULL;
 	}
 
-	/*
-	 * If widelinks are disallowed we need to canonicalise the connect
-	 * path here to ensure we don't have any symlinks in the
-	 * connectpath. We will be checking all paths on this connection are
-	 * below this directory. We must do this after the VFS init as we
-	 * depend on the realpath() pointer in the vfs table. JRA.
-	 */
-	if (!lp_widelinks(snum)) {
-		if (!canonicalize_connect_path(conn)) {
-			DEBUG(0, ("canonicalize_connect_path failed "
-			"for service %s, path %s\n",
-				lp_servicename(snum),
-				conn->connectpath));
-			conn_free(conn);
-			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
-			return NULL;
-		}
-	}
-
 	if ((!conn->printer) && (!conn->ipc)) {
 		conn->notify_ctx = notify_init(conn, server_id_self(),
 					       smbd_messaging_context(),
@@ -877,6 +858,14 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	}
 
 /* ROOT Activities: */	
+	if (lp_unix_extensions() && lp_widelinks(snum)) {
+		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
+			"These parameters are incompatible. "
+			"Disabling wide links for this share.\n",
+			lp_servicename(snum) ));
+		lp_do_parameter(snum, "wide links", "False");
+	}
+
 	/*
 	 * Enforce the max connections parameter.
 	 */
@@ -923,6 +912,26 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			yield_connection(conn, lp_servicename(snum));
 			conn_free(conn);
 			*pstatus = NT_STATUS_ACCESS_DENIED;
+			return NULL;
+		}
+	}
+
+	/*
+	 * If widelinks are disallowed we need to canonicalise the connect
+	 * path here to ensure we don't have any symlinks in the
+	 * connectpath. We will be checking all paths on this connection are
+	 * below this directory. We must do this after the VFS init as we
+	 * depend on the realpath() pointer in the vfs table. JRA.
+	 */
+	if (!lp_widelinks(snum)) {
+		if (!canonicalize_connect_path(conn)) {
+			DEBUG(0, ("canonicalize_connect_path failed "
+			"for service %s, path %s\n",
+				lp_servicename(snum),
+				conn->connectpath));
+			yield_connection(conn, lp_servicename(snum));
+			conn_free(conn);
+			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			return NULL;
 		}
 	}
@@ -1038,14 +1047,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		vfs_ChDir(conn,conn->connectpath);
 	}
 #endif
-
-	if (lp_unix_extensions() && lp_widelinks(snum)) {
-		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
-			"These parameters are incompatible. "
-			"Disabling wide links for this share.\n",
-			lp_servicename(snum) ));
-		lp_do_parameter(snum, "wide links", "False");
-	}
 
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted withing a share path have
