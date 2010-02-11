@@ -862,13 +862,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	 * in the logs. */
 	widelinks_warning(snum);
 
-	if (lp_unix_extensions() && lp_widelinks(snum)) {
-		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
-			"These parameters are incompatible. "
-			"Wide links will be disabled for this share.\n",
-			lp_servicename(snum) ));
-	}
-
 	/*
 	 * Enforce the max connections parameter.
 	 */
