@@ -82,6 +82,7 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 		return;
 	}
 
+	unlink(tmp_path);
 	fd = open(tmp_path, O_CREAT|O_TRUNC|O_WRONLY, 0444);
 	if (fd == -1) {
 		DEBUG(1,(__location__ ": Unable to open %s - %s\n", tmp_path, strerror(errno)));
@@ -106,6 +107,7 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	close(fd);
 
 	if (file_compare(tmp_path, path) == true) {
+		unlink(tmp_path);
 		talloc_free(tmp_ctx);
 		return;
 	}
