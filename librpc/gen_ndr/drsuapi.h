@@ -171,15 +171,15 @@ struct drsuapi_DsReplicaObjectIdentifier {
 #define DRSUAPI_DS_REPLICA_SYNC_PREEMPTED ( 0x00800000 )
 
 struct drsuapi_DsReplicaSyncRequest1 {
-	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [unique] */
+	struct drsuapi_DsReplicaObjectIdentifier *naming_context;/* [ref] */
 	struct GUID source_dsa_guid;
-	const char * other_info;/* [unique,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * source_dsa_dns;/* [unique,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t options;
 };
 
 union drsuapi_DsReplicaSyncRequest {
 	struct drsuapi_DsReplicaSyncRequest1 req1;/* [case] */
-}/* [switch_type(int32)] */;
+}/* [switch_type(uint32)] */;
 
 struct drsuapi_DsReplicaHighWaterMark {
 	uint64_t tmp_highest_usn;
@@ -1590,8 +1590,8 @@ struct drsuapi_DsUnbind {
 struct drsuapi_DsReplicaSync {
 	struct {
 		struct policy_handle *bind_handle;/* [ref] */
-		int32_t level;
-		union drsuapi_DsReplicaSyncRequest req;/* [switch_is(level)] */
+		uint32_t level;
+		union drsuapi_DsReplicaSyncRequest *req;/* [ref,switch_is(level)] */
 	} in;
 
 	struct {

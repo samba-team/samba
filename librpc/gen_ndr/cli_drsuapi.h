@@ -31,16 +31,16 @@ struct tevent_req *rpccli_drsuapi_DsReplicaSync_send(TALLOC_CTX *mem_ctx,
 						     struct tevent_context *ev,
 						     struct rpc_pipe_client *cli,
 						     struct policy_handle *_bind_handle /* [in] [ref] */,
-						     int32_t _level /* [in]  */,
-						     union drsuapi_DsReplicaSyncRequest _req /* [in] [switch_is(level)] */);
+						     uint32_t _level /* [in]  */,
+						     union drsuapi_DsReplicaSyncRequest *_req /* [in] [ref,switch_is(level)] */);
 NTSTATUS rpccli_drsuapi_DsReplicaSync_recv(struct tevent_req *req,
 					   TALLOC_CTX *mem_ctx,
 					   WERROR *result);
 NTSTATUS rpccli_drsuapi_DsReplicaSync(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *bind_handle /* [in] [ref] */,
-				      int32_t level /* [in]  */,
-				      union drsuapi_DsReplicaSyncRequest req /* [in] [switch_is(level)] */,
+				      uint32_t level /* [in]  */,
+				      union drsuapi_DsReplicaSyncRequest *req /* [in] [ref,switch_is(level)] */,
 				      WERROR *werror);
 struct tevent_req *rpccli_drsuapi_DsGetNCChanges_send(TALLOC_CTX *mem_ctx,
 						      struct tevent_context *ev,
