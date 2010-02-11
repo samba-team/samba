@@ -1011,8 +1011,6 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 
 void queue_packet(struct packet_struct *packet)
 {
-	struct packet_struct *p;
-
 	DLIST_ADD_END(packet_queue, packet, struct packet_struct *);
 }
 
