@@ -446,7 +446,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			      " of key %s while transaction is active\n",
 			      (char *)call->key.dptr));
 		} else {
-			DEBUG(DEBUG_INFO,("pnn %u starting migration of %08x to %u\n",
+			DEBUG(DEBUG_DEBUG,("pnn %u starting migration of %08x to %u\n",
 				 ctdb->pnn, ctdb_hash(&(call->key)), c->hdr.srcnode));
 			ctdb_call_send_dmaster(ctdb_db, c, &header, &(call->key), &data);
 			talloc_free(data.dptr);
