@@ -1173,8 +1173,9 @@ def provision(setup_dir, message, session_info,
 
     # only install a new smb.conf if there isn't one there already
     if os.path.exists(smbconf):
-        # JHT calls me up often enough with weird errors, because he
-        # uses an empty smb.conf. --abartlet
+        # if Samba Team members can't figure out the weird errors
+        # loading an empty smb.conf gives, then we need to be smarter.
+        # Pretend it just didn't exist --abartlet
         data = open(smbconf, 'r').read()
         data = data.lstrip()
         if data is None or data == "":
