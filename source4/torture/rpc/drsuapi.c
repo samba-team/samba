@@ -436,7 +436,7 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 
 			r.in.req.req1.naming_context		= &nc;
 			r.in.req.req1.source_dsa_guid		= priv->dcinfo.ntds_guid;
-			r.in.req.req1.other_info		= NULL;
+			r.in.req.req1.source_dsa_dns		= NULL;
 			r.in.req.req1.options			= 16;
 			break;
 		}
