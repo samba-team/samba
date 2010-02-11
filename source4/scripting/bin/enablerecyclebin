@@ -15,6 +15,7 @@ from samba import getopt as options, Ldb
 from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
 import sys
 import ldb
+from samba.auth import system_session
 
 parser = optparse.OptionParser("enablerecyclebin <URL>")
 sambaopts = options.SambaOptions(parser)
@@ -35,7 +36,7 @@ url = args[0]
 lp_ctx = sambaopts.get_loadparm()
 
 creds = credopts.get_credentials(lp_ctx)
-sam_ldb = Ldb(url, credentials=creds, lp=lp_ctx)
+sam_ldb = Ldb(url, session_info=system_session(), credentials=creds, lp=lp_ctx)
 
 # get the rootDSE
 res = sam_ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
