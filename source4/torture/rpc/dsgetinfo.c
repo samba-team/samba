@@ -172,6 +172,7 @@ static bool test_getinfo(struct torture_context *tctx,
 	union drsuapi_DsReplicaInfo info;
 	enum drsuapi_DsReplicaInfoType info_type;
 	int i;
+	int invalid_levels = 0;
 	struct {
 		int32_t level;
 		int32_t infotype;
@@ -278,14 +279,24 @@ static bool test_getinfo(struct torture_context *tctx,
 		r.out.info_type		= &info_type;
 
 		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
-		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaGetInfo");
-		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == DCERPC_FAULT_INVALID_TAG) {
+
+		if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_LEVEL)) {
+			/* this is a not yet supported level */
+			torture_comment(tctx,
+					"DsReplicaGetInfo level %d and/or infotype %d not yet supported by server\n",
+					array[i].level, array[i].infotype);
+			invalid_levels++;
+		} else if (!NT_STATUS_IS_OK(status) && p->last_fault_code == DCERPC_FAULT_INVALID_TAG) {
 			torture_comment(tctx,
 					"DsReplicaGetInfo level %d and/or infotype %d not supported by server\n",
 					array[i].level, array[i].infotype);
-		} else {
+		}/* else {
 			torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaGetInfo");
-		}
+		}*/
+	}
+
+	if (invalid_levels > 0) {
+		return false;
 	}
 
 	return true;
