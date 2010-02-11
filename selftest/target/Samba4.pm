@@ -580,7 +580,9 @@ sub provision_raw_step1($$)
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log level = $ctx->{server_loglevel}
-	lanman auth = Yes";
+	lanman auth = Yes
+	dnsupdate:rndc reload command = /bin/true
+";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
 		print CONFFILE "
