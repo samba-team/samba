@@ -222,9 +222,9 @@ interface drsuapi
 	} drsuapi_DsReplicaSyncOptions;
 
 	typedef struct {
-		drsuapi_DsReplicaObjectIdentifier *naming_context;
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		GUID source_dsa_guid;
-		astring *other_info; /* I assume this is related to the repsFromTo1OtherInfo dns_name */
+		astring *source_dsa_dns; /* Source DSA dns_name in <guid>._msdcs.<domain_dns> form */
 		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaSyncRequest1;
 
