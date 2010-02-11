@@ -4842,6 +4842,8 @@ static WERROR fill_printer_driver_info8(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+#if 0 /* disabled until marshalling issues are resolved - gd */
 /********************************************************************
  ********************************************************************/
 
@@ -4960,7 +4962,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- * fill a spoolss_DriverInfo101 sttruct
+ * fill a spoolss_DriverInfo101 struct
  ********************************************************************/
 
 static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
@@ -5015,7 +5017,7 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
-
+#endif
 /********************************************************************
  ********************************************************************/
 
@@ -5090,9 +5092,11 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	case 8:
 		result = fill_printer_driver_info8(mem_ctx, &r->info8, driver, servername);
 		break;
+#if 0 /* disabled until marshalling issues are resolved - gd */
 	case 101:
 		result = fill_printer_driver_info101(mem_ctx, &r->info101, driver, servername);
 		break;
+#endif
 	default:
 		result = WERR_UNKNOWN_LEVEL;
 		break;
