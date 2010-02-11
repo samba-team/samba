@@ -158,9 +158,11 @@
       <varlistentry><term>-f &lt;file&gt;</term>
         <listitem>
           <para>
-            Specify an alternative nodes file to use instead of
-            <filename>/etc/ctdb/nodes</filename>.  This overrides the
-            CTDB_NODES_FILE environment variable.
+            Specify an alternative nodes file to use instead of the
+            default.  This option overrides the CTDB_NODES_FILE
+            environment variable.  See the discussion of
+            <filename>/etc/ctdb/nodes</filename> in the FILES section
+            for more details.
 	  </para>
         </listitem>
       </varlistentry>
@@ -223,8 +225,10 @@
       <varlistentry><term><envar>CTDB_NODES_FILE</envar></term>
         <listitem>
           <para>
-            Name of alternative nodes file to use instead of
-            <filename>/etc/ctdb/nodes</filename>.
+	    Name of alternative nodes file to use instead of the
+            default.  See the discussion of
+            <filename>/etc/ctdb/nodes</filename> in the FILES section
+            for more details.
 	  </para>
         </listitem>
       </varlistentry>
@@ -240,6 +244,16 @@
           <para>
             Default file containing a list of each node's IP address
             or hostname.
+	  </para>
+	  <para>
+	    Actually, the default is
+            <filename>$<envar>CTDB_BASE</envar>/nodes</filename>,
+            where <envar>$CTDB_BASE</envar> defaults to
+            <filename>/etc/ctdb</filename>.  If a relative path is
+            given (via the -f option or <envar>$CTDB_BASE</envar>) and
+            no corresponding file exists relative to the current
+            directory then the file is also searched for in the
+            <filename>$<envar>CTDB_BASE</envar></filename> directory.
 	  </para>
         </listitem>
       </varlistentry>
