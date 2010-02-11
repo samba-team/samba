@@ -857,10 +857,11 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					       conn);
 	}
 
-/* ROOT Activities: */	
-	/* explicitly check with lp_widelinks() instead of using
-	 * lp_safe_widelinks() here so that we can correctly warn
+/* ROOT Activities: */
+	/* explicitly check widelinks here so that we can correctly warn
 	 * in the logs. */
+	widelinks_warning(snum);
+
 	if (lp_unix_extensions() && lp_widelinks(snum)) {
 		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
@@ -973,7 +974,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	 * below this directory. We must do this after the VFS init as we
 	 * depend on the realpath() pointer in the vfs table. JRA.
 	 */
-	if (!lp_safe_widelinks(snum)) {
+	if (!lp_widelinks(snum)) {
 		if (!canonicalize_connect_path(conn)) {
 			DEBUG(0, ("canonicalize_connect_path failed "
 			"for service %s, path %s\n",

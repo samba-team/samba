@@ -928,7 +928,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	}
 
 	/* Check for widelinks allowed. */
-	if (!lp_safe_widelinks(SNUM(conn))) {
+	if (!lp_widelinks(SNUM(conn))) {
 		    const char *conn_rootdir;
 
 		    conn_rootdir = SMB_VFS_CONNECTPATH(conn, fname);
