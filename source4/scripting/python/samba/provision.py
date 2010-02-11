@@ -1524,6 +1524,8 @@ def create_zone_file(message, paths, setup_path, dnsdomain,
         pass
 
     os.mkdir(dns_dir, 0770)
+    # chmod needed to cope with umask
+    os.chmod(dns_dir, 0770)
 
     if paths.bind_gid is not None:
         try:
