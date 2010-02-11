@@ -90,3 +90,16 @@ KCC_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/kcc/, \
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/kcc/kcc_service_proto.h,$(KCC_SRV_OBJ_FILES:.o=.c)))
 
+#######################
+# Start SUBSYSTEM DNS_UPDATE_SRV
+[MODULE::DNS_UPDATE_SRV]
+INIT_FUNCTION = server_service_dnsupdate_init
+SUBSYSTEM = service
+PRIVATE_DEPENDENCIES = \
+		SAMDB \
+		process_model
+# End SUBSYSTEM DNS_UPDATE_SRV
+#######################
+
+DNS_UPDATE_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/dns/, \
+		dns_update.o)
