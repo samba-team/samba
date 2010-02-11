@@ -117,6 +117,8 @@ const char *errstr(DWORD error)
 		return "RPC_S_SERVER_UNAVAILABLE";
 	case RPC_S_INVALID_NET_ADDR:
 		return "RPC_S_INVALID_NET_ADDR";
+	case RPC_S_CALL_FAILED:
+		return "RPC_S_CALL_FAILED";
 	default:
 		break;
 	}
