@@ -297,6 +297,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
     paths.dns = os.path.join(paths.private_dir, "dns", dnsdomain + ".zone")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
+    paths.namedconf_update = os.path.join(paths.private_dir, "named.conf.update")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
     paths.krb5conf = os.path.join(paths.private_dir, "krb5.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
@@ -1563,8 +1564,11 @@ def create_named_conf(paths, setup_path, realm, dnsdomain,
             "REALM": realm,
             "ZONE_FILE": paths.dns,
             "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
-            "NAMED_CONF": paths.namedconf
+            "NAMED_CONF": paths.namedconf,
+            "NAMED_CONF_UPDATE": paths.namedconf_update
             })
+
+    setup_file(setup_path("named.conf.update"), paths.namedconf_update)
 
 def create_named_txt(path, setup_path, realm, dnsdomain,
                       private_dir, keytab_name):
