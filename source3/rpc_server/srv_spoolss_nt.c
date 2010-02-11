@@ -2270,8 +2270,8 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 
 	if (!StrCaseCmp(value, "Architecture")) {
 		*type = REG_SZ;
-
-		data->string = talloc_strdup(mem_ctx, "Windows NT x86");
+		data->string = talloc_strdup(mem_ctx,
+			lp_parm_const_string(GLOBAL_SECTION_SNUM, "spoolss", "architecture", SPOOLSS_ARCHITECTURE_NT_X86));
 		W_ERROR_HAVE_NO_MEMORY(data->string);
 
 		return WERR_OK;
