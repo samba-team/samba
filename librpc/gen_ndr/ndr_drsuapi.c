@@ -42,6 +42,7 @@ _PUBLIC_ void ndr_print_drsuapi_DrsOptions(struct ndr_print *ndr, const char *na
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_GET_ANC", DRSUAPI_DRS_GET_ANC, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_GET_NC_SIZE", DRSUAPI_DRS_GET_NC_SIZE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_LOCAL_ONLY", DRSUAPI_DRS_LOCAL_ONLY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_NONGC_RO_REP", DRSUAPI_DRS_NONGC_RO_REP, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_SYNC_BYNAME", DRSUAPI_DRS_SYNC_BYNAME, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_REF_OK", DRSUAPI_DRS_REF_OK, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DRS_FULL_SYNC_NOW", DRSUAPI_DRS_FULL_SYNC_NOW, r);
