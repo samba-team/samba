@@ -126,7 +126,7 @@ int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 
 	d_printf("%s\n", site_name);
 	if (site_options) {
-		// TODO: print meaningfull site options here
+		/* TODO: print meaningfull site options here */
 		d_printf("Current Site Options: 0x%X\n", site_options);
 	} else {
 		d_printf("Current Site Options: (none)\n");
