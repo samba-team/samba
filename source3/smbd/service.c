@@ -916,26 +916,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		}
 	}
 
-	/*
-	 * If widelinks are disallowed we need to canonicalise the connect
-	 * path here to ensure we don't have any symlinks in the
-	 * connectpath. We will be checking all paths on this connection are
-	 * below this directory. We must do this after the VFS init as we
-	 * depend on the realpath() pointer in the vfs table. JRA.
-	 */
-	if (!lp_widelinks(snum)) {
-		if (!canonicalize_connect_path(conn)) {
-			DEBUG(0, ("canonicalize_connect_path failed "
-			"for service %s, path %s\n",
-				lp_servicename(snum),
-				conn->connectpath));
-			yield_connection(conn, lp_servicename(snum));
-			conn_free(conn);
-			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
-			return NULL;
-		}
-	}
-
 /* USER Activites: */
 	if (!change_to_user(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
@@ -968,6 +948,24 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			DEBUG(1,("preexec gave %d - failing connection\n",
 				 ret));
 			*pstatus = NT_STATUS_ACCESS_DENIED;
+			goto err_root_exit;
+		}
+	}
+
+	/*
+	 * If widelinks are disallowed we need to canonicalise the connect
+	 * path here to ensure we don't have any symlinks in the
+	 * connectpath. We will be checking all paths on this connection are
+	 * below this directory. We must do this after the VFS init as we
+	 * depend on the realpath() pointer in the vfs table. JRA.
+	 */
+	if (!lp_widelinks(snum)) {
+		if (!canonicalize_connect_path(conn)) {
+			DEBUG(0, ("canonicalize_connect_path failed "
+			"for service %s, path %s\n",
+				lp_servicename(snum),
+				conn->connectpath));
+			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			goto err_root_exit;
 		}
 	}
