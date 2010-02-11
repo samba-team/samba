@@ -704,3 +704,34 @@ void *rep_memmem(const void *haystack, size_t haystacklen,
 }
 #endif
 
+#ifndef HAVE_VDPRINTF
+int vdprintf(int fd, const char *format, va_list ap)
+{
+	char *s = NULL;
+	int ret;
+
+	vasprintf(&s, format, ap);
+	if (s == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	ret = write(fd, s, strlen(s));
+	free(s);
+	return ret;
+}
+#endif
+
+#ifndef HAVE_DPRINTF
+int dprintf(int fd, const char *format, ...)
+{
+	int ret;
+	va_list ap;
+
+	va_start(ap, format);
+	ret = vdprintf(fd, format, ap);
+	va_end(ap);
+
+	return ret;
+}
+#endif
+
