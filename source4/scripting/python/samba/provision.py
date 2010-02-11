@@ -42,7 +42,7 @@ import ldb
 from samba.auth import system_session, admin_session
 from samba import glue, version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted, read_and_sub_file, setup_file
-from samba import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008
+from samba import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008, DS_DC_FUNCTION_2008_R2
 from samba.dcerpc import security
 from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
