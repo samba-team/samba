@@ -601,6 +601,11 @@ _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 _PUBLIC_ int fdprintf(int fd, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 _PUBLIC_ bool large_file_support(const char *path);
 
+/*
+  compare two files, return true if the two files have the same content
+ */
+bool file_compare(const char *path1, const char *path2);
+
 /* The following definitions come from lib/util/util.c  */
 
 
