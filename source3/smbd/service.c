@@ -893,6 +893,18 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		return NULL;
 	}  
 
+	/*
+	 * Fix compatibility issue pointed out by Volker.
+	 * We pass the conn->connectpath to the preexec
+	 * scripts as a parameter, so attempt to canonicalize
+	 * it here before calling the preexec scripts.
+	 * We ignore errors here, as it is possible that
+	 * the conn->connectpath doesn't exist yet and
+	 * the preexec scripts will create them.
+	 */
+
+	(void)canonicalize_connect_path(conn);
+
 	/* Preexecs are done here as they might make the dir we are to ChDir
 	 * to below */
 	/* execute any "root preexec = " line */
