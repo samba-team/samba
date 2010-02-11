@@ -23,7 +23,7 @@ python_glue_OBJ_FILES = $(pyscriptsrcdir)/pyglue.o
 
 $(python_glue_OBJ_FILES): CFLAGS+=-I$(ldbsrcdir)
 
-_PY_FILES = $(shell find $(pyscriptsrcdir)/samba ../lib/subunit/python -name "*.py")
+_PY_FILES = $(shell find $(pyscriptsrcdir)/samba ../lib/subunit/python -type f -name "*.py")
 
 $(eval $(foreach pyfile, $(_PY_FILES),$(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(subst ../lib/subunit/python,,$(pyfile))),$(pyfile))))
 
