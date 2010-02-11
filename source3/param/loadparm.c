@@ -9891,3 +9891,19 @@ void lp_set_passdb_backend(const char *backend)
 {
 	string_set(&Globals.szPassdbBackend, backend);
 }
+
+/*******************************************************************
+ Safe wide links checks.
+ This helper function always verify the validity of wide links,
+ even after a configuration file reload.
+********************************************************************/
+
+bool lp_safe_widelinks(int snum)
+{
+	/* wide links is always incompatible with unix extensions */
+	if (lp_unix_extensions()) {
+		return false;
+	}
+
+	return lp_widelinks(snum);
+}
