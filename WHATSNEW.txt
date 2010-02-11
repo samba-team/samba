@@ -94,6 +94,7 @@ smb.conf changes
    debug hires timestamp	       Changed Default yes
    ldap deref			       New	       auto
    ldap follow referral		       New	       auto
+   nmbd bind explicit broadcast	       New	       no
    wide links			       Changed Default no
 
 
