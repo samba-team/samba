@@ -36,6 +36,7 @@ from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session
 import samba.getopt as options
 from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, find_setup_dir
+from samba import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008, DS_DOMAIN_FUNCTION_2008_R2
 
 # how do we make this case insensitive??
 
