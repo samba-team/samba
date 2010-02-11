@@ -316,8 +316,11 @@ static int ldb_match_extended(struct ldb_context *ldb,
 	struct ldb_message_element *el;
 
 	if (tree->u.extended.dnAttributes) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb: dnAttributes extended match not supported yet");
-		return -1;
+		/* FIXME: We really need to find out what this ":dn" part in
+		 * an extended match means and how to handle it. For now print
+		 * only a warning to have s3 winbind and other tools working
+		 * against us. - Matthias */
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb: dnAttributes extended match not supported yet");
 	}
 	if (tree->u.extended.rule_id == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb: no-rule extended matches not supported yet");
