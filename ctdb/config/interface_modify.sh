@@ -47,7 +47,7 @@ delete_ip_from_iface()
 		    echo "kept secondary $_i on dev $_iface"
 		else
 		    echo "re-adding secondary address $_i to dev $_iface"
-		    /sbin/ip addr add $_i dev $_iface || _failed=1
+		    /sbin/ip addr add $_i brd + dev $_iface || _failed=1
 		fi
 	    done
 	}
