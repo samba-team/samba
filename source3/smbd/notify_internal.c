@@ -101,7 +101,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	}
 
 	notify->db_onelevel = db_open(notify, lock_path("notify_onelevel.tdb"),
-				      0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+				      0, TDB_CLEAR_IF_FIRST,
 				      O_RDWR|O_CREAT, 0644);
 	if (notify->db_onelevel == NULL) {
 		talloc_free(notify);
