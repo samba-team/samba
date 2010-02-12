@@ -447,8 +447,15 @@ add_ip_to_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
-	local _readd_base="$CTDB_BASE/state/interface_modify.$_iface.readd.d"
-	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _lockfile="$_state_dir/$_iface.flock"
+	local _readd_base="$_state_dir/$_iface.readd.d"
+
+	mkdir -p $_state_dir || {
+		ret=$?
+		echo "Failed to mkdir -p $_state_dir - $ret"
+		return $ret
+	}
 
 	test -f $_lockfile || {
 		touch $_lockfile
@@ -463,8 +470,15 @@ delete_ip_from_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
-	local _readd_base="$CTDB_BASE/state/interface_modify.$_iface.readd.d"
-	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _lockfile="$_state_dir/$_iface.flock"
+	local _readd_base="$_state_dir/$_iface.readd.d"
+
+	mkdir -p $_state_dir || {
+		ret=$?
+		echo "Failed to mkdir -p $_state_dir - $ret"
+		return $ret
+	}
 
 	test -f $_lockfile || {
 		touch $_lockfile
@@ -480,8 +494,15 @@ setup_iface_ip_readd_script()
 	local _ip=$2
 	local _maskbits=$3
 	local _readd_script=$4
-	local _readd_base="$CTDB_BASE/state/interface_modify.$_iface.readd.d"
-	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _lockfile="$_state_dir/$_iface.flock"
+	local _readd_base="$_state_dir/$_iface.readd.d"
+
+	mkdir -p $_state_dir || {
+		ret=$?
+		echo "Failed to mkdir -p $_state_dir - $ret"
+		return $ret
+	}
 
 	test -f $_lockfile || {
 		touch $_lockfile
