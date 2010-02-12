@@ -68,6 +68,11 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->nt_hash = NULL;
 
+	cred->lm_response.data = NULL;
+	cred->lm_response.length = 0;
+	cred->nt_response.data = NULL;
+	cred->nt_response.length = 0;
+
 	cred->ccache = NULL;
 	cred->client_gss_creds = NULL;
 	cred->keytab = NULL;
