@@ -136,7 +136,7 @@ case "$1" in
 			_IFACE=`echo $_IP_HELD | sed -e "s/.*\s//"`
 			_NM=`echo $_IP_HELD | sed -e "s/.*$_IP\///" -e "s/\s.*//"`
 			echo "Removing public address $_IP/$_NM from device $_IFACE"
-			/sbin/ip addr del $_IP/$_NM dev $_IFACE
+			delete_ip_from_iface $_IFACE $_IP $_NM
 		}
 	done
 	;;
