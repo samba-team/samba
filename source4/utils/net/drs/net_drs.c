@@ -137,13 +137,61 @@ static bool net_drs_DsUnbind(struct net_drs_connection *conn)
 	struct drsuapi_DsUnbind r;
 	struct policy_handle bind_handle;
 
+	SMB_ASSERT(conn->drs_pipe);
+
 	ZERO_STRUCT(r);
 	r.out.bind_handle = &bind_handle;
 
 	r.in.bind_handle = &conn->bind_handle;
 	dcerpc_drsuapi_DsUnbind(conn->drs_pipe, conn, &r);
 
+	/* free dcerpc pipe in case we get called more than once */
+	talloc_free(conn->drs_pipe);
+	conn->drs_pipe = NULL;
+
 	return true;
+}
+
+/**
+ * Destroy drsuapi connection
+ */
+static int net_drs_connection_destructor(struct net_drs_connection *conn)
+{
+	if (conn->drs_pipe) {
+		net_drs_DsUnbind(conn);
+	}
+	return 0;
+}
+
+/**
+ * Create DRSUAPI connection to target DC
+ * @return ptr to net_drs_connection or NULL on failure
+ */
+struct net_drs_connection * net_drs_connect_dc(struct net_drs_context *drs_ctx, const char *dc_name)
+{
+	struct net_drs_connection *conn = NULL;
+
+	conn = talloc_zero(drs_ctx, struct net_drs_connection);
+	NET_DRS_NOMEM_GOTO(conn, failed);
+
+	/* init binding */
+	conn->binding = talloc_zero(conn, struct dcerpc_binding);
+	conn->binding->transport = NCACN_IP_TCP;
+	conn->binding->flags = drs_ctx->drs_conn->binding->flags;
+	conn->binding->host = talloc_strdup(conn, dc_name);
+	conn->binding->target_hostname = conn->binding->host;
+
+	if (!net_drs_DsBind(drs_ctx, conn)) {
+		goto failed;
+	}
+
+	talloc_set_destructor(conn, net_drs_connection_destructor);
+
+	return conn;
+
+failed:
+	talloc_free(conn);
+	return NULL;
 }
 
 /**
