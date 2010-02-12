@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
-#include "net_drs.h"
+#include "utils/net/drs/net_drs.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb_wrap.h"
 #include "system/filesys.h"

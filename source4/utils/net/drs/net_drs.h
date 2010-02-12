@@ -51,6 +51,6 @@ struct net_drs_context {
 };
 
 
-#include "net_drs_proto.h"
+#include "utils/net/drs/net_drs_proto.h"
 
 #endif /* NET_DRS_H_ */

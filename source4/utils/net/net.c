@@ -51,7 +51,7 @@
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
 #include "scripting/python/modules.h"
-#include "drs/net_drs.h"
+#include "utils/net/drs/net_drs.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
