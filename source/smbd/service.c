@@ -921,25 +921,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}
 
-	/*
-	 * If widelinks are disallowed we need to canonicalise the connect
-	 * path here to ensure we don't have any symlinks in the
-	 * connectpath. We will be checking all paths on this connection are
-	 * below this directory. We must do this after the VFS init as we
-	 * depend on the realpath() pointer in the vfs table. JRA.
-	 */
-	if (!lp_widelinks(snum)) {
-		if (!canonicalize_connect_path(conn)) {
-			DEBUG(0, ("canonicalize_connect_path failed "
-			"for service %s, path %s\n",
-				lp_servicename(snum),
-				conn->connectpath));
-			conn_free(conn);
-			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
-			return NULL;
-		}
-	}
-
 	if ((!conn->printer) && (!conn->ipc)) {
 		conn->notify_ctx = notify_init(conn, server_id_self(),
 					       smbd_messaging_context(),
@@ -947,7 +928,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					       conn);
 	}
 
-/* ROOT Activities: */	
+/* ROOT Activities: */
+	/* explicitly check widelinks here so that we can correctly warn
+	 * in the logs. */
+	widelinks_warning(snum);
+
 	/*
 	 * Enforce the max connections parameter.
 	 */
@@ -972,6 +957,18 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		*pstatus = NT_STATUS_INTERNAL_DB_ERROR;
 		return NULL;
 	}  
+
+	/*
+	 * Fix compatibility issue pointed out by Volker.
+	 * We pass the conn->connectpath to the preexec
+	 * scripts as a parameter, so attempt to canonicalize
+	 * it here before calling the preexec scripts.
+	 * We ignore errors here, as it is possible that
+	 * the conn->connectpath doesn't exist yet and
+	 * the preexec scripts will create them.
+	 */
+
+	(void)canonicalize_connect_path(conn);
 
 	/* Preexecs are done here as they might make the dir we are to ChDir
 	 * to below */
@@ -1030,6 +1027,24 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			DEBUG(1,("preexec gave %d - failing connection\n",
 				 ret));
 			*pstatus = NT_STATUS_ACCESS_DENIED;
+			goto err_root_exit;
+		}
+	}
+
+	/*
+	 * If widelinks are disallowed we need to canonicalise the connect
+	 * path here to ensure we don't have any symlinks in the
+	 * connectpath. We will be checking all paths on this connection are
+	 * below this directory. We must do this after the VFS init as we
+	 * depend on the realpath() pointer in the vfs table. JRA.
+	 */
+	if (!lp_widelinks(snum)) {
+		if (!canonicalize_connect_path(conn)) {
+			DEBUG(0, ("canonicalize_connect_path failed "
+			"for service %s, path %s\n",
+				lp_servicename(snum),
+				conn->connectpath));
+			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			goto err_root_exit;
 		}
 	}
@@ -1102,14 +1117,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		vfs_ChDir(conn,conn->connectpath);
 	}
 #endif
-
-	if (lp_unix_extensions() && lp_widelinks(snum)) {
-		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
-			"These parameters are incompatible. "
-			"Disabling wide links for this share.\n",
-			lp_servicename(snum) ));
-		lp_do_parameter(snum, "wide links", "False");
-	}
 
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted withing a share path have
