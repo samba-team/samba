@@ -922,6 +922,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo101(struct ndr_push *ndr, 
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->provider));
 			ndr->flags = _flags_save_string;
 		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
@@ -945,7 +946,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo101(struct ndr_push *ndr, 
 		if (r->file_info) {
 			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->file_info));
 #if 0
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->file_count));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->file_count));
 #endif
 			for (cntr_file_info_1 = 0; cntr_file_info_1 < r->file_count; cntr_file_info_1++) {
 				NDR_CHECK(ndr_push_spoolss_DriverFileInfo(ndr, NDR_SCALARS, &r->file_info[cntr_file_info_1]));
