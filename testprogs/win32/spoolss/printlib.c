@@ -594,6 +594,22 @@ void print_printer_info_2(PPRINTER_INFO_2 info)
 	return;
 }
 
+void print_printer_info_3(PPRINTER_INFO_3 info)
+{
+	printf("\tSecurity Descriptor Information\n");
+	printf("\t-------------------------------\n");
+	print_secdesc(info->pSecurityDescriptor);
+	return;
+}
+
+void print_printer_info_4(PPRINTER_INFO_4 info)
+{
+	printf("\tServer Name\t\t= %s\n",	info->pServerName);
+	printf("\tPrinter Name\t\t= %s\n",	info->pPrinterName);
+	printf("\tAttributes\t\t= 0x%x\n",	info->Attributes);
+	return;
+}
+
 void print_printer_info_5(PPRINTER_INFO_5 info)
 {
 	printf("\tPrinter Name\t\t\t= %s\n",		info->pPrinterName);
@@ -638,6 +654,7 @@ void print_printer_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
 	PPRINTER_INFO_6	buffer6 = NULL;
 	PPRINTER_INFO_7	buffer7 = NULL;
 	PPRINTER_INFO_8	buffer8 = NULL;
+	PPRINTER_INFO_9	buffer9 = NULL;
 
 	if (!buffer) {
 		return;
@@ -668,6 +685,9 @@ void print_printer_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
 	case 8:
 		buffer8 = (PPRINTER_INFO_8)buffer;
 		break;
+	case 9:
+		buffer9 = (PPRINTER_INFO_9)buffer;
+		break;
 	default:
 		break;
 	}
@@ -687,7 +707,6 @@ void print_printer_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
 			printf("\n");
 		}
 		break;
-#if 0
 	case 3:
 		for (i=0; i<count; i++) {
 			print_printer_info_3(&buffer3[i]);
@@ -700,7 +719,6 @@ void print_printer_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
 			printf("\n");
 		}
 		break;
-#endif
 	case 5:
 		for (i=0; i<count; i++) {
 			print_printer_info_5(&buffer5[i]);
@@ -722,6 +740,12 @@ void print_printer_info_bylevel(DWORD level, LPBYTE buffer, DWORD count)
 	case 8:
 		for (i=0; i<count; i++) {
 			print_printer_info_8(&buffer8[i]);
+			printf("\n");
+		}
+		break;
+	case 9:
+		for (i=0; i<count; i++) {
+			print_printer_info_9(&buffer9[i]);
 			printf("\n");
 		}
 		break;
