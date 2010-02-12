@@ -32,7 +32,7 @@ struct drs_extension_flag {
 	const char 	*win_name;
 };
 
-const struct drs_extension_flag drs_repl_flags[] = {
+static const struct drs_extension_flag drs_repl_flags[] = {
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_BASE, 			"DRS_EXT_BASE"),
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION, 	"DRS_EXT_ASYNCREPL"),
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI, 		"DRS_EXT_REMOVEAPI"),
@@ -69,7 +69,7 @@ const struct drs_extension_flag drs_repl_flags[] = {
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_RESERVED_PART3,		"DRS_EXT_RESERVED_FOR_WIN2K_OR_DOTNET_PART3")
 };
 
-const struct drs_extension_flag drs_repl_flags_ex[] = {
+static const struct drs_extension_flag drs_repl_flags_ex[] = {
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_ADAM,			"DRS_EXT_ADAM"),
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2,		"DRS_EXT_LH_BETA2"),
 	DEFINE_FLAG(DRSUAPI_SUPPORTED_EXTENSION_RECYCLE_BIN,		"DRS_EXT_RECYCLE_BIN")
