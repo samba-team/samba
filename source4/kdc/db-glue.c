@@ -751,7 +751,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *dnsdomain;
-	char *realm;
+	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
 	DATA_BLOB password_utf16;
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
@@ -781,19 +781,22 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	/* use 'whenCreated' */
 	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
-	/* use '???' */
-	entry_ex->entry.created_by.principal = NULL;
+	/* use 'kadmin' for now (needed by mit_samba) */
+	krb5_make_principal(context,
+			    &entry_ex->entry.created_by.principal,
+			    realm, "kadmin", NULL);
 
 	entry_ex->entry.valid_start = NULL;
 
 	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
 
 	if (direction == INBOUND) {
-		realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
 		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
 
 	} else { /* OUTBOUND */
 		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+		/* replace realm */
+		talloc_free(realm);
 		realm = strupper_talloc(mem_ctx, dnsdomain);
 		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
 	}
