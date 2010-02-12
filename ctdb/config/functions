@@ -447,13 +447,14 @@ add_ip_to_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
+	local _readd_base="$CTDB_BASE/state/interface_modify.$_iface.readd.d"
 	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
 
 	test -f $_lockfile || {
 		touch $_lockfile
 	}
 
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh add "$_iface" "$_ip" "$_maskbits"
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh add "$_iface" "$_ip" "$_maskbits" "$_readd_base"
 	return $?
 }
 
@@ -462,13 +463,31 @@ delete_ip_from_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
+	local _readd_base="$CTDB_BASE/state/interface_modify.$_iface.readd.d"
 	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
 
 	test -f $_lockfile || {
 		touch $_lockfile
 	}
 
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh delete "$_iface" "$_ip" "$_maskbits"
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh delete "$_iface" "$_ip" "$_maskbits" "$_readd_base"
+	return $?
+}
+
+setup_iface_ip_readd_script()
+{
+	local _iface=$1
+	local _ip=$2
+	local _maskbits=$3
+	local _readd_script=$4
+	local _readd_base="$CTDB_BASE/state/interface_modify.$_iface.readd.d"
+	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+
+	test -f $_lockfile || {
+		touch $_lockfile
+	}
+
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh readd_script "$_iface" "$_ip" "$_maskbits" "$_readd_base" "$_readd_script"
 	return $?
 }
 
