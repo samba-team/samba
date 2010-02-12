@@ -93,10 +93,10 @@ int net_drs_bind_cmd(struct net_context *ctx, int argc, const char **argv)
 	}
 
 	d_printf("Bind to %s succeeded.\n", drs_ctx->dc_name);
-	d_printf("Extensions supported (cb=%d):\n", drs_ctx->bind_info_len);
+	d_printf("Extensions supported (cb=%d):\n", drs_ctx->drs_conn->bind_info_len);
 
 	/* Print standard flags */
-	info48 = &drs_ctx->info48;
+	info48 = &drs_ctx->drs_conn->info48;
 	for (i = 0; i < ARRAY_SIZE(drs_repl_flags); i++) {
 		const struct drs_extension_flag *repl_flag = &drs_repl_flags[i];
 		d_printf("  %-60s: %-3s (%s)\n", repl_flag->samba_name,

@@ -97,6 +97,7 @@ int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct net_drs_context *drs_ctx;
+	struct net_drs_connection *drs_conn;
 	struct drsuapi_DsBindInfo48 *info48;
 	struct drsuapi_DsExecuteKCC req;
 	union drsuapi_DsExecuteKCCRequest kcc_req;
@@ -111,7 +112,8 @@ int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 	if (!net_drs_create_context(ctx, argv[0], &drs_ctx)) {
 		return -1;
 	}
-	info48 = &drs_ctx->info48;
+	drs_conn = drs_ctx->drs_conn;
+	info48 = &drs_conn->info48;
 
 	/* check if target DC supports ExecuteKCC */
 	if (!(info48->supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE)) {
@@ -135,14 +137,14 @@ int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 	/* execute KCC */
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(kcc_req);
-	req.in.bind_handle = &drs_ctx->bind_handle;
+	req.in.bind_handle = &drs_conn->bind_handle;
 	req.in.level = 1;
 	req.in.req = &kcc_req;
-	status = dcerpc_drsuapi_DsExecuteKCC(drs_ctx->drs_pipe, drs_ctx, &req);
+	status = dcerpc_drsuapi_DsExecuteKCC(drs_conn->drs_pipe, drs_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(drs_ctx, drs_ctx->drs_pipe->last_fault_code);
+			errstr = dcerpc_errstr(drs_ctx, drs_conn->drs_pipe->last_fault_code);
 		}
 		d_printf("dcerpc_drsuapi_DsExecuteKCC failed - %s.\n", errstr);
 		goto failed;

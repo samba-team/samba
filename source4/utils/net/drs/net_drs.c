@@ -63,7 +63,7 @@ int net_drs_usage(struct net_context *ctx, int argc, const char **argv)
  * Create drsuapi connection to remote DC
  * and fill-in DC capabilities
  */
-static bool net_drs_DsBind(struct net_drs_context *drs_ctx)
+static bool net_drs_DsBind(struct net_drs_context *drs_ctx, struct net_drs_connection *conn)
 {
 	NTSTATUS status;
 	struct GUID bind_guid;
@@ -71,11 +71,11 @@ static bool net_drs_DsBind(struct net_drs_context *drs_ctx)
 	struct drsuapi_DsBindInfoCtr in_bind_ctr;
 	union drsuapi_DsBindInfo *bind_info;
 
-	SMB_ASSERT(drs_ctx->binding != NULL);
+	SMB_ASSERT(conn->binding != NULL);
 
-	status = dcerpc_pipe_connect_b(drs_ctx,
-				       &drs_ctx->drs_pipe,
-				       drs_ctx->binding,
+	status = dcerpc_pipe_connect_b(conn,
+				       &conn->drs_pipe,
+				       conn->binding,
 				       &ndr_table_drsuapi,
 				       drs_ctx->net_ctx->credentials,
 				       drs_ctx->net_ctx->event_ctx,
@@ -91,13 +91,13 @@ static bool net_drs_DsBind(struct net_drs_context *drs_ctx)
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &bind_guid);
 	req.in.bind_guid = &bind_guid;
 	req.in.bind_info = &in_bind_ctr;
-	req.out.bind_handle = &drs_ctx->bind_handle;
+	req.out.bind_handle = &conn->bind_handle;
 
-	status = dcerpc_drsuapi_DsBind(drs_ctx->drs_pipe, drs_ctx, &req);
+	status = dcerpc_drsuapi_DsBind(conn->drs_pipe, conn, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(drs_ctx, drs_ctx->drs_pipe->last_fault_code);
+			errstr = dcerpc_errstr(conn, conn->drs_pipe->last_fault_code);
 		}
 		d_printf("dcerpc_drsuapi_DsBind failed - %s\n", errstr);
 		return false;
@@ -107,19 +107,19 @@ static bool net_drs_DsBind(struct net_drs_context *drs_ctx)
 	}
 
 	/* fill-in remote DC capabilities */
-	ZERO_STRUCT(drs_ctx->info48);
+	ZERO_STRUCT(conn->info48);
 	bind_info = &req.out.bind_info->info;
-	drs_ctx->bind_info_len = req.out.bind_info->length;
-	switch (drs_ctx->bind_info_len) {
+	conn->bind_info_len = req.out.bind_info->length;
+	switch (conn->bind_info_len) {
 	case 48:
-		drs_ctx->info48.supported_extensions_ext = bind_info->info48.supported_extensions_ext;
-		drs_ctx->info48.config_dn_guid = bind_info->info48.config_dn_guid;
+		conn->info48.supported_extensions_ext = bind_info->info48.supported_extensions_ext;
+		conn->info48.config_dn_guid = bind_info->info48.config_dn_guid;
 	case 28:
-		drs_ctx->info48.repl_epoch = bind_info->info28.repl_epoch;
+		conn->info48.repl_epoch = bind_info->info28.repl_epoch;
 	case 24:
-		drs_ctx->info48.supported_extensions = bind_info->info24.supported_extensions;
-		drs_ctx->info48.site_guid = bind_info->info24.site_guid;
-		drs_ctx->info48.pid = bind_info->info24.pid;
+		conn->info48.supported_extensions = bind_info->info24.supported_extensions;
+		conn->info48.site_guid = bind_info->info24.site_guid;
+		conn->info48.pid = bind_info->info24.pid;
 		break;
 	default:
 		d_printf("Error: server returned BindInfo length %d", req.out.bind_info->length);
@@ -132,7 +132,7 @@ static bool net_drs_DsBind(struct net_drs_context *drs_ctx)
 /**
  * Close DRSUAPI connection to remote DC
  */
-static bool net_drs_DsUnbind(struct net_drs_context *drs_ctx)
+static bool net_drs_DsUnbind(struct net_drs_connection *conn)
 {
 	struct drsuapi_DsUnbind r;
 	struct policy_handle bind_handle;
@@ -140,12 +140,11 @@ static bool net_drs_DsUnbind(struct net_drs_context *drs_ctx)
 	ZERO_STRUCT(r);
 	r.out.bind_handle = &bind_handle;
 
-	r.in.bind_handle = &drs_ctx->bind_handle;
-	dcerpc_drsuapi_DsUnbind(drs_ctx->drs_pipe, drs_ctx, &r);
+	r.in.bind_handle = &conn->bind_handle;
+	dcerpc_drsuapi_DsUnbind(conn->drs_pipe, conn, &r);
 
 	return true;
 }
-
 
 /**
  * Open secured LDAP connection to remote DC
@@ -224,18 +223,21 @@ static bool net_drs_ldap_rootdse(struct net_drs_context *drs_ctx)
 static bool net_drs_parse_binding(struct net_drs_context *drs_ctx, const char *dc_binding)
 {
 	NTSTATUS status;
+	struct dcerpc_binding *b;
 
-	status = dcerpc_parse_binding(drs_ctx, dc_binding, &drs_ctx->binding);
+	status = dcerpc_parse_binding(drs_ctx->drs_conn, dc_binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Bad binding supplied %s\n", dc_binding);
 		return false;
 	}
 
-	drs_ctx->binding->transport = NCACN_IP_TCP;
-	drs_ctx->binding->flags |= DCERPC_SIGN | DCERPC_SEAL;
+	b->transport = NCACN_IP_TCP;
+	b->flags |= DCERPC_SIGN | DCERPC_SEAL;
 
 	/* cache target DC name */
-	drs_ctx->dc_name = drs_ctx->binding->target_hostname;
+	drs_ctx->dc_name = b->target_hostname;
+
+	drs_ctx->drs_conn->binding = b;
 
 	return true;
 }
@@ -246,8 +248,8 @@ static bool net_drs_parse_binding(struct net_drs_context *drs_ctx, const char *d
  */
 static int net_drs_context_destructor(struct net_drs_context *drs_ctx)
 {
-	if (drs_ctx->drs_pipe) {
-		net_drs_DsUnbind(drs_ctx);
+	if (drs_ctx->drs_conn && drs_ctx->drs_conn->drs_pipe) {
+		net_drs_DsUnbind(drs_ctx->drs_conn);
 	}
 	return 0;
 }
@@ -268,6 +270,12 @@ bool net_drs_create_context(struct net_context *net_ctx,
 		return false;
 	}
 
+	drs_ctx->drs_conn = talloc_zero(drs_ctx, struct net_drs_connection);
+	if (!drs_ctx->drs_conn) {
+		d_printf(__location__ ": No memory");
+		return false;
+	}
+
 	drs_ctx->net_ctx = net_ctx;
 
 	if (!net_drs_parse_binding(drs_ctx, dc_binding)) {
@@ -284,7 +292,7 @@ bool net_drs_create_context(struct net_context *net_ctx,
 	}
 
 	/* DRSUAPI connection */
-	if (!net_drs_DsBind(drs_ctx)) {
+	if (!net_drs_DsBind(drs_ctx, drs_ctx->drs_conn)) {
 		goto failed;
 	}
 
