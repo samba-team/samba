@@ -5676,7 +5676,6 @@ FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
 FN_LOCAL_BOOL(lp_onlyuser, bOnlyUser)
 FN_LOCAL_PARM_BOOL(lp_manglednames, bMangledNames)
-FN_LOCAL_BOOL(lp_widelinks, bWidelinks)
 FN_LOCAL_BOOL(lp_symlinks, bSymlinks)
 FN_LOCAL_BOOL(lp_syncalways, bSyncAlways)
 FN_LOCAL_BOOL(lp_strict_allocate, bStrictAllocate)
@@ -9889,4 +9888,36 @@ const char *lp_socket_address(void)
 void lp_set_passdb_backend(const char *backend)
 {
 	string_set(&Globals.szPassdbBackend, backend);
+}
+
+/*******************************************************************
+ Safe wide links checks.
+ This helper function always verify the validity of wide links,
+ even after a configuration file reload.
+********************************************************************/
+
+static bool lp_widelinks_internal(int snum)
+{
+	return (bool)(LP_SNUM_OK(snum)? ServicePtrs[(snum)]->bWidelinks :
+			sDefault.bWidelinks);
+}
+
+void widelinks_warning(int snum)
+{
+	if (lp_unix_extensions() && lp_widelinks_internal(snum)) {
+		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
+			"These parameters are incompatible. "
+			"Wide links will be disabled for this share.\n",
+			lp_servicename(snum) ));
+	}
+}
+
+bool lp_widelinks(int snum)
+{
+	/* wide links is always incompatible with unix extensions */
+	if (lp_unix_extensions()) {
+		return false;
+	}
+
+	return lp_widelinks_internal(snum);
 }
