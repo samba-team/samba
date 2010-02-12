@@ -206,8 +206,8 @@ generate_per_ip_routing()
 	local _ipdir="$CTDB_PER_IP_ROUTING_STATE/ips/$_ip"
 
 	table_id=""
-	release_script="$_ipdir/release_script.sh"
-	setup_script="$_ipdir/setup_script.sh"
+	release_script="$_ipdir/per_ip_routing_release.sh"
+	setup_script="$_ipdir/per_ip_routing_setup.sh"
 
 	test x"$_readonly" = x"yes" && {
 		test -d $_ipdir || {
@@ -319,7 +319,7 @@ case "$1" in
 
      shutdown)
 
-	for s in $CTDB_PER_IP_ROUTING_STATE/ips/*/release_script.sh; do
+	for s in $CTDB_PER_IP_ROUTING_STATE/ips/*/per_ip_routing_release.sh; do
 		run_release_script_once "$s"
 	done
 	rm -rf $CTDB_PER_IP_ROUTING_STATE
