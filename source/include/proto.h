@@ -6073,6 +6073,7 @@ void lp_set_posix_pathnames(void);
 enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp);
 void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val);
 int lp_min_receive_file_size(void);
+void widelinks_warning(int snum);
 
 /* The following definitions come from param/params.c  */
 
