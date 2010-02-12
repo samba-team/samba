@@ -7120,13 +7120,22 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 				defer_lock = true;
 			}
 
-			/* This heuristic seems to match W2K3 very well. If a
-			   lock sent with timeout of zero would fail with NT_STATUS_FILE_LOCK_CONFLICT
-			   it pretends we asked for a timeout of between 150 - 300 milliseconds as
-			   far as I can tell. Replacement for do_lock_spin(). JRA. */
+			/* If a lock sent with timeout of zero would fail, and
+			 * this lock has been requested multiple times,
+			 * according to brl_lock_failed() we convert this
+			 * request to a blocking lock with a timeout of between
+			 * 150 - 300 milliseconds.
+			 *
+			 * If lp_lock_spin_time() has been set to 0, we skip
+			 * this blocking retry and fail immediately.
+			 *
+			 * Replacement for do_lock_spin(). JRA. */
 
-			if (br_lck && lp_blocking_locks(SNUM(conn)) && !blocking_lock &&
-					NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT)) {
+			if (br_lck && lp_blocking_locks(SNUM(conn)) &&
+			    lp_lock_spin_time() && !blocking_lock &&
+			    NT_STATUS_EQUAL((status),
+				NT_STATUS_FILE_LOCK_CONFLICT))
+			{
 				defer_lock = true;
 				timeout = lp_lock_spin_time();
 			}
