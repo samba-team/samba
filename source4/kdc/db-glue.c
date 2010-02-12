@@ -180,6 +180,13 @@ static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 
 static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 {
+	/* this function is called only from hdb_free_entry().
+	 * Make sure we neutralize the destructor or we will
+	 * get a double free later when hdb_free_entry() will
+	 * try to call free_hdb_entry() */
+	talloc_set_destructor(entry_ex->ctx, NULL);
+
+	/* now proceed to free the talloc part */
 	talloc_free(entry_ex->ctx);
 }
 
@@ -542,6 +549,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
+	/* make sure we do not have bogus data in there */
+	memset(&entry_ex->entry, 0, sizeof(hdb_entry));
+
 	entry_ex->ctx = p;
 	entry_ex->free_entry = samba_kdc_free_entry;
 
@@ -763,6 +773,9 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
+	/* make sure we do not have bogus data in there */
+	memset(&entry_ex->entry, 0, sizeof(hdb_entry));
+
 	entry_ex->ctx = p;
 	entry_ex->free_entry = samba_kdc_free_entry;
 
@@ -821,8 +834,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			break;
 		}
 	}
-	entry_ex->entry.keys.len = 0;
-	entry_ex->entry.keys.val = NULL;
 
 	if (i < password_blob.count) {
 		Key key;
