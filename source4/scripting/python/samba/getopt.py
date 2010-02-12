@@ -66,7 +66,7 @@ class VersionOptions(optparse.OptionGroup):
 class CredentialsOptions(optparse.OptionGroup):
     """Command line options for specifying credentials."""
     def __init__(self, parser):
-        self.no_pass = False
+        self.no_pass = True
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
         self.add_option("--simple-bind-dn", metavar="DN", action="callback",
                         callback=self._set_simple_bind_dn, type=str,
@@ -94,6 +94,7 @@ class CredentialsOptions(optparse.OptionGroup):
 
     def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)
+        self.no_pass = False
 
     def _set_kerberos(self, option, opt_str, arg, parser):
         if bool(arg) or arg.lower() == "yes":
@@ -111,7 +112,7 @@ class CredentialsOptions(optparse.OptionGroup):
         :return: Credentials object
         """
         self.creds.guess(lp)
-        if not self.no_pass:
+        if self.no_pass:
             self.creds.set_cmdline_callbacks()
         return self.creds
 
@@ -119,7 +120,7 @@ class CredentialsOptionsDouble(CredentialsOptions):
     """Command line options for specifying credentials of two servers."""
     def __init__(self, parser):
         CredentialsOptions.__init__(self, parser)
-        self.no_pass2 = False
+        self.no_pass2 = True
         self.add_option("--simple-bind-dn2", metavar="DN2", action="callback",
                         callback=self._set_simple_bind_dn2, type=str,
                         help="DN to use for a simple bind")
@@ -146,6 +147,7 @@ class CredentialsOptionsDouble(CredentialsOptions):
 
     def _set_password2(self, option, opt_str, arg, parser):
         self.creds2.set_password(arg)
+        self.no_pass2 = False
 
     def _set_kerberos2(self, option, opt_str, arg, parser):
         if bool(arg) or arg.lower() == "yes":
@@ -163,6 +165,6 @@ class CredentialsOptionsDouble(CredentialsOptions):
         :return: Credentials object
         """
         self.creds2.guess(lp)
-        if not self.no_pass2:
+        if self.no_pass2:
             self.creds2.set_cmdline_callbacks()
         return self.creds2
