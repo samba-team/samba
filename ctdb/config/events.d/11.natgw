@@ -11,8 +11,11 @@ loadconfig
 [ -z "$CTDB_NATGW_PUBLIC_IFACE" ] && exit 0
 
 delete_all() {
-	remove_ip $CTDB_NATGW_PUBLIC_IP $CTDB_NATGW_PUBLIC_IFACE
-	remove_ip $CTDB_NATGW_PUBLIC_IP_HOST lo
+	local _ip=`echo $CTDB_NATGW_PUBLIC_IP | cut -d '/' -f1`
+	local _maskbits=`echo $CTDB_NATGW_PUBLIC_IP | cut -d '/' -f2`
+
+	delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits
+	delete_ip_from_iface lo $_ip 32
 
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
