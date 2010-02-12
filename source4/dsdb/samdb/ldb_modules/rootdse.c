@@ -26,6 +26,9 @@
 #include "system/time.h"
 #include "dsdb/samdb/samdb.h"
 #include "version.h"
+#include "dsdb/samdb/ldb_modules/util.h"
+#include "libcli/security/security.h"
+#include "librpc/ndr/libndr.h"
 
 struct private_data {
 	int num_controls;
@@ -689,31 +692,231 @@ static int rootdse_init(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
+/*
+ * This function gets the string SCOPE_DN:OPTIONAL_FEATURE_GUID and parse it
+ * to a DN and a GUID object
+ */
+static int get_optional_feature_dn_guid(struct ldb_request *req, struct ldb_context *ldb,
+						TALLOC_CTX *mem_ctx,
+						struct ldb_dn **op_feature_scope_dn,
+						struct GUID *op_feature_guid)
 {
-	struct ldb_context *ldb;
+	const struct ldb_message *msg = req->op.mod.message;
+	const char *ldb_val_str;
+	char *dn, *guid;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NTSTATUS status;
+
+	ldb_val_str = ldb_msg_find_attr_as_string(msg, "enableOptionalFeature", NULL);
+	if (!ldb_val_str) {
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: unable to find enableOptionalFeature\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	guid = strchr(ldb_val_str, ':');
+	if (!guid) {
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: unable to find GUID in enableOptionalFeature\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	status = GUID_from_string(guid+1, op_feature_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: bad GUID in enableOptionalFeature\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	dn = talloc_strndup(tmp_ctx, ldb_val_str, guid-ldb_val_str);
+	if (!dn) {
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: bad DN in enableOptionalFeature\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	*op_feature_scope_dn = ldb_dn_new(mem_ctx, ldb, dn);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
+ * This function gets the OPTIONAL_FEATURE_GUID and looks for the optional feature
+ * ldb_message object.
+ */
+static int dsdb_find_optional_feature(struct ldb_module *module, struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx, struct GUID op_feature_guid, struct ldb_message **msg)
+{
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int ret;
+
+	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				NULL,
+				DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 "(&(objectClass=msDS-OptionalFeature)"
+				 "(msDS-OptionalFeatureGUID=%s))",GUID_string(tmp_ctx, &op_feature_guid));
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	if (res->count == 0) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	if (res->count != 1) {
+		ldb_asprintf_errstring(ldb,
+				"More than one object found matching optional feature GUID %s\n",
+				GUID_string(tmp_ctx, &op_feature_guid));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*msg = talloc_steal(mem_ctx, res->msgs[0]);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_context *ldb,
+			TALLOC_CTX *mem_ctx, struct ldb_dn *op_feature_scope_dn,
+			struct ldb_message *op_feature_msg)
+{
+	int ret;
+	const int domain_func_level = dsdb_functional_level(ldb);
+	struct ldb_dn *ntds_settings_dn;
+	TALLOC_CTX *tmp_ctx;
+	uint32_t el_count = 0;
+	struct ldb_message *msg;
+
+	ret = ldb_msg_find_attr_as_int(op_feature_msg, "msDS-RequiredForestBehaviorVersion", 0);
+	if (domain_func_level < ret){
+		ldb_asprintf_errstring(ldb,
+						       "rootdse: Domain functional level must be at least %d\n",
+						       ret);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	ntds_settings_dn = samdb_ntds_settings_dn(ldb);
+	if (!ntds_settings_dn) {
+		ldb_asprintf_errstring(ldb,
+				__location__ ": Failed to find NTDS settings DN\n");
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ntds_settings_dn = ldb_dn_copy(tmp_ctx, ntds_settings_dn);
+	if (!ntds_settings_dn) {
+		DEBUG(0, (__location__ ": Failed to copy NTDS settings DN\n"));
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	msg = ldb_msg_new(tmp_ctx);
+	msg->dn = ntds_settings_dn;
+
+	ldb_msg_add_linearized_dn(msg, "msDS-EnabledFeature", op_feature_msg->dn);
+	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb,
+				"rootdse_enable_recycle_bin: Failed to modify object %s - %s",
+				ldb_dn_get_linearized(ntds_settings_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	msg->dn = op_feature_scope_dn;
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
+				       ldb_dn_get_linearized(op_feature_scope_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_request *req)
+{
+	/*
+	  steps:
+	       - check for system (only system can enable features)
+	       - extract GUID from the request
+	       - find the feature object
+	       - check functional level, must be at least msDS-RequiredForestBehaviorVersion
+	       - check if it is already enabled (if enabled return LDAP_ATTRIBUTE_OR_VALUE_EXISTS) - probably not needed, just return error from the add/modify
+	       - add/modify objects (see ntdsconnection code for an example)
+	 */
+
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct GUID op_feature_guid;
+	struct ldb_dn *op_feature_scope_dn;
+	struct ldb_message *op_feature_msg;
+	struct auth_session_info *session_info =
+				(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	int ret;
+	const char *guid_string;
+
+	if (security_session_user_level(session_info) != SECURITY_SYSTEM) {
+		ldb_asprintf_errstring(ldb, "rootdse: Insufficient rights for enableoptionalfeature");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	ret = get_optional_feature_dn_guid(req, ldb, tmp_ctx, &op_feature_scope_dn, &op_feature_guid);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	guid_string = GUID_string(tmp_ctx, &op_feature_guid);
+	if (!guid_string) {
+		ldb_asprintf_errstring(ldb, "rootdse: bad optional feature GUID");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	ret = dsdb_find_optional_feature(module, ldb, tmp_ctx, op_feature_guid, &op_feature_msg);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "rootdse: unable to find optional feature for %s - %s",
+						       guid_string, ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (strcasecmp(DS_GUID_FEATURE_RECYCLE_BIN, guid_string) == 0) {
+			ret = rootdse_enable_recycle_bin(module, ldb,
+							 tmp_ctx, op_feature_scope_dn,
+							 op_feature_msg);
+	} else {
+		ldb_asprintf_errstring(ldb, "rootdse: unknown optional feature %s",
+				       guid_string);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "rootdse: failed to set optional feature for %s - %s",
+				       guid_string, ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	talloc_free(tmp_ctx);
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);;
+}
+
+static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_result *ext_res;
 	int ret;
 	struct ldb_dn *schema_dn;
-	struct ldb_message_element *schemaUpdateNowAttr;
-	
-	/*
-		If dn is not "" we should let it pass through
-	*/
-	if (!ldb_dn_is_null(req->op.mod.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	ldb = ldb_module_get_ctx(module);
-
-	/*
-		dn is empty so check for schemaUpdateNow attribute
-		"The type of modification and values specified in the LDAP modify operation do not matter." MSDN
-	*/
-	schemaUpdateNowAttr = ldb_msg_find_element(req->op.mod.message, "schemaUpdateNow");
-	if (!schemaUpdateNowAttr) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	schema_dn = samdb_schema_dn(ldb);
 	if (!schema_dn) {
@@ -727,9 +930,37 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	talloc_free(ext_res);
 	return ldb_module_done(req, NULL, NULL, ret);
+}
+
+static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+
+	/*
+		If dn is not "" we should let it pass through
+	*/
+	if (!ldb_dn_is_null(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb = ldb_module_get_ctx(module);
+
+	/*
+		dn is empty so check for schemaUpdateNow attribute
+		"The type of modification and values specified in the LDAP modify operation do not matter." MSDN
+	*/
+	if (ldb_msg_find_element(req->op.mod.message, "schemaUpdateNow")) {
+		return rootdse_schemaupdatenow(module, req);
+	}
+
+	if (ldb_msg_find_element(req->op.mod.message, "enableOptionalFeature")) {
+		return rootdse_enableoptionalfeature(module, req);
+	}
+
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {

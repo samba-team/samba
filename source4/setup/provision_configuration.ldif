@@ -970,6 +970,18 @@ msDS-Other-Settings: DynamicObjectDefaultTTL=86400
 sPNMappings: host=alerter,appmgmt,cisvc,clipsrv,browser,dhcp,dnscache,replicator,eventlog,eventsystem,policyagent,oakley,dmserver,dns,mcsvc,fax,msiserver,ias,messenger,netlogon,netman,netdde,netddedsm,nmagent,plugplay,protectedstorage,rasman,rpclocator,rpc,rpcss,remoteaccess,rsvp,samss,scardsvr,scesrv,seclogon,scm,dcom,cifs,spooler,snmp,schedule,tapisrv,trksvr,trkwks,ups,time,wins,www,http,w3svc,iisadmin,msdtc
 tombstoneLifetime: 180
 
+dn: CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: container
+
+dn: CN=Recycle Bin Feature,CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
+objectClass: top
+objectClass: msDS-OptionalFeature
+msDS-OptionalFeatureGUID: 766ddcd8-acd0-445e-f3b9-a7f9b6744f2a
+msDS-OptionalFeatureFlags: 1
+msDS-RequiredForestBehaviorVersion: 4
+systemFlags: -1946157056
+
 dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
