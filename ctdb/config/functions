@@ -421,25 +421,15 @@ startstop_nfslock() {
 }
 
 # better use delete_ip_from_iface() together with add_ip_to_iface
+# remove_ip should be removed in future
 remove_ip() {
-	# the ip tool will delete all secondary IPs if this is the primary.
-	# To work around this _very_ annoying behaviour we have to keep a
-	# record of the secondaries and re-add them afterwards. yuck
-	secondaries=""
-	if ip addr list dev $2 primary | grep -q "inet $1 " ; then
-	    secondaries=`ip addr list dev $2 secondary | grep " inet " | awk '{print $2}'`
-	fi
-	ip addr del $1 dev $2 >/dev/null 2>/dev/null || failed=1
-	[ -z "$secondaries" ] || {
-	    for i in $secondaries; do
-		if ip addr list dev $2 | grep -q "inet $i" ; then
-		    echo "kept secondary $i on dev $2"
-		else 
-		    echo "re-adding secondary address $i to dev $2"
-		    ip addr add $i dev $2 || failed=1		
-		fi
-	    done
-	}
+	local _ip_maskbits=$1
+	local _iface=$2
+	local _ip=`echo "$_ip_maskbits" | cut -d '/' -f1`
+	local _maskbits=`echo "$_ip_maskbits" | cut -d '/' -f2`
+
+	delete_ip_from_iface "$_iface" "$_ip" "$_maskbits"
+	return $?
 }
 
 add_ip_to_iface()
