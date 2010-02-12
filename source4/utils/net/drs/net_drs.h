@@ -43,14 +43,10 @@
 	NET_DRS_CHECK_GOTO(_ptr, _label, "Not enough memory!")
 
 
-
-/* net drs commands context */
-struct net_drs_context {
-	struct net_context 	*net_ctx;
-
-	/* remote DC name supplied from command line */
-	const char 		*dc_name;
-
+/**
+ * DRSUAPI binding context
+ */
+struct net_drs_connection {
 	/* DRSUAPI connection context */
 	struct dcerpc_binding 	*binding;
 	struct dcerpc_pipe 	*drs_pipe;
@@ -62,6 +58,20 @@ struct net_drs_context {
 
 	/* remote DC DRSUAPI capabilities */
 	struct drsuapi_DsBindInfo48 info48;
+};
+
+
+/**
+ * net drs commands context
+ */
+struct net_drs_context {
+	struct net_context 	*net_ctx;
+
+	/* remote DC name supplied from command line */
+	const char 		*dc_name;
+
+	/* DRSUAPI connection to target DC */
+	struct net_drs_connection *drs_conn;
 
 	/* LDAP connection to DC */
 	struct net_drs_ldap {
