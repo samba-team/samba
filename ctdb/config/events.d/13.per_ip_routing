@@ -357,6 +357,11 @@ case "$1" in
 		exit 1;
 	}
 
+	setup_iface_ip_readd_script $iface $ip $maskbits $setup_script || {
+		echo "$0: $1: setup_iface_ip_readd_script $iface $ip $maskbits $setup_script - failed"
+		exit 1;
+	}
+
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	ctdb gratiousarp $ip $iface
@@ -394,6 +399,12 @@ case "$1" in
 		echo "$0: $1: setup_per_ip_routing $ip $iface $table_id $release_script $setup_script - failed"
 		exit 1;
 	}
+
+	setup_iface_ip_readd_script $niface $ip $maskbits $setup_script || {
+		echo "$0: $1: setup_iface_ip_readd_script $niface $ip $maskbits $setup_script - failed"
+		exit 1;
+	}
+
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
 
