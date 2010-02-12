@@ -694,6 +694,22 @@ static void sig_child_handler(struct event_context *ev,
 	}
 }
 
+static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
+				      void *private_data)
+{
+	if (status != 0) {
+		ctdb_fatal(ctdb, "Failed to run setup event\n");
+		return;
+	}
+	ctdb_run_notification_script(ctdb, "setup");
+
+	/* tell all other nodes we've just started up */
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
+				 0, CTDB_CONTROL_STARTUP, 0,
+				 CTDB_CTRL_FLAG_NOREPLY,
+				 tdb_null, NULL, NULL);
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -797,12 +813,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 			   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_accept_client, ctdb);
 
-	/* tell all other nodes we've just started up */
-	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
-				 0, CTDB_CONTROL_STARTUP, 0,
-				 CTDB_CTRL_FLAG_NOREPLY,
-				 tdb_null, NULL, NULL);
-
 	/* release any IPs we hold from previous runs of the daemon */
 	ctdb_release_all_ips(ctdb);
 
@@ -816,6 +826,18 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 				     ctdb);
 	if (se == NULL) {
 		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD\n"));
+		exit(1);
+	}
+
+	ret = ctdb_event_script_callback(ctdb,
+					 ctdb,
+					 ctdb_setup_event_callback,
+					 ctdb,
+					 false,
+					 CTDB_EVENT_SETUP,
+					 "");
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT,("Failed to set up 'setup' event\n"));
 		exit(1);
 	}
 

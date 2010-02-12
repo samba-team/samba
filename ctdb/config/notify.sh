@@ -37,10 +37,13 @@ case $event in
 	#		recovery?
 		;;
 
+	setup)
+	#		do some extra magic when ctdb has setup itself?
+		;;
+
 	init)
 	#		do some extra magic when ctdb has started?
 		;;
-
 esac
 
 exit 0

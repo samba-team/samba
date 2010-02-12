@@ -660,6 +660,7 @@ void ctdb_lockdown_memory(struct ctdb_context *ctdb)
 
 const char *ctdb_eventscript_call_names[] = {
 	"init",
+	"setup",
 	"startup",
 	"startrecovery",
 	"recovered",

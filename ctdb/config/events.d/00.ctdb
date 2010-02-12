@@ -16,8 +16,14 @@ case "$1" in
      init)
         # make sure we have a blank state directory for the scripts to work with
 	/bin/rm -rf $CTDB_BASE/state
-	/bin/mkdir -p $CTDB_BASE/state
+	/bin/mkdir -p $CTDB_BASE/state || {
+	    ret=$?
+	    echo "/bin/mkdir -p $CTDB_BASE/state - failed - $ret"
+	    exit $ret
+	}
+	;;
 
+     setup)
 	# set any tunables from the config file
 	set | grep ^CTDB_SET_ | cut -d_ -f3- | 
 	while read v; do
