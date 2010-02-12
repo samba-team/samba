@@ -396,7 +396,7 @@ case "$1" in
 	}
 
 	setup_per_ip_routing $ip $niface $table_id $release_script $setup_script || {
-		echo "$0: $1: setup_per_ip_routing $ip $iface $table_id $release_script $setup_script - failed"
+		echo "$0: $1: setup_per_ip_routing $ip $niface $table_id $release_script $setup_script - failed"
 		exit 1;
 	}
 
