@@ -103,6 +103,16 @@ case "$1" in
 		rpc.mountd $RPCMOUNTDOPTS &
 		exit 1
 	}
+	# rquotad needs special handling since it is sometimes not started
+	# correctly on RHEL5
+	# this is not a critical service so we dont flag the node as unhealthy
+	rpcinfo -u localhost 100011 1 > /dev/null || {
+		echo "ERROR: RQUOTAD is not running. Trying to restart it."
+		RPCRQUOTADOPTS=""
+		[ -n "$RQUOTAD_PORT" ] && RPCRQUOTADOPTS="$RPCRQUOTADOPTS -p $RQUOTAD_PORT"
+		killall -q -9 rpc.rquotad
+		rpc.rquotad $RPCRQUOTADOPTS &
+	}
        	;;
 
     *)
