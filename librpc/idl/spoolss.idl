@@ -468,7 +468,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[relative] nstring *comment;
 	} spoolss_PrinterInfo1;
 
-	typedef [public,gensize] struct {
+	typedef [public,gensize,nopush] struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
 		[relative] nstring *sharename;
