@@ -105,17 +105,21 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 	if (tevent_req_nomem(r, req)) {
 		return;
 	}
+	r->in.req = talloc_zero(r, union drsuapi_DsReplicaSyncRequest);
+	if (tevent_req_nomem(r, req)) {
+		return;
+	}
 	r->in.bind_handle	= &drsuapi->bind_handle;
 	r->in.level = 1;
-	r->in.req.req1.naming_context = &partition->nc;
-	r->in.req.req1.source_dsa_guid = state->op->service->ntds_guid;
-	r->in.req.req1.options = 
+	r->in.req->req1.naming_context = &partition->nc;
+	r->in.req->req1.source_dsa_guid = state->op->service->ntds_guid;
+	r->in.req->req1.options =
 		DRSUAPI_DRS_ASYNC_OP |
 		DRSUAPI_DRS_UPDATE_NOTIFICATION |
 		DRSUAPI_DRS_WRIT_REP;
 
 	if (state->op->is_urgent) {
-		r->in.req.req1.options |= DRSUAPI_DRS_SYNC_URGENT;
+		r->in.req->req1.options |= DRSUAPI_DRS_SYNC_URGENT;
 	}
 
 	rreq = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);

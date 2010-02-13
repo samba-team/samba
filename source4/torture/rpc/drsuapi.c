@@ -397,6 +397,7 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 	struct dcerpc_pipe *p = priv->drs_pipe;
 	int i;
 	struct drsuapi_DsReplicaSync r;
+	union drsuapi_DsReplicaSyncRequest sync_req;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
@@ -434,10 +435,12 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 			nc.sid					= null_sid;
 			nc.dn					= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req1.naming_context		= &nc;
-			r.in.req.req1.source_dsa_guid		= priv->dcinfo.ntds_guid;
-			r.in.req.req1.source_dsa_dns		= NULL;
-			r.in.req.req1.options			= 16;
+			sync_req.req1.naming_context		= &nc;
+			sync_req.req1.source_dsa_guid		= priv->dcinfo.ntds_guid;
+			sync_req.req1.source_dsa_dns		= NULL;
+			sync_req.req1.options			= 16;
+
+			r.in.req 				= &sync_req;
 			break;
 		}
 

@@ -110,7 +110,7 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 {
 	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
 							   struct dreplsrv_service);
-	struct GUID *guid = &r->in.req.req1.naming_context->guid;
+	struct GUID *guid = &r->in.req->req1.naming_context->guid;
 
 	r->out.result = dreplsrv_schedule_partition_pull_by_guid(service, msg, guid);
 	if (W_ERROR_IS_OK(r->out.result)) {
