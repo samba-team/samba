@@ -36,6 +36,7 @@
 #include "ntvfs/sysdep/sys_notify.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "lib/util/tsort.h"
 
 struct notify_context {
 	struct tdb_wrap *w;
@@ -328,9 +329,7 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_en
 	d->max_mask |= e->filter;
 	d->max_mask_subdir |= e->subdir_filter;
 
-	if (d->num_entries > 1) {
-		qsort(d->entries, d->num_entries, sizeof(d->entries[0]), notify_compare);
-	}
+	TYPESAFE_QSORT(d->entries, d->num_entries, notify_compare);
 
 	/* recalculate the maximum masks */
 	d->max_mask = 0;
