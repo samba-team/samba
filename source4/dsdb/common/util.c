@@ -3213,7 +3213,7 @@ int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
 	}
 	/* see MS-ADTS section 7.1.1.2.4.1.1. There doesn't appear to
 	 be a wellknown GUID for this */
-	if (!ldb_dn_add_child_fmt(dn, "CN=Directory Service,CN=Windows NT")) {
+	if (!ldb_dn_add_child_fmt(dn, "CN=Directory Service,CN=Windows NT,CN=Services")) {
 		talloc_free(dn);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
