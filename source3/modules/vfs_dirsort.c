@@ -20,9 +20,8 @@
 
 #include "includes.h"
 
-static int compare_dirent (const void *a, const void *b) {
-	const SMB_STRUCT_DIRENT *da = (const SMB_STRUCT_DIRENT *) a;
-	const SMB_STRUCT_DIRENT *db = (const SMB_STRUCT_DIRENT *) b;
+static int compare_dirent (const SMB_STRUCT_DIRENT *da, const SMB_STRUCT_DIRENT *db)
+{
 	return StrCaseCmp(da->d_name, db->d_name);
 }
 
@@ -81,8 +80,7 @@ static void open_and_sort_dir (vfs_handle_struct *handle)
 
 	/* Sort the directory entries by name */
 	data->pos = current_pos;
-	qsort(data->directory_list, data->number_of_entries,
-	      sizeof(SMB_STRUCT_DIRENT), compare_dirent);
+	TYPESAFE_QSORT(data->directory_list, data->number_of_entries, compare_dirent);
 }
 
 static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,

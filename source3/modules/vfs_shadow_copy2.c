@@ -838,9 +838,9 @@ static void shadow_copy2_sort_data(vfs_handle_struct *handle,
 	if (shadow_copy2_data && shadow_copy2_data->num_volumes > 0 &&
 	    shadow_copy2_data->labels)
 	{
-		qsort(shadow_copy2_data->labels,
-		      shadow_copy2_data->num_volumes,
-		      sizeof(SHADOW_COPY_LABEL), cmpfunc);
+		TYPESAFE_QSORT(shadow_copy2_data->labels,
+			       shadow_copy2_data->num_volumes,
+			       cmpfunc);
 	}
 
 	return;
