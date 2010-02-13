@@ -38,6 +38,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "system/locale.h"
+#include "lib/util/tsort.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -3160,7 +3161,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 	       }
        }
 
-       qsort(nc_dns, el->num_values, sizeof(nc_dns[0]), (comparison_fn_t)dsdb_dn_compare_ptrs);
+       TYPESAFE_QSORT(nc_dns, el->num_values, dsdb_dn_compare_ptrs);
 
        for (i=0; i<el->num_values; i++) {
                if (ldb_dn_compare_base(nc_dns[i], dn) == 0) {
@@ -3297,9 +3298,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	ret = dsdb_load_partition_usn(samdb, dn, &highest_usn, NULL);
 	if (ret != LDB_SUCCESS) {
 		/* nothing to add - this can happen after a vampire */
-		qsort(*cursors, *count,
-		      sizeof(struct drsuapi_DsReplicaCursor2),
-		      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
+		TYPESAFE_QSORT(*cursors, *count, drsuapi_DsReplicaCursor2_compare);
 		return LDB_SUCCESS;
 	}
 
@@ -3307,9 +3306,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 		if (GUID_equal(our_invocation_id, &(*cursors)[i].source_dsa_invocation_id)) {
 			(*cursors)[i].highest_usn = highest_usn;
 			(*cursors)[i].last_sync_success = timeval_to_nttime(&now);
-			qsort(*cursors, *count,
-			      sizeof(struct drsuapi_DsReplicaCursor2),
-			      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
+			TYPESAFE_QSORT(*cursors, *count, drsuapi_DsReplicaCursor2_compare);
 			return LDB_SUCCESS;
 		}
 	}
@@ -3324,9 +3321,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	(*cursors)[*count].last_sync_success = timeval_to_nttime(&now);
 	(*count)++;
 
-	qsort(*cursors, *count,
-	      sizeof(struct drsuapi_DsReplicaCursor2),
-	      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
+	TYPESAFE_QSORT(*cursors, *count, drsuapi_DsReplicaCursor2_compare);
 
 	return LDB_SUCCESS;
 }

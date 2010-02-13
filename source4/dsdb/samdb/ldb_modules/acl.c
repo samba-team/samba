@@ -39,6 +39,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/util/tsort.h"
 
 struct extended_access_check_attribute {
 	const char *oa_name;
@@ -528,11 +529,7 @@ static int acl_childClasses(struct ldb_module *module,
 		}
 	}
 	if (allowedClasses->num_values > 1) {
-		qsort(allowedClasses->values,
-		      allowedClasses->num_values,
-		      sizeof(*allowedClasses->values),
-		      (comparison_fn_t)data_blob_cmp);
-
+		TYPESAFE_QSORT(allowedClasses->values, allowedClasses->num_values, data_blob_cmp);
 		for (i=1 ; i < allowedClasses->num_values; i++) {
 			struct ldb_val *val1 = &allowedClasses->values[i-1];
 			struct ldb_val *val2 = &allowedClasses->values[i];
@@ -615,10 +612,7 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	}
 
 	if (allowedClasses->num_values > 1) {
-		qsort(allowedClasses->values,
-		      allowedClasses->num_values,
-		      sizeof(*allowedClasses->values),
-		      (comparison_fn_t)data_blob_cmp);
+		TYPESAFE_QSORT(allowedClasses->values, allowedClasses->num_values, data_blob_cmp);
 		for (i=1 ; i < allowedClasses->num_values; i++) {
 			struct ldb_val *val1 = &allowedClasses->values[i-1];
 			struct ldb_val *val2 = &allowedClasses->values[i];

@@ -48,6 +48,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/binsearch.h"
 #include "libcli/security/security.h"
+#include "lib/util/tsort.h"
 
 #define W2K3_LINKED_ATTRIBUTES 1
 
@@ -1278,7 +1279,7 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		p->v = v;
 	}
 
-	qsort(*pdn, el->num_values, sizeof((*pdn)[0]), (comparison_fn_t)parsed_dn_compare);
+	TYPESAFE_QSORT(*pdn, el->num_values, parsed_dn_compare);
 
 	return LDB_SUCCESS;
 }
@@ -3151,9 +3152,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	/*
 	 * sort the cursors
 	 */
-	qsort(nuv.ctr.ctr2.cursors, nuv.ctr.ctr2.count,
-	      sizeof(struct drsuapi_DsReplicaCursor2),
-	      (comparison_fn_t)drsuapi_DsReplicaCursor2_compare);
+	TYPESAFE_QSORT(nuv.ctr.ctr2.cursors, nuv.ctr.ctr2.count, drsuapi_DsReplicaCursor2_compare);
 
 	/*
 	 * create the change ldb_message

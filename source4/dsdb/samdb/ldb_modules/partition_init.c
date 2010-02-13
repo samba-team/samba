@@ -30,6 +30,8 @@
  */
 
 #include "dsdb/samdb/ldb_modules/partition.h"
+#include "lib/util/tsort.h"
+
 static int partition_sort_compare(const void *v1, const void *v2)
 {
 	const struct dsdb_partition *p1;
@@ -359,8 +361,7 @@ static int add_partition_to_data(struct ldb_context *ldb, struct partition_priva
 	data->partitions[i+1] = NULL;
 	
 	/* Sort again (should use binary insert) */
-	qsort(data->partitions, i+1,
-	      sizeof(*data->partitions), partition_sort_compare);
+	TYPESAFE_QSORT(data->partitions, i+1, partition_sort_compare);
 	
 	ret = partition_register(ldb, partition->ctrl);
 	if (ret != LDB_SUCCESS) {

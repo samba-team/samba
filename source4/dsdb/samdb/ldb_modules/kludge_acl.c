@@ -36,6 +36,7 @@
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
+#include "lib/util/tsort.h"
 
 /* Kludge ACL rules:
  *
@@ -174,10 +175,7 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	}
 		
 	if (allowedClasses->num_values > 1) {
-		qsort(allowedClasses->values, 
-		      allowedClasses->num_values, 
-		      sizeof(*allowedClasses->values),
-		      (comparison_fn_t)data_blob_cmp);
+		TYPESAFE_QSORT(allowedClasses->values, allowedClasses->num_values, data_blob_cmp);
 	
 		for (i=1 ; i < allowedClasses->num_values; i++) {
 

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/util/binsearch.h"
+#include "lib/util/tsort.h"
 
 static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
 						      const struct dsdb_schema *schema, 
@@ -379,11 +380,8 @@ static const char **dsdb_full_attribute_list_internal_el(TALLOC_CTX *mem_ctx,
 	return attr_list;
 }
 
-static int qsort_string(const void *v1,
-			const void *v2)
+static int qsort_string(const char **s1, const char **s2)
 {
-	char * const *s1 = v1;
-	char * const *s2 = v2;
 	return strcasecmp(*s1, *s2);
 }
 
@@ -394,9 +392,7 @@ static const char **dedup_attr_list(const char **attr_list)
 	/* Remove duplicates */
 	if (new_len > 1) {
 		int i;
-		qsort(attr_list, new_len,
-		      sizeof(*attr_list),
-		      (comparison_fn_t)qsort_string);
+		TYPESAFE_QSORT(attr_list, new_len, qsort_string);
 		
 		for (i=1 ; i < new_len; i++) {
 			const char **val1 = &attr_list[i-1];

@@ -27,6 +27,7 @@
 #include "param/param.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "lib/util/tsort.h"
 
 /*
   override the name to attribute handler function
@@ -259,14 +260,10 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	}
 
 	/* sort the arrays */
-	qsort(schema->classes_by_lDAPDisplayName, schema->num_classes, 
-	      sizeof(struct dsdb_class *), QSORT_CAST dsdb_compare_class_by_lDAPDisplayName);
-	qsort(schema->classes_by_governsID_id, schema->num_classes, 
-	      sizeof(struct dsdb_class *), QSORT_CAST dsdb_compare_class_by_governsID_id);
-	qsort(schema->classes_by_governsID_oid, schema->num_classes, 
-	      sizeof(struct dsdb_class *), QSORT_CAST dsdb_compare_class_by_governsID_oid);
-	qsort(schema->classes_by_cn, schema->num_classes, 
-	      sizeof(struct dsdb_class *), QSORT_CAST dsdb_compare_class_by_cn);
+	TYPESAFE_QSORT(schema->classes_by_lDAPDisplayName, schema->num_classes, dsdb_compare_class_by_lDAPDisplayName);
+	TYPESAFE_QSORT(schema->classes_by_governsID_id, schema->num_classes, dsdb_compare_class_by_governsID_id);
+	TYPESAFE_QSORT(schema->classes_by_governsID_oid, schema->num_classes, dsdb_compare_class_by_governsID_oid);
+	TYPESAFE_QSORT(schema->classes_by_cn, schema->num_classes, dsdb_compare_class_by_cn);
 
 	/* now build the attribute accessor arrays */
 	talloc_free(schema->attributes_by_lDAPDisplayName);
@@ -298,14 +295,10 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	}
 
 	/* sort the arrays */
-	qsort(schema->attributes_by_lDAPDisplayName, schema->num_attributes, 
-	      sizeof(struct dsdb_attribute *), QSORT_CAST dsdb_compare_attribute_by_lDAPDisplayName);
-	qsort(schema->attributes_by_attributeID_id, schema->num_attributes, 
-	      sizeof(struct dsdb_attribute *), QSORT_CAST dsdb_compare_attribute_by_attributeID_id);
-	qsort(schema->attributes_by_attributeID_oid, schema->num_attributes, 
-	      sizeof(struct dsdb_attribute *), QSORT_CAST dsdb_compare_attribute_by_attributeID_oid);
-	qsort(schema->attributes_by_linkID, schema->num_attributes, 
-	      sizeof(struct dsdb_attribute *), QSORT_CAST dsdb_compare_attribute_by_linkID);
+	TYPESAFE_QSORT(schema->attributes_by_lDAPDisplayName, schema->num_attributes, dsdb_compare_attribute_by_lDAPDisplayName);
+	TYPESAFE_QSORT(schema->attributes_by_attributeID_id, schema->num_attributes, dsdb_compare_attribute_by_attributeID_id);
+	TYPESAFE_QSORT(schema->attributes_by_attributeID_oid, schema->num_attributes, dsdb_compare_attribute_by_attributeID_oid);
+	TYPESAFE_QSORT(schema->attributes_by_linkID, schema->num_attributes, dsdb_compare_attribute_by_linkID);
 
 	return LDB_SUCCESS;
 
