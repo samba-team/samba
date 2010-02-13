@@ -303,7 +303,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));
 			poptPrintUsage(pc, stderr, 0);
-			exit(1);
+			return 1;
 		}
 	}
 
@@ -311,7 +311,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
-		exit(1);
+		return 1;
 	} else if (!opt_interactive) {
 		/* default is --daemon */
 		opt_daemon = true;
@@ -333,7 +333,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
 		DEBUGADD(0,("sizeof(uint16_t) = %u, sizeof(uint32_t) %u, sizeof(uint64_t) = %u\n",
 			    (unsigned int)sizeof(uint16_t), (unsigned int)sizeof(uint32_t), (unsigned int)sizeof(uint64_t)));
-		exit(1);
+		return 1;
 	}
 
 	if (opt_daemon) {
@@ -353,7 +353,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	 * passdb/secrets.c, and proved that Samba still builds... */
 	/* Setup the SECRETS subsystem */
 	if (secrets_init(talloc_autofree_context(), cmdline_lp_ctx) == NULL) {
-		exit(1);
+		return 1;
 	}
 
 	gensec_init(cmdline_lp_ctx); /* FIXME: */
