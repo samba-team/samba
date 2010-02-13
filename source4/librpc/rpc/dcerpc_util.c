@@ -83,6 +83,10 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 
 	if (auth_info) {
+		ndr_err = ndr_push_zero(ndr, auth_info->auth_pad_length);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
 		ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
@@ -750,3 +754,59 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	return NT_STATUS_OK;
 }
+
+
+/*
+  pull an dcerpc_auth structure, taking account of any auth padding in
+  the blob at the end of the structure
+ */
+NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
+				  TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *pkt_auth_blob,
+				  struct dcerpc_auth *auth,
+				  uint32_t *auth_length,
+				  bool check_pad)
+{
+	struct ndr_pull *ndr;
+	enum ndr_err_code ndr_err;
+	uint32_t pad;
+
+	pad = pkt_auth_blob->length - (DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length);
+	*auth_length = pkt_auth_blob->length - pad;
+
+	ndr = ndr_pull_init_blob(pkt_auth_blob, mem_ctx, NULL);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	ndr_err = ndr_pull_advance(ndr, pad);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(ndr);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(ndr);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (check_pad && pad != auth->auth_pad_length) {
+		DEBUG(1,(__location__ ": WARNING: pad length mismatch. Calculated %u  got %u\n",
+			 (unsigned)pad, (unsigned)auth->auth_pad_length));
+	}
+
+	DEBUG(6,(__location__ ": auth_pad_length %u\n",
+		 (unsigned)auth->auth_pad_length));
+
+	talloc_steal(mem_ctx, auth->credentials.data);
+	talloc_free(ndr);
+
+	return NT_STATUS_OK;
+}
+
+

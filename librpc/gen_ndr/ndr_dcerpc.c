@@ -80,12 +80,6 @@ static enum ndr_err_code ndr_push_dcerpc_bind(struct ndr_push *ndr, int ndr_flag
 		}
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->auth_info));
 			ndr->flags = _flags_save_DATA_BLOB;
@@ -114,12 +108,6 @@ static enum ndr_err_code ndr_pull_dcerpc_bind(struct ndr_pull *ndr, int ndr_flag
 			NDR_CHECK(ndr_pull_dcerpc_ctx_list(ndr, NDR_SCALARS, &r->ctx_list[cntr_ctx_list_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctx_list_0, 0);
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -152,7 +140,6 @@ _PUBLIC_ void ndr_print_dcerpc_bind(struct ndr_print *ndr, const char *name, con
 		}
 	}
 	ndr->depth--;
-	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
 	ndr_print_DATA_BLOB(ndr, "auth_info", r->auth_info);
 	ndr->depth--;
 }
@@ -879,7 +866,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_dcerpc_auth3(struct ndr_push *ndr, int ndr_f
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_pad));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -897,7 +883,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_auth3(struct ndr_pull *ndr, int ndr_f
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_pad));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -915,7 +900,6 @@ _PUBLIC_ void ndr_print_dcerpc_auth3(struct ndr_print *ndr, const char *name, co
 {
 	ndr_print_struct(ndr, name, "dcerpc_auth3");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "_pad", r->_pad);
 	ndr_print_DATA_BLOB(ndr, "auth_info", r->auth_info);
 	ndr->depth--;
 }
@@ -924,7 +908,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_dcerpc_orphaned(struct ndr_push *ndr, int nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_pad));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -942,7 +925,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_orphaned(struct ndr_pull *ndr, int nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_pad));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -960,7 +942,6 @@ _PUBLIC_ void ndr_print_dcerpc_orphaned(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "dcerpc_orphaned");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "_pad", r->_pad);
 	ndr_print_DATA_BLOB(ndr, "auth_info", r->auth_info);
 	ndr->depth--;
 }
@@ -969,7 +950,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_dcerpc_co_cancel(struct ndr_push *ndr, int n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_pad));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -987,7 +967,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_co_cancel(struct ndr_pull *ndr, int n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_pad));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -1005,7 +984,6 @@ _PUBLIC_ void ndr_print_dcerpc_co_cancel(struct ndr_print *ndr, const char *name
 {
 	ndr_print_struct(ndr, name, "dcerpc_co_cancel");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "_pad", r->_pad);
 	ndr_print_DATA_BLOB(ndr, "auth_info", r->auth_info);
 	ndr->depth--;
 }

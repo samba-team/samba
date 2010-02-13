@@ -25,7 +25,6 @@ interface dcerpc
 		uint32 assoc_group_id;
 		uint8  num_contexts;
 		dcerpc_ctx_list ctx_list[num_contexts];
-		[flag(NDR_ALIGN4)]    DATA_BLOB _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind;
 
@@ -156,17 +155,14 @@ interface dcerpc
 	const uint8 DCERPC_AUTH_TRAILER_LENGTH = 8;
 
 	typedef [public] struct {
-		uint32 _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_auth3;
 
 	typedef [public] struct {
-		uint32 _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_orphaned;
 
 	typedef [public] struct {
-		uint32 _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_co_cancel;
 

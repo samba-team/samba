@@ -51,7 +51,6 @@ struct dcerpc_bind {
 	uint32_t assoc_group_id;
 	uint8_t num_contexts;
 	struct dcerpc_ctx_list *ctx_list;
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 };
 
@@ -181,17 +180,14 @@ struct dcerpc_auth {
 }/* [public] */;
 
 struct dcerpc_auth3 {
-	uint32_t _pad;
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 
 struct dcerpc_orphaned {
-	uint32_t _pad;
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 
 struct dcerpc_co_cancel {
-	uint32_t _pad;
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 

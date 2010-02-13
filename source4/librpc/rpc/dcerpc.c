@@ -223,11 +223,9 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 					DATA_BLOB *raw_packet,
 					struct ncacn_packet *pkt)
 {
-	struct ndr_pull *ndr;
 	NTSTATUS status;
 	struct dcerpc_auth auth;
-	DATA_BLOB auth_blob;
-	enum ndr_err_code ndr_err;
+	uint32_t auth_length;
 
 	if (!c->security_state.auth_info ||
 	    !c->security_state.generic_state) {
@@ -254,33 +252,12 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	auth_blob.length = 8 + pkt->auth_length;
+	status = dcerpc_pull_auth_trailer(pkt, mem_ctx,
+					  &pkt->u.response.stub_and_verifier,
+					  &auth, &auth_length, false);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	/* check for a valid length */
-	if (pkt->u.response.stub_and_verifier.length < auth_blob.length) {
-		return NT_STATUS_INFO_LENGTH_MISMATCH;
-	}
-
-	auth_blob.data = 
-		pkt->u.response.stub_and_verifier.data + 
-		pkt->u.response.stub_and_verifier.length - auth_blob.length;
-	pkt->u.response.stub_and_verifier.length -= auth_blob.length;
-
-	/* pull the auth structure */
-	ndr = ndr_pull_init_flags(c, &auth_blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-	status = NT_STATUS_OK;
+	pkt->u.response.stub_and_verifier.length -= auth_length;
 
 	/* check signature or unseal the packet */
 	switch (c->security_state.auth_info->auth_level) {
@@ -317,7 +294,7 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 		break;
 	}
 	
-	/* remove the indicated amount of paddiing */
+	/* remove the indicated amount of padding */
 	if (pkt->u.response.stub_and_verifier.length < auth.auth_pad_length) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
@@ -600,7 +577,6 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 	dcerpc_request_recv_data(conn, blob, &pkt);
 }
 
-
 /*
   Receive a bind reply from the transport
 */
@@ -643,17 +619,14 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 	}
 
 	/* the bind_ack might contain a reply set of credentials */
-	if (conn->security_state.auth_info &&
-	    pkt->u.bind_ack.auth_info.length) {
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(
-			&pkt->u.bind_ack.auth_info, conn,
-			NULL,
-			conn->security_state.auth_info,
-			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			c->status = ndr_map_error2ntstatus(ndr_err);
-			if (!composite_is_ok(c)) return;
+	if (conn->security_state.auth_info && pkt->u.bind_ack.auth_info.length) {
+		NTSTATUS status;
+		uint32_t auth_length;
+		status = dcerpc_pull_auth_trailer(pkt, conn, &pkt->u.bind_ack.auth_info,
+						  conn->security_state.auth_info, &auth_length, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			composite_error(c, status);
+			return;
 		}
 	}
 
@@ -791,7 +764,6 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.call_id = next_call_id(p->conn);
 	pkt.auth_length = 0;
-	pkt.u.auth3._pad = 0;
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
 	if (p->binding->flags & DCERPC_CONCURRENT_MULTIPLEX) {
@@ -1610,15 +1582,14 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 	/* the alter_resp might contain a reply set of credentials */
 	if (recv_pipe->conn->security_state.auth_info &&
 	    pkt->u.alter_resp.auth_info.length) {
-		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(
-			&pkt->u.alter_resp.auth_info, recv_pipe,
-			NULL,
-			recv_pipe->conn->security_state.auth_info,
-			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			c->status = ndr_map_error2ntstatus(ndr_err);
-			if (!composite_is_ok(c)) return;
+		struct dcerpc_connection *conn = recv_pipe->conn;
+		NTSTATUS status;
+		uint32_t auth_length;
+		status = dcerpc_pull_auth_trailer(pkt, conn, &pkt->u.alter_resp.auth_info,
+						  conn->security_state.auth_info, &auth_length, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			composite_error(c, status);
+			return;
 		}
 	}
 
