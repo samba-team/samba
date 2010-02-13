@@ -51,9 +51,8 @@ struct pri_list {
 	char *string;
 };
 
-static int qsort_cmp_list(const void *x, const void *y) {
-	struct pri_list *a = (struct pri_list *)x;
-	struct pri_list *b = (struct pri_list *)y;
+static int qsort_cmp_list(struct pri_list *a, struct pri_list *b)
+{
 	if (a->pri > b->pri) return -1;
 	if (a->pri < b->pri) return 1;
 	return 0;
@@ -101,7 +100,7 @@ void web_set_lang(const char *lang_string)
 	}
 	TALLOC_FREE(lang_list);
 
-	qsort(pl, lang_num, sizeof(struct pri_list), &qsort_cmp_list);
+	TYPESAFE_QSORT(pl, lang_num, qsort_cmp_list);
 
 	/* it's not an error to not initialise - we just fall back to 
 	   the default */
