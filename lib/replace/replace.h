@@ -729,4 +729,8 @@ char *ufc_crypt(const char *key, const char *salt);
 #endif
 #endif
 
+#ifndef HAVE_FDATASYNC
+#define fdatasync(fd) fsync(fd)
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */
