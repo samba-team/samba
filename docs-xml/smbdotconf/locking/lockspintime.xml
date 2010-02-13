@@ -3,7 +3,7 @@
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>The time in microseconds that smbd should 
+	<para>The time in milliseconds that smbd should 
 	keep waiting to see if a failed lock request can
 	be granted. This parameter has changed in default
 	value from Samba 3.0.23 from 10 to 200. The associated
