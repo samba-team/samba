@@ -1232,6 +1232,10 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 
 	putip(sort_ip, (char *)&ip);
 
+	/* TODO:
+	   this can't use TYPESAFE_QSORT() as the types are wrong.
+	   It should be fixed to use a real type instead of char*
+	*/
 	qsort(data, n, 6, QSORT_CAST name_query_comp);
 }
 

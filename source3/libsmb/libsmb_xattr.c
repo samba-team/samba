@@ -145,8 +145,7 @@ sort_acl(SEC_ACL *the_acl)
 	uint32 i;
 	if (!the_acl) return;
 
-	qsort(the_acl->aces, the_acl->num_aces, sizeof(the_acl->aces[0]),
-              QSORT_CAST ace_compare);
+	TYPESAFE_QSORT(the_acl->aces, the_acl->num_aces, ace_compare);
 
 	for (i=1;i<the_acl->num_aces;) {
 		if (sec_ace_equal(&the_acl->aces[i-1], &the_acl->aces[i])) {

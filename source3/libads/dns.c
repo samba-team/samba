@@ -563,7 +563,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		}
 	}
 
-	qsort( dcs, idx, sizeof(struct dns_rr_srv), QSORT_CAST dnssrvcmp );
+	TYPESAFE_QSORT(dcs, idx, dnssrvcmp );
 
 	*dclist = dcs;
 	*numdcs = idx;
