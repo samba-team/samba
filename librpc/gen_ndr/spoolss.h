@@ -344,7 +344,7 @@ struct spoolss_PrinterInfo2 {
 	uint32_t status;
 	uint32_t cjobs;
 	uint32_t averageppm;
-}/* [gensize,public] */;
+}/* [gensize,public,nopush] */;
 
 struct spoolss_PrinterInfo3 {
 	struct spoolss_security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
