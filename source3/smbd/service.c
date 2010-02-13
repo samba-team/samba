@@ -1037,23 +1037,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	string_set(&conn->origpath,conn->connectpath);
 
-#if SOFTLINK_OPTIMISATION
-	/* resolve any soft links early if possible */
-	if (vfs_ChDir(conn,conn->connectpath) == 0) {
-		TALLOC_CTX *ctx = talloc_tos();
-		char *s = vfs_GetWd(ctx,s);
-		if (!s) {
-			*status = map_nt_error_from_unix(errno);
-			goto err_root_exit;
-		}
-		if (!set_conn_connectpath(conn,s)) {
-			*status = NT_STATUS_NO_MEMORY;
-			goto err_root_exit;
-		}
-		vfs_ChDir(conn,conn->connectpath);
-	}
-#endif
-
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted withing a share path have
 	 * the same characteristics, which is likely but not guaranteed.
