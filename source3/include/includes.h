@@ -609,6 +609,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "../lib/util/xfile.h"
 #include "../lib/util/memory.h"
 #include "../lib/util/attr.h"
+#include "../lib/util/tsort.h"
 #include "intl.h"
 #include "../lib/util/dlinklist.h"
 #include "tdb.h"
