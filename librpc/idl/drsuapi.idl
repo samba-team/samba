@@ -228,14 +228,14 @@ interface drsuapi
 		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaSyncRequest1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsReplicaSyncRequest1 req1;
 	} drsuapi_DsReplicaSyncRequest;
 
 	WERROR drsuapi_DsReplicaSync(
 		[in] policy_handle *bind_handle,
-		[in] int32 level,
-		[in,switch_is(level)] drsuapi_DsReplicaSyncRequest req
+		[in] uint32 level,
+		[in,switch_is(level)] drsuapi_DsReplicaSyncRequest *req
 		);
 
 	/*****************/
