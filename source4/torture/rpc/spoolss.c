@@ -26,6 +26,8 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 
@@ -1318,6 +1320,14 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 			break; \
 		}
 
+#define SD_EQUAL(sd1, sd2, field) \
+		if (!security_descriptor_equal(sd1, sd2)) { \
+			torture_comment(tctx, "Failed to set %s (%s)\n", \
+			       #field, __location__); \
+			ret = false; \
+			break; \
+		}
+
 #define TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, err) do { \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
@@ -1517,6 +1527,229 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 	return ret;
 }
 
+#define torture_assert_sid_equal(torture_ctx,got,expected,cmt)\
+	do { struct dom_sid *__got = (got), *__expected = (expected); \
+	if (!dom_sid_equal(__got, __expected)) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					   __location__": "#got" was %s, expected %s: %s", \
+					   dom_sid_string(torture_ctx, __got), dom_sid_string(torture_ctx, __expected), cmt); \
+		return false; \
+	} \
+	} while(0)
+
+static bool test_security_descriptor_equal(struct torture_context *tctx,
+					   const struct security_descriptor *sd1,
+					   const struct security_descriptor *sd2)
+{
+	if (sd1 == sd2) {
+		return true;
+	}
+
+	if (!sd1 || !sd2) {
+		torture_comment(tctx, "%s\n", __location__);
+		return false;
+	}
+
+	torture_assert_int_equal(tctx, sd1->revision, sd2->revision, "revision mismatch");
+	torture_assert_int_equal(tctx, sd1->type, sd2->type, "type mismatch");
+
+	torture_assert_sid_equal(tctx, sd1->owner_sid, sd2->owner_sid, "owner mismatch");
+	torture_assert_sid_equal(tctx, sd1->group_sid, sd2->group_sid, "group mismatch");
+
+	if (!security_acl_equal(sd1->sacl, sd2->sacl)) {
+		torture_comment(tctx, "%s: sacl mismatch\n", __location__);
+		NDR_PRINT_DEBUG(security_acl, sd1->sacl);
+		NDR_PRINT_DEBUG(security_acl, sd2->sacl);
+		return false;
+	}
+	if (!security_acl_equal(sd1->dacl, sd2->dacl)) {
+		torture_comment(tctx, "%s: dacl mismatch\n", __location__);
+		NDR_PRINT_DEBUG(security_acl, sd1->dacl);
+		NDR_PRINT_DEBUG(security_acl, sd2->dacl);
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_sd_set_level(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle,
+			      uint32_t level,
+			      struct security_descriptor *sd)
+{
+	struct spoolss_SetPrinter r;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	switch (level) {
+	case 2: {
+		union spoolss_PrinterInfo info;
+		struct spoolss_SetPrinterInfo2 info2;
+		torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+		info2.servername	= info.info2.servername;
+		info2.printername	= info.info2.printername;
+		info2.sharename		= info.info2.sharename;
+		info2.portname		= info.info2.portname;
+		info2.drivername	= info.info2.drivername;
+		info2.comment		= info.info2.comment;
+		info2.location		= info.info2.location;
+		info2.devmode_ptr	= 0;
+		info2.sepfile		= info.info2.sepfile;
+		info2.printprocessor	= info.info2.printprocessor;
+		info2.datatype		= info.info2.datatype;
+		info2.parameters	= info.info2.parameters;
+		info2.secdesc_ptr	= 0;
+		info2.attributes	= info.info2.attributes;
+		info2.priority		= info.info2.priority;
+		info2.defaultpriority	= info.info2.defaultpriority;
+		info2.starttime		= info.info2.starttime;
+		info2.untiltime		= info.info2.untiltime;
+		info2.status		= info.info2.status;
+		info2.cjobs		= info.info2.cjobs;
+		info2.averageppm	= info.info2.averageppm;
+
+		info_ctr.level = 2;
+		info_ctr.info.info2 = &info2;
+
+		break;
+	}
+	case 3: {
+		struct spoolss_SetPrinterInfo3 info3;
+
+		info3.sec_desc_ptr = 0;
+
+		info_ctr.level = 3;
+		info_ctr.info.info3 = &info3;
+
+		break;
+	}
+	default:
+		return false;
+	}
+
+	secdesc_ctr.sd = sd;
+
+	r.in.handle = handle;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.in.command = 0;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r), "SetPrinter failed");
+	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
+
+	return true;
+}
+
+static bool test_PrinterInfo_SDs(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *handle)
+{
+	union spoolss_PrinterInfo info;
+	union spoolss_PrinterInfo info_2;
+	struct security_descriptor *sd1, *sd2;
+	int i;
+
+	/* level 2 */
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	sd1 = security_descriptor_copy(tctx, info.info2.secdesc);
+
+	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 2, sd1), "");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info_2), "");
+
+	sd2 = security_descriptor_copy(tctx, info_2.info2.secdesc);
+
+	if (sd1->type & SEC_DESC_DACL_DEFAULTED) {
+		torture_comment(tctx, "removing SEC_DESC_DACL_DEFAULTED from 1st for comparison\n");
+		sd1->type &= ~SEC_DESC_DACL_DEFAULTED;
+	}
+
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+
+	/* level 3 */
+
+	sd1 = sd2;
+
+	for (i=0; i < 93; i++) {
+		struct security_ace a;
+		const char *sid_string = talloc_asprintf(tctx, "S-1-5-32-9999%i", i);
+		a.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+		a.flags = 0;
+		a.size = 0; /* autogenerated */
+		a.access_mask = 0;
+		a.trustee = *dom_sid_parse_talloc(tctx, sid_string);
+		torture_assert_ntstatus_ok(tctx, security_descriptor_dacl_add(sd1, &a), "");
+	}
+
+	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 3, sd1), "");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info_2), "");
+	sd2 = security_descriptor_copy(tctx, info_2.info2.secdesc);
+
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+
+	return true;
+}
+
+/*
+ * wrapper call that saves original sd, runs tests, and restores sd
+ */
+
+static bool test_PrinterInfo_SD(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle)
+{
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinter r;
+	struct spoolss_SetPrinterInfo3 info3;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct security_descriptor *sd;
+	bool ret = true;
+
+	/* save original sd */
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	sd = security_descriptor_copy(tctx, info.info2.secdesc);
+
+	/* run tests */
+
+	ret = test_PrinterInfo_SDs(tctx, p, handle);
+
+	/* restore original sd */
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	info3.sec_desc_ptr = 0;
+
+	info_ctr.level = 3;
+	info_ctr.info.info3 = &info3;
+
+	secdesc_ctr.sd = sd;
+
+	r.in.handle = handle;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.in.command = 0;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r), "SetPrinter failed");
+	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
+
+	return ret;
+}
 
 static bool test_ClosePrinter(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
@@ -3027,6 +3260,10 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		return false;
 	}
 
+	if (!test_PrinterInfo_SD(tctx, p, &handle)) {
+		ret = false;
+	}
+
 	if (!test_GetPrinter(tctx, p, &handle)) {
 		ret = false;
 	}
@@ -3803,6 +4040,10 @@ static bool test_printer(struct torture_context *tctx,
 	}
 
 	if (!test_printer_info(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_PrinterInfo_SD(tctx, p, &handle[0])) {
 		ret = false;
 	}
 
