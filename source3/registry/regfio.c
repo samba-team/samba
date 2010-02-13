@@ -1767,8 +1767,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		parent->subkey_index++;
 
 		/* sort the list by keyname */
-
-		qsort( parent->subkeys.hashes, parent->subkey_index, sizeof(REGF_HASH_REC), QSORT_CAST hashrec_cmp );
+		TYPESAFE_QSORT(parent->subkeys.hashes, parent->subkey_index, hashrec_cmp);
 
 		if ( !hbin_prs_lf_records( "lf_rec", parent->subkeys.hbin, 0, parent ) )
 			return False;

@@ -1158,8 +1158,7 @@ static void print_queue_update_internal( const char *sharename,
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
 
-	qsort(queue, qcount, sizeof(print_queue_struct),
-		QSORT_CAST(printjob_comp));
+	TYPESAFE_QSORT(queue, qcount, printjob_comp);
 
 	/*
 	  any job in the internal database that is marked as spooled
@@ -2736,7 +2735,7 @@ static bool get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
 
-	qsort(queue, total_count, sizeof(print_queue_struct), QSORT_CAST(printjob_comp));
+	TYPESAFE_QSORT(queue, total_count, printjob_comp);
 
 	DEBUG(5,("get_stored_queue_info: total_count = %u\n", (unsigned int)total_count));
 

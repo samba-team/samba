@@ -1177,9 +1177,9 @@ done:
  * recreated on demand.
  */
 
-static int cmp_keynames(const void *p1, const void *p2)
+static int cmp_keynames(char **p1, char **p2)
 {
-	return StrCaseCmp(*((char **)p1), *((char **)p2));
+	return StrCaseCmp(*p1, *p2);
 }
 
 struct create_sorted_subkeys_context {
@@ -1248,7 +1248,7 @@ static NTSTATUS create_sorted_subkeys_action(struct db_context *db,
 		len += strlen(sorted_subkeys[i])+1;
 	}
 
-	qsort(sorted_subkeys, num_subkeys, sizeof(char *), cmp_keynames);
+	TYPESAFE_QSORT(sorted_subkeys, num_subkeys, cmp_keynames);
 
 	buf = talloc_array(ctr, char, len);
 	if (buf == NULL) {
