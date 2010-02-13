@@ -277,7 +277,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		PRINTER_ATTRIBUTE_TS			= 0x00008000
 	} spoolss_PrinterAttributes;
 
-	typedef [public,gensize] struct {
+	typedef [public,gensize,nopush] struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
 		[relative] nstring *sharename;
