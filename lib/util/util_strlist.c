@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/locale.h"
+#include "lib/util/tsort.h"
 
 #undef strcasecmp
 
@@ -393,7 +394,7 @@ _PUBLIC_ const char **str_list_unique(const char **list)
 	}
 	list2 = (const char **)talloc_memdup(list, list,
 					     sizeof(list[0])*(len+1));
-	qsort(list2, len, sizeof(list2[0]), QSORT_CAST list_cmp);
+	TYPESAFE_QSORT(list2, len, list_cmp);
 	list[0] = list2[0];
 	for (i=j=1;i<len;i++) {
 		if (strcmp(list2[i], list[j-1]) != 0) {
