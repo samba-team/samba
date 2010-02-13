@@ -2006,11 +2006,17 @@ LIBWBCLIENT_OBJ0 = ../nsswitch/libwbclient/wbclient.o \
 		  ../nsswitch/libwbclient/wbc_idmap.o \
 		  ../nsswitch/libwbclient/wbc_sid.o \
 		  ../nsswitch/libwbclient/wbc_guid.o \
-		  ../nsswitch/libwbclient/wbc_pam.o \
-		  ../nsswitch/libwbclient/wb_reqtrans.o \
-		  ../nsswitch/libwbclient/wbc_async.o
+		  ../nsswitch/libwbclient/wbc_pam.o
+
+LIBWBCLIENT_OBJ_ASYNC = ../nsswitch/libwbclient/wb_reqtrans.o \
+		  ../nsswitch/libwbclient/wbc_async.o \
+		  ../nsswitch/libwbclient/wbc_util_async.o\
+		  ../nsswitch/libwbclient/wbc_idmap_async.o \
+		  ../nsswitch/libwbclient/wbc_sid_async.o \
+		  ../nsswitch/libwbclient/wbc_pam_async.o
 
 LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) \
+		  $(LIBWBCLIENT_OBJ_ASYNC) \
 		  $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) \
 		  ../lib/async_req/async_sock.o \
@@ -2038,9 +2044,9 @@ $(LIBWBCLIENT_SHARED_TARGET): $(LIBWBCLIENT_SHARED_TARGET_SONAME)
 	@rm -f $@
 	@ln -f -s `basename $(LIBWBCLIENT_SHARED_TARGET_SONAME)` $@
 
-$(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
+$(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(LIBWBCLIENT_OBJ_ASYNC) $(WBCOMMON_OBJ)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
+	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0) $(LIBWBCLIENT_OBJ_ASYNC) $(WBCOMMON_OBJ)
 
 libwbclient: $(LIBWBCLIENT)
 
