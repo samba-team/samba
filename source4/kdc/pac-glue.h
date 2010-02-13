@@ -21,12 +21,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
-				       struct smb_iconv_convenience *ic,
-				       struct auth_serversupplied_info *info,
-				       DATA_BLOB *pac_data);
-
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    DATA_BLOB *pac_blob,
 				    krb5_pac *pac);

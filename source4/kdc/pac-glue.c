@@ -32,6 +32,7 @@
 #include "kdc/kdc.h"
 #include "param/param.h"
 
+static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       struct smb_iconv_convenience *ic,
 				       struct auth_serversupplied_info *info,
