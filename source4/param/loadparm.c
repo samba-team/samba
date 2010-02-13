@@ -1542,7 +1542,7 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 static bool handle_logfile(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
-	logfile = pszParmValue;
+	logfile = strdup(pszParmValue);
 	return true;
 }
 
