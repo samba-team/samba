@@ -149,10 +149,6 @@ static void g_lock_got_retry(struct messaging_context *msg,
 			     uint32_t msg_type,
 			     struct server_id server_id,
 			     DATA_BLOB *data);
-static void g_lock_timedout(struct tevent_context *ev,
-			    struct tevent_timer *te,
-			    struct timeval current_time,
-			    void *private_data);
 
 static NTSTATUS g_lock_trylock(struct g_lock_ctx *ctx, const char *name,
 			       enum g_lock_type lock_type)
@@ -302,7 +298,9 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	timeout_end = timeval_sum(&time_now, &timeout);
 
 	while (true) {
+#ifdef CLUSTER_SUPPORT
 		fd_set _r_fds;
+#endif
 		fd_set *r_fds = NULL;
 		int max_fd = 0;
 		int ret;
@@ -404,7 +402,9 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		 */
 	}
 
+#ifdef CLUSTER_SUPPORT
 done:
+#endif
 
 	if (!NT_STATUS_IS_OK(status)) {
 		NTSTATUS unlock_status;
@@ -435,16 +435,6 @@ static void g_lock_got_retry(struct messaging_context *msg,
 		   procid_str(talloc_tos(), &server_id)));
 
 	*pretry = true;
-}
-
-static void g_lock_timedout(struct tevent_context *ev,
-			    struct tevent_timer *te,
-			    struct timeval current_time,
-			    void *private_data)
-{
-	bool *ptimedout = (bool *)private_data;
-	*ptimedout = true;
-	TALLOC_FREE(te);
 }
 
 static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
