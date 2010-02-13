@@ -45,11 +45,8 @@ struct usrinfo {
 	struct timeval login_time;
 };
 
-static int usr_info_cmp(const void *p1, const void *p2)
+static int usr_info_cmp(const struct usrinfo *usr1, const struct usrinfo *usr2)
 {
-	const struct usrinfo *usr1 = (const struct usrinfo *)p1;
-	const struct usrinfo *usr2 = (const struct usrinfo *)p2;
-
 	/* Called from qsort to compare two users in a usrinfo_t array for
 	 * sorting by login time. Return >0 if usr1 login time was later than
 	 * usr2 login time, <0 if it was earlier */
@@ -104,7 +101,7 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 	}
 
 	/* Sort the user list by time, oldest first */
-	qsort(usr_infos, num_users, sizeof(struct usrinfo), usr_info_cmp);
+	TYPESAFE_QSORT(usr_infos, num_users, usr_info_cmp);
 
 	users = (char**)talloc_array(mem_ctx, char*, num_users);
 	if (users) {
@@ -127,14 +124,11 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 
 #endif
 
-static int dom_user_cmp(const void *p1, const void *p2)
+static int dom_user_cmp(const struct dom_usr *usr1, const struct dom_usr *usr2)
 {
 	/* Called from qsort to compare two domain users in a dom_usr_t array
 	 * for sorting by login time. Return >0 if usr1 login time was later
 	 * than usr2 login time, <0 if it was earlier */
-	const struct dom_usr *usr1 = (const struct dom_usr *)p1;
-	const struct dom_usr *usr2 = (const struct dom_usr *)p2;
-
 	return (usr1->login_time - usr2->login_time);
 }
 
@@ -235,7 +229,7 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 	users = tmp;
 
 	/* Sort the user list by time, oldest first */
-	qsort(users, num_users, sizeof(struct dom_usr), dom_user_cmp);
+	TYPESAFE_QSORT(users, num_users, dom_user_cmp);
 
 	errno = 0;
 	return users;
