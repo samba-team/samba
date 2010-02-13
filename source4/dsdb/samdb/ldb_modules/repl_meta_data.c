@@ -603,9 +603,7 @@ static int replmd_replPropertyMetaDataCtr1_sort(struct replPropertyMetaDataCtr1 
 	DEBUG(6,("Sorting rpmd with attid exception %u rDN=%s DN=%s\n", 
 		 rdn_sa->attributeID_id, rdn_name, ldb_dn_get_linearized(dn)));
 
-	ldb_qsort(ctr1->array, ctr1->count, sizeof(struct replPropertyMetaData1),
-		  discard_const_p(void, &rdn_sa->attributeID_id), 
-		  (ldb_qsort_cmp_fn_t)replmd_replPropertyMetaData1_attid_sort);
+	LDB_TYPESAFE_QSORT(ctr1->array, ctr1->count, &rdn_sa->attributeID_id, replmd_replPropertyMetaData1_attid_sort);
 
 	return LDB_SUCCESS;
 }
@@ -641,8 +639,7 @@ static int replmd_ldb_message_element_attid_sort(const struct ldb_message_elemen
 static void replmd_ldb_message_sort(struct ldb_message *msg,
 				    const struct dsdb_schema *schema)
 {
-	ldb_qsort(msg->elements, msg->num_elements, sizeof(struct ldb_message_element),
-		  discard_const_p(void, schema), (ldb_qsort_cmp_fn_t)replmd_ldb_message_element_attid_sort);
+	LDB_TYPESAFE_QSORT(msg->elements, msg->num_elements, schema, replmd_ldb_message_element_attid_sort);
 }
 
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,

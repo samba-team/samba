@@ -669,8 +669,7 @@ static void nbtd_wins_randomize1Clist(struct loadparm_context *lp_ctx,
 	if (num_addrs <= 1) return; /* nothing to do */
 
 	/* first sort the addresses depending on the matching to the client */
-	ldb_qsort(addresses, num_addrs , sizeof(addresses[0]),
-		  src, (ldb_qsort_cmp_fn_t)nbtd_wins_randomize1Clist_sort);
+	LDB_TYPESAFE_QSORT(addresses, num_addrs, src, nbtd_wins_randomize1Clist_sort);
 
 	mask = lp_parm_string(lp_ctx, NULL, "nbtd", "wins_randomize1Clist_mask");
 	if (!mask) {

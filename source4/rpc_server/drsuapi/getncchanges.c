@@ -990,9 +990,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.linked_attributes_count = getnc_state->la_count;
 		r->out.ctr->ctr6.linked_attributes = talloc_steal(mem_ctx, getnc_state->la_list);
 
-		ldb_qsort(r->out.ctr->ctr6.linked_attributes, r->out.ctr->ctr6.linked_attributes_count,
-			  sizeof(r->out.ctr->ctr6.linked_attributes[0]),
-			  b_state->sam_ctx, (ldb_qsort_cmp_fn_t)linked_attribute_compare);
+		LDB_TYPESAFE_QSORT(r->out.ctr->ctr6.linked_attributes, r->out.ctr->ctr6.linked_attributes_count,
+				   b_state->sam_ctx, linked_attribute_compare);
 
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;

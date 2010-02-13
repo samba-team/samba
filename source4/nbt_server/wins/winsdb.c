@@ -503,7 +503,7 @@ add_new_addr:
 
 	addresses[len+1] = NULL;
 
-	ldb_qsort(addresses, len+1 , sizeof(addresses[0]), h, (ldb_qsort_cmp_fn_t)winsdb_addr_sort_list);
+	LDB_TYPESAFE_QSORT(addresses, len+1, h, winsdb_addr_sort_list);
 
 	return addresses;
 }

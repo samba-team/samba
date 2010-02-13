@@ -248,8 +248,7 @@ again:
 		int i;
 
 		if (sctx->num_stored) {
-			ldb_qsort(sctx->store, sctx->num_stored, sizeof(struct ldb_message *),
-				  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
+			LDB_TYPESAFE_QSORT(sctx->store, sctx->num_stored, ldb, do_compare_msg);
 		}
 		for (i = 0; i < sctx->num_stored; i++) {
 			display_message(sctx->store[i], sctx);

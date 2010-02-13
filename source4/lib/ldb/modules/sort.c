@@ -144,9 +144,7 @@ static int server_sort_results(struct sort_context *ac)
 	ac->a = ldb_schema_attribute_by_name(ldb, ac->attributeName);
 	ac->sort_result = 0;
 
-	ldb_qsort(ac->msgs, ac->num_msgs,
-		  sizeof(struct ldb_message *),
-		  ac, (ldb_qsort_cmp_fn_t)sort_compare);
+	LDB_TYPESAFE_QSORT(ac->msgs, ac->num_msgs, ac, sort_compare);
 
 	if (ac->sort_result != LDB_SUCCESS) {
 		return ac->sort_result;
