@@ -31,6 +31,7 @@
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/security/security.h"
 #include "lib/util/binsearch.h"
+#include "lib/util/tsort.h"
 
 /*
   build a DsReplicaObjectIdentifier from a ldb msg
@@ -506,7 +507,7 @@ static int linked_attribute_compare(const struct drsuapi_DsReplicaLinkedAttribut
 /*
   sort the objects we send by tree order
  */
-static int site_res_cmp_parent_order(const struct ldb_message **m1, const struct ldb_message **m2)
+static int site_res_cmp_parent_order(struct ldb_message **m1, struct ldb_message **m2)
 {
 	return ldb_dn_compare((*m2)->dn, (*m1)->dn);
 }
@@ -514,7 +515,7 @@ static int site_res_cmp_parent_order(const struct ldb_message **m1, const struct
 /*
   sort the objects we send first by uSNChanged
  */
-static int site_res_cmp_usn_order(const struct ldb_message **m1, const struct ldb_message **m2)
+static int site_res_cmp_usn_order(struct ldb_message **m1, struct ldb_message **m2)
 {
 	unsigned usnchanged1, usnchanged2;
 	unsigned cn1, cn2;
@@ -841,24 +842,21 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		if (req8->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			qsort(getnc_state->site_res->msgs,
-			      getnc_state->site_res->count,
-			      sizeof(getnc_state->site_res->msgs[0]),
-			      (comparison_fn_t)site_res_cmp_parent_order);
+			TYPESAFE_QSORT(getnc_state->site_res->msgs,
+				       getnc_state->site_res->count,
+				       site_res_cmp_parent_order);
 		} else {
-			qsort(getnc_state->site_res->msgs,
-			      getnc_state->site_res->count,
-			      sizeof(getnc_state->site_res->msgs[0]),
-			      (comparison_fn_t)site_res_cmp_usn_order);
+			TYPESAFE_QSORT(getnc_state->site_res->msgs,
+				       getnc_state->site_res->count,
+				       site_res_cmp_usn_order);
 		}
 
 		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req8->uptodateness_vector);
 		if (getnc_state->uptodateness_vector) {
 			/* make sure its sorted */
-			qsort(getnc_state->uptodateness_vector->cursors, 
-			      getnc_state->uptodateness_vector->count,
-			      sizeof(getnc_state->uptodateness_vector->cursors[0]),
-			      (comparison_fn_t)drsuapi_DsReplicaCursor_compare);
+			TYPESAFE_QSORT(getnc_state->uptodateness_vector->cursors,
+				       getnc_state->uptodateness_vector->count,
+				       drsuapi_DsReplicaCursor_compare);
 		}
 	}
 

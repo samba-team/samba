@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "../lib/crypto/crypto.h"
+#include "lib/util/tsort.h"
 
 /*
   this type allows us to distinguish handle types
@@ -1637,8 +1638,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* sort the results by name */
-	qsort(entries, count, sizeof(*entries), 
-	      (comparison_fn_t)compare_DomainInfo);
+	TYPESAFE_QSORT(entries, count, compare_DomainInfo);
 
 	if (*r->in.resume_handle >= count) {
 		*r->out.resume_handle = -1;
@@ -1733,8 +1733,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_ca
 	}
 
 	/* sort the results by name */
-	qsort(entries, count, sizeof(*entries), 
-	      (comparison_fn_t)compare_TrustDomainInfoInfoEx);
+	TYPESAFE_QSORT(entries, count, compare_TrustDomainInfoInfoEx);
 
 	if (*r->in.resume_handle >= count) {
 		*r->out.resume_handle = -1;

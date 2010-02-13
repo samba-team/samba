@@ -37,6 +37,7 @@
 #include "rpc_server/samr/proto.h"
 #include "../lib/util/util_ldb.h"
 #include "param/param.h"
+#include "lib/util/tsort.h"
 
 /* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 
@@ -1168,8 +1169,7 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 	}
 
 	/* sort the results by rid */
-	qsort(entries, count, sizeof(struct samr_SamEntry), 
-	      (comparison_fn_t)compare_SamEntry);
+	TYPESAFE_QSORT(entries, count, compare_SamEntry);
 
 	/* find the first entry to return */
 	for (first=0;
@@ -1529,8 +1529,7 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	}
 
 	/* sort the results by rid */
-	qsort(entries, num_filtered_entries, sizeof(struct samr_SamEntry), 
-	      (comparison_fn_t)compare_SamEntry);
+	TYPESAFE_QSORT(entries, num_filtered_entries, compare_SamEntry);
 
 	/* find the first entry to return */
 	for (first=0;
@@ -1739,8 +1738,7 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	}
 
 	/* sort the results by rid */
-	qsort(entries, count, sizeof(struct samr_SamEntry), 
-	      (comparison_fn_t)compare_SamEntry);
+	TYPESAFE_QSORT(entries, count, compare_SamEntry);
 
 	/* find the first entry to return */
 	for (first=0;
