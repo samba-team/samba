@@ -1439,9 +1439,7 @@ static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
 	data_len = fixed_len = string_len = 0;
 	missed = 0;
 
-	if (total > 0) {
-		qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
-	}
+	TYPESAFE_QSORT(servers, total, srv_comp);
 
 	{
 		char *lastname=NULL;
@@ -1616,9 +1614,7 @@ static bool api_RNetServerEnum3(connection_struct *conn, uint16 vuid,
 	data_len = fixed_len = string_len = 0;
 	missed = 0;
 
-	if (total > 0) {
-		qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
-	}
+	TYPESAFE_QSORT(servers, total, srv_comp);
 
 	if (first_name[0] != '\0') {
 		struct srv_info_struct *first_server = NULL;

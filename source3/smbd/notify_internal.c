@@ -200,10 +200,8 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 /*
   compare notify entries for sorting
 */
-static int notify_compare(const void *p1, const void *p2)
+static int notify_compare(const struct notify_entry *e1, const struct notify_entry *e2)
 {
-	const struct notify_entry *e1 = (const struct notify_entry *)p1;
-	const struct notify_entry *e2 = (const struct notify_entry *)p2;
 	return strcmp(e1->path, e2->path);
 }
 
@@ -339,9 +337,7 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct db_record
 	d->max_mask |= e->filter;
 	d->max_mask_subdir |= e->subdir_filter;
 
-	if (d->num_entries > 1) {
-		qsort(d->entries, d->num_entries, sizeof(d->entries[0]), notify_compare);
-	}
+	TYPESAFE_QSORT(d->entries, d->num_entries, notify_compare);
 
 	/* recalculate the maximum masks */
 	d->max_mask = 0;
