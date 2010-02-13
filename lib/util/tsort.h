@@ -27,12 +27,14 @@
   a wrapper around qsort() that ensures the comparison function is
   type safe.
  */
+#ifndef TYPESAFE_QSORT
 #define TYPESAFE_QSORT(base, numel, comparison) \
 do { \
 	if (numel > 1) { \
-		qsort(base, numel, sizeof((base)[0]), QSORT_CAST comparison); \
+		qsort(base, numel, sizeof((base)[0]), (int (*)(const void *, const void *))comparison); \
 		assert(comparison(&((base)[0]), &((base)[1])) <= 0); \
 	} \
 } while (0)
+#endif
 
 #endif

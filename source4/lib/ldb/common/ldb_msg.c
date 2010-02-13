@@ -464,8 +464,8 @@ struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
 */
 void ldb_msg_sort_elements(struct ldb_message *msg)
 {
-	qsort(msg->elements, msg->num_elements, sizeof(struct ldb_message_element), 
-	      (comparison_fn_t)ldb_msg_element_compare_name);
+	TYPESAFE_QSORT(msg->elements, msg->num_elements,
+		       ldb_msg_element_compare_name);
 }
 
 /*

@@ -34,13 +34,11 @@
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "ldbutil.h"
+#include "replace.h"
 
-static int dn_cmp(const void *p1, const void *p2)
+static int dn_cmp(struct ldb_message **msg1, struct ldb_message **msg2)
 {
-	const struct ldb_message *msg1, *msg2;
-	msg1 = *(const struct ldb_message * const *)p1;
-	msg2 = *(const struct ldb_message * const *)p2;
-	return ldb_dn_compare(msg1->dn, msg2->dn);
+	return ldb_dn_compare((*msg1)->dn, (*msg2)->dn);
 }
 
 static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struct ldb_control **req_ctrls)
@@ -53,7 +51,7 @@ static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struc
 	if (ret != LDB_SUCCESS) return -1;
 
 	/* sort the DNs, deepest first */
-	qsort(res->msgs, res->count, sizeof(res->msgs[0]), dn_cmp);
+	TYPESAFE_QSORT(res->msgs, res->count, dn_cmp);
 
 	for (i = 0; i < res->count; i++) {
 		if (ldb_delete_ctrl(ldb, res->msgs[i]->dn,req_ctrls) == 0) {

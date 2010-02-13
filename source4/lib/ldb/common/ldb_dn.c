@@ -824,8 +824,8 @@ char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 	 * the resulting DNs consistent, plus to ensure that we put
 	 * 'DELETED' first, so it can be very quickly recognised
 	 */
-	qsort(dn->ext_components, dn->ext_comp_num, sizeof(dn->ext_components[0]),
-	      ldb_dn_extended_component_compare);
+	TYPESAFE_QSORT(dn->ext_components, dn->ext_comp_num,
+		       ldb_dn_extended_component_compare);
 
 	for (i = 0; i < dn->ext_comp_num; i++) {
 		const struct ldb_dn_extended_syntax *ext_syntax;

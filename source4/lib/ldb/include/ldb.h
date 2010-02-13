@@ -2002,6 +2002,17 @@ do { \
 	} \
 } while (0)
 
+/* allow ldb to also call TYPESAFE_QSORT() */
+#ifndef TYPESAFE_QSORT
+#define TYPESAFE_QSORT(base, numel, comparison) \
+do { \
+	if (numel > 1) { \
+		qsort(base, numel, sizeof((base)[0]), (int (*)(const void *, const void *))comparison); \
+		comparison(&((base)[0]), &((base)[1])); \
+	} \
+} while (0)
+#endif
+
 
 
 /**

@@ -973,7 +973,7 @@ static void ltdb_dn_list_remove_duplicates(struct dn_list *list)
 		return;
 	}
 
-	qsort(list->dn, list->count, sizeof(struct ldb_val), (comparison_fn_t) dn_list_cmp);
+	TYPESAFE_QSORT(list->dn, list->count, dn_list_cmp);
 
 	new_count = 1;
 	for (i=1; i<list->count; i++) {
