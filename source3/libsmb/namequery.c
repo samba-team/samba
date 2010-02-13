@@ -433,16 +433,16 @@ bool name_status_find(const char *q_name,
   comparison function used by sort_addr_list
 */
 
-static int addr_compare(const struct sockaddr *ss1,
-		const struct sockaddr *ss2)
+static int addr_compare(const struct sockaddr_storage *ss1,
+			const struct sockaddr_storage *ss2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();
 	int i;
 
 	/* Sort IPv4 addresses first. */
-	if (ss1->sa_family != ss2->sa_family) {
-		if (ss2->sa_family == AF_INET) {
+	if (ss1->ss_family != ss2->ss_family) {
+		if (ss2->ss_family == AF_INET) {
 			return 1;
 		} else {
 			return -1;
@@ -460,7 +460,7 @@ static int addr_compare(const struct sockaddr *ss1,
 		size_t len = 0;
 		int bits1, bits2;
 
-		if (pss->ss_family != ss1->sa_family) {
+		if (pss->ss_family != ss1->ss_family) {
 			/* Ignore interfaces of the wrong type. */
 			continue;
 		}
@@ -494,15 +494,15 @@ static int addr_compare(const struct sockaddr *ss1,
 	}
 
 	/* Bias towards directly reachable IPs */
-	if (iface_local(ss1)) {
-		if (ss1->sa_family == AF_INET) {
+	if (iface_local((struct sockaddr *)ss1)) {
+		if (ss1->ss_family == AF_INET) {
 			max_bits1 += 32;
 		} else {
 			max_bits1 += 128;
 		}
 	}
-	if (iface_local(ss2)) {
-		if (ss2->sa_family == AF_INET) {
+	if (iface_local((struct sockaddr *)ss2)) {
+		if (ss2->ss_family == AF_INET) {
 			max_bits2 += 32;
 		} else {
 			max_bits2 += 128;
@@ -519,7 +519,7 @@ int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
 {
 	int result;
 
-	if ((result = addr_compare((struct sockaddr *)&ss1->ss, (struct sockaddr *)&ss2->ss)) != 0) {
+	if ((result = addr_compare(&ss1->ss, &ss2->ss)) != 0) {
 		return result;
 	}
 
@@ -546,8 +546,7 @@ static void sort_addr_list(struct sockaddr_storage *sslist, int count)
 		return;
 	}
 
-	qsort(sslist, count, sizeof(struct sockaddr_storage),
-			QSORT_CAST addr_compare);
+	TYPESAFE_QSORT(sslist, count, addr_compare);
 }
 
 static void sort_service_list(struct ip_service *servlist, int count)
@@ -556,8 +555,7 @@ static void sort_service_list(struct ip_service *servlist, int count)
 		return;
 	}
 
-	qsort(servlist, count, sizeof(struct ip_service),
-			QSORT_CAST ip_service_compare);
+	TYPESAFE_QSORT(servlist, count, ip_service_compare);
 }
 
 /**********************************************************************
