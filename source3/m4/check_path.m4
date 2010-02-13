@@ -151,8 +151,8 @@ AC_ARG_WITH(piddir,
 
 #################################################
 # set ncalrpc directory location
-AC_ARG_WITH(ncalprcdir,
-[AS_HELP_STRING([--with-ncalprcdir=DIR], [Where to put ncalrpc sockets ($ac_default_prefix/var/ncalrpc)])],
+AC_ARG_WITH(ncalrpcdir,
+[AS_HELP_STRING([--with-ncalrpcdir=DIR], [Where to put ncalrpc sockets ($ac_default_prefix/var/ncalrpc)])],
 [ case "$withval" in
   yes|no)
   #
