@@ -236,7 +236,7 @@ bool afs_settoken_str(const char *token_string)
 	if (!afs_decode_token(token_string, &cell, &ticket, &ct))
 		return False;
 
-	if (geteuid() != 0)
+	if (geteuid() != sec_initial_uid())
 		ct.ViceId = getuid();
 
 	result = afs_settoken(cell, &ct, ticket);

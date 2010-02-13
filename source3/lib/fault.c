@@ -304,7 +304,7 @@ void dump_core_setup(const char *progname)
 	/* If we're running as non root we might not be able to dump the core
 	 * file to the corepath.  There must not be an unbecome_root() before
 	 * we call abort(). */
-	if (geteuid() != 0) {
+	if (geteuid() != sec_initial_uid()) {
 		become_root();
 	}
 

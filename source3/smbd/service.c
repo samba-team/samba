@@ -1083,7 +1083,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
   err_root_exit:
 	TALLOC_FREE(smb_fname_cpath);
 	/* We must exit this function as root. */
-	if (geteuid() != sec_initial_uid()) {
+	if (geteuid() != 0) {
 		change_to_root_user();
 	}
 	if (on_err_call_dis_hook) {

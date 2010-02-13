@@ -738,7 +738,7 @@ void check_log_size( void )
 	 *  loop check do a new check as root.
 	 */
 
-	if( geteuid() != 0 )
+	if( geteuid() != sec_initial_uid() )
 		return;
 
 	if(log_overflow || !need_to_check_log_size() )
