@@ -225,11 +225,11 @@ _NORETURN_ static void standard_terminate(struct tevent_context *ev, struct load
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
 
+	talloc_free(ev);
+
 	/* this reload_charcnv() has the effect of freeing the iconv context memory,
 	   which makes leak checking easier */
 	reload_charcnv(lp_ctx);
-
-	talloc_free(ev);
 
 	/* terminate this process */
 	exit(0);
