@@ -1019,27 +1019,20 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	   check during individual operations. To match this behaviour
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
-	if (SMB_VFS_STAT(conn, smb_fname_cpath) == 0) {
-		if (!S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
+	if ((ret = SMB_VFS_STAT(conn, smb_fname_cpath)) != 0 ||
+	    !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
+		if (ret == 0 && !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
 			DEBUG(0,("'%s' is not a directory, when connecting to "
 				 "[%s]\n", conn->connectpath,
 				 lp_servicename(snum)));
-			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
-			goto err_root_exit;
-		}
-	} else {
-		/* Stat failed. Bail on any error except permission denied. */
-		if (errno != EACCES) {
-			DEBUG(0,("Connecting to share [%s], path '%s' "
-				"gives error %s\n",
-				lp_servicename(snum),
-				 conn->connectpath,
+		} else {
+			DEBUG(0,("'%s' does not exist or permission denied "
+				 "when connecting to [%s] Error was %s\n",
+				 conn->connectpath, lp_servicename(snum),
 				 strerror(errno) ));
-			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
-			goto err_root_exit;
 		}
-		/* As Windows does, on permsission denied we continue.
- 		 * Pathname calls fail, not TconX calls. */
+		*pstatus = NT_STATUS_BAD_NETWORK_NAME;
+		goto err_root_exit;
 	}
 
 	string_set(&conn->origpath,conn->connectpath);
