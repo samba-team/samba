@@ -23,6 +23,7 @@
 #include "libcli/raw/raw_proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "lib/util/tsort.h"
 
 
 #define BASEDIR "\\testsearch"
@@ -733,8 +734,7 @@ static bool test_many_files(struct torture_context *tctx,
 
 		compare_data_level = search_types[t].data_level;
 
-		qsort(result.list, result.count, sizeof(result.list[0]), 
-		      QSORT_CAST  search_compare);
+		TYPESAFE_QSORT(result.list, result.count, search_compare);
 
 		for (i=0;i<result.count;i++) {
 			const char *s;
@@ -1345,8 +1345,7 @@ static bool test_ea_list(struct torture_context *tctx,
 
 	/* we have to sort the result as different servers can return directories
 	   in different orders */
-	qsort(result.list, result.count, sizeof(result.list[0]), 
-	      (comparison_fn_t)ealist_cmp);
+	TYPESAFE_QSORT(result.list, result.count, ealist_cmp);
 
 	CHECK_VALUE(result.count, 3);
 	CHECK_VALUE(result.list[0].ea_list.eas.num_eas, 2);

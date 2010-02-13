@@ -34,6 +34,7 @@
 #include "torture/util.h"
 
 #include "system/filesys.h"
+#include "lib/util/tsort.h"
 
 #define DNAME	"smb2_dir"
 #define NFILES	100
@@ -808,8 +809,7 @@ static bool test_many_files(struct torture_context *tctx,
 		compare_data_level = search_types[t].data_level;
 		level_sort = search_types[t].level;
 
-		qsort(result.list, result.count, sizeof(result.list[0]),
-		      QSORT_CAST  search_compare);
+		TYPESAFE_QSORT(result.list, result.count, search_compare);
 
 		for (i=0;i<result.count;i++) {
 			const char *s;

@@ -28,6 +28,7 @@
 
 #include "system/filesys.h"
 #include "system/locale.h"
+#include "lib/util/tsort.h"
 
 #define DNAME "teststreams"
 
@@ -79,19 +80,13 @@
 	}} while (0)
 
 
-static int qsort_string(const void *v1,
-			const void *v2)
+static int qsort_string(char * const *s1, char * const *s2)
 {
-	char * const *s1 = v1;
-	char * const *s2 = v2;
 	return strcmp(*s1, *s2);
 }
 
-static int qsort_stream(const void *v1,
-			const void *v2)
+static int qsort_stream(const struct stream_struct * s1, const struct stream_struct *s2)
 {
-	const struct stream_struct * s1 = v1;
-	const struct stream_struct * s2 = v2;
 	return strcmp(s1->stream_name.s, s2->stream_name.s);
 }
 
@@ -197,7 +192,7 @@ static bool check_stream_list(struct smb2_tree *tree,
 		goto fail;
 	}
 
-	qsort(exp_sort, num_exp, sizeof(*exp_sort), qsort_string);
+	TYPESAFE_QSORT(exp_sort, num_exp, qsort_string);
 
 	stream_sort = talloc_memdup(tmp_ctx, finfo.stream_info.out.streams,
 				    finfo.stream_info.out.num_streams *
@@ -207,8 +202,7 @@ static bool check_stream_list(struct smb2_tree *tree,
 		goto fail;
 	}
 
-	qsort(stream_sort, finfo.stream_info.out.num_streams,
-	      sizeof(*stream_sort), qsort_stream);
+	TYPESAFE_QSORT(stream_sort, finfo.stream_info.out.num_streams, qsort_stream);
 
 	for (i=0; i<num_exp; i++) {
 		if (strcmp(exp_sort[i], stream_sort[i].stream_name.s) != 0) {
