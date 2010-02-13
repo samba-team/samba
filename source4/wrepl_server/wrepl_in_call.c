@@ -30,6 +30,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/time.h"
+#include "lib/util/tsort.h"
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -300,7 +301,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	}
 
 	/* sort the names before we send them */
-	qsort(names, j, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
+	TYPESAFE_QSORT(names, j, wreplsrv_in_sort_wins_name);
 
 	DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
 		j, owner_in->address, 
