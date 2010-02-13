@@ -944,7 +944,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 
 #if ZERO_ZERO
 	/* sort the lock list */
-	qsort(br_lck->lock_data, (size_t)br_lck->num_locks, sizeof(lock), lock_compare);
+	TYPESAFE_QSORT(br_lck->lock_data, (size_t)br_lck->num_locks, lock_compare);
 #endif
 
 	/* If we're returning an error, return who blocked us. */
@@ -2029,8 +2029,7 @@ static void brl_revalidate(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	qsort(state->pids, state->num_pids, sizeof(state->pids[0]),
-	      compare_procids);
+	TYPESAFE_QSORT(state->pids, state->num_pids, compare_procids);
 
 	ZERO_STRUCT(last_pid);
 
