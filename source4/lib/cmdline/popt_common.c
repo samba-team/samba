@@ -67,7 +67,7 @@ static void popt_samba_callback(poptContext con,
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		if (lp_configfile(cmdline_lp_ctx) == NULL) {
-            lp_load_default(cmdline_lp_ctx);
+			lp_load_default(cmdline_lp_ctx);
 		}
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
