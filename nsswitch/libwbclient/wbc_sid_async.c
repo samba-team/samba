@@ -24,6 +24,7 @@
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
+#include "wbc_async.h"
 
 struct wbc_lookup_name_state {
 	struct winbindd_request req;

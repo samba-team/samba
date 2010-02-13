@@ -23,6 +23,7 @@
 
 #include "replace.h"
 #include "libwbclient.h"
+#include "wbc_async.h"
 
 struct wbc_sid_to_uid_state {
 	struct winbindd_request req;

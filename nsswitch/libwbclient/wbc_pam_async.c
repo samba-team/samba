@@ -24,6 +24,7 @@
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
+#include "wbc_async.h"
 
 /* FIXME: Currently this is still a copy of the same function from wbc_pam.c */
 static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,

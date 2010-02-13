@@ -36,7 +36,6 @@
 /* Public headers */
 
 #include "wbclient.h"
-#include "wbc_async.h"
 
 /* Private headers */
 
