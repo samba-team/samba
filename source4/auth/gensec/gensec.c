@@ -30,6 +30,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "lib/util/tsort.h"
 
 /* the list of currently registered GENSEC backends */
 static struct gensec_security_ops **generic_security_ops;
@@ -1405,7 +1406,7 @@ _PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 
 	talloc_free(shared_init);
 
-	qsort(generic_security_ops, gensec_num_backends, sizeof(*generic_security_ops), QSORT_CAST sort_gensec);
+	TYPESAFE_QSORT(generic_security_ops, gensec_num_backends, sort_gensec);
 	
 	return NT_STATUS_OK;
 }
