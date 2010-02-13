@@ -68,7 +68,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	const int PRINTER_STATUS_OK		= 0x00000000;
 
-	typedef bitmap {
+	typedef [public] bitmap {
 		PRINTER_STATUS_PAUSED		= 0x00000001,
 		PRINTER_STATUS_ERROR		= 0x00000002,
 		PRINTER_STATUS_PENDING_DELETION	= 0x00000004,
@@ -255,7 +255,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *comment;
 	} spoolss_PrinterInfo1;
 
-	typedef bitmap {
+	typedef [public] bitmap {
 		PRINTER_ATTRIBUTE_QUEUED		= 0x00000001,
 		PRINTER_ATTRIBUTE_DIRECT		= 0x00000002,
 		PRINTER_ATTRIBUTE_DEFAULT		= 0x00000004,
