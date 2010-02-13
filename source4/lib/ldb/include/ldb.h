@@ -1985,6 +1985,24 @@ time_t ldb_string_utc_to_time(const char *s);
 
 void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque, ldb_qsort_cmp_fn_t cmp);
 
+#ifndef discard_const
+#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
+#endif
+
+/*
+  a wrapper around ldb_qsort() that ensures the comparison function is
+  type safe. This will produce a compilation warning if the types
+  don't match
+ */
+#define LDB_TYPESAFE_QSORT(base, numel, opaque, comparison)	\
+do { \
+	if (numel > 1) { \
+		ldb_qsort(base, numel, sizeof((base)[0]), discard_const(opaque), (ldb_qsort_cmp_fn_t)comparison); \
+		comparison(&((base)[0]), &((base)[1]), opaque);		\
+	} \
+} while (0)
+
+
 
 /**
    Convert an array of string represention of a control into an array of ldb_control structures 
