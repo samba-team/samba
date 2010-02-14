@@ -1271,16 +1271,16 @@ enum drsuapi_DsReplicaInfoType
 struct drsuapi_DsReplicaGetInfoRequest1 {
 	enum drsuapi_DsReplicaInfoType info_type;
 	const char *object_dn;/* [unique,charset(UTF16)] */
-	struct GUID guid1;
+	struct GUID source_dsa_guid;
 };
 
 struct drsuapi_DsReplicaGetInfoRequest2 {
 	enum drsuapi_DsReplicaInfoType info_type;
 	const char *object_dn;/* [unique,charset(UTF16)] */
-	struct GUID guid1;
+	struct GUID source_dsa_guid;
 	uint32_t flags;
-	const char *string1;/* [unique,charset(UTF16)] */
-	const char *string2;/* [unique,charset(UTF16)] */
+	const char *attribute_name;/* [unique,charset(UTF16)] */
+	const char *value_dn_str;/* [unique,charset(UTF16)] */
 	uint32_t enumeration_context;
 };
 

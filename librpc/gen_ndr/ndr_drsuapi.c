@@ -9599,7 +9599,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoRequest1(struct ndr_pu
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaInfoType(ndr, NDR_SCALARS, r->info_type));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->object_dn));
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid1));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_guid));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -9626,7 +9626,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest1(struct ndr_pu
 		} else {
 			r->object_dn = NULL;
 		}
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->guid1));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->source_dsa_guid));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -9657,7 +9657,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaGetInfoRequest1(struct ndr_print *ndr, 
 		ndr_print_string(ndr, "object_dn", r->object_dn);
 	}
 	ndr->depth--;
-	ndr_print_GUID(ndr, "guid1", &r->guid1);
+	ndr_print_GUID(ndr, "source_dsa_guid", &r->source_dsa_guid);
 	ndr->depth--;
 }
 
@@ -9667,10 +9667,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaInfoType(ndr, NDR_SCALARS, r->info_type));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->object_dn));
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid1));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->source_dsa_guid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string1));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string2));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->attribute_name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->value_dn_str));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumeration_context));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
@@ -9681,17 +9681,17 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->object_dn, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->object_dn, ndr_charset_length(r->object_dn, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->string1) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->string1, CH_UTF16)));
+		if (r->attribute_name) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->attribute_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->string1, CH_UTF16)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string1, ndr_charset_length(r->string1, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->attribute_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->attribute_name, ndr_charset_length(r->attribute_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->string2) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->string2, CH_UTF16)));
+		if (r->value_dn_str) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->value_dn_str, CH_UTF16)));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->string2, CH_UTF16)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string2, ndr_charset_length(r->string2, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->value_dn_str, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->value_dn_str, ndr_charset_length(r->value_dn_str, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -9701,10 +9701,10 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 {
 	uint32_t _ptr_object_dn;
 	TALLOC_CTX *_mem_save_object_dn_0;
-	uint32_t _ptr_string1;
-	TALLOC_CTX *_mem_save_string1_0;
-	uint32_t _ptr_string2;
-	TALLOC_CTX *_mem_save_string2_0;
+	uint32_t _ptr_attribute_name;
+	TALLOC_CTX *_mem_save_attribute_name_0;
+	uint32_t _ptr_value_dn_str;
+	TALLOC_CTX *_mem_save_value_dn_str_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaInfoType(ndr, NDR_SCALARS, &r->info_type));
@@ -9714,19 +9714,19 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 		} else {
 			r->object_dn = NULL;
 		}
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->guid1));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->source_dsa_guid));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string1));
-		if (_ptr_string1) {
-			NDR_PULL_ALLOC(ndr, r->string1);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_attribute_name));
+		if (_ptr_attribute_name) {
+			NDR_PULL_ALLOC(ndr, r->attribute_name);
 		} else {
-			r->string1 = NULL;
+			r->attribute_name = NULL;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string2));
-		if (_ptr_string2) {
-			NDR_PULL_ALLOC(ndr, r->string2);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_value_dn_str));
+		if (_ptr_value_dn_str) {
+			NDR_PULL_ALLOC(ndr, r->value_dn_str);
 		} else {
-			r->string2 = NULL;
+			r->value_dn_str = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumeration_context));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
@@ -9744,29 +9744,29 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaGetInfoRequest2(struct ndr_pu
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->object_dn, ndr_get_array_length(ndr, &r->object_dn), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_object_dn_0, 0);
 		}
-		if (r->string1) {
-			_mem_save_string1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->string1, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->string1));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->string1));
-			if (ndr_get_array_length(ndr, &r->string1) > ndr_get_array_size(ndr, &r->string1)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->string1), ndr_get_array_length(ndr, &r->string1));
+		if (r->attribute_name) {
+			_mem_save_attribute_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->attribute_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->attribute_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->attribute_name));
+			if (ndr_get_array_length(ndr, &r->attribute_name) > ndr_get_array_size(ndr, &r->attribute_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->attribute_name), ndr_get_array_length(ndr, &r->attribute_name));
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->string1), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string1, ndr_get_array_length(ndr, &r->string1), sizeof(uint16_t), CH_UTF16));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string1_0, 0);
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->attribute_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->attribute_name, ndr_get_array_length(ndr, &r->attribute_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_attribute_name_0, 0);
 		}
-		if (r->string2) {
-			_mem_save_string2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->string2, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->string2));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->string2));
-			if (ndr_get_array_length(ndr, &r->string2) > ndr_get_array_size(ndr, &r->string2)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->string2), ndr_get_array_length(ndr, &r->string2));
+		if (r->value_dn_str) {
+			_mem_save_value_dn_str_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->value_dn_str, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->value_dn_str));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->value_dn_str));
+			if (ndr_get_array_length(ndr, &r->value_dn_str) > ndr_get_array_size(ndr, &r->value_dn_str)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->value_dn_str), ndr_get_array_length(ndr, &r->value_dn_str));
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->string2), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string2, ndr_get_array_length(ndr, &r->string2), sizeof(uint16_t), CH_UTF16));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string2_0, 0);
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->value_dn_str), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->value_dn_str, ndr_get_array_length(ndr, &r->value_dn_str), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value_dn_str_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -9783,18 +9783,18 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaGetInfoRequest2(struct ndr_print *ndr, 
 		ndr_print_string(ndr, "object_dn", r->object_dn);
 	}
 	ndr->depth--;
-	ndr_print_GUID(ndr, "guid1", &r->guid1);
+	ndr_print_GUID(ndr, "source_dsa_guid", &r->source_dsa_guid);
 	ndr_print_uint32(ndr, "flags", r->flags);
-	ndr_print_ptr(ndr, "string1", r->string1);
+	ndr_print_ptr(ndr, "attribute_name", r->attribute_name);
 	ndr->depth++;
-	if (r->string1) {
-		ndr_print_string(ndr, "string1", r->string1);
+	if (r->attribute_name) {
+		ndr_print_string(ndr, "attribute_name", r->attribute_name);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "string2", r->string2);
+	ndr_print_ptr(ndr, "value_dn_str", r->value_dn_str);
 	ndr->depth++;
-	if (r->string2) {
-		ndr_print_string(ndr, "string2", r->string2);
+	if (r->value_dn_str) {
+		ndr_print_string(ndr, "value_dn_str", r->value_dn_str);
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "enumeration_context", r->enumeration_context);
