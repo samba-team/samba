@@ -105,7 +105,7 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	p->mem_ctx = talloc_init("pipe %s %p",
+	p->mem_ctx = talloc_named(p, 0, "pipe %s %p",
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   syntax), p);
 	if (p->mem_ctx == NULL) {
@@ -116,7 +116,6 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	if (!init_pipe_handle_list(p, syntax)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
-		talloc_destroy(p->mem_ctx);
 		TALLOC_FREE(p);
 		return NULL;
 	}
@@ -130,7 +129,6 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	if(!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
-		talloc_destroy(p->mem_ctx);
 		close_policy_by_pipe(p);
 		TALLOC_FREE(p);
 		return NULL;
@@ -139,7 +137,6 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	p->server_info = copy_serverinfo(p, server_info);
 	if (p->server_info == NULL) {
 		DEBUG(0, ("open_rpc_pipe_p: copy_serverinfo failed\n"));
-		talloc_destroy(p->mem_ctx);
 		close_policy_by_pipe(p);
 		TALLOC_FREE(p);
 		return NULL;
@@ -344,10 +341,9 @@ static void free_pipe_context(pipes_struct *p)
 			 "%lu\n", (unsigned long)talloc_total_size(p->mem_ctx) ));
 		talloc_free_children(p->mem_ctx);
 	} else {
-		p->mem_ctx = talloc_init(
-			"pipe %s %p", get_pipe_name_from_syntax(talloc_tos(),
-								&p->syntax),
-			p);
+		p->mem_ctx = talloc_named(p, 0, "pipe %s %p",
+				    get_pipe_name_from_syntax(talloc_tos(),
+							      &p->syntax), p);
 		if (p->mem_ctx == NULL) {
 			p->fault_state = True;
 		}
@@ -932,8 +928,6 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		(*p->auth.auth_data_free_func)(&p->auth);
 	}
 
-	TALLOC_FREE(p->mem_ctx);
-
 	free_pipe_rpc_context( p->contexts );
 
 	/* Free the handles database. */
@@ -943,9 +937,7 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 
 	ZERO_STRUCTP(p);
 
-	TALLOC_FREE(p);
-	
-	return True;
+	return 0;
 }
 
 bool fsp_is_np(struct files_struct *fsp)
