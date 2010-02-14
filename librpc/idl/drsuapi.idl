@@ -1384,7 +1384,7 @@ interface drsuapi
 		GUID source_dsa_guid;
 		uint32 flags;
 		[charset(UTF16),string] uint16 *attribute_name;
-		[charset(UTF16),string] uint16 *string2;
+		[charset(UTF16),string] uint16 *value_dn_str;
 		uint32 enumeration_context;
 	} drsuapi_DsReplicaGetInfoRequest2;
 
