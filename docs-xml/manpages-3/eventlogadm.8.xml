@@ -20,6 +20,7 @@
 	<cmdsynopsis>
 
 		<command>eventlogadm</command>
+		<arg><option>-s</option></arg>
 		<arg><option>-d</option></arg>
 		<arg><option>-h</option></arg>
 		<arg choice="plain"><option>-o</option>
@@ -32,6 +33,7 @@
 	</cmdsynopsis>
 	<cmdsynopsis>
 		<command>eventlogadm</command>
+		<arg><option>-s</option></arg>
 		<arg><option>-d</option></arg>
 		<arg><option>-h</option></arg>
 		<arg choice="plain"><option>-o</option>
@@ -42,6 +44,7 @@
 	</cmdsynopsis>
 	<cmdsynopsis>
 		<command>eventlogadm</command>
+		<arg><option>-s</option></arg>
 		<arg><option>-d</option></arg>
 		<arg><option>-h</option></arg>
 		<arg choice="plain"><option>-o</option>
@@ -72,6 +75,16 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
+		<varlistentry>
+		<term>
+		<option>-s</option>
+		<replaceable>FILENAME</replaceable>
+		</term>
+		<listitem><para>
+		The <command>-s</command> option causes <command>eventlogadm</command> to load the
+		configuration file given as FILENAME instead of the default one used by Samba.
+		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><option>-d</option></term>

@@ -40,6 +40,7 @@ static void usage( char *s )
 	printf( " -o addsource <EventlogName> <sourcename> <msgfileDLLname> \tAdds the specified source & DLL eventlog registry entry\n" );
 	printf( " -o dump <Eventlog Name> <starting_record>\t\t\t\t\tDump stored eventlog entries on STDOUT\n" );
 	printf( "\nMiscellaneous options:\n" );
+	printf( " -s <filename>\t\t\t\t\t\t\tUse configuration file <filename>.\n");
 	printf( " -d\t\t\t\t\t\t\t\tturn debug on\n" );
 	printf( " -h\t\t\t\t\t\t\t\tdisplay help\n\n" );
 }
@@ -50,7 +51,7 @@ static void display_eventlog_names( void )
 	int i;
 
 	elogs = lp_eventlog_list(  );
-	printf( "Active eventlog names (from smb.conf):\n" );
+	printf( "Active eventlog names:\n" );
 	printf( "--------------------------------------\n" );
 	if ( elogs ) {
 		for ( i = 0; elogs[i]; i++ ) {
@@ -220,6 +221,7 @@ int main( int argc, char *argv[] )
 {
 	int opt, rc;
 	char *exename;
+	char *configfile = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 
@@ -228,8 +230,6 @@ int main( int argc, char *argv[] )
 	load_case_tables();
 
 	opt_debug = 0;		/* todo set this from getopts */
-
-	lp_load(get_dyn_CONFIGFILE(), True, False, False, True);
 
 	exename = argv[0];
 
@@ -240,7 +240,7 @@ int main( int argc, char *argv[] )
 #if 0				/* TESTING CODE */
 	eventlog_add_source( "System", "TestSourceX", "SomeTestPathX" );
 #endif
-	while ( ( opt = getopt( argc, argv, "dho:" ) ) != EOF ) {
+	while ( ( opt = getopt( argc, argv, "dho:s:" ) ) != EOF ) {
 		switch ( opt ) {
 
 		case 'o':
@@ -256,6 +256,10 @@ int main( int argc, char *argv[] )
 		case 'd':
 			opt_debug = 1;
 			break;
+		case 's':
+			configfile = talloc_strdup(frame, optarg);
+			break;
+
 		}
 	}
 
@@ -265,6 +269,13 @@ int main( int argc, char *argv[] )
 	if ( argc < 1 ) {
 		printf( "\nNot enough arguments!\n" );
 		usage( exename );
+		exit( 1 );
+	}
+
+	if ( configfile == NULL ) {
+		lp_load(get_dyn_CONFIGFILE(), True, False, False, True);
+	} else if (!lp_load(configfile, True, False, False, True)) {
+		printf("Unable to parse configfile '%s'\n",configfile);
 		exit( 1 );
 	}
 
