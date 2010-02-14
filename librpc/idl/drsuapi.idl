@@ -1383,7 +1383,7 @@ interface drsuapi
 		[charset(UTF16),string] uint16 *object_dn;
 		GUID source_dsa_guid;
 		uint32 flags;
-		[charset(UTF16),string] uint16 *string1;
+		[charset(UTF16),string] uint16 *attribute_name;
 		[charset(UTF16),string] uint16 *string2;
 		uint32 enumeration_context;
 	} drsuapi_DsReplicaGetInfoRequest2;
