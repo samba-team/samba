@@ -482,27 +482,23 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		break;
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		if (creds2.length != sig_size) {
-			DEBUG(0,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
-				 (unsigned)creds2.length, (uint32_t)sig_size,
-				 (unsigned)dce_conn->auth_state.auth_info->auth_pad_length,
-				 (unsigned)pkt->u.response.stub_and_verifier.length));
-			data_blob_free(&creds2);
-			status = NT_STATUS_INTERNAL_ERROR;
-		}
-	}
-
-	if (NT_STATUS_IS_OK(status)) {
-		if (!data_blob_append(call, blob, creds2.data, creds2.length)) {
-			status = NT_STATUS_NO_MEMORY;
-		}
-		data_blob_free(&creds2);
-	}
-
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}	
+
+	if (creds2.length != sig_size) {
+		DEBUG(3,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
+			 (unsigned)creds2.length, (uint32_t)sig_size,
+			 (unsigned)dce_conn->auth_state.auth_info->auth_pad_length,
+			 (unsigned)pkt->u.response.stub_and_verifier.length));
+		dcerpc_set_frag_length(blob, blob->length + creds2.length);
+		dcerpc_set_auth_length(blob, creds2.length);
+	}
+
+	if (!data_blob_append(call, blob, creds2.data, creds2.length)) {
+		status = NT_STATUS_NO_MEMORY;
+	}
+	data_blob_free(&creds2);
 
 	return true;
 }
