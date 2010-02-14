@@ -378,7 +378,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	struct ndr_push *ndr;
-	uint32_t payload_length;
+	uint32_t payload_length, offset;
 	DATA_BLOB creds2;
 
 	/* non-signed packets are simple */
@@ -423,12 +423,12 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	}
 
 	/* pad to 16 byte multiple, match win2k3 */
-	dce_conn->auth_state.auth_info->auth_pad_length =
-		(16 - (pkt->u.response.stub_and_verifier.length & 15)) & 15;
-	ndr_err = ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
+	offset = ndr->offset;
+	ndr_err = ndr_push_align(ndr, 16);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
+	dce_conn->auth_state.auth_info->auth_pad_length = ndr->offset - offset;
 
 	payload_length = pkt->u.response.stub_and_verifier.length +
 		dce_conn->auth_state.auth_info->auth_pad_length;

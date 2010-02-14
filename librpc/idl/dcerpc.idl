@@ -155,14 +155,17 @@ interface dcerpc
 	const uint8 DCERPC_AUTH_TRAILER_LENGTH = 8;
 
 	typedef [public] struct {
+		[value(0)]	      uint32    _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_auth3;
 
 	typedef [public] struct {
+		[value(0)]	      uint32    _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_orphaned;
 
 	typedef [public] struct {
+		[value(0)]	      uint32    _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_co_cancel;
 

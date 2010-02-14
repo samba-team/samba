@@ -52,8 +52,8 @@ const struct ndr_interface_call *dcerpc_iface_find_call(const struct ndr_interfa
 */
 NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			 struct smb_iconv_convenience *iconv_convenience,
-			  struct ncacn_packet *pkt,
-			  struct dcerpc_auth *auth_info)
+			 struct ncacn_packet *pkt,
+			 struct dcerpc_auth *auth_info)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code ndr_err;
@@ -83,10 +83,12 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 
 	if (auth_info) {
-		ndr_err = ndr_push_zero(ndr, auth_info->auth_pad_length);
+		uint32_t offset = ndr->offset;
+		ndr_err = ndr_push_align(ndr, 16);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
 		}
+		auth_info->auth_pad_length = ndr->offset - offset;
 		ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);

@@ -318,6 +318,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	size_t payload_length;
 	enum ndr_err_code ndr_err;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
+	uint32_t offset;
 
 	/* non-signed packets are simpler */
 	if (sig_size == 0) {
@@ -362,17 +363,15 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
-	status = NT_STATUS_OK;
 
 	/* pad to 16 byte multiple in the payload portion of the
 	   packet. This matches what w2k3 does */
-	c->security_state.auth_info->auth_pad_length = 
-		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
-	ndr_err = ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
+	offset = ndr->offset;
+	ndr_err = ndr_push_align(ndr, 16);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
-	status = NT_STATUS_OK;
+	c->security_state.auth_info->auth_pad_length = ndr->offset - offset;
 
 	payload_length = pkt->u.request.stub_and_verifier.length + 
 		c->security_state.auth_info->auth_pad_length;
@@ -385,7 +384,6 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
-	status = NT_STATUS_OK;
 
 	/* extract the whole packet as a blob */
 	*blob = ndr_push_blob(ndr);
@@ -433,12 +431,17 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	}
 
 	if (creds2.length != sig_size) {
-		DEBUG(0,("ncacn_push_request_sign: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
+		/* this means the sig_size estimate for the signature
+		   was incorrect. We have to correct the packet
+		   sizes. That means we could go over the max fragment
+		   length */
+		DEBUG(3,("ncacn_push_request_sign: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
 			(unsigned) creds2.length,
 			(unsigned) sig_size,
 			(unsigned) c->security_state.auth_info->auth_pad_length,
 			(unsigned) pkt->u.request.stub_and_verifier.length));
-		return NT_STATUS_INTERNAL_ERROR;
+		dcerpc_set_frag_length(blob, blob->length + creds2.length);
+		dcerpc_set_auth_length(blob, creds2.length);
 	}
 
 	if (!data_blob_append(mem_ctx, blob, creds2.data, creds2.length)) {

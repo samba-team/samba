@@ -180,14 +180,17 @@ struct dcerpc_auth {
 }/* [public] */;
 
 struct dcerpc_auth3 {
+	uint32_t _pad;/* [value(0)] */
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 
 struct dcerpc_orphaned {
+	uint32_t _pad;/* [value(0)] */
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 
 struct dcerpc_co_cancel {
+	uint32_t _pad;/* [value(0)] */
 	DATA_BLOB auth_info;/* [flag(LIBNDR_FLAG_REMAINING)] */
 }/* [public] */;
 
