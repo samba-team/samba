@@ -360,12 +360,12 @@ static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 		case DRSUAPI_DS_REPLICA_GET_INFO:
 			r.in.req->req1.info_type	= array[i].infotype;
 			r.in.req->req1.object_dn	= object_dn;
-			ZERO_STRUCT(r.in.req->req1.guid1);
+			ZERO_STRUCT(r.in.req->req1.source_dsa_guid);
 			break;
 		case DRSUAPI_DS_REPLICA_GET_INFO2:
 			r.in.req->req2.info_type	= array[i].infotype;
 			r.in.req->req2.object_dn	= object_dn;
-			ZERO_STRUCT(r.in.req->req2.guid1);
+			ZERO_STRUCT(r.in.req->req2.source_dsa_guid);
 			r.in.req->req2.flags	= 0;
 			r.in.req->req2.string1	= NULL;
 			r.in.req->req2.string2	= NULL;

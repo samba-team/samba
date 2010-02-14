@@ -602,7 +602,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		base_index = 0;
 		info_type = req1->info_type;
 		object_dn_str = req1->object_dn;
-		req_src_dsa_guid = req1->guid1;
+		req_src_dsa_guid = req1->source_dsa_guid;
 
 	} else { /* r->in.level == DRSUAPI_DS_REPLICA_GET_INFO2 */
 		req2 = &req->in.req->req2;
@@ -615,7 +615,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		base_index = req2->enumeration_context;
 		info_type = req2->info_type;
 		object_dn_str = req2->object_dn;
-		req_src_dsa_guid = req2->guid1;
+		req_src_dsa_guid = req2->source_dsa_guid;
 	}
 
 	/* allocate the reply and fill in some fields */
