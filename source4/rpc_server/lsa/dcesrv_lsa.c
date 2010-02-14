@@ -551,7 +551,6 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 	case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
 		return dcesrv_lsa_info_AccountDomain(state, mem_ctx, &info->l_account_domain);
 
-
 	case LSA_POLICY_INFO_ROLE:
 		info->role.role = LSA_ROLE_PRIMARY;
 		return NT_STATUS_OK;
