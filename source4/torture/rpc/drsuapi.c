@@ -366,9 +366,9 @@ static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 			r.in.req->req2.info_type	= array[i].infotype;
 			r.in.req->req2.object_dn	= object_dn;
 			ZERO_STRUCT(r.in.req->req2.source_dsa_guid);
-			r.in.req->req2.flags	= 0;
-			r.in.req->req2.string1	= NULL;
-			r.in.req->req2.string2	= NULL;
+			r.in.req->req2.flags		= 0;
+			r.in.req->req2.attribute_name	= NULL;
+			r.in.req->req2.value_dn_str	= NULL;
 			r.in.req->req2.enumeration_context = 0;
 			break;
 		}
