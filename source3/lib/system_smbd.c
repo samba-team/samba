@@ -68,7 +68,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 		return -1;
 	}
 
-	if (initgroups(user, gid) != 0) {
+	if (initgroups(user, gid) == -1) {
 		DEBUG(0, ("getgrouplist_internals: initgroups() failed!\n"));
 		SAFE_FREE(gids_saved);
 		return -1;
