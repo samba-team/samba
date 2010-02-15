@@ -822,7 +822,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	ldb_msg_add_linearized_dn(msg, "msDS-EnabledFeature", op_feature_msg->dn);
 	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
+	ret = dsdb_module_modify(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				"rootdse_enable_recycle_bin: Failed to modify object %s - %s",
@@ -832,7 +832,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	}
 
 	msg->dn = op_feature_scope_dn;
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
+	ret = dsdb_module_modify(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
 				       ldb_dn_get_linearized(op_feature_scope_dn), ldb_errstring(ldb));
