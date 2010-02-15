@@ -1737,6 +1737,122 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_devicemode_equal(struct torture_context *tctx,
+				  const struct spoolss_DeviceMode *d1,
+				  const struct spoolss_DeviceMode *d2)
+{
+	if (d1 == d2) {
+		return true;
+	}
+
+	if (!d1 || !d2) {
+		torture_comment(tctx, "%s\n", __location__);
+		return false;
+	}
+	torture_assert_str_equal(tctx, d1->devicename, d2->devicename, "devicename mismatch");
+	torture_assert_int_equal(tctx, d1->specversion, d2->specversion, "specversion mismatch");
+	torture_assert_int_equal(tctx, d1->driverversion, d2->driverversion, "driverversion mismatch");
+	torture_assert_int_equal(tctx, d1->size, d2->size, "size mismatch");
+	torture_assert_int_equal(tctx, d1->__driverextra_length, d2->__driverextra_length, "__driverextra_length mismatch");
+	torture_assert_int_equal(tctx, d1->fields, d2->fields, "fields mismatch");
+	torture_assert_int_equal(tctx, d1->orientation, d2->orientation, "orientation mismatch");
+	torture_assert_int_equal(tctx, d1->papersize, d2->papersize, "papersize mismatch");
+	torture_assert_int_equal(tctx, d1->paperlength, d2->paperlength, "paperlength mismatch");
+	torture_assert_int_equal(tctx, d1->paperwidth, d2->paperwidth, "paperwidth mismatch");
+	torture_assert_int_equal(tctx, d1->scale, d2->scale, "scale mismatch");
+	torture_assert_int_equal(tctx, d1->copies, d2->copies, "copies mismatch");
+	torture_assert_int_equal(tctx, d1->defaultsource, d2->defaultsource, "defaultsource mismatch");
+	torture_assert_int_equal(tctx, d1->printquality, d2->printquality, "printquality mismatch");
+	torture_assert_int_equal(tctx, d1->color, d2->color, "color mismatch");
+	torture_assert_int_equal(tctx, d1->duplex, d2->duplex, "duplex mismatch");
+	torture_assert_int_equal(tctx, d1->yresolution, d2->yresolution, "yresolution mismatch");
+	torture_assert_int_equal(tctx, d1->ttoption, d2->ttoption, "ttoption mismatch");
+	torture_assert_int_equal(tctx, d1->collate, d2->collate, "collate mismatch");
+	torture_assert_str_equal(tctx, d1->formname, d2->formname, "formname mismatch");
+	torture_assert_int_equal(tctx, d1->logpixels, d2->logpixels, "logpixels mismatch");
+	torture_assert_int_equal(tctx, d1->bitsperpel, d2->bitsperpel, "bitsperpel mismatch");
+	torture_assert_int_equal(tctx, d1->pelswidth, d2->pelswidth, "pelswidth mismatch");
+	torture_assert_int_equal(tctx, d1->pelsheight, d2->pelsheight, "pelsheight mismatch");
+	torture_assert_int_equal(tctx, d1->displayflags, d2->displayflags, "displayflags mismatch");
+	torture_assert_int_equal(tctx, d1->displayfrequency, d2->displayfrequency, "displayfrequency mismatch");
+	torture_assert_int_equal(tctx, d1->icmmethod, d2->icmmethod, "icmmethod mismatch");
+	torture_assert_int_equal(tctx, d1->icmintent, d2->icmintent, "icmintent mismatch");
+	torture_assert_int_equal(tctx, d1->mediatype, d2->mediatype, "mediatype mismatch");
+	torture_assert_int_equal(tctx, d1->dithertype, d2->dithertype, "dithertype mismatch");
+	torture_assert_int_equal(tctx, d1->reserved1, d2->reserved1, "reserved1 mismatch");
+	torture_assert_int_equal(tctx, d1->reserved2, d2->reserved2, "reserved2 mismatch");
+	torture_assert_int_equal(tctx, d1->panningwidth, d2->panningwidth, "panningwidth mismatch");
+	torture_assert_int_equal(tctx, d1->panningheight, d2->panningheight, "panningheight mismatch");
+	torture_assert_data_blob_equal(tctx, d1->driverextra_data, d2->driverextra_data, "driverextra_data mismatch");
+
+	return true;
+}
+
+static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      struct policy_handle *handle)
+{
+	union spoolss_PrinterInfo info;
+	struct spoolss_DeviceMode *devmode;
+	struct spoolss_DeviceMode *devmode2;
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
+
+	devmode = info.info8.devmode;
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	devmode2 = info.info2.devmode;
+
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+
+	return true;
+}
+
+/*
+ * wrapper call that saves original devmode, runs tests, and restores devmode
+ */
+
+static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *handle)
+{
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfo8 info8;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_DeviceMode *devmode;
+	bool ret = true;
+
+	/* save original devmode */
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
+
+	devmode = info.info8.devmode;
+
+	/* run tests */
+
+	ret = test_PrinterInfo_DevModes(tctx, p, handle);
+
+	/* restore original devmode */
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	info8.devmode_ptr = 0;
+
+	info_ctr.level = 8;
+	info_ctr.info.info8 = &info8;
+
+	devmode_ctr.devmode = devmode;
+
+	torture_assert(tctx,
+		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
+
+	return ret;
+}
+
 static bool test_ClosePrinter(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
@@ -4035,6 +4151,10 @@ static bool test_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterInfo_SD(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_PrinterInfo_DevMode(tctx, p, &handle[0])) {
 		ret = false;
 	}
 
