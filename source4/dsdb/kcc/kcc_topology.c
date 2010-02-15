@@ -493,7 +493,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		// TODO: don't need to ldb_search again; search in res.
+		/* TODO: don't need to ldb_search again; search in res. */
 		ret = ldb_search(ldb, tmp_ctx, &res_site_link, base_dn,
 				 LDB_SCOPE_SUBTREE, attrs,
 				 "objectClass=siteLink");
