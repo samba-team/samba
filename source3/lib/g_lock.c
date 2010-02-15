@@ -338,7 +338,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		 * for writing and some other process already holds a lock
 		 * on the registry.tdb.
 		 *
-		 * So as a quick fix, we act a little corasely here: we do
+		 * So as a quick fix, we act a little coarsely here: we do
 		 * a select on the ctdb connection fd and when it is readable
 		 * or we get EINTR, then we retry without actually parsing
 		 * any ctdb packages or dispatching messages. This means that
