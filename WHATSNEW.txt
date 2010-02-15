@@ -4,8 +4,10 @@
                    =============================
 
 
-This is the first stable release of Samba 3.5.
-
+This is the third release candidate of Samba 3.5.  This is *not*
+intended for production environments and is designed for testing
+purposes only.  Please report any defects via the Samba bug reporting
+system at https://bugzilla.samba.org/.
 
 Major enhancements in Samba 3.5.0 include:
 
@@ -143,6 +145,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 7084: Fix storing of create time on directories in an EA in new
       create time code.
     * BUG 7104: "wide links" and "unix extensions" are incompatible.
+    * BUG 7118: Fix nmbd problems with socket address.
     * BUG 7122: Fix reading of large browselist.
 
 
@@ -150,8 +153,13 @@ o   Steven Danneman <steven.danneman@isilon.com>
     * BUG 7096: Fix string buffer overflow causing heap corruption in smbd.
 
 
+o   Günther Deschner <gd@samba.org>
+    * BUG 7130: Fix listing of printjobs in  Windows 7.
+
+
 o   Björn Jacke <bj@sernet.de>
     * BUG 7103: Fix build issue on Tru64.
+    * BUG 7116: Change ldap filter to what really was intended.
     * Fix some wrong newlines in de translation strings.
 
 
@@ -163,6 +171,7 @@ o   Volker Lendecke <vl@samba.org>
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 7098: Fix results of 'smbclient -L' with a large browse list.
     * BUG 7116: Add pdb_ldap performance fixes.
+    * BUG 7118: Add new "nmbd bind explicit broadcast" parameter.
     * BUG 7119: Support large browselist.
 
 
