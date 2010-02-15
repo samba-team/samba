@@ -108,6 +108,34 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 			      (locks[i].lock_type & G_LOCK_PENDING) ?
 			      "(pending)" : "(owner)"));
 
+		if (((locks[i].lock_type & G_LOCK_PENDING) == 0)
+		    && !process_exists(locks[i].pid)) {
+
+			DEBUGADD(10, ("lock owner %s died -- discarding\n",
+				      procid_str(talloc_tos(),
+						 &locks[i].pid)));
+
+			if (i < (num_locks-1)) {
+				locks[i] = locks[num_locks-1];
+			}
+			num_locks -= 1;
+		}
+	}
+
+	*plocks = locks;
+	*pnum_locks = num_locks;
+	return true;
+}
+
+static void g_lock_cleanup(int *pnum_locks, struct g_lock_rec *locks)
+{
+	int i, num_locks;
+
+	num_locks = *pnum_locks;
+
+	DEBUG(10, ("g_lock_cleanup: %d locks\n", num_locks));
+
+	for (i=0; i<num_locks; i++) {
 		if (process_exists(locks[i].pid)) {
 			continue;
 		}
@@ -119,10 +147,8 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 		}
 		num_locks -= 1;
 	}
-
-	*plocks = locks;
 	*pnum_locks = num_locks;
-	return true;
+	return;
 }
 
 static struct g_lock_rec *g_lock_addrec(TALLOC_CTX *mem_ctx,
@@ -237,6 +263,13 @@ again:
 		 * have acquired the lock this time.
 		 */
 		locks[our_index].lock_type = lock_type;
+	}
+
+	if (NT_STATUS_IS_OK(status) && ((lock_type & G_LOCK_PENDING) == 0)) {
+		/*
+		 * Walk through the list of locks, search for dead entries
+		 */
+		g_lock_cleanup(&num_locks, locks);
 	}
 
 	data = make_tdb_data((uint8_t *)locks, num_locks * sizeof(*locks));
