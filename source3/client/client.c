@@ -4234,7 +4234,7 @@ static char **remote_completion(const char *text, int len)
 	int i;
 	completion_remote_t info = { NULL, NULL, 1, 0, NULL, 0 };
 
-	/* can't have non-static intialisation on Sun CC, so do it
+	/* can't have non-static initialisation on Sun CC, so do it
 	   at run time here */
 	info.samelen = len;
 	info.text = text;
