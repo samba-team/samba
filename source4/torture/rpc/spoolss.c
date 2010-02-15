@@ -3815,17 +3815,22 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
 		"failed to add printer");
 	result = ex ? rex.out.result : r.out.result;
-	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTPROCESSOR,
-		"unexpected result code");
 
-	info2.printprocessor = "winprint";
+	/* w2k8r2 allows to add printer w/o defining printprocessor */
 
-	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
-					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
-		"failed to add printer");
-	result = ex ? rex.out.result : r.out.result;
-	torture_assert_werr_ok(tctx, result,
-		"failed to add printer");
+	if (!W_ERROR_IS_OK(result)) {
+		torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTPROCESSOR,
+			"unexpected result code");
+
+		info2.printprocessor = "winprint";
+
+		torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+						      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+			"failed to add printer");
+		result = ex ? rex.out.result : r.out.result;
+		torture_assert_werr_ok(tctx, result,
+			"failed to add printer");
+	}
 
 	*handle_p = handle;
 
