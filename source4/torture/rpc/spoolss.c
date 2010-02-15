@@ -1645,32 +1645,53 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 				 struct policy_handle *handle)
 {
 	union spoolss_PrinterInfo info;
-	union spoolss_PrinterInfo info_2;
 	struct security_descriptor *sd1, *sd2;
 	int i;
 
-	/* level 2 */
+	/* just compare level 2 and level 3 */
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
 
-	sd1 = security_descriptor_copy(tctx, info.info2.secdesc);
+	sd1 = info.info2.secdesc;
 
-	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 2, sd1), "");
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 3, &info), "");
 
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info_2), "");
-
-	sd2 = security_descriptor_copy(tctx, info_2.info2.secdesc);
-
-	if (sd1->type & SEC_DESC_DACL_DEFAULTED) {
-		torture_comment(tctx, "removing SEC_DESC_DACL_DEFAULTED from 1st for comparison\n");
-		sd1->type &= ~SEC_DESC_DACL_DEFAULTED;
-	}
+	sd2 = info.info3.secdesc;
 
 	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
 
-	/* level 3 */
 
-	sd1 = sd2;
+	/* query level 2, set level 2, query level 2 */
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	sd1 = info.info2.secdesc;
+
+	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 2, sd1), "");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	sd2 = info.info2.secdesc;
+
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+
+
+	/* query level 2, set level 3, query level 2 */
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	sd1 = info.info2.secdesc;
+
+	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 3, sd1), "");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	sd2 = info.info2.secdesc;
+
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+
+
+	/* set modified sd level 3, query level 2 */
 
 	for (i=0; i < 93; i++) {
 		struct security_ace a;
@@ -1685,8 +1706,13 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 
 	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 3, sd1), "");
 
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info_2), "");
-	sd2 = security_descriptor_copy(tctx, info_2.info2.secdesc);
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+	sd2 = info.info2.secdesc;
+
+	if (sd1->type & SEC_DESC_DACL_DEFAULTED) {
+		torture_comment(tctx, "removing SEC_DESC_DACL_DEFAULTED\n");
+		sd1->type &= ~SEC_DESC_DACL_DEFAULTED;
+	}
 
 	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
 
