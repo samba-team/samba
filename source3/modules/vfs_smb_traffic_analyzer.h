@@ -104,7 +104,9 @@ enum vfs_id {
         vfs_id_mkdir,
         vfs_id_rmdir,
         vfs_id_rename,
-        vfs_id_chdir
+        vfs_id_chdir,
+	vfs_id_open,
+	vfs_id_close
 };
 
 
@@ -113,6 +115,17 @@ enum vfs_id {
  * Specific data sets for the VFS functions.
  * A compatible receiver has to have the exact same dataset.
  */
+struct open_data {
+	const char *filename;
+	mode_t mode;
+	int result;
+};
+
+struct close_data {
+	const char *filename;
+	int result;
+};
+
 struct mkdir_data {
         const char *path;
         mode_t mode;

@@ -478,6 +478,22 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	} else if ( strcmp( protocol_version, "V2") == 0) {
 
 		switch( vfs_operation ) {
+		case vfs_id_open: ;
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_id_open,
+				3, ((struct open_data *) data)->filename,
+				talloc_asprintf( talloc_tos(), "%u",
+				((struct open_data *) data)->mode),
+				talloc_asprintf( talloc_tos(), "%u",
+				((struct open_data *) data)->result));
+			break;
+		case vfs_id_close: ;
+			str = smb_traffic_analyzer_create_string( talloc_tos(),
+				tm, seconds, handle, username, vfs_id_close,
+				2, ((struct close_data *) data)->filename,
+				talloc_asprintf( talloc_tos(), "%u",
+				((struct close_data *) data)->result));
+			break;
 		case vfs_id_mkdir: ;
 			str = smb_traffic_analyzer_create_string( talloc_tos(),
 				tm, seconds, handle, username, vfs_id_mkdir, \
@@ -782,6 +798,38 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	return s_data.len;
 }
 
+static int smb_traffic_analyzer_open(vfs_handle_struct *handle, \
+	struct smb_filename *smb_fname, files_struct *fsp,\
+	int flags, mode_t mode)
+{
+	struct open_data s_data;
+
+	s_data.result = SMB_VFS_NEXT_OPEN( handle, smb_fname, fsp,
+			flags, mode);
+	DEBUG(10,("smb_traffic_analyzer_open: OPEN: %s\n",
+		fsp_str_dbg(fsp)));
+	s_data.filename = fsp->fsp_name->base_name;
+	smb_traffic_analyzer_send_data(handle,
+			&s_data,
+			vfs_id_open);
+	return s_data.result;
+}
+
+static int smb_traffic_analyzer_close(vfs_handle_struct *handle, \
+	files_struct *fsp)
+{
+	struct close_data s_data;
+	s_data.result = SMB_VFS_NEXT_CLOSE(handle, fsp);
+	DEBUG(10,("smb_traffic_analyzer_close: CLOSE: %s\n",
+		fsp_str_dbg(fsp)));
+	s_data.filename = fsp->fsp_name->base_name;
+	smb_traffic_analyzer_send_data(handle,
+			&s_data,
+			vfs_id_close);
+	return s_data.result;
+}
+
+	
 static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
         .connect_fn = smb_traffic_analyzer_connect,
 	.vfs_read = smb_traffic_analyzer_read,
@@ -790,7 +838,9 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 	.pwrite = smb_traffic_analyzer_pwrite,
 	.mkdir = smb_traffic_analyzer_mkdir,
 	.rename = smb_traffic_analyzer_rename,
-	.chdir = smb_traffic_analyzer_chdir
+	.chdir = smb_traffic_analyzer_chdir,
+	.open = smb_traffic_analyzer_open,
+	.close_fn = smb_traffic_analyzer_close
 };
 
 /* Module initialization */
