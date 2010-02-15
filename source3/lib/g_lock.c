@@ -127,11 +127,12 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 
 static struct g_lock_rec *g_lock_addrec(TALLOC_CTX *mem_ctx,
 					struct g_lock_rec *locks,
-					int num_locks,
+					int *pnum_locks,
 					const struct server_id pid,
 					enum g_lock_type lock_type)
 {
 	struct g_lock_rec *result;
+	int num_locks = *pnum_locks;
 
 	result = talloc_realloc(mem_ctx, locks, struct g_lock_rec,
 				num_locks+1);
@@ -141,6 +142,7 @@ static struct g_lock_rec *g_lock_addrec(TALLOC_CTX *mem_ctx,
 
 	result[num_locks].pid = pid;
 	result[num_locks].lock_type = lock_type;
+	*pnum_locks += 1;
 	return result;
 }
 
@@ -221,7 +223,7 @@ again:
 	if (our_index == -1) {
 		/* First round, add ourself */
 
-		locks = g_lock_addrec(talloc_tos(), locks, num_locks,
+		locks = g_lock_addrec(talloc_tos(), locks, &num_locks,
 				      self, lock_type);
 		if (locks == NULL) {
 			DEBUG(10, ("g_lock_addrec failed\n"));
@@ -237,7 +239,7 @@ again:
 		locks[our_index].lock_type = lock_type;
 	}
 
-	data = make_tdb_data((uint8_t *)locks, talloc_get_size(locks));
+	data = make_tdb_data((uint8_t *)locks, num_locks * sizeof(*locks));
 	store_status = rec->store(rec, data, 0);
 	if (!NT_STATUS_IS_OK(store_status)) {
 		DEBUG(1, ("rec->store failed: %s\n",
