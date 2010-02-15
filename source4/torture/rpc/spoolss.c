@@ -951,7 +951,7 @@ static bool test_SetPrinter(struct torture_context *tctx,
 	r.in.secdesc_ctr = secdesc_ctr;
 	r.in.command = command;
 
-	torture_comment(tctx, "Testing SetPrinter Level %d\n", r.in.info_ctr->level);
+	torture_comment(tctx, "Testing SetPrinter level %d\n", r.in.info_ctr->level);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
 		"failed to call SetPrinter");
@@ -1578,7 +1578,6 @@ static bool test_sd_set_level(struct torture_context *tctx,
 			      uint32_t level,
 			      struct security_descriptor *sd)
 {
-	struct spoolss_SetPrinter r;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
@@ -1635,14 +1634,8 @@ static bool test_sd_set_level(struct torture_context *tctx,
 
 	secdesc_ctr.sd = sd;
 
-	r.in.handle = handle;
-	r.in.info_ctr = &info_ctr;
-	r.in.devmode_ctr = &devmode_ctr;
-	r.in.secdesc_ctr = &secdesc_ctr;
-	r.in.command = 0;
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r), "SetPrinter failed");
-	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
+	torture_assert(tctx,
+		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
 
 	return true;
 }
@@ -1709,7 +1702,6 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 				struct policy_handle *handle)
 {
 	union spoolss_PrinterInfo info;
-	struct spoolss_SetPrinter r;
 	struct spoolss_SetPrinterInfo3 info3;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
@@ -1739,14 +1731,8 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 
 	secdesc_ctr.sd = sd;
 
-	r.in.handle = handle;
-	r.in.info_ctr = &info_ctr;
-	r.in.devmode_ctr = &devmode_ctr;
-	r.in.secdesc_ctr = &secdesc_ctr;
-	r.in.command = 0;
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r), "SetPrinter failed");
-	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
+	torture_assert(tctx,
+		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
 
 	return ret;
 }
