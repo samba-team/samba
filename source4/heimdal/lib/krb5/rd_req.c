@@ -820,7 +820,7 @@ out:
  * @param inbuf the (AP-REQ) authentication buffer
  *
  * @param server the server with authenticate as, if NULL the function
- *        will try to find any avaiable credentintial in the keytab
+ *        will try to find any available credential in the keytab
  *        that will verify the reply. The function will prefer the
  *        server the server client specified in the AP-REQ, but if
  *        there is no mach, it will try all keytab entries for a
