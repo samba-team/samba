@@ -29,7 +29,7 @@ import unittest
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
-parser = optparse.OptionParser("ldap [options] <host>")
+parser = optparse.OptionParser("urgent_replication [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
@@ -61,27 +61,9 @@ class UrgentReplicationTests(unittest.TestCase):
         self.assertEquals(len(res), 1)
         return res[0]["defaultNamingContext"][0]
 
-    def find_configurationdn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["configurationNamingContext"][0]
-
-    def find_schemadn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["schemaNamingContext"][0]
-
-    def find_domain_sid(self):
-        res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
-
     def setUp(self):
         self.ldb = ldb
-        self.gc_ldb = gc_ldb
         self.base_dn = self.find_basedn(ldb)
-        self.configuration_dn = self.find_configurationdn(ldb)
-        self.schema_dn = self.find_schemadn(ldb)
-        self.domain_sid = self.find_domain_sid()
 
         print "baseDN: %s\n" % self.base_dn
 
@@ -94,11 +76,11 @@ class UrgentReplicationTests(unittest.TestCase):
             "samaccountname":"nonurgenttest",
             "description":"nonurgenttest description"});
 
-        ''' urgent replication shouldn't be enabled when creating '''
+        ''' urgent replication should not be enabled when creating '''
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication shouldn't be enabled when modifying '''
+        ''' urgent replication should not be enabled when modifying '''
         m = Message()
         m.dn = Dn(ldb, "cn=nonurgenttest,cn=users," + self.base_dn)
         m["description"] = MessageElement("new description", FLAG_MOD_REPLACE,
@@ -107,7 +89,7 @@ class UrgentReplicationTests(unittest.TestCase):
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication shouldn't be enabled when deleting '''
+        ''' urgent replication should not be enabled when deleting '''
         self.delete_force(self.ldb, "cn=nonurgenttest,cn=users," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
@@ -401,11 +383,6 @@ if not "://" in host:
 
 
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
-if not "tdb://" in host:
-    gc_ldb = Ldb("%s:3268" % host, credentials=creds,
-                 session_info=system_session(), lp=lp)
-else:
-    gc_ldb = None
 
 runner = SubunitTestRunner()
 rc = 0
