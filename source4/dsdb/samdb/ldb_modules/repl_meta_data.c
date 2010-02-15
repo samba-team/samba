@@ -983,6 +983,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 static int replmd_update_rpmd_element(struct ldb_context *ldb,
 				      struct ldb_message *msg,
 				      struct ldb_message_element *el,
+				      struct ldb_message_element *old_el,
 				      struct replPropertyMetaDataBlob *omd,
 				      const struct dsdb_schema *schema,
 				      uint64_t *seq_num,
@@ -1001,6 +1002,11 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	}
 
 	if ((a->systemFlags & DS_FLAG_ATTR_NOT_REPLICATED) || (a->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED)) {
+		return LDB_SUCCESS;
+	}
+
+	/* if the attribute's value haven't changed then return LDB_SUCCESS	*/
+	if (old_el != NULL && ldb_msg_element_compare(el, old_el) == 0) {
 		return LDB_SUCCESS;
 	}
 
@@ -1073,7 +1079,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	NTTIME now;
 	const struct GUID *our_invocation_id;
 	int ret;
-	const char *attrs[] = { "replPropertyMetaData" , "objectClass", NULL };
+	const char *attrs[] = { "replPropertyMetaData", "*", NULL };
 	struct ldb_result *res;
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
@@ -1091,8 +1097,16 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 	unix_to_nt_time(&now, t);
 
-	/* search for the existing replPropertyMetaDataBlob */
-	ret = dsdb_search_dn_with_deleted(ldb, msg, &res, msg->dn, attrs);
+	/* search for the existing replPropertyMetaDataBlob. We need
+	 * to use REVEAL and ask for DNs in storage format to support
+	 * the check for values being the same in
+	 * replmd_update_rpmd_element()
+	 */
+	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
+				    DSDB_SEARCH_SHOW_DELETED |
+				    DSDB_SEARCH_SHOW_EXTENDED_DN |
+				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+				    DSDB_SEARCH_REVEAL_INTERNALS);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
 			 ldb_dn_get_linearized(msg->dn)));
@@ -1136,7 +1150,9 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	}
 
 	for (i=0; i<msg->num_elements; i++) {
-		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], &omd, schema, seq_num,
+		struct ldb_message_element *old_el;
+		old_el = ldb_msg_find_element(res->msgs[0], msg->elements[i].name);
+		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], old_el, &omd, schema, seq_num,
 						 our_invocation_id, now);
 		if (ret != LDB_SUCCESS) {
 			return ret;
