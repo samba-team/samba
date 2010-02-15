@@ -659,7 +659,7 @@ static BOOL test_EnumJobs(struct torture_context *tctx,
 		}
 
 		if (tctx->print) {
-			print_job_info_bylevel(levels[i], buffer, 1);
+			print_job_info_bylevel(levels[i], buffer, returned);
 		}
 
 		free(buffer);
