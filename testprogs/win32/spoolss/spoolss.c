@@ -228,7 +228,7 @@ static BOOL test_EnumForms(struct torture_context *tctx,
 			   HANDLE handle)
 {
 	DWORD levels[]  = { 1, 2 };
-	DWORD success[] = { 1, 0 };
+	DWORD success[] = { 1, 1 };
 	DWORD i;
 	LPBYTE buffer = NULL;
 
@@ -240,6 +240,11 @@ static BOOL test_EnumForms(struct torture_context *tctx,
 		char tmp[1024];
 
 		torture_comment(tctx, "Testing EnumForms level %d", levels[i]);
+
+		if (tctx->samba3 && levels[i] == 2) {
+			torture_comment(tctx, "skipping level %d enum against samba\n", levels[i]);
+			continue;
+		}
 
 		EnumForms(handle, levels[i], NULL, 0, &needed, &returned);
 		err = GetLastError();
@@ -638,6 +643,11 @@ static BOOL test_EnumJobs(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing EnumJobs level %d", levels[i]);
 
+		if (tctx->samba3 && levels[i] == 4) {
+			torture_comment(tctx, "skipping level %d enum against samba\n", levels[i]);
+			continue;
+		}
+
 		EnumJobs(handle, 0, 100, levels[i], NULL, 0, &needed, &returned);
 		err = GetLastError();
 		if (err == ERROR_INSUFFICIENT_BUFFER) {
@@ -1028,6 +1038,21 @@ static BOOL test_PrinterData(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+const char *get_string_param(const char *str)
+{
+	const char *p;
+
+	p = strchr(str, '=');
+	if (!p) {
+		return NULL;
+	}
+
+	return (p+1);
+}
+
+/****************************************************************************
+****************************************************************************/
+
 int main(int argc, char *argv[])
 {
 	BOOL ret = FALSE;
@@ -1036,9 +1061,10 @@ int main(int argc, char *argv[])
 	HANDLE server_handle;
 	PRINTER_DEFAULTS defaults_admin, defaults_use;
 	struct torture_context *tctx;
+	int i;
 
 	if (argc < 2) {
-		fprintf(stderr, "usage: %s <servername> [print]\n", argv[0]);
+		fprintf(stderr, "usage: %s <servername> [print] [samba3] [architecture=ARCHITECTURE]\n", argv[0]);
 		exit(-1);
 	}
 
@@ -1051,11 +1077,19 @@ int main(int argc, char *argv[])
 
 	servername = argv[1];
 
-	if (argc >= 3) {
-		if (strcmp(argv[2], "print") == 0) {
+	for (i=1; i < argc; i++) {
+		if (strcmp(argv[i], "print") == 0) {
 			tctx->print = TRUE;
 		}
+		if (strcmp(argv[i], "samba3") == 0) {
+			tctx->samba3 = TRUE;
+		}
+		if (strncmp(argv[i], "architecture", strlen("architecture")) == 0) {
+			architecture = get_string_param(argv[i]);
+		}
 	}
+
+	printf("Running testsuite with architecture: %s\n", architecture);
 
 	defaults_admin.pDatatype = NULL;
 	defaults_admin.pDevMode = NULL;

@@ -35,6 +35,7 @@ struct torture_context {
 	enum torture_result last_result;
 	char *last_reason;
 	BOOL print;
+	BOOL samba3;
 };
 
 /****************************************************************************
