@@ -4161,20 +4161,20 @@ static int process_command_string(const char *cmd_in)
 
 #define MAX_COMPLETIONS 100
 
-typedef struct {
+struct completion_remote {
 	char *dirmask;
 	char **matches;
 	int count, samelen;
 	const char *text;
 	int len;
-} completion_remote_t;
+};
 
 static void completion_remote_filter(const char *mnt,
 				file_info *f,
 				const char *mask,
 				void *state)
 {
-	completion_remote_t *info = (completion_remote_t *)state;
+	struct completion_remote *info = (struct completion_remote *)state;
 
 	if ((info->count < MAX_COMPLETIONS - 1) &&
 			(strncmp(info->text, f->name, info->len) == 0) &&
@@ -4232,7 +4232,7 @@ static char **remote_completion(const char *text, int len)
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	int i;
-	completion_remote_t info = { NULL, NULL, 1, 0, NULL, 0 };
+	struct completion_remote info = { NULL, NULL, 1, 0, NULL, 0 };
 
 	/* can't have non-static initialisation on Sun CC, so do it
 	   at run time here */
