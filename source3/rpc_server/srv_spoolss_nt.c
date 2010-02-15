@@ -5039,7 +5039,7 @@ static WERROR fill_printer_driver_info6(TALLOC_CTX *mem_ctx,
 
 /********************************************************************
  ********************************************************************/
-
+#if 0 /* disabled until marshalling issues are resolved - gd */
 static WERROR fill_spoolss_DriverFileInfo(TALLOC_CTX *mem_ctx,
 					  struct spoolss_DriverFileInfo *r,
 					  const char *cservername,
@@ -5155,7 +5155,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- * fill a spoolss_DriverInfo101 sttruct
+ * fill a spoolss_DriverInfo101 struct
  ********************************************************************/
 
 static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
@@ -5204,7 +5204,7 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
-
+#endif
 /********************************************************************
  * construct_printer_driver_info_1
  ********************************************************************/
@@ -5392,7 +5392,7 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 
 	return status;
 }
-
+#if 0 /* disabled until marshalling issues are resolved - gd */
 /********************************************************************
  * construct_printer_info_101
  * fill a printer_info_101 struct
@@ -5455,7 +5455,7 @@ static WERROR construct_printer_driver_info_101(TALLOC_CTX *mem_ctx,
 
 	return result;
 }
-
+#endif
 /****************************************************************
  _spoolss_GetPrinterDriver2
 ****************************************************************/
@@ -5525,6 +5525,7 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 							 r->in.architecture,
 							 r->in.client_major_version);
 		break;
+#if 0 /* disabled until marshalling issues are resolved - gd */
 	case 101:
 		result = construct_printer_driver_info_101(p->mem_ctx,
 							   &r->out.info->info101,
@@ -5533,6 +5534,7 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 							   r->in.architecture,
 							   r->in.client_major_version);
 		break;
+#endif
 	default:
 		result = WERR_UNKNOWN_LEVEL;
 		break;
