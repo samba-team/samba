@@ -128,7 +128,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 			return WERR_NOMEM;
 		}
 
-		ret = ldb_modify(b_state->sam_ctx, msg);
+		ret = dsdb_modify_permissive(b_state->sam_ctx, msg);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to add SPNs - %s\n",
 				 ldb_errstring(b_state->sam_ctx)));
