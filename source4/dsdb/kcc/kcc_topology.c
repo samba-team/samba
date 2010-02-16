@@ -146,8 +146,7 @@ static NTSTATUS kcctpl_create_graph(TALLOC_CTX *mem_ctx,
 						 guids->count);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(graph->vertices.data, graph);
 
-	qsort(guids->data, guids->count, sizeof(struct GUID),
-	      QSORT_CAST GUID_compare);
+	TYPESAFE_QSORT(guids->data, guids->count, GUID_compare);
 
 	for (i = 0; i < guids->count; i++) {
 		graph->vertices.data[i].id = guids->data[i];
