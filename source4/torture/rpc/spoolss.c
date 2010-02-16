@@ -1767,6 +1767,75 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_devmode_set_level(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
+				   uint32_t level,
+				   struct spoolss_DeviceMode *devmode)
+{
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	switch (level) {
+	case 2: {
+		union spoolss_PrinterInfo info;
+		struct spoolss_SetPrinterInfo2 info2;
+		torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+		info2.servername	= info.info2.servername;
+		info2.printername	= info.info2.printername;
+		info2.sharename		= info.info2.sharename;
+		info2.portname		= info.info2.portname;
+		info2.drivername	= info.info2.drivername;
+		info2.comment		= info.info2.comment;
+		info2.location		= info.info2.location;
+		info2.devmode_ptr	= 0;
+		info2.sepfile		= info.info2.sepfile;
+		info2.printprocessor	= info.info2.printprocessor;
+		info2.datatype		= info.info2.datatype;
+		info2.parameters	= info.info2.parameters;
+		info2.secdesc_ptr	= 0;
+		info2.attributes	= info.info2.attributes;
+		info2.priority		= info.info2.priority;
+		info2.defaultpriority	= info.info2.defaultpriority;
+		info2.starttime		= info.info2.starttime;
+		info2.untiltime		= info.info2.untiltime;
+		info2.status		= info.info2.status;
+		info2.cjobs		= info.info2.cjobs;
+		info2.averageppm	= info.info2.averageppm;
+
+		info_ctr.level = 2;
+		info_ctr.info.info2 = &info2;
+
+		break;
+	}
+	case 8: {
+		struct spoolss_SetPrinterInfo8 info8;
+
+		info8.devmode_ptr = 0;
+
+		info_ctr.level = 8;
+		info_ctr.info.info8 = &info8;
+
+		break;
+	}
+	default:
+		return false;
+	}
+
+	devmode_ctr.devmode = devmode;
+
+	torture_assert(tctx,
+		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
+
+	return true;
+}
+
+
 static bool test_devicemode_equal(struct torture_context *tctx,
 				  const struct spoolss_DeviceMode *d1,
 				  const struct spoolss_DeviceMode *d2)
@@ -1885,29 +1954,12 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 	test_ClosePrinter(tctx, p, &handle_devmode);
 
 
-	/* set devicemode and see if it persists */
+	/* set devicemode level 8 and see if it persists */
 
 	devmode->copies = 93;
 	devmode->formname = talloc_strdup(tctx, "Legal");
 
-	{
-		struct spoolss_SetPrinterInfoCtr info_ctr;
-		struct spoolss_SetPrinterInfo8 info8;
-		struct spoolss_DevmodeContainer devmode_ctr;
-		struct sec_desc_buf secdesc_ctr;
-
-		info8.devmode_ptr = 0;
-
-		info_ctr.level = 8;
-		info_ctr.info.info8 = &info8;
-
-		devmode_ctr.devmode = devmode;
-
-		ZERO_STRUCT(secdesc_ctr);
-
-		torture_assert(tctx,
-			test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
-	}
+	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 8, devmode), "");
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
 
