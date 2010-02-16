@@ -34,57 +34,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
-
-/*
-  onelevel search with SHOW_DELETED control
- */
-static int search_onelevel_with_deleted(struct ldb_context *ldb,
-					TALLOC_CTX *mem_ctx,
-					struct ldb_result **_res,
-					struct ldb_dn *basedn,
-					const char * const *attrs)
-{
-	struct ldb_request *req;
-	TALLOC_CTX *tmp_ctx;
-	struct ldb_result *res;
-	int ret;
-
-	tmp_ctx = talloc_new(mem_ctx);
-
-	res = talloc_zero(tmp_ctx, struct ldb_result);
-	if (!res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
-				   basedn,
-				   LDB_SCOPE_ONELEVEL,
-				   NULL,
-				   attrs,
-				   NULL,
-				   res,
-				   ldb_search_default_callback,
-				   NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-
-	talloc_free(req);
-	*_res = talloc_steal(mem_ctx, res);
-	return ret;
-}
+#include "dsdb/common/util.h"
 
 /*
   check to see if any deleted objects need scavenging
@@ -120,7 +70,8 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			   container */
 			continue;
 		}
-		ret = search_onelevel_with_deleted(s->samdb, do_dn, &res, do_dn, attrs);
+		ret = dsdb_search(s->samdb, do_dn, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
+				  DSDB_SEARCH_SHOW_DELETED, NULL);
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",
