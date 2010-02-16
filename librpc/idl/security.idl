@@ -345,14 +345,14 @@ interface security
 	} security_acl;
 
 	/* default revision for new ACLs */
-	typedef [enum8bit] enum {
+	typedef [public,enum8bit] enum {
 		SECURITY_DESCRIPTOR_REVISION_1 = 1
 	} security_descriptor_revision;
 
 	const int SD_REVISION                    = SECURITY_DESCRIPTOR_REVISION_1;
 
 	/* security_descriptor->type bits */
-	typedef [bitmap16bit] bitmap {
+	typedef [public,bitmap16bit] bitmap {
 		SEC_DESC_OWNER_DEFAULTED	= 0x0001,
 		SEC_DESC_GROUP_DEFAULTED	= 0x0002,
 		SEC_DESC_DACL_PRESENT		= 0x0004,
