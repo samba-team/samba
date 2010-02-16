@@ -152,15 +152,25 @@ void print_sid(LPSTR str, PSID sid)
 
 void print_secdesc(SECURITY_DESCRIPTOR *secdesc)
 {
+	LPSTR sd_string;
+
 	if (secdesc == NULL) {
 		printf("\tSecurity Descriptor\t= (null)\n");
 		return;
 	}
 
+	if (!ConvertSecurityDescriptorToStringSecurityDescriptor(secdesc, 1, 7, &sd_string, NULL)) {
+		PrintLastError();
+		return;
+	}
+
+	printf("%s\n", sd_string);
+	LocalFree(sd_string);
+
+#if 0
 	printf("\tRevision\t= 0x%x\n", secdesc->Revision);
 	printf("\tSbz1\t\t= 0x%x\n", secdesc->Sbz1);
 	printf("\tControl\t\t= 0x%x\n", secdesc->Control);
-#if 0
 	print_sid("\tOwner\t\t= ", secdesc->Owner);
 	print_sid("\tGroup\t\t= ",secdesc->Group);
 	print_acl("\tSacl\t\t= ", secdesc->Sacl);
