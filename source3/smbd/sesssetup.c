@@ -485,10 +485,40 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		}
 
 	} else {
-		ret = make_server_info_pw(&server_info, real_username, pw);
+		/*
+		 * We didn't get a PAC, we have to make up the user
+		 * ourselves. Try to ask the pdb backend to provide
+		 * SID consistency with ntlmssp session setup
+		 */
+		struct samu *sampass;
+
+		sampass = samu_new(talloc_tos());
+		if (sampass == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			TALLOC_FREE(mem_ctx);
+			reply_nterror(req, nt_status_squash(ret));
+			return;
+		}
+
+		if (pdb_getsampwnam(sampass, real_username)) {
+			DEBUG(10, ("found user %s in passdb, calling "
+				   "make_server_info_sam\n", real_username));
+			ret = make_server_info_sam(&server_info, sampass);
+		} else {
+			/*
+			 * User not in passdb, make it up artificially
+			 */
+			TALLOC_FREE(sampass);
+			DEBUG(10, ("didn't find user %s in passdb, calling "
+				   "make_server_info_pw\n", real_username));
+			ret = make_server_info_pw(&server_info, real_username,
+						  pw);
+		}
 
 		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(1,("make_server_info_pw failed: %s!\n",
+			DEBUG(1,("make_server_info_[sam|pw] failed: %s!\n",
 				 nt_errstr(ret)));
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
