@@ -530,11 +530,21 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 	}
 
 	if ((lock_type & G_LOCK_PENDING) == 0) {
+		int num_wakeups = 0;
+
 		/*
-		 * We've been the lock holder. Tell all others to retry.
+		 * We've been the lock holder. Others to retry. Don't
+		 * tell all others to avoid a thundering herd. In case
+		 * this leads to a complete stall because we miss some
+		 * processes, the loop in g_lock_lock tries at least
+		 * once a minute.
 		 */
+
 		for (i=0; i<num_locks; i++) {
 			if ((locks[i].lock_type & G_LOCK_PENDING) == 0) {
+				continue;
+			}
+			if (!process_exists(locks[i].pid)) {
 				continue;
 			}
 
@@ -549,6 +559,11 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 					  procid_str(talloc_tos(),
 						     &locks[i].pid),
 					  nt_errstr(status)));
+			} else {
+				num_wakeups += 1;
+			}
+			if (num_wakeups > 5) {
+				break;
 			}
 		}
 	}
