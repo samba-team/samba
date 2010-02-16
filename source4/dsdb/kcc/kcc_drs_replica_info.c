@@ -254,7 +254,6 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_dn *source_dsa_dn;
 	int ret;
-	char *dsa_guid_str;
 	struct ldb_dn *transport_obj_dn = NULL;
 
 	neigh->source_dsa_address = reps_from->other_info->dns_name1;
@@ -262,13 +261,11 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 	neigh->last_attempt = reps_from->last_attempt;
 	neigh->source_dsa_obj_guid = reps_from->source_dsa_obj_guid;
 
-	dsa_guid_str = GUID_string(mem_ctx, &reps_from->source_dsa_obj_guid);
-	W_ERROR_HAVE_NO_MEMORY(dsa_guid_str);
-	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, dsa_guid_str, &source_dsa_dn);
+	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->source_dsa_obj_guid, &source_dsa_dn);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find DN for neighbor GUID %s\n",
-		      dsa_guid_str));
+			 GUID_string(mem_ctx, &reps_from->source_dsa_obj_guid)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
@@ -281,9 +278,7 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!GUID_all_zero(&reps_from->transport_guid)) {
-		char *transp_guid_str = GUID_string(mem_ctx, &reps_from->transport_guid);
-		W_ERROR_HAVE_NO_MEMORY(transp_guid_str);
-		if (dsdb_find_dn_by_guid(samdb, mem_ctx, transp_guid_str,
+		if (dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->transport_guid,
 					 &transport_obj_dn) != LDB_SUCCESS)
 		{
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -391,7 +386,6 @@ static WERROR fill_neighbor_from_repsTo(TALLOC_CTX *mem_ctx,
 					struct drsuapi_DsReplicaNeighbour *neigh,
 					struct repsFromTo2 *reps_to)
 {
-	char *dsa_guid_str;
 	int ret;
 	struct ldb_dn *source_dsa_dn;
 
@@ -400,13 +394,10 @@ static WERROR fill_neighbor_from_repsTo(TALLOC_CTX *mem_ctx,
 	neigh->last_attempt = reps_to->last_attempt;
 	neigh->source_dsa_obj_guid = reps_to->source_dsa_obj_guid;
 
-	dsa_guid_str = GUID_string(mem_ctx, &reps_to->source_dsa_obj_guid);
-	W_ERROR_HAVE_NO_MEMORY(dsa_guid_str);
-
-	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, dsa_guid_str, &source_dsa_dn);
+	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_to->source_dsa_obj_guid, &source_dsa_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find DN for neighbor GUID %s\n",
-			 dsa_guid_str));
+			 GUID_string(mem_ctx, &reps_to->source_dsa_obj_guid)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 

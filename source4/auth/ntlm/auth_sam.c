@@ -28,6 +28,7 @@
 #include "auth/ntlm/auth_proto.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "param/param.h"
 
 extern const char *user_attrs[];
@@ -45,10 +46,11 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	int ret;
 
 	/* pull the user attributes */
-	ret = gendb_search_single_extended_dn(sam_ctx, mem_ctx, domain_dn, LDB_SCOPE_SUBTREE,
-					      ret_msg, user_attrs,
-					      "(&(sAMAccountName=%s)(objectclass=user))", 
-					      ldb_binary_encode_string(mem_ctx, account_name));
+	ret = dsdb_search_one(sam_ctx, mem_ctx, ret_msg, domain_dn, LDB_SCOPE_SUBTREE,
+			      user_attrs,
+			      DSDB_SEARCH_SHOW_EXTENDED_DN,
+			      "(&(sAMAccountName=%s)(objectclass=user))",
+			      ldb_binary_encode_string(mem_ctx, account_name));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(3,("sam_search_user: Couldn't find user [%s] in samdb, under %s\n", 
 			 account_name, ldb_dn_get_linearized(domain_dn)));

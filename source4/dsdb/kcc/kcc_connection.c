@@ -65,8 +65,7 @@ static int kccsrv_add_connection(struct kccsrv_service *s,
 		ret = LDB_ERR_INVALID_DN_SYNTAX;
 		goto done;
 	}
-	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, GUID_string(tmp_ctx,
-				   &conn->dsa_guid), &server_dn);
+	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &conn->dsa_guid, &server_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("failed to find fromServer DN '%s'\n",
 			  GUID_string(tmp_ctx, &conn->dsa_guid)));
@@ -105,8 +104,7 @@ static int kccsrv_delete_connection(struct kccsrv_service *s,
 	int ret;
 
 	tmp_ctx = talloc_new(s);
-	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx,
-				   GUID_string(tmp_ctx, &conn->obj_guid), &dn);
+	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &conn->obj_guid, &dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("failed to find nTDSConnection's DN: %s\n",
 			  ldb_strerror(ret)));

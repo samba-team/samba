@@ -2237,27 +2237,25 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  */
 int dsdb_find_dn_by_guid(struct ldb_context *ldb, 
 			 TALLOC_CTX *mem_ctx,
-			 const char *guid_str, struct ldb_dn **dn)
+			 const struct GUID *guid, struct ldb_dn **dn)
 {
 	int ret;
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
+	char *guid_str = GUID_string(mem_ctx, guid);
+
+	if (!guid_str) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 			  DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
-			  DSDB_SEARCH_SHOW_EXTENDED_DN,
+			  DSDB_SEARCH_SHOW_EXTENDED_DN |
+			  DSDB_SEARCH_ONE_ONLY,
 			  "objectGUID=%s", guid_str);
+	talloc_free(guid_str);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}
-	if (res->count == 0) {
-		talloc_free(res);
-		return LDB_ERR_NO_SUCH_OBJECT;
-	}
-	if (res->count != 1) {
-		DEBUG(1,(__location__ ": found %u records with GUID %s\n", res->count, guid_str));
-		talloc_free(res);
-		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
@@ -3438,7 +3436,70 @@ int dsdb_search(struct ldb_context *ldb,
 		return ret;
 	}
 
+	if (dsdb_flags & DSDB_SEARCH_ONE_ONLY) {
+		if (res->count == 0) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		if (res->count != 1) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
 	*_res = talloc_steal(mem_ctx, res);
+	talloc_free(tmp_ctx);
+
+	return LDB_SUCCESS;
+}
+
+
+/*
+  general search with dsdb_flags for controls
+  returns exactly 1 record or an error
+ */
+int dsdb_search_one(struct ldb_context *ldb,
+		    TALLOC_CTX *mem_ctx,
+		    struct ldb_message **msg,
+		    struct ldb_dn *basedn,
+		    enum ldb_scope scope,
+		    const char * const *attrs,
+		    uint32_t dsdb_flags,
+		    const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(8, 9)
+{
+	int ret;
+	struct ldb_result *res;
+	va_list ap;
+	char *expression = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	dsdb_flags |= DSDB_SEARCH_ONE_ONLY;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (exp_fmt) {
+		va_start(ap, exp_fmt);
+		expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
+		va_end(ap);
+
+		if (!expression) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	ret = dsdb_search(ldb, tmp_ctx, &res, basedn, scope, attrs,
+			  dsdb_flags, "%s", expression);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	*msg = talloc_steal(mem_ctx, res->msgs[0]);
 	talloc_free(tmp_ctx);
 
 	return LDB_SUCCESS;
