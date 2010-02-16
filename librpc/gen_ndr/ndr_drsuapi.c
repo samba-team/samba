@@ -9587,10 +9587,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaInfoType(struct ndr_print *ndr, const c
 		case DRSUAPI_DS_REPLICA_INFO_CURSORS3: val = "DRSUAPI_DS_REPLICA_INFO_CURSORS3"; break;
 		case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2: val = "DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2"; break;
 		case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2: val = "DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2"; break;
-		case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: val = "DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02"; break;
-		case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04: val = "DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04"; break;
-		case DRSUAPI_DS_REPLICA_INFO_CURSORS05: val = "DRSUAPI_DS_REPLICA_INFO_CURSORS05"; break;
-		case DRSUAPI_DS_REPLICA_INFO_06: val = "DRSUAPI_DS_REPLICA_INFO_06"; break;
+		case DRSUAPI_DS_REPLICA_INFO_REPSTO: val = "DRSUAPI_DS_REPLICA_INFO_REPSTO"; break;
+		case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS: val = "DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS"; break;
+		case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1: val = "DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1"; break;
+		case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS: val = "DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
@@ -11974,20 +11974,20 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaInfo(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->attrvalmetadata2));
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, r->neighbours02));
+			case DRSUAPI_DS_REPLICA_INFO_REPSTO: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->repsto));
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04: {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, r->connections04));
+			case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->clientctx));
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_CURSORS05: {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, r->cursors05));
+			case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->udv1));
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_06: {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, r->i06));
+			case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->srvoutgoingcalls));
 			break; }
 
 			default:
@@ -12063,27 +12063,27 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaInfo(struct ndr_push *ndr, in
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02:
-				if (r->neighbours02) {
-					NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->neighbours02));
+			case DRSUAPI_DS_REPLICA_INFO_REPSTO:
+				if (r->repsto) {
+					NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->repsto));
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04:
-				if (r->connections04) {
-					NDR_CHECK(ndr_push_drsuapi_DsReplicaConnection04Ctr(ndr, NDR_SCALARS, r->connections04));
+			case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS:
+				if (r->clientctx) {
+					NDR_CHECK(ndr_push_drsuapi_DsReplicaConnection04Ctr(ndr, NDR_SCALARS, r->clientctx));
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_CURSORS05:
-				if (r->cursors05) {
-					NDR_CHECK(ndr_push_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->cursors05));
+			case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1:
+				if (r->udv1) {
+					NDR_CHECK(ndr_push_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->udv1));
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_06:
-				if (r->i06) {
-					NDR_CHECK(ndr_push_drsuapi_DsReplica06Ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->i06));
+			case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS:
+				if (r->srvoutgoingcalls) {
+					NDR_CHECK(ndr_push_drsuapi_DsReplica06Ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->srvoutgoingcalls));
 				}
 			break;
 
@@ -12109,10 +12109,10 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaInfo(struct ndr_pull *ndr, in
 	TALLOC_CTX *_mem_save_cursors3_0;
 	TALLOC_CTX *_mem_save_objmetadata2_0;
 	TALLOC_CTX *_mem_save_attrvalmetadata2_0;
-	TALLOC_CTX *_mem_save_neighbours02_0;
-	TALLOC_CTX *_mem_save_connections04_0;
-	TALLOC_CTX *_mem_save_cursors05_0;
-	TALLOC_CTX *_mem_save_i06_0;
+	TALLOC_CTX *_mem_save_repsto_0;
+	TALLOC_CTX *_mem_save_clientctx_0;
+	TALLOC_CTX *_mem_save_udv1_0;
+	TALLOC_CTX *_mem_save_srvoutgoingcalls_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -12231,43 +12231,43 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaInfo(struct ndr_pull *ndr, in
 				}
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: {
-				uint32_t _ptr_neighbours02;
-				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_neighbours02));
-				if (_ptr_neighbours02) {
-					NDR_PULL_ALLOC(ndr, r->neighbours02);
+			case DRSUAPI_DS_REPLICA_INFO_REPSTO: {
+				uint32_t _ptr_repsto;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_repsto));
+				if (_ptr_repsto) {
+					NDR_PULL_ALLOC(ndr, r->repsto);
 				} else {
-					r->neighbours02 = NULL;
+					r->repsto = NULL;
 				}
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04: {
-				uint32_t _ptr_connections04;
-				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_connections04));
-				if (_ptr_connections04) {
-					NDR_PULL_ALLOC(ndr, r->connections04);
+			case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS: {
+				uint32_t _ptr_clientctx;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_clientctx));
+				if (_ptr_clientctx) {
+					NDR_PULL_ALLOC(ndr, r->clientctx);
 				} else {
-					r->connections04 = NULL;
+					r->clientctx = NULL;
 				}
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_CURSORS05: {
-				uint32_t _ptr_cursors05;
-				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_cursors05));
-				if (_ptr_cursors05) {
-					NDR_PULL_ALLOC(ndr, r->cursors05);
+			case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1: {
+				uint32_t _ptr_udv1;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_udv1));
+				if (_ptr_udv1) {
+					NDR_PULL_ALLOC(ndr, r->udv1);
 				} else {
-					r->cursors05 = NULL;
+					r->udv1 = NULL;
 				}
 			break; }
 
-			case DRSUAPI_DS_REPLICA_INFO_06: {
-				uint32_t _ptr_i06;
-				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_i06));
-				if (_ptr_i06) {
-					NDR_PULL_ALLOC(ndr, r->i06);
+			case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS: {
+				uint32_t _ptr_srvoutgoingcalls;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_srvoutgoingcalls));
+				if (_ptr_srvoutgoingcalls) {
+					NDR_PULL_ALLOC(ndr, r->srvoutgoingcalls);
 				} else {
-					r->i06 = NULL;
+					r->srvoutgoingcalls = NULL;
 				}
 			break; }
 
@@ -12376,39 +12376,39 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaInfo(struct ndr_pull *ndr, in
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02:
-				if (r->neighbours02) {
-					_mem_save_neighbours02_0 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, r->neighbours02, 0);
-					NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->neighbours02));
-					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_neighbours02_0, 0);
+			case DRSUAPI_DS_REPLICA_INFO_REPSTO:
+				if (r->repsto) {
+					_mem_save_repsto_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->repsto, 0);
+					NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->repsto));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_repsto_0, 0);
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04:
-				if (r->connections04) {
-					_mem_save_connections04_0 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, r->connections04, 0);
-					NDR_CHECK(ndr_pull_drsuapi_DsReplicaConnection04Ctr(ndr, NDR_SCALARS, r->connections04));
-					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_connections04_0, 0);
+			case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS:
+				if (r->clientctx) {
+					_mem_save_clientctx_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->clientctx, 0);
+					NDR_CHECK(ndr_pull_drsuapi_DsReplicaConnection04Ctr(ndr, NDR_SCALARS, r->clientctx));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_clientctx_0, 0);
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_CURSORS05:
-				if (r->cursors05) {
-					_mem_save_cursors05_0 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, r->cursors05, 0);
-					NDR_CHECK(ndr_pull_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->cursors05));
-					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_cursors05_0, 0);
+			case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1:
+				if (r->udv1) {
+					_mem_save_udv1_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->udv1, 0);
+					NDR_CHECK(ndr_pull_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->udv1));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_udv1_0, 0);
 				}
 			break;
 
-			case DRSUAPI_DS_REPLICA_INFO_06:
-				if (r->i06) {
-					_mem_save_i06_0 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, r->i06, 0);
-					NDR_CHECK(ndr_pull_drsuapi_DsReplica06Ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->i06));
-					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_i06_0, 0);
+			case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS:
+				if (r->srvoutgoingcalls) {
+					_mem_save_srvoutgoingcalls_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->srvoutgoingcalls, 0);
+					NDR_CHECK(ndr_pull_drsuapi_DsReplica06Ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->srvoutgoingcalls));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_srvoutgoingcalls_0, 0);
 				}
 			break;
 
@@ -12524,38 +12524,38 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaInfo(struct ndr_print *ndr, const char 
 			ndr->depth--;
 		break;
 
-		case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02:
-			ndr_print_ptr(ndr, "neighbours02", r->neighbours02);
+		case DRSUAPI_DS_REPLICA_INFO_REPSTO:
+			ndr_print_ptr(ndr, "repsto", r->repsto);
 			ndr->depth++;
-			if (r->neighbours02) {
-				ndr_print_drsuapi_DsReplicaNeighbourCtr(ndr, "neighbours02", r->neighbours02);
+			if (r->repsto) {
+				ndr_print_drsuapi_DsReplicaNeighbourCtr(ndr, "repsto", r->repsto);
 			}
 			ndr->depth--;
 		break;
 
-		case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04:
-			ndr_print_ptr(ndr, "connections04", r->connections04);
+		case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS:
+			ndr_print_ptr(ndr, "clientctx", r->clientctx);
 			ndr->depth++;
-			if (r->connections04) {
-				ndr_print_drsuapi_DsReplicaConnection04Ctr(ndr, "connections04", r->connections04);
+			if (r->clientctx) {
+				ndr_print_drsuapi_DsReplicaConnection04Ctr(ndr, "clientctx", r->clientctx);
 			}
 			ndr->depth--;
 		break;
 
-		case DRSUAPI_DS_REPLICA_INFO_CURSORS05:
-			ndr_print_ptr(ndr, "cursors05", r->cursors05);
+		case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1:
+			ndr_print_ptr(ndr, "udv1", r->udv1);
 			ndr->depth++;
-			if (r->cursors05) {
-				ndr_print_drsuapi_DsReplicaCursorCtrEx(ndr, "cursors05", r->cursors05);
+			if (r->udv1) {
+				ndr_print_drsuapi_DsReplicaCursorCtrEx(ndr, "udv1", r->udv1);
 			}
 			ndr->depth--;
 		break;
 
-		case DRSUAPI_DS_REPLICA_INFO_06:
-			ndr_print_ptr(ndr, "i06", r->i06);
+		case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS:
+			ndr_print_ptr(ndr, "srvoutgoingcalls", r->srvoutgoingcalls);
 			ndr->depth++;
-			if (r->i06) {
-				ndr_print_drsuapi_DsReplica06Ctr(ndr, "i06", r->i06);
+			if (r->srvoutgoingcalls) {
+				ndr_print_drsuapi_DsReplica06Ctr(ndr, "srvoutgoingcalls", r->srvoutgoingcalls);
 			}
 			ndr->depth--;
 		break;

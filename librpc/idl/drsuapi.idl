@@ -1365,10 +1365,10 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_INFO_CURSORS3			= 8,
 		DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2			= 9,
 		DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2	= 10,
-		DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02			= -2,
-		DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04			= -4,
-		DRSUAPI_DS_REPLICA_INFO_CURSORS05			= -5,
-		DRSUAPI_DS_REPLICA_INFO_06				= -6
+		DRSUAPI_DS_REPLICA_INFO_REPSTO                          = -2,
+		DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS			= -4,
+		DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1		= -5,
+		DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS		= -6
 	} drsuapi_DsReplicaInfoType;
 
 	typedef struct {
@@ -1600,10 +1600,10 @@ interface drsuapi
 		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS3)] drsuapi_DsReplicaCursor3Ctr *cursors3;
 		[case(DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2)] drsuapi_DsReplicaObjMetaData2Ctr *objmetadata2;
 		[case(DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2)] drsuapi_DsReplicaAttrValMetaData2Ctr *attrvalmetadata2;
-		[case(DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02)] drsuapi_DsReplicaNeighbourCtr *neighbours02;
-		[case(DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04)] drsuapi_DsReplicaConnection04Ctr *connections04;
-		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS05)] drsuapi_DsReplicaCursorCtrEx *cursors05;
-		[case(DRSUAPI_DS_REPLICA_INFO_06)] drsuapi_DsReplica06Ctr *i06;
+		[case(DRSUAPI_DS_REPLICA_INFO_REPSTO)] drsuapi_DsReplicaNeighbourCtr *repsto;
+		[case(DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS)] drsuapi_DsReplicaConnection04Ctr *clientctx;
+		[case(DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1)] drsuapi_DsReplicaCursorCtrEx *udv1;
+		[case(DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS)] drsuapi_DsReplica06Ctr *srvoutgoingcalls;
 	} drsuapi_DsReplicaInfo;
 
 	WERROR drsuapi_DsReplicaGetInfo(

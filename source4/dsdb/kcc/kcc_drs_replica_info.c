@@ -33,7 +33,80 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "dsdb/common/util.h"
 
+/*
+  get metadata for specified object
+*/
+static WERROR kccdrs_replica_get_info_obj_metadata(TALLOC_CTX *mem_ctx,
+					      struct ldb_context *samdb,
+					      struct drsuapi_DsReplicaGetInfo *r,
+					      union drsuapi_DsReplicaInfo *reply,
+					      struct ldb_dn *dn)
+{
+    int ret, i;
+    const struct ldb_val *md_value;
+    struct ldb_result *result;
+    enum ndr_err_code ndr_err;
+    struct replPropertyMetaDataBlob md;
+    const struct dsdb_schema *schema;
+    const char *attrs[] = { "replPropertyMetaData", NULL };
+
+    ret = dsdb_search_dn(samdb, mem_ctx, &result, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
+    if (ret != LDB_SUCCESS) {
+        return WERR_INTERNAL_ERROR;
+    } else if (result->count < 1) {
+        DEBUG(1, (__location__": Failed to find replPropertyMetaData for: %s\n", r->in.req->req1.object_dn));
+        return WERR_INTERNAL_ERROR;
+    }
+
+    md_value = ldb_msg_find_ldb_val(result->msgs[0], "replPropertyMetaData");
+    if (!md_value) {
+        return WERR_INTERNAL_ERROR;
+    }
+
+    ndr_err = ndr_pull_struct_blob(md_value, mem_ctx,
+                                    lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")),
+                                    &md,
+                                    (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+    if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+        return WERR_INTERNAL_ERROR;
+    }
+
+    if (md.version != 1) {
+        return WERR_INTERNAL_ERROR;
+    }
+
+    schema = dsdb_get_schema(samdb);
+    if (!schema) {
+        DEBUG(0,(__location__": Failed to get the schema\n"));
+        return WERR_INTERNAL_ERROR;
+    }
+
+    reply->objmetadata = talloc(mem_ctx, struct drsuapi_DsReplicaObjMetaDataCtr);
+    W_ERROR_HAVE_NO_MEMORY(reply->objmetadata);
+
+    reply->objmetadata->reserved = 0;
+    reply->objmetadata->count = md.ctr.ctr1.count;
+    reply->objmetadata->array = talloc_array(mem_ctx, struct drsuapi_DsReplicaObjMetaData, reply->objmetadata->count);
+    for (i=0; i<md.ctr.ctr1.count; i++) {
+        const struct dsdb_attribute *attr = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+        char const* attribute_name = NULL;
+        if (!attr) {
+            DEBUG(0, (__location__": Failed to find attribute with id: %d", md.ctr.ctr1.array[i].attid));
+        } else {
+            attribute_name = attr->lDAPDisplayName;
+        }
+        reply->objmetadata->array[i].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
+        reply->objmetadata->array[i].version = md.ctr.ctr1.array[i].version;
+        reply->objmetadata->array[i].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
+        reply->objmetadata->array[i].originating_usn = md.ctr.ctr1.array[i].originating_usn;
+        reply->objmetadata->array[i].local_usn = md.ctr.ctr1.array[i].local_usn;
+        reply->objmetadata->array[i].attribute_name = attribute_name;
+    }
+
+    return WERR_OK;
+}
 
 /*
   get cursors info for a specified DN
@@ -444,10 +517,10 @@ static WERROR kccdrs_replica_get_info_repsto(TALLOC_CTX *mem_ctx,
 
 	i = j = 0;
 
-	reply->neighbours02 = talloc_zero(mem_ctx, struct drsuapi_DsReplicaNeighbourCtr);
-	W_ERROR_HAVE_NO_MEMORY(reply->neighbours02);
-	reply->neighbours02->reserved = 0;
-	reply->neighbours02->count = 0;
+	reply->repsto = talloc_zero(mem_ctx, struct drsuapi_DsReplicaNeighbourCtr);
+	W_ERROR_HAVE_NO_MEMORY(reply->repsto);
+	reply->repsto->reserved = 0;
+	reply->repsto->count = 0;
 
 	/* foreach nc in ncs */
 	for (p_nc_list = nc_list; p_nc_list != NULL; p_nc_list = p_nc_list->next) {
@@ -478,11 +551,11 @@ static WERROR kccdrs_replica_get_info_repsto(TALLOC_CTX *mem_ctx,
 				W_ERROR_NOT_OK_RETURN(status);
 
 				/* append the neighbour to the neighbours array */
-				reply->neighbours02->array = talloc_realloc(mem_ctx,
-									    reply->neighbours02->array,
+				reply->repsto->array = talloc_realloc(mem_ctx,
+									    reply->repsto->array,
 									    struct drsuapi_DsReplicaNeighbour,
-									    reply->neighbours02->count + 1);
-				reply->neighbours02->array[reply->neighbours02->count++] = neigh;
+									    reply->repsto->count + 1);
+				reply->repsto->array[reply->repsto->count++] = neigh;
 				j++;
 			}
 			i++;
@@ -562,7 +635,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 							    reply, base_index, req_src_dsa_guid,
 							    object_dn_str);
 		break;
-	case DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02: /* On MS-DRSR it is DS_REPL_INFO_REPSTO */
+	case DRSUAPI_DS_REPLICA_INFO_REPSTO: /* On MS-DRSR it is DS_REPL_INFO_REPSTO */
 		status = kccdrs_replica_get_info_repsto(mem_ctx, service, samdb, req,
 							reply, base_index, req_src_dsa_guid,
 							object_dn_str);
@@ -581,15 +654,18 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		break;
 
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS3: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_3_FOR_NC */
-	case DRSUAPI_DS_REPLICA_INFO_CURSORS05: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
+	case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
 	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
+                status = kccdrs_replica_get_info_obj_metadata(mem_ctx, samdb, req, reply,
+							     ldb_dn_new(mem_ctx, samdb, object_dn_str));
+                break;
 	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_ATTR_VALUE */
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_2_FOR_ATTR_VALUE */
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES */
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_LINK_FAILURES */
-	case DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04: /* On MS-DRSR it is DS_REPL_INFO_CLIENT_CONTEXTS */
-	case DRSUAPI_DS_REPLICA_INFO_06: /* On MS-DRSR it is DS_REPL_INFO_SERVER_OUTGOING_CALLS */
+	case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS: /* On MS-DRSR it is DS_REPL_INFO_CLIENT_CONTEXTS */
+	case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS: /* On MS-DRSR it is DS_REPL_INFO_SERVER_OUTGOING_CALLS */
 	default:
 		DEBUG(1,(__location__ ": Unsupported DsReplicaGetInfo info_type %u\n",
 			 info_type));

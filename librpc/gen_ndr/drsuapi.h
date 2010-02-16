@@ -1241,10 +1241,10 @@ enum drsuapi_DsReplicaInfoType
 	DRSUAPI_DS_REPLICA_INFO_CURSORS3=(int)(8),
 	DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2=(int)(9),
 	DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2=(int)(10),
-	DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02=(int)(-2),
-	DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04=(int)(-4),
-	DRSUAPI_DS_REPLICA_INFO_CURSORS05=(int)(-5),
-	DRSUAPI_DS_REPLICA_INFO_06=(int)(-6)
+	DRSUAPI_DS_REPLICA_INFO_REPSTO=(int)(-2),
+	DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS=(int)(-4),
+	DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1=(int)(-5),
+	DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS=(int)(-6)
 }
 #else
  { __donnot_use_enum_drsuapi_DsReplicaInfoType=0x7FFFFFFF}
@@ -1259,10 +1259,10 @@ enum drsuapi_DsReplicaInfoType
 #define DRSUAPI_DS_REPLICA_INFO_CURSORS3 ( 8 )
 #define DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2 ( 9 )
 #define DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2 ( 10 )
-#define DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02 ( -2 )
-#define DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04 ( -4 )
-#define DRSUAPI_DS_REPLICA_INFO_CURSORS05 ( -5 )
-#define DRSUAPI_DS_REPLICA_INFO_06 ( -6 )
+#define DRSUAPI_DS_REPLICA_INFO_REPSTO ( -2 )
+#define DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS ( -4 )
+#define DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1 ( -5 )
+#define DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS ( -6 )
 #endif
 ;
 
@@ -1506,10 +1506,10 @@ union drsuapi_DsReplicaInfo {
 	struct drsuapi_DsReplicaCursor3Ctr *cursors3;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_CURSORS3)] */
 	struct drsuapi_DsReplicaObjMetaData2Ctr *objmetadata2;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2)] */
 	struct drsuapi_DsReplicaAttrValMetaData2Ctr *attrvalmetadata2;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2)] */
-	struct drsuapi_DsReplicaNeighbourCtr *neighbours02;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02)] */
-	struct drsuapi_DsReplicaConnection04Ctr *connections04;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04)] */
-	struct drsuapi_DsReplicaCursorCtrEx *cursors05;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_CURSORS05)] */
-	struct drsuapi_DsReplica06Ctr *i06;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_06)] */
+	struct drsuapi_DsReplicaNeighbourCtr *repsto;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_REPSTO)] */
+	struct drsuapi_DsReplicaConnection04Ctr *clientctx;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS)] */
+	struct drsuapi_DsReplicaCursorCtrEx *udv1;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1)] */
+	struct drsuapi_DsReplica06Ctr *srvoutgoingcalls;/* [unique,case(DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS)] */
 }/* [switch_type(drsuapi_DsReplicaInfoType)] */;
 
 struct drsuapi_DsGetMemberships2Ctr1 {
