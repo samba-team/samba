@@ -2322,59 +2322,6 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 }
 
 /*
-  search for attrs on one DN, allowing for deleted objects
- */
-int dsdb_search_dn_with_deleted(struct ldb_context *ldb,
-				TALLOC_CTX *mem_ctx,
-				struct ldb_result **_res,
-				struct ldb_dn *basedn,
-				const char * const *attrs)
-{
-	int ret;
-	struct ldb_request *req;
-	TALLOC_CTX *tmp_ctx;
-	struct ldb_result *res;
-
-	tmp_ctx = talloc_new(mem_ctx);
-
-	res = talloc_zero(tmp_ctx, struct ldb_result);
-	if (!res) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
-				   basedn,
-				   LDB_SCOPE_BASE,
-				   NULL,
-				   attrs,
-				   NULL,
-				   res,
-				   ldb_search_default_callback,
-				   NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-
-	*_res = talloc_steal(mem_ctx, res);
-	talloc_free(tmp_ctx);
-	return ret;
-}
-
-
-/*
   use a DN to find a GUID with a given attribute name
  */
 int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
@@ -2389,7 +2336,7 @@ int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
 	attrs[0] = attribute;
 	attrs[1] = NULL;
 
-	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, dn, attrs);
+	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -2463,7 +2410,7 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 
 	ZERO_STRUCTP(sid);
 
-	ret = dsdb_search_dn_with_deleted(ldb, tmp_ctx, &res, dn, attrs);
+	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -3031,7 +2978,7 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = dsdb_search_dn_with_deleted(samdb, tmp_ctx, &res, dn, attrs);
+	ret = dsdb_search_dn(samdb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -3423,4 +3370,59 @@ int dsdb_replace(struct ldb_context *ldb, struct ldb_message *msg, uint32_t dsdb
 	}
 
 	return dsdb_modify(ldb, msg, dsdb_flags);
+}
+
+
+/*
+  search for attrs on one DN, allowing for dsdb_flags controls
+ */
+int dsdb_search_dn(struct ldb_context *ldb,
+		   TALLOC_CTX *mem_ctx,
+		   struct ldb_result **_res,
+		   struct ldb_dn *basedn,
+		   const char * const *attrs,
+		   uint32_t dsdb_flags)
+{
+	int ret;
+	struct ldb_request *req;
+	struct ldb_result *res;
+
+	res = talloc_zero(mem_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req(&req, ldb, res,
+				   basedn,
+				   LDB_SCOPE_BASE,
+				   NULL,
+				   attrs,
+				   NULL,
+				   res,
+				   ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+
+	*_res = res;
+	return LDB_SUCCESS;
 }
