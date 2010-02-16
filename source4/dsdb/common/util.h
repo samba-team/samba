@@ -30,3 +30,4 @@
 #define DSDB_SEARCH_SHOW_EXTENDED_DN          0x0010
 #define DSDB_MODIFY_RELAX		      0x0020
 #define DSDB_MODIFY_PERMISSIVE		      0x0040
+#define DSDB_FLAG_AS_SYSTEM		      0x0080

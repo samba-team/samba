@@ -783,7 +783,7 @@ int samdb_msg_add_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 			 const char *attr_name)
 {
 	/* we use an empty replace rather than a delete, as it allows for 
-	   samdb_replace() to be used everywhere */
+	   dsdb_replace() to be used everywhere */
 	return ldb_msg_add_empty(msg, attr_name, LDB_FLAG_MOD_REPLACE, NULL);
 }
 
@@ -981,26 +981,10 @@ int samdb_msg_set_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 }
 
 /*
-  replace elements in a record
-*/
-int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
-{
-	int i;
-
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
-	for (i=0;i<msg->num_elements;i++) {
-		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
-	/* modify the samdb record */
-	return ldb_modify(sam_ldb, msg);
-}
-
-/*
  * Handle ldb_request in transaction
  */
 static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
-				 struct ldb_request *req)
+					struct ldb_request *req)
 {
 	int ret;
 
@@ -1020,55 +1004,6 @@ static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
 	ldb_transaction_cancel(sam_ldb);
 
 	return ret;
-}
-
-/*
- * replace elements in a record using LDB_CONTROL_AS_SYSTEM
- * used to skip access checks on operations
- * that are performed by the system
- */
-int samdb_replace_as_system(struct ldb_context *sam_ldb,
-			    TALLOC_CTX *mem_ctx,
-			    struct ldb_message *msg)
-{
-	int i;
-	int ldb_ret;
-	struct ldb_request *req = NULL;
-
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
-	for (i=0;i<msg->num_elements;i++) {
-		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
-
-	ldb_ret = ldb_msg_sanity_check(sam_ldb, msg);
-	if (ldb_ret != LDB_SUCCESS) {
-		return ldb_ret;
-	}
-
-	ldb_ret = ldb_build_mod_req(&req, sam_ldb, mem_ctx,
-	                            msg,
-	                            NULL,
-	                            NULL,
-	                            ldb_op_default_callback,
-	                            NULL);
-
-	if (ldb_ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ldb_ret;
-	}
-
-	ldb_ret = ldb_request_add_control(req, LDB_CONTROL_AS_SYSTEM_OID, false, NULL);
-	if (ldb_ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ldb_ret;
-	}
-
-	/* do request and auto start a transaction */
-	ldb_ret = dsdb_autotransaction_request(sam_ldb, req);
-
-	talloc_free(req);
-	return ldb_ret;
 }
 
 /*
@@ -2119,7 +2054,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(ldb, mem_ctx, msg);
+	ret = dsdb_replace(ldb, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		ldb_transaction_cancel(ldb);
 		talloc_free(user_dn);
@@ -3434,6 +3369,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_FLAG_AS_SYSTEM) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_AS_SYSTEM_OID, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -3461,11 +3403,24 @@ int dsdb_modify(struct ldb_context *ldb, const struct ldb_message *message,
 		return ret;
 	}
 
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
+	ret = dsdb_autotransaction_request(ldb, req);
 
 	talloc_free(req);
 	return ret;
+}
+
+/*
+  like dsdb_modify() but set all the element flags to
+  LDB_FLAG_MOD_REPLACE
+ */
+int dsdb_replace(struct ldb_context *ldb, struct ldb_message *msg, uint32_t dsdb_flags)
+{
+	int i;
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	return dsdb_modify(ldb, msg, dsdb_flags);
 }

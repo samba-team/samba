@@ -331,7 +331,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		rtn = samdb_replace(remote_ldb, tmp_ctx, msg);
+		rtn = dsdb_replace(remote_ldb, msg, 0);
 		if (rtn != 0) {
 			r->out.error_string
 				= talloc_asprintf(r, 

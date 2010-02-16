@@ -2632,7 +2632,7 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(secret_state->sam_ldb, mem_ctx, msg);
+	ret = dsdb_replace(secret_state->sam_ldb, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;

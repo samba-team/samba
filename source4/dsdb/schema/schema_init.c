@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -310,12 +311,12 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 		return WERR_NOMEM;
  	}
  
-	ldb_ret = samdb_replace_as_system(ldb, temp_ctx, msg);
+	ldb_ret = dsdb_replace(ldb, msg, DSDB_FLAG_AS_SYSTEM);
 
 	talloc_free(temp_ctx);
 
 	if (ldb_ret != 0) {
-		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: samdb_replace failed\n"));	
+		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: dsdb_replace failed\n"));
 		return WERR_FOOBAR;
  	}
  

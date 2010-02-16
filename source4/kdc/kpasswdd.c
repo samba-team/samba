@@ -379,7 +379,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 
 		if (NT_STATUS_IS_OK(status)) {
 			/* modify the samdb record */
-			ret = samdb_replace(samdb, mem_ctx, msg);
+			ret = dsdb_replace(samdb, msg, 0);
 			if (ret != 0) {
 				DEBUG(2,("Failed to modify record to set password on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn),

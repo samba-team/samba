@@ -389,7 +389,7 @@ static WERROR sptr_SetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	ret = samdb_replace(sptr_db, mem_ctx, msg);
+	ret = dsdb_replace(sptr_db, msg, 0);
 	if (ret != 0) {
 		return WERR_FOOBAR;
 	}

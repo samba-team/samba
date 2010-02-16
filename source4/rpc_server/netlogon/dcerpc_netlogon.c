@@ -1200,7 +1200,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
 			"operatingSystemVersion");
 
-		if (samdb_replace(sam_ctx, mem_ctx, new_msg) != LDB_SUCCESS) {
+		if (dsdb_replace(sam_ctx, new_msg, 0) != LDB_SUCCESS) {
 			DEBUG(3,("Impossible to update samdb: %s\n",
 				ldb_errstring(sam_ctx)));
 		}
@@ -1262,7 +1262,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			);
 		}
 
-		if (samdb_replace(sam_ctx, mem_ctx, new_msg) != LDB_SUCCESS) {
+		if (dsdb_replace(sam_ctx, new_msg, 0) != LDB_SUCCESS) {
 			DEBUG(3,("Impossible to update samdb: %s\n",
 				ldb_errstring(sam_ctx)));
 		}

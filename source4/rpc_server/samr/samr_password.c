@@ -153,7 +153,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 
 	/* The above call only setup the modifications, this actually
 	 * makes the write to the database. */
-	ret = samdb_replace(sam_ctx, mem_ctx, msg);
+	ret = dsdb_replace(sam_ctx, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
 			 ldb_dn_get_linearized(a_state->account_dn),
@@ -310,7 +310,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	/* The above call only setup the modifications, this actually
 	 * makes the write to the database. */
-	ret = samdb_replace(sam_ctx, mem_ctx, mod);
+	ret = dsdb_replace(sam_ctx, mod, 0);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
 			 ldb_dn_get_linearized(user_dn),
@@ -473,9 +473,9 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	/* The above call only setup the modifications, this actually
 	 * makes the write to the database. */
-	ret = samdb_replace(sam_ctx, mem_ctx, mod);
+	ret = dsdb_replace(sam_ctx, mod, 0);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(2,("samdb_replace failed to change password for %s: %s\n",
+		DEBUG(2,("dsdb_replace failed to change password for %s: %s\n",
 			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
 		status = NT_STATUS_UNSUCCESSFUL;

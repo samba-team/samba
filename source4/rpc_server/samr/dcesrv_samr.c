@@ -1415,7 +1415,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
+	ret = dsdb_replace(a_state->sam_ctx, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
 			 ldb_dn_get_linearized(msg->dn),

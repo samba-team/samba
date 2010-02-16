@@ -138,7 +138,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		
 		mod_msg = ldb_msg_diff(ldb, res->msgs[0], msg);
 		if (mod_msg->num_elements > 0) {
-			ret = samdb_replace(ldb, mem_ctx, mod_msg);
+			ret = dsdb_replace(ldb, mod_msg, 0);
 		}
 	}
 
@@ -166,7 +166,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 		mod_msg = ldb_msg_diff(ldb, res_idx->msgs[0], msg_idx);
 		if (mod_msg->num_elements > 0) {
-			ret = samdb_replace(ldb, mem_ctx, mod_msg);
+			ret = dsdb_replace(ldb, mod_msg, 0);
 		}
 	}
 	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS || ret == LDB_ERR_INVALID_DN_SYNTAX) {
