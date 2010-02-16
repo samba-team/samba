@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "auth/auth_sam.h"
+#include "dsdb/common/util.h"
 
 #define KRBTGT_ATTRS \
 	/* required for the krb5 kdc */		\
@@ -548,8 +549,8 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	}
 	
 	/* pull the user attributes */
-	ret = gendb_search_single_extended_dn(sam_ctx, tmp_ctx, user_dn,
-		LDB_SCOPE_BASE, msg, attrs, "(objectClass=*)");
+	ret = dsdb_search_one(sam_ctx, tmp_ctx, msg, user_dn,
+			      LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

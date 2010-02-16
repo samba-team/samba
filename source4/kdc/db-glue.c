@@ -32,6 +32,7 @@
 #include "auth/auth_sam.h"
 #include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/lsa.h"
@@ -1043,10 +1044,11 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		int lret;
 		char *realm_fixed;
 
-		lret = gendb_search_single_extended_dn(kdc_db_ctx->samdb, mem_ctx,
-						       realm_dn, LDB_SCOPE_SUBTREE,
-						       &msg, krbtgt_attrs,
-						       "(&(objectClass=user)(samAccountName=krbtgt))");
+		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
+				       &msg, realm_dn, LDB_SCOPE_SUBTREE,
+				       krbtgt_attrs,
+				       DSDB_SEARCH_SHOW_EXTENDED_DN,
+				       "(&(objectClass=user)(samAccountName=krbtgt))");
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
 			krb5_warnx(context, "samba_kdc_fetch: could not find own KRBTGT in DB!");
 			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: could not find own KRBTGT in DB!");
@@ -1167,11 +1169,10 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 			return HDB_ERR_NOENTRY;
 		}
 
-		ldb_ret = gendb_search_single_extended_dn(kdc_db_ctx->samdb,
-							  mem_ctx,
-							  user_dn, LDB_SCOPE_BASE,
-							  msg, attrs,
-							  "(objectClass=*)");
+		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb,
+					  mem_ctx,
+					  msg, user_dn, LDB_SCOPE_BASE,
+					  attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "(objectClass=*)");
 		if (ldb_ret != LDB_SUCCESS) {
 			return HDB_ERR_NOENTRY;
 		}
@@ -1194,10 +1195,12 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 			return ret;
 		}
 
-		lret = gendb_search_single_extended_dn(kdc_db_ctx->samdb, mem_ctx,
-						       *realm_dn, LDB_SCOPE_SUBTREE,
-						       msg, attrs, "(&(objectClass=user)(samAccountName=%s))",
-						       ldb_binary_encode_string(mem_ctx, short_princ));
+		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx, msg,
+				       *realm_dn, LDB_SCOPE_SUBTREE,
+				       attrs,
+				       DSDB_SEARCH_SHOW_EXTENDED_DN,
+				       "(&(objectClass=user)(samAccountName=%s))",
+				       ldb_binary_encode_string(mem_ctx, short_princ));
 		free(short_princ);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
 			DEBUG(3, ("Failed find a entry for %s\n", filter));
