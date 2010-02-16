@@ -2242,81 +2242,26 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	int ret;
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
-	struct ldb_request *search_req;
-	char *expression;
-	struct ldb_search_options_control *options;
 
-	expression = talloc_asprintf(mem_ctx, "objectGUID=%s", guid_str);
-	if (!expression) {
-		DEBUG(0, (__location__ ": out of memory\n"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	res = talloc_zero(expression, struct ldb_result);
-	if (!res) {
-		DEBUG(0, (__location__ ": out of memory\n"));
-		talloc_free(expression);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_build_search_req(&search_req, ldb, expression,
-				   ldb_get_default_basedn(ldb),
-				   LDB_SCOPE_SUBTREE,
-				   expression, attrs,
-				   NULL,
-				   res, ldb_search_default_callback,
-				   NULL);
+	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+			  DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+			  DSDB_SEARCH_SHOW_EXTENDED_DN,
+			  "objectGUID=%s", guid_str);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(expression);
 		return ret;
 	}
-
-	/* we need to cope with cross-partition links, so search for
-	   the GUID over all partitions */
-	options = talloc(search_req, struct ldb_search_options_control);
-	if (options == NULL) {
-		DEBUG(0, (__location__ ": out of memory\n"));
-		talloc_free(expression);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
-
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_EXTENDED_DN_OID, true, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(expression);
-		return ret;
-	}
-
-	ret = ldb_request_add_control(search_req,
-				      LDB_CONTROL_SEARCH_OPTIONS_OID,
-				      true, options);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(expression);
-		return ret;
-	}
-
-	ret = ldb_request(ldb, search_req);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(expression);
-		return ret;
-	}
-
-	ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(expression);
-		return ret;
-	}
-
-	/* this really should be exactly 1, but there is a bug in the
-	   partitions module that can return two here with the
-	   search_options control set */
-	if (res->count < 1) {
-		talloc_free(expression);
+	if (res->count == 0) {
+		talloc_free(res);
 		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	if (res->count != 1) {
+		DEBUG(1,(__location__ ": found %u records with GUID %s\n", res->count, guid_str));
+		talloc_free(res);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
-	talloc_free(expression);
+	talloc_free(res);
 
 	return LDB_SUCCESS;
 }
@@ -3424,5 +3369,77 @@ int dsdb_search_dn(struct ldb_context *ldb,
 	}
 
 	*_res = res;
+	return LDB_SUCCESS;
+}
+
+/*
+  general search with dsdb_flags for controls
+ */
+int dsdb_search(struct ldb_context *ldb,
+		TALLOC_CTX *mem_ctx,
+		struct ldb_result **_res,
+		struct ldb_dn *basedn,
+		enum ldb_scope scope,
+		const char * const *attrs,
+		uint32_t dsdb_flags,
+		const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(8, 9)
+{
+	int ret;
+	struct ldb_request *req;
+	struct ldb_result *res;
+	va_list ap;
+	char *expression = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (exp_fmt) {
+		va_start(ap, exp_fmt);
+		expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
+		va_end(ap);
+
+		if (!expression) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+				   basedn,
+				   scope,
+				   expression,
+				   attrs,
+				   NULL,
+				   res,
+				   ldb_search_default_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	*_res = talloc_steal(mem_ctx, res);
+	talloc_free(tmp_ctx);
+
 	return LDB_SUCCESS;
 }
