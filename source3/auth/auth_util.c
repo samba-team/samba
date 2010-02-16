@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -136,7 +136,7 @@ static NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	(*user_info)->internal_username = SMB_STRDUP(internal_username);
 	if ((*user_info)->internal_username == NULL) { 
 		free_user_info(user_info);
@@ -305,40 +305,40 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
-	
+
 	memcpy(key, dc_sess_key, 16);
-	
+
 	if (lm_interactive_pwd)
 		memcpy(lm_pwd, lm_interactive_pwd, sizeof(lm_pwd));
 
 	if (nt_interactive_pwd)
 		memcpy(nt_pwd, nt_interactive_pwd, sizeof(nt_pwd));
-	
+
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("key:"));
 	dump_data(100, key, sizeof(key));
-	
+
 	DEBUG(100,("lm owf password:"));
 	dump_data(100, lm_pwd, sizeof(lm_pwd));
-	
+
 	DEBUG(100,("nt owf password:"));
 	dump_data(100, nt_pwd, sizeof(nt_pwd));
 #endif
-	
+
 	if (lm_interactive_pwd)
 		arcfour_crypt(lm_pwd, key, sizeof(lm_pwd));
-	
+
 	if (nt_interactive_pwd)
 		arcfour_crypt(nt_pwd, key, sizeof(nt_pwd));
-	
+
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
 	dump_data(100, lm_pwd, sizeof(lm_pwd));
-	
+
 	DEBUG(100,("decrypt of nt owf password:"));
 	dump_data(100, nt_pwd, sizeof(nt_pwd));
 #endif
-	
+
 	if (lm_interactive_pwd)
 		SMBOWFencrypt(lm_pwd, chal,
 			      local_lm_response);
@@ -346,7 +346,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 	if (nt_interactive_pwd)
 		SMBOWFencrypt(nt_pwd, chal,
 			      local_nt_response);
-	
+
 	/* Password info paranoia */
 	ZERO_STRUCT(key);
 
@@ -358,7 +358,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 
 		DATA_BLOB lm_interactive_blob;
 		DATA_BLOB nt_interactive_blob;
-		
+
 		if (lm_interactive_pwd) {
 			local_lm_blob = data_blob(local_lm_response,
 						  sizeof(local_lm_response));
@@ -366,7 +366,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 							sizeof(lm_pwd));
 			ZERO_STRUCT(lm_pwd);
 		}
-		
+
 		if (nt_interactive_pwd) {
 			local_nt_blob = data_blob(local_nt_response,
 						  sizeof(local_nt_response));
@@ -412,17 +412,17 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-			
+
 	/*
 	 * Not encrypted - do so.
 	 */
-	
+
 	DEBUG(5,("make_user_info_for_reply: User passwords not in encrypted "
 		 "format.\n"));
-	
+
 	if (plaintext_password.data) {
 		unsigned char local_lm_response[24];
-		
+
 #ifdef DEBUG_PASSWORD
 		DEBUG(10,("Unencrypted password (len %d):\n",
 			  (int)plaintext_password.length));
@@ -433,16 +433,15 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 		SMBencrypt( (const char *)plaintext_password.data,
 			    (const uchar*)chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
-		
+
 		/* We can't do an NT hash here, as the password needs to be
 		   case insensitive */
 		local_nt_blob = data_blob_null; 
-		
 	} else {
 		local_lm_blob = data_blob_null; 
 		local_nt_blob = data_blob_null; 
 	}
-	
+
 	ret = make_user_info_map(
 		user_info, smb_name, client_domain, 
 		get_remote_machine_name(),
@@ -451,7 +450,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 		NULL, NULL,
 		plaintext_password.data ? &plaintext_password : NULL, 
 		False);
-	
+
 	data_blob_free(&local_lm_blob);
 	return NT_STATUS_IS_OK(ret) ? True : False;
 }
@@ -490,7 +489,7 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 				   NULL, NULL, 
 				   NULL,
 				   True);
-			      
+
 	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }
 
@@ -642,7 +641,7 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 	/* For now we throw away the gids and convert via sid_to_gid
 	 * later. This needs fixing, but I'd like to get the code straight and
 	 * simple first. */
-	 
+
 	TALLOC_FREE(gids);
 
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
@@ -1108,7 +1107,6 @@ bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 
 	TALLOC_FREE(mem_ctx);
 	return result;
-	
 }
 
 bool user_in_group(const char *username, const char *groupname)
@@ -1152,11 +1150,11 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	DOM_SID u_sid;
 	enum lsa_SidType type;
 	struct auth_serversupplied_info *result;
-	
+
 	if ( !(sampass = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	status = samu_set_unix( sampass, pwd );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1290,7 +1288,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 		TALLOC_FREE(sampass);
 		return status;
 	}
-	
+
 	(*server_info)->guest = True;
 
 	status = create_local_token(*server_info);
@@ -1381,7 +1379,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-	
+
 	dst->user_session_key = data_blob_talloc( dst, src->user_session_key.data,
 						src->user_session_key.length);
 
@@ -1398,7 +1396,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(dst);
 		return NULL;
 	}
-	
+
 	dst->pam_handle = NULL;
 	dst->unix_name = talloc_strdup(dst, src->unix_name);
 	if (!dst->unix_name) {
@@ -1514,15 +1512,15 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	   one we actually looked up and succeeded. Have I mentioned
 	   why I hate the 'winbind use default domain' parameter?   
 	                                 --jerry              */
-	   
+
 	*found_username = talloc_strdup( mem_ctx, real_username );
-	
+
 	DEBUG(5,("fill_sam_account: located username was [%s]\n", *found_username));
 
 	nt_status = samu_set_unix( account, passwd );
-	
+
 	TALLOC_FREE(passwd);
-	
+
 	return nt_status;
 }
 
@@ -1531,28 +1529,28 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
  try again in case a local UNIX user is already there.  Also run through 
  the username if we fallback to the username only.
  ****************************************************************************/
- 
+
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 			     fstring save_username, bool create )
 {
 	struct passwd *pw = NULL;
 	char *p;
 	fstring username;
-	
+
 	/* we only save a copy of the username it has been mangled 
 	   by winbindd use default domain */
-	   
+
 	save_username[0] = '\0';
-	   
+
 	/* don't call map_username() here since it has to be done higher 
 	   up the stack so we don't call it mutliple times */
 
 	fstrcpy( username, domuser );
-	
+
 	p = strchr_m( username, *lp_winbind_separator() );
-	
+
 	/* code for a DOMAIN\user string */
-	
+
 	if ( p ) {
 		fstring strip_username;
 
@@ -1563,7 +1561,7 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 
 			if ( !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
 				char *domain;
-				
+
 				/* split the domain and username into 2 strings */
 				*p = '\0';
 				domain = username;
@@ -1584,16 +1582,16 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 		fstrcpy( strip_username, p );
 		fstrcpy( username, strip_username );
 	}
-	
+
 	/* just lookup a plain username */
-	
+
 	pw = Get_Pwnam_alloc(mem_ctx, username);
-		
+
 	/* Create local user if requested but only if winbindd
 	   is not running.  We need to protect against cases
 	   where winbindd is failing and then prematurely
 	   creating users in /etc/passwd */
-	
+
 	if ( !pw && create && !winbind_ping() ) {
 		/* Don't add a machine account. */
 		if (username[strlen(username)-1] == '$')
@@ -1602,9 +1600,9 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 		_smb_create_user(NULL, username, NULL);
 		pw = Get_Pwnam_alloc(mem_ctx, username);
 	}
-	
+
 	/* one last check for a valid passwd struct */
-	
+
 	if ( pw )
 		fstrcpy( save_username, pw->pw_name );
 
@@ -1646,7 +1644,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	if (!sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	if (!sid_compose(&group_sid, info3->base.domain_sid,
 			 info3->base.primary_gid)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1665,7 +1663,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		 * them */
 		nt_domain = domain;
 	}
-	
+
 	/* try to fill the SAM account..  If getpwnam() fails, then try the 
 	   add user script (2.2.x behavior).
 
@@ -1677,7 +1675,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   called map_username() unnecessarily in make_user_info_map() but
 	   that is how the current code is designed.  Making the change here
 	   is the least disruptive place.  -- jerry */
-	   
+
 	if ( !(sam_account = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1688,10 +1686,10 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				     &found_username, &uid, &gid, sam_account,
 				     &username_was_mapped);
 
-	
+
 	/* if we still don't have a valid unix account check for 
 	  'map to guest = bad uid' */
-	  
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE( sam_account );
 		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
@@ -1700,7 +1698,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		}
 		return nt_status;
 	}
-		
+
 	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
@@ -1799,7 +1797,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* save this here to _net_sam_logon() doesn't fail (it assumes a 
 	   valid struct samu) */
-		   
+
 	result->sam_account = sam_account;
 	result->unix_name = talloc_strdup(result, found_username);
 
@@ -2152,7 +2150,7 @@ bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 		return False;
 	}
 	ZERO_STRUCTP(*auth_method);
-	
+
 	return True;
 }
 
@@ -2212,7 +2210,7 @@ bool is_trusted_domain(const char* dom_name)
 		/* The only other possible result is that winbind is not up
 		   and running. We need to update the trustdom_cache
 		   ourselves */
-		
+
 		update_trustdom_cache();
 	}
 
