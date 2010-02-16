@@ -298,7 +298,6 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	NTSTATUS status;
 	bool retry = false;
 	struct timeval timeout_end;
-	struct timeval timeout_remaining;
 	struct timeval time_now;
 
 	DEBUG(10, ("Trying to acquire lock %d for %s\n", (int)lock_type,
@@ -339,6 +338,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		fd_set *r_fds = NULL;
 		int max_fd = 0;
 		int ret;
+		struct timeval select_timeout;
 
 		status = g_lock_trylock(ctx, name, lock_type);
 		if (NT_STATUS_IS_OK(status)) {
@@ -395,12 +395,10 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		}
 #endif
 
-		time_now = timeval_current();
-		timeout_remaining = timeval_until(&time_now, &timeout_end);
+		select_timeout = timeval_set(60, 0);
 
 		ret = sys_select(max_fd + 1, r_fds, NULL, NULL,
-				 &timeout_remaining);
-
+				 &select_timeout);
 		if (ret == -1) {
 			if (errno != EINTR) {
 				DEBUG(1, ("error calling select: %s\n",
@@ -421,7 +419,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 				break;
 			} else {
 				DEBUG(10, ("select returned 0 but timeout not "
-					   "not expired: strange - retrying\n"));
+					   "not expired, retrying\n"));
 			}
 		} else if (ret != 1) {
 			DEBUG(1, ("invalid return code of select: %d\n", ret));
