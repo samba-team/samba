@@ -83,12 +83,19 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 
 	if (auth_info) {
+#if 0
+		/* the s3 rpc server doesn't handle auth padding in
+		   bind requests. Use zero auth padding to keep us
+		   working with old servers */
 		uint32_t offset = ndr->offset;
 		ndr_err = ndr_push_align(ndr, 16);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
 		}
 		auth_info->auth_pad_length = ndr->offset - offset;
+#else
+		auth_info->auth_pad_length = 0;
+#endif
 		ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
