@@ -7,6 +7,7 @@
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/winreg.h"
+#define spoolss_security_descriptor security_descriptor
 #ifndef _HEADER_spoolss
 #define _HEADER_spoolss
 
@@ -334,7 +335,7 @@ struct spoolss_PrinterInfo2 {
 	const char * printprocessor;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * parameters;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	struct security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
+	struct spoolss_security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
 	uint32_t attributes;
 	uint32_t priority;/* [range(0,99)] */
 	uint32_t defaultpriority;
@@ -346,7 +347,7 @@ struct spoolss_PrinterInfo2 {
 }/* [gensize,public] */;
 
 struct spoolss_PrinterInfo3 {
-	struct security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
+	struct spoolss_security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
 }/* [gensize,public] */;
 
 struct spoolss_PrinterInfo4 {
@@ -430,7 +431,7 @@ struct spoolss_JobInfo2 {
 	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct spoolss_DeviceMode *devmode;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	struct security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
+	struct spoolss_security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
 	uint32_t status;
 	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
@@ -462,7 +463,7 @@ struct spoolss_JobInfo4 {
 	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct spoolss_DeviceMode *devmode;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	struct security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
+	struct spoolss_security_descriptor *secdesc;/* [relative,subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
 	uint32_t status;
 	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
