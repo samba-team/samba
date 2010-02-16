@@ -30,9 +30,7 @@ struct tstream_read_pdu_blob_state {
 	struct {
 		struct tevent_context *ev;
 		struct tstream_context *stream;
-		NTSTATUS (*full_fn)(void *private_data,
-				    DATA_BLOB blob,
-				    size_t *packet_size);
+		tstream_read_pdu_blob_full_fn_t *full_fn;
 		void *full_private;
 	} caller;
 
@@ -46,9 +44,7 @@ struct tevent_req *tstream_read_pdu_blob_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct tstream_context *stream,
 				size_t initial_read_size,
-				NTSTATUS (*full_fn)(void *private_data,
-						    DATA_BLOB blob,
-						    size_t *packet_size),
+				tstream_read_pdu_blob_full_fn_t *full_fn,
 				void *full_private)
 {
 	struct tevent_req *req;
