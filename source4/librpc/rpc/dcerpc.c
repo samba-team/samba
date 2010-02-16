@@ -318,7 +318,6 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	size_t payload_length;
 	enum ndr_err_code ndr_err;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
-	uint32_t offset;
 
 	/* non-signed packets are simpler */
 	if (sig_size == 0) {
@@ -365,13 +364,16 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	}
 
 	/* pad to 16 byte multiple in the payload portion of the
-	   packet. This matches what w2k3 does */
-	offset = ndr->offset;
-	ndr_err = ndr_push_align(ndr, 16);
+	   packet. This matches what w2k3 does. Note that we can't use
+	   ndr_push_align() as that is relative to the start of the
+	   whole packet, whereas w2k8 wants it relative to the start
+	   of the stub */
+	c->security_state.auth_info->auth_pad_length =
+		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
+	ndr_err = ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
-	c->security_state.auth_info->auth_pad_length = ndr->offset - offset;
 
 	payload_length = pkt->u.request.stub_and_verifier.length + 
 		c->security_state.auth_info->auth_pad_length;

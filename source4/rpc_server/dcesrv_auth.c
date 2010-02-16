@@ -378,7 +378,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	struct ndr_push *ndr;
-	uint32_t payload_length, offset;
+	uint32_t payload_length;
 	DATA_BLOB creds2;
 
 	/* non-signed packets are simple */
@@ -422,13 +422,17 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		return false;
 	}
 
-	/* pad to 16 byte multiple, match win2k3 */
-	offset = ndr->offset;
-	ndr_err = ndr_push_align(ndr, 16);
+	/* pad to 16 byte multiple in the payload portion of the
+	   packet. This matches what w2k3 does. Note that we can't use
+	   ndr_push_align() as that is relative to the start of the
+	   whole packet, whereas w2k8 wants it relative to the start
+	   of the stub */
+	dce_conn->auth_state.auth_info->auth_pad_length =
+		(16 - (pkt->u.response.stub_and_verifier.length & 15)) & 15;
+	ndr_err = ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
-	dce_conn->auth_state.auth_info->auth_pad_length = ndr->offset - offset;
 
 	payload_length = pkt->u.response.stub_and_verifier.length +
 		dce_conn->auth_state.auth_info->auth_pad_length;
@@ -497,6 +501,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	if (!data_blob_append(call, blob, creds2.data, creds2.length)) {
 		status = NT_STATUS_NO_MEMORY;
+		return false;
 	}
 	data_blob_free(&creds2);
 
