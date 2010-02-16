@@ -730,6 +730,131 @@ static BOOL test_EnumPrinterDataEx(struct torture_context *tctx,
 	return TRUE;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_devicemode_equal(struct torture_context *tctx,
+				  const DEVMODE *d1,
+				  const DEVMODE *d2)
+{
+	if (d1 == d2) {
+		return TRUE;
+	}
+
+	if (!d1 || !d2) {
+		torture_comment(tctx, "%s\n", __location__);
+		return FALSE;
+	}
+
+	torture_assert_str_equal(tctx, (const char *)d1->dmDeviceName, (const char *)d2->dmDeviceName, "dmDeviceName mismatch");
+	torture_assert_int_equal(tctx, d1->dmSpecVersion, d2->dmSpecVersion, "dmSpecVersion mismatch");
+	torture_assert_int_equal(tctx, d1->dmDriverVersion, d2->dmDriverVersion, "dmDriverVersion mismatch");
+	torture_assert_int_equal(tctx, d1->dmSize, d2->dmSize, "size mismatch");
+	torture_assert_int_equal(tctx, d1->dmDriverExtra, d2->dmDriverExtra, "dmDriverExtra mismatch");
+	torture_assert_int_equal(tctx, d1->dmFields, d2->dmFields, "dmFields mismatch");
+
+	torture_assert_int_equal(tctx, d1->dmOrientation, d2->dmOrientation, "dmOrientation mismatch");
+	torture_assert_int_equal(tctx, d1->dmPaperSize, d2->dmPaperSize, "dmPaperSize mismatch");
+	torture_assert_int_equal(tctx, d1->dmPaperLength, d2->dmPaperLength, "dmPaperLength mismatch");
+	torture_assert_int_equal(tctx, d1->dmPaperWidth, d2->dmPaperWidth, "dmPaperWidth mismatch");
+	torture_assert_int_equal(tctx, d1->dmScale, d2->dmScale, "dmScale mismatch");
+	torture_assert_int_equal(tctx, d1->dmCopies, d2->dmCopies, "dmCopies mismatch");
+	torture_assert_int_equal(tctx, d1->dmDefaultSource, d2->dmDefaultSource, "dmDefaultSource mismatch");
+	torture_assert_int_equal(tctx, d1->dmPrintQuality, d2->dmPrintQuality, "dmPrintQuality mismatch");
+
+	torture_assert_int_equal(tctx, d1->dmColor, d2->dmColor, "dmColor mismatch");
+	torture_assert_int_equal(tctx, d1->dmDuplex, d2->dmDuplex, "dmDuplex mismatch");
+	torture_assert_int_equal(tctx, d1->dmYResolution, d2->dmYResolution, "dmYResolution mismatch");
+	torture_assert_int_equal(tctx, d1->dmTTOption, d2->dmTTOption, "dmTTOption mismatch");
+	torture_assert_int_equal(tctx, d1->dmCollate, d2->dmCollate, "dmCollate mismatch");
+	torture_assert_str_equal(tctx, (const char *)d1->dmFormName, (const char *)d2->dmFormName, "dmFormName mismatch");
+	torture_assert_int_equal(tctx, d1->dmLogPixels, d2->dmLogPixels, "dmLogPixels mismatch");
+	torture_assert_int_equal(tctx, d1->dmBitsPerPel, d2->dmBitsPerPel, "dmBitsPerPel mismatch");
+	torture_assert_int_equal(tctx, d1->dmPelsWidth, d2->dmPelsWidth, "dmPelsWidth mismatch");
+	torture_assert_int_equal(tctx, d1->dmPelsHeight, d2->dmPelsHeight, "dmPelsHeight mismatch");
+
+	torture_assert_int_equal(tctx, d1->dmDisplayFlags, d2->dmDisplayFlags, "dmDisplayFlags mismatch");
+	/* or dmNup ? */
+	torture_assert_int_equal(tctx, d1->dmDisplayFrequency, d2->dmDisplayFrequency, "dmDisplayFrequency mismatch");
+
+	torture_assert_int_equal(tctx, d1->dmICMMethod, d2->dmICMMethod, "dmICMMethod mismatch");
+	torture_assert_int_equal(tctx, d1->dmICMIntent, d2->dmICMIntent, "dmICMIntent mismatch");
+	torture_assert_int_equal(tctx, d1->dmMediaType, d2->dmMediaType, "dmMediaType mismatch");
+	torture_assert_int_equal(tctx, d1->dmDitherType, d2->dmDitherType, "dmDitherType mismatch");
+	torture_assert_int_equal(tctx, d1->dmReserved1, d2->dmReserved1, "dmReserved1 mismatch");
+	torture_assert_int_equal(tctx, d1->dmReserved2, d2->dmReserved2, "reserved2 mismatch");
+
+	torture_assert_int_equal(tctx, d1->dmPanningWidth, d2->dmPanningWidth, "dmPanningWidth mismatch");
+	torture_assert_int_equal(tctx, d1->dmPanningHeight, d2->dmPanningHeight, "dmPanningHeight mismatch");
+
+	/* torture_assert_mem_equal(tctx, d1 + d1->dmSize, d2 + d2->dmSize, d1->dmDriverExtra, "private extra data mismatch"); */
+
+	return TRUE;
+}
+
+static BOOL test_DeviceModes(struct torture_context *tctx,
+			     LPSTR printername,
+			     HANDLE handle)
+{
+	PPRINTER_INFO_2 info2 = NULL;
+	PPRINTER_INFO_8 info8 = NULL;
+	DWORD needed = 0;
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing DeviceModes");
+
+	torture_comment(tctx, "Testing GetPrinter level %d", 2);
+
+	GetPrinter(handle, 2, NULL, 0, &needed);
+	err = GetLastError();
+	if (err == ERROR_INSUFFICIENT_BUFFER) {
+		err = 0;
+		info2 = (PPRINTER_INFO_2)malloc(needed);
+		torture_assert(tctx, (LPBYTE)info2, "malloc failed");
+		if (!GetPrinter(handle, 2, (LPBYTE)info2, needed, &needed)) {
+			err = GetLastError();
+		}
+	}
+	if (err) {
+		sprintf(tmp, "GetPrinter failed level %d on [%s] (buffer size = %d), error: %s\n",
+			2, printername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_printer_info_2(info2);
+	}
+
+	torture_comment(tctx, "Testing GetPrinter level %d", 8);
+
+	GetPrinter(handle, 8, NULL, 0, &needed);
+	err = GetLastError();
+	if (err == ERROR_INSUFFICIENT_BUFFER) {
+		err = 0;
+		info8 = (PPRINTER_INFO_8)malloc(needed);
+		torture_assert(tctx, (LPBYTE)info8, "malloc failed");
+		if (!GetPrinter(handle, 8, (LPBYTE)info8, needed, &needed)) {
+			err = GetLastError();
+		}
+	}
+	if (err) {
+		sprintf(tmp, "GetPrinter failed level %d on [%s] (buffer size = %d), error: %s\n",
+			8, printername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_printer_info_8(info8);
+	}
+
+	torture_assert(tctx, test_devicemode_equal(tctx, info2->pDevMode, info8->pDevMode), "");
+
+	free(info2);
+	free(info8);
+
+	return TRUE;
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -752,6 +877,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "");
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "PrinterDriverData");
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
+	ret &= test_DeviceModes(tctx, printername, handle);
 	ret &= test_ClosePrinter(tctx, handle);
 
 	return ret;

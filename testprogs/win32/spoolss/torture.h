@@ -50,7 +50,7 @@ struct torture_context {
 
 #define torture_assert_str_equal(torture_ctx,got,expected,cmt)\
 	do { const char *__got = (got), *__expected = (expected); \
-	if (strcmp_safe(__got, __expected) != 0) { \
+	if (strcmp(__got, __expected) != 0) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 			__location__": "#got" was %s, expected %s: %s", \
 			__got, __expected, cmt); \
