@@ -1546,10 +1546,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_push_spoolss_PrinterAttributes(ndr, NDR_SCALARS, r->attributes));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
@@ -1688,19 +1688,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
 				{
 					struct ndr_push *_ndr_secdesc;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -1881,7 +1881,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
 			if (_ptr_secdesc) {
@@ -1890,7 +1890,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			} else {
 				r->secdesc = NULL;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_spoolss_PrinterAttributes(ndr, NDR_SCALARS, &r->attributes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
@@ -2092,7 +2092,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				uint32_t _relative_save_offset;
@@ -2103,13 +2103,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 				{
 					struct ndr_pull *_ndr_secdesc;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 				ndr->offset = _relative_save_offset;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2194,7 +2194,7 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo2(struct ndr_print *ndr, const char *
 	ndr_print_ptr(ndr, "secdesc", r->secdesc);
 	ndr->depth++;
 	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
+		ndr_print_spoolss_security_descriptor(ndr, "secdesc", r->secdesc);
 	}
 	ndr->depth--;
 	ndr_print_spoolss_PrinterAttributes(ndr, "attributes", r->attributes);
@@ -2218,28 +2218,28 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo3(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
 				{
 					struct ndr_push *_ndr_secdesc;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2252,7 +2252,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, i
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
 			if (_ptr_secdesc) {
@@ -2261,13 +2261,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, i
 			} else {
 				r->secdesc = NULL;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				uint32_t _relative_save_offset;
@@ -2278,13 +2278,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, i
 				{
 					struct ndr_pull *_ndr_secdesc;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 				ndr->offset = _relative_save_offset;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2297,7 +2297,7 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo3(struct ndr_print *ndr, const char *
 	ndr_print_ptr(ndr, "secdesc", r->secdesc);
 	ndr->depth++;
 	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
+		ndr_print_spoolss_security_descriptor(ndr, "secdesc", r->secdesc);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -3656,10 +3656,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
@@ -3790,19 +3790,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
 				{
 					struct ndr_push *_ndr_secdesc;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -3970,7 +3970,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
 			if (_ptr_secdesc) {
@@ -3979,7 +3979,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			} else {
 				r->secdesc = NULL;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
@@ -4168,7 +4168,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				uint32_t _relative_save_offset;
@@ -4179,13 +4179,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 				{
 					struct ndr_pull *_ndr_secdesc;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 				ndr->offset = _relative_save_offset;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4265,7 +4265,7 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo2(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "secdesc", r->secdesc);
 	ndr->depth++;
 	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
+		ndr_print_spoolss_security_descriptor(ndr, "secdesc", r->secdesc);
 	}
 	ndr->depth--;
 	ndr_print_spoolss_JobStatus(ndr, "status", r->status);
@@ -4401,10 +4401,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->secdesc));
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
@@ -4536,19 +4536,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->secdesc));
 				{
 					struct ndr_push *_ndr_secdesc;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_push_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_push_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->secdesc));
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4716,7 +4716,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
 			if (_ptr_secdesc) {
@@ -4725,7 +4725,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			} else {
 				r->secdesc = NULL;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
@@ -4915,7 +4915,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		{
-			uint32_t _flags_save_security_descriptor = ndr->flags;
+			uint32_t _flags_save_spoolss_security_descriptor = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			if (r->secdesc) {
 				uint32_t _relative_save_offset;
@@ -4926,13 +4926,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 				{
 					struct ndr_pull *_ndr_secdesc;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_secdesc, 0, -1));
-					NDR_CHECK(ndr_pull_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
+					NDR_CHECK(ndr_pull_spoolss_security_descriptor(_ndr_secdesc, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_secdesc, 0, -1));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 				ndr->offset = _relative_save_offset;
 			}
-			ndr->flags = _flags_save_security_descriptor;
+			ndr->flags = _flags_save_spoolss_security_descriptor;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5012,7 +5012,7 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo4(struct ndr_print *ndr, const char *name
 	ndr_print_ptr(ndr, "secdesc", r->secdesc);
 	ndr->depth++;
 	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
+		ndr_print_spoolss_security_descriptor(ndr, "secdesc", r->secdesc);
 	}
 	ndr->depth--;
 	ndr_print_spoolss_JobStatus(ndr, "status", r->status);

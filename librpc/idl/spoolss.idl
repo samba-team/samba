@@ -5,6 +5,9 @@
 */
 import "misc.idl", "security.idl", "winreg.idl";
 
+
+cpp_quote("#define spoolss_security_descriptor security_descriptor")
+
 [ uuid("12345678-1234-abcd-ef00-0123456789ab"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\spoolss]"),
@@ -478,7 +481,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *printprocessor;
 		[relative] nstring *datatype;
 		[relative] nstring *parameters;
-		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_security_descriptor *secdesc;
 		spoolss_PrinterAttributes attributes;
 		[range(0,99)] uint32 priority;
 		uint32 defaultpriority;
@@ -490,7 +493,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_PrinterInfo2;
 
 	typedef [public,gensize] struct {
-		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_security_descriptor *secdesc;
 	} spoolss_PrinterInfo3;
 
 	typedef [public,gensize] struct {
@@ -621,7 +624,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *driver_name;
 		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_DeviceMode *devmode;
 		[relative] nstring *text_status;
-		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_security_descriptor *secdesc;
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
@@ -653,7 +656,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *driver_name;
 		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_DeviceMode *devmode;
 		[relative] nstring *text_status;
-		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_security_descriptor *secdesc;
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
