@@ -55,6 +55,7 @@ get_tgt_time(const char *ccname) {
 	krb5_principal principal;
 	time_t credtime = 0;
 	char *realm = NULL;
+	TALLOC_CTX *mem_ctx;
 
 	if (krb5_init_context(&context)) {
 		syslog(LOG_DEBUG, "%s: unable to init krb5 context", __func__);
@@ -86,9 +87,10 @@ get_tgt_time(const char *ccname) {
 		goto err_ccstart;
 	}
 
+	mem_ctx = talloc_init("cifs.upcall");
 	while (!credtime && !krb5_cc_next_cred(context, ccache, &cur, &creds)) {
 		char *name;
-		if (smb_krb5_unparse_name(NULL, context, creds.server, &name)) {
+		if (smb_krb5_unparse_name(mem_ctx, context, creds.server, &name)) {
 			syslog(LOG_DEBUG, "%s: unable to unparse name", __func__);
 			goto err_endseq;
 		}
@@ -101,6 +103,7 @@ get_tgt_time(const char *ccname) {
 		TALLOC_FREE(name);
         }
 err_endseq:
+	TALLOC_FREE(mem_ctx);
         krb5_cc_end_seq_get(context, ccache, &cur);
 err_ccstart:
 	krb5_free_principal(context, principal);
