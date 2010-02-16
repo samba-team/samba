@@ -781,6 +781,17 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 	uint32_t pad;
 
 	pad = pkt_auth_blob->length - (DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length);
+
+	/* paranoia check for pad size. This would be caught anyway by
+	   the ndr_pull_advance() a few lines down, but it scared
+	   Jeremy enough for him to call me, so we might as well check
+	   it now, just to prevent someone posting a bogus YouTube
+	   video in the future.
+	*/
+	if (pad > pkt_auth_blob->length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
 	*auth_length = pkt_auth_blob->length - pad;
 
 	ndr = ndr_pull_init_blob(pkt_auth_blob, mem_ctx, NULL);
