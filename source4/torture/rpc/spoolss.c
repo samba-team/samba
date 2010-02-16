@@ -1814,17 +1814,102 @@ static bool test_devicemode_equal(struct torture_context *tctx,
 	return true;
 }
 
+static bool call_OpenPrinterEx(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       const char *name,
+			       struct spoolss_DeviceMode *devmode,
+			       struct policy_handle *handle);
+
+static bool test_ClosePrinter(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle);
+
 static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 				      struct dcerpc_pipe *p,
-				      struct policy_handle *handle)
+				      struct policy_handle *handle,
+				      const char *name)
 {
 	union spoolss_PrinterInfo info;
 	struct spoolss_DeviceMode *devmode;
 	struct spoolss_DeviceMode *devmode2;
+	struct policy_handle handle_devmode;
+
+	/* simply compare level8 and level2 devmode */
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
 
 	devmode = info.info8.devmode;
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	devmode2 = info.info2.devmode;
+
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+
+
+	/* change formname upon open and see if it persists in getprinter calls */
+
+	devmode->formname = talloc_strdup(tctx, "A4");
+
+	torture_assert(tctx, call_OpenPrinterEx(tctx, p, name, devmode, &handle_devmode),
+		"failed to open printer handle");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, &handle_devmode, 8, &info), "");
+
+	devmode2 = info.info8.devmode;
+
+	if (strequal(devmode->devicename, devmode2->devicename)) {
+		torture_fail(tctx, "devicename is the same");
+	}
+
+	if (strequal(devmode->formname, devmode2->formname)) {
+		torture_fail(tctx, "formname is the same");
+	}
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, &handle_devmode, 2, &info), "");
+
+	devmode2 = info.info2.devmode;
+
+	if (strequal(devmode->devicename, devmode2->devicename)) {
+		torture_fail(tctx, "devicename is the same");
+	}
+
+	if (strequal(devmode->formname, devmode2->formname)) {
+		torture_fail(tctx, "formname is the same");
+	}
+
+	test_ClosePrinter(tctx, p, &handle_devmode);
+
+
+	/* set devicemode and see if it persists */
+
+	devmode->copies = 93;
+	devmode->formname = talloc_strdup(tctx, "Legal");
+
+	{
+		struct spoolss_SetPrinterInfoCtr info_ctr;
+		struct spoolss_SetPrinterInfo8 info8;
+		struct spoolss_DevmodeContainer devmode_ctr;
+		struct sec_desc_buf secdesc_ctr;
+
+		info8.devmode_ptr = 0;
+
+		info_ctr.level = 8;
+		info_ctr.info.info8 = &info8;
+
+		devmode_ctr.devmode = devmode;
+
+		ZERO_STRUCT(secdesc_ctr);
+
+		torture_assert(tctx,
+			test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
+	}
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
+
+	devmode2 = info.info8.devmode;
+
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
 
@@ -1841,7 +1926,8 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 
 static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
-				     struct policy_handle *handle)
+				     struct policy_handle *handle,
+				     const char *name)
 {
 	union spoolss_PrinterInfo info;
 	struct spoolss_SetPrinterInfo8 info8;
@@ -1859,7 +1945,7 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 
 	/* run tests */
 
-	ret = test_PrinterInfo_DevModes(tctx, p, handle);
+	ret = test_PrinterInfo_DevModes(tctx, p, handle, name);
 
 	/* restore original devmode */
 
@@ -4182,7 +4268,7 @@ static bool test_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_PrinterInfo_DevMode(tctx, p, &handle[0])) {
+	if (!test_PrinterInfo_DevMode(tctx, p, &handle[0], TORTURE_PRINTER)) {
 		ret = false;
 	}
 
