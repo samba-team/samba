@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 
 /*
@@ -95,7 +96,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			}
 
 			/* Apply to database */
-			ret = dsdb_modify_permissive(b_state->sam_ctx, msg);
+			ret = dsdb_modify(b_state->sam_ctx, msg, DSDB_MODIFY_PERMISSIVE);
 			if (ret != 0) {
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn),

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "param/param.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
@@ -128,7 +129,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 			return WERR_NOMEM;
 		}
 
-		ret = dsdb_modify_permissive(b_state->sam_ctx, msg);
+		ret = dsdb_modify(b_state->sam_ctx, msg, DSDB_MODIFY_PERMISSIVE);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to add SPNs - %s\n",
 				 ldb_errstring(b_state->sam_ctx)));

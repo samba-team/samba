@@ -3362,44 +3362,6 @@ int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	return LDB_SUCCESS;
 }
 
-
-/*
-  a modify with the 'permissive' control
-  this means no error for entries that already exist on adds, or
-  removal of entries that don't exist
-*/
-int dsdb_modify_permissive(struct ldb_context *ldb,
-			   const struct ldb_message *message)
-{
-	struct ldb_request *req;
-	int ret;
-
-	ret = ldb_build_mod_req(&req, ldb, ldb,
-				message,
-				NULL,
-				NULL,
-				ldb_op_default_callback,
-				NULL);
-
-	if (ret != LDB_SUCCESS) return ret;
-
-	ret = ldb_request_add_control(req, LDB_CONTROL_PERMISSIVE_MODIFY_OID, false, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ret;
-	}
-
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-
-	talloc_free(req);
-	return ret;
-}
-
-
-
 /*
   add a set of controls to a ldb_request structure based on a set of
   flags. See util.h for a list of available flags
@@ -3465,5 +3427,45 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_MODIFY_PERMISSIVE) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_PERMISSIVE_MODIFY_OID, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
+}
+
+/*
+  a modify with a set of controls
+*/
+int dsdb_modify(struct ldb_context *ldb, const struct ldb_message *message,
+		uint32_t dsdb_flags)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_build_mod_req(&req, ldb, ldb,
+				message,
+				NULL,
+				NULL,
+				ldb_op_default_callback,
+				NULL);
+
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+	return ret;
 }
