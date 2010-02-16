@@ -1973,6 +1973,27 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 
 	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
 
+
+	/* set devicemode level 2 and see if it persists */
+
+	devmode->copies = 39;
+	devmode->formname = talloc_strdup(tctx, "Letter");
+
+	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 8, devmode), "");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
+
+	devmode2 = info.info8.devmode;
+
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+
+	devmode2 = info.info2.devmode;
+
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+
+
 	return true;
 }
 
