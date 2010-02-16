@@ -527,6 +527,8 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 		goto done;
 	}
 
+	TALLOC_FREE(rec);
+
 	if ((lock_type & G_LOCK_PENDING) == 0) {
 		int num_wakeups = 0;
 
@@ -566,9 +568,13 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 		}
 	}
 done:
+	/*
+	 * For the error path, TALLOC_FREE(rec) as well. In the good
+	 * path we have already freed it.
+	 */
+	TALLOC_FREE(rec);
 
 	TALLOC_FREE(locks);
-	TALLOC_FREE(rec);
 	return status;
 }
 
