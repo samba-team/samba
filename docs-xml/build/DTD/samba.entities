@@ -428,6 +428,15 @@ an Active Directory environment.
 </varlistentry>
 '>
 
+<!ENTITY stdarg.useccache '
+<varlistentry>
+<term>-C|--use-ccache</term>
+<listitem><para>
+Try to use the credentials cached by winbind.
+</para></listitem>
+</varlistentry>
+'>
+
 
 <!ENTITY stdarg.help '
 <varlistentry>
@@ -439,6 +448,7 @@ an Active Directory environment.
 <!ENTITY popt.common.credentials '
 &stdarg.nopass;
 &stdarg.kerberos;
+&stdarg.useccache;
 &stdarg.authfile;
 &stdarg.username;
 '>

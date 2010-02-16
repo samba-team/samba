@@ -30,6 +30,7 @@
 		<arg choice="opt">-m maxprotocol</arg>
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-N</arg>
+		<arg choice="opt">-C</arg>
 		<arg choice="opt">-g</arg>
 		<arg choice="opt">-i scope</arg>
 		<arg choice="opt">-O &lt;socket options&gt;</arg>
@@ -55,6 +56,7 @@
 		<arg choice="opt">-m maxprotocol</arg>
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-N</arg>
+		<arg choice="opt">-C</arg>
 		<arg choice="opt">-g</arg>
 		<arg choice="opt">-l log-basename</arg>
 		<arg choice="opt">-I destinationIP</arg>
