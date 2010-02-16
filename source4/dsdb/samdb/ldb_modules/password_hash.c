@@ -1689,10 +1689,10 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	/* If no part of this ADD touches the userPassword, or the NT
 	 * or LM hashes, then we don't need to make any changes.  */
 
-	sambaAttr = ldb_msg_find_element(req->op.mod.message, "userPassword");
-	clearTextPasswordAttr = ldb_msg_find_element(req->op.mod.message, "clearTextPassword");
-	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
-	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
+	sambaAttr = ldb_msg_find_element(req->op.add.message, "userPassword");
+	clearTextPasswordAttr = ldb_msg_find_element(req->op.add.message, "clearTextPassword");
+	ntAttr = ldb_msg_find_element(req->op.add.message, "unicodePwd");
+	lmAttr = ldb_msg_find_element(req->op.add.message, "dBCSPwd");
 
 	if ((!sambaAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
 		return ldb_next_request(module, req);
@@ -1884,13 +1884,13 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* nobody must touch password Histories */
-	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory")) {
+	if (ldb_msg_find_element(req->op.mod.message, "ntPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	if (ldb_msg_find_element(req->op.add.message, "lmPwdHistory")) {
+	if (ldb_msg_find_element(req->op.mod.message, "lmPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	if (ldb_msg_find_element(req->op.add.message, "supplementalCredentials")) {
+	if (ldb_msg_find_element(req->op.mod.message, "supplementalCredentials")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
