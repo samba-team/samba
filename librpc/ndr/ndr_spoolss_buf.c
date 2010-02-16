@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #if (_SAMBA_BUILD_ >= 4)
 #include "param/param.h"
 #endif
@@ -1376,3 +1377,58 @@ _PUBLIC_ size_t ndr_size_spoolss_PrinterData(const union spoolss_PrinterData *r,
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterData, ic);
 }
 
+void ndr_print_spoolss_security_descriptor(struct ndr_print *ndr, const char *name, const struct security_descriptor *r)
+{
+	ndr_print_security_descriptor(ndr, name, r);
+}
+
+enum ndr_err_code ndr_pull_spoolss_security_descriptor(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor *r)
+{
+	uint32_t _flags_save_STRUCT = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NO_RELATIVE_REVERSE);
+	NDR_CHECK(ndr_pull_security_descriptor(ndr, ndr_flags, r));
+	ndr->flags = _flags_save_STRUCT;
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_spoolss_security_descriptor(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN|LIBNDR_FLAG_NO_RELATIVE_REVERSE);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 5));
+			NDR_CHECK(ndr_push_security_descriptor_revision(ndr, NDR_SCALARS, r->revision));
+			NDR_CHECK(ndr_push_security_descriptor_type(ndr, NDR_SCALARS, r->type));
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->owner_sid));
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->group_sid));
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->sacl));
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dacl));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 5));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			if (r->sacl) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->sacl));
+				NDR_CHECK(ndr_push_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->sacl));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->sacl));
+			}
+			if (r->dacl) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->dacl));
+				NDR_CHECK(ndr_push_security_acl(ndr, NDR_SCALARS|NDR_BUFFERS, r->dacl));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->dacl));
+			}
+			if (r->owner_sid) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->owner_sid));
+				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->owner_sid));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->owner_sid));
+			}
+			if (r->group_sid) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->group_sid));
+				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->group_sid));
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->group_sid));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
