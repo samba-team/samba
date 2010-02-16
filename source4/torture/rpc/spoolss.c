@@ -3337,7 +3337,9 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 
 static bool call_OpenPrinterEx(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
-			       const char *name, struct policy_handle *handle)
+			       const char *name,
+			       struct spoolss_DeviceMode *devmode,
+			       struct policy_handle *handle)
 {
 	struct spoolss_OpenPrinterEx r;
 	struct spoolss_UserLevel1 userlevel1;
@@ -3352,7 +3354,7 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 	}
 
 	r.in.datatype		= NULL;
-	r.in.devmode_ctr.devmode= NULL;
+	r.in.devmode_ctr.devmode= devmode;
 	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.level		= 1;
 	r.in.userlevel.level1	= &userlevel1;
@@ -3384,7 +3386,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	struct policy_handle handle;
 	bool ret = true;
 
-	if (!call_OpenPrinterEx(tctx, p, name, &handle)) {
+	if (!call_OpenPrinterEx(tctx, p, name, NULL, &handle)) {
 		return false;
 	}
 
@@ -3913,7 +3915,7 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 	if (W_ERROR_EQUAL(result, WERR_PRINTER_ALREADY_EXISTS)) {
 		struct policy_handle printer_handle;
 
-		torture_assert(tctx, call_OpenPrinterEx(tctx, p, printername, &printer_handle),
+		torture_assert(tctx, call_OpenPrinterEx(tctx, p, printername, NULL, &printer_handle),
 			"failed to open printer handle");
 
 		torture_assert(tctx, test_DeletePrinter(tctx, p, &printer_handle),
