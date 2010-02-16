@@ -1672,6 +1672,10 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
 
 	sd2 = info.info2.secdesc;
+	if (sd1->type & SEC_DESC_DACL_DEFAULTED) {
+		torture_comment(tctx, "removing SEC_DESC_DACL_DEFAULTED\n");
+		sd1->type &= ~SEC_DESC_DACL_DEFAULTED;
+	}
 
 	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
 
