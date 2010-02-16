@@ -680,7 +680,7 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(ac->module, req,
+	ret = dsdb_request_add_controls(req,
 					DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
 		return ret;

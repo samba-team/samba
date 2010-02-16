@@ -1,8 +1,8 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
 
-   Copyright (C) Andrew Tridgell 2009
+   Copyright (C) Andrew Tridgell 2010
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
 
    This program is free software; you can redistribute it and/or modify
@@ -19,17 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* predeclare some structures used by utility functions */
-struct dsdb_schema;
-struct GUID;
-struct dsdb_attribute;
-struct dsdb_fsmo_extended_op;
-
-#include "dsdb/samdb/ldb_modules/util_proto.h"
-#include "dsdb/common/util.h"
-
-/* extend the dsdb_request_add_controls() flags for module
-   specific functions */
-#define DSDB_FLAG_OWN_MODULE		      0x00400000
-#define DSDB_FLAG_TOP_MODULE		      0x00800000
-
+/*
+   flags for dsdb_request_add_controls(). For the module functions,
+   the upper 16 bits are in dsdb/samdb/ldb_modules/util.h
+*/
+#define DSDB_SEARCH_SEARCH_ALL_PARTITIONS     0x0001
+#define DSDB_SEARCH_SHOW_DELETED              0x0002
+#define DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT 0x0004
+#define DSDB_SEARCH_REVEAL_INTERNALS          0x0008
+#define DSDB_SEARCH_SHOW_EXTENDED_DN          0x0010
+#define DSDB_MODIFY_RELAX		      0x0020

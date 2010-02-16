@@ -29,76 +29,6 @@
 #include "libcli/security/security.h"
 
 /*
-  add a set of controls to a ldb_request structure based on a set of
-  flags. See util.h for a list of available flags
- */
-int dsdb_request_add_controls(struct ldb_module *module, struct ldb_request *req, uint32_t dsdb_flags)
-{
-	int ret;
-	if (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) {
-		struct ldb_search_options_control *options;
-		/* Using the phantom root control allows us to search all partitions */
-		options = talloc(req, struct ldb_search_options_control);
-		if (options == NULL) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
-		
-		ret = ldb_request_add_control(req,
-					      LDB_CONTROL_SEARCH_OPTIONS_OID,
-					      true, options);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	if (dsdb_flags & DSDB_SEARCH_SHOW_DELETED) {
-		ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	if (dsdb_flags & DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT) {
-		ret = ldb_request_add_control(req, DSDB_CONTROL_DN_STORAGE_FORMAT_OID, true, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	if (dsdb_flags & DSDB_SEARCH_SHOW_EXTENDED_DN) {
-		struct ldb_extended_dn_control *extended_ctrl = talloc(req, struct ldb_extended_dn_control);
-		if (!extended_ctrl) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		extended_ctrl->type = 1;
-		
-		ret = ldb_request_add_control(req, LDB_CONTROL_EXTENDED_DN_OID, true, extended_ctrl);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	if (dsdb_flags & DSDB_SEARCH_REVEAL_INTERNALS) {
-		ret = ldb_request_add_control(req, LDB_CONTROL_REVEAL_INTERNALS, false, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	if (dsdb_flags & DSDB_MODIFY_RELAX) {
-		ret = ldb_request_add_control(req, LDB_CONTROL_RELAX_OID, false, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	return LDB_SUCCESS;
-}
-
-/*
   search for attrs on one DN, in the modules below
  */
 int dsdb_module_search_dn(struct ldb_module *module,
@@ -134,7 +64,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(module, req, dsdb_flags);
+	ret = dsdb_request_add_controls(req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -206,7 +136,7 @@ int dsdb_module_search(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(module, req, dsdb_flags);
+	ret = dsdb_request_add_controls(req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -325,7 +255,7 @@ int dsdb_module_modify(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(module, mod_req, dsdb_flags);
+	ret = dsdb_request_add_controls(mod_req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -375,7 +305,7 @@ int dsdb_module_rename(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(module, req, dsdb_flags);
+	ret = dsdb_request_add_controls(req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -422,7 +352,7 @@ int dsdb_module_add(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(module, req, dsdb_flags);
+	ret = dsdb_request_add_controls(req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
