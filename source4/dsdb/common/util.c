@@ -3443,7 +3443,7 @@ int dsdb_search(struct ldb_context *ldb,
 		}
 		if (res->count != 1) {
 			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	}
 
