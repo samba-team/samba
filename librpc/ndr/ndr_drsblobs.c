@@ -96,12 +96,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->current) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->current));
+			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->current));
 			NDR_CHECK(ndr_push_AuthenticationInformationArray_with_count(ndr, NDR_SCALARS|NDR_BUFFERS, r->count, r->current));
+			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->current));
 		}
 		if (r->previous) {
-			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->previous));
+			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->previous));
 			NDR_CHECK(ndr_push_AuthenticationInformationArray_with_count(ndr, NDR_SCALARS|NDR_BUFFERS, r->count, r->previous));
+			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->previous));
 		}
 	}
 	return NDR_ERR_SUCCESS;
