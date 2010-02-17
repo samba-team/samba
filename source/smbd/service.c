@@ -720,7 +720,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	fstring dev;
 	int ret;
 	char addr[INET6_ADDRSTRLEN];
-	bool on_err_call_dis_hook = false;
 	NTSTATUS status;
 
 	fstrcpy(dev, pdev);
@@ -958,6 +957,18 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}  
 
+	/* Invoke VFS make connection hook - must be the first
+	   VFS operation we do. */
+
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
+			    conn->server_info->unix_name) < 0) {
+		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		yield_connection(conn, lp_servicename(snum));
+		conn_free(conn);
+		*pstatus = NT_STATUS_UNSUCCESSFUL;
+		return NULL;
+	}
+
 	/*
 	 * Fix compatibility issue pointed out by Volker.
 	 * We pass the conn->connectpath to the preexec
@@ -988,6 +999,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		if (ret != 0 && lp_rootpreexec_close(snum)) {
 			DEBUG(1,("root preexec gave %d - failing "
 				 "connection\n", ret));
+			SMB_VFS_DISCONNECT(conn);
 			yield_connection(conn, lp_servicename(snum));
 			conn_free(conn);
 			*pstatus = NT_STATUS_ACCESS_DENIED;
@@ -999,6 +1011,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (!change_to_user(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
 		DEBUG(0,("Can't become connected user!\n"));
+		SMB_VFS_DISCONNECT(conn);
 		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*pstatus = NT_STATUS_LOGON_FAILURE;
@@ -1064,19 +1077,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				lp_aio_write_behind(snum));
 	}
 	
-	/* Invoke VFS make connection hook - do this before the VFS_STAT call
-	   to allow any filesystems needing user credentials to initialize
-	   themselves. */
-
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
-			    conn->server_info->unix_name) < 0) {
-		DEBUG(0,("make_connection: VFS make connection failed!\n"));
-		*pstatus = NT_STATUS_UNSUCCESSFUL;
-		goto err_root_exit;
-	}
-
-	/* Any error exit after here needs to call the disconnect hook. */
-	on_err_call_dis_hook = true;
 
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
@@ -1149,10 +1149,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
   err_root_exit:
 
 	change_to_root_user();
-	if (on_err_call_dis_hook) {
-		/* Call VFS disconnect hook */
-		SMB_VFS_DISCONNECT(conn);
-	}
+	/* Call VFS disconnect hook */
+	SMB_VFS_DISCONNECT(conn);
 	yield_connection(conn, lp_servicename(snum));
 	conn_free(conn);
 	return NULL;
