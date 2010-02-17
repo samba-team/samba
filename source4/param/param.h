@@ -131,6 +131,7 @@ const char **lp_interfaces(struct loadparm_context *);
 const char *lp_socket_address(struct loadparm_context *);
 const char **lp_netbios_aliases(struct loadparm_context *);
 const char *lp_rndc_command(struct loadparm_context *);
+const char *lp_dns_update_command(struct loadparm_context *);
 bool lp_disable_netbios(struct loadparm_context *);
 bool lp_wins_support(struct loadparm_context *);
 bool lp_wins_dns_proxy(struct loadparm_context *);
