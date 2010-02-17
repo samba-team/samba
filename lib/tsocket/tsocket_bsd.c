@@ -1164,7 +1164,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			do_reuseaddr = true;
 			do_bind = true;
 		}
-		if (lbsda->u.in.sin_addr.s_addr == INADDR_ANY) {
+		if (lbsda->u.in.sin_addr.s_addr != INADDR_ANY) {
 			do_bind = true;
 		}
 		break;
@@ -1973,7 +1973,7 @@ static struct tevent_req * tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 			do_reuseaddr = true;
 			do_bind = true;
 		}
-		if (lbsda->u.in.sin_addr.s_addr == INADDR_ANY) {
+		if (lbsda->u.in.sin_addr.s_addr != INADDR_ANY) {
 			do_bind = true;
 		}
 		break;
