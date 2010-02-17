@@ -652,7 +652,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	fstring dev;
 	int ret;
 	char addr[INET6_ADDRSTRLEN];
-	bool on_err_call_dis_hook = false;
 	NTSTATUS status;
 
 	fstrcpy(dev, pdev);
@@ -887,6 +886,18 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		return NULL;
 	}  
 
+	/* Invoke VFS make connection hook - must be the first
+	   VFS operation we do. */
+
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
+			    conn->server_info->unix_name) < 0) {
+		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		yield_connection(conn, lp_servicename(snum));
+		conn_free(conn);
+		*pstatus = NT_STATUS_UNSUCCESSFUL;
+		return NULL;
+	}
+
 	/*
 	 * Fix compatibility issue pointed out by Volker.
 	 * We pass the conn->connectpath to the preexec
@@ -917,6 +928,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		if (ret != 0 && lp_rootpreexec_close(snum)) {
 			DEBUG(1,("root preexec gave %d - failing "
 				 "connection\n", ret));
+			SMB_VFS_DISCONNECT(conn);
 			yield_connection(conn, lp_servicename(snum));
 			conn_free(conn);
 			*pstatus = NT_STATUS_ACCESS_DENIED;
@@ -928,6 +940,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (!change_to_user(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
 		DEBUG(0,("Can't become connected user!\n"));
+		SMB_VFS_DISCONNECT(conn);
 		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*pstatus = NT_STATUS_LOGON_FAILURE;
@@ -993,20 +1006,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 				lp_aio_write_behind(snum));
 	}
 	
-	/* Invoke VFS make connection hook - do this before the VFS_STAT call
-	   to allow any filesystems needing user credentials to initialize
-	   themselves. */
-
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
-			    conn->server_info->unix_name) < 0) {
-		DEBUG(0,("make_connection: VFS make connection failed!\n"));
-		*pstatus = NT_STATUS_UNSUCCESSFUL;
-		goto err_root_exit;
-	}
-
-	/* Any error exit after here needs to call the disconnect hook. */
-	on_err_call_dis_hook = true;
-
 	status = create_synthetic_smb_fname(talloc_tos(), conn->connectpath,
 					    NULL, NULL, &smb_fname_cpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1085,10 +1084,8 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
   err_root_exit:
 	TALLOC_FREE(smb_fname_cpath);
 	change_to_root_user();
-	if (on_err_call_dis_hook) {
-		/* Call VFS disconnect hook */
-		SMB_VFS_DISCONNECT(conn);
-	}
+	/* Call VFS disconnect hook */
+	SMB_VFS_DISCONNECT(conn);
 	yield_connection(conn, lp_servicename(snum));
 	conn_free(conn);
 	return NULL;
