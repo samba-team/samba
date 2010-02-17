@@ -881,8 +881,11 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 	 * some systems too much bytes in tsocket_bsd_pending()
 	 * the return value includes some IP/UDP header bytes
 	 */
+	state->buf = talloc_realloc(state, state->buf, uint8_t, ret);
+	if (tevent_req_nomem(state->buf, req)) {
+		return;
+	}
 	state->len = ret;
-	talloc_realloc(state, state->buf, uint8_t, ret);
 
 	tevent_req_done(req);
 }
