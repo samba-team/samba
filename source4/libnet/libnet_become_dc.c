@@ -729,6 +729,8 @@ struct libnet_BecomeDC_state {
 	struct libnet_BecomeDC_PrepareDB _pp;
 	struct libnet_BecomeDC_StoreChunk _sc;
 	struct libnet_BecomeDC_Callbacks callbacks;
+
+	bool rodc_join;
 };
 
 static int32_t get_dc_function_level(struct loadparm_context *lp_ctx)
@@ -1762,7 +1764,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	if (composite_nomem(identifier->dn, c)) return;
 
 	/* allocate attribute array */
-	num_attrs	= 11;
+	num_attrs	= 12;
 	attrs		= talloc_array(r, struct drsuapi_DsReplicaAttribute, num_attrs);
 	if (composite_nomem(attrs, c)) return;
 
@@ -1846,7 +1848,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		i++;
 	}
 
-	/* objectClass: nTDSDSA */
+	/* objectClass: nTDSDSA or nTDSDSARO*/
 	{
 		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
@@ -1872,7 +1874,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		i++;
 	}
 
-	/* objectCategory: CN=NTDS-DSA,CN=Schema,... */
+	/* objectCategory: CN=NTDS-DSA,CN=Schema,... or CN=NTDS-DSA-RO,CN=Schema,... */
 	{
 		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
@@ -1886,8 +1888,14 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		v[0].guid		= GUID_zero();
 		v[0].sid		= s->zero_sid;
-		v[0].dn			= talloc_asprintf(vd, "CN=NTDS-DSA,%s",
+
+		if (s->rodc_join) {
+		    v[0].dn		= talloc_asprintf(vd, "CN=NTDS-DSA-RO,%s",
 							  s->forest.schema_dn_str);
+		} else {
+		    v[0].dn		= talloc_asprintf(vd, "CN=NTDS-DSA,%s",
+							  s->forest.schema_dn_str);
+		}
 		if (composite_nomem(v[0].dn, c)) return;
 
 		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0], 
@@ -2147,7 +2155,11 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vd[0] = data_blob_talloc(vd, NULL, 4);
 		if (composite_nomem(vd[0].data, c)) return;
 
-		SIVAL(vd[0].data, 0, SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+		if (s->rodc_join) {
+		    SIVAL(vd[0].data, 0, SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
+		} else {
+		    SIVAL(vd[0].data, 0, SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+		}
 
 		vs[0].blob		= &vd[0];
 
@@ -2184,6 +2196,31 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vs[0].blob		= &vd[0];
 
 		attrs[i].attid			= DRSUAPI_ATTRIBUTE_serverReference;
+		attrs[i].value_ctr.num_values	= 1;
+		attrs[i].value_ctr.values	= vs;
+
+		i++;
+	}
+
+	/* options:... */
+	if (s->rodc_join) {
+		struct drsuapi_DsAttributeValue *vs;
+		DATA_BLOB *vd;
+
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValue, 1);
+		if (composite_nomem(vs, c)) return;
+
+		vd = talloc_array(vs, DATA_BLOB, 1);
+		if (composite_nomem(vd, c)) return;
+
+		vd[0] = data_blob_talloc(vd, NULL, 4);
+		if (composite_nomem(vd[0].data, c)) return;
+
+		SIVAL(vd[0].data, 0, DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL);
+
+		vs[0].blob		= &vd[0];
+
+		attrs[i].attid			= DRSUAPI_ATTRIBUTE_options;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2582,6 +2619,9 @@ static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
 					| DRSUAPI_DRS_USE_COMPRESSION;
+	if (s->rodc_join) {
+	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
+	}
 
 	s->schema_part.store_chunk	= s->callbacks.schema_chunk;
 
@@ -2646,6 +2686,9 @@ static void becomeDC_drsuapi3_pull_config_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
 					| DRSUAPI_DRS_USE_COMPRESSION;
+	if (s->rodc_join) {
+	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
+	}
 
 	s->config_part.store_chunk	= s->callbacks.config_chunk;
 
@@ -2708,6 +2751,9 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
 					| DRSUAPI_DRS_USE_COMPRESSION;
+	if (s->rodc_join) {
+	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
+	}
 
 	s->domain_part.store_chunk	= s->callbacks.domain_chunk;
 
@@ -3016,6 +3062,9 @@ struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLO
 
 	/* Callback function pointers */
 	s->callbacks = r->in.callbacks;
+
+        /* RODC join*/
+        s->rodc_join = r->in.rodc_join;
 
 	becomeDC_send_cldap(s);
 	return c;

@@ -136,7 +136,9 @@ struct libnet_BecomeDC {
 		const char *dest_dsa_netbios_name;
 
 		struct libnet_BecomeDC_Callbacks callbacks;
-	} in;
+
+                bool rodc_join;
+        } in;
 
 	struct {
 		const char *error_string;

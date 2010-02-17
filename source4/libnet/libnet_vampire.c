@@ -686,6 +686,8 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	b.in.callbacks.config_chunk	= vampire_store_chunk;
 	b.in.callbacks.domain_chunk	= vampire_store_chunk;
 
+	b.in.rodc_join = lp_parm_bool(s->lp_ctx, NULL, "repl", "RODC", false);
+
 	status = libnet_BecomeDC(ctx, s, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
