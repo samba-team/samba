@@ -884,8 +884,10 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 	}
 
 	/*
-	 * some systems too much bytes in tsocket_bsd_pending()
-	 * the return value includes some IP/UDP header bytes
+	 * Some systems (FreeBSD, see bug #7115) return too much
+	 * bytes in tsocket_bsd_pending()/ioctl(fd, FIONREAD, ...),
+	 * the return value includes some IP/UDP header bytes,
+	 * while recvfrom() just returns the payload.
 	 */
 	state->buf = talloc_realloc(state, state->buf, uint8_t, ret);
 	if (tevent_req_nomem(state->buf, req)) {
