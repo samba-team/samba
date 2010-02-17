@@ -1839,6 +1839,10 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 	switch (si->family) {
 	case AF_INET:
 		return 0;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		return 0;
+#endif
 	default:
 		errno = ENOPROTOOPT;
 		return -1;
