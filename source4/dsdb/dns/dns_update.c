@@ -23,6 +23,9 @@
 /*
   this module auto-creates the named.conf.update file, which tells
   bind9 what KRB5 principals it should accept for updates to our zone
+
+  It also uses the samba_dnsupdate script to auto-create the right DNS
+  names for ourselves as a DC in the domain, using TSIG-GSS
  */
 
 #include "includes.h"
@@ -39,12 +42,21 @@ struct dnsupdate_service {
 	struct auth_session_info *system_session_info;
 	struct ldb_context *samdb;
 
+	/* status for periodic config file update */
 	struct {
 		uint32_t interval;
 		struct tevent_timer *te;
 		struct composite_context *c;
 		NTSTATUS status;
-	} periodic;
+	} confupdate;
+
+	/* status for periodic DNS name check */
+	struct {
+		uint32_t interval;
+		struct tevent_timer *te;
+		struct composite_context *c;
+		NTSTATUS status;
+	} nameupdate;
 };
 
 /*
@@ -54,18 +66,18 @@ static void dnsupdate_rndc_done(struct composite_context *c)
 {
 	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
 								  struct dnsupdate_service);
-	service->periodic.status = composite_wait(c);
-	if (!NT_STATUS_IS_OK(service->periodic.status)) {
+	service->confupdate.status = composite_wait(c);
+	if (!NT_STATUS_IS_OK(service->confupdate.status)) {
 		DEBUG(0,(__location__ ": Failed rndc update - %s\n",
-			 nt_errstr(service->periodic.status)));
+			 nt_errstr(service->confupdate.status)));
 		return;
 	}
 	talloc_free(c);
-	service->periodic.c = NULL;
+	service->confupdate.c = NULL;
 }
 
 /*
-  called every dnsupdate:interval seconds
+  called every 'dnsupdate:conf interval' seconds
  */
 static void dnsupdate_rebuild(struct dnsupdate_service *service)
 {
@@ -122,12 +134,12 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	dprintf(fd, "};\n");
 	close(fd);
 
-	if (service->periodic.c != NULL) {
-		talloc_free(service->periodic.c);
-		service->periodic.c = NULL;
+	if (service->confupdate.c != NULL) {
+		talloc_free(service->confupdate.c);
+		service->confupdate.c = NULL;
 	}
 
-	if (NT_STATUS_IS_OK(service->periodic.status) &&
+	if (NT_STATUS_IS_OK(service->confupdate.status) &&
 	    file_compare(tmp_path, path) == true) {
 		unlink(tmp_path);
 		talloc_free(tmp_ctx);
@@ -142,38 +154,101 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	}
 
 	DEBUG(2,("Loading new DNS update grant rules\n"));
-	service->periodic.c = samba_runcmd(service->task->event_ctx, service,
+	service->confupdate.c = samba_runcmd(service->task->event_ctx, service,
 					   timeval_current_ofs(10, 0),
 					   2, 0,
 					   lp_rndc_command(service->task->lp_ctx),
 					   "reload", NULL);
-	service->periodic.c->async.fn = dnsupdate_rndc_done;
-	service->periodic.c->async.private_data = service;
+	service->confupdate.c->async.fn = dnsupdate_rndc_done;
+	service->confupdate.c->async.private_data = service;
 
 	talloc_free(tmp_ctx);
 }
 
-static NTSTATUS dnsupdate_periodic_schedule(struct dnsupdate_service *service);
+static NTSTATUS dnsupdate_confupdate_schedule(struct dnsupdate_service *service);
 
 /*
-  called every dnsupdate:interval seconds
+  called every 'dnsupdate:conf interval' seconds
  */
-static void dnsupdate_periodic_handler_te(struct tevent_context *ev, struct tevent_timer *te,
+static void dnsupdate_confupdate_handler_te(struct tevent_context *ev, struct tevent_timer *te,
 					  struct timeval t, void *ptr)
 {
 	struct dnsupdate_service *service = talloc_get_type(ptr, struct dnsupdate_service);
 
 	dnsupdate_rebuild(service);
-	dnsupdate_periodic_schedule(service);
+	dnsupdate_confupdate_schedule(service);
 }
 
 
-static NTSTATUS dnsupdate_periodic_schedule(struct dnsupdate_service *service)
+static NTSTATUS dnsupdate_confupdate_schedule(struct dnsupdate_service *service)
 {
-	service->periodic.te = tevent_add_timer(service->task->event_ctx, service,
-						timeval_current_ofs(service->periodic.interval, 0),
-						dnsupdate_periodic_handler_te, service);
-	NT_STATUS_HAVE_NO_MEMORY(service->periodic.te);
+	service->confupdate.te = tevent_add_timer(service->task->event_ctx, service,
+						timeval_current_ofs(service->confupdate.interval, 0),
+						dnsupdate_confupdate_handler_te, service);
+	NT_STATUS_HAVE_NO_MEMORY(service->confupdate.te);
+	return NT_STATUS_OK;
+}
+
+
+/*
+  called when dns update script has finished
+ */
+static void dnsupdate_nameupdate_done(struct composite_context *c)
+{
+	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
+								  struct dnsupdate_service);
+	service->nameupdate.status = composite_wait(c);
+	if (!NT_STATUS_IS_OK(service->nameupdate.status)) {
+		DEBUG(0,(__location__ ": Failed DNS update - %s\n",
+			 nt_errstr(service->nameupdate.status)));
+		return;
+	}
+	talloc_free(c);
+	service->nameupdate.c = NULL;
+}
+
+/*
+  called every 'dnsupdate:name interval' seconds
+ */
+static void dnsupdate_check_names(struct dnsupdate_service *service)
+{
+	/* kill any existing child */
+	if (service->nameupdate.c != NULL) {
+		talloc_free(service->nameupdate.c);
+		service->nameupdate.c = NULL;
+	}
+
+	DEBUG(3,("Calling DNS name update script\n"));
+	service->nameupdate.c = samba_runcmd(service->task->event_ctx, service,
+					     timeval_current_ofs(10, 0),
+					     2, 0,
+					     lp_dns_update_command(service->task->lp_ctx),
+					     NULL);
+	service->nameupdate.c->async.fn = dnsupdate_nameupdate_done;
+	service->nameupdate.c->async.private_data = service;
+}
+
+static NTSTATUS dnsupdate_nameupdate_schedule(struct dnsupdate_service *service);
+
+/*
+  called every 'dnsupdate:name interval' seconds
+ */
+static void dnsupdate_nameupdate_handler_te(struct tevent_context *ev, struct tevent_timer *te,
+					    struct timeval t, void *ptr)
+{
+	struct dnsupdate_service *service = talloc_get_type(ptr, struct dnsupdate_service);
+
+	dnsupdate_check_names(service);
+	dnsupdate_nameupdate_schedule(service);
+}
+
+
+static NTSTATUS dnsupdate_nameupdate_schedule(struct dnsupdate_service *service)
+{
+	service->nameupdate.te = tevent_add_timer(service->task->event_ctx, service,
+						  timeval_current_ofs(service->nameupdate.interval, 0),
+						  dnsupdate_nameupdate_handler_te, service);
+	NT_STATUS_HAVE_NO_MEMORY(service->nameupdate.te);
 	return NT_STATUS_OK;
 }
 
@@ -216,13 +291,24 @@ static void dnsupdate_task_init(struct task_server *task)
 		return;
 	}
 
-	service->periodic.interval	= lp_parm_int(task->lp_ctx, NULL,
-						      "dnsupdate", "interval", 60); /* in seconds */
+	service->confupdate.interval	= lp_parm_int(task->lp_ctx, NULL,
+						      "dnsupdate", "config interval", 60); /* in seconds */
 
-	status = dnsupdate_periodic_schedule(service);
+	service->nameupdate.interval	= lp_parm_int(task->lp_ctx, NULL,
+						      "dnsupdate", "name interval", 600); /* in seconds */
+
+	status = dnsupdate_confupdate_schedule(service);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
-				      "dnsupdate: Failed to periodic schedule: %s\n",
+				      "dnsupdate: Failed to confupdate schedule: %s\n",
+							    nt_errstr(status)), true);
+		return;
+	}
+
+	status = dnsupdate_nameupdate_schedule(service);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, talloc_asprintf(task,
+				      "dnsupdate: Failed to nameupdate schedule: %s\n",
 							    nt_errstr(status)), true);
 		return;
 	}
