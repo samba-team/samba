@@ -31,6 +31,9 @@
 #include "../lib/util/util_tdb.h"
 #include "../lib/util/util_ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
+#include "dsdb/common/proto.h"
 
 /**
  * Use a TDB to store an incrementing random seed.
@@ -138,15 +141,17 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev_ctx,
 				       struct loadparm_context *lp_ctx,
-				       const char *domain)
+				       const char *domain,
+				       char **errstring)
 {
 	struct ldb_context *ldb;
-	struct ldb_message **msgs;
+	struct ldb_message *msg;
 	int ldb_ret;
 	const char *attrs[] = { "objectSid", NULL };
 	struct dom_sid *result = NULL;
 	const struct ldb_val *v;
 	enum ndr_err_code ndr_err;
+	*errstring = NULL;
 
 	ldb = secrets_db_connect(mem_ctx, ev_ctx, lp_ctx);
 	if (ldb == NULL) {
@@ -154,35 +159,18 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ldb_ret = gendb_search(ldb, ldb,
-			       ldb_dn_new(mem_ctx, ldb, SECRETS_PRIMARY_DOMAIN_DN), 
-			       &msgs, attrs,
-			       SECRETS_PRIMARY_DOMAIN_FILTER, domain);
+	ldb_ret = dsdb_search_one(ldb, ldb, &msg,
+			      ldb_dn_new(mem_ctx, ldb, SECRETS_PRIMARY_DOMAIN_DN),
+			      LDB_SCOPE_ONELEVEL,
+			      attrs, 0, SECRETS_PRIMARY_DOMAIN_FILTER, domain);
 
-	if (ldb_ret == -1) {
-		DEBUG(5, ("Error searching for domain SID for %s: %s", 
-			  domain, ldb_errstring(ldb))); 
-		talloc_free(ldb);
+	if (ldb_ret != LDB_SUCCESS) {
+		*errstring = talloc_asprintf(mem_ctx, "Failed to find record for %s in secrets.ldb: %s: %s", domain, ldb_strerror(ldb_ret), ldb_errstring(ldb));
 		return NULL;
 	}
-
-	if (ldb_ret == 0) {
-		DEBUG(5, ("Did not find domain record for %s\n", domain));
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	if (ldb_ret > 1) {
-		DEBUG(5, ("Found more than one (%d) domain records for %s\n",
-			  ldb_ret, domain));
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	v = ldb_msg_find_ldb_val(msgs[0], "objectSid");
+	v = ldb_msg_find_ldb_val(msg, "objectSid");
 	if (v == NULL) {
-		DEBUG(0, ("Domain object for %s does not contain a SID!\n",
-			  domain));
+		*errstring = talloc_asprintf(mem_ctx, "Failed to find a SID on record for %s in secrets.ldb", domain);
 		return NULL;
 	}
 	result = talloc(mem_ctx, struct dom_sid);
@@ -194,6 +182,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_pull_struct_blob(v, result, NULL, result,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		*errstring = talloc_asprintf(mem_ctx, "Failed to parse SID on record for %s in secrets.ldb", domain);
 		talloc_free(result);
 		talloc_free(ldb);
 		return NULL;

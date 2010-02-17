@@ -2,8 +2,9 @@
    Unix SMB/CIFS implementation.
    Main winbindd server routines
 
-   Copyright (C) Stefan Metzmacher	2005
+   Copyright (C) Stefan Metzmacher	2005-2008
    Copyright (C) Andrew Tridgell	2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +27,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "libcli/util/tstream.h"
 #include "param/param.h"
+#include "param/secrets.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
 {
@@ -195,6 +197,8 @@ static void winbind_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct wbsrv_service *service;
 	struct wbsrv_listen_socket *listen_socket;
+	char *errstring;
+	struct dom_sid *primary_sid;
 
 	task_server_set_title(task, "task[winbind]");
 
@@ -226,11 +230,36 @@ static void winbind_task_init(struct task_server *task)
 	if (!service) goto nomem;
 	service->task	= task;
 
-	status = wbsrv_setup_domains(service);
-	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, nt_errstr(status), true);
-		return;
+
+	/* Find the primary SID, depending if we are a standalone
+	 * server (what good is winbind in this case, but anyway...),
+	 * or are in a domain as a member or a DC */
+	switch (lp_server_role(service->task->lp_ctx)) {
+	case ROLE_STANDALONE:
+		primary_sid = secrets_get_domain_sid(service,
+						     service->task->event_ctx,
+						     service->task->lp_ctx,
+						     lp_netbios_name(service->task->lp_ctx), &errstring);
+		if (!primary_sid) {
+			char *message = talloc_asprintf(task, "Cannot start Winbind (standalone configuration): %s", errstring);
+			task_server_terminate(task, message, true);
+			return;
+		}
+		break;
+	case ROLE_DOMAIN_MEMBER:
+	case ROLE_DOMAIN_CONTROLLER:
+		primary_sid = secrets_get_domain_sid(service,
+						     service->task->event_ctx,
+						     service->task->lp_ctx,
+						     lp_workgroup(service->task->lp_ctx), &errstring);
+		if (!primary_sid) {
+			char *message = talloc_asprintf(task, "Cannot start Winbind (domain configuration): %s", errstring);
+			task_server_terminate(task, message, true);
+			return;
+		}
+		break;
 	}
+	service->primary_sid = primary_sid;
 
 	service->idmap_ctx = idmap_init(service, task->event_ctx, task->lp_ctx);
 	if (service->idmap_ctx == NULL) {
