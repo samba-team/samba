@@ -1525,15 +1525,7 @@ def create_zone_file(message, paths, setup_path, dnsdomain,
     except OSError:
         pass
 
-    os.mkdir(dns_dir, 0770)
-    # chmod needed to cope with umask
-    os.chmod(dns_dir, 0770)
-
-    if paths.bind_gid is not None:
-        try:
-            os.chown(dns_dir, -1, paths.bind_gid)
-        except OSError:
-            message("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
+    os.mkdir(dns_dir, 0775)
 
     setup_file(setup_path("provision.zone"), paths.dns, {
             "HOSTNAME": hostname,
@@ -1548,6 +1540,16 @@ def create_zone_file(message, paths, setup_path, dnsdomain,
             "HOSTIP6_BASE_LINE": hostip6_base_line,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
         })
+
+    if paths.bind_gid is not None:
+        try:
+            os.chown(dns_dir, -1, paths.bind_gid)
+            os.chown(paths.dns, -1, paths.bind_gid)
+            # chmod needed to cope with umask
+            os.chmod(dns_dir, 0775)
+            os.chmod(paths.dns, 0664)
+        except OSError:
+            message("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
 
 
 def create_named_conf(paths, setup_path, realm, dnsdomain,
