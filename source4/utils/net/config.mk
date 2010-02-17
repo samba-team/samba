@@ -16,7 +16,8 @@ net_drs_OBJ_FILES = $(addprefix $(utilssrcdir)/net/drs/,  \
 		net_drs.o \
 		net_drs_bind.o \
 		net_drs_kcc.o \
-		net_drs_replicate.o)
+		net_drs_replicate.o \
+		net_drs_showrepl.o)
 
 $(eval $(call proto_header_template,$(utilssrcdir)/net/drs/net_drs_proto.h,$(net_drs_OBJ_FILES:.o=.c)))
 

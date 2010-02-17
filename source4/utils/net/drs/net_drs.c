@@ -37,6 +37,8 @@ static const struct net_functable net_drs_functable[] = {
 			net_drs_kcc_cmd, net_drs_kcc_usage },
 	{ "replicate", "Triggers replication event for the specified naming context between the source and destination domain controllers.\n",
 			net_drs_replicate_cmd, net_drs_replicate_usage },
+	{ "showrepl", "Displays the replication partners for each directory partition on the specified domain controller.\n",
+			net_drs_showrepl_cmd, net_drs_showrepl_usage },
 	{ NULL, NULL }
 };
 
@@ -59,6 +61,7 @@ int net_drs_usage(struct net_context *ctx, int argc, const char **argv)
 	d_printf("  bind      - Display DC replication features\n");
 	d_printf("  kcc       - Forces the KCC to recalculate replication topology for a specified domain controller\n");
 	d_printf("  replicate - Triggers replication event for the specified naming context between the source and destination domain controllers.\n");
+	d_printf("  showrepl  - Displays the replication partners for each directory partition on the specified domain controller.\n");
 	return 0;
 }
 
