@@ -29,12 +29,10 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "smbd/service.h"
-#include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
-#include "lib/ldb/include/ldb_errors.h"
 #include "param/param.h"
 #include "system/filesys.h"
-#include "lib/tevent/tevent.h"
+#include "libcli/composite/composite.h"
 
 struct dnsupdate_service {
 	struct task_server *task;
@@ -44,8 +42,27 @@ struct dnsupdate_service {
 	struct {
 		uint32_t interval;
 		struct tevent_timer *te;
+		struct composite_context *c;
+		NTSTATUS status;
 	} periodic;
 };
+
+/*
+  called when rndc reload has finished
+ */
+static void dnsupdate_rndc_done(struct composite_context *c)
+{
+	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
+								  struct dnsupdate_service);
+	service->periodic.status = composite_wait(c);
+	if (!NT_STATUS_IS_OK(service->periodic.status)) {
+		DEBUG(0,(__location__ ": Failed rndc update - %s\n",
+			 nt_errstr(service->periodic.status)));
+		return;
+	}
+	talloc_free(c);
+	service->periodic.c = NULL;
+}
 
 /*
   called every dnsupdate:interval seconds
@@ -59,7 +76,6 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	const char *attrs[] = { "sAMAccountName", NULL };
 	const char *realm = lp_realm(service->task->lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
-	const char *rndc_cmd;
 
 	ret = ldb_search(service->samdb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 			 attrs, "(&(primaryGroupID=%u)(objectClass=computer))",
@@ -106,7 +122,13 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	dprintf(fd, "};\n");
 	close(fd);
 
-	if (file_compare(tmp_path, path) == true) {
+	if (service->periodic.c != NULL) {
+		talloc_free(service->periodic.c);
+		service->periodic.c = NULL;
+	}
+
+	if (NT_STATUS_IS_OK(service->periodic.status) &&
+	    file_compare(tmp_path, path) == true) {
 		unlink(tmp_path);
 		talloc_free(tmp_ctx);
 		return;
@@ -119,17 +141,14 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 		return;
 	}
 
-	DEBUG(1,("Loaded new DNS update grant rules\n"));
-
-	rndc_cmd = lp_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "rndc reload command");
-	if (!rndc_cmd) {
-		rndc_cmd = "/usr/sbin/rndc reload";
-	}
-	ret = system(rndc_cmd);
-	if (ret != 0) {
-		DEBUG(0,(__location__ ": Failed rndc reload command: '%s' - %d\n",
-			 rndc_cmd, ret));
-	}
+	DEBUG(2,("Loading new DNS update grant rules\n"));
+	service->periodic.c = samba_runcmd(service->task->event_ctx, service,
+					   timeval_current_ofs(10, 0),
+					   2, 0,
+					   lp_rndc_command(service->task->lp_ctx),
+					   "reload", NULL);
+	service->periodic.c->async.fn = dnsupdate_rndc_done;
+	service->periodic.c->async.private_data = service;
 
 	talloc_free(tmp_ctx);
 }

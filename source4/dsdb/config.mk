@@ -98,7 +98,8 @@ INIT_FUNCTION = server_service_dnsupdate_init
 SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
-		process_model
+		process_model \
+		UTIL_RUNCMD
 # End SUBSYSTEM DNS_UPDATE_SRV
 #######################
 
