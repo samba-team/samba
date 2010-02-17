@@ -4322,6 +4322,32 @@ bool test_printer_keys(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_one_printer(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *handle,
+			     const char *name)
+{
+	bool ret = true;
+
+	if (!test_printer_info(tctx, p, handle)) {
+		ret = false;
+	}
+
+	if (!test_PrinterInfo_SD(tctx, p, handle)) {
+		ret = false;
+	}
+
+	if (!test_PrinterInfo_DevMode(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_printer_keys(tctx, p, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
 static bool test_printer(struct torture_context *tctx,
 			 struct dcerpc_pipe *p)
 {
@@ -4337,19 +4363,7 @@ static bool test_printer(struct torture_context *tctx,
 		return false;
 	}
 
-	if (!test_printer_info(tctx, p, &handle[0])) {
-		ret = false;
-	}
-
-	if (!test_PrinterInfo_SD(tctx, p, &handle[0])) {
-		ret = false;
-	}
-
-	if (!test_PrinterInfo_DevMode(tctx, p, &handle[0], TORTURE_PRINTER)) {
-		ret = false;
-	}
-
-	if (!test_printer_keys(tctx, p, &handle[0])) {
+	if (!test_one_printer(tctx, p, &handle[0], TORTURE_PRINTER)) {
 		ret = false;
 	}
 
@@ -4370,11 +4384,7 @@ static bool test_printer(struct torture_context *tctx,
 		return false;
 	}
 
-	if (!test_printer_info(tctx, p, &handle[1])) {
-		ret = false;
-	}
-
-	if (!test_printer_keys(tctx, p, &handle[1])) {
+	if (!test_one_printer(tctx, p, &handle[1], TORTURE_PRINTER_EX)) {
 		ret = false;
 	}
 
