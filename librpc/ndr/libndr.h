@@ -369,7 +369,6 @@ void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32_t offset
 enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset);
 enum ndr_err_code ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p);
-enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, const void *p);
 uint32_t ndr_pull_get_relative_base_offset(struct ndr_pull *ndr);
