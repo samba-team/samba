@@ -10,6 +10,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 LMHOSTSFILE4 = $(sysconfdir)/lmhosts
 
 $(dynconfigsrcdir)/dynconfig.o: CFLAGS+=-DCONFIGFILE=\"$(CONFIG4FILE)\" -DBINDIR=\"$(bindir)\" \
+	 -DSBINDIR=\"$(sbindir)\" \
 	 -DLMHOSTSFILE=\"$(LMHOSTSFILE4)\" \
 	 -DLOCKDIR=\"$(lockdir)\" -DPIDDIR=\"$(piddir)\" -DDATADIR=\"$(datadir)\" \
 	 -DLOGFILEBASE=\"$(logfilebase)\" \

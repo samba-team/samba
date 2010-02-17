@@ -43,6 +43,9 @@
 /** Directory with generic binaries */
 _PUBLIC_ const char *dyn_BINDIR = BINDIR;
 
+/** Directory with root use binaries */
+_PUBLIC_ const char *dyn_SBINDIR = SBINDIR;
+
 /**< Location of smb.conf file. **/
 _PUBLIC_ const char *dyn_CONFIGFILE = CONFIGFILE; 
 

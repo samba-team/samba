@@ -25,6 +25,7 @@
  **/
 
 extern const char *dyn_BINDIR;
+extern const char *dyn_SBINDIR;
 extern const char *dyn_CONFIGFILE;
 extern const char *dyn_NCALRPCDIR;
 extern const char *dyn_LOGFILEBASE;
