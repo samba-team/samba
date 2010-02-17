@@ -1160,7 +1160,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 	if (p == NULL) {
 		return NDR_ERR_SUCCESS;
 	}
-	return ndr_push_relative_ptr2(ndr, p);
+	if (!(ndr->flags & LIBNDR_FLAG_RELATIVE_REVERSE)) {
+		return ndr_push_relative_ptr2(ndr, p);
+	}
+
+	return ndr_push_error(ndr, NDR_ERR_RELATIVE,
+			      "ndr_push_relative_ptr2_start RELATIVE_REVERSE flag set, but not supported");
 }
 
 /*
