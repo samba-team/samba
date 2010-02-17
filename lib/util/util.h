@@ -875,5 +875,22 @@ bool add_uid_to_array_unique(TALLOC_CTX *mem_ctx, uid_t uid,
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
 
+/*
+  run a command as a child process, with a timeout.
+
+  any stdout/stderr from the child will appear in the Samba logs with
+  the specified log levels
+
+  If callback is set then the callback is called on completion
+  with the return code from the command
+ */
+struct tevent_context;
+struct composite_context *samba_runcmd(struct tevent_context *ev,
+				       TALLOC_CTX *mem_ctx,
+				       struct timeval timeout,
+				       int stdout_log_level,
+				       int stderr_log_level,
+				       const char *arg0, ...);
+
 
 #endif /* _SAMBA_UTIL_H_ */
