@@ -480,6 +480,8 @@ void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 
 /*******************************************************************
  Reads or writes an RPC_HDR_AUTH structure.
+ NB This writes UNALIGNED. Ensure you're correctly aligned before
+ calling.
 ********************************************************************/
 
 bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth)
@@ -489,9 +491,6 @@ bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_auth");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 
 	if(!prs_uint8 ("auth_type    ", ps, depth, &rai->auth_type))
 		return False;

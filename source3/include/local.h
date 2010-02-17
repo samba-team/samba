@@ -274,4 +274,7 @@
 /* Maximum size of RPC data we will accept for one call. */
 #define MAX_RPC_DATA_SIZE (15*1024*1024)
 
+#define CLIENT_NDR_PADDING_SIZE 8
+#define SERVER_NDR_PADDING_SIZE 8
+
 #endif

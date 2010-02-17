@@ -650,8 +650,9 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	}
 
 	/* Ensure there's enough data for an authenticated response. */
-	if ((auth_len > RPC_MAX_SIGN_SIZE) ||
-			(RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len)) {
+	if (auth_len > RPC_MAX_PDU_FRAG_LEN ||
+			prhdr->frag_len < RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
+					RPC_HDR_AUTH_LEN + auth_len) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_len %u is too large.\n",
 			(unsigned int)auth_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -671,16 +672,30 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	full_packet_data_len = prhdr->frag_len - auth_len;
 
 	/* Pull the auth header and the following data into a blob. */
-	if(!prs_set_offset(current_pdu, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len)) {
+        /* NB. The offset of the auth_header is relative to the *end*
+	 * of the packet, not the start. */
+	if(!prs_set_offset(current_pdu, prhdr->frag_len - RPC_HDR_AUTH_LEN - auth_len)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: cannot move offset to %u.\n",
 			(unsigned int)RPC_HEADER_LEN + (unsigned int)RPC_HDR_RESP_LEN + (unsigned int)data_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
+        }
 
 	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, current_pdu, 0)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall RPC_HDR_AUTH.\n"));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
+
+	/* Ensure auth_pad_len fits into the packet. */
+	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_len +
+			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len) {
+		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_info.auth_pad_len "
+			"too large (%u), auth_len (%u), frag_len = (%u).\n",
+			(unsigned int)auth_info.auth_pad_len,
+			(unsigned int)auth_len,
+			(unsigned int)prhdr->frag_len ));
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
 
 	auth_blob.data = (unsigned char *)prs_data_p(current_pdu) + prs_offset(current_pdu);
 	auth_blob.length = auth_len;
@@ -775,7 +790,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 	}
 
 	/* Ensure there's enough data for an authenticated response. */
-	if ((auth_len > RPC_MAX_SIGN_SIZE) ||
+	if ((auth_len > RPC_MAX_PDU_FRAG_LEN) ||
 			(RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len)) {
 		DEBUG(0,("cli_pipe_verify_schannel: auth_len %u is too large.\n",
 			(unsigned int)auth_len ));
@@ -784,14 +799,31 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	data_len = prhdr->frag_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len;
 
-	if(!prs_set_offset(current_pdu, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len)) {
-		DEBUG(0,("cli_pipe_verify_schannel: cannot move offset to %u.\n",
-			(unsigned int)RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len ));
+        /* Pull the auth header and the following data into a blob. */
+	/* NB. The offset of the auth_header is relative to the *end*
+	 * of the packet, not the start. */
+	if(!prs_set_offset(current_pdu,
+			prhdr->frag_len - RPC_HDR_AUTH_LEN - auth_len)) {
+		DEBUG(0,("cli_pipe_verify_schannel: cannot move "
+			"offset to %u.\n",
+			(unsigned int)(prhdr->frag_len -
+				RPC_HDR_AUTH_LEN - auth_len) ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, current_pdu, 0)) {
 		DEBUG(0,("cli_pipe_verify_schannel: failed to unmarshall RPC_HDR_AUTH.\n"));
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	/* Ensure auth_pad_len fits into the packet. */
+	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_len +
+			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len) {
+		DEBUG(0,("cli_pipe_verify_schannel: auth_info.auth_pad_len "
+			"too large (%u), auth_len (%u), frag_len = (%u).\n",
+			(unsigned int)auth_info.auth_pad_len,
+			(unsigned int)auth_len,
+			(unsigned int)prhdr->frag_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -1790,8 +1822,8 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type pkt_type,
 	/* Do we need to pad ? */
 	if (auth_len) {
 		uint16 data_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
-		if (data_len % 8) {
-			ss_padding_len = 8 - (data_len % 8);
+		if (data_len % CLIENT_NDR_PADDING_SIZE) {
+			ss_padding_len = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
 			phdr_auth->auth_pad_len = ss_padding_len;
 		}
 		frag_len += RPC_HDR_AUTH_LEN + auth_len + ss_padding_len;
@@ -1818,8 +1850,8 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type pkt_type,
 
 	if(auth_len != 0) {
 		if (ss_padding_len) {
-			char pad[8];
-			memset(pad, '\0', 8);
+			char pad[CLIENT_NDR_PADDING_SIZE];
+			memset(pad, '\0', CLIENT_NDR_PADDING_SIZE);
 			if (!prs_copy_data_in(rpc_out, pad, ss_padding_len)) {
 				DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall padding.\n"));
 				return NT_STATUS_NO_MEMORY;
@@ -2120,8 +2152,8 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 
 			data_len = MIN(data_space, data_left);
 			*p_ss_padding = 0;
-			if (data_len % 8) {
-				*p_ss_padding = 8 - (data_len % 8);
+			if (data_len % CLIENT_NDR_PADDING_SIZE) {
+				*p_ss_padding = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
 			}
 			*p_frag_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + 		/* Normal headers. */
 					data_len + *p_ss_padding + 		/* data plus padding. */
@@ -2517,7 +2549,7 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 
 	/*
 		I'm puzzled about this - seems to violate the DCE RPC auth rules,
-		about padding - shouldn't this pad to length 8 ? JRA.
+		about padding - shouldn't this pad to length CLIENT_NDR_PADDING_SIZE ? JRA.
 	*/
 
 	/* 4 bytes padding. */
