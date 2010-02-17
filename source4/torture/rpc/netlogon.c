@@ -6,7 +6,7 @@
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
    Copyright (C) Tim Potter      2003
-   Copyright (C) Matthias Dieter Wallnöfer            2009
+   Copyright (C) Matthias Dieter Wallnöfer            2009-2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@
 #include "lib/ldb_wrap.h"
 
 #define TEST_MACHINE_NAME "torturetest"
-#define TEST_MACHINE_DNS_SUFFIX "torturedomain"
 
 static bool test_LogonUasLogon(struct torture_context *tctx, 
 			       struct dcerpc_pipe *p)
@@ -2394,7 +2393,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 
 	ZERO_STRUCT(q1);
 	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
-		TEST_MACHINE_DNS_SUFFIX);
+		lp_dnsdomain(tctx->lp_ctx));
 	q1.sitename = "Default-First-Site-Name";
 	q1.os_version.os = &os;
 	q1.os_name.string = talloc_asprintf(tctx,
@@ -2497,15 +2496,91 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		"Out 'workstation flags' don't match!");
 
 
-	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 2nd call (variation of DNS hostname)\n");
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 2nd call (variation of DNS hostname doesn't work)\n");
 	netlogon_creds_client_authenticator(creds, &a);
 
 	/* Wipe out the osVersion, and prove which values still 'stick' */
 	q1.os_version.os = NULL;
 
 	/* Change also the DNS hostname to test differences in behaviour */
-	q1.dns_hostname = talloc_asprintf(tctx, "%s.newdomain",
-		TEST_MACHINE_NAME);
+	talloc_free(discard_const_p(char, q1.dns_hostname));
+	q1.dns_hostname = talloc_asprintf(tctx, "%s2.%s", TEST_MACHINE_NAME,
+		lp_dnsdomain(tctx->lp_ctx));
+
+	/* The workstation handles the "servicePrincipalName" and DNS hostname
+	   updates */
+	q1.workstation_flags = NETR_WS_FLAG_HANDLES_SPN_UPDATE;
+
+	status = dcerpc_netr_LogonGetDomainInfo(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo");
+	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
+
+	msleep(250);
+
+	if (sam_ctx) {
+		/* AD workstation infos entry check */
+		ret = gendb_search(sam_ctx, tctx, NULL, &res, attrs,
+				   "(sAMAccountName=%s$)", TEST_MACHINE_NAME);
+		torture_assert(tctx, ret == 1, "Test machine account not found in SAMDB on DC! Has the workstation been joined?");
+
+		torture_assert_str_equal(tctx,
+					 ldb_msg_find_attr_as_string(res[0], "operatingSystem", NULL),
+					 q1.os_name.string, "'operatingSystem' should stick!");
+		torture_assert(tctx,
+			       ldb_msg_find_attr_as_string(res[0], "operatingSystemServicePack", NULL) == NULL,
+			       "'operatingSystemServicePack' shouldn't stick!");
+		torture_assert(tctx,
+			       ldb_msg_find_attr_as_string(res[0], "operatingSystemVersion", NULL) == NULL,
+			       "'operatingSystemVersion' shouldn't stick!");
+
+		/* The DNS host name shouldn't have been updated by the server */
+
+		torture_assert_str_equal(tctx,
+					 ldb_msg_find_attr_as_string(res[0], "dNSHostName", NULL),
+					 old_dnsname, "'DNS host name' did change!");
+		
+		/* Find the two "servicePrincipalName"s which the DC shouldn't have been
+		   updated (HOST/<Netbios name> and HOST/<FQDN name>) - see MS-NRPC
+		   3.5.4.3.9 */
+		spn_el = ldb_msg_find_element(res[0], "servicePrincipalName");
+		torture_assert(tctx, spn_el != NULL,
+			       "There should exist 'servicePrincipalName's in AD!");
+		temp_str = talloc_asprintf(tctx, "HOST/%s", TEST_MACHINE_NAME);
+		for (i=0; i < spn_el->num_values; i++)
+			if (strcasecmp((char *) spn_el->values[i].data, temp_str) == 0)
+				break;
+		torture_assert(tctx, i != spn_el->num_values,
+			       "'servicePrincipalName' HOST/<Netbios name> not found!");
+		temp_str = talloc_asprintf(tctx, "HOST/%s", old_dnsname);
+		for (i=0; i < spn_el->num_values; i++)
+			if (strcasecmp((char *) spn_el->values[i].data, temp_str) == 0)
+				break;
+		torture_assert(tctx, i != spn_el->num_values,
+			       "'servicePrincipalName' HOST/<FQDN name> not found!");
+		
+		/* Check that the out DNS hostname was set properly */
+		torture_assert_str_equal(tctx, info.domain_info->dns_hostname.string,
+					 old_dnsname, "Out 'DNS hostname' doesn't match the old one!");
+	}
+
+	/* Checks "workstation flags" */
+	torture_assert(tctx,
+		info.domain_info->workstation_flags == NETR_WS_FLAG_HANDLES_SPN_UPDATE,
+		"Out 'workstation flags' don't match!");
+
+
+	/* Now try the same but the workstation flags set to 0 */
+
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 3rd call (variation of DNS hostname doesn't work)\n");
+	netlogon_creds_client_authenticator(creds, &a);
+
+	/* Change also the DNS hostname to test differences in behaviour */
+	talloc_free(discard_const_p(char, q1.dns_hostname));
+	q1.dns_hostname = talloc_asprintf(tctx, "%s2.%s", TEST_MACHINE_NAME,
+		lp_dnsdomain(tctx->lp_ctx));
+
+	/* Wipe out the osVersion, and prove which values still 'stick' */
+	q1.os_version.os = NULL;
 
 	/* Let the DC handle the "servicePrincipalName" and DNS hostname
 	   updates */
@@ -2522,6 +2597,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		ret = gendb_search(sam_ctx, tctx, NULL, &res, attrs,
 				   "(sAMAccountName=%s$)", TEST_MACHINE_NAME);
 		torture_assert(tctx, ret == 1, "Test machine account not found in SAMDB on DC! Has the workstation been joined?");
+
 		torture_assert_str_equal(tctx,
 					 ldb_msg_find_attr_as_string(res[0], "operatingSystem", NULL),
 					 q1.os_name.string, "'operatingSystem' should stick!");
@@ -2531,13 +2607,14 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		torture_assert(tctx,
 			       ldb_msg_find_attr_as_string(res[0], "operatingSystemVersion", NULL) == NULL,
 			       "'operatingSystemVersion' shouldn't stick!");
-		
-		/* The DNS host name should have been updated now by the server */
+
+		/* The DNS host name shouldn't have been updated by the server */
+
 		torture_assert_str_equal(tctx,
 					 ldb_msg_find_attr_as_string(res[0], "dNSHostName", NULL),
-					 q1.dns_hostname, "'DNS host name' didn't change!");
-		
-		/* Find the two "servicePrincipalName"s which the DC should have been
+					 old_dnsname, "'DNS host name' did change!");
+
+		/* Find the two "servicePrincipalName"s which the DC shouldn't have been
 		   updated (HOST/<Netbios name> and HOST/<FQDN name>) - see MS-NRPC
 		   3.5.4.3.9 */
 		spn_el = ldb_msg_find_element(res[0], "servicePrincipalName");
@@ -2545,20 +2622,20 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 			       "There should exist 'servicePrincipalName's in AD!");
 		temp_str = talloc_asprintf(tctx, "HOST/%s", TEST_MACHINE_NAME);
 		for (i=0; i < spn_el->num_values; i++)
-			if (strcmp((char *) spn_el->values[i].data, temp_str) == 0)
+			if (strcasecmp((char *) spn_el->values[i].data, temp_str) == 0)
 				break;
 		torture_assert(tctx, i != spn_el->num_values,
 			       "'servicePrincipalName' HOST/<Netbios name> not found!");
-		temp_str = talloc_asprintf(tctx, "HOST/%s", q1.dns_hostname);
+		temp_str = talloc_asprintf(tctx, "HOST/%s", old_dnsname);
 		for (i=0; i < spn_el->num_values; i++)
-			if (strcmp((char *) spn_el->values[i].data, temp_str) == 0)
+			if (strcasecmp((char *) spn_el->values[i].data, temp_str) == 0)
 				break;
 		torture_assert(tctx, i != spn_el->num_values,
 			       "'servicePrincipalName' HOST/<FQDN name> not found!");
-		
-		/* Check that the out DNS hostname was set properly */
-		torture_assert_str_equal(tctx, info.domain_info->dns_hostname.string,
-					 old_dnsname, "Out 'DNS hostname' doesn't match the old one!");
+
+		/* Here the server gives us NULL as the out DNS hostname */
+		torture_assert(tctx, info.domain_info->dns_hostname.string == NULL,
+			       "Out 'DNS hostname' should be NULL!");
 	}
 
 	/* Checks "workstation flags" */
@@ -2567,8 +2644,13 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		"Out 'workstation flags' don't match!");
 
 
-	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 3rd call (verification of DNS hostname and check for trusted domains)\n");
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 4th call (verification of DNS hostname and check for trusted domains)\n");
 	netlogon_creds_client_authenticator(creds, &a);
+
+	/* Put the DNS hostname back */
+	talloc_free(discard_const_p(char, q1.dns_hostname));
+	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
+		lp_dnsdomain(tctx->lp_ctx));
 
 	/* The workstation handles the "servicePrincipalName" and DNS hostname
 	   updates */
@@ -2599,7 +2681,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		"Trusted domains have been requested!");
 
 
-	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 4th call (check for trusted domains)\n");
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 5th call (check for trusted domains)\n");
 	netlogon_creds_client_authenticator(creds, &a);
 
 	/* The workstation handles the "servicePrincipalName" and DNS hostname
@@ -2664,7 +2746,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 
 	ZERO_STRUCT(q1);
 	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
-		TEST_MACHINE_DNS_SUFFIX);
+		lp_dnsdomain(tctx->lp_ctx));
 	q1.sitename = "Default-First-Site-Name";
 	q1.os_name.string = "UNIX/Linux or similar";
 
