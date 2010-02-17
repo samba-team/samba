@@ -384,7 +384,6 @@ enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, con
 enum ndr_err_code ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_short_relative_ptr1(struct ndr_push *ndr, const void *p);
-enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, const void *p);

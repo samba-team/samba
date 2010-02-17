@@ -1091,7 +1091,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr1(struct ndr_push *ndr, co
   push a relative object - stage2
   this is called during buffers processing
 */
-_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
+static enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 {
 	uint32_t save_offset;
 	uint32_t ptr_offset = 0xFFFFFFFF;
