@@ -1375,7 +1375,7 @@ def provision(setup_dir, message, session_info,
 
             # Only make a zone file on the first DC, it should be replicated
             # with DNS replication
-            create_zone_file(message, paths, setup_path, dnsdomain=names.dnsdomain,
+            create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain=names.dnsdomain,
                              hostip=hostip,
                              hostip6=hostip6, hostname=names.hostname,
                              realm=names.realm,
@@ -1486,7 +1486,7 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
             {"S4_LDAPI_URI": ldapi_uri})
 
 
-def create_zone_file(message, paths, setup_path, dnsdomain,
+def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
                      hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid):
     """Write out a DNS zone file, from the info in the current database.
@@ -1527,6 +1527,11 @@ def create_zone_file(message, paths, setup_path, dnsdomain,
 
     os.mkdir(dns_dir, 0775)
 
+    # we need to freeze the zone while we update the contents
+    if targetdir is None:
+        rndc = lp.get("rndc command")
+        os.system(rndc + " freeze " + lp.get("realm"))
+
     setup_file(setup_path("provision.zone"), paths.dns, {
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
@@ -1550,6 +1555,9 @@ def create_zone_file(message, paths, setup_path, dnsdomain,
             os.chmod(paths.dns, 0664)
         except OSError:
             message("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
+
+    if targetdir is None:
+        os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
 def create_named_conf(paths, setup_path, realm, dnsdomain,
