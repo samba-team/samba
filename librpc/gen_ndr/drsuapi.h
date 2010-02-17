@@ -368,6 +368,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_systemAuxiliaryClass=(int)(0x000900c6),
 	DRSUAPI_ATTRIBUTE_sAMAccountName=(int)(0x000900dd),
 	DRSUAPI_ATTRIBUTE_sAMAccountType=(int)(0x0009012e),
+	DRSUAPI_ATTRIBUTE_options=(int)(0x00090133),
 	DRSUAPI_ATTRIBUTE_fSMORoleOwner=(int)(0x00090171),
 	DRSUAPI_ATTRIBUTE_systemFlags=(int)(0x00090177),
 	DRSUAPI_ATTRIBUTE_serverReference=(int)(0x00090203),
@@ -445,6 +446,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_systemAuxiliaryClass ( 0x000900c6 )
 #define DRSUAPI_ATTRIBUTE_sAMAccountName ( 0x000900dd )
 #define DRSUAPI_ATTRIBUTE_sAMAccountType ( 0x0009012e )
+#define DRSUAPI_ATTRIBUTE_options ( 0x00090133 )
 #define DRSUAPI_ATTRIBUTE_fSMORoleOwner ( 0x00090171 )
 #define DRSUAPI_ATTRIBUTE_systemFlags ( 0x00090177 )
 #define DRSUAPI_ATTRIBUTE_serverReference ( 0x00090203 )

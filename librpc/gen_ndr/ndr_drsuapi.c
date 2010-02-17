@@ -1402,6 +1402,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_systemAuxiliaryClass: val = "DRSUAPI_ATTRIBUTE_systemAuxiliaryClass"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountName: val = "DRSUAPI_ATTRIBUTE_sAMAccountName"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountType: val = "DRSUAPI_ATTRIBUTE_sAMAccountType"; break;
+			case DRSUAPI_ATTRIBUTE_options: val = "DRSUAPI_ATTRIBUTE_options"; break;
 			case DRSUAPI_ATTRIBUTE_fSMORoleOwner: val = "DRSUAPI_ATTRIBUTE_fSMORoleOwner"; break;
 			case DRSUAPI_ATTRIBUTE_systemFlags: val = "DRSUAPI_ATTRIBUTE_systemFlags"; break;
 			case DRSUAPI_ATTRIBUTE_serverReference: val = "DRSUAPI_ATTRIBUTE_serverReference"; break;
