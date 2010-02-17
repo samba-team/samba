@@ -4030,6 +4030,7 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 	struct spoolss_UserLevelCtr userlevel_ctr;
 	struct policy_handle handle;
 	bool found = false;
+	bool existing_printer_deleted = false;
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
@@ -4078,6 +4079,10 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 	if (W_ERROR_EQUAL(result, WERR_PRINTER_ALREADY_EXISTS)) {
 		struct policy_handle printer_handle;
 
+		if (existing_printer_deleted) {
+			torture_fail(tctx, "already deleted printer still existing?");
+		}
+
 		torture_assert(tctx, call_OpenPrinterEx(tctx, p, printername, NULL, &printer_handle),
 			"failed to open printer handle");
 
@@ -4086,6 +4091,8 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 
 		torture_assert(tctx, test_ClosePrinter(tctx, p, &printer_handle),
 			"failed to close server handle");
+
+		existing_printer_deleted = true;
 
 		goto again;
 	}
