@@ -186,6 +186,7 @@ struct loadparm_global
 	int bDisableNetbios;
 	int bRpcBigEndian;
 	char *szNTPSignDSocketDirectory;
+	char *szRNDCCommand;
 	struct parmlist_entry *param_opt;
 };
 
@@ -503,6 +504,7 @@ static struct parm_struct parm_table[] = {
 	{"idmap trusted only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bIdmapTrustedOnly), NULL, NULL},
 
 	{"ntp signd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szNTPSignDSocketDirectory), NULL, NULL },
+	{"rndc command", P_STRING, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
 
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
@@ -654,6 +656,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, dos_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, unix_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_piddir, szPidDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_rndc_command, szRNDCCommand)
 _PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, dcerpc_ep_servers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_server_services, server_services)
 _PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, ntptr_providor)
@@ -2447,6 +2450,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "prefork children:smb", "4");
 
 	lp_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
+	lp_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
