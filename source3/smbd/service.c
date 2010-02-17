@@ -845,13 +845,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		goto err_root_exit;
 	}
 
-	if ((!conn->printer) && (!conn->ipc)) {
-		conn->notify_ctx = notify_init(conn, server_id_self(),
-					       smbd_messaging_context(),
-					       smbd_event_context(),
-					       conn);
-	}
-
 /* ROOT Activities: */
 	/* explicitly check widelinks here so that we can correctly warn
 	 * in the logs. */
@@ -880,6 +873,26 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		goto err_root_exit;
 	}
 	claimed_connection = true;
+
+	/* Invoke VFS make connection hook - this must be the first
+	   filesystem operation that we do. */
+
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
+			    conn->server_info->unix_name) < 0) {
+		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		*pstatus = NT_STATUS_UNSUCCESSFUL;
+		goto err_root_exit;
+	}
+
+	/* Any error exit after here needs to call the disconnect hook. */
+	on_err_call_dis_hook = true;
+
+	if ((!conn->printer) && (!conn->ipc)) {
+		conn->notify_ctx = notify_init(conn, server_id_self(),
+					       smbd_messaging_context(),
+					       smbd_event_context(),
+					       conn);
+	}
 
 	/*
 	 * Fix compatibility issue pointed out by Volker.
@@ -953,6 +966,20 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		}
 	}
 
+#ifdef WITH_FAKE_KASERVER
+	if (lp_afs_share(snum)) {
+		afs_login(conn);
+	}
+#endif
+
+	/*
+	 * we've finished with the user stuff - go back to root
+	 * so the SMB_VFS_STAT call will only fail on path errors,
+	 * not permission problems.
+	 */
+	change_to_root_user();
+/* ROOT Activites: */
+
 	/*
 	 * If widelinks are disallowed we need to canonicalise the connect
 	 * path here to ensure we don't have any symlinks in the
@@ -961,14 +988,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	 * depend on the realpath() pointer in the vfs table. JRA.
 	 */
 	if (!lp_widelinks(snum)) {
-
-		/* We need to do the path canonicalization
-		 * as root, as we may not have rights to
-		 * this path as the user. */
-
-		change_to_root_user();
-
-/* ROOT Activites: */
 		if (!canonicalize_connect_path(conn)) {
 			DEBUG(0, ("canonicalize_connect_path failed "
 			"for service %s, path %s\n",
@@ -977,20 +996,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			goto err_root_exit;
 		}
-
-		/* Back to the user for the VFS_CONNECT call. */
-		if (!change_to_user(conn, conn->vuid)) {
-			*pstatus = NT_STATUS_LOGON_FAILURE;
-			goto err_root_exit;
-		}
-/* USER Activites: */
 	}
-
-#ifdef WITH_FAKE_KASERVER
-	if (lp_afs_share(snum)) {
-		afs_login(conn);
-	}
-#endif
 
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
@@ -1000,21 +1006,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		set_namearray( &conn->aio_write_behind_list,
 				lp_aio_write_behind(snum));
 	}
-
-	/* Invoke VFS make connection hook - do this before the VFS_STAT call
-	   to allow any filesystems needing user credentials to initialize
-	   themselves. */
-
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
-			    conn->server_info->unix_name) < 0) {
-		DEBUG(0,("make_connection: VFS make connection failed!\n"));
-		*pstatus = NT_STATUS_UNSUCCESSFUL;
-		goto err_root_exit;
-	}
-
-	/* Any error exit after here needs to call the disconnect hook. */
-	on_err_call_dis_hook = true;
-
 	status = create_synthetic_smb_fname(talloc_tos(), conn->connectpath,
 					    NULL, NULL, &smb_fname_cpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1028,14 +1019,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
 
-	/*
-	 * we've finished with the user stuff - go back to root
-	 * so the SMB_VFS_STAT call will only fail on path errors,
-	 * not permission problems.
-	 */
-	change_to_root_user();
-
-/* ROOT Activites: */
 	if ((ret = SMB_VFS_STAT(conn, smb_fname_cpath)) != 0 ||
 	    !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
 		if (ret == 0 && !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
