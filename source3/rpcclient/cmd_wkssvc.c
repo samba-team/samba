@@ -190,7 +190,7 @@ static WERROR cmd_wkssvc_enumerateusers(struct rpc_pipe_client *cli,
 	}
 
 	for (i=0; i<num_entries; i++) {
-		const char *user;
+		const char *user = NULL;
 		switch (info.level) {
 		case 0:
 			user = info.ctr.user0->user0[i].user_name;
@@ -202,7 +202,7 @@ static WERROR cmd_wkssvc_enumerateusers(struct rpc_pipe_client *cli,
 				info.ctr.user1->user1[i].user_name);
 			break;
 		}
-		printf("%s\n", user);
+		printf("%s\n", user ? user : "(null)");
 	}
 
 	return werr;
