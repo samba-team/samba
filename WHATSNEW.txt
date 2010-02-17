@@ -163,6 +163,10 @@ o   Björn Jacke <bj@sernet.de>
     * Fix some wrong newlines in de translation strings.
 
 
+o   Jeff Layton <jlayton@redhat.com>
+    * BUG 6868: Fix crash bug in 'cifs.upcall'.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 7085: Fix an early release of the global lock that can cause data
       corruption in libtdb.
