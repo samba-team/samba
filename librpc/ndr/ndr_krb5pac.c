@@ -59,7 +59,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 			uint32_t _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			if (r->info) {
-				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->info));
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->info));
 				{
 					struct ndr_push *_ndr_info;
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info, 0, _subcontext_size_PAC_INFO(r->info,r->type,ndr->iconv_convenience, 0)));
@@ -67,6 +67,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 					NDR_CHECK(ndr_push_PAC_INFO(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->info));
 					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info, 0, _subcontext_size_PAC_INFO(r->info,r->type,ndr->iconv_convenience,0)));
 				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->info));
 			}
 			ndr->flags = _flags_save_PAC_INFO;
 		}
