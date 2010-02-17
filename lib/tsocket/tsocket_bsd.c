@@ -2025,7 +2025,7 @@ static struct tevent_req * tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_bind) {
-		ret = bind(state->fd, &lbsda->u.sa, sizeof(lbsda->u.ss));
+		ret = bind(state->fd, &lbsda->u.sa, sa_socklen);
 		if (ret == -1) {
 			tevent_req_error(req, errno);
 			goto post;
