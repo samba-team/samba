@@ -1549,7 +1549,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		    NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_EXPIRED) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_MUST_CHANGE) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_WRONG_PASSWORD)) {
-			goto process_result;
+			goto done;
 		}
 
 		if (state->request->flags & WBFLAG_PAM_FALLBACK_AFTER_KRB5) {
