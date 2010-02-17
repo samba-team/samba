@@ -581,7 +581,8 @@ sub provision_raw_step1($$)
 	gensec:require_pac = true
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
-	dnsupdate:rndc reload command = /bin/true
+	rndc command = /bin/true
+	dns update command = /bin/true
 ";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
