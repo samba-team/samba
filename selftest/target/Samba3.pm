@@ -436,6 +436,8 @@ sub provision($$$$$$)
 	my $nss_wrapper_passwd = "$privatedir/passwd";
 	my $nss_wrapper_group = "$privatedir/group";
 
+	my $mod_printer_pl = "$ENV{PERL} $RealBin/../source3/script/tests/printing/modprinter.pl";
+
 	open(CONF, ">$conffile") or die("Unable to open $conffile");
 	print CONF "
 [global]
@@ -468,6 +470,9 @@ sub provision($$$$$$)
 	delete user script =		$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type passwd --action delete --name %u
 	delete group script =		$nss_wrapper_pl --group_path  $nss_wrapper_group  --type group  --action delete --name %g
 	delete user from group script = $nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type member --action delete --member %u --name %g --group_path $nss_wrapper_group
+
+	addprinter command =		$mod_printer_pl -a -s $conffile --
+	deleteprinter command =		$mod_printer_pl -d -s $conffile --
 
 	kernel oplocks = no
 	kernel change notify = no

@@ -236,6 +236,9 @@ cat >$SERVERCONFFILE<<EOF
 	delete group script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --group_path  $NSS_WRAPPER_GROUP  --type group  --action delete --name %g
 	delete user from group script = $PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --group_path  $NSS_WRAPPER_GROUP  --type member --action delete --name %g --member %u --passwd_path $NSS_WRAPPER_PASSWD
 
+	addprinter command =            $PERL $SRCDIR/../source3/script/tests/printing/modprinter.pl -a -s $SERVERCONFFILE --
+	deleteprinter command =         $PERL $SRCDIR/../source3/script/tests/printing/modprinter.pl -d -s $SERVERCONFFILE --
+
 	kernel oplocks = no
 	kernel change notify = no
 
