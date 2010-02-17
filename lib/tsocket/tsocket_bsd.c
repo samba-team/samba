@@ -877,10 +877,12 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 		return;
 	}
 
-	if (ret != state->len) {
-		tevent_req_error(req, EIO);
-		return;
-	}
+	/*
+	 * some systems too much bytes in tsocket_bsd_pending()
+	 * the return value includes some IP/UDP header bytes
+	 */
+	state->len = ret;
+	talloc_realloc(state, state->buf, uint8_t, ret);
 
 	tevent_req_done(req);
 }
