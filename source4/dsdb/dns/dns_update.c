@@ -67,13 +67,14 @@ static void dnsupdate_rndc_done(struct composite_context *c)
 	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
 								  struct dnsupdate_service);
 	service->confupdate.status = composite_wait(c);
+	talloc_free(c);
+	service->confupdate.c = NULL;
 	if (!NT_STATUS_IS_OK(service->confupdate.status)) {
 		DEBUG(0,(__location__ ": Failed rndc update - %s\n",
 			 nt_errstr(service->confupdate.status)));
-		return;
+	} else {
+		DEBUG(3,("Completed rndc reload OK\n"));
 	}
-	talloc_free(c);
-	service->confupdate.c = NULL;
 }
 
 /*
@@ -198,13 +199,14 @@ static void dnsupdate_nameupdate_done(struct composite_context *c)
 	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
 								  struct dnsupdate_service);
 	service->nameupdate.status = composite_wait(c);
+	talloc_free(c);
+	service->nameupdate.c = NULL;
 	if (!NT_STATUS_IS_OK(service->nameupdate.status)) {
 		DEBUG(0,(__location__ ": Failed DNS update - %s\n",
 			 nt_errstr(service->nameupdate.status)));
-		return;
+	} else {
+		DEBUG(3,("Completed DNS update check OK\n"));
 	}
-	talloc_free(c);
-	service->nameupdate.c = NULL;
 }
 
 /*
@@ -297,6 +299,7 @@ static void dnsupdate_task_init(struct task_server *task)
 	service->nameupdate.interval	= lp_parm_int(task->lp_ctx, NULL,
 						      "dnsupdate", "name interval", 600); /* in seconds */
 
+	dnsupdate_rebuild(service);
 	status = dnsupdate_confupdate_schedule(service);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
@@ -305,6 +308,7 @@ static void dnsupdate_task_init(struct task_server *task)
 		return;
 	}
 
+	dnsupdate_check_names(service);
 	status = dnsupdate_nameupdate_schedule(service);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
