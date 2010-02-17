@@ -34,6 +34,8 @@
 #include "auth/pyauth.h"
 #include "param/pyparam.h"
 #include "auth/credentials/pycredentials.h"
+#include "lib/socket/netif.h"
+#include "lib/socket/netif_proto.h"
 
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
@@ -486,6 +488,45 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 }
 
 
+/*
+  return the list of interface IPs we have configured
+  takes an loadparm context, returns a list of IPs in string form
+ */
+static PyObject *py_interface_ips(PyObject *self, PyObject *args)
+{
+	PyObject *pylist;
+	int count;
+	TALLOC_CTX *tmp_ctx;
+	PyObject *py_lp_ctx;
+	struct loadparm_context *lp_ctx;
+	struct interface *ifaces;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "O", &py_lp_ctx))
+		return NULL;
+
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
+		return NULL;
+	}
+
+	tmp_ctx = talloc_new(NULL);
+
+	load_interfaces(tmp_ctx, lp_interfaces(lp_ctx), &ifaces);
+
+	count = iface_count(ifaces);
+
+	pylist = PyList_New(count);
+	for (i = 0; i<count; i++) {
+		PyList_SetItem(pylist, i,
+			       PyString_FromString(iface_n_ip(ifaces, i)));
+	}
+	talloc_free(tmp_ctx);
+	return pylist;
+}
+
+
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"random_password(len) -> string\n"
@@ -533,6 +574,8 @@ static PyMethodDef py_misc_methods[] = {
 		"set debug level" },
 	{ "dsdb_load_partition_usn", (PyCFunction)py_dsdb_load_partition_usn, METH_VARARGS,
 		"get uSNHighest and uSNUrgent from the partition @REPLCHANGED"},
+	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
+		"get interface IP address list"},
 	{ NULL }
 };
 
