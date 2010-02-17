@@ -770,7 +770,7 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 				       sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	return ldb_msg_add_value(msg, attr_name, &v, NULL);
 }
@@ -798,18 +798,18 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 	int ret;
 	a = talloc_strdup(mem_ctx, attr_name);
 	if (a == NULL)
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	v = talloc_strdup(mem_ctx, value);
 	if (v == NULL)
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	ret = ldb_msg_add_string(msg, a, v);
 	if (ret != 0)
 		return ret;
 	el = ldb_msg_find_element(msg, a);
 	if (el == NULL)
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	el->flags = LDB_FLAG_MOD_ADD;
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -823,18 +823,18 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 	int ret;
 	a = talloc_strdup(mem_ctx, attr_name);
 	if (a == NULL)
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	v = talloc_strdup(mem_ctx, value);
 	if (v == NULL)
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	ret = ldb_msg_add_string(msg, a, v);
 	if (ret != 0)
 		return ret;
 	el = ldb_msg_find_element(msg, a);
 	if (el == NULL)
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	el->flags = LDB_FLAG_MOD_DELETE;
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -884,7 +884,7 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 	struct ldb_val val;
 	val.data = talloc_memdup(mem_ctx, hash->hash, 16);
 	if (!val.data) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	val.length = 16;
 	return ldb_msg_add_value(msg, attr_name, &val, NULL);
@@ -901,7 +901,7 @@ int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	val.data = talloc_array_size(mem_ctx, 16, count);
 	val.length = count*16;
 	if (!val.data) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	for (i=0;i<count;i++) {
 		memcpy(i*16 + (char *)val.data, hashes[i].hash, 16);
