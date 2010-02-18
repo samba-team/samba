@@ -859,6 +859,111 @@ static BOOL test_DeviceModes(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_GetJob(struct torture_context *tctx,
+			LPSTR printername,
+			HANDLE handle,
+			DWORD job_id)
+{
+	DWORD levels[]  = { 1, 2, 3, 4 };
+	DWORD success[] = { 1, 1, 1, 1 };
+	DWORD i;
+	LPBYTE buffer = NULL;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		DWORD needed = 0;
+		DWORD err = 0;
+		char tmp[1024];
+
+		torture_comment(tctx, "Testing GetJob(%d) level %d", job_id, levels[i]);
+
+		if (tctx->samba3 && levels[i] == 4) {
+			torture_comment(tctx, "skipping level %d getjob against samba\n", levels[i]);
+			continue;
+		}
+
+		GetJob(handle, job_id, levels[i], NULL, 0, &needed);
+		err = GetLastError();
+		if (err == ERROR_INSUFFICIENT_BUFFER) {
+			err = 0;
+			buffer = malloc(needed);
+			torture_assert(tctx, buffer, "malloc failed");
+			if (!GetJob(handle, job_id, levels[i], buffer, needed, &needed)) {
+				err = GetLastError();
+			}
+		}
+		if (err) {
+			sprintf(tmp, "GetJob failed level %d on [%s] (buffer size = %d), error: %s\n",
+				levels[i], printername, needed, errstr(err));
+			if (success[i]) {
+				torture_fail(tctx, tmp);
+			} else {
+				torture_warning(tctx, tmp);
+			}
+		}
+
+		if (tctx->print) {
+			print_job_info_bylevel(levels[i], buffer, 1);
+		}
+
+		free(buffer);
+		buffer = NULL;
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_EachJob(struct torture_context *tctx,
+			 LPSTR printername,
+			 HANDLE handle)
+{
+	DWORD i;
+	PJOB_INFO_1 buffer = NULL;
+	DWORD needed = 0;
+	DWORD returned = 0;
+	DWORD err = 0;
+	DWORD level = 1;
+	char tmp[1024];
+	BOOL ret = TRUE;
+
+	torture_comment(tctx, "Testing Each PrintJob %d");
+
+	EnumJobs(handle, 0, 100, level, NULL, 0, &needed, &returned);
+	err = GetLastError();
+	if (err == ERROR_INSUFFICIENT_BUFFER) {
+		err = 0;
+		buffer = (PJOB_INFO_1)malloc(needed);
+		torture_assert(tctx, buffer, "malloc failed");
+		if (!EnumJobs(handle, 0, 100, level, (LPBYTE)buffer, needed, &needed, &returned)) {
+			err = GetLastError();
+		}
+	}
+	if (err) {
+		sprintf(tmp, "EnumJobs failed level %d on [%s] (buffer size = %d), error: %s\n",
+			level, printername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_job_info_bylevel(level, (LPBYTE)buffer, returned);
+	}
+
+	for (i=0; i < returned; i++) {
+		ret = test_GetJob(tctx, printername, handle, buffer[i].JobId);
+	}
+
+	free(buffer);
+
+	return ret;
+
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_OnePrinter(struct torture_context *tctx,
 			    LPSTR printername,
 			    LPSTR architecture,
@@ -874,6 +979,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_GetPrinterDriver(tctx, printername, architecture, handle);
 	ret &= test_EnumForms(tctx, printername, handle);
 	ret &= test_EnumJobs(tctx, printername, handle);
+	ret &= test_EachJob(tctx, printername, handle);
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "");
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "PrinterDriverData");
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
