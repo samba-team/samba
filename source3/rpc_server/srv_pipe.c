@@ -1477,7 +1477,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 */
 
 	become_root();
-	status = schannel_get_creds_state(p,
+	status = schannel_get_creds_state(p, NULL, lp_private_dir(),
 					    neg.oem_netbios_computer.a,
 					    &creds);
 	unbecome_root();

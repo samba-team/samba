@@ -724,7 +724,8 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
-	status = schannel_save_creds_state(p->mem_ctx, creds);
+	status = schannel_save_creds_state(p->mem_ctx,
+					   NULL, lp_private_dir(), creds);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -817,7 +818,8 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 		}
 	}
 
-	status = schannel_check_creds_state(mem_ctx,
+	status = schannel_check_creds_state(mem_ctx, NULL,
+					    lp_private_dir(),
 					    computer_name,
 					    received_authenticator,
 					    return_authenticator,
@@ -1387,6 +1389,7 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
 
 	become_root();
 	status = schannel_get_creds_state(p->mem_ctx,
+					  NULL, lp_private_dir(),
 					  r->in.computer_name, &creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
