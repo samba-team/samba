@@ -7,7 +7,7 @@
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Gerald Carter		       2000-2004,
  *  Copyright (C) Tim Potter                   2001-2002.
- *  Copyright (C) Guenther Deschner                 2009.
+ *  Copyright (C) Guenther Deschner            2009-2010.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -5919,6 +5919,67 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p,
 #endif
 }
 
+/********************************************************************
+ ********************************************************************/
+
+static WERROR update_printer_devmode(pipes_struct *p, struct policy_handle *handle,
+				     struct spoolss_DeviceMode *devmode)
+{
+	int snum;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	WERROR result;
+
+	DEBUG(8,("update_printer_devmode\n"));
+
+	result = WERR_OK;
+
+	if (!Printer) {
+		result = WERR_BADFID;
+		goto done;
+	}
+
+	if (!get_printer_snum(p, handle, &snum, NULL)) {
+		result = WERR_BADFID;
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(get_a_printer(Printer, &printer, 2, lp_const_servicename(snum)))) {
+		result = WERR_BADFID;
+		goto done;
+	}
+
+	if (devmode) {
+		/* we have a valid devmode
+		   convert it and link it*/
+
+		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
+		if (!convert_devicemode(printer->info_2->printername, devmode,
+					&printer->info_2->devmode)) {
+			result =  WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	/* Check calling user has permission to update printer description */
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("update_printer: printer property change denied by handle\n"));
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}
+
+
+	/* Update printer info */
+	result = mod_a_printer(printer, 2);
+
+done:
+	free_a_printer(&printer, 2);
+
+	return result;
+}
+
+
 /****************************************************************
  _spoolss_SetPrinter
 ****************************************************************/
@@ -5956,6 +6017,9 @@ WERROR _spoolss_SetPrinter(pipes_struct *p,
 		case 7:
 			return publish_or_unpublish_printer(p, r->in.handle,
 							    r->in.info_ctr->info.info7);
+		case 8:
+			return update_printer_devmode(p, r->in.handle,
+						      r->in.devmode_ctr->devmode);
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}
