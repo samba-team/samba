@@ -508,8 +508,7 @@ SCHANNEL_OBJ = ../libcli/auth/credentials.o \
 	       ../libcli/auth/schannel_sign.o \
 	       ../libcli/auth/schannel_state_tdb.o \
 	       ../librpc/gen_ndr/ndr_schannel.o \
-	       ../librpc/ndr/ndr_schannel.o \
-	       passdb/secrets_schannel.o
+	       ../librpc/ndr/ndr_schannel.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o \

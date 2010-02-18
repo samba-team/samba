@@ -23,8 +23,20 @@
 #ifndef _LIBCLI_AUTH_SCHANNEL_STATE_H__
 #define _LIBCLI_AUTH_SCHANNEL_STATE_H__
 
+NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
+				  const char *computer_name,
+				  struct netlogon_creds_CredentialState **creds);
+
+NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
+				   struct netlogon_creds_CredentialState *creds);
+
+NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
+				    const char *computer_name,
+				    struct netr_Authenticator *received_authenticator,
+				    struct netr_Authenticator *return_authenticator,
+				    struct netlogon_creds_CredentialState **creds_out);
+
 struct ldb_context;
-struct tdb_context;
 
 NTSTATUS schannel_store_session_key_ldb(struct ldb_context *ldb,
 					TALLOC_CTX *mem_ctx,
@@ -34,19 +46,6 @@ NTSTATUS schannel_fetch_session_key_ldb(struct ldb_context *ldb,
 					const char *computer_name,
 					struct netlogon_creds_CredentialState **creds);
 NTSTATUS schannel_creds_server_step_check_ldb(struct ldb_context *ldb,
-					      TALLOC_CTX *mem_ctx,
-					      const char *computer_name,
-					      struct netr_Authenticator *received_authenticator,
-					      struct netr_Authenticator *return_authenticator,
-					      struct netlogon_creds_CredentialState **creds_out);
-NTSTATUS schannel_store_session_key_tdb(struct tdb_context *tdb,
-					TALLOC_CTX *mem_ctx,
-					struct netlogon_creds_CredentialState *creds);
-NTSTATUS schannel_fetch_session_key_tdb(struct tdb_context *tdb,
-					TALLOC_CTX *mem_ctx,
-					const char *computer_name,
-					struct netlogon_creds_CredentialState **creds);
-NTSTATUS schannel_creds_server_step_check_tdb(struct tdb_context *tdb,
 					      TALLOC_CTX *mem_ctx,
 					      const char *computer_name,
 					      struct netr_Authenticator *received_authenticator,

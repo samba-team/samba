@@ -724,7 +724,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
-	status = schannel_store_session_key(p->mem_ctx, creds);
+	status = schannel_save_creds_state(p->mem_ctx, creds);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -806,7 +806,6 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 					     struct netlogon_creds_CredentialState **creds_out)
 {
 	NTSTATUS status;
-	struct tdb_context *tdb;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
 
 	if (schannel_global_required) {
@@ -818,17 +817,11 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 		}
 	}
 
-	tdb = open_schannel_session_store(mem_ctx);
-	if (!tdb) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	status = schannel_creds_server_step_check_tdb(tdb, mem_ctx,
-						      computer_name,
-						      received_authenticator,
-						      return_authenticator,
-						      creds_out);
-	tdb_close(tdb);
+	status = schannel_check_creds_state(mem_ctx,
+					    computer_name,
+					    received_authenticator,
+					    return_authenticator,
+					    creds_out);
 
 	return status;
 }
@@ -1393,7 +1386,8 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds = NULL;
 
 	become_root();
-	status = schannel_fetch_session_key(p->mem_ctx, r->in.computer_name, &creds);
+	status = schannel_get_creds_state(p->mem_ctx,
+					  r->in.computer_name, &creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

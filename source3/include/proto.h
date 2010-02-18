@@ -4746,15 +4746,6 @@ bool secrets_delete_generic(const char *owner, const char *key);
 bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
 bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
-/* The following definitions come from passdb/secrets_schannel.c  */
-
-TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx);
-NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
-				    const char *computer_name,
-				    struct netlogon_creds_CredentialState **pcreds);
-NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
-				    struct netlogon_creds_CredentialState *creds);
-
 /* The following definitions come from passdb/util_builtin.c  */
 
 bool lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name);

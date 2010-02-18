@@ -26,9 +26,75 @@
 #include "../libcli/auth/schannel_state.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 
+#define SECRETS_SCHANNEL_STATE "SECRETS/SCHANNEL"
+
+/******************************************************************************
+ Open or create the schannel session store tdb.
+*******************************************************************************/
+
+#define SCHANNEL_STORE_VERSION_1 1
+#define SCHANNEL_STORE_VERSION_2 2 /* should not be used */
+#define SCHANNEL_STORE_VERSION_CURRENT SCHANNEL_STORE_VERSION_1
+
+static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
+{
+	TDB_DATA vers;
+	uint32 ver;
+	TDB_CONTEXT *tdb_sc = NULL;
+	char *fname = talloc_asprintf(mem_ctx, "%s/schannel_store.tdb", lp_private_dir());
+
+	if (!fname) {
+		return NULL;
+	}
+
+	tdb_sc = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+
+	if (!tdb_sc) {
+		DEBUG(0,("open_schannel_session_store: Failed to open %s\n", fname));
+		TALLOC_FREE(fname);
+		return NULL;
+	}
+
+ again:
+	vers = tdb_fetch_bystring(tdb_sc, "SCHANNEL_STORE_VERSION");
+	if (vers.dptr == NULL) {
+		/* First opener, no version. */
+		SIVAL(&ver,0,SCHANNEL_STORE_VERSION_CURRENT);
+		vers.dptr = (uint8 *)&ver;
+		vers.dsize = 4;
+		tdb_store_bystring(tdb_sc, "SCHANNEL_STORE_VERSION", vers, TDB_REPLACE);
+		vers.dptr = NULL;
+	} else if (vers.dsize == 4) {
+		ver = IVAL(vers.dptr,0);
+		if (ver == SCHANNEL_STORE_VERSION_2) {
+			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
+				(int)ver, fname ));
+			tdb_wipe_all(tdb_sc);
+			goto again;
+		}
+		if (ver != SCHANNEL_STORE_VERSION_CURRENT) {
+			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
+				(int)ver, fname ));
+			tdb_close(tdb_sc);
+			tdb_sc = NULL;
+		}
+	} else {
+		tdb_close(tdb_sc);
+		tdb_sc = NULL;
+		DEBUG(0,("open_schannel_session_store: wrong version number size %d in %s\n",
+			(int)vers.dsize, fname ));
+	}
+
+	SAFE_FREE(vers.dptr);
+	TALLOC_FREE(fname);
+
+	return tdb_sc;
+}
+
 /********************************************************************
  ********************************************************************/
 
+static
 NTSTATUS schannel_store_session_key_tdb(struct tdb_context *tdb,
 					TALLOC_CTX *mem_ctx,
 					struct netlogon_creds_CredentialState *creds)
@@ -79,6 +145,7 @@ NTSTATUS schannel_store_session_key_tdb(struct tdb_context *tdb,
 /********************************************************************
  ********************************************************************/
 
+static
 NTSTATUS schannel_fetch_session_key_tdb(struct tdb_context *tdb,
 					TALLOC_CTX *mem_ctx,
 					const char *computer_name,
@@ -147,61 +214,134 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_context *tdb,
 	return NT_STATUS_OK;
 }
 
+/******************************************************************************
+ Wrapper around schannel_fetch_session_key_tdb()
+ Note we must be root here.
+*******************************************************************************/
+
+NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
+				  const char *computer_name,
+				  struct netlogon_creds_CredentialState **creds)
+{
+	struct tdb_context *tdb;
+	NTSTATUS status;
+
+	tdb = open_schannel_session_store(mem_ctx);
+	if (!tdb) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = schannel_fetch_session_key_tdb(tdb, mem_ctx,
+						computer_name, creds);
+
+	tdb_close(tdb);
+
+	return status;
+}
+
+/******************************************************************************
+ Wrapper around schannel_store_session_key_tdb()
+ Note we must be root here.
+*******************************************************************************/
+
+NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
+				   struct netlogon_creds_CredentialState *creds)
+{
+	struct tdb_context *tdb;
+	NTSTATUS status;
+
+	tdb = open_schannel_session_store(mem_ctx);
+	if (!tdb) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = schannel_store_session_key_tdb(tdb, mem_ctx, creds);
+
+	tdb_close(tdb);
+
+	return status;
+}
+
 /********************************************************************
+ Validate an incoming authenticator against the credentials for the
+ remote machine stored in the schannel database.
 
-  Validate an incoming authenticator against the credentials for the remote
-  machine.
+ The credentials are (re)read and from the schannel database, and
+ written back after the caclulations are performed.
 
-  The credentials are (re)read and from the schannel database, and
-  written back after the caclulations are performed.
-
-  The creds_out parameter (if not NULL) returns the credentials, if
-  the caller needs some of that information.
-
+ If the creds_out parameter is not NULL returns the credentials.
  ********************************************************************/
 
-NTSTATUS schannel_creds_server_step_check_tdb(struct tdb_context *tdb,
-					      TALLOC_CTX *mem_ctx,
-					      const char *computer_name,
-					      struct netr_Authenticator *received_authenticator,
-					      struct netr_Authenticator *return_authenticator,
-					      struct netlogon_creds_CredentialState **creds_out)
+NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
+				    const char *computer_name,
+				    struct netr_Authenticator *received_authenticator,
+				    struct netr_Authenticator *return_authenticator,
+				    struct netlogon_creds_CredentialState **creds_out)
 {
+	TALLOC_CTX *tmpctx;
+	struct tdb_context *tdb;
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
 	int ret;
 
+	tmpctx = talloc_named(mem_ctx, 0, "schannel_check_creds_state");
+	if (!tmpctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tdb = open_schannel_session_store(tmpctx);
+	if (!tdb) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
 	ret = tdb_transaction_start(tdb);
 	if (ret != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
 	}
 
 	/* Because this is a shared structure (even across
 	 * disconnects) we must update the database every time we
 	 * update the structure */
 
-	status = schannel_fetch_session_key_tdb(tdb, mem_ctx, computer_name,
-						&creds);
-
-	if (NT_STATUS_IS_OK(status)) {
-		status = netlogon_creds_server_step_check(creds,
-							  received_authenticator,
-							  return_authenticator);
-	}
-
-	if (NT_STATUS_IS_OK(status)) {
-		status = schannel_store_session_key_tdb(tdb, mem_ctx, creds);
-	}
-
-	if (NT_STATUS_IS_OK(status)) {
-		tdb_transaction_commit(tdb);
-		if (creds_out) {
-			*creds_out = creds;
-			talloc_steal(mem_ctx, creds);
-		}
-	} else {
+	status = schannel_fetch_session_key_tdb(tdb, tmpctx,
+						computer_name, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
 		tdb_transaction_cancel(tdb);
+		goto done;
 	}
 
+	status = netlogon_creds_server_step_check(creds,
+						  received_authenticator,
+						  return_authenticator);
+	if (!NT_STATUS_IS_OK(status)) {
+		tdb_transaction_cancel(tdb);
+		goto done;
+	}
+
+	status = schannel_store_session_key_tdb(tdb, tmpctx, creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		tdb_transaction_cancel(tdb);
+		goto done;
+	}
+
+	tdb_transaction_commit(tdb);
+
+	if (creds_out) {
+		*creds_out = talloc_steal(mem_ctx, creds);
+		if (!*creds_out) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	talloc_free(tmpctx);
+	if (tdb) tdb_close(tdb);
 	return status;
 }
+

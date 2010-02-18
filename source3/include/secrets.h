@@ -87,6 +87,4 @@ struct afs_keyfile {
 
 #define SECRETS_AFS_KEYFILE "SECRETS/AFS_KEYFILE"
 
-#define SECRETS_SCHANNEL_STATE "SECRETS/SCHANNEL"
-
 #endif /* _SECRETS_H */
