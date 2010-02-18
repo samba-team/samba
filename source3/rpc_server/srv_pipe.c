@@ -108,8 +108,15 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		return False;
 	}
 
-	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
-		- RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - NTLMSSP_SIG_SIZE;
+	if (data_len_left % SERVER_NDR_PADDING_SIZE) {
+		ss_padding_len = SERVER_NDR_PADDING_SIZE - (data_len_left % SERVER_NDR_PADDING_SIZE);
+		DEBUG(10,("create_next_pdu_ntlmssp: adding sign/seal padding of %u\n",
+			ss_padding_len ));
+	}
+
+	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN -
+		RPC_HDR_RESP_LEN - ss_padding_len - RPC_HDR_AUTH_LEN -
+		NTLMSSP_SIG_SIZE;
 
 	/*
 	 * The amount we send is the minimum of the available
@@ -131,12 +138,6 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
 		p->hdr.flags |= DCERPC_PFC_FLAG_LAST;
-	}
-
-	if (data_len_left % SERVER_NDR_PADDING_SIZE) {
-		ss_padding_len = SERVER_NDR_PADDING_SIZE - (data_len_left % SERVER_NDR_PADDING_SIZE);
-		DEBUG(10,("create_next_pdu_ntlmssp: adding sign/seal padding of %u\n",
-			ss_padding_len ));
 	}
 
 	/*
@@ -328,8 +329,14 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		return False;
 	}
 
+	if (data_len_left % SERVER_NDR_PADDING_SIZE) {
+		ss_padding_len = SERVER_NDR_PADDING_SIZE - (data_len_left % SERVER_NDR_PADDING_SIZE);
+		DEBUG(10,("create_next_pdu_schannel: adding sign/seal padding of %u\n",
+			ss_padding_len ));
+	}
+
 	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
-		- RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN
+		- RPC_HDR_RESP_LEN - ss_padding_len - RPC_HDR_AUTH_LEN
 		- RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
 
 	/*
@@ -352,11 +359,6 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
 		p->hdr.flags |= DCERPC_PFC_FLAG_LAST;
-	}
-	if (data_len_left % SERVER_NDR_PADDING_SIZE) {
-		ss_padding_len = SERVER_NDR_PADDING_SIZE - (data_len_left % SERVER_NDR_PADDING_SIZE);
-		DEBUG(10,("create_next_pdu_schannel: adding sign/seal padding of %u\n",
-			ss_padding_len ));
 	}
 
 	p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len + ss_padding_len +
