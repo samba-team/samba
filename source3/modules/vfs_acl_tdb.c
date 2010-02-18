@@ -147,7 +147,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	TDB_DATA data;
 	struct file_id id;
 	struct db_context *db;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
