@@ -433,30 +433,42 @@ static bool log_failure(vfs_handle_struct *handle, vfs_op_type op)
 
 static void init_bitmap(struct bitmap **bm, const char **ops)
 {
-	bool log_all = False;
-
-	if (*bm != NULL)
+	if (*bm != NULL) {
 		return;
+	}
+
+	if (ops == NULL) {
+		*bm = NULL;
+		return;
+	}
 
 	*bm = bitmap_allocate(SMB_VFS_OP_LAST);
-
 	if (*bm == NULL) {
 		DEBUG(0, ("Could not alloc bitmap -- "
 			  "defaulting to logging everything\n"));
 		return;
 	}
 
-	while (*ops != NULL) {
+	for (; *ops != NULL; ops += 1) {
 		int i;
-		bool found = False;
+		bool neg = false;
+		const char *op;
 
 		if (strequal(*ops, "all")) {
-			log_all = True;
-			break;
+			for (i=0; i<SMB_VFS_OP_LAST; i++) {
+				bitmap_set(*bm, i);
+			}
+			continue;
 		}
 
 		if (strequal(*ops, "none")) {
 			break;
+		}
+
+		op = ops[0];
+		if (op[0] == '!') {
+			neg = true;
+			op += 1;
 		}
 
 		for (i=0; i<SMB_VFS_OP_LAST; i++) {
@@ -464,25 +476,22 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 				smb_panic("vfs_full_audit.c: name table not "
 					  "in sync with vfs.h\n");
 			}
-
-			if (strequal(*ops, vfs_op_names[i].name)) {
-				bitmap_set(*bm, i);
-				found = True;
+			if (strequal(op, vfs_op_names[i].name)) {
+				if (neg) {
+					bitmap_clear(*bm, i);
+				} else {
+					bitmap_set(*bm, i);
+				}
+				break;
 			}
 		}
-		if (!found) {
+		if (i == SMB_VFS_OP_LAST) {
 			DEBUG(0, ("Could not find opname %s, logging all\n",
 				  *ops));
-			log_all = True;
+			bitmap_free(*bm);
+			*bm = NULL;
 			break;
 		}
-		ops += 1;
-	}
-
-	if (log_all) {
-		/* The query functions default to True */
-		bitmap_free(*bm);
-		*bm = NULL;
 	}
 }
 
@@ -603,8 +612,6 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 {
 	int result;
 	struct vfs_full_audit_private_data *pd = NULL;
-	const char *none[] = { NULL };
-	const char *all [] = { "all" };
 
 	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
 	if (result < 0) {
@@ -624,10 +631,10 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 
 	init_bitmap(&pd->success_ops,
 		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "success",
-					none));
+					NULL));
 	init_bitmap(&pd->failure_ops,
 		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "failure",
-					all));
+					NULL));
 
 	/* Store the private data. */
 	SMB_VFS_HANDLE_SET_DATA(handle, pd, free_private_data,

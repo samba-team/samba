@@ -184,7 +184,8 @@
 		<listitem>
 		<para>LIST is a list of VFS operations that should be
 		recorded if they succeed. Operations are specified using
-		the names listed above.
+		the names listed above. Operations can be unset by prefixing
+		the names with "!".
 		</para>
 
 		</listitem>
@@ -195,7 +196,8 @@
 		<listitem>
 		<para>LIST is a list of VFS operations that should be
 		recorded if they failed. Operations are specified using
-		the names listed above.
+		the names listed above. Operations can be unset by prefixing
+		the names with "!".
 		</para>
 
 		</listitem>
@@ -232,7 +234,8 @@
 
 	<para>Log file and directory open operations on the [records]
 	share using the LOCAL7 facility and ALERT priority, including
-	the username and IP address:</para>
+	the username and IP address. Logging excludes the open VFS function
+	on failures:</para>
 
 <programlisting>
         <smbconfsection name="[records]"/>
@@ -240,7 +243,7 @@
 	<smbconfoption name="vfs objects">full_audit</smbconfoption>
 	<smbconfoption name="full_audit:prefix">%u|%I</smbconfoption>
 	<smbconfoption name="full_audit:success">open opendir</smbconfoption>
-	<smbconfoption name="full_audit:failure">all</smbconfoption>
+	<smbconfoption name="full_audit:failure">all !open</smbconfoption>
 	<smbconfoption name="full_audit:facility">LOCAL7</smbconfoption>
 	<smbconfoption name="full_audit:priority">ALERT</smbconfoption>
 </programlisting>
