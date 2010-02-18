@@ -175,7 +175,7 @@ static void print_group(struct group *grp)
 	       grp->gr_passwd,
 	       (unsigned long)grp->gr_gid);
 
-	if (!grp->gr_mem[0]) {
+	if ((grp->gr_mem == NULL) || !grp->gr_mem[0]) {
 		printf("\n");
 		return;
 	}
