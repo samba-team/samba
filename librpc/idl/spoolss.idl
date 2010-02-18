@@ -282,12 +282,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *drivername;
 		[relative] nstring *comment;
 		[relative] nstring *location;
-		[relative,subcontext(0)] spoolss_DeviceMode *devmode;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_DeviceMode *devmode;
 		[relative] nstring *sepfile;
 		[relative] nstring *printprocessor;
 		[relative] nstring *datatype;
 		[relative] nstring *parameters;
-		[relative,subcontext(0)] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
 		spoolss_PrinterAttributes attributes;
 		[range(0,99)] uint32 priority;
 		uint32 defaultpriority;
@@ -299,7 +299,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_PrinterInfo2;
 
 	typedef [public,gensize] struct {
-		[relative,subcontext(0)] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
 	} spoolss_PrinterInfo3;
 
 	typedef [public,gensize] struct {
@@ -334,7 +334,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_PrinterInfo7;
 
 	typedef struct {
-		[relative,subcontext(0)] spoolss_DeviceMode *devmode;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_DeviceMode *devmode;
 	} spoolss_DeviceModeInfo;
 
 	typedef [nodiscriminant,relative_base,public,gensize,flag(NDR_RELATIVE_REVERSE)] union {
@@ -428,9 +428,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *print_processor;
 		[relative] nstring *parameters;
 		[relative] nstring *driver_name;
-		[relative] spoolss_DeviceMode *devmode;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_DeviceMode *devmode;
 		[relative] nstring *text_status;
-		[relative] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
@@ -460,9 +460,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *print_processor;
 		[relative] nstring *parameters;
 		[relative] nstring *driver_name;
-		[relative] spoolss_DeviceMode *devmode;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] spoolss_DeviceMode *devmode;
 		[relative] nstring *text_status;
-		[relative] security_descriptor *secdesc;
+		[relative,subcontext(0),flag(NDR_ALIGN4)] security_descriptor *secdesc;
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
