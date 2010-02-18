@@ -182,7 +182,7 @@
 	DATA_BLOB _data_blob_info;\
 	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx, iconv_convenience);\
 	if (!_ndr_info) return 0;\
-	_ndr_info->flags|=0;\
+	_ndr_info->flags|=LIBNDR_FLAG_NO_NDR_SIZE;\
 	__r.in.level	= level;\
 	__r.in.count	= count;\
 	__r.out.info	= info;\
@@ -197,7 +197,7 @@
 	DATA_BLOB _data_blob_info;\
 	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx, iconv_convenience);\
 	if (!_ndr_info) return 0;\
-	_ndr_info->flags|=0;\
+	_ndr_info->flags|=LIBNDR_FLAG_NO_NDR_SIZE;\
 	__r.in.count	= count;\
 	__r.out.info	= info;\
 	_NDR_CHECK_UINT32(ndr_push___##fn(_ndr_info, NDR_OUT, &__r)); \
