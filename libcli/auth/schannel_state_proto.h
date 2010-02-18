@@ -36,8 +36,6 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_context *tdb,
 NTSTATUS schannel_creds_server_step_check_tdb(struct tdb_context *tdb,
 					      TALLOC_CTX *mem_ctx,
 					      const char *computer_name,
-					      bool schannel_required_for_call,
-					      bool schannel_in_use,
 					      struct netr_Authenticator *received_authenticator,
 					      struct netr_Authenticator *return_authenticator,
 					      struct netlogon_creds_CredentialState **creds_out);

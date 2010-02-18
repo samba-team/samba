@@ -766,6 +766,36 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 }
 
 /*************************************************************************
+ * If schannel is required for this call test that it actually is available.
+ *************************************************************************/
+static NTSTATUS schannel_check_required(struct pipe_auth_data *auth_info,
+					const char *computer_name,
+					bool integrity, bool privacy)
+{
+	if (auth_info && auth_info->auth_type == PIPE_AUTH_TYPE_SCHANNEL) {
+		if (!privacy && !integrity) {
+			return NT_STATUS_OK;
+		}
+
+		if ((!privacy && integrity) &&
+		    auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+			return NT_STATUS_OK;
+		}
+
+		if ((privacy || integrity) &&
+		    auth_info->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	/* test didn't pass */
+	DEBUG(0, ("schannel_check_required: [%s] is not using schannel\n",
+		  computer_name));
+
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+/*************************************************************************
  *************************************************************************/
 
 static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
@@ -778,9 +808,15 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 	NTSTATUS status;
 	struct tdb_context *tdb;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
-	bool schannel_in_use = (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL) ? true:false; /* &&
-		(p->auth.auth_level == DCERPC_AUTH_LEVEL_INTEGRITY ||
-		 p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY); */
+
+	if (schannel_global_required) {
+		status = schannel_check_required(&p->auth,
+						 computer_name,
+						 false, false);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	tdb = open_schannel_session_store(mem_ctx);
 	if (!tdb) {
@@ -789,8 +825,6 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 
 	status = schannel_creds_server_step_check_tdb(tdb, mem_ctx,
 						      computer_name,
-						      schannel_global_required,
-						      schannel_in_use,
 						      received_authenticator,
 						      return_authenticator,
 						      creds_out);
