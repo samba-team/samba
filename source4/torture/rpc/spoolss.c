@@ -4212,6 +4212,10 @@ static bool test_printer_info(struct torture_context *tctx,
 {
 	bool ret = true;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping printer info cross tests against samba 3");
+	}
+
 	if (!test_PrinterInfo(tctx, p, handle)) {
 		ret = false;
 	}
