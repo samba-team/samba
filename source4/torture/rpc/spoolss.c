@@ -3886,6 +3886,7 @@ static bool test_EnumPrinters_findname(struct torture_context *tctx,
 	for (i=0; i < count; i++) {
 
 		const char *current = NULL;
+		const char *p;
 
 		switch (level) {
 		case 1:
@@ -3896,6 +3897,19 @@ static bool test_EnumPrinters_findname(struct torture_context *tctx,
 		if (strequal(current, name)) {
 			*found = true;
 			break;
+		}
+
+		p = strrchr(current, '\\');
+		if (p) {
+			if (!e.in.server) {
+				torture_warning(tctx,
+					"server returns printername %s incl. servername although we did not set servername", current);
+			}
+			p++;
+			if (strequal(p, name)) {
+				*found = true;
+				break;
+			}
 		}
 	}
 
