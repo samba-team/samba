@@ -331,6 +331,7 @@ static void init_chartest( void )
 	chartest = SMB_MALLOC_ARRAY(unsigned char, 256);
 
 	SMB_ASSERT(chartest != NULL);
+	memset(chartest, '\0', 256);
 
 	for( s = (const unsigned char *)basechars; *s; s++ ) {
 		chartest[*s] |= BASECHAR_MASK;
