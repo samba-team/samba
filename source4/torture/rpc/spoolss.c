@@ -2007,16 +2007,13 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 				     const char *name)
 {
 	union spoolss_PrinterInfo info;
-	struct spoolss_SetPrinterInfo8 info8;
-	struct spoolss_SetPrinterInfoCtr info_ctr;
-	struct spoolss_DevmodeContainer devmode_ctr;
-	struct sec_desc_buf secdesc_ctr;
 	struct spoolss_DeviceMode *devmode;
 	bool ret = true;
 
 	/* save original devmode */
 
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info),
+		"failed to get initial global devicemode");
 
 	devmode = info.info8.devmode;
 
@@ -2026,18 +2023,8 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 
 	/* restore original devmode */
 
-	ZERO_STRUCT(devmode_ctr);
-	ZERO_STRUCT(secdesc_ctr);
-
-	info8.devmode_ptr = 0;
-
-	info_ctr.level = 8;
-	info_ctr.info.info8 = &info8;
-
-	devmode_ctr.devmode = devmode;
-
-	torture_assert(tctx,
-		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
+	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 8, devmode),
+		"failed to restore initial global device mode");
 
 	return ret;
 }
