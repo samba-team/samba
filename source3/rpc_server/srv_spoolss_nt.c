@@ -4309,7 +4309,7 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 	 * Level 5: same as Level 2
 	 */
 
-	if (name) {
+	if (r->in.server) {
 		name = talloc_strdup_upper(p->mem_ctx, r->in.server);
 		W_ERROR_HAVE_NO_MEMORY(name);
 	}
