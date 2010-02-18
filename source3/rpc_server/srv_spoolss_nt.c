@@ -7136,6 +7136,15 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
+	/* samba does not have a concept of local, non-shared printers yet, so
+	 * make sure we always setup sharename - gd */
+	if ((printer->info_2->sharename[0] == '\0') && (printer->info_2->printername != '\0')) {
+		DEBUG(5, ("spoolss_addprinterex_level_2: "
+			"no sharename has been set, setting printername %s as sharename\n",
+			printer->info_2->printername));
+		fstrcpy(printer->info_2->sharename, printer->info_2->printername);
+	}
+
 	/* check to see if the printer already exists */
 
 	if ((snum = print_queue_snum(printer->info_2->sharename)) != -1) {
@@ -7143,6 +7152,15 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 			printer->info_2->sharename));
 		free_a_printer(&printer, 2);
 		return WERR_PRINTER_ALREADY_EXISTS;
+	}
+
+	if (!lp_force_printername(GLOBAL_SECTION_SNUM)) {
+		if ((snum = print_queue_snum(printer->info_2->printername)) != -1) {
+			DEBUG(5, ("spoolss_addprinterex_level_2: Attempted to add a printer named [%s] when one already existed!\n",
+				printer->info_2->printername));
+			free_a_printer(&printer, 2);
+			return WERR_PRINTER_ALREADY_EXISTS;
+		}
 	}
 
 	/* validate printer info struct */
