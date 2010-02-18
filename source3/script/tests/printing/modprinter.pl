@@ -95,7 +95,8 @@ while (<CONFIGFILE>) {
 		if ($section eq $share_name) {
 			$found_section = 1;
 			if ($opt_add) {
-				die("share $share_name already exists\n");
+				exit 0;
+#				die("share $share_name already exists\n");
 			}
 			if ($opt_delete) {
 				$within_section = 1;
