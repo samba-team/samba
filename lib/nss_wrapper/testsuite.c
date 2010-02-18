@@ -3,7 +3,7 @@
 
    local testing of the nss wrapper
 
-   Copyright (C) Guenther Deschner 2009
+   Copyright (C) Guenther Deschner 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -849,6 +849,96 @@ static bool test_nwrap_reentrant_enumeration_crosschecks(struct torture_context 
 	return true;
 }
 
+static bool test_nwrap_passwd_duplicates(struct torture_context *tctx)
+{
+	int i, d;
+	struct passwd *pwd;
+	size_t num_pwd;
+	int duplicates = 0;
+
+	torture_assert(tctx, test_nwrap_enum_passwd(tctx, &pwd, &num_pwd),
+	    "failed to enumerate passwd");
+
+	for (i=0; i < num_pwd; i++) {
+		const char *current_name = pwd[i].pw_name;
+		for (d=0; d < num_pwd; d++) {
+			const char *dup_name = pwd[d].pw_name;
+			if (d == i) {
+				continue;
+			}
+			if (!strequal(current_name, dup_name)) {
+				continue;
+			}
+
+			torture_warning(tctx, "found duplicate names:");
+			print_passwd(&pwd[d]);
+			print_passwd(&pwd[i]);
+			duplicates++;
+		}
+	}
+
+	if (duplicates) {
+		torture_fail(tctx, talloc_asprintf(tctx, "found %d duplicate names", duplicates));
+	}
+
+	return true;
+}
+
+static bool test_nwrap_group_duplicates(struct torture_context *tctx)
+{
+	int i, d;
+	struct group *grp;
+	size_t num_grp;
+	int duplicates = 0;
+
+	torture_assert(tctx, test_nwrap_enum_group(tctx, &grp, &num_grp),
+		"failed to enumerate group");
+
+	for (i=0; i < num_grp; i++) {
+		const char *current_name = grp[i].gr_name;
+		for (d=0; d < num_grp; d++) {
+			const char *dup_name = grp[d].gr_name;
+			if (d == i) {
+				continue;
+			}
+			if (!strequal(current_name, dup_name)) {
+				continue;
+			}
+
+			torture_warning(tctx, "found duplicate names:");
+			print_group(&grp[d]);
+			print_group(&grp[i]);
+			duplicates++;
+		}
+	}
+
+	if (duplicates) {
+		torture_fail(tctx, talloc_asprintf(tctx, "found %d duplicate names", duplicates));
+	}
+
+	return true;
+}
+
+
+static bool test_nwrap_duplicates(struct torture_context *tctx)
+{
+	const char *old_pwd = getenv("NSS_WRAPPER_PASSWD");
+	const char *old_group = getenv("NSS_WRAPPER_GROUP");
+
+	if (!old_pwd || !old_group) {
+		torture_comment(tctx, "ENV NSS_WRAPPER_PASSWD or NSS_WRAPPER_GROUP not set\n");
+		torture_skip(tctx, "nothing to test\n");
+	}
+
+	torture_assert(tctx, test_nwrap_passwd_duplicates(tctx),
+			"failed to test users");
+	torture_assert(tctx, test_nwrap_group_duplicates(tctx),
+			"failed to test groups");
+
+	return true;
+}
+
+
 struct torture_suite *torture_local_nss_wrapper(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "NSS-WRAPPER");
@@ -857,6 +947,7 @@ struct torture_suite *torture_local_nss_wrapper(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "reentrant enumeration", test_nwrap_reentrant_enumeration);
 	torture_suite_add_simple_test(suite, "reentrant enumeration crosschecks", test_nwrap_reentrant_enumeration_crosschecks);
 	torture_suite_add_simple_test(suite, "membership", test_nwrap_membership);
+	torture_suite_add_simple_test(suite, "duplicates", test_nwrap_duplicates);
 
 	return suite;
 }
