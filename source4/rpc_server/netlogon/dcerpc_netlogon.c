@@ -307,15 +307,43 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 }
 
 /*
-  Validate an incoming authenticator against the credentials for the remote machine.
+ * NOTE: The following functions are nearly identical to the ones available in
+ * source3/rpc_server/srv_nelog_nt.c
+ * The reason we keep 2 copies is that they use different structures to
+ * represent the auth_info and the decrpc pipes.
+ */
 
-  The credentials are (re)read and from the schannel database, and
-  written back after the caclulations are performed.
+/*
+ * If schannel is required for this call test that it actually is available.
+ */
+static NTSTATUS schannel_check_required(struct dcerpc_auth *auth_info,
+					const char *computer_name,
+					bool integrity, bool privacy)
+{
 
-  The creds_out parameter (if not NULL) returns the credentials, if
-  the caller needs some of that information.
+	if (auth_info && auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		if (!privacy && !integrity) {
+			return NT_STATUS_OK;
+		}
 
-*/
+		if ((!privacy && integrity) &&
+		    auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+			return NT_STATUS_OK;
+		}
+
+		if ((privacy || integrity) &&
+		    auth_info->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	/* test didn't pass */
+	DEBUG(0, ("schannel_check_required: [%s] is not using schannel\n",
+		  computer_name));
+
+	return NT_STATUS_ACCESS_DENIED;
+}
+
 static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
 						    const char *computer_name,
@@ -325,11 +353,17 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 {
 	NTSTATUS nt_status;
 	struct ldb_context *ldb;
+	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	bool schannel_global_required = false; /* Should be lp_schannel_server() == true */
-	bool schannel_in_use = dce_call->conn->auth_state.auth_info
-		&& dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL
-		&& (dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY
-		    || dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_PRIVACY);
+
+	if (schannel_global_required) {
+		nt_status = schannel_check_required(auth_info,
+						    computer_name,
+						    true, false);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	}
 
 	ldb = schannel_db_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
 	if (!ldb) {
@@ -337,8 +371,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	}
 	nt_status = schannel_creds_server_step_check_ldb(ldb, mem_ctx,
 							 computer_name,
-							 schannel_global_required,
-							 schannel_in_use,
 							 received_authenticator,
 							 return_authenticator, creds_out);
 	talloc_unlink(mem_ctx, ldb);

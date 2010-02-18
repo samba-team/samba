@@ -264,8 +264,6 @@ NTSTATUS schannel_fetch_session_key_ldb(struct ldb_context *ldb,
 NTSTATUS schannel_creds_server_step_check_ldb(struct ldb_context *ldb,
 					      TALLOC_CTX *mem_ctx,
 					      const char *computer_name,
-					      bool schannel_required_for_call,
-					      bool schannel_in_use,
 					      struct netr_Authenticator *received_authenticator,
 					      struct netr_Authenticator *return_authenticator,
 					      struct netlogon_creds_CredentialState **creds_out)
@@ -276,14 +274,6 @@ NTSTATUS schannel_creds_server_step_check_ldb(struct ldb_context *ldb,
 
 	/* If we are flaged that schannel is required for a call, and
 	 * it is not in use, then make this an error */
-
-	/* It would be good to make this mandetory once schannel is
-	 * negoiated, but this is not what windows does */
-	if (schannel_required_for_call && !schannel_in_use) {
-		DEBUG(0,("schannel_creds_server_step_check: client %s not using schannel for netlogon, despite negotiating it\n",
-			creds->computer_name ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	ret = ldb_transaction_start(ldb);
 	if (ret != 0) {
