@@ -113,6 +113,8 @@ const char *errstr(DWORD error)
 #endif
 	case ERROR_CANCELLED:
 		return "ERROR_CANCELLED";
+	case RPC_S_PROCNUM_OUT_OF_RANGE:
+		return "RPC_S_PROCNUM_OUT_OF_RANGE";
 	case RPC_S_SERVER_UNAVAILABLE:
 		return "RPC_S_SERVER_UNAVAILABLE";
 	case RPC_S_INVALID_NET_ADDR:
