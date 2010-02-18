@@ -408,8 +408,8 @@ static void cache_mangled_name( const char mangled_name[13],
 {
 	TDB_DATA data_val;
 	char mangled_name_key[13];
-	char *s1;
-	char *s2;
+	char *s1 = NULL;
+	char *s2 = NULL;
 
 	/* If the cache isn't initialized, give up. */
 	if( !tdb_mangled_cache )
@@ -448,7 +448,9 @@ static void cache_mangled_name( const char mangled_name[13],
 		DEBUG(5,("cache_mangled_name: Stored entry %s -> %s\n", mangled_name_key, raw_name));
 	}
 	/* Restore the change we made to the const string. */
-	*s2 = '.';
+	if (s2) {
+		*s2 = '.';
+	}
 }
 
 /* ************************************************************************** **
