@@ -772,8 +772,8 @@ static bool test_nwrap_membership(struct torture_context *tctx)
 	int i;
 
 	if (!old_pwd || !old_group) {
+		torture_comment(tctx, "ENV NSS_WRAPPER_PASSWD or NSS_WRAPPER_GROUP not set\n");
 		torture_skip(tctx, "nothing to test\n");
-		return true;
 	}
 
 	torture_assert(tctx, test_nwrap_enum_passwd(tctx, &pwd, &num_pwd),
@@ -797,8 +797,8 @@ static bool test_nwrap_enumeration(struct torture_context *tctx)
 	const char *old_group = getenv("NSS_WRAPPER_GROUP");
 
 	if (!old_pwd || !old_group) {
+		torture_comment(tctx, "ENV NSS_WRAPPER_PASSWD or NSS_WRAPPER_GROUP not set\n");
 		torture_skip(tctx, "nothing to test\n");
-		return true;
 	}
 
 	torture_assert(tctx, test_nwrap_passwd(tctx),
@@ -815,8 +815,8 @@ static bool test_nwrap_reentrant_enumeration(struct torture_context *tctx)
 	const char *old_group = getenv("NSS_WRAPPER_GROUP");
 
 	if (!old_pwd || !old_group) {
+		torture_comment(tctx, "ENV NSS_WRAPPER_PASSWD or NSS_WRAPPER_GROUP not set\n");
 		torture_skip(tctx, "nothing to test\n");
-		return true;
 	}
 
 	torture_comment(tctx, "Testing re-entrant calls\n");
@@ -835,8 +835,8 @@ static bool test_nwrap_reentrant_enumeration_crosschecks(struct torture_context 
 	const char *old_group = getenv("NSS_WRAPPER_GROUP");
 
 	if (!old_pwd || !old_group) {
+		torture_comment(tctx, "ENV NSS_WRAPPER_PASSWD or NSS_WRAPPER_GROUP not set\n");
 		torture_skip(tctx, "nothing to test\n");
-		return true;
 	}
 
 	torture_comment(tctx, "Testing re-entrant calls with cross checks\n");
