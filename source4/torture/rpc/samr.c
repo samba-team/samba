@@ -36,7 +36,6 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
-#include "auth/gensec/schannel_state.h"
 
 #include <unistd.h>
 

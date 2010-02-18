@@ -28,7 +28,6 @@
 #include "dsdb/samdb/samdb.h"
 #include "../lib/util/util_ldb.h"
 #include "../libcli/auth/schannel.h"
-#include "auth/gensec/schannel_state.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
@@ -75,7 +74,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	struct netlogon_server_pipe_state *pipe_state =
 		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
 	struct netlogon_creds_CredentialState *creds;
-	struct ldb_context *schannel_ldb;
 	struct ldb_context *sam_ctx;
 	struct samr_Password *mach_pwd;
 	uint32_t user_account_control;
@@ -248,13 +246,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	creds->sid = samdb_result_dom_sid(creds, msgs[0], "objectSid");
 
-	schannel_ldb = schannel_db_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (!schannel_ldb) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	nt_status = schannel_store_session_key_ldb(schannel_ldb, mem_ctx, creds);
-	talloc_unlink(mem_ctx, schannel_ldb);
+	nt_status = schannel_save_creds_state(mem_ctx,
+					      lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
+					      lp_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					      creds);
 
 	return nt_status;
 }
@@ -352,7 +347,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 						    struct netlogon_creds_CredentialState **creds_out)
 {
 	NTSTATUS nt_status;
-	struct ldb_context *ldb;
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	bool schannel_global_required = false; /* Should be lp_schannel_server() == true */
 
@@ -365,15 +359,13 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		}
 	}
 
-	ldb = schannel_db_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (!ldb) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	nt_status = schannel_creds_server_step_check_ldb(ldb, mem_ctx,
-							 computer_name,
-							 received_authenticator,
-							 return_authenticator, creds_out);
-	talloc_unlink(mem_ctx, ldb);
+	nt_status = schannel_check_creds_state(mem_ctx,
+					       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
+					       lp_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					       computer_name,
+					       received_authenticator,
+					       return_authenticator,
+					       creds_out);
 	return nt_status;
 }
 
@@ -697,12 +689,11 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 {
 	NTSTATUS nt_status;
 	struct netlogon_creds_CredentialState *creds;
-	struct ldb_context *ldb = schannel_db_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (!ldb) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
-	nt_status = schannel_fetch_session_key_ldb(ldb, mem_ctx, r->in.computer_name, &creds);
+	nt_status = schannel_get_creds_state(mem_ctx,
+					     lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
+					     lp_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					     r->in.computer_name, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

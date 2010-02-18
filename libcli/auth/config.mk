@@ -21,6 +21,6 @@ LIBCLI_AUTH_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, \
 PUBLIC_HEADERS += ../libcli/auth/credentials.h
 
 [SUBSYSTEM::COMMON_SCHANNELDB]
-PRIVATE_DEPENDENCIES = LDB_WRAP
+PRIVATE_DEPENDENCIES = TDB_WRAP
 
-COMMON_SCHANNELDB_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, schannel_state_ldb.o)
+COMMON_SCHANNELDB_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, schannel_state_tdb.o)

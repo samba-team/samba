@@ -31,7 +31,6 @@
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/schannel_state.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
@@ -192,7 +191,6 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 
 	samdb_connect(db_context, event_ctx, cmdline_lp_ctx, system_session(cmdline_lp_ctx));
 	privilege_connect(db_context, event_ctx, cmdline_lp_ctx);
-	schannel_db_connect(db_context, event_ctx, cmdline_lp_ctx);
 
 	/* we deliberately leave these open, which allows them to be
 	 * re-used in ldb_wrap_connect() */

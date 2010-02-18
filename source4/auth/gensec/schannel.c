@@ -27,7 +27,6 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
-#include "auth/gensec/schannel_state.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 
@@ -51,7 +50,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 	struct NL_AUTH_MESSAGE bind_schannel;
 	struct NL_AUTH_MESSAGE bind_schannel_ack;
 	struct netlogon_creds_CredentialState *creds;
-	struct ldb_context *schannel_ldb;
 	const char *workstation;
 	const char *domain;
 	uint32_t required_flags;
@@ -138,15 +136,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		schannel_ldb = schannel_db_connect(out_mem_ctx, gensec_security->event_ctx,
-						   gensec_security->settings->lp_ctx);
-		if (!schannel_ldb) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		/* pull the session key for this client */
-		status = schannel_fetch_session_key_ldb(schannel_ldb,
-							out_mem_ctx, workstation, &creds);
-		talloc_unlink(out_mem_ctx, schannel_ldb);
+		status = schannel_get_creds_state(out_mem_ctx,
+						  gensec_security->settings->iconv_convenience,
+						  lp_private_dir(gensec_security->settings->lp_ctx),
+						  workstation, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
 				  workstation, nt_errstr(status)));
