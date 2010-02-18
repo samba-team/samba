@@ -1111,6 +1111,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 		return NDR_ERR_SUCCESS;
 	}
 
+	if (ndr->flags & LIBNDR_FLAG_NO_NDR_SIZE) {
+		/* better say more than calculation a too small buffer */
+		NDR_PUSH_ALIGN(ndr, 8);
+		return NDR_ERR_SUCCESS;
+	}
+
 	if (ndr->relative_end_offset < ndr->offset) {
 		return ndr_push_error(ndr, NDR_ERR_RELATIVE,
 				      "ndr_push_relative_ptr2_end:"
