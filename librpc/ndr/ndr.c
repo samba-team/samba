@@ -1140,6 +1140,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 	/* the reversed offset is at the end of the main buffer */
 	correct_offset = ndr->relative_end_offset - len;
 
+	/* TODO: remove this hack and let the idl use FLAG_ALIGN2 explicit */
+	align = 2;
+
 	if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 		align = 2;
 	} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
