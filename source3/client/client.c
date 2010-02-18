@@ -4176,53 +4176,59 @@ static void completion_remote_filter(const char *mnt,
 {
 	struct completion_remote *info = (struct completion_remote *)state;
 
-	if ((info->count < MAX_COMPLETIONS - 1) &&
-			(strncmp(info->text, f->name, info->len) == 0) &&
-			(strcmp(f->name, ".") != 0) &&
-			(strcmp(f->name, "..") != 0)) {
-		if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
-			info->matches[info->count] = SMB_STRDUP(f->name);
-		else {
-			TALLOC_CTX *ctx = talloc_stackframe();
-			char *tmp;
+	if (info->count >= MAX_COMPLETIONS - 1) {
+		return;
+	}
+	if (strncmp(info->text, f->name, info->len) != 0) {
+		return;
+	}
+	if (ISDOT(f->name) || ISDOTDOT(f->name)) {
+		return;
+	}
 
-			tmp = talloc_strdup(ctx,info->dirmask);
-			if (!tmp) {
-				TALLOC_FREE(ctx);
-				return;
-			}
-			tmp = talloc_asprintf_append(tmp, "%s", f->name);
-			if (!tmp) {
-				TALLOC_FREE(ctx);
-				return;
-			}
-			if (f->mode & aDIR) {
-				tmp = talloc_asprintf_append(tmp, "%s", CLI_DIRSEP_STR);
-			}
-			if (!tmp) {
-				TALLOC_FREE(ctx);
-				return;
-			}
-			info->matches[info->count] = SMB_STRDUP(tmp);
+	if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
+		info->matches[info->count] = SMB_STRDUP(f->name);
+	else {
+		TALLOC_CTX *ctx = talloc_stackframe();
+		char *tmp;
+
+		tmp = talloc_strdup(ctx,info->dirmask);
+		if (!tmp) {
 			TALLOC_FREE(ctx);
+			return;
 		}
-		if (info->matches[info->count] == NULL) {
+		tmp = talloc_asprintf_append(tmp, "%s", f->name);
+		if (!tmp) {
+			TALLOC_FREE(ctx);
 			return;
 		}
 		if (f->mode & aDIR) {
-			smb_readline_ca_char(0);
+			tmp = talloc_asprintf_append(tmp, "%s",
+						     CLI_DIRSEP_STR);
 		}
-		if (info->count == 1) {
-			info->samelen = strlen(info->matches[info->count]);
-		} else {
-			while (strncmp(info->matches[info->count],
-						info->matches[info->count-1],
-						info->samelen) != 0) {
-				info->samelen--;
-			}
+		if (!tmp) {
+			TALLOC_FREE(ctx);
+			return;
 		}
-		info->count++;
+		info->matches[info->count] = SMB_STRDUP(tmp);
+		TALLOC_FREE(ctx);
 	}
+	if (info->matches[info->count] == NULL) {
+		return;
+	}
+	if (f->mode & aDIR) {
+		smb_readline_ca_char(0);
+	}
+	if (info->count == 1) {
+		info->samelen = strlen(info->matches[info->count]);
+	} else {
+		while (strncmp(info->matches[info->count],
+			       info->matches[info->count-1],
+			       info->samelen) != 0) {
+			info->samelen--;
+		}
+	}
+	info->count++;
 }
 
 static char **remote_completion(const char *text, int len)
