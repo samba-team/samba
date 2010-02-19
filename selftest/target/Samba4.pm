@@ -715,7 +715,7 @@ sub provision_raw_step2($$$)
 
 sub provision($$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password, $kdc_ipv4) = @_;
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $netbiosname, $netbiosalias,
@@ -730,6 +730,7 @@ sub provision($$$$$$$)
 
 	max xmit = 32K
 	server max protocol = SMB2
+        $extra_smbconf_options
 
 [tmp]
 	path = $ctx->{tmpdir}
@@ -825,7 +826,8 @@ sub provision_member($$$)
 				   "localmember",
 				   3,
 				   "localmemberpass",
-				   $dcvars->{SERVER_IP});
+				   $dcvars->{SERVER_IP},
+				   "");
 
 	$ret or die("Unable to provision");
 
@@ -834,16 +836,63 @@ sub provision_member($$$)
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
-	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	system($cmd) == 0 or die("Join failed\n$cmd");
 
-	$ret->{DC_SERVER} = $dcvars->{SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
-	$ret->{DC_NETBIOSALIAS} = $dcvars->{NETBIOSALIAS};
-	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{MEMBER_SERVER} = $ret->{SERVER};
+	$ret->{MEMBER_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{MEMBER_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{MEMBER_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
+	$ret->{MEMBER_USERNAME} = $ret->{USERNAME};
+	$ret->{MEMBER_PASSWORD} = $ret->{PASSWORD};
+
+	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
+	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
+	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+
+	return $ret;
+}
+
+sub provision_rpc_proxy($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+	print "PROVISIONING RPC PROXY...";
+
+	my $extra_smbconf_options = "dcerpc_remote:binding = ncacn_ip_tcp:localdc1
+       dcerpc endpoint servers = epmapper, remote
+       dcerpc_remote:interfaces = rpcecho
+";
+
+	my $ret = $self->provision($prefix,
+				   "member server",
+				   "localrpcproxy4",
+				   "localrpcproxy",
+				   4,
+				   "localrpcproxypass",
+				   $dcvars->{SERVER_IP},
+				   $extra_smbconf_options);
+
+	$ret or die("Unable to provision");
+
+	my $net = $self->bindir_path("net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
+
+	$ret->{RPC_PROXY_SERVER} = $ret->{SERVER};
+	$ret->{RPC_PROXY_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{RPC_PROXY_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{RPC_PROXY_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
+	$ret->{RPC_PROXY_USERNAME} = $ret->{USERNAME};
+	$ret->{RPC_PROXY_PASSWORD} = $ret->{PASSWORD};
 
 	return $ret;
 }
@@ -859,10 +908,17 @@ sub provision_dc($$)
 				   "localdc",
 				   1,
 				   "localdcpass",
-				   "127.0.0.1");
+				   "127.0.0.1", "");
 
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
+
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 
 	return $ret;
 }
@@ -942,11 +998,32 @@ sub setup_env($$$)
 
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
+	} elsif ($envname eq "rpc_proxy") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
 	} elsif ($envname eq "member") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_member("$path/member", $self->{vars}->{dc});
+	} elsif ($envname eq "all") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		my $ret = $self->setup_member("$path/member", $self->{vars}->{dc});
+		if (not defined($self->{vars}->{rpc_proxy})) {
+			my $rpc_proxy_ret = $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
+			
+			$ret->{RPC_PROXY_SERVER} = $rpc_proxy_ret->{SERVER};
+			$ret->{RPC_PROXY_SERVER_IP} = $rpc_proxy_ret->{SERVER_IP};
+			$ret->{RPC_PROXY_NETBIOSNAME} = $rpc_proxy_ret->{NETBIOSNAME};
+			$ret->{RPC_PROXY_NETBIOSALIAS} = $rpc_proxy_ret->{NETBIOSALIAS};
+			$ret->{RPC_PROXY_USERNAME} = $rpc_proxy_ret->{USERNAME};
+			$ret->{RPC_PROXY_PASSWORD} = $rpc_proxy_ret->{PASSWORD};
+		}
+		return $ret;
 	} else {
 		die("Samba4 can't provide environment '$envname'");
 	}
@@ -961,6 +1038,23 @@ sub setup_member($$$$)
 	$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
 
 	$self->wait_for_start($env);
+
+	$self->{vars}->{member} = $env;
+
+	return $env;
+}
+
+sub setup_rpc_proxy($$$$)
+{
+	my ($self, $path, $dc_vars) = @_;
+
+	my $env = $self->provision_rpc_proxy($path, $dc_vars);
+
+	$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
+
+	$self->wait_for_start($env);
+
+	$self->{vars}->{rpc_proxy} = $env;
 
 	return $env;
 }

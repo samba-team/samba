@@ -457,7 +457,7 @@ my $target;
 my $testenv_default = "none";
 
 if ($opt_target eq "samba4") {
-	$testenv_default = "member";
+	$testenv_default = "all";
 	require target::Samba4;
 	$target = new Samba4($bindir, $ldap, "$srcdir/setup", $exeext);
 } elsif ($opt_target eq "samba3") {
@@ -728,6 +728,18 @@ my @exported_envvars = (
 	"DC_SERVER_IP",
 	"DC_NETBIOSNAME",
 	"DC_NETBIOSALIAS",
+
+	# domain controller stuff
+	"MEMBER_SERVER",
+	"MEMBER_SERVER_IP",
+	"MEMBER_NETBIOSNAME",
+	"MEMBER_NETBIOSALIAS",
+
+	# domain controller stuff
+	"RPC_PROXY_SERVER",
+	"RPC_PROXY_SERVER_IP",
+	"RPC_PROXY_NETBIOSNAME",
+	"RPC_PROXY_NETBIOSALIAS",
 
 	# server stuff
 	"SERVER",
