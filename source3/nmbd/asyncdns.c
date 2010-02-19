@@ -162,7 +162,7 @@ void start_async_dns(void)
 	CatchSignal(SIGUSR2, SIG_IGN);
 	CatchSignal(SIGUSR1, SIG_IGN);
 	CatchSignal(SIGHUP, SIG_IGN);
-        CatchSignal(SIGTERM, SIGNAL_CAST sig_term );
+        CatchSignal(SIGTERM, sig_term);
 
 	if (!NT_STATUS_IS_OK(reinit_after_fork(nmbd_messaging_context(),
 					       nmbd_event_context(), true))) {

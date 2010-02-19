@@ -337,7 +337,7 @@ static void reload_interfaces(time_t t)
 		 * Whilst we're waiting for an interface, allow SIGTERM to
 		 * cause us to exit.
 		 */
-		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
+		saved_handler = CatchSignal(SIGTERM, SIG_DFL);
 
 		/* We only count IPv4, non-loopback interfaces here. */
 		while (iface_count_v4_nl() == 0) {
@@ -345,7 +345,7 @@ static void reload_interfaces(time_t t)
 			load_interfaces();
 		}
 
-		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
+		CatchSignal(SIGTERM, saved_handler);
 
 		/*
 		 * We got an interface, go back to blocking term.
