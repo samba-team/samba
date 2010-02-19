@@ -45,6 +45,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	struct samr_Password password;
 	bool retried = false;
 	fstring mach_acct;
+	uint32_t neg_flags = *neg_flags_inout;
 
 	if (!ndr_syntax_id_equal(&cli->abstract_syntax,
 				 &ndr_table_netlogon.syntax_id)) {
@@ -81,7 +82,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				    &srv_chal_recv,
 				    &password,
 				    &clnt_chal_send,
-				    *neg_flags_inout);
+				    neg_flags);
 
 	if (!cli->dc) {
 		return NT_STATUS_NO_MEMORY;
@@ -98,7 +99,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 						 cli->dc->computer_name,
 						 &clnt_chal_send, /* input. */
 						 &srv_chal_recv, /* output. */
-						 neg_flags_inout);
+						 &neg_flags);
 
 	/* we might be talking to NT4, so let's downgrade in that case and retry
 	 * with the returned neg_flags - gd */
@@ -131,6 +132,9 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	DEBUG(5,("rpccli_netlogon_setup_creds: server %s credential "
 		"chain established.\n",
 		cli->desthost ));
+
+	cli->dc->negotiate_flags = neg_flags;
+	*neg_flags_inout = neg_flags;
 
 	return NT_STATUS_OK;
 }
