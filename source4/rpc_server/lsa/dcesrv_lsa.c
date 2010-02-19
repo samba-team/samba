@@ -1253,7 +1253,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 					    struct lsa_OpenTrustedDomainByName *r)
 {
 	struct dcesrv_handle *policy_handle;
-	
+
 	struct lsa_policy_state *policy_state;
 	struct lsa_trusted_domain_state *trusted_domain_state;
 	struct dcesrv_handle *handle;
@@ -1271,7 +1271,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 	if (!r->in.name.string) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
@@ -1281,12 +1281,12 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 	/* search for the trusted_domain record */
 	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
-			   "(&(flatname=%s)(objectclass=trustedDomain))", 
+			   "(&(flatname=%s)(objectclass=trustedDomain))",
 			   ldb_binary_encode_string(mem_ctx, r->in.name.string));
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	
+
 	if (ret != 1) {
 		DEBUG(0,("Found %d records matching DN %s\n", ret,
 			 ldb_dn_get_linearized(policy_state->system_dn)));
@@ -1294,19 +1294,19 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 	}
 
 	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msgs[0]->dn);
-	
+
 	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
 	if (!handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	handle->data = talloc_steal(handle, trusted_domain_state);
-	
+
 	trusted_domain_state->access_mask = r->in.access_mask;
 	trusted_domain_state->policy = talloc_reference(trusted_domain_state, policy_state);
-	
+
 	*r->out.trustdom_handle = handle->wire_handle;
-	
+
 	return NT_STATUS_OK;
 }
 
