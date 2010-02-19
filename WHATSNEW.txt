@@ -1,7 +1,7 @@
-                   =============================
-                   Release Notes for Samba 3.5.0
-			  February 16, 2010
-                   =============================
+                   ===============================
+                   Release Notes for Samba 3.5.0rc3
+			  February 19, 2010
+                   ===============================
 
 
 This is the third release candidate of Samba 3.5.  This is *not*
@@ -134,6 +134,7 @@ Changes since 3.5.0rc2
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 6557: Fix vfs_full_audit.
     * BUG 6876: Fix duplicate initializer in the rmdir module.
     * BUG 7063: Fix core dump on Ubuntu 8.04 64 bit.
     * BUG 7067: Fix failing of smbd to respond to a read or a write caused by
@@ -147,6 +148,9 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 7104: "wide links" and "unix extensions" are incompatible.
     * BUG 7118: Fix nmbd problems with socket address.
     * BUG 7122: Fix reading of large browselist.
+    * BUG 7154: "mangling method = hash" can crash storing a name containing a '.'.
+    * BUG 7155: Valgrind Conditional jump or move depends on uninitialised
+      value(s) error when "mangling method = hash"..
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -154,7 +158,9 @@ o   Steven Danneman <steven.danneman@isilon.com>
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 6888: Fix printing with 64 bit clients.
     * BUG 7130: Fix listing of printjobs in  Windows 7.
+    * BUG 7148: Fix get_acl_blob in the acl_tdb VFS module.
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -170,13 +176,16 @@ o   Jeff Layton <jlayton@redhat.com>
 o   Volker Lendecke <vl@samba.org>
     * BUG 7085: Fix an early release of the global lock that can cause data
       corruption in libtdb.
+    * BUG 7139: Owner of file not available with Kerberos.
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6888: Fix printing with 64 bit clients.
     * BUG 7098: Fix results of 'smbclient -L' with a large browse list.
     * BUG 7116: Add pdb_ldap performance fixes.
     * BUG 7118: Add new "nmbd bind explicit broadcast" parameter.
     * BUG 7119: Support large browselist.
+    * BUG 7140: Fix IPv4/IPv6 problems.
 
 
 o   Lars Müller <lars@samba.org>
