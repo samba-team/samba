@@ -1196,11 +1196,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 	}
 
 	if (len > 0) {
+		uint32_t clear_size = correct_offset - begin_offset;
+
+		clear_size = MIN(clear_size, len);
+
 		/* now move the marshalled buffer to the end of the main buffer */
 		memmove(ndr->data + correct_offset, ndr->data + begin_offset, len);
 
-		/* and wipe out old buffer within the main buffer */
-		memset(ndr->data + begin_offset, '\0', len);
+		if (clear_size) {
+			/* and wipe out old buffer within the main buffer */
+			memset(ndr->data + begin_offset, '\0', clear_size);
+		}
 	}
 
 	/* and set the end offset for the next buffer */
