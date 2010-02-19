@@ -1664,7 +1664,8 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 
 	sd2 = info.info3.secdesc;
 
-	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2),
+		"SD level 2 != SD level 3");
 
 
 	/* query level 2, set level 2, query level 2 */
@@ -1683,7 +1684,8 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 		sd1->type &= ~SEC_DESC_DACL_DEFAULTED;
 	}
 
-	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2),
+		"SD level 2 != SD level 2 after SD has been set via level 2");
 
 
 	/* query level 2, set level 3, query level 2 */
@@ -1698,8 +1700,8 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 
 	sd2 = info.info2.secdesc;
 
-	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
-
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2),
+		"SD level 2 != SD level 2 after SD has been set via level 3");
 
 	/* set modified sd level 3, query level 2 */
 
@@ -1724,7 +1726,9 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 		sd1->type &= ~SEC_DESC_DACL_DEFAULTED;
 	}
 
-	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2), "");
+	torture_assert(tctx, test_security_descriptor_equal(tctx, sd1, sd2),
+		"modified SD level 2 != SD level 2 after SD has been set via level 3");
+
 
 	return true;
 }
@@ -1916,7 +1920,8 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 
 	devmode2 = info.info2.devmode;
 
-	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
+		"DM level 8 != DM level 2");
 
 
 	/* change formname upon open and see if it persists in getprinter calls */
@@ -1964,13 +1969,15 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 
 	devmode2 = info.info8.devmode;
 
-	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
+		"modified DM level 8 != DM level 8 after DM has been set via level 8");
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
 
 	devmode2 = info.info2.devmode;
 
-	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
+		"modified DM level 8 != DM level 2");
 
 
 	/* set devicemode level 2 and see if it persists */
@@ -1978,19 +1985,21 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 	devmode->copies = 39;
 	devmode->formname = talloc_strdup(tctx, "Letter");
 
-	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 8, devmode), "");
+	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 2, devmode), "");
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info), "");
 
 	devmode2 = info.info8.devmode;
 
-	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
+		"modified DM level 8 != DM level 8 after DM has been set via level 2");
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
 
 	devmode2 = info.info2.devmode;
 
-	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2), "");
+	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
+		"modified DM level 8 != DM level 2");
 
 
 	return true;
