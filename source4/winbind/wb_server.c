@@ -241,19 +241,36 @@ static void winbind_task_init(struct task_server *task)
 						     service->task->lp_ctx,
 						     lp_netbios_name(service->task->lp_ctx), &errstring);
 		if (!primary_sid) {
-			char *message = talloc_asprintf(task, "Cannot start Winbind (standalone configuration): %s", errstring);
+			char *message = talloc_asprintf(task, 
+							"Cannot start Winbind (standalone configuration): %s: "
+							"Have you provisioned this server (%s) or changed it's name?", 
+							errstring, lp_netbios_name(service->task->lp_ctx));
 			task_server_terminate(task, message, true);
 			return;
 		}
 		break;
 	case ROLE_DOMAIN_MEMBER:
+		primary_sid = secrets_get_domain_sid(service,
+						     service->task->event_ctx,
+						     service->task->lp_ctx,
+						     lp_workgroup(service->task->lp_ctx), &errstring);
+		if (!primary_sid) {
+			char *message = talloc_asprintf(task, "Cannot start Winbind (domain member): %s: "
+							"Have you joined the %s domain?", 
+							errstring, lp_workgroup(service->task->lp_ctx));
+			task_server_terminate(task, message, true);
+			return;
+		}
+		break;
 	case ROLE_DOMAIN_CONTROLLER:
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
 						     lp_workgroup(service->task->lp_ctx), &errstring);
 		if (!primary_sid) {
-			char *message = talloc_asprintf(task, "Cannot start Winbind (domain configuration): %s", errstring);
+			char *message = talloc_asprintf(task, "Cannot start Winbind (domain controller): %s: "
+							"Have you provisioned the %s domain?", 
+							errstring, lp_workgroup(service->task->lp_ctx));
 			task_server_terminate(task, message, true);
 			return;
 		}
