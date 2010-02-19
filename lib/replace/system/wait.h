@@ -36,10 +36,6 @@
 #define SIGCLD SIGCHLD
 #endif
 
-#ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)(int))
-#endif
-
 #ifdef HAVE_SETJMP_H
 #include <setjmp.h>
 #endif
