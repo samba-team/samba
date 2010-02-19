@@ -88,15 +88,21 @@ static void rpc_sock_read_done(struct tevent_req *subreq)
 		req, struct rpc_sock_read_state);
 	int err;
 
+	/* We must free subreq in this function as there is
+	  a timer event attached to it. */
+
 	state->received = async_recv_recv(subreq, &err);
+
 	if (state->received == -1) {
 		if (state->transp->fd != -1) {
 			close(state->transp->fd);
 			state->transp->fd = -1;
 		}
+		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
+	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
@@ -165,15 +171,21 @@ static void rpc_sock_write_done(struct tevent_req *subreq)
 		req, struct rpc_sock_write_state);
 	int err;
 
+	/* We must free subreq in this function as there is
+	  a timer event attached to it. */
+
 	state->sent = async_send_recv(subreq, &err);
+
 	if (state->sent == -1) {
 		if (state->transp->fd != -1) {
 			close(state->transp->fd);
 			state->transp->fd = -1;
 		}
+		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
+	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
