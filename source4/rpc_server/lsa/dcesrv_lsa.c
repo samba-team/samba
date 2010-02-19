@@ -1261,7 +1261,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 	const char *attrs[] = {
 		NULL
 	};
-
+	char *td_name;
 	int ret;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
@@ -1279,10 +1279,12 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 	trusted_domain_state->policy = policy_state;
 
 	/* search for the trusted_domain record */
+	td_name = ldb_binary_encode_string(mem_ctx, r->in.name.string);
 	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
-			   "(&(flatname=%s)(objectclass=trustedDomain))",
-			   ldb_binary_encode_string(mem_ctx, r->in.name.string));
+			   "(&(|(flatname=%s)(cn=%s)(trustPartner=%s))"
+			     "(objectclass=trustedDomain))",
+			   td_name, td_name, td_name);
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -1292,6 +1294,8 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce
 			 ldb_dn_get_linearized(policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+
+        /* TODO: perform access checks */
 
 	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msgs[0]->dn);
 
