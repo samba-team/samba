@@ -37,7 +37,7 @@ static NTSTATUS remote_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
         NTSTATUS status;
 	const struct ndr_interface_table *table;
@@ -120,6 +120,8 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	if (dce_call->context->assoc_group->proxied_id != 0) {
 		b->assoc_group_id = dce_call->context->assoc_group->proxied_id;
 	}
+
+	b->object.if_version = if_version;
 
 	pipe_conn_req = dcerpc_pipe_connect_b_send(dce_call->context, b, table,
 						   credentials, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);

@@ -648,7 +648,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->context = context;
 		talloc_set_destructor(context, dcesrv_connection_context_destructor);
 
-		status = iface->bind(call, iface);
+		status = iface->bind(call, iface, if_version);
 		if (!NT_STATUS_IS_OK(status)) {
 			char *uuid_str = GUID_string(call, &uuid);
 			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n",
@@ -827,7 +827,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	call->context = context;
 	talloc_set_destructor(context, dcesrv_connection_context_destructor);
 
-	status = iface->bind(call, iface);
+	status = iface->bind(call, iface, if_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* we don't want to trigger the iface->unbind() hook */
 		context->iface = NULL;
