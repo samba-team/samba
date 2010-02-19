@@ -260,6 +260,9 @@ struct dcesrv_assoc_group {
 
 	/* parent context */
 	struct dcesrv_context *dce_ctx;
+
+	/* Remote association group ID (if proxied) */
+	uint32_t proxied_id;
 };
 
 /* server-wide context information for the dcerpc server */

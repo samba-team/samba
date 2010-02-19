@@ -3,7 +3,9 @@
    remote dcerpc operations
 
    Copyright (C) Stefan (metze) Metzmacher 2004
-   
+   Copyright (C) Julien Kerihuel 2008-2009
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2010
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -43,7 +45,10 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	const char *binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
+	bool must_free_credentials = true;
 	bool machine_account;
+	struct dcerpc_binding		*b;
+	struct composite_context	*pipe_conn_req;
 
 	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
 
@@ -96,17 +101,42 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	} else if (dce_call->conn->auth_state.session_info->credentials) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using delegated credentials\n"));
 		credentials = dce_call->conn->auth_state.session_info->credentials;
+		must_free_credentials = false;
 	} else {
 		DEBUG(1,("dcerpc_remote: RPC Proxy: You must supply binding, user and password or have delegated credentials\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pipe_connect(priv,
-				     &(priv->c_pipe), binding, table,
-				     credentials, dce_call->event_ctx,
-				     dce_call->conn->dce_ctx->lp_ctx);
+	/* parse binding string to the structure */
+	status = dcerpc_parse_binding(dce_call->context, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to parse dcerpc binding '%s'\n", binding));
+		return status;
+	}
+	
+	DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(dce_call->context, b)));
+	
+	/* If we already have a remote association group ID, then use that */
+	if (dce_call->context->assoc_group->proxied_id != 0) {
+		b->assoc_group_id = dce_call->context->assoc_group->proxied_id;
+	}
 
-	talloc_free(credentials);
+	pipe_conn_req = dcerpc_pipe_connect_b_send(dce_call->context, b, table,
+						   credentials, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
+	status = dcerpc_pipe_connect_b_recv(pipe_conn_req, dce_call->context, &(priv->c_pipe));
+	
+	if (must_free_credentials) {
+		talloc_free(credentials);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (dce_call->context->assoc_group->proxied_id == 0) {
+		dce_call->context->assoc_group->proxied_id = priv->c_pipe->assoc_group_id;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
