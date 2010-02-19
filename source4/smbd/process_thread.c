@@ -459,13 +459,13 @@ setup our recursive fault handlers
 static void thread_fault_setup(void)
 {
 #ifdef SIGSEGV
-	CatchSignal(SIGSEGV,SIGNAL_CAST thread_sig_fault);
+	CatchSignal(SIGSEGV, thread_sig_fault);
 #endif
 #ifdef SIGBUS
-	CatchSignal(SIGBUS,SIGNAL_CAST thread_sig_fault);
+	CatchSignal(SIGBUS, thread_sig_fault);
 #endif
 #ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST thread_sig_fault);
+	CatchSignal(SIGABRT, thread_sig_fault);
 #endif
 }
 
