@@ -21,6 +21,9 @@ interface misc
 
 	typedef [public] struct {
 		GUID uuid;
+		/* The major version is encoded in the 16 least significant bits, 
+		   the minor in the 16 most significant bits.  
+		   http://www.opengroup.org/onlinepubs/9629399/chap12.htm */
 		uint32 if_version;
 	} ndr_syntax_id;
 
