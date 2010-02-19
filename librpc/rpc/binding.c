@@ -417,6 +417,21 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct nd
 	return blob;
 }
 
+static DATA_BLOB dcerpc_floor_pack_rhs_if_version_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
+{
+	DATA_BLOB blob;
+	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx, NULL);
+
+	ndr->flags |= LIBNDR_FLAG_NOALIGN;
+
+	ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version >> 16);
+
+	blob = ndr_push_blob(ndr);
+	talloc_steal(mem_ctx, blob.data);
+	talloc_free(ndr);
+	return blob;
+}
+
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
 	switch (epm_floor->lhs.protocol) {
@@ -697,7 +712,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 
 	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors, &binding->object);
 
-	tower->floors[0].rhs.uuid.unknown = data_blob_talloc_zero(tower->floors, 2);
+	tower->floors[0].rhs.uuid.unknown = dcerpc_floor_pack_rhs_if_version_data(tower->floors, &binding->object);
 
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
