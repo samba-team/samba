@@ -48,7 +48,7 @@ static SIG_ATOMIC_T gotalarm;
  Signal function to tell us we timed out.
 ****************************************************************/
 
-static void gotalarm_sig(void)
+static void gotalarm_sig(int signum)
 {
 	gotalarm = 1;
 }
@@ -63,7 +63,7 @@ static void gotalarm_sig(void)
 
 	/* Setup timeout */
 	gotalarm = 0;
-	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	CatchSignal(SIGALRM, gotalarm_sig);
 	alarm(to);
 	/* End setup timeout. */
 
@@ -77,7 +77,7 @@ static void gotalarm_sig(void)
 	}
 
 	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	CatchSignal(SIGALRM, SIG_IGN);
 	alarm(0);
 
 	return ldp;
@@ -103,7 +103,7 @@ static int ldap_search_with_timeout(LDAP *ld,
 
 	/* Setup alarm timeout.... Do we need both of these ? JRA. */
 	gotalarm = 0;
-	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	CatchSignal(SIGALRM, gotalarm_sig);
 	alarm(lp_ldap_timeout());
 	/* End setup timeout. */
 
@@ -112,7 +112,7 @@ static int ldap_search_with_timeout(LDAP *ld,
 				   sizelimit, res);
 
 	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	CatchSignal(SIGALRM, SIG_IGN);
 	alarm(0);
 
 	if (gotalarm != 0)
