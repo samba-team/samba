@@ -119,29 +119,35 @@ struct test_spoolss_context {
 #define DO_ROUND(size, n) (((size)+((n)-1)) & ~((n)-1))
 
 #define CHECK_NEEDED_SIZE_ENUM_LEVEL(fn, info, level, count, ic, needed, align) do { \
+	if (torture_setting_bool(tctx, "spoolss_check_size", false)) {\
 	uint32_t size = ndr_size_##fn##_info(tctx, ic, level, count, info);\
 	uint32_t round_size = DO_ROUND(size, align);\
 	if (round_size != needed) {\
 		torture_warning(tctx, __location__": "#fn" level %d (count: %d) got unexpected needed size: %d, we calculated: %d", level, count, needed, round_size);\
 		CHECK_ALIGN(size, align);\
 	}\
+	}\
 } while(0)
 
 #define CHECK_NEEDED_SIZE_ENUM(fn, info, count, ic, needed, align) do { \
+	if (torture_setting_bool(tctx, "spoolss_check_size", false)) {\
 	uint32_t size = ndr_size_##fn##_info(tctx, ic, count, info);\
 	uint32_t round_size = DO_ROUND(size, align);\
 	if (round_size != needed) {\
 		torture_warning(tctx, __location__": "#fn" (count: %d) got unexpected needed size: %d, we calculated: %d", count, needed, round_size);\
 		CHECK_ALIGN(size, align);\
 	}\
+	}\
 } while(0)
 
 #define CHECK_NEEDED_SIZE_LEVEL(fn, info, level, ic, needed, align) do { \
+	if (torture_setting_bool(tctx, "spoolss_check_size", false)) {\
 	uint32_t size = ndr_size_##fn(info, level, ic, 0);\
 	uint32_t round_size = DO_ROUND(size, align);\
 	if (round_size != needed) {\
 		torture_warning(tctx, __location__": "#fn" level %d got unexpected needed size: %d, we calculated: %d", level, needed, round_size);\
 		CHECK_ALIGN(size, align);\
+	}\
 	}\
 } while(0)
 
