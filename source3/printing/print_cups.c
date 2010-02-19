@@ -35,7 +35,7 @@ static SIG_ATOMIC_T gotalarm;
  Signal function to tell us we timed out.
 ****************************************************************/
 
-static void gotalarm_sig(void)
+static void gotalarm_sig(int signum)
 {
         gotalarm = 1;
 }
@@ -89,7 +89,7 @@ static http_t *cups_connect(TALLOC_CTX *frame)
 	gotalarm = 0;
 
 	if (timeout) {
-                CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+                CatchSignal(SIGALRM, gotalarm_sig);
                 alarm(timeout);
         }
 
@@ -100,7 +100,7 @@ static http_t *cups_connect(TALLOC_CTX *frame)
 #endif
 
 
-	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	CatchSignal(SIGALRM, SIG_IGN);
         alarm(0);
 
 	if (http == NULL) {
