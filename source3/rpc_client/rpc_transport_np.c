@@ -180,6 +180,12 @@ static void rpc_np_read_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (state->received == 0) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, NT_STATUS_PIPE_BROKEN);
+		return;
+	}
+
 	memcpy(state->data, rcvbuf, state->received);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
