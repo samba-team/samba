@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Almost completely rewritten by (C) Jeremy Allison 2005.
+ *  Almost completely rewritten by (C) Jeremy Allison 2005 - 2010
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -108,15 +108,9 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		return False;
 	}
 
-	if (data_len_left % SERVER_NDR_PADDING_SIZE) {
-		ss_padding_len = SERVER_NDR_PADDING_SIZE - (data_len_left % SERVER_NDR_PADDING_SIZE);
-		DEBUG(10,("create_next_pdu_ntlmssp: adding sign/seal padding of %u\n",
-			ss_padding_len ));
-	}
-
+	/* Space available - not including padding. */
 	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN -
-		RPC_HDR_RESP_LEN - ss_padding_len - RPC_HDR_AUTH_LEN -
-		NTLMSSP_SIG_SIZE;
+		RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - NTLMSSP_SIG_SIZE;
 
 	/*
 	 * The amount we send is the minimum of the available
@@ -124,6 +118,19 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 */
 
 	data_len = MIN(data_len_left, data_space_available);
+
+	/* Work out any padding alignment requirements. */
+	if ((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE) {
+		ss_padding_len = SERVER_NDR_PADDING_SIZE -
+			((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE);
+		DEBUG(10,("create_next_pdu_ntlmssp: adding sign/seal padding of %u\n",
+			ss_padding_len ));
+		/* If we're over filling the packet, we need to make space
+ 		 * for the padding at the end of the data. */
+		if (data_len + ss_padding_len > data_space_available) {
+			data_len -= SERVER_NDR_PADDING_SIZE;
+		}
+	}
 
 	/*
 	 * Set up the alloc hint. This should be the data left to
@@ -329,14 +336,9 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		return False;
 	}
 
-	if (data_len_left % SERVER_NDR_PADDING_SIZE) {
-		ss_padding_len = SERVER_NDR_PADDING_SIZE - (data_len_left % SERVER_NDR_PADDING_SIZE);
-		DEBUG(10,("create_next_pdu_schannel: adding sign/seal padding of %u\n",
-			ss_padding_len ));
-	}
-
+	/* Space available - not including padding. */
 	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
-		- RPC_HDR_RESP_LEN - ss_padding_len - RPC_HDR_AUTH_LEN
+		- RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN
 		- RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
 
 	/*
@@ -345,6 +347,19 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 */
 
 	data_len = MIN(data_len_left, data_space_available);
+
+	/* Work out any padding alignment requirements. */
+	if ((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE) {
+		ss_padding_len = SERVER_NDR_PADDING_SIZE -
+			((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE);
+		DEBUG(10,("create_next_pdu_schannel: adding sign/seal padding of %u\n",
+			ss_padding_len ));
+		/* If we're over filling the packet, we need to make space
+ 		 * for the padding at the end of the data. */
+		if (data_len + ss_padding_len > data_space_available) {
+			data_len -= SERVER_NDR_PADDING_SIZE;
+		}
+	}
 
 	/*
 	 * Set up the alloc hint. This should be the data left to
