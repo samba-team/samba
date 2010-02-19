@@ -1732,16 +1732,15 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 				struct policy_handle *handle)
 {
 	union spoolss_PrinterInfo info;
-	struct spoolss_SetPrinterInfo3 info3;
-	struct spoolss_SetPrinterInfoCtr info_ctr;
-	struct spoolss_DevmodeContainer devmode_ctr;
-	struct sec_desc_buf secdesc_ctr;
 	struct security_descriptor *sd;
 	bool ret = true;
 
+	torture_comment(tctx, "\nTesting Printer Security Descriptors\n");
+
 	/* save original sd */
 
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info),
+		"failed to get initial security descriptor");
 
 	sd = security_descriptor_copy(tctx, info.info2.secdesc);
 
@@ -1751,18 +1750,12 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 
 	/* restore original sd */
 
-	ZERO_STRUCT(devmode_ctr);
-	ZERO_STRUCT(secdesc_ctr);
+	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 3, sd),
+		"failed to restore initial security descriptor");
 
-	info3.sec_desc_ptr = 0;
+	torture_comment(tctx, "Printer Security Descriptors test %s\n",
+		ret ? "succeeded" : "failed");
 
-	info_ctr.level = 3;
-	info_ctr.info.info3 = &info3;
-
-	secdesc_ctr.sd = sd;
-
-	torture_assert(tctx,
-		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0), "");
 
 	return ret;
 }
@@ -2010,6 +2003,8 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 	struct spoolss_DeviceMode *devmode;
 	bool ret = true;
 
+	torture_comment(tctx, "\nTesting Printer Devicemodes\n");
+
 	/* save original devmode */
 
 	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 8, &info),
@@ -2025,6 +2020,10 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 
 	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 8, devmode),
 		"failed to restore initial global device mode");
+
+	torture_comment(tctx, "Printer Devicemodes test %s\n",
+		ret ? "succeeded" : "failed");
+
 
 	return ret;
 }
