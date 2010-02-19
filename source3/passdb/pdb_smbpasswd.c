@@ -69,7 +69,7 @@ static SIG_ATOMIC_T gotalarm;
  Signal function to tell us we timed out.
 ****************************************************************/
 
-static void gotalarm_sig(void)
+static void gotalarm_sig(int signum)
 {
 	gotalarm = 1;
 }
@@ -86,7 +86,7 @@ static bool do_file_lock(int fd, int waitsecs, int type)
 	void (*oldsig_handler)(int);
 
 	gotalarm = 0;
-	oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	oldsig_handler = CatchSignal(SIGALRM, gotalarm_sig);
 
 	lock.l_type = type;
 	lock.l_whence = SEEK_SET;
@@ -98,7 +98,7 @@ static bool do_file_lock(int fd, int waitsecs, int type)
 	/* Note we must *NOT* use sys_fcntl here ! JRA */
 	ret = fcntl(fd, SMB_F_SETLKW, &lock);
 	alarm(0);
-	CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
+	CatchSignal(SIGALRM, oldsig_handler);
 
 	if (gotalarm && ret == -1) {
 		DEBUG(0, ("do_file_lock: failed to %s file.\n",
