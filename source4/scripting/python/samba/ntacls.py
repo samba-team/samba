@@ -45,7 +45,6 @@ def getntacl(lp,file,backend=None,eadbfile=None):
 		raise
 	eadbname = lp.get("posix:eadb")
 	if eadbname != None and eadbname != "" :
-		attribute = samba.xattr_tdb.wrap_getxattr(eadbname,file,xattr.XATTR_NTACL_NAME)
 		try:
 			attribute = samba.xattr_tdb.wrap_getxattr(eadbname,file,xattr.XATTR_NTACL_NAME)
 		except:
