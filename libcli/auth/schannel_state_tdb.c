@@ -117,7 +117,7 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_context *tdb,
 
 	blob = data_blob_const(value.dptr, value.dsize);
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, creds,
+	ndr_err = ndr_pull_struct_blob(&blob, creds, NULL, creds,
 			(ndr_pull_flags_fn_t)ndr_pull_netlogon_creds_CredentialState);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
