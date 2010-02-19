@@ -1469,10 +1469,6 @@ extern int dcelogin_atmost_once;
 char *strdup(char *s);
 #endif
 
-#ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)(int))
-#endif
-
 #ifndef SELECT_CAST
 #define SELECT_CAST
 #endif
