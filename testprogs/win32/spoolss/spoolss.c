@@ -877,7 +877,7 @@ static BOOL test_GetJob(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetJob(%d) level %d", job_id, levels[i]);
 
-		if (tctx->samba3 && levels[i] == 4) {
+		if (tctx->samba3 && (levels[i] == 4) || (levels[i] == 3)) {
 			torture_comment(tctx, "skipping level %d getjob against samba\n", levels[i]);
 			continue;
 		}
