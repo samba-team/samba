@@ -3949,24 +3949,10 @@ static WERROR construct_printer_info8(TALLOC_CTX *mem_ctx,
 				      struct spoolss_DeviceModeInfo *r,
 				      int snum)
 {
-	struct spoolss_DeviceMode *devmode;
-	WERROR result;
-
-	if (!ntprinter->info_2->devmode) {
-		r->devmode = NULL;
-		return WERR_OK;
+	r->devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
+	if (!r->devmode) {
+		DEBUG(8,("Returning NULL Devicemode!\n"));
 	}
-
-	devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
-	W_ERROR_HAVE_NO_MEMORY(devmode);
-
-	result = convert_nt_devicemode(mem_ctx, devmode, ntprinter->info_2->devmode);
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(devmode);
-		return result;
-	}
-
-	r->devmode	= devmode;
 
 	return WERR_OK;
 }
