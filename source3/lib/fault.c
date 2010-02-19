@@ -54,13 +54,13 @@ static void fault_report(int sig)
 	if (cont_fn) {
 		cont_fn(NULL);
 #ifdef SIGSEGV
-		CatchSignal(SIGSEGV,SIGNAL_CAST SIG_DFL);
+		CatchSignal(SIGSEGV, SIG_DFL);
 #endif
 #ifdef SIGBUS
-		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
+		CatchSignal(SIGBUS, SIG_DFL);
 #endif
 #ifdef SIGABRT
-		CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+		CatchSignal(SIGABRT, SIG_DFL);
 #endif
 		return; /* this should cause a core dump */
 	}
@@ -83,13 +83,13 @@ void fault_setup(void (*fn)(void *))
 	cont_fn = fn;
 
 #ifdef SIGSEGV
-	CatchSignal(SIGSEGV,SIGNAL_CAST sig_fault);
+	CatchSignal(SIGSEGV, sig_fault);
 #endif
 #ifdef SIGBUS
-	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
+	CatchSignal(SIGBUS, sig_fault);
 #endif
 #ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST sig_fault);
+	CatchSignal(SIGABRT, sig_fault);
 #endif
 }
 
@@ -331,7 +331,7 @@ void dump_core_setup(const char *progname)
 
 	/* Ensure we don't have a signal handler for abort. */
 #ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+	CatchSignal(SIGABRT, SIG_DFL);
 #endif
 
 	abort();

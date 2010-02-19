@@ -34,7 +34,7 @@ static SIG_ATOMIC_T gotalarm;
  Signal function to tell us we timed out.
 ****************************************************************/
 
-static void gotalarm_sig(void)
+static void gotalarm_sig(int signum)
 {
 	gotalarm = 1;
 }
@@ -50,7 +50,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 	gotalarm = 0;
 
 	if (timeout) {
-		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		CatchSignal(SIGALRM, gotalarm_sig);
 		tdb_setalarm_sigptr(tdb, &gotalarm);
 		alarm(timeout);
 	}
@@ -63,7 +63,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 	if (timeout) {
 		alarm(0);
 		tdb_setalarm_sigptr(tdb, NULL);
-		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		CatchSignal(SIGALRM, SIG_IGN);
 		if (gotalarm && (ret == -1)) {
 			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb_name(tdb)));

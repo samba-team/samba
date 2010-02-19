@@ -1399,7 +1399,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	 * just a bit more kind to the server. VL. */
 
 	got_alarm = 0;
-	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	CatchSignal(SIGALRM, gotalarm_sig);
 	alarm(lp_ldap_timeout());
 	/* End setup timeout. */
 
@@ -1434,7 +1434,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	TALLOC_FREE(utf8_filter);
 
 	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	CatchSignal(SIGALRM, SIG_IGN);
 	alarm(0);
 
 	if (got_alarm != 0)
