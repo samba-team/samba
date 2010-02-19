@@ -1924,40 +1924,6 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 		"DM level 8 != DM level 2");
 
 
-	/* change formname upon open and see if it persists in getprinter calls */
-
-	devmode->formname = talloc_strdup(tctx, "A4");
-
-	torture_assert(tctx, call_OpenPrinterEx(tctx, p, name, devmode, &handle_devmode),
-		"failed to open printer handle");
-
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, &handle_devmode, 8, &info), "");
-
-	devmode2 = info.info8.devmode;
-
-	if (strequal(devmode->devicename, devmode2->devicename)) {
-		torture_fail(tctx, "devicename is the same");
-	}
-
-	if (strequal(devmode->formname, devmode2->formname)) {
-		torture_fail(tctx, "formname is the same");
-	}
-
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, &handle_devmode, 2, &info), "");
-
-	devmode2 = info.info2.devmode;
-
-	if (strequal(devmode->devicename, devmode2->devicename)) {
-		torture_fail(tctx, "devicename is the same");
-	}
-
-	if (strequal(devmode->formname, devmode2->formname)) {
-		torture_fail(tctx, "formname is the same");
-	}
-
-	test_ClosePrinter(tctx, p, &handle_devmode);
-
-
 	/* set devicemode level 8 and see if it persists */
 
 	devmode->copies = 93;
@@ -1983,7 +1949,7 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 	/* set devicemode level 2 and see if it persists */
 
 	devmode->copies = 39;
-	devmode->formname = talloc_strdup(tctx, "Letter");
+	devmode->formname = talloc_strdup(tctx, "Executive");
 
 	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 2, devmode), "");
 
@@ -2001,6 +1967,66 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
 		"modified DM level 8 != DM level 2");
 
+
+	/* change formname upon open and see if it persists in getprinter calls */
+
+	devmode->formname = talloc_strdup(tctx, "A4");
+	devmode->copies = 42;
+
+	torture_assert(tctx, call_OpenPrinterEx(tctx, p, name, devmode, &handle_devmode),
+		"failed to open printer handle");
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, &handle_devmode, 8, &info), "");
+
+	devmode2 = info.info8.devmode;
+
+	if (strequal(devmode->devicename, devmode2->devicename)) {
+		torture_comment(tctx, "devicenames are the same\n");
+	} else {
+		torture_comment(tctx, "devicename passed in for open: %s\n", devmode->devicename);
+		torture_comment(tctx, "devicename after level 8 get: %s\n", devmode2->devicename);
+	}
+
+	if (strequal(devmode->formname, devmode2->formname)) {
+		torture_warning(tctx, "formname are the same\n");
+	} else {
+		torture_comment(tctx, "formname passed in for open: %s\n", devmode->formname);
+		torture_comment(tctx, "formname after level 8 get: %s\n", devmode2->formname);
+	}
+
+	if (devmode->copies == devmode2->copies) {
+		torture_warning(tctx, "copies are the same\n");
+	} else {
+		torture_comment(tctx, "copies passed in for open: %d\n", devmode->copies);
+		torture_comment(tctx, "copies after level 8 get: %d\n", devmode2->copies);
+	}
+
+	torture_assert(tctx, test_GetPrinter_level(tctx, p, &handle_devmode, 2, &info), "");
+
+	devmode2 = info.info2.devmode;
+
+	if (strequal(devmode->devicename, devmode2->devicename)) {
+		torture_comment(tctx, "devicenames are the same\n");
+	} else {
+		torture_comment(tctx, "devicename passed in for open: %s\n", devmode->devicename);
+		torture_comment(tctx, "devicename after level 2 get: %s\n", devmode2->devicename);
+	}
+
+	if (strequal(devmode->formname, devmode2->formname)) {
+		torture_warning(tctx, "formname is the same\n");
+	} else {
+		torture_comment(tctx, "formname passed in for open: %s\n", devmode->formname);
+		torture_comment(tctx, "formname after level 2 get: %s\n", devmode2->formname);
+	}
+
+	if (devmode->copies == devmode2->copies) {
+		torture_warning(tctx, "copies are the same\n");
+	} else {
+		torture_comment(tctx, "copies passed in for open: %d\n", devmode->copies);
+		torture_comment(tctx, "copies after level 2 get: %d\n", devmode2->copies);
+	}
+
+	test_ClosePrinter(tctx, p, &handle_devmode);
 
 	return true;
 }
@@ -4332,6 +4358,8 @@ bool test_printer_keys(struct torture_context *tctx,
 {
 	const char **key_array = NULL;
 	int i;
+
+	torture_comment(tctx, "\nTesting Printer Keys\n");
 
 	torture_assert(tctx, test_EnumPrinterKey(tctx, p, handle, "", &key_array),
 		"failed to call test_EnumPrinterKey");
