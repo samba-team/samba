@@ -1,8 +1,14 @@
 # a waf tool to add autoconf-like macros to the configure section
+# and for SAMBA_ macros for building libraries, binaries etc
 
 import Build
 from Configure import conf
 
+
+####################################################
+# some autoconf like helpers, to make the transition
+# to waf a bit easier for those used to autoconf
+# m4 files
 @conf
 def DEFUN(conf, d, v):
     conf.define(d, v, quote=False)
@@ -40,8 +46,11 @@ def CHECK_FUNCS_IN(conf, list, library):
         for f in list.rsplit(' '):
             conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
 
+################################################################
+# magic rpath handling
+#
 # we want a different rpath when installing and when building
-# this should really check if rpath is available on this platform
+# Note that this should really check if rpath is available on this platform
 # and it should also honor an --enable-rpath option
 def set_rpath(bld):
     import Options
@@ -51,9 +60,11 @@ def set_rpath(bld):
         bld.env.append_value('RPATH', '-Wl,-rpath=build/default')
 Build.BuildContext.set_rpath = set_rpath
 
+################################################################
 # this will contain the set of includes needed per Samba library
 Build.BuildContext.SAMBA_LIBRARY_INCLUDES = {}
 
+################################################################
 # this will contain the library dependencies of each Samba library
 Build.BuildContext.SAMBA_LIBRARY_DEPS = {}
 
@@ -66,6 +77,7 @@ def SAMBA_LIBRARY_INCLUDE_LIST(bld, libdeps):
             ret = ret + bld.SAMBA_LIBRARY_INCLUDES[l] + ' '
     return ret
 Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
+
 
 #################################################################
 # define a Samba library
@@ -90,9 +102,9 @@ def SAMBA_BINARY(bld, binname, source_list, libdeps='', include_list=''):
         includes = bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list)
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
-
+############################################################
 # this overrides the normal -v debug output to be in a nice
-# unix like format
+# unix like format. Thanks to ita on #waf for this
 def exec_command(self, cmd, **kw):
     import Utils
     from Logs import debug
