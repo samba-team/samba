@@ -62,9 +62,8 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
 }
 
 /*
- *    helper functions to call the next module in chain
- *    */
-
+ * helper functions to call the next module in chain
+ */
 int partition_request(struct ldb_module *module, struct ldb_request *request)
 {
 	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { \
@@ -150,13 +149,13 @@ static int partition_req_callback(struct ldb_request *req,
 		 * or this is an individual search result, we can
 		 * deterministily tell the caller what partition this was
 		 * written to (repl_meta_data likes to know) */
-			ret = ldb_reply_add_control(ares,
-						    DSDB_CONTROL_CURRENT_PARTITION_OID,
-						    false, partition_ctrl->data);
-			if (ret != LDB_SUCCESS) {
-				return ldb_module_done(ac->req, NULL, NULL,
-						       ret);
-			}
+		ret = ldb_reply_add_control(ares,
+					    DSDB_CONTROL_CURRENT_PARTITION_OID,
+					    false, partition_ctrl->data);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL,
+					       ret);
+		}
 	}
 
 	if (ares->error != LDB_SUCCESS) {
@@ -485,12 +484,14 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* TODO:
-	   Generate referrals (look for a partition under this DN) if we don't have the above control specified
-	*/
+	 * Generate referrals (look for a partition under this DN) if we don't
+	 * have the LDB_CONTROL_DOMAIN_SCOPE_OID control specified.
+	 */
 	
 	if (search_options && (search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT)) {
 		int i;
 		struct partition_context *ac;
+
 		if ((search_options->search_options & ~LDB_SEARCH_OPTION_PHANTOM_ROOT) == 0) {
 			/* We have processed this flag, so we are done with this control now */
 
@@ -500,6 +501,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
+
 		ac = partition_init_ctx(module, req);
 		if (!ac) {
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -553,7 +555,6 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 		/* fire the first one */
 		return partition_call_first(ac);
-
 	} else {
 		/* Handle this like all other requests */
 		if (search_control && (search_options->search_options & ~LDB_SEARCH_OPTION_PHANTOM_ROOT) == 0) {
@@ -682,7 +683,9 @@ static int partition_prepare_commit(struct ldb_module *module)
 		}
 		ret = ldb_next_prepare_commit(data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(module->ldb, "prepare_commit error on %s: %s", ldb_dn_get_linearized(data->partitions[i]->ctrl->dn), ldb_errstring(module->ldb));
+			ldb_asprintf_errstring(module->ldb, "prepare_commit error on %s: %s",
+					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
+					       ldb_errstring(module->ldb));
 			return ret;
 		}
 	}
@@ -717,7 +720,9 @@ static int partition_end_trans(struct ldb_module *module)
 		}
 		ret2 = ldb_next_end_trans(data->partitions[i]->module);
 		if (ret2 != LDB_SUCCESS) {
-			ldb_asprintf_errstring(module->ldb, "end_trans error on %s: %s", ldb_dn_get_linearized(data->partitions[i]->ctrl->dn), ldb_errstring(module->ldb));
+			ldb_asprintf_errstring(module->ldb, "end_trans error on %s: %s",
+					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
+					       ldb_errstring(module->ldb));
 			ret = ret2;
 		}
 	}
@@ -745,7 +750,9 @@ static int partition_del_trans(struct ldb_module *module)
 		}
 		ret = ldb_next_del_trans(data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(module->ldb, "del_trans error on %s: %s", ldb_dn_get_linearized(data->partitions[i]->ctrl->dn), ldb_errstring(module->ldb));
+			ldb_asprintf_errstring(module->ldb, "del_trans error on %s: %s",
+					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
+					       ldb_errstring(module->ldb));
 			final_ret = ret;
 		}
 	}	
