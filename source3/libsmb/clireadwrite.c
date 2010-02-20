@@ -165,8 +165,9 @@ static void cli_read_andx_done(struct tevent_req *subreq)
 	uint32_t num_bytes;
 	uint8_t *bytes;
 
-	state->status = cli_smb_recv(subreq, NULL, NULL, 12, &wct, &vwv,
+	state->status = cli_smb_recv(subreq, state, &inbuf, 12, &wct, &vwv,
 				     &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_ERR(state->status)) {
 		tevent_req_nterror(req, state->status);
 		return;
@@ -194,7 +195,6 @@ static void cli_read_andx_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbuf = cli_smb_inbuf(subreq);
 	state->buf = (uint8_t *)smb_base(inbuf) + SVAL(vwv+6, 0);
 
 	if (trans_oob(smb_len(inbuf), SVAL(vwv+6, 0), state->received)
