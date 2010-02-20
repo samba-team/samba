@@ -650,12 +650,12 @@ objectClass: container
 dn: CN=ActiveDirectoryRodcUpdate,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
-revision: 5
+revision: 2
 
 dn: CN=ActiveDirectoryUpdate,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
-revision: 5
+revision: 2
 
 dn: CN=Operations,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
@@ -812,7 +812,7 @@ objectClass: container
 dn: CN=Windows2003Update,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
-revision: 9
+revision: 10
 
 # End forest updates
 
