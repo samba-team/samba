@@ -14,7 +14,7 @@ def build(bld):
         features = 'cc cshlib',
         source = 'talloc.c',
         target='talloc',
-        includes = '. ../replace default /usr/include')
+        includes = '. ../replace')
 
     # test program
     bld(
@@ -23,5 +23,3 @@ def build(bld):
         target = 'talloc_testsuite',
         uselib_local = 'replace talloc',
         includes = '. ../replace default /usr/include')
-
-

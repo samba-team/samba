@@ -39,8 +39,15 @@ def CHECK_FUNCS_IN(conf, list, library):
         for f in list.rsplit(' '):
             conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
 
-@conf
-def check_rpath(conf):
-    # this should check if rpath works
-    conf.env.append_value('RPATH', '-Wl,-rpath=build/default')
+# we want a different rpath when installing and when building
+# this should really check if rpath is available on this platform
+# and it should also honor an --enable-rpath option
+def set_rpath(bld):
+    import Options
+    if Options.is_install:
+        bld.env['RPATH'] = ['-Wl,-rpath=' + bld.env.PREFIX + '/lib']
+    else:
+        bld.env.append_value('RPATH', '-Wl,-rpath=build/default')
 
+import Build
+Build.BuildContext.set_rpath = set_rpath

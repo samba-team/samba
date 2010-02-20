@@ -13,8 +13,7 @@ def configure(conf):
     conf.env.hlist = []
 
     # load our local waf extensions
-    conf.check_tool('autoconf', tooldir='. ../replace')
-    conf.check_rpath()
+    conf.check_tool('autoconf', tooldir=conf.curdir)
 
     conf.check_tool('compiler_cc')
     conf.DEFUN('_GNU_SOURCE', 1)
@@ -114,12 +113,14 @@ main() { foo("hello"); }
     conf.write_config_header('config.h')
 
 def build(bld):
+    bld.set_rpath()
+
     # the libreplace shared library
     bld(
         features = 'cc cshlib',
         source = 'replace.c',
         target='replace',
-        includes = '. default /usr/include')
+        includes = '. default')
 
     # test program
     bld(
