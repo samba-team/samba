@@ -165,8 +165,8 @@ static void cli_read_andx_done(struct tevent_req *subreq)
 	uint32_t num_bytes;
 	uint8_t *bytes;
 
-	state->status = cli_smb_recv(subreq, 12, &wct, &vwv, &num_bytes,
-				     &bytes);
+	state->status = cli_smb_recv(subreq, NULL, NULL, 12, &wct, &vwv,
+				     &num_bytes, &bytes);
 	if (NT_STATUS_IS_ERR(state->status)) {
 		tevent_req_nterror(req, state->status);
 		return;
@@ -1020,7 +1020,7 @@ static void cli_write_andx_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 6, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 6, &wct, &vwv, NULL, NULL);
 	if (NT_STATUS_IS_ERR(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);

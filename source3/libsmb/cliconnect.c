@@ -269,7 +269,8 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	uint8_t *p;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
@@ -731,7 +732,8 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	uint8_t *p;
 	uint16_t blob_length;
 
-	status = cli_smb_recv(subreq, 1, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 1, &wct, &vwv,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		TALLOC_FREE(subreq);
@@ -1527,7 +1529,7 @@ static void cli_ulogoff_done(struct tevent_req *subreq)
 		req, struct cli_ulogoff_state);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -1758,7 +1760,8 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, &wct, &vwv,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
@@ -1874,7 +1877,7 @@ static void cli_tdis_done(struct tevent_req *subreq)
 		req, struct cli_tdis_state);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -2030,7 +2033,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint16_t protnum;
 
-	status = cli_smb_recv(subreq, 1, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 1, &wct, &vwv,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);

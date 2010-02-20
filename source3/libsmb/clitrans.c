@@ -1117,7 +1117,8 @@ static void cli_trans_done(struct tevent_req *subreq)
 	uint8_t *param		= NULL;
 	uint8_t *data		= NULL;
 
-	status = cli_smb_recv(subreq, 0, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, &wct, &vwv,
+			      &num_bytes, &bytes);
 
 	/*
 	 * We can receive something like STATUS_MORE_ENTRIES, so don't use

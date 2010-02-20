@@ -755,8 +755,9 @@ static void cli_smb_received(struct tevent_req *subreq)
 	}
 }
 
-NTSTATUS cli_smb_recv(struct tevent_req *req, uint8_t min_wct,
-		      uint8_t *pwct, uint16_t **pvwv,
+NTSTATUS cli_smb_recv(struct tevent_req *req,
+		      TALLOC_CTX *mem_ctx, uint8_t **pinbuf,
+		      uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
 		      uint32_t *pnum_bytes, uint8_t **pbytes)
 {
 	struct cli_smb_state *state = tevent_req_data(
@@ -867,6 +868,9 @@ no_err:
 	}
 	if (pbytes != NULL) {
 		*pbytes = (uint8_t *)state->inbuf + bytes_offset + 2;
+	}
+	if ((mem_ctx != NULL) && (pinbuf != NULL)) {
+		*pinbuf = talloc_move(mem_ctx, &state->inbuf);
 	}
 
 	return status;
@@ -1055,7 +1059,8 @@ static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 8, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 8, &wct, &vwv,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);

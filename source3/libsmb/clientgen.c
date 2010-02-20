@@ -852,7 +852,8 @@ static void cli_echo_done(struct tevent_req *subreq)
 	uint32_t num_bytes;
 	uint8_t *bytes;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -989,7 +990,8 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
         if (!tevent_req_poll_ntstatus(req, ev, &status)) {
                 goto fail;
         }
-        status = cli_smb_recv(req, min_wct, pwct, pvwv, pnum_bytes, pbytes);
+        status = cli_smb_recv(req, NULL, NULL, min_wct, pwct, pvwv,
+			      pnum_bytes, pbytes);
 fail:
         TALLOC_FREE(ev);
 	if (NT_STATUS_IS_OK(status)) {

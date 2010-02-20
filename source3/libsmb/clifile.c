@@ -1238,7 +1238,7 @@ static void cli_rename_done(struct tevent_req *subreq)
 				subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -1364,7 +1364,7 @@ static void cli_ntrename_internal_done(struct tevent_req *subreq)
 				subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -1559,7 +1559,7 @@ static void cli_unlink_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -1667,7 +1667,7 @@ static void cli_mkdir_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -1775,7 +1775,7 @@ static void cli_rmdir_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -2040,7 +2040,8 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 3, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 3, &wct, &vwv,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
@@ -2252,7 +2253,7 @@ static void cli_open_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 3, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 3, &wct, &vwv, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
@@ -2382,7 +2383,7 @@ static void cli_close_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -2723,7 +2724,7 @@ static void cli_unlock_done(struct tevent_req *subreq)
 				subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -2898,7 +2899,7 @@ static void cli_unlock64_done(struct tevent_req *subreq)
 				subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -3265,7 +3266,7 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 	uint16_t *vwv = NULL;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 11, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 11, &wct, &vwv, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -3427,7 +3428,7 @@ static void cli_getatr_done(struct tevent_req *subreq)
 	uint16_t *vwv = NULL;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 4, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 4, &wct, &vwv, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -3561,7 +3562,7 @@ static void cli_setattrE_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -3695,7 +3696,7 @@ static void cli_setatr_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -3806,7 +3807,7 @@ static void cli_chkpath_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -3921,7 +3922,7 @@ static void cli_dskattr_done(struct tevent_req *subreq)
 	uint16_t *vwv = NULL;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, 4, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, NULL, NULL, 4, &wct, &vwv, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -4052,7 +4053,8 @@ static void cli_ctemp_done(struct tevent_req *subreq)
 	uint32_t num_bytes = 0;
 	uint8_t *bytes = NULL;
 
-	status = cli_smb_recv(subreq, 1, &wcnt, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, NULL, NULL, 1, &wcnt, &vwv,
+			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
