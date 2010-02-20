@@ -730,12 +730,13 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t *p;
 	uint16_t blob_length;
+	uint8_t *inbuf;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 1, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
 			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -743,12 +744,11 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	state->status = status;
 	TALLOC_FREE(state->buf);
 
-	state->inbuf = (char *)cli_smb_inbuf(subreq);
+	state->inbuf = (char *)inbuf;
 	cli->vuid = SVAL(state->inbuf, smb_uid);
 
 	blob_length = SVAL(vwv+3, 0);
 	if (blob_length > num_bytes) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
@@ -771,7 +771,6 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	}
 
 	if (state->blob.length != 0) {
-		TALLOC_FREE(subreq);
 		/*
 		 * More to send
 		 */
