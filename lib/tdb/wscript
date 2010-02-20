@@ -22,3 +22,15 @@ def build(bld):
     bld.SAMBA_BINARY('tdbtorture',
                      'tools/tdbtorture.c',
                      'tdb')
+
+    bld.SAMBA_BINARY('tdbdump',
+                     'tools/tdbdump.c',
+                     'tdb')
+
+    bld.SAMBA_BINARY('tdbbackup',
+                     'tools/tdbbackup.c',
+                     'tdb')
+
+    bld.SAMBA_BINARY('tdbtool',
+                     'tools/tdbtool.c',
+                     'tdb')
