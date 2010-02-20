@@ -91,8 +91,11 @@ static void cli_message_start_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t wct;
 	uint16_t *vwv;
+	uint8_t *inbuf;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, state, &inbuf, 0, &wct, &vwv,
+			      NULL, NULL);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
@@ -103,7 +106,6 @@ static void cli_message_start_done(struct tevent_req *subreq)
 	} else {
 		state->grp = 0;
 	}
-	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
