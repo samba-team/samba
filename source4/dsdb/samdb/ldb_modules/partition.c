@@ -43,6 +43,8 @@ struct partition_context {
 	struct part_request *part_req;
 	int num_requests;
 	int finished_requests;
+
+	const char **referrals;
 };
 
 static struct partition_context *partition_init_ctx(struct ldb_module *module, struct ldb_request *req)
@@ -197,6 +199,19 @@ static int partition_req_callback(struct ldb_request *req,
 
 		ac->finished_requests++;
 		if (ac->finished_requests == ac->num_requests) {
+			/* Send back referrals if they do exist (search ops) */
+			if (ac->referrals != NULL) {
+				const char **ref;
+				for (ref = ac->referrals; *ref != NULL; ++ref) {
+					ret = ldb_module_send_referral(ac->req,
+								       talloc_strdup(ac->req, *ref));
+					if (ret != LDB_SUCCESS) {
+						return ldb_module_done(ac->req, NULL, NULL,
+								       ret);
+					}
+				}
+			}
+
 			/* this was the last one, call callback */
 			return ldb_module_done(ac->req, ares->controls,
 					       ares->response, 
@@ -434,23 +449,21 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 /* search */
 static int partition_search(struct ldb_module *module, struct ldb_request *req)
 {
-	int ret;
 	struct ldb_control **saved_controls;
 	/* Find backend */
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-
-	/* issue request */
-
-	/* (later) consider if we should be searching multiple
-	 * partitions (for 'invisible' partition behaviour */
+	struct partition_context *ac;
+	struct ldb_context *ldb;
+	struct loadparm_context *lp_ctx;
 
 	struct ldb_control *search_control = ldb_request_get_control(req, LDB_CONTROL_SEARCH_OPTIONS_OID);
 	struct ldb_control *domain_scope_control = ldb_request_get_control(req, LDB_CONTROL_DOMAIN_SCOPE_OID);
 	
 	struct ldb_search_options_control *search_options = NULL;
 	struct dsdb_partition *p;
-
+	unsigned int i, j;
+	int ret;
 	bool domain_scope = false, phantom_root = false;
 	
 	ret = partition_reload_if_required(module, data);
@@ -496,66 +509,149 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 			& ~LDB_SEARCH_OPTION_PHANTOM_ROOT;
 	}
 
-	if ((!domain_scope) || phantom_root) {
-		int i;
-		struct partition_context *ac;
+	if (!data || !data->partitions) {
+		return ldb_next_request(module, req);
+	}
 
-		ac = partition_init_ctx(module, req);
-		if (!ac) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+	ac = partition_init_ctx(module, req);
+	if (!ac) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-		/* Search from the base DN */
-		if (!req->op.search.base || ldb_dn_is_null(req->op.search.base)) {
-			return partition_send_all(module, ac, req);
-		}
-		for (i=0; data && data->partitions && data->partitions[i]; i++) {
-			bool match = false, stop = false;
-			/* Find all partitions under the search base 
-			   
-			   we match if:
+	ldb = ldb_module_get_ctx(ac->module);
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+						struct loadparm_context);
 
-			      1) the DN we are looking for exactly matches the partition
-		             or
-			      2) the DN we are looking for is a parent of the partition and it isn't
-                                 a scope base search
-                             or
-			      3) the DN we are looking for is a child of the partition
+	/* Search from the base DN */
+	if (ldb_dn_is_null(req->op.search.base)) {
+		return partition_send_all(module, ac, req);
+	}
+
+	for (i=0; data->partitions[i]; i++) {
+		bool match = false, stop = false;
+
+		if (phantom_root) {
+			/* Phantom root: Find all partitions under the
+			 * search base. We match if:
+			 *
+			 * 1) the DN we are looking for exactly matches a
+			 *    certain partition and always stop
+			 * 2) the DN we are looking for is a parent of certain
+			 *    partitions and it isn't a scope base search
+			 * 3) the DN we are looking for is a child of a certain
+			 *    partition and always stop
+			 *    - we don't need to go any further up in the
+			 *    hierarchy!
 			 */
-			if (ldb_dn_compare(data->partitions[i]->ctrl->dn, req->op.search.base) == 0) {
+			if (ldb_dn_compare(data->partitions[i]->ctrl->dn,
+					   req->op.search.base) == 0) {
 				match = true;
 				stop = true;
 			}
-			if (!match && 
-			    (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->ctrl->dn) == 0 &&
+			if (!match &&
+			    (ldb_dn_compare_base(req->op.search.base,
+						 data->partitions[i]->ctrl->dn) == 0 &&
 			     req->op.search.scope != LDB_SCOPE_BASE)) {
 				match = true;
 			}
 			if (!match &&
-			    ldb_dn_compare_base(data->partitions[i]->ctrl->dn, req->op.search.base) == 0) {
+			    ldb_dn_compare_base(data->partitions[i]->ctrl->dn,
+						req->op.search.base) == 0) {
 				match = true;
 				stop = true; /* note that this relies on partition ordering */
 			}
-			if (match) {
-				ret = partition_prep_request(ac, data->partitions[i]);
-				if (ret != LDB_SUCCESS) {
-					return ret;
+		} else {
+			/* Domain scope: Find all partitions under the search
+			 * base.
+			 *
+			 * We generate referral candidates if we haven't
+			 * specified the domain scope control, haven't a base
+			 * search* scope and the DN we are looking for is a real
+			 * predecessor of certain partitions. When a new
+			 * referral candidate is nearer to the DN than an
+			 * existing one delete the latter (we want to have only
+			 * the closest ones). When we checked this for all
+			 * candidates we have the final referrals.
+			 *
+			 * We match if the DN we are looking for is a child of
+			 * a certain partition or the partition
+			 * DN itself - we don't need to go any further
+			 * up in the hierarchy!
+			 */
+			if ((!domain_scope) &&
+			    (req->op.search.scope != LDB_SCOPE_BASE) &&
+			    (ldb_dn_compare_base(req->op.search.base,
+						 data->partitions[i]->ctrl->dn) == 0) &&
+			    (ldb_dn_compare(req->op.search.base,
+					    data->partitions[i]->ctrl->dn) != 0)) {
+				char *ref = talloc_asprintf(ac,
+							    "ldap://%s/%s%s",
+							    lp_dnsdomain(lp_ctx),
+							    ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
+							    req->op.search.scope == LDB_SCOPE_ONELEVEL ? "??base" : "");
+
+				if (ref == NULL) {
+					ldb_oom(ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+
+				/* Initialise the referrals list */
+				if (ac->referrals == NULL) {
+					ac->referrals = (const char **) str_list_make_empty(ac);
+					if (ac->referrals == NULL) {
+						ldb_oom(ldb);
+						return LDB_ERR_OPERATIONS_ERROR;
+					}
+				}
+
+				/* Check if the new referral candidate is
+				 * closer to the base DN than already
+				 * saved ones and delete the latters */
+				j = 0;
+				while (ac->referrals[j] != NULL) {
+					if (strstr(ac->referrals[j],
+						   ldb_dn_get_linearized(data->partitions[i]->ctrl->dn)) != NULL) {
+						str_list_remove(ac->referrals,
+								ac->referrals[j]);
+					} else {
+						++j;
+					}
+				}
+
+				/* Add our new candidate */
+				ac->referrals = str_list_add(ac->referrals, ref);
+
+				talloc_free(ref);
+
+				if (ac->referrals == NULL) {
+					ldb_oom(ldb);
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
-			if (stop) break;
+			if (ldb_dn_compare_base(data->partitions[i]->ctrl->dn, req->op.search.base) == 0) {
+				match = true;
+				stop = true; /* note that this relies on partition ordering */
+			}
 		}
 
-		/* Perhaps we didn't match any partitions.  Try the main partition, only */
-		if (ac->num_requests == 0) {
-			talloc_free(ac);
-			return ldb_next_request(module, req);
+		if (match) {
+			ret = partition_prep_request(ac, data->partitions[i]);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 
-		/* fire the first one */
-		return partition_call_first(ac);
-	} else {
-		return partition_replicate(module, req, req->op.search.base);
+		if (stop) break;
 	}
+
+	/* Perhaps we didn't match any partitions. Try the main partition */
+	if (ac->num_requests == 0) {
+		talloc_free(ac);
+		return ldb_next_request(module, req);
+	}
+
+	/* fire the first one */
+	return partition_call_first(ac);
 }
 
 /* add */

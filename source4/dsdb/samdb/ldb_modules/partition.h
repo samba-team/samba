@@ -25,6 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "system/locale.h"
+#include "param/param.h"
 
 struct dsdb_partition {
 	struct ldb_module *module;
