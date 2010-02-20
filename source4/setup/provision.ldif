@@ -131,6 +131,26 @@ objectClass: dfsConfiguration
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: FALSE
 
+dn: CN=DFSR-GlobalSettings,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msDFSR-GlobalSettings
+msDFSR-Flags: 48
+
+dn: CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msDFSR-ReplicationGroup
+msDFSR-ReplicationGroupType: 1
+
+dn: CN=Content,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msDFSR-Content
+
+dn: CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msDFSR-Topology
+
+# Here are missing the DFSR objects since we don't support this technique yet
+
 # Domain updates
 
 dn: CN=DomainUpdates,CN=System,${DOMAINDN}
@@ -375,8 +395,6 @@ objectClass: applicationSettings
 objectClass: nTFRSSettings
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
-
-# Here are missing the FRS objects since we don't support this technique yet
 
 dn: CN=FileLinks,CN=System,${DOMAINDN}
 objectClass: top
