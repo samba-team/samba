@@ -3267,9 +3267,12 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 		req, struct cli_getattrE_state);
 	uint8_t wct;
 	uint16_t *vwv = NULL;
+	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 11, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, state, &inbuf, 11, &wct, &vwv,
+			      NULL, NULL);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -3281,7 +3284,6 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 	state->access_time = make_unix_date2(vwv+2, state->zone_offset);
 	state->write_time = make_unix_date2(vwv+4, state->zone_offset);
 
-	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
