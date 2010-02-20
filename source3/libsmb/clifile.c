@@ -2038,12 +2038,13 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	uint32_t num_bytes;
 	uint8_t *bytes;
+	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 3, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, &inbuf, 3, &wct, &vwv,
 			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
