@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    endpoint server for the netlogon pipe
@@ -6,17 +6,17 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2008
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
    Copyright (C) Matthias Dieter Wallnöfer            2009
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -39,7 +39,6 @@ struct netlogon_server_pipe_state {
 	struct netr_Credential server_challenge;
 };
 
-
 static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
@@ -54,13 +53,13 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 		talloc_free(pipe_state);
 		dce_call->context->private_data = NULL;
 	}
-	
+
 	pipe_state = talloc(dce_call->context, struct netlogon_server_pipe_state);
 	NT_STATUS_HAVE_NO_MEMORY(pipe_state);
 
 	pipe_state->client_challenge = *r->in.credentials;
 
-	generate_random_buffer(pipe_state->server_challenge.data, 
+	generate_random_buffer(pipe_state->server_challenge.data,
 			       sizeof(pipe_state->server_challenge.data));
 
 	*r->out.return_credentials = pipe_state->server_challenge;
@@ -83,7 +82,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
-	const char *attrs[] = {"unicodePwd", "userAccountControl", 
+	const char *attrs[] = {"unicodePwd", "userAccountControl",
 			       "objectSid", NULL};
 
 	const char *trust_dom_attrs[] = {"flatname", NULL};
@@ -128,7 +127,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, 
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 				system_session(dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -149,20 +148,20 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		/* pull the user attributes */
 		num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs,
 					   trust_dom_attrs,
-					   "(&(trustPartner=%s)(objectclass=trustedDomain))", 
+					   "(&(trustPartner=%s)(objectclass=trustedDomain))",
 					   encoded_account);
-		
+
 		if (num_records == 0) {
-			DEBUG(3,("Couldn't find trust [%s] in samdb.\n", 
+			DEBUG(3,("Couldn't find trust [%s] in samdb.\n",
 				 encoded_account));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		
+
 		if (num_records > 1) {
 			DEBUG(0,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		
+
 		flatname = ldb_msg_find_attr_as_string(msgs[0], "flatname", NULL);
 		if (!flatname) {
 			/* No flatname for this trust - we can't proceed */
@@ -173,18 +172,18 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		if (!account_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		
+
 	} else {
 		account_name = r->in.account_name;
 	}
-	
+
 	/* pull the user attributes */
 	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
-				   "(&(sAMAccountName=%s)(objectclass=user))", 
+				   "(&(sAMAccountName=%s)(objectclass=user))",
 				   ldb_binary_encode_string(mem_ctx, account_name));
 
 	if (num_records == 0) {
-		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
+		DEBUG(3,("Couldn't find user [%s] in samdb.\n",
 			 r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -194,7 +193,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	
 	user_account_control = ldb_msg_find_attr_as_uint(msgs[0], "userAccountControl", 0);
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
@@ -207,11 +205,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", user_account_control));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN || 
+	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN ||
 		   r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
 		if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
 			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", user_account_control));
-			
+
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else if (r->in.secure_channel_type == SEC_CHAN_BDC) {
@@ -220,12 +218,12 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
-		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n", 
+		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
 			  r->in.secure_channel_type));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0], 
+	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0],
 						"objectSid", 0);
 
 	mach_pwd = samdb_result_hash(mem_ctx, msgs[0], "unicodePwd");
@@ -233,17 +231,17 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	creds = netlogon_creds_server_init(mem_ctx, 	
+	creds = netlogon_creds_server_init(mem_ctx,
 					   r->in.account_name,
 					   r->in.computer_name,
 					   r->in.secure_channel_type,
-					   &pipe_state->client_challenge, 
-					   &pipe_state->server_challenge, 
+					   &pipe_state->client_challenge,
+					   &pipe_state->server_challenge,
 					   mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
 					   *r->in.negotiate_flags);
-	
+
 	if (!creds) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -260,13 +258,13 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	return nt_status;
 }
-						 
+
 static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerAuthenticate *r)
 {
 	struct netr_ServerAuthenticate3 a;
 	uint32_t rid;
-	/* TODO: 
+	/* TODO:
 	 * negotiate_flags is used as an [in] parameter
 	 * so it need to be initialised.
 	 *
@@ -304,7 +302,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 	r3.in.negotiate_flags = r->in.negotiate_flags;
 	r3.out.negotiate_flags = r->out.negotiate_flags;
 	r3.out.rid = &rid;
-	
+
 	return dcesrv_netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
@@ -319,18 +317,18 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 
 */
 static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
-						    TALLOC_CTX *mem_ctx, 
+						    TALLOC_CTX *mem_ctx,
 						    const char *computer_name,
 						    struct netr_Authenticator *received_authenticator,
 						    struct netr_Authenticator *return_authenticator,
-						    struct netlogon_creds_CredentialState **creds_out) 
+						    struct netlogon_creds_CredentialState **creds_out)
 {
 	NTSTATUS nt_status;
 	struct ldb_context *ldb;
 	bool schannel_global_required = false; /* Should be lp_schannel_server() == true */
 	bool schannel_in_use = dce_call->conn->auth_state.auth_info
 		&& dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL
-		&& (dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY 
+		&& (dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY
 		    || dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_PRIVACY);
 
 	ldb = schannel_db_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
@@ -347,7 +345,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	return nt_status;
 }
 
-/* 
+/*
   Change the machine account password for the currently connected
   client.  Supplies only the NT#.
 */
@@ -360,8 +358,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	NTSTATUS nt_status;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							mem_ctx, 
-							r->in.computer_name, 
+							mem_ctx,
+							r->in.computer_name,
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -374,7 +372,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	netlogon_creds_des_decrypt(creds, r->in.new_password);
 
 	/* Using the sid for the account as the key, set the password */
-	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx, 
+	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
 					   NULL, /* Don't have plaintext */
 					   NULL, r->in.new_password,
@@ -383,7 +381,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	return nt_status;
 }
 
-/* 
+/*
   Change the machine account password for the currently connected
   client.  Supplies new plaintext.
 */
@@ -398,8 +396,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	struct samr_CryptPassword password_buf;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							mem_ctx, 
-							r->in.computer_name, 
+							mem_ctx,
+							r->in.computer_name,
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -417,7 +415,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 		DEBUG(3,("samr: failed to decode password buffer\n"));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-		
+
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
@@ -429,8 +427,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 }
 
 
-/* 
-  netr_LogonUasLogon 
+/*
+  netr_LogonUasLogon
 */
 static WERROR dcesrv_netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct netr_LogonUasLogon *r)
@@ -439,8 +437,8 @@ static WERROR dcesrv_netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALL
 }
 
 
-/* 
-  netr_LogonUasLogoff 
+/*
+  netr_LogonUasLogoff
 */
 static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonUasLogoff *r)
@@ -449,7 +447,7 @@ static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TAL
 }
 
 
-/* 
+/*
   netr_LogonSamLogon_base
 
   This version of the function allows other wrappers to say 'do not check the credentials'
@@ -468,7 +466,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	struct netr_SamInfo2 *sam2;
 	struct netr_SamInfo3 *sam3;
 	struct netr_SamInfo6 *sam6;
-	
+
 	user_info = talloc(mem_ctx, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
@@ -482,10 +480,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, 
+			netlogon_creds_arcfour_crypt(creds,
 					    r->in.logon->password->lmpassword.hash,
 					    sizeof(r->in.logon->password->lmpassword.hash));
-			netlogon_creds_arcfour_crypt(creds, 
+			netlogon_creds_arcfour_crypt(creds,
 					    r->in.logon->password->ntpassword.hash,
 					    sizeof(r->in.logon->password->ntpassword.hash));
 		} else {
@@ -494,7 +492,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		}
 
 		/* TODO: we need to deny anonymous access here */
-		nt_status = auth_context_create(mem_ctx, 
+		nt_status = auth_context_create(mem_ctx,
 						dce_call->event_ctx, dce_call->msg_ctx,
 						dce_call->conn->dce_ctx->lp_ctx,
 						&auth_context);
@@ -504,7 +502,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		user_info->client.account_name = r->in.logon->password->identity_info.account_name.string;
 		user_info->client.domain_name = r->in.logon->password->identity_info.domain_name.string;
 		user_info->workstation_name = r->in.logon->password->identity_info.workstation.string;
-		
+
 		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
 		user_info->password_state = AUTH_PASSWORD_HASH;
 
@@ -521,7 +519,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonNetworkTransitiveInformation:
 
 		/* TODO: we need to deny anonymous access here */
-		nt_status = auth_context_create(mem_ctx, 
+		nt_status = auth_context_create(mem_ctx,
 						dce_call->event_ctx, dce_call->msg_ctx,
 						dce_call->conn->dce_ctx->lp_ctx,
 						&auth_context);
@@ -534,18 +532,18 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		user_info->client.account_name = r->in.logon->network->identity_info.account_name.string;
 		user_info->client.domain_name = r->in.logon->network->identity_info.domain_name.string;
 		user_info->workstation_name = r->in.logon->network->identity_info.workstation.string;
-		
+
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
 		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon->network->lm.data, r->in.logon->network->lm.length);
 		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon->network->nt.data, r->in.logon->network->nt.length);
-	
+
 		break;
 
-		
+
 	case NetlogonGenericInformation:
 	{
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, 
+			netlogon_creds_arcfour_crypt(creds,
 					    r->in.logon->generic->data, r->in.logon->generic->length);
 		} else {
 			/* Using DES to verify kerberos tickets makes no sense */
@@ -559,21 +557,21 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 			struct netr_GenericInfo2 *generic = talloc_zero(mem_ctx, struct netr_GenericInfo2);
 			NT_STATUS_HAVE_NO_MEMORY(generic);
 			*r->out.authoritative = 1;
-			
+
 			/* TODO: Describe and deal with these flags */
 			*r->out.flags = 0;
 
 			r->out.validation->generic = generic;
-	
+
 			kdc = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "kdc_server");
 			if ((kdc == NULL) || (kdc[0].id == 0)) {
 				return NT_STATUS_NO_LOGON_SERVERS;
 			}
-			
-			check.in.generic_request = 
+
+			check.in.generic_request =
 				data_blob_const(r->in.logon->generic->data,
 						r->in.logon->generic->length);
-			
+
 			status = irpc_call(dce_call->msg_ctx, kdc[0],
 					   &ndr_table_irpc, NDR_KDC_CHECK_GENERIC_KERBEROS,
 					   &check, mem_ctx);
@@ -591,7 +589,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -604,8 +602,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	    memcmp(sam->key.key, zeros, sizeof(sam->key.key)) != 0) {
 		/* This key is sent unencrypted without the ARCFOUR flag set */
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, 
-					    sam->key.key, 
+			netlogon_creds_arcfour_crypt(creds,
+					    sam->key.key,
 					    sizeof(sam->key.key));
 		}
 	}
@@ -615,11 +613,11 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	if ((r->in.validation_level != 6) &&
 	    memcmp(sam->LMSessKey.key, zeros, sizeof(sam->LMSessKey.key)) != 0) {
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, 
-					    sam->LMSessKey.key, 
+			netlogon_creds_arcfour_crypt(creds,
+					    sam->LMSessKey.key,
 					    sizeof(sam->LMSessKey.key));
 		} else {
-			netlogon_creds_des_encrypt_LMKey(creds, 
+			netlogon_creds_des_encrypt_LMKey(creds,
 						&sam->LMSessKey);
 		}
 	}
@@ -644,7 +642,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		NT_STATUS_HAVE_NO_MEMORY(sam6);
 		sam6->base = *sam;
 		sam6->forest.string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
-		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
+		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s",
 							 sam->account_name.string, sam6->forest.string);
 		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
 		r->out.validation->sam6 = sam6;
@@ -663,7 +661,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 }
 
 static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				     struct netr_LogonSamLogonEx *r) 
+				     struct netr_LogonSamLogonEx *r)
 {
 	NTSTATUS nt_status;
 	struct netlogon_creds_CredentialState *creds;
@@ -671,7 +669,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	
+
 	nt_status = schannel_fetch_session_key_ldb(ldb, mem_ctx, r->in.computer_name, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -684,7 +682,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 	return dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);
 }
 
-/* 
+/*
   netr_LogonSamLogonWithFlags
 
 */
@@ -701,8 +699,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							mem_ctx, 
-							r->in.computer_name, 
+							mem_ctx,
+							r->in.computer_name,
 							r->in.credential, return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -726,7 +724,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 	return nt_status;
 }
 
-/* 
+/*
   netr_LogonSamLogon
 */
 static NTSTATUS dcesrv_netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -758,8 +756,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TA
 }
 
 
-/* 
-  netr_LogonSamLogoff 
+/*
+  netr_LogonSamLogoff
 */
 static NTSTATUS dcesrv_netr_LogonSamLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonSamLogoff *r)
@@ -769,8 +767,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogoff(struct dcesrv_call_state *dce_call, T
 
 
 
-/* 
-  netr_DatabaseDeltas 
+/*
+  netr_DatabaseDeltas
 */
 static NTSTATUS dcesrv_netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseDeltas *r)
@@ -779,8 +777,8 @@ static NTSTATUS dcesrv_netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, T
 }
 
 
-/* 
-  netr_DatabaseSync2 
+/*
+  netr_DatabaseSync2
 */
 static NTSTATUS dcesrv_netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync2 *r)
@@ -790,8 +788,8 @@ static NTSTATUS dcesrv_netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TA
 }
 
 
-/* 
-  netr_DatabaseSync 
+/*
+  netr_DatabaseSync
 */
 static NTSTATUS dcesrv_netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync *r)
@@ -817,8 +815,8 @@ static NTSTATUS dcesrv_netr_DatabaseSync(struct dcesrv_call_state *dce_call, TAL
 }
 
 
-/* 
-  netr_AccountDeltas 
+/*
+  netr_AccountDeltas
 */
 static NTSTATUS dcesrv_netr_AccountDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_AccountDeltas *r)
@@ -828,8 +826,8 @@ static NTSTATUS dcesrv_netr_AccountDeltas(struct dcesrv_call_state *dce_call, TA
 }
 
 
-/* 
-  netr_AccountSync 
+/*
+  netr_AccountSync
 */
 static NTSTATUS dcesrv_netr_AccountSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_AccountSync *r)
@@ -839,8 +837,8 @@ static NTSTATUS dcesrv_netr_AccountSync(struct dcesrv_call_state *dce_call, TALL
 }
 
 
-/* 
-  netr_GetDcName 
+/*
+  netr_GetDcName
 */
 static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetDcName *r)
@@ -883,8 +881,8 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 }
 
 
-/* 
-  netr_LogonControl2Ex 
+/*
+  netr_LogonControl2Ex
 */
 static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl2Ex *r)
@@ -893,8 +891,8 @@ static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TA
 }
 
 
-/* 
-  netr_LogonControl 
+/*
+  netr_LogonControl
 */
 static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl *r)
@@ -922,8 +920,8 @@ static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLO
 }
 
 
-/* 
-  netr_LogonControl2 
+/*
+  netr_LogonControl2
 */
 static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl2 *r)
@@ -945,8 +943,8 @@ static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALL
 }
 
 
-/* 
-  netr_GetAnyDCName 
+/*
+  netr_GetAnyDCName
 */
 static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetAnyDCName *r)
@@ -966,8 +964,8 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 }
 
 
-/* 
-  netr_DatabaseRedo 
+/*
+  netr_DatabaseRedo
 */
 static NTSTATUS dcesrv_netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseRedo *r)
@@ -976,7 +974,7 @@ static NTSTATUS dcesrv_netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TAL
 }
 
 
-/* 
+/*
   netr_NetrEnumerateTurstedDomains
 */
 static WERROR dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -986,7 +984,7 @@ static WERROR dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state *
 }
 
 
-/* 
+/*
   netr_LogonGetCapabilities
 */
 static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -997,8 +995,8 @@ static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_c
 }
 
 
-/* 
-  netr_NETRLOGONSETSERVICEBITS 
+/*
+  netr_NETRLOGONSETSERVICEBITS
 */
 static WERROR dcesrv_netr_NETRLOGONSETSERVICEBITS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONSETSERVICEBITS *r)
@@ -1017,8 +1015,8 @@ static WERROR dcesrv_netr_LogonGetTrustRid(struct dcesrv_call_state *dce_call, T
 }
 
 
-/* 
-  netr_NETRLOGONCOMPUTESERVERDIGEST 
+/*
+  netr_NETRLOGONCOMPUTESERVERDIGEST
 */
 static WERROR dcesrv_netr_NETRLOGONCOMPUTESERVERDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
@@ -1027,8 +1025,8 @@ static WERROR dcesrv_netr_NETRLOGONCOMPUTESERVERDIGEST(struct dcesrv_call_state 
 }
 
 
-/* 
-  netr_NETRLOGONCOMPUTECLIENTDIGEST 
+/*
+  netr_NETRLOGONCOMPUTECLIENTDIGEST
 */
 static WERROR dcesrv_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
@@ -1038,7 +1036,7 @@ static WERROR dcesrv_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state 
 
 
 
-/* 
+/*
   netr_DsRGetSiteName
 */
 static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1064,9 +1062,9 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 		/* w2k8 only fills this on trusted domains */
 		info->trust_extension.info = talloc_zero(mem_ctx, struct netr_trust_extension);
 		info->trust_extension.length = 16;
-		info->trust_extension.info->flags = 
+		info->trust_extension.info->flags =
 			NETR_TRUST_FLAG_TREEROOT |
-			NETR_TRUST_FLAG_IN_FOREST | 
+			NETR_TRUST_FLAG_IN_FOREST |
 			NETR_TRUST_FLAG_PRIMARY |
 			NETR_TRUST_FLAG_NATIVE;
 
@@ -1084,14 +1082,14 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 		/* TODO: we need a common function for pulling the forest */
 		info->dns_forestname.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
 		if (!info->dns_forestname.string) {
-			return NT_STATUS_NO_SUCH_DOMAIN;		
+			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 		p = strchr(info->dns_forestname.string, '/');
 		if (p) {
 			*p = '\0';
 		}
 		info->dns_forestname.string = talloc_asprintf(mem_ctx, "%s.", info->dns_forestname.string);
-					
+
 	}
 
 	if (is_local) {
@@ -1112,7 +1110,7 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* 
+/*
   netr_LogonGetDomainInfo
   this is called as part of the ADS domain logon procedure.
 
@@ -1140,9 +1138,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	NTSTATUS status;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
-						     mem_ctx, 
-						     r->in.computer_name, 
-						     r->in.credential, 
+						     mem_ctx,
+						     r->in.computer_name,
+						     r->in.credential,
 						     r->out.return_authenticator,
 						     &creds);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1369,8 +1367,8 @@ static WERROR dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call, 
 }
 
 
-/* 
-  netr_NETRLOGONSENDTOSAM 
+/*
+  netr_NETRLOGONSENDTOSAM
 */
 static WERROR dcesrv_netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONSENDTOSAM *r)
@@ -1379,8 +1377,8 @@ static WERROR dcesrv_netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call,
 }
 
 
-/* 
-  netr_DsRAddressToSitenamesW 
+/*
+  netr_DsRAddressToSitenamesW
 */
 static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DsRAddressToSitenamesW *r)
@@ -1474,7 +1472,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	return WERR_OK;
 }
 
-/* 
+/*
   netr_DsRGetDCNameEx
 */
 static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1499,7 +1497,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TAL
 	return werr;
 }
 
-/* 
+/*
   netr_DsRGetDCName
 */
 static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1515,7 +1513,7 @@ static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLO
 	r2.in.mask = 0;
 	r2.in.domain_name = r->in.domain_name;
 	r2.in.domain_guid = r->in.domain_guid;
-	
+
 	r2.in.site_name = NULL; /* should fill in from site GUID */
 	r2.in.flags = r->in.flags;
 	r2.out.info = r->out.info;
@@ -1524,8 +1522,8 @@ static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLO
 
 	return werr;
 }
-/* 
-  netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN 
+/*
+  netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN
 */
 static WERROR dcesrv_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
@@ -1544,8 +1542,8 @@ static WERROR dcesrv_netr_NetrEnumerateTrustedDomainsEx(struct dcesrv_call_state
 }
 
 
-/* 
-  netr_DsRAddressToSitenamesExW 
+/*
+  netr_DsRAddressToSitenamesExW
 */
 static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 						   struct netr_DsRAddressToSitenamesExW *r)
@@ -1577,7 +1575,7 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 }
 
 
-/* 
+/*
   netr_DsrGetDcSiteCoverageW
 */
 static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1587,8 +1585,8 @@ static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_ca
 }
 
 
-/* 
-  netr_DsrEnumerateDomainTrusts 
+/*
+  netr_DsrEnumerateDomainTrusts
 */
 static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					      struct netr_DsrEnumerateDomainTrusts *r)
@@ -1627,8 +1625,8 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	trusts->array[0].netbios_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 	trusts->array[0].dns_name     = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 	trusts->array[0].trust_flags =
-		NETR_TRUST_FLAG_TREEROOT | 
-		NETR_TRUST_FLAG_IN_FOREST | 
+		NETR_TRUST_FLAG_TREEROOT |
+		NETR_TRUST_FLAG_IN_FOREST |
 		NETR_TRUST_FLAG_PRIMARY;
 	trusts->array[0].parent_index = 0;
 	trusts->array[0].trust_type = 2;
@@ -1660,8 +1658,8 @@ static NTSTATUS dcesrv_netr_ServerTrustPasswordsGet(struct dcesrv_call_state *dc
 }
 
 
-/* 
-  netr_DsRGetForestTrustInformation 
+/*
+  netr_DsRGetForestTrustInformation
 */
 static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DsRGetForestTrustInformation *r)
