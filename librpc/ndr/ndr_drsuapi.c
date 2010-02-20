@@ -66,22 +66,6 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 	}
 }
 
-#define _OID_PUSH_CHECK(call) do { \
-	bool _status; \
-	_status = call; \
-	if (_status != true) { \
-		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "OID Conversion Error: %s\n", __location__); \
-	} \
-} while (0)
-
-#define _OID_PULL_CHECK(call) do { \
-	bool _status; \
-	_status = call; \
-	if (_status != true) { \
-		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "OID Conversion Error: %s\n", __location__); \
-	} \
-} while (0)
-
 _PUBLIC_ void ndr_print_drsuapi_DsReplicaOID(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaOID *r)
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaOID");
