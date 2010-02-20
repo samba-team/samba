@@ -3431,9 +3431,12 @@ static void cli_getatr_done(struct tevent_req *subreq)
 		req, struct cli_getatr_state);
 	uint8_t wct;
 	uint16_t *vwv = NULL;
+	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 4, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, state, &inbuf, 4, &wct, &vwv, NULL,
+			      NULL);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -3443,7 +3446,6 @@ static void cli_getatr_done(struct tevent_req *subreq)
 	state->size = (SMB_OFF_T)IVAL(vwv+3,0);
 	state->write_time = make_unix_date3(vwv+1, state->zone_offset);
 
-	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
