@@ -216,14 +216,14 @@ def handle_security_desc(ischema, att, msgElt, hashallSD, old, new):
 		hashSD["oldSD"] = old[0][att]
 		hashSD["newSD"] = new[0][att]
 		hashallSD[str(old[0].dn)] = hashSD
-		return 0
+		return 1
 	if att == "nTSecurityDescriptor"  and msgElt.flags() == FLAG_MOD_REPLACE:
 		if ischema == 0:
 			hashSD = {}
 			hashSD["oldSD"] =  ndr_unpack(security.descriptor, str(old[0][att]))
 			hashSD["newSD"] =  ndr_unpack(security.descriptor, str(new[0][att]))
 			hashallSD[str(old[0].dn)] = hashSD
-		return 1
+		return 0
 	return 0
 
 # Handle special cases ... That's when we want to update a particular attribute
@@ -547,7 +547,7 @@ def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
 			if att == "name":
 				delta.remove(att)
 				continue
-			if handle_security_desc(ischema,att,msgElt,hashallSD,current,reference):
+			if handle_security_desc(ischema,att,msgElt,hashallSD,current,reference) == 0:
 				delta.remove(att)
 				continue
 			if (not hashOverwrittenAtt.has_key(att) or not (hashOverwrittenAtt.get(att)&2^msgElt.flags())):
