@@ -13,7 +13,7 @@ def configure(conf):
     conf.env.hlist = []
 
     # load our local waf extensions
-    conf.check_tool('autoconf', tooldir=conf.curdir)
+    conf.check_tool('wafsamba', tooldir=conf.curdir)
 
     conf.check_tool('compiler_cc')
     conf.DEFUN('_GNU_SOURCE', 1)
@@ -115,19 +115,14 @@ main() { foo("hello"); }
 def build(bld):
     bld.set_rpath()
 
-    # the libreplace shared library
-    bld(
-        features = 'cc cshlib',
-        source = 'replace.c',
-        target='replace',
-        includes = '. default')
+    REPLACE_SOURCE = 'replace.c snprintf.c'
 
-    # test program
-    bld(
-        features = 'cc cprogram',
-        source = '''test/testsuite.c test/main.c test/strptime.c
-        test/os2_delete.c test/getifaddrs.c''',
-        target = 'replace_testsuite',
-        uselib_local = 'replace',
-        includes = '. default /usr/include')
+    bld.SAMBA_LIBRARY('replace',
+                      REPLACE_SOURCE)
 
+    TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
+                      test/os2_delete.c test/getifaddrs.c'''
+
+    bld.SAMBA_BINARY('replace_testsuite',
+                     TEST_SOURCES,
+                     'replace')

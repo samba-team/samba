@@ -10,16 +10,10 @@ def configure(conf):
 def build(bld):
     bld.recurse('../replace')
 
-    bld(
-        features = 'cc cshlib',
-        source = 'talloc.c',
-        target='talloc',
-        includes = '. ../replace')
+    bld.SAMBA_LIBRARY('talloc',
+                      'talloc.c',
+                      'replace')
 
-    # test program
-    bld(
-        features = 'cc cprogram',
-        source = 'testsuite.c testsuite_main.c',
-        target = 'talloc_testsuite',
-        uselib_local = 'replace talloc',
-        includes = '. ../replace default /usr/include')
+    bld.SAMBA_BINARY('talloc_testsuite',
+                     'testsuite.c testsuite_main.c',
+                     'talloc')
