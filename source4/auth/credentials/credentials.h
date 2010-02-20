@@ -162,6 +162,11 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 			       struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct ccache_container **ccc);
+int cli_credentials_get_named_ccache(struct cli_credentials *cred, 
+				     struct tevent_context *event_ctx,
+				     struct loadparm_context *lp_ctx,
+				     char *ccache_name,
+				     struct ccache_container **ccc);
 int cli_credentials_get_keytab(struct cli_credentials *cred, 
 			       struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
@@ -266,7 +271,8 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *ldb,
 				     const char *base,
-				     const char *filter);
+				     const char *filter, 
+				     char **error_string);
  int cli_credentials_get_kvno(struct cli_credentials *cred);
 
 #endif /* __CREDENTIALS_H__ */

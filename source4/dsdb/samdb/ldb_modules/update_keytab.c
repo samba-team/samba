@@ -81,6 +81,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 	struct update_kt_private *data = talloc_get_type(ldb_module_get_private(module), struct update_kt_private);
 	struct dn_list *item;
 	char *filter;
+	char *errstring;
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
 	int ret;
@@ -124,7 +125,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 	}
 
 	cli_credentials_set_conf(item->creds, ldb_get_opaque(ldb, "loadparm"));
-	status = cli_credentials_set_secrets(item->creds, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"), ldb, NULL, filter);
+	status = cli_credentials_set_secrets(item->creds, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"), ldb, NULL, filter, &errstring);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {
 		if (do_delete) {

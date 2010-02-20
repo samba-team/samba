@@ -86,6 +86,7 @@ struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx,
 {
 	static struct cli_credentials *static_credentials;
 	struct cli_credentials *cred;
+	char *error_string;
 
 	if (static_credentials) {
 		return static_credentials;
@@ -103,7 +104,8 @@ struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx,
 	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
 
 	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, NULL,
-							 SECRETS_LDAP_FILTER))) {
+							 SECRETS_LDAP_FILTER, &error_string))) {
+		DEBUG(5, ("(normal if no LDAP backend) %s", error_string));
 		/* Perfectly OK - if not against an LDAP backend */
 		talloc_free(cred);
 		return NULL;

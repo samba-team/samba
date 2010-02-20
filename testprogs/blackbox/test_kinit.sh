@@ -26,6 +26,7 @@ net="$samba4bindir/net$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
 enableaccount="$samba4bindir/net enableaccount"
+machineaccountccache="$BUILDDIR/scripting/bin/machineaccountccache"
 
 . `dirname $0`/subunit.sh
 
@@ -129,5 +130,9 @@ export KRB5CCNAME
 
 testit "del user with kerberos ccache" $VALGRIND $net user delete nettestuser $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
-rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
+rm -f $KRB5CCNAME
+testit "kinit with machineaccountccache script" $machineaccountccache $CONFIGURATTION $KRB5CCNAME || failed=`expr $failed + 1`
+test_smbclient "Test machine account login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+
+rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
 exit $failed
