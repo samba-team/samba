@@ -851,8 +851,9 @@ static void cli_echo_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint32_t num_bytes;
 	uint8_t *bytes;
+	uint8_t *inbuf;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL,
+	status = cli_smb_recv(subreq, state, &inbuf, 0, NULL, NULL,
 			      &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
