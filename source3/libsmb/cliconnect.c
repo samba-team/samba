@@ -1751,20 +1751,23 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	struct cli_tcon_andx_state *state = tevent_req_data(
 		req, struct cli_tcon_andx_state);
 	struct cli_state *cli = state->cli;
-	char *inbuf = (char *)cli_smb_inbuf(subreq);
+	uint8_t *in;
+	char *inbuf;
 	uint8_t wct;
 	uint16_t *vwv;
 	uint32_t num_bytes;
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, &in, 0, &wct, &vwv,
 			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
+
+	inbuf = (char *)in;
 
 	clistr_pull(inbuf, cli->dev, bytes, sizeof(fstring), num_bytes,
 		    STR_TERMINATE|STR_ASCII);
