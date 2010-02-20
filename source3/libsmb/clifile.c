@@ -3927,9 +3927,12 @@ static void cli_dskattr_done(struct tevent_req *subreq)
 		req, struct cli_dskattr_state);
 	uint8_t wct;
 	uint16_t *vwv = NULL;
+	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 4, &wct, &vwv, NULL, NULL);
+	status = cli_smb_recv(subreq, state, &inbuf, 4, &wct, &vwv, NULL,
+			      NULL);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -3937,7 +3940,6 @@ static void cli_dskattr_done(struct tevent_req *subreq)
 	state->bsize = SVAL(vwv+1, 0)*SVAL(vwv+2,0);
 	state->total = SVAL(vwv+0, 0);
 	state->avail = SVAL(vwv+3, 0);
-	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
