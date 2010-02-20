@@ -1106,6 +1106,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	uint32_t num_bytes;
 	uint8_t *bytes;
+	uint8_t *inbuf;
 	uint8_t num_setup	= 0;
 	uint16_t *setup		= NULL;
 	uint32_t total_param	= 0;
@@ -1117,8 +1118,12 @@ static void cli_trans_done(struct tevent_req *subreq)
 	uint8_t *param		= NULL;
 	uint8_t *data		= NULL;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, &inbuf, 0, &wct, &vwv,
 			      &num_bytes, &bytes);
+	/*
+	 * Do not TALLOC_FREE(subreq) here, we might receive more than
+	 * one response for the same mid.
+	 */
 
 	/*
 	 * We can receive something like STATUS_MORE_ENTRIES, so don't use
@@ -1133,7 +1138,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 		    && (state->data_sent == state->num_data));
 
 	status = cli_pull_trans(
-		cli_smb_inbuf(subreq), wct, vwv, num_bytes, bytes,
+		inbuf, wct, vwv, num_bytes, bytes,
 		state->cmd, !sent_all, &num_setup, &setup,
 		&total_param, &num_param, &param_disp, &param,
 		&total_data, &num_data, &data_disp, &data);
@@ -1191,6 +1196,8 @@ static void cli_trans_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 	}
+
+	TALLOC_FREE(inbuf);
 
 	if (!cli_smb_req_set_pending(subreq)) {
 		status = NT_STATUS_NO_MEMORY;
