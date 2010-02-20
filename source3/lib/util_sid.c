@@ -225,27 +225,33 @@ bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 	uint32 conv;
 
 	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
-		DEBUG(3,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
-		return False;
+		goto format_error;
 	}
 
 	ZERO_STRUCTP(sidout);
 
 	/* Get the revision number. */
 	p = sidstr + 2;
+
+	if (!isdigit(*p)) {
+		goto format_error;
+	}
+
 	conv = (uint32) strtoul(p, &q, 10);
 	if (!q || (*q != '-')) {
-		DEBUG(3,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-		return False;
+		goto format_error;
 	}
 	sidout->sid_rev_num = (uint8) conv;
 	q++;
 
+	if (!isdigit(*q)) {
+		goto format_error;
+	}
+
 	/* get identauth */
 	conv = (uint32) strtoul(q, &q, 10);
 	if (!q || (*q != '-')) {
-		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-		return False;
+		goto format_error;
 	}
 	/* identauth in decimal should be <  2^32 */
 	/* NOTE - the conv value is in big-endian format. */
@@ -259,16 +265,37 @@ bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 	q++;
 	sidout->num_auths = 0;
 
-	for(conv = (uint32) strtoul(q, &q, 10);
-	    q && (*q =='-' || *q =='\0') && (sidout->num_auths < MAXSUBAUTHS);
-	    conv = (uint32) strtoul(q, &q, 10)) {
-		sid_append_rid(sidout, conv);
-		if (*q == '\0')
-			break;
-		q++;
-	}
+	while (true) {
+		char *end;
 
-	return True;
+		if (!isdigit(*q)) {
+			goto format_error;
+		}
+
+		conv = strtoul(q, &end, 10);
+		if (end == q) {
+			goto format_error;
+		}
+
+		if (!sid_append_rid(sidout, conv)) {
+			DEBUG(3, ("Too many sid auths in %s\n", sidstr));
+			return false;
+		}
+
+		q = end;
+		if (*q == '\0') {
+			break;
+		}
+		if (*q != '-') {
+			goto format_error;
+		}
+		q += 1;
+	}
+	return true;
+
+format_error:
+	DEBUG(3, ("string_to_sid: SID %s is not in a valid format\n", sidstr));
+	return false;
 }
 
 /*****************************************************************
