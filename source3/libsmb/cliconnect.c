@@ -2033,11 +2033,12 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	NTSTATUS status;
 	uint16_t protnum;
+	uint8_t *inbuf;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 1, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
 			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
