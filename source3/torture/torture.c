@@ -6757,22 +6757,34 @@ static bool run_local_talloc_dict(int dummy)
 	return true;
 }
 
-static bool run_local_dom_sid_parse(int dummy) {
+static bool run_local_string_to_sid(int dummy) {
 	struct dom_sid sid;
 
-	if (dom_sid_parse("S--1-5-32-545", &sid)) {
+	if (string_to_sid(&sid, "S--1-5-32-545")) {
 		printf("allowing S--1-5-32-545\n");
 		return false;
 	}
-	if (dom_sid_parse("S-1-5-32-+545", &sid)) {
+	if (string_to_sid(&sid, "S-1-5-32-+545")) {
 		printf("allowing S-1-5-32-+545\n");
 		return false;
 	}
-	if (dom_sid_parse("S-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5-6-7-8-9-0", &sid)) {
+	if (string_to_sid(&sid, "S-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5-6-7-8-9-0")) {
 		printf("allowing S-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5-6-7-8-9-0\n");
 		return false;
 	}
-
+	if (string_to_sid(&sid, "S-1-5-32-545-abc")) {
+		printf("allowing S-1-5-32-545-abc\n");
+		return false;
+	}
+	if (!string_to_sid(&sid, "S-1-5-32-545")) {
+		printf("could not parse S-1-5-32-545\n");
+		return false;
+	}
+	if (!sid_equal(&sid, &global_sid_Builtin_Users)) {
+		printf("mis-parsed S-1-5-32-545 as %s\n",
+		       sid_string_tos(&sid));
+		return false;
+	}
 	return true;
 }
 
@@ -7464,7 +7476,7 @@ static struct {
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
 	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
-	{ "LOCAL-dom_sid_parse", run_local_dom_sid_parse, 0},
+	{ "LOCAL-string_to_sid", run_local_string_to_sid, 0},
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
 	{NULL, NULL, 0}};
 
