@@ -264,20 +264,21 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 		req, struct cli_session_setup_guest_state);
 	struct cli_state *cli = state->cli;
 	uint32_t num_bytes;
+	uint8_t *in;
 	char *inbuf;
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL,
+	status = cli_smb_recv(subreq, state, &in, 0, NULL, NULL,
 			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	inbuf = (char *)cli_smb_inbuf(subreq);
+	inbuf = (char *)in;
 	p = bytes;
 
 	cli->vuid = SVAL(inbuf, smb_uid);
@@ -292,8 +293,6 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
 	}
-
-	TALLOC_FREE(subreq);
 
 	status = cli_set_username(cli, "");
 	if (!NT_STATUS_IS_OK(status)) {
