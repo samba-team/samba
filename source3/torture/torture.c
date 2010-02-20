@@ -6761,12 +6761,15 @@ static bool run_local_dom_sid_parse(int dummy) {
 	struct dom_sid sid;
 
 	if (dom_sid_parse("S--1-5-32-545", &sid)) {
+		printf("allowing S--1-5-32-545\n");
 		return false;
 	}
 	if (dom_sid_parse("S-1-5-32-+545", &sid)) {
+		printf("allowing S-1-5-32-+545\n");
 		return false;
 	}
 	if (dom_sid_parse("S-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5-6-7-8-9-0", &sid)) {
+		printf("allowing S-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5-6-7-8-9-0\n");
 		return false;
 	}
 
