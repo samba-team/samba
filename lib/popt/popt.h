@@ -458,7 +458,7 @@ void poptSetExecPath(poptContext con, const char * path, int allowAbsolute)
 /** \ingroup popt
  * Print detailed description of options.
  * @param con		context
- * @param fp		ouput file handle
+ * @param fp		output file handle
  * @param flags		(unused)
  */
 void poptPrintHelp(poptContext con, FILE * fp, /*@unused@*/ int flags)
@@ -468,7 +468,7 @@ void poptPrintHelp(poptContext con, FILE * fp, /*@unused@*/ int flags)
 /** \ingroup popt
  * Print terse description of options.
  * @param con		context
- * @param fp		ouput file handle
+ * @param fp		output file handle
  * @param flags		(unused)
  */
 void poptPrintUsage(poptContext con, FILE * fp, /*@unused@*/ int flags)
