@@ -26,7 +26,6 @@ import os
 import sys
 import string
 import re
-# Find right directory when running from source tree
 
 import samba
 from samba import Ldb, DS_DOMAIN_FUNCTION_2000
@@ -37,8 +36,13 @@ from samba.provisionexceptions import ProvisioningError
 from samba.dcerpc import misc, security
 from samba.ndr import ndr_pack, ndr_unpack
 
-# Get Paths for important objects (ldb, keytabs ...)
 def get_paths(param,targetdir=None,smbconf=None):
+	"""Get paths to important provision objects (smb.conf, ldb files, ...)
+
+	:param param: Param object
+	:param targetdir: Directory where the provision is (or will be) stored
+	:param smbconf: Path to the smb.conf file
+	:return: A list with the path of important provision objects"""
 	if targetdir is not None:
 		if (not os.path.exists(os.path.join(targetdir, "etc"))):
 			os.makedirs(os.path.join(targetdir, "etc"))
@@ -55,10 +59,16 @@ def get_paths(param,targetdir=None,smbconf=None):
 	return paths
 
 
-# This function guesses (fetches) informations needed to make a fresh provision
-# from the current provision
-# It includes: realm, workgroup, partitions, netbiosname, domain guid, ...
 def find_provision_key_parameters(param,credentials,session_info,paths,smbconf):
+	"""Get key provision parameters (realm, domain, ...) from a given provision
+
+	:param param: Param object
+	:param credentials: Credentials for the authentification
+	:param session_info: Session object
+	:param paths: A list of path to provision object
+	:param smbconf: Path to the smb.conf file
+	:return: A list of key provision parameters"""
+
 	lp = param.LoadParm()
 	lp.load(paths.smbconf)
 	names = ProvisionNames()
@@ -145,6 +155,15 @@ def find_provision_key_parameters(param,credentials,session_info,paths,smbconf):
 # This provision will be the reference for knowing what has changed in the
 # since the latest upgrade in the current provision
 def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
+	"""Create a new provision
+
+	:param names: List of provision parameters
+	:param setup_dis: Directory where the setup files are stored
+	:param creds: Credentials for the authentification
+	:param session: Session object
+	:param smbconf: Path to the smb.conf file
+	:param provdir: Directory where the provision will be stored
+	:param messagefunc: A function for displaying the message of the provision"""
 	if os.path.isdir(provdir):
 		rmall(provdir)
 	logstd=os.path.join(provdir,"log.std")
@@ -176,11 +195,13 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
 		dom_for_fun_level=names.domainlevel,
 		ldap_dryrun_mode=None,useeadb=True)
 
-# This function sorts two DNs in the lexicographical order and put higher level
-# DN before.
-# So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller
-# (-1) as it has less level
 def dn_sort(x,y):
+	"""Sorts two DNs in the lexicographical order it and put higher level DN before.
+
+	So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller
+	:param x: First object to compare
+	:param y: Second object to compare
+	"""
 	p = re.compile(r'(?<!\\),')
 	tab1 = p.split(str(x))
 	tab2 = p.split(str(y))
@@ -210,6 +231,9 @@ def dn_sort(x,y):
 
 
 def rmall(topdir):
+	"""Remove a directory its contents and all its subdirectory
+
+	:param topdir: Directory to remove"""
 	for root, dirs, files in os.walk(topdir, topdown=False):
 		for name in files:
 			os.remove(os.path.join(root, name))
