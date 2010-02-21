@@ -1585,54 +1585,205 @@ static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_ca
 }
 
 
+#define GET_CHECK_STR(dest, mem, msg, attr) \
+do {\
+	const char *s; \
+	s = samdb_result_string(msg, attr, NULL); \
+	if (!s) { \
+		DEBUG(0, ("DB Error, TustedDomain entry (%s) " \
+			  "without flatname\n", \
+			  ldb_dn_get_linearized(msg->dn))); \
+		continue; \
+	} \
+	dest = talloc_strdup(mem, s); \
+	W_ERROR_HAVE_NO_MEMORY(dest); \
+} while(0)
+
+
+static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
+					 struct ldb_context *sam_ctx,
+					 struct netr_DomainTrustList *trusts,
+					 uint32_t trust_flags)
+{
+	struct ldb_dn *system_dn;
+	struct ldb_message **dom_res = NULL;
+	const char *trust_attrs[] = { "flatname", "trustPartner",
+				      "securityIdentifier", "trustDirection",
+				      "trustType", "trustAttributes", NULL };
+	int i, n;
+	int ret;
+
+	if (!(trust_flags & (NETR_TRUST_FLAG_INBOUND |
+			     NETR_TRUST_FLAG_OUTBOUND))) {
+		return WERR_INVALID_FLAGS;
+	}
+
+	system_dn = samdb_search_dn(sam_ctx, mem_ctx,
+				    ldb_get_default_basedn(sam_ctx),
+				    "(&(objectClass=container)(cn=System))");
+	if (!system_dn) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ret = gendb_search(sam_ctx, mem_ctx, system_dn,
+			   &dom_res, trust_attrs,
+			   "(objectclass=trustedDomain)");
+
+	for (i = 0; i < ret; i++) {
+		unsigned int trust_dir;
+		uint32_t flags = 0;
+
+		trust_dir = samdb_result_uint(dom_res[i],
+					      "trustDirection", 0);
+
+		if (trust_dir & LSA_TRUST_DIRECTION_INBOUND) {
+			flags |= NETR_TRUST_FLAG_INBOUND;
+		}
+		if (trust_dir & LSA_TRUST_DIRECTION_OUTBOUND) {
+			flags |= NETR_TRUST_FLAG_OUTBOUND;
+		}
+
+		if (!(flags & trust_flags)) {
+			/* this trust direction was not requested */
+			continue;
+		}
+
+		n = trusts->count;
+		trusts->array = talloc_realloc(trusts, trusts->array,
+					       struct netr_DomainTrust,
+					       n + 1);
+		W_ERROR_HAVE_NO_MEMORY(trusts->array);
+
+		GET_CHECK_STR(trusts->array[n].netbios_name, trusts,
+			      dom_res[i], "flatname");
+		GET_CHECK_STR(trusts->array[n].dns_name, trusts,
+			      dom_res[i], "trustPartner");
+
+		trusts->array[n].trust_flags = flags;
+		if ((trust_flags & NETR_TRUST_FLAG_IN_FOREST) &&
+		    !(flags & NETR_TRUST_FLAG_TREEROOT)) {
+			/* TODO: find if we have parent in the list */
+			trusts->array[n].parent_index = 0;
+		}
+
+		trusts->array[n].trust_type =
+				samdb_result_uint(dom_res[i],
+						  "trustType", 0);
+		trusts->array[n].trust_attributes =
+				samdb_result_uint(dom_res[i],
+						  "trustAttributes", 0);
+
+		if ((trusts->array[n].trust_type == NETR_TRUST_TYPE_MIT) ||
+		    (trusts->array[n].trust_type == NETR_TRUST_TYPE_DCE)) {
+			struct dom_sid zero_sid;
+			ZERO_STRUCT(zero_sid);
+			trusts->array[n].sid =
+				dom_sid_dup(trusts, &zero_sid);
+		} else {
+			trusts->array[n].sid =
+				samdb_result_dom_sid(trusts, dom_res[i],
+						     "securityIdentifier");
+		}
+		trusts->array[n].guid = GUID_zero();
+
+		trusts->count = n + 1;
+	}
+
+	talloc_free(dom_res);
+	return WERR_OK;
+}
+
 /*
   netr_DsrEnumerateDomainTrusts
 */
-static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					      struct netr_DsrEnumerateDomainTrusts *r)
+static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call,
+						   TALLOC_CTX *mem_ctx,
+						   struct netr_DsrEnumerateDomainTrusts *r)
 {
 	struct netr_DomainTrustList *trusts;
 	struct ldb_context *sam_ctx;
 	int ret;
 	struct ldb_message **dom_res;
 	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const char *dnsdomain = lp_dnsdomain(lp_ctx);
+	char *p;
+	WERROR werr;
+
+	if (r->in.trust_flags & 0xFFFFFE00) {
+		return WERR_INVALID_FLAGS;
+	}
+
+	/* TODO: turn to hard check once we are sure this is 100% correct */
+	p = strchr(r->in.server_name, '.');
+	if (!p) {
+		DEBUG(3, ("Invalid domain! Expected name in domain [%s]. "
+			  "But received [%s]!\n",
+			  dnsdomain, r->in.server_name));
+	}
+	p++;
+	if (strcasecmp(p, dnsdomain)) {
+		DEBUG(3, ("Invalid domain! Expected name in domain [%s]. "
+			  "But received [%s]!\n",
+			  dnsdomain, r->in.server_name));
+	}
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
+	trusts = talloc_zero(mem_ctx, struct netr_DomainTrustList);
+	W_ERROR_HAVE_NO_MEMORY(trusts);
+
+	trusts->count = 0;
+	r->out.trusts = trusts;
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL,
-			      &dom_res, dom_attrs);
-	if (ret != 1) {
-		return WERR_GENERAL_FAILURE;
+	if ((r->in.trust_flags & NETR_TRUST_FLAG_INBOUND) ||
+	    (r->in.trust_flags & NETR_TRUST_FLAG_OUTBOUND)) {
+
+		werr = fill_trusted_domains_array(mem_ctx, sam_ctx,
+						  trusts, r->in.trust_flags);
+		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
-	trusts = talloc(mem_ctx, struct netr_DomainTrustList);
-	W_ERROR_HAVE_NO_MEMORY(trusts);
+	/* NOTE: we currently are always the root of the forest */
+	if (r->in.trust_flags & NETR_TRUST_FLAG_IN_FOREST) {
+		int n = trusts->count;
 
-	trusts->array = talloc_array(trusts, struct netr_DomainTrust, ret);
-	W_ERROR_HAVE_NO_MEMORY(trusts->array);
+		ret = gendb_search_dn(sam_ctx, mem_ctx, NULL,
+				      &dom_res, dom_attrs);
+		if (ret != 1) {
+			return WERR_GENERAL_FAILURE;
+		}
 
-	trusts->count = 1; /* ?? */
+		trusts->count = n + 1;
+		trusts->array = talloc_realloc(trusts, trusts->array,
+					       struct netr_DomainTrust,
+					       trusts->count);
+		W_ERROR_HAVE_NO_MEMORY(trusts->array);
 
-	r->out.trusts = trusts;
-
-	/* TODO: add filtering by trust_flags, and correct trust_type
-	   and attributes */
-	trusts->array[0].netbios_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
-	trusts->array[0].dns_name     = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
-	trusts->array[0].trust_flags =
-		NETR_TRUST_FLAG_TREEROOT |
-		NETR_TRUST_FLAG_IN_FOREST |
-		NETR_TRUST_FLAG_PRIMARY;
-	trusts->array[0].parent_index = 0;
-	trusts->array[0].trust_type = 2;
-	trusts->array[0].trust_attributes = 0;
-	trusts->array[0].sid  = samdb_result_dom_sid(mem_ctx, dom_res[0], "objectSid");
-	trusts->array[0].guid = samdb_result_guid(dom_res[0], "objectGUID");
+		trusts->array[n].netbios_name = lp_workgroup(lp_ctx);
+		trusts->array[n].dns_name = lp_dnsdomain(lp_ctx);
+		trusts->array[n].trust_flags =
+			NETR_TRUST_FLAG_NATIVE |
+			NETR_TRUST_FLAG_TREEROOT |
+			NETR_TRUST_FLAG_IN_FOREST |
+			NETR_TRUST_FLAG_PRIMARY;
+		/* we are always the root domain for now */
+		trusts->array[n].parent_index = 0;
+		trusts->array[n].trust_type = NETR_TRUST_TYPE_UPLEVEL;
+		trusts->array[n].trust_attributes = 0;
+		trusts->array[n].sid = samdb_result_dom_sid(mem_ctx,
+							    dom_res[0],
+							    "objectSid");
+		trusts->array[n].guid = samdb_result_guid(dom_res[0],
+							  "objectGUID");
+		talloc_free(dom_res);
+	}
 
 	return WERR_OK;
 }
