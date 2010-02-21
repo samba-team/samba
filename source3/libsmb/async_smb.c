@@ -476,7 +476,8 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 	if (state->mid != 0) {
 		SSVAL(iov[0].iov_base, smb_mid, state->mid);
 	} else {
-		SSVAL(iov[0].iov_base, smb_mid, cli_alloc_mid(state->cli));
+		uint16_t mid = cli_alloc_mid(state->cli);
+		SSVAL(iov[0].iov_base, smb_mid, mid);
 	}
 
 	smb_setlen((char *)iov[0].iov_base, iov_len(iov, iov_count) - 4);
