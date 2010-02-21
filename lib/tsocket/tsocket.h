@@ -41,8 +41,8 @@ struct iovec;
 /**
  * @defgroup tsocket The tsocket API
  *
- * The tsocket abstraction is splitted into two different kinds of
- * communitation interfaces.
+ * The tsocket abstraction is split into two different kinds of
+ * communication interfaces.
  *
  * There's the "tstream_context" interface with abstracts the communication
  * through a bidirectional byte stream between two endpoints.
@@ -60,7 +60,7 @@ struct iovec;
  * @section vsock Virtual Sockets
  *
  * The abstracted layout of tdgram_context and tstream_context allow
- * implementations arround virtual sockets for encrypted tunnels (like TLS,
+ * implementations around virtual sockets for encrypted tunnels (like TLS,
  * SASL or GSSAPI) or named pipes over smb.
  *
  * @section npa Named Pipe Auth (NPA) Sockets
@@ -184,7 +184,7 @@ struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tdgram_recvfrom_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
@@ -253,7 +253,7 @@ struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tdgram_sendto_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @return              The length of the datagram (0 is never returned!), -1 on
  *                      error with perrno set to the actual errno.
@@ -298,7 +298,7 @@ struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tdgram_disconnect_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @return              The length of the datagram (0 is never returned!), -1 on
  *                      error with perrno set to the actual errno.
@@ -379,7 +379,7 @@ struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tstream_readv_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @return              The length of the stream (0 is never returned!), -1 on
  *                      error with perrno set to the actual errno.
@@ -423,7 +423,7 @@ struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tstream_writev_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @return              The length of the stream (0 is never returned!), -1 on
  *                      error with perrno set to the actual errno.
@@ -463,7 +463,7 @@ struct tevent_req *tstream_disconnect_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tstream_disconnect_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @return              The length of the stream (0 is never returned!), -1 on
  *                      error with perrno set to the actual errno.
@@ -691,7 +691,7 @@ struct tevent_req *tstream_inet_tcp_connect_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tstream_inet_tcp_connect_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
@@ -750,7 +750,7 @@ struct tevent_req * tstream_unix_connect_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  req      The tevent request from tstream_inet_tcp_connect_send().
  *
- * @param[out] perrno   The error number, set if an error occured.
+ * @param[out] perrno   The error number, set if an error occurred.
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
@@ -921,7 +921,7 @@ int _tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
  * delivered to the underlying system socket.
  *
  * The caller needs to make sure that all non-scalar input parameters hang
- * arround for the whole lifetime of the request.
+ * around for the whole lifetime of the request.
  *
  * @param[in]  mem_ctx  The memory context for the result.
  *
@@ -981,7 +981,7 @@ int tstream_readv_pdu_recv(struct tevent_req *req, int *perrno);
  * callback is triggered when a full PDU has been read from the socket.
  *
  * The caller needs to make sure that all non-scalar input parameters hang
- * arround for the whole lifetime of the request.
+ * around for the whole lifetime of the request.
  *
  * @param[in]  mem_ctx  The memory context for the result
  *
@@ -1026,7 +1026,7 @@ int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
  * vectror has been delivered to the underlying system socket.
  *
  * The caller needs to make sure that all non-scalar input parameters hang
- * arround for the whole lifetime of the request.
+ * around for the whole lifetime of the request.
  *
  * @param[in]  mem_ctx  The memory context for the result.
  *
