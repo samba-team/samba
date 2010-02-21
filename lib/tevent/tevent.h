@@ -183,7 +183,7 @@ enum tevent_req_state {
 	 */
 	TEVENT_REQ_DONE,
 	/**
-	 * A user error has occured
+	 * A user error has occurred
 	 */
 	TEVENT_REQ_USER_ERROR,
 	/**

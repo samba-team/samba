@@ -31,8 +31,8 @@
 /*
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
- NOTE: this code compiles fine, but is completly *UNTESTED*
-       and is only commited as example
+ NOTE: this code compiles fine, but is completely *UNTESTED*
+       and is only committed as an example
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	 
 */

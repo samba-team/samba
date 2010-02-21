@@ -417,7 +417,7 @@ void tevent_req_set_cancel_fn(struct tevent_req *req, tevent_req_cancel_fn fn)
 /**
  * @brief This function tries to cancel the given request
  * @param[in] req	The given request
- * @param[in] location	Automaticly filled with the __location__ macro
+ * @param[in] location	Automatically filled with the __location__ macro
  * 			via the tevent_req_cancel() macro. This is for debugging
  * 			only!
  * @retval		This function returns true is the request is cancelable.
