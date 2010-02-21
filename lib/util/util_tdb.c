@@ -133,7 +133,7 @@ int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr)
 }
 
 /****************************************************************************
- Store a int32_t value by an arbitary blob key, return 0 on success, -1 on failure.
+ Store a int32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -190,7 +190,7 @@ bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *val
 }
 
 /****************************************************************************
- Store a uint32_t value by an arbitary blob key, return 0 on success, -1 on failure.
+ Store a uint32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 

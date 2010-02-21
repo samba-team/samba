@@ -26,7 +26,7 @@
 
 struct test_list_element {
 	const char *list_as_string;
-	const char *seperators;
+	const char *separators;
 	const char *list[5];
 };
 
@@ -46,7 +46,7 @@ const struct test_list_element test_lists_strings[] = {
 	{
 		.list_as_string = "foo bar",
 		.list = { "foo bar", NULL },
-		.seperators = ";"
+		.separators = ";"
 	},
 	{
 		.list_as_string = "\"foo bar\"",
@@ -59,7 +59,7 @@ const struct test_list_element test_lists_strings[] = {
 	{
 		.list_as_string = "\"foo bar\",comma;semicolon",
 		.list = { "\"foo bar\",comma", "semicolon", NULL },
-		.seperators = ";"
+		.separators = ";"
 	}
 };
 
@@ -79,7 +79,7 @@ const struct test_list_element test_lists_shell_strings[] = {
 	{
 		.list_as_string = "foo bar",
 		.list = { "foo bar", NULL },
-		.seperators = ";"
+		.separators = ";"
 	},
 	{
 		.list_as_string = "\"foo bar\"",
@@ -107,11 +107,11 @@ static bool test_lists_shell(struct torture_context *tctx, const void *data)
 	bool match = true;
 	TALLOC_CTX *mem_ctx = tctx;
 
-	ret1 = str_list_make_shell(mem_ctx, element->list_as_string, element->seperators);
+	ret1 = str_list_make_shell(mem_ctx, element->list_as_string, element->separators);
 	
 	torture_assert(tctx, ret1, "str_list_make_shell() must not return NULL");
-	tmp = str_list_join_shell(mem_ctx, (const char **) ret1, element->seperators ? *element->seperators : ' ');
-	ret2 = str_list_make_shell(mem_ctx, tmp, element->seperators);
+	tmp = str_list_join_shell(mem_ctx, (const char **) ret1, element->separators ? *element->separators : ' ');
+	ret2 = str_list_make_shell(mem_ctx, tmp, element->separators);
 
 	if ((ret1 == NULL || ret2 == NULL) && ret2 != ret1) {
 		match = false;
@@ -144,7 +144,7 @@ static bool test_list_make(struct torture_context *tctx, const void *data)
 	const struct test_list_element *element = data;
 
 	char **result;
-	result = str_list_make(tctx, element->list_as_string, element->seperators);
+	result = str_list_make(tctx, element->list_as_string, element->separators);
 	torture_assert(tctx, result, "str_list_make() must not return NULL");
 	torture_assert(tctx, str_list_equal((const char * const *) result,
 					    element->list),

@@ -450,7 +450,7 @@ _PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string,
 
 /**
  * build a null terminated list of strings from an argv-like input string 
- * Entries are seperated by spaces and can be enclosed by quotes. 
+ * Entries are separated by spaces and can be enclosed by quotes.
  * Does NOT support escaping
  */
 _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
@@ -458,10 +458,10 @@ _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, con
 /**
  * join a list back to one string 
  */
-_PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator);
+_PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char separator);
 
 /** join a list back to one (shell-like) string; entries 
- * seperated by spaces, using quotes where necessary */
+ * separated by spaces, using quotes where necessary */
 _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep);
 
 /**
@@ -706,7 +706,7 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf,int len);
  * Write dump of binary data to the log file.
  *
  * The data is only written if the log level is at least level.
- * 16 zero bytes in a row are ommited
+ * 16 zero bytes in a row are omitted
  */
 _PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len);
 

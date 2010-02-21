@@ -121,7 +121,7 @@ _PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const cha
 
 /**
  * build a null terminated list of strings from an argv-like input string 
- * Entries are seperated by spaces and can be enclosed by quotes. 
+ * Entries are separated by spaces and can be enclosed by quotes.
  * Does NOT support escaping
  */
 _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
@@ -183,7 +183,7 @@ _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, con
 /**
  * join a list back to one string 
  */
-_PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
+_PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char separator)
 {
 	char *ret = NULL;
 	int i;
@@ -194,14 +194,14 @@ _PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char sepera
 	ret = talloc_strdup(mem_ctx, list[0]);
 
 	for (i = 1; list[i]; i++) {
-		ret = talloc_asprintf_append_buffer(ret, "%c%s", seperator, list[i]);
+		ret = talloc_asprintf_append_buffer(ret, "%c%s", separator, list[i]);
 	}
 
 	return ret;
 }
 
 /** join a list back to one (shell-like) string; entries 
- * seperated by spaces, using quotes where necessary */
+ * separated by spaces, using quotes where necessary */
 _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 {
 	char *ret = NULL;

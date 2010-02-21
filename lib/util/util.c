@@ -351,7 +351,7 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
  * Write dump of binary data to the log file.
  *
  * The data is only written if the log level is at least level.
- * 16 zero bytes in a row are ommited
+ * 16 zero bytes in a row are omitted
  */
 _PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len)
 {
