@@ -207,7 +207,7 @@ struct nwrap_ops {
 	void		(*nw_endgrent)(struct nwrap_backend *b);
 };
 
-/* protoypes for files backend */
+/* prototypes for files backend */
 
 
 static struct passwd *nwrap_files_getpwnam(struct nwrap_backend *b,
@@ -245,7 +245,7 @@ static int nwrap_files_getgrent_r(struct nwrap_backend *b,
 				  size_t buflen, struct group **grdstp);
 static void nwrap_files_endgrent(struct nwrap_backend *b);
 
-/* protoypes for module backend */
+/* prototypes for module backend */
 
 static struct passwd *nwrap_module_getpwent(struct nwrap_backend *b);
 static int nwrap_module_getpwent_r(struct nwrap_backend *b,
