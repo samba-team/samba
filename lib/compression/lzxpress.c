@@ -155,7 +155,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 						compressed[nibble_index] |= (15 * 16);
 					}
 
-					/* Additionnal best_len */
+					/* Additional best_len */
 					compressed[compressed_pos + metadata_size] = (best_len - (3 + 7 + 15)) & 0xFF;
 					metadata_size += sizeof(uint8_t);
 				} else {
@@ -167,7 +167,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 						compressed[nibble_index] |= 15 << 4;
 					}
 
-					/* Additionnal best_len */
+					/* Additional best_len */
 					compressed[compressed_pos + metadata_size] = 255;
 
 					metadata_size += sizeof(uint8_t);
