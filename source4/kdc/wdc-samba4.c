@@ -94,7 +94,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 		return EINVAL;
 	}
 
-	/* We now completly regenerate this pac */
+	/* We now completely regenerate this pac */
 	krb5_pac_free(context, *pac);
 
 	ret = samba_make_krb5_pac(context, pac_blob, pac);

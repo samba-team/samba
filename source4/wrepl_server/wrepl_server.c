@@ -485,7 +485,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	}
 
 	/* 
-	 * setup listen sockets, so we can anwser requests from our partners,
+	 * setup listen sockets, so we can answer requests from our partners,
 	 * which pull from us
 	 */
 	status = wreplsrv_setup_sockets(service, task->lp_ctx);

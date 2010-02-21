@@ -106,7 +106,7 @@ static bool test_share_remove_invalid(struct torture_context *tctx,
 	struct share_context *ctx = (struct share_context *)discard_const(tcase_data);
 	NTSTATUS status;
 
-	status = share_remove(ctx, "nonexistant");
+	status = share_remove(ctx, "nonexistent");
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED))
 		torture_skip(tctx, "Not supported by backend");

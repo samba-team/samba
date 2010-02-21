@@ -701,7 +701,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_code = "BH Failed to retrive session info";
 			reply_arg = nt_errstr(nt_status);
-			DEBUG(1, ("GENSEC failed to retreive the session info: %s\n", nt_errstr(nt_status)));
+			DEBUG(1, ("GENSEC failed to retrieve the session info: %s\n", nt_errstr(nt_status)));
 		} else {
 
 			reply_code = "AF";
