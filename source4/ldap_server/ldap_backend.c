@@ -475,6 +475,28 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 queue_reply:
 			ldapsrv_queue_reply(call, ent_r);
 		}
+
+		/* Send back referrals if they do exist (search operations) */
+		if (res->refs != NULL) {
+			char **ref;
+			struct ldap_SearchResRef *ent_ref;
+
+			for (ref = res->refs; *ref != NULL; ++ref) {
+				ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultReference);
+				NT_STATUS_HAVE_NO_MEMORY(ent_r);
+
+				/* Better to have the whole referrals kept here,
+				 * than to find someone further up didn't put
+				 * a value in the right spot in the talloc tree
+				 */
+				talloc_steal(ent_r, *ref);
+
+				ent_ref = &ent_r->msg->r.SearchResultReference;
+				ent_ref->referral = *ref;
+
+				ldapsrv_queue_reply(call, ent_r);
+			}
+		}
 	}
 
 reply:
