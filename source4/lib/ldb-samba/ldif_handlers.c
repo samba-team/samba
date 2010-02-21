@@ -533,7 +533,7 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				p[0] = '\0';
 			}
 		}
-		/* allow a traling seperator */
+		/* allow a trailing separator */
 		if (line == p) {
 			break;
 		}

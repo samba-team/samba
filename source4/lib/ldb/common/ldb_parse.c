@@ -773,7 +773,7 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 
 
 /*
-  replace any occurances of an attribute name in the parse tree with a
+  replace any occurrences of an attribute name in the parse tree with a
   new name
 */
 void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree, 

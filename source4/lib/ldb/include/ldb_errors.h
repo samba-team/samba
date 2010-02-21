@@ -197,7 +197,7 @@
 #define LDB_ERR_NO_SUCH_OBJECT			32
 
 /**
-   The function referred to an alias which points to a non-existant
+   The function referred to an alias which points to a non-existent
    object in the database.
 */
 #define LDB_ERR_ALIAS_PROBLEM			33

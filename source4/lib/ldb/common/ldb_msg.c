@@ -237,7 +237,7 @@ int ldb_msg_add_string(struct ldb_message *msg,
 	val.length = strlen(str);
 
 	if (val.length == 0) {
-		/* allow empty strings as non-existant attributes */
+		/* allow empty strings as non-existent attributes */
 		return LDB_SUCCESS;
 	}
 

@@ -557,7 +557,7 @@ query_int(const struct lsqlite3_private * lsqlite3,
 }
 
 /*
- * This is a bad hack to support ldap style comparisons whithin sqlite.
+ * This is a bad hack to support ldap style comparisons within sqlite.
  * val is the attribute in the row currently under test
  * func is the desired test "<=" ">=" "~" ":"
  * cmp is the value to compare against (eg: "test")

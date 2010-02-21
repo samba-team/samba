@@ -36,7 +36,7 @@
  *
  *  Modifications:
  *
- *  - description: make the module use asyncronous calls
+ *  - description: make the module use asynchronous calls
  *    date: Feb 2006
  *    Author: Simo Sorce
  *

@@ -510,7 +510,7 @@ static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val 
 	if (binary_file) {
 		int len = ldb_read_data_file(mem_ctx, value);
 		if (len == -1) {
-			/* an error occured hile trying to retrieve the file */
+			/* an error occurred while trying to retrieve the file */
 			return -1;
 		}
 	}

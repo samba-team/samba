@@ -795,7 +795,7 @@ int ldb_module_send_referral(struct ldb_request *req,
  * 	req:   the original request passed to your module
  * 	ctrls: controls to send in the reply (must be a talloc pointer, steal)
  * 	response: results for extended request (steal)
- * 	error: LDB_SUCCESS for a succesful return
+ * 	error: LDB_SUCCESS for a successful return
  * 	       any other ldb error otherwise
  */
 int ldb_module_done(struct ldb_request *req,

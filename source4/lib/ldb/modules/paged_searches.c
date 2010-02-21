@@ -78,7 +78,7 @@ static int check_ps_continuation(struct ps_context *ac, struct ldb_request *req,
 			ldb_set_errstring(ldb, "paged_searches:  ERROR: We got back a control from a previous page, but this time no control was returned!");
 			return LDB_ERR_OPERATIONS_ERROR;
 		} else {
-			/* No cookie recived yet, valid to just return the full data set */
+			/* No cookie received yet, valid to just return the full data set */
 
 			/* we are done */
 			ac->pending = false;
