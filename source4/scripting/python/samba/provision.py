@@ -1213,13 +1213,21 @@ def provision(setup_dir, message, session_info,
 
     if hostip is None:
         try:
-            hostip = socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+            for ip in socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP):
+                if hostip is None:
+                    hostip = ip[-1][0]
+                if hostip.startswith('127.0.0.') and (not ip[-1][0].startswith('127.0.0.')):
+                    hostip = ip[-1][0]
         except socket.gaierror, (socket.EAI_NODATA, msg):
             hostip = None
 
     if hostip6 is None:
         try:
-            hostip6 = socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+            for ip in socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP):
+                if hostip6 is None:
+                    hostip6 = ip[-1][0]
+                if hostip6 == '::1' and ip[-1][0] != '::1':
+                    hostip6 = ip[-1][0]
         except socket.gaierror, (socket.EAI_NODATA, msg): 
             hostip6 = None
 
