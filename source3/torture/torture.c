@@ -4870,10 +4870,10 @@ bool torture_ioctl_test(int dummy)
 	}
 
 	status = cli_raw_ioctl(cli, fnum, 0x2d0000 | (0x0420<<2), &blob);
-	printf("ioctl device info: %s\n", cli_errstr(cli));
+	printf("ioctl device info: %s\n", nt_errstr(status));
 
 	status = cli_raw_ioctl(cli, fnum, IOCTL_QUERY_JOB_INFO, &blob);
-	printf("ioctl job info: %s\n", cli_errstr(cli));
+	printf("ioctl job info: %s\n", nt_errstr(status));
 
 	for (device=0;device<0x100;device++) {
 		printf("testing device=0x%x\n", device);
