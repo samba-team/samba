@@ -85,5 +85,5 @@ _PUBLIC_ const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
 /** Where to find the winbindd privileged socket */
 _PUBLIC_ const char *dyn_WINBINDD_PRIVILEGED_SOCKET_DIR = WINBINDD_PRIVILEGED_SOCKET_DIR;
 
-/** Where to find the NTP signing deamon socket */
+/** Where to find the NTP signing daemon socket */
 _PUBLIC_ const char *dyn_NTP_SIGND_SOCKET_DIR = NTP_SIGND_SOCKET_DIR;

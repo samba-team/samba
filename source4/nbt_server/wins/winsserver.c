@@ -281,8 +281,8 @@ static void wins_wack_allow(struct nbtd_wins_wack_state *s)
 	rec->registered_by = s->src->addr;
 
 	/*
-	 * now remove all addresses that're the client doesn't hold anymore
-	 * and update the time stamp and owner for the ownes that are still there
+	 * now remove all addresses that the client doesn't hold anymore
+	 * and update the time stamp and owner for the ones that are still there
 	 */
 	for (i=0; rec->addresses[i]; i++) {
 		bool found = false;

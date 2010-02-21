@@ -100,7 +100,7 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 
 	/*
 	 * make sure nothing happens on the socket untill the
-	 * real implemenation takes over
+	 * real implementation takes over
 	 */
 	packet_recv_disable(pipe_conn->packet);
 

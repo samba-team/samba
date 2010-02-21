@@ -55,7 +55,7 @@ static void single_accept_connection(struct tevent_context *ev,
 		/* this looks strange, but is correct. 
 
 		   We can only be here if woken up from select, due to
-		   an incomming connection.
+		   an incoming connection.
 
 		   We need to throttle things until the system clears
 		   enough resources to handle this new socket. 

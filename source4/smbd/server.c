@@ -141,7 +141,7 @@ static void setup_signals(void)
 #endif
 
 	/* POSIX demands that signals are inherited. If the invoking process has
-	 * these signals masked, we will have problems, as we won't recieve them. */
+	 * these signals masked, we will have problems, as we won't receive them. */
 	BlockSignals(false, SIGHUP);
 	BlockSignals(false, SIGTERM);
 

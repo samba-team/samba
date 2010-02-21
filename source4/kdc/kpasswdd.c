@@ -158,7 +158,7 @@ static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 /*
    A user password change
 
-   Return true if there is a valid error packet (or sucess) formed in
+   Return true if there is a valid error packet (or success) formed in
    the error_blob
 */
 static bool kpasswdd_change_password(struct kdc_server *kdc,
