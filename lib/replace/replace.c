@@ -409,7 +409,7 @@ int rep_chroot(const char *dname)
 int rep_mkstemp(char *template)
 {
 	/* have a reasonable go at emulating it. Hope that
-	   the system mktemp() isn't completly hopeless */
+	   the system mktemp() isn't completely hopeless */
 	char *p = mktemp(template);
 	if (!p)
 		return -1;
