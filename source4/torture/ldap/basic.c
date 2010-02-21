@@ -4,7 +4,7 @@
    
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Simo Sorce 2004
-   Copyright (C) Matthias Dieter Wallnöfer 2009
+   Copyright (C) Matthias Dieter Wallnöfer 2009-2010
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "ldb_wrap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 
@@ -78,7 +79,8 @@ static bool test_multibind(struct ldap_connection *conn, const char *userdn, con
 	return ret;
 }
 
-static bool test_search_rootDSE(struct ldap_connection *conn, const char **basedn)
+static bool test_search_rootDSE(struct ldap_connection *conn, const char **basedn,
+	const char ***partitions)
 {
 	bool ret = true;
 	struct ldap_message *msg, *result;
@@ -90,6 +92,10 @@ static bool test_search_rootDSE(struct ldap_connection *conn, const char **based
 	printf("Testing RootDSE Search\n");
 
 	*basedn = NULL;
+
+	if (partitions != NULL) {
+		*partitions = const_str_list(str_list_make_empty(conn));
+	}
 
 	msg = new_ldap_message(conn);
 	if (!msg) {
@@ -136,6 +142,13 @@ static bool test_search_rootDSE(struct ldap_connection *conn, const char **based
 				*basedn = talloc_asprintf(conn, "%.*s",
 							  (int)r->attributes[i].values[j].length,
 							  (char *)r->attributes[i].values[j].data);
+			}
+			if ((partitions != NULL) &&
+			    (strcasecmp("namingContexts", r->attributes[i].name) == 0)) {
+				char *entry = talloc_asprintf(conn, "%.*s",
+							      (int)r->attributes[i].values[j].length,
+							      (char *)r->attributes[i].values[j].data);
+				*partitions = str_list_add(*partitions, entry);
 			}
 		}
 	}
@@ -350,6 +363,202 @@ static bool test_error_codes(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_referrals(struct torture_context *tctx, TALLOC_CTX *mem_ctx,
+	const char *url, const char *basedn, const char **partitions)
+{
+	struct ldb_context *ldb;
+	struct ldb_result *res;
+	const char * const *attrs = { NULL };
+	struct ldb_dn *dn1, *dn2;
+	int ret;
+	int i, j, k;
+	char *tempstr;
+	bool found, l_found;
+
+	printf("Testing referrals\n");
+
+	if (partitions[0] == NULL) {
+		printf("Partitions list empty!\n");
+		return false;
+	}
+
+	if (strcmp(partitions[0], basedn) != 0) {
+		printf("The first (root) partition DN should be the base DN!\n");
+		return false;
+	}
+
+	ldb = ldb_wrap_connect(mem_ctx, tctx->ev, tctx->lp_ctx, url,
+			       NULL, cmdline_credentials, 0);
+
+	/* "partitions[i]" are the partitions for which we search the parents */
+	for (i = 1; partitions[i] != NULL; i++) {
+		dn1 = ldb_dn_new(mem_ctx, ldb, partitions[i]);
+		if (dn1 == NULL) {
+			printf("Out of memory\n");
+			talloc_free(ldb);
+			return false;
+		}
+
+		/* search using base scope */
+		/* "partitions[j]" are the parent candidates */
+		for (j = str_list_length(partitions) - 1; j >= 0; --j) {
+			dn2 = ldb_dn_new(mem_ctx, ldb, partitions[j]);
+			if (dn2 == NULL) {
+				printf("Out of memory\n");
+				talloc_free(ldb);
+				return false;
+			}
+
+			ret = ldb_search(ldb, mem_ctx, &res, dn2,
+					 LDB_SCOPE_BASE, attrs,
+					 "(foo=bar)");
+			if (ret != LDB_SUCCESS) {
+				printf("%s", ldb_errstring(ldb));
+				talloc_free(ldb);
+				return false;
+			}
+
+			if (res->refs != NULL) {
+				printf("There shouldn't be generated any referrals in the base scope!\n");
+				talloc_free(ldb);
+				return false;
+			}
+
+			talloc_free(res);
+			talloc_free(dn2);
+		}
+
+		/* search using onelevel scope */
+		found = false;
+		/* "partitions[j]" are the parent candidates */
+		for (j = str_list_length(partitions) - 1; j >= 0; --j) {
+			dn2 = ldb_dn_new(mem_ctx, ldb, partitions[j]);
+			if (dn2 == NULL) {
+				printf("Out of memory\n");
+				talloc_free(ldb);
+				return false;
+			}
+
+			ret = ldb_search(ldb, mem_ctx, &res, dn2,
+					 LDB_SCOPE_ONELEVEL, attrs,
+					 "(foo=bar)");
+			if (ret != LDB_SUCCESS) {
+				printf("%s", ldb_errstring(ldb));
+				talloc_free(ldb);
+				return false;
+			}
+
+			tempstr = talloc_asprintf(mem_ctx, "/%s??base",
+						  partitions[i]);
+			if (tempstr == NULL) {
+				printf("Out of memory\n");
+				talloc_free(ldb);
+				return false;
+			}
+
+			/* Try to find or find not a matching referral */
+			l_found = false;
+			for (k = 0; (!l_found) && (res->refs != NULL)
+			    && (res->refs[k] != NULL); k++) {
+				if (strstr(res->refs[k], tempstr) != NULL) {
+					l_found = true;
+				}
+			}
+
+			talloc_free(tempstr);
+
+			if ((!found) && (ldb_dn_compare_base(dn2, dn1) == 0)
+			    && (ldb_dn_compare(dn2, dn1) != 0)) {
+				/* This is a referral candidate */
+				if (!l_found) {
+					printf("A required referral hasn't been found on onelevel scope (%s -> %s)!\n", partitions[j], partitions[i]);
+					talloc_free(ldb);
+					return false;
+				}
+				found = true;
+			} else {
+				/* This isn't a referral candidate */
+				if (l_found) {
+					printf("A unrequired referral has been found on onelevel scope (%s -> %s)!\n", partitions[j], partitions[i]);
+					talloc_free(ldb);
+					return false;
+				}
+			}
+
+			talloc_free(res);
+			talloc_free(dn2);
+		}
+
+		/* search using subtree scope */
+		found = false;
+		/* "partitions[j]" are the parent candidates */
+		for (j = str_list_length(partitions) - 1; j >= 0; --j) {
+			dn2 = ldb_dn_new(mem_ctx, ldb, partitions[j]);
+			if (dn2 == NULL) {
+				printf("Out of memory\n");
+				talloc_free(ldb);
+				return false;
+			}
+
+			ret = ldb_search(ldb, mem_ctx, &res, dn2,
+					 LDB_SCOPE_SUBTREE, attrs,
+					 "(foo=bar)");
+			if (ret != LDB_SUCCESS) {
+				printf("%s", ldb_errstring(ldb));
+				talloc_free(ldb);
+				return false;
+			}
+
+			tempstr = talloc_asprintf(mem_ctx, "/%s",
+						  partitions[i]);
+			if (tempstr == NULL) {
+				printf("Out of memory\n");
+				talloc_free(ldb);
+				return false;
+			}
+
+			/* Try to find or find not a matching referral */
+			l_found = false;
+			for (k = 0; (!l_found) && (res->refs != NULL)
+			    && (res->refs[k] != NULL); k++) {
+				if (strstr(res->refs[k], tempstr) != NULL) {
+					l_found = true;
+				}
+			}
+
+			talloc_free(tempstr);
+
+			if ((!found) && (ldb_dn_compare_base(dn2, dn1) == 0)
+			    && (ldb_dn_compare(dn2, dn1) != 0)) {
+				/* This is a referral candidate */
+				if (!l_found) {
+					printf("A required referral hasn't been found on subtree scope (%s -> %s)!\n", partitions[j], partitions[i]);
+					talloc_free(ldb);
+					return false;
+				}
+				found = true;
+			} else {
+				/* This isn't a referral candidate */
+				if (l_found) {
+					printf("A unrequired referral has been found on subtree scope (%s -> %s)!\n", partitions[j], partitions[i]);
+					talloc_free(ldb);
+					return false;
+				}
+			}
+
+			talloc_free(res);
+			talloc_free(dn2);
+		}
+
+		talloc_free(dn1);
+	}
+
+	talloc_free(ldb);
+
+	return true;
+}
+
+
 bool torture_ldap_basic(struct torture_context *torture)
 {
         NTSTATUS status;
@@ -361,6 +570,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 	const char *secret = torture_setting_string(torture, "ldap_secret", NULL);
 	const char *url;
 	const char *basedn;
+	const char **partitions;
 
 	mem_ctx = talloc_init("torture_ldap_basic");
 
@@ -371,7 +581,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 		return false;
 	}
 
-	if (!test_search_rootDSE(conn, &basedn)) {
+	if (!test_search_rootDSE(conn, &basedn, &partitions)) {
 		ret = false;
 	}
 
@@ -392,6 +602,12 @@ bool torture_ldap_basic(struct torture_context *torture)
 	/* error codes test here */
 
 	if (!test_error_codes(torture, conn, basedn)) {
+		ret = false;
+	}
+
+	/* referrals test here */
+
+	if (!test_referrals(torture, mem_ctx, url, basedn, partitions)) {
 		ret = false;
 	}
 
