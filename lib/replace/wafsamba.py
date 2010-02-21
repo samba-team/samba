@@ -88,6 +88,7 @@ def SUBDIR(bld, subdir, list):
     return ret
 Build.BuildContext.SUBDIR = SUBDIR
 
+
 ################################################################
 # this will contain the set of includes needed per Samba library
 Build.BuildContext.SAMBA_LIBRARY_INCLUDES = {}
@@ -106,6 +107,16 @@ def SAMBA_LIBRARY_INCLUDE_LIST(bld, libdeps):
     return ret
 Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 
+#################################################################
+# return a library list for a set of library dependencies
+def SAMBA_LIBRARY_LIB_LIST(bld, libdeps):
+    ret = ' '
+    for l in libdeps.split():
+        if l in bld.SAMBA_LIBRARY_DEPS:
+            ret = ret + l + ' ' + bld.SAMBA_LIBRARY_LIB_LIST(bld.SAMBA_LIBRARY_DEPS[l])
+    return ret
+Build.BuildContext.SAMBA_LIBRARY_LIB_LIST = SAMBA_LIBRARY_LIB_LIST
+
 
 #################################################################
 # define a Samba library
@@ -119,6 +130,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         includes='. ' + ilist,
         vnum=vnum)
     bld.SAMBA_LIBRARY_INCLUDES[libname] = ilist
+    bld.SAMBA_LIBRARY_DEPS[libname] = libdeps
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 #################################################################
@@ -128,7 +140,7 @@ def SAMBA_BINARY(bld, binname, source_list, libdeps='', include_list=''):
         features = 'cc cprogram',
         source = source_list,
         target = binname,
-        uselib_local = libdeps,
+        uselib_local = bld.SAMBA_LIBRARY_LIB_LIST(libdeps),
         includes = '. ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list)
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
