@@ -55,6 +55,15 @@ def SAMBA_CONFIG_H(conf):
         conf.write_config_header('config.h')
 
 
+##############################################################
+# setup a configurable path
+@conf
+def CONFIG_PATH(conf, name, default):
+    if not name in conf.env:
+        conf.env[name] = conf.env['PREFIX'] + default
+    conf.define(name, conf.env[name], quote=True)
+
+
 ################################################################
 # magic rpath handling
 #

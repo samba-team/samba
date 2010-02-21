@@ -5,6 +5,15 @@ import Options, os, wafsamba
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
+    opt.add_option('--libdir',
+                   help=("object code libraries [PREFIX/lib]"),
+                   action="store", dest='LIBDIR', default=None)
+    opt.add_option('--bindir',
+                   help=("user executables [PREFIX/bin]"),
+                   action="store", dest='BINDIR', default=None)
+    opt.add_option('--sbindir',
+                   help=("system admin executables [PREFIX/sbin]"),
+                   action="store", dest='SBINDIR', default=None)
     opt.add_option('--disable-rpath',
                    help=("Disable use of rpath"),
                    action="store_true", dest='disable_rpath', default=False)
@@ -15,6 +24,10 @@ def configure(conf):
 
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.curdir)
+
+    conf.CONFIG_PATH('LIBDIR', '/lib')
+    conf.CONFIG_PATH('BINDIR', '/bin')
+    conf.CONFIG_PATH('SBINDIR', '/sbin')
 
     conf.check_tool('compiler_cc')
     conf.DEFUN('_GNU_SOURCE', 1)

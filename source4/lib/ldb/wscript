@@ -1,0 +1,43 @@
+srcdir = '.'
+blddir = 'build'
+
+LIBTDB_DIR='../../../lib/tdb'
+LIBTALLOC_DIR='../../../lib/talloc'
+
+def set_options(opt):
+    opt.recurse(LIBTDB_DIR)
+    opt.recurse(LIBTALLOC_DIR)
+
+def configure(conf):
+    conf.sub_config(LIBTDB_DIR)
+    conf.sub_config(LIBTALLOC_DIR)
+    conf.SAMBA_CONFIG_H()
+
+def build(bld):
+    bld.add_subdirs(LIBTDB_DIR)
+    bld.add_subdirs(LIBTALLOC_DIR)
+
+    LDB_TDB_SRC = bld.SUBDIR('ldb_tdb',
+                             '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
+                             ldb_cache.c ldb_tdb_wrap.c''')
+    print "LDB_TDB_SRC=%s" % LDB_TDB_SRC
+
+    LDB_MAP_SRC = bld.SUBDIR('ldb_map',
+                             'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
+
+    COMMON_SRC = bld.SUBDIR('common',
+                            '''ldb.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
+                            ldb_debug.c ldb_modules.c ldb_dn.c ldb_match.c
+                            ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
+
+    MODULES_SRC = bld.SUBDIR('modules',
+                             'rdn_name.c asq.c paged_results.c sort.c')
+
+    bld.SAMBA_LIBRARY('ldb',
+		      LDB_TDB_SRC + ' ' + COMMON_SRC + ' ' + MODULES_SRC,
+		      'tdb talloc',
+		      'include')
+
+    bld.SAMBA_BINARY('ldbadd',
+		     'tools/ldbadd.c',
+		     'ldb')
