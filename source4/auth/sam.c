@@ -149,7 +149,7 @@ static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 }
 
 /****************************************************************************
- Do a specific test for a SAM_ACCOUNT being vaild for this connection 
+ Do a specific test for a SAM_ACCOUNT being valid for this connection
  (ie not disabled, expired and the like).
 ****************************************************************************/
 _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
