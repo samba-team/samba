@@ -700,7 +700,7 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	
 	if (strlen(name) > 0) {
 		/* For a default value, we add/overwrite the attributes to/of the hive.
- 		   For a normal value, we create new childs. */
+		   For a normal value, we create a new child. */
 		if (!ldb_dn_add_child_fmt(msg->dn, "value=%s",
 				  reg_ldb_escape(mem_ctx, name)))
 		{

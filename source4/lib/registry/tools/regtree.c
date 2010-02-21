@@ -69,7 +69,7 @@ static void print_tree(int level, struct registry_key *p,
 	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n",
+		DEBUG(0, ("Error occurred while fetching subkeys for '%s': %s\n",
 				  name, win_errstr(error)));
 	}
 
@@ -87,7 +87,7 @@ static void print_tree(int level, struct registry_key *p,
 		talloc_free(mem_ctx);
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching values for '%s': %s\n",
+			DEBUG(0, ("Error occurred while fetching values for '%s': %s\n",
 				name, win_errstr(error)));
 		}
 	}

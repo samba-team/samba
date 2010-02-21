@@ -282,7 +282,7 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 	}
 
 	if (!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		fprintf(stderr, "Error occured while browsing thru keys: %s\n",
+		fprintf(stderr, "Error occurred while browsing through keys: %s\n",
 			win_errstr(error));
 		return error;
 	}

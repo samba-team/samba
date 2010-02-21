@@ -86,7 +86,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		}
 
 		if (!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+			DEBUG(0, ("Error occurred while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
@@ -101,7 +101,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		/* perform here also the recursive invocation */
 		error1 = reg_open_key(mem_ctx, oldkey, keyname1, &t1);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+			DEBUG(0, ("Error occurred while getting subkey by name: %s\n",
 			win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
@@ -161,7 +161,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		/* perform here also the recursive invocation */
 		error1 = reg_open_key(mem_ctx, newkey, keyname1, &t2);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+			DEBUG(0, ("Error occurred while getting subkey by name: %s\n",
 			win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
@@ -387,7 +387,7 @@ static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 
 	/* We can't proof here for success, because a common superkey could */
 	/* have been deleted before the subkey's (diff order). This removed */
-	/* therefore all childs recursively and the "WERR_BADFILE" result is */
+	/* therefore all children recursively and the "WERR_BADFILE" result is */
 	/* expected. */
 
 	reg_key_del_abs(ctx, key_name);
