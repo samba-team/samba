@@ -48,6 +48,11 @@ def configure(conf):
     if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
         conf.DEFUN('STDC_HEADERS', 1)
 
+    if 'HAVE_SYS_TIME_H' in conf.env and 'HAVE_TIME_H' in conf.env:
+        conf.DEFUN('TIME_WITH_SYS_TIME', 1)
+
+    conf.define('SHLIBEXT', "so", quote=True)
+
     conf.check(type_name='long long')
     conf.CHECK_TYPES('intptr_t uintptr_t ptrdiff_t')
     conf.CHECK_TYPES('comparison_fn_t socklen_t bool')
