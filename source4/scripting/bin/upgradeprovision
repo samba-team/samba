@@ -722,43 +722,45 @@ def update_machine_account_password(paths, creds, session, names):
 
 def setup_path(file):
 	return os.path.join(setup_dir, file)
+cmd = os.environ["_"]
+m=re.match('(^|.*/)pydoc$',cmd)
+if not m:
+	# From here start the big steps of the program
+	# First get files paths
+	paths=get_paths(param,smbconf=smbconf)
+	paths.setup = setup_dir
+	# Guess all the needed names (variables in fact) from the current
+	# provision.
 
-# From here start the big steps of the program
-# First get files paths
-paths=get_paths(param,smbconf=smbconf)
-paths.setup = setup_dir
-# Guess all the needed names (variables in fact) from the current
-# provision.
+	names = find_provision_key_parameters(param, creds, session, paths, smbconf)
+	if not sanitychecks(creds,session,names,paths):
+		message(SIMPLE,"Sanity checks for the upgrade fails, checks messages and correct it before rerunning upgradeprovision")
+		sys.exit(1)
+	# Let's see them
+	print_provision_key_parameters(names)
+	# With all this information let's create a fresh new provision used as reference
+	message(SIMPLE,"Creating a reference provision")
+	provisiondir = tempfile.mkdtemp(dir=paths.private_dir, prefix="referenceprovision")
+	newprovision(names, setup_dir, creds, session, smbconf, provisiondir, messageprovision)
+	# Get file paths of this new provision
+	newpaths = get_paths(param, targetdir=provisiondir)
+	populate_backlink(newpaths, creds, session,names.schemadn)
+	populate_dnsyntax(newpaths, creds, session,names.schemadn)
+	# Check the difference
+	update_basesamdb(newpaths, paths,names)
 
-names = find_provision_key_parameters(param, creds, session, paths, smbconf)
-if not sanitychecks(creds,session,names,paths):
-	message(SIMPLE,"Sanity checks for the upgrade fails, checks messages and correct it before rerunning upgradeprovision")
-	sys.exit(1)
-# Let's see them
-print_provision_key_parameters(names)
-# With all this information let's create a fresh new provision used as reference
-message(SIMPLE,"Creating a reference provision")
-provisiondir = tempfile.mkdtemp(dir=paths.private_dir, prefix="referenceprovision")
-newprovision(names, setup_dir, creds, session, smbconf, provisiondir, messageprovision)
-# Get file paths of this new provision
-newpaths = get_paths(param, targetdir=provisiondir)
-populate_backlink(newpaths, creds, session,names.schemadn)
-populate_dnsyntax(newpaths, creds, session,names.schemadn)
-# Check the difference
-update_basesamdb(newpaths, paths,names)
-
-if opts.full:
-	update_samdb(newpaths, paths, creds, session, names)
-update_secrets(newpaths, paths, creds, session)
-update_privilege(newpaths, paths)
-update_machine_account_password(paths, creds, session, names)
-# SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
-# to recreate them with the good form but with system account and then give the ownership to admin ...
-admin_session_info = admin_session(lp, str(names.domainsid))
-message(SIMPLE,"Updating SD")
-update_sd(paths, creds, session,names)
-update_sd(paths, creds, admin_session_info, names)
-check_updated_sd(newpaths, paths, creds, session, names)
-message(SIMPLE,"Upgrade finished !")
-# remove reference provision now that everything is done !
-rmall(provisiondir)
+	if opts.full:
+		update_samdb(newpaths, paths, creds, session, names)
+	update_secrets(newpaths, paths, creds, session)
+	update_privilege(newpaths, paths)
+	update_machine_account_password(paths, creds, session, names)
+	# SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
+	# to recreate them with the good form but with system account and then give the ownership to admin ...
+	admin_session_info = admin_session(lp, str(names.domainsid))
+	message(SIMPLE,"Updating SD")
+	update_sd(paths, creds, session,names)
+	update_sd(paths, creds, admin_session_info, names)
+	check_updated_sd(newpaths, paths, creds, session, names)
+	message(SIMPLE,"Upgrade finished !")
+	# remove reference provision now that everything is done !
+	rmall(provisiondir)
