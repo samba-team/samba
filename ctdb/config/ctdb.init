@@ -171,7 +171,7 @@ start() {
 
     ctdb ping >/dev/null 2>&1 && {
 	echo $"CTDB is already running"
-	return 1
+	return 0
     }
 
     build_ctdb_options
@@ -215,7 +215,7 @@ start() {
     set_ctdb_variables
 
     return $RETVAL
-}	
+}
 
 stop() {
     echo -n $"Shutting down ctdbd service: "
@@ -262,7 +262,7 @@ stop() {
 restart() {
     stop
     start
-}	
+}
 
 status() {
     echo -n $"Checking for ctdbd service: "
@@ -275,7 +275,13 @@ status() {
 		rc_status -v
 		;;
 	    redhat)
-		echo ""
+		if [ -f /var/lock/subsys/ctdb ]; then
+			echo $"ctdb dead but subsys locked"
+			RETVAL=2
+		else
+			echo $"ctdb is stopped"
+			RETVAL=3
+		fi
 		;;
 	esac
 	return $RETVAL
@@ -292,13 +298,13 @@ case "$1" in
     stop)
   	stop
 	;;
-    restart|reload)
+    restart|reload|force-reload)
   	restart
 	;;
     status)
   	status
 	;;
-    condrestart)
+    condrestart|try-restart)
   	ctdb status > /dev/null && restart || :
 	;;
     cron)
@@ -306,7 +312,7 @@ case "$1" in
   	ctdb status > /dev/null || restart
 	;;
     *)
-	echo $"Usage: $0 {start|stop|restart|status|cron|condrestart}"
+	echo $"Usage: $0 {start|stop|restart|reload|force-reload|status|cron|condrestart|try-restart}"
 	exit 1
 esac
 
