@@ -4,6 +4,7 @@
 import Build, os, Logs
 from Configure import conf
 
+LIB_PATH="shared"
 
 ####################################################
 # some autoconf like helpers, to make the transition
@@ -73,9 +74,9 @@ def CONFIG_PATH(conf, name, default):
 def set_rpath(bld):
     import Options
     if Options.is_install:
-        bld.env['RPATH'] = ['-Wl,-rpath=' + bld.env.PREFIX + '/lib']
+        bld.env['RPATH'] = ['-Wl,-rpath=%s/%s' % (bld.env.PREFIX, LIB_PATH)]
     else:
-        bld.env.append_value('RPATH', '-Wl,-rpath=bin/lib')
+        bld.env.append_value('RPATH', '-Wl,-rpath=bin/%s' % LIB_PATH)
 Build.BuildContext.set_rpath = set_rpath
 
 
@@ -90,22 +91,16 @@ Build.BuildContext.SUBDIR = SUBDIR
 
 #################################################################
 # create the samba build environment
-def SAMBA_BUILD_ENV(bld):
-    bld(
-        target = 'binlib',
-        rule = 'test -d lib || mkdir -p lib && touch ${TGT}',
-        shell = True
-        )
-Build.BuildContext.SAMBA_BUILD_ENV = SAMBA_BUILD_ENV
+@conf
+def SAMBA_BUILD_ENV(conf):
+    libpath="%s/%s" % (conf.blddir, LIB_PATH)
+    if not os.path.exists(libpath):
+        os.mkdir(libpath)
 
 
 ################################################################
 # this will contain the set of includes needed per Samba library
 Build.BuildContext.SAMBA_LIBRARY_INCLUDES = {}
-
-################################################################
-# this will contain the library dependencies of each Samba library
-Build.BuildContext.SAMBA_LIBRARY_DEPS = {}
 
 #################################################################
 # return a include list for a set of library dependencies
@@ -118,17 +113,6 @@ def SAMBA_LIBRARY_INCLUDE_LIST(bld, libdeps):
 Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 
 #################################################################
-# return a library list for a set of library dependencies
-def SAMBA_LIBRARY_LIB_LIST(bld, libdeps):
-    ret = ' '
-    for l in libdeps.split():
-        if l in bld.SAMBA_LIBRARY_DEPS:
-            ret = ret + l + ' ' + bld.SAMBA_LIBRARY_LIB_LIST(bld.SAMBA_LIBRARY_DEPS[l])
-    return ret
-Build.BuildContext.SAMBA_LIBRARY_LIB_LIST = SAMBA_LIBRARY_LIB_LIST
-
-
-#################################################################
 # define a Samba library
 def SAMBA_LIBRARY(bld, libname, source_list,
                   libdeps='', include_list='.', vnum=None):
@@ -137,31 +121,32 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         features = 'cc cshlib',
         source = source_list,
         target=libname,
+        uselib_local = libdeps,
         includes='. ' + os.environ.get('PWD') + '/bin/default ' + ilist,
         vnum=vnum)
 
-    # put a link to the library in bin/lib
+    # put a link to the library in bin/shared
     soext=""
     if vnum is not None:
         soext = '.' + vnum.split('.')[0]
     bld(
         source = 'lib%s.so' % libname,
-        rule = 'ln -sf ../${SRC}%s lib' % soext,
-        after = 'binlib'
+        target = '%s.lnk' % libname,
+        rule = 'ln -sf ../${SRC}%s %s/lib%s.so%s && touch ${TGT}' %
+        (soext, LIB_PATH, libname, soext),
+        shell = True
         )
     bld.SAMBA_LIBRARY_INCLUDES[libname] = ilist
-    bld.SAMBA_LIBRARY_DEPS[libname] = libdeps
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 #################################################################
 # define a Samba binary
 def SAMBA_BINARY(bld, binname, source_list, libdeps='', syslibs='', include_list=''):
-    #print('binname=%s libs=%s' % (binname, bld.SAMBA_LIBRARY_LIB_LIST(libdeps)))
     bld(
         features = 'cc cprogram',
         source = source_list,
         target = binname,
-        uselib_local = bld.SAMBA_LIBRARY_LIB_LIST(libdeps),
+        uselib_local = libdeps,
         uselib = syslibs,
         includes = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list,
         top=True)
