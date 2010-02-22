@@ -51,9 +51,9 @@ def CHECK_FUNCS_IN(conf, list, library):
 #################################################
 # write out config.h in the right directory
 @conf
-def SAMBA_CONFIG_H(conf):
+def SAMBA_CONFIG_H(conf, path='config.h'):
     if os.path.normpath(conf.curdir) == os.path.normpath(os.environ.get('PWD')):
-        conf.write_config_header('config.h', top=True)
+        conf.write_config_header(path, top=True)
 
 
 ##############################################################
