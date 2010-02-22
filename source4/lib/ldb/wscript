@@ -47,3 +47,11 @@ def build(bld):
                          'tools/%s.c tools/ldbutil.c tools/cmdline.c' % t,
                          deps='ldb',
                          syslibs='dl popt')
+
+    # this is a temporary fix for the fact that some
+    # of the scripts call it 'ldb' and some 'LIBLDB'
+    bld.SAMBA_LIBRARY('LIBLDB',
+		      LDB_TDB_SRC + ' ' + COMMON_SRC + ' ' + MODULES_SRC,
+		      deps='tdb tevent',
+		      include_list='include',
+                      vnum=VERSION)
