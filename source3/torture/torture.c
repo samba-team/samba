@@ -6442,6 +6442,7 @@ static bool run_streamerror(int dummy)
 		return false;
 	}
 
+	cli_unlink(cli, "\\testdir\\*", aSYSTEM | aHIDDEN);
 	cli_rmdir(cli, dname);
 
 	status = cli_mkdir(cli, dname);
