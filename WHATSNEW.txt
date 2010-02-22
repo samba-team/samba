@@ -1,13 +1,11 @@
-                   ===============================
-                   Release Notes for Samba 3.5.0rc3
-			  February 19, 2010
+                   =============================
+                   Release Notes for Samba 3.5.0
+			    March 1, 2010
                    ===============================
 
 
-This is the third release candidate of Samba 3.5.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
+This is the first stable release of Samba 3.5.
+
 
 Major enhancements in Samba 3.5.0 include:
 
@@ -127,6 +125,10 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * Implement the new SMB2 protocol (experimental).
+
+
+Changes since 3.5.0rc3
+----------------------
 
 
 Changes since 3.5.0rc2
