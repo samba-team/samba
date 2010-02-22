@@ -1707,7 +1707,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	const char *dnsdomain = lp_dnsdomain(lp_ctx);
-	char *p;
+	const char *p;
 	WERROR werr;
 
 	if (r->in.trust_flags & 0xFFFFFE00) {
@@ -1715,18 +1715,25 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	}
 
 	/* TODO: turn to hard check once we are sure this is 100% correct */
-	p = strchr(r->in.server_name, '.');
-	if (!p) {
+        if (!r->in.server_name) {
 		DEBUG(3, ("Invalid domain! Expected name in domain [%s]. "
-			  "But received [%s]!\n",
-			  dnsdomain, r->in.server_name));
-	}
-	p++;
-	if (strcasecmp(p, dnsdomain)) {
-		DEBUG(3, ("Invalid domain! Expected name in domain [%s]. "
-			  "But received [%s]!\n",
-			  dnsdomain, r->in.server_name));
-	}
+			  "But received NULL!\n", dnsdomain));
+        } else {
+	        p = strchr(r->in.server_name, '.');
+	        if (!p) {
+		        DEBUG(3, ("Invalid domain! Expected name in domain "
+                                  "[%s]. But received [%s]!\n",
+			          dnsdomain, r->in.server_name));
+                        p = r->in.server_name;
+	        } else {
+	                p++;
+                }
+	        if (strcasecmp(p, dnsdomain)) {
+		        DEBUG(3, ("Invalid domain! Expected name in domain "
+                                  "[%s]. But received [%s]!\n",
+			          dnsdomain, r->in.server_name));
+	        }
+        }
 
 	ZERO_STRUCT(r->out);
 
