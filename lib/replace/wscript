@@ -34,9 +34,6 @@ def configure(conf):
 
     conf.check_tool('compiler_cc')
 
-    if Options.options.developer:
-        conf.ADD_CFLAGS('-Wall -g -DDEVELOPER')
-
     conf.env['RPATH_ON_INSTALL'] = Options.options.enable_rpath
 
     conf.DEFUN('_GNU_SOURCE', 1)
@@ -155,6 +152,9 @@ main() { foo("hello"); }
                 define_ret=1,
                 quote=0,
 		msg="Checking for C99 vsnprintf")
+
+    if Options.options.developer:
+        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -DDEVELOPER -W -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
 
     conf.SAMBA_CONFIG_H()
     conf.SAMBA_BUILD_ENV()
