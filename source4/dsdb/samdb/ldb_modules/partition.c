@@ -450,6 +450,8 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	
 	struct ldb_search_options_control *search_options = NULL;
 	struct dsdb_partition *p;
+
+	bool domain_scope = false, phantom_root = false;
 	
 	ret = partition_reload_if_required(module, data);
 	if (ret != LDB_SUCCESS) {
@@ -464,43 +466,39 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(p->module, req);		
 	}
 
-
+	/* Get back the search options from the search control, and mark it as
+	 * non-critical (to make backends and also dcpromo happy).
+	 */
 	if (search_control) {
 		search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
+		search_control->critical = 0;
+
 	}
 
-	/* Remove the domain_scope control, so we don't confuse a backend server */
+	/* Remove the "domain_scope" control, so we don't confuse a backend
+	 * server */
 	if (domain_scope_control && !save_controls(domain_scope_control, req, &saved_controls)) {
 		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/*
-	 * for now pass down the LDB_CONTROL_SEARCH_OPTIONS_OID control
-	 * down as uncritical to make windows 2008 dcpromo happy.
-	 */
-	if (search_control) {
-		search_control->critical = 0;
+	/* Locate the options */
+	domain_scope = (search_options
+		&& (search_options->search_options & LDB_SEARCH_OPTION_DOMAIN_SCOPE))
+		|| domain_scope_control;
+	phantom_root = search_options
+		&& (search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT);
+
+	/* Remove handled options from the search control flag */
+	if (search_options) {
+		search_options->search_options = search_options->search_options
+			& ~LDB_SEARCH_OPTION_DOMAIN_SCOPE
+			& ~LDB_SEARCH_OPTION_PHANTOM_ROOT;
 	}
 
-	/* TODO:
-	 * Generate referrals (look for a partition under this DN) if we don't
-	 * have the LDB_CONTROL_DOMAIN_SCOPE_OID control specified.
-	 */
-	
-	if (search_options && (search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT)) {
+	if ((!domain_scope) || phantom_root) {
 		int i;
 		struct partition_context *ac;
-
-		if ((search_options->search_options & ~LDB_SEARCH_OPTION_PHANTOM_ROOT) == 0) {
-			/* We have processed this flag, so we are done with this control now */
-
-			/* Remove search control, so we don't confuse a backend server */
-			if (search_control && !save_controls(search_control, req, &saved_controls)) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-		}
 
 		ac = partition_init_ctx(module, req);
 		if (!ac) {
@@ -556,17 +554,6 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		/* fire the first one */
 		return partition_call_first(ac);
 	} else {
-		/* Handle this like all other requests */
-		if (search_control && (search_options->search_options & ~LDB_SEARCH_OPTION_PHANTOM_ROOT) == 0) {
-			/* We have processed this flag, so we are done with this control now */
-
-			/* Remove search control, so we don't confuse a backend server */
-			if (search_control && !save_controls(search_control, req, &saved_controls)) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-		}
-
 		return partition_replicate(module, req, req->op.search.base);
 	}
 }
