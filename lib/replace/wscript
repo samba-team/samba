@@ -148,13 +148,12 @@ main() { foo("hello"); }
 		msg="Checking for C99 vsnprintf")
 
     conf.SAMBA_CONFIG_H()
+    conf.SAMBA_BUILD_ENV()
 
 def build(bld):
     bld.set_rpath()
 
     REPLACE_SOURCE = 'replace.c snprintf.c'
-
-    bld.SAMBA_BUILD_ENV()
 
     bld.SAMBA_LIBRARY('replace',
                       REPLACE_SOURCE)
