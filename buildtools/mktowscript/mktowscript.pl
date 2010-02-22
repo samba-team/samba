@@ -150,6 +150,9 @@ sub read_config_mk($)
 			next;
 		}
 
+		if ($line =~ /\$\(eval.\$\(call.proto_header_template.*,(.*),.*/) {
+			$result->{$section}->{AUTOPROTO} = $1;
+		}
 		if ($line =~ /^\$\(eval/) {
 			# skip eval lines for now
 			next;
@@ -257,6 +260,11 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 		    }
 		    if ($k eq "OUTPUT_TYPE") {
 			    $trailer .= sprintf(",\n\toutput_type='%s'", strlist($sec->{$k}));
+			    next;
+		    }
+		    if ($k eq "AUTOPROTO") {
+			    my $list = trim(find_files(strlist($sec->{$k})));
+			    $trailer .= sprintf(",\n\tautoproto='%s'", $list);
 			    next;
 		    }
 		    if ($k eq "$s" . "_OBJ_FILES") {

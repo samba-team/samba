@@ -161,7 +161,8 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   public_deps='',
                   include_list='.',
                   vnum=None,
-                  cflags=None):
+                  cflags=None,
+                  autoproto=None):
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
     bld(
@@ -196,7 +197,8 @@ def SAMBA_BINARY(bld, binname, source_list,
                  modules=None,
                  installdir=None,
                  ldflags=None,
-                 cflags=None):
+                 cflags=None,
+                 autoproto=None):
     ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
