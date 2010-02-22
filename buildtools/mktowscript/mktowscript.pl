@@ -70,6 +70,13 @@ sub find_files($)
 	my $list = shift;
 	my $ret = '';
 	foreach my $f (split(/\s+/, $list)) {
+		if ($f =~ /\.[0-9]$/) {
+			# a man page
+			my $m = find_file($f . ".xml");
+			die("Unable to find man page $f\n") if ($m eq "");
+			$m =~ s/\.xml$//;
+			return $m;
+		}
 		$f = find_file($f);
 		$f =~ s/^[.]\///;
 		$ret .= ' ' . $f;
@@ -204,7 +211,6 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 			$k eq "GCOV" ||
 			$k eq "PC_FILES" ||
 			$k eq "PUBLIC_HEADERS" ||
-			$k eq "MANPAGES" ||
 			$k eq "CONFIG4FILE" ||
 			$k eq "LMHOSTSFILE4") {
 			    $trailer .= sprintf(",\n\t# %s='%s'", $k, trim($sec->{$k}));
@@ -265,6 +271,11 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 		    if ($k eq "AUTOPROTO") {
 			    my $list = trim(find_files(strlist($sec->{$k})));
 			    $trailer .= sprintf(",\n\tautoproto='%s'", $list);
+			    next;
+		    }
+		    if ($k eq "MANPAGES") {
+			    my $list = trim(find_files(strlist($sec->{$k})));
+			    $trailer .= sprintf(",\n\tmanpages='%s'", $list);
 			    next;
 		    }
 		    if ($k eq "$s" . "_OBJ_FILES") {

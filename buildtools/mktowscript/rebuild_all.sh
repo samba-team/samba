@@ -20,7 +20,7 @@ while read f; do
 	rm -f wscript_build.$$
 	exit 1
     }
-    if cmp wscript_build.$$ $ws 2> /dev/null; then
+    if cmp wscript_build.$$ $ws > /dev/null 2>&1; then
 	rm -f wscript_build.$$
     else
 	mv wscript_build.$$ $ws || exit 1

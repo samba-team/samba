@@ -198,7 +198,8 @@ def SAMBA_BINARY(bld, binname, source_list,
                  installdir=None,
                  ldflags=None,
                  cflags=None,
-                 autoproto=None):
+                 autoproto=None,
+                 manpages=None):
     ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
