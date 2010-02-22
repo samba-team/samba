@@ -78,7 +78,7 @@ static bool test_multibind(struct ldap_connection *conn, const char *userdn, con
 	return ret;
 }
 
-static bool test_search_rootDSE(struct ldap_connection *conn, char **basedn)
+static bool test_search_rootDSE(struct ldap_connection *conn, const char **basedn)
 {
 	bool ret = true;
 	struct ldap_message *msg, *result;
@@ -139,8 +139,6 @@ static bool test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 			}
 		}
 	}
-
-	talloc_free(req);
 
 	return ret;
 }
@@ -361,8 +359,8 @@ bool torture_ldap_basic(struct torture_context *torture)
 	const char *host = torture_setting_string(torture, "host", NULL);
 	const char *userdn = torture_setting_string(torture, "ldap_userdn", NULL);
 	const char *secret = torture_setting_string(torture, "ldap_secret", NULL);
-	char *url;
-	char *basedn;
+	const char *url;
+	const char *basedn;
 
 	mem_ctx = talloc_init("torture_ldap_basic");
 
