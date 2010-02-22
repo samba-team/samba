@@ -262,7 +262,6 @@ cat >$SERVERCONFFILE<<EOF
 	map readonly = no
 	store dos attributes = yes
 	create mask = 755
-	store create time = yes
 	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_depot.so
 
 	#Include user defined custom parameters if set
