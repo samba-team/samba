@@ -153,7 +153,11 @@ Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 #################################################################
 # define a Samba library
 def SAMBA_LIBRARY(bld, libname, source_list,
-                  deps='', include_list='.', vnum=None):
+                  deps='',
+                  public_deps='',
+                  include_list='.',
+                  vnum=None,
+                  cflags=None):
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
     bld(
@@ -181,8 +185,14 @@ Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 #################################################################
 # define a Samba binary
-def SAMBA_BINARY(bld, binname, source_list, deps='', syslibs='',
-                 include_list='', modules=None):
+def SAMBA_BINARY(bld, binname, source_list,
+                 deps='',
+                 syslibs='',
+                 include_list='',
+                 modules=None,
+                 installdir=None,
+                 ldflags=None,
+                 cflags=None):
     ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
@@ -211,6 +221,17 @@ def SAMBA_BINARY(bld, binname, source_list, deps='', syslibs='',
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 
+#################################################################
+# define a Samba python module
+def SAMBA_PYTHON(bld, name, source_list,
+                 deps='',
+                 public_deps='',
+                 realname=''):
+    Logs.debug('runner: PYTHON_SAMBA not implemented')
+    return
+Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
+
+
 ################################################################
 # build a C prototype file automatically
 def AUTOPROTO(bld, header, source_list):
@@ -226,10 +247,14 @@ Build.BuildContext.AUTOPROTO = AUTOPROTO
 #################################################################
 # define a Samba module.
 def SAMBA_MODULE(bld, modname, source_list,
-                 deps='', include_list='.',
+                 deps='',
+                 include_list='.',
                  subsystem=None,
                  init_function=None,
-                 autoproto=None):
+                 autoproto=None,
+                 aliases=None,
+                 cflags=None,
+                 output_type=None):
     bld.ADD_INIT_FUNCTION(subsystem, init_function)
     bld.AUTOPROTO(autoproto, source_list)
     bld.SAMBA_LIBRARY(modname, source_list,
@@ -239,8 +264,12 @@ Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 #################################################################
 # define a Samba subsystem
 def SAMBA_SUBSYSTEM(bld, modname, source_list,
-                    deps='', include_list='.',
-                    autoproto=None):
+                    deps='',
+                    public_deps='',
+                    include_list='.',
+                    autoproto=None,
+                    cflags=None,
+                    init_function_sentinal=None):
     bld.SAMBA_LIBRARY(modname, source_list,
                       deps=deps, include_list=include_list)
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
