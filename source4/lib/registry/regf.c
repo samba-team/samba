@@ -2042,7 +2042,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	}
 	
 	/* We can drop our own reference now that *key will have created one */
-	talloc_free(regf);
+	talloc_unlink(NULL, regf);
 
 	return WERR_OK;
 }
