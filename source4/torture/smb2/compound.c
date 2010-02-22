@@ -33,6 +33,9 @@
 		goto done; \
 	}} while (0)
 
+#define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
+#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
+
 static bool test_compound_related1(struct torture_context *tctx,
 				   struct smb2_tree *tree)
 {
@@ -420,6 +423,158 @@ done:
 	return ret;
 }
 
+/* Send a compound request where we expect the last request (Create, Notify)
+ * to go asynchronous. This works against a Win7 server and the reply is
+ * sent in two different packets. */
+static bool test_compound_interim1(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+    struct smb2_handle hd;
+    struct smb2_create cr;
+    NTSTATUS status = NT_STATUS_OK;
+    const char *dname = "compound_interim_dir";
+    struct smb2_notify nt;
+    bool ret = true;
+    struct smb2_request *req[2];
+
+    /* Win7 compound request implementation deviates substantially from the
+     * SMB2 spec as noted in MS-SMB2 <159>, <162>.  This, test currently
+     * verifies the Windows behavior, not the general spec behavior. */
+    if (!TARGET_IS_WIN7(tctx) && !TARGET_IS_W2K8(tctx)) {
+	    torture_skip(tctx, "Interim test is specific to Windows server "
+			       "behavior.\n");
+    }
+
+    smb2_transport_credits_ask_num(tree->session->transport, 5);
+
+    smb2_deltree(tree, dname);
+
+    smb2_transport_credits_ask_num(tree->session->transport, 1);
+
+    ZERO_STRUCT(cr);
+    cr.in.desired_access	= SEC_RIGHTS_FILE_ALL;
+    cr.in.create_options	= NTCREATEX_OPTIONS_DIRECTORY;
+    cr.in.file_attributes	= FILE_ATTRIBUTE_DIRECTORY;
+    cr.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+				  NTCREATEX_SHARE_ACCESS_WRITE |
+				  NTCREATEX_SHARE_ACCESS_DELETE;
+    cr.in.create_disposition	= NTCREATEX_DISP_CREATE;
+    cr.in.fname			= dname;
+
+    smb2_transport_compound_start(tree->session->transport, 2);
+
+    req[0] = smb2_create_send(tree, &cr);
+
+    smb2_transport_compound_set_related(tree->session->transport, true);
+
+    hd.data[0] = UINT64_MAX;
+    hd.data[1] = UINT64_MAX;
+
+    ZERO_STRUCT(nt);
+    nt.in.recursive          = true;
+    nt.in.buffer_size        = 0x1000;
+    nt.in.file.handle        = hd;
+    nt.in.completion_filter  = FILE_NOTIFY_CHANGE_NAME;
+    nt.in.unknown            = 0x00000000;
+
+    req[1] = smb2_notify_send(tree, &nt);
+
+    status = smb2_create_recv(req[0], tree, &cr);
+    CHECK_STATUS(status, NT_STATUS_OK);
+
+    smb2_cancel(req[1]);
+    status = smb2_notify_recv(req[1], tree, &nt);
+    CHECK_STATUS(status, NT_STATUS_CANCELLED);
+
+    smb2_util_close(tree, cr.out.file.handle);
+
+    smb2_deltree(tree, dname);
+done:
+    return ret;
+}
+
+/* Send a compound request where we expect the middle request (Create, Notify,
+ * GetInfo) to go asynchronous. Against Win7 the sync request succeed while
+ * the async fails. All are returned in the same compound response. */
+static bool test_compound_interim2(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+    struct smb2_handle hd;
+    struct smb2_create cr;
+    NTSTATUS status = NT_STATUS_OK;
+    const char *dname = "compound_interim_dir";
+    struct smb2_getinfo gf;
+    struct smb2_notify  nt;
+    bool ret = true;
+    struct smb2_request *req[3];
+
+    /* Win7 compound request implementation deviates substantially from the
+     * SMB2 spec as noted in MS-SMB2 <159>, <162>.  This, test currently
+     * verifies the Windows behavior, not the general spec behavior. */
+    if (!TARGET_IS_WIN7(tctx) && !TARGET_IS_W2K8(tctx)) {
+	    torture_skip(tctx, "Interim test is specific to Windows server "
+			       "behavior.\n");
+    }
+
+    smb2_transport_credits_ask_num(tree->session->transport, 5);
+
+    smb2_deltree(tree, dname);
+
+    smb2_transport_credits_ask_num(tree->session->transport, 1);
+
+    ZERO_STRUCT(cr);
+    cr.in.desired_access        = SEC_RIGHTS_FILE_ALL;
+    cr.in.create_options        = NTCREATEX_OPTIONS_DIRECTORY;
+    cr.in.file_attributes       = FILE_ATTRIBUTE_DIRECTORY;
+    cr.in.share_access      = NTCREATEX_SHARE_ACCESS_READ |
+                      NTCREATEX_SHARE_ACCESS_WRITE |
+                      NTCREATEX_SHARE_ACCESS_DELETE;
+    cr.in.create_disposition    = NTCREATEX_DISP_CREATE;
+    cr.in.fname         = dname;
+
+    smb2_transport_compound_start(tree->session->transport, 3);
+
+    req[0] = smb2_create_send(tree, &cr);
+
+    smb2_transport_compound_set_related(tree->session->transport, true);
+
+    hd.data[0] = UINT64_MAX;
+    hd.data[1] = UINT64_MAX;
+
+    ZERO_STRUCT(nt);
+    nt.in.recursive          = true;
+    nt.in.buffer_size        = 0x1000;
+    nt.in.file.handle        = hd;
+    nt.in.completion_filter  = FILE_NOTIFY_CHANGE_NAME;
+    nt.in.unknown            = 0x00000000;
+
+    req[1] = smb2_notify_send(tree, &nt);
+
+    ZERO_STRUCT(gf);
+    gf.in.file.handle = hd;
+    gf.in.info_type   = SMB2_GETINFO_FILE;
+    gf.in.info_class  = 0x04; // FILE_BASIC_INFORMATION
+    gf.in.output_buffer_length = 0x1000;
+    gf.in.input_buffer_length = 0;
+
+    req[2] = smb2_getinfo_send(tree, &gf);
+
+    status = smb2_create_recv(req[0], tree, &cr);
+    CHECK_STATUS(status, NT_STATUS_OK);
+
+    status = smb2_notify_recv(req[1], tree, &nt);
+    CHECK_STATUS(status, NT_STATUS_INTERNAL_ERROR);
+
+    status = smb2_getinfo_recv(req[2], tree, &gf);
+    CHECK_STATUS(status, NT_STATUS_OK);
+
+    smb2_util_close(tree, cr.out.file.handle);
+
+    smb2_deltree(tree, dname);
+done:
+    return ret;
+}
+
 struct torture_suite *torture_smb2_compound_init(void)
 {
 	struct torture_suite *suite =
@@ -431,6 +586,8 @@ struct torture_suite *torture_smb2_compound_init(void)
 	torture_suite_add_1smb2_test(suite, "INVALID1", test_compound_invalid1);
 	torture_suite_add_1smb2_test(suite, "INVALID2", test_compound_invalid2);
 	torture_suite_add_1smb2_test(suite, "INVALID3", test_compound_invalid3);
+	torture_suite_add_1smb2_test(suite, "INTERIM1",  test_compound_interim1);
+	torture_suite_add_1smb2_test(suite, "INTERIM2",  test_compound_interim2);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND tests");
 
