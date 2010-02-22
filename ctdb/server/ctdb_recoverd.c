@@ -212,7 +212,7 @@ static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_
 static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
 {
 	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
-		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
+		DEBUG(DEBUG_ERR, (__location__ " Invalid length/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
 		return;
 	}
 	if (node_pnn < ctdb->num_nodes) {
