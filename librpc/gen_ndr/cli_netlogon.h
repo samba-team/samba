@@ -833,23 +833,22 @@ struct tevent_req *rpccli_netr_GetForestTrustInformation_send(TALLOC_CTX *mem_ct
 							      struct tevent_context *ev,
 							      struct rpc_pipe_client *cli,
 							      const char *_server_name /* [in] [unique,charset(UTF16)] */,
-							      const char *_trusted_domain_name /* [in] [ref,charset(UTF16)] */,
+							      const char *_computer_name /* [in] [ref,charset(UTF16)] */,
 							      struct netr_Authenticator *_credential /* [in] [ref] */,
 							      struct netr_Authenticator *_return_authenticator /* [out] [ref] */,
 							      uint32_t _flags /* [in]  */,
 							      struct lsa_ForestTrustInformation **_forest_trust_info /* [out] [ref] */);
 NTSTATUS rpccli_netr_GetForestTrustInformation_recv(struct tevent_req *req,
 						    TALLOC_CTX *mem_ctx,
-						    WERROR *result);
+						    NTSTATUS *result);
 NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       const char *server_name /* [in] [unique,charset(UTF16)] */,
-					       const char *trusted_domain_name /* [in] [ref,charset(UTF16)] */,
+					       const char *computer_name /* [in] [ref,charset(UTF16)] */,
 					       struct netr_Authenticator *credential /* [in] [ref] */,
 					       struct netr_Authenticator *return_authenticator /* [out] [ref] */,
 					       uint32_t flags /* [in]  */,
-					       struct lsa_ForestTrustInformation **forest_trust_info /* [out] [ref] */,
-					       WERROR *werror);
+					       struct lsa_ForestTrustInformation **forest_trust_info /* [out] [ref] */);
 struct tevent_req *rpccli_netr_LogonSamLogonWithFlags_send(TALLOC_CTX *mem_ctx,
 							   struct tevent_context *ev,
 							   struct rpc_pipe_client *cli,

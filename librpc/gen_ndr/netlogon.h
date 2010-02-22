@@ -1830,7 +1830,7 @@ struct netr_DsRGetForestTrustInformation {
 struct netr_GetForestTrustInformation {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
-		const char *trusted_domain_name;/* [ref,charset(UTF16)] */
+		const char *computer_name;/* [ref,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [ref] */
 		uint32_t flags;
 	} in;
@@ -1838,7 +1838,7 @@ struct netr_GetForestTrustInformation {
 	struct {
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		struct lsa_ForestTrustInformation **forest_trust_info;/* [ref] */
-		WERROR result;
+		NTSTATUS result;
 	} out;
 
 };

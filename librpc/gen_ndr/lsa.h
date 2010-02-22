@@ -764,7 +764,7 @@ enum lsa_ForestTrustRecordType
 struct lsa_ForestTrustRecord {
 	uint32_t flags;
 	enum lsa_ForestTrustRecordType level;
-	uint64_t unknown;
+	uint64_t time;
 	union lsa_ForestTrustData forest_trust_data;/* [switch_is(level)] */
 };
 

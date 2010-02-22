@@ -1627,9 +1627,9 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2c */
-	WERROR netr_GetForestTrustInformation(
+	NTSTATUS netr_GetForestTrustInformation(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
-		[in,ref] [string,charset(UTF16)] uint16 *trusted_domain_name,
+		[in,ref] [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref] netr_Authenticator *credential,
 		[out,ref] netr_Authenticator *return_authenticator,
 		[in] uint32 flags,

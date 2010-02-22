@@ -16151,13 +16151,13 @@ static enum ndr_err_code ndr_push_netr_GetForestTrustInformation(struct ndr_push
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.server_name, ndr_charset_length(r->in.server_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->in.trusted_domain_name == NULL) {
+		if (r->in.computer_name == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.trusted_domain_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.computer_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.trusted_domain_name, CH_UTF16)));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.trusted_domain_name, ndr_charset_length(r->in.trusted_domain_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.computer_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computer_name, ndr_charset_length(r->in.computer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		if (r->in.credential == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -16176,7 +16176,7 @@ static enum ndr_err_code ndr_push_netr_GetForestTrustInformation(struct ndr_push
 		if (*r->out.forest_trust_info) {
 			NDR_CHECK(ndr_push_lsa_ForestTrustInformation(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.forest_trust_info));
 		}
-		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -16211,13 +16211,13 @@ static enum ndr_err_code ndr_pull_netr_GetForestTrustInformation(struct ndr_pull
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.trusted_domain_name));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.trusted_domain_name));
-		if (ndr_get_array_length(ndr, &r->in.trusted_domain_name) > ndr_get_array_size(ndr, &r->in.trusted_domain_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.trusted_domain_name), ndr_get_array_length(ndr, &r->in.trusted_domain_name));
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
+		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.trusted_domain_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.trusted_domain_name, ndr_get_array_length(ndr, &r->in.trusted_domain_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -16257,7 +16257,7 @@ static enum ndr_err_code ndr_pull_netr_GetForestTrustInformation(struct ndr_pull
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_trust_info_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_trust_info_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -16278,9 +16278,9 @@ _PUBLIC_ void ndr_print_netr_GetForestTrustInformation(struct ndr_print *ndr, co
 			ndr_print_string(ndr, "server_name", r->in.server_name);
 		}
 		ndr->depth--;
-		ndr_print_ptr(ndr, "trusted_domain_name", r->in.trusted_domain_name);
+		ndr_print_ptr(ndr, "computer_name", r->in.computer_name);
 		ndr->depth++;
-		ndr_print_string(ndr, "trusted_domain_name", r->in.trusted_domain_name);
+		ndr_print_string(ndr, "computer_name", r->in.computer_name);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "credential", r->in.credential);
 		ndr->depth++;
@@ -16305,7 +16305,7 @@ _PUBLIC_ void ndr_print_netr_GetForestTrustInformation(struct ndr_print *ndr, co
 		}
 		ndr->depth--;
 		ndr->depth--;
-		ndr_print_WERROR(ndr, "result", r->out.result);
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;

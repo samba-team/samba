@@ -7105,7 +7105,7 @@ struct tevent_req *rpccli_netr_GetForestTrustInformation_send(TALLOC_CTX *mem_ct
 							      struct tevent_context *ev,
 							      struct rpc_pipe_client *cli,
 							      const char *_server_name /* [in] [unique,charset(UTF16)] */,
-							      const char *_trusted_domain_name /* [in] [ref,charset(UTF16)] */,
+							      const char *_computer_name /* [in] [ref,charset(UTF16)] */,
 							      struct netr_Authenticator *_credential /* [in] [ref] */,
 							      struct netr_Authenticator *_return_authenticator /* [out] [ref] */,
 							      uint32_t _flags /* [in]  */,
@@ -7125,7 +7125,7 @@ struct tevent_req *rpccli_netr_GetForestTrustInformation_send(TALLOC_CTX *mem_ct
 
 	/* In parameters */
 	state->orig.in.server_name = _server_name;
-	state->orig.in.trusted_domain_name = _trusted_domain_name;
+	state->orig.in.computer_name = _computer_name;
 	state->orig.in.credential = _credential;
 	state->orig.in.flags = _flags;
 
@@ -7193,7 +7193,7 @@ static void rpccli_netr_GetForestTrustInformation_done(struct tevent_req *subreq
 
 NTSTATUS rpccli_netr_GetForestTrustInformation_recv(struct tevent_req *req,
 						    TALLOC_CTX *mem_ctx,
-						    WERROR *result)
+						    NTSTATUS *result)
 {
 	struct rpccli_netr_GetForestTrustInformation_state *state = tevent_req_data(
 		req, struct rpccli_netr_GetForestTrustInformation_state);
@@ -7217,19 +7217,18 @@ NTSTATUS rpccli_netr_GetForestTrustInformation_recv(struct tevent_req *req,
 NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       const char *server_name /* [in] [unique,charset(UTF16)] */,
-					       const char *trusted_domain_name /* [in] [ref,charset(UTF16)] */,
+					       const char *computer_name /* [in] [ref,charset(UTF16)] */,
 					       struct netr_Authenticator *credential /* [in] [ref] */,
 					       struct netr_Authenticator *return_authenticator /* [out] [ref] */,
 					       uint32_t flags /* [in]  */,
-					       struct lsa_ForestTrustInformation **forest_trust_info /* [out] [ref] */,
-					       WERROR *werror)
+					       struct lsa_ForestTrustInformation **forest_trust_info /* [out] [ref] */)
 {
 	struct netr_GetForestTrustInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
 	r.in.server_name = server_name;
-	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.computer_name = computer_name;
 	r.in.credential = credential;
 	r.in.flags = flags;
 
@@ -7252,11 +7251,7 @@ NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
 	*forest_trust_info = *r.out.forest_trust_info;
 
 	/* Return result */
-	if (werror) {
-		*werror = r.out.result;
-	}
-
-	return werror_to_ntstatus(r.out.result);
+	return r.out.result;
 }
 
 struct rpccli_netr_LogonSamLogonWithFlags_state {

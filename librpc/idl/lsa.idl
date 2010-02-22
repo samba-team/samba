@@ -1295,7 +1295,7 @@ import "misc.idl", "security.idl";
 	typedef struct {
 		uint32 flags;
 		lsa_ForestTrustRecordType level;
-		hyper unknown;
+		hyper time;
 		[switch_is(level)] lsa_ForestTrustData forest_trust_data;
 	} lsa_ForestTrustRecord;
 

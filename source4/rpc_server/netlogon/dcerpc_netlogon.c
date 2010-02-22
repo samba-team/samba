@@ -1816,23 +1816,189 @@ static NTSTATUS dcesrv_netr_ServerTrustPasswordsGet(struct dcesrv_call_state *dc
 }
 
 
+static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
+				      struct ldb_context *sam_ctx,
+				      struct loadparm_context *lp_ctx,
+				      struct lsa_ForestTrustInformation *info)
+{
+	struct lsa_ForestTrustDomainInfo *domain_info;
+	struct lsa_ForestTrustRecord *e;
+	struct ldb_message **dom_res;
+	const char * const dom_attrs[] = { "objectSid", NULL };
+	int ret;
+
+	/* we need to provide 2 entries:
+	 * 1. the Root Forest name
+	 * 2. the Domain Information
+	 */
+
+	info->count = 2;
+	info->entries = talloc_array(info, struct lsa_ForestTrustRecord *, 2);
+	W_ERROR_HAVE_NO_MEMORY(info->entries);
+
+	/* Forest root info */
+	e = talloc(info, struct lsa_ForestTrustRecord);
+	W_ERROR_HAVE_NO_MEMORY(e);
+
+	e->flags = 0;
+	e->level = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+	e->time = 0; /* so far always 0 in trces. */
+	e->forest_trust_data.top_level_name.string = lp_dnsdomain(lp_ctx);
+
+	info->entries[0] = e;
+
+	/* Domain info */
+	e = talloc(info, struct lsa_ForestTrustRecord);
+	W_ERROR_HAVE_NO_MEMORY(e);
+
+	/* get our own domain info */
+	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs);
+	if (ret != 1) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	/* TODO: check if disabled and set flags accordingly */
+	e->flags = 0;
+	e->level = LSA_FOREST_TRUST_DOMAIN_INFO;
+	e->time = 0; /* so far always 0 in traces. */
+
+	domain_info = &e->forest_trust_data.domain_info;
+	domain_info->domain_sid = samdb_result_dom_sid(info, dom_res[0],
+						       "objectSid");
+	domain_info->dns_domain_name.string = lp_dnsdomain(lp_ctx);
+	domain_info->netbios_domain_name.string = lp_workgroup(lp_ctx);
+
+	info->entries[1] = e;
+
+	talloc_free(dom_res);
+
+	return WERR_OK;
+}
+
 /*
   netr_DsRGetForestTrustInformation
 */
-static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DsRGetForestTrustInformation *r)
+static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state *dce_call,
+						       TALLOC_CTX *mem_ctx,
+						       struct netr_DsRGetForestTrustInformation *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct lsa_ForestTrustInformation *info, **info_ptr;
+	struct ldb_context *sam_ctx;
+	WERROR werr;
+
+	ZERO_STRUCT(r->out);
+
+	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+		return WERR_CALL_NOT_IMPLEMENTED;
+	}
+
+	if (r->in.flags & 0xFFFFFFFE) {
+		return WERR_INVALID_FLAGS;
+	}
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (r->in.flags & DS_GFTI_UPDATE_TDO) {
+		if (!samdb_is_pdc(sam_ctx)) {
+			return WERR_NERR_NOTPRIMARY;
+		}
+
+		if (r->in.trusted_domain_name == NULL) {
+			return WERR_INVALID_FLAGS;
+		}
+
+		/* TODO: establish an schannel connection with
+		 * r->in.trusted_domain_name and perform a
+		 * netr_GetForestTrustInformation call against it */
+
+		/* for now return not implementd */
+		return WERR_CALL_NOT_IMPLEMENTED;
+	}
+
+	/* TODO: check r->in.server_name is our name */
+
+	info_ptr = talloc(mem_ctx, struct lsa_ForestTrustInformation *);
+	W_ERROR_HAVE_NO_MEMORY(info_ptr);
+
+	info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	werr = fill_forest_trust_array(mem_ctx, sam_ctx, lp_ctx, info);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	*info_ptr = info;
+	r->out.forest_trust_info = info_ptr;
+
+	return WERR_OK;
 }
 
 
 /*
   netr_GetForestTrustInformation
 */
-static WERROR dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_GetForestTrustInformation *r)
+static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *dce_call,
+						      TALLOC_CTX *mem_ctx,
+						      struct netr_GetForestTrustInformation *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct netlogon_creds_CredentialState *creds;
+	struct lsa_ForestTrustInformation *info, **info_ptr;
+	struct ldb_context *sam_ctx;
+	NTSTATUS status;
+	WERROR werr;
+
+	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ZERO_STRUCT(r->out);
+
+	status = dcesrv_netr_creds_server_step_check(dce_call,
+						     mem_ctx,
+						     r->in.computer_name,
+						     r->in.credential,
+						     r->out.return_authenticator,
+						     &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if ((creds->secure_channel_type != SEC_CHAN_DNS_DOMAIN) &&
+	    (creds->secure_channel_type != SEC_CHAN_DOMAIN)) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* TODO: check r->in.server_name is our name */
+
+	info_ptr = talloc(mem_ctx, struct lsa_ForestTrustInformation *);
+	if (!info_ptr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	werr = fill_forest_trust_array(mem_ctx, sam_ctx, lp_ctx, info);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
+	}
+
+	*info_ptr = info;
+	r->out.forest_trust_info = info_ptr;
+
+	return NT_STATUS_OK;
 }
 
 

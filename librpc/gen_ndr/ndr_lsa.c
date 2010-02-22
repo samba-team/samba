@@ -5206,7 +5206,7 @@ static enum ndr_err_code ndr_push_lsa_ForestTrustRecord(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_lsa_ForestTrustRecordType(ndr, NDR_SCALARS, r->level));
-		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->time));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->forest_trust_data, r->level));
 		NDR_CHECK(ndr_push_lsa_ForestTrustData(ndr, NDR_SCALARS, &r->forest_trust_data));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
@@ -5223,7 +5223,7 @@ static enum ndr_err_code ndr_pull_lsa_ForestTrustRecord(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_lsa_ForestTrustRecordType(ndr, NDR_SCALARS, &r->level));
-		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->time));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->forest_trust_data, r->level));
 		NDR_CHECK(ndr_pull_lsa_ForestTrustData(ndr, NDR_SCALARS, &r->forest_trust_data));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
@@ -5240,7 +5240,7 @@ _PUBLIC_ void ndr_print_lsa_ForestTrustRecord(struct ndr_print *ndr, const char 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_lsa_ForestTrustRecordType(ndr, "level", r->level);
-	ndr_print_hyper(ndr, "unknown", r->unknown);
+	ndr_print_hyper(ndr, "time", r->time);
 	ndr_print_set_switch_value(ndr, &r->forest_trust_data, r->level);
 	ndr_print_lsa_ForestTrustData(ndr, "forest_trust_data", &r->forest_trust_data);
 	ndr->depth--;
