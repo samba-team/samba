@@ -1526,6 +1526,31 @@ static int cmd_altname(void)
 	return 0;
 }
 
+static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t mode)
+{
+	char *attrs = TALLOC_ZERO_ARRAY(mem_ctx, char, 17);
+	int i = 0;
+
+	if (!(mode & FILE_ATTRIBUTE_NORMAL)) {
+		if (mode & FILE_ATTRIBUTE_READONLY) {
+			attrs[i++] = 'R';
+		}
+		if (mode & FILE_ATTRIBUTE_HIDDEN) {
+			attrs[i++] = 'H';
+		}
+		if (mode & FILE_ATTRIBUTE_SYSTEM) {
+			attrs[i++] = 'S';
+		}
+		if (mode & FILE_ATTRIBUTE_DIRECTORY) {
+			attrs[i++] = 'D';
+		}
+		if (mode & FILE_ATTRIBUTE_ARCHIVE) {
+			attrs[i++] = 'A';
+		}
+	}
+	return attrs;
+}
+
 /****************************************************************************
  Show all info we can get
 ****************************************************************************/
@@ -1567,6 +1592,8 @@ static int do_allinfo(const char *name)
 
 	unix_timespec_to_nt_time(&tmp, c_time);
 	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	d_printf("attributes: %s\n", attr_str(talloc_tos(), mode));
 
 	if (!cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
 				   &streams)) {
