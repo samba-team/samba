@@ -314,15 +314,10 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 ###############################################################
 # add a new set of build rules from a subdirectory
+# the @runonce decorator ensures we don't end up
+# with duplicate rules
+@runonce
 def BUILD_SUBDIR(bld, dir):
-    try:
-        cache = bld.cache_build_subdirs
-    except AttributeError:
-        bld.cache_build_subdirs = cache = {}
-    abs_dir=os.path.normpath(bld.curdir + '/' + dir)
-    if abs_dir in cache:
-        return
-    cache[abs_dir] = True
     bld.add_subdirs(dir)
 Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
 
