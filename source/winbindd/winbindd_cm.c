@@ -1618,7 +1618,7 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 	NTSTATUS result;
 
 	/* Internal connections never use the network. */
-	if (domain->internal) {
+	if (domain->internal || !winbindd_can_contact_domain(domain)) {
 		domain->initialized = True;
 		return NT_STATUS_OK;
 	}
@@ -1746,9 +1746,6 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 
 			domain->initialized = True;
 
-			if ( !winbindd_can_contact_domain( domain) )
-				domain->internal = True;
-			
 			break;
 		}		
 	}
