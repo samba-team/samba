@@ -1,25 +1,46 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs, sys
+import Build, os, Logs, sys, Configure, Options
 from Configure import conf
 
 LIB_PATH="shared"
+
+######################################################
+# this is used as a decorator to make functions only
+# run once. Based on the idea from
+# http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
+runonce_ret = {}
+def runonce(function):
+    def wrapper(*args):
+        if args in runonce_ret:
+            return runonce_ret[args]
+        else:
+            ret = function(*args)
+            runonce_ret[args] = ret
+            return ret
+    return wrapper
+
 
 ####################################################
 # some autoconf like helpers, to make the transition
 # to waf a bit easier for those used to autoconf
 # m4 files
+@runonce
 @conf
 def DEFUN(conf, d, v):
     conf.define(d, v, quote=False)
     conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
+@runonce
+def CHECK_HEADER(conf, h):
+    if conf.check(header_name=h):
+        conf.env.hlist.append(h)
+
 @conf
 def CHECK_HEADERS(conf, list):
     for hdr in list.split():
-        if conf.check(header_name=hdr):
-            conf.env.hlist.append(hdr)
+        CHECK_HEADER(conf, hdr)
 
 @conf
 def CHECK_TYPES(conf, list):
@@ -36,10 +57,15 @@ def CHECK_TYPE(conf, t, alternate):
     if not conf.check(type_name=t, header_name=conf.env.hlist):
         conf.DEFUN(t, alternate)
 
+@runonce
+def CHECK_FUNC(conf, f):
+    conf.check(function_name=f, header_name=conf.env.hlist)
+
+
 @conf
 def CHECK_FUNCS(conf, list):
     for f in list.split():
-        conf.check(function_name=f, header_name=conf.env.hlist)
+        CHECK_FUNC(conf, f)
 
 @conf
 def CHECK_FUNCS_IN(conf, list, library):
@@ -47,6 +73,7 @@ def CHECK_FUNCS_IN(conf, list, library):
         for f in list.split():
             conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
         conf.env['LIB_' + library.upper()] = library
+
 
 #################################################
 # write out config.h in the right directory
@@ -82,7 +109,6 @@ def ADD_CFLAGS(conf, flags):
 # Note that this should really check if rpath is available on this platform
 # and it should also honor an --enable-rpath option
 def set_rpath(bld):
-    import Options
     if Options.is_install:
         if bld.env['RPATH_ON_INSTALL']:
             bld.env['RPATH'] = ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
@@ -323,17 +349,3 @@ def exec_command(self, cmd, **kw):
 Build.BuildContext.exec_command = exec_command
 
 
-######################################################
-# this is used as a decorator to make functions only
-# run once. Based on the idea from
-# http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
-runonce_ret = {}
-def runonce(function):
-    def wrapper(*args):
-        if args in runonce_ret:
-            return runonce_ret[args]
-        else:
-            ret = function(*args)
-            runonce_ret[args] = ret
-            return ret
-    return wrapper
