@@ -36,6 +36,7 @@ import param
 import registry
 import urllib
 import shutil
+import string
 
 import ldb
 
@@ -806,25 +807,26 @@ def setup_self_join(samdb, names,
               "NTDSGUID": names.ntdsguid,
               "DNSPASS_B64": b64encode(dnspass),
               })
+def getpolicypath(sysvolpath,dnsdomain,guid):
+    if string.find(guid,"{",0,1) == -1:
+        guid = "{%s}"%guid
+    policy_path = os.path.join(sysvolpath, dnsdomain, "Policies",  guid )
+    return policy_path
 
-
-def setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid):
-    policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
-                               "{" + policyguid + "}")
+def create_gpo_struct(policy_path):
     os.makedirs(policy_path, 0755)
     open(os.path.join(policy_path, "GPT.INI"), 'w').write(
                       "[General]\r\nVersion=65543")
     os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
     os.makedirs(os.path.join(policy_path, "USER"), 0755)
 
-    policy_path_dc = os.path.join(paths.sysvol, names.dnsdomain, "Policies",
-                                  "{" + policyguid_dc + "}")
-    os.makedirs(policy_path_dc, 0755)
-    open(os.path.join(policy_path_dc, "GPT.INI"), 'w').write(
-                      "[General]\r\nVersion=2")
-    os.makedirs(os.path.join(policy_path_dc, "MACHINE"), 0755)
-    os.makedirs(os.path.join(policy_path_dc, "USER"), 0755)
+def setup_gpo(sysvolpath,dnsdomain,policyguid,policyguid_dc):
 
+    policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid)
+    create_gpo_struct(policy_path)
+
+    policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid_dc)
+    create_gpo_struct(policy_path)
 
 def setup_samdb(path, setup_path, session_info, provision_backend, lp, 
                 names, message, 
@@ -1035,7 +1037,7 @@ FILL_DRS = "DRS"
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 
-def set_gpo_acl(path,acl,lp,domsid):
+def set_dir_acl(path,acl,lp,domsid):
 	setntacl(lp,path,acl,domsid)
 	for root, dirs, files in os.walk(path, topdown=False):
 		for name in files:
@@ -1043,7 +1045,19 @@ def set_gpo_acl(path,acl,lp,domsid):
 		for name in dirs:
 			setntacl(lp,os.path.join(root, name),acl,domsid)
 
-def setsysvolacl(samdb,names,netlogon,sysvol,gid,domainsid,lp):
+def set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp):
+	# Set ACL for GPO
+	policy_path = os.path.join(sysvol, dnsdomain, "Policies")
+	set_dir_acl(policy_path,dsacl2fsacl(POLICIES_ACL,str(domainsid)),lp,str(domainsid))
+	res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
+						attrs=["cn","nTSecurityDescriptor"],
+						expression="", scope=ldb.SCOPE_ONELEVEL)
+	for policy in res:
+		acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
+		policy_path = getpolicypath(sysvol,dnsdomain,str(policy["cn"]))
+		set_dir_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
+
+def setsysvolacl(samdb,netlogon,sysvol,gid,domainsid,dnsdomain,domaindn,lp):
 	canchown = 1
 	try:
 		os.chown(sysvol,-1,gid)
@@ -1060,18 +1074,8 @@ def setsysvolacl(samdb,names,netlogon,sysvol,gid,domainsid,lp):
 			if canchown:
 				os.chown(os.path.join(root, name),-1,gid)
 			setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
+	set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp)
 
-	# Set ACL for GPO
-	policy_path = os.path.join(sysvol, names.dnsdomain, "Policies")
-	set_gpo_acl(policy_path,dsacl2fsacl(POLICIES_ACL,str(domainsid)),lp,str(domainsid))
-	res = samdb.search(base="CN=Policies,CN=System,%s"%(names.domaindn),
-						attrs=["cn","nTSecurityDescriptor"],
-						expression="", scope=ldb.SCOPE_ONELEVEL)
-	for policy in res:
-		acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
-		policy_path = os.path.join(sysvol, names.dnsdomain, "Policies",
-									 str(policy["cn"]))
-		set_gpo_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
 
 
 
@@ -1325,8 +1329,8 @@ def provision(setup_dir, message, session_info,
 
         if serverrole == "domain controller":
             # Set up group policies (domain policy and domain controller policy)
-            setup_gpo(paths,names,samdb,policyguid,policyguid_dc,domainsid)
-            setsysvolacl(samdb,names,paths.netlogon,paths.sysvol,wheel_gid,domainsid,lp)
+            setup_gpo(paths.sysvol,names.dnsdomain,policyguid,policyguid_dc)
+            setsysvolacl(samdb,paths.netlogon,paths.sysvol,wheel_gid,domainsid,names.dnsdomain,names.domaindn,lp)
 
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
