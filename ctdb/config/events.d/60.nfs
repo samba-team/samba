@@ -84,7 +84,7 @@ case "$1" in
 	# and that its directories are available
 	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
 	    exportfs | grep -v '^#' | grep '^/' |
-	    sed -e 's/[[:space:]]*[^[:space:]]*$//' |
+	    sed -e 's/[[:space:]]\+[^[:space:]]*$//' |
 	    ctdb_check_directories
 	} || exit $?
 
