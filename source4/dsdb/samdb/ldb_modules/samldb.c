@@ -210,9 +210,10 @@ static int samldb_check_samAccountName_callback(struct ldb_request *req,
                                        LDB_ERR_ENTRY_ALREADY_EXISTS);
 
 	case LDB_REPLY_REFERRAL:
-		/* this should not happen */
-		return ldb_module_done(ac->req, NULL, NULL,
-                                       LDB_ERR_OPERATIONS_ERROR);
+		/* ignore */
+		talloc_free(ares);
+		ret = LDB_SUCCESS;
+		break;
 
 	case LDB_REPLY_DONE:
 		/* not found, go on */
@@ -610,9 +611,9 @@ static int samldb_find_for_defaultObjectCategory_callback(struct ldb_request *re
 		break;
 
 	case LDB_REPLY_REFERRAL:
-		/* this should not happen */
+		/* ignore */
 		talloc_free(ares);
-		ret = LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_SUCCESS;
 		break;
 
 	case LDB_REPLY_DONE:
