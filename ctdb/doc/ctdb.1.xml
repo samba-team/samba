@@ -362,6 +362,17 @@ name:eth2 link:up references:1
       </screen>
     </refsect2>
 
+    <refsect2><title>setifacelink &lt;iface&gt; &lt;status&gt;</title>
+      <para>
+	This command will set the status of a network interface.
+	The status needs to be "up" or "down". This is typically
+	used in the 10.interfaces script in the "monitor" event.
+      </para>
+      <para>
+	Example: ctdb setifacelink eth0 up
+      </para>
+    </refsect2>
+
     <refsect2><title>ip</title>
       <para>
         This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip -n all".
