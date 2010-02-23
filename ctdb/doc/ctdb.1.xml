@@ -402,6 +402,26 @@ Public IPs on node 0
       </screen>
     </refsect2>
 
+    <refsect2><title>ipinfo &lt;ip&gt;</title>
+      <para>
+        This command will display details about the specified public addresses.
+      </para>
+      <para>
+	Example: ctdb ipinfo 172.31.92.85
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+Public IP[172.31.92.85] info on node 0
+IP:172.31.92.85
+CurrentNode:0
+NumInterfaces:2
+Interface[1]: Name:eth4 Link:down References:0
+Interface[2]: Name:eth5 Link:up References:2 (active)
+      </screen>
+    </refsect2>
+
     <refsect2><title>scriptstatus</title>
       <para>
         This command displays which scripts where run in the previous monitoring cycle and the result of each script. If a script failed with an error, causing the node to become unhealthy, the output from that script is also shown.
