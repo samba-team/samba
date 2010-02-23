@@ -954,7 +954,7 @@ static bool do_winbind_onlinestatus(struct messaging_context *msg_ctx,
 {
 	struct server_id myid;
 
-	myid = pid_to_procid(sys_getpid());
+	myid = procid_self();
 
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol winbindd onlinestatus\n");
@@ -986,7 +986,7 @@ static bool do_dump_event_list(struct messaging_context *msg_ctx,
 {
 	struct server_id myid;
 
-	myid = pid_to_procid(sys_getpid());
+	myid = procid_self();
 
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> dump-event-list\n");
@@ -1006,7 +1006,7 @@ static bool do_winbind_dump_domain_list(struct messaging_context *msg_ctx,
 	uint8_t *buf = NULL;
 	int buf_len = 0;
 
-	myid = pid_to_procid(sys_getpid());
+	myid = procid_self();
 
 	if (argc < 1 || argc > 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> dump_domain_list "
@@ -1069,7 +1069,7 @@ static bool do_winbind_validate_cache(struct messaging_context *msg_ctx,
 				      const struct server_id pid,
 				      const int argc, const char **argv)
 {
-	struct server_id myid = pid_to_procid(sys_getpid());
+	struct server_id myid = procid_self();
 
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol winbindd validate-cache\n");
@@ -1239,7 +1239,7 @@ static struct server_id parse_dest(const char *dest)
 	/* Try self - useful for testing */
 
 	if (strequal(dest, "self")) {
-		return pid_to_procid(sys_getpid());
+		return procid_self();
 	}
 
 	/* Fix winbind typo. */

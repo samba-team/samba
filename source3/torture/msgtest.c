@@ -87,9 +87,9 @@ static void pong_message(struct messaging_context *msg_ctx,
 	safe_strcpy(buf, "1234567890", sizeof(buf)-1);
 
 	for (i=0;i<n;i++) {
-		messaging_send(msg_ctx, pid_to_procid(getpid()), MSG_PING,
+		messaging_send(msg_ctx, procid_self(), MSG_PING,
 			       &data_blob_null);
-		messaging_send_buf(msg_ctx, pid_to_procid(getpid()), MSG_PING,
+		messaging_send_buf(msg_ctx, procid_self(), MSG_PING,
 				   (uint8 *)buf, 11);
 	}
 
