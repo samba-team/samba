@@ -160,9 +160,11 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   deps='',
                   public_deps='',
                   include_list='.',
+                  public_headers=None,
                   vnum=None,
                   cflags=None,
                   autoproto=None):
+    # print "Declaring SAMBA_LIBRARY %s" % libname
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
     bld(
@@ -194,6 +196,7 @@ def SAMBA_BINARY(bld, binname, source_list,
                  deps='',
                  syslibs='',
                  include_list='',
+                 public_headers=None,
                  modules=None,
                  installdir=None,
                  ldflags=None,
@@ -274,6 +277,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
                     deps='',
                     public_deps='',
                     include_list='.',
+                    public_headers=None,
                     autoproto=None,
                     cflags=None,
                     init_function_sentinal=None):

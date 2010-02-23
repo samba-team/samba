@@ -210,7 +210,6 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 			$k eq "COV_TARGET" ||
 			$k eq "GCOV" ||
 			$k eq "PC_FILES" ||
-			$k eq "PUBLIC_HEADERS" ||
 			$k eq "CONFIG4FILE" ||
 			$k eq "LMHOSTSFILE4") {
 			    $trailer .= sprintf(",\n\t# %s='%s'", $k, trim($sec->{$k}));
@@ -271,6 +270,17 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 		    if ($k eq "AUTOPROTO") {
 			    my $list = trim(find_files(strlist($sec->{$k})));
 			    $trailer .= sprintf(",\n\tautoproto='%s'", $list);
+			    next;
+		    }
+		    if ($k eq "PUBLIC_HEADERS") {
+			    my $list = trim(strlist($sec->{$k}));
+			    if ($list =~ /\$\(addprefix .*,(.*)\)(.*)$/) {
+				    $list = trim("$1 $2");
+				    $list = find_files($list);
+			    } else {
+				    $list = trim(find_files(strlist($sec->{$k})));
+			    }
+			    $trailer .= sprintf(",\n\tpublic_headers='%s'", $list);
 			    next;
 		    }
 		    if ($k eq "MANPAGES") {
