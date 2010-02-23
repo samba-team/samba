@@ -4456,6 +4456,77 @@ static bool test_printer(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_architecture_buffer(struct torture_context *tctx,
+				     struct dcerpc_pipe *p)
+{
+	struct spoolss_OpenPrinterEx r;
+	struct spoolss_UserLevel1 u1;
+	struct policy_handle handle;
+	uint32_t architectures[] = {
+		PROCESSOR_ARCHITECTURE_INTEL,
+		PROCESSOR_ARCHITECTURE_IA64,
+		PROCESSOR_ARCHITECTURE_AMD64
+	};
+	uint32_t needed[3];
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(architectures); i++) {
+
+		torture_comment(tctx, "Testing OpenPrinterEx with architecture %d\n", architectures[i]);
+
+		u1.size = 0;
+		u1.client = NULL;
+		u1.user = NULL;
+		u1.build = 0;
+		u1.major = 3;
+		u1.minor = 0;
+		u1.processor = architectures[i];
+
+		r.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.datatype		= NULL;
+		r.in.devmode_ctr.devmode= NULL;
+		r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+		r.in.level		 = 1;
+		r.in.userlevel.level1	= &u1;
+		r.out.handle		= &handle;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_OpenPrinterEx(p, tctx, &r), "");
+		torture_assert_werr_ok(tctx, r.out.result, "");
+
+		{
+			struct spoolss_EnumPrinters e;
+			uint32_t count;
+			union spoolss_PrinterInfo *info;
+
+			e.in.flags = PRINTER_ENUM_LOCAL;
+			e.in.server = NULL;
+			e.in.level = 2;
+			e.in.buffer = NULL;
+			e.in.offered = 0;
+			e.out.count = &count;
+			e.out.info = &info;
+			e.out.needed = &needed[i];
+
+			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinters(p, tctx, &e), "");
+#if 0
+			torture_comment(tctx, "needed was %d\n", needed[i]);
+#endif
+		}
+
+		torture_assert(tctx, test_ClosePrinter(tctx, p, &handle), "");
+	}
+
+	for (i=1; i < ARRAY_SIZE(architectures); i++) {
+		if (needed[i-1] != needed[i]) {
+			torture_fail(tctx,
+				talloc_asprintf(tctx, "needed size %d for architecture %d != needed size %d for architecture %d\n",
+						needed[i-1], architectures[i-1], needed[i], architectures[i]));
+		}
+	}
+
+	return true;
+}
+
 bool torture_rpc_spoolss(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -4497,6 +4568,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPorts_old(torture, p);
 	ret &= test_EnumPrinters_old(torture, p);
 	ret &= test_EnumPrinterDrivers_old(torture, p);
+	ret &= test_architecture_buffer(torture, p);
 
 	return ret;
 }
