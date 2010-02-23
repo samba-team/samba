@@ -373,11 +373,32 @@ name:eth2 link:up references:1
 	Example output:
       </para>
       <screen format="linespecific">
-Number of addresses:4
-12.1.1.1         0
-12.1.1.2         1
-12.1.1.3         2
-12.1.1.4         3
+Public IPs on node 0
+172.31.91.82 node[1] active[] available[eth2,eth3] configured[eth2,eth3]
+172.31.91.83 node[0] active[eth3] available[eth2,eth3] configured[eth2,eth3]
+172.31.91.84 node[1] active[] available[eth2,eth3] configured[eth2,eth3]
+172.31.91.85 node[0] active[eth2] available[eth2,eth3] configured[eth2,eth3]
+172.31.92.82 node[1] active[] available[eth5] configured[eth4,eth5]
+172.31.92.83 node[0] active[eth5] available[eth5] configured[eth4,eth5]
+172.31.92.84 node[1] active[] available[eth5] configured[eth4,eth5]
+172.31.92.85 node[0] active[eth5] available[eth5] configured[eth4,eth5]
+      </screen>
+      <para>
+	Example: ctdb ip -Y
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+:Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:
+:172.31.91.82:1::eth2,eth3:eth2,eth3:
+:172.31.91.83:0:eth3:eth2,eth3:eth2,eth3:
+:172.31.91.84:1::eth2,eth3:eth2,eth3:
+:172.31.91.85:0:eth2:eth2,eth3:eth2,eth3:
+:172.31.92.82:1::eth5:eth4,eth5:
+:172.31.92.83:0:eth5:eth5:eth4,eth5:
+:172.31.92.84:1::eth5:eth4,eth5:
+:172.31.92.85:0:eth5:eth5:eth4,eth5:
       </screen>
     </refsect2>
 
