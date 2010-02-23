@@ -60,7 +60,7 @@ def configure(conf):
     conf.CHECK_HEADERS('netinet/ip.h netinet/tcp.h netinet/in_ip.h sys/sockio.h sys/un.h')
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
-    conf.CHECK_HEADERS('resolv.h')
+    conf.CHECK_HEADERS('resolv.h libintl.h')
 
     if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
         conf.DEFUN('STDC_HEADERS', 1)
@@ -108,6 +108,7 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
     conf.CHECK_FUNCS_IN('res_search', 'resolv')
+    conf.CHECK_FUNCS_IN('gettext', 'intl')
 
     conf.check_cc(fragment='''
     #include <stdarg.h>
