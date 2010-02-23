@@ -173,6 +173,63 @@ def ADD_INIT_FUNCTION(bld, subsystem, init_function):
     cache[subsystem] += '%s,' % init_function
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
+#######################################################
+# d1 += d2
+def dict_concat(d1, d2):
+    for t in d2:
+        if t not in d1:
+            d1[t] = d2[t]
+
+################################################################
+# recursively build the dependency list for a target
+def FULL_DEPENDENCIES(bld, cache, target, chain, path):
+    if not target in cache:
+        return {}
+    deps = cache[target].copy()
+    for t in cache[target]:
+        bld.ASSERT(t not in chain, "Circular dependency for %s: %s->%s" % (t, path, t));
+        c2 = chain.copy()
+        c2[t] = True
+        dict_concat(deps, FULL_DEPENDENCIES(bld, cache, t, c2, "%s->%s" % (path, t)))
+    return deps
+
+############################################################
+# check our build dependencies for circular dependencies
+def CHECK_TARGET_DEPENDENCY(bld, target):
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    FULL_DEPENDENCIES(bld, cache, target, { target:True }, target)
+
+############################################################
+# check our build dependencies for circular dependencies
+def CHECK_DEPENDENCIES(bld):
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    print "Checking for circular dependencies"
+    for target in cache:
+        CHECK_TARGET_DEPENDENCY(bld, target)
+    print "No circular dependencies"
+
+Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
+
+
+################################################################
+# add to the dependency list. Return a new dependency list with
+# any circular dependencies removed
+def ADD_DEPENDENCIES(bld, name, deps):
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    if not name in cache:
+        cache[name] = {}
+    list = deps.split()
+    list2 = []
+    for d in list:
+        cache[name][d] = True;
+        try:
+            CHECK_TARGET_DEPENDENCY(bld, name)
+            list2.append(d)
+        except AssertionError:
+            print "Removing dependency %s from target %s" % (d, name)
+            del(cache[name][d])
+    return ' '.join(list2)
+
 
 #################################################################
 # return a include list for a set of library dependencies
@@ -196,6 +253,10 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   cflags=None,
                   autoproto=None):
     # print "Declaring SAMBA_LIBRARY %s" % libname
+    #print "SAMBA_LIBRARY '%s' with deps '%s'" % (libname, deps)
+
+    deps = ADD_DEPENDENCIES(bld, libname, deps)
+
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
     bld(
@@ -220,8 +281,6 @@ def SAMBA_LIBRARY(bld, libname, source_list,
     cache = BUILD_CACHE(bld, 'INCLUDE_LIST')
     cache[libname] = ilist
 
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
-    cache[libname] = deps.split()
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 
@@ -242,8 +301,9 @@ def SAMBA_BINARY(bld, binname, source_list,
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
 
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
-    cache[binname] = deps.split()
+    #print "SAMBA_BINARY '%s' with deps '%s'" % (binname, deps)
+
+    deps = ADD_DEPENDENCIES(bld, binname, deps)
 
     cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
@@ -276,8 +336,9 @@ def SAMBA_PYTHON(bld, name, source_list,
                  public_deps='',
                  realname=''):
 
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
-    cache[name] = deps.split()
+    #print "SAMBA_PYTHON '%s' with deps '%s'" % (name, deps)
+
+    deps = ADD_DEPENDENCIES(bld, name, deps)
 
     Logs.debug('runner: PYTHON_SAMBA not implemented')
     return
@@ -307,6 +368,7 @@ def SAMBA_MODULE(bld, modname, source_list,
                  aliases=None,
                  cflags=None,
                  output_type=None):
+    #print "SAMBA_MODULE '%s' with deps '%s'" % (modname, deps)
     bld.ADD_INIT_FUNCTION(subsystem, init_function)
     bld.AUTOPROTO(autoproto, source_list)
     bld.SAMBA_LIBRARY(modname, source_list,
@@ -336,34 +398,6 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 def BUILD_SUBDIR(bld, dir):
     bld.add_subdirs(dir)
 Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
-
-def CIRCULAR_DEPENDENCY(deps, path, cache, target):
-    if target not in cache:
-        return False
-    for t in cache[target]:
-        if t in deps:
-            print "Circular dependency on target %s: %s" % (t, path)
-            return True
-        if CIRCULAR_DEPENDENCY(deps,
-                               ("%s->%s" % (path, t)),
-                               cache, t):
-            return True
-        deps[t] = True
-    return False
-
-############################################################
-# check our build dependencies for circular dependencies
-def CHECK_DEPENDENCIES(bld):
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
-    print "Checking for circular dependencies"
-    for target in cache:
-        deps = {}
-        path = target
-        bld.ASSERT(not CIRCULAR_DEPENDENCY(deps, path, cache, target),
-                   "Circular dependency in target %s" % target)
-    print "No circular dependencies"
-
-Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
 
 
 ############################################################
