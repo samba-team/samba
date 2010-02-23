@@ -224,6 +224,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
     for d in list2:
         # strip out any dependencies on empty libraries
         if d in cache:
+            print "Removing dependence of '%s' on empty library '%s'" % (name, d)
             continue
         libname = 'LIB_%s' % d.upper()
         if libname in bld.env:
@@ -263,7 +264,9 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         cache[libname] = True
         return
 
-    (sysdeps, deps) = ADD_DEPENDENCIES(bld, libname, deps)
+    (sysdeps, localdeps) = ADD_DEPENDENCIES(bld, libname, deps)
+
+    #print "SAMBA_LIBRARY: sysdeps='%s' deps='%s'" % (sysdeps, deps)
 
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
@@ -271,7 +274,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         features = 'cc cshlib',
         source = source_list,
         target=libname,
-        uselib_local = deps,
+        uselib_local = localdeps,
         uselib = sysdeps,
         includes='. ' + os.environ.get('PWD') + '/bin/default ' + ilist,
         vnum=vnum)
@@ -313,7 +316,9 @@ def SAMBA_BINARY(bld, binname, source_list,
 
     #print "SAMBA_BINARY '%s' with deps '%s'" % (binname, deps)
 
-    (sysdeps, deps) = ADD_DEPENDENCIES(bld, binname, deps)
+    (sysdeps, localdeps) = ADD_DEPENDENCIES(bld, binname, deps)
+
+    #print "SAMBA_BINARY: sysdeps='%s' deps='%s'" % (sysdeps, deps)
 
     cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
@@ -326,7 +331,7 @@ def SAMBA_BINARY(bld, binname, source_list,
         features = 'cc cprogram',
         source = source_list,
         target = binname,
-        uselib_local = deps,
+        uselib_local = localdeps,
         uselib = sysdeps,
         includes = ilist,
         ccflags = ccflags,
@@ -348,11 +353,49 @@ def SAMBA_PYTHON(bld, name, source_list,
 
     #print "SAMBA_PYTHON '%s' with deps '%s'" % (name, deps)
 
-    (sysdeps, deps) = ADD_DEPENDENCIES(bld, name, deps)
+    (sysdeps, localdeps) = ADD_DEPENDENCIES(bld, name, deps)
 
-    Logs.debug('runner: PYTHON_SAMBA not implemented')
+    #Logs.debug('runner: PYTHON_SAMBA not implemented')
     return
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
+
+
+#################################################################
+# define a Samba ASN1 target
+def SAMBA_ASN1(bld, name, source,
+               options='',
+               directory=''):
+    import string
+    cfile = string.replace(source, '.asn1', '.c')
+    bld(
+        source = source,
+        target = cfile,
+        rule = 'echo ASN1_COMPILE ${SRC} > {$TGT}',
+        uselib = '',
+        name = name)
+    bld(
+        features = 'cc cshlib',
+        source = cfile,
+        target = name,
+        uselib = '',
+        after = name)
+Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
+
+
+#################################################################
+# define a Samba ERRTABLE target
+def SAMBA_ERRTABLE(bld, name, source,
+                   directory=''):
+    import string
+    cfile = string.replace(source, '.et', '.c')
+    bld(
+        source = source,
+        target = cfile,
+        rule = 'echo ET_COMPILE ${SRC} > {$TGT}',
+        uselib = '',
+        name = name)
+    return
+Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
 
 ################################################################
