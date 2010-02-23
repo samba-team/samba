@@ -6,6 +6,7 @@ use File::Basename;
 
 my $filename=$ARGV[0];
 my $dname=dirname($filename);
+my $globals;
 
 sub read_file($)
 {
@@ -33,22 +34,52 @@ sub strlist($)
 	$s =~ s/\$\(nsswitchsrcdir\)/..\/nsswitch/g;
 	$s =~ s/\$\(param_OBJ_FILES\)/..\/pyparam.c/g;
 	$s =~ s/\$\(libclisrcdir\)\///g;
+	$s =~ s/\$\(socketwrappersrcdir\)\///g;
+	$s =~ s/\$\(libcompressionsrcdir\)\///g;
+	$s =~ s/\$\(\w*srcdir\)\///g;
+	$s =~ s/\$\(libgpodir\)\///g;
+	$s =~ s/\:\.o=\.ho//g;
+	$s =~ s/\:\.o=\.d//g;
 
 	# this one doesn't exist?
-	$s =~ s/LDAP_ENCODE//g;
+	$s =~ s/\bLDAP_ENCODE\b//g;
 
 	# these need to use the library names
-	$s =~ s/LIBLDB/ldb/g;
-	$s =~ s/LIBTALLOC/talloc/g;
-	$s =~ s/LIBTEVENT/tevent/g;
+	$s =~ s/\bLIBLDB\b/ldb/g;
+	$s =~ s/\bLIBTALLOC\b/talloc/g;
+	$s =~ s/\bLIBTEVENT\b/tevent/g;
+	$s =~ s/\bRESOLV\b/resolv/g;
 
 	return trim(join(' ', split(/\s+/, $s)));
+}
+
+sub expand_vars($$)
+{
+	my $vars = shift;
+	my $s = shift;
+	foreach my $v (keys %{$vars}) {
+		if ($s =~ /\$\($v\)/) {
+			$s =~ s/\$\($v\)/$vars->{$v}/g;
+			delete($vars->{$v});
+		}
+	}
+	foreach my $v (keys %{$globals}) {
+		if ($s =~ /\$\($v\)/) {
+			$s =~ s/\$\($v\)/$globals->{$v}/g;
+		}
+	}
+	return $s;
 }
 
 sub find_file($)
 {
 	my $f = shift;
 	my $orig = $f;
+
+	if ($f =~ /\$/) {
+		printf(STDERR "bad variable expansion for file $orig in $dname\n");
+		exit(1);
+	}
 
 	my $b = basename($f);
 	return $b if (-e $b);
@@ -60,13 +91,13 @@ sub find_file($)
 		return $f if (-e $f);
 	}
 	my $f2;
-	$f2 = `find . -name $f -type f`;
+	$f2 = `find . -name "$f" -type f`;
 	return $f2 unless ($f2 eq "");
-	$f2 = `find .. -name $f -type f`;
+	$f2 = `find .. -name "$f" -type f`;
 	return $f2 unless ($f2 eq "");
-	$f2 = `find ../.. -name $f -type f`;
+	$f2 = `find ../.. -name "$f" -type f`;
 	return $f2 unless ($f2 eq "");
-	$f2 = `find ../../.. -name $f -type f`;
+	$f2 = `find ../../.. -name "$f" -type f`;
 	return $f2 unless ($f2 eq "");
 	printf(STDERR "Failed to find $orig in $dname\n");
 	exit(1);
@@ -112,6 +143,11 @@ sub read_config_mk($)
 		# lines beginning with '#' are ignored
 		next if (/^\#.*$/);
 
+		if (/^(mkinclude perl_path_wrapper.sh.*)/) {
+			printf(STDERR "Ignoring: %s", $1);
+			next;
+		}
+
 		if (/^(.*)\\$/) {
 			$prev .= $1;
 			next;
@@ -152,7 +188,8 @@ sub read_config_mk($)
 
 		# Assignment
 		if ($line =~ /^([a-zA-Z0-9_-]+)[\t ]*=(.*)$/) {
-			$result->{$section}->{$1} = $2;
+			$result->{$section}->{$1} = expand_vars($result->{$section}, strlist($2));
+			$globals->{$1} = $result->{$section}->{$1};
 			next;
 		}
 
@@ -161,7 +198,8 @@ sub read_config_mk($)
 			if (!$result->{$section}->{$1}) {
 				$result->{$section}->{$1}="";
 			}
-			$result->{$section}->{$1} .= " " . $2;
+			$result->{$section}->{$1} .= " " . expand_vars($result->{$section}, strlist($2));
+			$globals->{$1} = $result->{$section}->{$1};
 			next;
 		}
 
@@ -173,7 +211,7 @@ sub read_config_mk($)
 			next;
 		}
 
-		printf(STDERR "$linenum: Bad line: $line\n");
+		printf(STDERR "$linenum: Bad line: $line");
 	}
 
 	return $result;
@@ -251,6 +289,14 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 			    $trailer .= sprintf(",\n\tinstalldir='%s'", strlist($sec->{$k}));
 			    next;
 		    }
+		    if ($k eq "ASN1C") {
+			    $trailer .= sprintf(",\n\tcompiler='%s'", strlist($sec->{$k}));
+			    next;
+		    }
+		    if ($k eq "ET_COMPILER") {
+			    $trailer .= sprintf(",\n\tcompiler='%s'", strlist($sec->{$k}));
+			    next;
+		    }
 		    if ($k eq "ENABLE") {
 			    my $v = strlist($sec->{$k});
 			    if ($v eq "NO") {
@@ -259,6 +305,15 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 			    }
 			    next if ($v eq "YES");
 			    die("Unknown ENABLE value $v in $s\n");
+		    }
+		    if ($k eq "USE_HOSTCC") {
+			    my $v = strlist($sec->{$k});
+			    if ($v eq "YES") {
+				    $trailer .= sprintf(",\n\tuse_hostcc=True");
+				    next;
+			    }
+			    next if ($v eq "NO");
+			    die("Unknown HOST_CC value $v in $s\n");
 		    }
 		    if ($k eq "$s" . "_VERSION") {
 			    $trailer .= sprintf(",\n\tvnum='%s'", strlist($sec->{$k}));
@@ -319,6 +374,15 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 			    $list =~ s/\$\(\w+srcdir\)\///g;
 			    printf(",\n\t%s", $list);
 			    $got_src = 1;
+			    next;
+		    }
+		    if ($k eq "HEIMDAL_GSSAPI_KRB5_OBJ_FILES" ||
+			$k eq "HEIMDAL_GSSAPI_SPNEGO_OBJ_FILES" ||
+			$k eq "HEIMDAL_HEIM_ASN1_DER_OBJ_FILES" ||
+			$k eq "HEIMDAL_HX509_OBJH_FILES" ||
+			$k eq "HEIMDAL_HX509_OBJG_FILES" ||
+			$k eq "HEIMDAL_ROKEN_OBJ_FILES"
+			) {
 			    next;
 		    }
 		    die("Unknown keyword $k in $s\n");

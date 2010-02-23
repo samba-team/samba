@@ -3,6 +3,7 @@ source4/lib/basic.mk
 pidl/config.mk
 nsswitch/config.mk
 nsswitch/libwbclient/config.mk
+source4/heimdal_build/internal.mk
 source4/lib/ldb-samba/config.mk
 source4/librpc/config.mk
 source4/utils/config.mk
