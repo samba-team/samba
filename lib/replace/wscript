@@ -103,7 +103,7 @@ def configure(conf):
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
     conf.CHECK_FUNCS('inet_ntoa inet_ntop dirfd getdirentries getdents syslog')
-    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs inet_aton inet_atop')
+    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs inet_aton inet_atop crypt')
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
@@ -193,3 +193,9 @@ def build(bld):
     if not 'HAVE_SOCKETPAIR' in bld.env: NET_SOURCES.append('socketpair.c')
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES)
+
+
+    CRYPT_SOURCES = []
+    if not 'HAVE_CRYPT' in bld.env: CRYPT_SOURCES.append('crypt.c')
+
+    bld.SAMBA_SUBSYSTEM('LIBREPLACE_EXT', CRYPT_SOURCES)
