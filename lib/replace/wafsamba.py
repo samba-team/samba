@@ -119,6 +119,18 @@ def set_rpath(bld):
         bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
 Build.BuildContext.set_rpath = set_rpath
 
+
+#############################################################
+# return a named build cache dictionary, used to store
+# state inside the following functions
+def BUILD_CACHE(bld, name):
+    try:
+        cache = bld.name
+    except AttributeError:
+        bld.name = cache = {}
+    return cache
+
+
 #############################################################
 # a build assert call
 def ASSERT(ctx, expression, msg):
@@ -151,22 +163,15 @@ def NORMPATH(bld, ilist):
 Build.BuildContext.NORMPATH = NORMPATH
 
 ################################################################
-# this will contain the set of includes needed per Samba library
-Build.BuildContext.SAMBA_LIBRARY_INCLUDES = {}
-
-################################################################
-# init function list for a subsystem
-Build.BuildContext.SAMBA_INIT_FUNCTIONS = {}
-
-################################################################
 # add an init_function to the list for a subsystem
 def ADD_INIT_FUNCTION(bld, subsystem, init_function):
     if init_function is None:
         return
     bld.ASSERT(subsystem is not None, "You must specify a subsystem for init_function '%s'" % init_function)
-    if not subsystem in bld.SAMBA_INIT_FUNCTIONS:
-        bld.SAMBA_INIT_FUNCTIONS[subsystem] = ''
-    bld.SAMBA_INIT_FUNCTIONS[subsystem] += '%s,' % init_function
+    cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
+    if not subsystem in cache:
+        cache[subsystem] = ''
+    cache[subsystem] += '%s,' % init_function
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
 
@@ -174,9 +179,10 @@ Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 # return a include list for a set of library dependencies
 def SAMBA_LIBRARY_INCLUDE_LIST(bld, deps):
     ret = bld.curdir + ' '
+    cache = BUILD_CACHE(bld, 'INCLUDE_LIST')
     for l in deps.split():
-        if l in bld.SAMBA_LIBRARY_INCLUDES:
-            ret = ret + bld.SAMBA_LIBRARY_INCLUDES[l] + ' '
+        if l in cache:
+            ret = ret + cache[l] + ' '
     return ret
 Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 
@@ -212,7 +218,8 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         (soext, LIB_PATH, libname, soext),
         shell = True
         )
-    bld.SAMBA_LIBRARY_INCLUDES[libname] = ilist
+    cache = BUILD_CACHE(bld, 'INCLUDE_LIST')
+    cache[libname] = ilist
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 
@@ -233,12 +240,12 @@ def SAMBA_BINARY(bld, binname, source_list,
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
 
+    cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
         for m in modules.split():
-            bld.ASSERT(m in bld.SAMBA_INIT_FUNCTIONS,
+            bld.ASSERT(m in cache,
                        "No init_function defined for module '%s' in binary '%s'" % (m, binname))
-            modlist = bld.SAMBA_INIT_FUNCTIONS[m]
-            ccflags += ' -DSTATIC_%s_MODULES="%s"' % (m, modlist)
+            ccflags += ' -DSTATIC_%s_MODULES="%s"' % (m, cache[m])
 
     bld(
         features = 'cc cprogram',
