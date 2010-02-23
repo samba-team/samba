@@ -105,7 +105,7 @@ export PASSWORD
 	shift $#
 	testitprefix="wbinfo_s3."
 	testitenv="dc:local"
-	. $SCRIPTDIR/test_wbinfo_s3.sh \$WORKGROUP \$SERVER \$USERNAME \$PASSWORD
+	. $SCRIPTDIR/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
 )
 
 (
