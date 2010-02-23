@@ -1,5 +1,6 @@
 # top level waf build script for samba4
 
+bld.BUILD_SUBDIR('../lib/replace')
 bld.BUILD_SUBDIR('dynconfig')
 bld.BUILD_SUBDIR('dsdb')
 bld.BUILD_SUBDIR('smbd')
