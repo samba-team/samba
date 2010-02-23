@@ -1748,9 +1748,6 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 				const char *dnsdomain,
 				struct dns_rr_ns **nslist,
 				int *numns);
-bool sitename_store(const char *realm, const char *sitename);
-char *sitename_fetch(const char *realm);
-bool stored_sitename_changed(const char *realm, const char *sitename);
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 			   const char *realm,
 			   const char *sitename,

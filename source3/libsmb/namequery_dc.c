@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "libads/sitename_cache.h"
 
 /**********************************************************************
  Is this our primary domain ?

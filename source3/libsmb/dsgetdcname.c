@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libads/sitename_cache.h"
 
 #define DSGETDCNAME_FMT	"DSGETDCNAME/DOMAIN/%s"
 /* 15 minutes */

@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "libads/sitename_cache.h"
 
 int net_lookup_usage(struct net_context *c, int argc, const char **argv)
 {
