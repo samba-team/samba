@@ -17,8 +17,8 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.add_subdirs(LIBTDB_DIR)
-    bld.add_subdirs(LIBTEVENT_DIR)
+    bld.BUILD_SUBDIR(LIBTDB_DIR)
+    bld.BUILD_SUBDIR(LIBTEVENT_DIR)
 
     LDB_TDB_SRC = bld.SUBDIR('ldb_tdb',
                              '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c

@@ -13,7 +13,7 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.add_subdirs(LIBREPLACE_DIR)
+    bld.BUILD_SUBDIR(LIBREPLACE_DIR)
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''check.c error.c tdb.c traverse.c

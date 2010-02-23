@@ -13,7 +13,7 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.add_subdirs(LIBREPLACE_DIR)
+    bld.BUILD_SUBDIR(LIBREPLACE_DIR)
 
     bld.SAMBA_LIBRARY('talloc',
                       'talloc.c',

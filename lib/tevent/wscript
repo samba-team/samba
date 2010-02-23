@@ -20,8 +20,8 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.add_subdirs(LIBREPLACE_DIR)
-    bld.add_subdirs(LIBTALLOC_DIR)
+    bld.BUILD_SUBDIR(LIBREPLACE_DIR)
+    bld.BUILD_SUBDIR(LIBTALLOC_DIR)
 
     SRC = '''tevent.c tevent_debug.c tevent_epoll.c tevent_fd.c tevent_immediate.c
              tevent_queue.c tevent_req.c tevent_select.c

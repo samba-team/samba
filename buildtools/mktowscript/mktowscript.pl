@@ -186,7 +186,7 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
     if ($sec->{TYPE} eq "SUBCONFIG") {
 	    my $d = dirname($s);
 	    next if ($d eq ".");
-	    printf "bld.add_subdirs('%s')\n", dirname($s);
+	    printf "bld.BUILD_SUBDIR('%s')\n", dirname($s);
     } else {
 	    printf "\nbld.SAMBA_%s('%s'", $sec->{TYPE}, $s;
 	    my $trailer="";

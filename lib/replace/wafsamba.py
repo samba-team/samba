@@ -282,6 +282,21 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
+###############################################################
+# add a new set of build rules from a subdirectory
+def BUILD_SUBDIR(bld, dir):
+    try:
+        cache = bld.cache_build_subdirs
+    except AttributeError:
+        bld.cache_build_subdirs = cache = {}
+    abs_dir=os.path.normpath(bld.curdir + '/' + dir)
+    if abs_dir in cache:
+        return
+    cache[abs_dir] = True
+    bld.add_subdirs(dir)
+Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
+
+
 ############################################################
 # this overrides the 'waf -v' debug output to be in a nice
 # unix like format instead of a python list.
