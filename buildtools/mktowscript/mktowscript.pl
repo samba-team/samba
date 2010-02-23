@@ -143,17 +143,41 @@ sub read_config_mk($)
 		# lines beginning with '#' are ignored
 		next if (/^\#.*$/);
 
-		if (/^(mkinclude perl_path_wrapper.sh.*)/) {
-			printf(STDERR "Ignoring: %s", $1);
-			next;
-		}
-
 		if (/^(.*)\\$/) {
 			$prev .= $1;
 			next;
 		} else {
 			$line = "$prev$_";
 			$prev = "";
+		}
+
+		if ($line =~ /^mkinclude.*asn1_deps.pl\s+([^\s]+)\s+([^\s]+)\s+\\\$\\\(\w+\\\)\/([^\s|]+)\s*([^|]*)\|$/) {
+			my $src = $1;
+			$section = $2;
+			my $dir = $3;
+			my $options = $4;
+			$section = "HEIMDAL_" . uc($section);
+			$result->{$section}->{TYPE} = 'ASN1';
+			$result->{$section}->{SECNUMBER} = $secnumber++;
+			if ($options ne '') {
+				$result->{$section}->{OPTIONS} = $options;
+			}
+			$result->{$section}->{DIRECTORY} = $dir;
+			$result->{$section}->{$section . '_OBJ_FILES'} = $src;
+			next;
+		}
+
+		if ($line =~ /^mkinclude.*et_deps.pl\s+([^\s]+)\s+\\\$\\\(\w+\\\)\/([^\s|]+)\|$/) {
+			my $src = $1;
+			my $dir = $2;
+			$section = basename($src);
+			$section =~ s/\./_/g;
+			$section = "HEIMDAL_" . uc($section);
+			$result->{$section}->{TYPE} = 'ERRTABLE';
+			$result->{$section}->{SECNUMBER} = $secnumber++;
+			$result->{$section}->{DIRECTORY} = "$dir";
+			$result->{$section}->{$section . '_OBJ_FILES'} = $src;
+			next;
 		}
 
 		if ($line =~ /^\[(\w+)::([\w-]+)\]/)
@@ -279,6 +303,14 @@ foreach my $s (sort {$result->{$a}->{SECNUMBER} <=> $result->{$b}->{SECNUMBER}} 
 		    }
 		    if ($k eq "CFLAGS") {
 			    $trailer .= sprintf(",\n\tcflags='%s'", strlist($sec->{$k}));
+			    next;
+		    }
+		    if ($k eq "OPTIONS") {
+			    $trailer .= sprintf(",\n\toptions='%s'", strlist($sec->{$k}));
+			    next;
+		    }
+		    if ($k eq "DIRECTORY") {
+			    $trailer .= sprintf(",\n\tdirectory='%s'", strlist($sec->{$k}));
 			    next;
 		    }
 		    if ($k eq "LDFLAGS") {
