@@ -329,6 +329,39 @@ response from 3 time=0.000114 sec  (2 clients)
       </screen>
     </refsect2>
 
+    <refsect2><title>ifaces</title>
+      <para>
+	This command will display the list of network interfaces, which could
+	host public addresses, along with their status.
+      </para>
+      <para>
+	Example: ctdb ifaces
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+Interfaces on node 0
+name:eth5 link:up references:2
+name:eth4 link:down references:0
+name:eth3 link:up references:1
+name:eth2 link:up references:1
+      </screen>
+      <para>
+	Example: ctdb ifaces -Y
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+:Name:LinkStatus:References:
+:eth5:1:2
+:eth4:0:0
+:eth3:1:1
+:eth2:1:1
+      </screen>
+    </refsect2>
+
     <refsect2><title>ip</title>
       <para>
         This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip -n all".
