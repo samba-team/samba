@@ -124,11 +124,10 @@ Build.BuildContext.set_rpath = set_rpath
 # return a named build cache dictionary, used to store
 # state inside the following functions
 def BUILD_CACHE(bld, name):
-    try:
-        cache = bld.name
-    except AttributeError:
-        bld.name = cache = {}
-    return cache
+    if name in bld.env:
+        return bld.env[name]
+    bld.env[name] = {}
+    return bld.env[name]
 
 
 #############################################################
@@ -220,6 +219,9 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         )
     cache = BUILD_CACHE(bld, 'INCLUDE_LIST')
     cache[libname] = ilist
+
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    cache[libname] = deps.split()
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 
@@ -239,6 +241,9 @@ def SAMBA_BINARY(bld, binname, source_list,
     ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
+
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    cache[binname] = deps.split()
 
     cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
@@ -270,6 +275,10 @@ def SAMBA_PYTHON(bld, name, source_list,
                  deps='',
                  public_deps='',
                  realname=''):
+
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    cache[name] = deps.split()
+
     Logs.debug('runner: PYTHON_SAMBA not implemented')
     return
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
@@ -327,6 +336,34 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 def BUILD_SUBDIR(bld, dir):
     bld.add_subdirs(dir)
 Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
+
+def CIRCULAR_DEPENDENCY(deps, path, cache, target):
+    if target not in cache:
+        return False
+    for t in cache[target]:
+        if t in deps:
+            print "Circular dependency on target %s: %s" % (t, path)
+            return True
+        if CIRCULAR_DEPENDENCY(deps,
+                               ("%s->%s" % (path, t)),
+                               cache, t):
+            return True
+        deps[t] = True
+    return False
+
+############################################################
+# check our build dependencies for circular dependencies
+def CHECK_DEPENDENCIES(bld):
+    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    print "Checking for circular dependencies"
+    for target in cache:
+        deps = {}
+        path = target
+        bld.ASSERT(not CIRCULAR_DEPENDENCY(deps, path, cache, target),
+                   "Circular dependency in target %s" % target)
+    print "No circular dependencies"
+
+Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
 
 
 ############################################################
