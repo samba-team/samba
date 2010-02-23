@@ -328,7 +328,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint16 caColorfulness;
 		uint16 caRedGreenTint;
 		uint16 wCoreJTExpSize;
-		[value(sizeof(spoolss_PSDRVEXTRA) + wCoreJTExpSize)] uint16 wCoreFullSize;
+		[value(ndr_size_spoolss_PSDRVEXTRA(r, ndr->iconv_convenience, ndr->flags) + wCoreJTExpSize)] uint16 wCoreFullSize;
 		uint32 fxScrFreq;
 		uint32 fxScrAngle;
 		spoolss_DMPS_Dialect iDialect;
@@ -399,7 +399,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] spoolss_DM_Signature dwSignature;
 		[value(0x0022)] uint16 wVer;
 		uint16 wCoreJTExpSize;
-		[value(ndr_size_spoolss_UNIDRVEXTRA(r, NULL, 0) + wCoreJTExpSize)] uint16 wCoreFullSize;
+		[value(ndr_size_spoolss_UNIDRVEXTRA(r, ndr->iconv_convenience, ndr->flags) + wCoreJTExpSize)] uint16 wCoreFullSize;
 		uint16 wOEMExtra;
 		uint32 dwChecksum32;
 		spoolss_DMUNI_Flags dwFlags;
@@ -422,16 +422,8 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[value(0)] uint32 dwVersion;
 		[value(16)] uint32 wJTHdrSize;
 		uint32 wCoreMFOSize;
-//		[value(strlen_m(ModelName) + ndr_size_X)] uint32 wCoreMFOSize;
 		[string,charset(UTF16)] uint16 *ModelName;
 		nstring_array FeatureOptionPairs;
-		/*
-		FeatureOptionPairs (variable): Must be a concatenation of an
-		even number of zero-terminated ASCII strings, terminated by an
-		additional zero character. Each pair of two consecutive strings
-		specifies a print schema feature and the currently selected
-		option.
-		*/
 	} spoolss_JTEXP;
 
 	/* Device Mode Extra Data: OEM_DMEXTRA */
