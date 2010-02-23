@@ -67,12 +67,30 @@ def CHECK_FUNCS(conf, list):
     for f in list.split():
         CHECK_FUNC(conf, f)
 
+
+###########################################################
+# check that the functions in 'list' are available in 'library'
+# if they are, then make that library available as a dependency
+#
+# if the library is not available and mandatory==True, then
+# raise an error.
+#
+# If the library is not available and mandatory==False, then
+# add the library to the list of dependencies to remove from
+# build rules
 @conf
-def CHECK_FUNCS_IN(conf, list, library):
-    if conf.check(lib=library, uselib_store=library):
-        for f in list.split():
-            conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
-        conf.env['LIB_' + library.upper()] = library
+def CHECK_FUNCS_IN(conf, list, library, mandatory=False):
+    if not conf.check(lib=library, uselib_store=library):
+        conf.ASSERT(not mandatory,
+                    "Mandatory library '%s' not found for functions '%s'" % (library, list))
+        # if it isn't a mandatory library, then remove it from dependency lists
+        cache = LOCAL_CACHE(conf, 'EMPTY_LIBS')
+        cache[library.upper()] = True
+        return
+    for f in list.split():
+        conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
+    conf.env['LIB_' + library.upper()] = library
+
 
 #################################################
 # write out config.h in the right directory
@@ -122,15 +140,17 @@ Build.BuildContext.set_rpath = set_rpath
 #############################################################
 # return a named build cache dictionary, used to store
 # state inside the following functions
-def BUILD_CACHE(bld, name):
-    if name in bld.env:
-        return bld.env[name]
-    bld.env[name] = {}
-    return bld.env[name]
+@conf
+def LOCAL_CACHE(ctx, name):
+    if name in ctx.env:
+        return ctx.env[name]
+    ctx.env[name] = {}
+    return ctx.env[name]
 
 
 #############################################################
 # a build assert call
+@conf
 def ASSERT(ctx, expression, msg):
     if not expression:
         sys.stderr.write("ERROR: %s\n" % msg)
@@ -166,7 +186,7 @@ def ADD_INIT_FUNCTION(bld, subsystem, init_function):
     if init_function is None:
         return
     bld.ASSERT(subsystem is not None, "You must specify a subsystem for init_function '%s'" % init_function)
-    cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
+    cache = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
     if not subsystem in cache:
         cache[subsystem] = ''
     cache[subsystem] += '%s,' % init_function
@@ -195,7 +215,7 @@ def FULL_DEPENDENCIES(bld, cache, target, chain, path):
 ############################################################
 # check our build dependencies for circular dependencies
 def CHECK_TARGET_DEPENDENCY(bld, target):
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    cache = LOCAL_CACHE(bld, 'LIB_DEPS')
     FULL_DEPENDENCIES(bld, cache, target, { target:True }, target)
 
 ################################################################
@@ -203,7 +223,7 @@ def CHECK_TARGET_DEPENDENCY(bld, target):
 # any circular dependencies removed
 # returns a tuple containing (systemdeps, localdeps)
 def ADD_DEPENDENCIES(bld, name, deps):
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
+    cache = LOCAL_CACHE(bld, 'LIB_DEPS')
     if not name in cache:
         cache[name] = {}
     list = deps.split()
@@ -220,7 +240,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
     # extract out the system dependencies
     sysdeps = []
     localdeps = []
-    cache = BUILD_CACHE(bld, 'EMPTY_LIBS')
+    cache = LOCAL_CACHE(bld, 'EMPTY_LIBS')
     for d in list2:
         # strip out any dependencies on empty libraries
         if d in cache:
@@ -238,7 +258,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
 # return a include list for a set of library dependencies
 def SAMBA_LIBRARY_INCLUDE_LIST(bld, deps):
     ret = bld.curdir + ' '
-    cache = BUILD_CACHE(bld, 'INCLUDE_LIST')
+    cache = LOCAL_CACHE(bld, 'INCLUDE_LIST')
     for l in deps.split():
         if l in cache:
             ret = ret + cache[l] + ' '
@@ -260,7 +280,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
 
     # remember empty libraries, so we can strip the dependencies
     if (source_list == '') or (source_list == []):
-        cache = BUILD_CACHE(bld, 'EMPTY_LIBS')
+        cache = LOCAL_CACHE(bld, 'EMPTY_LIBS')
         cache[libname] = True
         return
 
@@ -290,7 +310,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         (soext, LIB_PATH, libname, soext),
         shell = True
         )
-    cache = BUILD_CACHE(bld, 'INCLUDE_LIST')
+    cache = LOCAL_CACHE(bld, 'INCLUDE_LIST')
     cache[libname] = ilist
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
@@ -320,7 +340,7 @@ def SAMBA_BINARY(bld, binname, source_list,
 
     #print "SAMBA_BINARY: sysdeps='%s' deps='%s'" % (sysdeps, deps)
 
-    cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
+    cache = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
         for m in modules.split():
             bld.ASSERT(m in cache,
