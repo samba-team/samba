@@ -278,9 +278,9 @@ struct spoolss_PrinterInfo0 {
 enum spoolss_DM_Signature
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA=0x554e4944,
-	SPOOLSS_DM_SIGNATURE_JTEXP=0x4a544d53,
-	SPOOLSS_DM_SIGNATURE_PSEXTRA=0x50524956
+	SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA=(int)(0x554e4944),
+	SPOOLSS_DM_SIGNATURE_JTEXP=(int)(0x4a544d53),
+	SPOOLSS_DM_SIGNATURE_PSEXTRA=(int)(0x50524956)
 }
 #else
  { __donnot_use_enum_spoolss_DM_Signature=0x7FFFFFFF}
@@ -293,13 +293,13 @@ enum spoolss_DM_Signature
 enum spoolss_DM_Layout
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_LAYOUT_NUP_DISABLED=0x00000000,
-	SPOOLSS_DM_LAYOUT_NUP_2=0x00000001,
-	SPOOLSS_DM_LAYOUT_NUP_4=0x00000002,
-	SPOOLSS_DM_LAYOUT_NUP_6=0x00000003,
-	SPOOLSS_DM_LAYOUT_NUP_9=0x00000004,
-	SPOOLSS_DM_LAYOUT_NUP_16=0x00000005,
-	SPOOLSS_DM_LAYOUT_BOOKLET=0x00000006
+	SPOOLSS_DM_LAYOUT_NUP_DISABLED=(int)(0x00000000),
+	SPOOLSS_DM_LAYOUT_NUP_2=(int)(0x00000001),
+	SPOOLSS_DM_LAYOUT_NUP_4=(int)(0x00000002),
+	SPOOLSS_DM_LAYOUT_NUP_6=(int)(0x00000003),
+	SPOOLSS_DM_LAYOUT_NUP_9=(int)(0x00000004),
+	SPOOLSS_DM_LAYOUT_NUP_16=(int)(0x00000005),
+	SPOOLSS_DM_LAYOUT_BOOKLET=(int)(0x00000006)
 }
 #else
  { __donnot_use_enum_spoolss_DM_Layout=0x7FFFFFFF}
@@ -316,10 +316,10 @@ enum spoolss_DM_Layout
 enum spoolss_DM_NupDirection
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_NUP_DIRECTION_L2R_T2B=0x00000001,
-	SPOOLSS_DM_NUP_DIRECTION_T2B_L2R=0x00000002,
-	SPOOLSS_DM_NUP_DIRECTION_R2L_T2B=0x00000004,
-	SPOOLSS_DM_NUP_DIRECTION_T2B_R2L=0x00000008
+	SPOOLSS_DM_NUP_DIRECTION_L2R_T2B=(int)(0x00000001),
+	SPOOLSS_DM_NUP_DIRECTION_T2B_L2R=(int)(0x00000002),
+	SPOOLSS_DM_NUP_DIRECTION_R2L_T2B=(int)(0x00000004),
+	SPOOLSS_DM_NUP_DIRECTION_T2B_R2L=(int)(0x00000008)
 }
 #else
  { __donnot_use_enum_spoolss_DM_NupDirection=0x7FFFFFFF}
@@ -333,8 +333,8 @@ enum spoolss_DM_NupDirection
 enum spoolss_DM_NupBorderFlags
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_NUP_BORDER_PRINT=0x00000000,
-	SPOOLSS_DM_NUP_BORDER_NONE=0x00000001
+	SPOOLSS_DM_NUP_BORDER_PRINT=(int)(0x00000000),
+	SPOOLSS_DM_NUP_BORDER_NONE=(int)(0x00000001)
 }
 #else
  { __donnot_use_enum_spoolss_DM_NupBorderFlags=0x7FFFFFFF}
@@ -346,8 +346,8 @@ enum spoolss_DM_NupBorderFlags
 enum spoolss_DM_BookletFlags
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_BOOKLET_LEFT_FLIP=0x00000000,
-	SPOOLSS_DM_BOOKLET_RIGHT_FLIP=0x00000001
+	SPOOLSS_DM_BOOKLET_LEFT_FLIP=(int)(0x00000000),
+	SPOOLSS_DM_BOOKLET_RIGHT_FLIP=(int)(0x00000001)
 }
 #else
  { __donnot_use_enum_spoolss_DM_BookletFlags=0x7FFFFFFF}
@@ -406,10 +406,10 @@ struct spoolss_PSDRVEXTRA400 {
 enum spoolss_DMPS_Dialect
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_PS_OPTIMIZE_SPEED=0x00000000,
-	SPOOLSS_DM_PS_OPTIMIZE_PORTABILITY=0x00000001,
-	SPOOLSS_DM_PS_OPTIMIZE_EPS=0x00000002,
-	SPOOLSS_DM_PS_OPTIMIZE_ARCHIVAL=0x00000003
+	SPOOLSS_DM_PS_OPTIMIZE_SPEED=(int)(0x00000000),
+	SPOOLSS_DM_PS_OPTIMIZE_PORTABILITY=(int)(0x00000001),
+	SPOOLSS_DM_PS_OPTIMIZE_EPS=(int)(0x00000002),
+	SPOOLSS_DM_PS_OPTIMIZE_ARCHIVAL=(int)(0x00000003)
 }
 #else
  { __donnot_use_enum_spoolss_DMPS_Dialect=0x7FFFFFFF}
@@ -423,10 +423,10 @@ enum spoolss_DMPS_Dialect
 enum spoolss_DMPS_TTDLFmt
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_PS_TTDLFMT_DEFAULT=0x00000000,
-	SPOOLSS_DM_PS_TTDLFMT_TYPE_1=0x00000001,
-	SPOOLSS_DM_PS_TTDLFMT_TYPE_3=0x00000002,
-	SPOOLSS_DM_PS_TTDLFMT_TYPE_42=0x00000003
+	SPOOLSS_DM_PS_TTDLFMT_DEFAULT=(int)(0x00000000),
+	SPOOLSS_DM_PS_TTDLFMT_TYPE_1=(int)(0x00000001),
+	SPOOLSS_DM_PS_TTDLFMT_TYPE_3=(int)(0x00000002),
+	SPOOLSS_DM_PS_TTDLFMT_TYPE_42=(int)(0x00000003)
 }
 #else
  { __donnot_use_enum_spoolss_DMPS_TTDLFmt=0x7FFFFFFF}
@@ -440,9 +440,9 @@ enum spoolss_DMPS_TTDLFmt
 enum spoolss_DMPS_PSLevel
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_PS_PSLEVEL_1=0x00000001,
-	SPOOLSS_DM_PS_PSLEVEL_2=0x00000002,
-	SPOOLSS_DM_PS_PSLEVEL_3=0x00000003
+	SPOOLSS_DM_PS_PSLEVEL_1=(int)(0x00000001),
+	SPOOLSS_DM_PS_PSLEVEL_2=(int)(0x00000002),
+	SPOOLSS_DM_PS_PSLEVEL_3=(int)(0x00000003)
 }
 #else
  { __donnot_use_enum_spoolss_DMPS_PSLevel=0x7FFFFFFF}
@@ -455,10 +455,10 @@ enum spoolss_DMPS_PSLevel
 enum spoolss_DMPS_FeedDirection
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST=0x0000,
-	SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST=0x0001,
-	SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST_UPSIDEDOWN=0x0002,
-	SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST_UPSIDEDOWN=0x0003
+	SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST=(int)(0x0000),
+	SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST=(int)(0x0001),
+	SPOOLSS_DM_PS_FEED_DIRECTION_LONG_EDGE_FIRST_UPSIDEDOWN=(int)(0x0002),
+	SPOOLSS_DM_PS_FEED_DIRECTION_SHORT_EDGE_FIRST_UPSIDEDOWN=(int)(0x0003)
 }
 #else
  { __donnot_use_enum_spoolss_DMPS_FeedDirection=0x7FFFFFFF}
@@ -526,7 +526,7 @@ struct spoolss_PSDRVEXTRA {
 	uint16_t caColorfulness;
 	uint16_t caRedGreenTint;
 	uint16_t wCoreJTExpSize;
-	uint16_t wCoreFullSize;/* [value(sizeof(spoolss_PSDRVEXTRA)+wCoreJTExpSize)] */
+	uint16_t wCoreFullSize;/* [value(ndr_size_spoolss_PSDRVEXTRA(r,ndr->iconv_convenience,ndr->flags)+wCoreJTExpSize)] */
 	uint32_t fxScrFreq;
 	uint32_t fxScrAngle;
 	enum spoolss_DMPS_Dialect iDialect;
@@ -560,9 +560,9 @@ struct spoolss_UNIDRVEXTRA3_4 {
 enum spoolss_DMUNI_Quality
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_DM_UNI_QUALITY_BEST=0x00000000,
-	SPOOLSS_DM_UNI_QUALITY_MEDIUM=0x00000001,
-	SPOOLSS_DM_UNI_QUALITY_DRAFT=0x00000002
+	SPOOLSS_DM_UNI_QUALITY_BEST=(int)(0x00000000),
+	SPOOLSS_DM_UNI_QUALITY_MEDIUM=(int)(0x00000001),
+	SPOOLSS_DM_UNI_QUALITY_DRAFT=(int)(0x00000002)
 }
 #else
  { __donnot_use_enum_spoolss_DMUNI_Quality=0x7FFFFFFF}
@@ -597,7 +597,7 @@ struct spoolss_UNIDRVEXTRA {
 	enum spoolss_DM_Signature dwSignature;/* [value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] */
 	uint16_t wVer;/* [value(0x0022)] */
 	uint16_t wCoreJTExpSize;
-	uint16_t wCoreFullSize;/* [value(ndr_size_spoolss_UNIDRVEXTRA(r,NULL,0)+wCoreJTExpSize)] */
+	uint16_t wCoreFullSize;/* [value(ndr_size_spoolss_UNIDRVEXTRA(r,ndr->iconv_convenience,ndr->flags)+wCoreJTExpSize)] */
 	uint16_t wOEMExtra;
 	uint32_t dwChecksum32;
 	uint32_t dwFlags;
@@ -634,14 +634,14 @@ union spoolss_DeviceModeExtraDataPostScript {
 	struct spoolss_PSDRVEXTRA400 psdrvextra400;/* [case(0x0400)] */
 	struct spoolss_PSDRVEXTRA500 psdrvextra500;/* [case(0x0501)] */
 	struct spoolss_PSDRVEXTRA psdrvextra;/* [case(0x0600)] */
-	DATA_BLOB blob;/* [default,flag(LIBNDR_FLAG_REMAINING)] */
+	DATA_BLOB psblob;/* [default,flag(LIBNDR_FLAG_REMAINING)] */
 }/* [nodiscriminant] */;
 
 union spoolss_DeviceModeExtraDataUniDriver {
 	struct spoolss_UNIDRVEXTRA3_4 unidrvextra3_4;/* [case(0x0301)] */
 	struct spoolss_UNIDRVEXTRA500 unidrvextra500;/* [case(0x0500)] */
 	struct spoolss_UNIDRVEXTRA unidrvextra;/* [case(0x0600)] */
-	DATA_BLOB blob;/* [default,flag(LIBNDR_FLAG_REMAINING)] */
+	DATA_BLOB uniblob;/* [default,flag(LIBNDR_FLAG_REMAINING)] */
 }/* [nodiscriminant] */;
 
 /* bitmap spoolss_DeviceModeFields */

@@ -533,14 +533,14 @@ _PUBLIC_ size_t ndr_size_spoolss_PrinterInfo0(const struct spoolss_PrinterInfo0 
 
 static enum ndr_err_code ndr_push_spoolss_DM_Signature(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_Signature r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DM_Signature(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_Signature *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -559,14 +559,14 @@ _PUBLIC_ void ndr_print_spoolss_DM_Signature(struct ndr_print *ndr, const char *
 
 static enum ndr_err_code ndr_push_spoolss_DM_Layout(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_Layout r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DM_Layout(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_Layout *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -589,14 +589,14 @@ _PUBLIC_ void ndr_print_spoolss_DM_Layout(struct ndr_print *ndr, const char *nam
 
 static enum ndr_err_code ndr_push_spoolss_DM_NupDirection(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_NupDirection r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DM_NupDirection(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_NupDirection *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -616,14 +616,14 @@ _PUBLIC_ void ndr_print_spoolss_DM_NupDirection(struct ndr_print *ndr, const cha
 
 static enum ndr_err_code ndr_push_spoolss_DM_NupBorderFlags(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_NupBorderFlags r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DM_NupBorderFlags(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_NupBorderFlags *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -641,14 +641,14 @@ _PUBLIC_ void ndr_print_spoolss_DM_NupBorderFlags(struct ndr_print *ndr, const c
 
 static enum ndr_err_code ndr_push_spoolss_DM_BookletFlags(struct ndr_push *ndr, int ndr_flags, enum spoolss_DM_BookletFlags r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DM_BookletFlags(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DM_BookletFlags *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -666,14 +666,14 @@ _PUBLIC_ void ndr_print_spoolss_DM_BookletFlags(struct ndr_print *ndr, const cha
 
 static enum ndr_err_code ndr_push_spoolss_DMUNI_Quality(struct ndr_push *ndr, int ndr_flags, enum spoolss_DMUNI_Quality r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_DMUNI_Quality(struct ndr_pull *ndr, int ndr_flags, enum spoolss_DMUNI_Quality *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
@@ -723,7 +723,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_UNIDRVEXTRA(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_spoolss_DM_Signature(ndr, NDR_SCALARS, SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0x0022));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->wCoreJTExpSize));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_spoolss_UNIDRVEXTRA(r, NULL, 0) + r->wCoreJTExpSize));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_spoolss_UNIDRVEXTRA(r, ndr->iconv_convenience, ndr->flags) + r->wCoreJTExpSize));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->wOEMExtra));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dwChecksum32));
 		NDR_CHECK(ndr_push_spoolss_DMUNI_Flags(ndr, NDR_SCALARS, r->dwFlags));
@@ -740,6 +740,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_UNIDRVEXTRA(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_spoolss_DM_NupDirection(ndr, NDR_SCALARS, r->dwNupDirection));
 		NDR_CHECK(ndr_push_spoolss_DM_NupBorderFlags(ndr, NDR_SCALARS, r->dwNupBorderFlags));
 		NDR_CHECK(ndr_push_spoolss_DM_BookletFlags(ndr, NDR_SCALARS, r->dwBookletFlags));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -772,6 +773,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_UNIDRVEXTRA(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_spoolss_DM_NupDirection(ndr, NDR_SCALARS, &r->dwNupDirection));
 		NDR_CHECK(ndr_pull_spoolss_DM_NupBorderFlags(ndr, NDR_SCALARS, &r->dwNupBorderFlags));
 		NDR_CHECK(ndr_pull_spoolss_DM_BookletFlags(ndr, NDR_SCALARS, &r->dwBookletFlags));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -787,7 +789,7 @@ _PUBLIC_ void ndr_print_spoolss_UNIDRVEXTRA(struct ndr_print *ndr, const char *n
 	ndr_print_spoolss_DM_Signature(ndr, "dwSignature", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA:r->dwSignature);
 	ndr_print_uint16(ndr, "wVer", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x0022:r->wVer);
 	ndr_print_uint16(ndr, "wCoreJTExpSize", r->wCoreJTExpSize);
-	ndr_print_uint16(ndr, "wCoreFullSize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_spoolss_UNIDRVEXTRA(r, NULL, 0) + r->wCoreJTExpSize:r->wCoreFullSize);
+	ndr_print_uint16(ndr, "wCoreFullSize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_spoolss_UNIDRVEXTRA(r, ndr->iconv_convenience, ndr->flags) + r->wCoreJTExpSize:r->wCoreFullSize);
 	ndr_print_uint16(ndr, "wOEMExtra", r->wOEMExtra);
 	ndr_print_uint32(ndr, "dwChecksum32", r->dwChecksum32);
 	ndr_print_spoolss_DMUNI_Flags(ndr, "dwFlags", r->dwFlags);
