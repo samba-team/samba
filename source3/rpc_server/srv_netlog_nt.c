@@ -1821,11 +1821,11 @@ WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_GetForestTrustInformation(pipes_struct *p,
-				       struct netr_GetForestTrustInformation *r)
+NTSTATUS _netr_GetForestTrustInformation(pipes_struct *p,
+					 struct netr_GetForestTrustInformation *r)
 {
 	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
