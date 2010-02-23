@@ -2688,7 +2688,28 @@ AC_SUBST(SMB_FAM_LIBS)
 #################################################
 # Check for DMAPI interfaces in libdm/libjfsdm/libxsdm
 
-SMB_CHECK_DMAPI([], AC_MSG_NOTICE(DMAPI support not present) )
+
+with_dmapi_support=auto
+AC_MSG_CHECKING(whether to use DMAPI support)
+AC_ARG_WITH(dmapi,
+[AS_HELP_STRING([--with-dmapi], [Include DMAPI/XDSM support (default=auto)])],
+[ case "$withval" in
+  yes|no)
+    with_dmapi_support=$withval
+    ;;
+  esac ]
+)
+AC_MSG_RESULT([$with_dmapi_support])
+
+if test x"$with_dmapi_support" != xno ; then
+	SMB_CHECK_DMAPI([], [
+		AC_MSG_NOTICE(DMAPI support not present)
+		if test x"$with_dmapi_support" = xyes ; then
+			AC_MSG_ERROR(no DMAPI support found but requested!)
+		fi
+		]
+	)
+fi
 
 # Add TSM SM VFS module only if there are both GPFS and DMAPI support
 # Theoretically it should work with AIX JFS2 too but this needs testing
