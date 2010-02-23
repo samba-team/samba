@@ -220,7 +220,11 @@ def ADD_DEPENDENCIES(bld, name, deps):
     # extract out the system dependencies
     sysdeps = []
     localdeps = []
+    cache = BUILD_CACHE(bld, 'EMPTY_LIBS')
     for d in list2:
+        # strip out any dependencies on empty libraries
+        if d in cache:
+            continue
         libname = 'LIB_%s' % d.upper()
         if libname in bld.env:
             sysdeps.append(d)
@@ -252,6 +256,12 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   autoproto=None):
     # print "Declaring SAMBA_LIBRARY %s" % libname
     #print "SAMBA_LIBRARY '%s' with deps '%s'" % (libname, deps)
+
+    # remember empty libraries, so we can strip the dependencies
+    if (source_list == '') or (source_list == []):
+        cache = BUILD_CACHE(bld, 'EMPTY_LIBS')
+        cache[libname] = True
+        return
 
     (sysdeps, deps) = ADD_DEPENDENCIES(bld, libname, deps)
 
