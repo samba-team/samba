@@ -62,6 +62,7 @@ def find_provision_key_parameters(param,credentials,session_info,paths,smbconf):
 	lp = param.LoadParm()
 	lp.load(paths.smbconf)
 	names = ProvisionNames()
+	names.adminpass = None
 	# NT domain, kerberos realm, root dn, domain dn, domain dns name
 	names.domain = string.upper(lp.get("workgroup"))
 	names.realm = lp.get("realm")
@@ -149,18 +150,18 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
 	logstd=os.path.join(provdir,"log.std")
 	os.chdir(os.path.join(setup_dir,".."))
 	os.mkdir(provdir)
-	os.close(2)
-	sys.stderr = open("%s/provision.log"%provdir, "w")
-	messagefunc("Reference provision stored in %s"%provdir)
-	messagefunc("STDERR message of provision will be logged in %s/provision.log"%provdir)
-	sys.stderr = open("/dev/stdout", "w")
+	#os.close(2)
+	#sys.stderr = open("%s/provision.log"%provdir, "w")
+	messagefunc("Provision stored in %s"%provdir)
+	#messagefunc("STDERR message of provision will be logged in %s/provision.log"%provdir)
+	#sys.stderr = open("/dev/stdout", "w")
 	provision(setup_dir, messagefunc,
 		session, creds, smbconf=smbconf, targetdir=provdir,
 		samdb_fill=FILL_FULL, realm=names.realm, domain=names.domain,
 		domainguid=names.domainguid, domainsid=str(names.domainsid),ntdsguid=names.ntdsguid,
 		policyguid=names.policyid,policyguid_dc=names.policyid_dc,hostname=names.netbiosname,
 		hostip=None, hostip6=None,
-		invocationid=names.invocation, adminpass=None,
+		invocationid=names.invocation, adminpass=names.adminpass,
 		krbtgtpass=None, machinepass=None,
 		dnspass=None, root=None, nobody=None,
 		wheel=None, users=None,

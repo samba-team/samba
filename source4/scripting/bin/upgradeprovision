@@ -39,7 +39,9 @@ import samba.getopt as options
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
 from samba import Ldb
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE, MessageElement, Message, Dn
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError,\
+				FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,\
+				MessageElement, Message, Dn
 from samba.samdb import SamDB
 from samba import param
 from samba import glue
@@ -71,20 +73,20 @@ CHANGEALL =	0xff
 # This is most probably because they are populated automatcally when object is
 # created
 # This also apply to imported object from reference provision
-hashAttrNotCopied = { 	"dn": 1,"whenCreated": 1,"whenChanged": 1,"objectGUID": 1,"replPropertyMetaData": 1,"uSNChanged": 1,
-						"uSNCreated": 1,"parentGUID": 1,"objectCategory": 1,"distinguishedName": 1,
-						"showInAdvancedViewOnly": 1,"instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,
-						"nTMixedDomain": 1,"versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,
-						"dBCSPwd":1,"supplementalCredentials":1,"gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,
-						"maxPwdAge":1, "mail":1, "secret":1,"possibleInferiors":1, "sAMAccountType":1}
+hashAttrNotCopied = { 	"dn": 1, "whenCreated": 1, "whenChanged": 1, "objectGUID": 1, "replPropertyMetaData": 1, "uSNChanged": 1,
+						"uSNCreated": 1, "parentGUID": 1, "objectCategory": 1, "distinguishedName": 1,
+						"showInAdvancedViewOnly": 1, "instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,
+						"nTMixedDomain": 1, "versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,
+						"dBCSPwd":1, "supplementalCredentials":1, "gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,
+						"maxPwdAge":1, "mail":1, "secret":1, "possibleInferiors":1, "sAMAccountType":1}
 
 # Usually for an object that already exists we do not overwrite attributes as
 # they might have been changed for good reasons. Anyway for a few of them it's
 # mandatory to replace them otherwise the provision will be broken somehow.
-hashOverwrittenAtt = {	"prefixMap": replace, "systemMayContain": replace,"systemOnly":replace, "searchFlags":replace,
-						"mayContain":replace,  "systemFlags":replace,"description":replace,
+hashOverwrittenAtt = {	"prefixMap": replace, "systemMayContain": replace, "systemOnly":replace, "searchFlags":replace,
+						"mayContain":replace,  "systemFlags":replace, "description":replace,
 						"oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
-						"defaultSecurityDescriptor": replace,"wellKnownObjects":replace,"privilege":delete,"groupType":replace,
+						"defaultSecurityDescriptor": replace, "wellKnownObjects":replace, "privilege":delete, "groupType":replace,
 						"rIDAvailablePool": never}
 
 
@@ -173,13 +175,14 @@ def sanitychecks(credentials,session_info,names,paths):
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp,options=["modules:samba_dsdb"])
 	# First update the SD for the rootdn
 	sam_ldb.set_session_info(session)
-	res = sam_ldb.search(expression="objectClass=ntdsdsa",base=str(names.configdn), scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
+	res = sam_ldb.search(expression="objectClass=ntdsdsa",base=str(names.configdn),
+						 scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
 	if len(res) == 0:
 		print "No DC found, your provision is most probalby hardly broken !"
 		return 0
 	elif len(res) != 1:
 		print "Found %d domain controllers, for the moment upgradeprovision is not able to handle upgrade on \
-domain with more than one DC, please demote the other DC before upgrading"%len(res)
+domain with more than one DC, please demote the other(s) DC(s) before upgrading"%len(res)
 		return 0
 	else:
 		return 1
@@ -207,18 +210,18 @@ def print_provision_key_parameters(names):
 
 # Check for security descriptors modifications return 1 if it is and 0 otherwise
 # it also populate hash structure for later use in the upgrade process
-def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
-	if ischema == 1 and att == "defaultSecurityDescriptor"  and msgElt.flags() == ldb.FLAG_MOD_REPLACE:
+def handle_security_desc(ischema, att, msgElt, hashallSD, old, new):
+	if ischema == 1 and att == "defaultSecurityDescriptor"  and msgElt.flags() == FLAG_MOD_REPLACE:
 		hashSD = {}
 		hashSD["oldSD"] = old[0][att]
 		hashSD["newSD"] = new[0][att]
 		hashallSD[str(old[0].dn)] = hashSD
 		return 0
-	if att == "nTSecurityDescriptor"  and msgElt.flags() == ldb.FLAG_MOD_REPLACE:
+	if att == "nTSecurityDescriptor"  and msgElt.flags() == FLAG_MOD_REPLACE:
 		if ischema == 0:
 			hashSD = {}
-			hashSD["oldSD"] =  ndr_unpack(security.descriptor,str(old[0][att]))
-			hashSD["newSD"] =  ndr_unpack(security.descriptor,str(new[0][att]))
+			hashSD["oldSD"] =  ndr_unpack(security.descriptor, str(old[0][att]))
+			hashSD["newSD"] =  ndr_unpack(security.descriptor, str(new[0][att]))
 			hashallSD[str(old[0].dn)] = hashSD
 		return 1
 	return 0
@@ -227,9 +230,10 @@ def handle_security_desc(ischema,att,msgElt,hashallSD,old,new):
 # only, e.g. if it has a certain value or if it's for a certain object or
 # a class of object.
 # It can be also if we want to do a merge of value instead of a simple replace
-def handle_special_case(att,delta,new,old,ischema):
+def handle_special_case(att, delta, new, old, ischema):
 	flag = delta.get(att).flags()
-	if (att == "gPLink" or att == "gPCFileSysPath") and flag ==  FLAG_MOD_REPLACE and str(new[0].dn).lower() == str(old[0].dn).lower():
+	if (att == "gPLink" or att == "gPCFileSysPath") and \
+		flag ==  FLAG_MOD_REPLACE and str(new[0].dn).lower() == str(old[0].dn).lower():
 		delta.remove(att)
 		return 1
 	if att == "forceLogoff":
@@ -240,13 +244,15 @@ def handle_special_case(att,delta,new,old,ischema):
 		return 1
 	if (att == "adminDisplayName" or att == "adminDescription") and ischema:
 		return 1
-	if (str(old[0].dn) == "CN=Samba4-Local-Domain,%s"%(str(names.schemadn)) and att == "defaultObjectCategory" and flag  == FLAG_MOD_REPLACE):
+
+	if (str(old[0].dn) == "CN=Samba4-Local-Domain,%s"%(str(names.schemadn))\
+		and att == "defaultObjectCategory" and flag  == FLAG_MOD_REPLACE):
 		return 1
 
 	if (str(old[0].dn) == "CN=Title,%s"%(str(names.schemadn)) and att == "rangeUpper" and flag  == FLAG_MOD_REPLACE):
 		return 1
-	if ( (att == "member" or att == "servicePrincipalName") and flag  == FLAG_MOD_REPLACE):
 
+	if ( (att == "member" or att == "servicePrincipalName") and flag  == FLAG_MOD_REPLACE):
 		hash = {}
 		newval = []
 		changeDelta=0
@@ -263,13 +269,14 @@ def handle_special_case(att,delta,new,old,ischema):
 		else:
 			delta.remove(att)
 		return 1
+
 	if (str(old[0].dn) == "%s"%(str(names.rootdn)) and att == "subRefs" and flag  == FLAG_MOD_REPLACE):
 		return 1
 	if str(delta.dn).endswith("CN=DisplaySpecifiers,%s"%names.configdn):
 		return 1
 	return 0
 
-def update_secrets(newpaths,paths,creds,session):
+def update_secrets(newpaths, paths, creds, session):
 	message(SIMPLE,"update secrets.ldb")
 	newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
 	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp, options=["modules:samba_secrets"])
@@ -329,7 +336,6 @@ def update_secrets(newpaths,paths,creds,session):
 				identic_rename(secrets_ldb,reference[0].dn)
 			else:
 				delta.remove(att)
-
 
 	for entry in listPresent:
 		reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
@@ -399,7 +405,7 @@ def check_dn_nottobecreated(hash,index,listdn):
 
 #This function tries to add the missing object "dn" if this object depends on some others
 # the function returns 0, if the object was created 1 is returned
-def add_missing_object(newsam_ldb,sam_ldb,dn,names,basedn,hash,index):
+def add_missing_object(newsam_ldb, sam_ldb, dn, names, basedn, hash, index):
 	handle_special_add(sam_ldb,dn,names)
 	reference = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn,
 					scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
@@ -427,7 +433,7 @@ def gen_dn_index_hash(listMissing):
 		hash[str(listMissing[i]).lower()] = i
 	return hash
 
-def add_missing_entries(newsam_ldb,sam_ldb,names,basedn,list):
+def add_missing_entries(newsam_ldb, sam_ldb, names, basedn,list):
 	listMissing = []
 	listDefered = list
 
@@ -452,7 +458,7 @@ def add_missing_entries(newsam_ldb,sam_ldb,names,basedn,list):
 # It looks for all objects which base DN is name. If ischema is "false" then
 # the scan is done in cross partition mode.
 # If "ischema" is true, then special handling is done for dealing with schema
-def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
+def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
 	hash_new = {}
 	hash = {}
 	hashallSD = {}
@@ -568,7 +574,7 @@ def check_diff_name(newpaths,paths,creds,session,basedn,names,ischema):
 	return hashallSD
 
 # Check that SD are correct
-def check_updated_sd(newpaths,paths,creds,session,names):
+def check_updated_sd(newpaths, paths, creds, session, names):
 	newsam_ldb = Ldb(newpaths.samdb, session_info=session, credentials=creds,lp=lp)
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
 	reference = newsam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
@@ -588,16 +594,17 @@ def check_updated_sd(newpaths,paths,creds,session,names):
 # Simple update method for updating the SD that rely on the fact that nobody
 # should have modified the SD
 # This assumption is safe right now (alpha9) but should be removed asap
-def update_sd(paths,creds,session,names):
+def update_sd(paths, creds, session, names):
 	sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp,options=["modules:samba_dsdb"])
 	sam_ldb.transaction_start()
 	# First update the SD for the rootdn
 	sam_ldb.set_session_info(session)
-	res = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_BASE,attrs=["dn","whenCreated"],controls=["search_options:1:2"])
+	res = sam_ldb.search(expression="objectClass=*", base=str(names.rootdn), scope=SCOPE_BASE,\
+						 attrs=["dn", "whenCreated"], controls=["search_options:1:2"])
 	delta = Message()
 	delta.dn = Dn(sam_ldb,str(res[0]["dn"]))
 	descr = get_domain_descriptor(names.domainsid)
-	delta["nTSecurityDescriptor"] = MessageElement( descr,FLAG_MOD_REPLACE,"nTSecurityDescriptor" )
+	delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE, "nTSecurityDescriptor")
 	sam_ldb.modify(delta,["recalculate_sd:0"])
 	# Then the config dn
 	res = sam_ldb.search(expression="objectClass=*",base=str(names.configdn), scope=SCOPE_BASE,attrs=["dn","whenCreated"],controls=["search_options:1:2"])
@@ -634,13 +641,14 @@ def update_sd(paths,creds,session,names):
 			sam_ldb.modify(delta,["recalculate_sd:0"])
 		except:
 			sam_ldb.transaction_cancel()
-			res = sam_ldb.search(expression="objectClass=*",base=str(names.rootdn), scope=SCOPE_SUBTREE,attrs=["dn","nTSecurityDescriptor"],controls=["search_options:1:2"])
+			res = sam_ldb.search(expression="objectClass=*", base=str(names.rootdn), scope=SCOPE_SUBTREE,\
+								 attrs=["dn","nTSecurityDescriptor"], controls=["search_options:1:2"])
 			print "bad stuff" +ndr_unpack(security.descriptor,str(res[0]["nTSecurityDescriptor"])).as_sddl(names.domainsid)
 			return
 	sam_ldb.transaction_commit()
 
 
-def update_basesamdb(newpaths,paths,names):
+def update_basesamdb(newpaths, paths, names):
 	message(SIMPLE,"Copy samdb")
 	shutil.copy(newpaths.samdb,paths.samdb)
 
@@ -663,12 +671,12 @@ def update_basesamdb(newpaths,paths,names):
 		shutil.copy(configldb,os.path.join(samldbdir,"%s.ldb"%str(names.configdn).upper()))
 		os.remove(configldb)
 
-def update_privilege(newpaths,paths):
+def update_privilege(newpaths, paths):
 	message(SIMPLE,"Copy privilege")
 	shutil.copy(os.path.join(newpaths.private_dir,"privilege.ldb"),os.path.join(paths.private_dir,"privilege.ldb"))
 
 # For each partition check the differences
-def update_samdb(newpaths,paths,creds,session,names):
+def update_samdb(newpaths, paths, creds, session, names):
 
 	message(SIMPLE, "Doing schema update")
 	hashdef = check_diff_name(newpaths,paths,creds,session,str(names.schemadn),names,1)
@@ -677,8 +685,7 @@ def update_samdb(newpaths,paths,creds,session,names):
 	hashSD = check_diff_name(newpaths,paths,creds,session,str(names.rootdn),names,0)
 	message(SIMPLE,"Done with scanning")
 
-def update_machine_account_password(paths,creds,session,names):
-
+def update_machine_account_password(paths, creds, session, names):
 	secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
 	secrets_ldb.transaction_start()
 	secrets_msg = secrets_ldb.search(expression=("samAccountName=%s$" % names.netbiosname), attrs=["secureChannelType"])
@@ -715,6 +722,7 @@ def update_machine_account_password(paths,creds,session,names):
 
 def setup_path(file):
 	return os.path.join(setup_dir, file)
+
 # From here start the big steps of the program
 # First get files paths
 paths=get_paths(param,smbconf=smbconf)
@@ -722,7 +730,7 @@ paths.setup = setup_dir
 # Guess all the needed names (variables in fact) from the current
 # provision.
 
-names = find_provision_key_parameters(param,creds,session,paths,smbconf)
+names = find_provision_key_parameters(param, creds, session, paths, smbconf)
 if not sanitychecks(creds,session,names,paths):
 	message(SIMPLE,"Sanity checks for the upgrade fails, checks messages and correct it before rerunning upgradeprovision")
 	sys.exit(1)
@@ -731,26 +739,26 @@ print_provision_key_parameters(names)
 # With all this information let's create a fresh new provision used as reference
 message(SIMPLE,"Creating a reference provision")
 provisiondir = tempfile.mkdtemp(dir=paths.private_dir, prefix="referenceprovision")
-newprovision(names,setup_dir,creds,session,smbconf,provisiondir,messageprovision)
+newprovision(names, setup_dir, creds, session, smbconf, provisiondir, messageprovision)
 # Get file paths of this new provision
-newpaths = get_paths(param,targetdir=provisiondir)
-populate_backlink(newpaths,creds,session,names.schemadn)
-populate_dnsyntax(newpaths,creds,session,names.schemadn)
+newpaths = get_paths(param, targetdir=provisiondir)
+populate_backlink(newpaths, creds, session,names.schemadn)
+populate_dnsyntax(newpaths, creds, session,names.schemadn)
 # Check the difference
-update_basesamdb(newpaths,paths,names)
+update_basesamdb(newpaths, paths,names)
 
 if opts.full:
-	update_samdb(newpaths,paths,creds,session,names)
-update_secrets(newpaths,paths,creds,session)
-update_privilege(newpaths,paths)
-update_machine_account_password(paths,creds,session,names)
+	update_samdb(newpaths, paths, creds, session, names)
+update_secrets(newpaths, paths, creds, session)
+update_privilege(newpaths, paths)
+update_machine_account_password(paths, creds, session, names)
 # SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
 # to recreate them with the good form but with system account and then give the ownership to admin ...
 admin_session_info = admin_session(lp, str(names.domainsid))
 message(SIMPLE,"Updating SD")
-update_sd(paths,creds,session,names)
-update_sd(paths,creds,admin_session_info,names)
-check_updated_sd(newpaths,paths,creds,session,names)
+update_sd(paths, creds, session,names)
+update_sd(paths, creds, admin_session_info, names)
+check_updated_sd(newpaths, paths, creds, session, names)
 message(SIMPLE,"Upgrade finished !")
 # remove reference provision now that everything is done !
 rmall(provisiondir)
