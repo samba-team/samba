@@ -74,7 +74,6 @@ def CHECK_FUNCS_IN(conf, list, library):
             conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
         conf.env['LIB_' + library.upper()] = library
 
-
 #################################################
 # write out config.h in the right directory
 @conf
@@ -202,6 +201,7 @@ def CHECK_TARGET_DEPENDENCY(bld, target):
 ################################################################
 # add to the dependency list. Return a new dependency list with
 # any circular dependencies removed
+# returns a tuple containing (systemdeps, localdeps)
 def ADD_DEPENDENCIES(bld, name, deps):
     cache = BUILD_CACHE(bld, 'LIB_DEPS')
     if not name in cache:
@@ -216,7 +216,17 @@ def ADD_DEPENDENCIES(bld, name, deps):
         except AssertionError:
             print "Removing dependency %s from target %s" % (d, name)
             del(cache[name][d])
-    return ' '.join(list2)
+
+    # extract out the system dependencies
+    sysdeps = []
+    localdeps = []
+    for d in list2:
+        libname = 'LIB_%s' % d.upper()
+        if libname in bld.env:
+            sysdeps.append(d)
+        else:
+            localdeps.append(d)
+    return (' '.join(sysdeps), ' '.join(localdeps))
 
 
 #################################################################
@@ -243,7 +253,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
     # print "Declaring SAMBA_LIBRARY %s" % libname
     #print "SAMBA_LIBRARY '%s' with deps '%s'" % (libname, deps)
 
-    deps = ADD_DEPENDENCIES(bld, libname, deps)
+    (sysdeps, deps) = ADD_DEPENDENCIES(bld, libname, deps)
 
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
@@ -252,6 +262,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         source = source_list,
         target=libname,
         uselib_local = deps,
+        uselib = sysdeps,
         includes='. ' + os.environ.get('PWD') + '/bin/default ' + ilist,
         vnum=vnum)
 
@@ -276,7 +287,6 @@ Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 # define a Samba binary
 def SAMBA_BINARY(bld, binname, source_list,
                  deps='',
-                 syslibs='',
                  include_list='',
                  public_headers=None,
                  modules=None,
@@ -284,6 +294,8 @@ def SAMBA_BINARY(bld, binname, source_list,
                  ldflags=None,
                  cflags=None,
                  autoproto=None,
+                 use_hostcc=None,
+                 compiler=None,
                  manpages=None):
     ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
@@ -291,7 +303,7 @@ def SAMBA_BINARY(bld, binname, source_list,
 
     #print "SAMBA_BINARY '%s' with deps '%s'" % (binname, deps)
 
-    deps = ADD_DEPENDENCIES(bld, binname, deps)
+    (sysdeps, deps) = ADD_DEPENDENCIES(bld, binname, deps)
 
     cache = BUILD_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
@@ -305,7 +317,7 @@ def SAMBA_BINARY(bld, binname, source_list,
         source = source_list,
         target = binname,
         uselib_local = deps,
-        uselib = syslibs,
+        uselib = sysdeps,
         includes = ilist,
         ccflags = ccflags,
         top=True)
@@ -326,7 +338,7 @@ def SAMBA_PYTHON(bld, name, source_list,
 
     #print "SAMBA_PYTHON '%s' with deps '%s'" % (name, deps)
 
-    deps = ADD_DEPENDENCIES(bld, name, deps)
+    (sysdeps, deps) = ADD_DEPENDENCIES(bld, name, deps)
 
     Logs.debug('runner: PYTHON_SAMBA not implemented')
     return

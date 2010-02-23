@@ -45,5 +45,4 @@ def build(bld):
     for t in LDB_TOOLS.split():
         bld.SAMBA_BINARY(t,
                          'tools/%s.c tools/ldbutil.c tools/cmdline.c' % t,
-                         deps='ldb',
-                         syslibs='dl popt')
+                         deps='ldb dl popt')
