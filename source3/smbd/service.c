@@ -888,7 +888,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	on_err_call_dis_hook = true;
 
 	if ((!conn->printer) && (!conn->ipc)) {
-		conn->notify_ctx = notify_init(conn, server_id_self(),
+		conn->notify_ctx = notify_init(conn, procid_self(),
 					       smbd_messaging_context(),
 					       smbd_event_context(),
 					       conn);

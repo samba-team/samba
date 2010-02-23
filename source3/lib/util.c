@@ -2662,11 +2662,6 @@ struct server_id procid_self(void)
 	return pid_to_procid(sys_getpid());
 }
 
-struct server_id server_id_self(void)
-{
-	return procid_self();
-}
-
 bool procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	if (p1->pid != p2->pid)

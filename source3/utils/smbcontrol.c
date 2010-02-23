@@ -1388,7 +1388,7 @@ int main(int argc, const char **argv)
          * shell needs 0. */ 
 	
 	if (!(evt_ctx = tevent_context_init(NULL)) ||
-	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
+	    !(msg_ctx = messaging_init(NULL, procid_self(), evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
 		TALLOC_FREE(frame);
 		exit(1);

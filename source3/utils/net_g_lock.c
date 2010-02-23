@@ -35,7 +35,7 @@ static bool net_g_lock_init(TALLOC_CTX *mem_ctx,
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;
 	}
-	msg = messaging_init(talloc_tos(), server_id_self(), ev);
+	msg = messaging_init(talloc_tos(), procid_self(), ev);
 	if (msg == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto fail;

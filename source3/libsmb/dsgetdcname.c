@@ -909,7 +909,7 @@ static struct messaging_context *msg_context(TALLOC_CTX *mem_ctx)
 {
 	static struct messaging_context *ctx;
 
-	if (!ctx && !(ctx = messaging_init(mem_ctx, server_id_self(),
+	if (!ctx && !(ctx = messaging_init(mem_ctx, procid_self(),
 					   ev_context()))) {
 		smb_panic("Could not init messaging context");
 	}

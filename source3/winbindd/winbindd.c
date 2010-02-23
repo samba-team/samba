@@ -51,7 +51,7 @@ struct messaging_context *winbind_messaging_context(void)
 	static struct messaging_context *ctx;
 
 	if (ctx == NULL) {
-		ctx = messaging_init(NULL, server_id_self(),
+		ctx = messaging_init(NULL, procid_self(),
 				     winbind_event_context());
 	}
 	if (ctx == NULL) {

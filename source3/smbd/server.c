@@ -60,7 +60,7 @@ struct messaging_context *smbd_messaging_context(void)
 {
 	if (smbd_msg_ctx == NULL) {
 		smbd_msg_ctx = messaging_init(talloc_autofree_context(),
-					      server_id_self(),
+					      procid_self(),
 					      smbd_event_context());
 	}
 	if (smbd_msg_ctx == NULL) {
