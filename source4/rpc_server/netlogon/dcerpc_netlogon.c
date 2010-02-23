@@ -1715,25 +1715,25 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	}
 
 	/* TODO: turn to hard check once we are sure this is 100% correct */
-        if (!r->in.server_name) {
+	if (!r->in.server_name) {
 		DEBUG(3, ("Invalid domain! Expected name in domain [%s]. "
 			  "But received NULL!\n", dnsdomain));
-        } else {
-	        p = strchr(r->in.server_name, '.');
-	        if (!p) {
-		        DEBUG(3, ("Invalid domain! Expected name in domain "
-                                  "[%s]. But received [%s]!\n",
-			          dnsdomain, r->in.server_name));
-                        p = r->in.server_name;
-	        } else {
-	                p++;
+	} else {
+		p = strchr(r->in.server_name, '.');
+		if (!p) {
+			DEBUG(3, ("Invalid domain! Expected name in domain "
+				  "[%s]. But received [%s]!\n",
+				  dnsdomain, r->in.server_name));
+			p = r->in.server_name;
+		} else {
+			p++;
                 }
 	        if (strcasecmp(p, dnsdomain)) {
-		        DEBUG(3, ("Invalid domain! Expected name in domain "
-                                  "[%s]. But received [%s]!\n",
-			          dnsdomain, r->in.server_name));
-	        }
-        }
+			DEBUG(3, ("Invalid domain! Expected name in domain "
+				  "[%s]. But received [%s]!\n",
+				  dnsdomain, r->in.server_name));
+		}
+	}
 
 	ZERO_STRUCT(r->out);
 
