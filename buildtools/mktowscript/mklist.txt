@@ -1,4 +1,5 @@
 source4/main.mk
+source4/lib/basic.mk
 pidl/config.mk
 nsswitch/config.mk
 nsswitch/libwbclient/config.mk

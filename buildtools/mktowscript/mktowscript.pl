@@ -34,6 +34,14 @@ sub strlist($)
 	$s =~ s/\$\(param_OBJ_FILES\)/..\/pyparam.c/g;
 	$s =~ s/\$\(libclisrcdir\)\///g;
 
+	# this one doesn't exist?
+	$s =~ s/LDAP_ENCODE//g;
+
+	# these need to use the library names
+	$s =~ s/LIBLDB/ldb/g;
+	$s =~ s/LIBTALLOC/talloc/g;
+	$s =~ s/LIBTEVENT/tevent/g;
+
 	return trim(join(' ', split(/\s+/, $s)));
 }
 
