@@ -364,6 +364,7 @@ static int fix_check_attributes(struct ldb_context *ldb,
 
 			/* We have to deny write operations on constructed attributes */
 			if ((attribute->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED) != 0) {
+				ldb_asprintf_errstring(ldb, "attribute %s is constructed", msg->elements[i].name);
 				if (op == LDB_ADD) {
 					return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
 				} else {
