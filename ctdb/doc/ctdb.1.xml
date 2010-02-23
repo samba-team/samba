@@ -169,6 +169,12 @@
       This node does not perticipate in the CTDB cluster but can still be
       communicated with. I.e. ctdb commands can be sent to it.
         </para>
+        <para>
+	PARTIALLYONLINE - A node that is partially online participates
+	in a cluster like a node that is ok. Some interfaces to serve
+	public ip addresses are down, but at least one interface is up.
+	See also "ctdb ifaces".
+        </para>
       </refsect3>
 
       <refsect3><title>generation</title>
