@@ -52,7 +52,7 @@ o   Steven Danneman <steven.danneman@isilon.com>
 o   Günther Deschner <gd@samba.org>
     * BUG 6888: Fix printing with 64 bit clients.
     * BUG 7130: Fix listing of printjobs in Windows 7.
-    * BUG 7136: Sspoolss getprinterdriver2 level 101 marshalling is bad.
+    * BUG 7136: Spoolss getprinterdriver2 level 101 marshalling is bad.
 
 
 o   William Jojo <w.jojo@hvcc.edu>
