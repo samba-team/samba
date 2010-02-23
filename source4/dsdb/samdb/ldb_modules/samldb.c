@@ -689,6 +689,81 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 	return ldb_next_request(ac->module, req);
 }
 
+/**
+ * msDS-IntId attributeSchema attribute handling
+ * during LDB_ADD request processing
+ */
+static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
+{
+	int ret;
+	bool id_exists;
+	uint32_t msds_intid;
+	uint32_t system_flags;
+	struct ldb_context *ldb;
+	struct ldb_result *ldb_res;
+	struct ldb_dn *schema_dn;
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema_dn = ldb_get_schema_basedn(ldb);
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(ac->req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return LDB_SUCCESS;
+	}
+
+	/* msDS-IntId is handled by system and should never be
+	 * passed by clients */
+	if (ldb_msg_find_element(ac->msg, "msDS-IntId")) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* do not generate msDS-IntId if Relax control is passed */
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		return LDB_SUCCESS;
+	}
+
+	/* check Functional Level */
+	if (dsdb_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003) {
+		return LDB_SUCCESS;
+	}
+
+	/* check systemFlags for SCHEMA_BASE_OBJECT flag */
+	system_flags = ldb_msg_find_attr_as_uint(ac->msg, "systemFlags", 0);
+	if (system_flags & SYSTEM_FLAG_SCHEMA_BASE_OBJECT) {
+		return LDB_SUCCESS;
+	}
+
+	/* Generate new value for msDs-IntId
+	 * Value should be in 0x80000000..0xBFFFFFFF range */
+	msds_intid = generate_random() % 0X3FFFFFFF;
+	msds_intid += 0x80000000;
+
+	/* probe id values until unique one is found */
+	do {
+		msds_intid++;
+		if (msds_intid > 0xBFFFFFFF) {
+			msds_intid = 0x80000001;
+		}
+
+		ret = dsdb_module_search(ac->module, ac,
+		                         &ldb_res,
+		                         schema_dn, LDB_SCOPE_ONELEVEL, NULL, 0,
+		                         "(msDS-IntId=%d)", msds_intid);
+		if (ret != LDB_SUCCESS) {
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+				      __location__": Searching for msDS-IntId=%d failed - %s\n",
+				      msds_intid,
+				      ldb_errstring(ldb));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		id_exists = (ldb_res->count > 0);
+
+		talloc_free(ldb_res);
+	} while(id_exists);
+
+	return ldb_msg_add_fmt(ac->msg, "msDS-IntId", "%d", msds_intid);
+}
+
 
 /*
  * samldb_add_entry (async)
@@ -869,6 +944,10 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 				return ret;
 			}
 		}
+
+		/* handle msDS-IntID attribute */
+		ret = samldb_add_handle_msDS_IntId(ac);
+		if (ret != LDB_SUCCESS) return ret;
 
 		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
@@ -1761,6 +1840,14 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		ldb_asprintf_errstring(ldb,
 			"sAMAccountType must not be specified!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* msDS-IntId is not allowed to be modified
+	 * except when modification comes from replication */
+	if (ldb_msg_find_element(req->op.mod.message, "msDS-IntId")) {
+		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 	}
 
 	/* TODO: do not modify original request, create a new one */
