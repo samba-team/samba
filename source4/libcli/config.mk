@@ -76,7 +76,7 @@ PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-HOSTCONFIG LIBNETIF
 
 LP_RESOLVE_OBJ_FILES = $(addprefix $(libclisrcdir)/resolve/, \
 					  bcast.o nbtlist.o wins.o \
-					  dns_ex.o \
+					  dns_ex.o file.o \
 					  host.o resolve_lp.o)
 
 $(eval $(call proto_header_template,$(libclisrcdir)/resolve/lp_proto.h,$(LP_RESOLVE_OBJ_FILES:.o=.c)))
