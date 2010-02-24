@@ -890,12 +890,13 @@ bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
   with the return code from the command
  */
 struct tevent_context;
-struct composite_context *samba_runcmd(struct tevent_context *ev,
-				       TALLOC_CTX *mem_ctx,
-				       struct timeval timeout,
-				       int stdout_log_level,
-				       int stderr_log_level,
-				       const char **argv0, ...);
-
+struct tevent_req;
+struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct timeval endtime,
+				     int stdout_log_level,
+				     int stderr_log_level,
+				     const char * const *argv0, ...);
+int samba_runcmd_recv(struct tevent_req *req, int *perrno);
 
 #endif /* _SAMBA_UTIL_H_ */
