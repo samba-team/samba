@@ -5,8 +5,8 @@
 <refmeta>
 	<refentrytitle>ctdb</refentrytitle>
 	<manvolnum>1</manvolnum>
-	<refmiscinfo class="source"> </refmiscinfo>
-	<refmiscinfo class="manual"> </refmiscinfo>
+	<refmiscinfo class="source">ctdb</refmiscinfo>
+	<refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
 </refmeta>
 
 
