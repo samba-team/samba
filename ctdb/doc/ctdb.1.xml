@@ -1104,7 +1104,8 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
       <screen format="linespecific">
 Number of databases:10
 dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
-dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0 dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
+dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
+dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
 dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0 
 dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0 
 dbid:0x122224da name:test.tdb path:/var/ctdb/test.tdb.0 
