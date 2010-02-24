@@ -1149,16 +1149,16 @@ def provision(setup_dir, message, session_info,
     policyguid_dc = policyguid_dc.upper()
 
     if adminpass is None:
-        adminpass = glue.generate_random_str(12)
+        adminpass = glue.generate_random_password(12, 32)
     if krbtgtpass is None:
-        krbtgtpass = glue.generate_random_str(12)
+        krbtgtpass = glue.generate_random_password(128, 255)
     if machinepass is None:
-        machinepass  = glue.generate_random_str(12)
+        machinepass  = glue.generate_random_password(128, 255)
     if dnspass is None:
-        dnspass = glue.generate_random_str(12)
+        dnspass = glue.generate_random_password(128, 255)
     if ldapadminpass is None:
         #Make a new, random password between Samba and it's LDAP server
-        ldapadminpass=glue.generate_random_str(12)        
+        ldapadminpass=glue.generate_random_password(128, 255)
 
     if backend_type is None:
         backend_type = "ldb"
