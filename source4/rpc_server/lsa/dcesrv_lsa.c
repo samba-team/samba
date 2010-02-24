@@ -759,13 +759,13 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	int ret;
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
-        struct ldb_context *sam_ldb;
+	struct ldb_context *sam_ldb;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.policy_handle, LSA_HANDLE_POLICY);
 	ZERO_STRUCTP(r->out.trustdom_handle);
 
 	policy_state = policy_handle->data;
-        sam_ldb = policy_state->sam_ldb;
+	sam_ldb = policy_state->sam_ldb;
 
 	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -951,13 +951,11 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	samdb_msg_add_string(sam_ldb, mem_ctx, msg, "flatname", netbios_name);
 
 	if (r->in.info->sid) {
-		const char *sid_string = dom_sid_string(mem_ctx, r->in.info->sid);
-		if (!sid_string) {
+		ret = samdb_msg_add_dom_sid(sam_ldb, mem_ctx, msg, "securityIdentifier", r->in.info->sid);
+		if (ret != LDB_SUCCESS) {
 			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_NO_MEMORY;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
-
-		samdb_msg_add_string(sam_ldb, mem_ctx, msg, "securityIdentifier", sid_string);
 	}
 
 	samdb_msg_add_string(sam_ldb, mem_ctx, msg, "objectClass", "trustedDomain");
