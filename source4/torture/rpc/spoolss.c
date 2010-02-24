@@ -3628,10 +3628,6 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_ChangeID(tctx, p, &handle)) {
-		ret = false;
-	}
-
 	if (!torture_setting_bool(tctx, "samba3", false)) {
 		if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
 			ret = false;
@@ -4392,6 +4388,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterInfo_DevMode(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_ChangeID(tctx, p, handle)) {
 		ret = false;
 	}
 
