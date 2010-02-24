@@ -420,8 +420,6 @@ void clobber_region(const char *fn, unsigned int line, char *dest, size_t len);
 
 /* The following definitions come from lib/conn_tdb.c  */
 
-struct db_record *connections_fetch_record(TALLOC_CTX *mem_ctx,
-					   TDB_DATA key);
 struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
 					  connection_struct *conn,
 					  const char *name);

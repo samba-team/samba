@@ -40,8 +40,8 @@ static struct db_context *connections_db_ctx(bool rw)
 	return db_ctx;
 }
 
-struct db_record *connections_fetch_record(TALLOC_CTX *mem_ctx,
-					   TDB_DATA key)
+static struct db_record *connections_fetch_record(TALLOC_CTX *mem_ctx,
+						  TDB_DATA key)
 {
 	struct db_context *ctx = connections_db_ctx(True);
 
