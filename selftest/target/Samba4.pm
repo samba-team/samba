@@ -458,6 +458,9 @@ sub provision_raw_prepare($$$$$$$)
 
 	$ctx->{prefix} = $prefix;
 	$ctx->{prefix_abs} = $prefix_abs;
+	
+	$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
+
 	$ctx->{server_role} = $server_role;
 	$ctx->{netbiosname} = $netbiosname;
 	$ctx->{netbiosalias} = $netbiosalias;
@@ -569,7 +572,7 @@ sub provision_raw_step1($$)
 	winbindd privileged socket directory = $ctx->{winbindd_privileged_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
 	winbind separator = /
-	name resolve order = bcast
+	name resolve order = bcast file
 	interfaces = $ctx->{interfaces}
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
 	panic action = $RealBin/gdb_backtrace \%PID% \%PROG%
@@ -582,7 +585,8 @@ sub provision_raw_step1($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	rndc command = /bin/true
-	dns update command = /bin/true
+        dns update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}
+        resolv:host file = $ctx->{dns_host_file}
 ";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
