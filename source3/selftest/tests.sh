@@ -41,7 +41,8 @@ plantest() {
 normalize_testname() {
 	name=$1
 	shift 1
-	echo $name | tr "A-Z-" "a-z."
+	n=`echo $name | tr "A-Z-" "a-z."`
+	echo "$n $@"
 }
 
 TEST_FUNCTIONS_SH="INCLUDED"
