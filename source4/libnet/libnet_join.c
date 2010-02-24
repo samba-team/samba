@@ -796,7 +796,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	
 	/* Grab a password of that minimum length */
 	
-	password_str = generate_random_str(tmp_ctx, MAX(8, policy_min_pw_len));	
+	password_str = generate_random_password(tmp_ctx, MAX(8, policy_min_pw_len), 255);
 
 	/* set full_name and reset flags */
 	ZERO_STRUCT(u_info21);
