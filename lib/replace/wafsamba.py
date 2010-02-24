@@ -29,7 +29,7 @@ def runonce(function):
 # m4 files
 @runonce
 @conf
-def DEFUN(conf, d, v):
+def DEFINE(conf, d, v):
     conf.define(d, v, quote=False)
     conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
@@ -56,7 +56,18 @@ def CHECK_TYPE_IN(conf, t, hdr):
 @conf
 def CHECK_TYPE(conf, t, alternate):
     if not conf.check(type_name=t, header_name=conf.env.hlist):
-        conf.DEFUN(t, alternate)
+        conf.DEFINE(t, alternate)
+
+@conf
+def CHECK_VARIABLE(conf, v):
+    hdrs=''
+    for h in conf.env.hlist:
+        hdrs += '#include <%s>\n' % h
+    if conf.check(fragment=
+                  '%s\nint main(void) {void *_x; _x=(void *)&%s; return 0;}\n' % (hdrs, v),
+                  execute=0,
+                  msg="Checking for variable %s" % v):
+        conf.DEFINE('HAVE_%s' % v.upper(), 1)
 
 @runonce
 def CHECK_FUNC(conf, f):
@@ -67,6 +78,14 @@ def CHECK_FUNC(conf, f):
 def CHECK_FUNCS(conf, list):
     for f in list.split():
         CHECK_FUNC(conf, f)
+
+
+#################################################
+# return True if a configuration option was found
+@conf
+def CONFIG_SET(conf, option):
+    return (option in conf.env) and (conf.env[option] != ())
+Build.BuildContext.CONFIG_SET = CONFIG_SET
 
 
 ###########################################################
@@ -117,7 +136,21 @@ def CONFIG_PATH(conf, name, default):
 # add some CFLAGS to the command line
 @conf
 def ADD_CFLAGS(conf, flags):
-    conf.env.append_value('CCFLAGS', flags.split())
+    if not 'EXTRA_CFLAGS' in conf.env:
+        conf.env['EXTRA_CFLAGS'] = []
+    conf.env['EXTRA_CFLAGS'].extend(flags.split())
+
+
+##############################################################
+# work out the current flags. local flags are added first
+def CURRENT_CFLAGS(bld, cflags):
+    if not 'EXTRA_CFLAGS' in bld.env:
+        list = []
+    else:
+        list = bld.env['EXTRA_CFLAGS'];
+    ret = cflags.split()
+    ret.extend(list)
+    return ret
 
 
 ################################################################
@@ -362,7 +395,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   include_list='.',
                   public_headers=None,
                   vnum=None,
-                  cflags=None,
+                  cflags='',
                   autoproto=None):
     if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
         return
@@ -612,11 +645,18 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
                     include_list='.',
                     public_headers=None,
                     autoproto=None,
-                    cflags=None,
+                    cflags='',
+                    group='main',
+                    config_option=None,
                     init_function_sentinal=None):
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
+
+    # if the caller specifies a config_option, then we create a blank
+    # subsystem if that configuration option was found at configure time
+    if (config_option is not None) and bld.CONFIG_SET(config_option):
+            source_list = ''
 
     # remember empty subsystems, so we can strip the dependencies
     if (source_list == '') or (source_list == []):

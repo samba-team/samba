@@ -36,9 +36,9 @@ def configure(conf):
 
     conf.env['RPATH_ON_INSTALL'] = Options.options.enable_rpath
 
-    conf.DEFUN('_GNU_SOURCE', 1)
-    conf.DEFUN('_XOPEN_SOURCE_EXTENDED', 1)
-    conf.DEFUN('LIBREPLACE_NETWORK_CHECKS', 1)
+    conf.DEFINE('_GNU_SOURCE', 1)
+    conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1)
+    conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
     conf.CHECK_HEADERS('unistd.h sys/types.h stdlib.h stdio.h stddef.h')
     conf.CHECK_HEADERS('ctype.h locale.h acl/libacl.h compat.h')
@@ -63,10 +63,10 @@ def configure(conf):
     conf.CHECK_HEADERS('resolv.h libintl.h')
 
     if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
-        conf.DEFUN('STDC_HEADERS', 1)
+        conf.DEFINE('STDC_HEADERS', 1)
 
     if 'HAVE_SYS_TIME_H' in conf.env and 'HAVE_TIME_H' in conf.env:
-        conf.DEFUN('TIME_WITH_SYS_TIME', 1)
+        conf.DEFINE('TIME_WITH_SYS_TIME', 1)
 
     conf.define('SHLIBEXT', "so", quote=True)
 
@@ -102,8 +102,9 @@ def configure(conf):
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
-    conf.CHECK_FUNCS('inet_ntoa inet_ntop dirfd getdirentries getdents syslog')
-    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs inet_aton inet_atop crypt')
+    conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
+    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
+    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs  crypt')
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
@@ -188,10 +189,11 @@ def build(bld):
                      'replace')
 
     NET_SOURCES = []
-    if not 'HAVE_INET_NTOA'  in bld.env: NET_SOURCES.append('inet_ntoa.c')
-    if not 'HAVE_INET_ATON'  in bld.env: NET_SOURCES.append('inet_aton.c')
-    if not 'HAVE_INET_ATOP'  in bld.env: NET_SOURCES.append('inet_atop.c')
-    if not 'HAVE_SOCKETPAIR' in bld.env: NET_SOURCES.append('socketpair.c')
+    if bld.CONFIG_SET('HAVE_INET_NTOA'):  NET_SOURCES.append('inet_ntoa.c')
+    if bld.CONFIG_SET('HAVE_INET_ATON'):  NET_SOURCES.append('inet_aton.c')
+    if bld.CONFIG_SET('HAVE_INET_NTOP'):  NET_SOURCES.append('inet_ntop.c')
+    if bld.CONFIG_SET('HAVE_INET_PTON'):  NET_SOURCES.append('inet_pton.c')
+    if bld.CONFIG_SET('HAVE_SOCKETPAIR'): NET_SOURCES.append('socketpair.c')
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES)
 

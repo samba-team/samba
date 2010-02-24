@@ -9,14 +9,15 @@ def set_options(opt):
     opt.recurse(LIBLDB_DIR)
 
 def configure(conf):
-    conf.DEFUN('_SAMBA_BUILD_', 4)
+    conf.DEFINE('_SAMBA_BUILD_', 4)
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBLDB_DIR)
+    conf.sub_config('heimdal_build')
 
-    conf.DEFUN('CONFIG_H_IS_FROM_SAMBA', 1)
+    conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.ADD_CFLAGS('-I.. -I../lib -I../../lib  -I../.. -I../include -Idefault/source4')
     conf.ADD_CFLAGS('-I../../lib/socket_wrapper -I../../lib/talloc -I../../lib/replace -I../../lib/tevent')
 
     conf.ADD_CFLAGS('-I../heimdal_build -I../heimdal/lib/krb5 -I../heimdal/lib/asn1 -I../heimdal/lib/com_err -I -I../heimdal/lib/hx509 -I../heimdal/lib/roken -I../heimdal/lib/hx509 -I../heimdal/lib/asn1 -I../heimdal/lib/hcrypto -I../heimdal/lib -I../heimdal/lib/hcrypto/imath -I../heimdal/lib/wind')
-    conf.DEFUN('HAVE_KRB5', 1)
+
     conf.SAMBA_CONFIG_H('include/config.h')
