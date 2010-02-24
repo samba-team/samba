@@ -5054,7 +5054,7 @@ static enum ndr_err_code ndr_push_lsa_ForestTrustData(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME: {
-				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));
+				NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->top_level_name));
 			break; }
 
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX: {
@@ -5075,7 +5075,7 @@ static enum ndr_err_code ndr_push_lsa_ForestTrustData(struct ndr_push *ndr, int 
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
-				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->top_level_name));
+				NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->top_level_name));
 			break;
 
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
@@ -5108,7 +5108,7 @@ static enum ndr_err_code ndr_pull_lsa_ForestTrustData(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME: {
-				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));
+				NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->top_level_name));
 			break; }
 
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX: {
@@ -5128,7 +5128,7 @@ static enum ndr_err_code ndr_pull_lsa_ForestTrustData(struct ndr_pull *ndr, int 
 	if (ndr_flags & NDR_BUFFERS) {
 		switch (level) {
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
-				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->top_level_name));
+				NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->top_level_name));
 			break;
 
 			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
@@ -5155,7 +5155,7 @@ _PUBLIC_ void ndr_print_lsa_ForestTrustData(struct ndr_print *ndr, const char *n
 	ndr_print_union(ndr, name, level, "lsa_ForestTrustData");
 	switch (level) {
 		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
-			ndr_print_lsa_String(ndr, "top_level_name", &r->top_level_name);
+			ndr_print_lsa_StringLarge(ndr, "top_level_name", &r->top_level_name);
 		break;
 
 		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:

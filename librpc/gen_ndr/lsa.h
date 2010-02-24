@@ -738,7 +738,7 @@ struct lsa_ForestTrustDomainInfo {
 };
 
 union lsa_ForestTrustData {
-	struct lsa_String top_level_name;/* [case(LSA_FOREST_TRUST_TOP_LEVEL_NAME)] */
+	struct lsa_StringLarge top_level_name;/* [case(LSA_FOREST_TRUST_TOP_LEVEL_NAME)] */
 	struct lsa_StringLarge top_level_name_ex;/* [case(LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX)] */
 	struct lsa_ForestTrustDomainInfo domain_info;/* [case(LSA_FOREST_TRUST_DOMAIN_INFO)] */
 	struct lsa_ForestTrustBinaryData data;/* [default] */
