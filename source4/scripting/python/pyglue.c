@@ -79,6 +79,23 @@ static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 	return ret;
 }
 
+static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
+{
+	int min, max;
+	PyObject *ret;
+	char *retstr;
+	if (!PyArg_ParseTuple(args, "ii", &min, &max))
+		return NULL;
+
+	retstr = generate_random_password(NULL, min, max);
+	if (retstr == NULL) {
+		return NULL;
+	}
+	ret = PyString_FromString(retstr);
+	talloc_free(retstr);
+	return ret;
+}
+
 static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 {
 	time_t t;
@@ -636,8 +653,11 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
-		"random_password(len) -> string\n"
-		"Generate random password with specified length." },
+		"generate_random_str(len) -> string\n"
+		"Generate random string with specified length." },
+	{ "generate_random_password", (PyCFunction)py_generate_random_password, METH_VARARGS,
+		"generate_random_password(min, max) -> string\n"
+		"Generate random password with a length >= min and <= max." },
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
 	{ "ldb_set_session_info", (PyCFunction)py_ldb_set_session_info, METH_VARARGS,
