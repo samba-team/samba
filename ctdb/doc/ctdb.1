@@ -2,12 +2,12 @@
 .\"     Title: ctdb
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 02/23/2010
-.\"    Manual:  
-.\"    Source:  
+.\"      Date: 02/24/2010
+.\"    Manual: CTDB - clustered TDB database
+.\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDB" "1" "02/23/2010" "" ""
+.TH "CTDB" "1" "02/24/2010" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -32,7 +32,7 @@ ctdb is a utility to view and manage a ctdb cluster\&.
 .PP
 \-n <pnn>
 .RS 4
-This specifies the physical node number on which to execute the command\&. Default is to run the command on the deamon running on the local host\&.
+This specifies the physical node number on which to execute the command\&. Default is to run the command on the daemon running on the local host\&.
 .sp
 The physical node number is an integer that describes the node in the cluster\&. The first node has physical node number 0\&.
 .RE
@@ -253,7 +253,7 @@ response from 0 time=0\&.000054 sec  (3 clients)
 response from 1 time=0\&.000144 sec  (2 clients)
 response from 2 time=0\&.000105 sec  (2 clients)
 response from 3 time=0\&.000114 sec  (2 clients)
-
+      
 .fi
 .if n \{\
 .RE
@@ -275,7 +275,7 @@ name:eth5 link:up references:2
 name:eth4 link:down references:0
 name:eth3 link:up references:1
 name:eth2 link:up references:1
-
+      
 .fi
 .if n \{\
 .RE
@@ -325,7 +325,7 @@ Public IPs on node 0
 172\&.31\&.92\&.83 node[0] active[eth5] available[eth5] configured[eth4,eth5]
 172\&.31\&.92\&.84 node[1] active[] available[eth5] configured[eth4,eth5]
 172\&.31\&.92\&.85 node[0] active[eth5] available[eth5] configured[eth4,eth5]
-
+      
 .fi
 .if n \{\
 .RE
@@ -348,7 +348,7 @@ Example output:
 :172\&.31\&.92\&.83:0:eth5:eth5:eth4,eth5:
 :172\&.31\&.92\&.84:1::eth5:eth4,eth5:
 :172\&.31\&.92\&.85:0:eth5:eth5:eth4,eth5:
-
+      
 .fi
 .if n \{\
 .RE
@@ -808,11 +808,11 @@ Example output:
 .\}
 .nf
 Number of databases:10
-dbid:0x435d3410 name:notify\&.tdb path:/var/ctdb/notify\&.tdb\&.0
-dbid:0x42fe72c5 name:locking\&.tdb path:/var/ctdb/locking\&.tdb\&.0 dbid:0x1421fb78 name:brlock\&.tdb path:/var/ctdb/brlock\&.tdb\&.0
-dbid:0x17055d90 name:connections\&.tdb path:/var/ctdb/connections\&.tdb\&.0
-dbid:0xc0bdde6a name:sessionid\&.tdb path:/var/ctdb/sessionid\&.tdb\&.0
-dbid:0x122224da name:test\&.tdb path:/var/ctdb/test\&.tdb\&.0
+dbid:0x435d3410 name:notify\&.tdb path:/var/ctdb/notify\&.tdb\&.0 
+dbid:0x42fe72c5 name:locking\&.tdb path:/var/ctdb/locking\&.tdb\&.0 dbid:0x1421fb78 name:brlock\&.tdb path:/var/ctdb/brlock\&.tdb\&.0 
+dbid:0x17055d90 name:connections\&.tdb path:/var/ctdb/connections\&.tdb\&.0 
+dbid:0xc0bdde6a name:sessionid\&.tdb path:/var/ctdb/sessionid\&.tdb\&.0 
+dbid:0x122224da name:test\&.tdb path:/var/ctdb/test\&.tdb\&.0 
 dbid:0x2672a57f name:idmap2\&.tdb path:/var/ctdb/persistent/idmap2\&.tdb\&.0 PERSISTENT
 dbid:0xb775fff6 name:secrets\&.tdb path:/var/ctdb/persistent/secrets\&.tdb\&.0 PERSISTENT
 dbid:0xe98e08b6 name:group_mapping\&.tdb path:/var/ctdb/persistent/group_mapping\&.tdb\&.0 PERSISTENT
@@ -906,7 +906,7 @@ ACTIVE \- This is the normal mode\&. The node is actively monitoring all other n
 DISABLED \- This node is not monitoring that other nodes are available\&. In this mode a node failure will not be detected and no recovery will be performed\&. This mode is useful when for debugging purposes one wants to attach GDB to a ctdb process but wants to prevent the rest of the cluster from marking this node as DISCONNECTED and do a recovery\&.
 .SS "setmonmode <0|1>"
 .PP
-This command can be used to explicitely disable/enable monitoring mode on a node\&. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery\&. To do this, set monitoring mode to 0 on all nodes before attaching with GDB\&. Remember to set monitoring mode back to 1 afterwards\&.
+This command can be used to explicitly disable/enable monitoring mode on a node\&. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery\&. To do this, set monitoring mode to 0 on all nodes before attaching with GDB\&. Remember to set monitoring mode back to 1 afterwards\&.
 .SS "attach <dbname>"
 .PP
 This is a debugging command\&. This command will make the CTDB daemon create a new CTDB database and attach to it\&.
@@ -931,7 +931,7 @@ This is a debugging command\&. This command can be used to manually invoke and r
 .PP
 Administratively ban a node for bantime seconds\&. A bantime of 0 means that the node should be permanently banned\&.
 .PP
-A banned node does not participate in the cluster and does not host any records for the clustered TDB\&. Its ip address has been taken over by an other node and no services are hosted\&.
+A banned node does not participate in the cluster and does not host any records for the clustered TDB\&. Its ip address has been taken over by another node and no services are hosted\&.
 .PP
 Nodes are automatically banned if they are the cause of too many cluster recoveries\&.
 .SS "unban"
