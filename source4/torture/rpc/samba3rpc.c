@@ -1161,7 +1161,7 @@ static bool schan(struct smbcli_state *cli,
 
 	{
 		struct netr_ServerPasswordSet s;
-		char *password = generate_random_str(wks_creds, 8);
+		char *password = generate_random_password(wks_creds, 8, 255);
 		struct netlogon_creds_CredentialState *creds_state;
 		struct netr_Authenticator credential, return_authenticator;
 		struct samr_Password new_password;
@@ -1285,7 +1285,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_password(wks_creds,
-				     generate_random_str(wks_creds, 8),
+				     generate_random_password(wks_creds, 8, 255),
 				     CRED_SPECIFIED);
 
 	if (!join3(cli, torture->lp_ctx, false, cmdline_credentials, wks_creds)) {
@@ -1376,7 +1376,7 @@ static bool test_join3(struct torture_context *tctx,
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_password(wks_creds,
-				     generate_random_str(wks_creds, 8),
+				     generate_random_password(wks_creds, 8, 255),
 				     CRED_SPECIFIED);
 
 	if (!join3(cli, tctx->lp_ctx, use_level25, samr_creds, wks_creds)) {
@@ -1804,7 +1804,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	cli_credentials_set_username(user_creds, "torture_username",
 				     CRED_SPECIFIED);
 	cli_credentials_set_password(user_creds,
-				     generate_random_str(user_creds, 8),
+				     generate_random_password(user_creds, 8, 255),
 				     CRED_SPECIFIED);
 
 	if (!create_user(mem_ctx, cli, torture->lp_ctx, cmdline_credentials,

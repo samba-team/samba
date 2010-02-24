@@ -574,8 +574,8 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 */
 static char *samr_rand_pass_silent(TALLOC_CTX *mem_ctx, int min_len)
 {
-	size_t len = MAX(8, min_len) + (random() % 6);
-	char *s = generate_random_str(mem_ctx, len);
+	size_t len = MAX(8, min_len);
+	char *s = generate_random_password(mem_ctx, len, len+6);
 	return s;
 }
 
@@ -610,7 +610,7 @@ static DATA_BLOB samr_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
 */
 static char *samr_rand_pass_fixed_len(TALLOC_CTX *mem_ctx, int len)
 {
-	char *s = generate_random_str(mem_ctx, len);
+	char *s = generate_random_password(mem_ctx, len, len);
 	printf("Generated password '%s'\n", s);
 	return s;
 }

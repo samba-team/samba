@@ -770,7 +770,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 
 	{
 		struct netr_ServerPasswordSet pwset;
-		char *password = generate_random_str(s->join_ctx1, 8);
+		char *password = generate_random_password(s->join_ctx1, 8, 255);
 		struct netlogon_creds_CredentialState *creds_state;
 		struct dcerpc_pipe *net_pipe;
 		struct netr_Authenticator credential, return_authenticator;

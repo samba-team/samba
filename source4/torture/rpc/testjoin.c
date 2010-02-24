@@ -235,7 +235,7 @@ again:
 		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 
-	random_pw = generate_random_str(join, MAX(8, policy_min_pw_len));
+	random_pw = generate_random_password(join, MAX(8, policy_min_pw_len), 255);
 
 	printf("Setting account password '%s'\n", random_pw);
 

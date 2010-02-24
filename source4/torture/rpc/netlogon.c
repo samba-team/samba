@@ -292,7 +292,7 @@ static bool test_SetPassword(struct torture_context *tctx,
 	r.in.new_password = &new_password;
 	r.out.return_authenticator = &return_authenticator;
 
-	password = generate_random_str(tctx, 8);
+	password = generate_random_password(tctx, 8, 255);
 	E_md4hash(password, new_password.hash);
 
 	netlogon_creds_des_encrypt(creds, &new_password);
@@ -367,7 +367,7 @@ static bool test_SetPassword_flags(struct torture_context *tctx,
 	r.in.new_password = &new_password;
 	r.out.return_authenticator = &return_authenticator;
 
-	password = generate_random_str(tctx, 8);
+	password = generate_random_password(tctx, 8, 255);
 	E_md4hash(password, new_password.hash);
 
 	netlogon_creds_des_encrypt(creds, &new_password);
@@ -460,7 +460,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	r.in.new_password = &new_password;
 	r.out.return_authenticator = &return_authenticator;
 
-	password = generate_random_str(tctx, 8);
+	password = generate_random_password(tctx, 8, 255);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
 
@@ -518,7 +518,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 		"ServerPasswordSet failed to actually change the password");
 
 	/* now try a random password */
-	password = generate_random_str(tctx, 8);
+	password = generate_random_password(tctx, 8, 255);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
 
