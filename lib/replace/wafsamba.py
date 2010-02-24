@@ -424,6 +424,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
 
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
+    bld.SET_BUILD_GROUP('main')
     bld(
         features = 'cc cshlib',
         source = source_list,
@@ -431,6 +432,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         uselib_local = localdeps,
         uselib = sysdeps,
         add_objects = add_objects,
+        ccflags = CURRENT_CFLAGS(bld, cflags),
         includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist,
         vnum=vnum)
 
@@ -438,6 +440,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
     soext=""
     if vnum is not None:
         soext = '.' + vnum.split('.')[0]
+    bld.SET_BUILD_GROUP('final')
     bld(
         source = 'lib%s.so' % libname,
         rule = 'ln -sf ../${SRC}%s %s/lib%s.so%s' %
@@ -459,14 +462,14 @@ def SAMBA_BINARY(bld, binname, source_list,
                  modules=None,
                  installdir=None,
                  ldflags=None,
-                 cflags=None,
+                 cflags='',
                  autoproto=None,
                  use_hostcc=None,
                  compiler=None,
+                 group='main',
                  manpages=None):
     ilist = '. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
-    ccflags = ''
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
@@ -478,8 +481,9 @@ def SAMBA_BINARY(bld, binname, source_list,
         for m in modules.split():
             bld.ASSERT(m in cache,
                        "No init_function defined for module '%s' in binary '%s'" % (m, binname))
-            ccflags += ' -DSTATIC_%s_MODULES="%s"' % (m, cache[m])
+            cflags += ' -DSTATIC_%s_MODULES="%s"' % (m, cache[m])
 
+    bld.SET_BUILD_GROUP(group)
     bld(
         features = 'cc cprogram',
         source = source_list,
@@ -487,7 +491,7 @@ def SAMBA_BINARY(bld, binname, source_list,
         uselib_local = localdeps,
         uselib = sysdeps,
         includes = ilist,
-        ccflags = ccflags,
+        ccflags = CURRENT_CFLAGS(bld, cflags),
         add_objects = add_objects,
         top=True)
     # put a link to the binary in bin/
@@ -517,18 +521,19 @@ def SAMBA_PYTHON(bld, name, source_list,
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
 
 
-###################################################################
-# declare the ASN1 build pattern
-@runonce
-def SAMBA_ASN1_PATTERN(bld):
-    bld(
-        name = 'asn1_compile',
-        rule = 'echo ASN1_COMPILE ${SRC} > {$TGT}',
-        shall = True,
-        ext_in = '.asn1',
-        ext_out = '.c',
-        reentrant = True,
-        install = False)
+################################################################################
+# a dummy asn1 task, that actually just copies the asn1 file to a .c and .h file
+Task.simple_task_type('asn1',
+		      '../heimdal_build/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options',
+                      color='BLUE', ext_out='.c',
+                      shell = True)
+
+@extension('.asn1')
+def process_asn1(self, node):
+    cc_node = node.change_ext('.c')
+    h_node  = node.change_ext('.h')
+    self.create_task('asn1', node, [cc_node, h_node])
+    self.allnodes.append(cc_node)
 
 
 #################################################################
@@ -536,25 +541,14 @@ def SAMBA_ASN1_PATTERN(bld):
 def SAMBA_ASN1(bld, name, source,
                options='',
                directory=''):
-    import string
-
     if not SET_TARGET_TYPE(bld, name, 'ASN1'):
         return
-
-    cfile = string.replace(source, '.asn1', '.c')
-
-    # declare the pattern rule
-    SAMBA_ASN1_PATTERN(bld)
-
-    bld(source=source)
-
+    debug("runner: SAMBA_ASN1 name='%s' source='%s'" % (name, source))
     bld(
-        features = 'cc cshlib',
-        source = cfile,
-        target = name,
-        uselib = '',
-        after = 'asn1_compile'
-        )
+        features = 'cc',
+        source   = source,
+        target   = name
+    )
 Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
 
 
@@ -576,22 +570,30 @@ def SAMBA_ERRTABLE(bld, name, source,
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
 
+from TaskGen import extension
+Task.simple_task_type('idl', '../../pidl/pidl --header --ndr-parser --server --client --python --dcom-proxy --com-header -- ${SRC}', color='BLUE', ext_out='.c')
+
+@extension('.idl')
+def process_idl(self, node):
+    c_node = node.change_ext('.c')
+    h_node = node.change_ext('.h')
+    self.create_task('idl', node, [c_node, h_node])
+
+    # reinject the c node to the list of nodes to process
+    self.allnodes.append(c_node)
+
 #################################################################
 # define a PIDL target
 def SAMBA_PIDL(bld, directory, source):
     pidl = "../../pidl/pidl"
     idl_dir = os.path.dirname(source)
     base = os.path.basename(string.replace(source, '.idl', ''))
-    rule = "pidl --outputdir %s --header --ndr-parser --server --client --python --dcom-proxy --com-header --includedir %s -- %s" % (directory, idl_dir, source)
+    rule = "%s --outputdir %s --header --ndr-parser --server --client --python --dcom-proxy --com-header --includedir %s -- %s" % (pidl, directory, idl_dir, source)
     output = '%s/ndr_%s.c' % (directory, base)
     tname = 'PIDL_%s' % base.upper()
     bld(
-        rule   = rule,
-        source = source,
-        target = output,
-        name   = 'pidl_compile'
-        )
-
+        features = 'cc',
+        source = source)
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 
@@ -608,6 +610,7 @@ Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 # build a C prototype file automatically
 def AUTOPROTO(bld, header, source_list):
     if header is not None:
+        bld.SET_BUILD_GROUP('prototypes')
         bld(
             source = source_list,
             target = header,
@@ -625,7 +628,7 @@ def SAMBA_MODULE(bld, modname, source_list,
                  init_function=None,
                  autoproto=None,
                  aliases=None,
-                 cflags=None,
+                 cflags='',
                  output_type=None):
 
     if not SET_TARGET_TYPE(bld, modname, 'MODULE'):
@@ -640,14 +643,12 @@ def SAMBA_MODULE(bld, modname, source_list,
 
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
+    bld.SET_BUILD_GROUP('main')
     bld(
         features = 'cc',
         source = source_list,
         target=modname,
-# we don't supply dependencies here, as this is just a compile, not a link
-#        uselib_local = localdeps,
-#        uselib = sysdeps,
-#        add_objects = add_objects,
+        ccflags = CURRENT_CFLAGS(bld, cflags),
         includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
@@ -682,14 +683,12 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
 
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
+    bld.SET_BUILD_GROUP(group)
     bld(
         features = 'cc',
         source = source_list,
         target=modname,
-# we don't supply dependencies here, as this is just a compile, not a link
-#        uselib_local = localdeps,
-#        uselib = sysdeps,
-#        add_objects = add_objects,
+        ccflags = CURRENT_CFLAGS(bld, cflags),
         includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
@@ -753,3 +752,26 @@ def add_extra_targets():
     import Utils
     setattr(Utils.g_module, 'list', cmd_list)
 
+
+###########################################################
+# setup build groups used to ensure that the different build
+# phases happen consecutively
+@runonce
+def SETUP_BUILD_GROUPS(bld):
+    bld.env['USING_BUILD_GROUPS'] = True
+    bld.add_group('setup')
+    bld.add_group('build_compilers')
+    bld.add_group('build_source')
+    bld.add_group('prototypes')
+    bld.add_group('main')
+    bld.add_group('final')
+Build.BuildContext.SETUP_BUILD_GROUPS = SETUP_BUILD_GROUPS
+
+
+###########################################################
+# set the current build group
+def SET_BUILD_GROUP(bld, group):
+    if not 'USING_BUILD_GROUPS' in bld.env:
+        return
+    bld.set_group(group)
+Build.BuildContext.SET_BUILD_GROUP = SET_BUILD_GROUP
