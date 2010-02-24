@@ -110,6 +110,20 @@ export PASSWORD
 
 (
 	shift $#
+	testitprefix="wbinfo_s3."
+	testitenv="dc:local"
+	. $SCRIPTDIR/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$DOMAIN\\\\\$USERNAME \$PASSWORD
+)
+
+(
+	shift $#
+	testitprefix="wbinfo_s3."
+	testitenv="member:local"
+	. $SCRIPTDIR/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$DOMAIN\\\\\$USERNAME \$PASSWORD
+)
+
+(
+	shift $#
 	testitprefix="ntlm_auth_s3."
 	testitenv="dc:local"
 	. $SCRIPTDIR/test_ntlm_auth_s3.sh
