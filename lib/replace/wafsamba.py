@@ -1,9 +1,10 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs, sys, Configure, Options, string
+import Build, os, Logs, sys, Configure, Options, string, Task
 from Configure import conf
 from Logs import debug
+from TaskGen import extension
 
 LIB_PATH="shared"
 
@@ -317,22 +318,22 @@ Build.BuildContext.PREDECLARE = PREDECLARE
 ################################################################
 # add to the dependency list. Return a new dependency list with
 # any circular dependencies removed
-# returns a tuple containing (systemdeps, localdeps)
+# returns a tuple containing (systemdeps, localdeps, add_objects)
 def ADD_DEPENDENCIES(bld, name, deps):
     debug('deps: Calculating dependencies for %s' % name)
-    cache = LOCAL_CACHE(bld, 'LIB_DEPS')
-    if not name in cache:
-        cache[name] = {}
+    lib_deps = LOCAL_CACHE(bld, 'LIB_DEPS')
+    if not name in lib_deps:
+        lib_deps[name] = {}
     list = deps.split()
     list2 = []
     for d in list:
-        cache[name][d] = True;
+        lib_deps[name][d] = True;
         try:
             CHECK_TARGET_DEPENDENCY(bld, name)
             list2.append(d)
         except AssertionError:
             debug("deps: Removing dependency %s from target %s" % (d, name))
-            del(cache[name][d])
+            del(lib_deps[name][d])
 
     # extract out the system dependencies
     sysdeps = []
@@ -342,6 +343,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
     target_cache = LOCAL_CACHE(bld, 'TARGET_TYPE')
     predeclare = LOCAL_CACHE(bld, 'PREDECLARED_TARGET')
     for d in list2:
+        recurse = False
         # strip out any dependencies on empty libraries
         if d in cache:
             debug("deps: Removing empty dependency '%s' from '%s'" % (d, name))
@@ -362,15 +364,28 @@ def ADD_DEPENDENCIES(bld, name, deps):
             localdeps.append(d)
         elif type == 'SUBSYSTEM':
             add_objects.append(d)
+            recurse = True
         elif type == 'MODULE':
             add_objects.append(d)
+            recurse = True
         elif type == 'PYTHON':
             pass
         elif type == 'ASN1':
             pass
+        elif type == 'BINARY':
+            pass
         else:
             ASSERT(bld, False, "Unknown target type '%s' for dependency %s" % (
                     type, d))
+
+        # for some types we have to build the list recursively
+        if recurse and (d in lib_deps):
+            rec_deps = ' '.join(lib_deps[d].keys())
+            (rec_sysdeps, rec_localdeps, rec_add_objects) = ADD_DEPENDENCIES(bld, d, rec_deps)
+            sysdeps.extend(rec_sysdeps.split())
+            localdeps.extend(rec_localdeps.split())
+            add_objects.extend(rec_add_objects.split())
+
     debug('deps: Dependencies for %s: sysdeps: %u  localdeps: %u  add_objects=%u' % (
             name, len(sysdeps), len(localdeps), len(add_objects)))
     return (' '.join(sysdeps), ' '.join(localdeps), ' '.join(add_objects))
