@@ -1758,8 +1758,6 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 		}
 	}
 
-	ZERO_STRUCT(r->out);
-
 	trusts = talloc_zero(mem_ctx, struct netr_DomainTrustList);
 	W_ERROR_HAVE_NO_MEMORY(trusts);
 
@@ -1910,8 +1908,6 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	struct ldb_context *sam_ctx;
 	WERROR werr;
 
-	ZERO_STRUCT(r->out);
-
 	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
 		return WERR_CALL_NOT_IMPLEMENTED;
 	}
@@ -1978,8 +1974,6 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
-	ZERO_STRUCT(r->out);
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
 						     mem_ctx,
