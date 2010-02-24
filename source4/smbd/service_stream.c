@@ -98,7 +98,7 @@ static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
 	}
 }
 
-void stream_io_handler_fde(struct tevent_context *ev, struct tevent_fd *fde,
+static void stream_io_handler_fde(struct tevent_context *ev, struct tevent_fd *fde, 
 				  uint16_t flags, void *private_data)
 {
 	struct stream_connection *conn = talloc_get_type(private_data,
