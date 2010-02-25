@@ -491,6 +491,8 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
+
+  Does not return addresses on 127.0.0.0/8
  */
 static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 {
@@ -500,7 +502,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	PyObject *py_lp_ctx;
 	struct loadparm_context *lp_ctx;
 	struct interface *ifaces;
-	int i;
+	int i, ifcount;
 
 	if (!PyArg_ParseTuple(args, "O", &py_lp_ctx))
 		return NULL;
@@ -517,10 +519,21 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 
 	count = iface_count(ifaces);
 
-	pylist = PyList_New(count);
-	for (i = 0; i<count; i++) {
-		PyList_SetItem(pylist, i,
-			       PyString_FromString(iface_n_ip(ifaces, i)));
+	/* first count how many are not loopback addresses */
+	for (ifcount = i = 0; i<count; i++) {
+		const char *ip = iface_n_ip(ifaces, i);
+		if (!iface_same_net(ip, "127.0.0.1", "255.0.0.0")) {
+			ifcount++;
+		}
+	}
+
+	pylist = PyList_New(ifcount);
+	for (ifcount = i = 0; i<count; i++) {
+		const char *ip = iface_n_ip(ifaces, i);
+		if (!iface_same_net(ip, "127.0.0.1", "255.0.0.0")) {
+			PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
+			ifcount++;
+		}
 	}
 	talloc_free(tmp_ctx);
 	return pylist;
