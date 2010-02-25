@@ -34,6 +34,7 @@
 #include "torture/rpc/rpc.h"
 #include "torture/drs/proto.h"
 #include "lib/tsocket/tsocket.h"
+#include "libcli/resolve/resolve.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *drs_pipe;
@@ -54,7 +55,7 @@ struct DsSyncTest {
 	
 	const char *ldap_url;
 	const char *site_name;
-	
+	const char *dest_address;
 	const char *domain_dn;
 
 	/* what we need to do as 'Administrator' */
@@ -86,6 +87,8 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	struct drsuapi_DsBindInfo28 *our_bind_info28;
 	struct drsuapi_DsBindInfoCtr *our_bind_info_ctr;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct nbt_name name;
+
 	ctx = talloc_zero(tctx, struct DsSyncTest);
 	if (!ctx) return NULL;
 
@@ -97,6 +100,17 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	ctx->drsuapi_binding->flags |= DCERPC_SIGN | DCERPC_SEAL;
 
 	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s", ctx->drsuapi_binding->host);
+
+	make_nbt_name_server(&name, ctx->drsuapi_binding->host);
+
+	/* do an initial name resolution to find its IP */
+	status = resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx,
+			      &ctx->dest_address, tctx->ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to resolve %s - %s\n",
+		       name.name, nt_errstr(status));
+		return NULL;
+	}
 
 	/* ctx->admin ...*/
 	ctx->admin.credentials				= cmdline_credentials;
@@ -298,7 +312,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	int ret2;
 
 	ret2 = tsocket_address_inet_from_strings(tctx, "ip",
-						 ctx->drsuapi_binding->host,
+						 ctx->dest_address,
 						 lp_cldap_port(tctx->lp_ctx),
 						 &dest_addr);
 	if (ret2 != 0) {
