@@ -296,6 +296,9 @@ class Ldb(ldb.Ldb):
         "Get the invocation_id id"
         return glue.samdb_ntds_invocation_id(self)
 
+    def server_site_name(self):
+        "Get the server site name"
+        return glue.samdb_server_site_name(self)
 
     def set_opaque_integer(self, name, value):
         """Set an integer as an opaque (a flag or other value) value on the database
