@@ -3651,23 +3651,20 @@ static WERROR convert_nt_devicemode(TALLOC_CTX *mem_ctx,
 	r->formname		= talloc_strdup(mem_ctx, ntdevmode->formname);
 	W_ERROR_HAVE_NO_MEMORY(r->formname);
 
-	/* all 0 below are values that have not been set in the old parsing/copy
-	 * function, maybe they should... - gd */
-
-	r->logpixels		= 0;
-	r->bitsperpel		= 0;
-	r->pelswidth		= 0;
-	r->pelsheight		= 0;
-	r->displayflags		= 0;
-	r->displayfrequency	= 0;
+	r->logpixels		= ntdevmode->logpixels;
+	r->bitsperpel		= ntdevmode->bitsperpel;
+	r->pelswidth		= ntdevmode->pelswidth;
+	r->pelsheight		= ntdevmode->pelsheight;
+	r->displayflags		= ntdevmode->displayflags;
+	r->displayfrequency	= ntdevmode->displayfrequency;
 	r->icmmethod		= ntdevmode->icmmethod;
 	r->icmintent		= ntdevmode->icmintent;
 	r->mediatype		= ntdevmode->mediatype;
 	r->dithertype		= ntdevmode->dithertype;
-	r->reserved1		= 0;
-	r->reserved2		= 0;
-	r->panningwidth		= 0;
-	r->panningheight	= 0;
+	r->reserved1		= ntdevmode->reserved1;
+	r->reserved2		= ntdevmode->reserved2;
+	r->panningwidth		= ntdevmode->panningwidth;
+	r->panningheight	= ntdevmode->panningheight;
 
 	if (ntdevmode->nt_dev_private != NULL) {
 		r->driverextra_data = data_blob_talloc(mem_ctx,
