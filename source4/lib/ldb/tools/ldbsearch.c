@@ -191,21 +191,16 @@ static int do_search(struct ldb_context *ldb,
 
 	req = NULL;
 	
-	sctx = talloc(ldb, struct search_context);
+	sctx = talloc_zero(ldb, struct search_context);
 	if (!sctx) return -1;
 
 	sctx->ldb = ldb;
 	sctx->sort = options->sorted;
-	sctx->num_stored = 0;
-	sctx->refs_stored = 0;
-	sctx->store = NULL;
 	sctx->req_ctrls = ldb_parse_control_strings(ldb, sctx, (const char **)options->controls);
 	if (options->controls != NULL &&  sctx->req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
 		return -1;
 	}
-	sctx->entries = 0;
-	sctx->refs = 0;
 
 	if (basedn == NULL) {
 		basedn = ldb_get_default_basedn(ldb);
