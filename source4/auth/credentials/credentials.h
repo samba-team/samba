@@ -161,12 +161,13 @@ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 int cli_credentials_get_ccache(struct cli_credentials *cred, 
 			       struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
-			       struct ccache_container **ccc);
+			       struct ccache_container **ccc,
+			       const char **error_string);
 int cli_credentials_get_named_ccache(struct cli_credentials *cred, 
 				     struct tevent_context *event_ctx,
 				     struct loadparm_context *lp_ctx,
 				     char *ccache_name,
-				     struct ccache_container **ccc);
+				     struct ccache_container **ccc, const char **error_string);
 int cli_credentials_get_keytab(struct cli_credentials *cred, 
 			       struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
@@ -185,7 +186,8 @@ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
 					 struct tevent_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
-					 struct gssapi_creds_container **_gcc);
+					 struct gssapi_creds_container **_gcc,
+					 const char **error_string);
 void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
 					enum credentials_use_kerberos use_kerberos);
 bool cli_credentials_set_domain(struct cli_credentials *cred, 
@@ -258,7 +260,8 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 			       struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       const char *name, 
-			       enum credentials_obtained obtained);
+			       enum credentials_obtained obtained,
+			       const char **error_string);
 bool cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained);
 bool cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
 				       int fd, enum credentials_obtained obtained);

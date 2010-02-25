@@ -234,7 +234,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	NTSTATUS nt_status;
 	struct ccache_container *ccache_container;
 	const char *hostname;
-
+	const char *error_string;
 	const char *principal;
 	krb5_data in_data;
 
@@ -277,17 +277,17 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 
 	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), 
 				         gensec_security->event_ctx, 
-					 gensec_security->settings->lp_ctx, &ccache_container);
+					 gensec_security->settings->lp_ctx, &ccache_container, &error_string);
 	switch (ret) {
 	case 0:
 		break;
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5_KDC_UNREACH:
-		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
+		DEBUG(3, ("Cannot reach a KDC we require to contact %s: %s\n", principal, error_string));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
-		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentials failed: %s\n", error_message(ret)));
+		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	in_data.length = 0;
@@ -472,6 +472,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		uint8_t tok_id[2];
 		struct keytab_container *keytab;
 		krb5_principal server_in_keytab;
+		const char *error_string;
 
 		if (!in.data) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -488,9 +489,10 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		/* This ensures we lookup the correct entry in that keytab */
 		ret = principal_from_credentials(out_mem_ctx, gensec_get_credentials(gensec_security), 
 						 gensec_krb5_state->smb_krb5_context, 
-						 &server_in_keytab);
+						 &server_in_keytab, error_string);
 
 		if (ret) {
+			DEBUG(2,("Failed to make credentials from principal: %s\n", error_string));
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 

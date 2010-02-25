@@ -36,12 +36,14 @@ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
 					 struct tevent_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
 					 gss_cred_id_t gssapi_cred,
-					 enum credentials_obtained obtained);
+					 enum credentials_obtained obtained,
+					 const char **error_string);
 
 /* Manually prototyped here to avoid needing krb5 headers in most callers */
 krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
 					   struct cli_credentials *credentials, 
 					   struct smb_krb5_context *smb_krb5_context,
-					   krb5_principal *princ);
+					   krb5_principal *princ,
+					   const char **error_string);
 	
 #endif /* __CREDENTIALS_KRB5_H__ */

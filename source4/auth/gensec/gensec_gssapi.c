@@ -320,6 +320,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	const char *principal;
 	struct gssapi_creds_container *gcc;
+	const char *error_string;
 
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -368,17 +369,17 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	ret = cli_credentials_get_client_gss_creds(creds, 
 						   gensec_security->event_ctx, 
-						   gensec_security->settings->lp_ctx, &gcc);
+						   gensec_security->settings->lp_ctx, &gcc, &error_string);
 	switch (ret) {
 	case 0:
 		break;
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5_KDC_UNREACH:
-		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
+		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", principal, error_string));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
-		DEBUG(1, ("Aquiring initiator credentials failed\n"));
+		DEBUG(1, ("Aquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1335,6 +1336,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
 	} else {
 		krb5_error_code ret;
+		const char *error_string;
+
 		DEBUG(10, ("gensec_gssapi: delegated credentials supplied by client\n"));
 		session_info->credentials = cli_credentials_init(session_info);
 		if (!session_info->credentials) {
@@ -1350,9 +1353,10 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 							   gensec_security->event_ctx,
 							   gensec_security->settings->lp_ctx, 
 							   gensec_gssapi_state->delegated_cred_handle,
-							   CRED_SPECIFIED);
+							   CRED_SPECIFIED, &error_string);
 		if (ret) {
 			talloc_free(mem_ctx);
+			DEBUG(2,("Failed to get gss creds: %s\n", error_string));
 			return NT_STATUS_NO_MEMORY;
 		}
 		

@@ -263,6 +263,7 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 			gss_buffer_desc cred_token;
 			gss_cred_id_t cred_handle;
 			int ret;
+			const char *error_string;
 
 			DEBUG(10, ("named_pipe_auth: delegated credentials supplied by client\n"));
 
@@ -292,9 +293,10 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 								   conn->event.ctx,
 								   conn->lp_ctx,
 								   cred_handle,
-								   CRED_SPECIFIED);
+								   CRED_SPECIFIED, &error_string);
 			if (ret) {
 				rep.status = NT_STATUS_INTERNAL_ERROR;
+				DEBUG(2, ("Failed to set pipe forwarded creds: %s\n", error_string));
 				goto reply;
 			}
 

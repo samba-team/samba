@@ -349,11 +349,12 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 		OM_uint32 gret;
 		OM_uint32 minor_status;
 		gss_buffer_desc cred_token;
+		const char *error_string;
 
 		ret = cli_credentials_get_client_gss_creds(req->session_info->credentials,
 							   ipriv->ntvfs->ctx->event_ctx,
 							   ipriv->ntvfs->ctx->lp_ctx,
-							   &gcc);
+							   &gcc, &error_string);
 		if (ret) {
 			goto skip;
 		}

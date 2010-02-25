@@ -103,13 +103,15 @@ void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
  krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
-			  struct cli_credentials *credentials,
-			  struct smb_krb5_context *smb_krb5_context,
-				 krb5_ccache ccache);
+				 struct cli_credentials *credentials,
+				 struct smb_krb5_context *smb_krb5_context,
+				 krb5_ccache ccache,
+				 const char **error_string);
 krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
 					   struct cli_credentials *credentials, 
 					   struct smb_krb5_context *smb_krb5_context,
-					   krb5_principal *princ);
+					   krb5_principal *princ,
+					   const char **error_string);
 NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     struct smb_iconv_convenience *iconv_convenience,
 			     struct PAC_DATA **pac_data_out,

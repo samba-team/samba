@@ -254,6 +254,7 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 	struct ccache_container *ccc;
 	struct tevent_context *event_ctx;
 	int ret;
+	const char *error_string;
 
 	if (!PyArg_ParseTuple(args, "|Os", &py_lp_ctx, &ccache_name))
 		return NULL;
@@ -264,15 +265,17 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 
 	event_ctx = tevent_context_init(NULL);
 
-	ret = cli_credentials_get_named_ccache(PyCredentials_AsCliCredentials(self), event_ctx, lp_ctx, ccache_name, &ccc);
+	ret = cli_credentials_get_named_ccache(PyCredentials_AsCliCredentials(self), event_ctx, lp_ctx,
+					       ccache_name, &ccc, &error_string);
 	if (ret == 0) {
 		talloc_steal(ccc, event_ctx);
 		return PyCredentialCacheContainer_from_ccache_container(ccc);
-	} else {
-		talloc_free(event_ctx);
-		return NULL;
 	}
 
+	PyErr_SetStringError(error_string);
+
+	talloc_free(event_ctx);
+	return NULL;
 }
 
 static PyMethodDef py_creds_methods[] = {

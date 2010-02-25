@@ -84,8 +84,8 @@
   Orignally by remus@snapserver.com
 */
  krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
-				krb5_principal principal, const char *password, 
-				time_t *expire_time, time_t *kdc_time)
+					    krb5_principal principal, const char *password,
+					    time_t *expire_time, time_t *kdc_time)
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
