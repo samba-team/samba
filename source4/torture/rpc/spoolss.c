@@ -1890,6 +1890,103 @@ static bool test_devicemode_equal(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_devicemode_full(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *handle)
+{
+	struct spoolss_SetPrinter s;
+	struct spoolss_GetPrinter q;
+	struct spoolss_GetPrinter q0;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo8 info8;
+	union spoolss_PrinterInfo info;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	uint32_t needed;
+	bool ret = true;
+	NTSTATUS status;
+
+#define TEST_DEVMODE_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value) do { \
+		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.level = lvl1; \
+		if (lvl1 == 2) {\
+			info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		} else if (lvl1 == 8) {\
+			info_ctr.info.info ## lvl1 = &info8; \
+		}\
+		devmode_ctr.devmode = q.out.info->info ## lvl1.devmode; \
+		devmode_ctr.devmode->field1 = value; \
+		TESTSETCALL(SetPrinter, s) \
+		TESTGETCALL(GetPrinter, q) \
+		INT_EQUAL(q.out.info->info ## lvl1.devmode->field1, exp_value, field1); \
+		q.in.level = lvl2; \
+		TESTGETCALL(GetPrinter, q) \
+		INT_EQUAL(q.out.info->info ## lvl2.devmode->field2, exp_value, field1); \
+	} while (0)
+
+#define TEST_DEVMODE_INT(lvl1, field1, lvl2, field2, value) do { \
+        TEST_DEVMODE_INT_EXP(lvl1, field1, lvl2, field2, value, value); \
+        } while (0)
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	ZERO_STRUCT(info8);
+
+	s.in.handle = handle;
+	s.in.command = 0;
+	s.in.info_ctr = &info_ctr;
+	s.in.devmode_ctr = &devmode_ctr;
+	s.in.secdesc_ctr = &secdesc_ctr;
+
+	q.in.handle = handle;
+	q.out.info = &info;
+	q0 = q;
+
+#if 0
+	const char *devicename;/* [charset(UTF16)] */
+	enum spoolss_DeviceModeSpecVersion specversion;
+	uint16_t driverversion;
+	uint16_t size;
+	uint16_t __driverextra_length;/* [value(r->driverextra_data.length)] */
+	uint32_t fields;
+#endif
+
+	TEST_DEVMODE_INT(8, orientation,	8, orientation, __LINE__);
+	TEST_DEVMODE_INT(8, papersize,		8, papersize, __LINE__);
+	TEST_DEVMODE_INT(8, paperlength,	8, paperlength, __LINE__);
+	TEST_DEVMODE_INT(8, paperwidth,		8, paperwidth, __LINE__);
+	TEST_DEVMODE_INT(8, scale,		8, scale, __LINE__);
+	TEST_DEVMODE_INT(8, copies,		8, copies, __LINE__);
+	TEST_DEVMODE_INT(8, defaultsource,	8, defaultsource, __LINE__);
+	TEST_DEVMODE_INT(8, printquality,	8, printquality, __LINE__);
+	TEST_DEVMODE_INT(8, color,		8, color, __LINE__);
+	TEST_DEVMODE_INT(8, duplex,		8, duplex, __LINE__);
+	TEST_DEVMODE_INT(8, yresolution,	8, yresolution, __LINE__);
+	TEST_DEVMODE_INT(8, ttoption,		8, ttoption, __LINE__);
+	TEST_DEVMODE_INT(8, collate,		8, collate, __LINE__);
+#if 0
+	const char *formname;/* [charset(UTF16)] */
+#endif
+	TEST_DEVMODE_INT(8, logpixels,		8, logpixels, __LINE__);
+	TEST_DEVMODE_INT(8, bitsperpel,		8, bitsperpel, __LINE__);
+	TEST_DEVMODE_INT(8, pelswidth,		8, pelswidth, __LINE__);
+	TEST_DEVMODE_INT(8, pelsheight,		8, pelsheight, __LINE__);
+	TEST_DEVMODE_INT(8, displayflags,	8, displayflags, __LINE__);
+	TEST_DEVMODE_INT(8, displayfrequency,	8, displayfrequency, __LINE__);
+	TEST_DEVMODE_INT(8, icmmethod,		8, icmmethod, __LINE__);
+	TEST_DEVMODE_INT(8, icmintent,		8, icmintent, __LINE__);
+	TEST_DEVMODE_INT(8, mediatype,		8, mediatype, __LINE__);
+	TEST_DEVMODE_INT(8, dithertype,		8, dithertype, __LINE__);
+	TEST_DEVMODE_INT(8, reserved1,		8, reserved1, __LINE__);
+	TEST_DEVMODE_INT(8, reserved2,		8, reserved2, __LINE__);
+	TEST_DEVMODE_INT(8, panningwidth,	8, panningwidth, __LINE__);
+	TEST_DEVMODE_INT(8, panningheight,	8, panningheight, __LINE__);
+
+	return ret;
+}
+
 static bool call_OpenPrinterEx(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       const char *name,
@@ -1966,6 +2063,12 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 
 	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
 		"modified DM level 8 != DM level 2");
+
+
+	/* check every single bit in public part of devicemode */
+
+	torture_assert(tctx, test_devicemode_full(tctx, p, handle),
+		"failed to set every single devicemode component");
 
 
 	/* change formname upon open and see if it persists in getprinter calls */
