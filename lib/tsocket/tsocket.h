@@ -869,7 +869,9 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
  * @brief Wrap an existing file descriptors into the tstream abstraction.
  *
  * You can use this function to wrap an existing file descriptors into the
- * tstream abstraction.
+ * tstream abstraction. After that you're not able to use this file descriptor
+ * for anything else. The file descriptor will be closed when the stream gets
+ * freed. If you still want to use the fd you have have to create a duplicate.
  *
  * @param[in]  mem_ctx      The talloc memory context to use.
  *
