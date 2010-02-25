@@ -488,6 +488,40 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 }
 
 
+
+static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb, *result;
+	struct ldb_context *ldb;
+	TALLOC_CTX *mem_ctx;
+	const struct GUID *guid;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	guid = samdb_ntds_invocation_id(ldb);
+	if (guid == NULL) {
+		PyErr_SetStringError("Failed to find NTDS invocation ID");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	result = PyString_FromString(GUID_string(mem_ctx, guid));
+	talloc_free(mem_ctx);
+	return result;
+}
+
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -587,6 +621,8 @@ static PyMethodDef py_misc_methods[] = {
 		"set debug level" },
 	{ "dsdb_load_partition_usn", (PyCFunction)py_dsdb_load_partition_usn, METH_VARARGS,
 		"get uSNHighest and uSNUrgent from the partition @REPLCHANGED"},
+	{ "samdb_ntds_invocation_id", (PyCFunction)py_samdb_ntds_invocation_id, METH_VARARGS,
+		"get the NTDS invocation ID GUID as a string"},
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
 	{ NULL }
