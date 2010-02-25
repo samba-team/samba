@@ -28,6 +28,7 @@
 #include "../libds/common/flags.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "param/param.h"
+#include "lib/tsocket/tsocket.h"
 
 /*****************************************************************************
  * Windows 2003 (w2k3) does the following steps when changing the server role
@@ -256,9 +257,11 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
 	struct tevent_req *req;
+	struct tsocket_address *dest_address;
+	int ret;
 
-	s->cldap.io.in.dest_address	= s->source_dsa.address;
-	s->cldap.io.in.dest_port	= lp_cldap_port(s->libnet->lp_ctx);
+	s->cldap.io.in.dest_address	= NULL;
+	s->cldap.io.in.dest_port	= 0;
 	s->cldap.io.in.realm		= s->domain.dns_name;
 	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
 	s->cldap.io.in.user		= NULL;
@@ -268,8 +271,17 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	s->cldap.io.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	s->cldap.io.in.map_response	= true;
 
+	ret = tsocket_address_inet_from_strings(s, "ip",
+						s->source_dsa.address,
+						lp_cldap_port(s->libnet->lp_ctx),
+						&dest_address);
+	if (ret != 0) {
+		c->status = map_nt_error_from_unix(errno);
+		if (!composite_is_ok(c)) return;
+	}
+
 	c->status = cldap_socket_init(s, s->libnet->event_ctx,
-				      NULL, NULL, &s->cldap.sock);//TODO
+				      NULL, dest_address, &s->cldap.sock);
 	if (!composite_is_ok(c)) return;
 
 	req = cldap_netlogon_send(s, s->cldap.sock, &s->cldap.io);

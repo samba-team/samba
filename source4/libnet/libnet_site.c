@@ -25,6 +25,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "lib/tsocket/tsocket.h"
 
 /**
  * 1. Setup a CLDAP socket.
@@ -41,6 +42,8 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 
 	struct cldap_socket *cldap = NULL;
 	struct cldap_netlogon search;
+	int ret;
+	struct tsocket_address *dest_address;
 
 	tmp_ctx = talloc_named(ctx, 0, "libnet_FindSite temp context");
 	if (!tmp_ctx) {
@@ -50,14 +53,24 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 
 	/* Resolve the site name. */
 	ZERO_STRUCT(search);
-	search.in.dest_address = r->in.dest_address;
-	search.in.dest_port = r->in.cldap_port;
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
 
+	ret = tsocket_address_inet_from_strings(tmp_ctx, "ip",
+						r->in.dest_address,
+						r->in.cldap_port,
+						&dest_address);
+	if (ret != 0) {
+		r->out.error_string = NULL;
+		status = map_nt_error_from_unix(errno);
+		return status;
+	}
+
 	/* we want to use non async calls, so we're not passing an event context */
-	status = cldap_socket_init(tmp_ctx, NULL, NULL, NULL, &cldap);//TODO
+	status = cldap_socket_init(tmp_ctx, NULL, NULL, dest_address, &cldap);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		r->out.error_string = NULL;
