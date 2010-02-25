@@ -150,6 +150,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	fstring service;
 	int snum = -1;
 	struct smbd_smb2_tcon *tcon;
+	connection_struct *compat_conn = NULL;
 	int id;
 	NTSTATUS status;
 
@@ -196,14 +197,15 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	tcon->session = req->session;
 	talloc_set_destructor(tcon, smbd_smb2_tcon_destructor);
 
-	tcon->compat_conn = make_connection_snum(req->sconn,
+	compat_conn = make_connection_snum(req->sconn,
 					snum, req->session->compat_vuser,
 					data_blob_null, "???",
 					&status);
-	if (tcon->compat_conn == NULL) {
+	if (compat_conn == NULL) {
 		TALLOC_FREE(tcon);
 		return status;
 	}
+	tcon->compat_conn = talloc_move(tcon, &compat_conn);
 	tcon->compat_conn->cnum = tcon->tid;
 
 	*out_share_type = 0x01;

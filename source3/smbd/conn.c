@@ -177,15 +177,26 @@ return true if any were closed
 ****************************************************************************/
 bool conn_close_all(struct smbd_server_connection *sconn)
 {
-	connection_struct *conn, *next;
-	bool ret = false;
-	for (conn=sconn->smb1.tcons.Connections;conn;conn=next) {
-		next=conn->next;
-		set_current_service(conn, 0, True);
-		close_cnum(conn, conn->vuid);
-		ret = true;
+	if (sconn->allow_smb2) {
+		/* SMB2 */
+		if (sconn->smb2.sessions.list &&
+				sconn->smb2.sessions.list->tcons.list) {
+			return true;
+		}
+		return false;
+	} else {
+		/* SMB1 */
+		connection_struct *conn, *next;
+		bool ret = false;
+
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=next) {
+			next=conn->next;
+			set_current_service(conn, 0, True);
+			close_cnum(conn, conn->vuid);
+			ret = true;
+		}
+		return ret;
 	}
-	return ret;
 }
 
 /****************************************************************************
