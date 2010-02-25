@@ -234,7 +234,8 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
+static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
+				uint16_t *p_creds_requested)
 {
 	int count;
 	int idx;
@@ -265,6 +266,8 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 		if (IVAL(inhdr, SMB2_HDR_PROTOCOL_ID) != SMB2_MAGIC) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+
+		*p_creds_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
 
 		flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 		if (idx == 1) {
@@ -314,7 +317,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
+static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint16_t creds)
 {
 	struct iovec *vector;
 	int count;
@@ -371,8 +374,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		      NT_STATUS_V(NT_STATUS_INTERNAL_ERROR));
 		SSVAL(outhdr, SMB2_HDR_OPCODE,
 		      SVAL(inhdr, SMB2_HDR_OPCODE));
-		/* Make up a number for now... JRA. FIXME ! FIXME !*/
-		SSVAL(outhdr, SMB2_HDR_CREDIT,		20);
+		SSVAL(outhdr, SMB2_HDR_CREDIT,		creds);
 		SIVAL(outhdr, SMB2_HDR_FLAGS,
 		      IVAL(inhdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_REDIRECT);
 		SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND,	next_command_ofs);
@@ -1510,7 +1512,7 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req);
+	status = smbd_smb2_request_setup_out(req, (uint16_t)lp_maxmux());
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
@@ -1533,6 +1535,7 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 
 static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 {
+	uint16_t creds_requested = 0;
 	struct smbd_server_connection *sconn = tevent_req_callback_data(subreq,
 					       struct smbd_server_connection);
 	NTSTATUS status;
@@ -1557,13 +1560,13 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 	DEBUG(10,("smbd_smb2_request_incoming: idx[%d] of %d vectors\n",
 		 req->current_idx, req->in.vector_count));
 
-	status = smbd_smb2_request_validate(req);
+	status = smbd_smb2_request_validate(req, &creds_requested);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req);
+	status = smbd_smb2_request_setup_out(req, creds_requested);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
