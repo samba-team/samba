@@ -108,7 +108,7 @@ int main(int argc, const char **argv)
 	const char *server_name = NULL;
 	char *opt_domain = NULL;
 	int opt_dbflag = 0;
-	uint32_t query_level;
+	uint32_t query_level = 0;
 	uint8_t *buffer = NULL;
 
 	poptContext pc;
