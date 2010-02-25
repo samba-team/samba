@@ -22,21 +22,16 @@
 static struct db_context *connections_db_ctx(bool rw)
 {
 	static struct db_context *db_ctx;
+	int open_flags;
 
 	if (db_ctx != NULL) {
 		return db_ctx;
 	}
 
-	if (rw) {
-		db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
-				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-				 O_RDWR | O_CREAT, 0644);
-	}
-	else {
-		db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
-				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT, O_RDONLY, 0);
-	}
+	open_flags = rw ? (O_RDWR|O_CREAT) : O_RDONLY;
 
+	db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
+			 TDB_CLEAR_IF_FIRST|TDB_DEFAULT, open_flags, 0644);
 	return db_ctx;
 }
 
