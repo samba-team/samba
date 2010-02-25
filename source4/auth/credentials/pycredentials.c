@@ -278,6 +278,27 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 	return NULL;
 }
 
+static PyObject *py_creds_set_gensec_features(py_talloc_Object *self, PyObject *args)
+{
+	unsigned int gensec_features;
+
+	if (!PyArg_ParseTuple(args, "I", &gensec_features))
+		return NULL;
+
+	cli_credentials_set_gensec_features(PyCredentials_AsCliCredentials(self), gensec_features);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_creds_get_gensec_features(py_talloc_Object *self, PyObject *args)
+{
+	unsigned int gensec_features;
+
+	gensec_features = cli_credentials_get_gensec_features(PyCredentials_AsCliCredentials(self));
+	return PyInt_FromLong(gensec_features);
+}
+
+
 static PyMethodDef py_creds_methods[] = {
 	{ "get_username", (PyCFunction)py_creds_get_username, METH_NOARGS,
 		"S.get_username() -> username\nObtain username." },
@@ -335,6 +356,8 @@ static PyMethodDef py_creds_methods[] = {
 	{ "guess", (PyCFunction)py_creds_guess, METH_VARARGS, NULL },
 	{ "set_machine_account", (PyCFunction)py_creds_set_machine_account, METH_VARARGS, NULL },
 	{ "get_named_ccache", (PyCFunction)py_creds_get_named_ccache, METH_VARARGS, NULL },
+	{ "set_gensec_features", (PyCFunction)py_creds_set_gensec_features, METH_VARARGS, NULL },
+	{ "get_gensec_features", (PyCFunction)py_creds_get_gensec_features, METH_NOARGS, NULL },
 	{ NULL }
 };
 
