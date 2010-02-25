@@ -213,7 +213,8 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 		file_info_level = in_file_info_class + 1000;
 		if (file_info_level == SMB_FILE_RENAME_INFORMATION) {
-			file_info_level = 0xFF00 + in_file_info_class;
+			/* SMB2_FILE_RENAME_INFORMATION_INTERNAL == 0xFF00 + in_file_info_class */
+			file_info_level = SMB2_FILE_RENAME_INFORMATION_INTERNAL;
 		}
 
 		if (fsp->is_directory || fsp->fh->fd == -1) {

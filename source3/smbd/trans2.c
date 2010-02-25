@@ -5888,6 +5888,107 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 }
 
 /****************************************************************************
+ Deal with SMB2_FILE_RENAME_INFORMATION_INTERNAL
+****************************************************************************/
+
+static NTSTATUS smb2_file_rename_information(connection_struct *conn,
+					    struct smb_request *req,
+					    const char *pdata,
+					    int total_data,
+					    files_struct *fsp,
+					    struct smb_filename *smb_fname_src)
+{
+	bool overwrite;
+	uint32_t len;
+	char *newname = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	if (!fsp) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (total_data < 20) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	overwrite = (CVAL(pdata,0) ? True : False);
+	len = IVAL(pdata,16);
+
+	if (len > (total_data - 20) || (len == 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	srvstr_get_path(ctx, pdata, req->flags2, &newname,
+				&pdata[20], len, STR_TERMINATE,
+				&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DEBUG(10,("smb_file_rename_information: got name |%s|\n",
+				newname));
+
+#if 0
+	/* Check the new name has no '/' characters. */
+	if (strchr_m(newname, '/')) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+#endif
+
+	status = filename_convert(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				newname,
+				0,
+				NULL,
+				&smb_fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (fsp && fsp->base_fsp) {
+		/* newname must be a stream name. */
+		if (newname[0] != ':') {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+
+		/* Create an smb_fname to call rename_internals_fsp() with. */
+		status = create_synthetic_smb_fname(talloc_tos(),
+		    fsp->base_fsp->fsp_name->base_name, newname, NULL,
+		    &smb_fname_dst);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		/*
+		 * Set the original last component, since
+		 * rename_internals_fsp() requires it.
+		 */
+		smb_fname_dst->original_lcomp = talloc_strdup(smb_fname_dst,
+							      newname);
+		if (smb_fname_dst->original_lcomp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+	}
+
+	DEBUG(10,("smb_file_rename_information: "
+		  "SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
+		  fsp->fnum, fsp_str_dbg(fsp),
+		  smb_fname_str_dbg(smb_fname_dst)));
+	status = rename_internals_fsp(conn, fsp, smb_fname_dst, 0,
+				      overwrite);
+
+ out:
+	TALLOC_FREE(smb_fname_dst);
+	return status;
+}
+
+
+/****************************************************************************
  Deal with SMB_FILE_RENAME_INFORMATION.
 ****************************************************************************/
 
@@ -7475,6 +7576,14 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 			break;
 		}
 
+		case SMB2_FILE_RENAME_INFORMATION_INTERNAL:
+		{
+			/* SMB2 rename information. */
+			status = smb2_file_rename_information(conn, req,
+							     pdata, total_data,
+							     fsp, smb_fname);
+			break;
+		}
 #if defined(HAVE_POSIX_ACLS)
 		case SMB_SET_POSIX_ACL:
 		{
