@@ -30,6 +30,7 @@ struct cmd_setpwent_state {
 	struct libnet_context *libnet_ctx;
 
 	struct wbsrv_pwent *result;
+	char *domain_name;
 };
 
 static void cmd_setpwent_recv_domain(struct composite_context *ctx);
@@ -80,6 +81,8 @@ static void cmd_setpwent_recv_domain(struct composite_context *ctx)
 	user_list = talloc(state->result, struct libnet_UserList);
 	if (composite_nomem(user_list, state->ctx)) return;
 
+	state->domain_name = talloc_strdup(state,
+			domain->libnet_ctx->samr.name);
 	user_list->in.domain_name = talloc_strdup(state,
 			domain->libnet_ctx->samr.name);
 	if (composite_nomem(user_list->in.domain_name, state->ctx)) return;
@@ -93,6 +96,7 @@ static void cmd_setpwent_recv_domain(struct composite_context *ctx)
 	ctx = libnet_UserList_send(domain->libnet_ctx, state->result, user_list,
 			NULL);
 
+	state->result->page_index = -1;
 	composite_continue(state->ctx, ctx, cmd_setpwent_recv_user_list, state);
 }
 
@@ -101,7 +105,7 @@ static void cmd_setpwent_recv_user_list(struct composite_context *ctx)
 	struct cmd_setpwent_state *state = talloc_get_type(
 			ctx->async.private_data, struct cmd_setpwent_state);
 	struct libnet_UserList *user_list;
-
+	struct libnet_UserList *user_list_send;
 	DEBUG(5, ("cmd_setpwent_recv_user_list called\n"));
 
 	user_list = talloc(state->result, struct libnet_UserList);
@@ -109,13 +113,42 @@ static void cmd_setpwent_recv_user_list(struct composite_context *ctx)
 
 	state->ctx->status = libnet_UserList_recv(ctx, state->result,
 			user_list);
-	if (!composite_is_ok(state->ctx)) return;
+	if (NT_STATUS_IS_OK(state->ctx->status) ||
+		NT_STATUS_EQUAL(state->ctx->status, STATUS_MORE_ENTRIES)) {
+		if( state->result->page_index == -1) { /* First run*/
+			state->result->user_list = user_list;
+			state->result->page_index = 0;
+			state->result->libnet_ctx = state->libnet_ctx;
+		} else {
+			int i;
+			struct userlist *tmp;
+			tmp = state->result->user_list->out.users;
+			state->result->user_list->out.users = talloc_realloc(state->result,tmp,struct userlist,
+			state->result->user_list->out.count+user_list->out.count);
+			tmp = state->result->user_list->out.users;
+			for(i=0;i<user_list->out.count;i++ ) {
+				tmp[i+state->result->user_list->out.count].username = talloc_steal(state->result,user_list->out.users[i].username);
+			}
+			state->result->user_list->out.count += user_list->out.count;
+			talloc_free(user_list);
+		}
 
-	state->result->user_list = user_list;
-	state->result->page_index = 0;
-	state->result->libnet_ctx = state->libnet_ctx;
 
-	composite_done(state->ctx);
+		if (NT_STATUS_IS_OK(state->ctx->status) ) {
+			composite_done(state->ctx);
+		} else {
+			user_list_send = talloc(state->result, struct libnet_UserList);
+			if (composite_nomem(user_list_send, state->ctx)) return;
+			user_list_send->in.domain_name =  talloc_strdup(state, state->domain_name);
+			user_list_send->in.resume_index = user_list->out.resume_index;
+			user_list_send->in.page_size = 128;
+			ctx = libnet_UserList_send(state->libnet_ctx, state->result, user_list_send, NULL);
+			composite_continue(state->ctx, ctx, cmd_setpwent_recv_user_list, state);
+		}
+	} else {
+		composite_error(state->ctx, state->ctx->status);
+	}
+	return;
 }
 
 NTSTATUS wb_cmd_setpwent_recv(struct composite_context *ctx,
