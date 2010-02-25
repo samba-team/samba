@@ -362,6 +362,48 @@ again:
 }
 
 /**
+ * Generate a random text password.
+ */
+
+_PUBLIC_ char *generate_random_password(TALLOC_CTX *mem_ctx, size_t min, size_t max)
+{
+	char *retstr;
+	const char *c_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,@$%&!?:;<=>(){}[]~";
+	size_t len = max;
+	size_t diff;
+
+	if (min > max) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	diff = max - min;
+
+	if (diff > 0 ) {
+		size_t tmp;
+
+		generate_random_buffer((uint8_t *)&tmp, sizeof(tmp));
+
+		tmp %= diff;
+
+		len = min + tmp;
+	}
+
+again:
+	retstr = generate_random_str_list(mem_ctx, len, c_list);
+	if (!retstr) return NULL;
+
+	/* we need to make sure the random string passes basic quality tests
+	   or it might be rejected by windows as a password */
+	if (len >= 7 && !check_password_quality(retstr)) {
+		talloc_free(retstr);
+		goto again;
+	}
+
+	return retstr;
+}
+
+/**
  * Generate an array of unique text strings all of the same length.
  * The returned string will be allocated.
  * Returns NULL if the number of unique combinations cannot be created.

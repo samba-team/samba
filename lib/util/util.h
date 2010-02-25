@@ -178,6 +178,11 @@ _PUBLIC_ uint32_t generate_random(void);
 _PUBLIC_ bool check_password_quality(const char *s);
 
 /**
+ * Generate a random text password.
+ */
+_PUBLIC_ char *generate_random_password(TALLOC_CTX *mem_ctx, size_t min, size_t max);
+
+/**
  Use the random number generator to generate a random string.
 **/
 _PUBLIC_ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list);
