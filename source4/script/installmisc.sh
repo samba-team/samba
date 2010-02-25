@@ -57,7 +57,7 @@ do
 done
 
 echo "Installing sbin scripts from scripting/bin/*"
-for p in upgradeprovision
+for p in upgradeprovision samba_dnsupdate
 do
 	cp scripting/bin/$p $SBINDIR || exit 1
 	chmod a+x $SBINDIR/$p
