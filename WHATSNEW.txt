@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.3.11
-		         , 2010
+		         February 26, 2010
                    ==============================
 
 
@@ -8,7 +8,10 @@ This is the latest bugfix release of the Samba 3.3 series.
 
 Major enhancements in Samba 3.3.11 include:
 
-   o 
+   o "wide links" and "unix extensions" are incompatible (bug #7104).
+   o Fix failing of smbd to respond to a read or a write caused by
+     Linux asynchronous IO (aio) (bug #7067).
+
 
 ######################################################################
 Changes
@@ -18,6 +21,42 @@ Changes since 3.3.10
 --------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6557: Fix vfs_full_audit.
+    * BUG 7036: Fix 'net rpc getsid' in hardened Windows environments.
+    * BUG 7045: Fix bad (non memory copying) interfaces in smbc_setXXXX calls.
+    * BUG 7067: Fix failing of smbd to respond to a read or a write caused by
+      Linux asynchronous IO (aio).
+    * BUG 7072: Fix unlocking of accounts from ldap.
+    * BUG 7104: "wide links" and "unix extensions" are incompatible.
+    * BUG 7122: Fix reading of large browselist.
+    * BUG 7154: "mangling method = hash" can crash storing a name containing a '.'.
+    * BUG 7155: Valgrind Conditional jump or move depends on uninitialised
+      value(s) error when "mangling method = hash".
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7043: Fix crash bug in "SMBC_parse_path".
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5626: Fix build on AIX.
+    * BUG 5885: Fix bogus ip address in SWAT.
+    * BUG 7046: Fix a crash in libsmbclient used against the OpenSolaris CIFS
+      server.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7098: Fix results of 'smbclient -L' with a large browse list.
+    * BUG 7170: Fix handling of external domains in setups with one way trusts.
+
+
+o   William Jojo <w.jojo@hvcc.edu>
+    * BUG 7052: Fix DFS on AIX (maybe others).
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 7106: Fix malformed require_membership_of_sid.
 
 
 ######################################################################
