@@ -280,16 +280,24 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 	struct netlogon_samlogon_response n1;
 	uint32_t server_type;
 	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
+	struct tsocket_address *dest_addr;
+	int ret;
+
+	ret = tsocket_address_inet_from_strings(tctx, "ip",
+						dest,
+						lp_cldap_port(tctx->lp_ctx),
+						&dest_addr);
+	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
+	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Printing out netlogon server type flags: %s\n", dest);
 
 	ZERO_STRUCT(search);
-	search.in.dest_address = dest;
-	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
@@ -393,16 +401,24 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	struct netlogon_samlogon_response n1;
 	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
 	bool result = true;
+	struct tsocket_address *dest_addr;
+	int ret;
+
+	ret = tsocket_address_inet_from_strings(tctx, "ip",
+						dest,
+						lp_cldap_port(tctx->lp_ctx),
+						&dest_addr);
+	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
+	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Testing netlogon server type flag NBT_SERVER_FOREST_ROOT: ");
 
 	ZERO_STRUCT(search);
-	search.in.dest_address = dest;
-	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
@@ -467,14 +483,22 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 	const char *attrs1[] = { "currentTime", "highestCommittedUSN", NULL };
 	const char *attrs2[] = { "currentTime", "highestCommittedUSN", "netlogon", NULL };
 	const char *attrs3[] = { "netlogon", NULL };
+	struct tsocket_address *dest_addr;
+	int ret;
+
+	ret = tsocket_address_inet_from_strings(tctx, "ip",
+						dest,
+						lp_cldap_port(tctx->lp_ctx),
+						&dest_addr);
+	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
+	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(search);
-	search.in.dest_address = dest;
-	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.timeout = 10;
 	search.in.retries = 3;
 

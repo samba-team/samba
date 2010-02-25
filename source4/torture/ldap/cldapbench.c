@@ -80,8 +80,8 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 	state->tctx = tctx;
 
 	ZERO_STRUCT(search);
-	search.in.dest_address = address;
-	search.in.dest_port	= lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = 6;
 
@@ -147,16 +147,24 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 	struct cldap_search search;
 	struct bench_state *state;
 	NTSTATUS status;
+	struct tsocket_address *dest_addr;
+	int ret;
+
+	ret = tsocket_address_inet_from_strings(tctx, "ip",
+						address,
+						lp_cldap_port(tctx->lp_ctx),
+						&dest_addr);
+	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, tctx->ev, NULL, NULL, &cldap);
+	status = cldap_socket_init(tctx, tctx->ev, NULL, dest_addr, &cldap);
 	torture_assert_ntstatus_ok(tctx, status, "cldap_socket_init");
 
 	state = talloc_zero(tctx, struct bench_state);
 
 	ZERO_STRUCT(search);
-	search.in.dest_address	= address;
-	search.in.dest_port	= lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address	= NULL;
+	search.in.dest_port	= 0;
 	search.in.filter	= "(objectClass=*)";
 	search.in.timeout	= 2;
 	search.in.retries	= 1;

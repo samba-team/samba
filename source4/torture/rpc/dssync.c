@@ -33,7 +33,7 @@
 #include "lib/ldb_wrap.h"
 #include "torture/rpc/rpc.h"
 #include "torture/drs/proto.h"
-
+#include "lib/tsocket/tsocket.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *drs_pipe;
@@ -294,8 +294,21 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	bool ret = true;
 	struct cldap_socket *cldap;
 	struct cldap_netlogon search;
+	struct tsocket_address *dest_addr;
+	int ret2;
 
-	status = cldap_socket_init(ctx, NULL, NULL, NULL, &cldap);
+	ret2 = tsocket_address_inet_from_strings(tctx, "ip",
+						 ctx->drsuapi_binding->host,
+						 lp_cldap_port(tctx->lp_ctx),
+						 &dest_addr);
+	if (ret2 != 0) {
+		printf("failed to create tsocket_address for '%s' port %u - %s\n",
+			ctx->drsuapi_binding->host, lp_cldap_port(tctx->lp_ctx),
+			strerror(errno));
+		return false;
+	}
+
+	status = cldap_socket_init(ctx, NULL, NULL, dest_addr, &cldap);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to setup cldap socket - %s\n",
 			nt_errstr(status));
@@ -333,8 +346,8 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	ctx->domain_dn = r.out.ctr->ctr1->array[0].result_name;
 	
 	ZERO_STRUCT(search);
-	search.in.dest_address = ctx->drsuapi_binding->host;
-	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
