@@ -5927,15 +5927,8 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_file_rename_information: got name |%s|\n",
+	DEBUG(10,("smb2_file_rename_information: got name |%s|\n",
 				newname));
-
-#if 0
-	/* Check the new name has no '/' characters. */
-	if (strchr_m(newname, '/')) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-#endif
 
 	status = filename_convert(ctx,
 				conn,
@@ -5975,7 +5968,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 
 	}
 
-	DEBUG(10,("smb_file_rename_information: "
+	DEBUG(10,("smb2_file_rename_information: "
 		  "SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
 		  fsp->fnum, fsp_str_dbg(fsp),
 		  smb_fname_str_dbg(smb_fname_dst)));
@@ -7584,6 +7577,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 							     fsp, smb_fname);
 			break;
 		}
+
 #if defined(HAVE_POSIX_ACLS)
 		case SMB_SET_POSIX_ACL:
 		{
