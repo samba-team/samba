@@ -46,7 +46,7 @@ struct dnsupdate_service {
 	struct {
 		uint32_t interval;
 		struct tevent_timer *te;
-		struct composite_context *c;
+		struct tevent_req *subreq;
 		NTSTATUS status;
 	} confupdate;
 
@@ -54,7 +54,7 @@ struct dnsupdate_service {
 	struct {
 		uint32_t interval;
 		struct tevent_timer *te;
-		struct composite_context *c;
+		struct tevent_req *subreq;
 		NTSTATUS status;
 	} nameupdate;
 };
@@ -62,13 +62,23 @@ struct dnsupdate_service {
 /*
   called when rndc reload has finished
  */
-static void dnsupdate_rndc_done(struct composite_context *c)
+static void dnsupdate_rndc_done(struct tevent_req *subreq)
 {
-	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
-								  struct dnsupdate_service);
-	service->confupdate.status = composite_wait(c);
-	talloc_free(c);
-	service->confupdate.c = NULL;
+	struct dnsupdate_service *service = tevent_req_callback_data(subreq,
+					    struct dnsupdate_service);
+	int ret;
+	int sys_errno;
+
+	service->confupdate.subreq = NULL;
+
+	ret = samba_runcmd_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		service->confupdate.status = map_nt_error_from_unix(sys_errno);
+	} else {
+		service->confupdate.status = NT_STATUS_OK;
+	}
+
 	if (!NT_STATUS_IS_OK(service->confupdate.status)) {
 		DEBUG(0,(__location__ ": Failed rndc update - %s\n",
 			 nt_errstr(service->confupdate.status)));
@@ -90,6 +100,10 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	const char *attrs[] = { "sAMAccountName", NULL };
 	const char *realm = lp_realm(service->task->lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
+	const char * const *rndc_command = lp_rndc_command(service->task->lp_ctx);
+
+	/* abort any pending script run */
+	TALLOC_FREE(service->confupdate.subreq);
 
 	ret = ldb_search(service->samdb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 			 attrs, "(&(primaryGroupID=%u)(objectClass=computer))",
@@ -136,10 +150,6 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	dprintf(fd, "};\n");
 	close(fd);
 
-	if (service->confupdate.c != NULL) {
-		talloc_free(service->confupdate.c);
-		service->confupdate.c = NULL;
-	}
 
 	if (NT_STATUS_IS_OK(service->confupdate.status) &&
 	    file_compare(tmp_path, path) == true) {
@@ -156,13 +166,20 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	}
 
 	DEBUG(2,("Loading new DNS update grant rules\n"));
-	service->confupdate.c = samba_runcmd(service->task->event_ctx, service,
-					     timeval_current_ofs(10, 0),
-					     2, 0,
-					     lp_rndc_command(service->task->lp_ctx),
-					     "reload", NULL);
-	service->confupdate.c->async.fn = dnsupdate_rndc_done;
-	service->confupdate.c->async.private_data = service;
+	service->confupdate.subreq = samba_runcmd_send(service,
+						       service->task->event_ctx,
+						       timeval_current_ofs(10, 0),
+						       2, 0,
+						       rndc_command,
+						       "reload", NULL);
+	if (service->confupdate.subreq == NULL) {
+		DEBUG(0,(__location__ ": samba_runcmd_send() failed with no memory\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+	tevent_req_set_callback(service->confupdate.subreq,
+				dnsupdate_rndc_done,
+				service);
 
 	talloc_free(tmp_ctx);
 }
@@ -195,13 +212,23 @@ static NTSTATUS dnsupdate_confupdate_schedule(struct dnsupdate_service *service)
 /*
   called when dns update script has finished
  */
-static void dnsupdate_nameupdate_done(struct composite_context *c)
+static void dnsupdate_nameupdate_done(struct tevent_req *subreq)
 {
-	struct dnsupdate_service *service = talloc_get_type_abort(c->async.private_data,
-								  struct dnsupdate_service);
-	service->nameupdate.status = composite_wait(c);
-	talloc_free(c);
-	service->nameupdate.c = NULL;
+	struct dnsupdate_service *service = tevent_req_callback_data(subreq,
+					    struct dnsupdate_service);
+	int ret;
+	int sys_errno;
+
+	service->nameupdate.subreq = NULL;
+
+	ret = samba_runcmd_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		service->nameupdate.status = map_nt_error_from_unix(sys_errno);
+	} else {
+		service->nameupdate.status = NT_STATUS_OK;
+	}
+
 	if (!NT_STATUS_IS_OK(service->nameupdate.status)) {
 		DEBUG(0,(__location__ ": Failed DNS update - %s\n",
 			 nt_errstr(service->nameupdate.status)));
@@ -215,20 +242,25 @@ static void dnsupdate_nameupdate_done(struct composite_context *c)
  */
 static void dnsupdate_check_names(struct dnsupdate_service *service)
 {
+	const char * const *dns_update_command = lp_dns_update_command(service->task->lp_ctx);
+
 	/* kill any existing child */
-	if (service->nameupdate.c != NULL) {
-		talloc_free(service->nameupdate.c);
-		service->nameupdate.c = NULL;
-	}
+	TALLOC_FREE(service->nameupdate.subreq);
 
 	DEBUG(3,("Calling DNS name update script\n"));
-	service->nameupdate.c = samba_runcmd(service->task->event_ctx, service,
-					     timeval_current_ofs(10, 0),
-					     2, 0,
-					     lp_dns_update_command(service->task->lp_ctx),
-					     NULL);
-	service->nameupdate.c->async.fn = dnsupdate_nameupdate_done;
-	service->nameupdate.c->async.private_data = service;
+	service->nameupdate.subreq = samba_runcmd_send(service,
+						       service->task->event_ctx,
+						       timeval_current_ofs(10, 0),
+						       2, 0,
+						       dns_update_command,
+						       NULL);
+	if (service->nameupdate.subreq == NULL) {
+		DEBUG(0,(__location__ ": samba_runcmd_send() failed with no memory\n"));
+		return;
+	}
+	tevent_req_set_callback(service->nameupdate.subreq,
+				dnsupdate_nameupdate_done,
+				service);
 }
 
 static NTSTATUS dnsupdate_nameupdate_schedule(struct dnsupdate_service *service);
