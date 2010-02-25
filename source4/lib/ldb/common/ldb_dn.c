@@ -333,8 +333,8 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	/* make sure we free this if alloced previously before replacing */
 	talloc_free(dn->components);
 
-	talloc_free(dn->ext_components);
-	dn->ext_components = NULL;
+	LDB_FREE(dn->ext_components);
+	dn->ext_comp_num = 0;
 
 	/* in the common case we have 3 or more components */
 	/* make sure all components are zeroed, other functions depend on it */
