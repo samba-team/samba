@@ -296,6 +296,10 @@ class Ldb(ldb.Ldb):
         "Get the invocation_id id"
         return glue.samdb_ntds_invocation_id(self)
 
+    def get_ntds_GUID(self):
+        "Get the NTDS objectGUID"
+        return glue.samdb_ntds_objectGUID(self)
+
     def server_site_name(self):
         "Get the server site name"
         return glue.samdb_server_site_name(self)
