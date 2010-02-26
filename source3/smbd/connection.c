@@ -30,7 +30,8 @@ bool yield_connection(connection_struct *conn, const char *name)
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
-	if (!(rec = connections_fetch_entry(NULL, conn, name))) {
+	rec = connections_fetch_entry(talloc_tos(), conn, name);
+	if (rec == NULL) {
 		DEBUG(0, ("connections_fetch_entry failed\n"));
 		return False;
 	}
