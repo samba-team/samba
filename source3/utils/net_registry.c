@@ -420,13 +420,13 @@ done:
 	return ret;
 }
 
-static int net_registry_getsd(struct net_context *c, int argc,
-			      const char **argv)
+static WERROR net_registry_getsd_internal(struct net_context *c,
+					  TALLOC_CTX *mem_ctx,
+					  const char *keyname,
+					  struct security_descriptor **sd)
 {
 	WERROR werr;
-	int ret = -1;
 	struct registry_key *key = NULL;
-	struct security_descriptor *secdesc = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	uint32_t access_mask = REG_KEY_READ |
 			       SEC_FLAG_MAXIMUM_ALLOWED |
@@ -438,6 +438,46 @@ static int net_registry_getsd(struct net_context *c, int argc,
 	 */
 	access_mask = REG_KEY_READ;
 
+	if (sd == NULL) {
+		d_fprintf(stderr, _("internal error: invalid argument\n"));
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (strlen(keyname) == 0) {
+		d_fprintf(stderr, "error: zero length key name given\n");
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	werr = open_key(ctx, keyname, access_mask, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
+		goto done;
+	}
+
+	werr = reg_getkeysecurity(mem_ctx, key, sd);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("reg_getkeysecurity failed: %s\n"),
+			  win_errstr(werr));
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+done:
+	TALLOC_FREE(ctx);
+	return werr;
+}
+
+static int net_registry_getsd(struct net_context *c, int argc,
+			      const char **argv)
+{
+	WERROR werr;
+	int ret = -1;
+	struct security_descriptor *secdesc = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+
 	if (argc != 1 || c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
@@ -447,21 +487,9 @@ static int net_registry_getsd(struct net_context *c, int argc,
 			 _("net registry getsd 'HKLM\\Software\\Samba'\n"));
 		goto done;
 	}
-	if (strlen(argv[0]) == 0) {
-		d_fprintf(stderr, "error: zero length key name given\n");
-		goto done;
-	}
 
-	werr = open_key(ctx, argv[0], access_mask, &key);
+	werr = net_registry_getsd_internal(c, ctx, argv[0], &secdesc);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
-		goto done;
-	}
-
-	werr = reg_getkeysecurity(ctx, key, &secdesc);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("reg_getkeysecurity failed: %s\n"),
-			  win_errstr(werr));
 		goto done;
 	}
 
