@@ -445,7 +445,7 @@ static WERROR net_registry_getsd_internal(struct net_context *c,
 	}
 
 	if (strlen(keyname) == 0) {
-		d_fprintf(stderr, "error: zero length key name given\n");
+		d_fprintf(stderr, _("error: zero length key name given\n"));
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
