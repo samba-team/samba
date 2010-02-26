@@ -199,7 +199,7 @@ def call_nsupdate(d):
                                                            d.existing_port, d.dest))
         f.write("update add %s %u SRV 0 100 %s %s\n" % (d.name, default_ttl, d.port, d.dest))
     if d.type == "CNAME":
-        f.write("update add %s %u SRV %s\n" % (d.name, default_ttl, d.dest))
+        f.write("update add %s %u CNAME %s\n" % (d.name, default_ttl, d.dest))
     if opts.verbose:
         f.write("show\n")
     f.write("send\n")
