@@ -160,7 +160,7 @@ objectClass: container
 dn: CN=ActiveDirectoryUpdate,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
-revision: 3
+revision: 5
 
 dn: CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
@@ -385,7 +385,7 @@ objectClass: container
 dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
-revision: 9
+revision: 8
 
 # End domain updates
 
