@@ -1,7 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
+   Samba utility functions
 
-   Copyright (C) Stefan Metzmacher 2006
+   Copyright (C) 2009 Jelmer Vernooij <jelmer@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,29 +18,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __SDDL_H__
+#define __SDDL_H__
+
 #include "librpc/gen_ndr/security.h"
 
-enum security_user_level {
-	SECURITY_ANONYMOUS,
-	SECURITY_USER,
-	SECURITY_DOMAIN_CONTROLLER,
-	SECURITY_ADMINISTRATOR,
-	SECURITY_SYSTEM
-};
+struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
+					const struct dom_sid *domain_sid);
+char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
+		  const struct dom_sid *domain_sid);
 
-struct auth_session_info;
 
-struct object_tree {
-	uint32_t remaining_access;
-	struct GUID guid;
-	int num_of_children;
-	struct object_tree *children;
-};
-
-/* Moved the dom_sid functions to the top level dir with manual proto header */
-#include "libcli/security/dom_sid.h"
-#include "libcli/security/secace.h"
-#include "libcli/security/secacl.h"
-#include "libcli/security/proto.h"
-#include "libcli/security/security_descriptor.h"
-#include "libcli/security/sddl.h"
+#endif /* __SDDL_H__ */
