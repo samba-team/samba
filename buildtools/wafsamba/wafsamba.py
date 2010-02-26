@@ -209,6 +209,8 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   public_headers=None,
                   vnum=None,
                   cflags='',
+                  output_type=None,
+                  realname=None,
                   autoproto=None):
     if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
         return
