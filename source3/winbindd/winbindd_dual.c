@@ -1463,6 +1463,14 @@ static bool fork_domain_child(struct winbindd_child *child)
 		FD_SET(state.sock, &r_fds);
 		maxfd = state.sock;
 
+		/*
+		 * Initialize this high as event_add_to_select_args()
+		 * uses a timeval_min() on this and next_event. Fix
+		 * from Roel van Meer <rolek@alt001.com>.
+		 */
+		t.tv_sec = 999999;
+		t.tv_usec = 0;
+
 		event_add_to_select_args(winbind_event_context(), &now,
 					 &r_fds, &w_fds, &t, &maxfd);
 		tp = get_timed_events_timeout(winbind_event_context(), &t);
