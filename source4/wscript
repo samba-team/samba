@@ -1,6 +1,10 @@
 srcdir = '..'
 blddir = 'bin'
 
+import sys
+sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+import wafsamba
+
 LIBREPLACE_DIR= srcdir + '/lib/replace'
 LIBLDB_DIR=     srcdir + '/source4/lib/ldb'
 

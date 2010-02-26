@@ -3,6 +3,10 @@ VERSION = '0.9.8'
 srcdir = '../..'
 blddir = 'bin'
 
+import sys
+sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+import wafsamba
+
 LIBREPLACE_DIR= srcdir + '/lib/replace'
 LIBTALLOC_DIR=  srcdir + '/lib/talloc'
 

@@ -6,189 +6,12 @@ from Configure import conf
 from Logs import debug
 from TaskGen import extension
 
+# bring in the other samba modules
+from samba_utils import *
+from samba_autoconf import *
+
 LIB_PATH="shared"
 
-######################################################
-# this is used as a decorator to make functions only
-# run once. Based on the idea from
-# http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
-runonce_ret = {}
-def runonce(function):
-    def wrapper(*args):
-        if args in runonce_ret:
-            return runonce_ret[args]
-        else:
-            ret = function(*args)
-            runonce_ret[args] = ret
-            return ret
-    return wrapper
-
-
-####################################################
-# some autoconf like helpers, to make the transition
-# to waf a bit easier for those used to autoconf
-# m4 files
-@runonce
-@conf
-def DEFINE(conf, d, v):
-    conf.define(d, v, quote=False)
-    conf.env.append_value('CCDEFINES', d + '=' + str(v))
-
-@runonce
-def CHECK_HEADER(conf, h):
-    if conf.check(header_name=h):
-        conf.env.hlist.append(h)
-
-@conf
-def CHECK_HEADERS(conf, list):
-    for hdr in list.split():
-        CHECK_HEADER(conf, hdr)
-
-@conf
-def CHECK_TYPES(conf, list):
-    for t in list.split():
-        conf.check(type_name=t, header_name=conf.env.hlist)
-
-@conf
-def CHECK_TYPE_IN(conf, t, hdr):
-    if conf.check(header_name=hdr):
-        conf.check(type_name=t, header_name=hdr)
-
-@conf
-def CHECK_TYPE(conf, t, alternate):
-    if not conf.check(type_name=t, header_name=conf.env.hlist):
-        conf.DEFINE(t, alternate)
-
-@conf
-def CHECK_VARIABLE(conf, v):
-    hdrs=''
-    for h in conf.env.hlist:
-        hdrs += '#include <%s>\n' % h
-    if conf.check(fragment=
-                  '%s\nint main(void) {void *_x; _x=(void *)&%s; return 0;}\n' % (hdrs, v),
-                  execute=0,
-                  msg="Checking for variable %s" % v):
-        conf.DEFINE('HAVE_%s' % v.upper(), 1)
-
-@runonce
-def CHECK_FUNC(conf, f):
-    conf.check(function_name=f, header_name=conf.env.hlist)
-
-
-@conf
-def CHECK_FUNCS(conf, list):
-    for f in list.split():
-        CHECK_FUNC(conf, f)
-
-
-#################################################
-# return True if a configuration option was found
-@conf
-def CONFIG_SET(conf, option):
-    return (option in conf.env) and (conf.env[option] != ())
-Build.BuildContext.CONFIG_SET = CONFIG_SET
-
-
-###########################################################
-# check that the functions in 'list' are available in 'library'
-# if they are, then make that library available as a dependency
-#
-# if the library is not available and mandatory==True, then
-# raise an error.
-#
-# If the library is not available and mandatory==False, then
-# add the library to the list of dependencies to remove from
-# build rules
-@conf
-def CHECK_FUNCS_IN(conf, list, library, mandatory=False):
-    if not conf.check(lib=library, uselib_store=library):
-        conf.ASSERT(not mandatory,
-                    "Mandatory library '%s' not found for functions '%s'" % (library, list))
-        # if it isn't a mandatory library, then remove it from dependency lists
-        LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
-        return
-    for f in list.split():
-        conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
-    conf.env['LIB_' + library.upper()] = library
-    LOCAL_CACHE_SET(conf, 'TARGET_TYPE', library, 'SYSLIB')
-
-
-#################################################
-# write out config.h in the right directory
-@conf
-def SAMBA_CONFIG_H(conf, path=None):
-    if os.path.normpath(conf.curdir) != os.path.normpath(os.environ.get('PWD')):
-        return
-    if path is None:
-        conf.write_config_header('config.h', top=True)
-    else:
-        conf.write_config_header(path)
-
-
-##############################################################
-# setup a configurable path
-@conf
-def CONFIG_PATH(conf, name, default):
-    if not name in conf.env:
-        conf.env[name] = conf.env['PREFIX'] + default
-    conf.define(name, conf.env[name], quote=True)
-
-##############################################################
-# add some CFLAGS to the command line
-@conf
-def ADD_CFLAGS(conf, flags):
-    if not 'EXTRA_CFLAGS' in conf.env:
-        conf.env['EXTRA_CFLAGS'] = []
-    conf.env['EXTRA_CFLAGS'].extend(flags.split())
-
-
-##############################################################
-# work out the current flags. local flags are added first
-def CURRENT_CFLAGS(bld, cflags):
-    if not 'EXTRA_CFLAGS' in bld.env:
-        list = []
-    else:
-        list = bld.env['EXTRA_CFLAGS'];
-    ret = cflags.split()
-    ret.extend(list)
-    return ret
-
-
-################################################################
-# magic rpath handling
-#
-# we want a different rpath when installing and when building
-# Note that this should really check if rpath is available on this platform
-# and it should also honor an --enable-rpath option
-def set_rpath(bld):
-    if Options.is_install:
-        if bld.env['RPATH_ON_INSTALL']:
-            bld.env['RPATH'] = ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
-        else:
-            bld.env['RPATH'] = []
-    else:
-        rpath = os.path.normpath('%s/%s' % (bld.env['BUILD_DIRECTORY'], LIB_PATH))
-        bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
-Build.BuildContext.set_rpath = set_rpath
-
-
-#############################################################
-# return a named build cache dictionary, used to store
-# state inside the following functions
-@conf
-def LOCAL_CACHE(ctx, name):
-    if name in ctx.env:
-        return ctx.env[name]
-    ctx.env[name] = {}
-    return ctx.env[name]
-
-
-#############################################################
-# set a value in a local cache
-@conf
-def LOCAL_CACHE_SET(ctx, cachename, key, value):
-    cache = LOCAL_CACHE(ctx, cachename)
-    cache[key] = value
 
 #############################################################
 # set a value in a local cache
@@ -214,24 +37,6 @@ def SET_TARGET_TYPE(ctx, target, value):
     debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
     return True
 
-
-#############################################################
-# a build assert call
-@conf
-def ASSERT(ctx, expression, msg):
-    if not expression:
-        sys.stderr.write("ERROR: %s\n" % msg)
-        raise AssertionError
-Build.BuildContext.ASSERT = ASSERT
-
-################################################################
-# create a list of files by pre-pending each with a subdir name
-def SUBDIR(bld, subdir, list):
-    ret = ''
-    for l in list.split():
-        ret = ret + subdir + '/' + l + ' '
-    return ret
-Build.BuildContext.SUBDIR = SUBDIR
 
 #################################################################
 # create the samba build environment
@@ -259,13 +64,6 @@ def ADD_INIT_FUNCTION(bld, subsystem, init_function):
         cache[subsystem] = ''
     cache[subsystem] += '%s,' % init_function
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
-
-#######################################################
-# d1 += d2
-def dict_concat(d1, d2):
-    for t in d2:
-        if t not in d1:
-            d1[t] = d2[t]
 
 ################################################################
 # recursively build the dependency list for a target
@@ -788,28 +586,6 @@ def BUILD_SUBDIR(bld, dir):
 Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
 
 
-############################################################
-# this overrides the 'waf -v' debug output to be in a nice
-# unix like format instead of a python list.
-# Thanks to ita on #waf for this
-def exec_command(self, cmd, **kw):
-    import Utils, Logs
-    _cmd = cmd
-    if isinstance(cmd, list):
-        _cmd = ' '.join(cmd)
-    debug('runner: %s' % _cmd)
-    if self.log:
-        self.log.write('%s\n' % cmd)
-        kw['log'] = self.log
-    try:
-        if not kw.get('cwd', None):
-            kw['cwd'] = self.cwd
-    except AttributeError:
-        self.cwd = kw['cwd'] = self.bldnode.abspath()
-    return Utils.exec_command(cmd, **kw)
-Build.BuildContext.exec_command = exec_command
-
-
 ##########################################################
 # add a new top level command to waf
 def ADD_COMMAND(opt, name, function):
@@ -840,13 +616,3 @@ def SET_BUILD_GROUP(bld, group):
     bld.set_group(group)
 Build.BuildContext.SET_BUILD_GROUP = SET_BUILD_GROUP
 
-
-#import TaskGen, Task
-#
-#old_post_run = Task.Task.post_run
-#def new_post_run(self):
-#    self.cached = True
-#    return old_post_run(self)
-#
-#for y in ['cc', 'cxx']:
-#    TaskGen.classes[y].post_run = new_post_run

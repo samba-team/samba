@@ -3,6 +3,10 @@ VERSION = '0.9.10'
 srcdir = '../../..'
 blddir = 'bin'
 
+import sys
+sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+import wafsamba
+
 LIBTDB_DIR= srcdir + '/lib/tdb'
 LIBTEVENT_DIR= srcdir + '/lib/tevent'
 

@@ -1,7 +1,10 @@
 srcdir = '../..'
 blddir = 'bin'
 
-import Options, os, wafsamba
+import sys
+sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+import wafsamba
+import Options, os
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
