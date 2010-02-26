@@ -3587,8 +3587,9 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->global_counter		= session_counter->counter;
 	r->total_pages			= 0;
 	/* in 2.2 we reported ourselves as 0x0004 and 0x0565 */
-	r->version			= 0x0005; 	/* NT 5 */
-	r->free_build			= 0x0893; 	/* build 2195 */
+	SSVAL(&r->version, 0, 0x0005); /* NT 5 */
+	SSVAL(&r->version, 2, 0x0893); /* build 2195 */
+	r->free_build			= SPOOLSS_RELEASE_BUILD;
 	r->spooling			= 0;
 	r->max_spooling			= 0;
 	r->session_counter		= session_counter->counter;
