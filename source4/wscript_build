@@ -69,6 +69,8 @@ bld.SAMBA_SUBSYSTEM('SETPROCTITLE', '')
 bld.SAMBA_SUBSYSTEM('HDB_LDB', '')
 bld.SAMBA_SUBSYSTEM('ICONV', '')
 bld.SAMBA_SUBSYSTEM('NDR_MISC', '')
+bld.SAMBA_SUBSYSTEM('SCHANNELDB', '')
+
 
 bld.BUILD_SUBDIR('../lib/replace')
 bld.BUILD_SUBDIR('../lib/talloc')
