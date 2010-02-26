@@ -30,30 +30,12 @@ static const struct mapping_backend *backend;
  */
 static bool init_group_mapping(void)
 {
-	const char *backend_string;
-
 	if (backend != NULL) {
 		/* already initialised */
 		return True;
 	}
 
-	/*
-	 * default to using the ldb backend. This parameter should
-	 * disappear in future versions of Samba3.
-	 *
-	 * But it's needed for cluster setups, because it's
-	 * not yet possible to distribute a ldb inside a cluster.
-	 */
-	backend_string = lp_parm_const_string(-1, "groupdb", "backend", "ldb");
-
-	if (strcmp(backend_string, "ldb") == 0) {
-		backend = groupdb_ldb_init();
-	} else if (strcmp(backend_string, "tdb") == 0) {
-		backend = groupdb_tdb_init();
-	} else {
-		DEBUG(0,("Unknown groupdb backend '%s'\n", backend_string));
-		smb_panic("Unknown groupdb backend");
-	}
+        backend = groupdb_tdb_init();
 
 	return backend != NULL;
 }
