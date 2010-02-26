@@ -57,7 +57,8 @@ static struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 	tdb_sc = tdb_wrap_open(mem_ctx, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb_sc) {
-		DEBUG(0,("open_schannel_session_store: Failed to open %s\n", fname));
+		DEBUG(0,("open_schannel_session_store: Failed to open %s - %s\n",
+			 fname, strerror(errno)));
 		TALLOC_FREE(fname);
 		return NULL;
 	}
