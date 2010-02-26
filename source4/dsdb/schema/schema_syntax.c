@@ -1742,7 +1742,6 @@ static WERROR dsdb_syntax_DN_validate_one_val(struct ldb_context *ldb,
 	 * one.
 	 */
 	ldb_dn_extended_filter(dn, extended_list);
-	ldb_dn_remove_extended_components(dn2);
 
 	dn_str = ldb_dn_get_extended_linearized(tmp_ctx, dn, 0);
 	if (dn_str == NULL) {
