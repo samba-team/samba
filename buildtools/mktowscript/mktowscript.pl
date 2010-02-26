@@ -263,6 +263,7 @@ sub process_results($)
 			printf "\nbld.SAMBA_%s('%s'", $sec->{TYPE}, $s;
 			my $trailer="";
 			my $got_src = 0;
+			my $got_private_deps = 0;
 
 			foreach my $k (keys %{$sec}) {
 				#print "key=$k\n";
@@ -293,6 +294,7 @@ sub process_results($)
 				}
 				if ($k eq "PRIVATE_DEPENDENCIES") {
 					$trailer .= sprintf(",\n\tdeps='%s'", strlist($sec->{$k}));
+					$got_private_deps = 1;
 					next;
 				}
 				if ($k eq "PUBLIC_DEPENDENCIES") {
@@ -422,7 +424,10 @@ sub process_results($)
 				}
 				die("Unknown keyword $k in $s\n");
 			}
-			die("No source list in $s\n") unless $got_src;
+			die("No source list in $s\n") unless $got_src or $got_private_deps;
+			if (! $got_src) {
+				printf(",''\n\t");
+			}
 			printf("%s\n\t)\n\n", $trailer);
 		}
 	}
