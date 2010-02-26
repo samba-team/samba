@@ -34,5 +34,227 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
 import ldb
 from samba import glue
 from samba.auth import system_session
+from samba.samdb import SamDB
 
-print "Updating Samba DNS entries - work in progress"
+default_ttl = 900
+
+parser = optparse.OptionParser("samba_dnsupdate")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+parser.add_option("--verbose", action="store_true")
+
+creds = None
+ccachename = None
+
+opts, args = parser.parse_args()
+
+if len(args) != 0:
+    parser.print_usage()
+    sys.exit(1)
+
+lp = sambaopts.get_loadparm()
+
+domain = lp.get("realm")
+host = lp.get("netbios name")
+IPs = glue.interface_ips(lp)
+nsupdate_cmd = lp.get('nsupdate command')
+
+if len(IPs) == 0:
+    print "No IP interfaces - skipping DNS updates"
+    sys.exit(0)
+
+
+
+########################################################
+# get credentials if we haven't got them already
+def get_credentials(lp):
+    from samba.credentials import Credentials
+    global ccachename, creds
+    if creds is not None:
+        return
+    creds = Credentials()
+    creds.guess(lp)
+    try:
+        creds.set_machine_account(lp)
+    except:
+        print "Failed to set machine account"
+        raise
+
+    (tmp_fd, ccachename) = tempfile.mkstemp()
+    creds.get_named_ccache(lp, ccachename)
+
+
+#############################################
+# an object to hold a parsed DNS line
+class dnsobj(object):
+    def __init__(self):
+        self.type = None
+        self.name = None
+        self.dest = None
+        self.port = None
+        self.ip = None
+    def __str__(self):
+        if d.type == "A":     return "%s:%s:%s" % (self.type, self.name, self.ip)
+        if d.type == "SRV":   return "%s:%s:%s:%s" % (self.type, self.name, self.dest, self.port)
+        if d.type == "CNAME": return "%s:%s:%s" % (self.type, self.name, self.dest)
+
+
+################################################
+# parse a DNS line from
+def parse_dns_line(line, sub_vars):
+    d = dnsobj()
+    subline = samba.substitute_var(line, sub_vars)
+    list = subline.split()
+    d.type = list[0]
+    d.name = list[1]
+    if d.type == 'SRV':
+        d.dest = list[2]
+        d.port = list[3]
+    elif d.type == 'A':
+        d.ip   = list[2] # usually $IP, which gets replaced
+    elif d.type == 'CNAME':
+        d.dest = list[2]
+    else:
+        print "Received unexpected DNS reply of type %s" % d.type
+        raise
+    return d
+
+############################################
+# see if two hostnames match
+def hostname_match(h1, h2):
+    h1 = str(h1)
+    h2 = str(h2)
+    return h1.lower().rstrip('.') == h2.lower().rstrip('.')
+
+
+############################################
+# check that a DNS entry exists
+def check_dns_name(d):
+    if opts.verbose:
+        print "Looking for DNS entry %s" % d
+    try:
+        ans = dns.resolver.query(d.name, d.type)
+    except dns.resolver.NXDOMAIN:
+        return False
+    if d.type == 'A':
+        # we need to be sure that our IP is there
+        for rdata in ans:
+            if str(rdata) == str(d.ip):
+                return True
+    if d.type == 'CNAME':
+        for i in range(len(ans)):
+            if hostname_match(ans[i].target, d.dest):
+                return True
+    if d.type == 'SRV':
+        if opts.verbose:
+            print "Got %u replies in SRV lookup for %s" % (len(ans), d.name)
+        for i in range(len(ans)):
+            rdata = ans[i]
+            if opts.verbose:
+                print "Checking %s against %s" % (rdata, d)
+            if str(rdata.port) == str(d.port) and hostname_match(rdata.target, d.dest):
+                return True
+    if opts.verbose:
+        print "Failed to find DNS entry %s" % d
+    return False
+
+
+###########################################
+# get the list of substitution vars
+def get_subst_vars():
+    global lp
+    vars = {}
+
+    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), lp=lp)
+
+    vars['DNSDOMAIN'] = lp.get('realm').lower()
+    vars['HOSTNAME']  = lp.get('netbios name').lower() + "." + vars['DNSDOMAIN']
+    vars['NTDSGUID']  = samdb.get_ntds_GUID()
+    vars['SITE']      = samdb.server_site_name()
+    res = samdb.search(base=None, scope=SCOPE_BASE, attrs=["objectGUID"])
+    guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
+    vars['DOMAINGUID'] = guid
+    return vars
+
+
+############################################
+# call nsupdate for an entry
+def call_nsupdate(d):
+    global ccachename, nsupdate_cmd
+
+    if opts.verbose:
+        print "Calling nsupdate for %s" % d
+    (tmp_fd, tmpfile) = tempfile.mkstemp()
+    f = os.fdopen(tmp_fd, 'w')
+    if d.type == "A":
+        f.write("update add %s %u A %s\n" % (d.name, default_ttl, d.ip))
+    if d.type == "SRV":
+        f.write("update add %s %u SRV 0 100 %s %s\n" % (d.name, default_ttl, d.port, d.dest))
+    if d.type == "CNAME":
+        f.write("update add %s %u SRV %s\n" % (d.name, default_ttl, d.dest))
+    if opts.verbose:
+        f.write("show\n")
+    f.write("send\n")
+    f.close()
+
+    os.putenv("KRB5CCNAME", ccachename)
+    os.system("%s %s" % (nsupdate_cmd, tmpfile))
+    os.unlink(tmpfile)
+
+
+# get the list of DNS entries we should have
+dns_update_list = lp.private_path('dns_update_list')
+
+file = open(dns_update_list, "r")
+
+# get the substitution dictionary
+sub_vars = get_subst_vars()
+
+# build up a list of update commands to pass to nsupdate
+update_list = []
+dns_list = []
+
+# read each line, and check that the DNS name exists
+line = file.readline()
+while line:
+    line = line.rstrip().lstrip()
+    if line[0] == "#":
+        line = file.readline()
+        continue
+    d = parse_dns_line(line, sub_vars)
+    dns_list.append(d)
+    line = file.readline()
+
+# now expand the entries, if any are A record with ip set to $IP
+# then replace with multiple entries, one for each interface IP
+for d in dns_list:
+    if d.type == 'A' and d.ip == "$IP":
+        d.ip = IPs[0]
+        for i in range(len(IPs)-1):
+            d2 = d
+            d2.ip = IPs[i+1]
+            dns_list.append(d2)
+
+# now check if the entries already exist on the DNS server
+for d in dns_list:
+    if not check_dns_name(d):
+        update_list.append(d)
+
+if len(update_list) == 0:
+    if opts.verbose:
+        print "No DNS updates needed"
+    sys.exit(0)
+
+# get our krb5 creds
+get_credentials(lp)
+
+# ask nsupdate to add entries as needed
+for d in update_list:
+    call_nsupdate(d)
+
+# delete the ccache if we created it
+if ccachename is not None:
+    os.unlink(ccachename)
+
+
