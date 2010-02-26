@@ -296,6 +296,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.secrets = os.path.join(paths.private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
     paths.dns = os.path.join(paths.private_dir, "dns", dnsdomain + ".zone")
+    paths.dns_update_list = os.path.join(paths.private_dir, "dns_update_list")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
     paths.namedconf_update = os.path.join(paths.private_dir, "named.conf.update")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
@@ -1553,6 +1554,10 @@ def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
             "HOSTIP6_BASE_LINE": hostip6_base_line,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
         })
+
+    # note that we use no variable substitution on this file
+    # the substitution is done at runtime by samba_dnsupdate
+    setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
 
     if paths.bind_gid is not None:
         try:
