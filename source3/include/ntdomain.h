@@ -140,12 +140,6 @@ struct kerberos_auth_struct {
 	DATA_BLOB session_key;
 };
 
-/* auth state for schannel. */
-struct schannel_auth_struct {
-	unsigned char sess_key[16];
-	uint32 seq_num;
-};
-
 /* auth state for all bind types. */
 
 struct pipe_auth_data {
