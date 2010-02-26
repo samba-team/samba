@@ -188,6 +188,7 @@ struct loadparm_global
 	char *szNTPSignDSocketDirectory;
 	char *szRNDCCommand;
 	char *szDNSUpdateCommand;
+	char *szNSUpdateCommand;
 	struct parmlist_entry *param_opt;
 };
 
@@ -507,6 +508,7 @@ static struct parm_struct parm_table[] = {
 	{"ntp signd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szNTPSignDSocketDirectory), NULL, NULL },
 	{"rndc command", P_STRING, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
 	{"dns update command", P_STRING, P_GLOBAL, GLOBAL_VAR(szDNSUpdateCommand), NULL, NULL },
+	{"nsupdate command", P_STRING, P_GLOBAL, GLOBAL_VAR(szNSUpdateCommand), NULL, NULL },
 
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
@@ -660,6 +662,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_piddir, szPidDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_rndc_command, szRNDCCommand)
 _PUBLIC_ FN_GLOBAL_STRING(lp_dns_update_command, szDNSUpdateCommand)
+_PUBLIC_ FN_GLOBAL_STRING(lp_nsupdate_command, szNSUpdateCommand)
 _PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, dcerpc_ep_servers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_server_services, server_services)
 _PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, ntptr_providor)
@@ -2455,6 +2458,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
 	lp_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
 	lp_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SBINDIR);
+	lp_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
