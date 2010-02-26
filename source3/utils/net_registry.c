@@ -502,6 +502,38 @@ done:
 	return ret;
 }
 
+static int net_registry_getsd_sddl(struct net_context *c,
+				   int argc, const char **argv)
+{
+	WERROR werr;
+	int ret = -1;
+	struct security_descriptor *secdesc = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+
+	if (argc != 1 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry getsd_sddl <path>\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry getsd_sddl 'HKLM\\Software\\Samba'\n"));
+		goto done;
+	}
+
+	werr = net_registry_getsd_internal(c, ctx, argv[0], &secdesc);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	d_printf("%s\n", sddl_encode(ctx, secdesc, get_global_sam_sid()));
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(ctx);
+	return ret;
+}
+
 int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
@@ -570,6 +602,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Get security descriptor"),
 			N_("net registry getsd\n"
 			   "    Get security descriptor")
+		},
+		{
+			"getsd_sddl",
+			net_registry_getsd_sddl,
+			NET_TRANSPORT_LOCAL,
+			N_("Get security descriptor in sddl format"),
+			N_("net registry getsd_sddl\n"
+			   "    Get security descriptor in sddl format")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};
