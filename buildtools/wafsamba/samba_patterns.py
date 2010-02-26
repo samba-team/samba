@@ -39,14 +39,14 @@ Task.simple_task_type('idl', '../../pidl/pidl ${TGT[0].options} --header --ndr-p
 @extension('.idl')
 def process_idl(self, node):
     bname      = node.file_base()
-    c_node     = NEW_NODE(node, 'ndr_%s.c' % bname)
-    h1_node    = NEW_NODE(node, '%s.h' % bname)
-    h2_node    = NEW_NODE(node, 'ndr_%s.h' % bname)
-    s_node     = NEW_NODE(node, 'ndr_%s_s.c' % bname)
-    cli_node   = NEW_NODE(node, 'ndr_%s_c.c' % bname)
-    cli_h_node = NEW_NODE(node, 'ndr_%s_c.h' % bname)
-    py_node    = NEW_NODE(node, 'py_%s.c' % bname)
-
+    gen_ndr    = "../gen_ndr/"
+    c_node     = NEW_NODE(node, gen_ndr + 'ndr_%s.c' % bname)
+    h1_node    = NEW_NODE(node, gen_ndr + '%s.h' % bname)
+    h2_node    = NEW_NODE(node, gen_ndr + 'ndr_%s.h' % bname)
+    s_node     = NEW_NODE(node, gen_ndr + 'ndr_%s_s.c' % bname)
+    cli_node   = NEW_NODE(node, gen_ndr + 'ndr_%s_c.c' % bname)
+    cli_h_node = NEW_NODE(node, gen_ndr + 'ndr_%s_c.h' % bname)
+    py_node    = NEW_NODE(node, gen_ndr + 'py_%s.c' % bname)
 
     dname = os.path.dirname(node.bld_dir(self.env)) + "/gen_ndr"
     c_node.outputdir = dname
