@@ -1901,7 +1901,7 @@ static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(e);
 
 	e->flags = 0;
-	e->level = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+	e->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
 	e->time = 0; /* so far always 0 in trces. */
 	e->forest_trust_data.top_level_name.string = lp_dnsdomain(lp_ctx);
 
@@ -1919,7 +1919,7 @@ static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 
 	/* TODO: check if disabled and set flags accordingly */
 	e->flags = 0;
-	e->level = LSA_FOREST_TRUST_DOMAIN_INFO;
+	e->type = LSA_FOREST_TRUST_DOMAIN_INFO;
 	e->time = 0; /* so far always 0 in traces. */
 
 	domain_info = &e->forest_trust_data.domain_info;
