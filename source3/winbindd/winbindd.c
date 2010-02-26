@@ -1054,6 +1054,15 @@ static void process_loop(void)
 		struct timeval now;
 		GetTimeOfDay(&now);
 
+                /*
+		 * Initialize this high as event_add_to_select_args()
+		 * uses a timeval_min() on this and next_event. Fix
+		 * from Roel van Meer <rolek@alt001.com>.
+		 */
+
+		ev_timeout.tv_sec = 999999;
+		ev_timeout.tv_usec = 0;
+
 		event_add_to_select_args(winbind_event_context(), &now,
 					 &r_fds, &w_fds, &ev_timeout, &maxfd);
 	}
