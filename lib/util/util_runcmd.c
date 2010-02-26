@@ -154,7 +154,7 @@ struct composite_context *samba_runcmd(struct tevent_context *ev,
 				       struct timeval timeout,
 				       int stdout_log_level,
 				       int stderr_log_level,
-				       const char *arg0, ...)
+				       const char **argv0, ...)
 {
 	struct samba_runcmd *r;
 	int p1[2], p2[2];
@@ -174,7 +174,7 @@ struct composite_context *samba_runcmd(struct tevent_context *ev,
 	r->stdout_log_level = stdout_log_level;
 	r->stderr_log_level = stderr_log_level;
 
-	r->arg0 = talloc_strdup(r, arg0);
+	r->arg0 = talloc_strdup(r, argv0[0]);
 	if (composite_nomem(r->arg0, c)) return c;
 
 	if (pipe(p1) != 0) {
@@ -228,13 +228,13 @@ struct composite_context *samba_runcmd(struct tevent_context *ev,
 	dup2(p1[1], 1);
 	dup2(p2[1], 2);
 
-	argv = str_list_make_single(r, r->arg0);
+	argv = str_list_copy(r, argv0);
 	if (!argv) {
 		fprintf(stderr, "Out of memory in child\n");
 		_exit(255);
 	}
 
-	va_start(ap, arg0);
+	va_start(ap, argv0);
 	while (1) {
 		char *arg = va_arg(ap, char *);
 		if (arg == NULL) break;
@@ -246,7 +246,7 @@ struct composite_context *samba_runcmd(struct tevent_context *ev,
 	}
 	va_end(ap);
 
-	ret = execv(arg0, argv);
+	ret = execv(r->arg0, argv);
 	fprintf(stderr, "Failed to exec child - %s\n", strerror(errno));
 	_exit(255);
 	return NULL;

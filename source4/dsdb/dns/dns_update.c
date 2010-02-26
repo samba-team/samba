@@ -157,10 +157,10 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 
 	DEBUG(2,("Loading new DNS update grant rules\n"));
 	service->confupdate.c = samba_runcmd(service->task->event_ctx, service,
-					   timeval_current_ofs(10, 0),
-					   2, 0,
-					   lp_rndc_command(service->task->lp_ctx),
-					   "reload", NULL);
+					     timeval_current_ofs(10, 0),
+					     2, 0,
+					     lp_rndc_command(service->task->lp_ctx),
+					     "reload", NULL);
 	service->confupdate.c->async.fn = dnsupdate_rndc_done;
 	service->confupdate.c->async.private_data = service;
 

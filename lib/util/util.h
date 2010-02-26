@@ -890,7 +890,7 @@ struct composite_context *samba_runcmd(struct tevent_context *ev,
 				       struct timeval timeout,
 				       int stdout_log_level,
 				       int stderr_log_level,
-				       const char *arg0, ...);
+				       const char **argv0, ...);
 
 
 #endif /* _SAMBA_UTIL_H_ */

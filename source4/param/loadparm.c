@@ -186,8 +186,8 @@ struct loadparm_global
 	int bDisableNetbios;
 	int bRpcBigEndian;
 	char *szNTPSignDSocketDirectory;
-	char *szRNDCCommand;
-	char *szDNSUpdateCommand;
+	const char **szRNDCCommand;
+	const char **szDNSUpdateCommand;
 	char *szNSUpdateCommand;
 	struct parmlist_entry *param_opt;
 };
@@ -506,8 +506,8 @@ static struct parm_struct parm_table[] = {
 	{"idmap trusted only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bIdmapTrustedOnly), NULL, NULL},
 
 	{"ntp signd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szNTPSignDSocketDirectory), NULL, NULL },
-	{"rndc command", P_STRING, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
-	{"dns update command", P_STRING, P_GLOBAL, GLOBAL_VAR(szDNSUpdateCommand), NULL, NULL },
+	{"rndc command", P_LIST, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
+	{"dns update command", P_LIST, P_GLOBAL, GLOBAL_VAR(szDNSUpdateCommand), NULL, NULL },
 	{"nsupdate command", P_STRING, P_GLOBAL, GLOBAL_VAR(szNSUpdateCommand), NULL, NULL },
 
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
@@ -660,8 +660,8 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, dos_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, unix_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_piddir, szPidDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_rndc_command, szRNDCCommand)
-_PUBLIC_ FN_GLOBAL_STRING(lp_dns_update_command, szDNSUpdateCommand)
+_PUBLIC_ FN_GLOBAL_LIST(lp_rndc_command, szRNDCCommand)
+_PUBLIC_ FN_GLOBAL_LIST(lp_dns_update_command, szDNSUpdateCommand)
 _PUBLIC_ FN_GLOBAL_STRING(lp_nsupdate_command, szNSUpdateCommand)
 _PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, dcerpc_ep_servers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_server_services, server_services)
