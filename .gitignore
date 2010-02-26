@@ -320,6 +320,7 @@ source4/heimdal/lib/roken/roken.h
 source4/lib/ldb-samba/ldif_handlers_proto.h
 source4/libcli/drsblobs_proto.h
 source4/ntvfs/posix/vfs_acl_proto.h
+source4/kdc/mit_samba.so
 *.swp
 tags
 *.x
