@@ -1452,12 +1452,18 @@ struct ldb_dn *samdb_server_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_dn *server_dn;
+	struct ldb_dn *servers_dn;
 	struct ldb_dn *server_site_dn;
+
+	/* TODO: there must be a saner way to do this!! */
 
 	server_dn = samdb_server_dn(ldb, mem_ctx);
 	if (!server_dn) return NULL;
 
-	server_site_dn = ldb_dn_get_parent(mem_ctx, server_dn);
+	servers_dn = ldb_dn_get_parent(mem_ctx, server_dn);
+	if (!servers_dn) return NULL;
+
+	server_site_dn = ldb_dn_get_parent(mem_ctx, servers_dn);
 
 	talloc_free(server_dn);
 	return server_site_dn;
