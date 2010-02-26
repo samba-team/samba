@@ -805,7 +805,7 @@ static int ldb_dn_extended_component_compare(const void *p1, const void *p2)
 char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
 {
 	const char *linearized = ldb_dn_get_linearized(dn);
-	char *p;
+	char *p = NULL;
 	int i;
 
 	if (!linearized) {
