@@ -127,7 +127,7 @@ static void wbsrv_accept(struct stream_connection *conn)
 
 	TALLOC_FREE(conn->event.fde);
 
-	rc = tstream_bsd_existing_socket(wbsrv_conn->tstream,
+	rc = tstream_bsd_existing_socket(wbsrv_conn,
 			socket_get_fd(conn->socket),
 			&wbsrv_conn->tstream);
 	if (rc < 0) {
