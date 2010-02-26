@@ -26,7 +26,7 @@ def configure(conf):
     conf.env.hlist = []
 
     # load our local waf extensions
-    conf.check_tool('wafsamba', tooldir=conf.curdir)
+    conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     conf.CONFIG_PATH('LIBDIR', '/lib')
     conf.CONFIG_PATH('BINDIR', '/bin')
