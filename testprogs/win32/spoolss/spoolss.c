@@ -1073,6 +1073,10 @@ static BOOL test_GetPrintProcessorDirectory(struct torture_context *tctx,
 			}
 		}
 
+		if (tctx->print) {
+			printf("\tPrint Processor Directory\t= %s\n\n", (LPSTR)buffer);
+		}
+
 		free(buffer);
 		buffer = NULL;
 	}
@@ -1118,6 +1122,10 @@ static BOOL test_GetPrinterDriverDirectory(struct torture_context *tctx,
 			} else {
 				torture_warning(tctx, tmp);
 			}
+		}
+
+		if (tctx->print) {
+			printf("\tPrinter Driver Directory\t= %s\n\n", (LPSTR)buffer);
 		}
 
 		free(buffer);
