@@ -44,7 +44,6 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 
 bool yield_connection(connection_struct *conn, const char *name);
 int count_current_connections( const char *sharename, bool clear  );
-int count_all_current_connections(void);
 bool claim_connection(connection_struct *conn, const char *name,
 		      uint32 msg_flags);
 bool register_message_flags(bool doreg, uint32 msg_flags);
