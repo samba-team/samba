@@ -1939,7 +1939,7 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	int i, total;
+	int i;
 	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_String *names;
 	uint32_t *ids;
@@ -1959,8 +1959,6 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 
 	if ((names == NULL) || (ids == NULL))
 		return NT_STATUS_NO_MEMORY;
-
-	total = 0;
 
 	for (i=0; i<r->in.num_rids; i++) {
 		struct ldb_message **res;
