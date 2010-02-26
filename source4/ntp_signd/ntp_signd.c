@@ -445,7 +445,7 @@ static void ntp_signd_accept(struct stream_connection *conn)
 
 	TALLOC_FREE(conn->event.fde);
 
-	rc = tstream_bsd_existing_socket(ntp_signd_conn->tstream,
+	rc = tstream_bsd_existing_socket(ntp_signd_conn,
 			socket_get_fd(conn->socket),
 			&ntp_signd_conn->tstream);
 	if (rc < 0) {
