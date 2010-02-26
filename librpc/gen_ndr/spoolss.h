@@ -1467,6 +1467,19 @@ enum spoolss_PrinterControl
 #endif
 ;
 
+enum spoolss_Build
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DEBUGGING_BUILD=(int)(0x00000000),
+	SPOOLSS_RELEASE_BUILD=(int)(0x00000001)
+}
+#else
+ { __donnot_use_enum_spoolss_Build=0x7FFFFFFF}
+#define SPOOLSS_DEBUGGING_BUILD ( 0x00000000 )
+#define SPOOLSS_RELEASE_BUILD ( 0x00000001 )
+#endif
+;
+
 struct spoolss_SetPrinterInfo0 {
 	const char *servername;/* [unique,charset(UTF16)] */
 	const char *printername;/* [unique,charset(UTF16)] */
@@ -1477,7 +1490,7 @@ struct spoolss_SetPrinterInfo0 {
 	uint32_t global_counter;
 	uint32_t total_pages;
 	uint32_t version;
-	uint32_t free_build;
+	enum spoolss_Build free_build;
 	uint32_t spooling;
 	uint32_t max_spooling;
 	uint32_t session_counter;

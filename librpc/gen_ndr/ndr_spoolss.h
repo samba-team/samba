@@ -347,6 +347,7 @@ void ndr_print_spoolss_SetJobInfo(struct ndr_print *ndr, const char *name, const
 void ndr_print_spoolss_JobInfoContainer(struct ndr_print *ndr, const char *name, const struct spoolss_JobInfoContainer *r);
 void ndr_print_spoolss_JobControl(struct ndr_print *ndr, const char *name, enum spoolss_JobControl r);
 void ndr_print_spoolss_PrinterControl(struct ndr_print *ndr, const char *name, enum spoolss_PrinterControl r);
+void ndr_print_spoolss_Build(struct ndr_print *ndr, const char *name, enum spoolss_Build r);
 void ndr_print_spoolss_SetPrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo0 *r);
 void ndr_print_spoolss_SetPrinterInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo1 *r);
 void ndr_print_spoolss_SetPrinterInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo2 *r);

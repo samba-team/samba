@@ -1146,6 +1146,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		SPOOLSS_PRINTER_CONTROL_SET_STATUS = 4
 	} spoolss_PrinterControl;
 
+	typedef [v1_enum] enum {
+		SPOOLSS_DEBUGGING_BUILD		= 0x00000000,
+		SPOOLSS_RELEASE_BUILD		= 0x00000001
+	} spoolss_Build;
+
 	typedef struct {
 		[string,charset(UTF16)] uint16 *servername;
 		[string,charset(UTF16)] uint16 *printername;
@@ -1156,7 +1161,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 global_counter;
 		uint32 total_pages;
 		uint32 version;
-		uint32 free_build;
+		spoolss_Build free_build;
 		uint32 spooling;
 		uint32 max_spooling;
 		uint32 session_counter;
