@@ -311,7 +311,7 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 
 	TALLOC_FREE(conn->event.fde);
 
-	rc = tstream_bsd_existing_socket(kdc_conn->tstream,
+	rc = tstream_bsd_existing_socket(kdc_conn,
 			socket_get_fd(conn->socket),
 			&kdc_conn->tstream);
 	if (rc < 0) {
