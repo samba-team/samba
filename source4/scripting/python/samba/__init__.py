@@ -353,7 +353,7 @@ def read_and_sub_file(file, subst_vars):
     data = open(file, 'r').read()
     if subst_vars is not None:
         data = substitute_var(data, subst_vars)
-    check_all_substituted(data)
+        check_all_substituted(data)
     return data
 
 
