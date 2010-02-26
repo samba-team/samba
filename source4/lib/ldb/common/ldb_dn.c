@@ -894,6 +894,7 @@ void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept)
 			i--;
 		}
 	}
+	LDB_FREE(dn->ext_linearized);
 }
 
 
@@ -1424,9 +1425,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
-	if (dn->ext_linearized) {
-		LDB_FREE(dn->ext_linearized);
-	}
+	LDB_FREE(dn->ext_linearized);
 
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
@@ -1935,6 +1934,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 				}
 				return LDB_SUCCESS;
 			}
+			LDB_FREE(dn->ext_linearized);
 		}
 	}
 
@@ -1972,6 +1972,7 @@ void ldb_dn_remove_extended_components(struct ldb_dn *dn)
 {
 	dn->ext_comp_num = 0;
 	LDB_FREE(dn->ext_components);
+	LDB_FREE(dn->ext_linearized);
 }
 
 bool ldb_dn_is_valid(struct ldb_dn *dn)
