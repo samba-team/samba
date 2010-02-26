@@ -1404,6 +1404,9 @@ def provision(setup_dir, message, session_info,
                              realm=names.realm)
             message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
 
+    if serverrole == "domain controller":
+        create_dns_update_list(lp, message, paths, setup_path)
+
     provision_backend.post_setup()
     provision_backend.shutdown()
     
@@ -1571,6 +1574,13 @@ def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
 
     if targetdir is None:
         os.system(rndc + " unfreeze " + lp.get("realm"))
+
+
+def create_dns_update_list(lp, message, paths, setup_path):
+    """Write out a dns_update_list file"""
+    # note that we use no variable substitution on this file
+    # the substitution is done at runtime by samba_dnsupdate
+    setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
 
 
 def create_named_conf(paths, setup_path, realm, dnsdomain,
