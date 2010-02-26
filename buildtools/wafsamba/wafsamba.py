@@ -357,17 +357,9 @@ def SAMBA_ERRTABLE(bld, name, source,
     )
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
-##########################################################
-# create a node with a new name, based on an existing node
-def NEW_NODE(node, name):
-    ret = node.parent.find_or_declare([name])
-    ASSERT(node, ret is not None, "Unable to find new target with name '%s' from '%s'" % (
-            name, node.name))
-    return ret
-
 #################################################################
 # define a PIDL target
-def SAMBA_PIDL(bld, directory, source):
+def SAMBA_PIDL(bld, directory, source, options=''):
     name = os.path.basename(string.replace(source, '.idl', ''))
     name = "%s/ndr_%s.o" % (directory, name)
 
@@ -378,7 +370,8 @@ def SAMBA_PIDL(bld, directory, source):
     bld(
         features = 'cc',
         source   = source,
-        target   = name
+        target   = name,
+        options  = options
     )
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
@@ -386,9 +379,9 @@ Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 #################################################################
 # define a set of Samba PIDL targets
-def SAMBA_PIDL_LIST(bld, directory, source_list):
+def SAMBA_PIDL_LIST(bld, directory, source_list, options=''):
     for p in source_list.split():
-        bld.SAMBA_PIDL(directory, p)
+        bld.SAMBA_PIDL(directory, p, options)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 

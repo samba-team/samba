@@ -7,6 +7,14 @@ from Logs import debug
 from TaskGen import extension
 from samba_utils import *
 
+##########################################################
+# create a node with a new name, based on an existing node
+def NEW_NODE(node, name):
+    ret = node.parent.find_or_declare([name])
+    ASSERT(node, ret is not None, "Unable to find new target with name '%s' from '%s'" % (
+            name, node.name))
+    return ret
+
 
 ################################################################################
 # a et task which calls out to compile_et to do the work
@@ -23,9 +31,10 @@ def process_et(self, node):
     self.allnodes.append(c_node)
 
 
+
 ################################################################################
 # a idl task which calls out to pidl to do the work
-Task.simple_task_type('idl', '../../pidl/pidl --header --ndr-parser --client --python --server --outputdir=${TGT[0].outputdir} -- ${SRC}', color='BLUE', ext_out='.c')
+Task.simple_task_type('idl', '../../pidl/pidl ${TGT[0].options} --header --ndr-parser --client --python --server --outputdir=${TGT[0].outputdir} -- ${SRC}', color='BLUE', ext_out='.c')
 
 @extension('.idl')
 def process_idl(self, node):
@@ -41,6 +50,7 @@ def process_idl(self, node):
 
     dname = os.path.dirname(node.bld_dir(self.env)) + "/gen_ndr"
     c_node.outputdir = dname
+    c_node.options   = self.options
 
     self.create_task('idl', node, [c_node, h1_node, h2_node, s_node, cli_node, cli_h_node, py_node])
 
