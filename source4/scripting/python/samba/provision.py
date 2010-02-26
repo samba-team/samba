@@ -1541,7 +1541,7 @@ def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
 
     # we need to freeze the zone while we update the contents
     if targetdir is None:
-        rndc = lp.get("rndc command")
+        rndc = ' '.join(lp.get("rndc command"))
         os.system(rndc + " freeze " + lp.get("realm"))
 
     setup_file(setup_path("provision.zone"), paths.dns, {
