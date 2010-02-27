@@ -178,7 +178,7 @@ static void continue_epm_map(struct rpc_request *req)
 							  struct epm_map_binding_state);
 
 	/* receive result of a rpc request */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_epm_Map_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* check the details */

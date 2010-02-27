@@ -161,7 +161,7 @@ static void continue_srv_challenge(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive rpc request result - netlogon challenge */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_netr_ServerReqChallenge_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare credentials for auth2 request */
@@ -209,7 +209,7 @@ static void continue_srv_auth2(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive rpc request result - auth2 credentials */ 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_netr_ServerAuthenticate2_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* verify credentials */
