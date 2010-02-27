@@ -289,9 +289,9 @@ static bool test_sleep(struct torture_context *tctx,
 					torture_comment(tctx, "Slept for %u seconds (reply takes %u.%06u seconds - ok)\n", 
 							r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec);
 				} else {
-						torture_comment(tctx, "(Failed) - Not async - Slept for %u seconds (but reply takes %u.%06u seconds)", 
-							r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec);
-					/* TODO: let the test fail here, when we support async rpc on ncacn_np */
+					torture_fail(tctx, talloc_asprintf(tctx,
+						     "(Failed) - Not async - Slept for %u seconds (but reply takes %u.%06u seconds)\n",
+						     r[i].out.result, (unsigned int)diff[i].tv_sec, (unsigned int)diff[i].tv_usec));
 				}
 			}
 		}
