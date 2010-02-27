@@ -218,6 +218,12 @@ static bool test_testcall2(struct torture_context *tctx,
 	return true;
 }
 
+static void test_sleep_done(struct rpc_request *rreq)
+{
+	bool *done1 = (bool *)rreq->async.private_data;
+	*done1 = true;
+}
+
 /*
   test the TestSleep interface
 */
@@ -229,7 +235,8 @@ static bool test_sleep(struct torture_context *tctx,
 #define ASYNC_COUNT 3
 	struct rpc_request *req[ASYNC_COUNT];
 	struct echo_TestSleep r[ASYNC_COUNT];
-	bool done[ASYNC_COUNT];
+	bool done1[ASYNC_COUNT];
+	bool done2[ASYNC_COUNT];
 	struct timeval snd[ASYNC_COUNT];
 	struct timeval rcv[ASYNC_COUNT];
 	struct timeval diff[ASYNC_COUNT];
@@ -242,12 +249,15 @@ static bool test_sleep(struct torture_context *tctx,
 	torture_comment(tctx, "Testing TestSleep - use \"torture:quick=yes\" to disable\n");
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		done[i]		= false;
+		done1[i]	= false;
+		done2[i]	= false;
 		snd[i]		= timeval_current();
 		rcv[i]		= timeval_zero();
 		r[i].in.seconds = ASYNC_COUNT-i;
 		req[i] = dcerpc_echo_TestSleep_send(p, tctx, &r[i]);
 		torture_assert(tctx, req[i], "Failed to send async sleep request\n");
+		req[i]->async.callback = test_sleep_done;
+		req[i]->async.private_data = &done1[i];
 	}
 
 	ctx = dcerpc_event_context(p);
@@ -255,10 +265,10 @@ static bool test_sleep(struct torture_context *tctx,
 		torture_assert(tctx, event_loop_once(ctx) == 0, 
 					   "Event context loop failed");
 		for (i=0;i<ASYNC_COUNT;i++) {
-			if (done[i] == false && req[i]->state == RPC_REQUEST_DONE) {
+			if (done2[i] == false && done1[i] == true) {
 				int rounded_tdiff;
 				total_done++;
-				done[i] = true;
+				done2[i] = true;
 				rcv[i]	= timeval_current();
 				diff[i]	= timeval_until(&snd[i], &rcv[i]);
 				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
