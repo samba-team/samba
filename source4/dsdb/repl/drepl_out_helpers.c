@@ -138,7 +138,7 @@ static void dreplsrv_out_drsuapi_bind_done(struct rpc_request *rreq)
 						   struct dreplsrv_out_drsuapi_state);
 	NTSTATUS status;
 
-	status = dcerpc_ndr_request_recv(rreq);
+	status = dcerpc_drsuapi_DsBind_recv(rreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -346,7 +346,7 @@ static void dreplsrv_op_pull_source_get_changes_done(struct rpc_request *rreq)
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
 
-	status = dcerpc_ndr_request_recv(rreq);
+	status = dcerpc_drsuapi_DsGetNCChanges_recv(rreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -570,7 +570,7 @@ static void dreplsrv_update_refs_done(struct rpc_request *rreq)
 								struct drsuapi_DsReplicaUpdateRefs);
 	NTSTATUS status;
 
-	status = dcerpc_ndr_request_recv(rreq);
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(rreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("UpdateRefs failed with %s\n", 
 			 nt_errstr(status)));

@@ -137,7 +137,7 @@ static void dreplsrv_op_notify_replica_sync_done(struct rpc_request *rreq)
 							  struct drsuapi_DsReplicaSync);
 	NTSTATUS status;
 
-	status = dcerpc_ndr_request_recv(rreq);
+	status = dcerpc_drsuapi_DsReplicaSync_recv(rreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
