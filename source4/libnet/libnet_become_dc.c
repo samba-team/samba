@@ -710,6 +710,8 @@ struct libnet_BecomeDC_state {
 		struct policy_handle bind_handle;
 	} drsuapi1, drsuapi2, drsuapi3;
 
+	void *ndr_struct_ptr;
+
 	struct libnet_BecomeDC_Domain domain;
 	struct libnet_BecomeDC_Forest forest;
 	struct libnet_BecomeDC_SourceDSA source_dsa;
@@ -2245,6 +2247,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	r->out.level_out	= talloc(s, int32_t);
 	r->out.ctr		= talloc(s, union drsuapi_DsAddEntryCtr);
 
+	s->ndr_struct_ptr = r;
 	req = dcerpc_drsuapi_DsAddEntry_send(s->drsuapi1.pipe, r, r);
 	composite_continue_rpc(c, req, becomeDC_drsuapi1_add_entry_recv, s);
 }
@@ -2257,10 +2260,11 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsAddEntry *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsAddEntry *r = talloc_get_type_abort(s->ndr_struct_ptr,
 				       struct drsuapi_DsAddEntry);
 	char *binding_str;
 
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsAddEntry_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -2484,6 +2488,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	 * are needed for it. Or the same KRB5 TGS is needed on both
 	 * connections.
 	 */
+	s->ndr_struct_ptr = r;
 	req = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi_p->pipe, r, r);
 	composite_continue_rpc(c, req, recv_fn, s);
 }
@@ -2620,10 +2625,11 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsGetNCChanges *r = talloc_get_type_abort(s->ndr_struct_ptr,
 					   struct drsuapi_DsGetNCChanges);
 	WERROR status;
 
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsGetNCChanges_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -2676,10 +2682,11 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsGetNCChanges *r = talloc_get_type_abort(s->ndr_struct_ptr,
 					   struct drsuapi_DsGetNCChanges);
 	WERROR status;
 
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsGetNCChanges_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -2738,10 +2745,11 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsGetNCChanges *r = talloc_get_type_abort(s->ndr_struct_ptr,
 					   struct drsuapi_DsGetNCChanges);
 	WERROR status;
 
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsGetNCChanges_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -2798,6 +2806,7 @@ static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
 		r->in.req.req1.options |= DRSUAPI_DRS_WRIT_REP;
 	}
 
+	s->ndr_struct_ptr = r;
 	req = dcerpc_drsuapi_DsReplicaUpdateRefs_send(drsuapi->pipe, r, r);
 	composite_continue_rpc(c, req, recv_fn, s);
 }
@@ -2809,9 +2818,10 @@ static void becomeDC_drsuapi2_update_refs_schema_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type_abort(s->ndr_struct_ptr,
 					   struct drsuapi_DsReplicaUpdateRefs);
 
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -2834,8 +2844,10 @@ static void becomeDC_drsuapi2_update_refs_config_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(s->ndr_struct_ptr,
 					   struct drsuapi_DsReplicaUpdateRefs);
+
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -2856,8 +2868,10 @@ static void becomeDC_drsuapi2_update_refs_domain_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
-	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(s->ndr_struct_ptr,
 					   struct drsuapi_DsReplicaUpdateRefs);
+
+	s->ndr_struct_ptr = NULL;
 
 	c->status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(req);
 	if (!composite_is_ok(c)) return;
