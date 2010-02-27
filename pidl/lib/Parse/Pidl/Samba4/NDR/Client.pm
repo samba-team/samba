@@ -43,6 +43,37 @@ sub ParseFunctionSend($$$)
 	$res .= "}\n\n";
 }
 
+sub ParseFunctionRecv($$$)
+{
+	my ($interface, $fn, $name) = @_;
+	my $uname = uc $name;
+
+	my $proto = "NTSTATUS dcerpc_$name\_recv(struct rpc_request *rreq)";
+
+	$res_hdr .= "\n$proto;\n";
+
+	$res .= "$proto\n{\n";
+
+	if (has_property($fn, "todo")) {
+		$res .= "\treturn NT_STATUS_NOT_IMPLEMENTED;\n";
+	} else {
+		$res .= "NTSTATUS status;
+	struct dcerpc_pipe *p = rreq->p;
+	struct $name *r = (struct $name *)rreq->ndr.struct_ptr;
+
+	status = dcerpc_ndr_request_recv(rreq);
+
+	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
+		NDR_PRINT_OUT_DEBUG($name, r);
+	}
+
+	return status;
+";
+	}
+
+	$res .= "}\n\n";
+}
+
 sub ParseFunctionSync($$$)
 {
 	my ($interface, $fn, $name) = @_;
@@ -90,6 +121,7 @@ sub ParseFunction($$)
 	my ($interface, $fn) = @_;
 
 	ParseFunctionSend($interface, $fn, $fn->{NAME});
+	ParseFunctionRecv($interface, $fn, $fn->{NAME});
 	ParseFunctionSync($interface, $fn, $fn->{NAME});
 }
 
