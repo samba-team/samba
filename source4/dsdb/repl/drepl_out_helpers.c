@@ -203,6 +203,7 @@ NTSTATUS dreplsrv_out_drsuapi_recv(struct tevent_req *req)
 
 struct dreplsrv_op_pull_source_state {
 	struct dreplsrv_out_operation *op;
+	void *ndr_struct_ptr;
 };
 
 static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq);
@@ -322,6 +323,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	NDR_PRINT_IN_DEBUG(drsuapi_DsGetNCChanges, r);
 #endif
 
+	state->ndr_struct_ptr = r;
 	rreq = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi->pipe, r, r);
 	if (tevent_req_nomem(rreq, req)) {
 		return;
@@ -339,12 +341,16 @@ static void dreplsrv_op_pull_source_get_changes_done(struct rpc_request *rreq)
 {
 	struct tevent_req *req = talloc_get_type(rreq->async.private_data,
 						 struct tevent_req);
+	struct dreplsrv_op_pull_source_state *state = tevent_req_data(req,
+						      struct dreplsrv_op_pull_source_state);
 	NTSTATUS status;
-	struct drsuapi_DsGetNCChanges *r = talloc_get_type(rreq->ndr.struct_ptr,
+	struct drsuapi_DsGetNCChanges *r = talloc_get_type(state->ndr_struct_ptr,
 					   struct drsuapi_DsGetNCChanges);
 	uint32_t ctr_level = 0;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
+
+	state->ndr_struct_ptr = NULL;
 
 	status = dcerpc_drsuapi_DsGetNCChanges_recv(rreq);
 	if (tevent_req_nterror(req, status)) {
@@ -552,6 +558,7 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 		r->in.req.req1.options |= DRSUAPI_DRS_WRIT_REP;
 	}
 
+	state->ndr_struct_ptr = r;
 	rreq = dcerpc_drsuapi_DsReplicaUpdateRefs_send(drsuapi->pipe, r, r);
 	if (tevent_req_nomem(rreq, req)) {
 		return;
@@ -566,9 +573,13 @@ static void dreplsrv_update_refs_done(struct rpc_request *rreq)
 {
 	struct tevent_req *req = talloc_get_type(rreq->async.private_data,
 				 struct tevent_req);
-	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(rreq->ndr.struct_ptr,
+	struct dreplsrv_op_pull_source_state *state = tevent_req_data(req,
+						      struct dreplsrv_op_pull_source_state);
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(state->ndr_struct_ptr,
 								struct drsuapi_DsReplicaUpdateRefs);
 	NTSTATUS status;
+
+	state->ndr_struct_ptr = NULL;
 
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(rreq);
 	if (!NT_STATUS_IS_OK(status)) {
