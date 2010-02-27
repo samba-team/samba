@@ -58,7 +58,7 @@ static void continue_useradd_create(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct useradd_state);
 
 	/* check rpc layer status code */
-	c->status = dcerpc_ndr_request_recv(s->req);
+	c->status = dcerpc_samr_CreateUser_recv(s->req);
 	if (!composite_is_ok(c)) return;
 
 	/* check create user call status code */
@@ -222,7 +222,7 @@ static void continue_userdel_name_found(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userdel_state);
 
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_LookupNames_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookupname.out.result;
@@ -285,7 +285,7 @@ static void continue_userdel_user_opened(struct rpc_request* req)
 	s = talloc_get_type(c->private_data, struct userdel_state);
 
 	/* receive samr_OpenUser result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_OpenUser_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->openuser.out.result;
@@ -333,7 +333,7 @@ static void continue_userdel_deleted(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userdel_state);
 
 	/* receive samr_DeleteUser result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_DeleteUser_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* return the actual function call status */
@@ -490,7 +490,7 @@ static void continue_usermod_name_found(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_LookupNames_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookupname.out.result;
@@ -714,7 +714,7 @@ static void continue_usermod_user_opened(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_OpenUser_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->openuser.out.result;
@@ -744,7 +744,7 @@ static void continue_usermod_user_queried(struct rpc_request *req)
 	i = &s->info;
 
 	/* receive samr_QueryUserInfo result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_QueryUserInfo_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->queryuser.out.result;
@@ -782,7 +782,7 @@ static void continue_usermod_user_changed(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
 	/* receive samr_SetUserInfo result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_SetUserInfo_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* return the actual function call status */

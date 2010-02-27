@@ -66,7 +66,7 @@ static void continue_userinfo_lookup(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_Lookup reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_LookupNames_recv(req);
 	if (!composite_is_ok(c)) return;
 	
 	/* there could be a problem with name resolving itself */
@@ -125,7 +125,7 @@ static void continue_userinfo_openuser(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_OpenUser reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_OpenUser_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!NT_STATUS_IS_OK(s->queryuserinfo.out.result)) {
@@ -174,7 +174,7 @@ static void continue_userinfo_getuser(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_QueryUserInfo reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_QueryUserInfo_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* check if queryuser itself went ok */
@@ -222,7 +222,7 @@ static void continue_userinfo_closeuser(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userinfo_state);
 
 	/* receive samr_Close reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Close_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!NT_STATUS_IS_OK(s->samrclose.out.result)) {

@@ -98,7 +98,7 @@ static void continue_domain_open_close(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
 
 	/* receive samr_Close reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Close_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -143,7 +143,7 @@ static void continue_domain_open_connect(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
 
 	/* receive samr_Connect reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Connect_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -184,7 +184,7 @@ static void continue_domain_open_lookup(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
 	
 	/* receive samr_LookupDomain reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_LookupDomain_recv(req);
 
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
@@ -234,7 +234,7 @@ static void continue_domain_open_open(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct domain_open_samr_state);
 
 	/* receive samr_OpenDomain reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_OpenDomain_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -521,7 +521,7 @@ static void continue_lsa_policy_open(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_open_lsa_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_OpenPolicy2_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -721,7 +721,7 @@ static void continue_lsa_close(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_close_lsa_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_Close_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -823,7 +823,7 @@ static void continue_samr_close(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_close_samr_state);
 	
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Close_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -987,7 +987,7 @@ static void continue_samr_connect(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_list_state);
 	
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Connect_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -1030,7 +1030,7 @@ static void continue_samr_enum_domains(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_list_state);
 	
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_EnumDomains_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {
@@ -1090,7 +1090,7 @@ static void continue_samr_close_handle(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_list_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Close_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (s->monitor_fn) {

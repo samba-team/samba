@@ -593,7 +593,7 @@ static void continue_lsa_policy(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_OpenPolicy2_recv(req);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		composite_error(c, c->status);
 		return;
@@ -650,7 +650,7 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy2_recv(req);
 	
 	/* In case of error just null the realm and guid and proceed
 	   to the next step. After all, it doesn't have to be AD domain
@@ -723,7 +723,7 @@ static void continue_lsa_query_info(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		s->r.out.error_string = talloc_asprintf(c,
 							"lsa_QueryInfoPolicy failed: %s",

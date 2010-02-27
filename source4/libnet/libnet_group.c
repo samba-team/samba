@@ -449,7 +449,6 @@ struct grouplist_state {
 static void continue_lsa_domain_opened(struct composite_context *ctx);
 static void continue_domain_queried(struct rpc_request *req);
 static void continue_samr_domain_opened(struct composite_context *ctx);
-static void continue_domain_queried(struct rpc_request *req);
 static void continue_groups_enumerated(struct rpc_request *req);
 
 
@@ -554,7 +553,7 @@ static void continue_domain_queried(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct grouplist_state);
 
 	/* receive result of rpc request */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* get the returned domain info */
@@ -631,7 +630,7 @@ static void continue_groups_enumerated(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct grouplist_state);
 
 	/* receive result of rpc request */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_EnumDomainGroups_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* get the actual status of the rpc call result

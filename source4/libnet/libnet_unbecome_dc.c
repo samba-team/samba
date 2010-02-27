@@ -605,7 +605,7 @@ static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsBind_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!W_ERROR_IS_OK(s->drsuapi.bind_r.out.result)) {
@@ -672,7 +672,7 @@ static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req)
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsRemoveDSServer *r = &s->drsuapi.rm_ds_srv_r;
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsRemoveDSServer_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {

@@ -1015,7 +1015,7 @@ static void continue_domain_queried(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
 	/* receive result of rpc request */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* get the returned domain info */
@@ -1094,7 +1094,7 @@ static void continue_users_enumerated(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
 	/* receive result of rpc request */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_EnumDomainUsers_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* get the actual status of the rpc call result

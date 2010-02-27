@@ -348,7 +348,7 @@ static void continue_name_found(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct lookup_name_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_lsa_LookupNames_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookup.out.result;

@@ -107,7 +107,7 @@ static void continue_groupadd_created(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct groupadd_state);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_CreateDomainGroup_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->creategroup.out.result;
@@ -196,7 +196,7 @@ static void continue_groupdel_name_found(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupdel_state);
 
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_LookupNames_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookupname.out.result;
@@ -242,7 +242,7 @@ static void continue_groupdel_group_opened(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupdel_state);
 
 	/* receive samr_OpenGroup result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_OpenGroup_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->opengroup.out.result;
@@ -273,7 +273,7 @@ static void continue_groupdel_deleted(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupdel_state);
 
 	/* receive samr_DeleteGroup result */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_DeleteDomainGroup_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* return the actual function call status */

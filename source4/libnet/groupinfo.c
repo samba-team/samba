@@ -67,7 +67,7 @@ static void continue_groupinfo_lookup(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_Lookup reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_LookupNames_recv(req);
 	if (!composite_is_ok(c)) return;
 	
 	/* there could be a problem with name resolving itself */
@@ -126,7 +126,7 @@ static void continue_groupinfo_opengroup(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_OpenGroup reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_OpenGroup_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!NT_STATUS_IS_OK(s->querygroupinfo.out.result)) {
@@ -175,7 +175,7 @@ static void continue_groupinfo_getgroup(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_QueryGroupInfo reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_QueryGroupInfo_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	/* check if querygroup itself went ok */
@@ -223,7 +223,7 @@ static void continue_groupinfo_closegroup(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_Close reply */
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_samr_Close_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!NT_STATUS_IS_OK(s->samrclose.out.result)) {
