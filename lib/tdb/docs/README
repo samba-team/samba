@@ -105,6 +105,25 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
    caller must free the resulting data
 
 ----------------------------------------------------------------------
+int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
+		     int (*parser)(TDB_DATA key, TDB_DATA data,
+				   void *private_data),
+		     void *private_data);
+
+   Hand a record to a parser function without allocating it.
+
+   This function is meant as a fast tdb_fetch alternative for large records
+   that are frequently read. The "key" and "data" arguments point directly
+   into the tdb shared memory, they are not aligned at any boundary.
+
+   WARNING: The parser is called while tdb holds a lock on the record. DO NOT
+   call other tdb routines from within the parser. Also, for good performance
+   you should make the parser fast to allow parallel operations.
+
+   tdb_parse_record returns -1 if the record was not found.  If the record was
+   found, the return value of "parser" is passed up to the caller.
+
+----------------------------------------------------------------------
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 
    check if an entry in the database exists 
