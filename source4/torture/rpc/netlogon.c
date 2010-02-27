@@ -2629,15 +2629,6 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	return true;
 }
 
-
-static void async_callback(struct rpc_request *req)
-{
-	int *counter = (int *)req->async.private_data;
-	if (NT_STATUS_IS_OK(req->status)) {
-		(*counter)++;
-	}
-}
-
 static bool test_GetDomainInfo_async(struct torture_context *tctx, 
 				     struct dcerpc_pipe *p,
 				     struct cli_credentials *machine_credentials)
@@ -2651,7 +2642,6 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds_async[ASYNC_COUNT];
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
-	int *async_counter = talloc(tctx, int);
 	union netr_WorkstationInfo query;
 	union netr_DomainInfo info;
 
@@ -2680,16 +2670,11 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 
 	query.workstation_info = &q1;
 
-	*async_counter = 0;
-
 	for (i=0;i<ASYNC_COUNT;i++) {
 		netlogon_creds_client_authenticator(creds, &a);
 
 		creds_async[i] = (struct netlogon_creds_CredentialState *)talloc_memdup(creds, creds, sizeof(*creds));
 		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, tctx, &r);
-
-		req[i]->async.callback = async_callback;
-		req[i]->async.private_data = async_counter;
 
 		/* even with this flush per request a w2k3 server seems to 
 		   clag with multiple outstanding requests. bleergh. */
@@ -2708,9 +2693,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	}
 
 	torture_comment(tctx, 
-			"Testing netr_LogonGetDomainInfo - async count %d OK\n", *async_counter);
-
-	torture_assert_int_equal(tctx, (*async_counter), ASYNC_COUNT, "int");
+			"Testing netr_LogonGetDomainInfo - async count %d OK\n", ASYNC_COUNT);
 
 	return true;
 }
