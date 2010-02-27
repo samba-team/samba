@@ -39,6 +39,7 @@
 
 struct dreplsrv_op_notify_state {
 	struct dreplsrv_notify_operation *op;
+	void *ndr_struct_ptr;
 };
 
 static void dreplsrv_op_notify_connect_done(struct tevent_req *subreq);
@@ -122,6 +123,8 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 		r->in.req->req1.options |= DRSUAPI_DRS_SYNC_URGENT;
 	}
 
+	state->ndr_struct_ptr = r;
+
 	rreq = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);
 	if (tevent_req_nomem(rreq, req)) {
 		return;
@@ -133,9 +136,14 @@ static void dreplsrv_op_notify_replica_sync_done(struct rpc_request *rreq)
 {
 	struct tevent_req *req = talloc_get_type(rreq->async.private_data,
 						 struct tevent_req);
-	struct drsuapi_DsReplicaSync *r = talloc_get_type(rreq->ndr.struct_ptr,
+	struct dreplsrv_op_notify_state *state =
+		tevent_req_data(req,
+		struct dreplsrv_op_notify_state);
+	struct drsuapi_DsReplicaSync *r = talloc_get_type(state->ndr_struct_ptr,
 							  struct drsuapi_DsReplicaSync);
 	NTSTATUS status;
+
+	state->ndr_struct_ptr = NULL;
 
 	status = dcerpc_drsuapi_DsReplicaSync_recv(rreq);
 	if (tevent_req_nterror(req, status)) {
