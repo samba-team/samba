@@ -2698,7 +2698,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		status = dcerpc_ndr_request_recv(req[i]);
+		status = dcerpc_netr_LogonGetDomainInfo_recv(req[i]);
 
 		torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo_async");
 		torture_assert_ntstatus_ok(tctx, r.out.result, "netr_LogonGetDomainInfo_async"); 

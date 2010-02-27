@@ -262,7 +262,7 @@ static bool test_sleep(struct torture_context *tctx,
 				rcv[i]	= timeval_current();
 				diff[i]	= timeval_until(&snd[i], &rcv[i]);
 				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
-				status	= dcerpc_ndr_request_recv(req[i]);
+				status	= dcerpc_echo_TestSleep_recv(req[i]);
 				torture_comment(tctx, "rounded_tdiff=%d\n", rounded_tdiff);
 				torture_assert_ntstatus_ok(tctx, status, 
 							talloc_asprintf(tctx, "TestSleep(%d) failed", i));
@@ -395,7 +395,7 @@ static bool test_timeout(struct torture_context *tctx,
 	}
 	req->ignore_timeout = true;
 
-	status	= dcerpc_ndr_request_recv(req);
+	status	= dcerpc_echo_TestSleep_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_IO_TIMEOUT, 
 								  "request should have timed out");
 
@@ -413,7 +413,7 @@ static bool test_timeout(struct torture_context *tctx,
 		goto failed;
 	}
 	req->ignore_timeout = true;
-	status	= dcerpc_ndr_request_recv(req);
+	status	= dcerpc_echo_TestSleep_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_IO_TIMEOUT, 
 		"request should have timed out");
 

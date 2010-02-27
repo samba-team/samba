@@ -645,7 +645,7 @@ static void torture_schannel_bench_recv(struct rpc_request *req)
 	struct torture_schannel_bench *s = talloc_get_type(conn->s,
 					   struct torture_schannel_bench);
 
-	s->error = dcerpc_ndr_request_recv(req);
+	s->error = dcerpc_netr_LogonSamLogonEx_recv(req);
 	if (!NT_STATUS_IS_OK(s->error)) {
 		return;
 	}

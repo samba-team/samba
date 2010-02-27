@@ -752,7 +752,7 @@ static void lookupsids_cb(struct rpc_request *req)
 	int *replies = (int *)req->async.private_data;
 	NTSTATUS status;
 
-	status = dcerpc_ndr_request_recv(req);
+	status = dcerpc_lsa_LookupSids_recv(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("lookupsids returned %s\n", nt_errstr(status));
 		*replies = -1;

@@ -5897,7 +5897,7 @@ static bool test_EnumDomainUsers_async(struct dcerpc_pipe *p, struct torture_con
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		status = dcerpc_ndr_request_recv(req[i]);
+		status = dcerpc_samr_EnumDomainUsers_recv(req[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_warning(tctx, "EnumDomainUsers[%d] failed - %s\n",
 			       i, nt_errstr(status));
