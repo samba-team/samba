@@ -122,9 +122,9 @@ static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct trusted_dom_info_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_netr_DsRGetDCName_recv(req);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		DEBUG(9, ("dcerpc_ndr_request_recv returned %s\n",
+		DEBUG(9, ("dcerpc_netr_DsRGetDCName_recv returned %s\n",
 			  nt_errstr(state->ctx->status)));
 		goto fallback;
 	}
@@ -180,7 +180,7 @@ static void trusted_dom_info_recv_dcname(struct rpc_request *req)
 	struct composite_context *ctx;
 	struct nbt_name name;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_netr_GetAnyDCName_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = werror_to_ntstatus(state->g.out.result);
 	if (!composite_is_ok(state->ctx)) return;

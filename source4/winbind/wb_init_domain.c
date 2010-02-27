@@ -309,7 +309,7 @@ static void init_domain_recv_lsa_policy(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct init_domain_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_lsa_OpenPolicy2_recv(req);
 	if ((!NT_STATUS_IS_OK(state->ctx->status)
 	      || !NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
@@ -342,7 +342,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 	struct lsa_DomainInfo *dominfo;
 	struct composite_context *ctx;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->queryinfo.out.result;
 	if (!composite_is_ok(state->ctx)) return;

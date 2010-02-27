@@ -126,7 +126,7 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 				struct cmd_list_trustdom_state);
 	int i, old_num_domains;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_lsa_EnumTrustDom_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
 

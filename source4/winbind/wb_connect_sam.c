@@ -110,7 +110,7 @@ static void connect_samr_recv_conn(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct connect_samr_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_samr_Connect2_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->c.out.result;
 	if (!composite_is_ok(state->ctx)) return;
@@ -134,7 +134,7 @@ static void connect_samr_recv_open(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct connect_samr_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_samr_OpenDomain_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->o.out.result;
 	if (!composite_is_ok(state->ctx)) return;

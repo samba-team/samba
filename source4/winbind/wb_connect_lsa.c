@@ -107,7 +107,7 @@ static void init_lsa_recv_openpol(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct init_lsa_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_lsa_OpenPolicy2_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->openpolicy.out.result;
 	if (!composite_is_ok(state->ctx)) return;

@@ -96,7 +96,7 @@ static void getdcname_recv_dcname(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct cmd_getdcname_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_netr_GetAnyDCName_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = werror_to_ntstatus(state->g.out.result);
 	if (!composite_is_ok(state->ctx)) return;

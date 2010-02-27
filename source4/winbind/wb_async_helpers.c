@@ -107,7 +107,7 @@ static void lsa_lookupsids_recv_names(struct rpc_request *req)
 				struct lsa_lookupsids_state);
 	int i;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_lsa_LookupSids_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
 	if (!NT_STATUS_IS_OK(state->ctx->status) &&
@@ -256,7 +256,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 				struct lsa_lookupnames_state);
 	int i;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_lsa_LookupNames_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
 	if (!NT_STATUS_IS_OK(state->ctx->status) &&
@@ -376,7 +376,7 @@ static void samr_usergroups_recv_open(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct samr_getuserdomgroups_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_samr_OpenUser_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->o.out.result;
 	if (!composite_is_ok(state->ctx)) return;
@@ -396,7 +396,7 @@ static void samr_usergroups_recv_groups(struct rpc_request *req)
 		talloc_get_type(req->async.private_data,
 				struct samr_getuserdomgroups_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_samr_GetGroupsForUser_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->g.out.result;
 	if (!composite_is_ok(state->ctx)) return;
@@ -415,7 +415,7 @@ static void samr_usergroups_recv_close(struct rpc_request *req)
                 talloc_get_type(req->async.private_data,
                                 struct samr_getuserdomgroups_state);
 
-        state->ctx->status = dcerpc_ndr_request_recv(req);
+        state->ctx->status = dcerpc_samr_Close_recv(req);
         if (!composite_is_ok(state->ctx)) return;
         state->ctx->status = state->c.out.result;
         if (!composite_is_ok(state->ctx)) return;

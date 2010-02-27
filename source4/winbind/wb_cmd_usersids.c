@@ -138,7 +138,7 @@ static void usersids_recv_aliases(struct rpc_request *req)
 				struct cmd_usersids_state);
 	int i;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
+	state->ctx->status = dcerpc_samr_GetAliasMembership_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
 	if (!composite_is_ok(state->ctx)) return;
