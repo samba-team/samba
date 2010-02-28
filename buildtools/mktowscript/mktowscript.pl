@@ -409,7 +409,7 @@ sub process_results($)
 						$list="'$list'";
 					}
 					$list =~ s/\$\(\w+srcdir\)\///g;
-					printf(",\n\t%s", $list);
+					printf(",\n\tsource=%s", $list);
 					$got_src = 1;
 					next;
 				}
@@ -426,7 +426,7 @@ sub process_results($)
 			}
 			die("No source list in $s\n") unless $got_src or $got_private_deps;
 			if (! $got_src) {
-				printf(",''\n\t");
+				printf(",source=''\n\t");
 			}
 			printf("%s\n\t)\n\n", $trailer);
 		}

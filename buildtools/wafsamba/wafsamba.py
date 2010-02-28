@@ -179,7 +179,7 @@ Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 
 #################################################################
 # define a Samba library
-def SAMBA_LIBRARY(bld, libname, source_list,
+def SAMBA_LIBRARY(bld, libname, source,
                   deps='',
                   public_deps='',
                   include_list='.',
@@ -193,7 +193,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         return
 
     # remember empty libraries, so we can strip the dependencies
-    if (source_list == '') or (source_list == []):
+    if (source == '') or (source == []):
         LOCAL_CACHE_SET(bld, 'EMPTY_TARGETS', libname, True)
         return
 
@@ -204,7 +204,7 @@ def SAMBA_LIBRARY(bld, libname, source_list,
     bld.SET_BUILD_GROUP('main')
     bld(
         features = 'cc cshlib',
-        source = source_list,
+        source = source,
         target=libname,
         uselib_local = localdeps,
         uselib = sysdeps,
@@ -232,7 +232,7 @@ Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 #################################################################
 # define a Samba binary
-def SAMBA_BINARY(bld, binname, source_list,
+def SAMBA_BINARY(bld, binname, source,
                  deps='',
                  include_list='',
                  public_headers=None,
@@ -263,7 +263,7 @@ def SAMBA_BINARY(bld, binname, source_list,
     bld.SET_BUILD_GROUP(group)
     bld(
         features = 'cc cprogram',
-        source = source_list,
+        source = source,
         target = binname,
         uselib_local = localdeps,
         uselib = sysdeps,
@@ -284,7 +284,7 @@ Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 #################################################################
 # define a Samba python module
-def SAMBA_PYTHON(bld, name, source_list,
+def SAMBA_PYTHON(bld, name, source,
                  deps='',
                  public_deps='',
                  realname=''):
@@ -338,19 +338,19 @@ Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
 #################################################################
 # define a set of Samba PIDL targets
-def SAMBA_PIDL_LIST(bld, directory, source_list, options=''):
-    for p in source_list.split():
+def SAMBA_PIDL_LIST(bld, directory, source, options=''):
+    for p in source.split():
         bld.SAMBA_PIDL(directory, p, options)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 
 ################################################################
 # build a C prototype file automatically
-def AUTOPROTO(bld, header, source_list):
+def AUTOPROTO(bld, header, source):
     if header is not None:
         bld.SET_BUILD_GROUP('prototypes')
         bld(
-            source = source_list,
+            source = source,
             target = header,
             rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
             )
@@ -359,7 +359,7 @@ Build.BuildContext.AUTOPROTO = AUTOPROTO
 
 #################################################################
 # define a Samba module.
-def SAMBA_MODULE(bld, modname, source_list,
+def SAMBA_MODULE(bld, modname, source,
                  deps='',
                  include_list='.',
                  subsystem=None,
@@ -373,7 +373,7 @@ def SAMBA_MODULE(bld, modname, source_list,
         return
 
     # remember empty modules, so we can strip the dependencies
-    if (source_list == '') or (source_list == []):
+    if (source == '') or (source == []):
         LOCAL_CACHE_SET(bld, 'EMPTY_TARGETS', modname, True)
         return
 
@@ -384,7 +384,7 @@ def SAMBA_MODULE(bld, modname, source_list,
     bld.SET_BUILD_GROUP('main')
     bld(
         features = 'cc',
-        source = source_list,
+        source = source,
         target=modname,
         ccflags = CURRENT_CFLAGS(bld, cflags),
         includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
@@ -393,7 +393,7 @@ Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
 #################################################################
 # define a Samba subsystem
-def SAMBA_SUBSYSTEM(bld, modname, source_list,
+def SAMBA_SUBSYSTEM(bld, modname, source,
                     deps='',
                     public_deps='',
                     include_list='.',
@@ -410,10 +410,10 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
     # if the caller specifies a config_option, then we create a blank
     # subsystem if that configuration option was found at configure time
     if (config_option is not None) and bld.CONFIG_SET(config_option):
-            source_list = ''
+            source = ''
 
     # remember empty subsystems, so we can strip the dependencies
-    if (source_list == '') or (source_list == []):
+    if (source == '') or (source == []):
         LOCAL_CACHE_SET(bld, 'EMPTY_TARGETS', modname, True)
         return
 
@@ -424,7 +424,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
     bld.SET_BUILD_GROUP(group)
     bld(
         features = 'cc',
-        source = source_list,
+        source = source,
         target=modname,
         ccflags = CURRENT_CFLAGS(bld, cflags),
         includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)

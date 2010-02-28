@@ -4,7 +4,7 @@
 bld.BUILD_SUBDIR('samdb/ldb_modules')
 
 bld.SAMBA_SUBSYSTEM('SAMDB',
-	'samdb/samdb.c samdb/samdb_privilege.c samdb/cracknames.c repl/replicated_objects.c',
+	source='samdb/samdb.c samdb/samdb_privilege.c samdb/cracknames.c repl/replicated_objects.c',
 	autoproto='samdb/samdb_proto.h',
 	public_deps='HEIMDAL_KRB5',
 	deps='LIBNDR NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER auth_system_session LIBCLI_AUTH LIBNDR SAMDB_SCHEMA LDB_WRAP SAMDB_COMMON LIBCLI_DRSUAPI LIBCLI_LDAP_NDR LIBSAMBA-UTIL'
@@ -12,21 +12,21 @@ bld.SAMBA_SUBSYSTEM('SAMDB',
 
 
 bld.SAMBA_SUBSYSTEM('SAMDB_COMMON',
-	'samdb/ldb_modules/util.c ./common/util.c common/dsdb_dn.c ./common/tests/dsdb_dn.c ../../libds/common/flag_mapping.c',
+	source='samdb/ldb_modules/util.c ./common/util.c common/dsdb_dn.c ./common/tests/dsdb_dn.c ../../libds/common/flag_mapping.c',
 	autoproto='common/proto.h',
 	deps='ldb NDR_DRSBLOBS LIBCLI_LDAP_NDR UTIL_LDB LIBCLI_AUTH'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('SAMDB_SCHEMA',
-	'schema/schema_init.c schema/schema_set.c schema/schema_query.c schema/tests/schema_syntax.c ./schema/schema_syntax.c schema/schema_description.c schema/schema_convert_to_ol.c schema/schema_inferiors.c schema/schema_prefixmap.c',
+	source='schema/schema_init.c schema/schema_set.c schema/schema_query.c schema/tests/schema_syntax.c ./schema/schema_syntax.c schema/schema_description.c schema/schema_convert_to_ol.c schema/schema_inferiors.c schema/schema_prefixmap.c',
 	autoproto='schema/proto.h',
 	deps='SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS LDBSAMBA'
 	)
 
 
 bld.SAMBA_MODULE('DREPL_SRV',
-	'repl/drepl_service.c repl/drepl_periodic.c repl/drepl_partitions.c repl/drepl_out_pull.c repl/drepl_out_helpers.c repl/drepl_notify.c repl/drepl_ridalloc.c',
+	source='repl/drepl_service.c repl/drepl_periodic.c repl/drepl_partitions.c repl/drepl_out_pull.c repl/drepl_out_helpers.c repl/drepl_notify.c repl/drepl_ridalloc.c',
 	autoproto='repl/drepl_service_proto.h',
 	subsystem='service',
 	init_function='server_service_drepl_init',
@@ -35,7 +35,7 @@ bld.SAMBA_MODULE('DREPL_SRV',
 
 
 bld.SAMBA_MODULE('KCC_SRV',
-	'kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_topology.c kcc/kcc_deleted.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
+	source='kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_topology.c kcc/kcc_deleted.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
 	autoproto='kcc/kcc_service_proto.h',
 	subsystem='service',
 	init_function='server_service_kcc_init',
@@ -44,7 +44,7 @@ bld.SAMBA_MODULE('KCC_SRV',
 
 
 bld.SAMBA_MODULE('DNS_UPDATE_SRV',
-	'dns/dns_update.c',
+	source='dns/dns_update.c',
 	subsystem='service',
 	init_function='server_service_dnsupdate_init',
 	deps='SAMDB process_model UTIL_RUNCMD'
