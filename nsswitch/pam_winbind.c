@@ -156,7 +156,7 @@ static inline void textdomain_init(void);
 static inline void textdomain_init(void)
 {
 	if (!initialized) {
-		bindtextdomain(MODULE_NAME, dyn_LOCALEDIR);
+		bindtextdomain(MODULE_NAME, LOCALEDIR);
 		initialized = 1;
 	}
 	return;

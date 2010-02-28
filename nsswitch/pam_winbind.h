@@ -9,7 +9,6 @@
 #include "system/time.h"
 #include <talloc.h>
 #include "libwbclient/wbclient.h"
-#include "localedir.h"
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
