@@ -33,6 +33,8 @@ static int test_args;
    than going via LSA calls to resolve them */
 static int numeric;
 
+static int sddl;
+
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
@@ -681,7 +683,12 @@ static int cacl_dump(struct cli_state *cli, char *filename)
 		goto done;
 	}
 
-	sec_desc_print(cli, stdout, sd);
+	if (sddl) {
+		printf("%s\n", sddl_encode(talloc_tos(), sd,
+					   get_global_sam_sid()));
+	} else {
+		sec_desc_print(cli, stdout, sd);
+	}
 
 	result = EXIT_OK;
 
@@ -1024,6 +1031,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
 		{ "numeric", 0, POPT_ARG_NONE, &numeric, 1, "Don't resolve sids or masks to names" },
+		{ "sddl", 0, POPT_ARG_NONE, &sddl, 1, "Output acls in sddl format" },
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
