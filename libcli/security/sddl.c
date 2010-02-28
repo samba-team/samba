@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/security/security.h"
+#include "libcli/security/dom_sid.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/locale.h"
 
