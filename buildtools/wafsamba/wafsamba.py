@@ -107,7 +107,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
             CHECK_TARGET_DEPENDENCY(bld, name)
             list2.append(d)
         except AssertionError:
-            sys.stderr.write("Removing dependency %s from target %s" % (d, name))
+            sys.stderr.write("Removing dependency %s from target %s\n" % (d, name))
             del(lib_deps[name][d])
 
     # extract out the system dependencies
