@@ -4,4 +4,4 @@
  --metze
 */
 #include "../replace/replace.h"
-#include "iniparser/src/iniparser.c"
+#include "../iniparser/src/dictionary.c"
