@@ -201,6 +201,7 @@ struct cli_smb_state {
 	uint8_t *inbuf;
 	uint32_t seqnum;
 	int chain_num;
+	int chain_length;
 	struct tevent_req **chained_requests;
 };
 
@@ -710,6 +711,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 		state->inbuf = talloc_move(state, &inbuf);
 		talloc_set_destructor(req, NULL);
 		cli_smb_req_destructor(req);
+		state->chain_num = 0;
+		state->chain_length = 1;
 		tevent_req_done(req);
 	} else {
 		struct tevent_req **chain = talloc_move(
@@ -721,6 +724,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 						cli_smb_state);
 			state->inbuf = inbuf;
 			state->chain_num = i;
+			state->chain_length = num_chained;
 			tevent_req_done(chain[i]);
 		}
 		TALLOC_FREE(inbuf);
@@ -870,7 +874,11 @@ no_err:
 		*pbytes = (uint8_t *)state->inbuf + bytes_offset + 2;
 	}
 	if ((mem_ctx != NULL) && (pinbuf != NULL)) {
-		*pinbuf = talloc_move(mem_ctx, &state->inbuf);
+		if (state->chain_num == state->chain_length-1) {
+			*pinbuf = talloc_move(mem_ctx, &state->inbuf);
+		} else {
+			*pinbuf = state->inbuf;
+		}
 	}
 
 	return status;
