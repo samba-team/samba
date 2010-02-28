@@ -22,4 +22,4 @@ def build(bld):
 
     bld.SAMBA_BINARY('talloc_testsuite',
                      'testsuite.c testsuite_main.c',
-                     'talloc')
+                     deps='talloc')

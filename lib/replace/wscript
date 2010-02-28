@@ -189,7 +189,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('replace_testsuite',
                      TEST_SOURCES,
-                     'replace')
+                     deps='replace')
 
     NET_SOURCES = []
     if bld.CONFIG_SET('HAVE_INET_NTOA'):  NET_SOURCES.append('inet_ntoa.c')
