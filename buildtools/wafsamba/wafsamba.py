@@ -10,33 +10,9 @@ from TaskGen import extension
 from samba_utils import *
 from samba_autoconf import *
 from samba_patterns import *
+from samba_pidl import *
 
 LIB_PATH="shared"
-
-
-#############################################################
-# set a value in a local cache
-# return False if it's already set
-def SET_TARGET_TYPE(ctx, target, value):
-    cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
-    if target in cache:
-        ASSERT(ctx, cache[target] == value,
-               "Target '%s' re-defined as %s - was %s" % (target, value, cache[target]))
-        debug("task_gen: Skipping duplicate target %s (curdir=%s)" % (target, ctx.curdir))
-        return False
-    assumed = LOCAL_CACHE(ctx, 'ASSUMED_TARGET')
-    if target in assumed:
-        #if assumed[target] != value:
-        #    print "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value)
-        ASSERT(ctx, assumed[target] == value,
-               "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value))
-    predeclared = LOCAL_CACHE(ctx, 'PREDECLARED_TARGET')
-    if target in predeclared:
-        ASSERT(ctx, predeclared[target] == value,
-               "Target '%s' was predeclared of type '%s' but is '%s'" % (target, predeclared[target], value))
-    LOCAL_CACHE_SET(ctx, 'TARGET_TYPE', target, value)
-    debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
-    return True
 
 
 #################################################################
@@ -131,7 +107,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
             CHECK_TARGET_DEPENDENCY(bld, name)
             list2.append(d)
         except AssertionError:
-            debug("deps: Removing dependency %s from target %s" % (d, name))
+            sys.stderr.write("Removing dependency %s from target %s" % (d, name))
             del(lib_deps[name][d])
 
     # extract out the system dependencies
@@ -357,23 +333,6 @@ def SAMBA_ERRTABLE(bld, name, source,
     )
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
-#################################################################
-# define a PIDL target
-def SAMBA_PIDL(bld, directory, source, options=''):
-    name = os.path.basename(string.replace(source, '.idl', ''))
-    name = "%s/ndr_%s.o" % (directory, name)
-
-    if not SET_TARGET_TYPE(bld, name, 'PIDL'):
-        return
-
-    bld.SET_BUILD_GROUP('build_source')
-    bld(
-        features = 'cc',
-        source   = source,
-        target   = name,
-        options  = options
-    )
-Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 
 

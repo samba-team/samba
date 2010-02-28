@@ -2,11 +2,46 @@
 # and for SAMBA_ macros for building libraries, binaries etc
 
 import Build, os, Logs, sys, Configure, Options, string, Task, Utils, optparse
+from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
 from TaskGen import extension
 
 LIB_PATH="shared"
+
+
+##########################################################
+# create a node with a new name, based on an existing node
+def NEW_NODE(node, name):
+    ret = node.parent.find_or_declare([name])
+    ASSERT(node, ret is not None, "Unable to find new target with name '%s' from '%s'" % (
+            name, node.name))
+    return ret
+
+
+#############################################################
+# set a value in a local cache
+# return False if it's already set
+def SET_TARGET_TYPE(ctx, target, value):
+    cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
+    if target in cache:
+        ASSERT(ctx, cache[target] == value,
+               "Target '%s' re-defined as %s - was %s" % (target, value, cache[target]))
+        debug("task_gen: Skipping duplicate target %s (curdir=%s)" % (target, ctx.curdir))
+        return False
+    assumed = LOCAL_CACHE(ctx, 'ASSUMED_TARGET')
+    if target in assumed:
+        #if assumed[target] != value:
+        #    print "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value)
+        ASSERT(ctx, assumed[target] == value,
+               "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value))
+    predeclared = LOCAL_CACHE(ctx, 'PREDECLARED_TARGET')
+    if target in predeclared:
+        ASSERT(ctx, predeclared[target] == value,
+               "Target '%s' was predeclared of type '%s' but is '%s'" % (target, predeclared[target], value))
+    LOCAL_CACHE_SET(ctx, 'TARGET_TYPE', target, value)
+    debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
+    return True
 
 ######################################################
 # this is used as a decorator to make functions only
@@ -120,6 +155,19 @@ def ADD_COMMAND(opt, name, function):
     Utils.g_module.__dict__[name] = function
     opt.name = function
 Options.Handler.ADD_COMMAND = ADD_COMMAND
+
+
+@feature('cprogram cc')
+@before('apply_core')
+def process_depends_on(self):
+    '''The new depends_on attribute for build rules
+       allow us to specify a dependency on output from
+       a source generation rule'''
+    if getattr(self , 'depends_on', None):
+        lst = self.to_list(self.depends_on)
+        for x in lst:
+            y = self.bld.name_to_obj(x, self.env)
+            y.post()
 
 
 #import TaskGen, Task
