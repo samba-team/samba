@@ -6447,7 +6447,7 @@ if test x"$INCLUDED_INIPARSER" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_INIPARSER='$(INIPARSER_OBJ)'
 	INIPARSERLIBS=""
-    FLAGS1="$FLAGS1 -I\$(srcdir)/iniparser/src"
+    FLAGS1="$FLAGS1 -I\$(srcdir)/../lib/iniparser/src"
 else
     AC_MSG_RESULT(no)
 	BUILD_INIPARSER=""

@@ -1293,8 +1293,8 @@ WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(LIBREPLACE_OBJ)
 POPT_OBJ=../lib/popt/findme.o ../lib/popt/popt.o ../lib/popt/poptconfig.o \
           ../lib/popt/popthelp.o ../lib/popt/poptparse.o
 
-INIPARSER_OBJ = iniparser_build/iniparser.o iniparser_build/dictionary.o \
-		iniparser_build/strlib.o
+INIPARSER_OBJ = ../lib/iniparser_build/iniparser.o ../lib/iniparser_build/dictionary.o \
+		../lib/iniparser_build/strlib.o
 
 TDBBACKUP_OBJ = @tdbdir@/tools/tdbbackup.o $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
