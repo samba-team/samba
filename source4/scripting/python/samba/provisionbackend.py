@@ -169,8 +169,8 @@ class LDAPBackend(ProvisionBackend):
         # if another instance of slapd is already running 
         try:
             ldapi_db = Ldb(self.ldapi_uri)
-            search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
-                                                expression="(objectClass=OpenLDAProotDSE)");
+            ldapi_db.search(base="", scope=SCOPE_BASE,
+                expression="(objectClass=OpenLDAProotDSE)");
             try:
                 f = open(self.paths.slapdpid, "r")
                 p = f.read()
@@ -181,7 +181,7 @@ class LDAPBackend(ProvisionBackend):
             
             raise ProvisioningError("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
         
-        except LdbError, e:
+        except LdbError:
             pass
 
         # Try to print helpful messages when the user has not specified the path to slapd
@@ -237,11 +237,11 @@ class LDAPBackend(ProvisionBackend):
             # Wait until the socket appears
             try:
                 ldapi_db = Ldb(self.ldapi_uri, lp=self.lp, credentials=self.credentials)
-                search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+                ldapi_db.search(base="", scope=SCOPE_BASE,
                                                     expression="(objectClass=OpenLDAProotDSE)")
                 # If we have got here, then we must have a valid connection to the LDAP server!
                 return
-            except LdbError, e:
+            except LdbError:
                 time.sleep(1)
                 pass
         
@@ -621,7 +621,7 @@ class FDSBackend(LDAPBackend):
 
         lnkattr = self.schema.linked_attributes()
 
-        refint_config = data = open(self.setup_path("fedorads-refint-delete.ldif"), 'r').read()
+        refint_config = open(self.setup_path("fedorads-refint-delete.ldif"), 'r').read()
         memberof_config = ""
         index_config = ""
         argnum = 3

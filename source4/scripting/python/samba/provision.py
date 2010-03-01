@@ -42,7 +42,7 @@ import ldb
 from samba.auth import system_session, admin_session
 from samba import glue, version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted, read_and_sub_file, setup_file
-from samba import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008, DS_DC_FUNCTION_2008_R2
+from samba import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008
 from samba.dcerpc import security
 from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
@@ -541,9 +541,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
 
     """
     assert session_info is not None
-
-    old_partitions = None
-    new_partitions = None
 
     # We use options=["modules:"] to stop the modules loading - we
     # just want to wipe and re-initialise the database, not start it up

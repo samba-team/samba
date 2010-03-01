@@ -31,7 +31,7 @@ from samba.dcerpc import security
 from samba import read_and_sub_file, substitute_var, check_all_substituted
 from samba import Ldb
 from samba.ndr import ndr_pack
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
 import os
 
 def get_schema_descriptor(domain_sid):

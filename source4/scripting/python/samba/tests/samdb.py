@@ -17,13 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from samba.auth import system_session
-from samba.credentials import Credentials
 import os
 from samba.provision import setup_samdb, guess_names, make_smbconf, find_setup_dir
-from samba.samdb import SamDB
 from samba.tests import TestCaseInTempDir
 from samba.dcerpc import security
-from unittest import TestCase
 import uuid
 from samba import param
 
@@ -48,7 +45,6 @@ class SamDBTestCase(TestCaseInTempDir):
         domainguid = str(uuid.uuid4())
         policyguid = str(uuid.uuid4())
         domainsid = security.random_sid()
-        hostguid = str(uuid.uuid4())
         path = os.path.join(self.tempdir, "samdb.ldb")
         session_info = system_session()
         

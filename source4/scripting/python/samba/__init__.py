@@ -100,7 +100,7 @@ class Ldb(ldb.Ldb):
         # Allow admins to force non-sync ldb for all databases
         if lp is not None:
             nosync_p = lp.get("nosync", "ldb")
-            if nosync_p is not None and nosync_p == true:
+            if nosync_p is not None and nosync_p == True:
                 flags |= FLG_NOSYNC
 
         self.set_create_perms()

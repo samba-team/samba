@@ -200,17 +200,8 @@ class IdmapDbTestCase(unittest.TestCase):
         self.idmapdb.close()
 
 
-class ShareInfoTestCase(unittest.TestCase):
-    def setUp(self):
-        self.shareinfodb = ShareInfoDatabase(os.path.join(DATADIR, "share_info.tdb"))
-
-    # FIXME: needs proper data so it can be tested
-
-    def tearDown(self):
-        self.shareinfodb.close()
-
-
 class ParamTestCase(unittest.TestCase):
+
     def test_init(self):
         file = ParamFile()
         self.assertTrue(file is not None)

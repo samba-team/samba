@@ -22,10 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
-
 import samba.getopt as options
-import optparse
 import ldb
 
 from samba.auth import system_session

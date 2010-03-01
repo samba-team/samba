@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba import Ldb
 from samba.upgrade import import_wins
 from samba.tests import LdbTestCase
 

@@ -39,6 +39,7 @@ class SamrTests(RpcInterfaceTestCase):
 
     def test_connect2(self):
         handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
+        self.assertTrue(handle is not None)
 
     def test_EnumDomains(self):
         handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)

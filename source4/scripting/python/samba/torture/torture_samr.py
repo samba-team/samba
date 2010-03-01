@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import sys
 import dcerpc, samr
 
 def test_Connect(pipe):

@@ -20,7 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import samba.getopt as options
-from samba.netcmd import Command, CommandError, Option
+from samba.netcmd import Command, Option
 
 from getpass import getpass
 from samba.auth import system_session

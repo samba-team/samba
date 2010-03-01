@@ -144,7 +144,7 @@ def find_provision_key_parameters(param, credentials, session_info, paths, smbco
     # dc policy guid
     attrs8 = ["cn","displayName"]
     res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",base="CN=Policies,CN=System,"+basedn, \
-                            scope=SCOPE_ONELEVEL, attrs=attrs7)
+                            scope=SCOPE_ONELEVEL, attrs=attrs8)
     if len(res8) == 1:
         names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
     else:
@@ -168,7 +168,6 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
     :param messagefunc: A function for displaying the message of the provision"""
     if os.path.isdir(provdir):
         shutil.rmtree(provdir)
-    logstd=os.path.join(provdir,"log.std")
     os.chdir(os.path.join(setup_dir,".."))
     os.mkdir(provdir)
     messagefunc("Provision stored in %s"%provdir)
