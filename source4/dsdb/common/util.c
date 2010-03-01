@@ -2674,15 +2674,47 @@ int drsuapi_DsReplicaCursor_compare(const struct drsuapi_DsReplicaCursor *c1,
 
 /*
   see if we are a RODC
-
-  TODO: This should take a sam_ctx, and lookup the right object (with
-  a cache)
 */
-bool samdb_rodc(struct loadparm_context *lp_ctx)
+bool samdb_rodc(struct ldb_context *sam_ctx)
 {
-	return lp_parm_bool(lp_ctx, NULL, "repl", "RODC", false);
-}
+	TALLOC_CTX *tmp_ctx;
+	const char *obj_category;
+	struct ldb_dn *obj_category_dn;
+	const struct ldb_val *obj_category_dn_rdn_val;
 
+	tmp_ctx = talloc_new(sam_ctx);
+	if (tmp_ctx == NULL) {
+		DEBUG(1,("samdb_rodc: Failed to talloc new context.\n"));
+		goto failed;
+	}
+
+	obj_category = samdb_ntds_object_category(tmp_ctx, sam_ctx);
+	if (!obj_category) {
+		DEBUG(1,("samdb_rodc: Failed to get object category.\n"));
+		goto failed;
+	}
+
+	obj_category_dn = ldb_dn_new(tmp_ctx, sam_ctx, obj_category);
+	if (!obj_category_dn) {
+		DEBUG(1,("samdb_rodc: Failed to create object category dn.\n"));
+		goto failed;
+	}
+
+	obj_category_dn_rdn_val = ldb_dn_get_rdn_val(obj_category_dn);
+	if (!obj_category_dn_rdn_val) {
+		DEBUG(1, ("samdb_rodc: Failed to get object category dn rdn value.\n"));
+		goto failed;
+	}
+
+	if (strequal((const char*)obj_category_dn_rdn_val->data, "NTDS-DSA-RO")) {
+		talloc_free(tmp_ctx);
+		return true;
+	}
+
+failed:
+	talloc_free(tmp_ctx);
+	return false;
+}
 
 /*
   return NTDS options flags. See MS-ADTS 7.1.1.2.2.1.2.1.1 
@@ -2717,9 +2749,31 @@ int samdb_ntds_options(struct ldb_context *ldb, uint32_t *options)
 	return LDB_SUCCESS;
 
 failed:
-	DEBUG(1,("Failed to find our own NTDS Settings objectGUID in the ldb!\n"));
+	DEBUG(1,("Failed to find our own NTDS Settings options in the ldb!\n"));
 	talloc_free(tmp_ctx);
 	return LDB_ERR_NO_SUCH_OBJECT;
+}
+
+const char* samdb_ntds_object_category(TALLOC_CTX *tmp_ctx, struct ldb_context *ldb)
+{
+	const char *attrs[] = { "objectCategory", NULL };
+	int ret;
+	struct ldb_result *res;
+
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
+	if (ret) {
+		goto failed;
+	}
+
+	if (res->count != 1) {
+		goto failed;
+	}
+
+	return samdb_result_string(res->msgs[0], "objectCategory", NULL);
+
+failed:
+	DEBUG(1,("Failed to find our own NTDS Settings objectCategory in the ldb!\n"));
+	return NULL;
 }
 
 /*

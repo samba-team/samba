@@ -692,7 +692,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.uptodateness_vector = NULL;
 
 	/* a RODC doesn't allow for any replication */
-	if (samdb_rodc(ldb_get_opaque(b_state->sam_ctx, "loadparm"))) {
+	if (samdb_rodc(b_state->sam_ctx)) {
 		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
