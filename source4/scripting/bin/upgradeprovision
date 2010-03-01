@@ -21,38 +21,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import getopt
 import shutil
 import optparse
 import os
 import sys
-import random
-import string
 import re
+import shutil
 import tempfile
 # Allow to run from s4 source directory (without installing samba)
 sys.path.insert(0, "bin/python")
-
 
 import samba
 import samba.getopt as options
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
 from samba import Ldb
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError,\
+from ldb import SCOPE_SUBTREE, SCOPE_BASE, \
 				FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,\
 				MessageElement, Message, Dn
-from samba.samdb import SamDB
 from samba import param
 from samba import glue
 from samba.misc import messageEltFlagToString
 from samba.provision import  find_setup_dir, get_domain_descriptor, get_config_descriptor, secretsdb_self_join
 from samba.provisionexceptions import ProvisioningError
-from samba.schema import get_dnsyntax_attributes, get_linked_attributes, Schema, get_schema_descriptor
-from samba.dcerpc import misc, security
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
+from samba.dcerpc import security
+from samba.ndr import ndr_unpack
 from samba.dcerpc.misc import SEC_CHAN_BDC
-from samba.upgradehelpers import dn_sort, get_paths, newprovision, find_provision_key_parameters, rmall
+from samba.upgradehelpers import dn_sort, get_paths, newprovision, find_provision_key_parameters
 
 never=0
 replace=2^FLAG_MOD_REPLACE
@@ -912,4 +908,4 @@ if not m:
 	check_updated_sd(newpaths, paths, creds, session, names)
 	message(SIMPLE,"Upgrade finished !")
 	# remove reference provision now that everything is done !
-	rmall(provisiondir)
+	shutil.rmtree(provisiondir)

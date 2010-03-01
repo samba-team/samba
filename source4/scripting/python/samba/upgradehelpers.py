@@ -23,20 +23,20 @@
 
 
 import os
-import sys
 import string
 import re
 
 import samba
 from samba import Ldb, DS_DOMAIN_FUNCTION_2000
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
-from samba.provision import  ProvisionNames,provision_paths_from_lp,FILL_FULL,provision
+from samba.provision import ProvisionNames, provision_paths_from_lp, FILL_FULL, provision
 from samba.provisionexceptions import ProvisioningError
 from samba.dcerpc import misc, security
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.ndr import ndr_unpack
 
-def get_paths(param,targetdir=None,smbconf=None):
+
+def get_paths(param, targetdir=None, smbconf=None):
 	"""Get paths to important provision objects (smb.conf, ldb files, ...)
 
 	:param param: Param object
@@ -59,7 +59,7 @@ def get_paths(param,targetdir=None,smbconf=None):
 	return paths
 
 
-def find_provision_key_parameters(param,credentials,session_info,paths,smbconf):
+def find_provision_key_parameters(param, credentials, session_info, paths, smbconf):
 	"""Get key provision parameters (realm, domain, ...) from a given provision
 
 	:param param: Param object
@@ -151,11 +151,11 @@ def find_provision_key_parameters(param,credentials,session_info,paths,smbconf):
 	return names
 
 
-# Create a fresh new reference provision
-# This provision will be the reference for knowing what has changed in the
-# since the latest upgrade in the current provision
 def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
-	"""Create a new provision
+	"""Create a new provision.
+
+    This provision will be the reference for knowing what has changed in the
+    since the latest upgrade in the current provision
 
 	:param names: List of provision parameters
 	:param setup_dis: Directory where the setup files are stored
@@ -165,15 +165,11 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
 	:param provdir: Directory where the provision will be stored
 	:param messagefunc: A function for displaying the message of the provision"""
 	if os.path.isdir(provdir):
-		rmall(provdir)
+		shutil.rmtree(provdir)
 	logstd=os.path.join(provdir,"log.std")
 	os.chdir(os.path.join(setup_dir,".."))
 	os.mkdir(provdir)
-	#os.close(2)
-	#sys.stderr = open("%s/provision.log"%provdir, "w")
 	messagefunc("Provision stored in %s"%provdir)
-	#messagefunc("STDERR message of provision will be logged in %s/provision.log"%provdir)
-	#sys.stderr = open("/dev/stdout", "w")
 	provision(setup_dir, messagefunc,
 		session, creds, smbconf=smbconf, targetdir=provdir,
 		samdb_fill=FILL_FULL, realm=names.realm, domain=names.domain,
@@ -228,18 +224,3 @@ def dn_sort(x,y):
 				else:
 					return -1
 	return ret
-
-
-def rmall(topdir):
-	"""Remove a directory its contents and all its subdirectory
-
-	:param topdir: Directory to remove"""
-	for root, dirs, files in os.walk(topdir, topdown=False):
-		for name in files:
-			os.remove(os.path.join(root, name))
-		for name in dirs:
-			os.rmdir(os.path.join(root, name))
-	os.rmdir(topdir)
-
-
-
