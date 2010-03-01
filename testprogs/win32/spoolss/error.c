@@ -115,6 +115,8 @@ const char *errstr(DWORD error)
 		return "ERROR_CANCELLED";
 	case ERROR_NOACCESS:
 		return "ERROR_NOACCESS";
+	case RPC_X_NULL_REF_POINTER:
+		return "RPC_X_NULL_REF_POINTER";
 	case RPC_S_PROCNUM_OUT_OF_RANGE:
 		return "RPC_S_PROCNUM_OUT_OF_RANGE";
 	case RPC_S_SERVER_UNAVAILABLE:
