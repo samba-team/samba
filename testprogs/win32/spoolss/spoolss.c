@@ -1290,6 +1290,33 @@ static BOOL test_DeletePrinterKey(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_SetPrinterDataEx(struct torture_context *tctx,
+				  LPSTR servername,
+				  LPSTR keyname,
+				  LPSTR valuename,
+				  HANDLE handle,
+				  DWORD type,
+				  LPBYTE buffer,
+				  DWORD offered)
+{
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s)", keyname, valuename);
+
+	err = SetPrinterDataEx(handle, keyname, valuename, type, buffer, offered);
+	if (err) {
+		sprintf(tmp, "SetPrinterDataEx(%s) failed on [%s] (buffer size = %d), error: %s\n",
+			valuename, servername, offered, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_PrinterData(struct torture_context *tctx,
 			     LPSTR servername,
 			     HANDLE handle)
