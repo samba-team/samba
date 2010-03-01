@@ -1356,8 +1356,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
  a new session setup with VC==0 is ignored.
 ****************************************************************************/
 
-static int shutdown_other_smbds(struct db_record *rec,
-				const struct connections_key *key,
+static int shutdown_other_smbds(const struct connections_key *key,
 				const struct connections_data *crec,
 				void *private_data)
 {
@@ -1394,7 +1393,7 @@ static void setup_new_vc_session(void)
 	invalidate_all_vuids();
 #endif
 	if (lp_reset_on_zero_vc()) {
-		connections_forall(shutdown_other_smbds,
+		connections_forall_read(shutdown_other_smbds,
 			CONST_DISCARD(void *,
 			client_addr(get_client_fd(),addr,sizeof(addr))));
 	}

@@ -121,6 +121,48 @@ int connections_forall(int (*fn)(struct db_record *rec,
 	return ctx->traverse(ctx, conn_traverse_fn, (void *)&state);
 }
 
+struct conn_traverse_read_state {
+	int (*fn)(const struct connections_key *key,
+		  const struct connections_data *data,
+		  void *private_data);
+	void *private_data;
+};
+
+static int connections_forall_read_fn(struct db_record *rec,
+				      void *private_data)
+{
+	struct conn_traverse_read_state *state =
+		(struct conn_traverse_read_state *)private_data;
+
+	if ((rec->key.dsize != sizeof(struct connections_key))
+	    || (rec->value.dsize != sizeof(struct connections_data))) {
+		return 0;
+	}
+	return state->fn((const struct connections_key *)rec->key.dptr,
+			 (const struct connections_data *)rec->value.dptr,
+			 state->private_data);
+}
+
+int connections_forall_read(int (*fn)(const struct connections_key *key,
+				      const struct connections_data *data,
+				      void *private_data),
+			    void *private_data)
+{
+	struct db_context *ctx;
+	struct conn_traverse_read_state state;
+
+	ctx = connections_db_ctx(false);
+	if (ctx == NULL) {
+		return -1;
+	}
+
+	state.fn = fn;
+	state.private_data = private_data;
+
+	return ctx->traverse_read(ctx, connections_forall_read_fn,
+				  (void *)&state);
+}
+
 bool connections_init(bool rw)
 {
 	return (connections_db_ctx(rw) != NULL);

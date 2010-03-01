@@ -151,8 +151,7 @@ static int collect_pid(struct db_record *rec, void *private_data)
 	return 0;
 }
 
-static int show_share_parseable(struct db_record *rec,
-				const struct connections_key *key,
+static int show_share_parseable(const struct connections_key *key,
 				const struct connections_data *crec,
 				void *state)
 {
@@ -205,7 +204,7 @@ static int net_status_shares_parseable(struct net_context *c, int argc, const ch
 	db->traverse_read(db, collect_pid, &ids);
 	TALLOC_FREE(db);
 
-	connections_forall(show_share_parseable, &ids);
+	connections_forall_read(show_share_parseable, &ids);
 
 	SAFE_FREE(ids.entries);
 

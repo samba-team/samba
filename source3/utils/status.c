@@ -232,8 +232,7 @@ static void print_brl(struct file_id id,
 	TALLOC_FREE(share_mode);
 }
 
-static int traverse_fn1(struct db_record *rec,
-			const struct connections_key *key,
+static int traverse_fn1(const struct connections_key *key,
 			const struct connections_data *crec,
 			void *state)
 {
@@ -447,7 +446,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		d_printf("\nService      pid     machine       Connected at\n");
 		d_printf("-------------------------------------------------------\n");
 
-		connections_forall(traverse_fn1, NULL);
+		connections_forall_read(traverse_fn1, NULL);
 
 		d_printf("\n");
 
