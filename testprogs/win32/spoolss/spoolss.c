@@ -984,6 +984,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "PrinterDriverData");
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
 	ret &= test_DeviceModes(tctx, printername, handle);
+	ret &= test_PrinterData(tctx, printername, handle);
 	ret &= test_ClosePrinter(tctx, handle);
 
 	return ret;
@@ -1352,6 +1353,43 @@ static BOOL test_PrinterData_Server(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_PrinterData(struct torture_context *tctx,
+			     LPSTR printername,
+			     HANDLE handle)
+{
+	LPSTR keyname = "torture_key";
+	LPSTR valuename = "torture_value";
+	DWORD type = REG_NONE;
+	LPBYTE buffer = NULL;
+	DWORD offered = 0;
+	BOOL ret = TRUE;
+
+	torture_comment(tctx, "Testing PrinterData");
+
+	type = REG_SZ;
+	offered = 4;
+	buffer = malloc(offered);
+	if (!buffer) {
+		return FALSE;
+	}
+	buffer[0] = 'c';
+	buffer[1] = 'r';
+	buffer[2] = 'a';
+	buffer[3] = 'p';
+
+	ret &= test_SetPrinterDataEx(tctx, printername, keyname, valuename, handle, type, buffer, offered);
+	ret &= test_GetPrinterDataEx(tctx, printername, keyname, valuename, handle, NULL, NULL, NULL);
+	ret &= test_DeletePrinterDataEx(tctx, printername, keyname, valuename, handle);
+	ret &= test_DeletePrinterKey(tctx, printername, keyname, handle);
+
+	free(buffer);
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 const char *get_string_param(const char *str)
 {
 	const char *p;
@@ -1417,7 +1455,7 @@ int main(int argc, char *argv[])
 		LPSTR p = servername+2;
 		LPSTR p2;
 		if ((p2 = strchr(p, '\\')) != NULL) {
-			ret = test_OnePrinter(tctx, servername, architecture, NULL);
+			ret = test_OnePrinter(tctx, servername, architecture, &defaults_admin);
 			goto done;
 		}
 	}
@@ -1435,7 +1473,7 @@ int main(int argc, char *argv[])
 	ret &= test_EnumPrintProcessorDatatypes(tctx, servername);
 	ret &= test_GetPrintProcessorDirectory(tctx, servername, architecture);
 	ret &= test_GetPrinterDriverDirectory(tctx, servername, architecture);
-	ret &= test_EachPrinter(tctx, servername, architecture, NULL);
+	ret &= test_EachPrinter(tctx, servername, architecture, &defaults_admin);
 
  done:
 	if (!ret) {
