@@ -112,12 +112,18 @@ int connections_forall(int (*fn)(struct db_record *rec,
 				 void *private_data),
 		       void *private_data)
 {
+	struct db_context *ctx;
 	struct conn_traverse_state state;
+
+	ctx = connections_db_ctx(true);
+	if (ctx == NULL) {
+		return -1;
+	}
 
 	state.fn = fn;
 	state.private_data = private_data;
 
-	return connections_traverse(conn_traverse_fn, (void *)&state);
+	return ctx->traverse(ctx, conn_traverse_fn, (void *)&state);
 }
 
 bool connections_init(bool rw)
