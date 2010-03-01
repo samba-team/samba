@@ -46,7 +46,7 @@ class cmd_export_keytab(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp)
-        net.export_keytab(keytab=keytab, creds=creds)
+        net.export_keytab(keytab=keytab)
 
 
 class cmd_export(SuperCommand):

@@ -106,26 +106,20 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 static const char py_net_set_password_doc[] = "set_password(account_name, domain_name, newpassword) -> True\n\n" \
 "Set password for a user. You must supply credential with enough rights to do this.\n\n" \
 "Sample usage is:\n" \
-"creds = samba.credentials.Credentials()\n" \
-"creds.set_username('admin_user')\n" \
-"creds.set_domain('domain_name')\n" \
-"creds.set_password('pass')\n\n" \
 "net.set_password(account_name=<account_name>,\n" \
-"                domain_name=creds.get_domain(),\n" \
-"                newpassword=new_pass,\n" \
-"                credentials=creds)\n";
+"                domain_name=domain_name,\n" \
+"                newpassword=new_pass)\n";
 
 
 static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_export_keytab r;
 	TALLOC_CTX *mem_ctx;
-	const char *kwnames[] = { "keytab", "creds", NULL };
-	PyObject *py_creds;
+	const char *kwnames[] = { "keytab", NULL };
 	NTSTATUS status;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO:export_keytab", discard_const_p(char *, kwnames),
-					 &r.in.keytab_name, &py_creds)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s:export_keytab", discard_const_p(char *, kwnames),
+					 &r.in.keytab_name)) {
 		return NULL;
 	}
 
@@ -146,10 +140,54 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 static const char py_net_export_keytab_doc[] = "export_keytab(keytab, name)\n\n"
 "Export the DC keytab to a keytab file.";
 
+static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "server_name", NULL };
+	union libnet_RemoteTOD r;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	char timestr[64];
+	PyObject *ret;
+	struct tm *tm;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s",
+		discard_const_p(char *, kwnames), &r.generic.in.server_name))
+		return NULL;
+
+	r.generic.level			= LIBNET_REMOTE_TOD_GENERIC;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = libnet_RemoteTOD(self->libnet_ctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_RuntimeError, r.generic.out.error_string);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ZERO_STRUCT(timestr);
+	tm = localtime(&r.generic.out.time);
+	strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
+	
+	ret = PyString_FromString(timestr);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+static const char py_net_time_doc[] = "time(server_name) -> timestr\n"
+"Retrieve the remote time on a server";
+
 static PyMethodDef net_obj_methods[] = {
 	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
 	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
+	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
 	{ NULL }
 };
 
