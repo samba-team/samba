@@ -1384,7 +1384,7 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 	char *device;
 	const char **names;
 	int count;
-	unsigned int i;
+	int i;
 
 	*r->out.type = 0;
 
