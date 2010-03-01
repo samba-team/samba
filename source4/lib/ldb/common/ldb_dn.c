@@ -1718,7 +1718,7 @@ static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
 	tmpctx = talloc_new(mem_ctx);
 
 	/* Walk backwards down the DN, grabbing 'dc' components at first */
-	for (i = dn->comp_num - 1 ; i >= 0; i--) {
+	for (i = dn->comp_num - 1; i >= 0; i--) {
 		if (ldb_attr_cmp(dn->components[i].name, "dc") != 0) {
 			break;
 		}
