@@ -131,6 +131,20 @@ Changes since 3.5.0rc3
 ----------------------
 
 
+o   Günther Deschner <gd@samba.org>
+    * BUG 7181: Fix 'net ads dns' usage calls.
+    * BUG 7182: Fix uninitialized variable in wkssvc_enumerateusers.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7145: Fix duplicate sam and unix accounts.
+    * BUG 7166: Avoid calling cli_alloc_mid twice in cli_smb_req_iov_send.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7160: Keep the the correct negotiate_flags on the cli->dc structure.
+
+
 Changes since 3.5.0rc2
 ----------------------
 
