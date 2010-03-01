@@ -33,3 +33,8 @@ epydoc:: pythonmods
 	PYTHONPATH=$(pythonbuilddir):../lib/subunit/python epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit testtools
 
 install:: installpython
+
+PYFLAKES = pyflakes
+
+pyflakes::
+	$(PYFLAKES) $(pyscriptsrcdir)/samba
