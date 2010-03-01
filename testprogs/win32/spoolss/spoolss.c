@@ -1243,6 +1243,30 @@ static BOOL test_GetPrinterDataEx(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_DeletePrinterDataEx(struct torture_context *tctx,
+				     LPSTR servername,
+				     LPSTR keyname,
+				     LPSTR valuename,
+				     HANDLE handle)
+{
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing DeletePrinterDataEx(%s - %s)", keyname, valuename);
+
+	err = DeletePrinterDataEx(handle, keyname, valuename);
+	if (err) {
+		sprintf(tmp, "DeletePrinterDataEx(%s - %s) failed on [%s], error: %s\n",
+			keyname, valuename, servername, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_PrinterData(struct torture_context *tctx,
 			     LPSTR servername,
 			     HANDLE handle)
