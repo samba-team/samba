@@ -1339,6 +1339,15 @@ int main(int argc, char *argv[])
 	defaults_use.pDevMode = NULL;
 	defaults_use.DesiredAccess = PRINTER_ACCESS_USE;
 
+	if ((servername[0] == '\\') && (servername[1] == '\\')) {
+		LPSTR p = servername+2;
+		LPSTR p2;
+		if ((p2 = strchr(p, '\\')) != NULL) {
+			ret = test_OnePrinter(tctx, servername, architecture, NULL);
+			goto done;
+		}
+	}
+
 	ret &= test_EnumPrinters(tctx, servername);
 	ret &= test_EnumDrivers(tctx, servername, architecture);
 	ret &= test_OpenPrinter(tctx, servername, NULL, &server_handle);
@@ -1354,6 +1363,7 @@ int main(int argc, char *argv[])
 	ret &= test_GetPrinterDriverDirectory(tctx, servername, architecture);
 	ret &= test_EachPrinter(tctx, servername, architecture, NULL);
 
+ done:
 	if (!ret) {
 		if (tctx->last_reason) {
 			fprintf(stderr, "failed: %s\n", tctx->last_reason);
