@@ -204,7 +204,7 @@ class Ldb(ldb.Ldb):
             try:
                 self.delete(attr)
             except ldb.LdbError, (errno, _):
-                if errno != ldb.ERR_NO_SUCH_OBJECT
+                if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore missing dn errors
                     raise
 

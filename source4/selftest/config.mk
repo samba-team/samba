@@ -23,6 +23,10 @@ test-subunit:: everything
 	$(ST_RM) $(SELFTEST) --socket-wrapper $(TESTS) $(ST_TOUCH)
 	$(ST_DONE_TEST)
 
+test-subunit-filtered:: everything
+	$(ST_RM) $(SELFTEST) --socket-wrapper $(TESTS) $(ST_TOUCH) | $(FILTER_XFAIL)
+	$(ST_DONE_TEST)
+
 slowtest:: everything
 	$(ST_RM) $(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) $(ST_TOUCH) | $(FORMAT_TEST_OUTPUT)
 	$(ST_DONE_TEST)
