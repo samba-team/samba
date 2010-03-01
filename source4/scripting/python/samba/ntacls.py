@@ -52,7 +52,7 @@ def getntacl(lp, file, backend=None, eadbfile=None):
     ntacl = ndr_unpack(xattr.NTACL,attribute)
     return ntacl
 
-def setntacl(lp,file,sddl,domsid,backend=None,eadbfile=None):
+def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
     checkset_backend(lp,backend,eadbfile)
     ntacl=xattr.NTACL()
     ntacl.version = 1
@@ -62,12 +62,12 @@ def setntacl(lp,file,sddl,domsid,backend=None,eadbfile=None):
     eadbname = lp.get("posix:eadb")
     if eadbname != None  and eadbname != "":
         try:
-            attribute = samba.xattr_tdb.wrap_setxattr(eadbname,file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+            samba.xattr_tdb.wrap_setxattr(eadbname,file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
         except:
             print "Fail to open %s"%eadbname
-            attribute = samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+            samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
     else:
-        attribute = samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+        samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
 
 def ldapmask2filemask(ldm):
     """Takes the access mask of a DS ACE and transform them in a File ACE mask"""
@@ -138,7 +138,7 @@ def dsacl2fsacl(dssddl, domsid):
     fdescr.revision = ref.revision
     fdescr.sacl = ref.sacl
     aces = ref.dacl.aces
-    for i in range(0,len(aces)):
+    for i in range(0, len(aces)):
         ace = aces[i]
         if not ace.type &  security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT and str(ace.trustee) != security.SID_BUILTIN_PREW2K:
         #    if fdescr.type & security.SEC_DESC_DACL_AUTO_INHERITED:

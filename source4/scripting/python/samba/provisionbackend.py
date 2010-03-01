@@ -119,7 +119,7 @@ class ExistingBackend(ProvisionBackend):
     def init(self):
         #Check to see that this 'existing' LDAP backend in fact exists
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
-        search_ol_rootdse = ldapi_db.search(base="", scope=SCOPE_BASE,
+        ldapi_db.search(base="", scope=SCOPE_BASE,
                                             expression="(objectClass=OpenLDAProotDSE)")
 
         # If we have got here, then we must have a valid connection to the LDAP server, with valid credentials supplied
@@ -170,7 +170,7 @@ class LDAPBackend(ProvisionBackend):
         try:
             ldapi_db = Ldb(self.ldapi_uri)
             ldapi_db.search(base="", scope=SCOPE_BASE,
-                expression="(objectClass=OpenLDAProotDSE)");
+                expression="(objectClass=OpenLDAProotDSE)")
             try:
                 f = open(self.paths.slapdpid, "r")
                 p = f.read()
@@ -204,7 +204,7 @@ class LDAPBackend(ProvisionBackend):
         except OSError:
             pass
 
-        self.schema.write_to_tmp_ldb(schemadb_path);
+        self.schema.write_to_tmp_ldb(schemadb_path)
 
         self.credentials = Credentials()
         self.credentials.guess(self.lp)
@@ -243,7 +243,6 @@ class LDAPBackend(ProvisionBackend):
                 return
             except LdbError:
                 time.sleep(1)
-                pass
         
         raise ProvisioningError("slapd died before we could make a connection to it")
 
@@ -297,7 +296,7 @@ class OpenLDAPBackend(LDAPBackend):
                 self.domainsid,
                 schemadn=self.names.schemadn,
                 serverdn=self.names.serverdn,
-                files=[setup_path("schema_samba4.ldif")]);
+                files=[setup_path("schema_samba4.ldif")])
 
     def provision(self):
         # Wipe the directories so we can start
@@ -674,7 +673,7 @@ class FDSBackend(LDAPBackend):
         fedora_ds_dir = os.path.join(self.paths.ldapdir, "slapd-samba4")
         shutil.rmtree(fedora_ds_dir, True)
 
-        self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir, "-i", self.paths.slapdpid];
+        self.slapd_provision_command = [self.slapd_path, "-D", fedora_ds_dir, "-i", self.paths.slapdpid]
         #In the 'provision' command line, stay in the foreground so we can easily kill it
         self.slapd_provision_command.append("-d0")
 

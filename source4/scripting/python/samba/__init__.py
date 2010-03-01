@@ -145,17 +145,20 @@ class Ldb(ldb.Ldb):
         try:
             res = self.search(base=dn, scope=ldb.SCOPE_SUBTREE, attrs=[],
                       expression="(|(objectclass=user)(objectclass=computer))")
-        except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-            # Ignore no such object errors
-            return
-            pass
+        except ldb.LdbError, (errno, _):
+            if errno == ldb.ERR_NO_SUCH_OBJECT:
+                # Ignore no such object errors
+                return
+            else:
+                raise
 
         try:
             for msg in res:
                 self.delete(msg.dn)
-        except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-            # Ignore no such object errors
-            return
+        except ldb.LdbError, (errno, _):
+            if errno != ldb.ERR_NO_SUCH_OBJECT:
+                # Ignore no such object errors
+                raise
 
     def erase_except_schema_controlled(self):
         """Erase this ldb, removing all records, except those that are controlled by Samba4's schema."""
@@ -171,9 +174,10 @@ class Ldb(ldb.Ldb):
                                [], controls=["show_deleted:0"]):
             try:
                 self.delete(msg.dn)
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                # Ignore no such object errors
-                pass
+            except ldb.LdbError, (errno, _):
+                if errno != ldb.ERR_NO_SUCH_OBJECT:
+                    # Ignore no such object errors
+                    raise
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE,
                           "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
@@ -185,9 +189,10 @@ class Ldb(ldb.Ldb):
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
                 self.delete(attr)
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                # Ignore missing dn errors
-                pass
+            except ldb.LdbError, (errno, _):
+                if errno != ldb.ERR_NO_SUCH_OBJECT:
+                    # Ignore missing dn errors
+                    raise
 
     def erase(self):
         """Erase this ldb, removing all records."""
@@ -198,9 +203,10 @@ class Ldb(ldb.Ldb):
         for attr in ["@INDEXLIST", "@ATTRIBUTES"]:
             try:
                 self.delete(attr)
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                # Ignore missing dn errors
-                pass
+            except ldb.LdbError, (errno, _):
+                if errno != ldb.ERR_NO_SUCH_OBJECT
+                    # Ignore missing dn errors
+                    raise
 
     def erase_partitions(self):
         """Erase an ldb, removing all records."""
@@ -209,18 +215,20 @@ class Ldb(ldb.Ldb):
             try:
                 res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[],
                                   controls=["show_deleted:0"])
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                # Ignore no such object errors
-                return
+            except ldb.LdbError, (errno, _):
+                if errno == ldb.ERR_NO_SUCH_OBJECT:
+                    # Ignore no such object errors
+                    return
 
             for msg in res:
                 erase_recursive(self, msg.dn)
 
             try:
                 self.delete(dn)
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
-                # Ignore no such object errors
-                pass
+            except ldb.LdbError, (errno, _):
+                if errno != ldb.ERR_NO_SUCH_OBJECT:
+                    # Ignore no such object errors
+                    raise
 
         res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)",
                          ["namingContexts"])

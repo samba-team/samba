@@ -602,7 +602,7 @@ def secretsdb_self_join(secretsdb, domain,
            "privateKeytab"]
     
 
-    msg = ldb.Message(ldb.Dn(secretsdb, "flatname=%s,cn=Primary Domains" % domain));
+    msg = ldb.Message(ldb.Dn(secretsdb, "flatname=%s,cn=Primary Domains" % domain))
     msg["secureChannelType"] = str(secure_channel_type)
     msg["flatname"] = [domain]
     msg["objectClass"] = ["top", "primaryDomain"]
@@ -613,7 +613,7 @@ def secretsdb_self_join(secretsdb, domain,
       msg["realm"] = realm
       msg["saltPrincipal"] = "host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper())
       msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
-      msg["privateKeytab"] = ["secrets.keytab"];
+      msg["privateKeytab"] = ["secrets.keytab"]
 
 
     msg["secret"] = [machinepass]
@@ -971,7 +971,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
-        message("Reopening sam.ldb with new schema");
+        message("Reopening sam.ldb with new schema")
         samdb.transaction_commit()
         samdb = Ldb(session_info=admin_session_info,
                     credentials=provision_backend.credentials, lp=lp)

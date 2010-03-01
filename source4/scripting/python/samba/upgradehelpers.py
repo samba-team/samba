@@ -27,7 +27,6 @@ import string
 import re
 import shutil
 
-import samba
 from samba import Ldb, DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb

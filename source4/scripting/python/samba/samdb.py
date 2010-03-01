@@ -229,5 +229,5 @@ accountExpires: %u
         except:
             self.transaction_cancel()
             raise
-        self.transaction_commit();
+        self.transaction_commit()
 

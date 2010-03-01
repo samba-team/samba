@@ -62,6 +62,7 @@ class FindNssTests(unittest.TestCase):
 
 
 class Disabled(object):
+
     def test_setup_templatesdb(self):
         raise NotImplementedError(self.test_setup_templatesdb)
 

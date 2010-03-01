@@ -25,9 +25,9 @@ __docformat__ = "restructuredText"
 import ldb
 
 def messageEltFlagToString(flag):
-	if flag == ldb.FLAG_MOD_ADD:
-		return "MOD_ADD"
-	elif flag == ldb.FLAG_MOD_REPLACE:
-		return "MOD_REPLACE"
-	elif flag == ldb.FLAG_MOD_DELETE:
-		return "MOD_DELETE"
+    if flag == ldb.FLAG_MOD_ADD:
+        return "MOD_ADD"
+    elif flag == ldb.FLAG_MOD_REPLACE:
+        return "MOD_REPLACE"
+    elif flag == ldb.FLAG_MOD_DELETE:
+        return "MOD_DELETE"
