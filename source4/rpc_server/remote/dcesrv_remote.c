@@ -186,6 +186,8 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return NT_STATUS_OK;
 }
 
+static void remote_op_dispatch_done(struct rpc_request *rreq);
+
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	struct dcesrv_remote_private *priv = dce_call->context->private_data;
@@ -193,6 +195,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
 	const char *name;
+	struct rpc_request *rreq;
 
 	name = table->calls[opnum].name;
 	call = &table->calls[opnum];
@@ -204,20 +207,53 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	priv->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	/* we didn't use the return code of this function as we only check the last_fault_code */
-	dcerpc_ndr_request(priv->c_pipe, NULL, table, opnum, mem_ctx,r);
+	rreq = dcerpc_ndr_request_send(priv->c_pipe, NULL, table, opnum, true, mem_ctx, r);
+	if (rreq == NULL) {
+		DEBUG(0,("dcesrv_remote: call[%s] dcerpc_ndr_request_send() failed!\n", name));
+		return NT_STATUS_NO_MEMORY;
+	}
+	rreq->async.callback = remote_op_dispatch_done;
+	rreq->async.private_data = dce_call;
+
+	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void remote_op_dispatch_done(struct rpc_request *rreq)
+{
+	struct dcesrv_call_state *dce_call = talloc_get_type_abort(rreq->async.private_data,
+					     struct dcesrv_call_state);
+	struct dcesrv_remote_private *priv = dce_call->context->private_data;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
+	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
+	const struct ndr_interface_call *call;
+	const char *name;
+	NTSTATUS status;
+
+	name = table->calls[opnum].name;
+	call = &table->calls[opnum];
+
+	/* we didn't use the return code of this function as we only check the last_fault_code */
+	status = dcerpc_ndr_request_recv(rreq);
 
 	dce_call->fault_code = priv->c_pipe->last_fault_code;
 	if (dce_call->fault_code != 0) {
-		DEBUG(0,("dcesrv_remote: call[%s] failed with: %s!\n",name, dcerpc_errstr(mem_ctx, dce_call->fault_code)));
-		return NT_STATUS_NET_WRITE_FAULT;
+		DEBUG(0,("dcesrv_remote: call[%s] failed with: %s!\n",
+			name, dcerpc_errstr(dce_call, dce_call->fault_code)));
+		goto reply;
 	}
 
-	if ((dce_call->fault_code == 0) && 
+	if (NT_STATUS_IS_OK(status) &&
 	    (priv->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		ndr_print_function_debug(call->ndr_print, name, NDR_OUT, r);		
+		ndr_print_function_debug(call->ndr_print, name, NDR_OUT, dce_call->r);
 	}
 
-	return NT_STATUS_OK;
+reply:
+	status = dcesrv_reply(dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("dcesrv_remote: call[%s]: dcesrv_reply() failed - %s\n",
+			name, nt_errstr(status)));
+	}
 }
 
 static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
