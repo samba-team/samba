@@ -37,9 +37,6 @@ class MockLoadParm(object):
     def __getitem__(self, name):
         return MockService(self.data[name])
 
-    def __contains__(self, name):
-        return name in self.data
-
     def __len__(self):
         return len(self.data)
 
