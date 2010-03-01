@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# vim: expandtab
 #
 # Copyright (C) Matthieu Patou <mat@matws.net> 2009
 #
@@ -25,7 +26,6 @@ import shutil
 import optparse
 import os
 import sys
-import re
 import tempfile
 # Allow to run from s4 source directory (without installing samba)
 sys.path.insert(0, "bin/python")
@@ -135,7 +135,7 @@ def message(what,text):
 
     :param what: Category of the message
     :param text: Message to print """
-    if (whatToLog & what) or (what <= 0 ):
+    if (whatToLog & what) or what <= 0:
         print text
 
 if len(sys.argv) == 1:
@@ -160,6 +160,7 @@ def identic_rename(ldbobj,dn):
     ldbobj.rename(dn,Dn(ldbobj,"%s=foo%s"%(before,after)))
     ldbobj.rename(Dn(ldbobj,"%s=foo%s"%(before,after)),dn)
 
+
 def populate_backlink(newpaths,creds,session,schemadn):
     """Populate an array with all the back linked attributes
 
@@ -174,7 +175,6 @@ def populate_backlink(newpaths,creds,session,schemadn):
     linkedAttHash = get_linked_attributes(Dn(newsam_ldb,str(schemadn)),newsam_ldb)
     backlinked.extend(linkedAttHash.values())
 
-# Create an array of  attributes with a dn synthax (2.5.5.1)
 def populate_dnsyntax(newpaths,creds,session,schemadn):
     """Populate an array with all the attributes that have DN synthax (oid 2.5.5.1)
 
@@ -187,6 +187,7 @@ def populate_dnsyntax(newpaths,creds,session,schemadn):
                             scope=SCOPE_SUBTREE, attrs=["lDAPDisplayName"])
     for elem in res:
         dn_syntax_att.append(elem["lDAPDisplayName"])
+
 
 def sanitychecks(credentials,session_info,names,paths):
     """Populate an array with all the attributes that have DN synthax (oid 2.5.5.1)
@@ -203,13 +204,13 @@ def sanitychecks(credentials,session_info,names,paths):
                          scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
     if len(res) == 0:
         print "No DC found, your provision is most probalby hardly broken !"
-        return 0
+        return False
     elif len(res) != 1:
         print "Found %d domain controllers, for the moment upgradeprovision is not able to handle upgrade on \
 domain with more than one DC, please demote the other(s) DC(s) before upgrading"%len(res)
-        return 0
+        return False
     else:
-        return 1
+        return True
 
 
 def print_provision_key_parameters(names):
@@ -234,6 +235,7 @@ def print_provision_key_parameters(names):
     message(GUESS, "ntdsguid    :"+names.ntdsguid)
     message(GUESS, "domainlevel :"+str(names.domainlevel))
 
+
 def handle_security_desc(ischema, att, msgElt, hashallSD, old, new):
     """Check if the security descriptor has been modified.
 
@@ -251,15 +253,16 @@ def handle_security_desc(ischema, att, msgElt, hashallSD, old, new):
         hashSD["oldSD"] = old[0][att]
         hashSD["newSD"] = new[0][att]
         hashallSD[str(old[0].dn)] = hashSD
-        return 1
+        return True
     if att == "nTSecurityDescriptor"  and msgElt.flags() == FLAG_MOD_REPLACE:
         if ischema == 0:
             hashSD = {}
-            hashSD["oldSD"] =  ndr_unpack(security.descriptor, str(old[0][att]))
-            hashSD["newSD"] =  ndr_unpack(security.descriptor, str(new[0][att]))
+            hashSD["oldSD"] = ndr_unpack(security.descriptor, str(old[0][att]))
+            hashSD["newSD"] = ndr_unpack(security.descriptor, str(new[0][att]))
             hashallSD[str(old[0].dn)] = hashSD
-        return 0
-    return 0
+        return False
+    return False
+
 
 def handle_special_case(att, delta, new, old, ischema):
     """Define more complicate update rules for some attributes
@@ -269,30 +272,30 @@ def handle_special_case(att, delta, new, old, ischema):
     :param new: The reference object
     :param old: The Updated object
     :param ischema: A boolean that indicate that the attribute is part of a schema object
-    :return: 1 to indicate that the attribute should be kept, 0 for discarding it
+    :return: Tru to indicate that the attribute should be kept, False for discarding it
     """
     flag = delta.get(att).flags()
     if (att == "gPLink" or att == "gPCFileSysPath") and \
-        flag ==  FLAG_MOD_REPLACE and str(new[0].dn).lower() == str(old[0].dn).lower():
+        flag == FLAG_MOD_REPLACE and str(new[0].dn).lower() == str(old[0].dn).lower():
         delta.remove(att)
-        return 1
+        return True
     if att == "forceLogoff":
         ref=0x8000000000000000
         oldval=int(old[0][att][0])
         newval=int(new[0][att][0])
         ref == old and ref == abs(new)
-        return 1
+        return True
     if (att == "adminDisplayName" or att == "adminDescription") and ischema:
-        return 1
+        return True
 
-    if (str(old[0].dn) == "CN=Samba4-Local-Domain,%s"%(str(names.schemadn))\
-        and att == "defaultObjectCategory" and flag  == FLAG_MOD_REPLACE):
-        return 1
+    if (str(old[0].dn) == "CN=Samba4-Local-Domain,%s" % (str(names.schemadn))\
+        and att == "defaultObjectCategory" and flag == FLAG_MOD_REPLACE):
+        return True
 
-    if (str(old[0].dn) == "CN=Title,%s"%(str(names.schemadn)) and att == "rangeUpper" and flag  == FLAG_MOD_REPLACE):
-        return 1
+    if (str(old[0].dn) == "CN=Title,%s"%(str(names.schemadn)) and att == "rangeUpper" and flag == FLAG_MOD_REPLACE):
+        return True
 
-    if ( (att == "member" or att == "servicePrincipalName") and flag  == FLAG_MOD_REPLACE):
+    if ((att == "member" or att == "servicePrincipalName") and flag == FLAG_MOD_REPLACE):
         hash = {}
         newval = []
         changeDelta=0
@@ -308,13 +311,13 @@ def handle_special_case(att, delta, new, old, ischema):
             delta[att] = MessageElement(newval, FLAG_MOD_REPLACE, att)
         else:
             delta.remove(att)
-        return 1
+        return True
 
-    if (str(old[0].dn) == "%s"%(str(names.rootdn)) and att == "subRefs" and flag  == FLAG_MOD_REPLACE):
-        return 1
+    if (str(old[0].dn) == "%s"%(str(names.rootdn)) and att == "subRefs" and flag == FLAG_MOD_REPLACE):
+        return True
     if str(delta.dn).endswith("CN=DisplaySpecifiers,%s"%names.configdn):
-        return 1
-    return 0
+        return True
+    return False
 
 def update_secrets(newpaths, paths, creds, session):
     """Update secrets.ldb
@@ -373,12 +376,9 @@ def update_secrets(newpaths, paths, creds, session):
         reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
         current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(current[0],reference[0])
-        i=0
         for att in hashAttrNotCopied.keys():
             delta.remove(att)
         for att in delta:
-            i = i + 1
-
             if att == "name":
                 message(CHANGE,"Found attribute name on  %s, must rename the DN "%(current[0].dn))
                 identic_rename(secrets_ldb,reference[0].dn)
@@ -389,16 +389,15 @@ def update_secrets(newpaths, paths, creds, session):
         reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
         current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(current[0],reference[0])
-        i=0
         for att in hashAttrNotCopied.keys():
             delta.remove(att)
         for att in delta:
-            i = i + 1
             if att != "dn":
                 message(CHANGE," Adding/Changing attribute %s to %s"%(att,current[0].dn))
 
         delta.dn = current[0].dn
         secrets_ldb.modify(delta)
+
 
 def dump_denied_change(dn,att,flagtxt,current,reference):
     """Print detailed information about why a changed is denied
@@ -414,15 +413,16 @@ def dump_denied_change(dn,att,flagtxt,current,reference):
         i = 0
         for e in range(0,len(current)):
             message(CHANGE,"old %d : %s"%(i,str(current[e])))
-            i=i+1
+            i+=1
         if reference != None:
             i = 0
             for e in range(0,len(reference)):
-                    message(CHANGE,"new %d : %s"%(i,str(reference[e])))
-                    i=i+1
+                message(CHANGE,"new %d : %s"%(i,str(reference[e])))
+                i+=1
     else:
         message(CHANGE,"old : %s"%str(ndr_unpack( security.dom_sid,current[0])))
         message(CHANGE,"new : %s"%str(ndr_unpack( security.dom_sid,reference[0])))
+
 
 def handle_special_add(sam_ldb,dn,names):
     """Handle special operation (like remove) on some object needed during upgrade
@@ -431,18 +431,18 @@ def handle_special_add(sam_ldb,dn,names):
     :param sam_ldb: An Ldb object representing the SAM database
     :param dn: DN of the object to inspect
     :param names: list of key provision parameters"""
-    dntoremove=None
+    dntoremove = None
     if str(dn).lower() == ("CN=Certificate Service DCOM Access,CN=Builtin,%s"%names.rootdn).lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove="CN=Certificate Service DCOM Access,CN=Users,%s"%names.rootdn
+        dntoremove = "CN=Certificate Service DCOM Access,CN=Users,%s"%names.rootdn
 
     if str(dn).lower() == ("CN=Cryptographic Operators,CN=Builtin,%s"%names.rootdn).lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove="CN=Cryptographic Operators,CN=Users,%s"%names.rootdn
+        dntoremove = "CN=Cryptographic Operators,CN=Users,%s"%names.rootdn
 
     if str(dn).lower() == ("CN=Event Log Readers,CN=Builtin,%s"%names.rootdn).lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove="CN=Event Log Readers,CN=Users,%s"%names.rootdn
+        dntoremove = "CN=Event Log Readers,CN=Users,%s"%names.rootdn
 
     if dntoremove != None:
         res = sam_ldb.search(expression="objectClass=*",base=dntoremove, scope=SCOPE_BASE,attrs=["dn"],controls=["search_options:1:2"])
@@ -450,16 +450,13 @@ def handle_special_add(sam_ldb,dn,names):
             message(CHANGE,"Existing object %s must be replaced by %s, removing old object"%(dntoremove,str(dn)))
             sam_ldb.delete(res[0]["dn"])
 
-#Check if the one of the dn in the listdn will be created after the current dn
-#hash is indexed by dn to be created, with each key is associated the creation order
-#First dn to be created has the creation order 0, second has 1, ...
-#Index contain the current creation order
 def check_dn_nottobecreated(hash,index,listdn):
     """Check if one of the DN present in the list has a creation order greater than the current.
 
     Hash is indexed by dn to be created, with each key is associated the creation order
     First dn to be created has the creation order 0, second has 1, ...
     Index contain the current creation order
+
     :param hash: Hash holding the different DN of the object to be created as key
     :param index: Current creation order
     :param listdn: List of DNs on which the current DN depends on
@@ -473,6 +470,7 @@ def check_dn_nottobecreated(hash,index,listdn):
             return str(dn)
     return None
 
+
 def add_missing_object(newsam_ldb, sam_ldb, dn, names, basedn, hash, index):
     """Add a new object if the dependencies are satisfied
 
@@ -484,7 +482,7 @@ def add_missing_object(newsam_ldb, sam_ldb, dn, names, basedn, hash, index):
     :param basedn: DN of the partition to be updated
     :param hash: Hash holding the different DN of the object to be created as key
     :param index: Current creation order
-    :return: 1 if the object was created 0 otherwise"""
+    :return: True if the object was created False otherwise"""
     handle_special_add(sam_ldb,dn,names)
     reference = newsam_ldb.search(expression="dn=%s"%(str(dn)),base=basedn,
                     scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
@@ -500,11 +498,12 @@ def add_missing_object(newsam_ldb, sam_ldb, dn, names, basedn, hash, index):
         if depend_on_yet_tobecreated != None:
             message(CHANGE,"Object %s depends on %s in attribute %s, delaying the creation"
                             %(str(dn),depend_on_yet_tobecreated,str(att)))
-            return 0
+            return False
     delta.dn = dn
     message(CHANGE,"Object %s will be added"%dn)
     sam_ldb.add(delta,["relax:0"])
-    return 1
+    return True
+
 
 def gen_dn_index_hash(listMissing):
     """Generate a hash associating the DN to its creation order
@@ -515,6 +514,7 @@ def gen_dn_index_hash(listMissing):
     for i in range(0,len(listMissing)):
         hash[str(listMissing[i]).lower()] = i
     return hash
+
 
 def add_missing_entries(newsam_ldb, sam_ldb, names, basedn,list):
     """Add the missing object whose DN is the list
@@ -535,7 +535,7 @@ def add_missing_entries(newsam_ldb, sam_ldb, names, basedn,list):
         listDefered = []
         hashMissing = gen_dn_index_hash(listMissing)
         for dn in listMissing:
-            ret =  add_missing_object(newsam_ldb,sam_ldb,dn,names,basedn,hashMissing,index)
+            ret = add_missing_object(newsam_ldb,sam_ldb,dn,names,basedn,hashMissing,index)
             index = index + 1
             if ret == 0:
                 #DN can't be created because it depends on some other DN in the list
@@ -544,14 +544,12 @@ def add_missing_entries(newsam_ldb, sam_ldb, names, basedn,list):
         raise ProvisioningError("Unable to insert missing elements: circular references")
 
 
-
-
-# Check difference between the current provision and the reference provision.
-# It looks for all objects which base DN is name. If ischema is "false" then
-# the scan is done in cross partition mode.
-# If "ischema" is true, then special handling is done for dealing with schema
 def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
     """Check differences between the reference provision and the upgraded one.
+
+    It looks for all objects which base DN is name. If ischema is "false" then
+    the scan is done in cross partition mode.
+    If "ischema" is true, then special handling is done for dealing with schema
 
     This function will also add the missing object and update existing object to add
     or remove attributes that were missing.
@@ -625,7 +623,8 @@ def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
         sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
 
     sam_ldb.transaction_start()
-
+    # XXX: This needs to be wrapped in try/except so we
+    # abort on exceptions.
     message(SIMPLE,"There are %d missing objects"%(len(listMissing)))
     add_missing_entries(newsam_ldb,sam_ldb,names,basedn,listMissing)
     changed = 0
@@ -652,15 +651,14 @@ def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
             if att == "name":
                 delta.remove(att)
                 continue
-            if handle_security_desc(ischema,att,msgElt,hashallSD,current,reference) == 0:
+            if not handle_security_desc(ischema,att,msgElt,hashallSD,current,reference):
                 delta.remove(att)
                 continue
             if (not hashOverwrittenAtt.has_key(att) or not (hashOverwrittenAtt.get(att)&2^msgElt.flags())):
                 if  hashOverwrittenAtt.has_key(att) and hashOverwrittenAtt.get(att)==never:
                     delta.remove(att)
                     continue
-                if  handle_special_case(att,delta,reference,current,ischema)==0 and msgElt.flags()!=FLAG_MOD_ADD:
-                    i = 0
+                if not handle_special_case(att,delta,reference,current,ischema) and msgElt.flags()!=FLAG_MOD_ADD:
                     if opts.debugchange or opts.debugall:
                         try:
                             dump_denied_change(dn,att,messageEltFlagToString(msgElt.flags()),current[0][att],reference[0][att])
@@ -677,6 +675,7 @@ def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
     sam_ldb.transaction_commit()
     message(SIMPLE,"There are %d changed objects"%(changed))
     return hashallSD
+
 
 def check_updated_sd(newpaths, paths, creds, session, names):
     """Check if the security descriptor in the upgraded provision are the same as the reference
@@ -702,6 +701,7 @@ def check_updated_sd(newpaths, paths, creds, session, names):
             if sddl != hash_new[key]:
                 print "%s new sddl/sddl in ref"%key
                 print "%s\n%s"%(sddl,hash_new[key])
+
 
 def update_sd(paths, creds, session, names):
     """Update security descriptor of the current provision
@@ -760,6 +760,8 @@ def update_sd(paths, creds, session, names):
             delta["whenCreated"] = MessageElement(hash[key], FLAG_MOD_REPLACE, "whenCreated" )
             sam_ldb.modify(delta,["recalculate_sd:0"])
         except:
+            # XXX: We should always catch an explicit exception.
+            # What could go wrong here?
             sam_ldb.transaction_cancel()
             res = sam_ldb.search(expression="objectClass=*", base=str(names.rootdn), scope=SCOPE_SUBTREE,\
                                  attrs=["dn","nTSecurityDescriptor"], controls=["search_options:1:2"])
@@ -788,24 +790,26 @@ def update_basesamdb(newpaths, paths, names):
         os.mkdir(samldbdir)
         os.chmod(samldbdir,0700)
     if os.path.isfile(schemaldb):
-        shutil.copy(schemaldb,os.path.join(samldbdir,"%s.ldb"%str(names.schemadn).upper()))
+        shutil.copy(schemaldb, os.path.join(samldbdir, "%s.ldb"%str(names.schemadn).upper()))
         os.remove(schemaldb)
     if os.path.isfile(usersldb):
-        shutil.copy(usersldb,os.path.join(samldbdir,"%s.ldb"%str(names.rootdn).upper()))
+        shutil.copy(usersldb, os.path.join(samldbdir, "%s.ldb"%str(names.rootdn).upper()))
         os.remove(usersldb)
     if os.path.isfile(configldb):
-        shutil.copy(configldb,os.path.join(samldbdir,"%s.ldb"%str(names.configdn).upper()))
+        shutil.copy(configldb, os.path.join(samldbdir, "%s.ldb"%str(names.configdn).upper()))
         os.remove(configldb)
+
 
 def update_privilege(newpaths, paths):
     """Update the privilege database
 
     :param newpaths: List of paths for different provision objects from the reference provision
     :param paths: List of paths for different provision objects from the upgraded provision"""
-    message(SIMPLE,"Copy privilege")
-    shutil.copy(os.path.join(newpaths.private_dir,"privilege.ldb"),os.path.join(paths.private_dir,"privilege.ldb"))
+    message(SIMPLE, "Copy privilege")
+    shutil.copy(os.path.join(newpaths.private_dir, "privilege.ldb"), 
+                os.path.join(paths.private_dir, "privilege.ldb"))
 
-# For each partition check the differences
+
 def update_samdb(newpaths, paths, creds, session, names):
     """Upgrade the SAM DB contents for all the provision
 
@@ -821,6 +825,7 @@ def update_samdb(newpaths, paths, creds, session, names):
     message(SIMPLE,"Scanning whole provision for updates and additions")
     hashSD = check_diff_name(newpaths,paths,creds,session,str(names.rootdn),names,0)
     message(SIMPLE,"Done with scanning")
+
 
 def update_machine_account_password(paths, creds, session, names):
     """Update (change) the password of the current DC both in the SAM db and in secret one
@@ -864,12 +869,12 @@ def update_machine_account_password(paths, creds, session, names):
     else:
         secrets_ldb.transaction_cancel()
 
+
 def setup_path(file):
     return os.path.join(setup_dir, file)
 
-cmd = os.environ["_"]
-m = re.match('(^|.*/)pydoc$',cmd)
-if not m:
+
+if __name__ == '__main__':
     # From here start the big steps of the program
     # First get files paths
     paths=get_paths(param,smbconf=smbconf)
@@ -892,7 +897,7 @@ if not m:
     populate_backlink(newpaths, creds, session,names.schemadn)
     populate_dnsyntax(newpaths, creds, session,names.schemadn)
     # Check the difference
-    update_basesamdb(newpaths, paths,names)
+    update_basesamdb(newpaths, paths, names)
 
     if opts.full:
         update_samdb(newpaths, paths, creds, session, names)
@@ -902,10 +907,10 @@ if not m:
     # SD should be created with admin but as some previous acl were so wrong that admin can't modify them we have first
     # to recreate them with the good form but with system account and then give the ownership to admin ...
     admin_session_info = admin_session(lp, str(names.domainsid))
-    message(SIMPLE,"Updating SD")
+    message(SIMPLE, "Updating SD")
     update_sd(paths, creds, session,names)
     update_sd(paths, creds, admin_session_info, names)
     check_updated_sd(newpaths, paths, creds, session, names)
-    message(SIMPLE,"Upgrade finished !")
+    message(SIMPLE, "Upgrade finished !")
     # remove reference provision now that everything is done !
     shutil.rmtree(provisiondir)

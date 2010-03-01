@@ -193,6 +193,7 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
         dom_for_fun_level=names.domainlevel,
         ldap_dryrun_mode=None,useeadb=True)
 
+
 def dn_sort(x,y):
     """Sorts two DNs in the lexicographical order it and put higher level DN before.
 
@@ -203,25 +204,18 @@ def dn_sort(x,y):
     p = re.compile(r'(?<!\\),')
     tab1 = p.split(str(x))
     tab2 = p.split(str(y))
-    min = 0
-    if (len(tab1) > len(tab2)):
-        min = len(tab2)
-    elif (len(tab1) < len(tab2)):
-        min = len(tab1)
-    else:
-        min = len(tab1)
-    len1=len(tab1)-1
-    len2=len(tab2)-1
-    space = " "
+    minimum = min(len(tab1), len(tab2))
+    len1 = len(tab1)-1
+    len2 = len(tab2)-1
     # Note: python range go up to upper limit but do not include it
-    for i in range(0,min):
-        ret=cmp(tab1[len1-i],tab2[len2-i])
-        if(ret != 0):
+    for i in range(0,minimum):
+        ret = cmp(tab1[len1-i],tab2[len2-i])
+        if ret != 0:
             return ret
         else:
-            if(i==min-1):
-                assert len1!=len2,"PB PB PB"+space.join(tab1)+" / "+space.join(tab2)
-                if(len1>len2):
+            if i == minimum-1:
+                assert len1!=len2,"PB PB PB"+" ".join(tab1)+" / "+" ".join(tab2)
+                if len1 > len2:
                     return 1
                 else:
                     return -1
