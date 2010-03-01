@@ -1267,6 +1267,29 @@ static BOOL test_DeletePrinterDataEx(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_DeletePrinterKey(struct torture_context *tctx,
+				  LPSTR servername,
+				  LPSTR keyname,
+				  HANDLE handle)
+{
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing DeletePrinterKey(%s)", keyname);
+
+	err = DeletePrinterKey(handle, keyname);
+	if (err) {
+		sprintf(tmp, "DeletePrinterKey(%s) failed on [%s], error: %s\n",
+			keyname, servername, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_PrinterData(struct torture_context *tctx,
 			     LPSTR servername,
 			     HANDLE handle)
