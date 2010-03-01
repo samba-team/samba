@@ -48,7 +48,6 @@ bool yield_connection(connection_struct *conn, const char *name)
 }
 
 struct count_stat {
-	pid_t mypid;
 	int curr_connections;
 	const char *name;
 	bool Clear;
@@ -99,7 +98,6 @@ int count_current_connections( const char *sharename, bool clear  )
 {
 	struct count_stat cs;
 
-	cs.mypid = sys_getpid();
 	cs.curr_connections = 0;
 	cs.name = sharename;
 	cs.Clear = clear;
