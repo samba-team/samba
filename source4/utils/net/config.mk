@@ -42,8 +42,7 @@ net_OBJ_FILES = $(addprefix $(utilssrcdir)/net/,  \
 		net_machinepw.o \
 		net_password.o \
 		net_join.o \
-		net_vampire.o \
-		net_user.o)
+		net_vampire.o)
 
 
 $(eval $(call proto_header_template,$(utilssrcdir)/net/net_proto.h,$(net_OBJ_FILES:.o=.c)))

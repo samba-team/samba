@@ -183,11 +183,81 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 static const char py_net_time_doc[] = "time(server_name) -> timestr\n"
 "Retrieve the remote time on a server";
 
+static PyObject *py_net_user_create(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "username", NULL };
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_CreateUser r;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", discard_const_p(char *, kwnames), 
+									 &r.in.user_name))
+		return NULL;
+
+	r.in.domain_name = cli_credentials_get_domain(self->libnet_ctx->cred);
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = libnet_CreateUser(self->libnet_ctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+	
+	Py_RETURN_NONE;
+}
+
+static const char py_net_create_user_doc[] = "create_user(username)\n"
+"Create a new user.";
+
+static PyObject *py_net_user_delete(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "username", NULL };
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_DeleteUser r;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", discard_const_p(char *, kwnames), 
+									 &r.in.user_name))
+		return NULL;
+
+	r.in.domain_name = cli_credentials_get_domain(self->libnet_ctx->cred);
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = libnet_DeleteUser(self->libnet_ctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+	
+	Py_RETURN_NONE;
+}
+
+static const char py_net_delete_user_doc[] = "delete_user(username)\n"
+"Delete a user.";
+
 static PyMethodDef net_obj_methods[] = {
 	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
 	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
 	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
+	{"create_user", (PyCFunction)py_net_user_create, METH_VARARGS|METH_KEYWORDS, py_net_create_user_doc},
+	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},
 	{ NULL }
 };
 
