@@ -110,8 +110,6 @@ bool become_gid_done = false;
 connection_struct *last_conn = NULL;
 uint16_t last_flags = 0;
 
-struct db_context *session_db_ctx_ptr = NULL;
-
 uint32_t global_client_caps = 0;
 
 uint16_t fnf_handle = 257;

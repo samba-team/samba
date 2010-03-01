@@ -1233,8 +1233,9 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	if (!session_init())
+	if (!sessionid_init()) {
 		exit(1);
+	}
 
 	if (!connections_init(True))
 		exit(1);

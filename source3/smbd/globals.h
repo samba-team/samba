@@ -114,8 +114,6 @@ extern bool become_gid_done;
 extern connection_struct *last_conn;
 extern uint16_t last_flags;
 
-extern struct db_context *session_db_ctx_ptr;
-
 extern uint32_t global_client_caps;
 
 extern uint16_t fnf_handle;

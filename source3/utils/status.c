@@ -251,30 +251,26 @@ static int traverse_fn1(const struct connections_key *key,
 	return 0;
 }
 
-static int traverse_sessionid(struct db_record *db, void *state)
+static int traverse_sessionid(const char *key, struct sessionid *session,
+			      void *private_data)
 {
-	struct sessionid sessionid;
 	fstring uid_str, gid_str;
 
-	if (db->value.dsize != sizeof(sessionid))
-		return 0;
-
-	memcpy(&sessionid, db->value.dptr, sizeof(sessionid));
-
-	if (!process_exists(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
+	if (!process_exists(session->pid)
+	    || !Ucrit_checkUid(session->uid)) {
 		return 0;
 	}
 
-	Ucrit_addPid( sessionid.pid );
+	Ucrit_addPid(session->pid);
 
-	fstr_sprintf(uid_str, "%u", (unsigned int)sessionid.uid);
-	fstr_sprintf(gid_str, "%u", (unsigned int)sessionid.gid);
+	fstr_sprintf(uid_str, "%u", (unsigned int)session->uid);
+	fstr_sprintf(gid_str, "%u", (unsigned int)session->gid);
 
 	d_printf("%-7s   %-12s  %-12s  %-12s (%s)\n",
-		 procid_str_static(&sessionid.pid),
-		 numeric_only ? uid_str : uidtoname(sessionid.uid),
-		 numeric_only ? gid_str : gidtoname(sessionid.gid), 
-		 sessionid.remote_machine, sessionid.hostname);
+		 procid_str_static(&session->pid),
+		 numeric_only ? uid_str : uidtoname(session->uid),
+		 numeric_only ? gid_str : gidtoname(session->gid),
+		 session->remote_machine, session->hostname);
 
 	return 0;
 }
@@ -411,23 +407,15 @@ static int traverse_sessionid(struct db_record *db, void *state)
 	}
 
 	if ( show_processes ) {
-		struct db_context *db;
-		db = db_open(NULL, lock_path("sessionid.tdb"), 0,
-			     TDB_CLEAR_IF_FIRST, O_RDONLY, 0644);
-		if (!db) {
-			d_printf("sessionid.tdb not initialised\n");
-		} else {
-			d_printf("\nSamba version %s\n",samba_version_string());
-			d_printf("PID     Username      Group         Machine                        \n");
-			d_printf("-------------------------------------------------------------------\n");
-			if (lp_security() == SEC_SHARE) {
-				d_printf(" <processes do not show up in "
-				    "anonymous mode>\n");
-			}
-
-			db->traverse_read(db, traverse_sessionid, NULL);
-			TALLOC_FREE(db);
+		d_printf("\nSamba version %s\n",samba_version_string());
+		d_printf("PID     Username      Group         Machine                        \n");
+		d_printf("-------------------------------------------------------------------\n");
+		if (lp_security() == SEC_SHARE) {
+			d_printf(" <processes do not show up in "
+				 "anonymous mode>\n");
 		}
+
+		sessionid_traverse_read(traverse_sessionid, NULL);
 
 		if (processes_only) {
 			goto done;

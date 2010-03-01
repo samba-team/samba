@@ -7007,6 +7007,19 @@ bool session_claim(user_struct *vuser);
 void session_yield(user_struct *vuser);
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 
+/* The following definitions come from lib/sessionid_tdb.c  */
+
+bool sessionid_init(void);
+struct db_record *sessionid_fetch_record(TALLOC_CTX *mem_ctx, const char *key);
+int sessionid_traverse(int (*fn)(struct db_record *rec, const char *key,
+				 struct sessionid *session,
+				 void *private_data),
+		       void *private_data);
+int sessionid_traverse_read(int (*fn)(const char *key,
+				      struct sessionid *session,
+				      void *private_data),
+			    void *private_data);
+
 /* The following definitions come from smbd/sesssetup.c  */
 
 NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,

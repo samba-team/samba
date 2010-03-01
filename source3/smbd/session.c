@@ -30,42 +30,17 @@
 #include "smbd/globals.h"
 
 /********************************************************************
-********************************************************************/
-
-static struct db_context *session_db_ctx(void)
-{
-	if (session_db_ctx_ptr)
-		return session_db_ctx_ptr;
-
-	session_db_ctx_ptr = db_open(NULL, lock_path("sessionid.tdb"), 0,
-				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
-				     O_RDWR | O_CREAT, 0644);
-	return session_db_ctx_ptr;
-}
-
-bool session_init(void)
-{
-	if (session_db_ctx() == NULL) {
-		DEBUG(1,("session_init: failed to open sessionid tdb\n"));
-		return False;
-	}
-
-	return True;
-}
-
-/********************************************************************
  called when a session is created
 ********************************************************************/
 
 bool session_claim(user_struct *vuser)
 {
-	TDB_DATA key, data;
+	TDB_DATA data;
 	int i = 0;
 	struct sessionid sessionid;
 	struct server_id pid = procid_self();
 	fstring keystr;
 	const char * hostname;
-	struct db_context *ctx;
 	struct db_record *rec;
 	NTSTATUS status;
 	char addr[INET6_ADDRSTRLEN];
@@ -78,7 +53,7 @@ bool session_claim(user_struct *vuser)
 		return True;
 	}
 
-	if (!(ctx = session_db_ctx())) {
+	if (!sessionid_init()) {
 		return False;
 	}
 
@@ -98,10 +73,8 @@ bool session_claim(user_struct *vuser)
 			struct server_id sess_pid;
 
 			snprintf(keystr, sizeof(keystr), "ID/%d", i);
-			key = string_term_tdb_data(keystr);
 
-			rec = ctx->fetch_locked(ctx, NULL, key);
-
+			rec = sessionid_fetch_record(NULL, keystr);
 			if (rec == NULL) {
 				DEBUG(1, ("Could not lock \"%s\"\n", keystr));
 				return False;
@@ -139,10 +112,8 @@ bool session_claim(user_struct *vuser)
 	{
 		snprintf(keystr, sizeof(keystr), "ID/%s/%u",
 			 procid_str_static(&pid), vuser->vuid);
-		key = string_term_tdb_data(keystr);
 
-		rec = ctx->fetch_locked(ctx, NULL, key);
-
+		rec = sessionid_fetch_record(NULL, keystr);
 		if (rec == NULL) {
 			DEBUG(1, ("Could not lock \"%s\"\n", keystr));
 			return False;
@@ -219,20 +190,15 @@ bool session_claim(user_struct *vuser)
 
 void session_yield(user_struct *vuser)
 {
-	TDB_DATA key;
 	struct sessionid sessionid;
-	struct db_context *ctx;
 	struct db_record *rec;
-
-	if (!(ctx = session_db_ctx())) return;
 
 	if (!vuser->session_keystr) {
 		return;
 	}
 
-	key = string_term_tdb_data(vuser->session_keystr);
-
-	if (!(rec = ctx->fetch_locked(ctx, NULL, key))) {
+	rec = sessionid_fetch_record(NULL, vuser->session_keystr);
+	if (rec == NULL) {
 		return;
 	}
 
@@ -258,35 +224,16 @@ void session_yield(user_struct *vuser)
 /********************************************************************
 ********************************************************************/
 
-static bool session_traverse(int (*fn)(struct db_record *db,
-				       void *private_data),
-			     void *private_data)
-{
-	struct db_context *ctx;
-
-	if (!(ctx = session_db_ctx())) {
-		DEBUG(3, ("No tdb opened\n"));
-		return False;
-	}
-
-	ctx->traverse_read(ctx, fn, private_data);
-	return True;
-}
-
-/********************************************************************
-********************************************************************/
-
 struct session_list {
 	TALLOC_CTX *mem_ctx;
 	int count;
 	struct sessionid *sessions;
 };
 
-static int gather_sessioninfo(struct db_record *rec, void *state)
+static int gather_sessioninfo(const char *key, struct sessionid *session,
+			      void *private_data)
 {
-	struct session_list *sesslist = (struct session_list *) state;
-	const struct sessionid *current =
-		(const struct sessionid *) rec->value.dptr;
+	struct session_list *sesslist = (struct session_list *)private_data;
 
 	sesslist->sessions = TALLOC_REALLOC_ARRAY(
 		sesslist->mem_ctx, sesslist->sessions, struct sessionid,
@@ -297,13 +244,13 @@ static int gather_sessioninfo(struct db_record *rec, void *state)
 		return -1;
 	}
 
-	memcpy(&sesslist->sessions[sesslist->count], current,
+	memcpy(&sesslist->sessions[sesslist->count], session,
 	       sizeof(struct sessionid));
 
 	sesslist->count++;
 
-	DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
-		 current->username, current->remote_machine));
+	DEBUG(7, ("gather_sessioninfo session from %s@%s\n",
+		  session->username, session->remote_machine));
 
 	return 0;
 }
@@ -314,12 +261,14 @@ static int gather_sessioninfo(struct db_record *rec, void *state)
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list)
 {
 	struct session_list sesslist;
+	int ret;
 
 	sesslist.mem_ctx = mem_ctx;
 	sesslist.count = 0;
 	sesslist.sessions = NULL;
-	
-	if (!session_traverse(gather_sessioninfo, (void *) &sesslist)) {
+
+	ret = sessionid_traverse_read(gather_sessioninfo, (void *) &sesslist);
+	if (ret == -1) {
 		DEBUG(3, ("Session traverse failed\n"));
 		SAFE_FREE(sesslist.sessions);
 		*session_list = NULL;
