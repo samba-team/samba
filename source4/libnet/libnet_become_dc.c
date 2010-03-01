@@ -1860,7 +1860,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		i++;
 	}
 
-	/* objectClass: nTDSDSA or nTDSDSARO*/
+	/* objectClass: nTDSDSA */
 	{
 		struct drsuapi_DsAttributeValue *vs;
 		DATA_BLOB *vd;
