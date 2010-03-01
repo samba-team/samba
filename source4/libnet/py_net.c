@@ -90,11 +90,11 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 
 	talloc_free(mem_ctx);
 
-	if (result == NULL)
-		return NULL;
-
 	return result;
 }
+
+static const char py_net_join_doc[] = "join(domain_name, netbios_name, join_type, level) -> (join_password, domain_sid, domain_name)\n\n" \
+"Join the domain with the specified name.";
 
 static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kwargs)
 {
@@ -109,7 +109,7 @@ static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kw
 
 	r.generic.level = LIBNET_SET_PASSWORD_GENERIC;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sssO:SetPassword", discard_const_p(char *, kwnames),
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sssO:set_password", discard_const_p(char *, kwnames),
 					 &r.generic.in.account_name, &r.generic.in.domain_name,
 					 &r.generic.in.newpassword, &py_creds)) {
 		return NULL;
@@ -135,28 +135,72 @@ static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kw
 		return NULL;
 	}
 
+	talloc_free(mem_ctx);
+
 	Py_RETURN_NONE;
 }
 
-static const char py_net_join_doc[] = "join(domain_name, netbios_name, join_type, level) -> (join_password, domain_sid, domain_name)\n\n" \
-"Join the domain with the specified name.";
-
-static const char py_net_set_password_doc[] = "SetPassword(account_name, domain_name, newpassword) -> True\n\n" \
+static const char py_net_set_password_doc[] = "set_password(account_name, domain_name, newpassword) -> True\n\n" \
 "Set password for a user. You must supply credential with enough rights to do this.\n\n" \
 "Sample usage is:\n" \
 "creds = samba.credentials.Credentials()\n" \
 "creds.set_username('admin_user')\n" \
 "creds.set_domain('domain_name')\n" \
 "creds.set_password('pass')\n\n" \
-"net.SetPassword(account_name=<account_name>,\n" \
+"net.set_password(account_name=<account_name>,\n" \
 "                domain_name=creds.get_domain(),\n" \
 "                newpassword=new_pass,\n" \
 "                credentials=creds)\n";
 
 
+static PyObject *py_net_export_keytab(PyObject *cls, PyObject *args, PyObject *kwargs)
+{
+	struct libnet_export_keytab r;
+	struct tevent_context *ev;
+	TALLOC_CTX *mem_ctx;
+	const char *kwnames[] = { "keytab", "creds", NULL };
+	struct libnet_context *libnet_ctx;
+	PyObject *py_creds;
+	struct cli_credentials *creds;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO:export_keytab", discard_const_p(char *, kwnames),
+					 &r.in.keytab_name, &py_creds)) {
+		return NULL;
+	}
+
+	creds = cli_credentials_from_py_object(py_creds);
+	if (creds == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
+		return NULL;
+	}
+
+	/* FIXME: we really need to get a context from the caller or we may end
+	 * up with 2 event contexts */
+	ev = s4_event_context_init(NULL);
+	mem_ctx = talloc_new(ev);
+
+	libnet_ctx = py_net_ctx(cls, ev, creds);
+
+	status = libnet_export_keytab(libnet_ctx, mem_ctx, &r);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+
+	Py_RETURN_NONE;
+}
+
+static const char py_net_export_keytab_doc[] = "export_keytab(keytab, name)\n\n"
+"Export the DC keytab to a keytab file.";
+
 static struct PyMethodDef net_methods[] = {
-	{"Join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
-	{"SetPassword", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
+	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
+	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
+	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
 	{NULL }
 };
 
@@ -164,4 +208,3 @@ void initnet(void)
 {
 	Py_InitModule3("net", net_methods, NULL);
 }
-

@@ -147,3 +147,5 @@ from samba.netcmd.netacl import cmd_acl
 commands["acl"] = cmd_acl()
 from samba.netcmd.fsmo import cmd_fsmo
 commands["fsmo"] = cmd_fsmo()
+from samba.netcmd.export import cmd_export
+commands["export"] = cmd_export()
