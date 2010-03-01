@@ -79,6 +79,7 @@ EOF
 cat << EOF  > ${BATCHFILE_MAIN}
 set height 1000
 bt full
+info locals
 quit
 EOF
 	${DB_BIN} -x "${BATCHFILE_MAIN}" "${BINARY}" "${PID}"
