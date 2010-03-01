@@ -38,3 +38,8 @@ PYFLAKES = pyflakes
 
 pyflakes::
 	$(PYFLAKES) $(pyscriptsrcdir)/samba
+
+PYLINT = pylint
+
+pylint:: pythonmods
+	PYTHONPATH=$(pyscriptsrcdir) $(PYLINT) -f parseable samba
