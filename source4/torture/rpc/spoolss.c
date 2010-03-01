@@ -2893,7 +2893,8 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 				  const char *key_name,
 				  const char *value_name,
 				  enum winreg_Type *type_p,
-				  union spoolss_PrinterData *data_p)
+				  union spoolss_PrinterData *data_p,
+				  uint32_t *needed_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
@@ -2940,6 +2941,10 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 		*data_p = data;
 	}
 
+	if (needed_p) {
+		*needed_p = needed;
+	}
+
 	return true;
 }
 
@@ -2970,7 +2975,7 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 
 		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, list[i], &type, &data),
 			talloc_asprintf(tctx, "GetPrinterData failed on %s\n", list[i]));
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "random_string", list[i], &type_ex, &data_ex),
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "random_string", list[i], &type_ex, &data_ex, NULL),
 			talloc_asprintf(tctx, "GetPrinterDataEx failed on %s\n", list[i]));
 		torture_assert_int_equal(tctx, type, type_ex, "type mismatch");
 		switch (type) {
@@ -3041,7 +3046,7 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name, NULL, NULL),
 			talloc_asprintf(tctx, "failed to call GetPrinterData for %s\n", r.out.value_name));
 
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name, NULL, NULL),
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name, NULL, NULL, NULL),
 			talloc_asprintf(tctx, "failed to call GetPrinterDataEx on PrinterDriverData for %s\n", r.out.value_name));
 
 		r.in.enum_index++;
@@ -3296,7 +3301,7 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 
 		key = talloc_strdup(tctx, r.in.key_name);
 
-		if (!test_GetPrinterDataEx(tctx, p, handle, r.in.key_name, value_name, &type, &data)) {
+		if (!test_GetPrinterDataEx(tctx, p, handle, r.in.key_name, value_name, &type, &data, NULL)) {
 			return false;
 		}
 
@@ -3388,7 +3393,7 @@ static bool test_GetChangeID_PrinterDataEx(struct torture_context *tctx,
 	union spoolss_PrinterData data;
 
 	torture_assert(tctx,
-		test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", "ChangeID", &type, &data),
+		test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", "ChangeID", &type, &data, NULL),
 		"failed to call GetPrinterData");
 
 	torture_assert(tctx, type == REG_DWORD, "unexpected type");
