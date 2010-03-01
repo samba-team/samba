@@ -313,7 +313,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		return NULL;
 	}
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		return NULL;
@@ -395,7 +395,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 		return NULL;
 	}
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		return NULL;

@@ -206,13 +206,14 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oi", &py_lp_ctx, &all_interfaces))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	tmp_ctx = talloc_new(NULL);
+
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
-
-	tmp_ctx = talloc_new(NULL);
 
 	load_interfaces(tmp_ctx, lp_interfaces(lp_ctx), &ifaces);
 

@@ -25,31 +25,21 @@
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 #include "param/param.h"
+#include "param/pyparam.h"
 
-/* FIXME: This prototype should be in param/pyparam.h */
-struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx);
+typedef struct {
+	PyObject_HEAD
+	struct libnet_context *libnet_ctx;
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev;
+} py_net_Object;
 
-static struct libnet_context *py_net_ctx(PyObject *obj, struct tevent_context *ev, struct cli_credentials *creds)
-{
-/* FIXME: Use obj */
-	struct libnet_context *libnet;
-	libnet = libnet_context_init(ev, py_default_loadparm_context(NULL));
-	if (!libnet) {
-		return NULL;
-	}
-	libnet->cred = creds;
-	return libnet;
-}
-
-static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
+static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_Join r;
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
-	struct tevent_context *ev;
-	struct libnet_context *libnet_ctx;
-	struct cli_credentials *creds;
 	PyObject *py_creds;	
 	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", "credentials", NULL };
 
@@ -58,26 +48,9 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 					 &r.in.join_type, &r.in.level, &py_creds))
 		return NULL;
 
-	/* FIXME: we really need to get a context from the caller or we may end
-	 * up with 2 event contexts */
-	ev = s4_event_context_init(NULL);
-	mem_ctx = talloc_new(ev);
+	mem_ctx = talloc_new(self->mem_ctx);
 
-	creds = cli_credentials_from_py_object(py_creds);
-	if (creds == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	libnet_ctx = py_net_ctx(cls, ev, creds);
-	if (libnet_ctx == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "Unable to initialize libnet");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	status = libnet_Join(libnet_ctx, mem_ctx, &r);
+	status = libnet_Join(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
 		talloc_free(mem_ctx);
@@ -96,15 +69,13 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 static const char py_net_join_doc[] = "join(domain_name, netbios_name, join_type, level) -> (join_password, domain_sid, domain_name)\n\n" \
 "Join the domain with the specified name.";
 
-static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kwargs)
+static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	union libnet_SetPassword r;
 	NTSTATUS status;
 	PyObject *py_creds;
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
-	struct libnet_context *libnet_ctx;
-	struct cli_credentials *creds;
 	const char *kwnames[] = { "account_name", "domain_name", "newpassword", "credentials", NULL };
 
 	r.generic.level = LIBNET_SET_PASSWORD_GENERIC;
@@ -120,15 +91,7 @@ static PyObject *py_net_set_password(PyObject *cls, PyObject *args, PyObject *kw
 	ev = s4_event_context_init(NULL);
 	mem_ctx = talloc_new(ev);
 
-	creds = cli_credentials_from_py_object(py_creds);
-	if (creds == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
-		return NULL;
-	}
-
-	libnet_ctx = py_net_ctx(cls, ev, creds);
-
-	status = libnet_SetPassword(libnet_ctx, mem_ctx, &r);
+	status = libnet_SetPassword(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetString(PyExc_RuntimeError, r.generic.out.error_string);
 		talloc_free(mem_ctx);
@@ -153,15 +116,12 @@ static const char py_net_set_password_doc[] = "set_password(account_name, domain
 "                credentials=creds)\n";
 
 
-static PyObject *py_net_export_keytab(PyObject *cls, PyObject *args, PyObject *kwargs)
+static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_export_keytab r;
-	struct tevent_context *ev;
 	TALLOC_CTX *mem_ctx;
 	const char *kwnames[] = { "keytab", "creds", NULL };
-	struct libnet_context *libnet_ctx;
 	PyObject *py_creds;
-	struct cli_credentials *creds;
 	NTSTATUS status;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO:export_keytab", discard_const_p(char *, kwnames),
@@ -169,20 +129,9 @@ static PyObject *py_net_export_keytab(PyObject *cls, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	creds = cli_credentials_from_py_object(py_creds);
-	if (creds == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
-		return NULL;
-	}
+	mem_ctx = talloc_new(self->mem_ctx);
 
-	/* FIXME: we really need to get a context from the caller or we may end
-	 * up with 2 event contexts */
-	ev = s4_event_context_init(NULL);
-	mem_ctx = talloc_new(ev);
-
-	libnet_ctx = py_net_ctx(cls, ev, creds);
-
-	status = libnet_export_keytab(libnet_ctx, mem_ctx, &r);
+	status = libnet_export_keytab(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
 		talloc_free(mem_ctx);
@@ -197,14 +146,79 @@ static PyObject *py_net_export_keytab(PyObject *cls, PyObject *args, PyObject *k
 static const char py_net_export_keytab_doc[] = "export_keytab(keytab, name)\n\n"
 "Export the DC keytab to a keytab file.";
 
-static struct PyMethodDef net_methods[] = {
+static PyMethodDef net_obj_methods[] = {
 	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
 	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
-	{NULL }
+	{ NULL }
+};
+
+static void py_net_dealloc(py_net_Object *self)
+{
+	talloc_free(self->mem_ctx);
+}
+
+static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	PyObject *py_creds, *py_lp = Py_None;
+	const char *kwnames[] = { "creds", "lp", NULL };
+	py_net_Object *ret;
+	struct loadparm_context *lp;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", 
+			discard_const_p(char *, kwnames), &py_creds, &py_lp))
+		return NULL;
+
+	ret = PyObject_New(py_net_Object, type);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	/* FIXME: we really need to get a context from the caller or we may end
+	 * up with 2 event contexts */
+	ret->ev = s4_event_context_init(NULL);
+	ret->mem_ctx = talloc_new(ret->ev);
+
+	lp = lp_from_py_object(ret->mem_ctx, py_lp);
+	if (lp == NULL) {
+		Py_DECREF(ret);
+		return NULL;
+	}
+
+	ret->libnet_ctx = libnet_context_init(ret->ev, lp);
+	if (ret->libnet_ctx == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Unable to initialize net");
+		Py_DECREF(ret);
+		return NULL;
+	}
+
+	ret->libnet_ctx->cred = cli_credentials_from_py_object(py_creds);
+	if (ret->libnet_ctx->cred == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
+		Py_DECREF(ret);
+		return NULL;
+	}
+
+	return (PyObject *)ret;
+}
+
+
+PyTypeObject py_net_Type = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "net.Net",
+	.tp_basicsize = sizeof(py_net_Object),
+	.tp_dealloc = (destructor)py_net_dealloc,
+	.tp_methods = net_obj_methods,
+	.tp_new = net_obj_new,
 };
 
 void initnet(void)
 {
-	Py_InitModule3("net", net_methods, NULL);
+	PyObject *m;
+	m = Py_InitModule3("net", NULL, NULL);
+	if (m == NULL)
+		return;
+
+	Py_INCREF(&py_net_Type);
+	PyModule_AddObject(m, "Net", (PyObject *)&py_net_Type);
 }

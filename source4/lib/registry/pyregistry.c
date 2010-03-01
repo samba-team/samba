@@ -276,7 +276,7 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 					 &py_credentials))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		return NULL;
@@ -347,7 +347,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 					 &py_credentials, &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		return NULL;

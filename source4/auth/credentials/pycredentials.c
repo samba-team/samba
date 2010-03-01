@@ -197,14 +197,18 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
 	struct loadparm_context *lp_ctx;
+	struct cli_credentials *creds;
+
+	creds = PyCredentials_AsCliCredentials(self);
+
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) 
 		return NULL;
 
-	cli_credentials_guess(PyCredentials_AsCliCredentials(self), lp_ctx);
+	cli_credentials_guess(creds, lp_ctx);
 
 	Py_RETURN_NONE;
 }
@@ -214,14 +218,18 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	PyObject *py_lp_ctx = Py_None;
 	struct loadparm_context *lp_ctx;
 	NTSTATUS status;
+	struct cli_credentials *creds;
+
+	creds = PyCredentials_AsCliCredentials(self);
+
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) 
 		return NULL;
 
-	status = cli_credentials_set_machine_account(PyCredentials_AsCliCredentials(self), lp_ctx);
+	status = cli_credentials_set_machine_account(creds, lp_ctx);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
@@ -255,17 +263,20 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 	struct tevent_context *event_ctx;
 	int ret;
 	const char *error_string;
+	struct cli_credentials *creds;
+
+	creds = PyCredentials_AsCliCredentials(self);
 
 	if (!PyArg_ParseTuple(args, "|Os", &py_lp_ctx, &ccache_name))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) 
 		return NULL;
 
 	event_ctx = tevent_context_init(NULL);
 
-	ret = cli_credentials_get_named_ccache(PyCredentials_AsCliCredentials(self), event_ctx, lp_ctx,
+	ret = cli_credentials_get_named_ccache(creds, event_ctx, lp_ctx,
 					       ccache_name, &ccc, &error_string);
 	if (ret == 0) {
 		talloc_steal(ccc, event_ctx);

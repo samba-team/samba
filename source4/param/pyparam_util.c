@@ -25,12 +25,12 @@
 
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_type(obj, struct loadparm_context)
 
-_PUBLIC_ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
+_PUBLIC_ struct loadparm_context *lp_from_py_object(TALLOC_CTX *mem_ctx, PyObject *py_obj)
 {
     struct loadparm_context *lp_ctx;
 
     if (PyString_Check(py_obj)) {
-        lp_ctx = loadparm_init(NULL);
+        lp_ctx = loadparm_init(mem_ctx);
         if (!lp_load(lp_ctx, PyString_AsString(py_obj))) {
             talloc_free(lp_ctx);
 			PyErr_Format(PyExc_RuntimeError, "Unable to load %s", 
@@ -41,7 +41,7 @@ _PUBLIC_ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
     }
 
     if (py_obj == Py_None) {
-        lp_ctx = loadparm_init(NULL);
+        lp_ctx = loadparm_init(mem_ctx);
 		/* We're not checking that loading the file succeeded *on purpose */
         lp_load_default(lp_ctx);
         return lp_ctx;
