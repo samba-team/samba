@@ -1416,7 +1416,15 @@ int main(int argc, char *argv[])
 	int i;
 
 	if (argc < 2) {
-		fprintf(stderr, "usage: %s <servername> [print] [samba3] [architecture=ARCHITECTURE]\n", argv[0]);
+		fprintf(stderr, "usage: %s <name> [print] [samba3] [architecture=ARCHITECTURE]\n\n", argv[0]);
+		fprintf(stderr, "\t<name>           can be a server or printer name URI\n");
+		fprintf(stderr, "\t[print]          will print all data that has been retrieved\n");
+		fprintf(stderr, "\t                 from the printserver\n");
+		fprintf(stderr, "\t[samba3]         will skip some tests samba servers are known\n");
+		fprintf(stderr, "\t                 not to have implemented\n");
+		fprintf(stderr, "\t[architecture=X] allows to define a specific\n");
+		fprintf(stderr, "\t                 architecture to test with. choose between:\n");
+		fprintf(stderr, "\t                 \"Windows NT x86\" or \"Windows x64\"\n");
 		exit(-1);
 	}
 
