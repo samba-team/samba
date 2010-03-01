@@ -3248,25 +3248,46 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 		"torture\\data,ex"
 #endif
 	};
-	int i;
-	DATA_BLOB blob = data_blob_string_const("catfoobar");
+	enum winreg_Type types[] = {
+		REG_SZ,
+		REG_DWORD,
+		REG_BINARY
+	};
+	int i, t;
 
 
 	for (i=0; i < ARRAY_SIZE(keys); i++) {
+	for (t=0; t < ARRAY_SIZE(types); t++) {
 
 		char *c;
 		const char *key;
 		enum winreg_Type type;
+		const char *string = "I have no idea";
+		DATA_BLOB blob = data_blob_string_const("catfoobar");
+		uint32_t value = 12345678;
 		const char **subkeys;
 		union spoolss_PrinterData data;
 
 		r.in.handle = handle;
 		r.in.key_name = keys[i];
 		r.in.value_name = value_name;
-		r.in.type = REG_BINARY;
-		r.in.data.binary = blob;
+		r.in.type = types[t];
 
-		torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s)\n", r.in.key_name, value_name);
+		switch (types[t]) {
+		case REG_BINARY:
+			r.in.data.binary = blob;
+			break;
+		case REG_DWORD:
+			r.in.data.value = value;
+			break;
+		case REG_SZ:
+			r.in.data.string = string;
+			break;
+		default:
+			torture_fail(tctx, talloc_asprintf(tctx, "type %d untested\n", types[t]));
+		}
+
+		torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s) type %d\n", r.in.key_name, value_name, types[t]);
 
 		status = dcerpc_spoolss_SetPrinterDataEx(p, tctx, &r);
 
@@ -3280,7 +3301,20 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 		}
 
 		torture_assert_int_equal(tctx, r.in.type, type, "type mismatch");
-		torture_assert_data_blob_equal(tctx, blob, data.binary, "data mismatch");
+
+		switch (type) {
+		case REG_BINARY:
+			torture_assert_data_blob_equal(tctx, blob, data.binary, "data mismatch");
+			break;
+		case REG_DWORD:
+			torture_assert_int_equal(tctx, value, data.value, "data mismatch");
+			break;
+		case REG_SZ:
+			torture_assert_str_equal(tctx, string, data.string, "data mismatch");
+			break;
+		default:
+			torture_fail(tctx, talloc_asprintf(tctx, "type %d untested\n", type));
+		}
 
 		if (!test_EnumPrinterDataEx(tctx, p, handle, r.in.key_name)) {
 			return false;
@@ -3320,6 +3354,7 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 				return false;
 			}
 		}
+	}
 	}
 
 	return true;
