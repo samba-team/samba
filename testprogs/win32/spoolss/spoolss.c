@@ -1317,9 +1317,9 @@ static BOOL test_SetPrinterDataEx(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL test_PrinterData(struct torture_context *tctx,
-			     LPSTR servername,
-			     HANDLE handle)
+static BOOL test_PrinterData_Server(struct torture_context *tctx,
+				    LPSTR servername,
+				    HANDLE handle)
 {
 	BOOL ret = TRUE;
 	DWORD i;
@@ -1426,7 +1426,7 @@ int main(int argc, char *argv[])
 	ret &= test_EnumDrivers(tctx, servername, architecture);
 	ret &= test_OpenPrinter(tctx, servername, NULL, &server_handle);
 /*	ret &= test_EnumPrinterKey(tctx, servername, server_handle, ""); */
-	ret &= test_PrinterData(tctx, servername, server_handle);
+	ret &= test_PrinterData_Server(tctx, servername, server_handle);
 	ret &= test_EnumForms(tctx, servername, server_handle);
 	ret &= test_ClosePrinter(tctx, server_handle);
 	ret &= test_EnumPorts(tctx, servername);
