@@ -26,15 +26,13 @@ from samba import Ldb
 from samba.ndr import ndr_unpack
 
 from ldb import SCOPE_BASE
-import ldb
 import os
-import sys
 
 from samba.auth import system_session
 from samba.netcmd import (
     Command,
-	SuperCommand,
     CommandError,
+    SuperCommand,
     Option,
     )
 
@@ -53,31 +51,33 @@ class cmd_acl_set(Command):
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
                choices=["native","tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
-		]
+        ]
 
     takes_args = ["acl","file"]
 
     def run(self, acl, file, quiet=False,xattr_backend=None,eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None):
-		lp = sambaopts.get_loadparm()
-		creds = credopts.get_credentials(lp)
-		path = os.path.join(lp.get("private dir"), lp.get("secrets database") or "secrets.ldb")
-		creds = credopts.get_credentials(lp)
-		creds.set_kerberos_state(DONT_USE_KERBEROS)
-		try:
-			ldb = Ldb(path, session_info=system_session(), credentials=creds,lp=lp)
-		except:
-			print "Unable to read domain SID from configuration files"
-			sys.exit(1)
-		attrs = ["objectSid"]
-		print lp.get("realm")
-		res = ldb.search(expression="(objectClass=*)",base="flatname=%s,cn=Primary Domains"%lp.get("workgroup"), scope=SCOPE_BASE, attrs=attrs)
-		if len(res) !=0:
-			domainsid = ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
-			setntacl(lp,file,acl,str(domainsid),xattr_backend,eadb_file)
-		else:
-			print "Unable to read domain SID from configuration files"
-			sys.exit(1)
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        path = os.path.join(lp.get("private dir"), lp.get("secrets database") or "secrets.ldb")
+        creds = credopts.get_credentials(lp)
+        creds.set_kerberos_state(DONT_USE_KERBEROS)
+        try:
+            ldb = Ldb(path, session_info=system_session(), credentials=creds,lp=lp)
+        except:
+            # XXX: Should catch a particular exception type
+            raise CommandError("Unable to read domain SID from configuration files")
+        attrs = ["objectSid"]
+        print lp.get("realm")
+        res = ldb.search(expression="(objectClass=*)",
+            base="flatname=%s,cn=Primary Domains" % lp.get("workgroup"),
+            scope=SCOPE_BASE, attrs=attrs)
+        if len(res) !=0:
+            domainsid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
+            setntacl(lp, file, acl, str(domainsid), xattr_backend, eadb_file)
+        else:
+            raise CommandError("Unable to read domain SID from configuration files")
+
 
 class cmd_acl_get(Command):
     """Set ACLs on a file"""
@@ -98,13 +98,13 @@ class cmd_acl_get(Command):
 
     takes_args = ["file"]
 
-    def run(self, file, as_sddl=False,xattr_backend=None,eadb_file=None,
+    def run(self, file, as_sddl=False, xattr_backend=None, eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-	acl = getntacl(lp,file,xattr_backend,eadb_file)
+        acl = getntacl(lp, file, xattr_backend, eadb_file)
         if as_sddl:
-            anysid=security.dom_sid(security.SID_NT_SELF)
+            anysid = security.dom_sid(security.SID_NT_SELF)
             print acl.info.as_sddl(anysid)
         else:
             acl.dump()

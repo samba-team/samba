@@ -18,7 +18,7 @@
 #
 
 import optparse
-from samba import getopt as options, Ldb
+from samba import getopt as options
 import sys
 
 
