@@ -4553,6 +4553,10 @@ static bool test_one_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
+	if (!test_SetPrinterDataEx(tctx, p, handle)) {
+		ret = false;
+	}
+
 	return ret;
 }
 
