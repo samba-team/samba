@@ -1714,18 +1714,8 @@ static void becomeDC_drsuapi1_bind_recv(struct rpc_request *req)
 	struct composite_context *c = s->creq;
 	WERROR status;
 
-	bool print = false;
-
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
-
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsBind_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsBind, &s->drsuapi1.bind_r);
-	}
 
 	status = becomeDC_drsuapi_bind_recv(s, &s->drsuapi1);
 	if (!W_ERROR_IS_OK(status)) {
@@ -2270,18 +2260,10 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 	struct drsuapi_DsAddEntry *r = talloc_get_type(req->ndr.struct_ptr,
 				       struct drsuapi_DsAddEntry);
 	char *binding_str;
-	bool print = false;
 
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsAddEntry_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsAddEntry, r);
-	}
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		composite_error(c, werror_to_ntstatus(r->out.result));
@@ -2402,18 +2384,8 @@ static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req)
 	char *binding_str;
 	WERROR status;
 
-	bool print = false;
-
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
-
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsBind_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsBind, &s->drsuapi2.bind_r);
-	}
 
 	status = becomeDC_drsuapi_bind_recv(s, &s->drsuapi2);
 	if (!W_ERROR_IS_OK(status)) {
@@ -2652,18 +2624,9 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 					   struct drsuapi_DsGetNCChanges);
 	WERROR status;
 
-	bool print = false;
 
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
-
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsGetNCChanges_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsGetNCChanges, r);
-	}
 
 	status = becomeDC_drsuapi_pull_partition_recv(s, &s->drsuapi2, &s->drsuapi3, &s->schema_part, r);
 	if (!W_ERROR_IS_OK(status)) {
@@ -2717,18 +2680,9 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 					   struct drsuapi_DsGetNCChanges);
 	WERROR status;
 
-	bool print = false;
 
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
-
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsGetNCChanges_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsGetNCChanges, r);
-	}
 
 	status = becomeDC_drsuapi_pull_partition_recv(s, &s->drsuapi2, &s->drsuapi3, &s->config_part, r);
 	if (!W_ERROR_IS_OK(status)) {
@@ -2787,18 +2741,10 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
 					   struct drsuapi_DsGetNCChanges);
 	WERROR status;
-	bool print = false;
 
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsGetNCChanges_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsGetNCChanges, r);
-	}
 
 	status = becomeDC_drsuapi_pull_partition_recv(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part, r);
 	if (!W_ERROR_IS_OK(status)) {
@@ -2865,18 +2811,10 @@ static void becomeDC_drsuapi2_update_refs_schema_recv(struct rpc_request *req)
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
 					   struct drsuapi_DsReplicaUpdateRefs);
-	bool print = false;
 
-	if (req->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		print = true;
-	}
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(req);
 	if (!composite_is_ok(c)) return;
-
-	if (print) {
-		NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaUpdateRefs, r);
-	}
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		composite_error(c, werror_to_ntstatus(r->out.result));
@@ -2899,7 +2837,7 @@ static void becomeDC_drsuapi2_update_refs_config_recv(struct rpc_request *req)
 	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
 					   struct drsuapi_DsReplicaUpdateRefs);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
@@ -2921,7 +2859,7 @@ static void becomeDC_drsuapi2_update_refs_domain_recv(struct rpc_request *req)
 	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
 					   struct drsuapi_DsReplicaUpdateRefs);
 
-	c->status = dcerpc_ndr_request_recv(req);
+	c->status = dcerpc_drsuapi_DsReplicaUpdateRefs_recv(req);
 	if (!composite_is_ok(c)) return;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
