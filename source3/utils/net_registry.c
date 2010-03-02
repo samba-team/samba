@@ -452,13 +452,14 @@ static WERROR net_registry_getsd_internal(struct net_context *c,
 
 	werr = open_key(ctx, keyname, access_mask, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
+		d_fprintf(stderr, "%s%s\n", _("open_key failed: "),
+			  win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_getkeysecurity(mem_ctx, key, sd);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("reg_getkeysecurity failed: %s\n"),
+		d_fprintf(stderr, "%s%s\n", _("reg_getkeysecurity failed: "),
 			  win_errstr(werr));
 		goto done;
 	}
