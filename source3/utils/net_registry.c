@@ -535,6 +535,86 @@ done:
 	return ret;
 }
 
+static WERROR net_registry_setsd_internal(struct net_context *c,
+					  TALLOC_CTX *mem_ctx,
+					  const char *keyname,
+					  struct security_descriptor *sd)
+{
+	WERROR werr;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	uint32_t access_mask = REG_KEY_WRITE |
+			       SEC_FLAG_MAXIMUM_ALLOWED |
+			       SEC_FLAG_SYSTEM_SECURITY;
+
+	/*
+	 * net_rpc_regsitry uses SEC_FLAG_SYSTEM_SECURITY, but access
+	 * is denied with these perms right now...
+	 */
+	access_mask = REG_KEY_WRITE;
+
+	if (strlen(keyname) == 0) {
+		d_fprintf(stderr, _("error: zero length key name given\n"));
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	werr = open_key(ctx, keyname, access_mask, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "%s%s\n", _("open_key failed: "),
+			  win_errstr(werr));
+		goto done;
+	}
+
+	werr = reg_setkeysecurity(key, sd);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "%s%s\n", _("reg_setkeysecurity failed: "),
+			  win_errstr(werr));
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+done:
+	TALLOC_FREE(ctx);
+	return werr;
+}
+
+static int net_registry_setsd_sddl(struct net_context *c,
+				   int argc, const char **argv)
+{
+	WERROR werr;
+	int ret = -1;
+	struct security_descriptor *secdesc = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+
+	if (argc != 2 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry setsd_sddl <path> <security_descriptor>\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry setsd_sddl 'HKLM\\Software\\Samba'\n"));
+		goto done;
+	}
+
+	secdesc = sddl_decode(ctx, argv[1], get_global_sam_sid());
+	if (secdesc == NULL) {
+		goto done;
+	}
+
+	werr = net_registry_setsd_internal(c, ctx, argv[0], secdesc);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(ctx);
+	return ret;
+}
+
 int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
@@ -611,6 +691,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Get security descriptor in sddl format"),
 			N_("net registry getsd_sddl\n"
 			   "    Get security descriptor in sddl format")
+		},
+		{
+			"setsd_sddl",
+			net_registry_setsd_sddl,
+			NET_TRANSPORT_LOCAL,
+			N_("Set security descriptor from sddl format string"),
+			N_("net registry setsd_sddl\n"
+			   "    Set security descriptor from sddl format string")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};
