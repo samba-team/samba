@@ -1142,7 +1142,7 @@ void print_printer_keys(LPSTR buffer)
 	}
 }
 
-static LPSTR reg_type_str(DWORD type)
+LPSTR reg_type_str(DWORD type)
 {
 	switch (type) {
 	case REG_DWORD:

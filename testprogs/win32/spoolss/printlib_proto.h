@@ -54,6 +54,7 @@ void print_driver_info_8(PDRIVER_INFO_8 info);
 void print_driver_info_bylevel(DWORD level, LPBYTE buffer, DWORD count);
 void print_doc_info_1(PDOC_INFO_1 info);
 void print_printer_keys(LPSTR buffer);
+LPSTR reg_type_str(DWORD type);
 void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffer, DWORD type);
 void print_printer_enum_values(PRINTER_ENUM_VALUES *info);
 #undef _PRINTF_ATTRIBUTE
