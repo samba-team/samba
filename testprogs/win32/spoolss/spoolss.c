@@ -792,6 +792,9 @@ static BOOL test_devicemode_equal(struct torture_context *tctx,
 	return TRUE;
 }
 
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_DeviceModes(struct torture_context *tctx,
 			     LPSTR printername,
 			     HANDLE handle)
@@ -1353,22 +1356,37 @@ static BOOL test_PrinterData_Server(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL PrinterDataEqual(struct torture_context *tctx,
+			     DWORD type1, DWORD type2,
+			     DWORD size1, DWORD size2,
+			     LPBYTE buffer1, LPBYTE buffer2)
+{
+	torture_assert_int_equal(tctx, type1, type2, "type mismatch");
+	torture_assert_int_equal(tctx, size1, size2, "size mismatch");
+	torture_assert_mem_equal(tctx, buffer1, buffer2, size1, "buffer mismatch");
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_PrinterData(struct torture_context *tctx,
 			     LPSTR printername,
 			     HANDLE handle)
 {
 	LPSTR keyname = "torture_key";
 	LPSTR valuename = "torture_value";
-	DWORD type = REG_NONE;
-	LPBYTE buffer = NULL;
-	DWORD offered = 0;
 	BOOL ret = TRUE;
+	DWORD type, type_ex;
+	LPBYTE buffer, buffer_ex;
+	DWORD size, size_ex;
 
 	torture_comment(tctx, "Testing PrinterData");
 
 	type = REG_SZ;
-	offered = 4;
-	buffer = malloc(offered);
+	size = 4;
+	buffer = malloc(size);
 	if (!buffer) {
 		return FALSE;
 	}
@@ -1377,8 +1395,11 @@ static BOOL test_PrinterData(struct torture_context *tctx,
 	buffer[2] = 'a';
 	buffer[3] = 'p';
 
-	ret &= test_SetPrinterDataEx(tctx, printername, keyname, valuename, handle, type, buffer, offered);
-	ret &= test_GetPrinterDataEx(tctx, printername, keyname, valuename, handle, NULL, NULL, NULL);
+	ret &= test_SetPrinterDataEx(tctx, printername, keyname, valuename, handle, type, buffer, size);
+	ret &= test_GetPrinterDataEx(tctx, printername, keyname, valuename, handle, &type_ex, &buffer_ex, &size_ex);
+	if (ret == TRUE) {
+		ret &= PrinterDataEqual(tctx, type_ex, type, size_ex, size, buffer_ex, buffer);
+	}
 	ret &= test_DeletePrinterDataEx(tctx, printername, keyname, valuename, handle);
 	ret &= test_DeletePrinterKey(tctx, printername, keyname, handle);
 
