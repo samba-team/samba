@@ -493,7 +493,7 @@ static struct vfs_fn_pointers vfs_aixacl2_fns = {
 	.sys_acl_set_file = aixjfs2_sys_acl_set_file,
 	.sys_acl_set_fd = aixjfs2_sys_acl_set_fd,
 	.sys_acl_delete_def_file = aixjfs2_sys_acl_delete_def_file
-}
+};
 
 NTSTATUS vfs_aixacl2_init(void);
 NTSTATUS vfs_aixacl2_init(void)
