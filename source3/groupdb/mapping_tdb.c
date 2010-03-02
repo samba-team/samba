@@ -935,7 +935,7 @@ failed:
 
 static bool mapping_switch(const char *ldb_path)
 {
-	static TALLOC_CTX *ltdb;
+	TDB_CONTEXT *ltdb;
 	TALLOC_CTX *frame;
 	char *new_path;
 	int ret;
