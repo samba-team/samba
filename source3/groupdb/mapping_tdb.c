@@ -760,7 +760,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 	char *val;
 	char *q;
 	uint32_t num_mem = 0;
-	DOM_SID *members;
+	DOM_SID *members = NULL;
 
 	p = (uint8_t *)data.dptr;
 	if (data.dsize < 8) {
