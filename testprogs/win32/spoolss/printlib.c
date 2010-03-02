@@ -1168,12 +1168,20 @@ void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffe
 	}
 
 	printf("\tValue Name:\t%s\n", valuename);
-	printf("\tSize: 0x%x (%d)\n", size, size);
+	printf("\tSize:\t\t0x%x (%d)\n", size, size);
 	printf("\tType:\t\t%s\n", reg_type_str(type));
+
+	if (buffer == NULL || size == 0) {
+		return;
+	}
 
 	switch (type) {
 	case REG_SZ:
-		printf("\t\t%s\n", (LPSTR)buffer);
+		printf("\t\t");
+		for (i=0; i < size; i++) {
+			printf("%c", buffer[i]);
+		}
+		printf("\n");
 		break;
 	case REG_MULTI_SZ:
 		p = (LPSTR)buffer;
