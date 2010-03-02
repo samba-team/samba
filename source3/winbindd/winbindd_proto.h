@@ -40,14 +40,6 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
 
-/* The following definitions come from smbd/connection.c  */
-
-bool yield_connection(connection_struct *conn, const char *name);
-int count_current_connections( const char *sharename, bool clear  );
-bool claim_connection(connection_struct *conn, const char *name,
-		      uint32 msg_flags);
-bool register_message_flags(bool doreg, uint32 msg_flags);
-
 /* The following definitions come from winbindd/winbindd.c  */
 
 struct event_context *winbind_event_context(void);

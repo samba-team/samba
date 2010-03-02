@@ -719,6 +719,13 @@ static struct functable net_func[] = {
 		N_("  Use 'net help eventlog' to get more information about "
 		   "'net eventlog' commands.")
 	},
+	{	"serverid",
+		net_serverid,
+		NET_TRANSPORT_LOCAL,
+		N_("Manage the serverid tdb"),
+		N_("  Use 'net help serverid' to get more information about "
+		   "'net serverid' commands.")
+	},
 
 #ifdef WITH_FAKE_KASERVER
 	{	"afs",

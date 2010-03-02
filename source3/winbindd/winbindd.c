@@ -199,6 +199,7 @@ static void terminate(bool is_parent)
 #endif
 
 	if (is_parent) {
+		serverid_deregister_self();
 		pidfile_unlink();
 	}
 
@@ -1232,7 +1233,11 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	/* get broadcast messages */
-	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP);
+
+	if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP)) {
+		DEBUG(1, ("Could not register myself in serverid.tdb\n"));
+		exit(1);
+	}
 
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */

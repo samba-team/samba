@@ -249,6 +249,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 {
 	struct child_pid *child;
 	static struct timed_event *cleanup_te;
+	struct server_id child_id;
 
 	if (unclean_shutdown) {
 		/* a child terminated uncleanly so tickle all
@@ -266,6 +267,14 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 						&cleanup_te);
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
+	}
+
+	child_id = procid_self(); /* Just initialize pid and potentially vnn */
+	child_id.pid = pid;
+
+	if (!serverid_deregister(&child_id)) {
+		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
+			  (int)pid));
 	}
 
 	for (child = children; child != NULL; child = child->next) {
@@ -374,6 +383,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	pid_t pid = 0;
+	uint64_t unique_id;
 
 	smbd_set_server_fd(accept(s->fd,(struct sockaddr *)&addr,&in_addrlen));
 
@@ -398,11 +408,20 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		return;
 	}
 
+	/*
+	 * Generate a unique id in the parent process so that we use
+	 * the global random state in the parent.
+	 */
+	generate_random_buffer((uint8_t *)&unique_id, sizeof(unique_id));
+
 	pid = sys_fork();
 	if (pid == 0) {
 		NTSTATUS status = NT_STATUS_OK;
+
 		/* Child code ... */
 		am_parent = 0;
+
+		set_my_unique_id(unique_id);
 
 		/* Stop zombies, the parent explicitly handles
 		 * them, counting worker smbds. */
@@ -434,6 +453,13 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 		smbd_setup_sig_term_handler();
 		smbd_setup_sig_hup_handler();
+
+		if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+					    |FLAG_MSG_DBWRAP
+					    |FLAG_MSG_PRINT_GENERAL)) {
+			exit_server_cleanly("Could not register myself in "
+					    "serverid.tdb");
+		}
 
 		smbd_process();
 	 exit:
@@ -665,8 +691,13 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	   clustered mode, ctdb won't allow us to start doing database
 	   operations until it has gone thru a full startup, which
 	   includes checking to see that smbd is listening. */
-	claim_connection(NULL,"",
-			 FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_DBWRAP);
+
+	if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+				    |FLAG_MSG_DBWRAP)) {
+		DEBUG(0, ("open_sockets_smbd: Failed to register "
+			  "myself in serverid.tdb\n"));
+		return false;
+	}
 
         /* Listen to messages */
 
@@ -852,8 +883,8 @@ static void exit_server_common(enum server_exit_reason how,
 	/* 3 second timeout. */
 	print_notify_send_messages(smbd_messaging_context(), 3);
 
-	/* delete our entry in the connections database. */
-	yield_connection(NULL,"");
+	/* delete our entry in the serverid database. */
+	serverid_deregister_self();
 
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {

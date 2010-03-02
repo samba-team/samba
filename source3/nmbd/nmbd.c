@@ -83,6 +83,7 @@ static void terminate(void)
 	kill_async_dns_child();
 
 	gencache_stabilize();
+	serverid_deregister_self();
 
 	pidfile_unlink();
 
@@ -930,7 +931,11 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 
 	/* get broadcast messages */
-	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP);
+
+	if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP)) {
+		DEBUG(1, ("Could not register myself in serverid.tdb\n"));
+		exit(1);
+	}
 
 	messaging_register(nmbd_messaging_context(), NULL,
 			   MSG_FORCE_ELECTION, nmbd_message_election);

@@ -1464,8 +1464,10 @@ void start_background_queue(void)
 		smbd_setup_sig_term_handler();
 		smbd_setup_sig_hup_handler();
 
-		claim_connection( NULL, "smbd lpq backend",
-			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
+		if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+					    |FLAG_MSG_PRINT_GENERAL)) {
+			exit(1);
+		}
 
 		if (!locking_init()) {
 			exit(1);

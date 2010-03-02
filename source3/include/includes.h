@@ -687,6 +687,7 @@ struct ntlmssp_state;
 #include "ctdbd_conn.h"
 #include "../lib/util/talloc_stack.h"
 #include "memcache.h"
+#include "serverid.h"
 #include "async_smb.h"
 #include "../lib/async_req/async_sock.h"
 #include "talloc_dict.h"

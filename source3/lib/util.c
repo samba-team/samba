@@ -2647,10 +2647,18 @@ uint32 get_my_vnn(void)
 	return my_vnn;
 }
 
+static uint64_t my_unique_id = 0;
+
+void set_my_unique_id(uint64_t unique_id)
+{
+	my_unique_id = unique_id;
+}
+
 struct server_id pid_to_procid(pid_t pid)
 {
 	struct server_id result;
 	result.pid = pid;
+	result.unique_id = my_unique_id;
 #ifdef CLUSTER_SUPPORT
 	result.vnn = my_vnn;
 #endif
@@ -2720,6 +2728,7 @@ struct server_id interpret_pid(const char *pid_string)
 	if (result.pid < 0) {
 		result.pid = -1;
 	}
+	result.unique_id = 0;
 	return result;
 }
 

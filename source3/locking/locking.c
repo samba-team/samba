@@ -653,7 +653,7 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 		DEBUG(10,("parse_share_modes: %s\n",
 			str ? str : ""));
-		if (!process_exists(entry_p->pid)) {
+		if (!serverid_exists(&entry_p->pid)) {
 			DEBUG(10,("parse_share_modes: deleted %s\n",
 				str ? str : ""));
 			entry_p->op_type = UNUSED_SHARE_MODE_ENTRY;

@@ -1620,7 +1620,7 @@ static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 
 	for (i = 0; i < *pnum_entries; i++) {
 		struct lock_struct *lock_data = &locks[i];
-		if (!process_exists(lock_data->context.pid)) {
+		if (!serverid_exists(&lock_data->context.pid)) {
 			/* This process no longer exists - mark this
 			   entry as invalid by zeroing it. */
 			ZERO_STRUCTP(lock_data);

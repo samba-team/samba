@@ -618,7 +618,7 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 
 	/* of course, none of the message callbacks matter if you don't
 	   tell messages.c that you interested in receiving PRINT_GENERAL
-	   msgs.  This is done in claim_connection() */
+	   msgs.  This is done in serverid_register() */
 
 
 	if ( lp_security() == SEC_ADS ) {

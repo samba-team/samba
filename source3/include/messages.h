@@ -72,6 +72,7 @@ struct server_id {
 #ifdef CLUSTER_SUPPORT
 	uint32 vnn;
 #endif
+	uint64_t unique_id;
 };
 
 #ifdef CLUSTER_SUPPORT

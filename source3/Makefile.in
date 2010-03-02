@@ -385,6 +385,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o \
 	  lib/interfaces.o lib/memcache.o \
 	  lib/talloc_dict.o \
+	  lib/serverid.o \
 	  lib/util_transfer_file.o ../lib/async_req/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
@@ -846,7 +847,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_processlogon.o nmbd/nmbd_responserecordsdb.o \
             nmbd/nmbd_sendannounce.o nmbd/nmbd_serverlistdb.o \
             nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
-            nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o smbd/connection.o
+            nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(LDB_OBJ) $(KRBCLIENT_OBJ) \
            $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
@@ -1013,6 +1014,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o \
 	   auth/token_util.o utils/net_dom.o utils/net_share.o \
 	   utils/net_g_lock.o \
+	   utils/net_serverid.o \
 	   utils/net_eventlog.o
 
 # these are not processed by make proto
@@ -1228,8 +1230,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_remove_mapping.o \
 		winbindd/winbindd_set_hwm.o \
 		auth/token_util.o \
-		../nsswitch/libwbclient/wb_reqtrans.o \
-		smbd/connection.o
+		../nsswitch/libwbclient/wb_reqtrans.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
