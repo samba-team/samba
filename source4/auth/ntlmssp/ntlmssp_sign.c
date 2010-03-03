@@ -229,7 +229,7 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 	dump_data_pw("ntlmssp clear data\n", data, length);
 	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		/* The order of these two operations matters - we must first seal the packet,
-		   then seal the sequence number - this is becouse the send_seal_hash is not
+		   then seal the sequence number - this is because the send_seal_hash is not
 		   constant, but is is rather updated with each iteration */
 		nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 							  data, length, 
@@ -249,7 +249,7 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 
 		/* The order of these two operations matters - we must
 		   first seal the packet, then seal the sequence
-		   number - this is becouse the ntlmssp_hash is not
+		   number - this is because the ntlmssp_hash is not
 		   constant, but is is rather updated with each
 		   iteration */
 

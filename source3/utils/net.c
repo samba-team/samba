@@ -897,7 +897,7 @@ static struct functable net_func[] = {
 	load_interfaces();
 
 	/* this makes sure that when we do things like call scripts,
-	   that it won't assert becouse we are not root */
+	   that it won't assert because we are not root */
 	sec_init();
 
 	if (c->opt_machine_pass) {

@@ -256,7 +256,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 	dump_data_pw("ntlmssp clear data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		/* The order of these two operations matters - we must first seal the packet,
-		   then seal the sequence number - this is becouse the send_seal_hash is not
+		   then seal the sequence number - this is because the send_seal_hash is not
 		   constant, but is is rather updated with each iteration */
 		NTSTATUS nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
 							data, length,
@@ -278,7 +278,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		}
 
 		/* The order of these two operations matters - we must first seal the packet,
-		   then seal the sequence number - this is becouse the ntlmv1_arc4_state is not
+		   then seal the sequence number - this is because the ntlmv1_arc4_state is not
 		   constant, but is is rather updated with each iteration */
 
 		dump_arc4_state("ntlmv1 arc4 state:\n",

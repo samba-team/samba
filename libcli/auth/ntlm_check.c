@@ -416,7 +416,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		} else {
 			DEBUG(2,("ntlm_password_check: NTLMv1 passwords NOT PERMITTED for user %s\n",
 				 username));			
-			/* no return, becouse we might pick up LMv2 in the LM field */
+			/* no return, because we might pick up LMv2 in the LM field */
 		}
 	}
 	
