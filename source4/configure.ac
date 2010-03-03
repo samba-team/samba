@@ -126,10 +126,13 @@ m4_include(ntvfs/unixuid/config.m4)
 m4_include(../lib/socket_wrapper/config.m4)
 m4_include(../lib/nss_wrapper/config.m4)
 m4_include(../lib/uid_wrapper/config.m4)
+dnl nsswitch must be before auth as it sets some variable
+dnl tested by auth/config.m4, libiiniparser must be even before
+dnl because nsswitch depend also on it
+m4_include(../nsswitch/config.m4)
 m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
-m4_include(../nsswitch/config.m4)
 
 #################################################
 # add *_CFLAGS only for the real build
