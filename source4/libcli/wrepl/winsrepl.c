@@ -30,6 +30,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
+#include "lib/util/tevent_ntstatus.h"
 
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status);
 
