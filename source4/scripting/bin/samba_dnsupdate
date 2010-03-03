@@ -24,6 +24,10 @@ import sys
 import dns.resolver
 import tempfile
 
+# ensure we get messages out immediately, so they get in the samba logs,
+# and don't get swallowed by a timeout
+os.putenv('PYTHONUNBUFFERED', '1')
+
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
