@@ -684,64 +684,106 @@ NTSTATUS wrepl_associate_stop(struct wrepl_socket *wrepl_socket,
 	return wrepl_associate_stop_recv(req, io);
 }
 
-/*
-  fetch the partner tables - send
-*/
-struct wrepl_request *wrepl_pull_table_send(struct wrepl_socket *wrepl_socket,
-					    struct wrepl_pull_table *io)
+struct wrepl_pull_table_state {
+	struct wrepl_packet packet;
+	uint32_t num_partners;
+	struct wrepl_wins_owner *partners;
+};
+
+static void wrepl_pull_table_done(struct wrepl_request *subreq);
+
+struct tevent_req *wrepl_pull_table_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct wrepl_socket *wrepl_socket,
+					 const struct wrepl_pull_table *io)
 {
-	struct wrepl_packet *packet;
-	struct wrepl_request *req;
+	struct tevent_req *req;
+	struct wrepl_pull_table_state *state;
+	struct wrepl_request *subreq;
 
-	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
-	if (packet == NULL) return NULL;
+	if (wrepl_socket->event.ctx != ev) {
+		/* TODO: remove wrepl_socket->event.ctx !!! */
+		smb_panic("wrepl_pull_table_send event context mismatch!");
+		return NULL;
+	}
 
-	packet->opcode                      = WREPL_OPCODE_BITS;
-	packet->assoc_ctx                   = io->in.assoc_ctx;
-	packet->mess_type                   = WREPL_REPLICATION;
-	packet->message.replication.command = WREPL_REPL_TABLE_QUERY;
+	req = tevent_req_create(mem_ctx, &state,
+				struct wrepl_pull_table_state);
+	if (req == NULL) {
+		return NULL;
+	};
 
-	req = wrepl_request_send(wrepl_socket, packet, NULL);
+	state->packet.opcode				= WREPL_OPCODE_BITS;
+	state->packet.assoc_ctx				= io->in.assoc_ctx;
+	state->packet.mess_type				= WREPL_REPLICATION;
+	state->packet.message.replication.command	= WREPL_REPL_TABLE_QUERY;
 
-	talloc_free(packet);
+	subreq = wrepl_request_send(wrepl_socket, &state->packet, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.fn = wrepl_pull_table_done;
+	subreq->async.private_data = req;
 
-	return req;	
+	return req;
 }
 
+static void wrepl_pull_table_done(struct wrepl_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+				 struct tevent_req);
+	struct wrepl_pull_table_state *state = tevent_req_data(req,
+					       struct wrepl_pull_table_state);
+	NTSTATUS status;
+	struct wrepl_packet *packet;
+	struct wrepl_table *table;
+
+	status = wrepl_request_recv(subreq, state, &packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (packet->mess_type != WREPL_REPLICATION) {
+		tevent_req_nterror(req, NT_STATUS_NETWORK_ACCESS_DENIED);
+		return;
+	}
+
+	if (packet->message.replication.command != WREPL_REPL_TABLE_REPLY) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	table = &packet->message.replication.info.table;
+
+	state->num_partners = table->partner_count;
+	state->partners = talloc_move(state, &table->partners);
+
+	tevent_req_done(req);
+}
 
 /*
   fetch the partner tables - recv
 */
-NTSTATUS wrepl_pull_table_recv(struct wrepl_request *req,
+NTSTATUS wrepl_pull_table_recv(struct tevent_req *req,
 			       TALLOC_CTX *mem_ctx,
 			       struct wrepl_pull_table *io)
 {
-	struct wrepl_packet *packet=NULL;
+	struct wrepl_pull_table_state *state = tevent_req_data(req,
+					       struct wrepl_pull_table_state);
 	NTSTATUS status;
-	struct wrepl_table *table;
-	int i;
 
-	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
-	NT_STATUS_NOT_OK_RETURN(status);
-	if (packet->mess_type != WREPL_REPLICATION) {
-		status = NT_STATUS_NETWORK_ACCESS_DENIED;
-	} else if (packet->message.replication.command != WREPL_REPL_TABLE_REPLY) {
-		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	table = &packet->message.replication.info.table;
-	io->out.num_partners = table->partner_count;
-	io->out.partners = talloc_steal(mem_ctx, table->partners);
-	for (i=0;i<io->out.num_partners;i++) {
-		talloc_steal(io->out.partners, io->out.partners[i].address);
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
 	}
 
-failed:
-	talloc_free(packet);
-	return status;
+	io->out.num_partners = state->num_partners;
+	io->out.partners = talloc_move(mem_ctx, &state->partners);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
-
 
 /*
   fetch the partner table - sync api
@@ -750,8 +792,25 @@ NTSTATUS wrepl_pull_table(struct wrepl_socket *wrepl_socket,
 			  TALLOC_CTX *mem_ctx,
 			  struct wrepl_pull_table *io)
 {
-	struct wrepl_request *req = wrepl_pull_table_send(wrepl_socket, io);
-	return wrepl_pull_table_recv(req, mem_ctx, io);
+	struct tevent_req *subreq;
+	bool ok;
+	NTSTATUS status;
+
+	subreq = wrepl_pull_table_send(mem_ctx, wrepl_socket->event.ctx,
+				       wrepl_socket, io);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
+
+	ok = tevent_req_poll(subreq, wrepl_socket->event.ctx);
+	if (!ok) {
+		TALLOC_FREE(subreq);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = wrepl_pull_table_recv(subreq, mem_ctx, io);
+	TALLOC_FREE(subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 
