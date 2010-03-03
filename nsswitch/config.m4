@@ -35,5 +35,12 @@ SMB_EXT_LIB(PAM, $PAM_LIBS)
 
 if test x"$ac_cv_header_security_pam_appl_h" = x"yes" -a x"$ac_cv_lib_ext_pam_pam_start" = x"yes";then
 	SMB_ENABLE(PAM,YES)
+	if test x"$MERGED_BUILD" != x"1"; then
+		SMB_BUILD_LIBRARY(pam_winbind,[../nsswitch/pam_winbind.o],
+				  [LIBWBCLIENT LIBWINBIND-CLIENT LIBINIPARSER PAM],
+				  [-DLOCALEDIR=\\\"${datarootdir}/locale\\\"],
+				  [],
+				  [../nsswitch/pam_winbind.\$(SHLIBEXT)])
+	fi
 fi
 #####
