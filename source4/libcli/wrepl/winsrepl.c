@@ -755,107 +755,169 @@ NTSTATUS wrepl_pull_table(struct wrepl_socket *wrepl_socket,
 }
 
 
-/*
-  fetch the names for a WINS partner - send
-*/
-struct wrepl_request *wrepl_pull_names_send(struct wrepl_socket *wrepl_socket,
-					    struct wrepl_pull_names *io)
+struct wrepl_pull_names_state {
+	struct {
+		const struct wrepl_pull_names *io;
+	} caller;
+	struct wrepl_packet packet;
+	uint32_t num_names;
+	struct wrepl_name *names;
+};
+
+static void wrepl_pull_names_done(struct wrepl_request *subreq);
+
+struct tevent_req *wrepl_pull_names_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct wrepl_socket *wrepl_socket,
+					 const struct wrepl_pull_names *io)
 {
-	struct wrepl_packet *packet;
-	struct wrepl_request *req;
+	struct tevent_req *req;
+	struct wrepl_pull_names_state *state;
+	struct wrepl_request *subreq;
 
-	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
-	if (packet == NULL) return NULL;
+	if (wrepl_socket->event.ctx != ev) {
+		/* TODO: remove wrepl_socket->event.ctx !!! */
+		smb_panic("wrepl_pull_names_send event context mismatch!");
+		return NULL;
+	}
 
-	packet->opcode                         = WREPL_OPCODE_BITS;
-	packet->assoc_ctx                      = io->in.assoc_ctx;
-	packet->mess_type                      = WREPL_REPLICATION;
-	packet->message.replication.command    = WREPL_REPL_SEND_REQUEST;
-	packet->message.replication.info.owner = io->in.partner;
+	req = tevent_req_create(mem_ctx, &state,
+				struct wrepl_pull_names_state);
+	if (req == NULL) {
+		return NULL;
+	};
+	state->caller.io = io;
 
-	req = wrepl_request_send(wrepl_socket, packet, NULL);
+	state->packet.opcode				= WREPL_OPCODE_BITS;
+	state->packet.assoc_ctx				= io->in.assoc_ctx;
+	state->packet.mess_type				= WREPL_REPLICATION;
+	state->packet.message.replication.command	= WREPL_REPL_SEND_REQUEST;
+	state->packet.message.replication.info.owner	= io->in.partner;
 
-	talloc_free(packet);
+	subreq = wrepl_request_send(wrepl_socket, &state->packet, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.fn = wrepl_pull_names_done;
+	subreq->async.private_data = req;
 
-	return req;	
+	return req;
 }
 
-/*
-  fetch the names for a WINS partner - recv
-*/
-NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
-			       TALLOC_CTX *mem_ctx,
-			       struct wrepl_pull_names *io)
+static void wrepl_pull_names_done(struct wrepl_request *subreq)
 {
-	struct wrepl_packet *packet=NULL;
+	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+				 struct tevent_req);
+	struct wrepl_pull_names_state *state = tevent_req_data(req,
+					       struct wrepl_pull_names_state);
 	NTSTATUS status;
-	int i;
+	struct wrepl_packet *packet;
+	uint32_t i;
 
-	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
-	NT_STATUS_NOT_OK_RETURN(status);
-	if (packet->mess_type != WREPL_REPLICATION ||
-	    packet->message.replication.command != WREPL_REPL_SEND_REPLY) {
-		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	status = wrepl_request_recv(subreq, state, &packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
-	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	io->out.num_names = packet->message.replication.info.reply.num_names;
+	if (packet->mess_type != WREPL_REPLICATION) {
+		tevent_req_nterror(req, NT_STATUS_NETWORK_ACCESS_DENIED);
+		return;
+	}
 
-	io->out.names = talloc_array(packet, struct wrepl_name, io->out.num_names);
-	if (io->out.names == NULL) goto nomem;
+	if (packet->message.replication.command != WREPL_REPL_SEND_REPLY) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	state->num_names = packet->message.replication.info.reply.num_names;
+
+	state->names = talloc_array(state, struct wrepl_name, state->num_names);
+	if (tevent_req_nomem(state->names, req)) {
+		return;
+	}
 
 	/* convert the list of names and addresses to a sane format */
-	for (i=0;i<io->out.num_names;i++) {
+	for (i=0; i < state->num_names; i++) {
 		struct wrepl_wins_name *wname = &packet->message.replication.info.reply.names[i];
-		struct wrepl_name *name = &io->out.names[i];
+		struct wrepl_name *name = &state->names[i];
 
 		name->name	= *wname->name;
-		talloc_steal(io->out.names, wname->name);
+		talloc_steal(state->names, wname->name);
 		name->type	= WREPL_NAME_TYPE(wname->flags);
 		name->state	= WREPL_NAME_STATE(wname->flags);
 		name->node	= WREPL_NAME_NODE(wname->flags);
 		name->is_static	= WREPL_NAME_IS_STATIC(wname->flags);
 		name->raw_flags	= wname->flags;
 		name->version_id= wname->id;
-		name->owner	= talloc_strdup(io->out.names, io->in.partner.address);
-		if (name->owner == NULL) goto nomem;
+		name->owner	= talloc_strdup(state->names,
+						state->caller.io->in.partner.address);
+		if (tevent_req_nomem(name->owner, req)) {
+			return;
+		}
 
 		/* trying to save 1 or 2 bytes on the wire isn't a good idea */
 		if (wname->flags & 2) {
-			int j;
+			uint32_t j;
 
 			name->num_addresses = wname->addresses.addresses.num_ips;
-			name->addresses = talloc_array(io->out.names, 
-						       struct wrepl_address, 
+			name->addresses = talloc_array(state->names,
+						       struct wrepl_address,
 						       name->num_addresses);
-			if (name->addresses == NULL) goto nomem;
+			if (tevent_req_nomem(name->addresses, req)) {
+				return;
+			}
+
 			for (j=0;j<name->num_addresses;j++) {
-				name->addresses[j].owner = 
-					talloc_steal(name->addresses, 
-						     wname->addresses.addresses.ips[j].owner);
+				name->addresses[j].owner =
+					talloc_move(name->addresses,
+						    &wname->addresses.addresses.ips[j].owner);
 				name->addresses[j].address = 
-					talloc_steal(name->addresses, 
-						     wname->addresses.addresses.ips[j].ip);
+					talloc_move(name->addresses,
+						    &wname->addresses.addresses.ips[j].ip);
 			}
 		} else {
 			name->num_addresses = 1;
-			name->addresses = talloc(io->out.names, struct wrepl_address);
-			if (name->addresses == NULL) goto nomem;
-			name->addresses[0].owner = talloc_strdup(name->addresses,io->in.partner.address);
-			if (name->addresses[0].owner == NULL) goto nomem;
-			name->addresses[0].address = talloc_steal(name->addresses,
-								  wname->addresses.ip);
+			name->addresses = talloc_array(state->names,
+						       struct wrepl_address,
+						       name->num_addresses);
+			if (tevent_req_nomem(name->addresses, req)) {
+				return;
+			}
+
+			name->addresses[0].owner = talloc_strdup(name->addresses, name->owner);
+			if (tevent_req_nomem(name->addresses[0].owner, req)) {
+				return;
+			}
+			name->addresses[0].address = talloc_move(name->addresses,
+								 &wname->addresses.ip);
 		}
 	}
 
-	talloc_steal(mem_ctx, io->out.names);
-	talloc_free(packet);
+	tevent_req_done(req);
+}
+
+/*
+  fetch the names for a WINS partner - recv
+*/
+NTSTATUS wrepl_pull_names_recv(struct tevent_req *req,
+			       TALLOC_CTX *mem_ctx,
+			       struct wrepl_pull_names *io)
+{
+	struct wrepl_pull_names_state *state = tevent_req_data(req,
+					       struct wrepl_pull_names_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	io->out.num_names = state->num_names;
+	io->out.names = talloc_move(mem_ctx, &state->names);
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
-nomem:
-	status = NT_STATUS_NO_MEMORY;
-failed:
-	talloc_free(packet);
-	return status;
 }
 
 
@@ -867,6 +929,23 @@ NTSTATUS wrepl_pull_names(struct wrepl_socket *wrepl_socket,
 			  TALLOC_CTX *mem_ctx,
 			  struct wrepl_pull_names *io)
 {
-	struct wrepl_request *req = wrepl_pull_names_send(wrepl_socket, io);
-	return wrepl_pull_names_recv(req, mem_ctx, io);
+	struct tevent_req *subreq;
+	bool ok;
+	NTSTATUS status;
+
+	subreq = wrepl_pull_names_send(mem_ctx, wrepl_socket->event.ctx,
+				       wrepl_socket, io);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
+
+	ok = tevent_req_poll(subreq, wrepl_socket->event.ctx);
+	if (!ok) {
+		TALLOC_FREE(subreq);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = wrepl_pull_names_recv(subreq, mem_ctx, io);
+	TALLOC_FREE(subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
