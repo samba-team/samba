@@ -127,7 +127,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	/* Invoke NTVFS connection hook */
 	tcon.tcon.level = RAW_TCON_TCON;
 	ZERO_STRUCT(tcon.tcon.in);
-	tcon.tcon.in.service = share;
+	tcon.tcon.in.service = scfg->name;
 	status = ntvfs_connect(ntvfs_req, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("srvsvc_create_ntvfs_context: NTVFS ntvfs_connect() failed!\n"));
