@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "../lib/util/unix_privs.h"
 
 #if defined(UID_WRAPPER)
 #if !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)
@@ -392,8 +393,26 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		} else {
 			ret = fchown(fd, new_uid, new_gid);
 		}
-		if (errno == EPERM && uwrap_enabled()) {
-			ret = 0;
+		if (errno == EPERM) {
+			if (uwrap_enabled()) {
+				ret = 0;
+			} else {
+				/* try again as root if we have SEC_PRIV_RESTORE or
+				   SEC_PRIV_TAKE_OWNERSHIP */
+				if (security_token_has_privilege(req->session_info->security_token,
+								 SEC_PRIV_RESTORE) ||
+				    security_token_has_privilege(req->session_info->security_token,
+								 SEC_PRIV_TAKE_OWNERSHIP)) {
+					void *privs;
+					privs = root_privileges();
+					if (fd == -1) {
+						ret = chown(name->full_name, new_uid, new_gid);
+					} else {
+						ret = fchown(fd, new_uid, new_gid);
+					}
+					talloc_free(privs);
+				}
+			}
 		}
 		if (ret == -1) {
 			return pvfs_map_errno(pvfs, errno);
