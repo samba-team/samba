@@ -658,46 +658,6 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 }
 
 /*
-  spoolss_SetPrinterData
-*/
-enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r)
-{
-	struct _spoolss_SetPrinterData _r;
-	if (flags & NDR_IN) {
-		struct ndr_push *_ndr_data;
-		struct __spoolss_SetPrinterData __r;
-		DATA_BLOB _data_blob_data;
-
-		_ndr_data = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
-		NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
-		_ndr_data->flags= ndr->flags;
-
-		__r.in.type	= r->in.type;
-		__r.out.data	= discard_const_p(union spoolss_PrinterData, &r->in.data);
-		NDR_CHECK(ndr_push___spoolss_SetPrinterData(_ndr_data, NDR_OUT, &__r));
-		_data_blob_data = ndr_push_blob(_ndr_data);
-
-		_r.in.handle	= r->in.handle;
-		_r.in.value_name= r->in.value_name;
-		_r.in.type	= r->in.type;
-		_r.in.data	= _data_blob_data;
-		_r.in._offered	= _data_blob_data.length;
-		_r.out.result	= r->out.result;
-		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
-	}
-	if (flags & NDR_OUT) {
-		_r.in.handle	= r->in.handle;
-		_r.in.value_name= r->in.value_name;
-		_r.in.type	= r->in.type;
-		_r.in.data	= data_blob(NULL,0),
-		_r.in._offered	= r->in._offered;
-		_r.out.result	= r->out.result;
-		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-/*
   spoolss_GetPrinterDataEx
 */
 enum ndr_err_code ndr_push_spoolss_GetPrinterDataEx(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterDataEx *r)
@@ -798,48 +758,6 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterDataEx(struct ndr_pull *ndr, int fl
 		} else {
 			*r->out.type	= REG_NONE;
 		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-/*
-  spoolss_SetPrinterDataEx
-*/
-enum ndr_err_code ndr_push_spoolss_SetPrinterDataEx(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterDataEx *r)
-{
-	struct _spoolss_SetPrinterDataEx _r;
-	if (flags & NDR_IN) {
-		struct ndr_push *_ndr_data;
-		struct __spoolss_SetPrinterDataEx __r;
-		DATA_BLOB _data_blob_data;
-
-		_ndr_data = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
-		NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
-		_ndr_data->flags= ndr->flags;
-
-		__r.in.type	= r->in.type;
-		__r.out.data	= discard_const_p(union spoolss_PrinterData, &r->in.data);
-		NDR_CHECK(ndr_push___spoolss_SetPrinterDataEx(_ndr_data, NDR_OUT, &__r));
-		_data_blob_data = ndr_push_blob(_ndr_data);
-
-		_r.in.handle	= r->in.handle;
-		_r.in.key_name	= r->in.key_name;
-		_r.in.value_name= r->in.value_name;
-		_r.in.type	= r->in.type;
-		_r.in.data	= _data_blob_data;
-		_r.in._offered	= _data_blob_data.length;
-		_r.out.result	= r->out.result;
-		NDR_CHECK(ndr_push__spoolss_SetPrinterDataEx(ndr, flags, &_r));
-	}
-	if (flags & NDR_OUT) {
-		_r.in.handle	= r->in.handle;
-		_r.in.key_name	= r->in.key_name;
-		_r.in.value_name= r->in.value_name;
-		_r.in.type	= r->in.type;
-		_r.in.data	= data_blob(NULL,0),
-		_r.in._offered	= r->in._offered;
-		_r.out.result	= r->out.result;
-		NDR_CHECK(ndr_push__spoolss_SetPrinterDataEx(ndr, flags, &_r));
 	}
 	return NDR_ERR_SUCCESS;
 }
