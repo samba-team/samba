@@ -489,7 +489,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		/* This ensures we lookup the correct entry in that keytab */
 		ret = principal_from_credentials(out_mem_ctx, gensec_get_credentials(gensec_security), 
 						 gensec_krb5_state->smb_krb5_context, 
-						 &server_in_keytab, error_string);
+						 &server_in_keytab, &error_string);
 
 		if (ret) {
 			DEBUG(2,("Failed to make credentials from principal: %s\n", error_string));
