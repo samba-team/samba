@@ -720,7 +720,7 @@ void talloc_set_type(const char *ptr, #type);
  *
  * @return              The properly casted pointer given by ptr, NULL on error.
  */
-void *talloc_get_name(const void *ptr, #type);
+type *talloc_get_type(const void *ptr, #type);
 #else
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
