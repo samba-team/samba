@@ -1139,7 +1139,8 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 				      d_state->domain_dn, &res, attrs,
 				      d_state->domain_sid,
-				      "(&(grouptype=%d)(objectclass=group))",
+				      "(&(|(groupType=%d)(groupType=%d))(objectClass=group))",
+				      GTYPE_SECURITY_UNIVERSAL_GROUP,
 				      GTYPE_SECURITY_GLOBAL_GROUP);
 	if (ldb_cnt == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -3776,8 +3777,10 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 		break;
 	case 3:
 	case 5:
-		filter = talloc_asprintf(mem_ctx, "(&(grouptype=%d)"
-					 "(objectclass=group))",
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(|(groupType=%d)(groupType=%d))"
+					 "(objectClass=group))",
+					 GTYPE_SECURITY_UNIVERSAL_GROUP,
 					 GTYPE_SECURITY_GLOBAL_GROUP);
 		break;
 	default:
