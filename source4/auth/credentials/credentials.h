@@ -77,6 +77,8 @@ struct cli_credentials {
 	const char *realm;
 	const char *principal;
 	char *salt_principal;
+	char *impersonate_principal;
+	char *target_service;
 
 	const char *bind_dn;
 
@@ -268,6 +270,11 @@ bool cli_credentials_parse_password_fd(struct cli_credentials *credentials,
 void cli_credentials_invalidate_ccache(struct cli_credentials *cred, 
 				       enum credentials_obtained obtained);
 void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal);
+void cli_credentials_set_impersonate_principal(struct cli_credentials *cred, const char *principal);
+void cli_credentials_set_target_service(struct cli_credentials *cred, const char *principal);
+const char *cli_credentials_get_salt_principal(struct cli_credentials *cred);
+const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred);
+const char *cli_credentials_get_target_service(struct cli_credentials *cred);
 enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds);
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
 				     struct tevent_context *event_ctx,

@@ -63,6 +63,8 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->realm = NULL;
 	cred->principal = NULL;
 	cred->salt_principal = NULL;
+	cred->impersonate_principal = NULL;
+	cred->target_service = NULL;
 
 	cred->bind_dn = NULL;
 

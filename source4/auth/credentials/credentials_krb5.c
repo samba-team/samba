@@ -802,4 +802,42 @@ _PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, c
 	cred->salt_principal = talloc_strdup(cred, principal);
 }
 
+/* The 'impersonate_principal' is used to allow on Kerberos principal
+ * (and it's associated keytab etc) to impersonate another.  The
+ * ability to do this is controlled by the KDC, but it is generally
+ * permitted to impersonate anyone to yourself.  This allows any
+ * member of the domain to get the groups of a user.  This is also
+ * known as S4U2Self */
+
+const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred)
+{
+	return cred->impersonate_principal;
+}
+
+_PUBLIC_ void cli_credentials_set_impersonate_principal(struct cli_credentials *cred, const char *principal)
+{
+	talloc_free(cred->impersonate_principal);
+	cred->impersonate_principal = talloc_strdup(cred, principal);
+}
+
+/* when impersonating for S4U2Self we need to set the target principal
+ * to ourself, as otherwise we would need additional rights.
+ * Similarly, we may only be authorized to do general impersonation to
+ * some particular services.
+ *
+ * Likewise, password changes typically require a ticket to kpasswd/realm directly, not via a TGT
+ *
+ * NULL means that tickets will be obtained for the krbtgt service.
+*/
+
+const char *cli_credentials_get_target_service(struct cli_credentials *cred)
+{
+	return cred->target_service;
+}
+
+_PUBLIC_ void cli_credentials_set_target_service(struct cli_credentials *cred, const char *target_service)
+{
+	talloc_free(cred->target_service);
+	cred->target_service = talloc_strdup(cred, target_service);
+}
 

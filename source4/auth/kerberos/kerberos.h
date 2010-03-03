@@ -88,11 +88,13 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 				krb5_ccache ccache, 
 				krb5_data *outbuf);
 bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
-int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
-			       krb5_principal principal, const char *password, 
-			       time_t *expire_time, time_t *kdc_time);
-int kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
+krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
+					   krb5_principal principal, const char *password,
+					   krb5_principal impersonate_principal, const char *target_service,
+					   time_t *expire_time, time_t *kdc_time);
+krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 			       krb5_principal principal, krb5_keyblock *keyblock,
+			       const char *target_service,
 			       time_t *expire_time, time_t *kdc_time);
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 							krb5_principal host_princ,
@@ -107,6 +109,11 @@ char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TAL
 				 struct smb_krb5_context *smb_krb5_context,
 				 krb5_ccache ccache,
 				 const char **error_string);
+krb5_error_code impersonate_principal_from_credentials(TALLOC_CTX *parent_ctx,
+						       struct cli_credentials *credentials,
+						       struct smb_krb5_context *smb_krb5_context,
+						       krb5_principal *princ,
+						       const char **error_string);
 krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
 					   struct cli_credentials *credentials, 
 					   struct smb_krb5_context *smb_krb5_context,
