@@ -572,11 +572,11 @@ struct wreplsrv_pull_cycle_state {
 	struct wreplsrv_pull_names_io names_io;
 	struct composite_context *creq;
 	struct wrepl_associate_stop assoc_stop_io;
-	struct wrepl_request *req;
+	struct tevent_req *subreq;
 };
 
 static void wreplsrv_pull_cycle_handler_creq(struct composite_context *creq);
-static void wreplsrv_pull_cycle_handler_req(struct wrepl_request *req);
+static void wreplsrv_pull_cycle_handler_treq(struct tevent_req *subreq);
 
 static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycle_state *state)
 {
@@ -654,11 +654,15 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_wrapper(struct wreplsrv_pull_cycl
 	if (state->stage == WREPLSRV_PULL_CYCLE_STAGE_DONE && state->io->in.wreplconn) {
 		state->assoc_stop_io.in.assoc_ctx	= state->io->in.wreplconn->assoc_ctx.peer_ctx;
 		state->assoc_stop_io.in.reason		= 0;
-		state->req = wrepl_associate_stop_send(state->io->in.wreplconn->sock, &state->assoc_stop_io);
-		NT_STATUS_HAVE_NO_MEMORY(state->req);
+		state->subreq = wrepl_associate_stop_send(state,
+							  state->io->in.wreplconn->service->task->event_ctx,
+							  state->io->in.wreplconn->sock,
+							  &state->assoc_stop_io);
+		NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 
-		state->req->async.fn		= wreplsrv_pull_cycle_handler_req;
-		state->req->async.private_data	= state;
+		tevent_req_set_callback(state->subreq,
+					wreplsrv_pull_cycle_handler_treq,
+					state);
 
 		state->stage = WREPLSRV_PULL_CYCLE_STAGE_WAIT_STOP_ASSOC;
 	}
@@ -731,7 +735,8 @@ static NTSTATUS wreplsrv_pull_cycle_wait_stop_assoc(struct wreplsrv_pull_cycle_s
 {
 	NTSTATUS status;
 
-	status = wrepl_associate_stop_recv(state->req, &state->assoc_stop_io);
+	status = wrepl_associate_stop_recv(state->subreq, &state->assoc_stop_io);
+	TALLOC_FREE(state->subreq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->stage = WREPLSRV_PULL_CYCLE_STAGE_DONE;
@@ -778,9 +783,9 @@ static void wreplsrv_pull_cycle_handler_creq(struct composite_context *creq)
 	return;
 }
 
-static void wreplsrv_pull_cycle_handler_req(struct wrepl_request *req)
+static void wreplsrv_pull_cycle_handler_treq(struct tevent_req *subreq)
 {
-	struct wreplsrv_pull_cycle_state *state = talloc_get_type(req->async.private_data,
+	struct wreplsrv_pull_cycle_state *state = tevent_req_callback_data(subreq,
 						  struct wreplsrv_pull_cycle_state);
 	wreplsrv_pull_cycle_handler(state);
 	return;

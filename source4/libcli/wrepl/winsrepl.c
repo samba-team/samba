@@ -721,49 +721,87 @@ NTSTATUS wrepl_associate(struct wrepl_socket *wrepl_socket,
 	return NT_STATUS_OK;
 }
 
-/*
-  stop an association - send
-*/
-struct wrepl_request *wrepl_associate_stop_send(struct wrepl_socket *wrepl_socket,
-						struct wrepl_associate_stop *io)
-{
-	struct wrepl_packet *packet;
-	struct wrepl_request *req;
+struct wrepl_associate_stop_state {
+	struct wrepl_packet packet;
 	struct wrepl_send_ctrl ctrl;
+};
 
-	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
-	if (packet == NULL) return NULL;
+static void wrepl_associate_stop_done(struct wrepl_request *subreq);
 
-	packet->opcode			= WREPL_OPCODE_BITS;
-	packet->assoc_ctx		= io->in.assoc_ctx;
-	packet->mess_type		= WREPL_STOP_ASSOCIATION;
-	packet->message.stop.reason	= io->in.reason;
+struct tevent_req *wrepl_associate_stop_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct wrepl_socket *wrepl_socket,
+					     const struct wrepl_associate_stop *io)
+{
+	struct tevent_req *req;
+	struct wrepl_associate_stop_state *state;
+	struct wrepl_request *subreq;
 
-	ZERO_STRUCT(ctrl);
-	if (io->in.reason == 0) {
-		ctrl.send_only			= true;
-		ctrl.disconnect_after_send	= true;
+	if (wrepl_socket->event.ctx != ev) {
+		/* TODO: remove wrepl_socket->event.ctx !!! */
+		smb_panic("wrepl_associate_stop_send event context mismatch!");
+		return NULL;
 	}
 
-	req = wrepl_request_send(wrepl_socket, packet, &ctrl);
+	req = tevent_req_create(mem_ctx, &state,
+				struct wrepl_associate_stop_state);
+	if (req == NULL) {
+		return NULL;
+	};
 
-	talloc_free(packet);
+	state->packet.opcode			= WREPL_OPCODE_BITS;
+	state->packet.assoc_ctx			= io->in.assoc_ctx;
+	state->packet.mess_type			= WREPL_STOP_ASSOCIATION;
+	state->packet.message.stop.reason	= io->in.reason;
 
-	return req;	
+	if (io->in.reason == 0) {
+		state->ctrl.send_only			= true;
+		state->ctrl.disconnect_after_send	= true;
+	}
+
+	subreq = wrepl_request_send(wrepl_socket, &state->packet, &state->ctrl);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.fn = wrepl_associate_stop_done;
+	subreq->async.private_data = req;
+
+	return req;
+}
+
+static void wrepl_associate_stop_done(struct wrepl_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+				 struct tevent_req);
+	struct wrepl_associate_stop_state *state = tevent_req_data(req,
+						   struct wrepl_associate_stop_state);
+	NTSTATUS status;
+
+	/* currently we don't care about a possible response */
+	status = wrepl_request_recv(subreq, state, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 /*
   stop an association - recv
 */
-NTSTATUS wrepl_associate_stop_recv(struct wrepl_request *req,
+NTSTATUS wrepl_associate_stop_recv(struct tevent_req *req,
 				   struct wrepl_associate_stop *io)
 {
-	struct wrepl_packet *packet=NULL;
 	NTSTATUS status;
-	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
-	NT_STATUS_NOT_OK_RETURN(status);
-	talloc_free(packet);
-	return status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -772,8 +810,25 @@ NTSTATUS wrepl_associate_stop_recv(struct wrepl_request *req,
 NTSTATUS wrepl_associate_stop(struct wrepl_socket *wrepl_socket,
 			      struct wrepl_associate_stop *io)
 {
-	struct wrepl_request *req = wrepl_associate_stop_send(wrepl_socket, io);
-	return wrepl_associate_stop_recv(req, io);
+	struct tevent_req *subreq;
+	bool ok;
+	NTSTATUS status;
+
+	subreq = wrepl_associate_stop_send(wrepl_socket, wrepl_socket->event.ctx,
+					   wrepl_socket, io);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
+
+	ok = tevent_req_poll(subreq, wrepl_socket->event.ctx);
+	if (!ok) {
+		TALLOC_FREE(subreq);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = wrepl_associate_stop_recv(subreq, io);
+	TALLOC_FREE(subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 struct wrepl_pull_table_state {
