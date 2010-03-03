@@ -676,8 +676,7 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	}
 	
 	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
-		s3call->response.extra_data.data = unix_username;
-		s3call->response.length += strlen(unix_username)+1;
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.unix_username,unix_username);
 	}
 
  done:
@@ -769,8 +768,7 @@ static void pam_auth_recv(struct composite_context *ctx)
 	}
 	
 	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
-		s3call->response.extra_data.data = unix_username;
-		s3call->response.length += strlen(unix_username)+1;
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.unix_username,unix_username);
 	}
 	
 
