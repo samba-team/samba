@@ -592,6 +592,32 @@ static void lookupsid_recv_name(struct composite_context *ctx)
 }
 
 /*
+  This is a stub function in order to limit error message in the pam_winbind module
+*/
+NTSTATUS wbsrv_samba3_pam_logoff(struct wbsrv_samba3_call *s3call)
+{
+	NTSTATUS status;
+	struct winbindd_response *resp = &s3call->response;
+
+	status = NT_STATUS_OK;
+
+	DEBUG(5, ("wbsrv_samba3_pam_logoff called\n"));
+	DEBUG(10, ("Winbind logoff not implemented\n"));
+	resp->result = WINBINDD_OK;
+
+	WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+				nt_errstr(status));
+	WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+				get_friendly_nt_error_msg(status));
+
+	resp->data.auth.pam_error = nt_status_to_pam(status);
+	resp->data.auth.nt_status = NT_STATUS_V(status);
+	DEBUG(5, ("wbsrv_samba3_pam_logoff called\n"));
+
+	return NT_STATUS_OK;
+}
+
+/*
   Challenge-response authentication.  This interface is used by
   ntlm_auth and the smbd auth subsystem to pass NTLM authentication
   requests along a common pipe to the domain controller.  
