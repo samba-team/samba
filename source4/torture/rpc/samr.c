@@ -5921,6 +5921,7 @@ static bool test_EnumDomainGroups_all(struct dcerpc_pipe *p,
 	uint32_t num_entries = 0;
 	int i;
 	bool ret = true;
+	bool universal_group_found = false;
 
 	torture_comment(tctx, "Testing EnumDomainGroups\n");
 
@@ -5943,6 +5944,20 @@ static bool test_EnumDomainGroups_all(struct dcerpc_pipe *p,
 
 	for (i=0;i<sam->count;i++) {
 		if (!test_OpenGroup(p, tctx, handle, sam->entries[i].idx)) {
+			ret = false;
+		}
+		if ((ret == true) && (strcasecmp(sam->entries[i].name.string,
+						 "Enterprise Admins") == 0)) {
+			universal_group_found = true;
+		}
+	}
+
+	/* when we are running this on s4 we should get back at least the
+	 * "Enterprise Admins" universal group. If we don't get a group entry
+	 * at all we probably are performing the test on the builtin domain.
+	 * So ignore this case. */
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		if ((sam->count > 0) && (!universal_group_found)) {
 			ret = false;
 		}
 	}
