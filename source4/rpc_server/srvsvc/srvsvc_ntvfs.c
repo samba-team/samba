@@ -57,6 +57,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	struct share_context *sctx;
 	struct share_config *scfg;
 	const char *sharetype;
+	union smb_tcon tcon;
 
 	status = share_get_context_by_name(mem_ctx, lp_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -124,9 +125,10 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs_req);
 
 	/* Invoke NTVFS connection hook */
-	/* FIXME: Here is the right parameter missing!
-         * status = ntvfs_connect(ntvfs_req, <TODO>); */
-	status = NT_STATUS_UNSUCCESSFUL; /* return this for now */
+	tcon.tcon.level = RAW_TCON_TCON;
+	ZERO_STRUCT(tcon.tcon.in);
+	tcon.tcon.in.service = share;
+	status = ntvfs_connect(ntvfs_req, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("srvsvc_create_ntvfs_context: NTVFS ntvfs_connect() failed!\n"));
 		return status;
