@@ -41,15 +41,15 @@ enum wreplsrv_out_connect_stage {
 struct wreplsrv_out_connect_state {
 	enum wreplsrv_out_connect_stage stage;
 	struct composite_context *c;
-	struct wrepl_request *req;
 	struct composite_context *c_req;
 	struct wrepl_associate assoc_io;
 	enum winsrepl_partner_type type;
 	struct wreplsrv_out_connection *wreplconn;
+	struct tevent_req *subreq;
 };
 
 static void wreplsrv_out_connect_handler_creq(struct composite_context *c_req);
-static void wreplsrv_out_connect_handler_req(struct wrepl_request *req);
+static void wreplsrv_out_connect_handler_treq(struct tevent_req *subreq);
 
 static NTSTATUS wreplsrv_out_connect_wait_socket(struct wreplsrv_out_connect_state *state)
 {
@@ -58,11 +58,14 @@ static NTSTATUS wreplsrv_out_connect_wait_socket(struct wreplsrv_out_connect_sta
 	status = wrepl_connect_recv(state->c_req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	state->req = wrepl_associate_send(state->wreplconn->sock, &state->assoc_io);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	state->subreq = wrepl_associate_send(state,
+					     state->wreplconn->service->task->event_ctx,
+					     state->wreplconn->sock, &state->assoc_io);
+	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 
-	state->req->async.fn		= wreplsrv_out_connect_handler_req;
-	state->req->async.private_data	= state;
+	tevent_req_set_callback(state->subreq,
+				wreplsrv_out_connect_handler_treq,
+				state);
 
 	state->stage = WREPLSRV_OUT_CONNECT_STAGE_WAIT_ASSOC_CTX;
 
@@ -73,7 +76,8 @@ static NTSTATUS wreplsrv_out_connect_wait_assoc_ctx(struct wreplsrv_out_connect_
 {
 	NTSTATUS status;
 
-	status = wrepl_associate_recv(state->req, &state->assoc_io);
+	status = wrepl_associate_recv(state->subreq, &state->assoc_io);
+	TALLOC_FREE(state->subreq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->wreplconn->assoc_ctx.peer_ctx = state->assoc_io.out.assoc_ctx;
@@ -129,9 +133,9 @@ static void wreplsrv_out_connect_handler_creq(struct composite_context *creq)
 	return;
 }
 
-static void wreplsrv_out_connect_handler_req(struct wrepl_request *req)
+static void wreplsrv_out_connect_handler_treq(struct tevent_req *subreq)
 {
-	struct wreplsrv_out_connect_state *state = talloc_get_type(req->async.private_data,
+	struct wreplsrv_out_connect_state *state = tevent_req_callback_data(subreq,
 						   struct wreplsrv_out_connect_state);
 	wreplsrv_out_connect_handler(state);
 	return;

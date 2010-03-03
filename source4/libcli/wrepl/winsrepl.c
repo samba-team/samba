@@ -558,22 +558,39 @@ NTSTATUS wrepl_request(struct wrepl_socket *wrepl_socket,
 }
 
 
-/*
-  setup an association - send
-*/
-struct wrepl_request *wrepl_associate_send(struct wrepl_socket *wrepl_socket,
-					   struct wrepl_associate *io)
+struct wrepl_associate_state {
+	struct wrepl_packet packet;
+	uint32_t assoc_ctx;
+	uint16_t major_version;
+};
+
+static void wrepl_associate_done(struct wrepl_request *subreq);
+
+struct tevent_req *wrepl_associate_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct wrepl_socket *wrepl_socket,
+					const struct wrepl_associate *io)
 {
-	struct wrepl_packet *packet;
-	struct wrepl_request *req;
+	struct tevent_req *req;
+	struct wrepl_associate_state *state;
+	struct wrepl_request *subreq;
 
-	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
-	if (packet == NULL) return NULL;
+	if (wrepl_socket->event.ctx != ev) {
+		/* TODO: remove wrepl_socket->event.ctx !!! */
+		smb_panic("wrepl_associate_send event context mismatch!");
+		return NULL;
+	}
 
-	packet->opcode                      = WREPL_OPCODE_BITS;
-	packet->mess_type                   = WREPL_START_ASSOCIATION;
-	packet->message.start.minor_version = 2;
-	packet->message.start.major_version = 5;
+	req = tevent_req_create(mem_ctx, &state,
+				struct wrepl_associate_state);
+	if (req == NULL) {
+		return NULL;
+	};
+
+	state->packet.opcode				= WREPL_OPCODE_BITS;
+	state->packet.mess_type				= WREPL_START_ASSOCIATION;
+	state->packet.message.start.minor_version	= 2;
+	state->packet.message.start.major_version	= 5;
 
 	/*
 	 * nt4 uses 41 bytes for the start_association call
@@ -583,39 +600,68 @@ struct wrepl_request *wrepl_associate_send(struct wrepl_socket *wrepl_socket,
 	 * if we don't do this nt4 uses an old version of the wins replication protocol
 	 * and that would break nt4 <-> samba replication
 	 */
-	packet->padding	= data_blob_talloc(packet, NULL, 21);
-	if (packet->padding.data == NULL) {
-		talloc_free(packet);
-		return NULL;
+	state->packet.padding	= data_blob_talloc(state, NULL, 21);
+	if (tevent_req_nomem(state->packet.padding.data, req)) {
+		return tevent_req_post(req, ev);
 	}
-	memset(packet->padding.data, 0, packet->padding.length);
+	memset(state->packet.padding.data, 0, state->packet.padding.length);
 
-	req = wrepl_request_send(wrepl_socket, packet, NULL);
+	subreq = wrepl_request_send(wrepl_socket, &state->packet, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.fn = wrepl_associate_done;
+	subreq->async.private_data = req;
 
-	talloc_free(packet);
+	return req;
+}
 
-	return req;	
+static void wrepl_associate_done(struct wrepl_request *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+				 struct tevent_req);
+	struct wrepl_associate_state *state = tevent_req_data(req,
+					      struct wrepl_associate_state);
+	NTSTATUS status;
+	struct wrepl_packet *packet;
+
+	status = wrepl_request_recv(subreq, state, &packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (packet->mess_type != WREPL_START_ASSOCIATION_REPLY) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	state->assoc_ctx = packet->message.start_reply.assoc_ctx;
+	state->major_version = packet->message.start_reply.major_version;
+
+	tevent_req_done(req);
 }
 
 /*
   setup an association - recv
 */
-NTSTATUS wrepl_associate_recv(struct wrepl_request *req,
+NTSTATUS wrepl_associate_recv(struct tevent_req *req,
 			      struct wrepl_associate *io)
 {
-	struct wrepl_packet *packet=NULL;
+	struct wrepl_associate_state *state = tevent_req_data(req,
+					      struct wrepl_associate_state);
 	NTSTATUS status;
-	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
-	NT_STATUS_NOT_OK_RETURN(status);
-	if (packet->mess_type != WREPL_START_ASSOCIATION_REPLY) {
-		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
 	}
-	if (NT_STATUS_IS_OK(status)) {
-		io->out.assoc_ctx = packet->message.start_reply.assoc_ctx;
-		io->out.major_version = packet->message.start_reply.major_version;
-	}
-	talloc_free(packet);
-	return status;
+
+	io->out.assoc_ctx = state->assoc_ctx;
+	io->out.major_version = state->major_version;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -624,10 +670,26 @@ NTSTATUS wrepl_associate_recv(struct wrepl_request *req,
 NTSTATUS wrepl_associate(struct wrepl_socket *wrepl_socket,
 			 struct wrepl_associate *io)
 {
-	struct wrepl_request *req = wrepl_associate_send(wrepl_socket, io);
-	return wrepl_associate_recv(req, io);
-}
+	struct tevent_req *subreq;
+	bool ok;
+	NTSTATUS status;
 
+	subreq = wrepl_associate_send(wrepl_socket, wrepl_socket->event.ctx,
+				      wrepl_socket, io);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
+
+	ok = tevent_req_poll(subreq, wrepl_socket->event.ctx);
+	if (!ok) {
+		TALLOC_FREE(subreq);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = wrepl_associate_recv(subreq, io);
+	TALLOC_FREE(subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
+}
 
 /*
   stop an association - send
