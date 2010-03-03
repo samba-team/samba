@@ -6288,17 +6288,23 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p,
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_warning(tctx, "QueryDomainInfo level %u failed - %s\n",
 			       r.in.level, nt_errstr(status));
-				ret = false;
-				break;
+			ret = false;
+			break;
 		}
 		switch (r.in.level) {
 		case 1:
 		case 4:
 			if (info->general.num_users < r.in.start_idx) {
-				torture_warning(tctx, "QueryDomainInfo indicates that QueryDisplayInfo returned more users (%d/%d) than the domain %s is said to contain!\n",
-				       r.in.start_idx, info->general.num_groups,
-				       info->general.domain_name.string);
-				ret = false;
+				/* On AD deployments this numbers don't match
+				 * since QueryDisplayInfo returns universal and
+				 * global groups, QueryDomainInfo only global
+				 * ones. */
+				if (torture_setting_bool(tctx, "samba3", false)) {
+					torture_warning(tctx, "QueryDomainInfo indicates that QueryDisplayInfo returned more users (%d/%d) than the domain %s is said to contain!\n",
+					       r.in.start_idx, info->general.num_groups,
+					       info->general.domain_name.string);
+					ret = false;
+				}
 			}
 			if (!seen_testuser) {
 				struct policy_handle user_handle;
@@ -6313,10 +6319,16 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p,
 		case 3:
 		case 5:
 			if (info->general.num_groups != r.in.start_idx) {
-				torture_warning(tctx, "QueryDomainInfo indicates that QueryDisplayInfo didn't return all (%d/%d) the groups in %s\n",
-				       r.in.start_idx, info->general.num_groups,
-				       info->general.domain_name.string);
-				ret = false;
+				/* On AD deployments this numbers don't match
+				 * since QueryDisplayInfo returns universal and
+				 * global groups, QueryDomainInfo only global
+				 * ones. */
+				if (torture_setting_bool(tctx, "samba3", false)) {
+					torture_warning(tctx, "QueryDomainInfo indicates that QueryDisplayInfo didn't return all (%d/%d) the groups in %s\n",
+					       r.in.start_idx, info->general.num_groups,
+					       info->general.domain_name.string);
+					ret = false;
+				}
 			}
 
 			break;
