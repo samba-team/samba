@@ -129,6 +129,24 @@ struct wrepl_pull_table {
 	(type | (state << 2) | (node << 5) | \
 	 (is_static ? WREPL_FLAGS_IS_STATIC : 0))
 
+struct wrepl_address {
+	const char *owner;
+	const char *address;
+};
+
+struct wrepl_name {
+	struct nbt_name name;
+	enum wrepl_name_type type;
+	enum wrepl_name_state state;
+	enum wrepl_name_node node;
+	bool is_static;
+	uint32_t raw_flags;
+	uint64_t version_id;
+	const char *owner;
+	uint32_t num_addresses;
+	struct wrepl_address *addresses;
+};
+
 /*
   a full pull replication
 */
@@ -139,21 +157,7 @@ struct wrepl_pull_names {
 	} in;
 	struct {
 		uint32_t num_names;
-		struct wrepl_name {
-			struct nbt_name name;
-			enum wrepl_name_type type;
-			enum wrepl_name_state state;
-			enum wrepl_name_node node;
-			bool is_static;
-			uint32_t raw_flags;
-			uint64_t version_id;
-			const char *owner;
-			uint32_t num_addresses;
-			struct wrepl_address {
-				const char *owner;
-				const char *address;
-			} *addresses;
-		} *names;
+		struct wrepl_name *names;
 	} out;
 };
 
