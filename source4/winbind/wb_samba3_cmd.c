@@ -1190,17 +1190,84 @@ NTSTATUS wbsrv_samba3_getgroups(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
+static void setgrent_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+	struct wbsrv_grent *grent;
+
+	DEBUG(5, ("setpwent_recv called\n"));
+
+	status = wb_cmd_setgrent_recv(ctx, s3call->wbconn, &grent);
+	if (NT_STATUS_IS_OK(status)) {
+		s3call->wbconn->protocol_private_data = grent;
+	}
+
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
+
 NTSTATUS wbsrv_samba3_setgrent(struct wbsrv_samba3_call *s3call)
 {
+	struct composite_context *ctx;
+	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+
 	DEBUG(5, ("wbsrv_samba3_setgrent called\n"));
-	s3call->response.result = WINBINDD_OK;
+
+	ctx = wb_cmd_setgrent_send(s3call, service);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = setgrent_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
+}
+
+static void getgrent_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+	struct winbindd_gr *gr;
+	uint32_t num_groups;
+
+	DEBUG(5, ("getgrent_recv called\n"));
+
+	status = wb_cmd_getgrent_recv(ctx, s3call, &gr, &num_groups);
+	if (NT_STATUS_IS_OK(status)) {
+		uint32_t extra_len = sizeof(struct winbindd_gr) * num_groups;
+
+		s3call->response.data.num_entries = num_groups;
+		s3call->response.extra_data.data = gr;
+		s3call->response.length += extra_len;
+	}
+
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 NTSTATUS wbsrv_samba3_getgrent(struct wbsrv_samba3_call *s3call)
 {
+	struct composite_context *ctx;
+	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+	struct wbsrv_grent *grent;
+
 	DEBUG(5, ("wbsrv_samba3_getgrent called\n"));
-	s3call->response.result = WINBINDD_ERROR;
+
+	NT_STATUS_HAVE_NO_MEMORY(s3call->wbconn->protocol_private_data);
+
+	grent = talloc_get_type(s3call->wbconn->protocol_private_data,
+			struct wbsrv_grent);
+	NT_STATUS_HAVE_NO_MEMORY(grent);
+
+	ctx = wb_cmd_getgrent_send(s3call, service, grent,
+			s3call->request.data.num_entries);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = getgrent_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 

@@ -124,6 +124,19 @@ struct wbsrv_pwent {
 	/* The libnet_ctx to use for the libnet_UserList call */
 	struct libnet_context *libnet_ctx;
 };
+/*
+  state of a grent query
+*/
+struct wbsrv_grent {
+	/* Current UserList structure, contains 1+ user structs */
+	struct libnet_GroupList *group_list;
+
+	/* Index of the next user struct in the current UserList struct */
+	uint32_t page_index;
+
+	/* The libnet_ctx to use for the libnet_UserList call */
+	struct libnet_context *libnet_ctx;
+};
 
 /*
   state of one request
