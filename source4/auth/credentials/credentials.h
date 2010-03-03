@@ -76,7 +76,7 @@ struct cli_credentials {
 	const char *domain;
 	const char *realm;
 	const char *principal;
-	const char *salt_principal;
+	char *salt_principal;
 
 	const char *bind_dn;
 

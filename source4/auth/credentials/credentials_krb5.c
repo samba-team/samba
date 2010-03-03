@@ -798,6 +798,7 @@ const char *cli_credentials_get_salt_principal(struct cli_credentials *cred)
 
 _PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal) 
 {
+	talloc_free(cred->salt_principal);
 	cred->salt_principal = talloc_strdup(cred, principal);
 }
 
