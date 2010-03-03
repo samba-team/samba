@@ -10,7 +10,6 @@ import "drsuapi.idl", "misc.idl", "samr.idl", "lsa.idl";
   helpstring("Active Directory Replication LDAP Blobs")
 ]
 interface drsblobs {
-	typedef bitmap drsuapi_DsReplicaSyncOptions drsuapi_DsReplicaSyncOptions;
 	typedef bitmap drsuapi_DrsOptions drsuapi_DrsOptions;
 	typedef [v1_enum] enum drsuapi_DsAttributeId drsuapi_DsAttributeId;
 	typedef [v1_enum] enum lsa_TrustAuthType lsa_TrustAuthType;
