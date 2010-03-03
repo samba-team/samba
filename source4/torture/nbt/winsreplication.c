@@ -88,7 +88,6 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	struct wrepl_associate associate1;
 	struct wrepl_socket *wrepl_socket2;
 	struct wrepl_associate associate2;
-	struct wrepl_pull_table pull_table;
 	struct wrepl_packet packet;
 	struct wrepl_send_ctrl ctrl;
 	struct wrepl_packet *rep_packet;
@@ -141,8 +140,12 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Send a replication table query, with invalid assoc (conn1), receive answer from conn2\n");
-	pull_table.in.assoc_ctx = 0;
-	req = wrepl_pull_table_send(wrepl_socket1, &pull_table);
+	ZERO_STRUCT(packet);
+	packet.opcode				= WREPL_OPCODE_BITS;
+	packet.assoc_ctx			= 0;
+	packet.mess_type			= WREPL_REPLICATION;
+	packet.message.replication.command	= WREPL_REPL_TABLE_QUERY;
+	req = wrepl_request_send(wrepl_socket1, &packet, NULL);
 	status = wrepl_request_recv(req, tctx, &rep_packet);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
