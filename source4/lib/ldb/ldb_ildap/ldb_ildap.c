@@ -383,12 +383,12 @@ static void ildb_callback(struct ldap_request *req)
 		}
 	}
 
+	/* mark the request as not being in progress */
+	ac->in_ildb_callback = false;
+
 	if (request_done) {
 		ildb_request_done(ac, controls, ret);
 	}
-
-	/* unmark the request as beign in progress */
-	ac->in_ildb_callback = false;
 
 	return;
 }
