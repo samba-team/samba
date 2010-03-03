@@ -1424,22 +1424,26 @@ static BOOL test_PrinterData(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing PrinterData (type: %s, size: 0x%08x)", reg_type_str(type), size);
 
-		ret &= test_SetPrinterDataEx(tctx, printername, keyname, valuename, handle, type, buffer, size);
-		ret &= test_GetPrinterDataEx(tctx, printername, keyname, valuename, handle, &type_ex, &buffer_ex, &size_ex);
-		if (ret == TRUE) {
-			if (!PrinterDataEqual(tctx, type_ex, type, size_ex, size, buffer_ex, buffer)) {
-				torture_warning(tctx, "GetPrinterDataEx does not return the same info as we set with SetPrinterDataEx");
-				ret = FALSE;
-			}
+		torture_assert(tctx,
+			test_SetPrinterDataEx(tctx, printername, keyname, valuename, handle, type, buffer, size),
+			"failed to call SetPrinterDataEx");
+		torture_assert(tctx,
+			test_GetPrinterDataEx(tctx, printername, keyname, valuename, handle, &type_ex, &buffer_ex, &size_ex),
+			"failed to call GetPrinterDataEx");
+
+		if (!PrinterDataEqual(tctx, type_ex, type, size_ex, size, buffer_ex, buffer)) {
+			torture_warning(tctx, "GetPrinterDataEx does not return the same info as we set with SetPrinterDataEx");
+			ret = FALSE;
 		}
 		ret &= test_DeletePrinterDataEx(tctx, printername, keyname, valuename, handle);
 		ret &= test_DeletePrinterKey(tctx, printername, keyname, handle);
 
 		free(buffer);
+		free(buffer_ex);
 	}
 	}
 
-	return TRUE;
+	return ret;
 }
 
 /****************************************************************************
