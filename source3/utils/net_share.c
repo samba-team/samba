@@ -62,10 +62,8 @@ int net_share_usage(struct net_context *c, int argc, const char **argv)
 
 int net_share(struct net_context *c, int argc, const char **argv)
 {
-	if (argc < 1)
-		return net_share_usage(c, argc, argv);
 
-	if (StrCaseCmp(argv[0], "HELP") == 0) {
+	if (argc > 0 && StrCaseCmp(argv[0], "HELP") == 0) {
 		net_share_usage(c, argc, argv);
 		return 0;
 	}
