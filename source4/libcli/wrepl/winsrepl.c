@@ -267,34 +267,89 @@ static NTSTATUS wrepl_request_wait(struct wrepl_request *req)
 	return req->status;
 }
 
+const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
+{
+	struct interface *ifaces;
+	load_interfaces(lp_ctx, lp_interfaces(lp_ctx), &ifaces);
+	return iface_best_ip(ifaces, peer_ip);
+}
+
 struct wrepl_connect_state {
-	struct composite_context *result;
 	struct wrepl_socket *wrepl_socket;
-	struct composite_context *creq;
 };
 
-/*
-  handler for winrepl connection completion
-*/
-static void wrepl_connect_handler(struct composite_context *creq)
+static void wrepl_connect_handler(struct composite_context *creq);
+
+struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct wrepl_socket *wrepl_socket,
+				      const char *our_ip, const char *peer_ip)
 {
-	struct wrepl_connect_state *state = talloc_get_type(creq->async.private_data, 
+	struct tevent_req *req;
+	struct wrepl_connect_state *state;
+	struct composite_context *subreq;
+	struct socket_address *peer, *us;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wrepl_connect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->wrepl_socket	= wrepl_socket;
+
+	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name,
+					 our_ip, 0);
+	if (tevent_req_nomem(us, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	peer = socket_address_from_strings(state, wrepl_socket->sock->backend_name,
+					   peer_ip, WINS_REPLICATION_PORT);
+	if (tevent_req_nomem(peer, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = socket_connect_send(wrepl_socket->sock, us, peer,
+				     0, wrepl_socket->event.ctx);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq->async.fn = wrepl_connect_handler;
+	subreq->async.private_data = req;
+
+	return req;
+}
+
+static void wrepl_connect_handler(struct composite_context *subreq)
+{
+	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+				 struct tevent_req);
+	struct wrepl_connect_state *state = tevent_req_data(req,
 					    struct wrepl_connect_state);
 	struct wrepl_socket *wrepl_socket = state->wrepl_socket;
-	struct composite_context *result = state->result;
+	NTSTATUS status;
 
-	result->status = socket_connect_recv(state->creq);
-	if (!composite_is_ok(result)) return;
+	status = socket_connect_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
 
 	wrepl_socket->event.fde = event_add_fd(wrepl_socket->event.ctx, wrepl_socket, 
 					       socket_get_fd(wrepl_socket->sock), 
 					       EVENT_FD_READ,
 					       wrepl_handler, wrepl_socket);
-	if (composite_nomem(wrepl_socket->event.fde, result)) return;
+	if (tevent_req_nomem(wrepl_socket->event.fde, req)) {
+		return;
+	}
 
 	/* setup the stream -> packet parser */
 	wrepl_socket->packet = packet_init(wrepl_socket);
-	if (composite_nomem(wrepl_socket->packet, result)) return;
+	if (tevent_req_nomem(wrepl_socket->packet, req)) {
+		return;
+	}
 	packet_set_private(wrepl_socket->packet, wrepl_socket);
 	packet_set_socket(wrepl_socket->packet, wrepl_socket->sock);
 	packet_set_callback(wrepl_socket->packet, wrepl_finish_recv);
@@ -304,69 +359,27 @@ static void wrepl_connect_handler(struct composite_context *creq)
 	packet_set_fde(wrepl_socket->packet, wrepl_socket->event.fde);
 	packet_set_serialise(wrepl_socket->packet);
 
-	composite_done(result);
-}
-
-const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
-{
-	struct interface *ifaces;
-	load_interfaces(lp_ctx, lp_interfaces(lp_ctx), &ifaces);
-	return iface_best_ip(ifaces, peer_ip);
-}
-
-
-/*
-  connect a wrepl_socket to a WINS server
-*/
-struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
-					     const char *our_ip, const char *peer_ip)
-{
-	struct composite_context *result;
-	struct wrepl_connect_state *state;
-	struct socket_address *peer, *us;
-
-	result = talloc_zero(wrepl_socket, struct composite_context);
-	if (!result) return NULL;
-
-	result->state		= COMPOSITE_STATE_IN_PROGRESS;
-	result->event_ctx	= wrepl_socket->event.ctx;
-
-	state = talloc_zero(result, struct wrepl_connect_state);
-	if (composite_nomem(state, result)) return result;
-	result->private_data	= state;
-	state->result		= result;
-	state->wrepl_socket	= wrepl_socket;
-
-	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 
-					 our_ip, 0);
-	if (composite_nomem(us, result)) return result;
-
-	peer = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 
-					   peer_ip, WINS_REPLICATION_PORT);
-	if (composite_nomem(peer, result)) return result;
-
-	state->creq = socket_connect_send(wrepl_socket->sock, us, peer,
-					  0, wrepl_socket->event.ctx);
-	composite_continue(result, state->creq, wrepl_connect_handler, state);
-	return result;
+	tevent_req_done(req);
 }
 
 /*
   connect a wrepl_socket to a WINS server - recv side
 */
-NTSTATUS wrepl_connect_recv(struct composite_context *result)
+NTSTATUS wrepl_connect_recv(struct tevent_req *req)
 {
-	struct wrepl_connect_state *state = talloc_get_type(result->private_data,
+	struct wrepl_connect_state *state = tevent_req_data(req,
 					    struct wrepl_connect_state);
 	struct wrepl_socket *wrepl_socket = state->wrepl_socket;
-	NTSTATUS status = composite_wait(result);
+	NTSTATUS status;
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		wrepl_socket_dead(wrepl_socket, status);
+		tevent_req_received(req);
+		return status;
 	}
 
-	talloc_free(result);
-	return status;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -375,8 +388,25 @@ NTSTATUS wrepl_connect_recv(struct composite_context *result)
 NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket,
 		       const char *our_ip, const char *peer_ip)
 {
-	struct composite_context *c_req = wrepl_connect_send(wrepl_socket, our_ip, peer_ip);
-	return wrepl_connect_recv(c_req);
+	struct tevent_req *subreq;
+	bool ok;
+	NTSTATUS status;
+
+	subreq = wrepl_connect_send(wrepl_socket, wrepl_socket->event.ctx,
+				    wrepl_socket, our_ip, peer_ip);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
+
+	ok = tevent_req_poll(subreq, wrepl_socket->event.ctx);
+	if (!ok) {
+		TALLOC_FREE(subreq);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = wrepl_connect_recv(subreq);
+	TALLOC_FREE(subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 /* 

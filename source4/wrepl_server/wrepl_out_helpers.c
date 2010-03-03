@@ -41,21 +41,20 @@ enum wreplsrv_out_connect_stage {
 struct wreplsrv_out_connect_state {
 	enum wreplsrv_out_connect_stage stage;
 	struct composite_context *c;
-	struct composite_context *c_req;
 	struct wrepl_associate assoc_io;
 	enum winsrepl_partner_type type;
 	struct wreplsrv_out_connection *wreplconn;
 	struct tevent_req *subreq;
 };
 
-static void wreplsrv_out_connect_handler_creq(struct composite_context *c_req);
 static void wreplsrv_out_connect_handler_treq(struct tevent_req *subreq);
 
 static NTSTATUS wreplsrv_out_connect_wait_socket(struct wreplsrv_out_connect_state *state)
 {
 	NTSTATUS status;
 
-	status = wrepl_connect_recv(state->c_req);
+	status = wrepl_connect_recv(state->subreq);
+	TALLOC_FREE(state->subreq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->subreq = wrepl_associate_send(state,
@@ -123,14 +122,6 @@ static void wreplsrv_out_connect_handler(struct wreplsrv_out_connect_state *stat
 	if (c->state >= COMPOSITE_STATE_DONE && c->async.fn) {
 		c->async.fn(c);
 	}
-}
-
-static void wreplsrv_out_connect_handler_creq(struct composite_context *creq)
-{
-	struct wreplsrv_out_connect_state *state = talloc_get_type(creq->async.private_data,
-						   struct wreplsrv_out_connect_state);
-	wreplsrv_out_connect_handler(state);
-	return;
 }
 
 static void wreplsrv_out_connect_handler_treq(struct tevent_req *subreq)
@@ -201,13 +192,16 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 
 	state->stage	= WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET;
 	state->wreplconn= wreplconn;
-	state->c_req	= wrepl_connect_send(wreplconn->sock,
+	state->subreq	= wrepl_connect_send(state,
+					     service->task->event_ctx,
+					     wreplconn->sock,
 					     partner->our_address?partner->our_address:wrepl_best_ip(service->task->lp_ctx, partner->address),
 					     partner->address);
-	if (!state->c_req) goto failed;
+	if (!state->subreq) goto failed;
 
-	state->c_req->async.fn			= wreplsrv_out_connect_handler_creq;
-	state->c_req->async.private_data	= state;
+	tevent_req_set_callback(state->subreq,
+				wreplsrv_out_connect_handler_treq,
+				state);
 
 	return c;
 failed:
