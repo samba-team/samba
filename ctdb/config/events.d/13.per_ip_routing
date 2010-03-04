@@ -75,7 +75,7 @@ lock_file() {
 			stat -c%y "$lckf"
 			return 1
 		}
-		kill -0 $pid && {
+		/bin/kill -0 $pid && {
 			lock_debug "lock file $lckf is valid for process $pid"
 			stat -c%y "$lckf"
 			return 1
@@ -165,7 +165,10 @@ run_release_script_once()
 		#echo "run it: end"
 	}
 
-	echo -e "#!/bin/sh\n#\n" > $_script
+	echo '#!/bin/sh' > $_script
+	echo '#' >> $_script
+	echo >> $_script
+
 	chmod +x $_script
 
 	return 0;
@@ -230,7 +233,9 @@ generate_per_ip_routing()
 
 	run_release_script_once $release_script
 
-	echo -e "#!/bin/sh\n#\n" > $setup_script
+	echo '#!/bin/sh' > $setup_script
+	echo '#' >> $setup_script
+	echo >> $setup_script
 	chmod +x $setup_script
 
 	return 0;
