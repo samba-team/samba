@@ -1182,14 +1182,14 @@ def provision(setup_dir, message, session_info,
     paths.bind_gid = bind_gid
 
     if hostip is None:
-        try:
-            for ip in socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP):
-                if hostip is None:
-                    hostip = ip[-1][0]
-                if hostip.startswith('127.0.0.') and (not ip[-1][0].startswith('127.0.0.')):
-                    hostip = ip[-1][0]
-        except socket.gaierror, (socket.EAI_NODATA, msg):
-            hostip = None
+        hostips = glue.interface_ips(lp)
+        if len(hostips) == 0:
+            message("No external IPv4 address has been found: I use the loopback.")
+            hostip = '127.0.0.1'
+        else:
+            hostip = hostips[0]
+            if len(hostips) > 1:
+                message("More than one IPv4 address found: I use " + hostip + ".")
 
     if hostip6 is None:
         try:
