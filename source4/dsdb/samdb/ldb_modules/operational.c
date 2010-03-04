@@ -106,12 +106,12 @@ static int construct_primary_group_token(struct ldb_module *module,
 	ldb = ldb_module_get_ctx(module);
 	if (ldb_match_msg_objectclass(msg, "group") == 1) {
 		primary_group_token
-			= samdb_result_rid_from_sid(ldb, msg, "objectSid", 0);
+			= samdb_result_rid_from_sid(msg, msg, "objectSid", 0);
 		if (primary_group_token == 0) {
 			return LDB_SUCCESS;
 		}
 
-		return samdb_msg_add_int(ldb, ldb, msg, "primaryGroupToken",
+		return samdb_msg_add_int(ldb, msg, msg, "primaryGroupToken",
 			primary_group_token);
 	} else {
 		return LDB_SUCCESS;
