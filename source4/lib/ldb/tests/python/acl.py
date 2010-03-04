@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# This is unit with PPD tests
+# This is unit with tests for LDAP access checks
 
 import getopt
 import optparse
@@ -13,12 +13,10 @@ sys.path.append("bin/python")
 
 import samba.getopt as options
 
-# Some error messages that are being tested
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_INVALID_DN_SYNTAX, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_INSUFFICIENT_ACCESS_RIGHTS
 
-# For running the test unit
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
@@ -72,6 +70,7 @@ class AclTests(unittest.TestCase):
         self.ldb_admin = ldb
         self.base_dn = self.find_basedn(self.ldb_admin)
         self.domain_sid = self.find_domain_sid(self.ldb_admin)
+        self.user_pass = "samba123@"
         print "baseDN: %s" % self.base_dn
         self.SAMBA = False; self.WIN = False
         res = self.ldb_admin.search(base="",expression="", scope=SCOPE_BASE,
@@ -80,54 +79,6 @@ class AclTests(unittest.TestCase):
             self.SAMBA = True
         else:
             self.WIN = True
-        if self.WIN:
-            # Modify acluser1 & acluser2 to be excluded from 'Doamin Admin' group
-            try:
-                ldif = """
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-delete: member
-member: """ + self.get_user_dn("acluser1")
-                self.ldb_admin.modify_ldif(ldif)
-                ldif = """
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-delete: member
-member: """ + self.get_user_dn("acluser2")
-                self.ldb_admin.modify_ldif(ldif)
-            except LdbError, (num, _):
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM) # LDAP_ENTRY_ALREADY_EXISTS
-
-    def tearDown(self):
-        # Add
-        self.delete_force(self.ldb_admin, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_add_ou1," + self.base_dn)
-        # Modify
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
-        self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
-        # Search
-        self.delete_force(self.ldb_admin, "CN=test_search_user1,OU=test_search_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
-        # Delete
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_delete_user1"))
-        # Rename OU3
-        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        # Rename OU2
-        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou2," + self.base_dn)
-        # Rename OU1
-        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou1," + self.base_dn)
 
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
@@ -188,7 +139,7 @@ member: """ + member_dn
             "dn" : user_dn,
             "sAMAccountName" : user_dn.split(",")[0][3:],
             "objectClass" : "user",
-            "userPassword" : "samba123@",
+            "userPassword" : self.user_pass,
             "url" : "www.bbc.co.uk",
         }
         if desc:
@@ -241,10 +192,10 @@ userAccountControl: %s""" % userAccountControl
             mod = re.sub("userAccountControl: \d.*", "userAccountControl: 544", mod)
         self.ldb_admin.modify_ldif(mod)
 
-    def get_ldb_connection(self, target_username, target_password):
+    def get_ldb_connection(self, target_username):
         username_save = creds.get_username(); password_save = creds.get_password()
         creds.set_username(target_username)
-        creds.set_password(target_password)
+        creds.set_password(self.user_pass)
         ldb_target = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
         creds.set_username(username_save); creds.set_password(password_save)
         return ldb_target
@@ -269,61 +220,80 @@ userAccountControl: %s""" % userAccountControl
         """
         desc = self.read_desc(object_dn)
         return desc.as_sddl(self.domain_sid)
-    
-    # Testing section
 
-    def test_add_domainadmin_notowner(self):
-        """ 1 Testing OU with the rights of Doman Admin not creator of the OU """
-        # Creating simple user
+    # Test if we have any additional groups for users than default ones
+    def assert_user_no_group_member(self, username):
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                                         % self.get_user_dn(username) )
+        try:
+            self.assertEqual( res[0]["memberOf"][0], "" )
+        except KeyError:
+            pass
+        else:
+            self.fail()
+    
+    def create_enable_user(self, username):
+        self.create_user(self.ldb_admin, self.get_user_dn(username))
+        self.enable_account(self.get_user_dn(username))
+
+#tests on ldap add operations
+class AclAddTests(AclTests):
+    def setUp(self):
+        AclTests.setUp(self)
+        # Domain admin that will be creator of OU parent-child structure
+        self.usr_admin_owner = "acl_add_user1"
+        # Second domain admin that will not be creator of OU parent-child structure
+        self.usr_admin_not_owner = "acl_add_user2"
+        # Regular user
+        self.regular_user = "acl_add_user3"
         if self.SAMBA:
-            # Create domain admin that will be creator of OU parent-child structure
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-            # Create second domain admin that will not be creator of OU parent-child structure
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser2"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser2"))
-            self.enable_account(self.get_user_dn("acluser2"))
-        # Test if we have any additional groups for users than default ones
+            self.create_enable_user(self.usr_admin_owner)
+            self.create_enable_user(self.usr_admin_not_owner)
+            self.create_enable_user(self.regular_user)
+
         if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser2") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Modify acluser1 & acluser2 to be 'Doamin Admin' group member
+            self.assert_user_no_group_member(self.usr_admin_owner)
+            self.assert_user_no_group_member(self.usr_admin_not_owner)
+            self.assert_user_no_group_member(self.regular_user)
+
+        # add admins to the Domain Admins group
         self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn("acluser1"))
+                self.get_user_dn(self.usr_admin_owner))
         self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn("acluser2"))
-        # Create LDAP connection with OUs crator domain admin credentials
-        ldb_owner = self.get_ldb_connection("acluser1", "samba123@")
-        # Create LDAP connection with second domain admin credentials that is not creator of the OUs
-        ldb_notowner = self.get_ldb_connection("acluser2", "samba123@")
-        # Make sure top OU is deleted (and so everything under it)
+                self.get_user_dn(self.usr_admin_not_owner))
+
+        self.ldb_owner = self.get_ldb_connection(self.usr_admin_owner)
+        self.ldb_notowner = self.get_ldb_connection(self.usr_admin_not_owner)
+        self.ldb_user = self.get_ldb_connection(self.regular_user)
+
+    def tearDown(self):
+        self.delete_force(self.ldb_admin, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_add_ou1," + self.base_dn)
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+
+    # Make sure top OU is deleted (and so everything under it)
+    def assert_top_ou_deleted(self):
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s,%s)" \
                 % ("OU=test_add_ou1", self.base_dn) )
         self.assertEqual( res, [] )
+
+    def test_add_u1(self):
+        """Testing OU with the rights of Doman Admin not creator of the OU """
+        self.assert_top_ou_deleted()
         # Change descriptor for top level OU
-        self.create_ou(ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        self.create_ou(ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        user_sid = self.get_object_sid(self.get_user_dn("acluser2"))
+        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
+        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        user_sid = self.get_object_sid(self.get_user_dn(self.usr_admin_not_owner))
         mod = "(D;CI;WPCC;;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         # Test user and group creation with another domain admin's credentials
-        self.create_user(ldb_notowner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.create_group(ldb_notowner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_user(self.ldb_notowner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_group(self.ldb_notowner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Make sure we HAVE created the two objects -- user and group
         # !!! We should not be able to do that, but however beacuse of ACE ordering our inherited Deny ACE
         # !!! comes after explicit (A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA) that comes from somewhere
@@ -334,54 +304,16 @@ userAccountControl: %s""" % userAccountControl
                 % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn) )
         self.assertTrue( len(res) > 0 )
 
-    def test_add_regular_user(self):
-        """ 2 Testing OU with the regular user that has no rights granted over the OU """
-        # Creating simple user
-        if self.SAMBA:
-            # Create domain admin that will be creator of OU parent-child structure
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-            # Create regular user that will not be creator of OU parent-child structure
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser2"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser2"))
-            self.enable_account(self.get_user_dn("acluser2"))
-        # Test if we have any additional groups for users than default ones
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser2") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Modify acluser1 to be 'Doamin Admin' group member
-        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn("acluser1"))
-        # Create LDAP connection with OUs crator domain admin credentials
-        ldb_owner = self.get_ldb_connection("acluser1", "samba123@")
-        # Create LDAP connection with a regular user that has the right 'Crate child User objects'
-        ldb_user = self.get_ldb_connection("acluser2", "samba123@")
-        # Make sure top OU is deleted (and so everything under it)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s,%s)" \
-                % ("OU=test_add_ou1", self.base_dn) )
-        self.assertEqual( res, [] )
+    def test_add_u2(self):
+        """Testing OU with the regular user that has no rights granted over the OU """
+        self.assert_top_ou_deleted()
         # Create a parent-child OU structure with domain admin credentials
-        self.create_ou(ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        self.create_ou(ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
+        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with regular user credentials
         try:
-            self.create_user(ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-            self.create_group(ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+            self.create_user(self.ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+            self.create_group(self.ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -394,57 +326,19 @@ userAccountControl: %s""" % userAccountControl
                 % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn) )
         self.assertEqual( res, [])
 
-    def test_add_granted_user(self):
-        """ 3 Testing OU with the rights of regular user granted the right 'Create User child objects' """
-        # Creating simple user
-        if self.SAMBA:
-            # Create domain admin that will be creator of OU parent-child structure
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-            # Create second domain admin that will not be creator of OU parent-child structure
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser2"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser2"))
-            self.enable_account(self.get_user_dn("acluser2"))
-        # Test if we have any additional groups for users than default ones
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser2") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Modify acluser1 to be 'Doamin Admin' group member
-        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn("acluser1"))
-        # Create LDAP connection with OUs crator domain admin credentials
-        ldb_owner = self.get_ldb_connection("acluser1", "samba123@")
-        # Create LDAP connection with a regular user that has the right 'Crate child User objects'
-        ldb_guser = self.get_ldb_connection("acluser2", "samba123@")
-        # Make sure top OU is deleted (and so everything under it)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s,%s)" \
-                % ("OU=test_add_ou1", self.base_dn) )
-        self.assertEqual( res, [] )
+    def test_add_u3(self):
+        """Testing OU with the rights of regular user granted the right 'Create User child objects' """
+        self.assert_top_ou_deleted()
         # Change descriptor for top level OU
-        self.create_ou(ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        user_sid = self.get_object_sid(self.get_user_dn("acluser2"))
+        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
+        user_sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
-        self.create_ou(ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with granted user only to one of the objects
-        self.create_user(ldb_guser, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_user(self.ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         try:
-            self.create_group(ldb_guser, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+            self.create_group(self.ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -457,36 +351,13 @@ userAccountControl: %s""" % userAccountControl
                 % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn) )
         self.assertEqual( res, [])
 
-    def test_add_domainadmin_owner(self):
+    def test_add_u4(self):
         """ 4 Testing OU with the rights of Doman Admin creator of the OU"""
-        # Creating acluser1
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        # Test if we have any additional groups for user than default
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Modify acluser1 to be 'Doamin Admin' group member
-        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn("acluser1"))
-        # Create LDAP connection with OUs crator domain admin credentials
-        ldb_owner = self.get_ldb_connection("acluser1", "samba123@")
-        # Make sure top OU is deleted (and so everything under it)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s,%s)" \
-                % ("OU=test_add_ou1", self.base_dn) )
-        self.assertEqual( res, [] )
-        self.create_ou(ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        self.create_ou(ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.create_user(ldb_owner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.create_group(ldb_owner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.assert_top_ou_deleted()
+        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
+        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_user(self.ldb_owner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.create_group(self.ldb_owner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Make sure we have successfully created the two objects -- user and group
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s,%s)" \
                 % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn) )
@@ -495,100 +366,82 @@ userAccountControl: %s""" % userAccountControl
                 % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn) )
         self.assertTrue( len(res) > 0 )
 
+#tests on ldap modify operations
+class AclModifyTests(AclTests):
+
+    def setUp(self):
+        AclTests.setUp(self)
+        self.user_with_wp = "acl_mod_user1"
+
+        if self.SAMBA:
+            # Create regular user
+            self.create_enable_user(self.user_with_wp)
+        if self.WIN:
+            self.assert_user_no_group_member(self.user_with_wp)
+
+        self.ldb_user = self.get_ldb_connection(self.user_with_wp)
+        self.user_sid = self.get_object_sid( self.get_user_dn(self.user_with_wp))
+
+    def tearDown(self):
+        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
+
     def test_modify_u1(self):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
-        # Creating acluser1
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-
-        # Test if we have any additional groups for user than default
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
+        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
         print "Testing modify on User object"
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        #self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.create_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
-        user_sid = self.get_object_sid( self.get_user_dn("acluser1") )
-        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         ldif = """
 dn: """ + self.get_user_dn("test_modify_user1") + """
 changetype: modify
 replace: displayName
 displayName: test_changed"""
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % self.get_user_dn("test_modify_user1") )
         self.assertEqual(res[0]["displayName"][0], "test_changed")
         # Second test object -- Group
         print "Testing modify on Group object"
-        self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        #self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
-        user_sid = self.get_object_sid( self.get_user_dn("acluser1") )
-        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
 changetype: modify
 replace: displayName
 displayName: test_changed"""
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % str("CN=test_modify_group1,CN=Users," + self.base_dn) )
         self.assertEqual(res[0]["displayName"][0], "test_changed")
-        # Second test object -- Organizational Unit
+        # Third test object -- Organizational Unit
         print "Testing modify on OU object"
-        self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        #self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.create_ou(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
-        user_sid = self.get_object_sid( self.get_user_dn("acluser1") )
-        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
 changetype: modify
 replace: displayName
 displayName: test_changed"""
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % str("OU=test_modify_ou1," + self.base_dn) )
         self.assertEqual(res[0]["displayName"][0], "test_changed")
 
     def test_modify_u2(self):
         """6 Modify two attributes as you have DS_WRITE_PROPERTY granted only for one of them"""
-        # Creating acluser1
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        # Test if we have any additional groups for user than default
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
+        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
         print "Testing modify on User object"
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        #self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.create_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
-        user_sid = self.get_object_sid( self.get_user_dn("acluser1") )
-        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         # Modify on attribute you have rights for
         ldif = """
@@ -596,7 +449,7 @@ dn: """ + self.get_user_dn("test_modify_user1") + """
 changetype: modify
 replace: displayName
 displayName: test_changed"""
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % self.get_user_dn("test_modify_user1") )
         self.assertEqual(res[0]["displayName"][0], "test_changed")
@@ -607,7 +460,7 @@ changetype: modify
 replace: url
 url: www.samba.org"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -615,17 +468,14 @@ url: www.samba.org"""
             self.fail()
         # Second test object -- Group
         print "Testing modify on Group object"
-        self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
-        user_sid = self.get_object_sid( self.get_user_dn("acluser1") )
-        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
 changetype: modify
 replace: displayName
 displayName: test_changed"""
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % str("CN=test_modify_group1,CN=Users," + self.base_dn) )
         self.assertEqual(res[0]["displayName"][0], "test_changed")
@@ -636,7 +486,7 @@ changetype: modify
 replace: url
 url: www.samba.org"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -644,17 +494,14 @@ url: www.samba.org"""
             self.fail()
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
-        self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.create_ou(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
-        user_sid = self.get_object_sid( self.get_user_dn("acluser1") )
-        mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
 changetype: modify
 replace: displayName
 displayName: test_changed"""
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % str("OU=test_modify_ou1," + self.base_dn) )
         self.assertEqual(res[0]["displayName"][0], "test_changed")
@@ -665,7 +512,7 @@ changetype: modify
 replace: url
 url: www.samba.org"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -674,28 +521,8 @@ url: www.samba.org"""
 
     def test_modify_u3(self):
         """7 Modify one attribute as you have no what so ever rights granted"""
-        # Creating acluser1
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-
-        # Test if we have any additional groups for user than default
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser1") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
-
         # First test object -- User
         print "Testing modify on User object"
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.create_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         # Modify on attribute you do not have rights for granted
         ldif = """
@@ -704,7 +531,7 @@ changetype: modify
 replace: url
 url: www.samba.org"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -713,7 +540,6 @@ url: www.samba.org"""
 
         # Second test object -- Group
         print "Testing modify on Group object"
-        self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         # Modify on attribute you do not have rights for granted
         ldif = """
@@ -722,7 +548,7 @@ changetype: modify
 replace: url
 url: www.samba.org"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -731,7 +557,7 @@ url: www.samba.org"""
 
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
-        self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        #self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.create_ou(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         # Modify on attribute you do not have rights for granted
         ldif = """
@@ -740,7 +566,7 @@ changetype: modify
 replace: url
 url: www.samba.org"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -750,30 +576,13 @@ url: www.samba.org"""
 
     def test_modify_u4(self):
         """11 Grant WP to PRINCIPAL_SELF and test modify"""
-        # Creating acluser1
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser3"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser3"))
-            self.enable_account(self.get_user_dn("acluser3"))
-        # Test if we have any additional groups for user than default
-        if self.WIN:
-            res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                    % self.get_user_dn("acluser3") )
-            try:
-                self.assertEqual( res[0]["memberOf"][0], "" )
-            except KeyError:
-                pass
-            else:
-                self.fail()
-        # Create user connection that we will test with
-        ldb_user = self.get_ldb_connection("acluser3", "samba123@")
         ldif = """
-dn: """ + self.get_user_dn("acluser3") + """
+dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 add: adminDescription
 adminDescription: blah blah blah"""
         try:
-            ldb_user.modify_ldif(ldif)
+            self.ldb_user.modify_ldif(ldif)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -781,21 +590,37 @@ adminDescription: blah blah blah"""
             self.fail()
 
         mod = "(OA;;WP;bf967919-0de6-11d0-a285-00aa003049e2;;PS)"
-        self.dacl_add_ace(self.get_user_dn("acluser3"), mod)
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         # Modify on attribute you have rights for
-        ldb_user.modify_ldif(ldif)
+        self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                                    % self.get_user_dn("acluser3"), attrs=["adminDescription"] )
+                                    % self.get_user_dn(self.user_with_wp), attrs=["adminDescription"] )
         self.assertEqual(res[0]["adminDescription"][0], "blah blah blah")
 
+
 #enable these when we have search implemented
-    def _test_search_u1(self):
-        """See if can prohibit user to read another User object"""
-        # Creating simple user to search with
+class AclSearchTests(AclTests):
+
+    def setUp(self):
+        AclTests.setUp(self)
+        self.regular_user = "acl_search_user1"
+
         if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
+            # Create regular user
+            self.create_enable_user(self.regular_user)
+        if self.WIN:
+            self.assert_user_no_group_member(self.regular_user)
+
+        self.ldb_user = self.get_ldb_connection(self.regular_user)
+
+    def tearDown(self):
+        self.delete_force(self.ldb_admin, "CN=test_search_user1,OU=test_search_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+
+    def test_search_u1(self):
+        """See if can prohibit user to read another User object"""
         ou_dn = "OU=test_search_ou1," + self.base_dn
         user_dn = "CN=test_search_user1," + ou_dn
         # Create clean OU
@@ -830,19 +655,13 @@ adminDescription: blah blah blah"""
         desc = security.descriptor.from_sddl( desc_sddl, self.domain_sid )
         self.delete_force(self.ldb_admin, user_dn)
         self.create_user(self.ldb_admin, user_dn, desc)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
+
         res = ldb_user.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % user_dn )
         self.assertEqual( res, [] )
 
-    def _test_search_u2(self):
+    def test_search_u2(self):
         """User's group ACEs cleared and after that granted RIGHT_DS_READ_PROPERTY to another User object"""
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
         ou_dn = "OU=test_search_ou1," + self.base_dn
         user_dn = "CN=test_search_user1," + ou_dn
         # Create clean OU
@@ -874,27 +693,37 @@ adminDescription: blah blah blah"""
         #mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)"
         mod = "(A;;RP;;;AU)"
         self.dacl_add_ace(user_dn, mod)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
-        res = ldb_user.search( self.base_dn, expression="(distinguishedName=%s)" \
+        res = self.ldb_user.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % user_dn )
         self.assertNotEqual( res, [] )
 
+#tests on ldap delete operations
+class AclDeleteTests(AclTests):
+
+    def setUp(self):
+        AclTests.setUp(self)
+        self.regular_user = "acl_delete_user1"
+
+        if self.SAMBA:
+            # Create regular user
+            self.create_enable_user(self.regular_user)
+        if self.WIN:
+            self.assert_user_no_group_member(self.regular_user)
+
+        self.ldb_user = self.get_ldb_connection(self.regular_user)
+
+    def tearDown(self):
+        self.delete_force(self.ldb_admin, self.get_user_dn("test_delete_user1"))
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+
     def test_delete_u1(self):
         """User is prohibited by default to delete another User object"""
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         # Create user that we try to delete
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_delete_user"))
-        self.create_user(self.ldb_admin, self.get_user_dn("test_delete_user"))
+        self.create_user(self.ldb_admin, self.get_user_dn("test_delete_user1"))
         # Here delete User object should ALWAYS through exception
         try:
-            ldb_user.delete(self.get_user_dn("test_delete_user"))
+            self.ldb_user.delete(self.get_user_dn("test_delete_user1"))
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -903,20 +732,12 @@ adminDescription: blah blah blah"""
     def test_delete_u2(self):
         """User's group has RIGHT_DELETE to another User object"""
         user_dn = self.get_user_dn("test_delete_user1")
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         # Create user that we try to delete
-        self.delete_force(self.ldb_admin, user_dn)
         self.create_user(self.ldb_admin, user_dn)
         mod = "(A;;SD;;;AU)"
         self.dacl_add_ace(user_dn, mod)
         # Try to delete User object
-        ldb_user.delete( user_dn )
+        self.ldb_user.delete( user_dn )
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % user_dn )
         self.assertEqual( res, [] )
@@ -924,38 +745,57 @@ adminDescription: blah blah blah"""
     def test_delete_u3(self):
         """User indentified by SID has RIGHT_DELETE to another User object"""
         user_dn = self.get_user_dn("test_delete_user1")
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         # Create user that we try to delete
-        self.delete_force(self.ldb_admin, user_dn)
         self.create_user(self.ldb_admin, user_dn)
-        mod = "(A;;SD;;;%s)" % str( self.get_object_sid(self.get_user_dn("acluser1")) )
+        mod = "(A;;SD;;;%s)" % str( self.get_object_sid(self.get_user_dn(self.regular_user)))
         self.dacl_add_ace(user_dn, mod)
         # Try to delete User object
-        ldb_user.delete( user_dn )
+        self.ldb_user.delete( user_dn )
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % user_dn )
         self.assertEqual( res, [] )
 
-    def test_rename_u1(self):
-        """ 6 Regular user fails to rename 'User object' within single OU"""
-        # Creating simple user to search with
+#tests on ldap rename operations
+class AclRenameTests(AclTests):
+
+    def setUp(self):
+        AclTests.setUp(self)
+        self.regular_user = "acl_rename_user1"
+
         if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
+            # Create regular user
+            self.create_enable_user(self.regular_user)
+        if self.WIN:
+            self.assert_user_no_group_member(self.regular_user)
+
+        self.ldb_user = self.get_ldb_connection(self.regular_user)
+
+    def tearDown(self):
+        # Rename OU3
+        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
+        # Rename OU2
+        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_rename_ou2," + self.base_dn)
+        # Rename OU1
+        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_rename_ou1," + self.base_dn)
+        if self.SAMBA:
+            self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+
+    def test_rename_u1(self):
+        """Regular user fails to rename 'User object' within single OU"""
         # Create OU structure
         self.create_ou(self.ldb_admin, "OU=test_rename_ou1," + self.base_dn)
         self.create_user(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         try:
-            ldb_user.rename("CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn, \
+            self.ldb_user.rename("CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn, \
                     "CN=test_rename_user5,OU=test_rename_ou1," + self.base_dn)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
@@ -963,45 +803,17 @@ adminDescription: blah blah blah"""
             self.fail()
 
     def test_rename_u2(self):
-        """ 7 Grant WRITE_PROPERTY to AU so regular user can rename 'User object' within single OU"""
+        """Grant WRITE_PROPERTY to AU so regular user can rename 'User object' within single OU"""
         ou_dn = "OU=test_rename_ou1," + self.base_dn
         user_dn = "CN=test_rename_user1," + ou_dn
         rename_user_dn = "CN=test_rename_user5," + ou_dn
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        print "Test rename with rights granted to AU"
         # Create OU structure
         self.create_ou(self.ldb_admin, ou_dn)
         self.create_user(self.ldb_admin, user_dn)
         mod = "(A;;WP;;;AU)"
         self.dacl_add_ace(user_dn, mod)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         # Rename 'User object' having WP to AU
-        ldb_user.rename(user_dn, rename_user_dn)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                % user_dn )
-        self.assertEqual( res, [] )
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                % rename_user_dn )
-        self.assertNotEqual( res, [] )
-        print "Test rename with rights granted to 'User object' SID"
-        # Create OU structure
-        self.delete_force(self.ldb_admin, user_dn)
-        self.delete_force(self.ldb_admin, rename_user_dn)
-        self.delete_force(self.ldb_admin, ou_dn)
-        self.create_ou(self.ldb_admin, ou_dn)
-        self.create_user(self.ldb_admin, user_dn)
-        sid = self.get_object_sid(self.get_user_dn("acluser1"))
-        mod = "(A;;WP;;;%s)" % str(sid)
-        self.dacl_add_ace(user_dn, mod)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
-        # Rename 'User object' having WP to AU
-        ldb_user.rename(user_dn, rename_user_dn)
+        self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % user_dn )
         self.assertEqual( res, [] )
@@ -1010,53 +822,18 @@ adminDescription: blah blah blah"""
         self.assertNotEqual( res, [] )
 
     def test_rename_u3(self):
-        """ 8 Rename 'User object' cross OU with WP, SD and CC right granted on reg. user to AU"""
-        ou1_dn = "OU=test_rename_ou1," + self.base_dn
-        ou2_dn = "OU=test_rename_ou2," + self.base_dn
-        user_dn = "CN=test_rename_user2," + ou1_dn
-        rename_user_dn = "CN=test_rename_user5," + ou2_dn
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
-        print "Test rename with rights granted to AU"
+        """Test rename with rights granted to 'User object' SID"""
+        ou_dn = "OU=test_rename_ou1," + self.base_dn
+        user_dn = "CN=test_rename_user1," + ou_dn
+        rename_user_dn = "CN=test_rename_user5," + ou_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
+        self.create_ou(self.ldb_admin, ou_dn)
         self.create_user(self.ldb_admin, user_dn)
-        mod = "(A;;WPSD;;;AU)"
+        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = "(A;;WP;;;%s)" % str(sid)
         self.dacl_add_ace(user_dn, mod)
-        mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(ou2_dn, mod)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
-        # Rename 'User object' having SD and CC to AU
-        ldb_user.rename(user_dn, rename_user_dn)
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                % user_dn )
-        self.assertEqual( res, [] )
-        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
-                % rename_user_dn )
-        self.assertNotEqual( res, [] )
-        print "Test rename with rights granted to 'User object' SID"
-        # Create OU structure
-        self.delete_force(self.ldb_admin, user_dn)
-        self.delete_force(self.ldb_admin, rename_user_dn)
-        self.delete_force(self.ldb_admin, ou1_dn)
-        self.delete_force(self.ldb_admin, ou2_dn)
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
-        self.create_user(self.ldb_admin, user_dn)
-        sid = self.get_object_sid(self.get_user_dn("acluser1"))
-        mod = "(A;;WPSD;;;%s)" % str(sid)
-        self.dacl_add_ace(user_dn, mod)
-        mod = "(A;;CC;;;%s)" % str(sid)
-        self.dacl_add_ace(ou2_dn, mod)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
-        # Rename 'User object' having SD and CC to AU
-        ldb_user.rename(user_dn, rename_user_dn)
+        # Rename 'User object' having WP to AU
+        self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % user_dn )
         self.assertEqual( res, [] )
@@ -1065,16 +842,58 @@ adminDescription: blah blah blah"""
         self.assertNotEqual( res, [] )
 
     def test_rename_u4(self):
-        """9 Rename 'User object' cross OU with WP, DC and CC right granted on OU & user to AU"""
+        """Rename 'User object' cross OU with WP, SD and CC right granted on reg. user to AU"""
+        ou1_dn = "OU=test_rename_ou1," + self.base_dn
+        ou2_dn = "OU=test_rename_ou2," + self.base_dn
+        user_dn = "CN=test_rename_user2," + ou1_dn
+        rename_user_dn = "CN=test_rename_user5," + ou2_dn
+        # Create OU structure
+        self.create_ou(self.ldb_admin, ou1_dn)
+        self.create_ou(self.ldb_admin, ou2_dn)
+        self.create_user(self.ldb_admin, user_dn)
+        mod = "(A;;WPSD;;;AU)"
+        self.dacl_add_ace(user_dn, mod)
+        mod = "(A;;CC;;;AU)"
+        self.dacl_add_ace(ou2_dn, mod)
+        # Rename 'User object' having SD and CC to AU
+        self.ldb_user.rename(user_dn, rename_user_dn)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                % user_dn )
+        self.assertEqual( res, [] )
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                % rename_user_dn )
+        self.assertNotEqual( res, [] )
+
+    def test_rename_u5(self):
+        """Test rename with rights granted to 'User object' SID"""
+        ou1_dn = "OU=test_rename_ou1," + self.base_dn
+        ou2_dn = "OU=test_rename_ou2," + self.base_dn
+        user_dn = "CN=test_rename_user2," + ou1_dn
+        rename_user_dn = "CN=test_rename_user5," + ou2_dn
+        # Create OU structure
+        self.create_ou(self.ldb_admin, ou1_dn)
+        self.create_ou(self.ldb_admin, ou2_dn)
+        self.create_user(self.ldb_admin, user_dn)
+        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = "(A;;WPSD;;;%s)" % str(sid)
+        self.dacl_add_ace(user_dn, mod)
+        mod = "(A;;CC;;;%s)" % str(sid)
+        self.dacl_add_ace(ou2_dn, mod)
+        # Rename 'User object' having SD and CC to AU
+        self.ldb_user.rename(user_dn, rename_user_dn)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                % user_dn )
+        self.assertEqual( res, [] )
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                % rename_user_dn )
+        self.assertNotEqual( res, [] )
+
+    def test_rename_u6(self):
+        """Rename 'User object' cross OU with WP, DC and CC right granted on OU & user to AU"""
         ou1_dn = "OU=test_rename_ou1," + self.base_dn
         ou2_dn = "OU=test_rename_ou2," + self.base_dn
         user_dn = "CN=test_rename_user2," + ou1_dn
         rename_user_dn = "CN=test_rename_user2," + ou2_dn
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
         # Create OU structure
         self.create_ou(self.ldb_admin, ou1_dn)
         self.create_ou(self.ldb_admin, ou2_dn)
@@ -1086,10 +905,8 @@ adminDescription: blah blah blah"""
         self.create_user(self.ldb_admin, user_dn)
         mod = "(A;;WP;;;AU)"
         self.dacl_add_ace(user_dn, mod)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         # Rename 'User object' having SD and CC to AU
-        ldb_user.rename(user_dn, rename_user_dn)
+        self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % user_dn )
         self.assertEqual( res, [] )
@@ -1097,18 +914,13 @@ adminDescription: blah blah blah"""
                 % rename_user_dn )
         self.assertNotEqual( res, [] )
 
-    def test_rename_u5(self):
-        """10 Rename 'User object' cross OU (second level) with WP, DC and CC right granted on OU to AU"""
+    def test_rename_u7(self):
+        """Rename 'User object' cross OU (second level) with WP, DC and CC right granted on OU to AU"""
         ou1_dn = "OU=test_rename_ou1," + self.base_dn
         ou2_dn = "OU=test_rename_ou2," + self.base_dn
         ou3_dn = "OU=test_rename_ou3," + ou2_dn
         user_dn = "CN=test_rename_user2," + ou1_dn
         rename_user_dn = "CN=test_rename_user5," + ou3_dn
-        # Creating simple user to search with
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.create_user(self.ldb_admin, self.get_user_dn("acluser1"))
-            self.enable_account(self.get_user_dn("acluser1"))
         # Create OU structure
         self.create_ou(self.ldb_admin, ou1_dn)
         self.create_ou(self.ldb_admin, ou2_dn)
@@ -1118,10 +930,8 @@ adminDescription: blah blah blah"""
         mod = "(A;;CC;;;AU)"
         self.dacl_add_ace(ou3_dn, mod)
         self.create_user(self.ldb_admin, user_dn)
-        # Create user connectiona that we will test with
-        ldb_user = self.get_ldb_connection("acluser1", "samba123@")
         # Rename 'User object' having SD and CC to AU
-        ldb_user.rename(user_dn, rename_user_dn)
+        self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % user_dn )
         self.assertEqual( res, [] )
@@ -1137,7 +947,12 @@ ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
 
 runner = SubunitTestRunner()
 rc = 0
-if not runner.run(unittest.makeSuite(AclTests)).wasSuccessful():
+if not runner.run(unittest.makeSuite(AclAddTests)).wasSuccessful():
     rc = 1
-
+if not runner.run(unittest.makeSuite(AclModifyTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(AclDeleteTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(AclRenameTests)).wasSuccessful():
+    rc = 1
 sys.exit(rc)
