@@ -772,9 +772,9 @@ objectClass: container
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
-    def test_primary_group_token(self):
-        """Test the primary group token behaviour (hidden-generated-readonly attribute on groups)"""
-        print "Testing primary group token behaviour\n"
+    def test_primary_group_token_constructed(self):
+        """Test the primary group token behaviour (hidden-generated-readonly attribute on groups) and some other constructed attributes"""
+        print "Testing primary group token behaviour and other constructed attributes\n"
 
         try:
             ldb.add({
