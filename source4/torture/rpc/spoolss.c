@@ -3290,7 +3290,6 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		REG_DWORD,
 		REG_BINARY
 	};
-	uint32_t value = 12345678;
 	const char *str = "abcdefghijklmnopqrstuvwxzy";
 	int i, t, s;
 
@@ -3309,19 +3308,11 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		uint8_t *data_out;
 		uint32_t needed, offered = 0;
 
-		if (types[t] == REG_DWORD) {
-			s = 0xffff;
-		}
-
 		switch (types[t]) {
 		case REG_BINARY:
+		case REG_DWORD:
 			data = blob;
 			offered = blob.length;
-			break;
-		case REG_DWORD:
-			data = data_blob(NULL, 4);
-			SIVAL(data.data, 0, value);
-			offered = 4;
 			break;
 		case REG_SZ:
 			torture_assert(tctx,
