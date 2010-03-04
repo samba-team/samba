@@ -9137,7 +9137,6 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 	WERROR 			result = WERR_OK;
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	char			*oid_string;
-	DATA_BLOB blob;
 
 	DEBUG(4,("_spoolss_SetPrinterDataEx\n"));
 
@@ -9187,12 +9186,6 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 		oid_string++;
 	}
 
-	result = push_spoolss_PrinterData(p->mem_ctx, &blob,
-					  r->in.type, &r->in.data);
-	if (!W_ERROR_IS_OK(result)) {
-		goto done;
-	}
-
 	/*
 	 * When client side code sets a magic printer data key, detect it and save
 	 * the current printer data and the magic key's data (its the DEVMODE) for
@@ -9200,7 +9193,7 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 	 */
 	if ((r->in.type == REG_BINARY) && strequal(r->in.value_name, PHANTOM_DEVMODE_KEY)) {
 		/* Set devmode and printer initialization info */
-		result = save_driver_init(printer, 2, blob.data, blob.length);
+		result = save_driver_init(printer, 2, r->in.data, r->in.offered);
 
 		srv_spoolss_reset_printerdata(printer->info_2->drivername);
 
@@ -9210,7 +9203,7 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 	/* save the registry data */
 
 	result = set_printer_dataex(printer, r->in.key_name, r->in.value_name,
-				    r->in.type, blob.data, blob.length);
+				    r->in.type, r->in.data, r->in.offered);
 
 	if (W_ERROR_IS_OK(result)) {
 		/* save the OID if one was specified */
