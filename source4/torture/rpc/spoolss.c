@@ -3191,11 +3191,16 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 
 		enum winreg_Type type;
 		union spoolss_PrinterData data;
+		DATA_BLOB blob;
+
+		torture_assert(tctx,
+			reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
+					  "REG_SZ", "dog", &r.in.type, &blob), "");
 
 		r.in.handle = handle;
 		r.in.value_name = values[i];
-		r.in.type = REG_SZ;
-		r.in.data.string = "dog";
+		r.in.data = blob.data;
+		r.in.offered = blob.length;
 
 		torture_comment(tctx, "Testing SetPrinterData(%s)\n",
 			r.in.value_name);
@@ -3210,7 +3215,7 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 		}
 
 		torture_assert_int_equal(tctx, r.in.type, type, "type mismatch");
-		torture_assert_str_equal(tctx, r.in.data.string, data.string, "data mismatch");
+		torture_assert_str_equal(tctx, "dog", data.string, "data mismatch");
 
 		if (!test_DeletePrinterData(tctx, p, handle, r.in.value_name)) {
 			return false;
@@ -3232,8 +3237,8 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 				  const char *key_name,
 				  const char *value_name,
 				  enum winreg_Type type,
-				  union spoolss_PrinterData *data,
-				  uint32_t _offered)
+				  uint8_t *data,
+				  uint32_t offered)
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinterDataEx r;
@@ -3242,11 +3247,11 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 	r.in.key_name = key_name;
 	r.in.value_name = value_name;
 	r.in.type = type;
-	r.in.data = *data;
-	r.in._offered = _offered;
+	r.in.data = data;
+	r.in.offered = offered;
 
 	torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s) type: %s, offered: 0x%08x\n",
-		r.in.key_name, r.in.value_name, str_regtype(r.in.type), r.in._offered);
+		r.in.key_name, r.in.value_name, str_regtype(r.in.type), r.in.offered);
 
 	status = dcerpc_spoolss_SetPrinterDataEx(p, tctx, &r);
 
@@ -3302,7 +3307,8 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		const char *string = talloc_strndup(tctx, str, s);
 		DATA_BLOB blob = data_blob_string_const(string);
 		const char **subkeys;
-		union spoolss_PrinterData data;
+		DATA_BLOB data;
+		union spoolss_PrinterData data_out;
 		uint32_t needed, offered = 0;
 
 		if (types[t] == REG_DWORD) {
@@ -3311,26 +3317,30 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 
 		switch (types[t]) {
 		case REG_BINARY:
-			data.binary = blob;
+			data = blob;
 			offered = blob.length;
 			break;
 		case REG_DWORD:
-			data.value = value;
+			data = data_blob(NULL, 4);
+			SIVAL(data.data, 0, value);
 			offered = 4;
 			break;
 		case REG_SZ:
-			data.string = string;
-			offered = strlen_m_term(data.string)*2;
+			torture_assert(tctx,
+				reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
+						  "REG_SZ", string, &type, &data), "");
+			offered = data.length;
+			/*strlen_m_term(data.string)*2;*/
 			break;
 		default:
 			torture_fail(tctx, talloc_asprintf(tctx, "type %d untested\n", types[t]));
 		}
 
 		torture_assert(tctx,
-			test_SetPrinterDataEx(tctx, p, handle, keys[i], value_name, types[t], &data, offered),
+			test_SetPrinterDataEx(tctx, p, handle, keys[i], value_name, types[t], data.data, offered),
 			"failed to call SetPrinterDataEx");
 
-		if (!test_GetPrinterDataEx(tctx, p, handle, keys[i], value_name, &type, &data, &needed)) {
+		if (!test_GetPrinterDataEx(tctx, p, handle, keys[i], value_name, &type, &data_out, &needed)) {
 			return false;
 		}
 
@@ -3344,13 +3354,13 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 
 		switch (type) {
 		case REG_BINARY:
-			torture_assert_data_blob_equal(tctx, blob, data.binary, "data mismatch");
+			torture_assert_data_blob_equal(tctx, blob, data_out.binary, "data mismatch");
 			break;
 		case REG_DWORD:
-			torture_assert_int_equal(tctx, value, data.value, "data mismatch");
+			torture_assert_int_equal(tctx, value, data_out.value, "data mismatch");
 			break;
 		case REG_SZ:
-			torture_assert_str_equal(tctx, string, data.string, "data mismatch");
+			torture_assert_str_equal(tctx, string, data_out.string, "data mismatch");
 			break;
 		default:
 			break;
