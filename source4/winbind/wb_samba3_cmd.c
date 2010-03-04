@@ -1183,10 +1183,64 @@ static void getgrgid_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
+static void getgroups_recv(struct composite_context *ctx);
+
 NTSTATUS wbsrv_samba3_getgroups(struct wbsrv_samba3_call *s3call)
 {
+	struct composite_context *ctx;
+	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+
 	DEBUG(5, ("wbsrv_samba3_getgroups called\n"));
-	s3call->response.result = WINBINDD_ERROR;
+	/* S3 code do the same so why not ... */
+	s3call->request.data.username[sizeof(s3call->request.data.username)-1]='\0';
+	ctx = wb_cmd_getgroups_send(s3call, service, s3call->request.data.username);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = getgroups_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void getgroups_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	gid_t *gids;
+	uint32_t num_groups;
+	NTSTATUS status;
+	DEBUG(5, ("getgroups_recv called\n"));
+
+	status = wb_cmd_getgroups_recv(ctx, s3call, &gids, &num_groups);
+	if (NT_STATUS_IS_OK(status)) {
+		uint32_t extra_len = sizeof(gid_t) * num_groups;
+
+		s3call->response.data.num_entries = num_groups;
+		s3call->response.extra_data.data = gids;
+		s3call->response.length += extra_len;
+	} else {
+		s3call->response.result = WINBINDD_ERROR;
+	}
+
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
+
+static void setgrent_recv(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_setgrent(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+
+	DEBUG(5, ("wbsrv_samba3_setgrent called\n"));
+
+	ctx = wb_cmd_setgrent_send(s3call, service);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = setgrent_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -1208,17 +1262,27 @@ static void setgrent_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
-NTSTATUS wbsrv_samba3_setgrent(struct wbsrv_samba3_call *s3call)
+static void getgrent_recv(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_getgrent(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
+	struct wbsrv_grent *grent;
 
-	DEBUG(5, ("wbsrv_samba3_setgrent called\n"));
+	DEBUG(5, ("wbsrv_samba3_getgrent called\n"));
 
-	ctx = wb_cmd_setgrent_send(s3call, service);
+	NT_STATUS_HAVE_NO_MEMORY(s3call->wbconn->protocol_private_data);
+
+	grent = talloc_get_type(s3call->wbconn->protocol_private_data,
+			struct wbsrv_grent);
+	NT_STATUS_HAVE_NO_MEMORY(grent);
+
+	ctx = wb_cmd_getgrent_send(s3call, service, grent,
+			s3call->request.data.num_entries);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
-	ctx->async.fn = setgrent_recv;
+	ctx->async.fn = getgrent_recv;
 	ctx->async.private_data = s3call;
 	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
@@ -1245,30 +1309,6 @@ static void getgrent_recv(struct composite_context *ctx)
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
-}
-
-NTSTATUS wbsrv_samba3_getgrent(struct wbsrv_samba3_call *s3call)
-{
-	struct composite_context *ctx;
-	struct wbsrv_service *service = s3call->wbconn->listen_socket->service;
-	struct wbsrv_grent *grent;
-
-	DEBUG(5, ("wbsrv_samba3_getgrent called\n"));
-
-	NT_STATUS_HAVE_NO_MEMORY(s3call->wbconn->protocol_private_data);
-
-	grent = talloc_get_type(s3call->wbconn->protocol_private_data,
-			struct wbsrv_grent);
-	NT_STATUS_HAVE_NO_MEMORY(grent);
-
-	ctx = wb_cmd_getgrent_send(s3call, service, grent,
-			s3call->request.data.num_entries);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	ctx->async.fn = getgrent_recv;
-	ctx->async.private_data = s3call;
-	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
-	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_endgrent(struct wbsrv_samba3_call *s3call)

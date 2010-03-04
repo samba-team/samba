@@ -52,6 +52,7 @@ WINBIND_OBJ_FILES = $(addprefix $(winbindsrcdir)/, \
 		wb_cmd_getpwent.o \
 		wb_cmd_getgrent.o \
 		wb_cmd_setgrent.o \
+		wb_cmd_getgroups.o \
 		wb_pam_auth.o \
 		wb_sam_logon.o)
 
