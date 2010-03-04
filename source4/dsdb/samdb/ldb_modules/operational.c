@@ -72,6 +72,9 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#include "auth/auth.h"
+#include "libcli/security/dom_sid.h"
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
@@ -118,6 +121,97 @@ static int construct_primary_group_token(struct ldb_module *module,
 	}
 }
 
+/*
+  construct the token groups for SAM objects from a message
+*/
+static int construct_token_groups(struct ldb_module *module,
+				  struct ldb_message *msg)
+{
+	struct ldb_context *ldb;
+	const struct dom_sid *sid;
+
+	ldb = ldb_module_get_ctx(module);
+
+	sid = samdb_result_dom_sid(msg, msg, "objectSid");
+	if (sid != NULL) {
+		NTSTATUS status;
+		uint32_t prim_group_rid;
+		struct dom_sid **sids = NULL;
+		unsigned int i, num_sids = 0;
+		int ret;
+
+		prim_group_rid = samdb_result_uint(msg, "primaryGroupID", 0);
+		if (prim_group_rid != 0) {
+			struct dom_sid *prim_group_sid;
+
+			prim_group_sid = dom_sid_add_rid(msg,
+							 samdb_domain_sid(ldb),
+							 prim_group_rid);
+			if (prim_group_sid == NULL) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			/* onlyChilds = false, we want to consider also the
+			 * "primaryGroupID" for membership */
+			status = authsam_expand_nested_groups(ldb,
+							      prim_group_sid,
+							      false, msg,
+							      &sids, &num_sids);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			for (i = 0; i < num_sids; i++) {
+				ret = samdb_msg_add_dom_sid(ldb, msg, msg,
+							    "tokenGroups",
+							    sids[i]);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(sids);
+					return ret;
+				}
+			}
+
+			talloc_free(sids);
+		}
+
+		sids = NULL;
+		num_sids = 0;
+
+		/* onlyChils = true, we don't want to have the SAM object itself
+		 * in the result */
+		status = authsam_expand_nested_groups(ldb, sid, true, msg,
+						      &sids, &num_sids);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		for (i = 0; i < num_sids; i++) {
+			ret = samdb_msg_add_dom_sid(ldb, msg, msg,
+						    "tokenGroups", sids[i]);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(sids);
+				return ret;
+			}
+		}
+
+		talloc_free(sids);
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  construct the parent GUID for an entry from a message
+*/
 static int construct_parent_guid(struct ldb_module *module,
 				 struct ldb_message *msg)
 {
@@ -207,6 +301,7 @@ static const struct {
 	{ "structuralObjectClass", "objectClass", NULL , NULL },
 	{ "canonicalName", "distinguishedName", NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
+	{ "tokenGroups", "objectSid", "primaryGroupID", construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry }
 };
