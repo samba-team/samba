@@ -1925,24 +1925,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPOOL_REG_URL			= "url";
 	const string SPOOL_REG_VERSIONNUMBER		= "versionNumber";
 
-	[noopnum,noprint,public] WERROR _spoolss_GetPrinterData(
+	WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
-		[in] 	 uint32 offered,
 		[out,ref] winreg_Type *type,
-		[out,ref] DATA_BLOB *data,
-		[out,ref] uint32 *needed
-	);
-	[noopnum,noprint,public] void __spoolss_GetPrinterData(
-		[in] winreg_Type type,
-		[out,ref,switch_is(type)] spoolss_PrinterData *data
-	);
-	[nopull,nopush,public] WERROR spoolss_GetPrinterData(
-		[in,ref] policy_handle *handle,
-		[in] 	 [string,charset(UTF16)] uint16 value_name[],
+		[out,ref,size_is(offered)] uint8 *data,
 		[in] 	 uint32 offered,
-		[out,ref] winreg_Type *type,
-		[out,ref,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData *data,
 		[out,ref] uint32 *needed
 	);
 
@@ -2849,26 +2837,13 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x4e */
-	[noopnum,noprint,public] WERROR _spoolss_GetPrinterDataEx(
+	WERROR spoolss_GetPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
-		[in] 	 uint32 offered,
 		[out,ref] winreg_Type *type,
-		[out,ref] DATA_BLOB *data,
-		[out,ref] uint32 *needed
-	);
-	[noopnum,noprint,public] void __spoolss_GetPrinterDataEx(
-		[in] winreg_Type type,
-		[out,ref,switch_is(type)] spoolss_PrinterData *data
-	);
-	[nopull,nopush,public] WERROR spoolss_GetPrinterDataEx(
-		[in,ref] policy_handle *handle,
-		[in] 	 [string,charset(UTF16)] uint16 key_name[],
-		[in] 	 [string,charset(UTF16)] uint16 value_name[],
+		[out,ref,size_is(offered)] uint8 *data,
 		[in] 	 uint32 offered,
-		[out,ref] winreg_Type *type,
-		[out,ref,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData *data,
 		[out,ref] uint32 *needed
 	);
 
