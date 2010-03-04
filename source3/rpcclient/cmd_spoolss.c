@@ -749,20 +749,29 @@ static void display_reg_value(struct regval_blob value)
 
 static void display_printer_data(const char *v,
 				 enum winreg_Type type,
-				 union spoolss_PrinterData *r)
+				 uint8_t *data,
+				 uint32_t length)
 {
 	int i;
+	union spoolss_PrinterData r;
+	DATA_BLOB blob = data_blob_const(data, length);
+	WERROR result;
+
+	result = pull_spoolss_PrinterData(talloc_tos(), &blob, &r, type);
+	if (!W_ERROR_IS_OK(result)) {
+		return;
+	}
 
 	switch (type) {
 	case REG_DWORD:
-		printf("%s: REG_DWORD: 0x%08x\n", v, r->value);
+		printf("%s: REG_DWORD: 0x%08x\n", v, r.value);
 		break;
 	case REG_SZ:
-		printf("%s: REG_SZ: %s\n", v, r->string);
+		printf("%s: REG_SZ: %s\n", v, r.string);
 		break;
 	case REG_BINARY: {
 		char *hex = hex_encode_talloc(NULL,
-			r->binary.data, r->binary.length);
+			r.binary.data, r.binary.length);
 		size_t len;
 		printf("%s: REG_BINARY:", v);
 		len = strlen(hex);
@@ -781,8 +790,8 @@ static void display_printer_data(const char *v,
 	}
 	case REG_MULTI_SZ:
 		printf("%s: REG_MULTI_SZ: ", v);
-		for (i=0; r->string_array[i] != NULL; i++) {
-			printf("%s ", r->string_array[i]);
+		for (i=0; r.string_array[i] != NULL; i++) {
+			printf("%s ", r.string_array[i]);
 		}
 		printf("\n");
 		break;
@@ -804,7 +813,8 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 	fstring 	printername;
 	const char *valuename;
 	enum winreg_Type type;
-	union spoolss_PrinterData data;
+	uint8_t *data;
+	uint32_t needed;
 
 	if (argc != 3) {
 		printf("Usage: %s <printername> <valuename>\n", argv[0]);
@@ -837,13 +847,14 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 					       valuename,
 					       0,
 					       &type,
+					       &needed,
 					       &data);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display printer data */
 
-	display_printer_data(valuename, type, &data);
+	display_printer_data(valuename, type, data, needed);
 
  done:
 	if (is_valid_policy_hnd(&pol))
@@ -866,7 +877,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	const char *valuename, *keyname;
 
 	enum winreg_Type type;
-	union spoolss_PrinterData data;
+	uint8_t *data = NULL;
 	uint32_t offered = 0;
 	uint32_t needed;
 
@@ -898,24 +909,33 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 
 	/* Get printer info */
 
+	data = talloc_zero_array(mem_ctx, uint8_t, offered);
+	if (!data) {
+		goto done;
+	}
+
 	status = rpccli_spoolss_GetPrinterDataEx(cli, mem_ctx,
 						 &pol,
 						 keyname,
 						 valuename,
-						 offered,
 						 &type,
-						 &data,
+						 data,
+						 offered,
 						 &needed,
 						 &result);
 	if (W_ERROR_EQUAL(result, WERR_MORE_DATA)) {
 		offered = needed;
+		data = talloc_zero_array(mem_ctx, uint8_t, offered);
+		if (!data) {
+			goto done;
+		}
 		status = rpccli_spoolss_GetPrinterDataEx(cli, mem_ctx,
 							 &pol,
 							 keyname,
 							 valuename,
-							 offered,
 							 &type,
-							 &data,
+							 data,
+							 offered,
 							 &needed,
 							 &result);
 	}
@@ -929,7 +949,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 
 	/* Display printer data */
 
-	display_printer_data(valuename, type, &data);
+	display_printer_data(valuename, type, data, needed);
 
 
  done:
@@ -2850,7 +2870,9 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 					  const char **argv)
 {
 	WERROR result;
+#if 0
 	uint32_t i;
+#endif
 	const char *printername;
 	struct policy_handle hnd;
 	uint32_t count;
@@ -2884,13 +2906,13 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
-
+#if 0
 	for (i=0; i < count; i++) {
 		display_printer_data(info[i].value_name,
 				     info[i].type,
 				     info[i].data);
 	}
-
+#endif
  done:
 	if (is_valid_policy_hnd(&hnd)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
