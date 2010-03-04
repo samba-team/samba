@@ -2483,17 +2483,10 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 					struct regval_blob v;
 
-					result = push_spoolss_PrinterData(mem_ctx, &blob,
-									  info[j].type,
-									  info[j].data);
-					if (!W_ERROR_IS_OK(result)) {
-						goto done;
-					}
-
 					fstrcpy(v.valuename, info[j].value_name);
 					v.type = info[j].type;
-					v.data_p = blob.data;
-					v.size = blob.length;
+					v.data_p = info[j].data->data;
+					v.size = info[j].data->length;
 
 					if (c->opt_verbose) {
 						display_reg_value(subkey, v);
