@@ -785,13 +785,13 @@ interface drsuapi
 		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaDelRequest1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsReplicaDelRequest1 req1;
 	} drsuapi_DsReplicaDelRequest;
 
 	WERROR drsuapi_DsReplicaDel(
 		[in] policy_handle *bind_handle,
-		[in] int32 level,
+		[in] uint32 level,
 		[in,switch_is(level)] drsuapi_DsReplicaDelRequest req
 		);
 
