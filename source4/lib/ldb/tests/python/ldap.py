@@ -846,6 +846,50 @@ objectClass: container
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_tokenGroups(self):
+        """Test the tokenGroups behaviour (hidden-generated-readonly attribute on SAM objects)"""
+        print "Testing tokenGroups behaviour\n"
+
+        # The domain object shouldn't contain any "tokenGroups" entry
+        res = ldb.search(self.base_dn, scope=SCOPE_BASE, attrs=["tokenGroups"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("tokenGroups" in res[0])
+
+        # The domain administrator should contain "tokenGroups" entries
+        # (the exact number depends on the domain/forest function level and the
+        # DC software versions)
+        res = ldb.search("cn=Administrator,cn=Users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["tokenGroups"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("tokenGroups" in res[0])
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        # This testuser should contain at least two "tokenGroups" entries
+        # (exactly two on an unmodified "Domain Users" and "Users" group)
+        res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["tokenGroups"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue(len(res[0]["tokenGroups"]) >= 2)
+
+        # one entry which we need to find should point to domains "Domain Users"
+        # group and another entry should point to the builtin "Users"group
+        domain_users_group_found = False
+        users_group_found = False
+        for sid in res[0]["tokenGroups"]:
+            rid = security.dom_sid(ldb.schema_format_value("objectSID", sid)).split()[1]
+            if rid == 513:
+                domain_users_group_found = True
+            if rid == 545:
+                users_group_found = True
+
+        self.assertTrue(domain_users_group_found)
+        self.assertTrue(users_group_found)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
     def test_wkguid(self):
         """Test Well known GUID behaviours (including DN+Binary)"""
         print "Test Well known GUID behaviours (including DN+Binary)"""
