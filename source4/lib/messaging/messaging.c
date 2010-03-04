@@ -608,6 +608,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	msg->event.ev   = ev;
 	msg->event.fde	= event_add_fd(ev, msg, socket_get_fd(msg->sock), 
 				       EVENT_FD_READ, messaging_handler, msg);
+	tevent_fd_set_auto_close(msg->event.fde);
 
 	talloc_set_destructor(msg, messaging_destructor);
 	
