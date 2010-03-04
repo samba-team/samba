@@ -344,7 +344,7 @@ static int operational_search_post_process(struct ldb_module *module,
 					   bool sd_flags_set)
 {
 	struct ldb_context *ldb;
-	int i, a=0;
+	unsigned int i, a = 0;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -472,7 +472,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	struct operational_context *ac;
 	struct ldb_request *down_req;
 	const char **search_attrs = NULL;
-	int i, a;
+	unsigned int i, a;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
