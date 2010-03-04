@@ -2381,6 +2381,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	union spoolss_PrinterInfo info;
 	enum winreg_Type type;
 	union spoolss_PrinterData data;
+	DATA_BLOB blob;
 
 	/* parse the command arguments */
 	if (argc < 5) {
@@ -2483,12 +2484,17 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
+	result = push_spoolss_PrinterData(mem_ctx, &blob, type, &data);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 	status = rpccli_spoolss_SetPrinterData(cli, mem_ctx,
 					       &pol,
 					       argv[3], /* value_name */
 					       type,
-					       data,
-					       0, /* autocalculated size */
+					       blob.data,
+					       blob.length,
 					       &result);
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to set [%s=%s]!\n", argv[3], argv[4]);
