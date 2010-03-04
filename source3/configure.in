@@ -1746,12 +1746,7 @@ fi
 
 AC_MSG_RESULT($BLDSHARED)
 
-AC_ARG_ENABLE(as-needed,
-	      [AS_HELP_STRING([--enable-as-needed],
-	      [Turn on as-needed support if available (default=yes)])])
-
-if test "x$enable_as_needed" != xno; then
-    for flags in "-Wl,--as-needed" "-Wl,-z,ignore" "-z ignore" ; do
+for flags in "-Wl,--as-needed" "-Wl,-z,ignore" "-z ignore" ; do
 	saved_ldflags="$LDFLAGS"
 	AC_MSG_CHECKING([if $flags works])
 	LDFLAGS="$flags $saved_ldflags"
@@ -1762,8 +1757,7 @@ if test "x$enable_as_needed" != xno; then
 		AC_MSG_RESULT([no]))
 	LDFLAGS="$LD_AS_NEEDED_FLAG $saved_ldflags"
 	test x"$ld_as_needed_flag_found" = xyes && break
-    done
-fi
+done
 
 # for historical reasons almost all linkers don't complain about unresolved
 # symbols in shared libs. Except for the internal samba modules we want to get
