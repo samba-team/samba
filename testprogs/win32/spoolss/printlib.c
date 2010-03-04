@@ -1224,16 +1224,13 @@ static void dump_printer_data(DWORD size, LPBYTE buffer, DWORD type)
 
 	switch (type) {
 	case REG_SZ:
-		printf("\t\t");
-		for (i=0; i < size; i++) {
-			printf("%c", buffer[i]);
-		}
-		printf("\n");
+		dump_data(buffer, size);
 		break;
 	case REG_MULTI_SZ:
+		dump_data(buffer, size);
 		p = (LPSTR)buffer;
 		while (p && *p) {
-			printf("%s\n", p);
+			printf("\t\t%s\n", p);
 			for (; *p; p = CharNext(p)) {
 				p = CharNext(p);
 			}
@@ -1244,12 +1241,7 @@ static void dump_printer_data(DWORD size, LPBYTE buffer, DWORD type)
 		printf("\t\t0x%08x\n", (DWORD)*buffer);
 		break;
 	case REG_BINARY:
-		for (i=0; i < size; i++) {
-			printf("\t0x%x", buffer[i]);
-			if (i%4 == 3) {
-				printf("\n");
-			}
-		}
+		dump_data(buffer, size);
 		break;
 	default:
 		break;
