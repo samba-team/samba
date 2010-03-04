@@ -1247,6 +1247,60 @@ static BOOL test_GetPrinterDataEx(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_GetPrinterDataExW(struct torture_context *tctx,
+				   LPSTR servername,
+				   LPCWSTR keyname,
+				   LPCWSTR valuename,
+				   HANDLE handle,
+				   DWORD *type_p,
+				   LPBYTE *buffer_p,
+				   DWORD *size_p)
+{
+	LPBYTE buffer = NULL;
+	DWORD needed = 0;
+	DWORD type;
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing GetPrinterDataExW(%ls - %ls)", keyname, valuename);
+
+	err = GetPrinterDataExW(handle, keyname, valuename, &type, NULL, 0, &needed);
+	if (err == ERROR_MORE_DATA) {
+		buffer = (LPBYTE)malloc(needed);
+		torture_assert(tctx, buffer, "malloc failed");
+		err = GetPrinterDataExW(handle, keyname, valuename, &type, buffer, needed, &needed);
+	}
+	if (err) {
+		sprintf(tmp, "GetPrinterDataExW(%ls) failed on [%s] (buffer size = %d), error: %s\n",
+			valuename, servername, needed, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	if (tctx->print) {
+		print_printer_dataw(keyname, valuename, needed, buffer, type);
+	}
+
+	if (type_p) {
+		*type_p = type;
+	}
+
+	if (size_p) {
+		*size_p = needed;
+	}
+
+	if (buffer_p) {
+		*buffer_p = buffer;
+	} else {
+		free(buffer);
+	}
+
+	return TRUE;
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_DeletePrinterDataEx(struct torture_context *tctx,
 				     LPSTR servername,
 				     LPSTR keyname,
@@ -1271,6 +1325,31 @@ static BOOL test_DeletePrinterDataEx(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_DeletePrinterDataExW(struct torture_context *tctx,
+				      LPSTR servername,
+				      LPCWSTR keyname,
+				      LPCWSTR valuename,
+				      HANDLE handle)
+{
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing DeletePrinterDataExW(%ls - %ls)", keyname, valuename);
+
+	err = DeletePrinterDataExW(handle, keyname, valuename);
+	if (err) {
+		sprintf(tmp, "DeletePrinterDataExW(%ls - %ls) failed on [%s], error: %s\n",
+			keyname, valuename, servername, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	return TRUE;
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_DeletePrinterKey(struct torture_context *tctx,
 				  LPSTR servername,
 				  LPSTR keyname,
@@ -1284,6 +1363,29 @@ static BOOL test_DeletePrinterKey(struct torture_context *tctx,
 	err = DeletePrinterKey(handle, keyname);
 	if (err) {
 		sprintf(tmp, "DeletePrinterKey(%s) failed on [%s], error: %s\n",
+			keyname, servername, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_DeletePrinterKeyW(struct torture_context *tctx,
+				   LPSTR servername,
+				   LPCWSTR keyname,
+				   HANDLE handle)
+{
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing DeletePrinterKeyW(%ls)", keyname);
+
+	err = DeletePrinterKeyW(handle, keyname);
+	if (err) {
+		sprintf(tmp, "DeletePrinterKeyW(%ls) failed on [%s], error: %s\n",
 			keyname, servername, errstr(err));
 		torture_fail(tctx, tmp);
 	}
@@ -1317,6 +1419,34 @@ static BOOL test_SetPrinterDataEx(struct torture_context *tctx,
 
 	return TRUE;
 }
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_SetPrinterDataExW(struct torture_context *tctx,
+				   LPCSTR servername,
+				   LPCWSTR keyname,
+				   LPCWSTR valuename,
+				   HANDLE handle,
+				   DWORD type,
+				   LPBYTE buffer,
+				   DWORD offered)
+{
+	DWORD err = 0;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing SetPrinterDataExW(%ls - %ls)", keyname, valuename);
+
+	err = SetPrinterDataExW(handle, keyname, valuename, type, buffer, offered);
+	if (err) {
+		sprintf(tmp, "SetPrinterDataExW(%ls) failed on [%s] (buffer size = %d), error: %s\n",
+			valuename, servername, offered, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	return TRUE;
+}
+
 
 /****************************************************************************
 ****************************************************************************/
