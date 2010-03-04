@@ -24,6 +24,10 @@
 #include <assert.h>
 #include <sddl.h>
 
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
 void print_devmode(DEVMODE *pDevModeIn)
 {
 	if (pDevModeIn == NULL) {
@@ -1158,22 +1162,65 @@ LPSTR reg_type_str(DWORD type)
 	}
 }
 
-void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffer, DWORD type)
+void print_asc(const BYTE *buf, DWORD len)
+{
+	int i;
+	for (i=0; i<len; i++) {
+		printf("%c", isprint(buf[i])?buf[i]:'.');
+	}
+}
+
+static void dump_data(const BYTE *buf, int len)
+{
+	int i=0;
+	static const BYTE empty[16] = { 0, };
+
+	if (len<=0) return;
+
+	for (i=0; i<len;) {
+
+		if (i%16 == 0) {
+			if ((i > 0) &&
+			    (len > i+16) &&
+			    (memcmp(&buf[i], &empty, 16) == 0))
+			{
+				i +=16;
+				continue;
+			}
+
+			if (i<len)  {
+				printf("[%04X] ",i);
+			}
+		}
+
+		printf("%02x ", buf[i]);
+		i++;
+
+		if (i%8 == 0) printf("  ");
+		if (i%16 == 0) {
+			print_asc(&buf[i-16],8); printf(" ");
+			print_asc(&buf[i-8],8); printf("\n");
+		}
+	}
+
+	if (i%16) {
+		int n;
+		n = 16 - (i%16);
+		printf(" ");
+		if (n>8) printf(" ");
+		while (n--) printf("   ");
+		n = MIN(8,i%16);
+		print_asc(&buf[i-(i%16)],n); printf( " " );
+		n = (i%16) - n;
+		if (n>0) print_asc(&buf[i-n],n);
+		printf("\n");
+	}
+}
+
+static void dump_printer_data(DWORD size, LPBYTE buffer, DWORD type)
 {
 	DWORD i = 0;
 	LPSTR p = NULL;
-
-	if (keyname) {
-		printf("\tKey Name:\t%s\n", keyname);
-	}
-
-	printf("\tValue Name:\t%s\n", valuename);
-	printf("\tSize:\t\t0x%x (%d)\n", size, size);
-	printf("\tType:\t\t%s\n", reg_type_str(type));
-
-	if (buffer == NULL || size == 0) {
-		return;
-	}
 
 	switch (type) {
 	case REG_SZ:
@@ -1208,6 +1255,41 @@ void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffe
 		break;
 	}
 }
+
+void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffer, DWORD type)
+{
+	if (keyname) {
+		printf("\tKey Name:\t%s\n", keyname);
+	}
+
+	printf("\tValue Name:\t%s\n", valuename);
+	printf("\tSize:\t\t0x%x (%d)\n", size, size);
+	printf("\tType:\t\t%s\n", reg_type_str(type));
+
+	if (buffer == NULL || size == 0) {
+		return;
+	}
+
+	dump_printer_data(size, buffer, type);
+}
+
+void print_printer_dataw(LPCWSTR keyname, LPCWSTR valuename, DWORD size, LPBYTE buffer, DWORD type)
+{
+	if (keyname) {
+		printf("\tKey Name:\t%ls\n", keyname);
+	}
+
+	printf("\tValue Name:\t%ls\n", valuename);
+	printf("\tSize:\t\t0x%x (%d)\n", size, size);
+	printf("\tType:\t\t%s\n", reg_type_str(type));
+
+	if (buffer == NULL || size == 0) {
+		return;
+	}
+
+	dump_printer_data(size, buffer, type);
+}
+
 
 void print_printer_enum_values(PRINTER_ENUM_VALUES *info)
 {

@@ -56,6 +56,7 @@ void print_doc_info_1(PDOC_INFO_1 info);
 void print_printer_keys(LPSTR buffer);
 LPSTR reg_type_str(DWORD type);
 void print_printer_data(LPSTR keyname, LPSTR valuename, DWORD size, LPBYTE buffer, DWORD type);
+void print_printer_dataw(LPCWSTR keyname, LPCWSTR valuename, DWORD size, LPBYTE buffer, DWORD type);
 void print_printer_enum_values(PRINTER_ENUM_VALUES *info);
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
