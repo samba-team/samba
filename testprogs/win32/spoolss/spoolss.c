@@ -988,6 +988,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
 	ret &= test_DeviceModes(tctx, printername, handle);
 	ret &= test_PrinterData(tctx, printername, handle);
+	ret &= test_PrinterDataW(tctx, printername, handle);
 	ret &= test_ClosePrinter(tctx, handle);
 
 	return ret;
@@ -1537,6 +1538,7 @@ static BOOL test_PrinterData(struct torture_context *tctx,
 			break;
 		case REG_DWORD:
 			buffer = malloc(4);
+			memcpy(buffer, &value, 4);
 			size = 4;
 			break;
 		case REG_SZ:
@@ -1567,6 +1569,85 @@ static BOOL test_PrinterData(struct torture_context *tctx,
 		}
 		ret &= test_DeletePrinterDataEx(tctx, printername, keyname, valuename, handle);
 		ret &= test_DeletePrinterKey(tctx, printername, keyname, handle);
+
+		free(buffer);
+		free(buffer_ex);
+	}
+	}
+
+	return ret;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL test_PrinterDataW(struct torture_context *tctx,
+			      LPSTR printername,
+			      HANDLE handle)
+{
+	char tmp[1024];
+	LPCWSTR keyname = L"torture_key";
+	LPCWSTR valuename = L"torture_value";
+	BOOL ret = TRUE;
+	DWORD types[] = {
+		REG_SZ,
+		REG_DWORD,
+		REG_BINARY
+	};
+	DWORD value = 12345678;
+	LPSTR str = "abcdefghijklmnopqrstuvwxzy";
+	DWORD t, s;
+
+	for (t=0; t < ARRAY_SIZE(types); t++) {
+	for (s=0; s < strlen(str); s++) {
+
+		DWORD type, type_ex;
+		LPBYTE buffer, buffer_ex;
+		DWORD size, size_ex;
+
+		if (types[t] == REG_DWORD) {
+			s = 0xffff;
+		}
+
+		switch (types[t]) {
+		case REG_BINARY:
+			buffer = malloc(s);
+			memcpy(buffer, str, s);
+			size = s;
+			break;
+		case REG_DWORD:
+			buffer = malloc(4);
+			memcpy(buffer, &value, 4);
+			size = 4;
+			break;
+		case REG_SZ:
+			buffer = malloc(s);
+			memcpy(buffer, str, s);
+			size = s;
+			break;
+		default:
+			sprintf(tmp, "type %d untested\n", types[t]);
+			torture_fail(tctx, tmp);
+			break;
+		}
+
+		type = types[t];
+
+		torture_comment(tctx, "Testing PrinterDataW (type: %s, size: 0x%08x)", reg_type_str(type), size);
+
+		torture_assert(tctx,
+			test_SetPrinterDataExW(tctx, printername, keyname, valuename, handle, type, buffer, size),
+			"failed to call SetPrinterDataExW");
+		torture_assert(tctx,
+			test_GetPrinterDataExW(tctx, printername, keyname, valuename, handle, &type_ex, &buffer_ex, &size_ex),
+			"failed to call GetPrinterDataExW");
+
+		if (!PrinterDataEqual(tctx, type_ex, type, size_ex, size, buffer_ex, buffer)) {
+			torture_warning(tctx, "GetPrinterDataExW does not return the same info as we set with SetPrinterDataExW");
+			ret = FALSE;
+		}
+		ret &= test_DeletePrinterDataExW(tctx, printername, keyname, valuename, handle);
+		ret &= test_DeletePrinterKeyW(tctx, printername, keyname, handle);
 
 		free(buffer);
 		free(buffer_ex);
