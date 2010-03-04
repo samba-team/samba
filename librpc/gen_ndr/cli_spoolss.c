@@ -4152,9 +4152,9 @@ struct tevent_req *rpccli_spoolss_GetPrinterData_send(TALLOC_CTX *mem_ctx,
 						      struct rpc_pipe_client *cli,
 						      struct policy_handle *_handle /* [in] [ref] */,
 						      const char *_value_name /* [in] [charset(UTF16)] */,
-						      uint32_t _offered /* [in]  */,
 						      enum winreg_Type *_type /* [out] [ref] */,
-						      union spoolss_PrinterData *_data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
+						      uint8_t *_data /* [out] [ref,size_is(offered)] */,
+						      uint32_t _offered /* [in]  */,
 						      uint32_t *_needed /* [out] [ref] */)
 {
 	struct tevent_req *req;
@@ -4226,7 +4226,7 @@ static void rpccli_spoolss_GetPrinterData_done(struct tevent_req *subreq)
 
 	/* Copy out parameters */
 	*state->orig.out.type = *state->tmp.out.type;
-	*state->orig.out.data = *state->tmp.out.data;
+	memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.offered) * sizeof(*state->orig.out.data));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -4265,9 +4265,9 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *value_name /* [in] [charset(UTF16)] */,
-				       uint32_t offered /* [in]  */,
 				       enum winreg_Type *type /* [out] [ref] */,
-				       union spoolss_PrinterData *data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
+				       uint8_t *data /* [out] [ref,size_is(offered)] */,
+				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
 {
@@ -4295,7 +4295,7 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*type = *r.out.type;
-	*data = *r.out.data;
+	memcpy(data, r.out.data, (r.in.offered) * sizeof(*data));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -11868,9 +11868,9 @@ struct tevent_req *rpccli_spoolss_GetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 							struct policy_handle *_handle /* [in] [ref] */,
 							const char *_key_name /* [in] [charset(UTF16)] */,
 							const char *_value_name /* [in] [charset(UTF16)] */,
-							uint32_t _offered /* [in]  */,
 							enum winreg_Type *_type /* [out] [ref] */,
-							union spoolss_PrinterData *_data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
+							uint8_t *_data /* [out] [ref,size_is(offered)] */,
+							uint32_t _offered /* [in]  */,
 							uint32_t *_needed /* [out] [ref] */)
 {
 	struct tevent_req *req;
@@ -11943,7 +11943,7 @@ static void rpccli_spoolss_GetPrinterDataEx_done(struct tevent_req *subreq)
 
 	/* Copy out parameters */
 	*state->orig.out.type = *state->tmp.out.type;
-	*state->orig.out.data = *state->tmp.out.data;
+	memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.offered) * sizeof(*state->orig.out.data));
 	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
@@ -11983,9 +11983,9 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 					 struct policy_handle *handle /* [in] [ref] */,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
-					 uint32_t offered /* [in]  */,
 					 enum winreg_Type *type /* [out] [ref] */,
-					 union spoolss_PrinterData *data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
+					 uint8_t *data /* [out] [ref,size_is(offered)] */,
+					 uint32_t offered /* [in]  */,
 					 uint32_t *needed /* [out] [ref] */,
 					 WERROR *werror)
 {
@@ -12014,7 +12014,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*type = *r.out.type;
-	*data = *r.out.data;
+	memcpy(data, r.out.data, (r.in.offered) * sizeof(*data));
 	*needed = *r.out.needed;
 
 	/* Return result */

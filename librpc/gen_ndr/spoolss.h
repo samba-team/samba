@@ -3068,35 +3068,6 @@ struct spoolss_ScheduleJob {
 };
 
 
-struct _spoolss_GetPrinterData {
-	struct {
-		struct policy_handle *handle;/* [ref] */
-		const char *value_name;/* [charset(UTF16)] */
-		uint32_t offered;
-	} in;
-
-	struct {
-		enum winreg_Type *type;/* [ref] */
-		DATA_BLOB *data;/* [ref] */
-		uint32_t *needed;/* [ref] */
-		WERROR result;
-	} out;
-
-};
-
-
-struct __spoolss_GetPrinterData {
-	struct {
-		enum winreg_Type type;
-	} in;
-
-	struct {
-		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
-	} out;
-
-};
-
-
 struct spoolss_GetPrinterData {
 	struct {
 		struct policy_handle *handle;/* [ref] */
@@ -3106,7 +3077,7 @@ struct spoolss_GetPrinterData {
 
 	struct {
 		enum winreg_Type *type;/* [ref] */
-		union spoolss_PrinterData *data;/* [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */
+		uint8_t *data;/* [ref,size_is(offered)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -3861,36 +3832,6 @@ struct spoolss_SetPrinterDataEx {
 };
 
 
-struct _spoolss_GetPrinterDataEx {
-	struct {
-		struct policy_handle *handle;/* [ref] */
-		const char *key_name;/* [charset(UTF16)] */
-		const char *value_name;/* [charset(UTF16)] */
-		uint32_t offered;
-	} in;
-
-	struct {
-		enum winreg_Type *type;/* [ref] */
-		DATA_BLOB *data;/* [ref] */
-		uint32_t *needed;/* [ref] */
-		WERROR result;
-	} out;
-
-};
-
-
-struct __spoolss_GetPrinterDataEx {
-	struct {
-		enum winreg_Type type;
-	} in;
-
-	struct {
-		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
-	} out;
-
-};
-
-
 struct spoolss_GetPrinterDataEx {
 	struct {
 		struct policy_handle *handle;/* [ref] */
@@ -3901,7 +3842,7 @@ struct spoolss_GetPrinterDataEx {
 
 	struct {
 		enum winreg_Type *type;/* [ref] */
-		union spoolss_PrinterData *data;/* [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */
+		uint8_t *data;/* [ref,size_is(offered)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
