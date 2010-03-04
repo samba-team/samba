@@ -8589,11 +8589,29 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 
 	if (Printer->printer_type == SPLHND_SERVER) {
 
+		union spoolss_PrinterData data;
+
 		result = getprinterdata_printer_server(p->mem_ctx,
 						       r->in.value_name,
 						       r->out.type,
-						       r->out.data);
-		goto done;
+						       &data);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+
+		result = push_spoolss_PrinterData(p->mem_ctx, &blob,
+						  *r->out.type, &data);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+
+		*r->out.needed = blob.length;
+
+		if (r->in.offered >= *r->out.needed) {
+			memcpy(r->out.data, blob.data, blob.length);
+		}
+
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
@@ -8618,8 +8636,10 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 	    strequal(r->in.value_name, "ChangeId")) {
 		*r->out.type = REG_DWORD;
 		*r->out.needed = 4;
-		r->out.data->value = printer->info_2->changeid;
-		result = WERR_OK;
+		if (r->in.offered >= *r->out.needed) {
+			SIVAL(r->out.data, 0, printer->info_2->changeid);
+			result = WERR_OK;
+		}
 		goto done;
 	}
 
@@ -8640,12 +8660,9 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 	*r->out.needed = regval_size(val);
 	*r->out.type = regval_type(val);
 
-	blob = data_blob_const(regval_data_p(val), regval_size(val));
-
-	result = pull_spoolss_PrinterData(p->mem_ctx, &blob,
-					  r->out.data,
-					  *r->out.type);
-
+	if (r->in.offered >= *r->out.needed) {
+		memcpy(r->out.data, regval_data_p(val), regval_size(val));
+	}
  done:
 	if (printer) {
 		free_a_printer(&printer, 2);
@@ -8655,7 +8672,6 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed  = ndr_size_spoolss_PrinterData(r->out.data, *r->out.type, NULL, 0);
 	*r->out.type    = SPOOLSS_BUFFER_OK(*r->out.type, REG_NONE);
 	r->out.data     = SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
 
