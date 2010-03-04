@@ -345,19 +345,13 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 		/* Have the data we need now, so start building */
 		for (i=0; i < count; i++) {
 			REGISTRY_VALUE v;
-			DATA_BLOB blob;
 
-			result = push_spoolss_PrinterData(mem_ctx, &blob,
-							  info[i].type,
-							  info[i].data);
-			if (W_ERROR_IS_OK(result)) {
-				fstrcpy(v.valuename, info[i].value_name);
-				v.type = info[i].type;
-				v.data_p = blob.data;
-				v.size = blob.length;
+			fstrcpy(v.valuename, info[i].value_name);
+			v.type = info[i].type;
+			v.data_p = info[i].data->data;
+			v.size = info[i].data->length;
 
-				map_regval_to_ads(mem_ctx, mods, &v);
-			}
+			map_regval_to_ads(mem_ctx, mods, &v);
 		}
 	}
 
@@ -372,19 +366,13 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	} else {
 		for (i=0; i < count; i++) {
 			REGISTRY_VALUE v;
-			DATA_BLOB blob = data_blob_null;
 
-			result = push_spoolss_PrinterData(mem_ctx, &blob,
-							  info[i].type,
-							  info[i].data);
-			if (W_ERROR_IS_OK(result)) {
-				fstrcpy(v.valuename, info[i].value_name);
-				v.type = info[i].type;
-				v.data_p = blob.data;
-				v.size = blob.length;
+			fstrcpy(v.valuename, info[i].value_name);
+			v.type = info[i].type;
+			v.data_p = info[i].data->data;
+			v.size = info[i].data->length;
 
-				map_regval_to_ads(mem_ctx, mods, &v);
-			}
+			map_regval_to_ads(mem_ctx, mods, &v);
 		}
 	}
 
