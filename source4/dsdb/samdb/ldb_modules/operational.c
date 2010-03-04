@@ -345,6 +345,7 @@ static int operational_search_post_process(struct ldb_module *module,
 {
 	struct ldb_context *ldb;
 	unsigned int i, a = 0;
+	bool constructed_attributes = false;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -376,6 +377,7 @@ static int operational_search_post_process(struct ldb_module *module,
 
 			/* construct the new attribute, using either a supplied
 			   constructor or a simple copy */
+			constructed_attributes = true;
 			if (search_sub[i].constructor != NULL) {
 				if (search_sub[i].constructor(module, msg) != LDB_SUCCESS) {
 					goto failed;
@@ -385,17 +387,23 @@ static int operational_search_post_process(struct ldb_module *module,
 						     search_sub[i].attr) != LDB_SUCCESS) {
 				goto failed;
 			}
+		}
+	}
 
-			/* remove the added search attribute, unless it was
- 			   asked for by the user */
+	/* Deletion of the search helper attributes are needed if:
+	 * - we generated constructed attributes and
+	 * - we aren't requesting all attributes
+	 */
+	if ((constructed_attributes) && (!ldb_attr_in_list(attrs, "*"))) {
+		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
+			/* remove the added search helper attributes, unless
+			 * they were asked for by the user */
 			if (search_sub[i].replace != NULL && 
-			    !ldb_attr_in_list(attrs, search_sub[i].replace) &&
-			    !ldb_attr_in_list(attrs, "*")) {
+			    !ldb_attr_in_list(attrs, search_sub[i].replace)) {
 				ldb_msg_remove_attr(msg, search_sub[i].replace);
 			}
 			if (search_sub[i].extra_attr != NULL && 
-			    !ldb_attr_in_list(attrs, search_sub[i].extra_attr) &&
-			    !ldb_attr_in_list(attrs, "*")) {
+			    !ldb_attr_in_list(attrs, search_sub[i].extra_attr)) {
 				ldb_msg_remove_attr(msg, search_sub[i].extra_attr);
 			}
 		}
