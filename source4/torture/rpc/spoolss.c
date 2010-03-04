@@ -2845,7 +2845,8 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 				struct policy_handle *handle,
 				const char *value_name,
 				enum winreg_Type *type_p,
-				union spoolss_PrinterData *data_p)
+				uint8_t **data_p,
+				uint32_t *needed_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
@@ -2858,7 +2859,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	r.in.offered = 0;
 	r.out.needed = &needed;
 	r.out.type = &type;
-	r.out.data = &data;
+	r.out.data = talloc_zero_array(tctx, uint8_t, r.in.offered);
 
 	torture_comment(tctx, "Testing GetPrinterData(%s)\n", r.in.value_name);
 
@@ -2867,7 +2868,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.offered = needed;
-
+		r.out.data = talloc_zero_array(tctx, uint8_t, r.in.offered);
 		status = dcerpc_spoolss_GetPrinterData(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed");
 	}
@@ -2882,7 +2883,11 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	}
 
 	if (data_p) {
-		*data_p = data;
+		*data_p = r.out.data;
+	}
+
+	if (needed_p) {
+		*needed_p = needed;
 	}
 
 	return true;
@@ -2894,7 +2899,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 				  const char *key_name,
 				  const char *value_name,
 				  enum winreg_Type *type_p,
-				  union spoolss_PrinterData *data_p,
+				  uint8_t **data_p,
 				  uint32_t *needed_p)
 {
 	NTSTATUS status;
@@ -2909,7 +2914,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	r.in.offered = 0;
 	r.out.type = &type;
 	r.out.needed = &needed;
-	r.out.data = &data;
+	r.out.data = talloc_zero_array(tctx, uint8_t, r.in.offered);
 
 	torture_comment(tctx, "Testing GetPrinterDataEx(%s - %s)\n",
 		r.in.key_name, r.in.value_name);
@@ -2925,6 +2930,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.offered = needed;
+		r.out.data = talloc_zero_array(tctx, uint8_t, r.in.offered);
 		status = dcerpc_spoolss_GetPrinterDataEx(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinterDataEx failed");
 	}
@@ -2939,7 +2945,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	}
 
 	if (data_p) {
-		*data_p = data;
+		*data_p = r.out.data;
 	}
 
 	if (needed_p) {
@@ -2972,26 +2978,16 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(list); i++) {
 		enum winreg_Type type, type_ex;
-		union spoolss_PrinterData data, data_ex;
+		uint8_t *data, *data_ex;
+		uint32_t needed, needed_ex;
 
-		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, list[i], &type, &data),
+		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, list[i], &type, &data, &needed),
 			talloc_asprintf(tctx, "GetPrinterData failed on %s\n", list[i]));
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "random_string", list[i], &type_ex, &data_ex, NULL),
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "random_string", list[i], &type_ex, &data_ex, &needed_ex),
 			talloc_asprintf(tctx, "GetPrinterDataEx failed on %s\n", list[i]));
 		torture_assert_int_equal(tctx, type, type_ex, "type mismatch");
-		switch (type) {
-		case REG_SZ:
-			torture_assert_str_equal(tctx, data.string, data_ex.string, "REG_SZ mismatch");
-			break;
-		case REG_DWORD:
-			torture_assert_int_equal(tctx, data.value, data_ex.value, "REG_DWORD mismatch");
-			break;
-		case REG_BINARY:
-			torture_assert_data_blob_equal(tctx, data.binary, data_ex.binary, "REG_BINARY mismatch");
-			break;
-		default:
-			break;
-		}
+		torture_assert_int_equal(tctx, needed, needed_ex, "needed mismatch");
+		torture_assert_mem_equal(tctx, data, data_ex, needed, "data mismatch");
 	}
 
 	return true;
@@ -3044,7 +3040,7 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterData failed");
 
-		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name, NULL, NULL),
+		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name, NULL, NULL, NULL),
 			talloc_asprintf(tctx, "failed to call GetPrinterData for %s\n", r.out.value_name));
 
 		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name, NULL, NULL, NULL),
@@ -3190,8 +3186,9 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 	for (i=0; i < ARRAY_SIZE(values); i++) {
 
 		enum winreg_Type type;
-		union spoolss_PrinterData data;
+		uint8_t *data;
 		DATA_BLOB blob;
+		uint32_t needed;
 
 		torture_assert(tctx,
 			reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
@@ -3210,12 +3207,13 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "SetPrinterData failed");
 		torture_assert_werr_ok(tctx, r.out.result, "SetPrinterData failed");
 
-		if (!test_GetPrinterData(tctx, p, handle, r.in.value_name, &type, &data)) {
+		if (!test_GetPrinterData(tctx, p, handle, r.in.value_name, &type, &data, &needed)) {
 			return false;
 		}
 
 		torture_assert_int_equal(tctx, r.in.type, type, "type mismatch");
-		torture_assert_str_equal(tctx, "dog", data.string, "data mismatch");
+		torture_assert_int_equal(tctx, r.in.offered, needed, "size mismatch");
+		torture_assert_mem_equal(tctx, blob.data, data, needed, "buffer mismatch");
 
 		if (!test_DeletePrinterData(tctx, p, handle, r.in.value_name)) {
 			return false;
@@ -3308,7 +3306,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		DATA_BLOB blob = data_blob_string_const(string);
 		const char **subkeys;
 		DATA_BLOB data;
-		union spoolss_PrinterData data_out;
+		uint8_t *data_out;
 		uint32_t needed, offered = 0;
 
 		if (types[t] == REG_DWORD) {
@@ -3351,22 +3349,8 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		} else {
 			torture_assert_int_equal(tctx, types[t], type, "type mismatch");
 		}
-
-		switch (type) {
-		case REG_BINARY:
-			torture_assert_data_blob_equal(tctx, blob, data_out.binary, "data mismatch");
-			break;
-		case REG_DWORD:
-			torture_assert_int_equal(tctx, value, data_out.value, "data mismatch");
-			break;
-		case REG_SZ:
-			torture_assert_str_equal(tctx, string, data_out.string, "data mismatch");
-			break;
-		default:
-			break;
-		}
-
 		torture_assert_int_equal(tctx, needed, offered, "size mismatch");
+		torture_assert_mem_equal(tctx, data_out, data.data, offered, "buffer mismatch");
 
 		key = talloc_strdup(tctx, keys[i]);
 
@@ -3421,15 +3405,17 @@ static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
 					 uint32_t *change_id)
 {
 	enum winreg_Type type;
-	union spoolss_PrinterData data;
+	uint8_t *data;
+	uint32_t needed;
 
 	torture_assert(tctx,
-		test_GetPrinterData(tctx, p, handle, "ChangeID", &type, &data),
+		test_GetPrinterData(tctx, p, handle, "ChangeID", &type, &data, &needed),
 		"failed to call GetPrinterData");
 
 	torture_assert(tctx, type == REG_DWORD, "unexpected type");
+	torture_assert_int_equal(tctx, needed, 4, "unexpected size");
 
-	*change_id = data.value;
+	*change_id = IVAL(data, 0);
 
 	return true;
 }
@@ -3440,15 +3426,17 @@ static bool test_GetChangeID_PrinterDataEx(struct torture_context *tctx,
 					   uint32_t *change_id)
 {
 	enum winreg_Type type;
-	union spoolss_PrinterData data;
+	uint8_t *data;
+	uint32_t needed;
 
 	torture_assert(tctx,
-		test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", "ChangeID", &type, &data, NULL),
+		test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", "ChangeID", &type, &data, &needed),
 		"failed to call GetPrinterData");
 
 	torture_assert(tctx, type == REG_DWORD, "unexpected type");
+	torture_assert_int_equal(tctx, needed, 4, "unexpected size");
 
-	*change_id = data.value;
+	*change_id = IVAL(data, 0);
 
 	return true;
 }
