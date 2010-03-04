@@ -336,7 +336,7 @@ _PUBLIC_ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		++(*num_res_sids);
 	}
 
-	tmp_ctx = talloc_new(sam_ctx);
+	tmp_ctx = talloc_new(res_sids_ctx);
 
 	ret = gendb_search(sam_ctx, tmp_ctx, NULL, &res, attrs,
 		"objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
