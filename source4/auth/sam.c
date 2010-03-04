@@ -297,7 +297,7 @@ static bool sids_contains_sid(const struct dom_sid **sids,
  *
  * At the beginning "res_sids" should reference to a NULL pointer.
  */
-static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
+_PUBLIC_ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	const struct dom_sid *sid, const bool only_childs,
 	TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
 	unsigned int *num_res_sids)
