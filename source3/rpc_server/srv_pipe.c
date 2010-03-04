@@ -33,8 +33,6 @@
 #include "../libcli/auth/spnego.h"
 #include "ntlmssp.h"
 
-extern struct current_user current_user;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
