@@ -3341,14 +3341,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		if (!test_GetPrinterDataEx(tctx, p, handle, keys[i], value_name, &type, &data_out, &needed)) {
 			return false;
 		}
-
-		/* special case, a REG_BINARY set with 0 size returns a 0 sized
-		 * REG_NONE - gd */
-		if ((types[t] == REG_BINARY) && (offered == 0)) {
-			torture_assert_int_equal(tctx, REG_NONE, type, "type mismatch");
-		} else {
-			torture_assert_int_equal(tctx, types[t], type, "type mismatch");
-		}
+		torture_assert_int_equal(tctx, types[t], type, "type mismatch");
 		torture_assert_int_equal(tctx, needed, offered, "size mismatch");
 		torture_assert_mem_equal(tctx, data_out, data.data, offered, "buffer mismatch");
 
