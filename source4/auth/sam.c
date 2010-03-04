@@ -380,8 +380,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 					   struct ldb_message *msg,
 					   DATA_BLOB user_sess_key,
 					   DATA_BLOB lm_sess_key,
-					   struct auth_serversupplied_info
-						   **_server_info)
+					   struct auth_serversupplied_info **_server_info)
 {
 	NTSTATUS status;
 	struct auth_serversupplied_info *server_info;
