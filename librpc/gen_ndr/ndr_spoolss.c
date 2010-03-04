@@ -20271,8 +20271,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterEnumValues(struct ndr_push *n
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2 * strlen_m_term(r->value_name)));
 		NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, r->type));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->data));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags)));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->data));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->data->length));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -20287,16 +20292,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterEnumValues(struct ndr_push *n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->data) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->data));
-			{
-				struct ndr_push *_ndr_data;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_data, 0, r->data_length));
-				NDR_CHECK(ndr_push_set_switch_value(_ndr_data, r->data, r->type));
-				NDR_CHECK(ndr_push_spoolss_PrinterData(_ndr_data, NDR_SCALARS|NDR_BUFFERS, r->data));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_data, 0, r->data_length));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			if (r->data) {
+				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->data));
+				{
+					struct ndr_push *_ndr_data;
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_data, 0, r->data->length));
+					NDR_CHECK(ndr_push_DATA_BLOB(_ndr_data, NDR_SCALARS, *r->data));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_data, 0, r->data->length));
+				}
+				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->data));
 			}
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->data));
+			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}
 	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
@@ -20327,12 +20336,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterEnumValues(struct ndr_pull *n
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value_name_len));
 		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, &r->type));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
-		if (_ptr_data) {
-			NDR_PULL_ALLOC(ndr, r->data);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->data, _ptr_data));
-		} else {
-			r->data = NULL;
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+			if (_ptr_data) {
+				NDR_PULL_ALLOC(ndr, r->data);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->data, _ptr_data));
+			} else {
+				r->data = NULL;
+			}
+			ndr->flags = _flags_save_DATA_BLOB;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->data_length));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
@@ -20357,24 +20371,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterEnumValues(struct ndr_pull *n
 			}
 			ndr->flags = _flags_save_string;
 		}
-		if (r->data) {
-			uint32_t _relative_save_offset;
-			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->data));
-			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
-			{
-				struct ndr_pull *_ndr_data;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_data, 0, r->data_length));
-				NDR_CHECK(ndr_pull_set_switch_value(_ndr_data, r->data, r->type));
-				NDR_CHECK(ndr_pull_spoolss_PrinterData(_ndr_data, NDR_SCALARS|NDR_BUFFERS, r->data));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_data, 0, r->data_length));
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			if (r->data) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->data));
+				_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+				{
+					struct ndr_pull *_ndr_data;
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_data, 0, r->data_length));
+					NDR_CHECK(ndr_pull_DATA_BLOB(_ndr_data, NDR_SCALARS, r->data));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_data, 0, r->data_length));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
+				if (ndr->offset > ndr->relative_highest_offset) {
+					ndr->relative_highest_offset = ndr->offset;
+				}
+				ndr->offset = _relative_save_offset;
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
-			if (ndr->offset > ndr->relative_highest_offset) {
-				ndr->relative_highest_offset = ndr->offset;
-			}
-			ndr->offset = _relative_save_offset;
+			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}
 	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
@@ -20396,11 +20414,10 @@ _PUBLIC_ void ndr_print_spoolss_PrinterEnumValues(struct ndr_print *ndr, const c
 	ndr_print_ptr(ndr, "data", r->data);
 	ndr->depth++;
 	if (r->data) {
-		ndr_print_set_switch_value(ndr, r->data, r->type);
-		ndr_print_spoolss_PrinterData(ndr, "data", r->data);
+		ndr_print_DATA_BLOB(ndr, "data", *r->data);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "data_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags):r->data_length);
+	ndr_print_uint32(ndr, "data_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->data->length:r->data_length);
 	ndr->depth--;
 }
 
