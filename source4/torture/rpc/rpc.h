@@ -27,6 +27,7 @@
 #include "libnet/libnet_join.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_spoolss.h"
 #include "torture/rpc/proto.h"
 
 struct torture_rpc_tcase {
