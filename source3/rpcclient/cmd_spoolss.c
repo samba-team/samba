@@ -2870,9 +2870,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 					  const char **argv)
 {
 	WERROR result;
-#if 0
 	uint32_t i;
-#endif
 	const char *printername;
 	struct policy_handle hnd;
 	uint32_t count;
@@ -2906,13 +2904,14 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
-#if 0
+
 	for (i=0; i < count; i++) {
 		display_printer_data(info[i].value_name,
 				     info[i].type,
-				     info[i].data);
+				     info[i].data->data,
+				     info[i].data->length);
 	}
-#endif
+
  done:
 	if (is_valid_policy_hnd(&hnd)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
