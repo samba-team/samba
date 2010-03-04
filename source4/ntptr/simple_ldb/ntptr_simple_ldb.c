@@ -122,51 +122,57 @@ static WERROR sptr_OpenPrintServer(struct ntptr_context *ntptr, TALLOC_CTX *mem_
 /*
  * PrintServer PrinterData functions
  */
-static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
-				      struct spoolss_GetPrinterData *r)
+
+static WERROR sptr_PrintServerData(struct ntptr_GenericHandle *server,
+				   TALLOC_CTX *mem_ctx,
+				   const char *value_name,
+				   union spoolss_PrinterData *r,
+				   enum winreg_Type *type)
 {
 	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, server->ntptr->lp_ctx);
-	if (strcmp("W3SvcInstalled", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 0;
+	if (strcmp("W3SvcInstalled", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 0;
 		return WERR_OK;
-	} else if (strcmp("BeepEnabled", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 0;
+	} else if (strcmp("BeepEnabled", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 0;
 		return WERR_OK;
-	} else if (strcmp("EventLog", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 0;
+	} else if (strcmp("EventLog", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 0;
 		return WERR_OK;
-	} else if (strcmp("NetPopup", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 0;
+	} else if (strcmp("NetPopup", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 0;
 		return WERR_OK;
-	} else if (strcmp("NetPopupToComputer", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 0;
+	} else if (strcmp("NetPopupToComputer", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 0;
 		return  WERR_OK;
-	} else if (strcmp("MajorVersion", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 3;
+	} else if (strcmp("MajorVersion", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 3;
 		return WERR_OK;
-	} else if (strcmp("MinorVersion", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 0;
+	} else if (strcmp("MinorVersion", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 0;
 		return WERR_OK;
-	} else if (strcmp("DefaultSpoolDirectory", r->in.value_name) == 0) {
-		*r->out.type		= REG_SZ;
-		r->out.data->string	= "C:\\PRINTERS";
+	} else if (strcmp("DefaultSpoolDirectory", value_name) == 0) {
+		*type		= REG_SZ;
+		r->string	= talloc_strdup(mem_ctx, "C:\\PRINTERS");
+		W_ERROR_HAVE_NO_MEMORY(r->string);
 		return  WERR_OK;
-	} else if (strcmp("Architecture", r->in.value_name) == 0) {
-		*r->out.type		= REG_SZ;
-		r->out.data->string	= SPOOLSS_ARCHITECTURE_NT_X86;
+	} else if (strcmp("Architecture", value_name) == 0) {
+		*type		= REG_SZ;
+		r->string	= talloc_strdup(mem_ctx, SPOOLSS_ARCHITECTURE_NT_X86);
+		W_ERROR_HAVE_NO_MEMORY(r->string);
 		return  WERR_OK;
-	} else if (strcmp("DsPresent", r->in.value_name) == 0) {
-		*r->out.type		= REG_DWORD;
-		r->out.data->value	= 1;
+	} else if (strcmp("DsPresent", value_name) == 0) {
+		*type		= REG_DWORD;
+		r->value	= 1;
 		return WERR_OK;
-	} else if (strcmp("OSVersion", r->in.value_name) == 0) {
+	} else if (strcmp("OSVersion", value_name) == 0) {
 		DATA_BLOB blob;
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
@@ -181,10 +187,10 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 			return WERR_GENERAL_FAILURE;
 		}
 
-		*r->out.type		= REG_BINARY;
-		r->out.data->binary	= blob;
+		*type		= REG_BINARY;
+		r->binary	= blob;
 		return WERR_OK;
-	} else if (strcmp("OSVersionEx", r->in.value_name) == 0) {
+	} else if (strcmp("OSVersionEx", value_name) == 0) {
 		DATA_BLOB blob;
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersionEx os_ex;
@@ -204,21 +210,49 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 			return WERR_GENERAL_FAILURE;
 		}
 
-		*r->out.type		= REG_BINARY;
-		r->out.data->binary	= blob;
+		*type		= REG_BINARY;
+		r->binary	= blob;
 		return WERR_OK;
-	} else if (strcmp("DNSMachineName", r->in.value_name) == 0) {
+	} else if (strcmp("DNSMachineName", value_name) == 0) {
 		if (!lp_realm(server->ntptr->lp_ctx)) return WERR_INVALID_PARAM;
 
-		*r->out.type		= REG_SZ;
-		r->out.data->string	= talloc_asprintf(mem_ctx, "%s.%s",
-								   lp_netbios_name(server->ntptr->lp_ctx),
-								   lp_realm(server->ntptr->lp_ctx));
-		W_ERROR_HAVE_NO_MEMORY(r->out.data->string);
+		*type		= REG_SZ;
+		r->string	= talloc_asprintf(mem_ctx, "%s.%s",
+						   lp_netbios_name(server->ntptr->lp_ctx),
+						   lp_realm(server->ntptr->lp_ctx));
+		W_ERROR_HAVE_NO_MEMORY(r->string);
 		return WERR_OK;
 	}
 
 	return WERR_INVALID_PARAM;
+}
+
+static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
+				      struct spoolss_GetPrinterData *r)
+{
+	WERROR result;
+	union spoolss_PrinterData data;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+
+	result = sptr_PrintServerData(server, mem_ctx, r->in.value_name, &data, r->out.type);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	ndr_err = ndr_push_union_blob(&blob, mem_ctx, lp_iconv_convenience(server->ntptr->lp_ctx),
+				      &data, *r->out.type, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterData);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	*r->out.needed = blob.length;
+
+	if (r->in.offered >= *r->out.needed) {
+		memcpy(r->out.data, blob.data, blob.length);
+	}
+
+	return WERR_OK;
 }
 
 /* PrintServer Form functions */
