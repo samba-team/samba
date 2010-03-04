@@ -845,7 +845,7 @@ interface drsuapi
 		[size_is(num_sids)] dom_sid28 **sids;
 	} drsuapi_DsGetMembershipsCtr1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsGetMembershipsCtr1 ctr1;
 	} drsuapi_DsGetMembershipsCtr;
 
@@ -859,15 +859,15 @@ interface drsuapi
 		drsuapi_DsReplicaObjectIdentifier *domain;
 	} drsuapi_DsGetMembershipsRequest1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsGetMembershipsRequest1 req1;
 	} drsuapi_DsGetMembershipsRequest;
 
 	[todo] WERROR drsuapi_DsGetMemberships(
 		[in] policy_handle *bind_handle,
-		[in] int32 level,
+		[in] uint32 level,
 		[in,ref] [switch_is(level)] drsuapi_DsGetMembershipsRequest *req,
-		[out,ref] int32 *level_out,
+		[out,ref] uint32 *level_out,
 		[out,ref] [switch_is(*level_out)] drsuapi_DsGetMembershipsCtr *ctr
 		);
 
