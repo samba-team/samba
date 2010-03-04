@@ -270,10 +270,11 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 }
 
 /* This function tests if a SID structure "sids" contains the SID "sid" */
-static bool sids_contains_sid(const struct dom_sid **sids, const int num_sids,
-	const struct dom_sid *sid)
+static bool sids_contains_sid(const struct dom_sid **sids,
+			      const unsigned int num_sids,
+			      const struct dom_sid *sid)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < num_sids; i++) {
 		if (dom_sid_equal(sids[i], sid))
