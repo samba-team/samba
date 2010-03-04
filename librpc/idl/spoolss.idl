@@ -2550,8 +2550,8 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[relative] nstring *value_name;
 		[value(2*strlen_m_term(value_name))] uint32 value_name_len;
 		winreg_Type type;
-		[relative,switch_is(type),subcontext(0),subcontext_size(r->data_length)] spoolss_PrinterData *data;
-		[value(ndr_size_spoolss_PrinterData(data, type, ndr->iconv_convenience, ndr->flags))] uint32 data_length;
+		[relative,subcontext(0),subcontext_size(data_length),flag(NDR_REMAINING)] DATA_BLOB *data;
+		[value(data->length)] uint32 data_length;
 	} spoolss_PrinterEnumValues;
 
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrinterDataEx(
