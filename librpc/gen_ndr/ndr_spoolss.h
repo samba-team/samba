@@ -632,13 +632,6 @@ void ndr_print___spoolss_GetPrinterData(struct ndr_print *ndr, const char *name,
 enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r);
 enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterData *r);
 void ndr_print_spoolss_GetPrinterData(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_GetPrinterData *r);
-enum ndr_err_code ndr_push__spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct _spoolss_SetPrinterData *r);
-enum ndr_err_code ndr_pull__spoolss_SetPrinterData(struct ndr_pull *ndr, int flags, struct _spoolss_SetPrinterData *r);
-void ndr_print__spoolss_SetPrinterData(struct ndr_print *ndr, const char *name, int flags, const struct _spoolss_SetPrinterData *r);
-enum ndr_err_code ndr_push___spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct __spoolss_SetPrinterData *r);
-enum ndr_err_code ndr_pull___spoolss_SetPrinterData(struct ndr_pull *ndr, int flags, struct __spoolss_SetPrinterData *r);
-void ndr_print___spoolss_SetPrinterData(struct ndr_print *ndr, const char *name, int flags, const struct __spoolss_SetPrinterData *r);
-enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r);
 void ndr_print_spoolss_SetPrinterData(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_SetPrinterData *r);
 void ndr_print_spoolss_WaitForPrinterChange(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_WaitForPrinterChange *r);
 enum ndr_err_code ndr_push_spoolss_ClosePrinter(struct ndr_push *ndr, int flags, const struct spoolss_ClosePrinter *r);
@@ -735,13 +728,6 @@ void ndr_print_spoolss_DeletePrinterData(struct ndr_print *ndr, const char *name
 void ndr_print_spoolss_4a(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_4a *r);
 void ndr_print_spoolss_4b(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_4b *r);
 void ndr_print_spoolss_4c(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_4c *r);
-enum ndr_err_code ndr_push__spoolss_SetPrinterDataEx(struct ndr_push *ndr, int flags, const struct _spoolss_SetPrinterDataEx *r);
-enum ndr_err_code ndr_pull__spoolss_SetPrinterDataEx(struct ndr_pull *ndr, int flags, struct _spoolss_SetPrinterDataEx *r);
-void ndr_print__spoolss_SetPrinterDataEx(struct ndr_print *ndr, const char *name, int flags, const struct _spoolss_SetPrinterDataEx *r);
-enum ndr_err_code ndr_push___spoolss_SetPrinterDataEx(struct ndr_push *ndr, int flags, const struct __spoolss_SetPrinterDataEx *r);
-enum ndr_err_code ndr_pull___spoolss_SetPrinterDataEx(struct ndr_pull *ndr, int flags, struct __spoolss_SetPrinterDataEx *r);
-void ndr_print___spoolss_SetPrinterDataEx(struct ndr_print *ndr, const char *name, int flags, const struct __spoolss_SetPrinterDataEx *r);
-enum ndr_err_code ndr_push_spoolss_SetPrinterDataEx(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterDataEx *r);
 void ndr_print_spoolss_SetPrinterDataEx(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_SetPrinterDataEx *r);
 enum ndr_err_code ndr_push__spoolss_GetPrinterDataEx(struct ndr_push *ndr, int flags, const struct _spoolss_GetPrinterDataEx *r);
 enum ndr_err_code ndr_pull__spoolss_GetPrinterDataEx(struct ndr_pull *ndr, int flags, struct _spoolss_GetPrinterDataEx *r);

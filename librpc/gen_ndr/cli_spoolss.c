@@ -4321,8 +4321,8 @@ struct tevent_req *rpccli_spoolss_SetPrinterData_send(TALLOC_CTX *mem_ctx,
 						      struct policy_handle *_handle /* [in] [ref] */,
 						      const char *_value_name /* [in] [charset(UTF16)] */,
 						      enum winreg_Type _type /* [in]  */,
-						      union spoolss_PrinterData _data /* [in] [subcontext(4),switch_is(type)] */,
-						      uint32_t __offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */)
+						      uint8_t *_data /* [in] [ref,size_is(offered)] */,
+						      uint32_t _offered /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_spoolss_SetPrinterData_state *state;
@@ -4341,7 +4341,7 @@ struct tevent_req *rpccli_spoolss_SetPrinterData_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.value_name = _value_name;
 	state->orig.in.type = _type;
 	state->orig.in.data = _data;
-	state->orig.in._offered = __offered;
+	state->orig.in.offered = _offered;
 
 	/* Out parameters */
 
@@ -4423,8 +4423,8 @@ NTSTATUS rpccli_spoolss_SetPrinterData(struct rpc_pipe_client *cli,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *value_name /* [in] [charset(UTF16)] */,
 				       enum winreg_Type type /* [in]  */,
-				       union spoolss_PrinterData data /* [in] [subcontext(4),switch_is(type)] */,
-				       uint32_t _offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */,
+				       uint8_t *data /* [in] [ref,size_is(offered)] */,
+				       uint32_t offered /* [in]  */,
 				       WERROR *werror)
 {
 	struct spoolss_SetPrinterData r;
@@ -4435,7 +4435,7 @@ NTSTATUS rpccli_spoolss_SetPrinterData(struct rpc_pipe_client *cli,
 	r.in.value_name = value_name;
 	r.in.type = type;
 	r.in.data = data;
-	r.in._offered = _offered;
+	r.in.offered = offered;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
@@ -11710,8 +11710,8 @@ struct tevent_req *rpccli_spoolss_SetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 							const char *_key_name /* [in] [charset(UTF16)] */,
 							const char *_value_name /* [in] [charset(UTF16)] */,
 							enum winreg_Type _type /* [in]  */,
-							union spoolss_PrinterData _data /* [in] [subcontext(4),switch_is(type)] */,
-							uint32_t __offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */)
+							uint8_t *_data /* [in] [ref,size_is(offered)] */,
+							uint32_t _offered /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_spoolss_SetPrinterDataEx_state *state;
@@ -11731,7 +11731,7 @@ struct tevent_req *rpccli_spoolss_SetPrinterDataEx_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.value_name = _value_name;
 	state->orig.in.type = _type;
 	state->orig.in.data = _data;
-	state->orig.in._offered = __offered;
+	state->orig.in.offered = _offered;
 
 	/* Out parameters */
 
@@ -11814,8 +11814,8 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
 					 enum winreg_Type type /* [in]  */,
-					 union spoolss_PrinterData data /* [in] [subcontext(4),switch_is(type)] */,
-					 uint32_t _offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */,
+					 uint8_t *data /* [in] [ref,size_is(offered)] */,
+					 uint32_t offered /* [in]  */,
 					 WERROR *werror)
 {
 	struct spoolss_SetPrinterDataEx r;
@@ -11827,7 +11827,7 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 	r.in.value_name = value_name;
 	r.in.type = type;
 	r.in.data = data;
-	r.in._offered = _offered;
+	r.in.offered = offered;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
