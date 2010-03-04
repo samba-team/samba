@@ -812,7 +812,8 @@ static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
 				       struct policy_handle *hnd,
 				       const char *value_name,
 				       enum winreg_Type type,
-				       union spoolss_PrinterData data)
+				       uint8_t *data,
+				       uint32_t offered)
 {
 	WERROR result;
 	NTSTATUS status;
@@ -823,7 +824,7 @@ static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
 					       value_name,
 					       type,
 					       data,
-					       0, /* autocalculated */
+					       offered,
 					       &result);
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -2312,8 +2313,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			if (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(result)) {
 
 				REGISTRY_VALUE v;
-				DATA_BLOB blob;
-				union spoolss_PrinterData printer_data;
 
 				/* display_value */
 				if (c->opt_verbose) {
@@ -2324,18 +2323,10 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 					display_reg_value(SPOOL_PRINTERDATA_KEY, v);
 				}
 
-				result = pull_spoolss_PrinterData(mem_ctx,
-								  &blob,
-								  &printer_data,
-								  type);
-				if (!W_ERROR_IS_OK(result)) {
-					goto done;
-				}
-
 				/* set_value */
 				if (!net_spoolss_setprinterdata(pipe_hnd_dst, mem_ctx,
 								&hnd_dst, value_name,
-								type, printer_data))
+								type, buffer, data_offered))
 					goto done;
 
 				DEBUGADD(1,("\tSetPrinterData of [%s] succeeded\n",
