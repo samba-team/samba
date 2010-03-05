@@ -848,15 +848,15 @@ struct wreplsrv_push_notify_state {
 	enum wrepl_replication_cmd command;
 	bool full_table;
 	struct wrepl_send_ctrl ctrl;
-	struct wrepl_request *req;
 	struct wrepl_packet req_packet;
 	struct wrepl_packet *rep_packet;
 	struct composite_context *creq;
 	struct wreplsrv_out_connection *wreplconn;
+	struct tevent_req *subreq;
 };
 
 static void wreplsrv_push_notify_handler_creq(struct composite_context *creq);
-static void wreplsrv_push_notify_handler_req(struct wrepl_request *req);
+static void wreplsrv_push_notify_handler_treq(struct tevent_req *subreq);
 
 static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *state)
 {
@@ -880,8 +880,10 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* queue the request */
-	state->req = wrepl_request_send(state->wreplconn->sock, req, NULL);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	state->subreq = wrepl_request_send(state,
+					   state->wreplconn->service->task->event_ctx,
+					   state->wreplconn->sock, req, NULL);
+	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 
 	/*
 	 * now we need to convert the wrepl_socket (client connection)
@@ -951,11 +953,14 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 	/* we won't get a reply to a inform message */
 	state->ctrl.send_only		= true;
 
-	state->req = wrepl_request_send(state->wreplconn->sock, req, &state->ctrl);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	state->subreq = wrepl_request_send(state,
+					   state->wreplconn->service->task->event_ctx,
+					   state->wreplconn->sock, req, &state->ctrl);
+	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 
-	state->req->async.fn		= wreplsrv_push_notify_handler_req;
-	state->req->async.private_data	= state;
+	tevent_req_set_callback(state->subreq,
+				wreplsrv_push_notify_handler_treq,
+				state);
 
 	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM;
 
@@ -1009,7 +1014,8 @@ static NTSTATUS wreplsrv_push_notify_wait_inform(struct wreplsrv_push_notify_sta
 {
 	NTSTATUS status;
 
-	status =  wrepl_request_recv(state->req, state, NULL);
+	status = wrepl_request_recv(state->subreq, state, NULL);
+	TALLOC_FREE(state->subreq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_DONE;
@@ -1052,9 +1058,9 @@ static void wreplsrv_push_notify_handler_creq(struct composite_context *creq)
 	return;
 }
 
-static void wreplsrv_push_notify_handler_req(struct wrepl_request *req)
+static void wreplsrv_push_notify_handler_treq(struct tevent_req *subreq)
 {
-	struct wreplsrv_push_notify_state *state = talloc_get_type(req->async.private_data,
+	struct wreplsrv_push_notify_state *state = tevent_req_callback_data(subreq,
 						   struct wreplsrv_push_notify_state);
 	wreplsrv_push_notify_handler(state);
 	return;

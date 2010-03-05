@@ -83,7 +83,7 @@ static const char *wrepl_name_state_string(enum wrepl_name_state state)
 static bool test_assoc_ctx1(struct torture_context *tctx)
 {
 	bool ret = true;
-	struct wrepl_request *req;
+	struct tevent_req *subreq;
 	struct wrepl_socket *wrepl_socket1;
 	struct wrepl_associate associate1;
 	struct wrepl_socket *wrepl_socket2;
@@ -95,6 +95,7 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	NTSTATUS status;
 	struct nbt_name name;
 	const char *address;
+	bool ok;
 
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
@@ -131,8 +132,13 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	packet.message.replication.command = WREPL_REPL_TABLE_QUERY;
 	ZERO_STRUCT(ctrl);
 	ctrl.send_only = true;
-	req = wrepl_request_send(wrepl_socket2, &packet, &ctrl);
-	status = wrepl_request_recv(req, tctx, &rep_packet);
+	subreq = wrepl_request_send(tctx, tctx->ev, wrepl_socket2, &packet, &ctrl);
+	ok = tevent_req_poll(subreq, tctx->ev);
+	if (!ok) {
+		CHECK_STATUS(tctx, NT_STATUS_INTERNAL_ERROR, NT_STATUS_OK);
+	}
+	status = wrepl_request_recv(subreq, tctx, &rep_packet);
+	TALLOC_FREE(subreq);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Send a association request (conn2), to make sure the last request was ignored\n");
