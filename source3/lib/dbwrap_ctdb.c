@@ -1050,7 +1050,7 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 		return db_ctdb_fetch_locked_persistent(ctx, mem_ctx, key);
 	}
 
-	return fetch_locked_internal(ctx, mem_ctx, key, db->persistent);
+	return fetch_locked_internal(ctx, mem_ctx, key, false);
 }
 
 /*
