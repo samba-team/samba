@@ -72,6 +72,7 @@ ntvfs_posix_OBJ_FILES = $(addprefix $(ntvfssrcdir)/posix/, \
 		pvfs_xattr.o \
 		pvfs_streams.o \
 		pvfs_notify.o \
+		pvfs_sys.o \
 		xattr_system.o \
 		xattr_tdb.o)
 
