@@ -636,7 +636,8 @@ static bool torture_winbind_struct_list_users(struct torture_context *torture)
 	return true;
 }
 
-static bool get_group_list(struct torture_context *torture, int *num_entries,
+static bool get_group_list(struct torture_context *torture,
+			   unsigned int *num_entries,
 			   char ***groups)
 {
 	struct winbindd_request req;
