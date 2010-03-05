@@ -761,12 +761,12 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-	int32_t out_level = 0;
+	uint32_t out_level = 0;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
 	DATA_BLOB gensec_skey;
 	struct {
-		int32_t level;
+		uint32_t level;
 	} array[] = {
 /*		{
 			5
@@ -883,7 +883,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 		
 		printf("Dumping AD partition: %s\n", nc.dn);
 		for (y=0; ;y++) {
-			int32_t _level = 0;
+			uint32_t _level = 0;
 			union drsuapi_DsGetNCChangesCtr ctr;
 
 			ZERO_STRUCT(r.out);

@@ -269,7 +269,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		return;
 	}
 
-	r->out.level_out = talloc(r, int32_t);
+	r->out.level_out = talloc(r, uint32_t);
 	if (tevent_req_nomem(r->out.level_out, req)) {
 		return;
 	}

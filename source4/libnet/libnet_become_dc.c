@@ -2444,7 +2444,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	r = talloc(s, struct drsuapi_DsGetNCChanges);
 	if (composite_nomem(r, c)) return;
 
-	r->out.level_out = talloc(r, int32_t);
+	r->out.level_out = talloc(r, uint32_t);
 	if (composite_nomem(r->out.level_out, c)) return;
 	r->in.req = talloc(r, union drsuapi_DsGetNCChangesRequest);
 	if (composite_nomem(r->in.req, c)) return;

@@ -530,9 +530,9 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
-	int32_t level_out;
+	uint32_t level_out;
 	struct {
-		int32_t level;
+		uint32_t level;
 	} array[] = {
 		{	
 			5
