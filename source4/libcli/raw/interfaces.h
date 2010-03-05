@@ -1439,6 +1439,9 @@ union smb_open {
 			
 			/* some optional parameters from the SMB2 varient */
 			bool query_maximal_access;
+
+			/* private flags for internal use only */
+			uint8_t private_flags;
 		} in;
 		struct {
 			union smb_handle file;

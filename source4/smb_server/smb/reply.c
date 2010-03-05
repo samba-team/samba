@@ -2228,12 +2228,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	io->ntcreatex.in.ea_list          = NULL;
 	io->ntcreatex.in.sec_desc         = NULL;
 	io->ntcreatex.in.query_maximal_access = false;
-
-	/* we use a couple of bits of the create options internally */
-	if (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
-		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
+	io->ntcreatex.in.private_flags    = 0;
 
 	/* we need a neater way to handle this alignment */
 	if ((req->flags2 & FLAGS2_UNICODE_STRINGS) && 

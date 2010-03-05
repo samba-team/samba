@@ -182,6 +182,8 @@ struct pvfs_file_handle {
 
 	/* the open went through to completion */
 	bool open_completed;
+
+	uint8_t private_flags;
 };
 
 /* open file state */

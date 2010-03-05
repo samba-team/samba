@@ -178,19 +178,15 @@
 #define NTCREATEX_OPTIONS_INVALID_PARAM_MASK    (NTCREATEX_OPTIONS_OPFILTER | \
 						 NTCREATEX_OPTIONS_SYNC_ALERT | \
 						 NTCREATEX_OPTIONS_ASYNC_ALERT | \
-						 NTCREATEX_OPTIONS_OPFILTER | \
 						 0xFF000000)
 
 /*
- * We reuse some ignored flags for private use.
+ * private_flags field in ntcreatex
  * This values have different meaning for some ntvfs backends.
- *
- * TODO: use values that are ignore for sure...
  */
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS      0x00010000
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB      0x00020000
-#define NTCREATEX_OPTIONS_PRIVATE_MASK          (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS | \
-						 NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS      0x0001
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB      0x0002
+
 
 /* ntcreatex impersonation field */
 #define NTCREATEX_IMPERSONATION_ANONYMOUS      0

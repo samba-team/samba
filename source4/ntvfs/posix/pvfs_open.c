@@ -276,6 +276,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->fd                = -1;
 	f->handle->odb_locking_key   = data_blob(NULL, 0);
 	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->private_flags     = io->generic.in.private_flags;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
@@ -776,6 +777,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->name              = talloc_steal(f->handle, name);
 	f->handle->fd                = fd;
 	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->private_flags     = io->generic.in.private_flags;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
@@ -1061,7 +1063,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 		if (f2 != f &&
 		    f2->ntvfs->session_info == req->session_info &&
 		    f2->ntvfs->smbpid == req->smbpid &&
-		    (f2->handle->create_options & 
+		    (f2->handle->private_flags &
 		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 		    (f2->access_mask & SEC_FILE_WRITE_DATA) &&
@@ -1077,7 +1079,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 
 	/* quite an insane set of semantics ... */
 	if (is_exe_filename(io->generic.in.fname) &&
-	    (f2->handle->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+	    (f2->handle->private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
@@ -1129,7 +1131,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	struct timeval end_time;
 	struct timeval *final_timeout = NULL;
 
-	if (io->generic.in.create_options & 
+	if (io->generic.in.private_flags &
 	    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS | NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 		/* see if we can satisfy the request using the special DENY_DOS
 		   code */
@@ -1219,7 +1221,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	 * but we reuse some of them as private values for the generic mapping
 	 */
 	create_options_must_ignore_mask = NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
-	create_options_must_ignore_mask &= ~NTCREATEX_OPTIONS_PRIVATE_MASK;
 	create_options &= ~create_options_must_ignore_mask;
 
 	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
@@ -1438,6 +1439,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->fd                = -1;
 	f->handle->name              = talloc_steal(f->handle, name);
 	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->private_flags     = io->generic.in.private_flags;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
