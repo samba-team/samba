@@ -230,7 +230,7 @@ static bool test_DsWriteAccountSpn(struct torture_context *tctx,
 	union drsuapi_DsWriteAccountSpnRequest req;
 	struct drsuapi_DsNameString names[2];
 	union drsuapi_DsWriteAccountSpnResult res;
-	int32_t level_out;
+	uint32_t level_out;
 
 	r.in.bind_handle		= &priv->bind_handle;
 	r.in.level			= 1;
