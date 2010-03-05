@@ -21,7 +21,6 @@
 import getopt
 import os
 import sys
-import dns.resolver
 import tempfile
 
 # ensure we get messages out immediately, so they get in the samba logs,
@@ -39,6 +38,9 @@ import ldb
 from samba import glue
 from samba.auth import system_session
 from samba.samdb import SamDB
+import samba.external
+
+resolver = samba.external.samba_external_dns_resolver()
 
 default_ttl = 900
 
@@ -141,8 +143,8 @@ def check_dns_name(d):
     if opts.verbose:
         print "Looking for DNS entry %s as %s" % (d, normalised_name)
     try:
-        ans = dns.resolver.query(normalised_name, d.type)
-    except dns.resolver.NXDOMAIN:
+        ans = resolver.query(normalised_name, d.type)
+    except resolver.NXDOMAIN:
         return False
     if d.type == 'A':
         # we need to be sure that our IP is there
