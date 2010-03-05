@@ -39,6 +39,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 {
 	struct share_config *scfg = pvfs->ntvfs->ctx->config;
 	const char *eadb;
+	bool def_perm_override = false;
 
 	if (share_bool_option(scfg, SHARE_MAP_HIDDEN, SHARE_MAP_HIDDEN_DEFAULT))
 		pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
@@ -58,7 +59,14 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
 	if (share_bool_option(scfg, PVFS_AIO, false))
 		pvfs->flags |= PVFS_FLAG_LINUX_AIO;
-	if (share_bool_option(scfg, PVFS_PERM_OVERRIDE, true))
+
+#if defined(O_DIRECTORY) && defined(O_NOFOLLOW)
+	/* set PVFS_PERM_OVERRIDE by default only if the system
+	 * supports the necessary capabilities to make it secure
+	 */
+	def_perm_override = true;
+#endif
+	if (share_bool_option(scfg, PVFS_PERM_OVERRIDE, def_perm_override))
 		pvfs->flags |= PVFS_FLAG_PERM_OVERRIDE;
 
 	/* file perm options */
