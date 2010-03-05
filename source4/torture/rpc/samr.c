@@ -2855,7 +2855,7 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
 				     struct cli_credentials *machine_creds,
 				     const char *acct_name,
-				     char *password,
+				     const char *password,
 				     NTSTATUS expected_samlogon_result,
 				     bool interactive)
 {
