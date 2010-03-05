@@ -218,9 +218,9 @@ static NTSTATUS libnet_dssync_lookup_nc(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	WERROR werr;
-	int32_t level = 1;
+	uint32_t level = 1;
 	union drsuapi_DsNameRequest req;
-	int32_t level_out;
+	uint32_t level_out;
 	struct drsuapi_DsNameString names[1];
 	union drsuapi_DsNameCtr ctr;
 

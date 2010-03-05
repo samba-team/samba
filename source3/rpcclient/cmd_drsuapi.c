@@ -34,9 +34,9 @@ static WERROR cracknames(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werr;
 	int i;
-	int32_t level = 1;
+	uint32_t level = 1;
 	union drsuapi_DsNameRequest req;
-	int32_t level_out;
+	uint32_t level_out;
 	struct drsuapi_DsNameString *names;
 
 	names = TALLOC_ZERO_ARRAY(mem_ctx, struct drsuapi_DsNameString, argc);
