@@ -2747,7 +2747,8 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 			return status;
 		}
 	} else {
-		DEBUG(0, ("samdb_search returned %d: %s\n", ret, ldb_errstring(d_state->sam_ctx)));
+		DEBUG(0, ("samdb_search returned %d: %s\n", ret,
+		      ldb_errstring(d_state->sam_ctx)));
 	}
 
 	if (memberdn == NULL) {
