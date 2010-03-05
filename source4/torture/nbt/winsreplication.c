@@ -274,17 +274,12 @@ static bool test_wins_replication(struct torture_context *tctx)
 
 	status = wrepl_pull_table(wrepl_socket, tctx, &pull_table);
 	if (NT_STATUS_EQUAL(NT_STATUS_NETWORK_ACCESS_DENIED,status)) {
-		struct wrepl_packet packet;
-		struct wrepl_request *req;
+		struct wrepl_associate_stop assoc_stop;
 
-		ZERO_STRUCT(packet);
-		packet.opcode                      = WREPL_OPCODE_BITS;
-		packet.assoc_ctx                   = associate.out.assoc_ctx;
-		packet.mess_type                   = WREPL_STOP_ASSOCIATION;
-		packet.message.stop.reason         = 0;
+		assoc_stop.in.assoc_ctx = associate.out.assoc_ctx;
+		assoc_stop.in.reason = 0;
 
-		req = wrepl_request_send(wrepl_socket, &packet, NULL);
-		talloc_free(req);
+		wrepl_associate_stop(wrepl_socket, &assoc_stop);
 
 		torture_fail(tctx, "We are not a valid pull partner for the server");
 	}
