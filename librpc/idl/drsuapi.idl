@@ -499,7 +499,7 @@ interface drsuapi
 		uint32 more_flags;
 	} drsuapi_DsGetNCChangesRequest10;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(5)] drsuapi_DsGetNCChangesRequest5 req5;
 		[case(8)] drsuapi_DsGetNCChangesRequest8 req8;
 		[case(10)] drsuapi_DsGetNCChangesRequest10 req10;
@@ -705,12 +705,12 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr2;
 
 	typedef struct {
-		[range(0,6)] int32 level;
+		[range(0,6)] uint32 level;
 		[range(2,3)] drsuapi_DsGetNCChangesCompressionType type;
 		[switch_is(level | (type<<16))] drsuapi_DsGetNCChangesCompressedCtr ctr;
 	} drsuapi_DsGetNCChangesCtr7;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsGetNCChangesCtr1 ctr1;
 		[case(2)] drsuapi_DsGetNCChangesCtr2 ctr2;
 		[case(6)] drsuapi_DsGetNCChangesCtr6 ctr6;
@@ -719,9 +719,9 @@ interface drsuapi
 
 	WERROR drsuapi_DsGetNCChanges(
 		[in] policy_handle *bind_handle,
-		[in] int32 level,
+		[in] uint32 level,
 		[in,ref,switch_is(level)] drsuapi_DsGetNCChangesRequest *req,
-		[out,ref] int32 *level_out,
+		[out,ref] uint32 *level_out,
 		[out,ref,switch_is(*level_out)] drsuapi_DsGetNCChangesCtr *ctr
 		);
 
