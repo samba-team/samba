@@ -974,7 +974,7 @@ static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_st
 static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_state *state)
 {
 	struct wreplsrv_in_connection *wrepl_in;
-	struct socket_context *sock;
+	struct tstream_context *stream;
 	NTSTATUS status;
 
 	status = wrepl_request_recv(state->subreq, state, NULL);
@@ -988,37 +988,21 @@ static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_sta
 	 * message is received by the peer.
 	 */
 
-	/* steal the socket_context */
-	sock = state->wreplconn->sock->sock;
-	state->wreplconn->sock->sock = NULL;
-	talloc_steal(state, sock);
-
-	/*
-	 * TODO: steal the tstream if we switch the client to tsocket.
-	 * This is just to get a compiler error as soon as we remove
-	 * packet_context.
-	 */
-	state->wreplconn->sock->packet = NULL;
-
-	/*
-	 * free the wrepl_socket (client connection)
-	 */
-	talloc_free(state->wreplconn->sock);
-	state->wreplconn->sock = NULL;
+	status = wrepl_socket_split_stream(state->wreplconn->sock, state, &stream);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/*
 	 * now create a wreplsrv_in_connection,
 	 * on which we act as server
 	 *
-	 * NOTE: sock and packet will be stolen by
+	 * NOTE: stream will be stolen by
 	 *       wreplsrv_in_connection_merge()
 	 */
 	status = wreplsrv_in_connection_merge(state->io->in.partner,
-					      sock, &wrepl_in);
+					      state->wreplconn->assoc_ctx.peer_ctx,
+					      &stream,
+					      &wrepl_in);
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	wrepl_in->assoc_ctx.peer_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
-	wrepl_in->assoc_ctx.our_ctx	= 0;
 
 	/* now we can free the wreplsrv_out_connection */
 	TALLOC_FREE(state->wreplconn);

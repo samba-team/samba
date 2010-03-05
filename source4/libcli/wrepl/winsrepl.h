@@ -24,37 +24,7 @@
 #include "librpc/gen_ndr/winsrepl.h"
 
 struct wrepl_request;
-
-/*
-  main context structure for the wins replication client library
-*/
-struct wrepl_socket {
-	struct socket_context *sock;
-	struct packet_context *packet;
-
-	struct {
-		struct tevent_context *ctx;
-		struct tevent_fd *fde;
-	} event;
-
-	/* a queue of replies waiting to be received */
-	struct wrepl_request *recv_queue;
-
-	/* the default timeout for requests, 0 means no timeout */
-#define WREPL_SOCKET_REQUEST_TIMEOUT	(60)
-	uint32_t request_timeout;
-
-	/* counter for request timeouts, after 2 timeouts the socket is marked as dead */
-	uint32_t timeout_count;
-
-	/* remember is the socket is dead */
-	bool dead;
-
-	/* remember if we need to free the wrepl_socket at the end of wrepl_socket_dead() */
-	bool free_skipped;
-
-	struct smb_iconv_convenience *iconv_convenience;
-};
+struct wrepl_socket;
 
 struct wrepl_send_ctrl {
 	bool send_only;
@@ -135,6 +105,6 @@ struct wrepl_pull_names {
 	} out;
 };
 
-struct resolve_context;
+struct tstream_context;
 
 #include "libcli/wrepl/winsrepl_proto.h"

@@ -121,7 +121,6 @@ void stream_io_handler_callback(void *private_data, uint16_t flags)
 NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const struct model_ops *model_ops,
-				     struct socket_context *sock,
 				     const struct stream_server_ops *stream_ops,
 				     struct messaging_context *msg_ctx,
 				     void *private_data,
@@ -132,23 +131,15 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 	srv_conn = talloc_zero(ev, struct stream_connection);
 	NT_STATUS_HAVE_NO_MEMORY(srv_conn);
 
-	talloc_steal(srv_conn, sock);
-
 	srv_conn->private_data  = private_data;
 	srv_conn->model_ops     = model_ops;
-	srv_conn->socket	= sock;
+	srv_conn->socket	= NULL;
 	srv_conn->server_id	= cluster_id(0, 0);
 	srv_conn->ops           = stream_ops;
 	srv_conn->msg_ctx	= msg_ctx;
 	srv_conn->event.ctx	= ev;
 	srv_conn->lp_ctx	= lp_ctx;
-	srv_conn->event.fde	= tevent_add_fd(ev, srv_conn, socket_get_fd(sock),
-						TEVENT_FD_READ,
-						stream_io_handler_fde, srv_conn);
-	if (!srv_conn->event.fde) {
-		talloc_free(srv_conn);
-		return NT_STATUS_NO_MEMORY;
-	}
+	srv_conn->event.fde	= NULL;
 
 	*_srv_conn = srv_conn;
 	return NT_STATUS_OK;

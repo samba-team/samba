@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
@@ -31,7 +32,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/time.h"
 #include "lib/util/tsort.h"
-#include "lib/stream/packet.h" /* FIXME */
+#include "param/param.h"
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -342,7 +343,7 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	struct wreplsrv_out_connection *wrepl_out;
 	struct wrepl_table *update_in = &call->req_packet.message.replication.info.table;
 	struct wreplsrv_in_update_state *update_state;
-	struct packet_context *packet;
+	NTSTATUS status;
 
 	DEBUG(2,("WREPL_REPL_UPDATE: partner[%s] initiator[%s] num_owners[%u]\n",
 		call->wreplconn->partner->address,
@@ -351,34 +352,21 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	update_state = talloc(wrepl_in, struct wreplsrv_in_update_state);
 	NT_STATUS_HAVE_NO_MEMORY(update_state);
 
-	/*
-	 * We need to flip the connection into a client connection
-	 * and do a WREPL_REPL_SEND_REQUEST's on the that connection
-	 * and then stop this connection.
-	 */
-	packet = packet_init(wrepl_in);
-	if (packet == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-	 * TODO We can free the tstream here as we don't use it in the client
-	 * yet.
-	 */
-	TALLOC_FREE(wrepl_in->send_queue);
-	TALLOC_FREE(wrepl_in->tstream);
-
 	wrepl_out = talloc(update_state, struct wreplsrv_out_connection);
 	NT_STATUS_HAVE_NO_MEMORY(wrepl_out);
 	wrepl_out->service		= wrepl_in->service;
 	wrepl_out->partner		= wrepl_in->partner;
 	wrepl_out->assoc_ctx.our_ctx	= wrepl_in->assoc_ctx.our_ctx;
 	wrepl_out->assoc_ctx.peer_ctx	= wrepl_in->assoc_ctx.peer_ctx;
-	wrepl_out->sock			= wrepl_socket_merge(wrepl_out,
-							     wrepl_in->conn->event.ctx,
-							     wrepl_in->conn->socket,
-							     packet);
-	NT_STATUS_HAVE_NO_MEMORY(wrepl_out->sock);
+	wrepl_out->sock			= wrepl_socket_init(wrepl_out,
+							    wrepl_in->conn->event.ctx,
+							    lp_iconv_convenience(wrepl_in->service->task->lp_ctx));
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(wrepl_out->sock, update_state);
+
+	TALLOC_FREE(wrepl_in->send_queue);
+
+	status = wrepl_socket_donate_stream(wrepl_out->sock, &wrepl_in->tstream);
+	NT_STATUS_NOT_OK_RETURN_AND_FREE(status, update_state);
 
 	update_state->wrepl_in			= wrepl_in;
 	update_state->wrepl_out			= wrepl_out;
@@ -389,6 +377,7 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	update_state->cycle_io.in.wreplconn	= wrepl_out;
 	update_state->creq = wreplsrv_pull_cycle_send(update_state, &update_state->cycle_io);
 	if (!update_state->creq) {
+		talloc_free(update_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

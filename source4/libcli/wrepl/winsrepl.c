@@ -23,83 +23,34 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "../lib/util/dlinklist.h"
-#include "lib/socket/socket.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "lib/stream/packet.h"
-#include "libcli/composite/composite.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
 #include "lib/util/tevent_ntstatus.h"
-
-enum wrepl_request_internal_state {
-	WREPL_REQUEST_INIT  = 0,
-	WREPL_REQUEST_RECV  = 1,
-	WREPL_REQUEST_DONE  = 2,
-	WREPL_REQUEST_ERROR = 3
-};
+#include "lib/tsocket/tsocket.h"
+#include "libcli/util/tstream.h"
 
 /*
-  a WINS replication request
+  main context structure for the wins replication client library
 */
-struct wrepl_request {
-	struct wrepl_request *next, *prev;
-	struct wrepl_socket *wrepl_socket;
-
-	enum wrepl_request_internal_state state;
-	bool trigger;
-	NTSTATUS status;
-
-	struct tevent_timer *te;
-
-	struct wrepl_packet *packet;
-
+struct wrepl_socket {
 	struct {
-		void (*fn)(struct wrepl_request *);
-		void *private_data;
-	} async;
+		struct tevent_context *ctx;
+	} event;
+
+	/* the default timeout for requests, 0 means no timeout */
+#define WREPL_SOCKET_REQUEST_TIMEOUT	(60)
+	uint32_t request_timeout;
+
+	struct smb_iconv_convenience *iconv_convenience;
+
+	struct tevent_queue *request_queue;
+
+	struct tstream_context *stream;
 };
-
-static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status);
-
-/*
-  mark all pending requests as dead - called when a socket error happens
-*/
-static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status)
-{
-	wrepl_socket->dead = true;
-
-	if (wrepl_socket->packet) {
-		packet_recv_disable(wrepl_socket->packet);
-		packet_set_fde(wrepl_socket->packet, NULL);
-		packet_set_socket(wrepl_socket->packet, NULL);
-	}
-
-	if (wrepl_socket->event.fde) {
-		talloc_free(wrepl_socket->event.fde);
-		wrepl_socket->event.fde = NULL;
-	}
-
-	if (wrepl_socket->sock) {
-		talloc_free(wrepl_socket->sock);
-		wrepl_socket->sock = NULL;
-	}
-
-	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
-		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-	while (wrepl_socket->recv_queue) {
-		struct wrepl_request *req = wrepl_socket->recv_queue;
-		DLIST_REMOVE(wrepl_socket->recv_queue, req);
-		wrepl_request_finished(req, status);
-	}
-
-	talloc_set_destructor(wrepl_socket, NULL);
-	if (wrepl_socket->free_skipped) {
-		talloc_free(wrepl_socket);
-	}
-}
 
 bool wrepl_socket_is_connected(struct wrepl_socket *wrepl_sock)
 {
@@ -107,130 +58,42 @@ bool wrepl_socket_is_connected(struct wrepl_socket *wrepl_sock)
 		return false;
 	}
 
-	if (wrepl_sock->dead) {
-		return false;
-	}
-
-	if (!wrepl_sock->sock) {
+	if (!wrepl_sock->stream) {
 		return false;
 	}
 
 	return true;
 }
 
-static void wrepl_request_timeout_handler(struct tevent_context *ev, struct tevent_timer *te,
-					  struct timeval t, void *ptr)
-{
-	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
-	wrepl_socket_dead(req->wrepl_socket, NT_STATUS_IO_TIMEOUT);
-}
-
-/*
-  handle recv events 
-*/
-static NTSTATUS wrepl_finish_recv(void *private_data, DATA_BLOB packet_blob_in)
-{
-	struct wrepl_socket *wrepl_socket = talloc_get_type(private_data, struct wrepl_socket);
-	struct wrepl_request *req = wrepl_socket->recv_queue;
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
-
-	if (!req) {
-		DEBUG(1,("Received unexpected WINS packet of length %u!\n", 
-			 (unsigned)packet_blob_in.length));
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	req->packet = talloc(req, struct wrepl_packet);
-	NT_STATUS_HAVE_NO_MEMORY(req->packet);
-
-	blob.data = packet_blob_in.data + 4;
-	blob.length = packet_blob_in.length - 4;
-	
-	/* we have a full request - parse it */
-	ndr_err = ndr_pull_struct_blob(&blob, req->packet, wrepl_socket->iconv_convenience, req->packet,
-				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		wrepl_request_finished(req, status);
-		return NT_STATUS_OK;
-	}
-
-	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received WINS packet of length %u\n", 
-			  (unsigned)packet_blob_in.length));
-		NDR_PRINT_DEBUG(wrepl_packet, req->packet);
-	}
-
-	wrepl_request_finished(req, NT_STATUS_OK);
-	return NT_STATUS_OK;
-}
-
-/*
-  handler for winrepl events
-*/
-static void wrepl_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-			  uint16_t flags, void *private_data)
-{
-	struct wrepl_socket *wrepl_socket = talloc_get_type(private_data,
-							    struct wrepl_socket);
-	if (flags & EVENT_FD_READ) {
-		packet_recv(wrepl_socket->packet);
-		return;
-	}
-	if (flags & EVENT_FD_WRITE) {
-		packet_queue_run(wrepl_socket->packet);
-	}
-}
-
-static void wrepl_error(void *private_data, NTSTATUS status)
-{
-	struct wrepl_socket *wrepl_socket = talloc_get_type(private_data,
-							    struct wrepl_socket);
-	wrepl_socket_dead(wrepl_socket, status);
-}
-
-
-/*
-  destroy a wrepl_socket destructor
-*/
-static int wrepl_socket_destructor(struct wrepl_socket *sock)
-{
-	if (sock->dead) {
-		sock->free_skipped = true;
-		return -1;
-	}
-	wrepl_socket_dead(sock, NT_STATUS_LOCAL_DISCONNECT);
-	return 0;
-}
-
 /*
   initialise a wrepl_socket. The event_ctx is optional, if provided then
   operations will use that event context
 */
-struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx, 
+struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *event_ctx,
 				       struct smb_iconv_convenience *iconv_convenience)
 {
 	struct wrepl_socket *wrepl_socket;
-	NTSTATUS status;
 
 	wrepl_socket = talloc_zero(mem_ctx, struct wrepl_socket);
-	if (!wrepl_socket) return NULL;
+	if (!wrepl_socket) {
+		return NULL;
+	}
 
 	wrepl_socket->event.ctx = event_ctx;
-	if (!wrepl_socket->event.ctx) goto failed;
+	if (!wrepl_socket->event.ctx) {
+		goto failed;
+	}
+
+	wrepl_socket->request_queue = tevent_queue_create(wrepl_socket,
+							  "wrepl request queue");
+	if (wrepl_socket->request_queue == NULL) {
+		goto failed;
+	}
 
 	wrepl_socket->iconv_convenience = iconv_convenience;
 
-	status = socket_create("ip", SOCKET_TYPE_STREAM, &wrepl_socket->sock, 0);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	talloc_steal(wrepl_socket, wrepl_socket->sock);
-
 	wrepl_socket->request_timeout	= WREPL_SOCKET_REQUEST_TIMEOUT;
-
-	talloc_set_destructor(wrepl_socket, wrepl_socket_destructor);
 
 	return wrepl_socket;
 
@@ -242,75 +105,37 @@ failed:
 /*
   initialise a wrepl_socket from an already existing connection
 */
-struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx, 
-				        struct tevent_context *event_ctx,
-					struct socket_context *sock,
-					struct packet_context *pack)
+NTSTATUS wrepl_socket_donate_stream(struct wrepl_socket *wrepl_socket,
+				    struct tstream_context **stream)
 {
-	struct wrepl_socket *wrepl_socket;
-
-	wrepl_socket = talloc_zero(mem_ctx, struct wrepl_socket);
-	if (wrepl_socket == NULL) goto failed;
-
-	wrepl_socket->event.ctx = event_ctx;
-	if (wrepl_socket->event.ctx == NULL) goto failed;
-
-	wrepl_socket->sock = sock;
-	talloc_steal(wrepl_socket, wrepl_socket->sock);
-
-
-	wrepl_socket->request_timeout	= WREPL_SOCKET_REQUEST_TIMEOUT;
-
-	wrepl_socket->event.fde = event_add_fd(wrepl_socket->event.ctx, wrepl_socket,
-					       socket_get_fd(wrepl_socket->sock), 
-					       EVENT_FD_READ,
-					       wrepl_handler, wrepl_socket);
-	if (wrepl_socket->event.fde == NULL) {
-		goto failed;
+	if (wrepl_socket->stream) {
+		return NT_STATUS_CONNECTION_ACTIVE;
 	}
 
-	wrepl_socket->packet = pack;
-	talloc_steal(wrepl_socket, wrepl_socket->packet);
-	packet_set_private(wrepl_socket->packet, wrepl_socket);
-	packet_set_socket(wrepl_socket->packet, wrepl_socket->sock);
-	packet_set_callback(wrepl_socket->packet, wrepl_finish_recv);
-	packet_set_full_request(wrepl_socket->packet, packet_full_request_u32);
-	packet_set_error_handler(wrepl_socket->packet, wrepl_error);
-	packet_set_event_context(wrepl_socket->packet, wrepl_socket->event.ctx);
-	packet_set_fde(wrepl_socket->packet, wrepl_socket->event.fde);
-	packet_set_serialise(wrepl_socket->packet);
-
-	talloc_set_destructor(wrepl_socket, wrepl_socket_destructor);
-	
-	return wrepl_socket;
-
-failed:
-	talloc_free(wrepl_socket);
-	return NULL;
+	wrepl_socket->stream = talloc_move(wrepl_socket, stream);
+	return NT_STATUS_OK;
 }
 
 /*
-  destroy a wrepl_request
+  initialise a wrepl_socket from an already existing connection
 */
-static int wrepl_request_destructor(struct wrepl_request *req)
+NTSTATUS wrepl_socket_split_stream(struct wrepl_socket *wrepl_socket,
+				   TALLOC_CTX *mem_ctx,
+				   struct tstream_context **stream)
 {
-	if (req->state == WREPL_REQUEST_RECV) {
-		DLIST_REMOVE(req->wrepl_socket->recv_queue, req);
-	}
-	req->state = WREPL_REQUEST_ERROR;
-	return 0;
-}
+	size_t num_requests;
 
-/*
-  wait for a request to complete
-*/
-static NTSTATUS wrepl_request_wait(struct wrepl_request *req)
-{
-	NT_STATUS_HAVE_NO_MEMORY(req);
-	while (req->state < WREPL_REQUEST_DONE) {
-		event_loop_once(req->wrepl_socket->event.ctx);
+	if (!wrepl_socket->stream) {
+		return NT_STATUS_CONNECTION_INVALID;
 	}
-	return req->status;
+
+	num_requests = tevent_queue_length(wrepl_socket->request_queue);
+	if (num_requests > 0) {
+		return NT_STATUS_CONNECTION_IN_USE;
+	}
+
+	*stream = talloc_move(wrepl_socket, &wrepl_socket->stream);
+	return NT_STATUS_OK;
 }
 
 const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
@@ -321,10 +146,17 @@ const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
 }
 
 struct wrepl_connect_state {
-	struct wrepl_socket *wrepl_socket;
+	struct {
+		struct wrepl_socket *wrepl_socket;
+		struct tevent_context *ev;
+	} caller;
+	struct tsocket_address *local_address;
+	struct tsocket_address *remote_address;
+	struct tstream_context *stream;
 };
 
-static void wrepl_connect_handler(struct composite_context *creq);
+static void wrepl_connect_trigger(struct tevent_req *req,
+				  void *private_date);
 
 struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -333,8 +165,8 @@ struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct wrepl_connect_state *state;
-	struct composite_context *subreq;
-	struct socket_address *peer, *us;
+	int ret;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wrepl_connect_state);
@@ -342,68 +174,91 @@ struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->wrepl_socket	= wrepl_socket;
+	state->caller.wrepl_socket = wrepl_socket;
+	state->caller.ev = ev;
 
-	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name,
-					 our_ip, 0);
-	if (tevent_req_nomem(us, req)) {
+	if (wrepl_socket->stream) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_ACTIVE);
 		return tevent_req_post(req, ev);
 	}
 
-	peer = socket_address_from_strings(state, wrepl_socket->sock->backend_name,
-					   peer_ip, WINS_REPLICATION_PORT);
-	if (tevent_req_nomem(peer, req)) {
+	ret = tsocket_address_inet_from_strings(state, "ipv4",
+						our_ip, 0,
+						&state->local_address);
+	if (ret != 0) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = socket_connect_send(wrepl_socket->sock, us, peer,
-				     0, wrepl_socket->event.ctx);
-	if (tevent_req_nomem(subreq, req)) {
+	ret = tsocket_address_inet_from_strings(state, "ipv4",
+						peer_ip, WINS_REPLICATION_PORT,
+						&state->remote_address);
+	if (ret != 0) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
-	subreq->async.fn = wrepl_connect_handler;
-	subreq->async.private_data = req;
+	ok = tevent_queue_add(wrepl_socket->request_queue,
+			      ev,
+			      req,
+			      wrepl_connect_trigger,
+			      NULL);
+	if (!ok) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
+	}
+
+	if (wrepl_socket->request_timeout > 0) {
+		struct timeval endtime;
+		endtime = tevent_timeval_current_ofs(wrepl_socket->request_timeout, 0);
+		ok = tevent_req_set_endtime(req, ev, endtime);
+		if (!ok) {
+			return tevent_req_post(req, ev);
+		}
+	}
 
 	return req;
 }
 
-static void wrepl_connect_handler(struct composite_context *subreq)
+static void wrepl_connect_done(struct tevent_req *subreq);
+
+static void wrepl_connect_trigger(struct tevent_req *req,
+				  void *private_date)
 {
-	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+	struct wrepl_connect_state *state = tevent_req_data(req,
+					    struct wrepl_connect_state);
+	struct tevent_req *subreq;
+
+	subreq = tstream_inet_tcp_connect_send(state,
+					       state->caller.ev,
+					       state->local_address,
+					       state->remote_address);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wrepl_connect_done, req);
+
+	return;
+}
+
+static void wrepl_connect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
 				 struct tevent_req);
 	struct wrepl_connect_state *state = tevent_req_data(req,
 					    struct wrepl_connect_state);
-	struct wrepl_socket *wrepl_socket = state->wrepl_socket;
-	NTSTATUS status;
+	int ret;
+	int sys_errno;
 
-	status = socket_connect_recv(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = tstream_inet_tcp_connect_recv(subreq, &sys_errno,
+					    state, &state->stream);
+	if (ret != 0) {
+		NTSTATUS status = map_nt_error_from_unix(sys_errno);
 		tevent_req_nterror(req, status);
 		return;
 	}
-
-	wrepl_socket->event.fde = event_add_fd(wrepl_socket->event.ctx, wrepl_socket, 
-					       socket_get_fd(wrepl_socket->sock), 
-					       EVENT_FD_READ,
-					       wrepl_handler, wrepl_socket);
-	if (tevent_req_nomem(wrepl_socket->event.fde, req)) {
-		return;
-	}
-
-	/* setup the stream -> packet parser */
-	wrepl_socket->packet = packet_init(wrepl_socket);
-	if (tevent_req_nomem(wrepl_socket->packet, req)) {
-		return;
-	}
-	packet_set_private(wrepl_socket->packet, wrepl_socket);
-	packet_set_socket(wrepl_socket->packet, wrepl_socket->sock);
-	packet_set_callback(wrepl_socket->packet, wrepl_finish_recv);
-	packet_set_full_request(wrepl_socket->packet, packet_full_request_u32);
-	packet_set_error_handler(wrepl_socket->packet, wrepl_error);
-	packet_set_event_context(wrepl_socket->packet, wrepl_socket->event.ctx);
-	packet_set_fde(wrepl_socket->packet, wrepl_socket->event.fde);
-	packet_set_serialise(wrepl_socket->packet);
 
 	tevent_req_done(req);
 }
@@ -415,14 +270,15 @@ NTSTATUS wrepl_connect_recv(struct tevent_req *req)
 {
 	struct wrepl_connect_state *state = tevent_req_data(req,
 					    struct wrepl_connect_state);
-	struct wrepl_socket *wrepl_socket = state->wrepl_socket;
+	struct wrepl_socket *wrepl_socket = state->caller.wrepl_socket;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		wrepl_socket_dead(wrepl_socket, status);
 		tevent_req_received(req);
 		return status;
 	}
+
+	wrepl_socket->stream = talloc_move(wrepl_socket, &state->stream);
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
@@ -455,177 +311,26 @@ NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket,
 	return NT_STATUS_OK;
 }
 
-/* 
-   callback from wrepl_request_trigger() 
-*/
-static void wrepl_request_trigger_handler(struct tevent_context *ev, struct tevent_timer *te,
-					  struct timeval t, void *ptr)
-{
-	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
-	if (req->async.fn) {
-		req->async.fn(req);
-	}
-}
-
-/*
-  trigger an immediate event on a wrepl_request
-  the return value should only be used in wrepl_request_send()
-  this is the only place where req->trigger is true
-*/
-static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status)
-{
-	struct tevent_timer *te;
-
-	if (req->state == WREPL_REQUEST_RECV) {
-		DLIST_REMOVE(req->wrepl_socket->recv_queue, req);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		req->state	= WREPL_REQUEST_ERROR;
-	} else {
-		req->state	= WREPL_REQUEST_DONE;
-	}
-
-	req->status	= status;
-
-	if (req->trigger) {
-		req->trigger = false;
-		/* a zero timeout means immediate */
-		te = event_add_timed(req->wrepl_socket->event.ctx,
-				     req, timeval_zero(),
-				     wrepl_request_trigger_handler, req);
-		if (!te) {
-			talloc_free(req);
-			return NULL;
-		}
-		return req;
-	}
-
-	if (req->async.fn) {
-		req->async.fn(req);
-	}
-	return NULL;
-}
-
-struct wrepl_send_ctrl_state {
-	struct wrepl_send_ctrl ctrl;
-	struct wrepl_request *req;
-	struct wrepl_socket *wrepl_sock;
-};
-
-static int wrepl_send_ctrl_destructor(struct wrepl_send_ctrl_state *s)
-{
-	struct wrepl_request *req = s->wrepl_sock->recv_queue;
-
-	/* check if the request is still in WREPL_STATE_RECV,
-	 * we need this here because the caller has may called 
-	 * talloc_free(req) and wrepl_send_ctrl_state isn't
-	 * a talloc child of the request, so our s->req pointer
-	 * is maybe invalid!
-	 */
-	for (; req; req = req->next) {
-		if (req == s->req) break;
-	}
-	if (!req) return 0;
-
-	/* here, we need to make sure the async request handler is called
-	 * later in the next event_loop and now now
-	 */
-	req->trigger = true;
-	wrepl_request_finished(req, NT_STATUS_OK);
-
-	if (s->ctrl.disconnect_after_send) {
-		wrepl_socket_dead(s->wrepl_sock, NT_STATUS_LOCAL_DISCONNECT);
-	}
-
-	return 0;
-}
-
-/*
-  send a generic wins replication request
-*/
-static struct wrepl_request *wrepl_request_internal_send(struct wrepl_socket *wrepl_socket,
-							 const struct wrepl_packet *packet,
-							 const struct wrepl_send_ctrl *ctrl)
-{
-	struct wrepl_request *req;
-	struct wrepl_wrap wrap;
-	DATA_BLOB blob;
-	NTSTATUS status;
-	enum ndr_err_code ndr_err;
-
-	req = talloc_zero(wrepl_socket, struct wrepl_request);
-	if (!req) return NULL;
-	req->wrepl_socket = wrepl_socket;
-	req->state        = WREPL_REQUEST_RECV;
-	req->trigger      = true;
-
-	DLIST_ADD_END(wrepl_socket->recv_queue, req, struct wrepl_request *);
-	talloc_set_destructor(req, wrepl_request_destructor);
-
-	if (wrepl_socket->dead) {
-		return wrepl_request_finished(req, NT_STATUS_INVALID_CONNECTION);
-	}
-
-	wrap.packet = *packet;
-	ndr_err = ndr_push_struct_blob(&blob, req, wrepl_socket->iconv_convenience, &wrap, 
-				       (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		return wrepl_request_finished(req, status);
-	}
-
-	if (DEBUGLVL(10)) {
-		DEBUG(10,("Sending WINS packet of length %u\n", 
-			  (unsigned)blob.length));
-		NDR_PRINT_DEBUG(wrepl_packet, &wrap.packet);
-	}
-
-	if (wrepl_socket->request_timeout > 0) {
-		req->te = event_add_timed(wrepl_socket->event.ctx, req, 
-					  timeval_current_ofs(wrepl_socket->request_timeout, 0), 
-					  wrepl_request_timeout_handler, req);
-		if (!req->te) return wrepl_request_finished(req, NT_STATUS_NO_MEMORY);
-	}
-
-	if (ctrl && (ctrl->send_only || ctrl->disconnect_after_send)) {
-		struct wrepl_send_ctrl_state *s = talloc(blob.data, struct wrepl_send_ctrl_state);
-		if (!s) return wrepl_request_finished(req, NT_STATUS_NO_MEMORY);
-		s->ctrl		= *ctrl;
-		s->req		= req;
-		s->wrepl_sock	= wrepl_socket;
-		talloc_set_destructor(s, wrepl_send_ctrl_destructor);
-	}
-
-	status = packet_send(wrepl_socket->packet, blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return wrepl_request_finished(req, status);
-	}
-
-	req->trigger = false;
-	return req;
-}
-
-/*
-  receive a generic WINS replication reply
-*/
-static NTSTATUS wrepl_request_internal_recv(struct wrepl_request *req,
-					    TALLOC_CTX *mem_ctx,
-					    struct wrepl_packet **packet)
-{
-	NTSTATUS status = wrepl_request_wait(req);
-	if (NT_STATUS_IS_OK(status) && packet) {
-		*packet = talloc_steal(mem_ctx, req->packet);
-	}
-	talloc_free(req);
-	return status;
-}
-
 struct wrepl_request_state {
-	struct wrepl_packet *packet;
+	struct {
+		struct wrepl_socket *wrepl_socket;
+		struct tevent_context *ev;
+	} caller;
+	struct wrepl_send_ctrl ctrl;
+	struct {
+		struct wrepl_wrap wrap;
+		DATA_BLOB blob;
+		struct iovec iov;
+	} req;
+	bool one_way;
+	struct {
+		DATA_BLOB blob;
+		struct wrepl_packet *packet;
+	} rep;
 };
 
-static void wrepl_request_done(struct wrepl_request *subreq);
+static void wrepl_request_trigger(struct tevent_req *req,
+				  void *private_data);
 
 struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -635,7 +340,9 @@ struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct wrepl_request_state *state;
-	struct wrepl_request *subreq;
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	bool ok;
 
 	if (wrepl_socket->event.ctx != ev) {
 		/* TODO: remove wrepl_socket->event.ctx !!! */
@@ -649,28 +356,190 @@ struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	subreq = wrepl_request_internal_send(wrepl_socket, packet, ctrl);
-	if (tevent_req_nomem(subreq, req)) {
+	state->caller.wrepl_socket = wrepl_socket;
+	state->caller.ev = ev;
+
+	if (ctrl) {
+		state->ctrl = *ctrl;
+	}
+
+	if (wrepl_socket->stream == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
 		return tevent_req_post(req, ev);
 	}
-	subreq->async.fn = wrepl_request_done;
-	subreq->async.private_data = req;
+
+	state->req.wrap.packet = *packet;
+	ndr_err = ndr_push_struct_blob(&state->req.blob, state,
+				       wrepl_socket->iconv_convenience,
+				       &state->req.wrap,
+				       (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	state->req.iov.iov_base = state->req.blob.data;
+	state->req.iov.iov_len = state->req.blob.length;
+
+	ok = tevent_queue_add(wrepl_socket->request_queue,
+			      ev,
+			      req,
+			      wrepl_request_trigger,
+			      NULL);
+	if (!ok) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
+	}
+
+	if (wrepl_socket->request_timeout > 0) {
+		struct timeval endtime;
+		endtime = tevent_timeval_current_ofs(wrepl_socket->request_timeout, 0);
+		ok = tevent_req_set_endtime(req, ev, endtime);
+		if (!ok) {
+			return tevent_req_post(req, ev);
+		}
+	}
 
 	return req;
 }
 
-static void wrepl_request_done(struct wrepl_request *subreq)
+static void wrepl_request_writev_done(struct tevent_req *subreq);
+
+static void wrepl_request_trigger(struct tevent_req *req,
+				  void *private_data)
 {
-	struct tevent_req *req = talloc_get_type_abort(subreq->async.private_data,
+	struct wrepl_request_state *state = tevent_req_data(req,
+					    struct wrepl_request_state);
+	struct tevent_req *subreq;
+
+	if (DEBUGLVL(10)) {
+		DEBUG(10,("Sending WINS packet of length %u\n",
+			  (unsigned)state->req.blob.length));
+		NDR_PRINT_DEBUG(wrepl_packet, &state->req.wrap.packet);
+	}
+
+	subreq = tstream_writev_send(state,
+				     state->caller.ev,
+				     state->caller.wrepl_socket->stream,
+				     &state->req.iov, 1);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wrepl_request_writev_done, req);
+}
+
+static void wrepl_request_disconnect_done(struct tevent_req *subreq);
+static void wrepl_request_read_pdu_done(struct tevent_req *subreq);
+
+static void wrepl_request_writev_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct wrepl_request_state *state = tevent_req_data(req,
+					    struct wrepl_request_state);
+	int ret;
+	int sys_errno;
+
+	ret = tstream_writev_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (state->ctrl.disconnect_after_send) {
+		subreq = tstream_disconnect_send(state,
+						 state->caller.ev,
+						 state->caller.wrepl_socket->stream);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wrepl_request_disconnect_done, req);
+		return;
+	}
+
+	if (state->ctrl.send_only) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = tstream_read_pdu_blob_send(state,
+					    state->caller.ev,
+					    state->caller.wrepl_socket->stream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wrepl_request_read_pdu_done, req);
+}
+
+static void wrepl_request_disconnect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct wrepl_request_state *state = tevent_req_data(req,
+					    struct wrepl_request_state);
+	int ret;
+	int sys_errno;
+
+	ret = tstream_disconnect_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	DEBUG(10,("WINS connection disconnected\n"));
+	state->caller.wrepl_socket->stream = NULL;
+
+	tevent_req_done(req);
+}
+
+static void wrepl_request_read_pdu_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
 				 struct tevent_req);
 	struct wrepl_request_state *state = tevent_req_data(req,
 					    struct wrepl_request_state);
 	NTSTATUS status;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
 
-	status = wrepl_request_internal_recv(subreq, state, &state->packet);
+	status = tstream_read_pdu_blob_recv(subreq, state, &state->rep.blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
+	}
+
+	state->rep.packet = talloc(state, struct wrepl_packet);
+	if (tevent_req_nomem(state->rep.packet, req)) {
+		return;
+	}
+
+	blob.data = state->rep.blob.data + 4;
+	blob.length = state->rep.blob.length - 4;
+
+	/* we have a full request - parse it */
+	ndr_err = ndr_pull_struct_blob(&blob,
+				       state->rep.packet,
+				       state->caller.wrepl_socket->iconv_convenience,
+				       state->rep.packet,
+				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (DEBUGLVL(10)) {
+		DEBUG(10,("Received WINS packet of length %u\n",
+			  (unsigned)state->rep.blob.length));
+		NDR_PRINT_DEBUG(wrepl_packet, state->rep.packet);
 	}
 
 	tevent_req_done(req);
@@ -690,7 +559,7 @@ NTSTATUS wrepl_request_recv(struct tevent_req *req,
 	}
 
 	if (packet) {
-		*packet = talloc_move(mem_ctx, &state->packet);
+		*packet = talloc_move(mem_ctx, &state->rep.packet);
 	}
 
 	tevent_req_received(req);

@@ -349,7 +349,8 @@ static const struct stream_server_ops wreplsrv_stream_ops = {
   called when we get a new connection
 */
 NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
-				      struct socket_context *sock,
+				      uint32_t peer_assoc_ctx,
+				      struct tstream_context **stream,
 				      struct wreplsrv_in_connection **_wrepl_in)
 {
 	struct wreplsrv_service *service = partner->service;
@@ -358,7 +359,6 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 	struct stream_connection *conn;
 	struct tevent_req *subreq;
 	NTSTATUS status;
-	int rc;
 
 	/* within the wrepl task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
@@ -374,11 +374,12 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 
 	wrepl_in->service	= service;
 	wrepl_in->partner	= partner;
+	wrepl_in->tstream	= talloc_move(wrepl_in, stream);
+	wrepl_in->assoc_ctx.peer_ctx = peer_assoc_ctx;
 
 	status = stream_new_connection_merge(service->task->event_ctx,
 					     service->task->lp_ctx,
 					     model_ops,
-					     sock,
 					     &wreplsrv_stream_ops,
 					     service->task->msg_ctx,
 					     wrepl_in,
@@ -394,17 +395,6 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 
 	wrepl_in->send_queue = tevent_queue_create(wrepl_in, "wreplsrv_in_connection_merge");
 	if (wrepl_in->send_queue == NULL) {
-		stream_terminate_connection(conn,
-					    "wreplsrv_in_connection_merge: out of memory");
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	TALLOC_FREE(conn->event.fde);
-
-	rc = tstream_bsd_existing_socket(wrepl_in,
-					 socket_get_fd(sock),
-					 &wrepl_in->tstream);
-	if (rc < 0) {
 		stream_terminate_connection(conn,
 					    "wreplsrv_in_connection_merge: out of memory");
 		return NT_STATUS_NO_MEMORY;
