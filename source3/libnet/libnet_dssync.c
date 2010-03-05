@@ -300,12 +300,12 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 					    struct dssync_context *ctx,
 					    const char *dn,
 					    struct replUpToDateVectorBlob *utdv,
-					    int32_t *plevel,
+					    uint32_t *plevel,
 					    union drsuapi_DsGetNCChangesRequest *preq)
 {
 	NTSTATUS status;
 	uint32_t count;
-	int32_t level;
+	uint32_t level;
 	union drsuapi_DsGetNCChangesRequest req;
 	struct dom_sid null_sid;
 	enum drsuapi_DsExtendedOperation extended_op;
@@ -415,7 +415,7 @@ fail:
 
 static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 					   struct dssync_context *ctx,
-					   int32_t level,
+					   uint32_t level,
 					   union drsuapi_DsGetNCChangesRequest *req,
 					   struct replUpToDateVectorBlob **pnew_utdv)
 {
@@ -425,8 +425,8 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
 	struct replUpToDateVectorBlob *new_utdv = NULL;
-	int32_t level_out = 0;
-	int32_t out_level = 0;
+	uint32_t level_out = 0;
+	uint32_t out_level = 0;
 	int y;
 	bool last_query;
 
@@ -576,7 +576,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	int32_t level = 0;
+	uint32_t level = 0;
 	union drsuapi_DsGetNCChangesRequest req;
 	struct replUpToDateVectorBlob *old_utdv = NULL;
 	struct replUpToDateVectorBlob *pnew_utdv = NULL;
