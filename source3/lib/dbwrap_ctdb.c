@@ -52,11 +52,6 @@ struct db_ctdb_rec {
 	struct ctdb_ltdb_header header;
 };
 
-static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
-					       TALLOC_CTX *mem_ctx,
-					       TDB_DATA key,
-					       bool persistent);
-
 static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
 {
 	NTSTATUS status;
@@ -921,8 +916,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 					       TALLOC_CTX *mem_ctx,
-					       TDB_DATA key,
-					       bool persistent)
+					       TDB_DATA key)
 {
 	struct db_record *result;
 	struct db_ctdb_rec *crec;
@@ -1050,7 +1044,7 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 		return db_ctdb_fetch_locked_persistent(ctx, mem_ctx, key);
 	}
 
-	return fetch_locked_internal(ctx, mem_ctx, key, false);
+	return fetch_locked_internal(ctx, mem_ctx, key);
 }
 
 /*
