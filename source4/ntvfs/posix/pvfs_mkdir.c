@@ -51,7 +51,7 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 
 	mode = pvfs_fileperms(pvfs, FILE_ATTRIBUTE_DIRECTORY);
 
-	if (mkdir(name->full_name, mode) == -1) {
+	if (pvfs_sys_mkdir(pvfs, name->full_name, mode) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
 
@@ -69,7 +69,7 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 	/* setup an inherited acl from the parent */
 	status = pvfs_acl_inherit(pvfs, req, name, -1);
 	if (!NT_STATUS_IS_OK(status)) {
-		rmdir(name->full_name);
+		pvfs_sys_rmdir(pvfs, name->full_name);
 		return status;
 	}
 
@@ -78,7 +78,7 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 					 md->t2mkdir.in.num_eas,
 					 md->t2mkdir.in.eas);
 	if (!NT_STATUS_IS_OK(status)) {
-		rmdir(name->full_name);
+		pvfs_sys_rmdir(pvfs, name->full_name);
 		return status;
 	}
 
@@ -127,7 +127,7 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 
 	mode = pvfs_fileperms(pvfs, FILE_ATTRIBUTE_DIRECTORY);
 
-	if (mkdir(name->full_name, mode) == -1) {
+	if (pvfs_sys_mkdir(pvfs, name->full_name, mode) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
 
@@ -136,7 +136,7 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	/* setup an inherited acl from the parent */
 	status = pvfs_acl_inherit(pvfs, req, name, -1);
 	if (!NT_STATUS_IS_OK(status)) {
-		rmdir(name->full_name);
+		pvfs_sys_rmdir(pvfs, name->full_name);
 		return status;
 	}
 
@@ -179,7 +179,7 @@ NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	if (rmdir(name->full_name) == -1) {
+	if (pvfs_sys_rmdir(pvfs, name->full_name) == -1) {
 		/* some olders systems don't return ENOTEMPTY to rmdir() */
 		if (errno == EEXIST) {
 			return NT_STATUS_DIRECTORY_NOT_EMPTY;

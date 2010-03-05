@@ -102,13 +102,13 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fd1 = open(name1->full_name, O_RDONLY);
+	fd1 = pvfs_sys_open(pvfs, name1->full_name, O_RDONLY, 0);
 	if (fd1 == -1) {
 		talloc_free(buf);
 		return pvfs_map_errno(pvfs, errno);
 	}
 
-	fd2 = open(name2->full_name, O_CREAT|O_EXCL|O_WRONLY, 0);
+	fd2 = pvfs_sys_open(pvfs, name2->full_name, O_CREAT|O_EXCL|O_WRONLY, 0);
 	if (fd2 == -1) {
 		close(fd1);
 		talloc_free(buf);
@@ -133,7 +133,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 			close(fd1);
 			close(fd2);
 			talloc_free(buf);
-			unlink(name2->full_name);
+			pvfs_sys_unlink(pvfs, name2->full_name);
 			if (ret2 == -1) {
 				return pvfs_map_errno(pvfs, errno);
 			}
@@ -148,7 +148,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 	if (fchmod(fd2, mode) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
 		close(fd2);
-		unlink(name2->full_name);
+		pvfs_sys_unlink(pvfs, name2->full_name);
 		return status;
 	}
 
@@ -158,7 +158,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 	status = pvfs_dosattrib_save(pvfs, name2, fd2);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(fd2);
-		unlink(name2->full_name);
+		pvfs_sys_unlink(pvfs, name2->full_name);
 		return status;
 	}
 

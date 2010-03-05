@@ -37,7 +37,7 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs,
 	uint32_t mask;
 	NTSTATUS status;
 
-	if (rename(name1->full_name, name2) == -1) {
+	if (pvfs_sys_rename(pvfs, name1->full_name, name2) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
 
