@@ -1006,7 +1006,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsNameString *spn_names;
 	} drsuapi_DsWriteAccountSpnRequest1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsWriteAccountSpnRequest1 req1;
 	} drsuapi_DsWriteAccountSpnRequest;
 
@@ -1014,15 +1014,15 @@ interface drsuapi
 		WERROR status;
 	} drsuapi_DsWriteAccountSpnResult1;
 
-	typedef [switch_type(int32)] union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsWriteAccountSpnResult1 res1;
 	} drsuapi_DsWriteAccountSpnResult;
 
 	WERROR drsuapi_DsWriteAccountSpn(
 		[in] policy_handle *bind_handle,
-		[in] int32 level,
+		[in] uint32 level,
 		[in,ref,switch_is(level)] drsuapi_DsWriteAccountSpnRequest *req,
-		[out,ref] int32 *level_out,
+		[out,ref] uint32 *level_out,
 		[out,ref,switch_is(*level_out)] drsuapi_DsWriteAccountSpnResult *res
 		);
 
