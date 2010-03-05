@@ -246,6 +246,7 @@ struct pvfs_search_state {
 #define PVFS_FLAG_XATTR_ENABLE   (1<<7)
 #define PVFS_FLAG_FAKE_OPLOCKS   (1<<8)
 #define PVFS_FLAG_LINUX_AIO      (1<<9)
+#define PVFS_FLAG_PERM_OVERRIDE  (1<<10)
 
 /* forward declare some anonymous structures */
 struct pvfs_dir;
@@ -268,6 +269,7 @@ struct pvfs_odb_retry;
 #define PVFS_SEARCH_INACTIVITY		"posix:searchinactivity"
 #define PVFS_ACL			"posix:acl"
 #define PVFS_AIO			"posix:aio"
+#define PVFS_PERM_OVERRIDE		"posix:permission override"
 
 #define PVFS_XATTR_DEFAULT			true
 #define PVFS_FAKE_OPLOCKS_DEFAULT		false

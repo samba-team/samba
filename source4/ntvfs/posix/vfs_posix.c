@@ -58,6 +58,8 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
 	if (share_bool_option(scfg, PVFS_AIO, false))
 		pvfs->flags |= PVFS_FLAG_LINUX_AIO;
+	if (share_bool_option(scfg, PVFS_PERM_OVERRIDE, true))
+		pvfs->flags |= PVFS_FLAG_PERM_OVERRIDE;
 
 	/* file perm options */
 	pvfs->options.create_mask       = share_int_option(scfg,
