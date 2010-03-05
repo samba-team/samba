@@ -4749,7 +4749,7 @@ static bool test_one_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SetPrinterDataEx_matrix(tctx, p, handle, name)) {
+	if (!test_SetPrinterDataEx_matrix(tctx, p, handle, name, NULL, NULL)) {
 		ret = false;
 	}
 
