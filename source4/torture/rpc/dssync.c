@@ -303,7 +303,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	struct drsuapi_DsCrackNames r;
 	union drsuapi_DsNameRequest req;
 	union drsuapi_DsNameCtr ctr;
-	int32_t level_out = 0;
+	uint32_t level_out = 0;
 	struct drsuapi_DsNameString names[1];
 	bool ret = true;
 	struct cldap_socket *cldap;

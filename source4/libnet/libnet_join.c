@@ -184,7 +184,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 
 	r_crack_names.out.ctr			= talloc(r, union drsuapi_DsNameCtr);
-	r_crack_names.out.level_out		= talloc(r, int32_t);
+	r_crack_names.out.level_out		= talloc(r, uint32_t);
 	if (!r_crack_names.out.ctr || !r_crack_names.out.level_out) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

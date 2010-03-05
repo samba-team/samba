@@ -44,7 +44,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 	const char *err_msg;
 	struct drsuapi_DsCrackNames r;
 	union drsuapi_DsNameRequest req;
-	int32_t level_out;
+	uint32_t level_out;
 	union drsuapi_DsNameCtr ctr;
 	struct dcerpc_pipe *p = priv->drs_pipe;
 	TALLOC_CTX *mem_ctx = priv;
@@ -237,7 +237,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	const char *err_msg;
 	struct drsuapi_DsCrackNames r;
 	union drsuapi_DsNameRequest req;
-	int32_t level_out;
+	uint32_t level_out;
 	union drsuapi_DsNameCtr ctr;
 	struct drsuapi_DsNameString names[1];
 	const char *dns_domain;
