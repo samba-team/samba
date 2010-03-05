@@ -735,3 +735,15 @@ int dprintf(int fd, const char *format, ...)
 }
 #endif
 
+#ifndef HAVE_GET_CURRENT_DIR_NAME
+char *rep_get_current_dir_name(void)
+{
+	char buf[PATH_MAX+1];
+	char *p;
+	p = getcwd(buf, sizeof(buf));
+	if (p == NULL) {
+		return NULL;
+	}
+	return strdup(p);
+}
+#endif

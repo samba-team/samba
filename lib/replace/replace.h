@@ -497,6 +497,11 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 /* prototype is in "system/network.h" */
 #endif
 
+#ifndef HAVE_GET_CURRENT_DIR_NAME
+#define get_current_dir_name rep_get_current_dir_name
+char *rep_get_current_dir_name(void);
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
