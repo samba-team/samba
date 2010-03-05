@@ -109,8 +109,12 @@ static void print_pid_string_cb(struct messaging_context *msg,
 				struct server_id pid,
 				DATA_BLOB *data)
 {
-	printf("PID %u: %.*s", (unsigned int)procid_to_pid(&pid),
-	       (int)data->length, (const char *)data->data);
+	char *pidstr;
+
+	pidstr = procid_str(talloc_tos(), &pid);
+	printf("PID %s: %.*s", pidstr, (int)data->length,
+	       (const char *)data->data);
+	TALLOC_FREE(pidstr);
 	num_replies++;
 }
 
