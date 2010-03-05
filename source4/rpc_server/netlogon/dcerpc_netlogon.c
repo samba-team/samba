@@ -1148,16 +1148,18 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		"securityIdentifier", "trustPartner", NULL };
 	const char * const attrs2[] = { "dNSHostName",
 		"msDS-SupportedEncryptionTypes", NULL };
-	const char *temp_str;
+	const char * const attrs3[] = { NULL };
+	const char *temp_str, *temp_str2;
 	const char *old_dns_hostname;
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res1, **res2, **res3, *new_msg;
+	struct ldb_message **res0, **res1, **res2, **res3, *new_msg;
 	struct ldb_dn *workstation_dn;
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
 	struct netr_OsVersionInfoEx *os_version;
 	uint32_t default_supported_enc_types = 0xFFFFFFFF;
-	int ret1, ret2, ret3, i;
+	bool update_dns_hostname = true;
+	int ret, ret3, i;
 	NTSTATUS status;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -1181,27 +1183,59 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	switch (r->in.level) {
 	case 1: /* Domain information */
 
-		/* TODO: check NTSTATUS results - and fail also on SAMDB
-		 * errors (needs some testing against Windows Server 2008) */
+		/*
+		 * Updates the DNS hostname when the client wishes that the
+		 * server should handle this for him
+		 * ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set).
+		 * See MS-NRPC section 3.5.4.3.9
+		 */
+		if ((r->in.query->workstation_info->workstation_flags
+		    & NETR_WS_FLAG_HANDLES_SPN_UPDATE) != 0) {
+			update_dns_hostname = false;
+		}
 
 		/*
-		 * Check that the computer name parameter matches as prefix with
-		 * the DNS hostname in the workstation info structure.
+		 * Checks that the computer name parameter without possible "$"
+		 * matches as prefix with the DNS hostname in the workstation
+		 * info structure.
 		 */
-		temp_str = strndup(r->in.query->workstation_info->dns_hostname,
-			strcspn(r->in.query->workstation_info->dns_hostname,
-			"."));
-		if (strcasecmp(r->in.computer_name, temp_str) != 0)
-			return NT_STATUS_INVALID_PARAMETER;
+		temp_str = talloc_strndup(mem_ctx,
+					  r->in.computer_name,
+					  strcspn(r->in.computer_name, "$"));
+		NT_STATUS_HAVE_NO_MEMORY(temp_str);
+		temp_str2 = talloc_strndup(mem_ctx,
+					   r->in.query->workstation_info->dns_hostname,
+					   strcspn(r->in.query->workstation_info->dns_hostname, "."));
+		NT_STATUS_HAVE_NO_MEMORY(temp_str2);
+		if (strcasecmp(temp_str, temp_str2) != 0) {
+			update_dns_hostname = false;
+		}
 
+		/*
+		 * Check that the DNS hostname when it should be updated
+		 * will be used only by maximum one host.
+		 */
+		ret = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
+				   &res0, attrs3, "(dNSHostName=%s)",
+				   r->in.query->workstation_info->dns_hostname);
+		if (ret < 0) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		if (ret >= 1) {
+			update_dns_hostname = false;
+		}
+
+		talloc_free(res0);
+
+		/* Prepare the workstation DN */
 		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
 			dom_sid_string(mem_ctx, creds->sid));
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
 		/* Lookup for attributes in workstation object */
-		ret1 = gendb_search_dn(sam_ctx, mem_ctx, workstation_dn,
+		ret = gendb_search_dn(sam_ctx, mem_ctx, workstation_dn,
 			&res1, attrs2);
-		if (ret1 != 1) {
+		if (ret != 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -1260,13 +1294,10 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		/*
-		 * Updates the "dNSHostname" and the "servicePrincipalName"s
-		 * since the client wishes that the server should handle this
-		 * for him ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set).
-		 * See MS-NRPC section 3.5.4.3.9
+		 * If the boolean "update_dns_hostname" remained true, then we
+		 * are fine to start the update.
 		 */
-		if ((r->in.query->workstation_info->workstation_flags
-			& NETR_WS_FLAG_HANDLES_SPN_UPDATE) == 0) {
+		if (update_dns_hostname) {
 			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
 				"dNSHostname",
 			r->in.query->workstation_info->dns_hostname);
@@ -1297,9 +1328,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		   primary domain is also a "trusted" domain, so we need to
 		   put the primary domain into the lists of returned trusts as
 		   well. */
-		ret2 = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
+		ret = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
 			&res2, attrs);
-		if (ret2 != 1) {
+		if (ret != 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -1356,7 +1387,15 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 		domain_info->lsa_policy = *lsa_policy_info;
 
-		domain_info->dns_hostname.string = old_dns_hostname;
+		/* The DNS hostname is only returned back when there is a chance
+		 * for a change. */
+		if ((r->in.query->workstation_info->workstation_flags
+		    & NETR_WS_FLAG_HANDLES_SPN_UPDATE) != 0) {
+			domain_info->dns_hostname.string = old_dns_hostname;
+		} else {
+			domain_info->dns_hostname.string = NULL;
+		}
+
 		domain_info->workstation_flags =
 			r->in.query->workstation_info->workstation_flags;
 
