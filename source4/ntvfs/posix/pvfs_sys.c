@@ -42,6 +42,24 @@ struct pvfs_sys_ctx {
 	struct stat st_orig;
 };
 
+
+/*
+  we create PVFS_NOFOLLOW and PVFS_DIRECTORY as aliases for O_NOFOLLOW
+  and O_DIRECTORY on systems that have them. On systems that don't
+  have O_NOFOLLOW we are less safe, but the root override code is off
+  by default.
+ */
+#ifdef O_NOFOLLOW
+#define PVFS_NOFOLLOW O_NOFOLLOW
+#else
+#define PVFS_NOFOLLOW 0
+#endif
+#ifdef O_DIRECTORY
+#define PVFS_DIRECTORY O_DIRECTORY
+#else
+#define PVFS_DIRECTORY 0
+#endif
+
 /*
   return to original directory when context is destroyed
  */
@@ -97,7 +115,7 @@ static int pvfs_sys_chdir_nosymlink(struct pvfs_sys_ctx *ctx, const char *pathna
 		int fd;
 		struct stat st1, st2;
 		*p = 0;
-		fd = open(path, O_NOFOLLOW | O_DIRECTORY | O_RDONLY);
+		fd = open(path, PVFS_NOFOLLOW | PVFS_DIRECTORY | O_RDONLY);
 		if (fd == -1) {
 			return -1;
 		}
@@ -225,7 +243,7 @@ static int pvfs_sys_chown(struct pvfs_state *pvfs, struct pvfs_sys_ctx *ctx, con
 {
 	/* to avoid symlink hacks, we need to use fchown() on a directory fd */
 	int ret, fd;
-	fd = open(name, O_DIRECTORY | O_NOFOLLOW | O_RDONLY);
+	fd = open(name, PVFS_DIRECTORY | PVFS_NOFOLLOW | O_RDONLY);
 	if (fd == -1) {
 		return -1;
 	}
@@ -262,7 +280,7 @@ int pvfs_sys_open(struct pvfs_state *pvfs, const char *filename, int flags, mode
 	}
 
 	/* don't allow permission overrides to follow links */
-	flags |= O_NOFOLLOW;
+	flags |= PVFS_NOFOLLOW;
 
 	/*
 	   if O_CREAT was specified and O_EXCL was not specified
@@ -386,7 +404,7 @@ int pvfs_sys_unlink(struct pvfs_state *pvfs, const char *filename)
 
 static bool contains_symlink(const char *path)
 {
-	int fd = open(path, O_NOFOLLOW | O_RDONLY);
+	int fd = open(path, PVFS_NOFOLLOW | O_RDONLY);
 	if (fd != -1) {
 		close(fd);
 		return false;
