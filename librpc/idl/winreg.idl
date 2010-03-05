@@ -256,7 +256,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		[in,ref] policy_handle *handle,
 		[in,ref] winreg_String *value_name,
 		[in,out,unique] winreg_Type *type,
-		[in,out,unique,size_is(*data_size),length_is(*data_length)] uint8 *data,
+		[in,out,unique,size_is(data_size ? *data_size : 0),length_is(data_length ? *data_length : 0),range(0,0x4000000)] uint8 *data,
 		[in,out,unique] uint32 *data_size,
 		[in,out,unique] uint32 *data_length
 	);
