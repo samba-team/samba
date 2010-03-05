@@ -3261,7 +3261,8 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 
 static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 					 struct dcerpc_pipe *p,
-					 struct policy_handle *handle)
+					 struct policy_handle *handle,
+					 const char *printername)
 {
 	const char *value_name = "dog";
 	const char *keys[] = {
@@ -3796,7 +3797,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SetPrinterDataEx_matrix(tctx, p, &handle)) {
+	if (!test_SetPrinterDataEx_matrix(tctx, p, &handle, name)) {
 		ret = false;
 	}
 
@@ -4575,7 +4576,7 @@ static bool test_one_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SetPrinterDataEx_matrix(tctx, p, handle)) {
+	if (!test_SetPrinterDataEx_matrix(tctx, p, handle, name)) {
 		ret = false;
 	}
 
