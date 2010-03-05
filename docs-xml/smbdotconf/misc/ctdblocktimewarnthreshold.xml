@@ -1,0 +1,16 @@
+<samba:parameter name="ctdb locktime warn threshold"
+                 context="G"
+		 type="integer"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>In a cluster, ctdb is very unhappy if tdb database locks
+	are held for extended periods of time. This parameter adds a
+	warning threshold in milliseconds. If Samba holds a lock for
+	longer that ctdb locktime warn threshold milliseconds, a debug
+	level 0 message is printed when the lock is released. This is
+	mainly a debugging aid for post-mortem analysis.</para>
+	<para>If this parameter is set to 0, no message is printed.</para>
+</description>
+<value type="default">0</value>
+</samba:parameter>

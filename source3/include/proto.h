@@ -4145,6 +4145,7 @@ const char *lp_ctdbd_socket(void);
 const char **lp_cluster_addresses(void);
 bool lp_clustering(void);
 int lp_ctdb_timeout(void);
+int lp_ctdb_locktime_warn_threshold(void);
 char *lp_printcommand(int );
 char *lp_lpqcommand(int );
 char *lp_lprmcommand(int );

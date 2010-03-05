@@ -50,6 +50,7 @@ struct db_ctdb_ctx {
 struct db_ctdb_rec {
 	struct db_ctdb_ctx *ctdb_ctx;
 	struct ctdb_ltdb_header header;
+	struct timeval lock_time;
 };
 
 static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
@@ -898,6 +899,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 {
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		data->private_data, struct db_ctdb_rec);
+	int threshold;
 
 	DEBUG(10, (DEBUGLEVEL > 10
 		   ? "Unlocking db %u key %s\n"
@@ -909,6 +911,14 @@ static int db_ctdb_record_destr(struct db_record* data)
 	if (tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key) != 0) {
 		DEBUG(0, ("tdb_chainunlock failed\n"));
 		return -1;
+	}
+
+	threshold = lp_ctdb_locktime_warn_threshold();
+	if (threshold != 0) {
+		double timediff = timeval_elapsed(&crec->lock_time);
+		if ((timediff * 1000) > threshold) {
+			DEBUG(0, ("Held tdb lock %f seconds\n", timediff));
+		}
 	}
 
 	return 0;
@@ -1010,6 +1020,8 @@ again:
 		DEBUG(0, ("db_ctdb_fetch_locked needed %d attempts\n",
 			  migrate_attempts));
 	}
+
+	GetTimeOfDay(&crec->lock_time);
 
 	memcpy(&crec->header, ctdb_data.dptr, sizeof(crec->header));
 
