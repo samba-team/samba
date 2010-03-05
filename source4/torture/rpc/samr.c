@@ -4695,6 +4695,9 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		break;
 	}
 	case TORTURE_SAMR_OTHER:
+	case TORTURE_SAMR_MANY_ACCOUNTS:
+	case TORTURE_SAMR_MANY_GROUPS:
+	case TORTURE_SAMR_MANY_ALIASES:
 		/* We just need the account to exist */
 		break;
 	}
