@@ -62,7 +62,14 @@ bld(rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.absp
     name = 'HEIMDAL_MAP_TABLE'
 )
 
-
+# look at the example below - the output dir is lib/gssapi, the source asn1 file is lib/gssapi/spnego/spnego.asn1
+# well ... hmm, it depens if any heimdal C file uses a #include that depends on the path. We can try a different location
+# but I'm guessing it will break the heimdal C files
+# too hard to use a different output dir from input?
+# the restriction is we can't modify the existing C source of heimdal.
+# ok, symlink hacks to solve? it should be similar to the gen_ndr hackery of PIDL
+# as that is also a different out dir from input file
+# ok, but is it OK for PIDL? pidl is putting output in ../gen_ndr/ndr_$NAME.[ch] etc
 bld.SAMBA_ASN1('HEIMDAL_SPNEGO_ASN1',
 	'../heimdal/lib/gssapi/spnego/spnego.asn1',
 	options='--sequence=MechTypeList',

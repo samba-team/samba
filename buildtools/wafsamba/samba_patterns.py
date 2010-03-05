@@ -24,11 +24,17 @@ def process_et(self, node):
 
 
 
+# this was my (awful) attempt at a ASN1 rule, i plan on moving it to samba_asn1.py,
+# like I did for the PIDL rules, and conver to a make-like rule
 
 ################################################################################
 # a asn1 task which calls out to asn1_compile_wrapper.sh to do the work
 Task.simple_task_type('asn1',
 		      '''
+# this is the rule for now - ie. an embedded shell script!! like
+# I showed you previously, the ASN1 compiler generates weird names,
+# we need to fix the names, and add config.h header
+
 # shell script to convert ASN1 to C. This could be separated out if we want to
 set -e
 compiler=${TGT[0].compiler}
