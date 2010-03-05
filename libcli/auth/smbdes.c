@@ -358,7 +358,7 @@ void des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14], in
 }
 
 /* des encryption of a 16 byte lump of data with a 112 bit key */
-void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int forw)
+void des_crypt112_16(uint8_t out[16], const uint8_t in[16], const uint8_t key[14], int forw)
 {
         des_crypt56(out, in, key, forw);
         des_crypt56(out + 8, in + 8, key+7, forw);
