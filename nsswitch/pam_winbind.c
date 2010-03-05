@@ -1456,7 +1456,7 @@ static bool _pam_check_remark_auth_err(struct pwb_context *ctx,
 		}
 
 		if (e->display_string) {
-			_make_remark(ctx, PAM_ERROR_MSG, e->display_string);
+			_make_remark(ctx, PAM_ERROR_MSG, _(e->display_string));
 			*pam_error = e->pam_error;
 			return true;
 		}
