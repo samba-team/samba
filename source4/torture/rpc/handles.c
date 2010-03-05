@@ -120,7 +120,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p1, &ndr_table_lsarpc);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe1");
 
-	transport	= p1->conn->transport.transport,
+	transport	= p1->conn->transport.transport;
 	assoc_group_id	= p1->assoc_group_id;
 
 	torture_comment(torture, "use assoc_group_id[0x%08X] for new connections\n", assoc_group_id);
@@ -402,7 +402,7 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p1, &ndr_table_samr);
 	torture_assert_ntstatus_ok(torture, status, "opening samr pipe1");
 
-	transport	= p1->conn->transport.transport,
+	transport	= p1->conn->transport.transport;
 	assoc_group_id	= p1->assoc_group_id;
 
 	torture_comment(torture, "use assoc_group_id[0x%08X] for new connections\n", assoc_group_id);
@@ -490,7 +490,7 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p1, &ndr_table_samr);
 	torture_assert_ntstatus_ok(torture, status, "opening samr pipe1");
 
-	transport	= p1->conn->transport.transport,
+	transport	= p1->conn->transport.transport;
 	assoc_group_id	= p1->assoc_group_id;
 
 	torture_comment(torture, "pip1 use assoc_group_id[0x%08X]\n", assoc_group_id);
@@ -569,7 +569,6 @@ static bool test_handles_drsuapi(struct torture_context *torture)
 
 	return true;
 }
-
 
 struct torture_suite *torture_rpc_handles(TALLOC_CTX *mem_ctx)
 {
