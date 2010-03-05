@@ -59,7 +59,7 @@ struct wrepl_send_ctrl {
 	bool disconnect_after_send;
 };
 
-enum wrepl_request_state {
+enum wrepl_request_internal_state {
 	WREPL_REQUEST_INIT  = 0,
 	WREPL_REQUEST_RECV  = 1,
 	WREPL_REQUEST_DONE  = 2,
@@ -73,7 +73,7 @@ struct wrepl_request {
 	struct wrepl_request *next, *prev;
 	struct wrepl_socket *wrepl_socket;
 
-	enum wrepl_request_state state;
+	enum wrepl_request_internal_state state;
 	bool trigger;
 	NTSTATUS status;
 
