@@ -206,6 +206,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	if (io->ntcreatex.in.access_mask == SEC_FLAG_MAXIMUM_ALLOWED &&
 	    (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) &&
 	    (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		DEBUG(3,(__location__ ": Invalid access_mask/create_options 0x%08x 0x%08x for %s\n",
+			 io->ntcreatex.in.access_mask, io->ntcreatex.in.create_options, name->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
@@ -229,6 +231,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	case NTCREATEX_DISP_OVERWRITE:
 	case NTCREATEX_DISP_SUPERSEDE:
 	default:
+		DEBUG(3,(__location__ ": Invalid open disposition 0x%08x for %s\n",
+			 io->generic.in.open_disposition, name->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -618,15 +622,21 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	struct security_descriptor *sd = NULL;
 
 	if (io->ntcreatex.in.file_attr & ~FILE_ATTRIBUTE_ALL_MASK) {
+		DEBUG(3,(__location__ ": Invalid file_attr 0x%08x for %s\n",
+			 io->ntcreatex.in.file_attr, name->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_ENCRYPTED) {
+		DEBUG(3,(__location__ ": Invalid encryption request for %s\n",
+			 name->original_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	    
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		DEBUG(4,(__location__ ": Invalid delete on close for readonly file %s\n",
+			 name->original_name));
 		return NT_STATUS_CANNOT_DELETE;
 	}
 
@@ -1213,6 +1223,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	access_mask    = io->generic.in.access_mask;
 
 	if (share_access & ~NTCREATEX_SHARE_ACCESS_MASK) {
+		DEBUG(3,(__location__ ": Invalid share_access 0x%08x for %s\n",
+			 share_access, io->ntcreatex.in.fname));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1230,6 +1242,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (create_options & NTCREATEX_OPTIONS_INVALID_PARAM_MASK) {
+		DEBUG(3,(__location__ ": Invalid create_options 0x%08x for %s\n",
+			 create_options, io->ntcreatex.in.fname));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1260,6 +1274,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* other create options are not allowed */
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    !(access_mask & SEC_STD_DELETE)) {
+		DEBUG(3,(__location__ ": Invalid delete_on_close option 0x%08x with access_mask 0x%08x for %s\n",
+			 create_options, access_mask, io->ntcreatex.in.fname));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1291,6 +1307,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	if (io->ntcreatex.in.file_attr & (FILE_ATTRIBUTE_DEVICE|
 					  FILE_ATTRIBUTE_VOLUME| 
 					  (~FILE_ATTRIBUTE_ALL_MASK))) {
+		DEBUG(3,(__location__ ": Invalid file_attr 0x%08x for %s\n",
+			 io->ntcreatex.in.file_attr, io->ntcreatex.in.fname));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1374,6 +1392,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		break;
 
 	default:
+		DEBUG(3,(__location__ ": Invalid open disposition 0x%08x for %s\n",
+			 io->generic.in.open_disposition, name->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

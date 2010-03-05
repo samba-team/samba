@@ -366,6 +366,8 @@ static NTSTATUS pvfs_rename_wildcard(struct pvfs_state *pvfs,
 	if (strncmp(dir_path, name2->full_name, strlen(dir_path)) != 0 ||
 	    name2->full_name[strlen(dir_path)] != '/' ||
 	    strchr(name2->full_name + strlen(dir_path) + 1, '/')) {
+		DEBUG(3,(__location__ ": Invalid rename for %s -> %s\n",
+			 name1->original_name, name2->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -480,10 +482,14 @@ static NTSTATUS pvfs_rename_stream(struct ntvfs_module_context *ntvfs,
 	struct odb_lock *lck = NULL;
 
 	if (name1->has_wildcard) {
+		DEBUG(3,(__location__ ": Invalid wildcard rename for %s\n",
+			 name1->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (ren->ntrename.in.new_name[0] != ':') {
+		DEBUG(3,(__location__ ": Invalid rename for %s\n",
+			 ren->ntrename.in.new_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -492,6 +498,8 @@ static NTSTATUS pvfs_rename_stream(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (ren->ntrename.in.flags != RENAME_FLAG_RENAME) {
+		DEBUG(3,(__location__ ": Invalid rename flags 0x%x for %s\n",
+			 ren->ntrename.in.flags, ren->ntrename.in.new_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -621,6 +629,8 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		return pvfs_copy_file(pvfs, name1, name2);
 
 	case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
+		DEBUG(3,(__location__ ": Invalid rename cluster for %s\n",
+			 name1->original_name));
 		return NT_STATUS_INVALID_PARAMETER;
 
 	default:
