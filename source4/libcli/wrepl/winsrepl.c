@@ -499,9 +499,9 @@ static int wrepl_send_ctrl_destructor(struct wrepl_send_ctrl_state *s)
 /*
   send a generic wins replication request
 */
-struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
-					 struct wrepl_packet *packet,
-					 struct wrepl_send_ctrl *ctrl)
+static struct wrepl_request *wrepl_request_internal_send(struct wrepl_socket *wrepl_socket,
+							  struct wrepl_packet *packet,
+							  struct wrepl_send_ctrl *ctrl)
 {
 	struct wrepl_request *req;
 	struct wrepl_wrap wrap;
@@ -564,9 +564,9 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 /*
   receive a generic WINS replication reply
 */
-NTSTATUS wrepl_request_recv(struct wrepl_request *req,
-			    TALLOC_CTX *mem_ctx,
-			    struct wrepl_packet **packet)
+static NTSTATUS wrepl_request_internal_recv(struct wrepl_request *req,
+					    TALLOC_CTX *mem_ctx,
+					    struct wrepl_packet **packet)
 {
 	NTSTATUS status = wrepl_request_wait(req);
 	if (NT_STATUS_IS_OK(status) && packet) {
@@ -574,6 +574,20 @@ NTSTATUS wrepl_request_recv(struct wrepl_request *req,
 	}
 	talloc_free(req);
 	return status;
+}
+
+struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
+					 struct wrepl_packet *packet,
+					 struct wrepl_send_ctrl *ctrl)
+{
+	return wrepl_request_internal_send(wrepl_socket, packet, ctrl);
+}
+
+NTSTATUS wrepl_request_recv(struct wrepl_request *req,
+			    TALLOC_CTX *mem_ctx,
+			    struct wrepl_packet **packet)
+{
+	return wrepl_request_internal_recv(req, mem_ctx, packet);
 }
 
 /*
