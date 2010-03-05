@@ -166,7 +166,7 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 
 	/* we have a connection already, so use it */
 	if (wreplconn) {
-		if (!wreplconn->sock->dead) {
+		if (wrepl_socket_is_connected(wreplconn->sock)) {
 			state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
 			state->wreplconn= wreplconn;
 			composite_done(c);

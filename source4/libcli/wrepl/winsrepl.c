@@ -101,6 +101,23 @@ static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status
 	}
 }
 
+bool wrepl_socket_is_connected(struct wrepl_socket *wrepl_sock)
+{
+	if (!wrepl_sock) {
+		return false;
+	}
+
+	if (wrepl_sock->dead) {
+		return false;
+	}
+
+	if (!wrepl_sock->sock) {
+		return false;
+	}
+
+	return true;
+}
+
 static void wrepl_request_timeout_handler(struct tevent_context *ev, struct tevent_timer *te,
 					  struct timeval t, void *ptr)
 {
