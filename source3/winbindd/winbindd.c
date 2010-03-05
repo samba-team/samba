@@ -593,6 +593,9 @@ static void process_request(struct winbindd_cli_state *state)
 	/* Remember who asked us. */
 	state->pid = state->request->pid;
 
+	state->cmd_name = "unknown request";
+	state->recv_fn = NULL;
+
 	/* Process command */
 
 	for (atable = async_nonpriv_table; atable->send_req; atable += 1) {
@@ -613,8 +616,11 @@ static void process_request(struct winbindd_cli_state *state)
 	if (atable->send_req != NULL) {
 		struct tevent_req *req;
 
-		DEBUG(10, ("process_request: Handling async request %s\n",
-			   atable->cmd_name));
+		state->cmd_name = atable->cmd_name;
+		state->recv_fn = atable->recv_req;
+
+		DEBUG(10, ("process_request: Handling async request %d:%s\n",
+			   (int)state->pid, state->cmd_name));
 
 		req = atable->send_req(state->mem_ctx, winbind_event_context(),
 				       state, state->request);
@@ -625,7 +631,6 @@ static void process_request(struct winbindd_cli_state *state)
 			return;
 		}
 		tevent_req_set_callback(req, wb_request_done, state);
-		state->recv_fn = atable->recv_req;
 		return;
 	}
 
@@ -643,6 +648,7 @@ static void process_request(struct winbindd_cli_state *state)
 		if (state->request->cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n",
 				  table->winbindd_cmd_name ));
+			state->cmd_name = table->winbindd_cmd_name;
 			table->fn(state);
 			break;
 		}
@@ -663,6 +669,8 @@ static void wb_request_done(struct tevent_req *req)
 
 	state->response = talloc_zero(state, struct winbindd_response);
 	if (state->response == NULL) {
+		DEBUG(0, ("wb_request_done[%d:%s]: talloc_zero failed - removing client\n",
+			  (int)state->pid, state->cmd_name));
 		remove_client(state);
 		return;
 	}
@@ -671,8 +679,11 @@ static void wb_request_done(struct tevent_req *req)
 
 	status = state->recv_fn(req, state->response);
 	TALLOC_FREE(req);
+
+	DEBUG(10,("wb_request_done[%d:%s]: %s\n",
+		  (int)state->pid, state->cmd_name, nt_errstr(status)));
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("returning %s\n", nt_errstr(status)));
 		request_error(state);
 		return;
 	}
@@ -704,6 +715,8 @@ static void request_finished(struct winbindd_cli_state *state)
 				 state->out_queue, state->sock,
 				 state->response);
 	if (req == NULL) {
+		DEBUG(10,("request_finished[%d:%s]: wb_resp_write_send() failed\n",
+			  (int)state->pid, state->cmd_name));
 		remove_client(state);
 		return;
 	}
@@ -722,14 +735,19 @@ static void winbind_client_response_written(struct tevent_req *req)
 	if (ret == -1) {
 		close(state->sock);
 		state->sock = -1;
-		DEBUG(2, ("Could not write response to client: %s\n",
-			  strerror(err)));
+		DEBUG(2, ("Could not write response[%d:%s] to client: %s\n",
+			  (int)state->pid, state->cmd_name, strerror(err)));
 		remove_client(state);
 		return;
 	}
 
+	DEBUG(10,("winbind_client_response_written[%d:%s]: deliverd response to client\n",
+		  (int)state->pid, state->cmd_name));
+
 	TALLOC_FREE(state->mem_ctx);
 	state->response = NULL;
+	state->cmd_name = "no request";
+	state->recv_fn = NULL;
 
 	req = wb_req_read_send(state, winbind_event_context(), state->sock,
 			       WINBINDD_MAX_EXTRA_DATA);
