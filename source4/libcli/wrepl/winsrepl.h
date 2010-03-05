@@ -23,6 +23,8 @@
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/winsrepl.h"
 
+struct wrepl_request;
+
 /*
   main context structure for the wins replication client library
 */
@@ -58,35 +60,6 @@ struct wrepl_send_ctrl {
 	bool send_only;
 	bool disconnect_after_send;
 };
-
-enum wrepl_request_internal_state {
-	WREPL_REQUEST_INIT  = 0,
-	WREPL_REQUEST_RECV  = 1,
-	WREPL_REQUEST_DONE  = 2,
-	WREPL_REQUEST_ERROR = 3
-};
-
-/*
-  a WINS replication request
-*/
-struct wrepl_request {
-	struct wrepl_request *next, *prev;
-	struct wrepl_socket *wrepl_socket;
-
-	enum wrepl_request_internal_state state;
-	bool trigger;
-	NTSTATUS status;
-
-	struct tevent_timer *te;
-
-	struct wrepl_packet *packet;
-
-	struct {
-		void (*fn)(struct wrepl_request *);
-		void *private_data;
-	} async;
-};
-
 
 /*
   setup an association
