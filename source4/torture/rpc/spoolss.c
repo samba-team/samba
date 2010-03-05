@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
@@ -3259,10 +3260,136 @@ static bool test_SetPrinterDataEx(struct torture_context *tctx,
 	return true;
 }
 
+#define TOP_LEVEL_PRINTER_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
+
+static bool test_winreg_OpenHKLM(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *handle)
+{
+	struct winreg_OpenHKLM r;
+
+	r.in.system_name = NULL;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	torture_comment(tctx, "Testing winreg_OpenHKLM\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_OpenHKLM(p, tctx, &r), "OpenHKLM failed");
+	torture_assert_werr_ok(tctx, r.out.result, "OpenHKLM failed");
+
+	return true;
+}
+
+static void init_winreg_String(struct winreg_String *name, const char *s)
+{
+	name->name = s;
+	if (s) {
+		name->name_len = 2 * (strlen_m(s) + 1);
+		name->name_size = name->name_len;
+	} else {
+		name->name_len = 0;
+		name->name_size = 0;
+	}
+}
+
+static bool test_winreg_OpenKey(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *hive_handle,
+				const char *keyname,
+				struct policy_handle *key_handle)
+{
+	struct winreg_OpenKey r;
+
+	r.in.parent_handle = hive_handle;
+	init_winreg_String(&r.in.keyname, keyname);
+	r.in.unknown = 0x00000000;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = key_handle;
+
+	torture_comment(tctx, "Testing winreg_OpenKey(%s)\n", keyname);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_OpenKey(p, tctx, &r), "OpenKey failed");
+	torture_assert_werr_ok(tctx, r.out.result, "OpenKey failed");
+
+	return true;
+}
+
+static bool test_winreg_CloseKey(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *handle)
+{
+	struct winreg_CloseKey r;
+
+	r.in.handle = handle;
+	r.out.handle = handle;
+
+	torture_comment(tctx, "Testing winreg_CloseKey\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CloseKey(p, tctx, &r), "CloseKey failed");
+	torture_assert_werr_ok(tctx, r.out.result, "CloseKey failed");
+
+	return true;
+}
+
+static bool test_winreg_QueryValue(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
+				   const char *value_name,
+				   enum winreg_Type *type_p,
+				   uint32_t *data_size_p,
+				   uint32_t *data_length_p,
+				   uint8_t **data_p)
+{
+	struct winreg_QueryValue r;
+	enum winreg_Type type = REG_NONE;
+	uint32_t data_size = 0;
+	uint32_t data_length = 0;
+	struct winreg_String valuename;
+
+	init_winreg_String(&valuename, value_name);
+
+	r.in.handle = handle;
+	r.in.value_name = &valuename;
+	r.in.type = &type;
+	r.in.data_size = &data_size;
+	r.in.data_length = &data_length;
+	r.out.type = &type;
+	r.out.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+	r.out.data_size = &data_size;
+	r.out.data_length = &data_length;
+
+	torture_comment(tctx, "Testing winreg_QueryValue(%s)\n", value_name);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r), "QueryValue failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		*r.in.data_size = *r.out.data_size;
+		r.out.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+		torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r), "QueryValue failed");
+	}
+	torture_assert_werr_ok(tctx, r.out.result, "QueryValue failed");
+
+	if (type_p) {
+		*type_p = *r.out.type;
+	}
+	if (data_size_p) {
+		*data_size_p = *r.out.data_size;
+	}
+	if (data_length_p) {
+		*data_length_p = *r.out.data_length;
+	}
+	if (data_p) {
+		*data_p = r.out.data;
+	}
+
+	return true;
+}
+
 static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 					 struct dcerpc_pipe *p,
 					 struct policy_handle *handle,
-					 const char *printername)
+					 const char *printername,
+					 struct dcerpc_pipe *winreg_pipe,
+					 struct policy_handle *hive_handle)
 {
 	const char *value_name = "dog";
 	const char *keys[] = {
@@ -3337,6 +3464,28 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, needed, offered, "size mismatch");
 		torture_assert_mem_equal(tctx, data_out, data.data, offered, "buffer mismatch");
 
+		if (winreg_pipe && hive_handle) {
+			const char *printer_key;
+			struct policy_handle key_handle;
+			enum winreg_Type w_type;
+			uint32_t w_size, w_length;
+			uint8_t *w_data;
+
+			printer_key = talloc_asprintf(tctx, "%s\\%s\\%s",
+				TOP_LEVEL_PRINTER_KEY, printername, keys[i]);
+
+			torture_assert(tctx, test_winreg_OpenKey(tctx, winreg_pipe, hive_handle, printer_key, &key_handle), "");
+
+			torture_assert(tctx,
+				test_winreg_QueryValue(tctx, winreg_pipe, &key_handle, value_name, &w_type, &w_size, &w_length, &w_data), "");
+
+			test_winreg_CloseKey(tctx, winreg_pipe, &key_handle);
+
+			torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
+			torture_assert_int_equal(tctx, w_size, offered, "winreg size mismatch");
+			torture_assert_mem_equal(tctx, w_data, data.data, offered, "winreg buffer mismatch");
+		}
+
 		key = talloc_strdup(tctx, keys[i]);
 
 		if (!test_EnumPrinterDataEx(tctx, p, handle, keys[i])) {
@@ -3382,6 +3531,30 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 	}
 
 	return true;
+}
+
+static bool test_PrinterData_winreg(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *handle,
+				    const char *printer_name)
+{
+	struct dcerpc_pipe *p2;
+	bool ret = true;
+	struct policy_handle hive_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+		"could not open winreg pipe");
+
+	torture_assert(tctx, test_winreg_OpenHKLM(tctx, p2, &hive_handle), "");
+
+	ret = test_SetPrinterDataEx_matrix(tctx, p, handle, printer_name, p2, &hive_handle);
+
+	test_winreg_CloseKey(tctx, p2, &hive_handle);
+
+	talloc_free(p2);
+
+	return ret;
 }
 
 static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
@@ -3797,7 +3970,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SetPrinterDataEx_matrix(tctx, p, &handle, name)) {
+	if (!test_SetPrinterDataEx_matrix(tctx, p, &handle, name, NULL, NULL)) {
 		ret = false;
 	}
 
@@ -4577,6 +4750,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_SetPrinterDataEx_matrix(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_PrinterData_winreg(tctx, p, handle, name)) {
 		ret = false;
 	}
 
