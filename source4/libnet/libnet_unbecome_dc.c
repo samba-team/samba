@@ -658,7 +658,7 @@ static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_st
 	r->in.req->req1.domain_dn = s->domain.dn_str;
 	r->in.req->req1.commit	= true;
 
-	r->out.level_out	= talloc(s, int32_t);
+	r->out.level_out	= talloc(s, uint32_t);
 	r->out.res		= talloc(s, union drsuapi_DsRemoveDSServerResult);
 
 	req = dcerpc_drsuapi_DsRemoveDSServer_send(s->drsuapi.pipe, s, r);
