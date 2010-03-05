@@ -94,7 +94,7 @@ void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 {
 	uint32 jobid;
 
-	if (fsp->fh->private_options & FILE_DELETE_ON_CLOSE) {
+	if (fsp->fh->private_options & NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
 		 * care of deleting it for us. JRA.

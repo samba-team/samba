@@ -570,6 +570,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
 		allocation_size,			/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -1105,6 +1106,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
 		allocation_size,			/* allocation_size */
+		0,					/* private_flags */
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
@@ -1331,6 +1333,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		NO_OPLOCK,				/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
@@ -1353,6 +1356,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		fattr,					/* file_attributes */
 		NO_OPLOCK,				/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp2,					/* result */

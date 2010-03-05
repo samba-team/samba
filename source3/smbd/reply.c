@@ -1694,6 +1694,7 @@ void reply_open(struct smb_request *req)
 	uint32 share_mode;
 	uint32 create_disposition;
 	uint32 create_options = 0;
+	uint32_t private_flags = 0;
 	NTSTATUS status;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1737,7 +1738,7 @@ void reply_open(struct smb_request *req)
 	if (!map_open_params_to_ntcreate(smb_fname, deny_mode,
 					 OPENX_FILE_EXISTS_OPEN, &access_mask,
 					 &share_mode, &create_disposition,
-					 &create_options)) {
+					 &create_options, &private_flags)) {
 		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
@@ -1754,6 +1755,7 @@ void reply_open(struct smb_request *req)
 		dos_attr,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
+		private_flags,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -1853,6 +1855,7 @@ void reply_open_and_X(struct smb_request *req)
 	uint32 share_mode;
 	uint32 create_disposition;
 	uint32 create_options = 0;
+	uint32_t private_flags = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopenX);
@@ -1910,7 +1913,8 @@ void reply_open_and_X(struct smb_request *req)
 	if (!map_open_params_to_ntcreate(smb_fname, deny_mode, smb_ofun,
 					 &access_mask, &share_mode,
 					 &create_disposition,
-					 &create_options)) {
+					 &create_options,
+					 &private_flags)) {
 		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
@@ -1927,6 +1931,7 @@ void reply_open_and_X(struct smb_request *req)
 		smb_attr,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
+		private_flags,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -2144,6 +2149,7 @@ void reply_mknew(struct smb_request *req)
 		fattr,					/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -2272,6 +2278,7 @@ void reply_ctemp(struct smb_request *req)
 		fattr,					/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -2472,6 +2479,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 				FILE_ATTRIBUTE_NORMAL,
 		 0,			/* oplock_request */
 		 0,			/* allocation_size */
+		 0,			/* private_flags */
 		 NULL,			/* sd */
 		 NULL,			/* ea_list */
 		 &fsp,			/* result */
@@ -5341,6 +5349,7 @@ void reply_rmdir(struct smb_request *req)
 		FILE_ATTRIBUTE_DIRECTORY,               /* file_attributes */
 		0,                                      /* oplock_request */
 		0,                                      /* allocation_size */
+		0,					/* private_flags */
 		NULL,                                   /* sd */
 		NULL,                                   /* ea_list */
 		&fsp,                                   /* result */
@@ -6038,6 +6047,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
 			0,				/* allocation_size */
+			0,				/* private_flags */
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&fsp,				/* result */
@@ -6176,6 +6186,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
 			0,				/* allocation_size */
+			0,				/* private_flags */
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&fsp,				/* result */
@@ -6396,6 +6407,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		if (!map_open_params_to_ntcreate(smb_fname_dst_tmp, 0, ofun,
 						 NULL, NULL,
 						 &new_create_disposition,
+						 NULL,
 						 NULL)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
@@ -6415,6 +6427,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
@@ -6443,6 +6456,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		dosattrs,				/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp2,					/* result */

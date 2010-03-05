@@ -611,6 +611,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     in_file_attributes,
 					     0, /* oplock_request */
 					     allocation_size,
+					     0, /* private_flags */
 					     sec_desc,
 					     ea_list,
 					     &result,

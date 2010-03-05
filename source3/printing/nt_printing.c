@@ -1315,6 +1315,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -1367,6 +1368,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -1524,6 +1526,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		0,					/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* private_flags */
 		0,					/* allocation_size */
 		NULL,					/* sd */
 		NULL,					/* ea_list */

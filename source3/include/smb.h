@@ -344,7 +344,8 @@ struct fd_handle {
 	SMB_OFF_T pos;
 	uint32 private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
-				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB (Except
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB and
+				 * NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE
 				 * for print files *only*, where
 				 * DELETE_ON_CLOSE is not stored in the share
 				 * mode database.
@@ -1372,13 +1373,17 @@ struct bitmap {
 
 /*
  * Private create options used by the ntcreatex processing code. From Samba4.
- * We reuse some ignored flags for private use.
+ * We reuse some ignored flags for private use. Passed in the private_flags
+ * argument.
  */
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x00010000
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x00020000
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x0001
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x0002
 
 /* Private options for streams support */
-#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x00040000
+#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x0004
+
+/* Private options for printer support */
+#define NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE 0x0008
 
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0

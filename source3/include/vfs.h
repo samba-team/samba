@@ -125,7 +125,8 @@
  * 			   return to fs_capabilities call. JRA. */
 /* Leave at 27 - not yet released. Add translate_name VFS call to convert
 		 UNIX names to Windows supported names -- asrinivasan. */
-#define SMB_VFS_INTERFACE_VERSION 27
+/* Changed to version 28 - Add private_flags uint32_t to CREATE call. */
+#define SMB_VFS_INTERFACE_VERSION 28
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -213,6 +214,7 @@ struct vfs_fn_pointers {
 				uint32_t file_attributes,
 				uint32_t oplock_request,
 				uint64_t allocation_size,
+				uint32_t private_flags,
 				struct security_descriptor *sd,
 				struct ea_list *ea_list,
 				files_struct **result,
@@ -538,6 +540,7 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  uint32_t file_attributes,
 				  uint32_t oplock_request,
 				  uint64_t allocation_size,
+				  uint32_t private_flags,
 				  struct security_descriptor *sd,
 				  struct ea_list *ea_list,
 				  files_struct **result,

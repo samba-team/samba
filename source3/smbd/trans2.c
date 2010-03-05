@@ -983,6 +983,7 @@ static void call_trans2open(connection_struct *conn,
 	uint32 share_mode;
 	uint32 create_disposition;
 	uint32 create_options = 0;
+	uint32_t private_flags = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/*
@@ -1054,7 +1055,8 @@ static void call_trans2open(connection_struct *conn,
 	if (!map_open_params_to_ntcreate(smb_fname, deny_mode, open_ofun,
 					 &access_mask, &share_mode,
 					 &create_disposition,
-					 &create_options)) {
+					 &create_options,
+					 &private_flags)) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
@@ -1101,6 +1103,7 @@ static void call_trans2open(connection_struct *conn,
 		open_attr,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		open_size,				/* allocation_size */
+		private_flags,
 		NULL,					/* sd */
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
@@ -5581,6 +5584,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		FORCE_OPLOCK_BREAK_TO_NONE,		/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&new_fsp,				/* result */
@@ -6494,6 +6498,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		FORCE_OPLOCK_BREAK_TO_NONE,		/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&new_fsp,				/* result */
@@ -7003,6 +7008,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		mod_unixmode,				/* file_attributes */
 		0,					/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -7177,6 +7183,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		mod_unixmode,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -7306,6 +7313,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		FILE_FLAG_POSIX_SEMANTICS|0777,		/* file_attributes */
 		0,					/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -7717,7 +7725,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-				fsp->fh->private_options |= FILE_DELETE_ON_CLOSE;
+				fsp->fh->private_options |= NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: "
 					 "Cancelling print job (%s)\n",

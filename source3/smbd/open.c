@@ -39,6 +39,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     uint32_t file_attributes,
 				     uint32_t oplock_request,
 				     uint64_t allocation_size,
+				     uint32_t private_flags,
 				     struct security_descriptor *sd,
 				     struct ea_list *ea_list,
 
@@ -1205,12 +1206,14 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
-				 uint32 *pcreate_options)
+				 uint32 *pcreate_options,
+				 uint32_t *pprivate_flags)
 {
 	uint32 access_mask;
 	uint32 share_mode;
 	uint32 create_disposition;
 	uint32 create_options = FILE_NON_DIRECTORY_FILE;
+	uint32_t private_flags = 0;
 
 	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "
 		  "open_func = 0x%x\n",
@@ -1288,7 +1291,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 			break;
 
 		case DENY_DOS:
-			create_options |= NTCREATEX_OPTIONS_PRIVATE_DENY_DOS;
+			private_flags |= NTCREATEX_OPTIONS_PRIVATE_DENY_DOS;
 	                if (is_executable(smb_fname->base_name)) {
 				share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 			} else {
@@ -1301,7 +1304,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 			break;
 
 		case DENY_FCB:
-			create_options |= NTCREATEX_OPTIONS_PRIVATE_DENY_FCB;
+			private_flags |= NTCREATEX_OPTIONS_PRIVATE_DENY_FCB;
 			share_mode = FILE_SHARE_NONE;
 			break;
 
@@ -1313,12 +1316,13 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 
 	DEBUG(10,("map_open_params_to_ntcreate: file %s, access_mask = 0x%x, "
 		  "share_mode = 0x%x, create_disposition = 0x%x, "
-		  "create_options = 0x%x\n",
+		  "create_options = 0x%x private_flags = 0x%x\n",
 		  smb_fname_str_dbg(smb_fname),
 		  (unsigned int)access_mask,
 		  (unsigned int)share_mode,
 		  (unsigned int)create_disposition,
-		  (unsigned int)create_options ));
+		  (unsigned int)create_options,
+		  (unsigned int)private_flags));
 
 	if (paccess_mask) {
 		*paccess_mask = access_mask;
@@ -1331,6 +1335,9 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 	}
 	if (pcreate_options) {
 		*pcreate_options = create_options;
+	}
+	if (pprivate_flags) {
+		*pprivate_flags = private_flags;
 	}
 
 	return True;
@@ -1449,6 +1456,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    uint32 new_dos_attributes,	/* attributes used for new file. */
 			    int oplock_request, 	/* internal Samba oplock codes. */
 				 			/* Information (FILE_EXISTS etc.) */
+			    uint32_t private_flags,     /* Samba specific flags. */
 			    int *pinfo,
 			    files_struct *fsp)
 {
@@ -1517,10 +1525,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
 		   "access_mask=0x%x share_access=0x%x "
 		   "create_disposition = 0x%x create_options=0x%x "
-		   "unix mode=0%o oplock_request=%d\n",
+		   "unix mode=0%o oplock_request=%d private_flags = 0x%x\n",
 		   smb_fname_str_dbg(smb_fname), new_dos_attributes,
 		   access_mask, share_access, create_disposition,
-		   create_options, (unsigned int)unx_mode, oplock_request));
+		   create_options, (unsigned int)unx_mode, oplock_request,
+		   (unsigned int)private_flags));
 
 	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
 		DEBUG(0, ("No smb request but not an internal only open!\n"));
@@ -1714,7 +1723,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		/* DENY_DOS opens are always underlying read-write on the
 		   file handle, no matter what the requested access mask
 		    says. */
-		if ((create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
+		if ((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
 			access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|FILE_READ_EA|FILE_EXECUTE)) {
 			flags = O_RDWR;
 		} else {
@@ -1763,7 +1772,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->share_access = share_access;
-	fsp->fh->private_options = create_options;
+	fsp->fh->private_options = private_flags;
 	fsp->access_mask = open_access_mask; /* We change this to the
 					      * requested access_mask after
 					      * the open is done. */
@@ -1831,7 +1840,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			/* Check if this can be done with the deny_dos and fcb
 			 * calls. */
-			if (create_options &
+			if (private_flags &
 			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
 			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 				if (req == NULL) {
@@ -2126,9 +2135,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	/* Record the options we were opened with. */
-	fsp->share_access = share_access;
-	fsp->fh->private_options = create_options;
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 */
@@ -2290,6 +2296,7 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		0,					/* file_attributes */
 		0,					/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -2594,7 +2601,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->can_write = False;
 
 	fsp->share_access = share_access;
-	fsp->fh->private_options = create_options;
+	fsp->fh->private_options = 0;
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 */
@@ -2678,6 +2685,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 		FILE_ATTRIBUTE_DIRECTORY,		/* file_attributes */
 		0,					/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -2847,10 +2855,11 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 (FILE_SHARE_READ |	/* share_access */
 			     FILE_SHARE_WRITE | FILE_SHARE_DELETE),
 			 FILE_OPEN,		/* create_disposition*/
-			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
+			 0, 			/* create_options */
 			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
 			 0,			/* oplock_request */
 			 0,			/* allocation_size */
+			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* private_flags */
 			 NULL,			/* sd */
 			 NULL,			/* ea_list */
 			 &streams[i],		/* result */
@@ -2900,6 +2909,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     uint32_t file_attributes,
 				     uint32_t oplock_request,
 				     uint64_t allocation_size,
+				     uint32_t private_flags,
 				     struct security_descriptor *sd,
 				     struct ea_list *ea_list,
 
@@ -2914,7 +2924,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	DEBUG(10,("create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
-		  "oplock_request = 0x%x ea_list = 0x%p, sd = 0x%p, "
+		  "oplock_request = 0x%x private_flags = 0x%x "
+		  "ea_list = 0x%p, sd = 0x%p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
@@ -2922,6 +2933,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
+		  (unsigned int)private_flags,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
@@ -3000,7 +3012,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && is_ntfs_stream_smb_fname(smb_fname)
-	    && (!(create_options & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
+	    && (!(private_flags & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
 		uint32 base_create_disposition;
 		struct smb_filename *smb_fname_base = NULL;
 
@@ -3038,7 +3050,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					      | FILE_SHARE_WRITE
 					      | FILE_SHARE_DELETE,
 					      base_create_disposition,
-					      0, 0, 0, 0, NULL, NULL,
+					      0, 0, 0, 0, 0, NULL, NULL,
 					      &base_fsp, NULL);
 		TALLOC_FREE(smb_fname_base);
 
@@ -3113,6 +3125,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					    create_options,
 					    file_attributes,
 					    oplock_request,
+					    private_flags,
 					    &info,
 					    fsp);
 
@@ -3382,6 +3395,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     uint32_t file_attributes,
 			     uint32_t oplock_request,
 			     uint64_t allocation_size,
+			     uint32_t private_flags,
 			     struct security_descriptor *sd,
 			     struct ea_list *ea_list,
 			     files_struct **result,
@@ -3395,6 +3409,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
+		  "private_flags = 0x%x "
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
@@ -3403,6 +3418,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
+		  (unsigned int)private_flags,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
@@ -3467,7 +3483,8 @@ NTSTATUS create_file_default(connection_struct *conn,
 	status = create_file_unixpath(
 		conn, req, smb_fname, access_mask, share_access,
 		create_disposition, create_options, file_attributes,
-		oplock_request, allocation_size, sd, ea_list,
+		oplock_request, allocation_size, private_flags,
+		sd, ea_list,
 		&fsp, &info);
 
 	if (!NT_STATUS_IS_OK(status)) {

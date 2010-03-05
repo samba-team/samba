@@ -6631,7 +6631,8 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
-				 uint32 *pcreate_options);
+				 uint32 *pcreate_options,
+				 uint32_t *pprivate_flags);
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result);
@@ -6656,6 +6657,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     uint32_t file_attributes,
 			     uint32_t oplock_request,
 			     uint64_t allocation_size,
+			     uint32_t private_flags,
 			     struct security_descriptor *sd,
 			     struct ea_list *ea_list,
 

@@ -120,10 +120,14 @@
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) \
 	smb_vfs_call_open((handle)->next, (fname), (fsp), (flags), (mode))
 
-#define SMB_VFS_CREATE_FILE(conn, req, root_dir_fid, smb_fname, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo) \
-	smb_vfs_call_create_file((conn)->vfs_handles, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo))
-#define SMB_VFS_NEXT_CREATE_FILE(handle, req, root_dir_fid, smb_fname, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo) \
-	smb_vfs_call_create_file((handle)->next, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo))
+#define SMB_VFS_CREATE_FILE(conn, req, root_dir_fid, smb_fname, access_mask, share_access, create_disposition, \
+        create_options, file_attributes, oplock_request, allocation_size, private_flags, sd, ea_list, result, pinfo) \
+	smb_vfs_call_create_file((conn)->vfs_handles, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), \
+        (create_options), (file_attributes), (oplock_request), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo))
+#define SMB_VFS_NEXT_CREATE_FILE(handle, req, root_dir_fid, smb_fname, access_mask, share_access, create_disposition, \
+        create_options, file_attributes, oplock_request, allocation_size, private_flags, sd, ea_list, result, pinfo) \
+	smb_vfs_call_create_file((handle)->next, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), \
+        (create_options), (file_attributes), (oplock_request), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo))
 
 #define SMB_VFS_CLOSE(fsp) \
 	smb_vfs_call_close_fn((fsp)->conn->vfs_handles, (fsp))

@@ -868,6 +868,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      uint32_t file_attributes,
 				      uint32_t oplock_request,
 				      uint64_t allocation_size,
+				      uint32_t private_flags,
 				      struct security_descriptor *sd,
 				      struct ea_list *ea_list,
 				      files_struct **result_fsp,
@@ -911,6 +912,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
 		allocation_size,			/* allocation_size */
+		private_flags,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		result_fsp,				/* result */

@@ -2130,6 +2130,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		0,					/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
@@ -2260,6 +2261,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		0,					/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
+		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */

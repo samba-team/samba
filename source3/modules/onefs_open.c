@@ -54,6 +54,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			      uint32_t file_attributes,
 			      uint32_t oplock_request,
 			      uint64_t allocation_size,
+			      uint32_t private_flags,
 			      struct security_descriptor *sd,
 			      struct ea_list *ea_list,
 			      files_struct **result,
@@ -438,6 +439,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				  uint32 create_options,
 				  uint32 new_dos_attributes,
 				  int oplock_request,
+				  uint32_t private_flags,
 				  struct security_descriptor *sd,
 				  files_struct *fsp,
 				  int *pinfo,
@@ -818,7 +820,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	DEBUG(10, ("fsp = %p\n", fsp));
 
 	fsp->share_access = share_access;
-	fsp->fh->private_options = create_options;
+	fsp->fh->private_options = private_flags;
 	fsp->access_mask = open_access_mask; /* We change this to the
 					      * requested access_mask after
 					      * the open is done. */
@@ -992,7 +994,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 			 * calls. */
 
 			/* Try to find dup fsp if possible. */
-			if (create_options &
+			if (private_flags &
 			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
 			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 
@@ -1261,9 +1263,6 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	 * deny mode is compatible with all current opens.
 	 */
 
-	/* Record the options we were opened with. */
-	fsp->share_access = share_access;
-	fsp->fh->private_options = create_options;
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 */
@@ -1629,7 +1628,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	fsp->can_write = False;
 
 	fsp->share_access = share_access;
-	fsp->fh->private_options = create_options;
+	fsp->fh->private_options = 0;
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 */
@@ -1718,6 +1717,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 					   uint32_t file_attributes,
 					   uint32_t oplock_request,
 					   uint64_t allocation_size,
+					   uint32_t private_flags,
 					   struct security_descriptor *sd,
 					   struct ea_list *ea_list,
 					   files_struct **result,
@@ -1732,7 +1732,8 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 	DEBUG(10,("onefs_create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
-		  "oplock_request = 0x%x ea_list = 0x%p, sd = 0x%p, "
+		  "oplock_request = 0x%x private_flags = 0x%x "
+		  "ea_list = 0x%p, sd = 0x%p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
@@ -1740,6 +1741,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
+		  (unsigned int)private_flags,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
@@ -1823,6 +1825,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			file_attributes,		/* file_attributes */
 			NO_OPLOCK,			/* oplock_request */
 			0,				/* allocation_size */
+			0,				/* private_flags */
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&base_fsp,			/* result */
@@ -2066,6 +2069,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   uint32_t file_attributes,
 			   uint32_t oplock_request,
 			   uint64_t allocation_size,
+			   uint32_t private_flags,
 			   struct security_descriptor *sd,
 			   struct ea_list *ea_list,
 			   files_struct **result,
@@ -2080,7 +2084,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 	DEBUG(10,("onefs_create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
-		  "oplock_request = 0x%x "
+		  "oplock_request = 0x%x private_flags = 0x%x"
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
@@ -2089,6 +2093,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
+		  (unsigned int)private_flags,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
@@ -2118,6 +2123,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		file_attributes,			/* file_attributes */
 		oplock_request,				/* oplock_request */
 		allocation_size,			/* allocation_size */
+		private_flags,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
