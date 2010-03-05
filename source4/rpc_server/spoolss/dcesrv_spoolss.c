@@ -581,7 +581,7 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 	r->out.needed = talloc_zero(mem_ctx, uint32_t);
 	W_ERROR_HAVE_NO_MEMORY(r->out.needed);
 
-	r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.needed);
+	r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 	W_ERROR_HAVE_NO_MEMORY(r->out.data);
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
