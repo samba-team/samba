@@ -81,4 +81,8 @@ cp setup/provision.smb.conf.member $SETUPDIR || exit 1
 cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
 cp setup/dns_update_list $SETUPDIR || exit 1
 
+echo "Installing external python libraries"
+mkdir -p $PYTHONDIR/samba_external || exit 1
+cp -r scripting/python/samba_external/* $PYTHONDIR/samba_external/ || exit 1
+
 exit 0
