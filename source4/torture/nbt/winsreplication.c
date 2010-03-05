@@ -145,8 +145,7 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	packet.assoc_ctx			= 0;
 	packet.mess_type			= WREPL_REPLICATION;
 	packet.message.replication.command	= WREPL_REPL_TABLE_QUERY;
-	req = wrepl_request_send(wrepl_socket1, &packet, NULL);
-	status = wrepl_request_recv(req, tctx, &rep_packet);
+	status = wrepl_request(wrepl_socket1, tctx, &packet, &rep_packet);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Send a association request (conn1), to make sure the last request was handled correct\n");
