@@ -373,13 +373,13 @@ int pvfs_sys_unlink(struct pvfs_state *pvfs, const char *filename)
 
 	ret = unlink(filename);
 	if (ret == -1) {
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
-	errno = orig_errno;
 	talloc_free(ctx);
+	errno = orig_errno;
 	return ret;
 }
 
@@ -424,23 +424,23 @@ int pvfs_sys_rename(struct pvfs_state *pvfs, const char *name1, const char *name
 	if (name2[0] != '/') {
 		name2 = talloc_asprintf(ctx, "%s/%s", ctx->old_wd, name2);
 		if (name2 == NULL) {
-			errno = saved_errno;
 			talloc_free(ctx);
+			errno = saved_errno;
 			return -1;
 		}
 	}
 
 	/* make sure the destination isn't a symlink beforehand */
 	if (contains_symlink(name2)) {
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
 	ret = rename(name1, name2);
 	if (ret == -1) {
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
@@ -448,13 +448,13 @@ int pvfs_sys_rename(struct pvfs_state *pvfs, const char *name1, const char *name
 	if (contains_symlink(name2)) {
 		DEBUG(0,(__location__ ": Possible symlink attack in rename to '%s' - unlinking\n", name2));
 		unlink(name2);
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
-	errno = orig_errno;
 	talloc_free(ctx);
+	errno = orig_errno;
 	return ret;
 }
 
@@ -532,13 +532,13 @@ int pvfs_sys_rmdir(struct pvfs_state *pvfs, const char *dirname)
 
 	ret = rmdir(dirname);
 	if (ret == -1) {
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
-	errno = orig_errno;
 	talloc_free(ctx);
+	errno = orig_errno;
 	return ret;
 }
 
@@ -570,13 +570,13 @@ int pvfs_sys_fchmod(struct pvfs_state *pvfs, int fd, mode_t mode)
 
 	ret = fchmod(fd, mode);
 	if (ret == -1) {
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
-	errno = orig_errno;
 	talloc_free(ctx);
+	errno = orig_errno;
 	return ret;
 }
 
@@ -609,12 +609,12 @@ int pvfs_sys_chmod(struct pvfs_state *pvfs, const char *filename, mode_t mode)
 
 	ret = chmod(filename, mode);
 	if (ret == -1) {
-		errno = saved_errno;
 		talloc_free(ctx);
+		errno = saved_errno;
 		return -1;
 	}
 
-	errno = orig_errno;
 	talloc_free(ctx);
+	errno = orig_errno;
 	return ret;
 }
