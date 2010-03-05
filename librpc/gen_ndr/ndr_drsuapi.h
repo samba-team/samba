@@ -78,9 +78,6 @@ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier(struct ndr_push *nd
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectIdentifier(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaObjectIdentifier *r);
 void ndr_print_drsuapi_DsReplicaObjectIdentifier(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaObjectIdentifier *r);
 size_t ndr_size_drsuapi_DsReplicaObjectIdentifier(const struct drsuapi_DsReplicaObjectIdentifier *r, struct smb_iconv_convenience *ic, int flags);
-enum ndr_err_code ndr_push_drsuapi_DsReplicaSyncOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r);
-enum ndr_err_code ndr_pull_drsuapi_DsReplicaSyncOptions(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
-void ndr_print_drsuapi_DsReplicaSyncOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsReplicaSyncRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaSyncRequest1 *r);
 void ndr_print_drsuapi_DsReplicaSyncRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsReplicaSyncRequest *r);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaHighWaterMark(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaHighWaterMark *r);

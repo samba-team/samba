@@ -567,51 +567,6 @@ _PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier(const struct drsuapi_
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier, ic);
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaSyncOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r)
-{
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsReplicaSyncOptions(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
-{
-	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_drsuapi_DsReplicaSyncOptions(struct ndr_print *ndr, const char *name, uint32_t r)
-{
-	ndr_print_uint32(ndr, name, r);
-	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_OPERATION", DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_OPERATION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_WRITEABLE", DRSUAPI_DS_REPLICA_SYNC_WRITEABLE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_PERIODIC", DRSUAPI_DS_REPLICA_SYNC_PERIODIC, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_INTERSITE_MESSAGING", DRSUAPI_DS_REPLICA_SYNC_INTERSITE_MESSAGING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_ALL_SOURCES", DRSUAPI_DS_REPLICA_SYNC_ALL_SOURCES, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_FULL", DRSUAPI_DS_REPLICA_SYNC_FULL, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_URGENT", DRSUAPI_DS_REPLICA_SYNC_URGENT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_NO_DISCARD", DRSUAPI_DS_REPLICA_SYNC_NO_DISCARD, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_FORCE", DRSUAPI_DS_REPLICA_SYNC_FORCE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_ADD_REFERENCE", DRSUAPI_DS_REPLICA_SYNC_ADD_REFERENCE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_NEVER_COMPLETED", DRSUAPI_DS_REPLICA_SYNC_NEVER_COMPLETED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_TWO_WAY", DRSUAPI_DS_REPLICA_SYNC_TWO_WAY, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_NEVER_NOTIFY", DRSUAPI_DS_REPLICA_SYNC_NEVER_NOTIFY, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_INITIAL", DRSUAPI_DS_REPLICA_SYNC_INITIAL, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_USE_COMPRESSION", DRSUAPI_DS_REPLICA_SYNC_USE_COMPRESSION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_ABANDONED", DRSUAPI_DS_REPLICA_SYNC_ABANDONED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_INITIAL_IN_PROGRESS", DRSUAPI_DS_REPLICA_SYNC_INITIAL_IN_PROGRESS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_PARTIAL_ATTRIBUTE_SET", DRSUAPI_DS_REPLICA_SYNC_PARTIAL_ATTRIBUTE_SET, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_REQUEUE", DRSUAPI_DS_REPLICA_SYNC_REQUEUE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_NOTIFICATION", DRSUAPI_DS_REPLICA_SYNC_NOTIFICATION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_REPLICA", DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_REPLICA, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_CRITICAL", DRSUAPI_DS_REPLICA_SYNC_CRITICAL, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_FULL_IN_PROGRESS", DRSUAPI_DS_REPLICA_SYNC_FULL_IN_PROGRESS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_SYNC_PREEMPTED", DRSUAPI_DS_REPLICA_SYNC_PREEMPTED, r);
-	ndr->depth--;
-}
-
 static enum ndr_err_code ndr_push_drsuapi_DsReplicaSyncRequest1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaSyncRequest1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -1805,7 +1760,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest(struct ndr_push 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 5: {
@@ -1849,10 +1804,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest(struct ndr_push 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsGetNCChangesRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -3632,7 +3587,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr7(struct ndr_push *nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->level));
 		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCompressionType(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->level | (r->type << 16)));
 		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCompressedCtr(ndr, NDR_SCALARS, &r->ctr));
@@ -3648,8 +3603,8 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr7(struct ndr_pull *nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->level));
-		if (r->level < 0 || r->level > 6) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->level));
+		if (r->level > 6) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCompressionType(ndr, NDR_SCALARS, &r->type));
@@ -3670,7 +3625,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr7(struct ndr_print *ndr, const 
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsGetNCChangesCtr7");
 	ndr->depth++;
-	ndr_print_int32(ndr, "level", r->level);
+	ndr_print_uint32(ndr, "level", r->level);
 	ndr_print_drsuapi_DsGetNCChangesCompressionType(ndr, "type", r->type);
 	ndr_print_set_switch_value(ndr, &r->ctr, r->level | (r->type << 16));
 	ndr_print_drsuapi_DsGetNCChangesCompressedCtr(ndr, "ctr", &r->ctr);
@@ -3681,7 +3636,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr(struct ndr_push *ndr
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 8));
 		switch (level) {
 			case 1: {
@@ -3733,10 +3688,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr(struct ndr_push *ndr
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsGetNCChangesCtr *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -3900,7 +3855,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaUpdateRefsRequest(struct ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -3928,10 +3883,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaUpdateRefsRequest(struct ndr_
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaUpdateRefsRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsReplicaUpdateRefsRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -4203,7 +4158,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaAddRequest(struct ndr_push *n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -4239,10 +4194,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaAddRequest(struct ndr_push *n
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaAddRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsReplicaAddRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -4386,7 +4341,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaDelRequest(struct ndr_push *n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -4414,10 +4369,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaDelRequest(struct ndr_push *n
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaDelRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsReplicaDelRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -4561,7 +4516,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaModRequest(struct ndr_push *n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -4589,10 +4544,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaModRequest(struct ndr_push *n
 static enum ndr_err_code ndr_pull_drsuapi_DsReplicaModRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsReplicaModRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -4910,7 +4865,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMembershipsCtr(struct ndr_push *n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -4938,10 +4893,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMembershipsCtr(struct ndr_push *n
 static enum ndr_err_code ndr_pull_drsuapi_DsGetMembershipsCtr(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsGetMembershipsCtr *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -5126,7 +5081,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMembershipsRequest(struct ndr_pus
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -5154,10 +5109,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMembershipsRequest(struct ndr_pus
 static enum ndr_err_code ndr_pull_drsuapi_DsGetMembershipsRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsGetMembershipsRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -5811,7 +5766,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsNameRequest(struct ndr_push *ndr, in
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -5839,10 +5794,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsNameRequest(struct ndr_push *ndr, in
 static enum ndr_err_code ndr_pull_drsuapi_DsNameRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsNameRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -6074,7 +6029,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsNameCtr(struct ndr_push *ndr, int nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -6104,11 +6059,11 @@ static enum ndr_err_code ndr_push_drsuapi_DsNameCtr(struct ndr_push *ndr, int nd
 static enum ndr_err_code ndr_pull_drsuapi_DsNameCtr(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsNameCtr *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	TALLOC_CTX *_mem_save_ctr1_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -6326,7 +6281,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpnRequest(struct ndr_pu
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -6354,10 +6309,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpnRequest(struct ndr_pu
 static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpnRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsWriteAccountSpnRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -6435,7 +6390,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpnResult(struct ndr_pus
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
@@ -6462,10 +6417,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpnResult(struct ndr_pus
 static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpnResult(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsWriteAccountSpnResult *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -6608,7 +6563,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerRequest(struct ndr_pus
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -6636,10 +6591,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerRequest(struct ndr_pus
 static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServerRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsRemoveDSServerRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -6717,7 +6672,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerResult(struct ndr_push
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case 1: {
@@ -6744,10 +6699,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServerResult(struct ndr_push
 static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServerResult(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsRemoveDSServerResult *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -12567,7 +12522,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2Ctr(struct ndr_push *
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -12595,10 +12550,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2Ctr(struct ndr_push *
 static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships2Ctr(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsGetMemberships2Ctr *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -12753,7 +12708,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2Request(struct ndr_pu
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -12781,10 +12736,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2Request(struct ndr_pu
 static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships2Request(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsGetMemberships2Request *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -12868,7 +12823,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostCtr1(struct ndr_push *
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_info));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->info));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -12900,7 +12855,7 @@ static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCostCtr1(struct ndr_pull *
 		} else {
 			r->info = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags_reserved));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -12945,7 +12900,7 @@ _PUBLIC_ void ndr_print_drsuapi_QuerySitesByCostCtr1(struct ndr_print *ndr, cons
 		ndr->depth--;
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr_print_uint32(ndr, "flags_reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->flags_reserved);
 	ndr->depth--;
 }
 
@@ -12953,7 +12908,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostCtr(struct ndr_push *n
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -12981,10 +12936,10 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostCtr(struct ndr_push *n
 static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCostCtr(struct ndr_pull *ndr, int ndr_flags, union drsuapi_QuerySitesByCostCtr *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -13184,7 +13139,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostRequest(struct ndr_pus
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		NDR_CHECK(ndr_push_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
@@ -13212,10 +13167,10 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCostRequest(struct ndr_pus
 static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCostRequest(struct ndr_pull *ndr, int ndr_flags, union drsuapi_QuerySitesByCostRequest *r)
 {
 	int level;
-	int32_t _level;
+	uint32_t _level;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &_level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
 		if (_level != level) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r at %s", _level, __location__);
 		}
@@ -13550,7 +13505,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChanges(struct ndr_push *ndr, i
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -13561,7 +13516,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChanges(struct ndr_push *ndr, i
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -13588,7 +13543,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChanges(struct ndr_pull *ndr, i
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -13608,7 +13563,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChanges(struct ndr_pull *ndr, i
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.ctr);
@@ -13637,7 +13592,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChanges(struct ndr_print *ndr, const char
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -13650,7 +13605,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChanges(struct ndr_print *ndr, const char
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
@@ -13670,7 +13625,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaUpdateRefs(struct ndr_push *n
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaUpdateRefsRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13691,7 +13646,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaUpdateRefs(struct ndr_pull *n
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaUpdateRefsRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13715,7 +13670,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaUpdateRefs(struct ndr_print *ndr, const
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_set_switch_value(ndr, &r->in.req, r->in.level);
 		ndr_print_drsuapi_DsReplicaUpdateRefsRequest(ndr, "req", &r->in.req);
 		ndr->depth--;
@@ -13736,7 +13691,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaAdd(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaAddRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13757,7 +13712,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaAdd(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaAddRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13781,7 +13736,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAdd(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_set_switch_value(ndr, &r->in.req, r->in.level);
 		ndr_print_drsuapi_DsReplicaAddRequest(ndr, "req", &r->in.req);
 		ndr->depth--;
@@ -13802,7 +13757,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaDel(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaDelRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13823,7 +13778,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaDel(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaDelRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13847,7 +13802,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaDel(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_set_switch_value(ndr, &r->in.req, r->in.level);
 		ndr_print_drsuapi_DsReplicaDelRequest(ndr, "req", &r->in.req);
 		ndr->depth--;
@@ -13868,7 +13823,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaMod(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaModRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13889,7 +13844,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaMod(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.req, r->in.level));
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaModRequest(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.req));
 	}
@@ -13913,7 +13868,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaMod(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_set_switch_value(ndr, &r->in.req, r->in.level);
 		ndr_print_drsuapi_DsReplicaModRequest(ndr, "req", &r->in.req);
 		ndr->depth--;
@@ -13975,7 +13930,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships(struct ndr_push *ndr,
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -13986,7 +13941,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships(struct ndr_push *ndr,
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14013,7 +13968,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -14033,7 +13988,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships(struct ndr_pull *ndr,
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.ctr);
@@ -14062,7 +14017,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMemberships(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -14075,7 +14030,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMemberships(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
@@ -14256,7 +14211,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsCrackNames(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14267,7 +14222,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsCrackNames(struct ndr_push *ndr, int
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14294,7 +14249,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsCrackNames(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -14314,7 +14269,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsCrackNames(struct ndr_pull *ndr, int
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.ctr);
@@ -14343,7 +14298,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsCrackNames(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -14356,7 +14311,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsCrackNames(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
@@ -14376,7 +14331,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpn(struct ndr_push *ndr
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14387,7 +14342,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsWriteAccountSpn(struct ndr_push *ndr
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.res == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14414,7 +14369,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpn(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -14434,7 +14389,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpn(struct ndr_pull *ndr
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.res);
@@ -14463,7 +14418,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsWriteAccountSpn(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -14476,7 +14431,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsWriteAccountSpn(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "res", r->out.res);
 		ndr->depth++;
@@ -14496,7 +14451,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServer(struct ndr_push *ndr,
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14507,7 +14462,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsRemoveDSServer(struct ndr_push *ndr,
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.res == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14534,7 +14489,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServer(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -14554,7 +14509,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsRemoveDSServer(struct ndr_pull *ndr,
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.res);
@@ -14583,7 +14538,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsRemoveDSServer(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -14596,7 +14551,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsRemoveDSServer(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "res", r->out.res);
 		ndr->depth++;
@@ -15137,7 +15092,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2(struct ndr_push *ndr
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -15148,7 +15103,7 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetMemberships2(struct ndr_push *ndr
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -15175,7 +15130,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships2(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -15195,7 +15150,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMemberships2(struct ndr_pull *ndr
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.ctr);
@@ -15224,7 +15179,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMemberships2(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -15237,7 +15192,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMemberships2(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
@@ -15339,7 +15294,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCost(struct ndr_push *ndr,
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -15350,7 +15305,7 @@ static enum ndr_err_code ndr_push_drsuapi_QuerySitesByCost(struct ndr_push *ndr,
 		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -15377,7 +15332,7 @@ static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCost(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
@@ -15397,7 +15352,7 @@ static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCost(struct ndr_pull *ndr,
 		}
 		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level_out));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.ctr);
@@ -15426,7 +15381,7 @@ _PUBLIC_ void ndr_print_drsuapi_QuerySitesByCost(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_int32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
@@ -15439,7 +15394,7 @@ _PUBLIC_ void ndr_print_drsuapi_QuerySitesByCost(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level_out", *r->out.level_out);
+		ndr_print_uint32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
