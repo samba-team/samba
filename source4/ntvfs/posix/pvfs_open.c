@@ -1625,7 +1625,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
 		if (f->handle->name->st.st_mode != mode &&
 		    f->handle->name->dos.attrib != attrib &&
-		    fchmod(fd, mode) == -1) {
+		    pvfs_sys_fchmod(pvfs, fd, mode) == -1) {
 			talloc_free(lck);
 			return pvfs_map_errno(pvfs, errno);
 		}

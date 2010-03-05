@@ -145,7 +145,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 	close(fd1);
 
 	mode = pvfs_fileperms(pvfs, name1->dos.attrib);
-	if (fchmod(fd2, mode) == -1) {
+	if (pvfs_sys_fchmod(pvfs, fd2, mode) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
 		close(fd2);
 		pvfs_sys_unlink(pvfs, name2->full_name);
