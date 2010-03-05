@@ -1639,7 +1639,7 @@ interface drsuapi
 	typedef struct {
 		[range(0,10000)] uint32 num_info;
 		[size_is(num_info)] drsuapi_DsSiteCostInfo *info;
-		uint32 unknown;
+		[value(0)] uint32 flags_reserved;
 	} drsuapi_QuerySitesByCostCtr1;
 
 	typedef [switch_type(uint32)] union {
