@@ -2395,8 +2395,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		printf ("Usage: %s <printer> <string|binary|dword|multistring>"
 			" <value> <data>\n",
 			argv[0]);
-		result = WERR_INVALID_PARAM;
-		goto done;
+		return WERR_OK;
 	}
 
 	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
