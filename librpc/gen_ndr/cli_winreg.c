@@ -2743,7 +2743,7 @@ struct tevent_req *rpccli_winreg_QueryValue_send(TALLOC_CTX *mem_ctx,
 						 struct policy_handle *_handle /* [in] [ref] */,
 						 struct winreg_String *_value_name /* [in] [ref] */,
 						 enum winreg_Type *_type /* [in,out] [unique] */,
-						 uint8_t *_data /* [in,out] [unique,length_is(*data_length),size_is(*data_size)] */,
+						 uint8_t *_data /* [in,out] [unique,range(0,0x4000000),length_is(data_length?*data_length:0),size_is(data_size?*data_size:0)] */,
 						 uint32_t *_data_size /* [in,out] [unique] */,
 						 uint32_t *_data_length /* [in,out] [unique] */)
 {
@@ -2823,7 +2823,7 @@ static void rpccli_winreg_QueryValue_done(struct tevent_req *subreq)
 		*state->orig.out.type = *state->tmp.out.type;
 	}
 	if (state->orig.out.data && state->tmp.out.data) {
-		memcpy(state->orig.out.data, state->tmp.out.data, (*state->tmp.in.data_size) * sizeof(*state->orig.out.data));
+		memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.data_size?*state->tmp.in.data_size:0) * sizeof(*state->orig.out.data));
 	}
 	if (state->orig.out.data_size && state->tmp.out.data_size) {
 		*state->orig.out.data_size = *state->tmp.out.data_size;
@@ -2869,7 +2869,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 				  struct policy_handle *handle /* [in] [ref] */,
 				  struct winreg_String *value_name /* [in] [ref] */,
 				  enum winreg_Type *type /* [in,out] [unique] */,
-				  uint8_t *data /* [in,out] [unique,length_is(*data_length),size_is(*data_size)] */,
+				  uint8_t *data /* [in,out] [unique,range(0,0x4000000),length_is(data_length?*data_length:0),size_is(data_size?*data_size:0)] */,
 				  uint32_t *data_size /* [in,out] [unique] */,
 				  uint32_t *data_length /* [in,out] [unique] */,
 				  WERROR *werror)
@@ -2904,7 +2904,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (data && r.out.data) {
-		memcpy(data, r.out.data, (*r.in.data_size) * sizeof(*data));
+		memcpy(data, r.out.data, (r.in.data_size?*r.in.data_size:0) * sizeof(*data));
 	}
 	if (data_size && r.out.data_size) {
 		*data_size = *r.out.data_size;
