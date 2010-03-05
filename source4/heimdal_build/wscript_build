@@ -10,8 +10,58 @@ bld(
     source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
     target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h',
     before = 'cc',
-    name="gruik", always=True
+    name="HEIMDAL_ERRORLIST"
 )
+
+
+# normalize_table.c rules
+#$(heimdalsrcdir)/lib/wind/normalize_table.h $(heimdalsrcdir)/lib/wind/normalize_table.c: $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/CompositionExclusions-3.2.0.txt $(heimdalsrcdir)/lib/wind/gen-normalize.py
+#        $(PYTHON) $(heimdalsrcdir)/lib/wind/gen-normalize.py $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/CompositionExclusions-3.2.0.txt $(heimdalsrcdir)/lib/wind/
+
+bld(rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
+    source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
+    target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c',
+    before = 'cc',
+    name = 'HEIMDAL_NORMALIZE_TABLE'
+)
+
+# combining_table.[ch] rules
+#$(heimdalsrcdir)/lib/wind/combining_table.h $(heimdalsrcdir)/lib/wind/combining_table.c: $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/gen-combining.py
+#	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-combining.py $(heimdalsrcdir)/lib/wind/UnicodeData.txt $(heimdalsrcdir)/lib/wind/
+
+
+bld(rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+    source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
+    target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c',
+    before = 'cc',
+    name = 'HEIMDAL_COMBINING_TABLE'
+)
+
+# bidi_table rules
+#$(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-bidi.py
+#	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-bidi.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+
+bld(rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+    source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
+    target = '../heimdal/lib/wind/bidi_table.h ../heimdal/lib/wind/bidi_table.c',
+    before = 'cc',
+    name = 'HEIMDAL_BIDI_TABLE'
+)
+
+
+# map_table rules
+#$(heimdalsrcdir)/lib/wind/map_table.h $(heimdalsrcdir)/lib/wind/map_table.c: $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/gen-map.py $(heimdalsrcdir)/lib/wind/stringprep.py
+#	$(PYTHON) $(heimdalsrcdir)/lib/wind/gen-map.py $(heimdalsrcdir)/lib/wind/rfc3454.txt $(heimdalsrcdir)/lib/wind/
+
+
+bld(rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
+    source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
+    target = '../heimdal/lib/wind/map_table.h ../heimdal/lib/wind/map_table.c',
+    before = 'cc',
+    name = 'HEIMDAL_MAP_TABLE'
+)
+
 
 bld.SAMBA_ASN1('HEIMDAL_SPNEGO_ASN1',
 	'../heimdal/lib/gssapi/spnego/spnego.asn1',
