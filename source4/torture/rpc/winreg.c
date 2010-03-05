@@ -87,6 +87,10 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 	init_winreg_String(&r.in.string1, NULL);
 	init_winreg_String(&r.in.string2, NULL);
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping NotifyChangeKeyValue test against Samba 3");
+	}
+
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_winreg_NotifyChangeKeyValue(p, tctx, &r),
 				   "NotifyChangeKeyValue failed");
