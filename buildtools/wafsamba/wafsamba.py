@@ -336,22 +336,6 @@ def SAMBA_ERRTABLE(bld, name, source,
     )
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
-
-
-
-################################################################
-# build a C prototype file automatically
-def AUTOPROTO(bld, header, source):
-    if header is not None:
-        bld.SET_BUILD_GROUP('prototypes')
-        bld(
-            source = source,
-            target = header,
-            rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
-            )
-Build.BuildContext.AUTOPROTO = AUTOPROTO
-
-
 #################################################################
 # define a Samba module.
 def SAMBA_MODULE(bld, modname, source,

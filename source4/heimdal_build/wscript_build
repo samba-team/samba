@@ -546,5 +546,6 @@ HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
 
 bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
                       HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                      group = 'build_compilers',
                       options="-q -P comment -o")
 
