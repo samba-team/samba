@@ -70,7 +70,7 @@ def SAMBA_PIDL_TDR(bld, pname, source, options=''):
     t = bld(rule='${PIDL} ${PIDL_BUILD_TYPES} ${OPTIONS} --outputdir ${TGT[0].parent.abspath(env)} -- ${SRC[0].abspath(env)}',
             ext_out = '.c',
             before = 'cc',
-            shell = False,
+            shell = True,
             source=source,
             target = out_files,
             name=name)
