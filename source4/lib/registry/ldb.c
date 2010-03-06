@@ -700,13 +700,14 @@ static WERROR ldb_set_value(struct hive_key *parent,
 {
 	struct ldb_message *msg;
 	struct ldb_key_data *kd = talloc_get_type(parent, struct ldb_key_data);
+	unsigned int i;
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_set_value");
 
 	msg = reg_ldb_pack_value(kd->ldb, mem_ctx, name, type, data);
 	msg->dn = ldb_dn_copy(msg, kd->dn);
-	
-	if (strlen(name) > 0) {
+
+	if (name[0] != '\0') {
 		/* For a default value, we add/overwrite the attributes to/of the hive.
 		   For a normal value, we create a new child. */
 		if (!ldb_dn_add_child_fmt(msg->dn, "value=%s",
@@ -717,14 +718,27 @@ static WERROR ldb_set_value(struct hive_key *parent,
 		}
 	}
 
-	ret = ldb_add(kd->ldb, msg);
-	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		unsigned int i;
-		for (i = 0; i < msg->num_elements; i++) {
-			if (msg->elements[i].flags != LDB_FLAG_MOD_DELETE)
-				msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	/* Try first a "modify" and if this doesn't work do try an "add" */
+	for (i = 0; i < msg->num_elements; i++) {
+		if (msg->elements[i].flags != LDB_FLAG_MOD_DELETE) {
+			msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 		}
-		ret = ldb_modify(kd->ldb, msg);
+	}
+	ret = ldb_modify(kd->ldb, msg);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		i = 0;
+		while (i < msg->num_elements) {
+			if (msg->elements[i].flags == LDB_FLAG_MOD_DELETE) {
+				ldb_msg_remove_element(msg, &msg->elements[i]);
+			} else {
+				++i;
+			}
+		}
+		ret = ldb_add(kd->ldb, msg);
+	}
+	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		/* ignore this -> the value didn't exist and also now doesn't */
+		ret = LDB_SUCCESS;
 	}
 
 	if (ret != LDB_SUCCESS) {
