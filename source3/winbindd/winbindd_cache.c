@@ -3042,6 +3042,12 @@ bool wcache_invalidate_cache_noinit(void)
 		if (cache) {
 			if (cache->tdb) {
 				tdb_traverse(cache->tdb, traverse_fn, NULL);
+				/*
+				 * Flushing cache has nothing to with domains.
+				 * return here if we successfully flushed once.
+				 * To avoid unnecessary traversing the cache.
+				 */
+				return true;
 			} else {
 				return false;
 			}
