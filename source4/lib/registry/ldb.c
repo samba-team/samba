@@ -37,7 +37,7 @@ struct ldb_key_data
 	unsigned int subkey_count, value_count;
 };
 
-static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, 
+static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 				 struct ldb_message *msg,
 				 const char **name, uint32_t *type,
 				 DATA_BLOB *data)
@@ -52,7 +52,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	}
 
 	value_type = ldb_msg_find_attr_as_uint(msg, "type", 0);
-	*type = value_type; 
+	*type = value_type;
 
 	val = ldb_msg_find_ldb_val(msg, "data");
 
@@ -278,7 +278,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_message_element *el;
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
-	
+
 	/* Initialization */
 	if (name != NULL)
 		*name = NULL;
@@ -327,7 +327,7 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	if (res->count == 0 || res->msgs[0]->num_elements == 0)
 		return WERR_BADFILE;
 
-	reg_ldb_unpack_value(mem_ctx, 
+	reg_ldb_unpack_value(mem_ctx,
 		 res->msgs[0], name, data_type, data);
 
 	talloc_free(res);
@@ -831,8 +831,8 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 			if (max_valbufsize != NULL) {
 				uint32_t data_type;
 				DATA_BLOB data;
-				reg_ldb_unpack_value(mem_ctx, 
-						     kd->values[i], NULL, 
+				reg_ldb_unpack_value(mem_ctx,
+						     kd->values[i], NULL,
 						     &data_type, &data);
 				*max_valbufsize = MAX(*max_valbufsize, data.length);
 				talloc_free(data.data);
