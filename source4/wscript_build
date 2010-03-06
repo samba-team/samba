@@ -9,6 +9,8 @@ bld.env.TOPDIR = os.path.normpath(os.path.join(os.environ.get('PWD'), srcdir))
 # building the C from ASN1 and IDL, and finally the main build process
 bld.SETUP_BUILD_GROUPS()
 
+bld.SAMBA_MKVERSION('version.h')
+
 bld.ENABLE_MAGIC_ORDERING()
 
 bld.PREDECLARE('LIBNDR', 'LIBRARY')
