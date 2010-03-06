@@ -379,12 +379,11 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 	}
 
 	ret = gendb_search_dn(state->sam_ldb, mem_ctx, domain_dn, &res, attrs);
-	if (ret == 1) {
-		domain_sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
-		if (domain_sid == NULL) {
-			return NT_STATUS_INVALID_SID;
-		}
-	} else {
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	domain_sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+	if (domain_sid == NULL) {
 		return NT_STATUS_INVALID_SID;
 	}
 
@@ -398,8 +397,8 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 	ret = gendb_search(state->sam_ldb, mem_ctx, domain_dn, &res, attrs, 
 			   "(&(sAMAccountName=%s)(objectSid=*))", 
 			   ldb_binary_encode_string(mem_ctx, username));
-	if (ret == -1) {
-		return NT_STATUS_INVALID_SID;
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	for (i=0; i < ret; i++) {
@@ -511,28 +510,30 @@ static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	ret = gendb_search(state->sam_ldb, mem_ctx, domain_dn, &res, attrs, 
-			   "objectSid=%s", ldap_encode_ndr_dom_sid(mem_ctx, sid));
-	if (ret == 1) {
-		*name = ldb_msg_find_attr_as_string(res[0], "sAMAccountName", NULL);
-		if (!*name) {
-			*name = ldb_msg_find_attr_as_string(res[0], "cn", NULL);
-			if (!*name) {
-				*name = talloc_strdup(mem_ctx, sid_str);
-				NT_STATUS_HAVE_NO_MEMORY(*name);
-			}
-		}
-
-		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-
-		*rtype = ds_atype_map(atype);
-
-		return NT_STATUS_OK;
-	}
-
 	/* need to re-add a check for an allocated sid */
 
-	return NT_STATUS_NOT_FOUND;
+	ret = gendb_search(state->sam_ldb, mem_ctx, domain_dn, &res, attrs, 
+			   "objectSid=%s", ldap_encode_ndr_dom_sid(mem_ctx, sid));
+	if ((ret < 0) || (ret > 1)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (ret == 0) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	*name = ldb_msg_find_attr_as_string(res[0], "sAMAccountName", NULL);
+	if (!*name) {
+		*name = ldb_msg_find_attr_as_string(res[0], "cn", NULL);
+		if (!*name) {
+			*name = talloc_strdup(mem_ctx, sid_str);
+			NT_STATUS_HAVE_NO_MEMORY(*name);
+		}
+	}
+
+	atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+	*rtype = ds_atype_map(atype);
+
+	return NT_STATUS_OK;
 }
 
 

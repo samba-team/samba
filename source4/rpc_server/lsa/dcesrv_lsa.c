@@ -697,7 +697,7 @@ static NTSTATUS dcesrv_lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALL
 	ret = gendb_search(state->pdb, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectSid=*)(privilege=*))");
 	if (ret < 0) {
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	if (*r->in.resume_handle >= ret) {
@@ -1626,7 +1626,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALL
 	   resumed based on resume_key */
 	count = gendb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs, 
 			     "objectclass=trustedDomain");
-	if (count == -1) {
+	if (count < 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1719,7 +1719,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_ca
 	   resumed based on resume_key */
 	count = gendb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs, 
 			     "objectclass=trustedDomain");
-	if (count == -1) {
+	if (count < 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1844,6 +1844,9 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 
 	ret = gendb_search(astate->policy->pdb, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sidstr);
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 	if (ret != 1) {
 		return NT_STATUS_OK;
 	}
@@ -1904,10 +1907,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	if (ret > 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	if (ret == -1) {
+	if (ret != 1) {
 		DEBUG(3, ("searching for account rights for SID: %s failed: %s", 
 			  dom_sid_string(mem_ctx, r->in.sid),
 			  ldb_errstring(state->pdb)));
@@ -2295,7 +2295,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 		
-		if (ret == -1) {
+		if (ret < 0) {
 			DEBUG(0,("Failure searching for CN=%s: %s\n", 
 				 name2, ldb_errstring(secret_state->sam_ldb)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2328,7 +2328,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 		
-		if (ret == -1) {
+		if (ret < 0) {
 			DEBUG(0,("Failure searching for CN=%s: %s\n", 
 				 name, ldb_errstring(secret_state->sam_ldb)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2907,7 +2907,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *d
 
 	ret = gendb_search(state->pdb, mem_ctx, NULL, &res, attrs, 
 			   "privilege=%s", privname);
-	if (ret == -1) {
+	if (ret < 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	if (ret == 0) {
