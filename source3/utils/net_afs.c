@@ -45,7 +45,7 @@ int net_afs_key(struct net_context *c, int argc, const char **argv)
 	}
 
 	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
-		d_fprintf(stderr, _("Could not open %s\n", argv[0]));
+		d_fprintf(stderr, _("Could not open %s\n"), argv[0]);
 		return -1;
 	}
 
