@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Registry interface
    Copyright (C) 2004-2007, Jelmer Vernooij, jelmer@samba.org
-   Copyright (C) 2008 Matthias Dieter Wallnöfer, mwallnoefer@yahoo.de
+   Copyright (C) 2008-2010, Matthias Dieter Wallnöfer, mdw@samba.org
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,10 +45,11 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	const struct ldb_val *val;
 	uint32_t value_type;
 
-	if (name != NULL)
+	if (name != NULL) {
 		*name = talloc_strdup(mem_ctx,
 				      ldb_msg_find_attr_as_string(msg, "value",
 				      NULL));
+	}
 
 	value_type = ldb_msg_find_attr_as_uint(msg, "type", 0);
 	*type = value_type; 
@@ -59,34 +60,35 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		if (val != NULL)
+		if (val != NULL) {
 			convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
 						     val->data, val->length,
 						     (void **)&data->data, &data->length, false);
-		else {
+		} else {
+			data->data = NULL;
+			data->length = 0;
+		}
+		break;
+
+	case REG_DWORD:
+		if (val != NULL) {
+			uint32_t tmp = strtoul((char *)val->data, NULL, 0);
+			*data = data_blob_talloc(mem_ctx, NULL, 4);
+			SIVAL(data->data, 0, tmp);
+		} else {
 			data->data = NULL;
 			data->length = 0;
 		}
 		break;
 
 	case REG_BINARY:
-		if (val != NULL)
+	default:
+		if (val != NULL) {
 			*data = data_blob_talloc(mem_ctx, val->data, val->length);
-		else {
+		} else {
 			data->data = NULL;
 			data->length = 0;
 		}
-		break;
-
-	case REG_DWORD: {
-		uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-		*data = data_blob_talloc(mem_ctx, NULL, 4);
-		SIVAL(data->data, 0, tmp);
-		}
-		break;
-
-	default:
-		*data = data_blob_talloc(mem_ctx, val->data, val->length);
 		break;
 	}
 }
@@ -105,7 +107,8 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		if (data.data[0] != '\0') {
+		if ((data.length > 0) && (data.data != NULL)
+		    && (data.data[0] != '\0')) {
 			convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
 						   (void *)data.data,
 						   data.length,
@@ -116,22 +119,26 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 		}
 		break;
 
-	case REG_BINARY:
-		if (data.length > 0)
-			ldb_msg_add_value(msg, "data", &data, NULL);
-		else
-			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
-		break;
-
 	case REG_DWORD:
-		ldb_msg_add_string(msg, "data",
-				   talloc_asprintf(mem_ctx, "0x%x",
-				   		   IVAL(data.data, 0)));
+		if ((data.length > 0) && (data.data != NULL)) {
+			ldb_msg_add_string(msg, "data",
+					   talloc_asprintf(mem_ctx, "0x%x",
+							   IVAL(data.data, 0)));
+		} else {
+			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+		}
 		break;
-	default:
-		ldb_msg_add_value(msg, "data", &data, NULL);
-	}
 
+	case REG_BINARY:
+	default:
+		if ((data.length > 0) && (data.data != NULL)
+		    && (data.data[0] != '\0')) {
+			ldb_msg_add_value(msg, "data", &data, NULL);
+		} else {
+			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+		}
+		break;
+	}
 
 	type_s = talloc_asprintf(mem_ctx, "%u", type);
 	ldb_msg_add_string(msg, "type", type_s);
