@@ -221,3 +221,11 @@ def BUILD_PATH(bld, relpath):
 Build.BuildContext.BUILD_PATH = BUILD_PATH
 
 
+# this is a useful way of debugging some of the rules in waf
+from TaskGen import feature, after
+@feature('dbg')
+@after('apply_core', 'apply_obj_vars_cc')
+def dbg(self):
+	if self.target == 'HEIMDAL_HEIM_ASN1':
+		print "@@@@@@@@@@@@@@2", self.includes, self.env._CCINCFLAGS
+
