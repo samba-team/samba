@@ -18,14 +18,14 @@ def DEFINE(conf, d, v):
     conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
 @runonce
-def CHECK_HEADER(conf, h):
-    if conf.check(header_name=h):
+def CHECK_HEADER(conf, h, add_headers=True):
+    if conf.check(header_name=h) and add_headers:
         conf.env.hlist.append(h)
 
 @conf
-def CHECK_HEADERS(conf, list):
+def CHECK_HEADERS(conf, list, add_headers=True):
     for hdr in list.split():
-        CHECK_HEADER(conf, hdr)
+        CHECK_HEADER(conf, hdr, add_header)
 
 @conf
 def CHECK_TYPES(conf, list):
