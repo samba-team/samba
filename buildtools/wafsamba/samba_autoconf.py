@@ -280,7 +280,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
         LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
         return False
 
-    conf.define('HAVE_LIB%s' % library.upper(), 1)
+    conf.define('HAVE_LIB%s' % string.replace(library.upper(),'-','_'), 1)
 
     ret = True
     for f in remaining:
