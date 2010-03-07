@@ -1,0 +1,10 @@
+conf.CHECK_HEADERS('iconv.h')
+
+conf.CHECK_FUNCS_IN('iconv_open', 'iconv')
+
+conf.CHECK_CODE('''
+                   iconv_t cd = iconv_open("ASCII","UCS-2LE");
+                   if (cd == 0 || cd == (iconv_t)-1) return -1;
+                ''',
+                define='HAVE_NATIVE_ICONV')
+

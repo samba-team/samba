@@ -28,6 +28,7 @@ def configure(conf):
     conf.sub_config('ntvfs/sysdep')
     conf.sub_config('../lib/util')
     conf.sub_config('../lib/zlib')
+    conf.sub_config('../lib/util/charset')
     conf.sub_config('auth')
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
