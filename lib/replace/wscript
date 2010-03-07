@@ -126,6 +126,11 @@ def configure(conf):
                        ''',
                     define='HAVE_IPV6')
 
+    # check if signal() takes a void function
+    if conf.CHECK_CODE('return *(signal (0, 0)) (0) == 1', define='RETSIGTYPE_INT', msg='Checking return type of signal handlers'):
+        conf.DEFINE('RETSIGTYPE', 'int')
+    else:
+        conf.DEFINE('RETSIGTYPE', 'void')
 
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
