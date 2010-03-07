@@ -84,8 +84,7 @@ def configure(conf):
 
     conf.define('SHLIBEXT', "so", quote=True)
 
-    conf.check(type_name='long long')
-    conf.CHECK_TYPES('intptr_t uintptr_t ptrdiff_t')
+    conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t')
     conf.CHECK_TYPES('comparison_fn_t socklen_t bool')
 
     conf.CHECK_TYPE('int8_t', 'char')
@@ -133,6 +132,9 @@ def configure(conf):
 
     conf.CHECK_DECLS('dirfd environ errno getgrent_r getpwent_r', reverse=True)
     conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
+
+    conf.CHECK_SIZEOF('char int "long long" long off_t short size_t ssize_t')
+    conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
 
     conf.check_cc(fragment='''
     #include <stdarg.h>

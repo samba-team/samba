@@ -115,7 +115,7 @@ def CHECK_FUNCS(conf, list):
     return ret
 
 @conf
-def CHECK_SIZEOF(conf, vars, headers=None):
+def CHECK_SIZEOF(conf, vars, headers=None, define=None):
     hdrs=''
     if headers is not None:
         hlist = to_list(headers)
@@ -124,6 +124,10 @@ def CHECK_SIZEOF(conf, vars, headers=None):
     for h in hlist:
         hdrs += '#include <%s>\n' % h
     for v in to_list(vars):
+        if define is None:
+            define_name = 'SIZEOF_%s' % string.replace(v.upper(), ' ', '_')
+        else:
+            define_name = define
         conf.check(fragment=
                    '''
                   %s
@@ -134,7 +138,7 @@ def CHECK_SIZEOF(conf, vars, headers=None):
                   ''' % (hdrs, v),
                    execute=1,
                    define_ret=True,
-                   define_name='SIZEOF_%s' % v.upper(),
+                   define_name=define_name,
                    quote=False,
                    msg="Checking size of %s" % v)
 
