@@ -112,6 +112,20 @@ def configure(conf):
 
     conf.CHECK_TYPE_IN('sig_atomic_t', 'signal.h', define='HAVE_SIG_ATOMIC_T_TYPE')
 
+    conf.CHECK_CODE('''
+                       struct sockaddr_storage sa_store;
+                       struct addrinfo *ai = NULL;
+                       struct in6_addr in6addr;
+                       int idx = if_nametoindex("iface1");
+                       int s = socket(AF_INET6, SOCK_STREAM, 0);
+                       int ret = getaddrinfo(NULL, NULL, NULL, &ai);
+                       if (ret != 0) {
+			  const char *es = gai_strerror(ret);
+                       }
+                       freeaddrinfo(ai);
+                       ''',
+                    define='HAVE_IPV6')
+
 
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
