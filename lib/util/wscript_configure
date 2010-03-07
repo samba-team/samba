@@ -11,3 +11,9 @@ conf.CHECK_FUNCS_IN('flistxattr', 'attr', checklibc=True)
 
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE')
 
+conf.CHECK_CODE('getxattr(NULL, NULL, NULL, 0, 0, 0)',
+                define='XATTR_ADDITIONAL_OPTIONS')
+
+if conf.CONFIG_SET('HAVE_FLISTXATTR'):
+    conf.DEFINE('HAVE_XATTR_SUPPORT', 1)
+
