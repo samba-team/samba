@@ -656,7 +656,7 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 			     uint64_t seq_num, const struct GUID *invocationId, time_t t,
 			     struct GUID *guid, const struct dsdb_attribute *sa)
 {
-	int i;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(el->values);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
@@ -726,7 +726,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	NTTIME now;
 	char *time_str;
 	int ret;
-	uint32_t i, ni=0;
+	unsigned int i;
+	uint32_t ni=0;
 	bool allow_add_guid = false;
 	bool remove_current_guid = false;
 	bool is_urgent = false;
@@ -990,7 +991,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 				      const struct GUID *our_invocation_id,
 				      NTTIME now)
 {
-	int i;
+	uint32_t i;
 	const struct dsdb_attribute *a;
 	struct replPropertyMetaData1 *md1;
 
@@ -1075,7 +1076,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	const struct ldb_val *omd_value;
 	enum ndr_err_code ndr_err;
 	struct replPropertyMetaDataBlob omd;
-	int i;
+	unsigned int i;
 	NTTIME now;
 	const struct GUID *our_invocation_id;
 	int ret;
@@ -1245,7 +1246,7 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			  struct ldb_message_element *el, struct parsed_dn **pdn,
 			  const char *ldap_oid)
 {
-	int i;
+	unsigned int i;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	if (el == NULL) {
@@ -1402,7 +1403,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
  */
 static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, const struct GUID *invocation_id)
 {
-	int i;
+	uint32_t i;
 	for (i=0; i<count; i++) {
 		NTSTATUS status;
 		uint32_t version;
@@ -1536,7 +1537,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				time_t t,
 				struct GUID *msg_guid)
 {
-	int i;
+	unsigned int i;
 	struct parsed_dn *dns, *old_dns;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	int ret;
@@ -1655,7 +1656,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 				   time_t t,
 				   struct GUID *msg_guid)
 {
-	int i;
+	unsigned int i;
 	struct parsed_dn *dns, *old_dns;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	int ret;
@@ -1774,15 +1775,15 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 				    time_t t,
 				    struct GUID *msg_guid)
 {
-	int i;
+	unsigned int i;
 	struct parsed_dn *dns, *old_dns;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	int ret;
 	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_val *new_values = NULL;
-	uint32_t num_new_values = 0;
-	unsigned old_num_values = old_el?old_el->num_values:0;
+	unsigned int num_new_values = 0;
+	unsigned int old_num_values = old_el?old_el->num_values:0;
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
@@ -1922,7 +1923,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 					       uint64_t seq_num, time_t t)
 {
 	struct ldb_result *res;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *old_msg;
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
@@ -2223,7 +2225,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 				     struct ldb_message_element *el,
 				     const struct dsdb_attribute *sa)
 {
-	int i;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
@@ -2321,8 +2323,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		"securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
 		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated",
 		"whenChanged", NULL};
-	uint32_t el_count = 0;
-	int i;
+	unsigned int i, el_count = 0;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
@@ -2557,7 +2558,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
 	struct ldb_val md_value;
-	uint32_t i;
+	unsigned int i;
 	int ret;
 
 	/*
@@ -2697,8 +2698,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	const struct ldb_val *omd_value;
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
-	uint32_t i,j,ni=0;
-	uint32_t removed_attrs = 0;
+	unsigned int i;
+	uint32_t j,ni=0;
+	unsigned int removed_attrs = 0;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ar->module);
@@ -3039,7 +3041,8 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	struct repsFromToBlob nrf;
 	struct ldb_val *nrf_value = NULL;
 	struct ldb_message_element *nrf_el = NULL;
-	uint32_t i,j,ni=0;
+	unsigned int i;
+	uint32_t j,ni=0;
 	bool found = false;
 	time_t t = time(NULL);
 	NTTIME now;
@@ -3387,7 +3390,8 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	struct dsdb_extended_replicated_objects *objs;
 	struct replmd_replicated_request *ar;
 	struct ldb_control **ctrls;
-	int ret, i;
+	int ret;
+	uint32_t i;
 	struct replmd_private *replmd_private = 
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
