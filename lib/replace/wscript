@@ -105,6 +105,12 @@ def configure(conf):
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
     conf.CHECK_TYPE_IN('struct sockaddr', 'sys/socket.h')
+    conf.CHECK_TYPE_IN('struct sockaddr_in6', 'sys/socket.h')
+    conf.CHECK_TYPE_IN('struct sockaddr_storage', 'sys/socket.h')
+    conf.CHECK_TYPE_IN('sa_family_t', 'sys/socket.h')
+
+    conf.CHECK_TYPE_IN('sig_atomic_t', 'signal.h', define='HAVE_SIG_ATOMIC_T_TYPE')
+
 
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
@@ -207,6 +213,37 @@ def configure(conf):
                     ''',
                     define='HAVE_IMMEDIATE_STRUCTURES')
 
+    conf.CHECK_CODE('mkdir("foo",0777)', define='HAVE_MKDIR_MODE')
+
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec', define='HAVE_STAT_TV_NSEC')
+    # we need the st_rdev test under two names
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_STRUCT_STAT_ST_RDEV')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_ST_RDEV')
+    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', 'ss_family')
+
+    conf.CHECK_CODE('struct sockaddr_un sunaddr; sunaddr.sun_family = AF_UNIX;',
+                    define='HAVE_UNIXSOCKET')
+
+
+    conf.CHECK_CODE('''
+                    struct stat st;
+                    char tpl[20]="/tmp/test.XXXXXX";
+                    int fd = mkstemp(tpl);
+                    if (fd == -1) exit(1);
+                    unlink(tpl);
+                    if (fstat(fd, &st) != 0) exit(1);
+                    if ((st.st_mode & 0777) != 0600) exit(1);
+                    exit(0);
+                    ''',
+                    define='HAVE_SECURE_MKSTEMP',
+                    execute=True,
+                    mandatory=True) # lets see if we get a mandatory failure for this one
+
+    if conf.CHECK_CFLAGS('-fvisibility=hidden', 'VISIBILITY_CFLAGS'):
+        conf.CHECK_CODE('''void vis_foo1(void) {}
+                           __attribute__((visibility("default"))) void vis_foo2(void) {}''',
+                        cflags=conf.env.VISIBILITY_CFLAGS,
+                        define='HAVE_VISIBILITY_ATTR')
 
 
 def build(bld):
