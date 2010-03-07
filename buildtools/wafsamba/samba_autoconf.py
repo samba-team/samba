@@ -27,7 +27,7 @@ def CHECK_HEADER(conf, h, add_headers=True):
 @conf
 def CHECK_HEADERS(conf, list, add_headers=True):
     ret = True
-    for hdr in list.split():
+    for hdr in to_list(list):
         if not CHECK_HEADER(conf, hdr, add_headers):
             ret = False
     return ret
@@ -35,7 +35,7 @@ def CHECK_HEADERS(conf, list, add_headers=True):
 @conf
 def CHECK_TYPES(conf, list):
     ret = True
-    for t in list.split():
+    for t in to_list(list):
         if not conf.check(type_name=t, header_name=conf.env.hlist):
             ret = False
     return ret
@@ -58,7 +58,7 @@ def CHECK_TYPE(conf, t, alternate):
 def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
     hdrs=''
     if headers is not None:
-        hlist = headers.split()
+        hlist = to_list(headers)
     else:
         hlist = conf.env.hlist
     for h in hlist:
@@ -73,7 +73,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
                     void *_x; _x=(void *)&%s;
                     #endif
                     return 0;
-                  }\n
+                  }
                   ''' % (hdrs, v, v),
                   execute=0,
                   msg="Checking for variable %s" % v):
@@ -91,7 +91,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
        When reverse==True then use HAVE_xxx_DECL instead of HAVE_DECL_xxx
        '''
     ret = True
-    for v in vars.split():
+    for v in to_list(vars):
         if not reverse:
             define='HAVE_DECL_%s' % v.upper()
         else:
@@ -109,10 +109,34 @@ def CHECK_FUNC(conf, f):
 @conf
 def CHECK_FUNCS(conf, list):
     ret = True
-    for f in list.split():
+    for f in to_list(list):
         if not CHECK_FUNC(conf, f):
             ret = False
     return ret
+
+@conf
+def CHECK_SIZEOF(conf, vars, headers=None):
+    hdrs=''
+    if headers is not None:
+        hlist = to_list(headers)
+    else:
+        hlist = conf.env.hlist
+    for h in hlist:
+        hdrs += '#include <%s>\n' % h
+    for v in to_list(vars):
+        conf.check(fragment=
+                   '''
+                  %s
+                  int main(void) {
+                    printf("%%u\\n", (unsigned)sizeof(%s));
+                    return 0;
+                  }
+                  ''' % (hdrs, v),
+                   execute=1,
+                   define_ret=True,
+                   define_name='SIZEOF_%s' % v.upper(),
+                   quote=False,
+                   msg="Checking size of %s" % v)
 
 
 #################################################
@@ -140,11 +164,11 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
     # first see if the functions are in libc
     if checklibc:
         remaining = []
-        for f in list.split():
+        for f in to_list(list):
             if not CHECK_FUNC(conf, f):
                 remaining.append(f)
     else:
-        remaining = list.split()
+        remaining = to_list(list)
 
     if remaining == []:
         LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
@@ -192,7 +216,7 @@ def CONFIG_PATH(conf, name, default):
 def ADD_CFLAGS(conf, flags):
     if not 'EXTRA_CFLAGS' in conf.env:
         conf.env['EXTRA_CFLAGS'] = []
-    conf.env['EXTRA_CFLAGS'].extend(flags.split())
+    conf.env['EXTRA_CFLAGS'].extend(to_list(flags))
 
 ##############################################################
 # add some extra include directories to all builds
@@ -200,7 +224,7 @@ def ADD_CFLAGS(conf, flags):
 def ADD_EXTRA_INCLUDES(conf, includes):
     if not 'EXTRA_INCLUDES' in conf.env:
         conf.env['EXTRA_INCLUDES'] = []
-    conf.env['EXTRA_INCLUDES'].extend(includes.split())
+    conf.env['EXTRA_INCLUDES'].extend(to_list(includes))
 
 
 ##############################################################
@@ -210,6 +234,6 @@ def CURRENT_CFLAGS(bld, cflags):
         list = []
     else:
         list = bld.env['EXTRA_CFLAGS'];
-    ret = cflags.split()
+    ret = to_list(cflags)
     ret.extend(list)
     return ret
