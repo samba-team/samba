@@ -752,7 +752,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	int i;
+	unsigned int i;
 	bool modify_sd = false;
 	const struct GUID *guid;
 	uint32_t access_granted;
