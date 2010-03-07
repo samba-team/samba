@@ -198,11 +198,13 @@ def CHECK_CODE(conf, code, define,
     if msg is None:
         msg="Checking for %s" % define
 
+    cflags = cflags + ' -I%s' % conf.curdir
+
     if conf.check(fragment=fragment,
                   execute=execute,
                   define_name = define,
                   mandatory = mandatory,
-                  ccflags='-I%s %s' % (conf.curdir, cflags),
+                  ccflags=to_list(cflags),
                   includes='# . ../default',
                   msg=msg):
         conf.DEFINE(define, 1)
