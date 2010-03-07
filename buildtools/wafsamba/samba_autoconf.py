@@ -25,7 +25,7 @@ def CHECK_HEADER(conf, h, add_headers=True):
 @conf
 def CHECK_HEADERS(conf, list, add_headers=True):
     for hdr in list.split():
-        CHECK_HEADER(conf, hdr, add_header)
+        CHECK_HEADER(conf, hdr, add_headers)
 
 @conf
 def CHECK_TYPES(conf, list):
