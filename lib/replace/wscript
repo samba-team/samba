@@ -100,6 +100,7 @@ def configure(conf):
     conf.CHECK_TYPE('loff_t', 'off_t')
     conf.CHECK_TYPE('bool', 'off_t')
     conf.CHECK_TYPE('offset_t', 'loff_t')
+    conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
 
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')

@@ -48,11 +48,16 @@ def CHECK_TYPE_IN(conf, t, hdr):
     return False
 
 @conf
-def CHECK_TYPE(conf, t, alternate):
-    if not conf.check(type_name=t, header_name=conf.env.hlist):
+def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
+    if headers is None:
+        headers = conf.env.hlist
+    if define is not None:
+        ret = conf.check(type_name=t, header_name=headers, define_name=define)
+    else:
+        ret = conf.check(type_name=t, header_name=headers)
+    if not ret and alternate is not None:
         conf.DEFINE(t, alternate)
-        return True
-    return False
+    return ret
 
 @conf
 def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
