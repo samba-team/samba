@@ -19,7 +19,7 @@ def configure(conf):
     conf.sub_config(LIBTEVENT_DIR)
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
-    conf.CONFIG_PATH('LDB_MODULESDIR', conf.env.LIBDIR + '/ldb')
+    conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('LIBDIR') + '/ldb')
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
