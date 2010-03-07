@@ -27,9 +27,15 @@
 
 #define FLAG_CR_NTDS_DOMAIN 0x00000002
 
+#define NTDSDSA_OPT_IS_GC 0x00000001
+
+#define NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED 0x00000008
+#define NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED 0x00000100
 #define NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED 0x00001000
 
 #define NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
+
+#define DS_BEHAVIOR_WIN2008 3
 
 /** replication parameters of a graph edge */
 struct kcctpl_repl_info {
@@ -130,6 +136,160 @@ struct message_list {
 };
 
 /**
+ * sort internal edges based on:
+ * - descending red_red,
+ * - ascending repl_info.cost,
+ * - descending available time in repl_info.schedule,
+ * - ascending v1id,
+ * - ascending v2id,
+ * - ascending type.
+ *
+ * this function is used in 'kcctpl_kruskal'.
+ */
+static int kcctpl_sort_internal_edges(const void *internal_edge1,
+				      const void *internal_edge2)
+{
+	const struct kcctpl_internal_edge *ie1, *ie2;
+	int cmp_red_red;
+
+	ie1 = (const struct kcctpl_internal_edge *) internal_edge1;
+	ie2 = (const struct kcctpl_internal_edge *) internal_edge2;
+
+	cmp_red_red = ie2->red_red - ie1->red_red;
+	if (cmp_red_red == 0) {
+		int cmp_cost = ie1->repl_info.cost - ie2->repl_info.cost;
+
+		if (cmp_cost == 0) {
+			uint32_t available1, available2, i;
+			int cmp_schedule;
+
+			available1 = available2 = 0;
+			for (i = 0; i < 84; i++) {
+				if (ie1->repl_info.schedule[i] == 0) {
+					available1++;
+				}
+
+				if (ie2->repl_info.schedule[i] == 0) {
+					available2++;
+				}
+			}
+			cmp_schedule = available2 - available1;
+
+			if (cmp_schedule == 0) {
+				int cmp_v1id = GUID_compare(&ie1->v1id,
+							    &ie2->v1id);
+
+				if (cmp_v1id == 0) {
+					int cmp_v2id = GUID_compare(&ie1->v2id,
+								    &ie2->v2id);
+
+					if (cmp_v2id == 0) {
+						return GUID_compare(&ie1->type,
+								    &ie2->type);
+					} else {
+						return cmp_v2id;
+					}
+				} else {
+					return cmp_v1id;
+				}
+			} else {
+				return cmp_schedule;
+			}
+		} else {
+			return cmp_cost;
+		}
+	} else {
+		return cmp_red_red;
+	}
+}
+
+/**
+ * sort vertices based on the following criteria:
+ * - ascending color (RED < BLACK),
+ * - ascending repl_info.cost,
+ * - ascending id.
+ *
+ * this function is used in 'kcctpl_process_edge'.
+ */
+static int kcctpl_sort_vertices(const void *vertex1, const void *vertex2)
+{
+	const struct kcctpl_vertex *v1, *v2;
+	int cmp_color;
+
+	v1 = (const struct kcctpl_vertex *) vertex1;
+	v2 = (const struct kcctpl_vertex *) vertex2;
+
+	cmp_color = v1->color - v2->color;
+	if (cmp_color == 0) {
+		int cmp_cost = v1->repl_info.cost - v2->repl_info.cost;
+		if (cmp_cost == 0) {
+			return GUID_compare(&v1->id, &v2->id);
+		} else {
+			return cmp_cost;
+		}
+	} else {
+		return cmp_color;
+	}
+}
+
+/**
+ * sort bridgehead elements (nTDSDSA) based on the following criteria:
+ * - GC servers precede non-GC servers
+ * - ascending objectGUID
+ *
+ * this function is used in 'kcctpl_get_all_bridgehead_dcs'.
+ */
+static int kcctpl_sort_bridgeheads(const void *bridgehead1,
+				   const void *bridgehead2)
+{
+	const struct ldb_message *bh1, *bh2;
+	uint64_t bh1_opts, bh2_opts, cmp_gc;
+
+	bh1 = (const struct ldb_message *) bridgehead1;
+	bh2 = (const struct ldb_message *) bridgehead2;
+
+	bh1_opts = samdb_result_int64(bh1, "options", 0);
+	bh2_opts = samdb_result_int64(bh2, "options", 0);
+
+	cmp_gc = (bh1_opts & NTDSDSA_OPT_IS_GC) -
+		 (bh2_opts & NTDSDSA_OPT_IS_GC);
+
+	if (cmp_gc == 0) {
+		struct GUID bh1_id, bh2_id;
+
+		bh1_id = samdb_result_guid(bh1, "objectGUID");
+		bh2_id = samdb_result_guid(bh2, "objectGUID");
+
+		return GUID_compare(&bh1_id, &bh2_id);
+	} else {
+		return cmp_gc;
+	}
+}
+
+/**
+ * sort bridgehead elements (nTDSDSA) in a random order.
+ *
+ * this function is used in 'kcctpl_get_all_bridgehead_dcs'.
+ */
+static void kcctpl_shuffle_bridgeheads(struct message_list bridgeheads)
+{
+	uint32_t i;
+
+	srandom(time(NULL));
+
+	for (i = bridgeheads.count; i > 1; i--) {
+		uint32_t r;
+		struct ldb_message tmp;
+
+		r = random() % i;
+
+		tmp = bridgeheads.data[i - 1];
+		bridgeheads.data[i - 1] = bridgeheads.data[r];
+		bridgeheads.data[r] = tmp;
+	}
+}
+
+/**
  * find a graph vertex based on its GUID.
  */
 static struct kcctpl_vertex *kcctpl_find_vertex_by_guid(struct kcctpl_graph *graph,
@@ -193,6 +353,22 @@ static struct kcctpl_multi_edge *kcctpl_find_edge_by_vertex_guid(struct kcctpl_g
 }
 
 /**
+ * search for an occurrence of a GUID inside a list of GUIDs.
+ */
+static bool kcctpl_guid_list_contains(struct GUID_list list, struct GUID guid)
+{
+	uint32_t i;
+
+	for (i = 0; i < list.count; i++) {
+		if (GUID_equal(&list.data[i], &guid)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * get the Transports DN
  * (CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=<domain>).
  */
@@ -246,6 +422,44 @@ static struct ldb_message *kcctpl_local_site(struct ldb_context *ldb,
 	talloc_steal(mem_ctx, res);
 	talloc_free(tmp_ctx);
 	return res->msgs[0];
+}
+
+/*
+ * compare two internal edges for equality. every field of the structure will be
+ * compared.
+ */
+static bool kcctpl_internal_edge_equal(struct kcctpl_internal_edge *edge1,
+				       struct kcctpl_internal_edge *edge2)
+{
+	if (!edge1 || !edge2) {
+		return false;
+	}
+
+	if (!GUID_equal(&edge1->v1id, &edge2->v1id)) {
+		return false;
+	}
+
+	if (!GUID_equal(&edge1->v2id, &edge2->v2id)) {
+		return false;
+	}
+
+	if (edge1->red_red != edge2->red_red) {
+		return false;
+	}
+
+	if (edge1->repl_info.cost != edge2->repl_info.cost ||
+	    edge1->repl_info.interval != edge2->repl_info.interval ||
+	    edge1->repl_info.options != edge2->repl_info.options ||
+	    memcmp(&edge1->repl_info.schedule,
+		   &edge2->repl_info.schedule, 84) != 0) {
+		return false;
+	}
+
+	if (!GUID_equal(&edge1->type, &edge2->type)) {
+		return false;
+	}
+
+	return true;
 }
 
 /**
@@ -747,6 +961,324 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * determine whether a given DC is known to be in a failed state.
+ */
+static NTSTATUS kcctpl_bridgehead_dc_failed(struct ldb_context *ldb,
+					    struct GUID guid,
+					    bool detect_failed_dcs,
+					    bool *_failed)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *settings_dn;
+	struct ldb_result *res;
+	const char * const attrs[] = { "options", NULL };
+	int ret;
+	struct ldb_message *settings;
+	uint64_t settings_opts;
+	bool failed;
+
+	tmp_ctx = talloc_new(ldb);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	settings_dn = samdb_ntds_settings_dn(ldb);
+	if (!settings_dn) {
+		DEBUG(1, (__location__ ": failed to find our own NTDS Settings "
+			  "DN\n"));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, settings_dn, LDB_SCOPE_BASE, attrs,
+			"objectClass=nTDSSiteSettings");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find site settings object "
+			  "%s: %s\n", ldb_dn_get_linearized(settings_dn),
+			  ldb_strerror(ret)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (res->count == 0) {
+		DEBUG(1, ("failed to find site settings object %s\n",
+			  ldb_dn_get_linearized(settings_dn)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	settings = res->msgs[0];
+
+	settings_opts = samdb_result_int64(settings, "options", 0);
+	if (settings_opts & NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) {
+		failed = false;
+	} else if (true) { /* TODO: how to get kCCFailedLinks and
+			      kCCFailedConnections? */
+		failed = true;
+	} else {
+		failed = detect_failed_dcs;
+	}
+
+	*_failed = failed;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * get all bridgehead DCs satisfying the given criteria.
+ */
+static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
+					      TALLOC_CTX *mem_ctx,
+					      struct GUID site_guid,
+					      struct ldb_message *cross_ref,
+					      struct ldb_message *transport,
+					      bool partial_replica_okay,
+					      bool detect_failed_dcs,
+					      struct message_list *_bridgeheads)
+{
+	struct message_list bridgeheads, all_dcs_in_site;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+	struct ldb_dn *sites_dn, *schemas_dn;
+	const char * const attrs[] = { "options", NULL };
+	int ret;
+	struct ldb_message *site, *schema;
+	const char * const dc_attrs[] = { "objectGUID", "options", NULL };
+	struct ldb_message_element *el;
+	uint32_t i;
+	bool rodc;
+	const char *transport_name, *transport_address_attr;
+	uint64_t site_opts;
+
+	ZERO_STRUCT(bridgeheads);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	sites_dn = samdb_sites_dn(ldb, tmp_ctx);
+	if (!sites_dn) {
+		DEBUG(1, (__location__ ": failed to find our own Sites DN\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, sites_dn, LDB_SCOPE_ONELEVEL,
+			 attrs, "(&(objectClass=site)(objectGUID=%s))",
+			 GUID_string(tmp_ctx, &site_guid));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find site object %s: %s\n",
+			  GUID_string(tmp_ctx, &site_guid),
+			  ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (res->count == 0) {
+		DEBUG(1, (__location__ ": failed to find site object %s\n",
+			  GUID_string(tmp_ctx, &site_guid)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	site = res->msgs[0];
+
+	schemas_dn = samdb_schema_dn(ldb);
+	if (!schemas_dn) {
+		DEBUG(1, (__location__ ": failed to find our own Schemas DN\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, schemas_dn, LDB_SCOPE_SUBTREE,
+			 NULL,
+			"(&(lDAPDisplayName=nTDSDSA)(objectClass=classSchema))");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find classSchema object :"
+			  "%s\n", ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (res->count == 0) {
+		DEBUG(1, (__location__ ": failed to find classSchema "
+			  "object\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	schema = res->msgs[0];
+
+	ZERO_STRUCT(all_dcs_in_site);
+
+	ret = ldb_search(ldb, tmp_ctx, &res, site->dn, LDB_SCOPE_SUBTREE,
+			dc_attrs, "objectCategory=%s",
+			ldb_dn_get_linearized(schema->dn));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find DCs objects :%s\n",
+			  ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	el = ldb_msg_find_element(transport, "bridgeheadServerListBL");
+
+	rodc = samdb_rodc(ldb);
+
+	transport_name = samdb_result_string(transport, "name", NULL);
+	if (!transport_name) {
+		DEBUG(1, (__location__ ": failed to find name attribute of "
+			  "object %s\n", ldb_dn_get_linearized(transport->dn)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	transport_address_attr = samdb_result_string(transport,
+						     "transportAddressAttribute",
+						     NULL);
+	if (!transport_address_attr) {
+		DEBUG(1, (__location__ ": failed to find "
+			  "transportAddressAttribute attribute of object %s\n",
+			  ldb_dn_get_linearized(transport->dn)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	site_opts = samdb_result_int64(site, "options", 0);
+
+	for (i = 0; i < res->count; i++) {
+		struct ldb_message *dc, *new_data;
+		uint32_t j;
+		struct ldb_dn *parent_dn;
+		uint64_t behavior_version;
+		const char *dc_transport_address;
+		struct ldb_result *parent_res;
+		const char *parent_attrs[] = { transport_address_attr, NULL };
+		NTSTATUS status;
+		struct GUID dc_guid;
+		bool failed;
+
+		dc = res->msgs[i];
+
+		parent_dn = ldb_dn_get_parent(tmp_ctx, dc->dn);
+		if (!parent_dn) {
+			DEBUG(1, (__location__ ": failed to get parent DN of "
+				  "%s\n", ldb_dn_get_linearized(dc->dn)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (el && (el->num_values >= 1)) {
+			bool contains = false;
+
+			for (j = 0; j < el->num_values; j++) {
+				struct ldb_val val;
+				struct ldb_dn *dn;
+
+				val = el->values[j];
+
+				dn = ldb_dn_from_ldb_val(tmp_ctx, ldb, &val);
+				if (!dn) {
+					DEBUG(1, (__location__ ": failed to read a DN "
+						  "from bridgeheadServerListBL "
+						  "attribute of %s\n",
+						  ldb_dn_get_linearized(transport->dn)));
+
+					talloc_free(tmp_ctx);
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
+
+				if (ldb_dn_compare(dn, parent_dn) == 0) {
+					contains = true;
+					break;
+				}
+			}
+
+			if (!contains) {
+				continue;
+			}
+		}
+
+		/* TODO: if dc is in the same site as the local DC */
+		if (true) {
+			/* TODO: if a replica of cr!nCName is not in the set of
+			 * NC replicas that "should be present" on 'dc' */
+			/* TODO: a partial replica of the NC "should be
+			   present" */
+			if (true || (true && !partial_replica_okay)) {
+				continue;
+			}
+		} else {
+			/* TODO: if an NC replica of cr!nCName is not in the set
+			 * of NC replicas that "are present" on 'dc' */
+			/* TODO: a partial replica of the NC "is present" */
+			if (true || (true && !partial_replica_okay)) {
+				continue;
+			}
+		}
+
+		behavior_version = samdb_result_int64(dc,
+						      "msDS-Behavior-Version", 0);
+		/* TODO: cr!nCName corresponds to default NC */
+		if (rodc && true && behavior_version < DS_BEHAVIOR_WIN2008) {
+			continue;
+		}
+
+		ret = ldb_search(ldb, tmp_ctx, &parent_res, parent_dn,
+				LDB_SCOPE_BASE, parent_attrs , NULL);
+
+		dc_transport_address = samdb_result_string(parent_res->msgs[0],
+							   transport_address_attr,
+							   NULL);
+
+		if (strncmp(transport_name, "IP", 2) != 0 &&
+		    dc_transport_address == NULL) {
+			continue;
+		}
+
+		dc_guid = samdb_result_guid(dc, "objectGUID");
+
+		status = kcctpl_bridgehead_dc_failed(ldb, dc_guid,
+						     detect_failed_dcs,
+						     &failed);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to check if "
+				  "bridgehead DC has failed: %s\n",
+				  nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		if (failed) {
+			continue;
+		}
+
+		new_data = talloc_realloc(tmp_ctx, bridgeheads.data,
+					  struct ldb_message,
+					  bridgeheads.count + 1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		new_data[bridgeheads.count + 1] = *dc;
+		bridgeheads.data = new_data;
+		bridgeheads.count++;
+	}
+
+	if (site_opts & NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED) {
+		qsort(bridgeheads.data, bridgeheads.count,
+		      sizeof(struct ldb_message), kcctpl_sort_bridgeheads);
+	} else {
+		kcctpl_shuffle_bridgeheads(bridgeheads);
+	}
+
+	talloc_steal(mem_ctx, bridgeheads.data);
+	*_bridgeheads = bridgeheads;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
  * get a bridgehead DC.
  */
 static NTSTATUS kcctpl_get_bridgehead_dc(struct ldb_context *ldb,
@@ -758,6 +1290,21 @@ static NTSTATUS kcctpl_get_bridgehead_dc(struct ldb_context *ldb,
 					 bool detect_failed_dcs,
 					 struct ldb_message **_dsa)
 {
+	struct message_list dsa_list;
+	NTSTATUS status;
+
+	status = kcctpl_get_all_bridgehead_dcs(ldb, mem_ctx,
+					       site_guid, cross_ref, transport,
+					       partial_replica_okay,
+					       detect_failed_dcs, &dsa_list);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to get all bridgehead DCs: "
+			  "%s\n", nt_errstr(status)));
+		return status;
+	}
+
+	*_dsa = (dsa_list.count == 0) ? NULL : &dsa_list.data[0];
+
 	return NT_STATUS_OK;
 }
 
@@ -971,6 +1518,1151 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 	}
 
 	*_found_failed_dcs = found_failed_dcs;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * setup the fields of the vertices that are relevant to Phase I (Dijkstra's
+ * Algorithm). for each vertex, set up its cost, root vertex and component. this
+ * defines the shortest-path forest structures.
+ */
+static void kcctpl_setup_vertices(struct kcctpl_graph *graph)
+{
+	uint32_t i;
+
+	for (i = 0; i < graph->vertices.count; i++) {
+		struct kcctpl_vertex *vertex = &graph->vertices.data[i];
+
+		if (vertex->color == WHITE) {
+			vertex->repl_info.cost = UINT32_MAX;
+			vertex->root_id = vertex->component_id = GUID_zero();
+		} else {
+			vertex->repl_info.cost = 0;
+			vertex->root_id = vertex->component_id = vertex->id;
+		}
+
+		vertex->repl_info.interval = 0;
+		vertex->repl_info.options = 0xFFFFFFFF;
+		ZERO_STRUCT(vertex->repl_info.schedule);
+		vertex->demoted = false;
+	}
+}
+
+/**
+ * demote one vertex if necessary.
+ */
+static void kcctpl_check_demote_one_vertex(struct kcctpl_vertex *vertex,
+					   struct GUID type)
+{
+	if (vertex->color == WHITE) {
+		return;
+	}
+
+	if (!kcctpl_guid_list_contains(vertex->accept_black, type) &&
+	    !kcctpl_guid_list_contains(vertex->accept_red_red, type)) {
+		vertex->repl_info.cost = UINT32_MAX;
+		vertex->root_id = GUID_zero();
+		vertex->demoted = true;
+	}
+}
+
+/**
+ * clear the demoted state of a vertex.
+ */
+static void kcctpl_undemote_one_vertex(struct kcctpl_vertex *vertex)
+{
+	if (vertex->color == WHITE) {
+		return;
+	}
+
+	vertex->repl_info.cost = 0;
+	vertex->root_id = vertex->id;
+	vertex->demoted = false;
+}
+
+/**
+ * returns the id of the component containing 'vertex' by traversing the up-tree
+ * implied by the component pointers.
+ */
+static struct GUID kcctpl_get_component_id(struct kcctpl_graph *graph,
+					   struct kcctpl_vertex *vertex)
+{
+	struct kcctpl_vertex *u;
+	struct GUID root;
+
+	u = vertex;
+	while (!GUID_equal(&u->component_id, &u->id)) {
+		u = kcctpl_find_vertex_by_guid(graph, u->component_id);
+	}
+
+	root = u->id;
+
+	u = vertex;
+	while (!GUID_equal(&u->component_id, &u->id)) {
+		struct kcctpl_vertex *w;
+
+		w = kcctpl_find_vertex_by_guid(graph, u->component_id);
+		u->component_id = root;
+		u = w;
+	}
+
+	return root;
+}
+
+/**
+ * copy all spanning tree edges from 'output_edges' that contain the vertex for
+ * DCs in the local DC's site.
+ */
+static NTSTATUS kcctpl_copy_output_edges(struct ldb_context *ldb,
+					 TALLOC_CTX *mem_ctx,
+					 struct kcctpl_graph *graph,
+					 struct kcctpl_multi_edge_list output_edges,
+					 struct kcctpl_multi_edge_list *_copy)
+{
+	struct kcctpl_multi_edge_list copy;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_message *site;
+	struct GUID site_guid;
+	uint32_t i;
+
+	ZERO_STRUCT(copy);
+
+	tmp_ctx = talloc_new(ldb);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	site = kcctpl_local_site(ldb, tmp_ctx);
+	if (!site) {
+		DEBUG(1, (__location__ ": failed to find our own local DC's "
+			  "site\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	site_guid = samdb_result_guid(site, "objectGUID");
+
+	for (i = 0; i < output_edges.count; i++) {
+		struct kcctpl_multi_edge *edge;
+		struct kcctpl_vertex *vertex1, *vertex2;
+
+		edge = &output_edges.data[i];
+
+		vertex1 = kcctpl_find_vertex_by_guid(graph,
+						     edge->vertex_ids.data[0]);
+		if (!vertex1) {
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx,
+					      &edge->vertex_ids.data[0])));
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		vertex2 = kcctpl_find_vertex_by_guid(graph,
+						     edge->vertex_ids.data[1]);
+		if (!vertex2) {
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx,
+					      &edge->vertex_ids.data[1])));
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (GUID_equal(&vertex1->id, &site_guid) ||
+		    GUID_equal(&vertex2->id, &site_guid)) {
+			struct kcctpl_multi_edge *new_data;
+
+			if ((vertex1->color == BLACK ||
+			     vertex2->color == BLACK) &&
+			    vertex1->dist_to_red != UINT32_MAX) {
+
+				edge->directed = true;
+
+				if (vertex2->dist_to_red <
+				    vertex1->dist_to_red) {
+					struct GUID tmp;
+
+					tmp = edge->vertex_ids.data[0];
+					edge->vertex_ids.data[0] = edge->vertex_ids.data[1];
+					edge->vertex_ids.data[1] = tmp;
+				}
+			}
+
+			new_data = talloc_realloc(tmp_ctx, copy.data,
+						  struct kcctpl_multi_edge,
+						  copy.count + 1);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+			new_data[copy.count + 1] = *edge;
+			copy.data = new_data;
+			copy.count++;
+		}
+	}
+
+	talloc_steal(mem_ctx, copy.data);
+	*_copy = copy;
+	return NT_STATUS_OK;
+}
+
+/**
+ * build the initial sequence for use with Dijkstra's algorithm. it will contain
+ * the red and black vertices as root vertices, unless these vertices accept no
+ * edges of the current 'type', or unless black vertices are not being
+ * including.
+ */
+static NTSTATUS kcctpl_setup_dijkstra(TALLOC_CTX *mem_ctx,
+				      struct kcctpl_graph *graph,
+				      struct GUID type, bool include_black,
+				      struct kcctpl_vertex_list *_vertices)
+{
+	struct kcctpl_vertex_list vertices;
+	uint32_t i;
+
+	kcctpl_setup_vertices(graph);
+
+	ZERO_STRUCT(vertices);
+
+	for (i = 0; i < graph->vertices.count; i++) {
+		struct kcctpl_vertex *vertex = &graph->vertices.data[i];
+
+		if (vertex->color == WHITE) {
+			continue;
+		}
+
+		if ((vertex->color == BLACK && !include_black) ||
+		    !kcctpl_guid_list_contains(vertex->accept_black, type) ||
+		    !kcctpl_guid_list_contains(vertex->accept_red_red, type)) {
+			vertex->repl_info.cost = UINT32_MAX;
+			vertex->root_id = GUID_zero();
+			vertex->demoted = true;
+		} else {
+			struct kcctpl_vertex *new_data;
+
+			new_data = talloc_realloc(mem_ctx, vertices.data,
+						  struct kcctpl_vertex,
+						  vertices.count + 1);
+			NT_STATUS_HAVE_NO_MEMORY(new_data);
+			new_data[vertices.count] = *vertex;
+			vertices.data = new_data;
+			vertices.count++;
+		}
+	}
+
+	*_vertices = vertices;
+	return NT_STATUS_OK;
+}
+
+/**
+ * merge schedules, replication intervals, options and costs.
+ */
+static bool kcctpl_combine_repl_info(struct kcctpl_graph *graph,
+				     struct kcctpl_repl_info *ria,
+				     struct kcctpl_repl_info *rib,
+				     struct kcctpl_repl_info *ric)
+{
+	uint8_t schedule[84];
+	bool is_available;
+	uint32_t i;
+	int32_t ric_cost;
+
+	is_available = false;
+	for (i = 0; i < 84; i++) {
+		schedule[i] = ria->schedule[i] & rib->schedule[i];
+
+		if (schedule[i] == 1) {
+			is_available = true;
+		}
+	}
+	if (!is_available) {
+		return false;
+	}
+
+	ric_cost = ria->cost + rib->cost;
+	ric->cost = (ric_cost < 0) ? UINT32_MAX : ric_cost;
+
+	ric->interval = MAX(ria->interval, rib->interval);
+	ric->options = ria->options & rib->options;
+	memcpy(&ric->schedule, &schedule, 84);
+
+	return true;
+}
+
+/**
+ * helper function for Dijkstra's algorithm. a new path has been found from a
+ * root vertex to vertex 'vertex2'. this path is ('vertex1->root, ..., vertex1,
+ * vertex2'). 'edge' is the edge connecting 'vertex1' and 'vertex2'. if this new
+ * path is better (in this case cheaper, or has a longer schedule), update
+ * 'vertex2' to use the new path.
+ */
+static NTSTATUS kcctpl_try_new_path(TALLOC_CTX *mem_ctx,
+				    struct kcctpl_graph *graph,
+				    struct kcctpl_vertex_list vertices,
+				    struct kcctpl_vertex *vertex1,
+				    struct kcctpl_multi_edge *edge,
+				    struct kcctpl_vertex *vertex2)
+{
+	struct kcctpl_repl_info new_repl_info;
+	bool intersect;
+	uint32_t i, new_duration, old_duration;
+
+	ZERO_STRUCT(new_repl_info);
+
+	intersect = kcctpl_combine_repl_info(graph, &vertex1->repl_info,
+					     &edge->repl_info, &new_repl_info);
+
+	if (new_repl_info.cost > vertex2->repl_info.cost) {
+		return NT_STATUS_OK;
+	}
+
+	if (new_repl_info.cost < vertex2->repl_info.cost && !intersect) {
+		return NT_STATUS_OK;
+	}
+
+	new_duration = old_duration = 0;
+	for (i = 0; i < 84; i++) {
+		if (new_repl_info.schedule[i] == 1) {
+			new_duration++;
+		}
+
+		if (vertex2->repl_info.schedule[i] == 1) {
+			old_duration++;
+		}
+	}
+
+	if (new_repl_info.cost < vertex2->repl_info.cost ||
+	    new_duration > old_duration) {
+		struct kcctpl_vertex *new_data;
+
+		vertex2->root_id = vertex1->root_id;
+		vertex2->component_id = vertex1->component_id;
+		vertex2->repl_info = new_repl_info;
+
+		new_data = talloc_realloc(mem_ctx, vertices.data,
+					  struct kcctpl_vertex,
+					  vertices.count + 1);
+		NT_STATUS_HAVE_NO_MEMORY(new_data);
+		new_data[vertices.count + 1] = *vertex2;
+		vertices.data = new_data;
+		vertices.count++;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * run Dijkstra's algorithm with the red (and possibly black) vertices as the
+ * root vertices, and build up a shortest-path forest.
+ */
+static NTSTATUS kcctpl_dijkstra(struct kcctpl_graph *graph, struct GUID type,
+				bool include_black)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct kcctpl_vertex_list vertices;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(graph);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	status = kcctpl_setup_dijkstra(tmp_ctx, graph, type, include_black,
+				       &vertices);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to build the initial sequence "
+			  "for Dijkstra's algorithm: %s\n", nt_errstr(status)));
+
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	while (vertices.count > 0) {
+		uint32_t minimum_cost, minimum_index, i;
+		struct kcctpl_vertex *minimum_vertex, *new_data;
+
+		minimum_cost = UINT32_MAX;
+		minimum_index = -1;
+		minimum_vertex = NULL;
+		for (i = 0; i < vertices.count; i++) {
+			struct kcctpl_vertex *vertex = &vertices.data[i];
+
+			if (vertex->repl_info.cost < minimum_cost) {
+				minimum_cost = vertex->repl_info.cost;
+				minimum_vertex = vertex;
+				minimum_index = i;
+			} else if (vertex->repl_info.cost == minimum_cost &&
+				   GUID_compare(&vertex->id,
+					        &minimum_vertex->id) < 0) {
+				minimum_vertex = vertex;
+				minimum_index = i;
+			}
+		}
+
+		if (minimum_index < vertices.count - 1) {
+			memcpy(&vertices.data[minimum_index + 1],
+			       &vertices.data[minimum_index],
+			       vertices.count - minimum_index - 1);
+		}
+		new_data = talloc_realloc(tmp_ctx, vertices.data,
+					  struct kcctpl_vertex,
+					  vertices.count - 1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		talloc_free(vertices.data);
+		vertices.data = new_data;
+		vertices.count--;
+
+		for (i = 0; i < graph->edges.count; i++) {
+			struct kcctpl_multi_edge *edge = &graph->edges.data[i];
+
+			if (kcctpl_guid_list_contains(minimum_vertex->edge_ids,
+						      edge->id)) {
+				uint32_t j;
+
+				for (j = 0; j < edge->vertex_ids.count; j++) {
+					struct GUID vertex_id;
+					struct kcctpl_vertex *vertex;
+
+					vertex_id = edge->vertex_ids.data[j];
+					vertex = kcctpl_find_vertex_by_guid(graph,
+									    vertex_id);
+					if (!vertex) {
+						DEBUG(1, (__location__
+							  ": failed to find "
+							  "vertex %s\n",
+							  GUID_string(tmp_ctx,
+								      &vertex_id)));
+
+						talloc_free(tmp_ctx);
+						return NT_STATUS_INTERNAL_DB_CORRUPTION;
+					}
+
+					kcctpl_try_new_path(tmp_ctx, graph,
+							    vertices,
+							    minimum_vertex,
+							    edge, vertex);
+				}
+			}
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * add an edge to the list of edges that will be processed with Kruskal's. the
+ * endpoints are in fact the root of the vertices to pass in, so the endpoints
+ * are always colored vertices.
+ */
+static NTSTATUS kcctpl_add_int_edge(TALLOC_CTX *mem_ctx,
+				    struct kcctpl_graph *graph,
+				    struct kcctpl_internal_edge_list internal_edges,
+				    struct kcctpl_multi_edge *edge,
+				    struct kcctpl_vertex *vertex1,
+				    struct kcctpl_vertex *vertex2)
+{
+	struct kcctpl_vertex *root1, *root2;
+	bool red_red, found;
+	struct kcctpl_repl_info repl_info1, repl_info2;
+	struct kcctpl_internal_edge new_internal_edge, *new_data;
+	uint32_t i;
+
+	root1 = kcctpl_find_vertex_by_guid(graph, vertex1->root_id);
+	if (!root1) {
+		TALLOC_CTX *tmp_ctx = talloc_new(graph);
+		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+		DEBUG(1, (__location__ ": failed to find vertex %s\n",
+			  GUID_string(tmp_ctx, &vertex1->root_id)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	root2 = kcctpl_find_vertex_by_guid(graph, vertex2->root_id);
+	if (!root2) {
+		TALLOC_CTX *tmp_ctx = talloc_new(graph);
+		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+		DEBUG(1, (__location__ ": failed to find vertex %s\n",
+			  GUID_string(tmp_ctx, &vertex2->root_id)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	red_red = (root1->color == RED && root2->color == RED);
+
+	if (red_red) {
+		if (!kcctpl_guid_list_contains(root1->accept_red_red,
+					       edge->type) ||
+		    !kcctpl_guid_list_contains(root2->accept_red_red,
+					       edge->type)) {
+			return NT_STATUS_OK;
+		}
+	} else if (!kcctpl_guid_list_contains(root1->accept_black,
+					      edge->type) ||
+		   !kcctpl_guid_list_contains(root2->accept_black,
+					      edge->type)) {
+		return NT_STATUS_OK;
+	}
+
+	if (!kcctpl_combine_repl_info(graph, &vertex1->repl_info,
+				      &vertex2->repl_info, &repl_info1) ||
+	    !kcctpl_combine_repl_info(graph, &repl_info1, &edge->repl_info,
+				      &repl_info2)) {
+		return NT_STATUS_OK;
+	}
+
+	new_internal_edge.v1id = root1->id;
+	new_internal_edge.v2id = root2->id;
+	new_internal_edge.red_red = red_red;
+	new_internal_edge.repl_info = repl_info2;
+	new_internal_edge.type = edge->type;
+
+	if (GUID_compare(&new_internal_edge.v1id,
+			 &new_internal_edge.v2id) > 0) {
+		struct GUID tmp_guid = new_internal_edge.v1id;
+
+		new_internal_edge.v1id = new_internal_edge.v2id;
+		new_internal_edge.v2id = tmp_guid;
+	}
+
+	found = false;
+	for (i = 0; i < internal_edges.count; i++) {
+		struct kcctpl_internal_edge *ie = &internal_edges.data[i];
+
+		if (kcctpl_internal_edge_equal(ie, &new_internal_edge)) {
+			found = true;
+		}
+	}
+	if (found) {
+		return NT_STATUS_OK;
+	}
+
+	new_data = talloc_realloc(mem_ctx, internal_edges.data,
+				  struct kcctpl_internal_edge,
+				  internal_edges.count + 1);
+	NT_STATUS_HAVE_NO_MEMORY(new_data);
+	new_data[internal_edges.count + 1] = new_internal_edge;
+	internal_edges.data = new_data;
+	internal_edges.count++;
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * after running Dijkstra's algorithm, this function examines a multi-edge and
+ * adds internal edges between every tree connected by this edge.
+ */
+static NTSTATUS kcctpl_process_edge(TALLOC_CTX *mem_ctx,
+				    struct kcctpl_graph *graph,
+				    struct kcctpl_multi_edge *edge,
+				    struct kcctpl_internal_edge_list internal_edges)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct kcctpl_vertex_list vertices;
+	uint32_t i;
+	struct kcctpl_vertex *best_vertex;
+
+	ZERO_STRUCT(vertices);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	for (i = 0; i < edge->vertex_ids.count; i++) {
+		struct GUID id;
+		struct kcctpl_vertex *vertex, *new_data;
+
+		id = edge->vertex_ids.data[i];
+
+		vertex = kcctpl_find_vertex_by_guid(graph, id);
+		if (!vertex) {
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx, &id)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		new_data = talloc_realloc(tmp_ctx, vertices.data,
+					  struct kcctpl_vertex,
+					  vertices.count + 1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		new_data[vertices.count] = *vertex;
+		vertices.data = new_data;
+		vertices.count++;
+	}
+
+	qsort(vertices.data, vertices.count, sizeof(struct kcctpl_vertex),
+	      kcctpl_sort_vertices);
+
+	best_vertex = &vertices.data[0];
+
+	for (i = 0; i < edge->vertex_ids.count; i++) {
+		struct GUID id, empty_id = GUID_zero();
+		struct kcctpl_vertex *vertex = &graph->vertices.data[i];
+
+		id = edge->vertex_ids.data[i];
+
+		vertex = kcctpl_find_vertex_by_guid(graph, id);
+		if (!vertex) {
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx, &id)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (!GUID_equal(&vertex->component_id, &empty_id) &&
+		    !GUID_equal(&vertex->root_id, &empty_id)) {
+			continue;
+		}
+
+		if (!GUID_equal(&best_vertex->component_id,
+				&empty_id) &&
+		    !GUID_equal(&best_vertex->root_id, &empty_id) &&
+		    !GUID_equal(&vertex->component_id, &empty_id) &&
+		    !GUID_equal(&vertex->root_id, &empty_id) &&
+		    !GUID_equal(&best_vertex->component_id,
+				&vertex->component_id)) {
+			NTSTATUS status;
+
+			status = kcctpl_add_int_edge(mem_ctx, graph,
+						     internal_edges,
+						     edge, best_vertex,
+						     vertex);
+			if (NT_STATUS_IS_ERR(status)) {
+				DEBUG(1, (__location__ ": failed to add an "
+					  "internal edge for %s: %s\n",
+					  GUID_string(tmp_ctx, &vertex->id),
+					  nt_errstr(status)));
+				talloc_free(tmp_ctx);
+				return status;
+			}
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * after running Dijkstra's algorithm to determine the shortest-path forest,
+ * examine all edges in this edge set. find all inter-tree edges, from which to
+ * build the list of 'internal edges', which will later be passed on to
+ * Kruskal's algorithm.
+ */
+static NTSTATUS kcctpl_process_edge_set(TALLOC_CTX *mem_ctx,
+					struct kcctpl_graph *graph,
+					struct kcctpl_multi_edge_set *set,
+					struct kcctpl_internal_edge_list internal_edges)
+{
+	uint32_t i;
+
+	if (!set) {
+		for (i = 0; i < graph->edges.count; i++) {
+			struct kcctpl_multi_edge *edge;
+			uint32_t j;
+			NTSTATUS status;
+
+			edge = &graph->edges.data[i];
+
+			for (j = 0; j < edge->vertex_ids.count; j++) {
+				struct GUID id;
+				struct kcctpl_vertex *vertex;
+
+				id = edge->vertex_ids.data[j];
+
+				vertex = kcctpl_find_vertex_by_guid(graph, id);
+				if (!vertex) {
+					TALLOC_CTX *tmp_ctx;
+
+					tmp_ctx = talloc_new(mem_ctx);
+					NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+					DEBUG(1, (__location__ ": failed to "
+						  "find vertex %s\n",
+						  GUID_string(tmp_ctx, &id)));
+
+					talloc_free(tmp_ctx);
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
+
+				kcctpl_check_demote_one_vertex(vertex,
+							       edge->type);
+			}
+
+			status = kcctpl_process_edge(mem_ctx, graph, edge,
+						     internal_edges);
+			if (NT_STATUS_IS_ERR(status)) {
+				TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+				NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+				DEBUG(1, (__location__ ": failed to process "
+					  "edge %s: %s\n",
+					  GUID_string(tmp_ctx, &edge->id),
+					  nt_errstr(status)));
+
+				talloc_free(tmp_ctx);
+				return status;
+			}
+
+			for (j = 0; j < edge->vertex_ids.count; j++) {
+				struct GUID id;
+				struct kcctpl_vertex *vertex;
+
+				id = edge->vertex_ids.data[j];
+
+				vertex = kcctpl_find_vertex_by_guid(graph, id);
+				if (!vertex) {
+					TALLOC_CTX *tmp_ctx;
+
+					tmp_ctx = talloc_new(mem_ctx);
+					NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+					DEBUG(1, (__location__ ": failed to "
+						  "find vertex %s\n",
+						  GUID_string(tmp_ctx, &id)));
+
+					talloc_free(tmp_ctx);
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
+
+				kcctpl_undemote_one_vertex(vertex);
+			}
+		}
+	} else {
+		for (i = 0; i < graph->edges.count; i++) {
+			struct kcctpl_multi_edge *edge = &graph->edges.data[i];
+
+			if (kcctpl_guid_list_contains(set->edge_ids,
+						      edge->id)) {
+				NTSTATUS status;
+
+				status = kcctpl_process_edge(mem_ctx, graph,
+							     edge,
+							     internal_edges);
+				if (NT_STATUS_IS_ERR(status)) {
+					TALLOC_CTX *tmp_ctx;
+
+					tmp_ctx = talloc_new(mem_ctx);
+					NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+					DEBUG(1, (__location__ ": failed to "
+						  "process edge %s: %s\n",
+						  GUID_string(tmp_ctx,
+							      &edge->id),
+						  nt_errstr(status)));
+
+					talloc_free(tmp_ctx);
+					return status;
+				}
+			}
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * a new edge, 'internal_edge', has been found for the spanning tree edge. add
+ * this edge to the list of output edges.
+ */
+static NTSTATUS kcctpl_add_out_edge(TALLOC_CTX *mem_ctx,
+				    struct kcctpl_graph *graph,
+				    struct kcctpl_multi_edge_list output_edges,
+				    struct kcctpl_internal_edge *internal_edge)
+{
+	struct kcctpl_vertex *vertex1, *vertex2;
+	TALLOC_CTX *tmp_ctx;
+	struct kcctpl_multi_edge *new_edge, *new_data;
+	struct GUID *new_data_id;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	vertex1 = kcctpl_find_vertex_by_guid(graph, internal_edge->v1id);
+	if (!vertex1) {
+		DEBUG(1, (__location__ ": failed to find vertex %s\n",
+			  GUID_string(tmp_ctx, &internal_edge->v1id)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	vertex2 = kcctpl_find_vertex_by_guid(graph, internal_edge->v2id);
+	if (!vertex2) {
+		DEBUG(1, (__location__ ": failed to find vertex %s\n",
+			  GUID_string(tmp_ctx, &internal_edge->v2id)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	new_edge = talloc(tmp_ctx, struct kcctpl_multi_edge);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_edge, tmp_ctx);
+
+	new_edge->id = GUID_random(); /* TODO: what should be new_edge->GUID? */
+	new_edge->directed = false;
+
+	new_edge->vertex_ids.data = talloc_array(new_edge, struct GUID, 2);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_edge->vertex_ids.data, tmp_ctx);
+
+	new_edge->vertex_ids.data[0] = vertex1->id;
+	new_edge->vertex_ids.data[1] = vertex2->id;
+	new_edge->vertex_ids.count = 2;
+
+	new_edge->type = internal_edge->type;
+	new_edge->repl_info = internal_edge->repl_info;
+
+	new_data = talloc_realloc(tmp_ctx, output_edges.data,
+				  struct kcctpl_multi_edge,
+				  output_edges.count + 1);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+	new_data[output_edges.count + 1] = *new_edge;
+	output_edges.data = new_data;
+	output_edges.count++;
+
+	new_data_id = talloc_realloc(vertex1, vertex1->edge_ids.data,
+				     struct GUID, vertex1->edge_ids.count);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data_id, tmp_ctx);
+	new_data_id[vertex1->edge_ids.count] = new_edge->id;
+	talloc_free(vertex1->edge_ids.data);
+	vertex1->edge_ids.data = new_data_id;
+	vertex1->edge_ids.count++;
+
+	new_data_id = talloc_realloc(vertex2, vertex2->edge_ids.data,
+				     struct GUID, vertex2->edge_ids.count);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data_id, tmp_ctx);
+	new_data_id[vertex2->edge_ids.count] = new_edge->id;
+	talloc_free(vertex2->edge_ids.data);
+	vertex2->edge_ids.data = new_data_id;
+	vertex2->edge_ids.count++;
+
+	talloc_steal(graph, new_edge);
+	talloc_steal(mem_ctx, output_edges.data);
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * run Kruskal's minimum-cost spanning tree algorithm on the internal edges
+ * (that represent shortest paths in the original graph between colored
+ * vertices).
+ */
+static NTSTATUS kcctpl_kruskal(TALLOC_CTX *mem_ctx, struct kcctpl_graph *graph,
+			       struct kcctpl_internal_edge_list internal_edges,
+			       struct kcctpl_multi_edge_list *_output_edges)
+{
+	uint32_t i, num_expected_tree_edges, cst_edges;
+	struct kcctpl_multi_edge_list output_edges;
+
+	num_expected_tree_edges = 0;
+	for (i = 0; i < graph->vertices.count; i++) {
+		struct kcctpl_vertex *vertex = &graph->vertices.data[i];
+
+		talloc_free(vertex->edge_ids.data);
+		ZERO_STRUCT(vertex->edge_ids);
+
+		if (vertex->color == RED || vertex->color == WHITE) {
+			num_expected_tree_edges++;
+		}
+	}
+
+	qsort(internal_edges.data, internal_edges.count,
+	      sizeof(struct kcctpl_internal_edge), kcctpl_sort_internal_edges);
+
+	cst_edges = 0;
+
+	ZERO_STRUCT(output_edges);
+
+	while (internal_edges.count > 0 &&
+	       cst_edges < num_expected_tree_edges) {
+		struct kcctpl_internal_edge *edge, *new_data;
+		struct kcctpl_vertex *vertex1, *vertex2;
+		struct GUID comp1, comp2;
+
+		edge = &internal_edges.data[0];
+
+		vertex1 = kcctpl_find_vertex_by_guid(graph, edge->v1id);
+		if (!vertex1) {
+			TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+			NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx, &edge->v1id)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		vertex2 = kcctpl_find_vertex_by_guid(graph, edge->v2id);
+		if (!vertex2) {
+			TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+			NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx, &edge->v2id)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		comp1 = kcctpl_get_component_id(graph, vertex1);
+		comp2 = kcctpl_get_component_id(graph, vertex2);
+
+		if (!GUID_equal(&comp1, &comp2)) {
+			NTSTATUS status;
+			struct kcctpl_vertex *vertex;
+
+			cst_edges++;
+
+			status = kcctpl_add_out_edge(mem_ctx, graph,
+						     output_edges, edge);
+			if (NT_STATUS_IS_ERR(status)) {
+				TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+				NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+				DEBUG(1, (__location__ ": failed to add an "
+					  "output edge between %s and %s: %s\n",
+					  GUID_string(tmp_ctx, &edge->v1id),
+					  GUID_string(tmp_ctx, &edge->v2id),
+					  nt_errstr(status)));
+
+				talloc_free(tmp_ctx);
+				return status;
+			}
+
+			vertex = kcctpl_find_vertex_by_guid(graph, comp1);
+			if (!vertex) {
+				TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+				NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+				DEBUG(1, (__location__ ": failed to find "
+					  "vertex %s\n", GUID_string(tmp_ctx,
+								     &comp1)));
+
+				talloc_free(tmp_ctx);
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+			vertex->component_id = comp2;
+		}
+
+		internal_edges.data = internal_edges.data + 1;
+		new_data = talloc_realloc(mem_ctx, internal_edges.data,
+					  struct kcctpl_internal_edge,
+					  internal_edges.count - 1);
+		NT_STATUS_HAVE_NO_MEMORY(new_data);
+		talloc_free(internal_edges.data);
+		internal_edges.data = new_data;
+		internal_edges.count--;
+	}
+
+	*_output_edges = output_edges;
+	return NT_STATUS_OK;
+}
+
+/**
+ * count the number of components. a component is considered to be a bunch of
+ * colored vertices that are connected by the spanning tree. vertices whose
+ * component ID is the same as their vertex ID are the root of the connected
+ * component.
+ */
+static uint32_t kcctpl_count_components(struct kcctpl_graph *graph)
+{
+	uint32_t num_components = 0, i;
+
+	for (i = 0; i < graph->vertices.count; i++) {
+		struct kcctpl_vertex *vertex;
+		struct GUID component_id;
+
+		vertex = &graph->vertices.data[i];
+
+		if (vertex->color == WHITE) {
+			continue;
+		}
+
+		component_id = kcctpl_get_component_id(graph, vertex);
+		if (GUID_equal(&component_id, &vertex->id)) {
+			vertex->component_index = num_components;
+			num_components++;
+		}
+	}
+
+	return num_components;
+}
+
+/**
+ * calculate the spanning tree and return the edges that include the vertex for
+ * the local site.
+ */
+static NTSTATUS kcctpl_get_spanning_tree_edges(struct ldb_context *ldb,
+					       TALLOC_CTX *mem_ctx,
+					       struct kcctpl_graph *graph,
+					       uint32_t *_component_count,
+					       struct kcctpl_multi_edge_list *_st_edge_list)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct kcctpl_internal_edge_list internal_edges;
+	uint32_t i, component_count;
+	NTSTATUS status;
+	struct kcctpl_multi_edge_list output_edges, st_edge_list;
+
+	ZERO_STRUCT(internal_edges);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	for (i = 0; i < graph->edge_sets.count; i++) {
+		struct kcctpl_multi_edge_set *set;
+		struct GUID edge_type;
+		uint32_t j;
+
+		set = &graph->edge_sets.data[i];
+
+		edge_type = GUID_zero();
+
+		for (j = 0; j < graph->vertices.count; j++) {
+			struct kcctpl_vertex *vertex = &graph->vertices.data[j];
+
+			talloc_free(vertex->edge_ids.data);
+			ZERO_STRUCT(vertex->edge_ids.data);
+		}
+
+		for (j = 0; j < set->edge_ids.count; j++) {
+			struct GUID edge_id;
+			struct kcctpl_multi_edge *edge;
+			uint32_t k;
+
+			edge_id = set->edge_ids.data[j];
+			edge = kcctpl_find_edge_by_guid(graph, edge_id);
+			if (!edge) {
+				DEBUG(1, (__location__ ": failed to find a "
+					  "graph edge with ID=%s\n",
+					  GUID_string(tmp_ctx, &edge_id)));
+
+				talloc_free(tmp_ctx);
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			edge_type = edge->type;
+
+			for (k = 0; k < edge->vertex_ids.count; k++) {
+				struct GUID vertex_id, *new_data;
+				struct kcctpl_vertex *vertex;
+
+				vertex_id = edge->vertex_ids.data[k];
+				vertex = kcctpl_find_vertex_by_guid(graph,
+								    vertex_id);
+				if (!vertex) {
+					DEBUG(1, (__location__ ": failed to "
+						  "find a graph vertex with "
+						  "ID=%s\n",
+						  GUID_string(tmp_ctx,
+							      &edge_id)));
+
+					talloc_free(tmp_ctx);
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
+
+				new_data = talloc_realloc(tmp_ctx,
+							  vertex->edge_ids.data,
+							  struct GUID,
+							  vertex->edge_ids.count + 1);
+				NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data,
+								  tmp_ctx);
+				new_data[vertex->edge_ids.count] = edge->id;
+				vertex->edge_ids.data = new_data;
+				vertex->edge_ids.count++;
+			}
+		}
+
+		status = kcctpl_dijkstra(graph, edge_type, false);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to run Dijkstra's "
+				  "algorithm: %s\n", nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		status = kcctpl_process_edge_set(tmp_ctx, graph, set,
+						 internal_edges);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to process edge set "
+				  "%s: %s\n", GUID_string(tmp_ctx, &set->id),
+				  nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		status = kcctpl_dijkstra(graph, edge_type, true);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to run Dijkstra's "
+				  "algorithm: %s\n", nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		status = kcctpl_process_edge_set(tmp_ctx, graph, set,
+						 internal_edges);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to process edge set "
+				  "%s: %s\n", GUID_string(tmp_ctx, &set->id),
+				  nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+	}
+
+	kcctpl_setup_vertices(graph);
+
+	status = kcctpl_process_edge_set(tmp_ctx, graph, NULL, internal_edges);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to process empty edge set: "
+			  "%s\n", nt_errstr(status)));
+
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	status = kcctpl_kruskal(tmp_ctx, graph, internal_edges, &output_edges);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to run Kruskal's algorithm: "
+			  "%s\n", nt_errstr(status)));
+
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	for (i = 0; i < graph->vertices.count; i++) {
+		struct kcctpl_vertex *vertex = &graph->vertices.data[i];
+
+		if (vertex->color == RED) {
+			vertex->dist_to_red = 0;
+		} else if (true) { /* TODO: if there exists a path from 'vertex'
+				    to a RED vertex */
+			vertex->dist_to_red = -1; /* TODO: the length of the
+						     shortest such path */
+		} else {
+			vertex->dist_to_red = UINT32_MAX;
+		}
+	}
+
+	component_count = kcctpl_count_components(graph);
+
+	status = kcctpl_copy_output_edges(ldb, tmp_ctx, graph, output_edges,
+					  &st_edge_list);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to copy edge list: %s\n",
+			  nt_errstr(status)));
+
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	*_component_count = component_count;
+	talloc_steal(mem_ctx, st_edge_list.data);
+	*_st_edge_list = st_edge_list;
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
