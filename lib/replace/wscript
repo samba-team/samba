@@ -129,6 +129,8 @@ def configure(conf):
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True)
 
+    conf.CHECK_DECLS('snprintf vsnprintf asprintf vasprintf')
+
     conf.check_cc(fragment='''
     #include <stdarg.h>
     va_list ap1,ap2;

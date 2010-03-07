@@ -71,6 +71,17 @@ def CHECK_VARIABLE(conf, v, define=None, always=False):
         conf.DEFINE(define, 0)
         return False
 
+@conf
+def CHECK_DECLS(conf, vars):
+    '''check a list of variable declarations, using the HAVE_DECL_xxx form
+       of define'''
+    ret = True
+    for v in vars.split():
+        if not CHECK_VARIABLE(conf, v, define='HAVE_DECL_%s' % v.upper()):
+            ret = False
+    return ret
+
+
 @runonce
 def CHECK_FUNC(conf, f):
     return conf.check(function_name=f, header_name=conf.env.hlist)
