@@ -308,7 +308,8 @@ static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_messag
 				      const struct dsdb_schema *schema) 
 {
 	struct ldb_dn *dn = msg->dn;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	const char *first_component_name = ldb_dn_get_component_name(dn, 0);
 	const struct ldb_val *first_component_val;
 	const struct dsdb_class *schema_class;
@@ -349,7 +350,8 @@ static int schema_data_search_callback(struct ldb_request *req, struct ldb_reply
 	struct ldb_context *ldb;
 	struct schema_data_search_data *ac;
 	struct schema_data_private_data *mc;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	ac = talloc_get_type(req->context, struct schema_data_search_data);
 	mc = talloc_get_type(ldb_module_get_private(ac->module), struct schema_data_private_data);
@@ -411,7 +413,8 @@ static int schema_data_search_callback(struct ldb_request *req, struct ldb_reply
 static int schema_data_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct schema_data_search_data *search_context;
 	struct ldb_request *down_req;
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
