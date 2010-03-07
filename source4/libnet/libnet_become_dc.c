@@ -2251,7 +2251,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	r->in.req->req2.first_object.object.attribute_ctr.num_attributes= num_attrs;
 	r->in.req->req2.first_object.object.attribute_ctr.attributes	= attrs;
 
-	r->out.level_out	= talloc(s, int32_t);
+	r->out.level_out	= talloc(s, uint32_t);
 	r->out.ctr		= talloc(s, union drsuapi_DsAddEntryCtr);
 
 	s->ndr_struct_ptr = r;
