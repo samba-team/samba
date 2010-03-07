@@ -99,6 +99,7 @@ def configure(conf):
     conf.CHECK_TYPE('ino_t', 'unsigned')
     conf.CHECK_TYPE('loff_t', 'off_t')
     conf.CHECK_TYPE('bool', 'off_t')
+    conf.CHECK_TYPE('offset_t', 'loff_t')
 
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
@@ -116,8 +117,11 @@ def configure(conf):
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
     conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
-    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
-    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs')
+    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog epoll getaddrinfo')
+    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
+    conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
+    conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r')
+
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
