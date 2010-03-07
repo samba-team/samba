@@ -261,6 +261,18 @@ def configure(conf):
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         define='HAVE_VISIBILITY_ATTR')
 
+    # use this later ->  conf.recurse('.', name='getpass')
+
+    if conf.CHECK_FUNCS('getpass getpassphrase'):
+        # if we have both, then we prefer getpassphrase
+        conf.DEFINE(REPLACE_GETPASS_BY_GETPASSPHRASE, 1)
+        conf.DEFINE(REPLACE_GETPASS, 1)
+
+    conf.CHECK_CODE('''#include "getpass.c"
+                       int main(void) { return 0; }''',
+                    addmain=False,
+                    define='REPLACE_GETPASS',
+                    cflags='-DNO_CONFIG_H')
 
 def build(bld):
     bld.set_rpath()
