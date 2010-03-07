@@ -785,6 +785,7 @@ class AclRenameTests(AclTests):
         self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,OU=test_rename_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, "OU=test_rename_ou1," + self.base_dn)
         if self.SAMBA:
             self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
@@ -937,6 +938,37 @@ class AclRenameTests(AclTests):
         self.assertEqual( res, [] )
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                 % rename_user_dn )
+        self.assertNotEqual( res, [] )
+
+    def test_rename_u8(self):
+        """Test rename on an object with and without modify access on the RDN attribute"""
+        ou1_dn = "OU=test_rename_ou1," + self.base_dn
+        ou2_dn = "OU=test_rename_ou2," + ou1_dn
+        ou3_dn = "OU=test_rename_ou3," + ou1_dn
+        # Create OU structure
+        self.create_ou(self.ldb_admin, ou1_dn)
+        self.create_ou(self.ldb_admin, ou2_dn)
+        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = "(OA;;WP;bf967a0e-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
+        self.dacl_add_ace(ou2_dn, mod)
+        mod = "(OD;;WP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
+        self.dacl_add_ace(ou2_dn, mod)
+        try:
+            self.ldb_user.rename(ou2_dn, ou3_dn)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            # This rename operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
+            self.fail()
+        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = "(A;;WP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
+        self.dacl_add_ace(ou2_dn, mod)
+        self.ldb_user.rename(ou2_dn, ou3_dn)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                % ou2_dn )
+        self.assertEqual( res, [] )
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                % ou3_dn )
         self.assertNotEqual( res, [] )
 
 # Important unit running information

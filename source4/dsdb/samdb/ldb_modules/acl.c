@@ -958,6 +958,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	NTSTATUS status;
 	uint32_t access_granted;
+	const char *rdn_name;
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
 		"objectClass",
@@ -996,6 +997,17 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 
 	guid = attribute_schemaid_guid_by_lDAPDisplayName(dsdb_get_schema(ldb),
 							  "name");
+	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
+				   &new_node, &new_node)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	};
+
+	rdn_name = ldb_dn_get_rdn_name(req->op.rename.olddn);
+	if (rdn_name == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	guid = attribute_schemaid_guid_by_lDAPDisplayName(dsdb_get_schema(ldb),
+							  rdn_name);
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &new_node, &new_node)) {
 		return LDB_ERR_OPERATIONS_ERROR;
