@@ -42,7 +42,10 @@ def configure(conf):
     conf.env.BINDIR = Options.options.BINDIR
     conf.env.SBINDIR = Options.options.SBINDIR
 
-    conf.env['RPATH_ON_INSTALL'] = Options.options.enable_rpath
+    conf.env.RPATH_ON_INSTALL = Options.options.enable_rpath
+
+    # check for pkgconfig
+    conf.check_cfg(atleast_pkgconfig_version='0.0.0')
 
     conf.DEFINE('_GNU_SOURCE', 1)
     conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1)
