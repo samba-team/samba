@@ -20,6 +20,7 @@ conf.CHECK_FUNCS('iruserok', checklink=True)
 conf.CHECK_FUNCS('bswap16')
 conf.CHECK_FUNCS('bswap32')
 
+conf.CHECK_TYPE('struct winsize', define='HAVE_STRUCT_WINSIZE')
 conf.DEFINE('HAVE_KRB_STRUCT_WINSIZE', 1)
 conf.DEFINE('VOID_RETSIGTYPE', 1)
 
