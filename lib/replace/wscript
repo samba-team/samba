@@ -71,7 +71,10 @@ def configure(conf):
     conf.CHECK_HEADERS('netinet/ip.h netinet/tcp.h netinet/in_ip.h sys/sockio.h sys/un.h')
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
-    conf.CHECK_HEADERS('resolv.h libintl.h')
+    conf.CHECK_HEADERS('resolv.h libintl.h errno.h')
+    conf.CHECK_HEADERS('execinfo.h gcrypt.h getopt.h iconv.h')
+    conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h popt.h sasl/sasl.h')
+    conf.CHECK_HEADERS('security/pam_appl.h sys/inotify.h zlib.h asm/unistd.h')
 
     if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
         conf.DEFINE('STDC_HEADERS', 1)
@@ -121,6 +124,8 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
     conf.CHECK_FUNCS_IN('res_search', 'resolv')
     conf.CHECK_FUNCS_IN('gettext', 'intl')
+
+    conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True)
 
     conf.check_cc(fragment='''
     #include <stdarg.h>
