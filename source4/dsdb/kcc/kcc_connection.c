@@ -175,6 +175,8 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 	const char *attrs[] = { "objectGUID", "fromServer", NULL };
 	struct kcc_connection_list *list;
 
+	kcctpl_test(s->samdb);
+
 	base_dn = samdb_ntds_settings_dn(s->samdb);
 	if (!base_dn) {
 		DEBUG(0, ("failed to find our own NTDS settings DN\n"));

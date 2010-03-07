@@ -25,13 +25,26 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
+#define FLAG_CR_NTDS_NC 0x00000001
 #define FLAG_CR_NTDS_DOMAIN 0x00000002
+
+#define NTDSCONN_OPT_IS_GENERATED 0x00000001
+#define NTDSCONN_OPT_TWOWAY_SYNC 0x00000002
+#define NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT 0x00000004
+#define NTDSCONN_OPT_USE_NOTIFY 0x00000008
+#define NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION 0x00000010
+#define NTDSCONN_OPT_USER_OWNED_SCHEDULE 0x00000020
+#define NTDSCONN_OPT_RODC_TOPOLOGY 0x00000040
 
 #define NTDSDSA_OPT_IS_GC 0x00000001
 
 #define NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED 0x00000008
 #define NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED 0x00000100
 #define NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED 0x00001000
+
+#define NTDSSITELINK_OPT_USE_NOTIFY 0x00000001
+#define NTDSSITELINK_OPT_TWOWAY_SYNC 0x00000002
+#define NTDSSITELINK_OPT_DISABLE_COMPRESSION 0x00000004
 
 #define NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
 
@@ -361,6 +374,26 @@ static bool kcctpl_guid_list_contains(struct GUID_list list, struct GUID guid)
 
 	for (i = 0; i < list.count; i++) {
 		if (GUID_equal(&list.data[i], &guid)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * search for an occurrence of an ldb_message inside a list of ldb_messages,
+ * based on the ldb_message's DN.
+ */
+static bool kcctpl_message_list_contains_dn(struct message_list list,
+					    struct ldb_dn *dn)
+{
+	uint32_t i;
+
+	for (i = 0; i < list.count; i++) {
+		struct ldb_message *message = &list.data[i];
+
+		if (ldb_dn_compare(message->dn, dn) == 0) {
 			return true;
 		}
 	}
@@ -2665,4 +2698,786 @@ static NTSTATUS kcctpl_get_spanning_tree_edges(struct ldb_context *ldb,
 	*_st_edge_list = st_edge_list;
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
+}
+
+/**
+ * creat an nTDSConnection object with the given parameters if one does not
+ * already exist.
+ */
+static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
+					 TALLOC_CTX *mem_ctx,
+					 struct ldb_message *cross_ref,
+					 struct ldb_message *r_bridgehead,
+					 struct ldb_message *transport,
+					 struct ldb_message *l_bridgehead,
+					 struct kcctpl_repl_info repl_info,
+					 uint8_t schedule[84],
+					 bool detect_failed_dcs,
+					 bool partial_replica_okay,
+					 struct GUID_list *_keep_connections)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *r_site_dn, *l_site_dn, *servers_dn;
+	bool ok;
+	struct GUID r_site_guid, l_site_guid;
+	int ret;
+	struct message_list r_bridgeheads_all, l_bridgeheads_all,
+			    r_bridgeheads_available, l_bridgeheads_available;
+	NTSTATUS status;
+	struct ldb_result *res;
+	const char * const attrs[] = { "objectGUID", "parent", "fromServer",
+				       "transportType", "schedule", "options",
+				       "enabledConnection", NULL };
+	uint32_t i, valid_connections;
+	struct GUID_list keep_connections;
+
+	tmp_ctx = talloc_new(ldb);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	r_site_dn = ldb_dn_copy(tmp_ctx, r_bridgehead->dn);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(r_site_dn, tmp_ctx);
+
+	ok = ldb_dn_remove_child_components(r_site_dn, 3);
+	if (!ok) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dsdb_find_guid_by_dn(ldb, r_site_dn, &r_site_guid);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find objectGUID for object "
+			  "%s: %s\n", ldb_dn_get_linearized(r_site_dn),
+			  ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	l_site_dn = ldb_dn_copy(tmp_ctx, l_bridgehead->dn);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(l_site_dn, tmp_ctx);
+
+	ok = ldb_dn_remove_child_components(l_site_dn, 3);
+	if (!ok) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dsdb_find_guid_by_dn(ldb, l_site_dn, &l_site_guid);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find objectGUID for object "
+			  "%s: %s\n", ldb_dn_get_linearized(l_site_dn),
+			  ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+					       r_site_guid, cross_ref,
+					       transport, partial_replica_okay,
+					       false, &r_bridgeheads_all);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to get all bridgehead DCs: "
+			  "%s\n", nt_errstr(status)));
+		return status;
+	}
+
+	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+					       r_site_guid, cross_ref,
+					       transport, partial_replica_okay,
+					       detect_failed_dcs,
+					       &r_bridgeheads_available);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to get all bridgehead DCs: "
+			  "%s\n", nt_errstr(status)));
+		return status;
+	}
+
+	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+					       l_site_guid, cross_ref,
+					       transport, partial_replica_okay,
+					       false, &l_bridgeheads_all);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to get all bridgehead DCs: "
+			  "%s\n", nt_errstr(status)));
+		return status;
+	}
+
+	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+					       l_site_guid, cross_ref,
+					       transport, partial_replica_okay,
+					       detect_failed_dcs,
+					       &l_bridgeheads_available);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to get all bridgehead DCs: "
+			  "%s\n", nt_errstr(status)));
+		return status;
+	}
+
+	servers_dn = samdb_sites_dn(ldb, tmp_ctx);
+	if (!servers_dn) {
+		DEBUG(1, (__location__ ": failed to find our own Sites DN\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	ok = ldb_dn_add_child_fmt(servers_dn, "CN=Servers");
+	if (!ok) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, servers_dn, LDB_SCOPE_SUBTREE,
+			 attrs, "objectClass=nTDSConnection");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find nTDSConnection "
+			  "objects: %s\n", ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	for (i = 0; i < res->count; i++) {
+		struct ldb_message *connection;
+		struct ldb_dn *parent_dn, *from_server;
+
+		connection = res->msgs[i];
+
+		parent_dn = ldb_dn_get_parent(tmp_ctx, connection->dn);
+		if (!parent_dn) {
+			DEBUG(1, (__location__ ": failed to get parent DN of "
+				  "%s\n",
+				  ldb_dn_get_linearized(connection->dn)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		from_server = samdb_result_dn(ldb, tmp_ctx, connection,
+					      "fromServer", NULL);
+		if (!from_server) {
+			DEBUG(1, (__location__ ": failed to find fromServer "
+				  "attribute of object %s\n",
+				  ldb_dn_get_linearized(connection->dn)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (kcctpl_message_list_contains_dn(l_bridgeheads_all,
+						    parent_dn) &&
+		    kcctpl_message_list_contains_dn(r_bridgeheads_all,
+						    from_server)) {
+			uint64_t conn_opts;
+			/* TODO: initialize conn_schedule from connection */
+			uint8_t conn_schedule[84];
+			struct ldb_dn *conn_transport_type;
+
+			conn_opts = samdb_result_int64(connection,
+						       "options", 0);
+
+			conn_transport_type = samdb_result_dn(ldb, tmp_ctx,
+							      connection,
+							      "transportType",
+							      NULL);
+			if (!conn_transport_type) {
+				DEBUG(1, (__location__ ": failed to find "
+					  "transportType attribute of object "
+					  "%s\n",
+					  ldb_dn_get_linearized(connection->dn)));
+
+				talloc_free(tmp_ctx);
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			if ((conn_opts & NTDSCONN_OPT_IS_GENERATED) &&
+			    !(conn_opts & NTDSCONN_OPT_RODC_TOPOLOGY) &&
+			    ldb_dn_compare(conn_transport_type,
+					   transport->dn) == 0) {
+				if (!(conn_opts & NTDSCONN_OPT_USER_OWNED_SCHEDULE) &&
+				    memcmp(&conn_schedule, &schedule, 84) != 0) {
+					/* TODO: perform an originating update
+					   to set conn!schedule to schedule */
+				}
+
+				if ((conn_opts & NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) &&
+				    (conn_opts & NTDSCONN_OPT_USE_NOTIFY)) {
+					if (!(repl_info.options & NTDSSITELINK_OPT_USE_NOTIFY)) {
+						/* TODO: perform an originating
+						   update to clear bits
+						   NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT
+						   and NTDSCONN_OPT_USE_NOTIFY
+						   in conn!options */
+					}
+				} else if (repl_info.options & NTDSSITELINK_OPT_USE_NOTIFY) {
+					/* TODO: perform an originating update
+					   to set bits
+					   NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT
+					   and NTDSCONN_OPT_USE_NOTIFY in
+					   conn!options */
+				}
+
+				if (conn_opts & NTDSCONN_OPT_TWOWAY_SYNC) {
+				    if (!(repl_info.options & NTDSSITELINK_OPT_TWOWAY_SYNC)) {
+					    /* TODO: perform an originating
+					       update to clear bit
+					       NTDSCONN_OPT_TWOWAY_SYNC in
+					       conn!options. */
+				    }
+				} else if (repl_info.options & NTDSSITELINK_OPT_TWOWAY_SYNC) {
+					/* TODO: perform an originating update
+					   to set bit NTDSCONN_OPT_TWOWAY_SYNC
+					   in conn!options. */
+				}
+
+				if (conn_opts & NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION) {
+					if (!(repl_info.options & NTDSSITELINK_OPT_DISABLE_COMPRESSION)) {
+						/* TODO: perform an originating
+						   update to clear bit
+						   NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
+						   in conn!options. */
+					}
+				} else if (repl_info.options & NTDSSITELINK_OPT_DISABLE_COMPRESSION) {
+					/* TODO: perform an originating update
+					   to set bit
+					   NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
+					   in conn!options. */
+				}
+			}
+		}
+	}
+
+	ZERO_STRUCT(keep_connections);
+
+	valid_connections = 0;
+	for (i = 0; i < res->count; i++) {
+		struct ldb_message *connection;
+		struct ldb_dn *parent_dn, *from_server;
+
+		connection = res->msgs[i];
+
+		parent_dn = ldb_dn_get_parent(tmp_ctx, connection->dn);
+		if (!parent_dn) {
+			DEBUG(1, (__location__ ": failed to get parent DN of "
+				  "%s\n",
+				  ldb_dn_get_linearized(connection->dn)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		from_server = samdb_result_dn(ldb, tmp_ctx, connection,
+					      "fromServer", NULL);
+		if (!from_server) {
+			DEBUG(1, (__location__ ": failed to find fromServer "
+				  "attribute of object %s\n",
+				  ldb_dn_get_linearized(connection->dn)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (kcctpl_message_list_contains_dn(l_bridgeheads_all,
+						    parent_dn) &&
+		    kcctpl_message_list_contains_dn(r_bridgeheads_all,
+						    from_server)) {
+			uint64_t conn_opts;
+			struct ldb_dn *conn_transport_type;
+
+			conn_opts = samdb_result_int64(connection,
+						       "options", 0);
+
+			conn_transport_type = samdb_result_dn(ldb, tmp_ctx,
+							      connection,
+							      "transportType",
+							      NULL);
+			if (!conn_transport_type) {
+				DEBUG(1, (__location__ ": failed to find "
+					  "transportType attribute of object "
+					  "%s\n",
+					  ldb_dn_get_linearized(connection->dn)));
+
+				talloc_free(tmp_ctx);
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			if ((!(conn_opts & NTDSCONN_OPT_IS_GENERATED) ||
+			     ldb_dn_compare(conn_transport_type,
+					    transport->dn) == 0) &&
+			    !(conn_opts & NTDSCONN_OPT_RODC_TOPOLOGY)) {
+				struct GUID r_guid, l_guid, conn_guid;
+				bool failed_state_r, failed_state_l;
+
+				ret = dsdb_find_guid_by_dn(ldb, from_server,
+							   &r_guid);
+				if (ret != LDB_SUCCESS) {
+					DEBUG(1, (__location__ ": failed to "
+						  "find GUID for object %s\n",
+						  ldb_dn_get_linearized(from_server)));
+
+					talloc_free(tmp_ctx);
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
+
+				ret = dsdb_find_guid_by_dn(ldb, parent_dn,
+							   &l_guid);
+				if (ret != LDB_SUCCESS) {
+					DEBUG(1, (__location__ ": failed to "
+						  "find GUID for object %s\n",
+						  ldb_dn_get_linearized(parent_dn)));
+
+					talloc_free(tmp_ctx);
+					return NT_STATUS_INTERNAL_DB_CORRUPTION;
+				}
+
+				status = kcctpl_bridgehead_dc_failed(ldb,
+								     r_guid,
+								     detect_failed_dcs,
+								     &failed_state_r);
+				if (NT_STATUS_IS_ERR(status)) {
+					DEBUG(1, (__location__ ": failed to "
+						  "check if bridgehead DC has "
+						  "failed: %s\n",
+						  nt_errstr(status)));
+
+					talloc_free(tmp_ctx);
+					return status;
+				}
+
+				status = kcctpl_bridgehead_dc_failed(ldb,
+								     l_guid,
+								     detect_failed_dcs,
+								     &failed_state_l);
+				if (NT_STATUS_IS_ERR(status)) {
+					DEBUG(1, (__location__ ": failed to "
+						  "check if bridgehead DC has "
+						  "failed: %s\n",
+						  nt_errstr(status)));
+
+					talloc_free(tmp_ctx);
+					return status;
+				}
+
+				if (!failed_state_r && !failed_state_l) {
+					valid_connections++;
+				}
+
+				conn_guid = samdb_result_guid(connection,
+							      "objectGUID");
+
+				if (!kcctpl_guid_list_contains(keep_connections,
+							       conn_guid)) {
+					struct GUID *new_data;
+
+					new_data = talloc_realloc(tmp_ctx,
+								 keep_connections.data,
+								 struct GUID,
+								 keep_connections.count + 1);
+					NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data,
+									  tmp_ctx);
+					new_data[keep_connections.count] = conn_guid;
+					keep_connections.data = new_data;
+					keep_connections.count++;
+				}
+			}
+		}
+	}
+
+	if (valid_connections == 0) {
+		uint64_t opts = NTDSCONN_OPT_IS_GENERATED;
+		struct GUID new_guid, *new_data;
+
+		if (repl_info.options & NTDSSITELINK_OPT_USE_NOTIFY) {
+			opts |= NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT;
+			opts |= NTDSCONN_OPT_USE_NOTIFY;
+		}
+
+		if (repl_info.options & NTDSSITELINK_OPT_TWOWAY_SYNC) {
+			opts |= NTDSCONN_OPT_TWOWAY_SYNC;
+		}
+
+		if (repl_info.options & NTDSSITELINK_OPT_DISABLE_COMPRESSION) {
+			opts |= NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION;
+		}
+
+		/* perform an originating update to create a new nTDSConnection
+		 * object cn that is:
+		 *
+		 * - child of l_bridgehead
+		 * - cn!enabledConnection = true
+		 * - cn!options = opts
+		 * - cn!transportType = t
+		 * - cn!fromServer = r_bridgehead
+		 * - cn!schedule = schedule
+		 */
+
+		/* TODO: what should be the new connection's GUID? */
+		new_guid = GUID_random();
+
+		new_data = talloc_realloc(tmp_ctx, keep_connections.data,
+					  struct GUID,
+					  keep_connections.count + 1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(new_data, tmp_ctx);
+		new_data[keep_connections.count] = new_guid;
+		keep_connections.data = new_data;
+		keep_connections.count++;
+	}
+
+	talloc_steal(mem_ctx, keep_connections.data);
+	*_keep_connections = keep_connections;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * construct an NC replica graph for the NC identified by the given 'cross_ref',
+ * then create any additional nTDSConnection objects required.
+ */
+static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
+					  TALLOC_CTX *mem_ctx,
+					  struct kcctpl_graph *graph,
+					  struct ldb_message *cross_ref,
+					  bool detect_failed_dcs,
+					  struct GUID_list keep_connections,
+					  bool *_found_failed_dcs,
+					  bool *_connected)
+{
+	bool connected, found_failed_dcs, partial_replica_okay, rodc;
+	NTSTATUS status;
+	struct ldb_message *site;
+	TALLOC_CTX *tmp_ctx;
+	struct GUID site_guid;
+	struct kcctpl_vertex *site_vertex;
+	uint32_t component_count, i;
+	struct kcctpl_multi_edge_list st_edge_list;
+	struct ldb_dn *transports_dn;
+	const char * const attrs[] = { "bridgeheadServerListBL", "name",
+				       "transportAddressAttribute", NULL };
+
+	connected = true;
+
+	status = kcctpl_color_vertices(ldb, graph, cross_ref, detect_failed_dcs,
+				       &found_failed_dcs);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed to color vertices: %s\n",
+			  nt_errstr(status)));
+
+		return status;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	site = kcctpl_local_site(ldb, tmp_ctx);
+	if (!site) {
+		DEBUG(1, (__location__ ": failed to find our own local DC's "
+			  "site\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	site_guid = samdb_result_guid(site, "objectGUID");
+
+	site_vertex = kcctpl_find_vertex_by_guid(graph, site_guid);
+	if (!site_vertex) {
+		DEBUG(1, (__location__ ": failed to find vertex %s\n",
+			  GUID_string(tmp_ctx, &site_guid)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (site_vertex->color == WHITE) {
+		*_found_failed_dcs = found_failed_dcs;
+		*_connected = true;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	status = kcctpl_get_spanning_tree_edges(ldb, tmp_ctx, graph,
+						&component_count,
+						&st_edge_list);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, (__location__ ": failed get spanning tree edges: %s\n",
+			  nt_errstr(status)));
+
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	if (component_count > 1) {
+		connected = false;
+	}
+
+	partial_replica_okay = (site_vertex->color == BLACK);
+
+	transports_dn = kcctpl_transports_dn(ldb, tmp_ctx);
+	if (!transports_dn) {
+		DEBUG(1, (__location__ ": failed to find our own Inter-Site "
+			  "Transports DN\n"));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	rodc = samdb_rodc(ldb);
+
+	for (i = 0; i < st_edge_list.count; i++) {
+		struct kcctpl_multi_edge *edge;
+		struct GUID other_site_id;
+		struct kcctpl_vertex *other_site_vertex;
+		struct ldb_result *res;
+		int ret;
+		struct ldb_message *transport, *r_bridgehead, *l_bridgehead;
+		uint8_t schedule[84];
+		uint32_t first_available, j, interval;
+
+		edge = &st_edge_list.data[i];
+
+		if (edge->directed && !GUID_equal(&edge->vertex_ids.data[1],
+						  &site_vertex->id)) {
+			continue;
+		}
+
+		if (GUID_equal(&edge->vertex_ids.data[0], &site_vertex->id)) {
+			other_site_id = edge->vertex_ids.data[1];
+		} else {
+			other_site_id = edge->vertex_ids.data[0];
+		}
+
+		other_site_vertex = kcctpl_find_vertex_by_guid(graph,
+							       other_site_id);
+		if (!other_site_vertex) {
+			DEBUG(1, (__location__ ": failed to find vertex %s\n",
+				  GUID_string(tmp_ctx, &other_site_id)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		ret = ldb_search(ldb, tmp_ctx, &res, transports_dn,
+				 LDB_SCOPE_ONELEVEL, attrs,
+				 "(&(objectClass=interSiteTransport)"
+				 "(objectGUID=%s))", GUID_string(tmp_ctx,
+								 &edge->type));
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, (__location__ ": failed to find "
+				  "interSiteTransport object %s: %s\n",
+				  GUID_string(tmp_ctx, &edge->type),
+				  ldb_strerror(ret)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		if (res->count == 0) {
+			DEBUG(1, (__location__ ": failed to find "
+				  "interSiteTransport object %s\n",
+				  GUID_string(tmp_ctx, &edge->type)));
+
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		transport = res->msgs[0];
+
+		status = kcctpl_get_bridgehead_dc(ldb, tmp_ctx,
+						  other_site_vertex->id,
+						  cross_ref, transport,
+						  partial_replica_okay,
+						  detect_failed_dcs,
+						  &r_bridgehead);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to get a bridgehead "
+				  "DC: %s\n", nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		if (rodc) {
+			/* TODO: l_bridgehad = nTDSDSA of local DC */
+		} else {
+			status = kcctpl_get_bridgehead_dc(ldb, tmp_ctx,
+							  site_vertex->id,
+							  cross_ref, transport,
+							  partial_replica_okay,
+							  detect_failed_dcs,
+							  &l_bridgehead);
+			if (NT_STATUS_IS_ERR(status)) {
+				DEBUG(1, (__location__ ": failed to get a "
+					  "bridgehead DC: %s\n",
+					  nt_errstr(status)));
+
+				talloc_free(tmp_ctx);
+				return status;
+			}
+		}
+
+		ZERO_ARRAY(schedule);
+		first_available = 84;
+		interval = edge->repl_info.interval / 15;
+		for (j = 0; j < 84; j++) {
+			if (edge->repl_info.schedule[j] == 1) {
+				first_available = j;
+				break;
+			}
+		}
+		for (j = first_available; j < 84; j += interval) {
+			schedule[j] = 1;
+		}
+
+		status = kcctpl_create_connection(ldb, mem_ctx, cross_ref,
+						  r_bridgehead, transport,
+						  l_bridgehead, edge->repl_info,
+						  schedule, detect_failed_dcs,
+						  partial_replica_okay,
+						  &keep_connections);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to create a "
+				  "connection: %s\n", nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+	}
+
+	*_found_failed_dcs = found_failed_dcs;
+	*_connected = connected;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/**
+ * computes an NC replica graph for each NC replica that "should be present" on
+ * the local DC or "is present" on any DC in the same site as the local DC. for
+ * each edge directed to an NC replica on such a DC from an NC replica on a DC
+ * in another site, the KCC creates and nTDSConnection object to imply that edge
+ * if one does not already exist.
+ */
+static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
+						    TALLOC_CTX *mem_ctx,
+						    struct GUID_list *_keep_connections,
+						    bool *_all_connected)
+{
+	struct GUID_list keep_connections;
+	bool all_connected;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *partitions_dn;
+	struct ldb_result *res;
+	const char * const attrs[] = { "enabled", "systemFlags", "nCName",
+					NULL };
+	int ret;
+	uint32_t i;
+
+	all_connected = true;
+
+	ZERO_STRUCT(keep_connections);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(partitions_dn, tmp_ctx);
+
+	ret = ldb_search(ldb, tmp_ctx, &res, partitions_dn, LDB_SCOPE_ONELEVEL,
+			 attrs, "objectClass=crossRef");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": failed to find crossRef objects: "
+			  "%s\n", ldb_strerror(ret)));
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	for (i = 0; i < res->count; i++) {
+		struct ldb_message *cross_ref;
+		unsigned int cr_enabled;
+		int64_t cr_flags;
+		struct kcctpl_graph *graph;
+		bool found_failed_dc, connected;
+		NTSTATUS status;
+
+		cross_ref = res->msgs[i];
+		cr_enabled = samdb_result_uint(cross_ref, "enabled", -1);
+		cr_flags = samdb_result_int64(cross_ref, "systemFlags", 0);
+		if ((cr_enabled == 0) || !(cr_flags & FLAG_CR_NTDS_NC)) {
+			continue;
+		}
+
+		status = kcctpl_setup_graph(ldb, tmp_ctx, &graph);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to create a graph: "
+				  "%s\n", nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		status = kcctpl_create_connections(ldb, mem_ctx, graph,
+						   cross_ref, true,
+						   keep_connections,
+						   &found_failed_dc,
+						   &connected);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, (__location__ ": failed to create "
+				  "connections: %s\n", nt_errstr(status)));
+
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		if (!connected) {
+			all_connected = false;
+
+			if (found_failed_dc) {
+				status = kcctpl_create_connections(ldb, mem_ctx,
+								   graph,
+								   cross_ref,
+								   true,
+								   keep_connections,
+								   &found_failed_dc,
+								   &connected);
+				if (NT_STATUS_IS_ERR(status)) {
+					DEBUG(1, (__location__ ": failed to "
+						  "create connections: %s\n",
+						  nt_errstr(status)));
+
+					talloc_free(tmp_ctx);
+					return status;
+				}
+			}
+		}
+	}
+
+	*_keep_connections = keep_connections;
+	*_all_connected = all_connected;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS kcctpl_test(struct ldb_context *ldb)
+{
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct GUID_list keep;
+	bool all_connected;
+
+	DEBUG(0, ("testing kcctpl_create_intersite_connections\n"));
+	status = kcctpl_create_intersite_connections(ldb, tmp_ctx, &keep,
+						     &all_connected);
+	DEBUG(4, ("%s\n", nt_errstr(status)));
+	if (NT_STATUS_IS_OK(status)) {
+		uint32_t i;
+
+		DEBUG(4, ("all_connected=%d, %d GUIDs returned\n",
+			  all_connected, keep.count));
+
+		for (i = 0; i < keep.count; i++) {
+			DEBUG(4, ("GUID %d: %s\n", i + 1,
+				  GUID_string(tmp_ctx, &keep.data[i])));
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return status;
 }
