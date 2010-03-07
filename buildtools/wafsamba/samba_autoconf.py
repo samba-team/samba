@@ -49,11 +49,14 @@ def CHECK_TYPES(conf, list):
 
 
 @conf
-def CHECK_TYPE_IN(conf, t, hdr):
+def CHECK_TYPE_IN(conf, t, hdr, define=None):
     '''check for a type in a specific header'''
     if conf.check(header_name=hdr):
-        conf.check(type_name=t, header_name=hdr)
-        return True
+        if define is None:
+            ret = conf.check(type_name=t, header_name=hdr)
+        else:
+            ret = conf.check(type_name=t, header_name=hdr, define_name=define)
+        return ret
     return False
 
 
@@ -169,8 +172,8 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
 
 @conf
 def CHECK_CODE(conf, code, define,
-               always=False, execute=False, addmain=True,
-               headers=None, msg=None):
+               always=False, execute=False, addmain=True, mandatory=False,
+               headers=None, msg=None, cflags=''):
     '''check if some code compiles and/or runs'''
     hdrs=''
     if headers is not None:
@@ -197,14 +200,17 @@ def CHECK_CODE(conf, code, define,
 
     if conf.check(fragment=fragment,
                   execute=execute,
-                  ccflags='-I%s' % conf.curdir,
+                  define_name = define,
+                  mandatory = mandatory,
+                  ccflags='-I%s %s' % (conf.curdir, cflags),
                   includes='# . ../default',
                   msg=msg):
         conf.DEFINE(define, 1)
         return True
-    elif always:
+    if always:
         conf.DEFINE(define, 0)
-        return False
+    return False
+
 
 
 @conf
@@ -236,6 +242,18 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
     elif always:
         conf.DEFINE(define, 0)
         return False
+
+
+@conf
+def CHECK_CFLAGS(conf, cflags, variable):
+    '''check if the given cflags are accepted by the compiler'''
+    if conf.check(fragment='int main(void) { return 0; }',
+                  execute=0,
+                  ccflags=cflags,
+                  msg="Checking compiler accepts %s" % cflags):
+        conf.env[variable] = cflags
+        return True
+    return False
 
 
 #################################################
