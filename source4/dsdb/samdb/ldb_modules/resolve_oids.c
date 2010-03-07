@@ -90,7 +90,7 @@ static int resolve_oids_parse_tree_need(struct ldb_context *ldb,
 					struct dsdb_schema *schema,
 					const struct ldb_parse_tree *tree)
 {
-	int i;
+	unsigned int i;
 	const struct dsdb_attribute *a = NULL;
 	const char *attr;
 	const char *p1;
@@ -169,7 +169,7 @@ static int resolve_oids_element_need(struct ldb_context *ldb,
 				     struct dsdb_schema *schema,
 				     const struct ldb_message_element *el)
 {
-	int i;
+	unsigned int i;
 	const struct dsdb_attribute *a = NULL;
 	const char *p1;
 
@@ -285,7 +285,7 @@ static int resolve_oids_parse_tree_replace(struct ldb_context *ldb,
 					   struct dsdb_schema *schema,
 					   struct ldb_parse_tree *tree)
 {
-	int i;
+	unsigned int i;
 	const struct dsdb_attribute *a = NULL;
 	const char **attrp;
 	const char *p1;
@@ -366,7 +366,7 @@ static int resolve_oids_element_replace(struct ldb_context *ldb,
 					struct dsdb_schema *schema,
 					struct ldb_message_element *el)
 {
-	int i;
+	unsigned int i;
 	const struct dsdb_attribute *a = NULL;
 	const char *p1;
 
@@ -399,7 +399,7 @@ static int resolve_oids_message_replace(struct ldb_context *ldb,
 					struct dsdb_schema *schema,
 					struct ldb_message *msg)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0; i < msg->num_elements; i++) {
 		int ret;
