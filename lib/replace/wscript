@@ -160,6 +160,7 @@ def configure(conf):
                 quote=0,
 		msg="Checking for va_copy")
 
+    conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
 
     conf.CHECK_CODE('#include "test/snprintf.c"',
                     define="HAVE_C99_VSNPRINTF",

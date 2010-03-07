@@ -120,17 +120,19 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
 
 
 @runonce
-def CHECK_FUNC(conf, f):
+def CHECK_FUNC(conf, f, checklink=False):
     '''check for a function'''
+    if checklink:
+        return CHECK_CODE(conf, '%s()' % f, execute=False, define='HAVE_%s' % f.upper())
     return conf.check(function_name=f, header_name=conf.env.hlist)
 
 
 @conf
-def CHECK_FUNCS(conf, list):
+def CHECK_FUNCS(conf, list, checklink=False):
     '''check for a list of functions'''
     ret = True
     for f in to_list(list):
-        if not CHECK_FUNC(conf, f):
+        if not CHECK_FUNC(conf, f, checklink):
             ret = False
     return ret
 
@@ -184,11 +186,11 @@ def CHECK_CODE(conf, code, define,
         execute = 0
 
     if addmain:
-        fragment='#include "confdefs.h"\n%s\n int main(void) { %s; return 0; }' % (hdrs, code)
+        fragment='#include "__confdefs.h"\n%s\n int main(void) { %s; return 0; }' % (hdrs, code)
     else:
-        fragment='#include "confdefs.h"\n%s\n%s' % (hdrs, code)
+        fragment='#include "__confdefs.h"\n%s\n%s' % (hdrs, code)
 
-    conf.write_config_header('confdefs.h', top=True)
+    conf.write_config_header('__confdefs.h', top=True)
 
     if msg is None:
         msg="Checking for %s" % define

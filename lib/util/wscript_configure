@@ -11,4 +11,3 @@ conf.CHECK_FUNCS_IN('flistxattr', 'attr', checklibc=True)
 
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE')
 
-conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
