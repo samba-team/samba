@@ -10,3 +10,5 @@ conf.CHECK_HEADERS('sys/attributes.h attr/xattr.h sys/xattr.h')
 conf.CHECK_FUNCS_IN('flistxattr', 'attr', checklibc=True)
 
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE')
+
+conf.CHECK_CODE_COMPILES('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ')

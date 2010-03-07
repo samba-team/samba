@@ -166,6 +166,33 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
 
 
 @conf
+def CHECK_CODE_COMPILES(conf, code, define,
+                        always=False, headers=None):
+    '''check if some code compiles'''
+    hdrs=''
+    if headers is not None:
+        hlist = to_list(headers)
+    else:
+        hlist = conf.env.hlist
+    for h in hlist:
+        hdrs += '#include <%s>\n' % h
+    if conf.check(fragment='''
+                  %s
+                  int main(void) {
+                    %s;
+                    return 0;
+                  }
+                  ''' % (hdrs, code),
+                  execute=0,
+                  msg="Checking %s" % define):
+        conf.DEFINE(define, 1)
+        return True
+    elif always:
+        conf.DEFINE(define, 0)
+        return False
+
+
+@conf
 def CHECK_STRUCTURE_MEMBER(conf, structname, member,
                            always=False, define=None, headers=None):
     '''check for a structure member'''
