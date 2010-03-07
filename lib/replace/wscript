@@ -117,10 +117,10 @@ def configure(conf):
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
     conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
-    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog epoll getaddrinfo')
+    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog getaddrinfo')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
-    conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r')
+    conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
@@ -139,6 +139,9 @@ def configure(conf):
 
     conf.CHECK_SIZEOF('char int "long long" long off_t short size_t ssize_t')
     conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
+
+    if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
+        conf.define('HAVE_EPOLL', 1)
 
     conf.check_cc(fragment='''
     #include <stdarg.h>
