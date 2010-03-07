@@ -21,26 +21,38 @@ def DEFINE(conf, d, v):
 def CHECK_HEADER(conf, h, add_headers=True):
     if conf.check(header_name=h) and add_headers:
         conf.env.hlist.append(h)
+        return True
+    return False
 
 @conf
 def CHECK_HEADERS(conf, list, add_headers=True):
+    ret = True
     for hdr in list.split():
-        CHECK_HEADER(conf, hdr, add_headers)
+        if not CHECK_HEADER(conf, hdr, add_headers):
+            ret = False
+    return ret
 
 @conf
 def CHECK_TYPES(conf, list):
+    ret = True
     for t in list.split():
-        conf.check(type_name=t, header_name=conf.env.hlist)
+        if not conf.check(type_name=t, header_name=conf.env.hlist):
+            ret = False
+    return ret
 
 @conf
 def CHECK_TYPE_IN(conf, t, hdr):
     if conf.check(header_name=hdr):
         conf.check(type_name=t, header_name=hdr)
+        return True
+    return False
 
 @conf
 def CHECK_TYPE(conf, t, alternate):
     if not conf.check(type_name=t, header_name=conf.env.hlist):
         conf.DEFINE(t, alternate)
+        return True
+    return False
 
 @conf
 def CHECK_VARIABLE(conf, v, define=None, always=False):
@@ -54,19 +66,23 @@ def CHECK_VARIABLE(conf, v, define=None, always=False):
                   execute=0,
                   msg="Checking for variable %s" % v):
         conf.DEFINE(define, 1)
+        return True
     elif always:
         conf.DEFINE(define, 0)
-
+        return False
 
 @runonce
 def CHECK_FUNC(conf, f):
-    conf.check(function_name=f, header_name=conf.env.hlist)
+    return conf.check(function_name=f, header_name=conf.env.hlist)
 
 
 @conf
 def CHECK_FUNCS(conf, list):
+    ret = True
     for f in list.split():
-        CHECK_FUNC(conf, f)
+        if not CHECK_FUNC(conf, f):
+            ret = False
+    return ret
 
 
 #################################################
@@ -87,18 +103,37 @@ Build.BuildContext.CONFIG_SET = CONFIG_SET
 # If the library is not available and mandatory==False, then
 # add the library to the list of dependencies to remove from
 # build rules
+#
+# optionally check for the functions first in libc
 @conf
-def CHECK_FUNCS_IN(conf, list, library, mandatory=False):
+def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
+    # first see if the functions are in libc
+    if checklibc:
+        remaining = []
+        for f in list.split():
+            if not CHECK_FUNC(conf, f):
+                remaining.append(f)
+    else:
+        remaining = list.split()
+
+    if remaining == []:
+        LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
+        return True
+
     if not conf.check(lib=library, uselib_store=library):
         conf.ASSERT(not mandatory,
                     "Mandatory library '%s' not found for functions '%s'" % (library, list))
         # if it isn't a mandatory library, then remove it from dependency lists
         LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
-        return
-    for f in list.split():
-        conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
+        return False
+
+    ret = True
+    for f in remaining:
+        if not conf.check(function_name=f, lib=library, header_name=conf.env.hlist):
+            ret = False
     conf.env['LIB_' + library.upper()] = library
     LOCAL_CACHE_SET(conf, 'TARGET_TYPE', library, 'SYSLIB')
+    return ret
 
 
 #################################################
