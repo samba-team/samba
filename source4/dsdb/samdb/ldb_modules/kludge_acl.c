@@ -97,7 +97,8 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	TALLOC_CTX *mem_ctx;
 	const char **attr_list;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
  	/* If we don't have a schema yet, we can't do anything... */
 	if (schema == NULL) {
@@ -144,7 +145,8 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	struct ldb_message_element *allowedClasses;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	const struct dsdb_class *sclass;
-	int i, j, ret;
+	unsigned int i, j;
+	int ret;
 
  	/* If we don't have a schema yet, we can't do anything... */
 	if (schema == NULL) {
@@ -199,7 +201,8 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_context *ldb;
 	struct kludge_acl_context *ac;
 	struct kludge_private_data *data;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	ac = talloc_get_type(req->context, struct kludge_acl_context);
 	data = talloc_get_type(ldb_module_get_private(ac->module), struct kludge_private_data);
@@ -310,7 +313,8 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	struct kludge_private_data *data;
 	const char * const *attrs;
-	int ret, i;
+	int ret;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -436,7 +440,8 @@ static int kludge_acl_extended(struct ldb_module *module, struct ldb_request *re
 static int kludge_acl_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
-	int ret, i;
+	int ret;
+	unsigned int i;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
 	static const char *attrs[] = { "passwordAttribute", NULL };
 	struct ldb_result *res;
