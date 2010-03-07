@@ -330,7 +330,10 @@ def SAMBA_CONFIG_H(conf, path=None):
 @conf
 def CONFIG_PATH(conf, name, default):
     if not name in conf.env:
-        conf.env[name] = conf.env['PREFIX'] + default
+        if default[0] == '/':
+            conf.env[name] = default
+        else:
+            conf.env[name] = conf.env['PREFIX'] + default
     conf.define(name, conf.env[name], quote=True)
 
 ##############################################################
