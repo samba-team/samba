@@ -11,44 +11,55 @@ from samba_utils import *
 # some autoconf like helpers, to make the transition
 # to waf a bit easier for those used to autoconf
 # m4 files
+
 @runonce
 @conf
 def DEFINE(conf, d, v):
+    '''define a config option'''
     conf.define(d, v, quote=False)
     conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
 @runonce
 def CHECK_HEADER(conf, h, add_headers=True):
+    '''check for a header'''
     if conf.check(header_name=h) and add_headers:
         conf.env.hlist.append(h)
         return True
     return False
 
+
 @conf
 def CHECK_HEADERS(conf, list, add_headers=True):
+    '''check for a list of headers'''
     ret = True
     for hdr in to_list(list):
         if not CHECK_HEADER(conf, hdr, add_headers):
             ret = False
     return ret
 
+
 @conf
 def CHECK_TYPES(conf, list):
+    '''check for a list of types'''
     ret = True
     for t in to_list(list):
         if not conf.check(type_name=t, header_name=conf.env.hlist):
             ret = False
     return ret
 
+
 @conf
 def CHECK_TYPE_IN(conf, t, hdr):
+    '''check for a type in a specific header'''
     if conf.check(header_name=hdr):
         conf.check(type_name=t, header_name=hdr)
         return True
     return False
 
+
 @conf
 def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
+    '''check for a type with an alternate'''
     if headers is None:
         headers = conf.env.hlist
     if define is not None:
@@ -59,8 +70,10 @@ def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
         conf.DEFINE(t, alternate)
     return ret
 
+
 @conf
 def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
+    '''check for a variable declaration (or define)'''
     hdrs=''
     if headers is not None:
         hlist = to_list(headers)
@@ -108,19 +121,23 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
 
 @runonce
 def CHECK_FUNC(conf, f):
+    '''check for a function'''
     return conf.check(function_name=f, header_name=conf.env.hlist)
 
 
 @conf
 def CHECK_FUNCS(conf, list):
+    '''check for a list of functions'''
     ret = True
     for f in to_list(list):
         if not CHECK_FUNC(conf, f):
             ret = False
     return ret
 
+
 @conf
 def CHECK_SIZEOF(conf, vars, headers=None, define=None):
+    '''check the size of a type'''
     hdrs=''
     if headers is not None:
         hlist = to_list(headers)
@@ -146,6 +163,37 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
                    define_name=define_name,
                    quote=False,
                    msg="Checking size of %s" % v)
+
+
+@conf
+def CHECK_STRUCTURE_MEMBER(conf, structname, member,
+                           always=False, define=None, headers=None):
+    '''check for a structure member'''
+    hdrs=''
+    if headers is not None:
+        hlist = to_list(headers)
+    else:
+        hlist = conf.env.hlist
+    for h in hlist:
+        hdrs += '#include <%s>\n' % h
+    if define is None:
+        define = 'HAVE_%s' % member.upper()
+    if conf.check(fragment=
+                  '''
+                  %s
+                  int main(void) {
+                    %s s;
+                    void *_x; _x=(void *)&s.%s;
+                    return 0;
+                  }
+                  ''' % (hdrs, structname, member),
+                  execute=0,
+                  msg="Checking for member %s in %s" % (member, structname)):
+        conf.DEFINE(define, 1)
+        return True
+    elif always:
+        conf.DEFINE(define, 0)
+        return False
 
 
 #################################################
