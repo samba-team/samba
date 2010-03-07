@@ -166,9 +166,10 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
 
 
 @conf
-def CHECK_CODE_COMPILES(conf, code, define,
-                        always=False, headers=None):
-    '''check if some code compiles'''
+def CHECK_CODE(conf, code, define,
+               always=False, execute=False, addmain=True,
+               headers=None, msg=None):
+    '''check if some code compiles and/or runs'''
     hdrs=''
     if headers is not None:
         hlist = to_list(headers)
@@ -176,15 +177,27 @@ def CHECK_CODE_COMPILES(conf, code, define,
         hlist = conf.env.hlist
     for h in hlist:
         hdrs += '#include <%s>\n' % h
-    if conf.check(fragment='''
-                  %s
-                  int main(void) {
-                    %s;
-                    return 0;
-                  }
-                  ''' % (hdrs, code),
-                  execute=0,
-                  msg="Checking %s" % define):
+
+    if execute:
+        execute = 1
+    else:
+        execute = 0
+
+    if addmain:
+        fragment='#include "confdefs.h"\n%s\n int main(void) { %s; return 0; }' % (hdrs, code)
+    else:
+        fragment='#include "confdefs.h"\n%s\n%s' % (hdrs, code)
+
+    conf.write_config_header('confdefs.h', top=True)
+
+    if msg is None:
+        msg="Checking for %s" % define
+
+    if conf.check(fragment=fragment,
+                  execute=execute,
+                  ccflags='-I%s' % conf.curdir,
+                  includes='# . ../default',
+                  msg=msg):
         conf.DEFINE(define, 1)
         return True
     elif always:
