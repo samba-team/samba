@@ -93,7 +93,7 @@ static int objectclass_sort(struct ldb_module *module,
 			    struct class_list **sorted_out) 
 {
 	struct ldb_context *ldb;
-	int i, lowest;
+	unsigned int i, lowest;
 	struct class_list *unsorted = NULL, *sorted = NULL, *current = NULL, *poss_parent = NULL, *new_parent = NULL, *current_lowest = NULL;
 
 	ldb = ldb_module_get_ctx(module);
@@ -178,7 +178,7 @@ static int objectclass_sort(struct ldb_module *module,
 
 	do
 	{
-		lowest = INT_MAX;
+		lowest = UINT_MAX;
 		current_lowest = NULL;
 		for (current = unsorted; schema && current; current = current->next) {
 			if(current->objectclass->subClass_order < lowest) {
