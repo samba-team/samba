@@ -1,4 +1,6 @@
 bin/
+.waf*
+.lock-wscript
 *~
 *.1
 *.3
