@@ -43,15 +43,20 @@ def CHECK_TYPE(conf, t, alternate):
         conf.DEFINE(t, alternate)
 
 @conf
-def CHECK_VARIABLE(conf, v):
+def CHECK_VARIABLE(conf, v, define=None, always=False):
     hdrs=''
     for h in conf.env.hlist:
         hdrs += '#include <%s>\n' % h
+    if define is None:
+        define = 'HAVE_%s' % v.upper()
     if conf.check(fragment=
                   '%s\nint main(void) {void *_x; _x=(void *)&%s; return 0;}\n' % (hdrs, v),
                   execute=0,
                   msg="Checking for variable %s" % v):
-        conf.DEFINE('HAVE_%s' % v.upper(), 1)
+        conf.DEFINE(define, 1)
+    elif always:
+        conf.DEFINE(define, 0)
+
 
 @runonce
 def CHECK_FUNC(conf, f):
