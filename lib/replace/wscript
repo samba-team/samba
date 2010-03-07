@@ -118,12 +118,14 @@ def configure(conf):
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
     conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
     conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
-    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs  crypt')
+    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs')
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
     conf.CHECK_FUNCS_IN('res_search', 'resolv')
     conf.CHECK_FUNCS_IN('gettext', 'intl')
+
+    conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True)
 
