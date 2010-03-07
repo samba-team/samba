@@ -77,7 +77,7 @@ static int partition_load_replicate_dns(struct ldb_context *ldb, struct partitio
 static int partition_load_modules(struct ldb_context *ldb, 
 				  struct partition_private_data *data, struct ldb_message *msg) 
 {
-	int i;
+	unsigned int i;
 	struct ldb_message_element *modules_attributes = ldb_msg_find_element(msg, "modules");
 	talloc_free(data->modules);
 	if (!modules_attributes) {
@@ -176,7 +176,7 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 
 static const char **find_modules_for_dn(struct partition_private_data *data, struct ldb_dn *dn) 
 {
-	int i;
+	unsigned int i;
 	struct partition_module *default_mod = NULL;
 	for (i=0; data->modules && data->modules[i]; i++) {
 		if (!data->modules[i]->dn) {
@@ -347,7 +347,9 @@ static int partition_register(struct ldb_context *ldb, struct dsdb_control_curre
 static int add_partition_to_data(struct ldb_context *ldb, struct partition_private_data *data,
 				 struct dsdb_partition *partition)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
+
 	/* Count the partitions */
 	for (i=0; data->partitions && data->partitions[i]; i++) { /* noop */};
 	
@@ -374,7 +376,8 @@ int partition_reload_if_required(struct ldb_module *module,
 				 struct partition_private_data *data)
 {
 	uint64_t seq;
-	int ret, i;
+	int ret;
+	unsigned int i;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
 	struct ldb_message_element *partition_attributes;
@@ -412,7 +415,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	partition_attributes = ldb_msg_find_element(msg, "partition");
 
 	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
-		int j;
+		unsigned int j;
 		bool new_partition = true;
 		const char *filename = NULL;
 		DATA_BLOB dn_blob;
@@ -536,7 +539,8 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 						 struct partition_private_data *data, 
 						 struct dsdb_partition *partition)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 	/* for each replicate, copy from main partition.  If we get an error, we report it up the chain */
 	for (i=0; data->replicate && data->replicate[i]; i++) {
 		struct ldb_result *replicate_res;
@@ -664,7 +668,8 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
  * instanceType */
 int partition_create(struct ldb_module *module, struct ldb_request *req)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_request *mod_req, *last_req = req;
 	struct ldb_message *mod_msg;

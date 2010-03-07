@@ -41,8 +41,8 @@ struct partition_context {
 	struct ldb_request *req;
 
 	struct part_request *part_req;
-	int num_requests;
-	int finished_requests;
+	unsigned int num_requests;
+	unsigned int finished_requests;
 
 	const char **referrals;
 };
@@ -91,7 +91,7 @@ static struct dsdb_partition *find_partition(struct partition_private_data *data
 					     struct ldb_dn *dn,
 					     struct ldb_request *req)
 {
-	int i;
+	unsigned int i;
 	struct ldb_control *partition_ctrl;
 
 	/* see if the request has the partition DN specified in a
@@ -365,7 +365,7 @@ static int partition_send_all(struct ldb_module *module,
 			      struct partition_context *ac, 
 			      struct ldb_request *req) 
 {
-	int i;
+	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 	int ret = partition_prep_request(ac, NULL);
@@ -390,7 +390,7 @@ static int partition_send_all(struct ldb_module *module,
 static int partition_replicate(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn) 
 {
 	struct partition_context *ac;
-	unsigned i;
+	unsigned int i;
 	int ret;
 	struct dsdb_partition *partition;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
@@ -710,7 +710,8 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 /* start a transaction */
 static int partition_start_trans(struct ldb_module *module)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 	/* Look at base DN */
@@ -753,7 +754,7 @@ static int partition_start_trans(struct ldb_module *module)
 /* prepare for a commit */
 static int partition_prepare_commit(struct ldb_module *module)
 {
-	int i;
+	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 
@@ -783,7 +784,8 @@ static int partition_prepare_commit(struct ldb_module *module)
 /* end a transaction */
 static int partition_end_trans(struct ldb_module *module)
 {
-	int i, ret, ret2;
+	int ret, ret2;
+	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 
@@ -823,7 +825,8 @@ static int partition_end_trans(struct ldb_module *module)
 /* delete a transaction */
 static int partition_del_trans(struct ldb_module *module)
 {
-	int i, ret, final_ret = LDB_SUCCESS;
+	int ret, final_ret = LDB_SUCCESS;
+	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
@@ -915,7 +918,8 @@ int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem
 /* FIXME: This function is still semi-async */
 static int partition_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
-	int i, ret;
+	int ret;
+	unsigned int i;
 	uint64_t seq_number = 0;
 	uint64_t timestamp_sequence = 0;
 	uint64_t timestamp = 0;
