@@ -86,6 +86,7 @@ def configure(conf):
 
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t')
     conf.CHECK_TYPES('comparison_fn_t socklen_t bool')
+    conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
 
     conf.CHECK_TYPE('int8_t', 'char')
     conf.CHECK_TYPE('int16_t', 'short')
@@ -151,20 +152,16 @@ def configure(conf):
     conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
 
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
-        conf.define('HAVE_EPOLL', 1)
+        conf.DEFINE('HAVE_EPOLL', 1)
 
-    conf.check_cc(fragment='''
-    #include <stdarg.h>
-    va_list ap1,ap2;
-    va_copy(ap1,ap2);
-    int main(void)
-    { return 0; }''',
-                define_name="HAVE_VA_COPY",
-		execute=0,
-		link=0,
-                define_ret=0,
-                quote=0,
-		msg="Checking for va_copy")
+    conf.CHECK_CODE('va_list ap1,ap2; va_copy(ap1,ap2)',
+                    define="HAVE_VA_COPY",
+                    msg="Checking for va_copy")
+
+    conf.CHECK_CODE('''
+                    #define eprintf(...) fprintf(stderr, __VA_ARGS__)
+                    eprintf("bla", "bar")
+                    ''', define='HAVE__VA_ARGS__MACRO')
 
     conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
 
