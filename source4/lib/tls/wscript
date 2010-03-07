@@ -1,0 +1,27 @@
+import Options
+
+def set_options(opt):
+    # allow users to disable gnutls
+    opt.add_option('--disable-gnutls',
+                   help=("Disable use of gnutls"),
+                   action="store_true", dest='disable_gnutls', default=False)
+
+def configure(conf):
+    # check for gnutls
+    conf.check_cfg(package='gnutls',
+                   args='"gnutls >= 1.4.0" --cflags --libs',
+                   msg='Checking for gnutls >= 1.4.0', mandatory=False)
+
+    if 'HAVE_GNUTLS' in conf.env and not Options.options.disable_gnutls:
+        conf.DEFINE('ENABLE_GNUTLS', 1)
+
+    conf.CHECK_HEADERS('gnutls/gnutls.h')
+
+    # check for gnutls_datum types
+    conf.CHECK_TYPES('gnutls_datum gnutls_datum_t')
+
+def build(bld):
+    bld.SAMBA_SUBSYSTEM('LIBTLS',
+                        source='tls.c tlscert.c',
+                        public_deps='talloc GNUTLS GCRYPT LIBSAMBA-HOSTCONFIG samba_socket'
+                        )

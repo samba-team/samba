@@ -14,6 +14,7 @@ def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
     opt.recurse(LIBLDB_DIR)
     opt.recurse('selftest')
+    opt.recurse('lib/tls')
 
 
 def configure(conf):
@@ -23,6 +24,7 @@ def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBLDB_DIR)
     conf.sub_config('heimdal_build')
+    conf.sub_config('lib/tls')
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib  #source4/include #lib/socket_wrapper #lib/talloc #lib/replace #lib/event')

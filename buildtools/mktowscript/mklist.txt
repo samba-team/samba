@@ -60,7 +60,6 @@ source4/lib/com/config.mk
 source4/lib/registry/config.mk
 source4/lib/wmi/config.mk
 source4/lib/socket/config.mk
-source4/lib/tls/config.mk
 source4/lib/samba3/config.mk
 source4/ldap_server/config.mk
 libgpo/config.mk
