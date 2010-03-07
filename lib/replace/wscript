@@ -105,7 +105,7 @@ def configure(conf):
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
     conf.CHECK_TYPE_IN('struct sockaddr', 'sys/socket.h')
-    conf.CHECK_TYPE_IN('struct sockaddr_in6', 'sys/socket.h')
+    conf.CHECK_CODE('struct sockaddr_in6 x', define='HAVE_STRUCT_SOCKADDR_IN6')
     conf.CHECK_TYPE_IN('struct sockaddr_storage', 'sys/socket.h')
     conf.CHECK_TYPE_IN('sa_family_t', 'sys/socket.h')
 
