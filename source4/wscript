@@ -15,6 +15,9 @@ def set_options(opt):
     opt.recurse(LIBLDB_DIR)
     opt.recurse('selftest')
     opt.recurse('lib/tls')
+    opt.recurse('../lib/nss_wrapper')
+    opt.recurse('../lib/socket_wrapper')
+    opt.recurse('../lib/uid_wrapper')
 
 
 def configure(conf):
@@ -30,6 +33,9 @@ def configure(conf):
     conf.sub_config('../lib/zlib')
     conf.sub_config('../lib/util/charset')
     conf.sub_config('auth')
+    conf.sub_config('../lib/nss_wrapper')
+    conf.sub_config('../lib/socket_wrapper')
+    conf.sub_config('../lib/uid_wrapper')
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib  #source4/include #lib/socket_wrapper #lib/talloc #lib/replace #lib/event')

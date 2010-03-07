@@ -1,0 +1,11 @@
+import Options
+
+def set_options(opt):
+        opt.add_option('--enable-uid-wrapper',
+                   help=("Turn on uid wrapper library (default=no)"),
+                   action="store_true", dest='enable_uid_wrapper', default=False)
+
+def configure(conf):
+    if Options.options.enable_uid_wrapper or Options.options.developer:
+        conf.DEFINE('UID_WRAPPER', 1)
+

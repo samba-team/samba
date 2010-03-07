@@ -1,0 +1,11 @@
+import Options
+
+def set_options(opt):
+        opt.add_option('--enable-nss-wrapper',
+                   help=("Turn on nss wrapper library (default=no)"),
+                   action="store_true", dest='enable_nss_wrapper', default=False)
+
+def configure(conf):
+    if Options.options.enable_nss_wrapper or Options.options.developer:
+        conf.DEFINE('NSS_WRAPPER', 1)
+
