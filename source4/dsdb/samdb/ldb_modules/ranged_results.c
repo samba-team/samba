@@ -58,7 +58,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	struct rr_context *ac;
-	int i, j;
+	unsigned int i, j;
 
 	ac = talloc_get_type(req->context, struct rr_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -174,7 +174,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int rr_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	int i;
+	unsigned int i;
 	unsigned int start, end;
 	const char **new_attrs = NULL;
 	bool found_rr = false;
