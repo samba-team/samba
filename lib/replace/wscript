@@ -193,6 +193,20 @@ def configure(conf):
                            execute=True):
             break
 
+    conf.CHECK_CODE('''
+		    typedef struct {unsigned x;} FOOBAR;
+                    #define X_FOOBAR(x) ((FOOBAR) { x })
+                    #define FOO_ONE X_FOOBAR(1)
+                    FOOBAR f = FOO_ONE;
+                    static const struct {
+                        FOOBAR y;
+                    } f2[] = {
+                        {FOO_ONE}
+                    };
+                    static const FOOBAR f3[] = {FOO_ONE};
+                    ''',
+                    define='HAVE_IMMEDIATE_STRUCTURES')
+
 
 
 def build(bld):
