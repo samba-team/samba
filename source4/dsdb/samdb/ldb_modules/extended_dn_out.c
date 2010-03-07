@@ -49,7 +49,7 @@ struct extended_dn_out_private {
 
 static bool is_attr_in_list(const char * const * attrs, const char *attr)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; attrs[i]; i++) {
 		if (ldb_attr_cmp(attrs[i], attr) == 0)
@@ -62,7 +62,7 @@ static bool is_attr_in_list(const char * const * attrs, const char *attr)
 static char **copy_attrs(void *mem_ctx, const char * const * attrs)
 {
 	char **nattrs;
-	int i, num;
+	unsigned int i, num;
 
 	for (num = 0; attrs[num]; num++);
 
@@ -84,7 +84,7 @@ static char **copy_attrs(void *mem_ctx, const char * const * attrs)
 static bool add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 {
 	char **nattrs;
-	int num;
+	unsigned int num;
 
 	for (num = 0; (*attrs)[num]; num++);
 
@@ -180,7 +180,7 @@ static int handle_dereference_openldap(struct ldb_dn *dn,
 {
 	const struct ldb_val *entryUUIDblob, *sid_blob;
 	struct ldb_message fake_msg; /* easier to use routines that expect an ldb_message */
-	int j;
+	unsigned int j;
 	
 	fake_msg.num_elements = 0;
 			
@@ -233,7 +233,7 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 {
 	const struct ldb_val *nsUniqueIdBlob, *sidBlob;
 	struct ldb_message fake_msg; /* easier to use routines that expect an ldb_message */
-	int j;
+	unsigned int j;
 	
 	fake_msg.num_elements = 0;
 			
@@ -318,7 +318,8 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	struct extended_search_context *ac;
 	struct ldb_control *control;
 	struct dsdb_openldap_dereference_result_control *dereference_control = NULL;
-	int ret, i, j;
+	int ret;
+	unsigned int i, j;
 	struct ldb_message *msg = ares->message;
 	struct extended_dn_out_private *p;
 	struct ldb_context *ldb;
@@ -392,7 +393,8 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		}
 	}
 
-	/* Walk the retruned elements (but only if we have a schema to interpret the list with) */
+	/* Walk the returned elements (but only if we have a schema to
+	 * interpret the list with) */
 	for (i = 0; ac->schema && i < msg->num_elements; i++) {
 		bool make_extended_dn;
 		const struct dsdb_attribute *attribute;
@@ -734,7 +736,8 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 
 static int extended_dn_out_dereference_init(struct ldb_module *module, const char *attrs[])
 {
-	int ret, i = 0;
+	int ret;
+	unsigned int i = 0;
 	struct extended_dn_out_private *p = talloc_zero(module, struct extended_dn_out_private);
 	struct dsdb_extended_dn_store_format *dn_format;
 	struct dsdb_openldap_dereference_control *dereference_control;
