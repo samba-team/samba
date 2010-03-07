@@ -280,6 +280,8 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
         LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
         return False
 
+    conf.define('HAVE_LIB%s' % library.upper(), 1)
+
     ret = True
     for f in remaining:
         if not conf.check(function_name=f, lib=library, header_name=conf.env.hlist):
