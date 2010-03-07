@@ -37,7 +37,7 @@
 
 static struct ldb_message_element *objectguid_find_attribute(const struct ldb_message *msg, const char *name)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
 		if (ldb_attr_cmp(name, msg->elements[i].name) == 0) {
