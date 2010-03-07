@@ -21,6 +21,13 @@ def set_options(opt):
 
 
 def configure(conf):
+    conf.define('PACKAGE_NAME', 'samba')
+    conf.define('PACKAGE_STRING', 'samba 4')
+    conf.define('PACKAGE_TARNAME',  'samba')
+    conf.define('PACKAGE_URL', "")
+    conf.define('PACKAGE_VERSION', "4")
+    conf.define('PACKAGE_BUGREPORT', 'samba-technical@samba.org')
+
     conf.DEFINE('_SAMBA_BUILD_', 4)
     conf.find_program('python', var='PYTHON', mandatory=True)
     conf.find_program('perl', var='PERL', mandatory=True)
