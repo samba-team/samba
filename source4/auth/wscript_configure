@@ -1,0 +1,2 @@
+conf.CHECK_HEADERS('security/pam_appl.h')
+conf.CHECK_FUNCS_IN('pam_start', 'pam')
