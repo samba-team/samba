@@ -119,6 +119,7 @@ def configure(conf):
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
     conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
     conf.CHECK_FUNCS('dirfd getdirentries getdents syslog getaddrinfo freeaddrinfo')
+    conf.CHECK_FUNCS('gai_strerror')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
@@ -132,6 +133,8 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True)
+
+    conf.CHECK_VARIABLE('__FUNCTION__', define='HAVE_FUNCTION_MACRO')
 
     conf.CHECK_DECLS('snprintf vsnprintf asprintf vasprintf')
 
