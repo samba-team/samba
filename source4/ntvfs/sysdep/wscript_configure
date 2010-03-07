@@ -1,0 +1,7 @@
+conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h', add_headers=False)
+
+conf.CHECK_FUNCS('inotify_init')
+
+conf.CHECK_VARIABLE('__NR_inotify_init')
+conf.CHECK_VARIABLE('F_SETLEASE')
+conf.CHECK_VARIABLE('SA_SIGINFO')
