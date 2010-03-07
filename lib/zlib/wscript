@@ -1,0 +1,11 @@
+def configure(conf):
+    conf.CHECK_HEADERS('zlib.h')
+    conf.CHECK_FUNCS_IN('zlibVersion', 'z')
+
+    conf.CHECK_CODE('''
+                    #if (ZLIB_VERNUM >= 0x1230)
+                    #else
+                    #error "ZLIB_VERNUM < 0x1230"
+                    #endif
+                    ''',
+                    define='HAVE_ZLIB')
