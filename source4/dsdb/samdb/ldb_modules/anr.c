@@ -239,7 +239,7 @@ static int anr_replace_subtrees(struct anr_context *ac,
 				struct ldb_parse_tree **ntree)
 {
 	int ret;
-	int i;
+	unsigned int i;
 
 	switch (tree->operation) {
 	case LDB_OP_AND:
