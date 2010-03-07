@@ -17,3 +17,12 @@ conf.CHECK_CODE('getxattr(NULL, NULL, NULL, 0, 0, 0)',
 if conf.CONFIG_SET('HAVE_FLISTXATTR'):
     conf.DEFINE('HAVE_XATTR_SUPPORT', 1)
 
+conf.CHECK_HEADERS('sys/statvfs.h')
+
+conf.CHECK_CODE('struct statvfs64 fsd; exit(statvfs64 (".", &fsd))',
+                define='STAT_STATVFS64',
+                headers='unistd.h sys/types.h sys/statvfs.h',
+                local_include=False)
+
+
+
