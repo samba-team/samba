@@ -236,3 +236,8 @@ def to_list(str):
     if isinstance(str, list):
         return str
     return shlex.split(str)
+
+@conf
+def SUBST_ENV_VAR(conf, varname):
+    '''Substitute an environment variable for any embedded variables'''
+    return Utils.subst_vars(conf.env[varname], conf.env)
