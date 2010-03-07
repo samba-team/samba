@@ -1,0 +1,6 @@
+
+conf.CHECK_HEADERS('execinfo.h')
+
+# backtrace could be in libexecinfo or in libc
+conf.CHECK_FUNCS_IN('backtrace', 'execinfo')
+conf.CHECK_FUNCS('backtrace')

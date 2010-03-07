@@ -72,7 +72,7 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
     conf.CHECK_HEADERS('resolv.h libintl.h errno.h')
-    conf.CHECK_HEADERS('execinfo.h gcrypt.h getopt.h iconv.h')
+    conf.CHECK_HEADERS('gcrypt.h getopt.h iconv.h')
     conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h popt.h sasl/sasl.h')
     conf.CHECK_HEADERS('security/pam_appl.h sys/inotify.h zlib.h asm/unistd.h')
 
