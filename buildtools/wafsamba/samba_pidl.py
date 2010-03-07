@@ -85,7 +85,7 @@ Build.BuildContext.SAMBA_PIDL_TDR = SAMBA_PIDL_TDR
 #################################################################
 # define a set of Samba PIDL targets
 def SAMBA_PIDL_LIST(bld, name, source,options=''):
-    for p in source.split():
+    for p in to_list(source):
         bld.SAMBA_PIDL(name, p, options)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 

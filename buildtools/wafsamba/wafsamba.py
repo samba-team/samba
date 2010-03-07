@@ -27,12 +27,6 @@ def SAMBA_BUILD_ENV(conf):
     if not os.path.exists(libpath):
         os.mkdir(libpath)
 
-##############################################
-# remove .. elements from a path list
-def NORMPATH(bld, ilist):
-    return " ".join([os.path.normpath(p) for p in ilist.split(" ")])
-Build.BuildContext.NORMPATH = NORMPATH
-
 ################################################################
 # add an init_function to the list for a subsystem
 def ADD_INIT_FUNCTION(bld, subsystem, init_function):
@@ -102,7 +96,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
     lib_deps = LOCAL_CACHE(bld, 'LIB_DEPS')
     if not name in lib_deps:
         lib_deps[name] = {}
-    list = deps.split()
+    list = to_list(deps)
     list2 = []
     for d in list:
         lib_deps[name][d] = True;
@@ -161,9 +155,9 @@ def ADD_DEPENDENCIES(bld, name, deps):
         if recurse and (d in lib_deps):
             rec_deps = ' '.join(lib_deps[d].keys())
             (rec_sysdeps, rec_localdeps, rec_add_objects) = ADD_DEPENDENCIES(bld, d, rec_deps)
-            sysdeps.extend(rec_sysdeps.split())
-            localdeps.extend(rec_localdeps.split())
-            add_objects.extend(rec_add_objects.split())
+            sysdeps.extend(to_list(rec_sysdeps))
+            localdeps.extend(to_list(rec_localdeps))
+            add_objects.extend(to_list(rec_add_objects))
 
     debug('deps: Dependencies for %s: sysdeps: %u  localdeps: %u  add_objects=%u' % (
             name, len(sysdeps), len(localdeps), len(add_objects)))
@@ -175,7 +169,7 @@ def ADD_DEPENDENCIES(bld, name, deps):
 def SAMBA_LIBRARY_INCLUDE_LIST(bld, deps):
     ret = bld.curdir + ' '
     cache = LOCAL_CACHE(bld, 'INCLUDE_LIST')
-    for l in deps.split():
+    for l in to_list(deps):
         if l in cache:
             ret = ret + cache[l] + ' '
     if 'EXTRA_INCLUDES' in bld.env:
@@ -272,7 +266,7 @@ def SAMBA_BINARY(bld, binname, source,
 
     cache = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
-        for m in modules.split():
+        for m in to_list(modules):
             bld.ASSERT(m in cache,
                        "No init_function defined for module '%s' in binary '%s'" % (m, binname))
             cflags += ' -DSTATIC_%s_MODULES="%s"' % (m, cache[m])

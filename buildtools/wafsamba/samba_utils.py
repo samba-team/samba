@@ -6,6 +6,7 @@ from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
 from TaskGen import extension
+import shlex
 
 LIB_PATH="shared"
 
@@ -109,7 +110,7 @@ Build.BuildContext.ASSERT = ASSERT
 # create a list of files by pre-pending each with a subdir name
 def SUBDIR(bld, subdir, list):
     ret = ''
-    for l in list.split():
+    for l in to_list(list):
         ret = ret + subdir + '/' + l + ' '
     return ret
 Build.BuildContext.SUBDIR = SUBDIR
@@ -117,7 +118,7 @@ Build.BuildContext.SUBDIR = SUBDIR
 ##############################################
 # remove .. elements from a path list
 def NORMPATH(bld, ilist):
-    return " ".join([os.path.normpath(p) for p in ilist.split(" ")])
+    return " ".join([os.path.normpath(p) for p in to_list(ilist)])
 Build.BuildContext.NORMPATH = NORMPATH
 
 #######################################################
@@ -229,3 +230,9 @@ def dbg(self):
 	if self.target == 'HEIMDAL_HEIM_ASN1':
 		print "@@@@@@@@@@@@@@2", self.includes, self.env._CCINCFLAGS
 
+
+def to_list(str):
+    '''Split a list, preserving quoted strings and existing lists'''
+    if isinstance(str, list):
+        return str
+    return shlex.split(str)
