@@ -837,6 +837,7 @@ NTSTATUS wreplsrv_pull_cycle_recv(struct composite_context *c)
 
 enum wreplsrv_push_notify_stage {
 	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT,
+	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE,
 	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM,
 	WREPLSRV_PUSH_NOTIFY_STAGE_DONE
 };
@@ -864,9 +865,7 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	struct wrepl_packet *req = &state->req_packet;
 	struct wrepl_replication *repl_out = &state->req_packet.message.replication;
 	struct wrepl_table *table_out = &state->req_packet.message.replication.info.table;
-	struct wreplsrv_in_connection *wrepl_in;
 	NTSTATUS status;
-	struct socket_context *sock;
 
 	/* prepare the outgoing request */
 	req->opcode	= WREPL_OPCODE_BITS;
@@ -885,49 +884,11 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 					   state->wreplconn->sock, req, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 
-	/*
-	 * now we need to convert the wrepl_socket (client connection)
-	 * into a wreplsrv_in_connection (server connection), because
-	 * we'll act as a server on this connection after the WREPL_REPL_UPDATE*
-	 * message is received by the peer.
-	 */
+	tevent_req_set_callback(state->subreq,
+				wreplsrv_push_notify_handler_treq,
+				state);
 
-	/* steal the socket_context */
-	sock = state->wreplconn->sock->sock;
-	state->wreplconn->sock->sock = NULL;
-	talloc_steal(state, sock);
-
-	/*
-	 * TODO: steal the tstream if we switch the client to tsocket.
-	 * This is just to get a compiler error as soon as we remove
-	 * packet_context.
-	 */
-	state->wreplconn->sock->packet = NULL;
-
-	/*
-	 * free the wrepl_socket (client connection)
-	 */
-	talloc_free(state->wreplconn->sock);
-	state->wreplconn->sock = NULL;
-
-	/*
-	 * now create a wreplsrv_in_connection,
-	 * on which we act as server
-	 *
-	 * NOTE: sock and packet will be stolen by
-	 *       wreplsrv_in_connection_merge()
-	 */
-	status = wreplsrv_in_connection_merge(state->io->in.partner,
-					      sock, &wrepl_in);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	wrepl_in->assoc_ctx.peer_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
-	wrepl_in->assoc_ctx.our_ctx	= 0;
-
-	/* now we can free the wreplsrv_out_connection */
-	TALLOC_FREE(state->wreplconn);
-
-	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_DONE;
+	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE;
 
 	return NT_STATUS_OK;
 }
@@ -1010,6 +971,62 @@ static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_st
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
+static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_state *state)
+{
+	struct wreplsrv_in_connection *wrepl_in;
+	struct socket_context *sock;
+	NTSTATUS status;
+
+	status = wrepl_request_recv(state->subreq, state, NULL);
+	TALLOC_FREE(state->subreq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/*
+	 * now we need to convert the wrepl_socket (client connection)
+	 * into a wreplsrv_in_connection (server connection), because
+	 * we'll act as a server on this connection after the WREPL_REPL_UPDATE*
+	 * message is received by the peer.
+	 */
+
+	/* steal the socket_context */
+	sock = state->wreplconn->sock->sock;
+	state->wreplconn->sock->sock = NULL;
+	talloc_steal(state, sock);
+
+	/*
+	 * TODO: steal the tstream if we switch the client to tsocket.
+	 * This is just to get a compiler error as soon as we remove
+	 * packet_context.
+	 */
+	state->wreplconn->sock->packet = NULL;
+
+	/*
+	 * free the wrepl_socket (client connection)
+	 */
+	talloc_free(state->wreplconn->sock);
+	state->wreplconn->sock = NULL;
+
+	/*
+	 * now create a wreplsrv_in_connection,
+	 * on which we act as server
+	 *
+	 * NOTE: sock and packet will be stolen by
+	 *       wreplsrv_in_connection_merge()
+	 */
+	status = wreplsrv_in_connection_merge(state->io->in.partner,
+					      sock, &wrepl_in);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	wrepl_in->assoc_ctx.peer_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
+	wrepl_in->assoc_ctx.our_ctx	= 0;
+
+	/* now we can free the wreplsrv_out_connection */
+	TALLOC_FREE(state->wreplconn);
+
+	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_DONE;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS wreplsrv_push_notify_wait_inform(struct wreplsrv_push_notify_state *state)
 {
 	NTSTATUS status;
@@ -1029,6 +1046,9 @@ static void wreplsrv_push_notify_handler(struct wreplsrv_push_notify_state *stat
 	switch (state->stage) {
 	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT:
 		c->status = wreplsrv_push_notify_wait_connect(state);
+		break;
+	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE:
+		c->status = wreplsrv_push_notify_wait_update(state);
 		break;
 	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM:
 		c->status = wreplsrv_push_notify_wait_inform(state);
