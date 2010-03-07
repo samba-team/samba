@@ -31,9 +31,9 @@
 #include "librpc/ndr/libndr.h"
 
 struct private_data {
-	int num_controls;
+	unsigned int num_controls;
 	char **controls;
-	int num_partitions;
+	unsigned int num_partitions;
 	struct ldb_dn **partitions;
 };
 
@@ -195,7 +195,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (priv && do_attribute(attrs, "supportedControl")) {
- 		int i;
+		unsigned int i;
 		for (i = 0; i < priv->num_controls; i++) {
 			char *control = talloc_strdup(msg, priv->controls[i]);
 			if (!control) {
@@ -209,7 +209,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  	}
 
 	if (priv && do_attribute(attrs, "namingContexts")) {
-		int i;
+		unsigned int i;
 		for (i = 0; i < priv->num_partitions; i++) {
 			struct ldb_dn *dn = priv->partitions[i];
 			if (ldb_msg_add_steal_string(msg, "namingContexts",
@@ -222,7 +222,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanims"), 
 				       char *);
 	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
-		int i;
+		unsigned int i;
 		for (i = 0; server_sasl && server_sasl[i]; i++) {
 			char *sasl_name = talloc_strdup(msg, server_sasl[i]);
 			if (!sasl_name) {
@@ -248,7 +248,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (schema && do_attribute_explicit(attrs, "dsSchemaAttrCount")) {
 		struct dsdb_attribute *cur;
-		uint32_t n = 0;
+		unsigned int n = 0;
 
 		for (cur = schema->attributes; cur; cur = cur->next) {
 			n++;
@@ -262,7 +262,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (schema && do_attribute_explicit(attrs, "dsSchemaClassCount")) {
 		struct dsdb_class *cur;
-		uint32_t n = 0;
+		unsigned int n = 0;
 
 		for (cur = schema->classes; cur; cur = cur->next) {
 			n++;
@@ -354,7 +354,8 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	   to expand the DNs to have GUID and SID. W2K8 join relies on
 	   this */
 	if (edn_control) {
-		int i, ret;
+		unsigned int i;
+		int ret;
 		for (i=0; dn_attrs[i]; i++) {
 			if (!do_attribute(attrs, dn_attrs[i])) continue;
 			ret = expand_dn_in_message(module, msg, dn_attrs[i],
@@ -787,7 +788,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	const int domain_func_level = dsdb_functional_level(ldb);
 	struct ldb_dn *ntds_settings_dn;
 	TALLOC_CTX *tmp_ctx;
-	uint32_t el_count = 0;
+	unsigned int el_count = 0;
 	struct ldb_message *msg;
 
 	ret = ldb_msg_find_attr_as_int(op_feature_msg, "msDS-RequiredForestBehaviorVersion", 0);
