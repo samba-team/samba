@@ -41,7 +41,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				       struct ldb_message_element *el, struct dsdb_schema *schema,
 				       const struct dsdb_attribute *schema_attr)
 {
-	int i;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *target;
@@ -58,7 +58,8 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 
 	for (i=0; i<el->num_values; i++) {
 		struct dsdb_dn *dsdb_dn;
-		int ret, j;
+		unsigned int j;
+		int ret;
 		struct ldb_result *res;
 		struct ldb_message *msg;
 		struct ldb_message_element *el2;
@@ -144,7 +145,8 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 {
 	struct ldb_result *res;
 	struct ldb_message *msg;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	/*
