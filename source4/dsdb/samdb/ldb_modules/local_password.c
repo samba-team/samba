@@ -151,7 +151,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	struct lpdb_context *ac;
 	struct GUID objectGUID;
 	int ret;
-	int i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "local_password_add\n");
@@ -311,7 +311,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 	struct ldb_message *remote_message;
 	struct ldb_request *remote_req;
 	int ret;
-	int i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "local_password_modify\n");
@@ -784,7 +784,7 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 	struct ldb_reply *merge;
 	struct lpdb_reply *lr;
 	int ret;
-	int i;
+	unsigned int i;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -1013,7 +1013,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	struct ldb_context *ldb;
 	struct ldb_request *remote_req;
 	struct lpdb_context *ac;
-	int i;
+	unsigned int i;
 	int ret;
 	const char * const *search_attrs = NULL;
 
