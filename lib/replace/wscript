@@ -118,7 +118,7 @@ def configure(conf):
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
     conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
-    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog getaddrinfo')
+    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog getaddrinfo freeaddrinfo')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
