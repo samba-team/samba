@@ -21,7 +21,7 @@ def configure(conf):
     conf.CHECK_TYPES('gnutls_datum gnutls_datum_t')
 
     conf.CHECK_HEADERS('gcrypt.h')
-    conf.CHECK_FUNCS_IN('gcry_control', 'gcrypt')
+    conf.CHECK_FUNCS_IN('gpg_err_code_from_errno gcry_control', 'gcrypt')
 
 def build(bld):
     bld.SAMBA_SUBSYSTEM('LIBTLS',
