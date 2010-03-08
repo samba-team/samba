@@ -201,7 +201,7 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, libname, deps)
 
-    ilist = bld.SUBDIR(bld.curdir, includes) + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
+    ilist = includes + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
 
     # this print below should show that we're runnig this code
@@ -351,7 +351,7 @@ def SAMBA_MODULE(bld, modname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, modname, deps)
 
-    ilist = bld.SUBDIR(bld.curdir, includes) + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
+    ilist = includes + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
     bld.SET_BUILD_GROUP('main')
     bld(
@@ -394,7 +394,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, modname, deps)
 
-    ilist = bld.SUBDIR(bld.curdir, includes) + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
+    ilist = includes + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
     bld.SET_BUILD_GROUP(group)
     t = bld(
