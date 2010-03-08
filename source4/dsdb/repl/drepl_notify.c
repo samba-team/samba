@@ -38,6 +38,7 @@
 
 
 struct dreplsrv_op_notify_state {
+	struct tevent_context *ev;
 	struct dreplsrv_notify_operation *op;
 	void *ndr_struct_ptr;
 };
@@ -60,6 +61,7 @@ static struct tevent_req *dreplsrv_op_notify_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->op = op;
 
 	subreq = dreplsrv_out_drsuapi_send(state,
@@ -90,7 +92,7 @@ static void dreplsrv_op_notify_connect_done(struct tevent_req *subreq)
 	dreplsrv_op_notify_replica_sync_trigger(req);
 }
 
-static void dreplsrv_op_notify_replica_sync_done(struct rpc_request *rreq);
+static void dreplsrv_op_notify_replica_sync_done(struct tevent_req *subreq);
 
 static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 {
@@ -99,8 +101,8 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 		struct dreplsrv_op_notify_state);
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
-	struct rpc_request *rreq;
 	struct drsuapi_DsReplicaSync *r;
+	struct tevent_req *subreq;
 
 	r = talloc_zero(state, struct drsuapi_DsReplicaSync);
 	if (tevent_req_nomem(r, req)) {
@@ -125,17 +127,21 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 
 	state->ndr_struct_ptr = r;
 
-	rreq = dcerpc_drsuapi_DsReplicaSync_send(drsuapi->pipe, r, r);
-	if (tevent_req_nomem(rreq, req)) {
+	subreq = dcerpc_drsuapi_DsReplicaSync_r_send(state,
+						     state->ev,
+						     drsuapi->drsuapi_handle,
+						     r);
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	composite_continue_rpc(NULL, rreq, dreplsrv_op_notify_replica_sync_done, req);
+	tevent_req_set_callback(subreq, dreplsrv_op_notify_replica_sync_done, req);
 }
 
-static void dreplsrv_op_notify_replica_sync_done(struct rpc_request *rreq)
+static void dreplsrv_op_notify_replica_sync_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = talloc_get_type(rreq->async.private_data,
-						 struct tevent_req);
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
 	struct dreplsrv_op_notify_state *state =
 		tevent_req_data(req,
 		struct dreplsrv_op_notify_state);
@@ -145,7 +151,8 @@ static void dreplsrv_op_notify_replica_sync_done(struct rpc_request *rreq)
 
 	state->ndr_struct_ptr = NULL;
 
-	status = dcerpc_drsuapi_DsReplicaSync_recv(rreq);
+	status = dcerpc_drsuapi_DsReplicaSync_r_recv(subreq, r);
+	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

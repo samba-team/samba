@@ -33,6 +33,7 @@ struct dreplsrv_drsuapi_connection {
 	 * for a valid connection
 	 */
 	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding_handle *drsuapi_handle;
 
 	DATA_BLOB gensec_skey;
 	struct drsuapi_DsBindInfo28 remote_info28;
