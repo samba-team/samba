@@ -2445,7 +2445,7 @@ SMB_CHECK_DMAPI([], AC_MSG_NOTICE(DMAPI support not present) )
 
 # Add TSM SM VFS module only if there are both GPFS and DMAPI support
 # Theoretically it should work with AIX JFS2 too but this needs testing
-if test x"$samba_cv_HAVE_GPFS" = x"yes" && test x"$samba_dmapi_libs" != x"" ; then
+if test x"$ac_cv_header_gpfs_gpl_h" = x"yes" && test x"$samba_dmapi_libs" != x"" ; then
     default_shared_modules="$default_shared_modules vfs_tsmsm"
 fi
 
