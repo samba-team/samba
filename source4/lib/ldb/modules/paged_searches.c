@@ -52,7 +52,7 @@ struct ps_context {
 	bool pending;
 
 	char **saved_referrals;
-	int num_referrals;
+	unsigned int num_referrals;
 
 	struct ldb_request *down_req;
 };
@@ -132,7 +132,7 @@ static int send_referrals(struct ps_context *ac)
 {
 	struct ldb_reply *ares;
 	int ret;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < ac->num_referrals; i++) {
 		ares = talloc_zero(ac->req, struct ldb_reply);
