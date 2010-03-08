@@ -208,8 +208,6 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 
 SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
 
-ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@ @CIFSUMOUNT_PROGS@
-
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ $(TDBBACKUP) \
@@ -1039,12 +1037,6 @@ CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(LDB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 	  $(LIBNDR_GEN_OBJ0)
 
-CIFS_MOUNT_OBJ = ../client/mount.cifs.o ../client/mtab.o
-
-CIFS_UMOUNT_OBJ = ../client/umount.cifs.o ../client/mtab.o
-
-CIFS_UPCALL_OBJ = ../client/cifs.upcall.o
-
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) \
                $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_ERR_OBJ)
 
@@ -1358,8 +1350,8 @@ SPLIT_TOKENS_OBJ = utils/split_tokens.o \
 ######################################################################
 # now the rules...
 ######################################################################
-all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @CIFSUPCALL_PROGS@ \
+all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) \
+	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) \
 	$(EXTRA_ALL_TARGETS)
 
 basics::
@@ -1619,21 +1611,6 @@ bin/smbspool@EXEEXT@: $(BINARY_PREREQS) $(CUPS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(
 	@$(CC) -o $@ $(CUPS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
-
-bin/mount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_MOUNT_OBJ)
-	@echo Linking $@
-	@$(CC) -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
-
-bin/umount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UMOUNT_OBJ)
-	@echo Linking $@
-	@$(CC) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
-
-bin/cifs.upcall@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UPCALL_OBJ) $(LIBSMBCLIENT_OBJ1) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
-	@echo Linking $@
-	@$(CC) -o $@ $(CIFS_UPCALL_OBJ) $(DYNEXP) $(LDFLAGS) \
-		$(LIBSMBCLIENT_OBJ1) $(LIBS) -lkeyutils $(KRB5LIBS) \
-		$(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBWBCLIENT_LIBS) \
-		$(LIBTDB_LIBS) $(NSCD_LIBS) $(ZLIB_LIBS)
 
 bin/testparm@EXEEXT@: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
@@ -2973,7 +2950,7 @@ bin/split_tokens@EXEEXT@: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(L
 		$(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUMOUNT@ @INSTALL_CIFSUPCALL@ installman \
+install:: installservers installbin installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
 		@INSTALL_PAM_MODULES@ installlibs installmo
 
@@ -2998,18 +2975,6 @@ installservers:: all installdirs
 
 installbin:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
-
-installcifsmount:: @CIFSMOUNT_PROGS@
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
-
-installcifsumount:: @CIFSUMOUNT_PROGS@
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSUMOUNT_PROGS@
-
-installcifsupcall:: @CIFSUPCALL_PROGS@
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(SBINDIR)
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) @CIFSUPCALL_PROGS@
 
 # Some symlinks are required for the 'probing' of modules.
 # This mechanism should go at some point..
@@ -3087,7 +3052,7 @@ showlayout::
 	@echo "  codepagedir: $(CODEPAGEDIR)"
 
 
-uninstall:: uninstallmo uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSUMOUNT@ @UNINSTALL_CIFSUPCALL@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
+uninstall:: uninstallmo uninstallman uninstallservers uninstallbin uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
 
 uninstallmo::
 	@$(SHELL) $(srcdir)/script/uninstallmo.sh $(DESTDIR) $(LOCALEDIR) $(srcdir)
@@ -3100,15 +3065,6 @@ uninstallservers::
 
 uninstallbin::
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
-
-uninstallcifsmount::
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
-
-uninstallcifsumount::
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSUMOUNT_PROGS@
-
-uninstallcifsupcall::
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSUPCALL_PROGS@
 
 uninstallmodules::
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
@@ -3159,7 +3115,7 @@ clean:: cleanlibs
 		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*/*/*.o ../nsswitch/*.@SHLIBEXT@ \
 		../client/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
 		$(EVERYTHING_PROGS) \
 		bin/timelimit \
