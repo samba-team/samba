@@ -957,10 +957,17 @@ int tldap_simple_bind(struct tldap_context *ld, const char *dn,
 /*****************************************************************************/
 
 /* can't use isalpha() as only a strict set is valid for LDAP */
-#define TLDAP_IS_ALPHA(c) ((((c) >= 'a') && ((c) <= 'z')) || \
-			   (((c) >= 'A') && ((c) <= 'Z')))
 
-#define TLDAP_IS_ADH(c) (TLDAP_IS_ALPHA(c) || isdigit(c) || (c) == '-')
+static bool tldap_is_alpha(char c)
+{
+	return (((c >= 'a') && (c <= 'z')) || \
+		((c >= 'A') && (c <= 'Z')));
+}
+
+static bool tldap_is_adh(char c)
+{
+	return tldap_is_alpha(c) || isdigit(c) || (c == '-');
+}
 
 #define TLDAP_FILTER_AND  ASN1_CONTEXT(0)
 #define TLDAP_FILTER_OR   ASN1_CONTEXT(1)
@@ -992,7 +999,7 @@ static bool tldap_is_attrdesc(const char *s, int len, bool no_tagopts)
 	/* first char has stricter rules */
 	if (isdigit(*s)) {
 		is_oid = true;
-	} else if (!TLDAP_IS_ALPHA(*s)) {
+	} else if (!tldap_is_alpha(*s)) {
 		/* bad first char */
 		return false;
 	}
@@ -1013,7 +1020,7 @@ static bool tldap_is_attrdesc(const char *s, int len, bool no_tagopts)
 				continue;
 			}
 		} else {
-			if (TLDAP_IS_ADH(s[i])) {
+			if (tldap_is_adh(s[i])) {
 				continue;
 			}
 		}
