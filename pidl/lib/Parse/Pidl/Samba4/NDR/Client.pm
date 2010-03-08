@@ -114,6 +114,181 @@ sub ParseFunctionSync($$$)
 	$res .= "}\n\n";
 }
 
+sub ParseFunction_r_State($$$)
+{
+	my ($interface, $fn, $name) = @_;
+	my $uname = uc $name;
+
+	if (has_property($fn, "todo")) {
+		return;
+	}
+
+	$res .= "struct dcerpc_$name\_r_state {\n";
+	$res .= "\tTALLOC_CTX *out_mem_ctx;\n";
+	$res .= "};\n";
+	$res .= "\n";
+	$res .= "static void dcerpc_$name\_r_done(struct rpc_request *subreq);\n";
+	$res .= "\n";
+}
+
+sub ParseFunction_r_Send($$$)
+{
+	my ($interface, $fn, $name) = @_;
+	my $uname = uc $name;
+
+	if (has_property($fn, "todo")) {
+		return;
+	}
+
+	my $proto = "struct tevent_req *dcerpc_$name\_r_send(TALLOC_CTX *mem_ctx,\n";
+	$proto   .= "\tstruct tevent_context *ev,\n",
+	$proto   .= "\tstruct dcerpc_binding_handle *h,\n",
+	$proto   .= "\tstruct $name *r)";
+
+	$res_hdr .= "\n$proto;\n";
+
+	$res .= "$proto\n{\n";
+
+	$res .= "\tstruct tevent_req *req;\n";
+	$res .= "\tstruct dcerpc_$name\_r_state *state;\n";
+	$res .= "\tstruct dcerpc_pipe *p =\n";
+	$res .= "\t\ttalloc_get_type_abort(h->private_data,\n";
+	$res .= "\t\tstruct dcerpc_pipe);\n";
+	$res .= "\tstruct rpc_request *subreq;\n";
+	$res .= "\n";
+
+	$res .= "\treq = tevent_req_create(mem_ctx, &state,\n";
+	$res .= "\t\t\t\tstruct dcerpc_$name\_r_state);\n";
+	$res .= "\tif (req == NULL) {\n";
+	$res .= "\t\treturn NULL;\n";
+	$res .= "\t}\n";
+	$res .= "\n";
+
+	my $out_params = 0;
+	foreach (@{$fn->{ELEMENTS}}) {
+		if (grep(/out/, @{$_->{DIRECTION}})) {
+			$out_params++;
+		}
+	}
+
+	my $submem;
+	if ($out_params > 0) {
+		$res .= "\tstate->out_mem_ctx = talloc_new(state);\n";
+		$res .= "\tif (tevent_req_nomem(state->out_mem_ctx, req)) {\n";
+		$res .= "\t\treturn tevent_req_post(req, ev);\n";
+		$res .= "\t}\n";
+		$res .= "\n";
+		$submem = "state->out_mem_ctx";
+	} else {
+		$res .= "\tstate->out_mem_ctx = NULL;\n";
+		$submem = "state";
+	}
+
+	$res .= "\tsubreq = dcerpc_$name\_send(p, $submem, r);\n";
+	$res .= "\tif (tevent_req_nomem(subreq, req)) {\n";
+	$res .= "\t\treturn tevent_req_post(req, ev);\n";
+	$res .= "\t}\n";
+	$res .= "\tsubreq->async.callback = dcerpc_$name\_r_done;\n";
+	$res .= "\tsubreq->async.private_data = req;\n";
+	$res .= "\n";
+
+	$res .= "\treturn req;\n";
+	$res .= "}\n";
+	$res .= "\n";
+}
+
+sub ParseFunction_r_Done($$$)
+{
+	my ($interface, $fn, $name) = @_;
+	my $uname = uc $name;
+
+	if (has_property($fn, "todo")) {
+		return;
+	}
+
+	my $proto = "static void dcerpc_$name\_r_done(struct rpc_request *subreq)";
+
+	$res .= "$proto\n";
+	$res .= "{\n";
+
+	$res .= "\tstruct tevent_req *req =\n";
+	$res .= "\t\ttalloc_get_type_abort(subreq->async.private_data,\n";
+	$res .= "\t\tstruct tevent_req);\n";
+	$res .= "\tNTSTATUS status;\n";
+	$res .= "\n";
+
+	$res .= "\tstatus = dcerpc_$name\_recv(subreq);\n";
+	$res .= "\tif (!NT_STATUS_IS_OK(status)) {\n";
+	$res .= "\t\ttevent_req_nterror(req, status);\n";
+	$res .= "\t\treturn;\n";
+	$res .= "\t}\n";
+	$res .= "\n";
+
+	$res .= "\ttevent_req_done(req);\n";
+	$res .= "}\n";
+	$res .= "\n";
+}
+
+sub ParseFunction_r_Recv($$$)
+{
+	my ($interface, $fn, $name) = @_;
+	my $uname = uc $name;
+
+	if (has_property($fn, "todo")) {
+		return;
+	}
+
+	my $proto = "NTSTATUS dcerpc_$name\_r_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)";
+
+	$res_hdr .= "\n$proto;\n";
+
+	$res .= "$proto\n{\n";
+
+	$res .= "\tstruct dcerpc_$name\_r_state *state =\n";
+	$res .= "\t\ttevent_req_data(req,\n";
+	$res .= "\t\tstruct dcerpc_$name\_r_state);\n";
+	$res .= "\tNTSTATUS status;\n";
+	$res .= "\n";
+
+	$res .= "\tif (tevent_req_is_nterror(req, &status)) {\n";
+	$res .= "\t\ttevent_req_received(req);\n";
+	$res .= "\t\treturn status;\n";
+	$res .= "\t}\n";
+	$res .= "\n";
+
+	$res .= "\ttalloc_steal(mem_ctx, state->out_mem_ctx);\n";
+	$res .= "\n";
+
+	$res .= "\ttevent_req_received(req);\n";
+	$res .= "\treturn NT_STATUS_OK;\n";
+	$res .= "}\n";
+	$res .= "\n";
+}
+
+sub ParseFunction_r_Sync($$$)
+{
+	my ($interface, $fn, $name) = @_;
+	my $uname = uc $name;
+
+	if (has_property($fn, "todo")) {
+		return;
+	}
+
+	my $proto = "NTSTATUS dcerpc_$name\_r(struct dcerpc_binding_handle *h, TALLOC_CTX *mem_ctx, struct $name *r)";
+
+	$res_hdr .= "\n$proto;\n";
+	$res .= "$proto\n{\n";
+
+	$res .= "\tstruct dcerpc_pipe *p =\n";
+	$res .= "\t\ttalloc_get_type_abort(h->private_data,\n";
+	$res .= "\t\tstruct dcerpc_pipe);\n";
+	$res .= "\n";
+
+	$res .= "\treturn dcerpc_$name(p, mem_ctx, r);\n";
+	$res .= "}\n";
+	$res .= "\n";
+}
+
 #####################################################################
 # parse a function
 sub ParseFunction($$)
@@ -123,6 +298,12 @@ sub ParseFunction($$)
 	ParseFunctionSend($interface, $fn, $fn->{NAME});
 	ParseFunctionRecv($interface, $fn, $fn->{NAME});
 	ParseFunctionSync($interface, $fn, $fn->{NAME});
+
+	ParseFunction_r_State($interface, $fn, $fn->{NAME});
+	ParseFunction_r_Send($interface, $fn, $fn->{NAME});
+	ParseFunction_r_Done($interface, $fn, $fn->{NAME});
+	ParseFunction_r_Recv($interface, $fn, $fn->{NAME});
+	ParseFunction_r_Sync($interface, $fn, $fn->{NAME});
 }
 
 my %done;
@@ -176,6 +357,8 @@ sub Parse($$$$)
 		$res .= "#include <stdarg.h>\n";
 		$res .= "#include <core/ntstatus.h>\n";
 	}
+	$res .= "#include <tevent.h>\n";
+	$res .= "#include \"lib/util/tevent_ntstatus.h\"\n";
 	$res .= "#include \"$ndr_header\"\n";
 	$res .= "#include \"$client_header\"\n";
 	$res .= "\n";
