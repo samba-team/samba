@@ -743,6 +743,7 @@ PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 PERFCOUNT_TEST_OBJ = modules/perfcount_test.o
 VFS_DIRSORT_OBJ = modules/vfs_dirsort.o
 VFS_SCANNEDONLY_OBJ = modules/vfs_scannedonly.o
+VFS_CROSSRENAME_OBJ = modules/vfs_crossrename.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -2841,6 +2842,10 @@ bin/dirsort.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DIRSORT_OBJ)
 bin/scannedonly.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SCANNEDONLY_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SCANNEDONLY_OBJ)
+
+bin/crossrename.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CROSSRENAME_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_CROSSRENAME_OBJ)
 
 #########################################################
 ## IdMap NSS plugins
