@@ -46,28 +46,28 @@ struct groupinfo_state {
 };
 
 
-static void continue_groupinfo_lookup(struct rpc_request *req);
-static void continue_groupinfo_opengroup(struct rpc_request *req);
-static void continue_groupinfo_getgroup(struct rpc_request *req);
-static void continue_groupinfo_closegroup(struct rpc_request *req);
+static void continue_groupinfo_lookup(struct tevent_req *subreq);
+static void continue_groupinfo_opengroup(struct tevent_req *subreq);
+static void continue_groupinfo_getgroup(struct tevent_req *subreq);
+static void continue_groupinfo_closegroup(struct tevent_req *subreq);
 
 
 /**
  * Stage 1 (optional): Look for a group name in SAM server.
  */
-static void continue_groupinfo_lookup(struct rpc_request *req)
+static void continue_groupinfo_lookup(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct groupinfo_state *s;
-	struct rpc_request *opengroup_req;
 	struct monitor_msg msg;
 	struct msg_rpc_lookup_name *msg_lookup;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_Lookup reply */
-	c->status = dcerpc_samr_LookupNames_recv(req);
+	c->status = dcerpc_samr_LookupNames_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 	
 	/* there could be a problem with name resolving itself */
@@ -104,29 +104,31 @@ static void continue_groupinfo_lookup(struct rpc_request *req)
 	s->opengroup.out.group_handle   = &s->group_handle;
 
 	/* send request */
-	opengroup_req = dcerpc_samr_OpenGroup_send(s->pipe, c, &s->opengroup);
-	if (composite_nomem(opengroup_req, c)) return;
+	subreq = dcerpc_samr_OpenGroup_r_send(s, c->event_ctx,
+					      s->pipe->binding_handle,
+					      &s->opengroup);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, opengroup_req, continue_groupinfo_opengroup, c);
+	tevent_req_set_callback(subreq, continue_groupinfo_opengroup, c);
 }
 
 
 /**
  * Stage 2: Open group policy handle.
  */
-static void continue_groupinfo_opengroup(struct rpc_request *req)
+static void continue_groupinfo_opengroup(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct groupinfo_state *s;
-	struct rpc_request *querygroup_req;
 	struct monitor_msg msg;
 	struct msg_rpc_open_group *msg_open;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_OpenGroup reply */
-	c->status = dcerpc_samr_OpenGroup_recv(req);
+	c->status = dcerpc_samr_OpenGroup_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	if (!NT_STATUS_IS_OK(s->querygroupinfo.out.result)) {
@@ -153,29 +155,32 @@ static void continue_groupinfo_opengroup(struct rpc_request *req)
 	if (composite_nomem(s->querygroupinfo.out.info, c)) return;
 	
 	/* queue rpc call, set event handling and new state */
-	querygroup_req = dcerpc_samr_QueryGroupInfo_send(s->pipe, c, &s->querygroupinfo);
-	if (composite_nomem(querygroup_req, c)) return;
+	subreq = dcerpc_samr_QueryGroupInfo_r_send(s,
+						   c->event_ctx,
+						   s->pipe->binding_handle,
+						   &s->querygroupinfo);
+	if (composite_nomem(subreq, c)) return;
 	
-	composite_continue_rpc(c, querygroup_req, continue_groupinfo_getgroup, c);
+	tevent_req_set_callback(subreq, continue_groupinfo_getgroup, c);
 }
 
 
 /**
  * Stage 3: Get requested group information.
  */
-static void continue_groupinfo_getgroup(struct rpc_request *req)
+static void continue_groupinfo_getgroup(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct groupinfo_state *s;
-	struct rpc_request *close_req;
 	struct monitor_msg msg;
 	struct msg_rpc_query_group *msg_query;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_QueryGroupInfo reply */
-	c->status = dcerpc_samr_QueryGroupInfo_recv(req);
+	c->status = dcerpc_samr_QueryGroupInfo_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* check if querygroup itself went ok */
@@ -202,28 +207,31 @@ static void continue_groupinfo_getgroup(struct rpc_request *req)
 	s->samrclose.out.handle = &s->group_handle;
 	
 	/* queue rpc call, set event handling and new state */
-	close_req = dcerpc_samr_Close_send(s->pipe, c, &s->samrclose);
-	if (composite_nomem(close_req, c)) return;
+	subreq = dcerpc_samr_Close_r_send(s, c->event_ctx,
+					  s->pipe->binding_handle,
+					  &s->samrclose);
+	if (composite_nomem(subreq, c)) return;
 	
-	composite_continue_rpc(c, close_req, continue_groupinfo_closegroup, c);
+	tevent_req_set_callback(subreq, continue_groupinfo_closegroup, c);
 }
 
 
 /**
  * Stage 4: Close policy handle associated with opened group.
  */
-static void continue_groupinfo_closegroup(struct rpc_request *req)
+static void continue_groupinfo_closegroup(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct groupinfo_state *s;
 	struct monitor_msg msg;
 	struct msg_rpc_close_group *msg_close;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct groupinfo_state);
 
 	/* receive samr_Close reply */
-	c->status = dcerpc_samr_Close_recv(req);
+	c->status = dcerpc_samr_Close_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	if (!NT_STATUS_IS_OK(s->samrclose.out.result)) {
@@ -259,7 +267,7 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 	struct composite_context *c;
 	struct groupinfo_state *s;
 	struct dom_sid *sid;
-	struct rpc_request *opengroup_req, *lookup_req;
+	struct tevent_req *subreq;
 
 	if (!p || !io) return NULL;
 	
@@ -286,10 +294,12 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 		s->opengroup.out.group_handle  = &s->group_handle;
 		
 		/* send request */
-		opengroup_req = dcerpc_samr_OpenGroup_send(p, c, &s->opengroup);
-		if (composite_nomem(opengroup_req, c)) return c;
+		subreq = dcerpc_samr_OpenGroup_r_send(s, c->event_ctx,
+						      p->binding_handle,
+						      &s->opengroup);
+		if (composite_nomem(subreq, c)) return c;
 
-		composite_continue_rpc(c, opengroup_req, continue_groupinfo_opengroup, c);
+		tevent_req_set_callback(subreq, continue_groupinfo_opengroup, c);
 
 	} else {
 		/* preparing parameters to send rpc request */
@@ -306,10 +316,12 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 		if (composite_nomem(s->lookup.out.types, c)) return c;
 
 		/* send request */
-		lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);
-		if (composite_nomem(lookup_req, c)) return c;
+		subreq = dcerpc_samr_LookupNames_r_send(s, c->event_ctx,
+							p->binding_handle,
+							&s->lookup);
+		if (composite_nomem(subreq, c)) return c;
 		
-		composite_continue_rpc(c, lookup_req, continue_groupinfo_lookup, c);
+		tevent_req_set_callback(subreq, continue_groupinfo_lookup, c);
 	}
 
 	return c;
