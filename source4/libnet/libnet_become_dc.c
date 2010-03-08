@@ -2314,7 +2314,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			case 5:
 			case 6:
 			case 7:
-				status = r->out.ctr->ctr3.error->info1.info->errorX.status;
+				status = r->out.ctr->ctr3.error->info1.info->errorX.extended_err;
 				break;
 			}
 
@@ -2325,7 +2325,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 		s->dest_dsa.ntds_guid	= r->out.ctr->ctr3.objects[0].guid;
 	} else if (*r->out.level_out == 2) {
 		if (r->out.ctr->ctr2.count != 1) {
-			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.error.status));
+			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.error.extended_err));
 			return;
 		}
 
