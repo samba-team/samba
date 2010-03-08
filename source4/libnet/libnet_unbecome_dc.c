@@ -204,6 +204,7 @@ struct libnet_UnbecomeDC_state {
 	struct {
 		struct dcerpc_binding *binding;
 		struct dcerpc_pipe *pipe;
+		struct dcerpc_binding_handle *drsuapi_handle;
 		struct drsuapi_DsBind bind_r;
 		struct GUID bind_guid;
 		struct drsuapi_DsBindInfoCtr bind_info_ctr;
@@ -567,16 +568,18 @@ static void unbecomeDC_drsuapi_connect_recv(struct composite_context *req)
 	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi.pipe);
 	if (!composite_is_ok(c)) return;
 
+	s->drsuapi.drsuapi_handle = s->drsuapi.pipe->binding_handle;
+
 	unbecomeDC_drsuapi_bind_send(s);
 }
 
-static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req);
+static void unbecomeDC_drsuapi_bind_recv(struct tevent_req *subreq);
 
 static void unbecomeDC_drsuapi_bind_send(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
-	struct rpc_request *req;
 	struct drsuapi_DsBindInfo28 *bind_info28;
+	struct tevent_req *subreq;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &s->drsuapi.bind_guid);
 
@@ -593,19 +596,23 @@ static void unbecomeDC_drsuapi_bind_send(struct libnet_UnbecomeDC_state *s)
 	s->drsuapi.bind_r.in.bind_info = &s->drsuapi.bind_info_ctr;
 	s->drsuapi.bind_r.out.bind_handle = &s->drsuapi.bind_handle;
 
-	req = dcerpc_drsuapi_DsBind_send(s->drsuapi.pipe, s, &s->drsuapi.bind_r);
-	composite_continue_rpc(c, req, unbecomeDC_drsuapi_bind_recv, s);
+	subreq = dcerpc_drsuapi_DsBind_r_send(s, c->event_ctx,
+					      s->drsuapi.drsuapi_handle,
+					      &s->drsuapi.bind_r);
+	if (composite_nomem(subreq, c)) return;
+	tevent_req_set_callback(subreq, unbecomeDC_drsuapi_bind_recv, s);
 }
 
 static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_state *s);
 
-static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
+static void unbecomeDC_drsuapi_bind_recv(struct tevent_req *subreq)
 {
-	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private_data,
+	struct libnet_UnbecomeDC_state *s = tevent_req_callback_data(subreq,
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 
-	c->status = dcerpc_drsuapi_DsBind_recv(req);
+	c->status = dcerpc_drsuapi_DsBind_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	if (!W_ERROR_IS_OK(s->drsuapi.bind_r.out.result)) {
@@ -643,13 +650,13 @@ static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
 	unbecomeDC_drsuapi_remove_ds_server_send(s);
 }
 
-static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req);
+static void unbecomeDC_drsuapi_remove_ds_server_recv(struct tevent_req *subreq);
 
 static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
-	struct rpc_request *req;
 	struct drsuapi_DsRemoveDSServer *r = &s->drsuapi.rm_ds_srv_r;
+	struct tevent_req *subreq;
 
 	r->in.bind_handle	= &s->drsuapi.bind_handle;
 	r->in.level		= 1;
@@ -661,18 +668,22 @@ static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_st
 	r->out.level_out	= talloc(s, uint32_t);
 	r->out.res		= talloc(s, union drsuapi_DsRemoveDSServerResult);
 
-	req = dcerpc_drsuapi_DsRemoveDSServer_send(s->drsuapi.pipe, s, r);
-	composite_continue_rpc(c, req, unbecomeDC_drsuapi_remove_ds_server_recv, s);
+	subreq = dcerpc_drsuapi_DsRemoveDSServer_r_send(s, c->event_ctx,
+							s->drsuapi.drsuapi_handle,
+							r);
+	if (composite_nomem(subreq, c)) return;
+	tevent_req_set_callback(subreq, unbecomeDC_drsuapi_remove_ds_server_recv, s);
 }
 
-static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req)
+static void unbecomeDC_drsuapi_remove_ds_server_recv(struct tevent_req *subreq)
 {
-	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private_data,
+	struct libnet_UnbecomeDC_state *s = tevent_req_callback_data(subreq,
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsRemoveDSServer *r = &s->drsuapi.rm_ds_srv_r;
 
-	c->status = dcerpc_drsuapi_DsRemoveDSServer_recv(req);
+	c->status = dcerpc_drsuapi_DsRemoveDSServer_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
