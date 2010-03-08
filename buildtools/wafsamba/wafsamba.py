@@ -215,6 +215,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         add_objects = add_objects,
         ccflags = CURRENT_CFLAGS(bld, cflags),
         includes=ilist + ' . #',
+        export_incdirs = includes,
         depends_on=depends_on,
         vnum=vnum)
 
