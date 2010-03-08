@@ -241,3 +241,31 @@ def to_list(str):
 def SUBST_ENV_VAR(conf, varname):
     '''Substitute an environment variable for any embedded variables'''
     return Utils.subst_vars(conf.env[varname], conf.env)
+
+
+def ENFORCE_GROUP_ORDERING(bld):
+    '''enforce group ordering for the project. This
+       makes the group ordering apply even when you specify
+       a target with --target'''
+    if Options.options.compile_targets:
+        @feature('*')
+        def force_previous_groups(self):
+            my_id = id(self)
+
+            bld = self.bld
+            stop = None
+            for g in bld.task_manager.groups:
+                for t in g.tasks_gen:
+                    if id(t) == my_id:
+                        stop = id(g)
+                        break
+                if stop is None:
+                    return
+
+                for g in bld.task_manager.groups:
+                    if id(g) == stop:
+                        break
+                    for t in g.tasks_gen:
+                        t.post()
+Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
+
