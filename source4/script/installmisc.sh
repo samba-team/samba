@@ -1,18 +1,19 @@
 #!/bin/sh
 # install miscellaneous files
 
-[ $# -eq 7 ] || {
-    echo "Usage: installmisc.sh DESTDIR SRCDIR SETUPDIR BINDDIR SBINDDIR PYTHONDIR PYTHON"
+[ $# -eq 8 ] || {
+    echo "Usage: installmisc.sh DESTDIR SRCDIR SETUPDIR PRIVATEDIR BINDDIR SBINDDIR PYTHONDIR PYTHON"
     exit 1
 }
 
 DESTDIR="$1"
 SRCDIR="$2"
 SETUPDIR="$3"
-BINDIR="$4"
-SBINDIR="$5"
-PYTHONDIR="$6"
-PYTHON="$7"
+PRIVATEDIR="$4"
+BINDIR="$5"
+SBINDIR="$6"
+PYTHONDIR="$7"
+PYTHON="$8"
 
 cd $SRCDIR || exit 1
 
@@ -89,5 +90,7 @@ do
   cp -r scripting/python/samba_external/$p/* $PYTHONDIR/samba_external/$p/ || exit 1
 done
 
+echo "Installing stuff in $PRIVATEDIR"
+cp setup/dns_update_list $PRIVATEDIR || exit 1
 
 exit 0
