@@ -201,8 +201,12 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, libname, deps)
 
+#    bld.SET_TARGET_INCLUDE_LIST(libname, includes)
+
     ilist = includes + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
+
+#    print "LIBRARY %s add_objects=%s deps=%s uselib_local=%s ilist=%s" % (libname, add_objects, deps, localdeps, ilist)
 
     # this print below should show that we're runnig this code
     bld.SET_BUILD_GROUP(group)   # <- here
@@ -234,7 +238,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         shell = True,
         after = 'cc_link',
         always = True,
-	name = 'fff' + libname,
+	name = libname + '.link',
         )
     #print t.rule
     LOCAL_CACHE_SET(bld, 'INCLUDE_LIST', libname, ilist)
@@ -270,6 +274,8 @@ def SAMBA_BINARY(bld, binname, source,
             bld.ASSERT(m in cache,
                        "No init_function defined for module '%s' in binary '%s'" % (m, binname))
             cflags += ' -DSTATIC_%s_MODULES="%s"' % (m, cache[m])
+
+#    print "BINARY %s add_objects=%s deps=%s uselib_local=%s" % (binname, add_objects, deps, localdeps)
 
     bld.SET_BUILD_GROUP(group)
     bld(
