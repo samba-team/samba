@@ -48,7 +48,7 @@ struct rename_context {
 
 static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_message *msg, const char *name)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
 		if (ldb_attr_cmp(name, msg->elements[i].name) == 0) {
@@ -94,7 +94,8 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_schema_attribute *a;
 	const char *rdn_name;
 	struct ldb_val rdn_val;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	ldb = ldb_module_get_ctx(module);
 
