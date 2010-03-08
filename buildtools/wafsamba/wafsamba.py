@@ -67,10 +67,10 @@ def CHECK_DEPENDENCIES(bld):
     for t in cache:
         deps = CHECK_TARGET_DEPENDENCY(bld, t)
         for d in deps:
-            if not d in target_cache:
-                print "WARNING: Dependency '%s' of target '%s' not declared" % (d, t)
-            #ASSERT(bld, d in target_cache,
-            #       "Dependency '%s' of target '%s' not declared" % (d, t))
+            #if not d in target_cache:
+            #    print "WARNING: Dependency '%s' of target '%s' not declared" % (d, t)
+            ASSERT(bld, d in target_cache,
+                   "Dependency '%s' of target '%s' not declared" % (d, t))
     debug("deps: Dependencies checked for %u targets" % len(target_cache))
 Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
 
@@ -205,7 +205,6 @@ def SAMBA_LIBRARY(bld, libname, source,
     ilist = bld.NORMPATH(ilist)
 
     # this print below should show that we're runnig this code
-    print "Setting build group for library %s to %s" % (libname, group), bld.path
     bld.SET_BUILD_GROUP(group)   # <- here
     bld(
         features = 'cc cshlib',
