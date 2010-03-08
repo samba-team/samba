@@ -594,7 +594,7 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	struct prefixMapBlob *blob;
 	enum ndr_err_code ndr_err;
 	char *string;
-	unsigned int i;
+	uint32_t i;
 
 	if (ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY) {
 		int err;
