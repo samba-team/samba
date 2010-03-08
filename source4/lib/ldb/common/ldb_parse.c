@@ -43,6 +43,26 @@
 #include "ldb_private.h"
 #include "system/locale.h"
 
+static int ldb_parse_hex2char(const char *x)
+{
+	if (isxdigit(x[0]) && isxdigit(x[1])) {
+		const char h1 = x[0], h2 = x[1];
+		int c;
+
+		if (h1 >= 'a') c = h1 - (int)'a' + 10;
+		else if (h1 >= 'A') c = h1 - (int)'A' + 10;
+		else if (h1 >= '0') c = h1 - (int)'0';
+		c = c << 4;
+		if (h2 >= 'a') c += h2 - (int)'a' + 10;
+		else if (h1 >= 'A') c += h2 - (int)'A' + 10;
+		else if (h1 >= '0') c += h2 - (int)'0';
+
+		return c;
+	}
+
+	return -1;
+}
+
 /*
 a filter is defined by:
                <filter> ::= '(' <filtercomp> ')'
@@ -71,8 +91,10 @@ struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str)
 
 	for (i=j=0;i<slen;i++) {
 		if (str[i] == '\\') {
-			unsigned c;
-			if (sscanf(&str[i+1], "%02X", &c) != 1) {
+			int c;
+
+                        c = ldb_parse_hex2char(&str[i+1]);
+                        if (c == -1) {
 				talloc_free(ret.data);
 				memset(&ret, 0, sizeof(ret));
 				return ret;
