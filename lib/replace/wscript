@@ -47,8 +47,8 @@ def configure(conf):
     # check for pkgconfig
     conf.check_cfg(atleast_pkgconfig_version='0.0.0')
 
-    conf.DEFINE('_GNU_SOURCE', 1)
-    conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1)
+    conf.DEFINE('_GNU_SOURCE', 1, add_to_cflags=True)
+    conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
     conf.CHECK_HEADERS('unistd.h sys/types.h stdlib.h stdio.h stddef.h')

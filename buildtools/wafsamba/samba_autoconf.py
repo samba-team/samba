@@ -14,10 +14,11 @@ from samba_utils import *
 
 @runonce
 @conf
-def DEFINE(conf, d, v):
+def DEFINE(conf, d, v, add_to_cflags=False):
     '''define a config option'''
     conf.define(d, v, quote=False)
-    conf.env.append_value('CCDEFINES', d + '=' + str(v))
+    if add_to_cflags:
+        conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
 @runonce
 def CHECK_HEADER(conf, h, add_headers=True):
