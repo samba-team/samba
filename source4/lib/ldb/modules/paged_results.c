@@ -65,8 +65,7 @@ struct results_store {
 };
 
 struct private_data {
-
-	int next_free_id;
+	unsigned int next_free_id;
 	struct results_store *store;
 	
 };
@@ -95,7 +94,7 @@ static int store_destructor(struct results_store *del)
 static struct results_store *new_store(struct private_data *priv)
 {
 	struct results_store *newr;
-	int new_id = priv->next_free_id++;
+	unsigned int new_id = priv->next_free_id++;
 
 	/* TODO: we should have a limit on the number of
 	 * outstanding paged searches
@@ -140,7 +139,8 @@ static int paged_results(struct paged_context *ac)
 {
 	struct ldb_paged_control *paged;
 	struct message_store *msg;
-	int i, num_ctrls, ret;
+	unsigned int i, num_ctrls;
+	int ret;
 
 	if (ac->store == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
