@@ -1,23 +1,28 @@
                    =============================
                    Release Notes for Samba 3.4.7
-			 , 2010
+			    March 8, 2010
                    =============================
 
 
-This is the latest stable release of Samba 3.4.
+This is a security release in order to address CVE-2010-0728.
 
-Major enhancements in Samba 3.4.7 include:
 
-   o 
+o  CVE-2010-0728:
+   In Samba releases 3.5.0, 3.4.6 and 3.3.11, new code
+   was added to fix a problem with Linux asynchronous IO handling.
+   This code introduced a bad security flaw on Linux platforms if the
+   binaries were built on Linux platforms with libcap support.
+   The flaw caused all smbd processes to inherit CAP_DAC_OVERRIDE
+   capabilities, allowing all file system access to be allowed
+   even when permissions should have denied access.
 
-######################################################################
-Changes
-#######
 
-Changes since 3.4.6
+Changes since 3.5.0
 -------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7222: Fix for CVE-2010-0728.
 
 
 ######################################################################
