@@ -387,7 +387,7 @@ static int lldb_rename(struct lldb_context *lldb_ac)
 	struct ldb_module *module = lldb_ac->module;
 	struct ldb_request *req = lldb_ac->req;
 	char *old_dn;
-       	char *newrdn;
+	char *newrdn;
 	char *parentdn;
 	int ret;
 
