@@ -1233,11 +1233,14 @@ interface drsuapi
 		[case(2)] drsuapi_DsAddEntryRequest2 req2;
 	} drsuapi_DsAddEntryRequest;
 
+	/* Generic extended error info
+	 * commonly used in most places
+	 * where rich error info is returned */
 	typedef struct {
-		uint32 unknown1;
-		WERROR status;
-		uint32 unknown2;
-		uint16 unknown3;
+		uint32	dsid;		/* implementation-specific diagnostic code */
+		WERROR	extended_err;	/* 0, STATUS code, or Windows error code */
+		uint32	extended_data;	/* implementation-specific diagnostic code */
+		uint16	problem;	/* 0 or PROBLEM error code */
 	} drsuapi_DsAddEntryErrorInfoX;
 
 	typedef struct {
