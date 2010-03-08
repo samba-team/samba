@@ -592,11 +592,6 @@ char *sys_getwd(char *s)
 
 #if defined(HAVE_POSIX_CAPABILITIES)
 
-/* This define hasn't made it into the glibc capabilities header yet. */
-#ifndef SECURE_NO_SETUID_FIXUP
-#define SECURE_NO_SETUID_FIXUP          2
-#endif
-
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
@@ -624,32 +619,6 @@ static bool set_process_capability(enum smbd_capability capability,
 	 */
 	if (!prctl(PR_GET_KEEPCAPS)) {
 		prctl(PR_SET_KEEPCAPS, 1);
-	}
-#endif
-
-#if defined(HAVE_PRCTL) && defined(PR_SET_SECUREBITS) && defined(SECURE_NO_SETUID_FIXUP)
-        /* New way of setting capabilities as "sticky". */
-
-	/*
-	 * Use PR_SET_SECUREBITS to prevent setresuid()
-	 * atomically dropping effective capabilities on
-	 * uid change. Only available in Linux kernels
-	 * 2.6.26 and above.
-	 *
-	 * See here:
-	 * http://www.kernel.org/doc/man-pages/online/pages/man7/capabilities.7.html
-	 * for details.
-	 *
-	 * Specifically the CAP_KILL capability we need
-	 * to allow Linux threads under different euids
-	 * to send signals to each other.
-	 */
-
-	if (prctl(PR_SET_SECUREBITS, 1 << SECURE_NO_SETUID_FIXUP)) {
-		DEBUG(0,("set_process_capability: "
-			"prctl PR_SET_SECUREBITS failed with error %s\n",
-			strerror(errno) ));
-		return false;
 	}
 #endif
 
@@ -681,11 +650,6 @@ static bool set_process_capability(enum smbd_capability capability,
 			cap_vals[num_cap_vals++] = CAP_LEASE;
 #endif
 			break;
-		case KILL_CAPABILITY:
-#ifdef CAP_KILL
-			cap_vals[num_cap_vals++] = CAP_KILL;
-#endif
-			break;
 	}
 
 	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));
@@ -695,37 +659,16 @@ static bool set_process_capability(enum smbd_capability capability,
 		return True;
 	}
 
-	/*
-	 * Ensure the capability is effective. We assume that as a root
-	 * process it's always permitted.
-	 */
-
-	if (cap_set_flag(cap, CAP_EFFECTIVE, num_cap_vals, cap_vals,
-			enable ? CAP_SET : CAP_CLEAR) == -1) {
-		DEBUG(0, ("set_process_capability: cap_set_flag effective "
-			"failed (%d): %s\n",
-			(int)capability,
-			strerror(errno)));
-		cap_free(cap);
-		return false;
-	}
+	cap_set_flag(cap, CAP_EFFECTIVE, num_cap_vals, cap_vals,
+		enable ? CAP_SET : CAP_CLEAR);
 
 	/* We never want to pass capabilities down to our children, so make
 	 * sure they are not inherited.
 	 */
-	if (cap_set_flag(cap, CAP_INHERITABLE, num_cap_vals,
-			cap_vals, CAP_CLEAR) == -1) {
-		DEBUG(0, ("set_process_capability: cap_set_flag inheritable "
-			"failed (%d): %s\n",
-			(int)capability,
-			strerror(errno)));
-		cap_free(cap);
-		return false;
-	}
+	cap_set_flag(cap, CAP_INHERITABLE, num_cap_vals, cap_vals, CAP_CLEAR);
 
 	if (cap_set_proc(cap) == -1) {
-		DEBUG(0, ("set_process_capability: cap_set_flag (%d) failed: %s\n",
-			(int)capability,
+		DEBUG(0, ("set_process_capability: cap_set_proc failed: %s\n",
 			strerror(errno)));
 		cap_free(cap);
 		return False;
