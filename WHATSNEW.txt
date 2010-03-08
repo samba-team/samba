@@ -1,4 +1,55 @@
                    =============================
+                   Release Notes for Samba 3.5.1
+			    March 8, 2010
+                   =============================
+
+
+This is a security release in order to address CVE-2010-0728.
+
+
+o  CVE-2010-0728:
+   In Samba releases 3.5.0, 3.4.6 and 3.3.11, new code
+   was added to fix a problem with Linux asynchronous IO handling.
+   This code introduced a bad security flaw on Linux platforms if the
+   binaries were built on Linux platforms with libcap support.
+   The flaw caused all smbd processes to inherit CAP_DAC_OVERRIDE
+   capabilities, allowing all file system access to be allowed
+   even when permissions should have denied access.
+
+
+Changes since 3.5.0
+-------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7222: Fix for CVE-2010-0728.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.5 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   =============================
                    Release Notes for Samba 3.5.0
 			    March 1, 2010
                    ===============================
@@ -479,4 +530,3 @@ database (https://bugzilla.samba.org/).
 == Our Code, Our Bugs, Our Responsibility.
 == The Samba Team
 ======================================================================
-
