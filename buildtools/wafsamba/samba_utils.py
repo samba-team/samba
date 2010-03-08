@@ -168,8 +168,8 @@ def process_depends_on(self):
         lst = self.to_list(self.depends_on)
         for x in lst:
             y = self.bld.name_to_obj(x, self.env)
+            self.bld.ASSERT(y is not None, "Failed to find dependency %s of %s" % (x, self.name))
             y.post()
-
             if getattr(y, 'more_includes', None):
                   self.includes += " " + y.more_includes
 
@@ -268,4 +268,16 @@ def ENFORCE_GROUP_ORDERING(bld):
                     for t in g.tasks_gen:
                         t.post()
 Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
+
+# @feature('cc')
+# @before('apply_lib_vars')
+# def process_objects(self):
+#     if getattr(self, 'add_objects', None):
+#         lst = self.to_list(self.add_objects)
+#         for x in lst:
+#             y = self.name_to_obj(x)
+#             if not y:
+#                 raise Utils.WafError('object %r was not found in uselib_local (required by add_objects %r)' % (x, self.name))
+#             y.post()
+#             self.env.append_unique('INC_PATHS', y.env.INC_PATHS)
 
