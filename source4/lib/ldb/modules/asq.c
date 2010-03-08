@@ -55,8 +55,8 @@ struct asq_context {
 	struct ldb_reply *base_res;
 
 	struct ldb_request **reqs;
-	int num_reqs;
-	int cur_req;
+	unsigned int num_reqs;
+	unsigned int cur_req;
 
 	struct ldb_control **controls;
 };
@@ -85,7 +85,7 @@ static int asq_search_continue(struct asq_context *ac);
 static int asq_search_terminate(struct asq_context *ac)
 {
 	struct ldb_asq_control *asq;
-	int i;
+	unsigned int i;
 
 	if (ac->controls) {
 		for (i = 0; ac->controls[i]; i++) /* count em */ ;
@@ -250,7 +250,8 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 	struct ldb_control *control;
 	struct ldb_dn *dn;
 	struct ldb_message_element *el;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (ac->base_res == NULL) {
 		return LDB_ERR_NO_SUCH_OBJECT;
