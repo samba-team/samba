@@ -118,6 +118,13 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 		p->conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	}
 
+	p->binding_handle = talloc(p, struct dcerpc_binding_handle);
+	if (p->binding_handle == NULL) {
+		talloc_free(p);
+		return NULL;
+	}
+	p->binding_handle->private_data = p;
+
 	return p;
 }
 
@@ -1701,3 +1708,4 @@ _PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 	creq = dcerpc_alter_context_send(p, mem_ctx, syntax, transfer_syntax);
 	return dcerpc_alter_context_recv(creq);
 }
+

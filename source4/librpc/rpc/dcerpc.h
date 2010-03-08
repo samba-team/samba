@@ -31,6 +31,10 @@
 #include "librpc/gen_ndr/dcerpc.h"
 #include "../librpc/ndr/libndr.h"
 
+struct tevent_context;
+struct tevent_req;
+struct dcerpc_binding_handle;
+
 enum dcerpc_transport_t {
 	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
 	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
@@ -112,6 +116,8 @@ struct dcerpc_pipe {
 
 	struct dcerpc_connection *conn;
 	struct dcerpc_binding *binding;
+
+	struct dcerpc_binding_handle *binding_handle;
 
 	/** the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;
@@ -391,5 +397,10 @@ typedef NTSTATUS (*dcerpc_call_fn) (struct dcerpc_pipe *, TALLOC_CTX *, void *);
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
+
+/* TODO: this needs to be completely private */
+struct dcerpc_binding_handle {
+	void *private_data;
+};
 
 #endif /* __DCERPC_H__ */
