@@ -17,7 +17,6 @@
 	<xi:include href="../manpages-3/libsmbclient.7.xml"/>
 	<xi:include href="../manpages-3/lmhosts.5.xml"/>
 	<xi:include href="../manpages-3/log2pcap.1.xml"/>
-	<xi:include href="../manpages-3/mount.cifs.8.xml"/>
 	<xi:include href="../manpages-3/net.8.xml"/>
 	<xi:include href="../manpages-3/nmbd.8.xml"/>
 	<xi:include href="../manpages-3/nmblookup.1.xml"/>
@@ -48,7 +47,6 @@
 	<xi:include href="../manpages-3/testparm.1.xml"/>
 	<xi:include href="../manpages-3/wbinfo.1.xml"/>
 	<xi:include href="../manpages-3/winbindd.8.xml"/>
-	<xi:include href="../manpages-3/umount.cifs.8.xml"/>
 	<xi:include href="../manpages-3/vfs_audit.8.xml"/>
 	<xi:include href="../manpages-3/vfs_cacheprime.8.xml"/>
 	<xi:include href="../manpages-3/vfs_cap.8.xml"/>
