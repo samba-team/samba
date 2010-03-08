@@ -6283,6 +6283,7 @@ static bool run_tldap(int dummy)
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	char *basedn;
+	const char *filter;
 
 	if (!resolve_name(host, &addr, 0, false)) {
 		d_printf("could not find host %s\n", host);
@@ -6335,6 +6336,19 @@ static bool run_tldap(int dummy)
 	tevent_req_poll(req, ev);
 
 	TALLOC_FREE(req);
+
+	/* test search filters against rootDSE */
+	filter = "(&(|(name=samba)(nextRid<=10000000)(usnChanged>=10)(samba~=ambas)(!(name=s*m*a)))"
+		   "(|(name:=samba)(name:dn:2.5.13.5:=samba)(:dn:2.5.13.5:=samba)(!(name=*samba))))";
+
+	rc = tldap_search(ld, "", TLDAP_SCOPE_BASE, filter,
+			  NULL, 0, 0, NULL, 0, NULL, 0, 0, 0, 0,
+			  talloc_tos(), NULL, NULL);
+	if (rc != TLDAP_SUCCESS) {
+		d_printf("tldap_search with complex filter failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
 
 	TALLOC_FREE(ld);
 	return true;
