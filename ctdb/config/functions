@@ -61,10 +61,19 @@ service() {
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
 nice_service() { 
-  # do nothing, when no service was specified
-  [ -z "$1" ] && return
+  _service_name="$1"
+  _op="$2"
 
-    nice service "$@"
+  # do nothing, when no service was specified
+  [ -z "$_service_name" ] && return
+
+  if [ -x /sbin/service ]; then
+      nice /sbin/service "$_service_name" "$_op"
+  elif [ -x /etc/init.d/$_service_name ]; then
+      nice /etc/init.d/$_service_name "$_op"
+  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
+      nice /etc/rc.d/init.d/$_service_name "$_op"
+  fi
 }
 
 ######################################################
