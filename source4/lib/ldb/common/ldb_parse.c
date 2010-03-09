@@ -54,8 +54,8 @@ static int ldb_parse_hex2char(const char *x)
 		else if (h1 >= '0') c = h1 - (int)'0';
 		c = c << 4;
 		if (h2 >= 'a') c += h2 - (int)'a' + 10;
-		else if (h1 >= 'A') c += h2 - (int)'A' + 10;
-		else if (h1 >= '0') c += h2 - (int)'0';
+		else if (h2 >= 'A') c += h2 - (int)'A' + 10;
+		else if (h2 >= '0') c += h2 - (int)'0';
 
 		return c;
 	}
@@ -93,8 +93,8 @@ struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str)
 		if (str[i] == '\\') {
 			int c;
 
-                        c = ldb_parse_hex2char(&str[i+1]);
-                        if (c == -1) {
+			c = ldb_parse_hex2char(&str[i+1]);
+			if (c == -1) {
 				talloc_free(ret.data);
 				memset(&ret, 0, sizeof(ret));
 				return ret;
