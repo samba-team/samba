@@ -1429,6 +1429,58 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SetValue(struct dcerpc_pipe *p,
+			  struct torture_context *tctx,
+			  struct policy_handle *handle,
+			  const char *value_name,
+			  enum winreg_Type type,
+			  uint8_t *data,
+			  uint32_t size)
+{
+	struct winreg_SetValue r;
+	struct winreg_String name;
+
+	torture_comment(tctx, "Testing SetValue(%s)\n", value_name);
+
+	init_winreg_String(&name, value_name);
+
+	r.in.handle = handle;
+	r.in.name = name;
+	r.in.type = type;
+	r.in.data = data;
+	r.in.size = size;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_SetValue(p, tctx, &r),
+		"winreg_SetValue failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"winreg_SetValue failed");
+
+	return true;
+}
+
+static bool test_DeleteValue(struct dcerpc_pipe *p,
+			     struct torture_context *tctx,
+			     struct policy_handle *handle,
+			     const char *value_name)
+{
+	struct winreg_DeleteValue r;
+	struct winreg_String value;
+
+	torture_comment(tctx, "Testing DeleteValue(%s)\n", value_name);
+
+	init_winreg_String(&value, value_name);
+
+	r.in.handle = handle;
+	r.in.value = value;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteValue(p, tctx, &r),
+		"winreg_DeleteValue failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"winreg_DeleteValue failed");
+
+	return true;
+}
+
 static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 		     struct policy_handle *handle, int depth,
 		     bool test_security);
