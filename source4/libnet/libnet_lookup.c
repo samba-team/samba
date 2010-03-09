@@ -252,7 +252,7 @@ static bool prepare_lookup_params(struct libnet_context *ctx,
 				  struct composite_context *c,
 				  struct lookup_name_state *s);
 static void continue_lookup_name(struct composite_context *ctx);
-static void continue_name_found(struct rpc_request *req);
+static void continue_name_found(struct tevent_req *subreq);
 
 
 struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
@@ -262,7 +262,7 @@ struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct lookup_name_state *s;
-	struct rpc_request *lookup_req;
+	struct tevent_req *subreq;
 	bool prereq_met = false;
 
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -283,10 +283,12 @@ struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
 
 	if (!prepare_lookup_params(ctx, c, s)) return c;
 
-	lookup_req = dcerpc_lsa_LookupNames_send(ctx->lsa.pipe, c, &s->lookup);
-	if (composite_nomem(lookup_req, c)) return c;
+	subreq = dcerpc_lsa_LookupNames_r_send(s, c->event_ctx,
+					       ctx->lsa.pipe->binding_handle,
+					       &s->lookup);
+	if (composite_nomem(subreq, c)) return c;
 
-	composite_continue_rpc(c, lookup_req, continue_name_found, c);
+	tevent_req_set_callback(subreq, continue_name_found, c);
 	return c;
 }
 
@@ -323,7 +325,7 @@ static void continue_lookup_name(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct lookup_name_state *s;
-	struct rpc_request *lookup_req;
+	struct tevent_req *subreq;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct lookup_name_state);
@@ -333,22 +335,25 @@ static void continue_lookup_name(struct composite_context *ctx)
 	
 	if (!prepare_lookup_params(s->ctx, c, s)) return;
 
-	lookup_req = dcerpc_lsa_LookupNames_send(s->ctx->lsa.pipe, c, &s->lookup);
-	if (composite_nomem(lookup_req, c)) return;
+	subreq = dcerpc_lsa_LookupNames_r_send(s, c->event_ctx,
+					       s->ctx->lsa.pipe->binding_handle,
+					       &s->lookup);
+	if (composite_nomem(subreq, c)) return;
 	
-	composite_continue_rpc(c, lookup_req, continue_name_found, c);
+	tevent_req_set_callback(subreq, continue_name_found, c);
 }
 
 
-static void continue_name_found(struct rpc_request *req)
+static void continue_name_found(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct lookup_name_state *s;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct lookup_name_state);
 
-	c->status = dcerpc_lsa_LookupNames_recv(req);
+	c->status = dcerpc_lsa_LookupNames_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookup.out.result;
