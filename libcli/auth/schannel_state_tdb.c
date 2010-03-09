@@ -340,7 +340,6 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 
 	ret = tdb_transaction_start(tdb_sc->tdb);
 	if (ret != 0) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
