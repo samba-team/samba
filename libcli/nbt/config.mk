@@ -10,6 +10,7 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT LIBCLI_COMPOSITE LIBEVENTS \
 
 LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclinbtsrcdir)/, \
 	lmhosts.o \
+	dns_hosts_file.o \
 	nbtsocket.o \
 	namequery.o \
 	nameregister.o \
