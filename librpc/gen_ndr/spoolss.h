@@ -1560,8 +1560,8 @@ struct spoolss_PrinterEnumValues {
 	const char * value_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t value_name_len;/* [value(2*strlen_m_term(value_name))] */
 	enum winreg_Type type;
-	union spoolss_PrinterData *data;/* [relative,subcontext_size(r->data_length),subcontext(0),switch_is(type)] */
-	uint32_t data_length;/* [value(ndr_size_spoolss_PrinterData(data,type,ndr->iconv_convenience,ndr->flags))] */
+	DATA_BLOB *data;/* [relative,subcontext_size(data_length),subcontext(0),flag(LIBNDR_FLAG_REMAINING)] */
+	uint32_t data_length;/* [value(data->length)] */
 }/* [relative_base,gensize,public] */;
 
 union spoolss_KeyNames {
@@ -2153,35 +2153,6 @@ struct spoolss_ScheduleJob {
 };
 
 
-struct _spoolss_GetPrinterData {
-	struct {
-		struct policy_handle *handle;/* [ref] */
-		const char *value_name;/* [charset(UTF16)] */
-		uint32_t offered;
-	} in;
-
-	struct {
-		enum winreg_Type *type;/* [ref] */
-		DATA_BLOB *data;/* [ref] */
-		uint32_t *needed;/* [ref] */
-		WERROR result;
-	} out;
-
-};
-
-
-struct __spoolss_GetPrinterData {
-	struct {
-		enum winreg_Type type;
-	} in;
-
-	struct {
-		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
-	} out;
-
-};
-
-
 struct spoolss_GetPrinterData {
 	struct {
 		struct policy_handle *handle;/* [ref] */
@@ -2191,37 +2162,9 @@ struct spoolss_GetPrinterData {
 
 	struct {
 		enum winreg_Type *type;/* [ref] */
-		union spoolss_PrinterData *data;/* [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */
+		uint8_t *data;/* [ref,size_is(offered)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
-	} out;
-
-};
-
-
-struct _spoolss_SetPrinterData {
-	struct {
-		struct policy_handle *handle;/* [ref] */
-		const char *value_name;/* [charset(UTF16)] */
-		enum winreg_Type type;
-		DATA_BLOB data;
-		uint32_t _offered;
-	} in;
-
-	struct {
-		WERROR result;
-	} out;
-
-};
-
-
-struct __spoolss_SetPrinterData {
-	struct {
-		enum winreg_Type type;
-	} in;
-
-	struct {
-		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
 	} out;
 
 };
@@ -2232,8 +2175,8 @@ struct spoolss_SetPrinterData {
 		struct policy_handle *handle;/* [ref] */
 		const char *value_name;/* [charset(UTF16)] */
 		enum winreg_Type type;
-		union spoolss_PrinterData data;/* [subcontext(4),switch_is(type)] */
-		uint32_t _offered;/* [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */
+		uint8_t *data;/* [ref,size_is(offered)] */
+		uint32_t offered;
 	} in;
 
 	struct {
@@ -2952,7 +2895,7 @@ struct spoolss_SetPrinterDataEx {
 		const char *key_name;/* [charset(UTF16)] */
 		const char *value_name;/* [charset(UTF16)] */
 		enum winreg_Type type;
-		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint8_t *data;/* [ref,size_is(offered)] */
 		uint32_t offered;
 	} in;
 
@@ -2973,7 +2916,7 @@ struct spoolss_GetPrinterDataEx {
 
 	struct {
 		enum winreg_Type *type;/* [ref] */
-		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint8_t *data;/* [ref,size_is(offered)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
