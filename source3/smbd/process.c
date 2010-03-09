@@ -1812,6 +1812,15 @@ void chain_reply(struct smb_request *req)
 	 */
 
 	if ((req->wct < 2) || (CVAL(req->outbuf, smb_wct) < 2)) {
+		if (req->chain_outbuf == NULL) {
+			req->chain_outbuf = TALLOC_REALLOC_ARRAY(
+				req, req->outbuf, uint8_t,
+				smb_len(req->outbuf) + 4);
+			if (req->chain_outbuf == NULL) {
+				smb_panic("talloc failed");
+			}
+		}
+		req->outbuf = NULL;
 		goto error;
 	}
 
@@ -1839,7 +1848,7 @@ void chain_reply(struct smb_request *req)
 		req->chain_outbuf = TALLOC_REALLOC_ARRAY(
 			req, req->outbuf, uint8_t, smb_len(req->outbuf) + 4);
 		if (req->chain_outbuf == NULL) {
-			goto error;
+			smb_panic("talloc failed");
 		}
 		req->outbuf = NULL;
 	} else {
