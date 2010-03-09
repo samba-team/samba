@@ -1069,6 +1069,18 @@ struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	return new_dn;
 }
 
+struct ldb_dn *samdb_infrastructure_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
+{
+       struct ldb_dn *new_dn;
+
+       new_dn = ldb_dn_copy(mem_ctx, samdb_base_dn(sam_ctx));
+       if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Infrastructure")) {
+               talloc_free(new_dn);
+               return NULL;
+       }
+       return new_dn;
+}
+
 struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_dn *new_dn;
