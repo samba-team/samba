@@ -598,7 +598,7 @@ nt_err_code_struct nt_err_desc[] =
 	{ N_("Invalid pipe state"), 		NT_STATUS_INVALID_PIPE_STATE },
 	{ N_("Named pipe busy"), 			NT_STATUS_PIPE_BUSY },
 	{ N_("Illegal function"),		 	NT_STATUS_ILLEGAL_FUNCTION },
-	{ N_("Named pipe dicconnected"), 		NT_STATUS_PIPE_DISCONNECTED },
+	{ N_("Named pipe disconnected"), 		NT_STATUS_PIPE_DISCONNECTED },
 	{ N_("Named pipe closing"), 		NT_STATUS_PIPE_CLOSING },
 	{ N_("Remote host not listening"), 		NT_STATUS_REMOTE_NOT_LISTENING },
 	{ N_("Duplicate name on network"), 		NT_STATUS_DUPLICATE_NAME },

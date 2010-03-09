@@ -769,7 +769,7 @@ static const nt_err_code_struct nt_err_desc[] =
 	{ "Invalid pipe state", 		NT_STATUS_INVALID_PIPE_STATE },
 	{ "Named pipe busy", 			NT_STATUS_PIPE_BUSY },
 	{ "Illegal function",		 	NT_STATUS_ILLEGAL_FUNCTION },
-	{ "Named pipe dicconnected", 		NT_STATUS_PIPE_DISCONNECTED },
+	{ "Named pipe disconnected", 		NT_STATUS_PIPE_DISCONNECTED },
 	{ "Named pipe closing", 		NT_STATUS_PIPE_CLOSING },
 	{ "Remote host not listening", 		NT_STATUS_REMOTE_NOT_LISTENING },
 	{ "Duplicate name on network", 		NT_STATUS_DUPLICATE_NAME },

@@ -368,7 +368,7 @@ msgid "Illegal function"
 msgstr ""
 
 #: ../../libsmb/nterr.c:601
-msgid "Named pipe dicconnected"
+msgid "Named pipe disconnected"
 msgstr ""
 
 #: ../../libsmb/nterr.c:602
