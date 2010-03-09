@@ -33,7 +33,7 @@ struct cmd_list_trustdom_state {
 	struct composite_context *ctx;
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;
-	int num_domains;
+	uint32_t num_domains;
 	struct wb_dom_info **domains;
 
 	uint32_t resume_handle;
@@ -124,7 +124,7 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 	struct cmd_list_trustdom_state *state =
 		talloc_get_type(req->async.private_data,
 				struct cmd_list_trustdom_state);
-	int i, old_num_domains;
+	uint32_t i, old_num_domains;
 
 	state->ctx->status = dcerpc_lsa_EnumTrustDom_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
@@ -147,7 +147,7 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 	    composite_nomem(state->domains, state->ctx)) return;
 
 	for (i=0; i<state->r.out.domains->count; i++) {
-		int j = i+old_num_domains;
+		uint32_t j = i+old_num_domains;
 		state->domains[j] = talloc(state->domains,
 					   struct wb_dom_info);
 		if (composite_nomem(state->domains[i], state->ctx)) return;
@@ -180,7 +180,7 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 
 NTSTATUS wb_cmd_list_trustdoms_recv(struct composite_context *ctx,
 				    TALLOC_CTX *mem_ctx,
-				    int *num_domains,
+				    uint32_t *num_domains,
 				    struct wb_dom_info ***domains)
 {
 	NTSTATUS status = composite_wait(ctx);

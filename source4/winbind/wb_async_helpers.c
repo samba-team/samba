@@ -31,7 +31,7 @@
 
 struct lsa_lookupsids_state {
 	struct composite_context *ctx;
-	int num_sids;
+	uint32_t num_sids;
 	struct lsa_LookupSids r;
 	struct lsa_SidArray sids;
 	struct lsa_TransNameArray names;
@@ -45,13 +45,13 @@ static void lsa_lookupsids_recv_names(struct rpc_request *req);
 struct composite_context *wb_lsa_lookupsids_send(TALLOC_CTX *mem_ctx,
 						 struct dcerpc_pipe *lsa_pipe,
 						 struct policy_handle *handle,
-						 int num_sids,
+						 uint32_t num_sids,
 						 const struct dom_sid **sids)
 {
 	struct composite_context *result;
 	struct rpc_request *req;
 	struct lsa_lookupsids_state *state;
-	int i;
+	uint32_t i;
 
 	result = composite_create(mem_ctx, lsa_pipe->conn->event_ctx);
 	if (result == NULL) goto failed;
@@ -105,7 +105,7 @@ static void lsa_lookupsids_recv_names(struct rpc_request *req)
 	struct lsa_lookupsids_state *state =
 		talloc_get_type(req->async.private_data,
 				struct lsa_lookupsids_state);
-	int i;
+	uint32_t i;
 
 	state->ctx->status = dcerpc_lsa_LookupSids_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
@@ -194,7 +194,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req);
 struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 						  struct dcerpc_pipe *lsa_pipe,
 						  struct policy_handle *handle,
-						  int num_names,
+						  uint32_t num_names,
 						  const char **names)
 {
 	struct composite_context *result;
@@ -202,7 +202,7 @@ struct composite_context *wb_lsa_lookupnames_send(TALLOC_CTX *mem_ctx,
 	struct lsa_lookupnames_state *state;
 
 	struct lsa_String *lsa_names;
-	int i;
+	uint32_t i;
 
 	result = composite_create(mem_ctx, lsa_pipe->conn->event_ctx);
 	if (result == NULL) goto failed;
@@ -254,7 +254,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 	struct lsa_lookupnames_state *state =
 		talloc_get_type(req->async.private_data,
 				struct lsa_lookupnames_state);
-	int i;
+	uint32_t i;
 
 	state->ctx->status = dcerpc_lsa_LookupNames_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
@@ -316,7 +316,7 @@ struct samr_getuserdomgroups_state {
 	struct composite_context *ctx;
 	struct dcerpc_pipe *samr_pipe;
 
-	int num_rids;
+	uint32_t num_rids;
 	uint32_t *rids;
 
 	struct samr_RidWithAttributeArray *rid_array;
@@ -425,13 +425,13 @@ static void samr_usergroups_recv_close(struct rpc_request *req)
 
 NTSTATUS wb_samr_userdomgroups_recv(struct composite_context *ctx,
 				    TALLOC_CTX *mem_ctx,
-				    int *num_rids, uint32_t **rids)
+				    uint32_t *num_rids, uint32_t **rids)
 {
         struct samr_getuserdomgroups_state *state =
                 talloc_get_type(ctx->private_data,
                                 struct samr_getuserdomgroups_state);
 
-	int i;
+	uint32_t i;
 	NTSTATUS status = composite_wait(ctx);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 

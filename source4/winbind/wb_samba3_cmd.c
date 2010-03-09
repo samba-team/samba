@@ -383,7 +383,7 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 	struct wbsrv_samba3_call *s3call =
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
-	int i, num_sids;
+	uint32_t i, num_sids;
 	struct dom_sid **sids;
 	char *sids_string;
 	NTSTATUS status;
@@ -450,7 +450,7 @@ static void usersids_recv_sids(struct composite_context *ctx)
 	struct wbsrv_samba3_call *s3call =
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
-	int i, num_sids;
+	uint32_t i, num_sids;
 	struct dom_sid **sids;
 	char *sids_string;
 	NTSTATUS status;
@@ -830,7 +830,7 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
 	struct wbsrv_samba3_call *s3call =
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
-	int i, num_domains;
+	uint32_t i, num_domains;
 	struct wb_dom_info **domains;
 	NTSTATUS status;
 	char *result;
