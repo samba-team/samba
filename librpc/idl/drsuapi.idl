@@ -1293,8 +1293,11 @@ interface drsuapi
 
 	typedef struct {
 		drsuapi_DsReplicaObjectIdentifier *id;
-		uint32 unknown1;
-		drsuapi_DsAddEntryErrorInfoX error;
+		drsuapi_DsAddEntry_DirErr dir_err;
+		uint32			  dsid;		 /* implementation-specific diagnostic code */
+		WERROR			  extended_err;	 /* 0, STATUS code, or Windows error code */
+		uint32			  extended_data; /* implementation-specific diagnostic code */
+		uint16			  problem;	 /* 0 or PROBLEM error code */
 		[range(0,10000)] uint32 count;
 		[size_is(count)] drsuapi_DsReplicaObjectIdentifier2 *objects;
 	} drsuapi_DsAddEntryCtr2;
