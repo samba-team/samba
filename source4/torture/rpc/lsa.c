@@ -747,12 +747,13 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	return true;
 }
 
-static void lookupsids_cb(struct rpc_request *req)
+static void lookupsids_cb(struct tevent_req *subreq)
 {
-	int *replies = (int *)req->async.private_data;
+	int *replies = (int *)tevent_req_callback_data_void(subreq);
 	NTSTATUS status;
 
-	status = dcerpc_lsa_LookupSids_recv(req);
+	status = dcerpc_lsa_LookupSids_r_recv(subreq, subreq);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("lookupsids returned %s\n", nt_errstr(status));
 		*replies = -1;
@@ -773,7 +774,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 	struct lsa_TransNameArray *names;
 	struct lsa_LookupSids *r;
 	struct lsa_RefDomainList *domains = NULL;
-	struct rpc_request **req;
+	struct tevent_req **req;
 	int i, replies;
 	bool ret = true;
 	const int num_async_requests = 50;
@@ -784,7 +785,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "\nTesting %d async lookupsids request\n", num_async_requests);
 
-	req = talloc_array(tctx, struct rpc_request *, num_async_requests);
+	req = talloc_array(tctx, struct tevent_req *, num_async_requests);
 
 	sids.num_sids = 1;
 	sids.sids = &sidptr;
@@ -806,14 +807,13 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 		r[i].out.names = &names[i];
 		r[i].out.domains = &domains;
 
-		req[i] = dcerpc_lsa_LookupSids_send(p, req, &r[i]);
+		req[i] = dcerpc_lsa_LookupSids_r_send(tctx, tctx->ev, p->binding_handle, &r[i]);
 		if (req[i] == NULL) {
 			ret = false;
 			break;
 		}
 
-		req[i]->async.callback = lookupsids_cb;
-		req[i]->async.private_data = &replies;
+		tevent_req_set_callback(req[i], lookupsids_cb, &replies);
 	}
 
 	while (replies >= 0 && replies < num_async_requests) {

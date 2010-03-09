@@ -554,7 +554,7 @@ static void torture_schannel_bench_connected(struct composite_context *c)
 	}
 }
 
-static void torture_schannel_bench_recv(struct rpc_request *req);
+static void torture_schannel_bench_recv(struct tevent_req *subreq);
 
 static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *conn)
 {
@@ -562,7 +562,7 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	NTSTATUS status;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int flags = CLI_CRED_NTLM_AUTH;
-	struct rpc_request *req;
+	struct tevent_req *subreq;
 	struct cli_credentials *user_creds;
 
 	if (conn->total % 2) {
@@ -628,24 +628,26 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	conn->r.out.authoritative = talloc(conn->tmp, uint8_t);
 	conn->r.out.flags = conn->r.in.flags;
 
-	req = dcerpc_netr_LogonSamLogonEx_send(conn->pipe, conn->tmp, &conn->r);
-	torture_assert(s->tctx, req, "Failed to setup LogonSamLogonEx request");
+	subreq = dcerpc_netr_LogonSamLogonEx_r_send(s, s->tctx->ev,
+						    conn->pipe->binding_handle,
+						    &conn->r);
+	torture_assert(s->tctx, subreq, "Failed to setup LogonSamLogonEx request");
 
-	req->async.callback = torture_schannel_bench_recv;
-	req->async.private_data = conn;
+	tevent_req_set_callback(subreq, torture_schannel_bench_recv, conn);
 
 	return true;
 }
 
-static void torture_schannel_bench_recv(struct rpc_request *req)
+static void torture_schannel_bench_recv(struct tevent_req *subreq)
 {
 	bool ret;
 	struct torture_schannel_bench_conn *conn =
-		(struct torture_schannel_bench_conn *)req->async.private_data;
+		(struct torture_schannel_bench_conn *)tevent_req_callback_data_void(subreq);
 	struct torture_schannel_bench *s = talloc_get_type(conn->s,
 					   struct torture_schannel_bench);
 
-	s->error = dcerpc_netr_LogonSamLogonEx_recv(req);
+	s->error = dcerpc_netr_LogonSamLogonEx_r_recv(subreq, subreq);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(s->error)) {
 		return;
 	}

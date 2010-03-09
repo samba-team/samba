@@ -218,9 +218,9 @@ static bool test_testcall2(struct torture_context *tctx,
 	return true;
 }
 
-static void test_sleep_done(struct rpc_request *rreq)
+static void test_sleep_done(struct tevent_req *subreq)
 {
-	bool *done1 = (bool *)rreq->async.private_data;
+	bool *done1 = (bool *)tevent_req_callback_data_void(subreq);
 	*done1 = true;
 }
 
@@ -233,7 +233,7 @@ static bool test_sleep(struct torture_context *tctx,
 	int i;
 	NTSTATUS status;
 #define ASYNC_COUNT 3
-	struct rpc_request *req[ASYNC_COUNT];
+	struct tevent_req *req[ASYNC_COUNT];
 	struct echo_TestSleep r[ASYNC_COUNT];
 	bool done1[ASYNC_COUNT];
 	bool done2[ASYNC_COUNT];
@@ -254,10 +254,9 @@ static bool test_sleep(struct torture_context *tctx,
 		snd[i]		= timeval_current();
 		rcv[i]		= timeval_zero();
 		r[i].in.seconds = ASYNC_COUNT-i;
-		req[i] = dcerpc_echo_TestSleep_send(p, tctx, &r[i]);
+		req[i] = dcerpc_echo_TestSleep_r_send(tctx, tctx->ev, p->binding_handle, &r[i]);
 		torture_assert(tctx, req[i], "Failed to send async sleep request\n");
-		req[i]->async.callback = test_sleep_done;
-		req[i]->async.private_data = &done1[i];
+		tevent_req_set_callback(req[i], test_sleep_done, &done1[i]);
 	}
 
 	ctx = dcerpc_event_context(p);
@@ -272,7 +271,7 @@ static bool test_sleep(struct torture_context *tctx,
 				rcv[i]	= timeval_current();
 				diff[i]	= timeval_until(&snd[i], &rcv[i]);
 				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
-				status	= dcerpc_echo_TestSleep_recv(req[i]);
+				status	= dcerpc_echo_TestSleep_r_recv(req[i], tctx);
 				torture_comment(tctx, "rounded_tdiff=%d\n", rounded_tdiff);
 				torture_assert_ntstatus_ok(tctx, status, 
 							talloc_asprintf(tctx, "TestSleep(%d) failed", i));

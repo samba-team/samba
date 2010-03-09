@@ -2747,7 +2747,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 #define ASYNC_COUNT 100
 	struct netlogon_creds_CredentialState *creds;
 	struct netlogon_creds_CredentialState *creds_async[ASYNC_COUNT];
-	struct rpc_request *req[ASYNC_COUNT];
+	struct tevent_req *req[ASYNC_COUNT];
 	int i;
 	union netr_WorkstationInfo query;
 	union netr_DomainInfo info;
@@ -2781,7 +2781,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 		netlogon_creds_client_authenticator(creds, &a);
 
 		creds_async[i] = (struct netlogon_creds_CredentialState *)talloc_memdup(creds, creds, sizeof(*creds));
-		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, tctx, &r);
+		req[i] = dcerpc_netr_LogonGetDomainInfo_r_send(tctx, tctx->ev, p->binding_handle, &r);
 
 		/* even with this flush per request a w2k3 server seems to 
 		   clag with multiple outstanding requests. bleergh. */
@@ -2790,7 +2790,10 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		status = dcerpc_netr_LogonGetDomainInfo_recv(req[i]);
+		torture_assert_int_equal(tctx, tevent_req_poll(req[i], tctx->ev), true,
+					 "tevent_req_poll() failed");
+
+		status = dcerpc_netr_LogonGetDomainInfo_r_recv(req[i], tctx);
 
 		torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo_async");
 		torture_assert_ntstatus_ok(tctx, r.out.result, "netr_LogonGetDomainInfo_async"); 

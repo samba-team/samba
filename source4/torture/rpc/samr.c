@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include <tevent.h>
 #include "system/time.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
@@ -5881,7 +5882,7 @@ static bool test_EnumDomainUsers_async(struct dcerpc_pipe *p, struct torture_con
 	uint32_t resume_handle=0;
 	int i;
 #define ASYNC_COUNT 100
-	struct rpc_request *req[ASYNC_COUNT];
+	struct tevent_req *req[ASYNC_COUNT];
 
 	if (!torture_setting_bool(tctx, "dangerous", false)) {
 		torture_skip(tctx, "samr async test disabled - enable dangerous tests to use\n");
@@ -5896,11 +5897,12 @@ static bool test_EnumDomainUsers_async(struct dcerpc_pipe *p, struct torture_con
 	r.out.resume_handle = &resume_handle;
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		req[i] = dcerpc_samr_EnumDomainUsers_send(p, tctx, &r);
+		req[i] = dcerpc_samr_EnumDomainUsers_r_send(tctx, tctx->ev, p->binding_handle, &r);
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		status = dcerpc_samr_EnumDomainUsers_recv(req[i]);
+		tevent_req_poll(req[i], tctx->ev);
+		status = dcerpc_samr_EnumDomainUsers_r_recv(req[i], tctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_warning(tctx, "EnumDomainUsers[%d] failed - %s\n",
 			       i, nt_errstr(status));
