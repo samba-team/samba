@@ -614,8 +614,9 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	struct loadparm_context *lp_ctx;
 	struct interface *ifaces;
 	int i, ifcount;
+	int all_interfaces;
 
-	if (!PyArg_ParseTuple(args, "O", &py_lp_ctx))
+	if (!PyArg_ParseTuple(args, "Oi", &py_lp_ctx, &all_interfaces))
 		return NULL;
 
 	lp_ctx = lp_from_py_object(py_lp_ctx);
@@ -633,7 +634,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	/* first count how many are not loopback addresses */
 	for (ifcount = i = 0; i<count; i++) {
 		const char *ip = iface_n_ip(ifaces, i);
-		if (!iface_same_net(ip, "127.0.0.1", "255.0.0.0")) {
+		if (!(!all_interfaces && iface_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
 			ifcount++;
 		}
 	}
@@ -641,7 +642,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	pylist = PyList_New(ifcount);
 	for (ifcount = i = 0; i<count; i++) {
 		const char *ip = iface_n_ip(ifaces, i);
-		if (!iface_same_net(ip, "127.0.0.1", "255.0.0.0")) {
+		if (!(!all_interfaces && iface_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
 			PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
 			ifcount++;
 		}

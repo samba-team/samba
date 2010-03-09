@@ -1182,7 +1182,7 @@ def provision(setup_dir, message, session_info,
     paths.bind_gid = bind_gid
 
     if hostip is None:
-        hostips = glue.interface_ips(lp)
+        hostips = glue.interface_ips(lp, False)
         if len(hostips) == 0:
             message("No external IPv4 address has been found: I use the loopback.")
             hostip = '127.0.0.1'

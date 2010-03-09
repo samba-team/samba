@@ -20,6 +20,7 @@
 
 import getopt
 import os
+import fcntl
 import sys
 import tempfile
 
@@ -49,6 +50,8 @@ sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 parser.add_option("--verbose", action="store_true")
+parser.add_option("--all-interfaces", action="store_true")
+parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
 
 creds = None
 ccachename = None
@@ -63,7 +66,12 @@ lp = sambaopts.get_loadparm()
 
 domain = lp.get("realm")
 host = lp.get("netbios name")
-IPs = glue.interface_ips(lp)
+if opts.all_interfaces:
+    all_interfaces = True
+else:
+    all_interfaces = False
+
+IPs = glue.interface_ips(lp, all_interfaces)
 nsupdate_cmd = lp.get('nsupdate command')
 
 if len(IPs) == 0:
@@ -94,38 +102,37 @@ def get_credentials(lp):
 #############################################
 # an object to hold a parsed DNS line
 class dnsobj(object):
-    def __init__(self):
-        self.type = None
-        self.name = None
+    def __init__(self, string_form):
+        list = string_form.split()
         self.dest = None
         self.port = None
         self.ip = None
         self.existing_port = None
         self.existing_weight = None
+        self.type = list[0]
+        self.name = list[1]
+        if self.type == 'SRV':
+            self.dest = list[2]
+            self.port = list[3]
+        elif self.type == 'A':
+            self.ip   = list[2] # usually $IP, which gets replaced
+        elif self.type == 'CNAME':
+            self.dest = list[2]
+        else:
+            print "Received unexpected DNS reply of type %s" % self.type
+            raise
+
     def __str__(self):
-        if d.type == "A":     return "%s:%s:%s" % (self.type, self.name, self.ip)
-        if d.type == "SRV":   return "%s:%s:%s:%s" % (self.type, self.name, self.dest, self.port)
-        if d.type == "CNAME": return "%s:%s:%s" % (self.type, self.name, self.dest)
+        if d.type == "A":     return "%s %s %s" % (self.type, self.name, self.ip)
+        if d.type == "SRV":   return "%s %s %s %s" % (self.type, self.name, self.dest, self.port)
+        if d.type == "CNAME": return "%s %s %s" % (self.type, self.name, self.dest)
 
 
 ################################################
 # parse a DNS line from
 def parse_dns_line(line, sub_vars):
-    d = dnsobj()
     subline = samba.substitute_var(line, sub_vars)
-    list = subline.split()
-    d.type = list[0]
-    d.name = list[1]
-    if d.type == 'SRV':
-        d.dest = list[2]
-        d.port = list[3]
-    elif d.type == 'A':
-        d.ip   = list[2] # usually $IP, which gets replaced
-    elif d.type == 'CNAME':
-        d.dest = list[2]
-    else:
-        print "Received unexpected DNS reply of type %s" % d.type
-        raise
+    d = dnsobj(subline)
     return d
 
 ############################################
@@ -142,6 +149,24 @@ def check_dns_name(d):
     normalised_name = d.name.rstrip('.') + '.'
     if opts.verbose:
         print "Looking for DNS entry %s as %s" % (d, normalised_name)
+ 
+    if opts.use_file is not None:
+        try:
+            dns_file = open(opts.use_file, "r")
+        except IOError:
+            return False
+        
+        line = dns_file.readline()
+        while line:
+            line = line.rstrip().lstrip()
+            if line[0] == "#":
+                line = dns_file.readline()
+                continue
+            if line.lower() == str(d).lower():
+                return True
+            line = dns_file.readline()
+        return False
+
     try:
         ans = resolver.query(normalised_name, d.type)
     except resolver.NXDOMAIN:
@@ -167,6 +192,7 @@ def check_dns_name(d):
                     d.existing_weight = str(rdata.weight)
     if opts.verbose:
         print "Failed to find DNS entry %s" % d
+
     return False
 
 
@@ -195,6 +221,14 @@ def call_nsupdate(d):
 
     if opts.verbose:
         print "Calling nsupdate for %s" % d
+
+    if opts.use_file is not None:
+        wfile = open(opts.use_file, 'a')
+        fcntl.lockf(wfile, fcntl.LOCK_EX)
+        wfile.write(str(d)+"\n")
+        fcntl.lockf(wfile, fcntl.LOCK_UN)
+        return
+
     (tmp_fd, tmpfile) = tempfile.mkstemp()
     f = os.fdopen(tmp_fd, 'w')
     if d.type == "A":
