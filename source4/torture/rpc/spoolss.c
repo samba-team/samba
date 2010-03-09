@@ -3353,6 +3353,7 @@ static bool test_winreg_QueryValue(struct torture_context *tctx,
 	r.in.type = &type;
 	r.in.data_size = &data_size;
 	r.in.data_length = &data_length;
+	r.in.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
 	r.out.type = &type;
 	r.out.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
 	r.out.data_size = &data_size;
