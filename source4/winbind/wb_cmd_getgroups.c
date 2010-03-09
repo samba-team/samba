@@ -51,8 +51,8 @@ static void cmd_getgroups_recv_gid(struct composite_context *ctx);
   Ask for the uid from the username
 */
 struct composite_context *wb_cmd_getgroups_send(TALLOC_CTX *mem_ctx,
-						 struct wbsrv_service *service,
-						 const char* username)
+						struct wbsrv_service *service,
+						const char* username)
 {
 	struct composite_context *ctx, *result;
 	struct cmd_getgroups_state *state;
@@ -97,7 +97,10 @@ static void cmd_getgroups_recv_pwnam(struct composite_context *ctx)
 	state->ctx->status = wb_cmd_getpwnam_recv(ctx, state, &pw);
 	if (composite_is_ok(state->ctx)) {
 		res = wb_uid2sid_send(state, service, pw->pw_uid);
-		NT_STATUS_HAVE_NO_MEMORY(res);
+		if (res == NULL) {
+			composite_error(state->ctx, NT_STATUS_NO_MEMORY);
+			return;
+		}
 		DEBUG(6, ("cmd_getgroups_recv_pwnam uid %d\n",pw->pw_uid));
 
 		composite_continue(ctx, res, wb_getgroups_uid2sid_recv, state);
@@ -128,7 +131,11 @@ static void wb_getgroups_uid2sid_recv(struct composite_context *ctx)
 			DEBUG(7, ("wb_getgroups_uid2sid_recv SID = %s\n",sid_str));
 			/* Ok got the SID now get the groups */
 			res = wb_cmd_userdomgroups_send(state, state->service, sid);
-			NT_STATUS_HAVE_NO_MEMORY(res);
+			if (res == NULL) {
+				composite_error(state->ctx,
+						NT_STATUS_NO_MEMORY);
+				return;
+			}
 
 			composite_continue(ctx, res, wb_getgroups_userdomsgroups_recv, state);
 		} else {
@@ -144,7 +151,7 @@ static void wb_getgroups_userdomsgroups_recv(struct composite_context *ctx) {
         struct cmd_getgroups_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct cmd_getgroups_state);
-	int num_sids;
+	uint32_t num_sids;
 	struct dom_sid **sids;
 
 	DEBUG(5, ("wb_getgroups_userdomsgroups_recv called\n"));
@@ -158,7 +165,7 @@ static void wb_getgroups_userdomsgroups_recv(struct composite_context *ctx) {
 	state->current_group=0;
 
 	if(num_sids > 0) {
-		state->gids = talloc_array(state, struct gid_t *, state->num_groups);
+		state->gids = talloc_array(state, gid_t, state->num_groups);
 		ctx = wb_sid2gid_send(state, state->service, state->sids[state->current_group]);
 		composite_continue(state->ctx, ctx, cmd_getgroups_recv_gid, state);
 	} else {
@@ -175,7 +182,6 @@ static void cmd_getgroups_recv_gid(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct cmd_getgroups_state);
 	gid_t gid;
-	char* sid_str;
 
 	DEBUG(5, ("cmd_getgroups_recv_gid called\n"));
 
@@ -197,7 +203,9 @@ static void cmd_getgroups_recv_gid(struct composite_context *ctx)
 /*
   Return list of uids when finished
 */
-NTSTATUS wb_cmd_getgroups_recv(struct composite_context *ctx,TALLOC_CTX *mem_ctx,gid_t **groups,uint32_t *num_groups)
+NTSTATUS wb_cmd_getgroups_recv(struct composite_context *ctx,
+			       TALLOC_CTX *mem_ctx, gid_t **groups,
+			       uint32_t *num_groups)
 {
 	NTSTATUS status = composite_wait(ctx);
 
