@@ -1610,6 +1610,107 @@ static bool test_QueryValue(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_QueryValue_full(struct dcerpc_pipe *p,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle,
+				 const char *valuename,
+				 bool existing_value)
+{
+	struct winreg_QueryValue r;
+	struct winreg_String value_name;
+	enum winreg_Type type = REG_NONE;
+	uint32_t data_size = 0;
+	uint32_t real_data_size = 0;
+	uint32_t data_length = 0;
+	uint8_t *data = NULL;
+	WERROR expected_error = WERR_BADFILE;
+
+	if (valuename == NULL) {
+		expected_error = WERR_INVALID_PARAM;
+	}
+
+	ZERO_STRUCT(r);
+
+	init_winreg_String(&value_name, NULL);
+
+	torture_comment(tctx, "Testing QueryValue(%s)\n", valuename);
+
+	r.in.handle = handle;
+	r.in.value_name = &value_name;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r), "QueryValue failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"expected WERR_INVALID_PARAM for NULL winreg_String.name");
+
+	init_winreg_String(&value_name, valuename);
+	r.in.value_name = &value_name;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+		"QueryValue failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"QueryValue failed");
+
+	r.in.type = &type;
+	r.out.type = &type;
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+		"QueryValue failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"QueryValue failed");
+
+	r.in.data_length = &data_length;
+	r.out.data_length = &data_length;
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+		"QueryValue failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"QueryValue failed");
+
+	r.in.data_size = &data_size;
+	r.out.data_size = &data_size;
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+		"QueryValue failed");
+	if (existing_value) {
+		torture_assert_werr_ok(tctx, r.out.result,
+			"QueryValue failed");
+	} else {
+		torture_assert_werr_equal(tctx, r.out.result, expected_error,
+			"QueryValue failed");
+	}
+
+	real_data_size = *r.out.data_size;
+
+	data = talloc_zero_array(tctx, uint8_t, 0);
+	r.in.data = data;
+	r.out.data = data;
+	*r.in.data_size = 0;
+	*r.out.data_size = 0;
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+		"QueryValue failed");
+	if (existing_value) {
+		torture_assert_werr_equal(tctx, r.out.result, WERR_MORE_DATA,
+			"QueryValue failed");
+	} else {
+		torture_assert_werr_equal(tctx, r.out.result, expected_error,
+			"QueryValue failed");
+	}
+
+	data = talloc_zero_array(tctx, uint8_t, real_data_size);
+	r.in.data = data;
+	r.out.data = data;
+	r.in.data_size = &real_data_size;
+	r.out.data_size = &real_data_size;
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+		"QueryValue failed");
+	if (existing_value) {
+		torture_assert_werr_ok(tctx, r.out.result,
+			"QueryValue failed");
+	} else {
+		torture_assert_werr_equal(tctx, r.out.result, expected_error,
+			"QueryValue failed");
+	}
+
+	return true;
+}
+
 static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 			   struct policy_handle *handle, int max_valnamelen,
 			   int max_valbufsize)
