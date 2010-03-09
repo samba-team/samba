@@ -3345,17 +3345,20 @@ static bool test_winreg_QueryValue(struct torture_context *tctx,
 	uint32_t data_size = 0;
 	uint32_t data_length = 0;
 	struct winreg_String valuename;
+	uint8_t *data = NULL;
 
 	init_winreg_String(&valuename, value_name);
+
+	data = talloc_zero_array(tctx, uint8_t, 0);
 
 	r.in.handle = handle;
 	r.in.value_name = &valuename;
 	r.in.type = &type;
 	r.in.data_size = &data_size;
 	r.in.data_length = &data_length;
-	r.in.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+	r.in.data = data;
 	r.out.type = &type;
-	r.out.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+	r.out.data = data;
 	r.out.data_size = &data_size;
 	r.out.data_length = &data_length;
 
@@ -3364,7 +3367,9 @@ static bool test_winreg_QueryValue(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r), "QueryValue failed");
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		*r.in.data_size = *r.out.data_size;
-		r.out.data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+		data = talloc_zero_array(tctx, uint8_t, *r.in.data_size);
+		r.in.data = data;
+		r.out.data = data;
 		torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r), "QueryValue failed");
 	}
 	torture_assert_werr_ok(tctx, r.out.result, "QueryValue failed");
