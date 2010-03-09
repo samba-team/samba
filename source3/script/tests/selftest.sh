@@ -302,6 +302,7 @@ EOF
 ## create a test account
 ##
 
+if [ "$USERID" != 0 ]; then
 cat >$NSS_WRAPPER_PASSWD<<EOF
 root:x:65533:65532:root gecos:$PREFIX_ABS:/bin/false
 nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
@@ -314,6 +315,21 @@ nogroup:x:65534:nobody
 root:x:65532:
 $USERNAME-group:x:$GROUPID:
 EOF
+else
+##
+## Running as root...
+##
+cat >$NSS_WRAPPER_PASSWD<<EOF
+$USERNAME:x:$USERID:$GROUPID:$USERNAME gecos:$PREFIX_ABS:/bin/false
+nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
+EOF
+
+cat >$NSS_WRAPPER_GROUP<<EOF
+$USERNAME-group:x:$GROUPID:
+nobody:x:65533:
+nogroup:x:65534:nobody
+EOF
+fi
 
 MAKE_TEST_BINARY="bin/smbpasswd"
 export MAKE_TEST_BINARY
