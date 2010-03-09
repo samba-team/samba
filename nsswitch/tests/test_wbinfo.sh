@@ -178,7 +178,8 @@ testit "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_uid
 # this does not work
 knownfail "wbinfo --group-info against $TARGET" $wbinfo --group-info "S-1-22-2-0"
 knownfail "wbinfo --gid-info against $TARGET" $wbinfo --gid-info 30001
-knownfail "wbinfo -r against $TARGET" $wbinfo -r "$DOMAIN/$USERNAME"
+
+testit "wbinfo -r against $TARGET" $wbinfo -r "$DOMAIN/$USERNAME" || failed=`expr $failed + 1`
 
 testit "wbinfo --user-domgroups against $TARGET" $wbinfo --user-domgroups $admin_sid || failed=`expr $failed + 1`
 
