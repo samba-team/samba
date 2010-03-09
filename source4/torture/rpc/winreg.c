@@ -1929,6 +1929,9 @@ static bool test_Open_Security(struct torture_context *tctx,
 	return ret;
 }
 
+#define KEY_CURRENT_VERSION "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION"
+#define VALUE_CURRENT_VERSION "CurrentVersion"
+
 static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		      void *userdata)
 {
@@ -1946,6 +1949,20 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
 				   "open");
+
+	if (open_fn == (void *)dcerpc_winreg_OpenHKLM) {
+#if 0
+		torture_assert(tctx, test_OpenKey(p, tctx, &handle, KEY_CURRENT_VERSION, &newhandle),
+			"failed to open current version key");
+#else
+		torture_assert(tctx, _test_OpenKey(p, tctx, &handle, KEY_CURRENT_VERSION, KEY_QUERY_VALUE, &newhandle, WERR_OK, NULL),
+			"failed to open current version key");
+#endif
+		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
+			"failed to query current version");
+		torture_assert(tctx, test_CloseKey(p, tctx, &newhandle),
+			"failed to close current version key");
+	}
 
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
 
