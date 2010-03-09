@@ -34,7 +34,7 @@ struct cmd_getdcname_state {
 };
 
 static void getdcname_recv_domain(struct composite_context *ctx);
-static void getdcname_recv_dcname(struct rpc_request *req);
+static void getdcname_recv_dcname(struct tevent_req *subreq);
 
 struct composite_context *wb_cmd_getdcname_send(TALLOC_CTX *mem_ctx,
 						struct wbsrv_service *service,
@@ -72,7 +72,7 @@ static void getdcname_recv_domain(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct cmd_getdcname_state);
 	struct wbsrv_domain *domain;
-	struct rpc_request *req;
+	struct tevent_req *subreq;
 
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
@@ -83,20 +83,23 @@ static void getdcname_recv_domain(struct composite_context *ctx)
 	state->g.in.domainname = state->domain_name;
 	state->g.out.dcname = talloc(state, const char *);
 
-	req = dcerpc_netr_GetAnyDCName_send(domain->netlogon_pipe, state,
-					    &state->g);
-	if (composite_nomem(req, state->ctx)) return;
+	subreq = dcerpc_netr_GetAnyDCName_r_send(state,
+						 state->ctx->event_ctx,
+						 domain->netlogon_pipe->binding_handle,
+						 &state->g);
+	if (composite_nomem(subreq, state->ctx)) return;
 
-	composite_continue_rpc(state->ctx, req, getdcname_recv_dcname, state);
+	tevent_req_set_callback(subreq, getdcname_recv_dcname, state);
 }
 
-static void getdcname_recv_dcname(struct rpc_request *req)
+static void getdcname_recv_dcname(struct tevent_req *subreq)
 {
 	struct cmd_getdcname_state *state =
-		talloc_get_type(req->async.private_data,
-				struct cmd_getdcname_state);
+		tevent_req_callback_data(subreq,
+		struct cmd_getdcname_state);
 
-	state->ctx->status = dcerpc_netr_GetAnyDCName_recv(req);
+	state->ctx->status = dcerpc_netr_GetAnyDCName_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = werror_to_ntstatus(state->g.out.result);
 	if (!composite_is_ok(state->ctx)) return;
