@@ -1351,23 +1351,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x1b */
-	[noopnum,nopull,noprint,public] WERROR _spoolss_SetPrinterData(
+	WERROR spoolss_SetPrinterData(
 		[in,ref] policy_handle *handle,
-		[in] [string,charset(UTF16)] uint16 value_name[],
-		[in] winreg_Type type,
-		[in] DATA_BLOB data,
-		[in] uint32 _offered
-	);
-	[noopnum,nopull,noprint,public] void __spoolss_SetPrinterData(
-		[in] winreg_Type type,
-		[out,ref,switch_is(type)] spoolss_PrinterData *data
-	);
-	[nopush] WERROR spoolss_SetPrinterData(
-		[in,ref] policy_handle *handle,
-		[in] [string,charset(UTF16)] uint16 value_name[],
-		[in] winreg_Type type,
-		[in,subcontext(4),switch_is(type)] spoolss_PrinterData data,
-		[in,value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] uint32 _offered
+		[in] 	 [string,charset(UTF16)] uint16 value_name[],
+		[in] 	 winreg_Type type,
+		[in,ref] [size_is(offered)] uint8 *data,
+		[in] 	 uint32 offered
 	);
 
 	/******************/
@@ -2252,7 +2241,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 winreg_Type type,
-		[in,ref] [size_is(offered)] uint8 *buffer,
+		[in,ref] [size_is(offered)] uint8 *data,
 		[in] 	 uint32 offered
 	);
 
