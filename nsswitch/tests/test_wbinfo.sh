@@ -176,9 +176,17 @@ testit "wbinfo -i against $TARGET" $wbinfo -i "$DOMAIN/$USERNAME" || failed=`exp
 
 testit "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_uid || failed=`expr $failed + 1`
 
-# this does not work
-knownfail "wbinfo --group-info against $TARGET" $wbinfo --group-info "S-1-22-2-0"
-knownfail "wbinfo --gid-info against $TARGET" $wbinfo --gid-info 30001
+echo "test: wbinfo --group-info against $TARGET"
+rawgid=`$wbinfo --group-info "Domain admins" | sed 's/.*:\([0-9][0-9]*\):/\1/'`
+if test x$? = x0; then
+	echo "success: wbinfo --group-info against $TARGET"
+else
+	echo "failure: wbinfo --group-info against $TARGET"
+	failed=`expr $failed + 1`
+fi
+
+gid=`echo $rawgid | sed 's/.*:\([0-9][0-9]*\):/\1/'`
+testit "wbinfo --gid-info against $TARGET" $wbinfo --gid-info $gid || failed=`expr $failed + 1`
 
 testit "wbinfo -r against $TARGET" $wbinfo -r "$DOMAIN/$USERNAME" || failed=`expr $failed + 1`
 
