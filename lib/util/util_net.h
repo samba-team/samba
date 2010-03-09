@@ -43,4 +43,6 @@ bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
 				       const char *str,
 				       int flags);
 
+void set_sockaddr_port(struct sockaddr *psa, uint16_t port);
+
 #endif /* _SAMBA_UTIL_NET_H_ */
