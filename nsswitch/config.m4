@@ -6,6 +6,8 @@ case "$host_os" in
 		SMB_BUILD_LIBRARY(nss_winbind,
 			    [../nsswitch/winbind_nss_linux.o],
 			    [LIBWINBIND-CLIENT])
+		SMB_MAKE_SETTINGS([nss_winbind_VERSION = 2])
+		SMB_MAKE_SETTINGS([nss_winbind_SOVERSION = 2])
 	    fi
 	;;
 	*)
