@@ -538,7 +538,7 @@ static NTSTATUS kcctpl_create_edge(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	const char * const attrs[] = { "siteList", NULL };
 	int ret;
 	struct ldb_message_element *el;
-	uint32_t i;
+	unsigned int i;
 	struct ldb_val val;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -694,7 +694,7 @@ static NTSTATUS kcctpl_create_edge_set(struct ldb_context *ldb,
 	struct kcctpl_multi_edge_set *set;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message_element *el;
-	uint32_t i;
+	unsigned int i;
 
 	tmp_ctx = talloc_new(ldb);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -1182,7 +1182,6 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 
 	for (i = 0; i < res->count; i++) {
 		struct ldb_message *dc, *new_data;
-		uint32_t j;
 		struct ldb_dn *parent_dn;
 		uint64_t behavior_version;
 		const char *dc_transport_address;
@@ -1204,7 +1203,10 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 		}
 
 		if (el && (el->num_values >= 1)) {
-			bool contains = false;
+			bool contains;
+			unsigned int j;
+
+			contains = false;
 
 			for (j = 0; j < el->num_values; j++) {
 				struct ldb_val val;
