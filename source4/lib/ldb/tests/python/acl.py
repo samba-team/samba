@@ -120,51 +120,51 @@ member: """ + member_dn
         _ldb.modify_ldif(ldif)
     
     def create_ou(self, _ldb, ou_dn, desc=None):
-        ou_dict = {
-            "dn" : ou_dn,
-            "ou" : ou_dn.split(",")[0][3:],
-            "objectClass" : "organizationalUnit",
-            "url" : "www.bbc.co.uk",
-        }
+        ldif = """
+dn: """ + ou_dn + """
+ou: """ + ou_dn.split(",")[0][3:] + """
+objectClass: organizationalUnit
+url: www.example.com
+"""
         if desc:
             assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
             if isinstance(desc, str):
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add(ou_dict)
+        _ldb.add_ldif(ldif)
 
     def create_user(self, _ldb, user_dn, desc=None):
-        user_dict = {
-            "dn" : user_dn,
-            "sAMAccountName" : user_dn.split(",")[0][3:],
-            "objectClass" : "user",
-            "userPassword" : self.user_pass,
-            "url" : "www.bbc.co.uk",
-        }
+        ldif = """
+dn: """ + user_dn + """
+sAMAccountName: """ + user_dn.split(",")[0][3:] + """
+objectClass: user
+userPassword: """ + self.user_pass + """
+url: www.example.com
+"""
         if desc:
             assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
             if isinstance(desc, str):
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add(user_dict)
+        _ldb.add_ldif(ldif)
 
     def create_group(self, _ldb, group_dn, desc=None):
-        group_dict = {
-            "dn" : group_dn,
-            "objectClass" : "group",
-            "sAMAccountName" : group_dn.split(",")[0][3:],
-            "groupType" : "4",
-            "url" : "www.bbc.co.uk",
-        }
+        ldif = """
+dn: """ + group_dn + """
+objectClass: group
+sAMAccountName: """ + group_dn.split(",")[0][3:] + """
+groupType: 4
+url: www.example.com
+"""
         if desc:
             assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
             if isinstance(desc, str):
                 ldif += "nTSecurityDescriptor: %s" % desc
             elif isinstance(desc, security.descriptor):
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add(group_dict)
+        _ldb.add_ldif(ldif)
 
     def read_desc(self, object_dn):
         res = self.ldb_admin.search(object_dn, SCOPE_BASE, None, ["nTSecurityDescriptor"])
