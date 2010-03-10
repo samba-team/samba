@@ -74,46 +74,6 @@ sub ParseFunctionOldRecv($$$)
 	$res .= "}\n\n";
 }
 
-sub ParseFunctionSync($$$)
-{
-	my ($interface, $fn, $name) = @_;
-	my $uname = uc $name;
-
-	if (has_property($fn, "todo")) {
-		return;
-	}
-
-	my $proto = "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)";
-
-	$res_hdr .= "\n$proto;\n";
-	$res .= "$proto\n{\n";
-
-	$res .= "
-	NTSTATUS status;
-
-	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG($name, r);
-	}
-
-	status = dcerpc_ndr_request(p, NULL, &ndr_table_$interface->{NAME},
-				    NDR_$uname, mem_ctx, r);
-
-	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG($name, r);		
-	}
-";
-    
-        if (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "NTSTATUS") {
-             $res .= "\tif (NT_STATUS_IS_OK(status)) status = r->out.result;\n";
-        }
-	$res .= 
-"
-	return status;
-";
-
-	$res .= "}\n\n";
-}
-
 sub ParseFunction_r_State($$$)
 {
 	my ($interface, $fn, $name) = @_;
@@ -313,8 +273,6 @@ sub ParseFunction_r_Sync($$$)
 sub ParseFunction($$)
 {
 	my ($interface, $fn) = @_;
-
-	ParseFunctionSync($interface, $fn, $fn->{NAME});
 
 	ParseFunctionOldSend($interface, $fn, $fn->{NAME});
 	ParseFunctionOldRecv($interface, $fn, $fn->{NAME});
