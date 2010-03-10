@@ -20,13 +20,13 @@ smbtorture_s3_encrypted() {
 
 smbclient_s3() {
 	echo "RUNNING TESTS smbclient_s3"
-	$SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP $USERNAME $PASSWORD $USERID \
+	$SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP $USERNAME $PASSWORD $USERID "$PREFIX_ABS"/tmp \
 	|| failed=`expr $failed + $?`
 }
 
 smbclient_s3_encrypted() {
 	echo "RUNNING TESTS smbclient_s3_encrypted"
-	$SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP $USERNAME $PASSWORD $USERID "-e" \
+	$SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP $USERNAME $PASSWORD $USERID "$PREFIX_ABS"/tmp "-e" \
 	|| failed=`expr $failed + $?`
 }
 

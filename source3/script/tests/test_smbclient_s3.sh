@@ -2,9 +2,9 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 6 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID
+Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID LOCAL_PATH
 EOF
 exit 1;
 fi
@@ -14,8 +14,9 @@ SERVER_IP="$2"
 USERNAME="$3"
 PASSWORD="$4"
 USERID="$5"
+LOCAL_PATH="$6"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
-shift 5
+shift 6
 ADDARGS="$*"
 
 test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
@@ -124,6 +125,43 @@ EOF
 	echo "$out"
 	echo "failed create then delete bad symlink - grep failed with $ret"
 	false
+    fi
+}
+
+# Test creating a good symlink and deleting it by path.
+test_good_symlink()
+{
+    tmpfile=/tmp/smbclient.in.$$
+
+    touch "$LOCAL_PATH/foo"
+    ln -s "$LOCAL_PATH/foo" "$LOCAL_PATH/bar"
+    cat > $tmpfile <<EOF
+del bar
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed delete good symlink with error $ret"
+	false
+	return
+    fi
+
+    if [ -e "$LOCAL_PATH/bar" ] ; then
+	echo "failed delete good symlink - symlink still exists"
+	rm "$LOCAL_PATH/bar"
+	rm "$LOCAL_PATH/foo"
+	false
+    else
+	# got the correct prompt .. succeed
+	rm "$LOCAL_PATH/foo"
+	true
     fi
 }
 
@@ -262,6 +300,10 @@ testit "interactive smbclient -l prompts on stdout" \
 
 testit "creating a bad symlink and deleting it" \
    test_bad_symlink || \
+   failed=`expr $failed + 1`
+
+testit "creating a good symlink and deleting it by path" \
+   test_good_symlink || \
    failed=`expr $failed + 1`
 
 testit "writing into a read-only directory fails" \
