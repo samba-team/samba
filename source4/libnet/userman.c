@@ -32,7 +32,6 @@
 
 struct useradd_state {
 	struct dcerpc_pipe       *pipe;
-	struct rpc_request       *req;
 	struct policy_handle     domain_handle;
 	struct samr_CreateUser   createuser;
 	struct policy_handle     user_handle;
@@ -43,22 +42,23 @@ struct useradd_state {
 };
 
 
-static void continue_useradd_create(struct rpc_request *req);
+static void continue_useradd_create(struct tevent_req *subreq);
 
 
 /**
  * Stage 1 (and the only one for now): Create user account.
  */
-static void continue_useradd_create(struct rpc_request *req)
+static void continue_useradd_create(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct useradd_state *s;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct useradd_state);
 
 	/* check rpc layer status code */
-	c->status = dcerpc_samr_CreateUser_recv(s->req);
+	c->status = dcerpc_samr_CreateUser_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* check create user call status code */
@@ -100,6 +100,7 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 {
 	struct composite_context *c;
 	struct useradd_state *s;
+	struct tevent_req *subreq;
 
 	if (!p || !io) return NULL;
 
@@ -130,10 +131,12 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	s->createuser.out.rid                  = &s->user_rid;
 
 	/* send the request */
-	s->req = dcerpc_samr_CreateUser_send(p, c, &s->createuser);
-	if (composite_nomem(s->req, c)) return c;
+	subreq = dcerpc_samr_CreateUser_r_send(s, c->event_ctx,
+					       p->binding_handle,
+					       &s->createuser);
+	if (composite_nomem(subreq, c)) return c;
 
-	composite_continue_rpc(c, s->req, continue_useradd_create, c);
+	tevent_req_set_callback(subreq, continue_useradd_create, c);
 	return c;
 }
 
@@ -203,26 +206,26 @@ struct userdel_state {
 };
 
 
-static void continue_userdel_name_found(struct rpc_request *req);
-static void continue_userdel_user_opened(struct rpc_request* req);
-static void continue_userdel_deleted(struct rpc_request *req);
+static void continue_userdel_name_found(struct tevent_req *subreq);
+static void continue_userdel_user_opened(struct tevent_req *subreq);
+static void continue_userdel_deleted(struct tevent_req *subreq);
 
 
 /**
  * Stage 1: Lookup the user name and resolve it to rid
  */
-static void continue_userdel_name_found(struct rpc_request *req)
+static void continue_userdel_name_found(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct userdel_state *s;
-	struct rpc_request *openuser_req;
 	struct monitor_msg msg;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userdel_state);
 
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_samr_LookupNames_recv(req);
+	c->status = dcerpc_samr_LookupNames_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookupname.out.result;
@@ -264,28 +267,30 @@ static void continue_userdel_name_found(struct rpc_request *req)
 	s->openuser.out.user_handle  = &s->user_handle;
 
 	/* send rpc request */
-	openuser_req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
-	if (composite_nomem(openuser_req, c)) return;
+	subreq = dcerpc_samr_OpenUser_r_send(s, c->event_ctx,
+					     s->pipe->binding_handle,
+					     &s->openuser);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, openuser_req, continue_userdel_user_opened, c);
+	tevent_req_set_callback(subreq, continue_userdel_user_opened, c);
 }
 
 
 /**
  * Stage 2: Open user account.
  */
-static void continue_userdel_user_opened(struct rpc_request* req)
+static void continue_userdel_user_opened(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct userdel_state *s;
-	struct rpc_request *deluser_req;
 	struct monitor_msg msg;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userdel_state);
 
 	/* receive samr_OpenUser result */
-	c->status = dcerpc_samr_OpenUser_recv(req);
+	c->status = dcerpc_samr_OpenUser_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->openuser.out.result;
@@ -312,28 +317,31 @@ static void continue_userdel_user_opened(struct rpc_request* req)
 	s->deleteuser.out.user_handle  = &s->user_handle;
 	
 	/* send rpc request */
-	deluser_req = dcerpc_samr_DeleteUser_send(s->pipe, c, &s->deleteuser);
-	if (composite_nomem(deluser_req, c)) return;
+	subreq = dcerpc_samr_DeleteUser_r_send(s, c->event_ctx,
+					       s->pipe->binding_handle,
+					       &s->deleteuser);
+	if (composite_nomem(subreq, c)) return;
 
 	/* callback handler setup */
-	composite_continue_rpc(c, deluser_req, continue_userdel_deleted, c);
+	tevent_req_set_callback(subreq, continue_userdel_deleted, c);
 }
 
 
 /**
  * Stage 3: Delete user account
  */
-static void continue_userdel_deleted(struct rpc_request *req)
+static void continue_userdel_deleted(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct userdel_state *s;
 	struct monitor_msg msg;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userdel_state);
 
 	/* receive samr_DeleteUser result */
-	c->status = dcerpc_samr_DeleteUser_recv(req);
+	c->status = dcerpc_samr_DeleteUser_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* return the actual function call status */
@@ -369,7 +377,7 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 {
 	struct composite_context *c;
 	struct userdel_state *s;
-	struct rpc_request *lookup_req;
+	struct tevent_req *subreq;
 
 	/* composite context allocation and setup */
 	c = composite_create(p, dcerpc_event_context(p));
@@ -396,11 +404,13 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	if (composite_nomem(s->lookupname.out.types, c)) return c;
 
 	/* send the request */
-	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
-	if (composite_nomem(lookup_req, c)) return c;
+	subreq = dcerpc_samr_LookupNames_r_send(s, c->event_ctx,
+						p->binding_handle,
+						&s->lookupname);
+	if (composite_nomem(subreq, c)) return c;
 
 	/* set the next stage */
-	composite_continue_rpc(c, lookup_req, continue_userdel_name_found, c);
+	tevent_req_set_callback(subreq, continue_userdel_name_found, c);
 	return c;
 }
 
@@ -454,10 +464,10 @@ NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *p,
  * USER MODIFY functionality
  */
 
-static void continue_usermod_name_found(struct rpc_request *req);
-static void continue_usermod_user_opened(struct rpc_request *req);
-static void continue_usermod_user_queried(struct rpc_request *req);
-static void continue_usermod_user_changed(struct rpc_request *req);
+static void continue_usermod_name_found(struct tevent_req *subreq);
+static void continue_usermod_user_opened(struct tevent_req *subreq);
+static void continue_usermod_user_queried(struct tevent_req *subreq);
+static void continue_usermod_user_changed(struct tevent_req *subreq);
 
 
 struct usermod_state {
@@ -479,18 +489,18 @@ struct usermod_state {
 /**
  * Step 1: Lookup user name
  */
-static void continue_usermod_name_found(struct rpc_request *req)
+static void continue_usermod_name_found(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct usermod_state *s;
-	struct rpc_request *openuser_req;
 	struct monitor_msg msg;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
 	/* receive samr_LookupNames result */
-	c->status = dcerpc_samr_LookupNames_recv(req);
+	c->status = dcerpc_samr_LookupNames_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookupname.out.result;
@@ -532,10 +542,12 @@ static void continue_usermod_name_found(struct rpc_request *req)
 	s->openuser.out.user_handle  = &s->user_handle;
 
 	/* send the rpc request */
-	openuser_req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
-	if (composite_nomem(openuser_req, c)) return;
+	subreq = dcerpc_samr_OpenUser_r_send(s, c->event_ctx,
+					     s->pipe->binding_handle,
+					     &s->openuser);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, openuser_req, continue_usermod_user_opened, c);
+	tevent_req_set_callback(subreq, continue_usermod_user_opened, c);
 }
 
 
@@ -655,9 +667,9 @@ static bool usermod_setfields(struct usermod_state *s, uint16_t *level,
 static NTSTATUS usermod_change(struct composite_context *c,
 			       struct usermod_state *s)
 {
-	struct rpc_request *query_req, *setuser_req;
 	bool do_set;
 	union samr_UserInfo *i = &s->info;
+	struct tevent_req *subreq;
 
 	/* set the level to invalid value, so that unless setfields routine 
 	   gives it a valid value we report the error correctly */
@@ -686,8 +698,11 @@ static NTSTATUS usermod_change(struct composite_context *c,
 
 		/* send query user info request to retrieve complete data of
 		   a particular info level */
-		query_req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuser);
-		composite_continue_rpc(c, query_req, continue_usermod_user_queried, c);
+		subreq = dcerpc_samr_QueryUserInfo_r_send(s, c->event_ctx,
+							  s->pipe->binding_handle,
+							  &s->queryuser);
+		if (composite_nomem(subreq, c)) return NT_STATUS_NO_MEMORY;
+		tevent_req_set_callback(subreq, continue_usermod_user_queried, c);
 
 	} else {
 		s->setuser.in.user_handle  = &s->user_handle;
@@ -695,8 +710,11 @@ static NTSTATUS usermod_change(struct composite_context *c,
 		s->setuser.in.info         = i;
 
 		/* send set user info request after making required change */
-		setuser_req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
-		composite_continue_rpc(c, setuser_req, continue_usermod_user_changed, c);
+		subreq = dcerpc_samr_SetUserInfo_r_send(s, c->event_ctx,
+							s->pipe->binding_handle,
+							&s->setuser);
+		if (composite_nomem(subreq, c)) return NT_STATUS_NO_MEMORY;
+		tevent_req_set_callback(subreq, continue_usermod_user_changed, c);
 	}
 	
 	return NT_STATUS_OK;
@@ -706,15 +724,16 @@ static NTSTATUS usermod_change(struct composite_context *c,
 /**
  * Stage 2: Open user account
  */
-static void continue_usermod_user_opened(struct rpc_request *req)
+static void continue_usermod_user_opened(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct usermod_state *s;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
-	c->status = dcerpc_samr_OpenUser_recv(req);
+	c->status = dcerpc_samr_OpenUser_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->openuser.out.result;
@@ -730,21 +749,21 @@ static void continue_usermod_user_opened(struct rpc_request *req)
 /**
  * Stage 2a (optional): Query the user information
  */
-static void continue_usermod_user_queried(struct rpc_request *req)
+static void continue_usermod_user_queried(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct usermod_state *s;
 	union samr_UserInfo *i;
 	uint16_t level;
-	struct rpc_request *setuser_req;
 	
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
 	i = &s->info;
 
 	/* receive samr_QueryUserInfo result */
-	c->status = dcerpc_samr_QueryUserInfo_recv(req);
+	c->status = dcerpc_samr_QueryUserInfo_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->queryuser.out.result;
@@ -765,24 +784,28 @@ static void continue_usermod_user_queried(struct rpc_request *req)
 	s->setuser.in.info         = i;
 
 	/* send the rpc request */
-	setuser_req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
-	composite_continue_rpc(c, setuser_req, continue_usermod_user_changed, c);
+	subreq = dcerpc_samr_SetUserInfo_r_send(s, c->event_ctx,
+						s->pipe->binding_handle,
+						&s->setuser);
+	if (composite_nomem(subreq, c)) return;
+	tevent_req_set_callback(subreq, continue_usermod_user_changed, c);
 }
 
 
 /**
  * Stage 3: Set new user account data
  */
-static void continue_usermod_user_changed(struct rpc_request *req)
+static void continue_usermod_user_changed(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct usermod_state *s;
 	
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);
 
 	/* receive samr_SetUserInfo result */
-	c->status = dcerpc_samr_SetUserInfo_recv(req);
+	c->status = dcerpc_samr_SetUserInfo_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* return the actual function call status */
@@ -817,7 +840,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 {
 	struct composite_context *c;
 	struct usermod_state *s;
-	struct rpc_request *lookup_req;
+	struct tevent_req *subreq;
 
 	/* composite context allocation and setup */
 	c = composite_create(p, dcerpc_event_context(p));
@@ -844,11 +867,13 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	if (composite_nomem(s->lookupname.out.types, c)) return c;
 
 	/* send the rpc request */
-	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
-	if (composite_nomem(lookup_req, c)) return c;
+	subreq = dcerpc_samr_LookupNames_r_send(s, c->event_ctx,
+						p->binding_handle,
+						&s->lookupname);
+	if (composite_nomem(subreq, c)) return c;
 	
 	/* callback handler setup */
-	composite_continue_rpc(c, lookup_req, continue_usermod_name_found, c);
+	tevent_req_set_callback(subreq, continue_usermod_name_found, c);
 	return c;
 }
 
