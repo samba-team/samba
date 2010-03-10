@@ -125,7 +125,7 @@ static void atalk_add_to_list(name_compare_entry **list)
 		}
 	}
 
-	if (!(new_list = SMB_CALLOC_ARRAY(name_compare_entry, (count == 0 ? 1 : count + 1))))
+	if (!(new_list = SMB_CALLOC_ARRAY(name_compare_entry, count + 2)))
 		return;
 
 	for (i = 0; i < count; i ++) {
