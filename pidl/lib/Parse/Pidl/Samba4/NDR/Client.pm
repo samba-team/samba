@@ -16,21 +16,20 @@ use strict;
 
 my($res,$res_hdr);
 
-sub ParseFunctionSend($$$)
+sub ParseFunctionOldSend($$$)
 {
 	my ($interface, $fn, $name) = @_;
 	my $uname = uc $name;
 
-	my $proto = "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)";
+	if (has_property($fn, "todo")) {
+		return;
+	}
 
-	$res_hdr .= "\n$proto;\n";
+	my $proto = "static struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)";
 
 	$res .= "$proto\n{\n";
 
-	if (has_property($fn, "todo")) {
-		$res .= "\treturn NULL;\n";
-	} else {
-		$res .= "
+	$res .= "
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);
 	}
@@ -38,26 +37,24 @@ sub ParseFunctionSend($$$)
 	return dcerpc_ndr_request_send(p, NULL, &ndr_table_$interface->{NAME},
 				       NDR_$uname, true, mem_ctx, r);
 ";
-	}
 
 	$res .= "}\n\n";
 }
 
-sub ParseFunctionRecv($$$)
+sub ParseFunctionOldRecv($$$)
 {
 	my ($interface, $fn, $name) = @_;
 	my $uname = uc $name;
 
-	my $proto = "NTSTATUS dcerpc_$name\_recv(struct rpc_request *rreq)";
+	if (has_property($fn, "todo")) {
+		return;
+	}
 
-	$res_hdr .= "\n$proto;\n";
+	my $proto = "static NTSTATUS dcerpc_$name\_recv(struct rpc_request *rreq)";
 
 	$res .= "$proto\n{\n";
 
-	if (has_property($fn, "todo")) {
-		$res .= "\treturn NT_STATUS_NOT_IMPLEMENTED;\n";
-	} else {
-		$res .= "NTSTATUS status;
+	$res .= "NTSTATUS status;
 	struct dcerpc_pipe *p = rreq->p;
 	struct $name *r = (struct $name *)rreq->ndr.struct_ptr;
 
@@ -69,7 +66,6 @@ sub ParseFunctionRecv($$$)
 
 	return status;
 ";
-	}
 
 	$res .= "}\n\n";
 }
@@ -295,10 +291,10 @@ sub ParseFunction($$)
 {
 	my ($interface, $fn) = @_;
 
-	ParseFunctionSend($interface, $fn, $fn->{NAME});
-	ParseFunctionRecv($interface, $fn, $fn->{NAME});
 	ParseFunctionSync($interface, $fn, $fn->{NAME});
 
+	ParseFunctionOldSend($interface, $fn, $fn->{NAME});
+	ParseFunctionOldRecv($interface, $fn, $fn->{NAME});
 	ParseFunction_r_State($interface, $fn, $fn->{NAME});
 	ParseFunction_r_Send($interface, $fn, $fn->{NAME});
 	ParseFunction_r_Done($interface, $fn, $fn->{NAME});
