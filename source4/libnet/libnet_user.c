@@ -909,9 +909,9 @@ struct userlist_state {
 
 
 static void continue_lsa_domain_opened(struct composite_context *ctx);
-static void continue_domain_queried(struct rpc_request *req);
+static void continue_domain_queried(struct tevent_req *subreq);
 static void continue_samr_domain_opened(struct composite_context *ctx);
-static void continue_users_enumerated(struct rpc_request *req);
+static void continue_users_enumerated(struct tevent_req *subreq);
 
 
 /**
@@ -930,7 +930,7 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	struct rpc_request *query_req;
+	struct tevent_req *subreq;
 	bool prereq_met = false;
 
 	/* composite context allocation and setup */
@@ -961,10 +961,12 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 	if (composite_nomem(s->query_domain.out.info, c)) return c;
 
 	/* send the request */
-	query_req = dcerpc_lsa_QueryInfoPolicy_send(ctx->lsa.pipe, c, &s->query_domain);
-	if (composite_nomem(query_req, c)) return c;
+	subreq = dcerpc_lsa_QueryInfoPolicy_r_send(s, c->event_ctx,
+						   ctx->lsa.pipe->binding_handle,
+						   &s->query_domain);
+	if (composite_nomem(subreq, c)) return c;
 
-	composite_continue_rpc(c, query_req, continue_domain_queried, c);
+	tevent_req_set_callback(subreq, continue_domain_queried, c);
 	return c;
 }
 
@@ -977,7 +979,7 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	struct rpc_request *query_req;
+	struct tevent_req *subreq;
 	
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
@@ -993,10 +995,12 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 	if (composite_nomem(s->query_domain.out.info, c)) return;
 
 	/* send the request */
-	query_req = dcerpc_lsa_QueryInfoPolicy_send(s->ctx->lsa.pipe, c, &s->query_domain);
-	if (composite_nomem(query_req, c)) return;
+	subreq = dcerpc_lsa_QueryInfoPolicy_r_send(s, c->event_ctx,
+						   s->ctx->lsa.pipe->binding_handle,
+						   &s->query_domain);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, query_req, continue_domain_queried, c);
+	tevent_req_set_callback(subreq, continue_domain_queried, c);
 }
 
 
@@ -1004,18 +1008,18 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
  * Stage 1: receive domain info and request to enum users,
  * provided a valid samr handle is opened
  */
-static void continue_domain_queried(struct rpc_request *req)
+static void continue_domain_queried(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	struct rpc_request *enum_req;
 	bool prereq_met = false;
 	
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
 	/* receive result of rpc request */
-	c->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* get the returned domain info */
@@ -1038,10 +1042,12 @@ static void continue_domain_queried(struct rpc_request *req)
 	if (composite_nomem(s->user_list.out.sam, c)) return;
 
 	/* send the request */
-	enum_req = dcerpc_samr_EnumDomainUsers_send(s->ctx->samr.pipe, c, &s->user_list);
-	if (composite_nomem(enum_req, c)) return;
+	subreq = dcerpc_samr_EnumDomainUsers_r_send(s, c->event_ctx,
+						    s->ctx->samr.pipe->binding_handle,
+						    &s->user_list);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, enum_req, continue_users_enumerated, c);
+	tevent_req_set_callback(subreq, continue_users_enumerated, c);
 }
 
 
@@ -1053,7 +1059,7 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	struct rpc_request *enum_req;
+	struct tevent_req *subreq;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
@@ -1074,27 +1080,30 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	if (composite_nomem(s->user_list.out.num_entries, c)) return;
 	
 	/* send the request */
-	enum_req = dcerpc_samr_EnumDomainUsers_send(s->ctx->samr.pipe, c, &s->user_list);
-	if (composite_nomem(enum_req, c)) return;
+	subreq = dcerpc_samr_EnumDomainUsers_r_send(s, c->event_ctx,
+						    s->ctx->samr.pipe->binding_handle,
+						    &s->user_list);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, enum_req, continue_users_enumerated, c);
+	tevent_req_set_callback(subreq, continue_users_enumerated, c);
 }
 
 
 /*
  * Stage 2: receive enumerated users and their rids
  */
-static void continue_users_enumerated(struct rpc_request *req)
+static void continue_users_enumerated(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct userlist_state *s;
 	uint32_t i;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
 	/* receive result of rpc request */
-	c->status = dcerpc_samr_EnumDomainUsers_recv(req);
+	c->status = dcerpc_samr_EnumDomainUsers_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* get the actual status of the rpc call result
