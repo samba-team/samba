@@ -32,8 +32,7 @@
 #include "param/param.h"
 
 /* the stages of this call */
-enum connect_stage {CONNECT_RESOLVE, 
-		    CONNECT_SOCKET, 
+enum connect_stage {CONNECT_SOCKET, 
 		    CONNECT_SESSION_REQUEST,
 		    CONNECT_NEGPROT,
 		    CONNECT_SESSION_SETUP,
@@ -362,34 +361,6 @@ static NTSTATUS connect_socket(struct composite_context *c,
 
 
 /*
-  called when name resolution is finished
-*/
-static NTSTATUS connect_resolve(struct composite_context *c, 
-				struct smb_composite_connect *io)
-{
-	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
-	NTSTATUS status;
-	const char *address;
-
-	status = resolve_name_recv(state->creq, state, &address);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	state->creq = smbcli_sock_connect_send(state, address, 
-					       io->in.dest_ports,
-					       io->in.dest_host, 
-					       NULL, c->event_ctx, 
-						  io->in.socket_options);
-	NT_STATUS_HAVE_NO_MEMORY(state->creq);
-
-	state->stage = CONNECT_SOCKET;
-	state->creq->async.private_data = c;
-	state->creq->async.fn = composite_handler;
-
-	return NT_STATUS_OK;
-}
-
-
-/*
   handle and dispatch state transitions
 */
 static void state_handler(struct composite_context *c)
@@ -397,9 +368,6 @@ static void state_handler(struct composite_context *c)
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 
 	switch (state->stage) {
-	case CONNECT_RESOLVE:
-		c->status = connect_resolve(c, state->io);
-		break;
 	case CONNECT_SOCKET:
 		c->status = connect_socket(c, state->io);
 		break;
@@ -461,7 +429,6 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 {
 	struct composite_context *c;
 	struct connect_state *state;
-	struct nbt_name name;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) goto failed;
@@ -478,11 +445,15 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = state;
 
-	state->stage = CONNECT_RESOLVE;
-	make_nbt_name_server(&name, io->in.dest_host);
-	state->creq = resolve_name_send(resolve_ctx, state, &name, c->event_ctx);
-
+	state->creq = smbcli_sock_connect_send(state, 
+					       NULL,
+					       io->in.dest_ports,
+					       io->in.dest_host, 
+					       resolve_ctx, c->event_ctx, 
+					       io->in.socket_options);
 	if (state->creq == NULL) goto failed;
+
+	state->stage = CONNECT_SOCKET;
 	state->creq->async.private_data = c;
 	state->creq->async.fn = composite_handler;
 

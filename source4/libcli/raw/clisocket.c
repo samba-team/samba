@@ -80,6 +80,10 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	state->socket_options = talloc_reference(state, socket_options);
 
+	if (!host_addr) {
+		host_addr = host_name;
+	}
+
 	ctx = socket_connect_multi_send(state, host_addr,
 					state->num_ports, state->ports,
 					resolve_ctx,
