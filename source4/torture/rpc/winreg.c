@@ -1960,6 +1960,8 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 #endif
 		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
 			"failed to query current version");
+		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, "IDoNotExist", false),
+			"failed to query current version");
 		torture_assert(tctx, test_CloseKey(p, tctx, &newhandle),
 			"failed to close current version key");
 	}
