@@ -236,8 +236,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 
 	*r->out.data_length = *r->out.type = REG_NONE;
 
-	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->key->name));
-	DEBUG(7,("_reg_info: policy key type = [%08x]\n", regkey->key->type));
+	DEBUG(7,("_winreg_QueryValue: policy key name = [%s]\n", regkey->key->name));
+	DEBUG(7,("_winreg_QueryValue: policy key type = [%08x]\n", regkey->key->type));
 
 	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
 	if(regkey->key->type == REG_KEY_HKPD)
@@ -287,6 +287,10 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 		status = reg_queryvalue(p->mem_ctx, regkey, r->in.value_name->name,
 					&val);
 		if (!W_ERROR_IS_OK(status)) {
+
+			DEBUG(10,("_winreg_QueryValue: reg_queryvalue failed with: %s\n",
+				win_errstr(status)));
+
 			if (r->out.data_size) {
 				*r->out.data_size = 0;
 			}
