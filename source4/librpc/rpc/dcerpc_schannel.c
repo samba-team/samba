@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "auth/auth.h"
 #include "libcli/composite/composite.h"
 #include "libcli/auth/libcli_auth.h"
@@ -49,8 +50,8 @@ struct schannel_key_state {
 
 static void continue_secondary_connection(struct composite_context *ctx);
 static void continue_bind_auth_none(struct composite_context *ctx);
-static void continue_srv_challenge(struct rpc_request *req);
-static void continue_srv_auth2(struct rpc_request *req);
+static void continue_srv_challenge(struct tevent_req *subreq);
+static void continue_srv_auth2(struct tevent_req *subreq);
 
 
 /*
@@ -119,7 +120,7 @@ static void continue_bind_auth_none(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct schannel_key_state *s;
-	struct rpc_request *srv_challenge_req;
+	struct tevent_req *subreq;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
@@ -140,10 +141,12 @@ static void continue_bind_auth_none(struct composite_context *ctx)
 	/*
 	  request a netlogon challenge - a rpc request over opened secondary pipe
 	*/
-	srv_challenge_req = dcerpc_netr_ServerReqChallenge_send(s->pipe2, c, &s->r);
-	if (composite_nomem(srv_challenge_req, c)) return;
+	subreq = dcerpc_netr_ServerReqChallenge_r_send(s, c->event_ctx,
+						       s->pipe2->binding_handle,
+						       &s->r);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, srv_challenge_req, continue_srv_challenge, c);
+	tevent_req_set_callback(subreq, continue_srv_challenge, c);
 }
 
 
@@ -151,17 +154,17 @@ static void continue_bind_auth_none(struct composite_context *ctx)
   Stage 5 of schannel_key: Receive a challenge and perform authentication
   on the netlogon pipe
 */
-static void continue_srv_challenge(struct rpc_request *req)
+static void continue_srv_challenge(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct schannel_key_state *s;
-	struct rpc_request *srv_auth2_req;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive rpc request result - netlogon challenge */
-	c->status = dcerpc_netr_ServerReqChallenge_recv(req);
+	c->status = dcerpc_netr_ServerReqChallenge_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare credentials for auth2 request */
@@ -189,10 +192,12 @@ static void continue_srv_challenge(struct rpc_request *req)
 	/*
 	  authenticate on the netlogon pipe - a rpc request over secondary pipe
 	*/
-	srv_auth2_req = dcerpc_netr_ServerAuthenticate2_send(s->pipe2, c, &s->a);
-	if (composite_nomem(srv_auth2_req, c)) return;
+	subreq = dcerpc_netr_ServerAuthenticate2_r_send(s, c->event_ctx,
+							s->pipe2->binding_handle,
+							&s->a);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, srv_auth2_req, continue_srv_auth2, c);
+	tevent_req_set_callback(subreq, continue_srv_auth2, c);
 }
 
 
@@ -200,16 +205,17 @@ static void continue_srv_challenge(struct rpc_request *req)
   Stage 6 of schannel_key: Receive authentication request result and verify
   received credentials
 */
-static void continue_srv_auth2(struct rpc_request *req)
+static void continue_srv_auth2(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct schannel_key_state *s;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive rpc request result - auth2 credentials */ 
-	c->status = dcerpc_netr_ServerAuthenticate2_recv(req);
+	c->status = dcerpc_netr_ServerAuthenticate2_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* verify credentials */
