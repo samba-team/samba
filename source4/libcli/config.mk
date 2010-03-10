@@ -65,7 +65,7 @@ LIBCLI_WREPL_OBJ_FILES = $(libclisrcdir)/wrepl/winsrepl.o
 $(eval $(call proto_header_template,$(libclisrcdir)/wrepl/winsrepl_proto.h,$(LIBCLI_WREPL_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
-PUBLIC_DEPENDENCIES = NDR_NBT
+PUBLIC_DEPENDENCIES = NDR_NBT LIBTSOCKET
 
 LIBCLI_RESOLVE_OBJ_FILES = $(libclisrcdir)/resolve/resolve.o
 

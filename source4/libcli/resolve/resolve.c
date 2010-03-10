@@ -27,6 +27,7 @@
 #include "system/network.h"
 #include "lib/socket/socket.h"
 #include "../lib/util/dlinklist.h"
+#include "lib/tsocket/tsocket.h"
 
 struct resolve_state {
 	struct resolve_context *ctx;
@@ -145,7 +146,7 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 	struct composite_context *c;
 	struct resolve_state *state;
 
-	if (ctx == NULL || event_ctx == NULL) {
+	if (event_ctx == NULL) {
 		return NULL;
 	}
 
@@ -239,8 +240,16 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 	status = resolve_name_all_recv(c, mem_ctx, &addrs, NULL);
 
 	if (NT_STATUS_IS_OK(status)) {
-		*reply_addr = talloc_steal(mem_ctx, addrs[0]->addr);
+		struct tsocket_address *t_addr = socket_address_to_tsocket_address(addrs, addrs[0]);
+		if (!t_addr) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		*reply_addr = tsocket_address_inet_addr_string(t_addr, mem_ctx);
 		talloc_free(addrs);
+		if (!*reply_addr) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	return status;
