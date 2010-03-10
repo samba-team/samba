@@ -79,15 +79,16 @@ sub ParseFunctionSync($$$)
 	my ($interface, $fn, $name) = @_;
 	my $uname = uc $name;
 
+	if (has_property($fn, "todo")) {
+		return;
+	}
+
 	my $proto = "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)";
 
 	$res_hdr .= "\n$proto;\n";
 	$res .= "$proto\n{\n";
 
-	if (has_property($fn, "todo")) {
-		$res .= "\treturn NT_STATUS_NOT_IMPLEMENTED;\n";
-	} else {
-		$res .= "
+	$res .= "
 	NTSTATUS status;
 
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
@@ -109,7 +110,6 @@ sub ParseFunctionSync($$$)
 "
 	return status;
 ";
-	}
 
 	$res .= "}\n\n";
 }
