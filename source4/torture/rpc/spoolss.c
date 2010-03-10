@@ -3057,7 +3057,9 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 				   struct dcerpc_pipe *p,
 				   struct policy_handle *handle,
-				   const char *key_name)
+				   const char *key_name,
+				   uint32_t *count_p,
+				   struct spoolss_PrinterEnumValues **info_p)
 {
 	struct spoolss_EnumPrinterDataEx r;
 	struct spoolss_PrinterEnumValues *info;
@@ -3084,6 +3086,13 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDataEx failed");
 
 	CHECK_NEEDED_SIZE_ENUM(spoolss_EnumPrinterDataEx, info, count, lp_iconv_convenience(tctx->lp_ctx), needed, 1);
+
+	if (count_p) {
+		*count_p = count;
+	}
+	if (info_p) {
+		*info_p = info;
+	}
 
 	return true;
 }
@@ -3441,6 +3450,8 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		DATA_BLOB data;
 		uint8_t *data_out;
 		uint32_t needed, offered = 0;
+		uint32_t ecount;
+		struct spoolss_PrinterEnumValues *einfo;
 
 		switch (types[t]) {
 		case REG_BINARY:
@@ -3463,12 +3474,24 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 			test_SetPrinterDataEx(tctx, p, handle, keys[i], value_name, types[t], data.data, offered),
 			"failed to call SetPrinterDataEx");
 
-		if (!test_GetPrinterDataEx(tctx, p, handle, keys[i], value_name, &type, &data_out, &needed)) {
-			return false;
-		}
+		torture_assert(tctx,
+			test_GetPrinterDataEx(tctx, p, handle, keys[i], value_name, &type, &data_out, &needed),
+			"failed to call GetPrinterDataEx");
+
+		torture_assert(tctx,
+			test_EnumPrinterDataEx(tctx, p, handle, keys[i], &ecount, &einfo),
+			"failed to call EnumPrinterDataEx");
+
 		torture_assert_int_equal(tctx, types[t], type, "type mismatch");
 		torture_assert_int_equal(tctx, needed, offered, "size mismatch");
 		torture_assert_mem_equal(tctx, data_out, data.data, offered, "buffer mismatch");
+
+		torture_assert_int_equal(tctx, ecount, 1, "unexpected enum count");
+		torture_assert_str_equal(tctx, einfo[0].value_name, value_name, "value_name mismatch");
+		torture_assert_int_equal(tctx, einfo[0].value_name_len, strlen_m_term(value_name)*2, "unexpected value_name_len");
+		torture_assert_int_equal(tctx, einfo[0].type, types[t], "type mismatch");
+		torture_assert_int_equal(tctx, einfo[0].data_length, offered, "size mismatch");
+		torture_assert_mem_equal(tctx, einfo[0].data->data, data.data, offered, "buffer mismatch");
 
 		if (winreg_pipe && hive_handle) {
 			const char *printer_key;
@@ -3493,10 +3516,6 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		}
 
 		key = talloc_strdup(tctx, keys[i]);
-
-		if (!test_EnumPrinterDataEx(tctx, p, handle, keys[i])) {
-			return false;
-		}
 
 		if (!test_DeletePrinterDataEx(tctx, p, handle, keys[i], value_name)) {
 			return false;
@@ -3952,7 +3971,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_EnumPrinterDataEx(tctx, p, &handle, "PrinterDriverData")) {
+	if (!test_EnumPrinterDataEx(tctx, p, &handle, "PrinterDriverData", NULL, NULL)) {
 		ret = false;
 	}
 
@@ -4721,7 +4740,7 @@ bool test_printer_keys(struct torture_context *tctx,
 			"failed to call test_EnumPrinterKey");
 	}
 	for (i=0; key_array && key_array[i]; i++) {
-		torture_assert(tctx, test_EnumPrinterDataEx(tctx, p, handle, key_array[i]),
+		torture_assert(tctx, test_EnumPrinterDataEx(tctx, p, handle, key_array[i], NULL, NULL),
 			"failed to call test_EnumPrinterDataEx");
 	}
 
