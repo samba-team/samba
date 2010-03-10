@@ -3491,7 +3491,9 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, einfo[0].value_name_len, strlen_m_term(value_name)*2, "unexpected value_name_len");
 		torture_assert_int_equal(tctx, einfo[0].type, types[t], "type mismatch");
 		torture_assert_int_equal(tctx, einfo[0].data_length, offered, "size mismatch");
-		torture_assert_mem_equal(tctx, einfo[0].data->data, data.data, offered, "buffer mismatch");
+		if (einfo[0].data_length > 0) {
+			torture_assert_mem_equal(tctx, einfo[0].data->data, data.data, offered, "buffer mismatch");
+		}
 
 		if (winreg_pipe && hive_handle) {
 			const char *printer_key;
