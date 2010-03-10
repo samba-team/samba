@@ -990,7 +990,7 @@ char *secrets_fetch_generic(const char *owner, const char *key)
 	char *tdbkey = NULL;
 
 	if (( ! owner) || ( ! key)) {
-		DEBUG(1, ("Invalid Paramters"));
+		DEBUG(1, ("Invalid Parameters"));
 		return NULL;
 	}
 
