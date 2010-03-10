@@ -2,9 +2,9 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD
+Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID
 EOF
 exit 1;
 fi
@@ -13,8 +13,9 @@ SERVER="$1"
 SERVER_IP="$2"
 USERNAME="$3"
 PASSWORD="$4"
+USERID="$5"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
-shift 4
+shift 5
 ADDARGS="$*"
 
 test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
@@ -126,6 +127,119 @@ EOF
     fi
 }
 
+# Test writing into a read-only directory (logon as guest) fails.
+test_read_only_dir()
+{
+    prompt="NT_STATUS_ACCESS_DENIED making remote directory"
+    tmpfile=/tmp/smbclient.in.$$
+
+##
+## We can't do this as non-root. We always have rights to
+## create the directory.
+##
+    if [ "$USERID" != 0 ]; then
+	echo "skipping test_read_only_dir as non-root"
+	true
+	return
+    fi
+
+##
+## We can't do this with an encrypted connection. No credentials
+## to set up the channel.
+##
+    if [ "$ADDARGS" == "-e" ]; then
+	echo "skipping test_read_only_dir with encrypted connection"
+	true
+	return
+    fi
+
+    cat > $tmpfile <<EOF
+mkdir a_test_dir
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U% //$SERVER/ro-tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed writing into read-only directory with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt" >/dev/null 2>&1
+
+    ret=$?
+    if [ $ret = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo "failed writing into read-only directory - grep failed with $ret"
+	false
+    fi
+}
+
+# Test reading an owner-only file (logon as guest) fails.
+test_owner_only_file()
+{
+    prompt="NT_STATUS_ACCESS_DENIED opening remote file"
+    tmpfile=/tmp/smbclient.in.$$
+
+##
+## We can't do this as non-root. We always have rights to
+## read the file.
+##
+    if [ "$USERID" != 0 ]; then
+	echo "skipping test_owner_only_file as non-root"
+	true
+	return
+    fi
+
+##
+## We can't do this with an encrypted connection. No credentials
+## to set up the channel.
+##
+    if [ "$ADDARGS" == "-e" ]; then
+	echo "skipping test_owner_only_file with encrypted connection"
+	true
+	return
+    fi
+
+    cat > $tmpfile <<EOF
+get unreadable_file
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U% //$SERVER/ro-tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed reading owner-only file with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt" >/dev/null 2>&1
+
+    ret=$?
+    if [ $ret = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo "failed reading owner-only file - grep failed with $ret"
+	false
+    fi
+}
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
@@ -148,6 +262,14 @@ testit "interactive smbclient -l prompts on stdout" \
 
 testit "creating a bad symlink and deleting it" \
    test_bad_symlink || \
+   failed=`expr $failed + 1`
+
+testit "writing into a read-only directory fails" \
+   test_read_only_dir || \
+   failed=`expr $failed + 1`
+
+testit "Reading a owner-only file fails" \
+   test_owner_only_file || \
    failed=`expr $failed + 1`
 
 testok $0 $failed

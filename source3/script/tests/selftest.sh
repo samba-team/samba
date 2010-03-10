@@ -36,9 +36,22 @@ if [ $CUSTOM_CONF_ARG ]; then
 fi
 
 ##
-## create the test directory
+## create the test directory layout
 ##
 PREFIX=`echo $DIRECTORY | sed s+//+/+`
+printf "%s" "CREATE TEST ENVIRONMENT IN '$PREFIX'"...
+/bin/rm -rf $PREFIX
+if [ -e "$PREFIX" ]; then
+	echo "***"
+	echo "*** Failed to delete test environment $PREFIX"
+	echo "*** Was a previous run done as root ?"
+	echo "***"
+	exit 1
+fi
+
+##
+## create the test directory
+##
 mkdir -p $PREFIX || exit $?
 OLD_PWD=`pwd`
 cd $PREFIX || exit $?
@@ -145,11 +158,6 @@ if test "x`smbd -b | grep NSS_WRAPPER`" = "x"; then
 fi
 
 
-## 
-## create the test directory layout
-##
-printf "%s" "CREATE TEST ENVIRONMENT IN '$PREFIX'"...
-/bin/rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $NCALRPCDIR $LIBDIR $PIDDIR $LOCKDIR $LOGDIR
 mkdir -p $SOCKET_WRAPPER_DIR
 mkdir -p $WINBINDD_SOCKET_DIR
@@ -171,6 +179,16 @@ else
     mkdir -p $SHRDIR
 fi
 chmod 777 $SHRDIR
+
+##
+## Create a read-only directory.
+##
+RO_SHRDIR=`echo $SHRDIR | sed -e 's:/[^/]*$::'`
+RO_SHRDIR=$RO_SHRDIR/root-tmp
+mkdir -p $RO_SHRDIR
+chmod 755 $RO_SHRDIR
+touch $RO_SHRDIR/unreadable_file
+chmod 600 $RO_SHRDIR/unreadable_file
 
 ##
 ## Create the common config include file with the basic settings
@@ -269,6 +287,9 @@ cat >$SERVERCONFFILE<<EOF
 
 [tmp]
 	path = $SHRDIR
+[ro-tmp]
+	path = $RO_SHRDIR
+	guest ok = yes
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
