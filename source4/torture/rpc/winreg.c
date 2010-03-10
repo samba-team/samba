@@ -34,6 +34,7 @@
 #define TEST_SUBKEY TEST_KEY3 "\\subkey"
 #define TEST_SUBKEY_SD  TEST_KEY4 "\\subkey_sd"
 #define TEST_SUBSUBKEY_SD TEST_KEY4 "\\subkey_sd\\subsubkey_sd"
+#define TEST_VALUE "torture_value_name"
 
 #define TEST_SID "S-1-5-21-1234567890-1234567890-1234567890-500"
 
@@ -1853,6 +1854,27 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
+static bool test_key_value(struct dcerpc_pipe *p,
+			   struct torture_context *tctx,
+			   struct policy_handle *handle)
+{
+	const char *value_name = TEST_VALUE;
+	enum winreg_Type type = REG_DWORD;
+	uint32_t value = 0x12345678;
+
+	DATA_BLOB blob = data_blob_talloc_zero(tctx, 4);
+	SIVAL(blob.data, 0, value);
+
+	torture_assert(tctx, test_SetValue(p, tctx, handle, value_name, type, blob.data, blob.length),
+		"test_SetValue failed");
+	torture_assert(tctx, test_QueryValue_full(p, tctx, handle, value_name, true),
+		talloc_asprintf(tctx, "test_QueryValue_full for %s value failed", value_name));
+	torture_assert(tctx, test_DeleteValue(p, tctx, handle, value_name),
+		"test_DeleteValue failed");
+
+	return true;
+}
+
 typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
 static bool test_Open_Security(struct torture_context *tctx,
@@ -1988,6 +2010,11 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	if (created && !test_OpenKey(p, tctx, &handle, TEST_KEY1, &newhandle))
 		torture_fail(tctx,
 			     "CreateKey failed (OpenKey after Create didn't work)\n");
+
+	if (created && !test_key_value(p, tctx, &newhandle)) {
+		torture_fail(tctx,
+			     "test_key_value failed\n");
+	}
 
 	if (created && !test_CloseKey(p, tctx, &newhandle))
 		torture_fail(tctx,
