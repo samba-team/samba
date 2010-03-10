@@ -43,7 +43,7 @@ struct cmd_list_trustdom_state {
 
 static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx);
 static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx);
-static void cmd_list_trustdoms_recv_doms(struct rpc_request *req);
+static void cmd_list_trustdoms_recv_doms(struct tevent_req *subreq);
 
 struct composite_context *wb_cmd_list_trustdoms_send(TALLOC_CTX *mem_ctx,
 						     struct wbsrv_service *service)
@@ -94,7 +94,7 @@ static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx)
 	struct cmd_list_trustdom_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct cmd_list_trustdom_state);
-	struct rpc_request *req;
+	struct tevent_req *subreq;
 
 	state->ctx->status = wb_init_lsa_recv(ctx, state,
 					      &state->lsa_pipe,
@@ -114,19 +114,23 @@ static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx)
 	state->r.out.resume_handle = &state->resume_handle;
 	state->r.out.domains = &state->domainlist;
 
-	req = dcerpc_lsa_EnumTrustDom_send(state->lsa_pipe, state, &state->r);
-	composite_continue_rpc(state->ctx, req, cmd_list_trustdoms_recv_doms,
-			       state);
+	subreq = dcerpc_lsa_EnumTrustDom_r_send(state,
+						state->ctx->event_ctx,
+						state->lsa_pipe->binding_handle,
+						&state->r);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, cmd_list_trustdoms_recv_doms, state);
 }
 
-static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
+static void cmd_list_trustdoms_recv_doms(struct tevent_req *subreq)
 {
 	struct cmd_list_trustdom_state *state =
-		talloc_get_type(req->async.private_data,
-				struct cmd_list_trustdom_state);
+		tevent_req_callback_data(subreq,
+		struct cmd_list_trustdom_state);
 	uint32_t i, old_num_domains;
 
-	state->ctx->status = dcerpc_lsa_EnumTrustDom_recv(req);
+	state->ctx->status = dcerpc_lsa_EnumTrustDom_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
 
@@ -173,9 +177,12 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 	state->r.out.resume_handle = &state->resume_handle;
 	state->r.out.domains = &state->domainlist;
 	
-	req = dcerpc_lsa_EnumTrustDom_send(state->lsa_pipe, state, &state->r);
-	composite_continue_rpc(state->ctx, req, cmd_list_trustdoms_recv_doms,
-			       state);
+	subreq = dcerpc_lsa_EnumTrustDom_r_send(state,
+						state->ctx->event_ctx,
+						state->lsa_pipe->binding_handle,
+						&state->r);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, cmd_list_trustdoms_recv_doms, state);
 }
 
 NTSTATUS wb_cmd_list_trustdoms_recv(struct composite_context *ctx,
