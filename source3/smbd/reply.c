@@ -2403,7 +2403,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	if (posix_paths) {
 		ret = SMB_VFS_LSTAT(conn, smb_fname);
 	} else {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
+		ret = SMB_VFS_STAT(conn, smb_fname);
 	}
 	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
