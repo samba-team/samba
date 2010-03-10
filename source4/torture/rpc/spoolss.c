@@ -3504,7 +3504,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 
 		c = strchr(key, '\\');
 		if (c) {
-			int i;
+			int k;
 
 			/* we have subkeys */
 
@@ -3514,9 +3514,9 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 				return false;
 			}
 
-			for (i=0; subkeys && subkeys[i]; i++) {
+			for (k=0; subkeys && subkeys[k]; k++) {
 
-				const char *current_key = talloc_asprintf(tctx, "%s\\%s", key, subkeys[i]);
+				const char *current_key = talloc_asprintf(tctx, "%s\\%s", key, subkeys[k]);
 
 				if (!test_DeletePrinterKey(tctx, p, handle, current_key)) {
 					return false;
@@ -4278,7 +4278,7 @@ static bool test_EnumPrinters_findname(struct torture_context *tctx,
 	for (i=0; i < count; i++) {
 
 		const char *current = NULL;
-		const char *p;
+		const char *q;
 
 		switch (level) {
 		case 1:
@@ -4291,14 +4291,14 @@ static bool test_EnumPrinters_findname(struct torture_context *tctx,
 			break;
 		}
 
-		p = strrchr(current, '\\');
-		if (p) {
+		q = strrchr(current, '\\');
+		if (q) {
 			if (!e.in.server) {
 				torture_warning(tctx,
 					"server returns printername %s incl. servername although we did not set servername", current);
 			}
-			p++;
-			if (strequal(p, name)) {
+			q++;
+			if (strequal(q, name)) {
 				*found = true;
 				break;
 			}
