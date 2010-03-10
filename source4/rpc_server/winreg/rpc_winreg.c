@@ -496,9 +496,15 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 		
 		if (!W_ERROR_IS_OK(result)) {
 			/* if the lookup wasn't successful, send client query back */
-			value_type = *r->in.type;
+			value_type = 0;
+			if (r->in.type != NULL) {
+				value_type = *r->in.type;
+			}
 			value_data.data = r->in.data;
-			value_data.length = *r->in.data_length;
+			value_data.length = 0;
+			if (r->in.data_length != NULL) {
+				value_data.length = *r->in.data_length;
+			}
 		}
 
 		r->out.type = talloc(mem_ctx, uint32_t);
