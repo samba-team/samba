@@ -1437,7 +1437,7 @@ static NTSTATUS becomeDC_ldap1_server_object_modify(struct libnet_BecomeDC_state
 {
 	int ret;
 	struct ldb_message *msg;
-	uint32_t i;
+	unsigned int i;
 
 	/* make a 'modify' msg, and only for serverReference */
 	msg = ldb_msg_new(s);
@@ -2891,7 +2891,7 @@ static NTSTATUS becomeDC_ldap2_modify_computer(struct libnet_BecomeDC_state *s)
 {
 	int ret;
 	struct ldb_message *msg;
-	uint32_t i;
+	unsigned int i;
 	uint32_t user_account_control = UF_SERVER_TRUST_ACCOUNT |
 					UF_TRUSTED_FOR_DELEGATION;
 

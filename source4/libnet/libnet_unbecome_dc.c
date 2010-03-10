@@ -419,7 +419,7 @@ static NTSTATUS unbecomeDC_ldap_modify_computer(struct libnet_UnbecomeDC_state *
 	int ret;
 	struct ldb_message *msg;
 	uint32_t user_account_control = UF_WORKSTATION_TRUST_ACCOUNT;
-	uint32_t i;
+	unsigned int i;
 
 	/* as the value is already as we want it to be, we're done */
 	if (s->dest_dsa.user_account_control == user_account_control) {
