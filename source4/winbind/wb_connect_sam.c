@@ -44,8 +44,8 @@ struct connect_samr_state {
 };
 
 static void connect_samr_recv_pipe(struct composite_context *ctx);
-static void connect_samr_recv_conn(struct rpc_request *req);
-static void connect_samr_recv_open(struct rpc_request *req);
+static void connect_samr_recv_conn(struct tevent_req *subreq);
+static void connect_samr_recv_open(struct tevent_req *subreq);
 
 struct composite_context *wb_connect_samr_send(TALLOC_CTX *mem_ctx,
 					   struct wbsrv_domain *domain)
@@ -81,10 +81,10 @@ struct composite_context *wb_connect_samr_send(TALLOC_CTX *mem_ctx,
 
 static void connect_samr_recv_pipe(struct composite_context *ctx)
 {
-	struct rpc_request *req;
 	struct connect_samr_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct connect_samr_state);
+	struct tevent_req *subreq;
 
 	state->ctx->status = dcerpc_secondary_auth_connection_recv(ctx, state, 
 								   &state->samr_pipe);
@@ -99,18 +99,22 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 	state->c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->c.out.connect_handle = state->connect_handle;
 
-	req = dcerpc_samr_Connect2_send(state->samr_pipe, state, &state->c);
-	composite_continue_rpc(state->ctx, req, connect_samr_recv_conn, state);
-	return;
+	subreq = dcerpc_samr_Connect2_r_send(state,
+					     state->ctx->event_ctx,
+					     state->samr_pipe->binding_handle,
+					     &state->c);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, connect_samr_recv_conn, state);
 }
 
-static void connect_samr_recv_conn(struct rpc_request *req)
+static void connect_samr_recv_conn(struct tevent_req *subreq)
 {
 	struct connect_samr_state *state =
-		talloc_get_type(req->async.private_data,
-				struct connect_samr_state);
+		tevent_req_callback_data(subreq,
+		struct connect_samr_state);
 
-	state->ctx->status = dcerpc_samr_Connect2_recv(req);
+	state->ctx->status = dcerpc_samr_Connect2_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->c.out.result;
 	if (!composite_is_ok(state->ctx)) return;
@@ -123,18 +127,22 @@ static void connect_samr_recv_conn(struct rpc_request *req)
 	state->o.in.sid = state->sid;
 	state->o.out.domain_handle = state->domain_handle;
 
-	req = dcerpc_samr_OpenDomain_send(state->samr_pipe, state, &state->o);
-	composite_continue_rpc(state->ctx, req,
-			       connect_samr_recv_open, state);
+	subreq = dcerpc_samr_OpenDomain_r_send(state,
+					       state->ctx->event_ctx,
+					       state->samr_pipe->binding_handle,
+					       &state->o);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, connect_samr_recv_open, state);
 }
 
-static void connect_samr_recv_open(struct rpc_request *req)
+static void connect_samr_recv_open(struct tevent_req *subreq)
 {
 	struct connect_samr_state *state =
-		talloc_get_type(req->async.private_data,
-				struct connect_samr_state);
+		tevent_req_callback_data(subreq,
+		struct connect_samr_state);
 
-	state->ctx->status = dcerpc_samr_OpenDomain_recv(req);
+	state->ctx->status = dcerpc_samr_OpenDomain_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->o.out.result;
 	if (!composite_is_ok(state->ctx)) return;
