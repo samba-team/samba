@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/util/util_net.h"
 
 /*
   auto-close sockets on free
@@ -369,6 +370,17 @@ _PUBLIC_ struct tsocket_address *socket_address_to_tsocket_address(TALLOC_CTX *m
 	}
 
 	return r;
+}
+
+_PUBLIC_ void socket_address_set_port(struct socket_address *a,
+				      uint16_t port)
+{
+	if (a->sockaddr) {
+		set_sockaddr_port(a->sockaddr, port);
+	} else {
+		a->port = port;
+	}
+
 }
 
 _PUBLIC_ struct socket_address *tsocket_address_to_socket_address(TALLOC_CTX *mem_ctx,
