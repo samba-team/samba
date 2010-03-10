@@ -1204,7 +1204,7 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	rop.in.buffer = NULL;
 	rop.out.handle = &notify_handle;
 
-	status = dcerpc_spoolss_ReplyOpenPrinter(p, mem_ctx, &rop);
+	status = dcerpc_spoolss_ReplyOpenPrinter_r(p->binding_handle, mem_ctx, &rop);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("unable to open remote printer %s\n",
 			r->in.local_machine));
