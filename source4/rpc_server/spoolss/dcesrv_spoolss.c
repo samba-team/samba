@@ -573,7 +573,6 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 	struct ntptr_GenericHandle *handle;
 	struct dcesrv_handle *h;
 	WERROR status;
-	struct smb_iconv_convenience *ic = lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx);
 
 	r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 	W_ERROR_HAVE_NO_MEMORY(r->out.type);
