@@ -183,11 +183,7 @@ static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx,
 
 	local_ctx = talloc_new(mem_ctx);
 
-	if (add) {
-		ret = ldb_dn_new(mem_ctx, ldb, add);
-	} else {
-		ret = ldb_dn_new(mem_ctx, ldb, NULL);
-	}
+	ret = ldb_dn_new(mem_ctx, ldb, add);
 	if (!ldb_dn_validate(ret)) {
 		talloc_free(ret);
 		talloc_free(local_ctx);
@@ -202,7 +198,7 @@ static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx,
 		if (begin) keyname = begin + 1;
 		else keyname = mypath;
 
-		if(strlen(keyname)) {
+		if (keyname[0] != '\0') {
 			if (!ldb_dn_add_base_fmt(ret, "key=%s",
 						 reg_ldb_escape(local_ctx,
 								keyname)))
@@ -373,7 +369,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	int ret;
 	char *query;
 
-	if (strlen(name) == 0) {
+	if ((name == NULL) || (name[0] == '\0')) {
 		/* default value */
 		return ldb_get_default_value(mem_ctx, k, NULL, data_type, data);
 	} else {
@@ -531,7 +527,7 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 	struct ldb_message *msg;
 	struct ldb_dn *childdn;
 
-	if (strlen(child) == 0) {
+	if ((child == NULL) || (child[0] == '\0')) {
 		/* default value */
 		mem_ctx = talloc_init("ldb_del_value");
 
@@ -707,7 +703,7 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	msg = reg_ldb_pack_value(kd->ldb, mem_ctx, name, type, data);
 	msg->dn = ldb_dn_copy(msg, kd->dn);
 
-	if (name[0] != '\0') {
+	if ((name != NULL) && (name[0] != '\0')) {
 		/* For a default value, we add/overwrite the attributes to/of the hive.
 		   For a normal value, we create a new child. */
 		if (!ldb_dn_add_child_fmt(msg->dn, "value=%s",
