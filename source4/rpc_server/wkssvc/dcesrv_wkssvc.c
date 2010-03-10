@@ -134,14 +134,8 @@ static WERROR dcesrv_wkssvc_NetrWkstaUserSetInfo(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaTransportEnum *r)
 {
-	r->out.total_entries = 0;
-	r->out.resume_handle = NULL;
-
 	switch (r->in.info->level) {
 	case 0:
-		r->out.info = talloc(mem_ctx, struct wkssvc_NetWkstaTransportInfo);
-		W_ERROR_HAVE_NO_MEMORY(r->out.info);
-		r->out.info->level = r->in.info->level;
 		r->out.info->ctr.ctr0 = talloc(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
 		W_ERROR_HAVE_NO_MEMORY(r->out.info->ctr.ctr0);
 
