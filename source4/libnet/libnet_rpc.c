@@ -454,9 +454,9 @@ struct rpc_connect_dci_state {
 
 
 static void continue_dci_rpc_connect(struct composite_context *ctx);
-static void continue_lsa_policy(struct rpc_request *req);
-static void continue_lsa_query_info(struct rpc_request *req);
-static void continue_lsa_query_info2(struct rpc_request *req);
+static void continue_lsa_policy(struct tevent_req *subreq);
+static void continue_lsa_query_info(struct tevent_req *subreq);
+static void continue_lsa_query_info2(struct tevent_req *subreq);
 static void continue_epm_map_binding(struct composite_context *ctx);
 static void continue_secondary_conn(struct composite_context *ctx);
 static void continue_epm_map_binding_send(struct composite_context *c);
@@ -528,7 +528,7 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
-	struct rpc_request *open_pol_req;
+	struct tevent_req *subreq;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
@@ -573,10 +573,12 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 	s->lsa_open_policy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	s->lsa_open_policy.out.handle     = &s->lsa_handle;
 
-	open_pol_req = dcerpc_lsa_OpenPolicy2_send(s->lsa_pipe, c, &s->lsa_open_policy);
-	if (composite_nomem(open_pol_req, c)) return;
+	subreq = dcerpc_lsa_OpenPolicy2_r_send(s, c->event_ctx,
+					       s->lsa_pipe->binding_handle,
+					       &s->lsa_open_policy);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, open_pol_req, continue_lsa_policy, c);
+	tevent_req_set_callback(subreq, continue_lsa_policy, c);
 }
 
 
@@ -584,16 +586,16 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
   Step 3 of RpcConnectDCInfo: Get policy handle and query lsa info
   for kerberos realm (dns name) and guid. The query may fail.
 */
-static void continue_lsa_policy(struct rpc_request *req)
+static void continue_lsa_policy(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
-	struct rpc_request *query_info_req;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_lsa_OpenPolicy2_recv(req);
+	c->status = dcerpc_lsa_OpenPolicy2_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		composite_error(c, c->status);
 		return;
@@ -630,10 +632,12 @@ static void continue_lsa_policy(struct rpc_request *req)
 	s->lsa_query_info2.out.info  = talloc_zero(c, union lsa_PolicyInformation *);
 	if (composite_nomem(s->lsa_query_info2.out.info, c)) return;
 
-	query_info_req = dcerpc_lsa_QueryInfoPolicy2_send(s->lsa_pipe, c, &s->lsa_query_info2);
-	if (composite_nomem(query_info_req, c)) return;
+	subreq = dcerpc_lsa_QueryInfoPolicy2_r_send(s, c->event_ctx,
+						    s->lsa_pipe->binding_handle,
+						    &s->lsa_query_info2);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, query_info_req, continue_lsa_query_info2, c);
+	tevent_req_set_callback(subreq, continue_lsa_query_info2, c);
 }
 
 
@@ -641,16 +645,16 @@ static void continue_lsa_policy(struct rpc_request *req)
   Step 4 of RpcConnectDCInfo: Get realm and guid if provided (rpc call
   may result in failure) and query lsa info for domain name and sid.
 */
-static void continue_lsa_query_info2(struct rpc_request *req)
+static void continue_lsa_query_info2(struct tevent_req *subreq)
 {	
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
-	struct rpc_request *query_info_req;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_lsa_QueryInfoPolicy2_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy2_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	
 	/* In case of error just null the realm and guid and proceed
 	   to the next step. After all, it doesn't have to be AD domain
@@ -705,25 +709,28 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 	s->lsa_query_info.out.info  = talloc_zero(c, union lsa_PolicyInformation *);
 	if (composite_nomem(s->lsa_query_info.out.info, c)) return;
 
-	query_info_req = dcerpc_lsa_QueryInfoPolicy_send(s->lsa_pipe, c, &s->lsa_query_info);
-	if (composite_nomem(query_info_req, c)) return;
+	subreq = dcerpc_lsa_QueryInfoPolicy_r_send(s, c->event_ctx,
+						   s->lsa_pipe->binding_handle,
+						   &s->lsa_query_info);
+	if (composite_nomem(subreq, c)) return;
 
-	composite_continue_rpc(c, query_info_req, continue_lsa_query_info, c);
+	tevent_req_set_callback(subreq, continue_lsa_query_info, c);
 }
 
 
 /*
   Step 5 of RpcConnectDCInfo: Get domain name and sid
 */
-static void continue_lsa_query_info(struct rpc_request *req)
+static void continue_lsa_query_info(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
 
-	c = talloc_get_type(req->async.private_data, struct composite_context);
+	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
-	c->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
+	c->status = dcerpc_lsa_QueryInfoPolicy_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		s->r.out.error_string = talloc_asprintf(c,
 							"lsa_QueryInfoPolicy failed: %s",
