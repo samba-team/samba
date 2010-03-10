@@ -432,6 +432,65 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
 	return LDB_SUCCESS;
 }
 
+int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
+					struct GUID op_feature_guid, bool *feature_enabled)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *res;
+	struct ldb_dn *search_dn;
+	struct GUID search_guid;
+	const char *attrs[] = {"msDS-EnabledFeature", NULL};
+	int ret;
+	int i;
+	struct ldb_message_element *el;
+
+	*feature_enabled = false;
+
+	tmp_ctx = talloc_new(ldb);
+
+	ret = ldb_search(ldb, tmp_ctx, &res,
+					scope, LDB_SCOPE_BASE, attrs,
+					NULL);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb,
+				"Could no find the scope object - dn: %s\n",
+				ldb_dn_get_linearized(scope));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (res->msgs[0]->num_elements > 0) {
+
+		el = ldb_msg_find_element(res->msgs[0],"msDS-EnabledFeature");
+
+		attrs[0] = "msDS-OptionalFeatureGUID";
+
+		for (i=0; i<el->num_values; i++) {
+			search_dn = ldb_dn_from_ldb_val(tmp_ctx, ldb, &el->values[i]);
+
+			ret = ldb_search(ldb, tmp_ctx, &res,
+							search_dn, LDB_SCOPE_BASE, attrs,
+							NULL);
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb,
+						"Could no find object dn: %s\n",
+						ldb_dn_get_linearized(search_dn));
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			search_guid = samdb_result_guid(res->msgs[0], "msDS-OptionalFeatureGUID");
+
+			if (GUID_compare(&search_guid, &op_feature_guid) == 0){
+				*feature_enabled = true;
+				break;
+			}
+		}
+	}
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
 
 /*
   find a 'reference' DN that points at another object
