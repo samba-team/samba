@@ -245,7 +245,8 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
 	struct ldb_message **remote_msgs = NULL;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	uint32_t acb;
 	bool add = false;
 	const char *attrs[] = { NULL };
@@ -658,7 +659,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 	struct ldb_message **msgs;
 	int ret;
 	const char *attrs[] = { NULL };
-	int i;
+	uint32_t i;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
@@ -867,7 +868,7 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 	struct ldb_message **msgs;
 	int ret;
 	const char *attrs[] = { NULL };
-	int i;
+	uint32_t i;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
@@ -948,7 +949,7 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 
 	struct ldb_message *msg;
 	int ret;
-	int i;
+	uint32_t i;
 	char *dnstr, *sidstr;
 
 	msg = ldb_msg_new(mem_ctx);

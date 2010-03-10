@@ -1116,7 +1116,7 @@ static void continue_samr_close_handle(struct rpc_request *req)
 */
 static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_list_state *s)
 {
-	int i;
+	uint32_t i;
 	if (mem_ctx == NULL || s == NULL) return NULL;
 
 	/* prepare domains array */

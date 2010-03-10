@@ -1088,7 +1088,7 @@ static void continue_users_enumerated(struct rpc_request *req)
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	int i;
+	uint32_t i;
 
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);

@@ -463,7 +463,7 @@ static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLO
 		LIBNET_SET_PASSWORD_SAMR_HANDLE_24,
 		LIBNET_SET_PASSWORD_SAMR_HANDLE_23,
 	};
-	int i;
+	unsigned int i;
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 		r->generic.level = levels[i];

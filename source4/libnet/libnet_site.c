@@ -235,7 +235,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 
 	rtn = ldb_add(remote_ldb, msg);
 	if (rtn == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		int i;
+		unsigned int i;
 
 		/* make a 'modify' msg, and only for serverReference */
 		msg = ldb_msg_new(tmp_ctx);

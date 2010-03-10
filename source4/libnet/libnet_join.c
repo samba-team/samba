@@ -289,7 +289,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	msg->dn = res->msgs[0]->dn;
 
 	{
-		int i;
+		unsigned int i;
 		const char *service_principal_name[6];
 		const char *dns_host_name = strlower_talloc(tmp_ctx, 
 							    talloc_asprintf(tmp_ctx, 
