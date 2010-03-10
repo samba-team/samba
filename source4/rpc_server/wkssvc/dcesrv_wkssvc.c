@@ -47,8 +47,7 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 		info100->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
 		info100->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, NULL);
 		W_ERROR_HAVE_NO_MEMORY(info100->server_name);
-		info100->domain_name	= talloc_reference(mem_ctx, server_info->domain_name);
-		W_ERROR_HAVE_NO_MEMORY(info100->domain_name);
+		info100->domain_name	= server_info->domain_name;
 		info100->version_major	= server_info->version_major;
 		info100->version_minor	= server_info->version_minor;
 
@@ -65,8 +64,7 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 		info101->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
 		info101->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, NULL);
 		W_ERROR_HAVE_NO_MEMORY(info101->server_name);
-		info101->domain_name	= talloc_reference(mem_ctx, server_info->domain_name);
-		W_ERROR_HAVE_NO_MEMORY(info101->domain_name);
+		info101->domain_name	= server_info->domain_name;
 		info101->version_major	= server_info->version_major;
 		info101->version_minor	= server_info->version_minor;
 		info101->lan_root	= dcesrv_common_get_lan_root(mem_ctx, dce_ctx);
