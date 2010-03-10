@@ -137,7 +137,7 @@ test_read_only_dir()
 ## We can't do this as non-root. We always have rights to
 ## create the directory.
 ##
-    if [ "$USERID" != 0 ]; then
+    if [ "$USERID" != 0 ] ; then
 	echo "skipping test_read_only_dir as non-root"
 	true
 	return
@@ -147,7 +147,7 @@ test_read_only_dir()
 ## We can't do this with an encrypted connection. No credentials
 ## to set up the channel.
 ##
-    if [ "$ADDARGS" == "-e" ]; then
+    if [ "$ADDARGS" = "-e" ] ; then
 	echo "skipping test_read_only_dir with encrypted connection"
 	true
 	return
@@ -194,7 +194,7 @@ test_owner_only_file()
 ## We can't do this as non-root. We always have rights to
 ## read the file.
 ##
-    if [ "$USERID" != 0 ]; then
+    if [ "$USERID" != 0 ] ; then
 	echo "skipping test_owner_only_file as non-root"
 	true
 	return
@@ -204,7 +204,7 @@ test_owner_only_file()
 ## We can't do this with an encrypted connection. No credentials
 ## to set up the channel.
 ##
-    if [ "$ADDARGS" == "-e" ]; then
+    if [ "$ADDARGS" = "-e" ] ; then
 	echo "skipping test_owner_only_file with encrypted connection"
 	true
 	return
