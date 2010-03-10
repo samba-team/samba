@@ -2135,17 +2135,6 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 					     const struct dcerpc_binding *binding,
 					     struct epm_tower *tower);
 
-/* The following definitions come from librpc/rpc/dcerpc.c  */
-
-struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p, const struct GUID *object, 
-					    const struct ndr_interface_table *table, uint32_t opnum, 
-					    TALLOC_CTX *mem_ctx, void *r);
-NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req);
-_PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe **pp, 
-				      const char *binding_string, const struct ndr_interface_table *table, 
-				      struct cli_credentials *credentials, struct event_context *ev, 
-				      struct loadparm_context *lp_ctx);
-
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 

@@ -26,39 +26,10 @@
 #ifndef __DCERPC_H__
 #define __DCERPC_H__
 
-#include "includes.h"
-#include "librpc/rpc/dcerpc.h"
-#include "librpc/gen_ndr/epmapper.h"
-
-struct loadparm_context;
-struct cli_credentials;
-
-/**
- * Connection to a particular DCE/RPC interface.
- */
-struct dcerpc_pipe {
-	const struct ndr_interface_table *table;
-
-	/** SMB context used when transport is ncacn_np. */
-	struct cli_state *cli;
-
-	/** Samba 3 DCE/RPC client context. */
-	struct rpc_pipe_client *rpc_cli;
-};
-
-struct rpc_request {
-	const struct ndr_interface_call *call;
-	prs_struct q_ps;
-	uint32_t opnum;
-	struct dcerpc_pipe *pipe;
-	void *r;
-};
-
 enum dcerpc_transport_t {
 	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
 	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
 	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
-
 
 /** this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
@@ -121,6 +92,5 @@ struct dcerpc_binding {
 
 /* use NDR64 transport */
 #define DCERPC_NDR64                   (1<<21)
-
 
 #endif /* __DCERPC_H__ */
