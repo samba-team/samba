@@ -70,8 +70,8 @@ struct init_domain_state {
 
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
 static void init_domain_recv_lsa_pipe(struct composite_context *ctx);
-static void init_domain_recv_lsa_policy(struct rpc_request *req);
-static void init_domain_recv_queryinfo(struct rpc_request *req);
+static void init_domain_recv_lsa_policy(struct tevent_req *subreq);
+static void init_domain_recv_queryinfo(struct tevent_req *subreq);
 static void init_domain_recv_samr(struct composite_context *ctx);
 
 static struct dcerpc_binding *init_domain_binding(struct init_domain_state *state, 
@@ -264,10 +264,10 @@ static bool retry_with_schannel(struct init_domain_state *state,
  */	
 static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 {
-	struct rpc_request *req;
 	struct init_domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);
+	struct tevent_req *subreq;
 
 	state->ctx->status = dcerpc_secondary_auth_connection_recv(ctx, state->domain,
 								   &state->domain->libnet_ctx->lsa.pipe);
@@ -294,22 +294,25 @@ static void init_domain_recv_lsa_pipe(struct composite_context *ctx)
 	state->lsa_openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->lsa_openpolicy.out.handle = &state->domain->libnet_ctx->lsa.handle;
 
-	req = dcerpc_lsa_OpenPolicy2_send(state->domain->libnet_ctx->lsa.pipe, state,
-					  &state->lsa_openpolicy);
-
-	composite_continue_rpc(state->ctx, req, init_domain_recv_lsa_policy, state);
+	subreq = dcerpc_lsa_OpenPolicy2_r_send(state,
+					       state->ctx->event_ctx,
+					       state->domain->libnet_ctx->lsa.pipe->binding_handle,
+					       &state->lsa_openpolicy);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, init_domain_recv_lsa_policy, state);
 }
 
 /* Receive a policy handle (or not, and retry the authentication) and
  * obtain some basic information about the domain */
 
-static void init_domain_recv_lsa_policy(struct rpc_request *req)
+static void init_domain_recv_lsa_policy(struct tevent_req *subreq)
 {
 	struct init_domain_state *state =
-		talloc_get_type(req->async.private_data,
-				struct init_domain_state);
+		tevent_req_callback_data(subreq,
+		struct init_domain_state);
 
-	state->ctx->status = dcerpc_lsa_OpenPolicy2_recv(req);
+	state->ctx->status = dcerpc_lsa_OpenPolicy2_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if ((!NT_STATUS_IS_OK(state->ctx->status)
 	      || !NT_STATUS_IS_OK(state->lsa_openpolicy.out.result))) {
 		if (retry_with_schannel(state, state->domain->lsa_binding, 
@@ -329,20 +332,24 @@ static void init_domain_recv_lsa_policy(struct rpc_request *req)
 	state->queryinfo.in.level = LSA_POLICY_INFO_ACCOUNT_DOMAIN;
 	state->queryinfo.out.info = &state->info;
 
-	req = dcerpc_lsa_QueryInfoPolicy_send(state->domain->libnet_ctx->lsa.pipe, state,
-					      &state->queryinfo);
-	composite_continue_rpc(state->ctx, req,
-			       init_domain_recv_queryinfo, state);
+	subreq = dcerpc_lsa_QueryInfoPolicy_r_send(state,
+						   state->ctx->event_ctx,
+						   state->domain->libnet_ctx->lsa.pipe->binding_handle,
+						   &state->queryinfo);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, init_domain_recv_queryinfo, state);
 }
 
-static void init_domain_recv_queryinfo(struct rpc_request *req)
+static void init_domain_recv_queryinfo(struct tevent_req *subreq)
 {
 	struct init_domain_state *state =
-		talloc_get_type(req->async.private_data, struct init_domain_state);
+		tevent_req_callback_data(subreq,
+		struct init_domain_state);
 	struct lsa_DomainInfo *dominfo;
 	struct composite_context *ctx;
 
-	state->ctx->status = dcerpc_lsa_QueryInfoPolicy_recv(req);
+	state->ctx->status = dcerpc_lsa_QueryInfoPolicy_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->queryinfo.out.result;
 	if (!composite_is_ok(state->ctx)) return;
