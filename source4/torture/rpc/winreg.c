@@ -1971,7 +1971,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
 				   "open");
-#if 0 /* FIXME: s3 and s4 crash on QueryValue */
+
 	if (open_fn == (void *)dcerpc_winreg_OpenHKLM) {
 #if 0
 		torture_assert(tctx, test_OpenKey(p, tctx, &handle, KEY_CURRENT_VERSION, &newhandle),
@@ -1987,7 +1987,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		torture_assert(tctx, test_CloseKey(p, tctx, &newhandle),
 			"failed to close current version key");
 	}
-#endif /* FIXME */
+
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
 
 	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
