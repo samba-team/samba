@@ -1221,8 +1221,6 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	info = talloc_array(mem_ctx, struct share_info, 10);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
-	ZERO_STRUCT(r->out);
-
 	if (strcmp("", r->in.share_name) == 0) {
 		return WERR_INVALID_PARAM;
 	}
