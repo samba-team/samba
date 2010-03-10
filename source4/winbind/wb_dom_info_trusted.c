@@ -40,8 +40,8 @@ struct trusted_dom_info_state {
 };
 
 static void trusted_dom_info_recv_domain(struct composite_context *ctx);
-static void trusted_dom_info_recv_dsr(struct rpc_request *req);
-static void trusted_dom_info_recv_dcname(struct rpc_request *req);
+static void trusted_dom_info_recv_dsr(struct tevent_req *subreq);
+static void trusted_dom_info_recv_dcname(struct tevent_req *subreq);
 static void trusted_dom_info_recv_dcaddr(struct composite_context *ctx);
 
 struct composite_context *wb_trusted_dom_info_send(TALLOC_CTX *mem_ctx,
@@ -88,7 +88,7 @@ static void trusted_dom_info_recv_domain(struct composite_context *ctx)
 	struct trusted_dom_info_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct trusted_dom_info_state);
-	struct rpc_request *req;
+	struct tevent_req *subreq;
 
 	state->ctx->status = wb_sid2domain_recv(ctx, &state->my_domain);
 	if (!composite_is_ok(state->ctx)) return;
@@ -106,23 +106,26 @@ static void trusted_dom_info_recv_domain(struct composite_context *ctx)
 	state->d.out.info = talloc(state, struct netr_DsRGetDCNameInfo *);
 	if (composite_nomem(state->d.out.info, state->ctx)) return;
 
-	req = dcerpc_netr_DsRGetDCName_send(state->my_domain->netlogon_pipe,
-					    state, &state->d);
-	composite_continue_rpc(state->ctx, req, trusted_dom_info_recv_dsr,
-			       state);
+	subreq = dcerpc_netr_DsRGetDCName_r_send(state,
+						 state->ctx->event_ctx,
+						 state->my_domain->netlogon_pipe->binding_handle,
+						 &state->d);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, trusted_dom_info_recv_dsr, state);
 }
 
 /*
  * dcerpc_netr_DsRGetDCName has replied
  */
 
-static void trusted_dom_info_recv_dsr(struct rpc_request *req)
+static void trusted_dom_info_recv_dsr(struct tevent_req *subreq)
 {
 	struct trusted_dom_info_state *state =
-		talloc_get_type(req->async.private_data,
-				struct trusted_dom_info_state);
+		tevent_req_callback_data(subreq,
+		struct trusted_dom_info_state);
 
-	state->ctx->status = dcerpc_netr_DsRGetDCName_recv(req);
+	state->ctx->status = dcerpc_netr_DsRGetDCName_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) {
 		DEBUG(9, ("dcerpc_netr_DsRGetDCName_recv returned %s\n",
 			  nt_errstr(state->ctx->status)));
@@ -164,23 +167,25 @@ static void trusted_dom_info_recv_dsr(struct rpc_request *req)
 	state->g.in.domainname = state->info->name;
 	state->g.out.dcname = talloc(state, const char *);
 
-	req = dcerpc_netr_GetAnyDCName_send(state->my_domain->netlogon_pipe,
-					    state, &state->g);
-	if (composite_nomem(req, state->ctx)) return;
+	subreq = dcerpc_netr_GetAnyDCName_r_send(state,
+						 state->ctx->event_ctx,
+						 state->my_domain->netlogon_pipe->binding_handle,
+						 &state->g);
+	if (composite_nomem(subreq, state->ctx)) return;
 
-	composite_continue_rpc(state->ctx, req, trusted_dom_info_recv_dcname,
-			       state);
+	tevent_req_set_callback(subreq, trusted_dom_info_recv_dcname, state);
 }
 
-static void trusted_dom_info_recv_dcname(struct rpc_request *req)
+static void trusted_dom_info_recv_dcname(struct tevent_req *subreq)
 {
 	struct trusted_dom_info_state *state =
-		talloc_get_type(req->async.private_data,
-				struct trusted_dom_info_state);
+		tevent_req_callback_data(subreq,
+		struct trusted_dom_info_state);
 	struct composite_context *ctx;
 	struct nbt_name name;
 
-	state->ctx->status = dcerpc_netr_GetAnyDCName_recv(req);
+	state->ctx->status = dcerpc_netr_GetAnyDCName_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = werror_to_ntstatus(state->g.out.result);
 	if (!composite_is_ok(state->ctx)) return;
