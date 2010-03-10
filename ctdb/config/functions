@@ -518,7 +518,7 @@ ctdb_active_dir="$ctdb_spool_dir/active"
 
 log_status_cat ()
 {
-    echo "node is \"$1\", problem with \"${script_name}\": $(cat $2)"
+    echo "node is \"$1\", \"${script_name}\" reports problem: $(cat $2)"
 }
 
 ctdb_checkstatus ()
@@ -651,6 +651,7 @@ ctdb_standard_event_handler ()
 	    exit
 	    ;;
 	setstatus)
+            shift
 	    ctdb_setstatus "$@"
 	    exit
 	    ;;
