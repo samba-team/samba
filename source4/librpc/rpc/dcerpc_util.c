@@ -124,7 +124,7 @@ struct epm_map_binding_state {
 
 
 static void continue_epm_recv_binding(struct composite_context *ctx);
-static void continue_epm_map(struct rpc_request *req);
+static void continue_epm_map(struct tevent_req *subreq);
 
 
 /*
@@ -133,12 +133,11 @@ static void continue_epm_map(struct rpc_request *req);
 */
 static void continue_epm_recv_binding(struct composite_context *ctx)
 {
-	struct rpc_request *map_req;
-
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
 							  struct epm_map_binding_state);
+	struct tevent_req *subreq;
 
 	/* receive result of rpc pipe connect request */
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
@@ -160,25 +159,28 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	s->r.out.entry_handle = &s->handle;
 
 	/* send request for an endpoint mapping - a rpc request on connected pipe */
-	map_req = dcerpc_epm_Map_send(s->pipe, c, &s->r);
-	if (composite_nomem(map_req, c)) return;
+	subreq = dcerpc_epm_Map_r_send(s, c->event_ctx,
+				       s->pipe->binding_handle,
+				       &s->r);
+	if (composite_nomem(subreq, c)) return;
 	
-	composite_continue_rpc(c, map_req, continue_epm_map, c);
+	tevent_req_set_callback(subreq, continue_epm_map, c);
 }
 
 
 /*
   Stage 3 of epm_map_binding: Receive endpoint mapping and provide binding details
 */
-static void continue_epm_map(struct rpc_request *req)
+static void continue_epm_map(struct tevent_req *subreq)
 {
-	struct composite_context *c = talloc_get_type(req->async.private_data,
-						      struct composite_context);
+	struct composite_context *c = tevent_req_callback_data(subreq,
+				      struct composite_context);
 	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
 							  struct epm_map_binding_state);
 
 	/* receive result of a rpc request */
-	c->status = dcerpc_epm_Map_recv(req);
+	c->status = dcerpc_epm_Map_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* check the details */
