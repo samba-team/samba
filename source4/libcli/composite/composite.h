@@ -70,7 +70,6 @@ struct composite_context {
 struct irpc_request;
 struct smbcli_request;
 struct smb2_request;
-struct rpc_request;
 struct nbt_name_request;
 
 struct composite_context *composite_create(TALLOC_CTX *mem_ctx, struct tevent_context *ev);
@@ -79,10 +78,6 @@ void composite_continue(struct composite_context *ctx,
 				 struct composite_context *new_ctx,
 				 void (*continuation)(struct composite_context *),
 				 void *private_data);
-void composite_continue_rpc(struct composite_context *ctx,
-				     struct rpc_request *new_req,
-				     void (*continuation)(struct rpc_request *),
-				     void *private_data);
 void composite_continue_irpc(struct composite_context *ctx,
 				      struct irpc_request *new_req,
 				      void (*continuation)(struct irpc_request *),
