@@ -43,7 +43,7 @@ struct init_lsa_state {
 };
 
 static void init_lsa_recv_pipe(struct composite_context *ctx);
-static void init_lsa_recv_openpol(struct rpc_request *req);
+static void init_lsa_recv_openpol(struct tevent_req *subreq);
 
 struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
 					   struct wbsrv_domain *domain)
@@ -76,10 +76,10 @@ struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
 
 static void init_lsa_recv_pipe(struct composite_context *ctx)
 {
-	struct rpc_request *req;
 	struct init_lsa_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_lsa_state);
+	struct tevent_req *subreq;
 
 	state->ctx->status = dcerpc_secondary_auth_connection_recv(ctx, state,
 								   &state->lsa_pipe);
@@ -96,18 +96,22 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 	state->openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->openpolicy.out.handle = state->handle;
 
-	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state,
-					  &state->openpolicy);
-	composite_continue_rpc(state->ctx, req, init_lsa_recv_openpol, state);
+	subreq = dcerpc_lsa_OpenPolicy2_r_send(state,
+					       state->ctx->event_ctx,
+					       state->lsa_pipe->binding_handle,
+					       &state->openpolicy);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, init_lsa_recv_openpol, state);
 }
 
-static void init_lsa_recv_openpol(struct rpc_request *req)
+static void init_lsa_recv_openpol(struct tevent_req *subreq)
 {
 	struct init_lsa_state *state =
-		talloc_get_type(req->async.private_data,
-				struct init_lsa_state);
+		tevent_req_callback_data(subreq,
+		struct init_lsa_state);
 
-	state->ctx->status = dcerpc_lsa_OpenPolicy2_recv(req);
+	state->ctx->status = dcerpc_lsa_OpenPolicy2_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->openpolicy.out.result;
 	if (!composite_is_ok(state->ctx)) return;
