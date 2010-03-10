@@ -491,19 +491,23 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 	case SECURITY_USER:
+		if ((r->in.type == NULL) || (r->in.data_length == NULL) ||
+		    (r->in.data_size == NULL)) {
+			return WERR_INVALID_PARAM;
+		}
+
 		result = reg_key_get_value_by_name(mem_ctx, key, 
 			 r->in.value_name->name, &value_type, &value_data);
 		
 		if (!W_ERROR_IS_OK(result)) {
 			/* if the lookup wasn't successful, send client query back */
-			value_type = 0;
-			if (r->in.type != NULL) {
-				value_type = *r->in.type;
-			}
+			value_type = *r->in.type;
 			value_data.data = r->in.data;
-			value_data.length = 0;
-			if (r->in.data_length != NULL) {
-				value_data.length = *r->in.data_length;
+			value_data.length = *r->in.data_length;
+		} else {
+			if ((r->in.data != NULL)
+			    && (*r->in.data_size < value_data.length)) {
+				return WERR_MORE_DATA;
 			}
 		}
 
