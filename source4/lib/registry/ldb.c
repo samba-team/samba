@@ -369,7 +369,11 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	int ret;
 	char *query;
 
-	if ((name == NULL) || (name[0] == '\0')) {
+	if (name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (name[0] == '\0') {
 		/* default value */
 		return ldb_get_default_value(mem_ctx, k, NULL, data_type, data);
 	} else {
