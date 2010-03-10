@@ -704,7 +704,7 @@ void dcom_proxy_async_call_recv_pipe_send_rpc(struct composite_context *c_pipe)
                 composite_error(c, NT_STATUS_RPC_NT_CALL_FAILED);
                 return;
         }
-
+/*TODO: FIXME - for now this unused anyway */
         req = dcerpc_ndr_request_send(p, &s->d->obj.u_objref.u_standard.std.ipid, s->table, s->opnum, s, s->r);
         composite_continue_rpc(c, req, s->continuation, c);
 }
