@@ -2288,33 +2288,33 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 		if (r->out.ctr->ctr3.count != 1) {
 			WERROR status;
 
-			if (r->out.ctr->ctr3.level != 1) {
+			if (r->out.ctr->ctr3.err_ver != 1) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
 
-			if (!r->out.ctr->ctr3.error) {
+			if (!r->out.ctr->ctr3.err_data) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
 
-			status = r->out.ctr->ctr3.error->info1.status;
+			status = r->out.ctr->ctr3.err_data->v1.status;
 
-			if (!r->out.ctr->ctr3.error->info1.info) {
+			if (!r->out.ctr->ctr3.err_data->v1.info) {
 				composite_error(c, werror_to_ntstatus(status));
 				return;
 			}
 
 			/* see if we can get a more detailed error */
-			switch (r->out.ctr->ctr3.error->info1.level) {
+			switch (r->out.ctr->ctr3.err_data->v1.dir_err) {
 			case 1:
-				status = r->out.ctr->ctr3.error->info1.info->error1.status;
+				status = r->out.ctr->ctr3.err_data->v1.info->error1.status;
 				break;
 			case 4:
 			case 5:
 			case 6:
 			case 7:
-				status = r->out.ctr->ctr3.error->info1.info->errorX.extended_err;
+				status = r->out.ctr->ctr3.err_data->v1.info->errorX.extended_err;
 				break;
 			}
 

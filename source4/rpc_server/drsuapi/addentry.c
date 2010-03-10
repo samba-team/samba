@@ -165,8 +165,8 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	ZERO_STRUCTP(r->out.ctr);
 	*r->out.level_out = 3;
-	r->out.ctr->ctr3.level = 1;
-	r->out.ctr->ctr3.error = talloc_zero(mem_ctx, union drsuapi_DsAddEntryError);
+	r->out.ctr->ctr3.err_ver = 1;
+	r->out.ctr->ctr3.err_data = talloc_zero(mem_ctx, union drsuapi_DsAddEntry_ErrData);
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -192,7 +192,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 						    &num,
 						    &ids);
 		if (!W_ERROR_IS_OK(status)) {
-			r->out.ctr->ctr3.error->info1.status = status;
+			r->out.ctr->ctr3.err_data->v1.status = status;
 			ldb_transaction_cancel(b_state->sam_ctx);
 			DEBUG(0,(__location__ ": DsAddEntry failed - %s\n", win_errstr(status)));
 			return status;
@@ -211,7 +211,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	 */
 	status = drsuapi_add_SPNs(b_state, dce_call, mem_ctx, first_object);
 	if (!W_ERROR_IS_OK(status)) {
-		r->out.ctr->ctr3.error->info1.status = status;
+		r->out.ctr->ctr3.err_data->v1.status = status;
 		ldb_transaction_cancel(b_state->sam_ctx);
 		DEBUG(0,(__location__ ": DsAddEntry add SPNs failed - %s\n", win_errstr(status)));
 		return status;
