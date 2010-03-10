@@ -175,6 +175,13 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
 
 		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+		if (!sa) {
+			DEBUG(0,(__location__ ": Failed to find attribute in schema for attrid %u mentioned in replPropertyMetaData of %s\n", 
+				 (unsigned int)md.ctr.ctr1.array[i].attid, 
+				 ldb_dn_get_linearized(msg->dn)));
+			return WERR_DS_DRA_INTERNAL_ERROR;		
+		}
+
 		if (sa->linkID) {
 			struct ldb_message_element *el;
 			el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
