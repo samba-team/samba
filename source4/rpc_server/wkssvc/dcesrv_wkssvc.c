@@ -34,10 +34,6 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, dce_ctx->lp_ctx);
 
-	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(mem_ctx, union wkssvc_NetWkstaInfo);
-	W_ERROR_HAVE_NO_MEMORY(r->out.info);
-
 	/* NOTE: win2k3 ignores r->in.server_name completly so we do --metze */
 
 	switch(r->in.level) {
