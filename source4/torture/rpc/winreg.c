@@ -2015,6 +2015,70 @@ static bool test_Open_Security(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_SetValue_extended(struct dcerpc_pipe *p,
+				   struct torture_context *tctx,
+				   struct policy_handle *handle)
+{
+	const char *value_name = TEST_VALUE;
+	enum winreg_Type types[] = {
+		REG_NONE,
+		REG_SZ,
+		REG_EXPAND_SZ,
+		REG_BINARY,
+		REG_DWORD,
+		REG_DWORD_BIG_ENDIAN,
+		REG_LINK,
+		REG_MULTI_SZ,
+		REG_RESOURCE_LIST,
+		REG_FULL_RESOURCE_DESCRIPTOR,
+		REG_RESOURCE_REQUIREMENTS_LIST,
+		REG_QWORD,
+		12,
+		13,
+		14,
+		55,
+		123456,
+		653210
+	};
+	const char *str = "abcdefghijklmnopqrstuvwxzy";
+	int t, s;
+
+	torture_comment(tctx, "Testing SetValue (extended formats)\n");
+
+	for (t=0; t < ARRAY_SIZE(types); t++) {
+	for (s=0; s < strlen(str); s++) {
+
+		enum winreg_Type w_type;
+		uint32_t w_size, w_length;
+		uint8_t *w_data;
+
+		const char *string = talloc_strndup(tctx, str, s);
+		DATA_BLOB blob = data_blob_string_const(string);
+
+		torture_assert(tctx,
+			test_SetValue(p, tctx, handle, value_name, types[t], blob.data, blob.length),
+			"test_SetValue failed");
+
+		torture_assert(tctx,
+			test_winreg_QueryValue(tctx, p, handle, value_name, &w_type, &w_size, &w_length, &w_data),
+			"test_winreg_QueryValue failed");
+
+		torture_assert(tctx,
+			test_DeleteValue(p, tctx, handle, value_name),
+			"test_DeleteValue failed");
+
+		torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
+		torture_assert_int_equal(tctx, w_size, blob.length, "winreg size mismatch");
+		torture_assert_int_equal(tctx, w_length, blob.length, "winreg length mismatch");
+		torture_assert_mem_equal(tctx, w_data, blob.data, blob.length, "winreg buffer mismatch");
+	}
+	}
+
+	torture_comment(tctx, "Testing SetValue (extended formats) succeeded\n");
+
+	return true;
+}
+
 #define KEY_CURRENT_VERSION "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION"
 #define VALUE_CURRENT_VERSION "CurrentVersion"
 
@@ -2075,9 +2139,16 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		torture_fail(tctx,
 			     "CreateKey failed (OpenKey after Create didn't work)\n");
 
-	if (created && !test_SetValue_simple(p, tctx, &newhandle)) {
-		torture_fail(tctx,
-			     "simple SetValue test failed\n");
+	if (created) {
+		torture_assert(tctx, test_SetValue_simple(p, tctx, &newhandle),
+			"simple SetValue test failed");
+		if (!test_SetValue_extended(p, tctx, &newhandle)) {
+			if (torture_setting_bool(tctx, "samba3", false)) {
+				torture_warning(tctx, "extended SetValue test failed");
+			} else {
+				torture_fail(tctx, "extended SetValue test failed");
+			}
+		}
 	}
 
 	if (created && !test_CloseKey(p, tctx, &newhandle))
