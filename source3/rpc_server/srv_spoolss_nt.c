@@ -5288,7 +5288,7 @@ WERROR _spoolss_EndDocPrinter(pipes_struct *p,
 WERROR _spoolss_WritePrinter(pipes_struct *p,
 			     struct spoolss_WritePrinter *r)
 {
-	uint32_t buffer_written;
+	ssize_t buffer_written;
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
@@ -5302,11 +5302,11 @@ WERROR _spoolss_WritePrinter(pipes_struct *p,
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
 		return WERR_BADFID;
 
-	buffer_written = (uint32_t)print_job_write(snum, Printer->jobid,
+	buffer_written = print_job_write(snum, Printer->jobid,
 						   (const char *)r->in.data.data,
 						   (SMB_OFF_T)-1,
 						   (size_t)r->in._data_size);
-	if (buffer_written == (uint32_t)-1) {
+	if (buffer_written == (ssize_t)-1) {
 		*r->out.num_written = 0;
 		if (errno == ENOSPC)
 			return WERR_NO_SPOOL_SPACE;

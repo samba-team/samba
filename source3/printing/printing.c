@@ -2232,7 +2232,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size)
 {
 	const char* sharename = lp_const_servicename(snum);
-	int return_code;
+	ssize_t return_code;
 	struct printjob *pjob;
 
 	pjob = print_job_find(sharename, jobid);
