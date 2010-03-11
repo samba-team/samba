@@ -113,6 +113,12 @@ import "lsa.idl", "security.idl", "misc.idl";
 	} winreg_SecBuf;
 
 	typedef [v1_enum] enum {
+		REG_KEYTYPE_NON_VOLATILE	= 0x00000000,
+		REG_KEYTYPE_VOLATILE		= 0x00000001,
+		REG_KEYTYPE_SYMLINK		= 0x00000002
+	} winreg_KeyType;
+
+	typedef [v1_enum] enum {
 		REG_ACTION_NONE         = 0, /* used by caller */
 		REG_CREATED_NEW_KEY     = 1,
 		REG_OPENED_EXISTING_KEY = 2
@@ -122,7 +128,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		[in,ref] policy_handle *handle,
 		[in] winreg_String name,
 		[in] winreg_String keyclass,
-		[in] uint32 options,
+		[in] winreg_KeyType options,
 		[in] winreg_AccessMask access_mask,
 		[in,unique] winreg_SecBuf *secdesc,
 		[out,ref] policy_handle *new_handle,
@@ -230,7 +236,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 	[public] WERROR winreg_OpenKey(
 		[in,ref] policy_handle *parent_handle,
 		[in] winreg_String keyname,
-		[in] uint32 unknown,
+		[in] winreg_KeyType options,
 		[in] winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);

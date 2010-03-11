@@ -323,7 +323,7 @@ static const uint8_t openkey_in_data[] = {
 
 static bool openkey_in_check(struct torture_context *tctx, struct winreg_OpenKey *r)
 {
-	torture_assert_int_equal(tctx, r->in.unknown, 0, "unknown");
+	torture_assert_int_equal(tctx, r->in.options, 0, "unknown");
 	torture_assert_int_equal(tctx, r->in.access_mask, 0x02000000, "access mask");
 	torture_assert_str_equal(tctx, r->in.keyname.name, "spottyfoot", "keyname");
 	/* FIXME: parent handle */

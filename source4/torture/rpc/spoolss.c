@@ -3311,7 +3311,7 @@ static bool test_winreg_OpenKey(struct torture_context *tctx,
 
 	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
-	r.in.unknown = 0x00000000;
+	r.in.options = REG_KEYTYPE_NON_VOLATILE;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = key_handle;
 

@@ -3097,7 +3097,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 
 		o.in.parent_handle = handle;
 		o.in.keyname.name = r.out.name->name;
-		o.in.unknown = 0;
+		o.in.options = 0;
 		o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		o.out.handle = &key_handle;
 
@@ -3453,7 +3453,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	o.in.unknown = 0;
+	o.in.options = 0;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.out.handle = &key_handle;
 

@@ -170,7 +170,7 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h,
 	ZERO_STRUCT(r);
 	r.in.parent_handle = &parentkeydata->pol;
 	r.in.keyname.name = name;
-	r.in.unknown = 0x00000000;
+	r.in.options = 0x00000000;
 	r.in.access_mask = 0x02000000;
 	r.out.handle = &mykeydata->pol;
 

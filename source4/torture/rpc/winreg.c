@@ -365,7 +365,7 @@ static bool _test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ZERO_STRUCT(r);
 	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
-	r.in.unknown = 0x00000000;
+	r.in.options = REG_KEYTYPE_NON_VOLATILE;
 	r.in.access_mask = access_mask;
 	r.out.handle = key_handle;
 

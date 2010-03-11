@@ -939,7 +939,7 @@ struct tevent_req *rpccli_winreg_CreateKey_send(TALLOC_CTX *mem_ctx,
 						struct policy_handle *_handle /* [in] [ref] */,
 						struct winreg_String _name /* [in]  */,
 						struct winreg_String _keyclass /* [in]  */,
-						uint32_t _options /* [in]  */,
+						enum winreg_KeyType _options /* [in]  */,
 						uint32_t _access_mask /* [in]  */,
 						struct winreg_SecBuf *_secdesc /* [in] [unique] */,
 						struct policy_handle *_new_handle /* [out] [ref] */,
@@ -1058,7 +1058,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 				 struct policy_handle *handle /* [in] [ref] */,
 				 struct winreg_String name /* [in]  */,
 				 struct winreg_String keyclass /* [in]  */,
-				 uint32_t options /* [in]  */,
+				 enum winreg_KeyType options /* [in]  */,
 				 uint32_t access_mask /* [in]  */,
 				 struct winreg_SecBuf *secdesc /* [in] [unique] */,
 				 struct policy_handle *new_handle /* [out] [ref] */,
@@ -2388,7 +2388,7 @@ struct tevent_req *rpccli_winreg_OpenKey_send(TALLOC_CTX *mem_ctx,
 					      struct rpc_pipe_client *cli,
 					      struct policy_handle *_parent_handle /* [in] [ref] */,
 					      struct winreg_String _keyname /* [in]  */,
-					      uint32_t _unknown /* [in]  */,
+					      enum winreg_KeyType _options /* [in]  */,
 					      uint32_t _access_mask /* [in]  */,
 					      struct policy_handle *_handle /* [out] [ref] */)
 {
@@ -2407,7 +2407,7 @@ struct tevent_req *rpccli_winreg_OpenKey_send(TALLOC_CTX *mem_ctx,
 	/* In parameters */
 	state->orig.in.parent_handle = _parent_handle;
 	state->orig.in.keyname = _keyname;
-	state->orig.in.unknown = _unknown;
+	state->orig.in.options = _options;
 	state->orig.in.access_mask = _access_mask;
 
 	/* Out parameters */
@@ -2497,7 +2497,7 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       struct policy_handle *parent_handle /* [in] [ref] */,
 			       struct winreg_String keyname /* [in]  */,
-			       uint32_t unknown /* [in]  */,
+			       enum winreg_KeyType options /* [in]  */,
 			       uint32_t access_mask /* [in]  */,
 			       struct policy_handle *handle /* [out] [ref] */,
 			       WERROR *werror)
@@ -2508,7 +2508,7 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.parent_handle = parent_handle;
 	r.in.keyname = keyname;
-	r.in.unknown = unknown;
+	r.in.options = options;
 	r.in.access_mask = access_mask;
 
 	status = cli->dispatch(cli,
