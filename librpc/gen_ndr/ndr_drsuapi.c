@@ -5154,20 +5154,43 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetMembershipsRequest(struct ndr_print *ndr, c
 	}
 }
 
+static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsGetNT4ChangeLogFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_NT4_CHANGELOG_GET_CHANGELOG", DRSUAPI_NT4_CHANGELOG_GET_CHANGELOG, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_NT4_CHANGELOG_GET_SERIAL_NUMBERS", DRSUAPI_NT4_CHANGELOG_GET_SERIAL_NUMBERS, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogRequest1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNT4ChangeLogRequest1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
+		NDR_CHECK(ndr_push_drsuapi_DsGetNT4ChangeLogFlags(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->preferred_maximum_length));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->restart_length));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->restart_data));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length));
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->data, r->length));
+		if (r->restart_data) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->restart_length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->restart_data, r->restart_length));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5175,35 +5198,35 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogRequest1(struct ndr_p
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogRequest1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNT4ChangeLogRequest1 *r)
 {
-	uint32_t _ptr_data;
-	TALLOC_CTX *_mem_save_data_0;
+	uint32_t _ptr_restart_data;
+	TALLOC_CTX *_mem_save_restart_data_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
-		if (r->length > 0x00A00000) {
+		NDR_CHECK(ndr_pull_drsuapi_DsGetNT4ChangeLogFlags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->preferred_maximum_length));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->restart_length));
+		if (r->restart_length > 0x00A00000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
-		if (_ptr_data) {
-			NDR_PULL_ALLOC(ndr, r->data);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_restart_data));
+		if (_ptr_restart_data) {
+			NDR_PULL_ALLOC(ndr, r->restart_data);
 		} else {
-			r->data = NULL;
+			r->restart_data = NULL;
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data) {
-			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
-			NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_size(ndr, &r->data)));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
+		if (r->restart_data) {
+			_mem_save_restart_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->restart_data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->restart_data));
+			NDR_PULL_ALLOC_N(ndr, r->restart_data, ndr_get_array_size(ndr, &r->restart_data));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->restart_data, ndr_get_array_size(ndr, &r->restart_data)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_restart_data_0, 0);
 		}
-		if (r->data) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->length));
+		if (r->restart_data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->restart_data, r->restart_length));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5213,13 +5236,13 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNT4ChangeLogRequest1(struct ndr_print *ndr,
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsGetNT4ChangeLogRequest1");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
-	ndr_print_uint32(ndr, "length", r->length);
-	ndr_print_ptr(ndr, "data", r->data);
+	ndr_print_drsuapi_DsGetNT4ChangeLogFlags(ndr, "flags", r->flags);
+	ndr_print_uint32(ndr, "preferred_maximum_length", r->preferred_maximum_length);
+	ndr_print_uint32(ndr, "restart_length", r->restart_length);
+	ndr_print_ptr(ndr, "restart_data", r->restart_data);
 	ndr->depth++;
-	if (r->data) {
-		ndr_print_array_uint8(ndr, "data", r->data, r->length);
+	if (r->restart_data) {
+		ndr_print_array_uint8(ndr, "restart_data", r->restart_data, r->restart_length);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -5306,27 +5329,27 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogInfo1(struct ndr_push
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length2));
-		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time2));
-		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown3));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time4));
-		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown5));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time6));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->restart_length));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->log_length));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->sam_serial_number));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->sam_creation_time));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->builtin_serial_number));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->builtin_creation_time));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->lsa_serial_number));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->lsa_creation_time));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->status));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data1));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data2));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->restart_data));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->log_data));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data1) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length1));
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->data1, r->length1));
+		if (r->restart_data) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->restart_length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->restart_data, r->restart_length));
 		}
-		if (r->data2) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length2));
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->data2, r->length2));
+		if (r->log_data) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->log_length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->log_data, r->log_length));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5334,63 +5357,63 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNT4ChangeLogInfo1(struct ndr_push
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogInfo1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNT4ChangeLogInfo1 *r)
 {
-	uint32_t _ptr_data1;
-	TALLOC_CTX *_mem_save_data1_0;
-	uint32_t _ptr_data2;
-	TALLOC_CTX *_mem_save_data2_0;
+	uint32_t _ptr_restart_data;
+	TALLOC_CTX *_mem_save_restart_data_0;
+	uint32_t _ptr_log_data;
+	TALLOC_CTX *_mem_save_log_data_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length1));
-		if (r->length1 > 0x00A00000) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->restart_length));
+		if (r->restart_length > 0x00A00000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length2));
-		if (r->length2 > 0x00A00000) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->log_length));
+		if (r->log_length > 0x00A00000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
-		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time2));
-		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown3));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time4));
-		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown5));
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->time6));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->sam_serial_number));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->sam_creation_time));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->builtin_serial_number));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->builtin_creation_time));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->lsa_serial_number));
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->lsa_creation_time));
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->status));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data1));
-		if (_ptr_data1) {
-			NDR_PULL_ALLOC(ndr, r->data1);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_restart_data));
+		if (_ptr_restart_data) {
+			NDR_PULL_ALLOC(ndr, r->restart_data);
 		} else {
-			r->data1 = NULL;
+			r->restart_data = NULL;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data2));
-		if (_ptr_data2) {
-			NDR_PULL_ALLOC(ndr, r->data2);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_log_data));
+		if (_ptr_log_data) {
+			NDR_PULL_ALLOC(ndr, r->log_data);
 		} else {
-			r->data2 = NULL;
+			r->log_data = NULL;
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 8));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data1) {
-			_mem_save_data1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->data1, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->data1));
-			NDR_PULL_ALLOC_N(ndr, r->data1, ndr_get_array_size(ndr, &r->data1));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data1, ndr_get_array_size(ndr, &r->data1)));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data1_0, 0);
+		if (r->restart_data) {
+			_mem_save_restart_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->restart_data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->restart_data));
+			NDR_PULL_ALLOC_N(ndr, r->restart_data, ndr_get_array_size(ndr, &r->restart_data));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->restart_data, ndr_get_array_size(ndr, &r->restart_data)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_restart_data_0, 0);
 		}
-		if (r->data2) {
-			_mem_save_data2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->data2, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->data2));
-			NDR_PULL_ALLOC_N(ndr, r->data2, ndr_get_array_size(ndr, &r->data2));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data2, ndr_get_array_size(ndr, &r->data2)));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data2_0, 0);
+		if (r->log_data) {
+			_mem_save_log_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->log_data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->log_data));
+			NDR_PULL_ALLOC_N(ndr, r->log_data, ndr_get_array_size(ndr, &r->log_data));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->log_data, ndr_get_array_size(ndr, &r->log_data)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_log_data_0, 0);
 		}
-		if (r->data1) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data1, r->length1));
+		if (r->restart_data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->restart_data, r->restart_length));
 		}
-		if (r->data2) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data2, r->length2));
+		if (r->log_data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->log_data, r->log_length));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5400,25 +5423,25 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNT4ChangeLogInfo1(struct ndr_print *ndr, co
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsGetNT4ChangeLogInfo1");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "length1", r->length1);
-	ndr_print_uint32(ndr, "length2", r->length2);
-	ndr_print_hyper(ndr, "unknown1", r->unknown1);
-	ndr_print_NTTIME(ndr, "time2", r->time2);
-	ndr_print_hyper(ndr, "unknown3", r->unknown3);
-	ndr_print_NTTIME(ndr, "time4", r->time4);
-	ndr_print_hyper(ndr, "unknown5", r->unknown5);
-	ndr_print_NTTIME(ndr, "time6", r->time6);
+	ndr_print_uint32(ndr, "restart_length", r->restart_length);
+	ndr_print_uint32(ndr, "log_length", r->log_length);
+	ndr_print_hyper(ndr, "sam_serial_number", r->sam_serial_number);
+	ndr_print_NTTIME(ndr, "sam_creation_time", r->sam_creation_time);
+	ndr_print_hyper(ndr, "builtin_serial_number", r->builtin_serial_number);
+	ndr_print_NTTIME(ndr, "builtin_creation_time", r->builtin_creation_time);
+	ndr_print_hyper(ndr, "lsa_serial_number", r->lsa_serial_number);
+	ndr_print_NTTIME(ndr, "lsa_creation_time", r->lsa_creation_time);
 	ndr_print_NTSTATUS(ndr, "status", r->status);
-	ndr_print_ptr(ndr, "data1", r->data1);
+	ndr_print_ptr(ndr, "restart_data", r->restart_data);
 	ndr->depth++;
-	if (r->data1) {
-		ndr_print_array_uint8(ndr, "data1", r->data1, r->length1);
+	if (r->restart_data) {
+		ndr_print_array_uint8(ndr, "restart_data", r->restart_data, r->restart_length);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "data2", r->data2);
+	ndr_print_ptr(ndr, "log_data", r->log_data);
 	ndr->depth++;
-	if (r->data2) {
-		ndr_print_array_uint8(ndr, "data2", r->data2, r->length2);
+	if (r->log_data) {
+		ndr_print_array_uint8(ndr, "log_data", r->log_data, r->log_length);
 	}
 	ndr->depth--;
 	ndr->depth--;

@@ -179,6 +179,7 @@ void ndr_print_drsuapi_DsGetMembershipsCtr1(struct ndr_print *ndr, const char *n
 void ndr_print_drsuapi_DsGetMembershipsCtr(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetMembershipsCtr *r);
 void ndr_print_drsuapi_DsGetMembershipsRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetMembershipsRequest1 *r);
 void ndr_print_drsuapi_DsGetMembershipsRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetMembershipsRequest *r);
+void ndr_print_drsuapi_DsGetNT4ChangeLogFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_drsuapi_DsGetNT4ChangeLogRequest1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNT4ChangeLogRequest1 *r);
 void ndr_print_drsuapi_DsGetNT4ChangeLogRequest(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetNT4ChangeLogRequest *r);
 void ndr_print_drsuapi_DsGetNT4ChangeLogInfo1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNT4ChangeLogInfo1 *r);

@@ -795,11 +795,15 @@ union drsuapi_DsGetMembershipsRequest {
 	struct drsuapi_DsGetMembershipsRequest1 req1;/* [case] */
 }/* [switch_type(uint32)] */;
 
+/* bitmap drsuapi_DsGetNT4ChangeLogFlags */
+#define DRSUAPI_NT4_CHANGELOG_GET_CHANGELOG ( 0x00000001 )
+#define DRSUAPI_NT4_CHANGELOG_GET_SERIAL_NUMBERS ( 0x00000002 )
+
 struct drsuapi_DsGetNT4ChangeLogRequest1 {
-	uint32_t unknown1;
-	uint32_t unknown2;
-	uint32_t length;/* [range(0,0x00A00000)] */
-	uint8_t *data;/* [unique,size_is(length)] */
+	uint32_t flags;
+	uint32_t preferred_maximum_length;
+	uint32_t restart_length;/* [range(0,0x00A00000)] */
+	uint8_t *restart_data;/* [unique,size_is(restart_length)] */
 };
 
 union drsuapi_DsGetNT4ChangeLogRequest {
@@ -807,17 +811,17 @@ union drsuapi_DsGetNT4ChangeLogRequest {
 }/* [switch_type(uint32)] */;
 
 struct drsuapi_DsGetNT4ChangeLogInfo1 {
-	uint32_t length1;/* [range(0,0x00A00000)] */
-	uint32_t length2;/* [range(0,0x00A00000)] */
-	uint64_t unknown1;
-	NTTIME time2;
-	uint64_t unknown3;
-	NTTIME time4;
-	uint64_t unknown5;
-	NTTIME time6;
+	uint32_t restart_length;/* [range(0,0x00A00000)] */
+	uint32_t log_length;/* [range(0,0x00A00000)] */
+	uint64_t sam_serial_number;
+	NTTIME sam_creation_time;
+	uint64_t builtin_serial_number;
+	NTTIME builtin_creation_time;
+	uint64_t lsa_serial_number;
+	NTTIME lsa_creation_time;
 	NTSTATUS status;
-	uint8_t *data1;/* [unique,size_is(length1)] */
-	uint8_t *data2;/* [unique,size_is(length2)] */
+	uint8_t *restart_data;/* [unique,size_is(restart_length)] */
+	uint8_t *log_data;/* [unique,size_is(log_length)] */
 };
 
 union drsuapi_DsGetNT4ChangeLogInfo {
