@@ -590,7 +590,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 				   "torture_temp_dir should return NT_STATUS_OK" );
 
 	s = talloc_zero(torture, struct test_become_dc_state);
-	if (!s) return false;
+	torture_assert(torture, s, "talloc_zero");
 
 	s->tctx = torture;
 	s->lp_ctx = torture->lp_ctx;
@@ -600,11 +600,9 @@ bool torture_net_become_dc(struct torture_context *torture)
 	/* do an initial name resolution to find its IP */
 	status = resolve_name(lp_resolve_context(torture->lp_ctx),
 			      &name, torture, &address, torture->ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to resolve %s - %s\n",
-		       name.name, nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(torture, status, talloc_asprintf(torture,
+				   "Failed to resolve %s - %s\n",
+				   name.name, nt_errstr(status)));
 
 	s->netbios_name = lp_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
@@ -617,11 +615,9 @@ bool torture_net_become_dc(struct torture_context *torture)
 	s->tj = torture_join_domain(torture, s->netbios_name,
 				 ACB_WSTRUST,
 				 &s->machine_account);
-	if (!s->tj) {
-		DEBUG(0, ("%s failed to join domain as workstation\n",
-			  s->netbios_name));
-		return false;
-	}
+	torture_assert(torture, s->tj, talloc_asprintf(torture,
+		       "%s failed to join domain as workstation\n",
+		       s->netbios_name));
 
 	s->ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	s->ctx->cred = cmdline_credentials;
@@ -643,66 +639,45 @@ bool torture_net_become_dc(struct torture_context *torture)
 	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;
 
 	status = libnet_BecomeDC(s->ctx, s, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_BecomeDC() failed - %s %s\n", nt_errstr(status), b.out.error_string);
-		ret = false;
-		goto cleanup;
-	}
-
+	torture_assert_ntstatus_ok_goto(torture, status, ret, cleanup, talloc_asprintf(torture,
+				   "libnet_BecomeDC() failed - %s %s\n",
+				   nt_errstr(status), b.out.error_string));
 	msg = ldb_msg_new(s);
-	if (!msg) {
-		printf("ldb_msg_new() failed\n");
-		ret = false;
-		goto cleanup;
-	}
+	torture_assert_int_equal_goto(torture, (msg?1:0), 1, ret, cleanup,
+				      "ldb_msg_new() failed\n");
 	msg->dn = ldb_dn_new(msg, s->ldb, "@ROOTDSE");
-	if (!msg->dn) {
-		printf("ldb_msg_new(@ROOTDSE) failed\n");
-		ret = false;
-		goto cleanup;
-	}
+	torture_assert_int_equal_goto(torture, (msg->dn?1:0), 1, ret, cleanup,
+				      "ldb_msg_new(@ROOTDSE) failed\n");
 
 	ldb_ret = ldb_msg_add_string(msg, "isSynchronized", "TRUE");
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("ldb_msg_add_string(msg, isSynchronized, TRUE) failed: %d\n", ldb_ret);
-		ret = false;
-		goto cleanup;
-	}
+	torture_assert_int_equal_goto(torture, ldb_ret, LDB_SUCCESS, ret, cleanup,
+				      "ldb_msg_add_string(msg, isSynchronized, TRUE) failed\n");
 
 	for (i=0; i < msg->num_elements; i++) {
 		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	printf("mark ROOTDSE with isSynchronized=TRUE\n");
+	torture_comment(torture, "mark ROOTDSE with isSynchronized=TRUE\n");
 	ldb_ret = ldb_modify(s->ldb, msg);
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("ldb_modify() failed: %d\n", ldb_ret);
-		ret = false;
-		goto cleanup;
-	}
+	torture_assert_int_equal_goto(torture, ldb_ret, LDB_SUCCESS, ret, cleanup,
+				      "ldb_modify() failed\n");
 	
 	/* reopen the ldb */
 	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
 	s->schema = NULL;
 
 	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
-	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path));
+	torture_comment(torture, "Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path);
 	s->ldb = ldb_wrap_connect(s, s->tctx->ev, s->lp_ctx, sam_ldb_path,
 				  system_session(s->lp_ctx),
 				  NULL, 0);
-	if (!s->ldb) {
-		DEBUG(0,("Failed to open '%s'\n",
-			sam_ldb_path));
-		ret = false;
-		goto cleanup;
-	}
+	torture_assert_int_equal_goto(torture, (s->ldb?1:0), 1, ret, cleanup,
+				      talloc_asprintf(torture,
+				      "Failed to open '%s'\n", sam_ldb_path));
 
 	s->schema = dsdb_get_schema(s->ldb);
-	if (!s->schema) {
-		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
-		ret = false;
-		goto cleanup;
-	}
+	torture_assert_int_equal_goto(torture, (s->schema?1:0), 1, ret, cleanup,
+				      "Failed to get loaded dsdb_schema\n");
 
 	/* Make sure we get this from the command line */
 	if (lp_parm_bool(torture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
@@ -718,10 +693,9 @@ cleanup:
 	u.in.dest_dsa_netbios_name	= s->netbios_name;
 
 	status = libnet_UnbecomeDC(s->ctx, s, &u);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_UnbecomeDC() failed - %s %s\n", nt_errstr(status), u.out.error_string);
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(torture, status, talloc_asprintf(torture,
+				   "libnet_UnbecomeDC() failed - %s %s\n",
+				   nt_errstr(status), u.out.error_string));
 
 	/* Leave domain. */                          
 	torture_leave_domain(torture, s->tj);
