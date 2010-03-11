@@ -1002,12 +1002,17 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	r.out.info		= &info;
 	r.out.level_out		= &level_out;
 
-	req.req1.unknown1	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-1", 3);
-	req.req1.unknown2	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-2", 0x00004000);
+	req.req1.flags = lp_parm_int(tctx->lp_ctx, NULL,
+				     "dssync", "nt4changelog_flags",
+				     DRSUAPI_NT4_CHANGELOG_GET_CHANGELOG |
+				     DRSUAPI_NT4_CHANGELOG_GET_SERIAL_NUMBERS);
+	req.req1.preferred_maximum_length = lp_parm_int(tctx->lp_ctx, NULL,
+					"dssync", "nt4changelog_preferred_len",
+					0x00004000);
 
 	while (1) {
-		req.req1.length	= cookie.length;
-		req.req1.data	= cookie.data;
+		req.req1.restart_length = cookie.length;
+		req.req1.restart_data = cookie.data;
 
 		r.in.req = &req;
 
@@ -1034,8 +1039,8 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 						     *r.out.level_out));
 		} else if (NT_STATUS_IS_OK(r.out.info->info1.status)) {
 		} else if (NT_STATUS_EQUAL(r.out.info->info1.status, STATUS_MORE_ENTRIES)) {
-			cookie.length	= r.out.info->info1.length1;
-			cookie.data	= r.out.info->info1.data1;
+			cookie.length	= r.out.info->info1.restart_length;
+			cookie.data	= r.out.info->info1.restart_data;
 			continue;
 		} else {
 			torture_fail(tctx,
