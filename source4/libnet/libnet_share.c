@@ -89,7 +89,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	s.out.info_ctr = &info_ctr;
 	s.out.totalentries = &totalentries;
 
-	status = dcerpc_srvsvc_NetShareEnumAll(c.out.dcerpc_pipe, mem_ctx, &s);
+	status = dcerpc_srvsvc_NetShareEnumAll_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &s);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
@@ -144,7 +144,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	s.in.info		= &info;
 	s.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
  
-	status = dcerpc_srvsvc_NetShareAdd(c.out.dcerpc_pipe, mem_ctx, &s);	
+	status = dcerpc_srvsvc_NetShareAdd_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &s);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
@@ -192,7 +192,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 	s.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
 	s.in.share_name = r->in.share_name;
 
-	status = dcerpc_srvsvc_NetShareDel(c.out.dcerpc_pipe, mem_ctx, &s);
+	status = dcerpc_srvsvc_NetShareDel_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "srvsvc_NetShareDel '%s' on server '%s' failed"
