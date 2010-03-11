@@ -33,7 +33,7 @@
 	n = i = value; \
 	r.in.in_data = n; \
 	r.out.out_data = &n; \
-	status = dcerpc_echo_AddOne(p, tctx, &r); \
+	status = dcerpc_echo_AddOne_r(b, tctx, &r); \
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, "AddOne(%d) failed", i)); \
 	torture_assert (tctx, n == i+1, talloc_asprintf(tctx, "%d + 1 != %u (should be %u)\n", i, n, i+1)); \
 	torture_comment (tctx, "%d + 1 = %u\n", i, n); \
@@ -46,6 +46,7 @@ static bool test_addone(struct torture_context *tctx,
 	NTSTATUS status;
 	uint32_t n;
 	struct echo_AddOne r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=0;i<10;i++) {
 		TEST_ADDONE(tctx, i);
@@ -69,6 +70,7 @@ static bool test_echodata(struct torture_context *tctx,
 	uint8_t *data_in, *data_out;
 	int len;
 	struct echo_EchoData r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (torture_setting_bool(tctx, "quick", false) &&
 	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
@@ -86,7 +88,7 @@ static bool test_echodata(struct torture_context *tctx,
 	r.in.len = len;
 	r.in.in_data = data_in;
 
-	status = dcerpc_echo_EchoData(p, tctx, &r);
+	status = dcerpc_echo_EchoData_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, 
 											"EchoData(%d) failed\n", len));
 
@@ -116,6 +118,7 @@ static bool test_sourcedata(struct torture_context *tctx,
 	NTSTATUS status;
 	int len;
 	struct echo_SourceData r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (torture_setting_bool(tctx, "quick", false) &&
 	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
@@ -126,7 +129,7 @@ static bool test_sourcedata(struct torture_context *tctx,
 
 	r.in.len = len;
 
-	status = dcerpc_echo_SourceData(p, tctx, &r);
+	status = dcerpc_echo_SourceData_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, 
 										"SourceData(%d) failed", len));
 
@@ -150,6 +153,7 @@ static bool test_sinkdata(struct torture_context *tctx,
 	uint8_t *data_in;
 	int len;
 	struct echo_SinkData r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (torture_setting_bool(tctx, "quick", false) &&
 	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
@@ -166,7 +170,7 @@ static bool test_sinkdata(struct torture_context *tctx,
 	r.in.len = len;
 	r.in.data = data_in;
 
-	status = dcerpc_echo_SinkData(p, tctx, &r);
+	status = dcerpc_echo_SinkData_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, 
 										"SinkData(%d) failed", 
 							   len));
@@ -185,11 +189,12 @@ static bool test_testcall(struct torture_context *tctx,
 	NTSTATUS status;
 	struct echo_TestCall r;
 	const char *s = NULL;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.s1 = "input string";
 	r.out.s2 = &s;
 
-	status = dcerpc_echo_TestCall(p, tctx, &r);
+	status = dcerpc_echo_TestCall_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "TestCall failed");
 
 	torture_assert_str_equal(tctx, s, "input string", "Didn't receive back same string");
@@ -206,13 +211,14 @@ static bool test_testcall2(struct torture_context *tctx,
 	NTSTATUS status;
 	struct echo_TestCall2 r;
 	int i;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=1;i<=7;i++) {
 		r.in.level = i;
 		r.out.info = talloc(tctx, union echo_Info);
 
 		torture_comment(tctx, "Testing TestCall2 level %d\n", i);
-		status = dcerpc_echo_TestCall2(p, tctx, &r);
+		status = dcerpc_echo_TestCall2_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "TestCall2 failed");
 	}
 	return true;
@@ -242,6 +248,7 @@ static bool test_sleep(struct torture_context *tctx,
 	struct timeval diff[ASYNC_COUNT];
 	struct tevent_context *ctx;
 	int total_done = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (torture_setting_bool(tctx, "quick", false)) {
 		torture_skip(tctx, "TestSleep disabled - use \"torture:quick=no\" to enable\n");
@@ -254,7 +261,7 @@ static bool test_sleep(struct torture_context *tctx,
 		snd[i]		= timeval_current();
 		rcv[i]		= timeval_zero();
 		r[i].in.seconds = ASYNC_COUNT-i;
-		req[i] = dcerpc_echo_TestSleep_r_send(tctx, tctx->ev, p->binding_handle, &r[i]);
+		req[i] = dcerpc_echo_TestSleep_r_send(tctx, tctx->ev, b, &r[i]);
 		torture_assert(tctx, req[i], "Failed to send async sleep request\n");
 		tevent_req_set_callback(req[i], test_sleep_done, &done1[i]);
 	}
@@ -310,6 +317,7 @@ static bool test_enum(struct torture_context *tctx,
 	enum echo_Enum1 v = ECHO_ENUM1;
 	struct echo_Enum2 e2;
 	union echo_Enum3 e3;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.foo1 = &v;
 	r.in.foo2 = &e2;
@@ -322,7 +330,7 @@ static bool test_enum(struct torture_context *tctx,
 	e2.e2 = ECHO_ENUM1_32;
 	e3.e1 = ECHO_ENUM2;
 
-	status = dcerpc_echo_TestEnum(p, tctx, &r);
+	status = dcerpc_echo_TestEnum_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "TestEnum failed");
 	return true;
 }
@@ -335,6 +343,7 @@ static bool test_surrounding(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct echo_TestSurrounding r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
 	r.in.data = talloc(tctx, struct echo_Surrounding);
@@ -344,7 +353,7 @@ static bool test_surrounding(struct torture_context *tctx,
 
 	r.out.data = talloc(tctx, struct echo_Surrounding);
 
-	status = dcerpc_echo_TestSurrounding(p, tctx, &r);
+	status = dcerpc_echo_TestSurrounding_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "TestSurrounding failed");
 	
 	torture_assert(tctx, r.out.data->x == 2 * r.in.data->x,
@@ -364,11 +373,12 @@ static bool test_doublepointer(struct torture_context *tctx,
 	uint16_t value = 12;
 	uint16_t *pvalue = &value;
 	uint16_t **ppvalue = &pvalue;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
 	r.in.data = &ppvalue;
 
-	status = dcerpc_echo_TestDoublePointer(p, tctx, &r);
+	status = dcerpc_echo_TestDoublePointer_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "TestDoublePointer failed");
 
 	torture_assert_int_equal(tctx, value, r.out.result, 
