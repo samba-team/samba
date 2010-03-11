@@ -3340,14 +3340,14 @@ static bool test_winreg_CloseKey(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_winreg_QueryValue(struct torture_context *tctx,
-				   struct dcerpc_pipe *p,
-				   struct policy_handle *handle,
-				   const char *value_name,
-				   enum winreg_Type *type_p,
-				   uint32_t *data_size_p,
-				   uint32_t *data_length_p,
-				   uint8_t **data_p)
+bool test_winreg_QueryValue(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle,
+			    const char *value_name,
+			    enum winreg_Type *type_p,
+			    uint32_t *data_size_p,
+			    uint32_t *data_length_p,
+			    uint8_t **data_p)
 {
 	struct winreg_QueryValue r;
 	enum winreg_Type type = REG_NONE;

@@ -25,6 +25,8 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
+#include "lib/registry/registry.h"
 
 #define TEST_KEY_BASE "smbtorture test"
 #define TEST_KEY1 TEST_KEY_BASE "\\spottyfoot"
@@ -1441,7 +1443,8 @@ static bool test_SetValue(struct dcerpc_pipe *p,
 	struct winreg_SetValue r;
 	struct winreg_String name;
 
-	torture_comment(tctx, "Testing SetValue(%s)\n", value_name);
+	torture_comment(tctx, "Testing SetValue(%s), type: %s, offered: 0x%08x)\n",
+		value_name, str_regtype(type), size);
 
 	init_winreg_String(&name, value_name);
 
@@ -1854,23 +1857,84 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_key_value(struct dcerpc_pipe *p,
-			   struct torture_context *tctx,
-			   struct policy_handle *handle)
+static bool test_SetValue_simple(struct dcerpc_pipe *p,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle)
 {
 	const char *value_name = TEST_VALUE;
-	enum winreg_Type type = REG_DWORD;
 	uint32_t value = 0x12345678;
+	const char *string = "torture";
+	DATA_BLOB blob;
+	enum winreg_Type types[] = {
+		REG_DWORD,
+		REG_BINARY,
+		REG_SZ,
+		REG_MULTI_SZ
+	};
+	int t;
 
-	DATA_BLOB blob = data_blob_talloc_zero(tctx, 4);
-	SIVAL(blob.data, 0, value);
+	torture_comment(tctx, "Testing SetValue (standard formats)\n");
 
-	torture_assert(tctx, test_SetValue(p, tctx, handle, value_name, type, blob.data, blob.length),
-		"test_SetValue failed");
-	torture_assert(tctx, test_QueryValue_full(p, tctx, handle, value_name, true),
-		talloc_asprintf(tctx, "test_QueryValue_full for %s value failed", value_name));
-	torture_assert(tctx, test_DeleteValue(p, tctx, handle, value_name),
-		"test_DeleteValue failed");
+	for (t=0; t < ARRAY_SIZE(types); t++) {
+
+		enum winreg_Type w_type;
+		uint32_t w_size, w_length;
+		uint8_t *w_data;
+
+		switch (types[t]) {
+		case REG_DWORD:
+			blob = data_blob_talloc_zero(tctx, 4);
+			SIVAL(blob.data, 0, value);
+			break;
+		case REG_BINARY:
+			blob = data_blob_string_const("binary_blob");
+			break;
+		case REG_SZ:
+			torture_assert(tctx,
+				convert_string_talloc_convenience(tctx, lp_iconv_convenience(tctx->lp_ctx),
+								  CH_UNIX, CH_UTF16,
+								  string,
+								  strlen(string)+1,
+								  (void **)&blob.data,
+								  &blob.length,
+								  false), "");
+			break;
+		case REG_MULTI_SZ:
+			torture_assert(tctx,
+				convert_string_talloc_convenience(tctx, lp_iconv_convenience(tctx->lp_ctx),
+								  CH_UNIX, CH_UTF16,
+								  string,
+								  strlen(string)+1,
+								  (void **)&blob.data,
+								  &blob.length,
+								  false), "");
+			torture_assert(tctx, data_blob_realloc(tctx, &blob, blob.length + 2), "");
+			memset(&blob.data[blob.length - 2], '\0', 2);
+			break;
+		default:
+			break;
+		}
+
+		torture_assert(tctx,
+			test_SetValue(p, tctx, handle, value_name, types[t], blob.data, blob.length),
+			"test_SetValue failed");
+		torture_assert(tctx,
+			test_QueryValue_full(p, tctx, handle, value_name, true),
+			talloc_asprintf(tctx, "test_QueryValue_full for %s value failed", value_name));
+		torture_assert(tctx,
+			test_winreg_QueryValue(tctx, p, handle, value_name, &w_type, &w_size, &w_length, &w_data),
+			"test_winreg_QueryValue failed");
+		torture_assert(tctx,
+			test_DeleteValue(p, tctx, handle, value_name),
+			"test_DeleteValue failed");
+
+		torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
+		torture_assert_int_equal(tctx, w_size, blob.length, "winreg size mismatch");
+		torture_assert_int_equal(tctx, w_length, blob.length, "winreg length mismatch");
+		torture_assert_mem_equal(tctx, w_data, blob.data, blob.length, "winreg buffer mismatch");
+	}
+
+	torture_comment(tctx, "Testing SetValue (standard formats) succeeded\n");
 
 	return true;
 }
@@ -2011,9 +2075,9 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		torture_fail(tctx,
 			     "CreateKey failed (OpenKey after Create didn't work)\n");
 
-	if (created && !test_key_value(p, tctx, &newhandle)) {
+	if (created && !test_SetValue_simple(p, tctx, &newhandle)) {
 		torture_fail(tctx,
-			     "test_key_value failed\n");
+			     "simple SetValue test failed\n");
 	}
 
 	if (created && !test_CloseKey(p, tctx, &newhandle))
