@@ -215,7 +215,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 
 			dbsync.in.credential = &credential;
 			
-			dbsync_nt_status = dcerpc_netr_DatabaseSync(p, loop_ctx, &dbsync);
+			dbsync_nt_status = dcerpc_netr_DatabaseSync_r(p->binding_handle, loop_ctx, &dbsync);
 			if (!NT_STATUS_IS_OK(dbsync_nt_status) &&
 			    !NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES)) {
 				r->out.error_string = talloc_asprintf(mem_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
