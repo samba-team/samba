@@ -97,7 +97,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge(p, tctx, &r);
+	status = dcerpc_netr_ServerReqChallenge_r(p->binding_handle, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
 
 	a.in.server_name = NULL;
@@ -120,7 +120,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing ServerAuthenticate3\n");
 
-	status = dcerpc_netr_ServerAuthenticate3(p, tctx, &a);
+	status = dcerpc_netr_ServerAuthenticate3_r(p->binding_handle, tctx, &a);
 	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate3");
 	torture_assert(tctx,
 		       netlogon_creds_client_check(creds, &credentials3),
