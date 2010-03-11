@@ -38,6 +38,7 @@
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *drs_pipe;
+	struct dcerpc_binding_handle *drs_handle;
 	struct drsuapi_DsBind req;
 	struct GUID bind_guid;
 	struct drsuapi_DsBindInfoCtr our_bind_info_ctr;
@@ -203,8 +204,9 @@ static bool _test_DsBind(struct torture_context *tctx,
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
 		return false;
 	}
+	b->drs_handle = b->drs_pipe->binding_handle;
 
-	status = dcerpc_drsuapi_DsBind(b->drs_pipe, ctx, &b->req);
+	status = dcerpc_drsuapi_DsBind_r(b->drs_handle, ctx, &b->req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -344,7 +346,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	r.out.level_out			= &level_out;
 	r.out.ctr			= &ctr;
 
-	status = dcerpc_drsuapi_DsCrackNames(ctx->admin.drsuapi.drs_pipe, ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(ctx->admin.drsuapi.drs_handle, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -907,7 +909,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 						r.in.req->req8.highwatermark.highest_usn);
 			}
 
-			status = dcerpc_drsuapi_DsGetNCChanges(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
+			status = dcerpc_drsuapi_DsGetNCChanges_r(ctx->new_dc.drsuapi.drs_handle, ctx, &r);
 			torture_drsuapi_assert_call(tctx, ctx->new_dc.drsuapi.drs_pipe, status,
 						    &r, "dcerpc_drsuapi_DsGetNCChanges");
 
@@ -1016,7 +1018,7 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 
 		r.in.req = &req;
 
-		status = dcerpc_drsuapi_DsGetNT4ChangeLog(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
+		status = dcerpc_drsuapi_DsGetNT4ChangeLog_r(ctx->new_dc.drsuapi.drs_handle, ctx, &r);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 			torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
 		} else if (!NT_STATUS_IS_OK(status)) {
@@ -1100,11 +1102,11 @@ static bool torture_dssync_tcase_teardown(struct torture_context *tctx, void *da
 
 	/* Unbing admin handle */
 	r.in.bind_handle = &ctx->admin.drsuapi.bind_handle;
-	dcerpc_drsuapi_DsUnbind(ctx->admin.drsuapi.drs_pipe, ctx, &r);
+	dcerpc_drsuapi_DsUnbind_r(ctx->admin.drsuapi.drs_handle, ctx, &r);
 
 	/* Unbing new_dc handle */
 	r.in.bind_handle = &ctx->new_dc.drsuapi.bind_handle;
-	dcerpc_drsuapi_DsUnbind(ctx->new_dc.drsuapi.drs_pipe, ctx, &r);
+	dcerpc_drsuapi_DsUnbind_r(ctx->new_dc.drsuapi.drs_handle, ctx, &r);
 
 	talloc_free(ctx);
 
