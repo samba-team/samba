@@ -366,7 +366,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
  * Initialize a struct smb_request from an inbuf
  */
 
-static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
+static bool init_smb_request(struct smb_request *req, const uint8 *inbuf,
 			     size_t unread_bytes, bool encrypted,
 			     uint32_t seqnum)
 {
@@ -376,7 +376,7 @@ static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
 	if (req_size < smb_size) {
 		DEBUG(0,("init_smb_request: invalid request size %u\n",
 			(unsigned int)req_size ));
-		exit_server_cleanly("Invalid SMB request");
+		return false;
 	}
 	req->cmd    = CVAL(inbuf, smb_com);
 	req->flags2 = SVAL(inbuf, smb_flg2);
@@ -402,7 +402,7 @@ static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
 		DEBUG(0,("init_smb_request: invalid wct number %u (size %u)\n",
 			(unsigned int)req->wct,
 			(unsigned int)req_size));
-		exit_server_cleanly("Invalid SMB request");
+		return false;
 	}
 	/* Ensure bcc is correct. */
 	if (((uint8 *)smb_buf(inbuf)) + req->buflen > inbuf + req_size) {
@@ -411,10 +411,11 @@ static void init_smb_request(struct smb_request *req, const uint8 *inbuf,
 			(unsigned int)req->buflen,
 			(unsigned int)req->wct,
 			(unsigned int)req_size));
-		exit_server_cleanly("Invalid SMB request");
+		return false;
 	}
 
 	req->outbuf = NULL;
+	return true;
 }
 
 static void process_smb(struct smbd_server_connection *conn,
@@ -1415,7 +1416,11 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		smb_panic("could not allocate smb_request");
 	}
 
-	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted, seqnum);
+	if (!init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted,
+			      seqnum)) {
+		exit_server_cleanly("Invalid SMB request");
+	}
+
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
 
 	/* we popped this message off the queue - keep original perf data */
