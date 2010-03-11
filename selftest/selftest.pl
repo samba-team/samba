@@ -853,6 +853,9 @@ sub teardown_env($)
 	delete $running_envs{$envname};
 }
 
+# This 'global' file needs to be empty when we start
+unlink("$prefix_abs/dns_host_file");
+
 if ($opt_no_lazy_setup) {
 	setup_env($_) foreach (keys %required_envs);
 }
