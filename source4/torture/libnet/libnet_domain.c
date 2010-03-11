@@ -28,7 +28,7 @@
 #include "param/param.h"
 
 
-static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle, struct lsa_String *domname,
 				 uint32_t *access_mask, struct dom_sid **sid_p)
 {
@@ -47,7 +47,7 @@ static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r1.in.access_mask = *access_mask;
 	r1.out.connect_handle = &h;
 	
-	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
+	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
 		return false;
@@ -59,7 +59,7 @@ static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("domain lookup on %s\n", domname->string);
 
-	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
+	status = dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
 		return false;
@@ -72,7 +72,7 @@ static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("opening domain\n");
 
-	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
+	status = dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenDomain failed - %s\n", nt_errstr(status));
 		return false;
@@ -84,7 +84,7 @@ static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_opendomain_lsa(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_opendomain_lsa(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle, struct lsa_String *domname,
 				uint32_t *access_mask)
 {
@@ -110,7 +110,7 @@ static bool test_opendomain_lsa(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	open.in.access_mask = *access_mask;
 	open.out.handle     = handle;
 	
-	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &open);
+	status = dcerpc_lsa_OpenPolicy2_r(b, mem_ctx, &open);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -157,7 +157,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 	lsa_close.in.handle  = &ctx->lsa.handle;
 	lsa_close.out.handle = &h;
 	
-	status = dcerpc_lsa_Close(ctx->lsa.pipe, ctx, &lsa_close);
+	status = dcerpc_lsa_Close_r(ctx->lsa.pipe->binding_handle, ctx, &lsa_close);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to close domain on lsa service: %s\n", nt_errstr(status));
 		ret = false;
@@ -207,7 +207,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
 	
-	if (!test_opendomain_lsa(p, torture, &h, &domain_name, &access_mask)) {
+	if (!test_opendomain_lsa(p->binding_handle, torture, &h, &domain_name, &access_mask)) {
 		d_printf("failed to open domain on lsa service\n");
 		ret = false;
 		goto done;
@@ -282,7 +282,7 @@ bool torture_domain_open_samr(struct torture_context *torture)
 	
 	printf("closing domain handle\n");
 	
-	status = dcerpc_samr_Close(ctx->samr.pipe, mem_ctx, &r);
+	status = dcerpc_samr_Close_r(ctx->samr.pipe->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
 		ret = false;
@@ -336,7 +336,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 
 	domain_name.string = talloc_strdup(mem_ctx, lp_workgroup(torture->lp_ctx));
 	
-	if (!test_opendomain_samr(p, torture, &h, &domain_name, &access_mask, &sid)) {
+	if (!test_opendomain_samr(p->binding_handle, torture, &h, &domain_name, &access_mask, &sid)) {
 		d_printf("failed to open domain on samr service\n");
 		ret = false;
 		goto done;

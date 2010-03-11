@@ -47,7 +47,7 @@ static bool test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -59,7 +59,7 @@ static bool test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	printf("closing domain handle\n");
 	
-	status = dcerpc_samr_Close(p, mem_ctx, &r);
+	status = dcerpc_samr_Close_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
 		return false;
@@ -100,7 +100,7 @@ bool torture_domainopen(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(net_ctx->samr.pipe, mem_ctx, &h)) {
+	if (!test_cleanup(net_ctx->samr.pipe->binding_handle, mem_ctx, &h)) {
 		ret = false;
 		goto done;
 	}

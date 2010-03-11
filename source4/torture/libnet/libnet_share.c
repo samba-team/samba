@@ -165,7 +165,7 @@ done:
 }
 
 
-static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, const char *host,
+static bool test_addshare(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx, const char *host,
 			  const char* share)
 {
 	NTSTATUS status;
@@ -188,7 +188,7 @@ static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 	add.in.info       = &info;
 	add.in.parm_error = NULL;
 
-	status = dcerpc_srvsvc_NetShareAdd(svc_pipe, mem_ctx, &add);
+	status = dcerpc_srvsvc_NetShareAdd_r(b, mem_ctx, &add);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to add a new share\n");
 		return false;
@@ -222,7 +222,7 @@ bool torture_delshare(struct torture_context *torture)
 
 	torture_assert_ntstatus_ok(torture, status, "Failed to get rpc connection");
 
-	if (!test_addshare(p, torture, host, TEST_SHARENAME)) {
+	if (!test_addshare(p->binding_handle, torture, host, TEST_SHARENAME)) {
 		return false;
 	}
 
