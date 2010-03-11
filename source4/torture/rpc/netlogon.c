@@ -660,9 +660,10 @@ static bool test_GetTrustPasswords(struct torture_context *tctx,
 /*
   try a netlogon SamLogon
 */
-bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
-			      struct cli_credentials *credentials, 
-			      struct netlogon_creds_CredentialState *creds)
+static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context *tctx,
+				   struct cli_credentials *credentials,
+				   struct netlogon_creds_CredentialState *creds,
+				   bool null_domain)
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogon r;
@@ -685,7 +686,11 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx, 
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
-	
+
+	if (null_domain) {
+		ninfo.identity_info.domain_name.string = NULL;
+	}
+
 	generate_random_buffer(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 	chal = data_blob_const(ninfo.challenge, 
@@ -757,6 +762,13 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
+bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
+		       struct cli_credentials *credentials,
+		       struct netlogon_creds_CredentialState *creds)
+{
+	return test_netlogon_ops_args(p, tctx, credentials, creds, false);
+}
+
 /*
   try a netlogon SamLogon
 */
@@ -771,6 +783,19 @@ static bool test_SamLogon(struct torture_context *tctx,
 	}
 
 	return test_netlogon_ops(p, tctx, credentials, creds);
+}
+
+static bool test_SamLogon_NULL_domain(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      struct cli_credentials *credentials)
+{
+	struct netlogon_creds_CredentialState *creds;
+
+	if (!test_SetupCredentials(p, tctx, credentials, &creds)) {
+		return false;
+	}
+
+	return test_netlogon_ops_args(p, tctx, credentials, creds, true);
 }
 
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
@@ -2939,6 +2964,7 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
+	torture_rpc_tcase_add_test_creds(tcase, "SamLogon_NULL_domain", test_SamLogon_NULL_domain);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword_with_flags", test_SetPassword_with_flags);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
