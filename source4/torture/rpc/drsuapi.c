@@ -78,7 +78,7 @@ bool test_DsBind(struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "testing DsBind\n");
 
-	status = dcerpc_drsuapi_DsBind(p, tctx, &r);
+	status = dcerpc_drsuapi_DsBind_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsBind");
 
 	/* cache server supported extensions, i.e. bind_info */
@@ -140,7 +140,7 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 				   "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 			       r.in.req->req1.level, r.in.req->req1.domain_name);
 		
-			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, tctx, &r);
+			status = dcerpc_drsuapi_DsGetDomainControllerInfo_r(p->binding_handle, tctx, &r);
 			torture_assert_ntstatus_ok(tctx, status,
 				   "dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
 			torture_assert_werr_equal(tctx,
@@ -194,7 +194,7 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 			r.in.req->req1.level, r.in.req->req1.domain_name);
 	
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, tctx, &r);
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo_r(p->binding_handle, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status,
 				   "dcerpc_drsuapi_DsGetDomainControllerInfo with dns domain failed");
@@ -249,13 +249,13 @@ static bool test_DsWriteAccountSpn(struct torture_context *tctx,
 	r.out.res			= &res;
 	r.out.level_out			= &level_out;
 
-	status = dcerpc_drsuapi_DsWriteAccountSpn(p, tctx, &r);
+	status = dcerpc_drsuapi_DsWriteAccountSpn_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsWriteAccountSpn");
 
 	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_DELETE;
 	r.in.req->req1.unknown1		= 0;
 
-	status = dcerpc_drsuapi_DsWriteAccountSpn(p, tctx, &r);
+	status = dcerpc_drsuapi_DsWriteAccountSpn_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsWriteAccountSpn");
 
 	return true;
@@ -376,7 +376,7 @@ static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 		r.out.info		= &info;
 		r.out.info_type		= &info_type;
 
-		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
+		status = dcerpc_drsuapi_DsReplicaGetInfo_r(p->binding_handle, tctx, &r);
 		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaGetInfo");
 		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == DCERPC_FAULT_INVALID_TAG) {
 			torture_comment(tctx,
@@ -444,7 +444,7 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 			break;
 		}
 
-		status = dcerpc_drsuapi_DsReplicaSync(p, tctx, &r);
+		status = dcerpc_drsuapi_DsReplicaSync_r(p->binding_handle, tctx, &r);
 		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaSync");
 	}
 
@@ -486,7 +486,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 	/* 1. deleting replica dest should fail */
 	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF;
-	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_DS_DRA_REF_NOT_FOUND, &r,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
@@ -494,7 +494,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 	/* 2. hopefully adding random replica dest should succeed */
 	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_ADD_REF;
-	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_OK, &r,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
@@ -502,7 +502,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 	/* 3. try adding same replica dest - should fail */
 	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_ADD_REF;
-	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_DS_DRA_REF_ALREADY_EXISTS, &r,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
@@ -510,7 +510,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 	/* 4. delete random replicate added at step 2. */
 	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF;
-	status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_OK, &r,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
@@ -621,7 +621,7 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 			break;
 		}
 
-		status = dcerpc_drsuapi_DsGetNCChanges(p, tctx, &r);
+		status = dcerpc_drsuapi_DsGetNCChanges_r(p->binding_handle, tctx, &r);
 		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsGetNCChanges");
 	}
 
@@ -651,7 +651,7 @@ bool test_QuerySitesByCost(struct torture_context *tctx,
 	r.in.level = 1;
 	r.in.req = &req;
 
-	status = dcerpc_drsuapi_QuerySitesByCost(p, tctx, &r);
+	status = dcerpc_drsuapi_QuerySitesByCost_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_QuerySitesByCost");
 
 	if (W_ERROR_IS_OK(r.out.result)) {
@@ -687,7 +687,7 @@ bool test_DsUnbind(struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "testing DsUnbind\n");
 
-	status = dcerpc_drsuapi_DsUnbind(p, tctx, &r);
+	status = dcerpc_drsuapi_DsUnbind_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsUnbind");
 
 	return true;
@@ -712,6 +712,7 @@ bool torture_rpc_drsuapi_get_dcinfo(struct torture_context *torture,
 
 	for (j=0; j < ARRAY_SIZE(names); j++) {
 		union drsuapi_DsGetDCInfoRequest req;
+		struct dcerpc_binding_handle *b = priv->drs_pipe->binding_handle;
 		r.in.bind_handle = &priv->bind_handle;
 		r.in.level = 1;
 		r.in.req = &req;
@@ -722,7 +723,7 @@ bool torture_rpc_drsuapi_get_dcinfo(struct torture_context *torture,
 		r.out.ctr = &ctr;
 		r.out.level_out = &level_out;
 
-		status = dcerpc_drsuapi_DsGetDomainControllerInfo(priv->drs_pipe, torture, &r);
+		status = dcerpc_drsuapi_DsGetDomainControllerInfo_r(b, torture, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			continue;
 		}

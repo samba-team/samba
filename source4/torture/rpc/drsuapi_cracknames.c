@@ -87,7 +87,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 		r.in.req->req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 		r.in.req->req1.format_desired	= formats[i];
 		names[0].str = dn;
-		status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+		status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -172,7 +172,7 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 				continue;
 			}
 			names[0].str = n_from[i];
-			status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+			status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				const char *errstr = nt_errstr(status);
 				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -282,7 +282,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -307,7 +307,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -333,7 +333,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -381,7 +381,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -407,7 +407,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -433,7 +433,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -953,7 +953,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 				torture_comment(tctx, "skipping: %s", comment);
 				continue;
 			}
-			status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+			status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				const char *errstr = nt_errstr(status);
 				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
