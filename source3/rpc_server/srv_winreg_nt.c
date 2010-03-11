@@ -230,6 +230,10 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	if ( !regkey )
 		return WERR_BADFID;
 
+	if (r->in.value_name->name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
 	if ((r->out.data_length == NULL) || (r->out.type == NULL) || (r->out.data_size == NULL)) {
 		return WERR_INVALID_PARAM;
 	}
