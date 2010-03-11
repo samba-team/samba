@@ -571,7 +571,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 				tdata.new_interval > ctdb_db->ctdb->tunable.vacuum_max_interval) {
 				tdata.new_interval = ctdb_db->ctdb->tunable.vacuum_min_interval;
 			}		
-			DEBUG(DEBUG_ERR,("Decreasing vacuum interval %u -> %u for %s\n", 
+			DEBUG(DEBUG_INFO,("Decreasing vacuum interval %u -> %u for %s\n", 
 					 tdata.last_interval, tdata.new_interval, ctdb_db->db_name));
 		}
 		tdata.last_interval = tdata.new_interval;
