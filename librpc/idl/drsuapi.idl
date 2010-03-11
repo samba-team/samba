@@ -855,7 +855,7 @@ interface drsuapi
 		[range(1,10000)] uint32 count;
 		[size_is(count)] drsuapi_DsReplicaObjectIdentifier **info_array;
 		uint32 flags;
-		drsuapi_DsMembershipType type;
+		[range(1,7)] drsuapi_DsMembershipType type;
 		drsuapi_DsReplicaObjectIdentifier *domain;
 	} drsuapi_DsGetMembershipsRequest1;
 
@@ -863,7 +863,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsGetMembershipsRequest1 req1;
 	} drsuapi_DsGetMembershipsRequest;
 
-	[todo] WERROR drsuapi_DsGetMemberships(
+	WERROR drsuapi_DsGetMemberships(
 		[in] policy_handle *bind_handle,
 		[in] uint32 level,
 		[in,ref] [switch_is(level)] drsuapi_DsGetMembershipsRequest *req,
