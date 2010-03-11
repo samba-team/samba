@@ -368,6 +368,12 @@ again:
 _PUBLIC_ char *generate_random_password(TALLOC_CTX *mem_ctx, size_t min, size_t max)
 {
 	char *retstr;
+	/* This list does not include { or } because they cause
+	 * problems for our provision (it can create a substring
+	 * ${...}, and for Fedora DS (which treats {...} at the start
+	 * of a stored password as special 
+	 *  -- Andrew Bartlett 2010-03-11
+	 */
 	const char *c_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,@$%&!?:;<=>()[]~";
 	size_t len = max;
 	size_t diff;
