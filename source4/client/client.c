@@ -2605,7 +2605,7 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 
 	do {
 		ZERO_STRUCT(ctr1);
-		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
+		status = dcerpc_srvsvc_NetShareEnumAll_r(p->binding_handle, mem_ctx, &r);
 
 		if (NT_STATUS_IS_OK(status) && 
 		    (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA) ||
