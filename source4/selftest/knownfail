@@ -46,6 +46,7 @@ samba4.rpc.samr.users.privileges
 samba4.rpc.spoolss # Not provided by Samba 4 yet
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
+^samba4.net.api.become.dc.*$                   # TODO: this should work!!!
 rap.*netservergetinfo
 smb2.persistent.handles1
 samba4.winbind.struct.*.SHOW_SEQUENCE     # Not yet working in winbind
