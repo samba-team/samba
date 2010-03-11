@@ -507,7 +507,7 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 		} else {
 			if ((r->in.data != NULL)
 			    && (*r->in.data_size < value_data.length)) {
-				return WERR_MORE_DATA;
+				result = WERR_MORE_DATA;
 			}
 		}
 
