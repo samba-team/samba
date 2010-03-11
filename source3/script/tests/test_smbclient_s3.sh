@@ -132,11 +132,13 @@ EOF
 test_good_symlink()
 {
     tmpfile=/tmp/smbclient.in.$$
+    slink_name="$LOCAL_PATH/slink"
+    slink_target="$LOCAL_PATH/slink_target"
 
-    touch "$LOCAL_PATH/foo"
-    ln -s "$LOCAL_PATH/foo" "$LOCAL_PATH/bar"
+    touch $slink_target
+    ln -s $slink_target $slink_name
     cat > $tmpfile <<EOF
-del bar
+del slink
 quit
 EOF
 
@@ -149,18 +151,28 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed delete good symlink with error $ret"
+	rm $slink_target
+	rm $slink_name
 	false
 	return
     fi
 
-    if [ -e "$LOCAL_PATH/bar" ] ; then
+    if [ ! -e $slink_target ] ; then
+	echo "failed delete good symlink - symlink target deleted !"
+	rm $slink_target
+	rm $slink_name
+	false
+	return
+    fi
+
+    if [ -e $slink_name ] ; then
 	echo "failed delete good symlink - symlink still exists"
-	rm "$LOCAL_PATH/bar"
-	rm "$LOCAL_PATH/foo"
+	rm $slink_target
+	rm $slink_name
 	false
     else
 	# got the correct prompt .. succeed
-	rm "$LOCAL_PATH/foo"
+	rm $slink_target
 	true
     fi
 }
