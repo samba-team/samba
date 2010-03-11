@@ -392,7 +392,7 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct winreg_EnumKey *r)
 	if ( !r->in.name || !r->in.keyclass )
 		return WERR_INVALID_PARAM;
 
-	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", key->key->name));
+	DEBUG(8,("_winreg_EnumKey: enumerating key [%s]\n", key->key->name));
 
 	err = reg_enumkey(p->mem_ctx, key, r->in.enum_index, (char **)&r->out.name->name,
 			  r->out.last_changed_time);
@@ -611,7 +611,7 @@ WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShu
 
 	/********** END SeRemoteShutdownPrivilege BLOCK **********/
 
-	DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",
+	DEBUG(3,("_winreg_AbortSystemShutdown: Running the command `%s' gave %d\n",
 		abort_shutdown_script, ret));
 
 	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
@@ -784,7 +784,7 @@ WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
 	if ( !key )
 		return WERR_BADFID;
 
-	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n",
+	DEBUG(8,("_winreg_SetValue: Setting value for [%s:%s]\n",
 			 key->key->name, r->in.name.name));
 
 	status = registry_pull_value(p->mem_ctx, &val, r->in.type, r->in.data,
