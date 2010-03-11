@@ -54,7 +54,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	tod.out.info = &info;
 
 	/* 2. try srvsvc_NetRemoteTOD */
-	status = dcerpc_srvsvc_NetRemoteTOD(c.out.dcerpc_pipe, mem_ctx, &tod);
+	status = dcerpc_srvsvc_NetRemoteTOD_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &tod);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->srvsvc.out.error_string = talloc_asprintf(mem_ctx,
 						"srvsvc_NetrRemoteTOD on server '%s' failed: %s",
