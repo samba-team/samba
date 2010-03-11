@@ -101,7 +101,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	pw3.out.reject = &reject;
 
 	/* 2. try samr_ChangePasswordUser3 */
-	status = dcerpc_samr_ChangePasswordUser3(c.out.dcerpc_pipe, mem_ctx, &pw3);
+	status = dcerpc_samr_ChangePasswordUser3_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &pw3);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		if (!NT_STATUS_IS_OK(status)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
@@ -133,7 +133,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	pw2.in.lm_verifier = &lm_verifier;
 
 	/* 3. try samr_ChangePasswordUser2 */
-	status = dcerpc_samr_ChangePasswordUser2(c.out.dcerpc_pipe, mem_ctx, &pw2);
+	status = dcerpc_samr_ChangePasswordUser2_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &pw2);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		if (!NT_STATUS_IS_OK(status)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
@@ -159,7 +159,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	oe2.in.hash = &lm_verifier;
 
 	/* 4. try samr_OemChangePasswordUser2 */
-	status = dcerpc_samr_OemChangePasswordUser2(c.out.dcerpc_pipe, mem_ctx, &oe2);
+	status = dcerpc_samr_OemChangePasswordUser2_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &oe2);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		if (!NT_STATUS_IS_OK(oe2.out.result)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
@@ -193,7 +193,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	pw.in.lm_cross = &hash6;
 
 	/* 5. try samr_ChangePasswordUser */
-	status = dcerpc_samr_ChangePasswordUser(c.pdc.out.dcerpc_pipe, mem_ctx, &pw);
+	status = dcerpc_samr_ChangePasswordUser_r(c.pdc.out.dcerpc_pipe->binding_handle, mem_ctx, &pw);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_ChangePasswordUser failed: %s",
@@ -299,7 +299,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	sui.in.level = 26;
 	
 	/* 7. try samr_SetUserInfo2 level 26 to set the password */
-	status = dcerpc_samr_SetUserInfo2(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
 	/* check result of samr_SetUserInfo2 level 26 */
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string
@@ -353,7 +353,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	sui.in.level = 25;
 
 	/* 8. try samr_SetUserInfo2 level 25 to set the password */
-	status = dcerpc_samr_SetUserInfo2(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string
 			= talloc_asprintf(mem_ctx,
@@ -394,7 +394,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 	sui.in.level = 24;
 
 	/* 9. try samr_SetUserInfo2 level 24 to set the password */
-	status = dcerpc_samr_SetUserInfo2(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string
 			= talloc_asprintf(mem_ctx,
@@ -437,7 +437,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TA
 	sui.in.level = 23;
 
 	/* 10. try samr_SetUserInfo2 level 23 to set the password */
-	status = dcerpc_samr_SetUserInfo2(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string
 			= talloc_asprintf(mem_ctx,
@@ -529,7 +529,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	sc.out.connect_handle = &p_handle;
 
 	/* 2. do a samr_Connect to get a policy handle */
-	status = dcerpc_samr_Connect(c.out.dcerpc_pipe, mem_ctx, &sc);
+	status = dcerpc_samr_Connect_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &sc);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_Connect failed: %s",
@@ -544,7 +544,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ld.out.sid = &sid;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
-	status = dcerpc_samr_LookupDomain(c.out.dcerpc_pipe, mem_ctx, &ld);
+	status = dcerpc_samr_LookupDomain_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &ld);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupDomain for [%s] failed: %s",
@@ -560,7 +560,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	od.out.domain_handle = &d_handle;
 
 	/* 4. do a samr_OpenDomain to get a domain handle */
-	status = dcerpc_samr_OpenDomain(c.out.dcerpc_pipe, mem_ctx, &od);
+	status = dcerpc_samr_OpenDomain_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &od);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenDomain for [%s] failed: %s",
@@ -581,7 +581,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ln.in.names[0].string = r->samr.in.account_name;
 
 	/* 5. do a samr_LookupNames to get the users rid */
-	status = dcerpc_samr_LookupNames(c.out.dcerpc_pipe, mem_ctx, &ln);
+	status = dcerpc_samr_LookupNames_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &ln);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] failed: %s",
@@ -606,7 +606,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ou.out.user_handle = &u_handle;
 
 	/* 6. do a samr_OpenUser to get a user handle */
-	status = dcerpc_samr_OpenUser(c.out.dcerpc_pipe, mem_ctx, &ou);
+	status = dcerpc_samr_OpenUser_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &ou);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenUser for [%s] failed: %s",
