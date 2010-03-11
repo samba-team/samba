@@ -1,0 +1,181 @@
+/*
+  ldb database library
+
+  Copyright (C) Nadezhda Ivanova 2010
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ *  Name: dsdb_access
+ *
+ *  Description: utility functions for access checking on objects
+ *
+ *  Authors: Nadezhda Ivanova
+ */
+
+#include "includes.h"
+#include "events/events.h"
+#include "ldb.h"
+#include "ldb_errors.h"
+#include "../lib/util/util_ldb.h"
+#include "../lib/crypto/crypto.h"
+#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "../libds/common/flags.h"
+#include "libcli/ldap/ldap_ndr.h"
+#include "param/param.h"
+#include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "system/locale.h"
+#include "auth/auth.h"
+#include "lib/util/tsort.h"
+
+void dsdb_acl_debug(struct security_descriptor *sd,
+		      struct security_token *token,
+		      struct ldb_dn *dn,
+		      bool denied,
+		      int level)
+{
+	if (denied) {
+		DEBUG(level, ("Access on %s denied", ldb_dn_get_linearized(dn)));
+	} else {
+		DEBUG(level, ("Access on %s granted", ldb_dn_get_linearized(dn)));
+	}
+
+	DEBUG(level,("Security context: %s\n",
+		     ndr_print_struct_string(0,(ndr_print_fn_t)ndr_print_security_token,"", token)));
+	DEBUG(level,("Security descriptor: %s\n",
+		     ndr_print_struct_string(0,(ndr_print_fn_t)ndr_print_security_descriptor,"", sd)));
+}
+
+int dsdb_get_sd_from_ldb_message(TALLOC_CTX *mem_ctx,
+				 struct ldb_message *acl_res,
+				 struct security_descriptor **sd)
+{
+	struct ldb_message_element *sd_element;
+	enum ndr_err_code ndr_err;
+
+	sd_element = ldb_msg_find_element(acl_res, "nTSecurityDescriptor");
+	if (!sd_element) {
+		*sd = NULL;
+		return LDB_SUCCESS;
+	}
+	*sd = talloc(mem_ctx, struct security_descriptor);
+	if(!*sd) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ndr_err = ndr_pull_struct_blob(&sd_element->values[0], *sd, NULL, *sd,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
+int dsdb_get_dom_sid_from_ldb_message(TALLOC_CTX *mem_ctx,
+				 struct ldb_message *acl_res,
+				 struct dom_sid **sid)
+{
+	struct ldb_message_element *sid_element;
+	enum ndr_err_code ndr_err;
+
+	sid_element = ldb_msg_find_element(acl_res, "objectSid");
+	if (!sid_element) {
+		*sid = NULL;
+		return LDB_SUCCESS;
+	}
+	*sid = talloc(mem_ctx, struct dom_sid);
+	if(!*sid) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ndr_err = ndr_pull_struct_blob(&sid_element->values[0], *sid, NULL, *sid,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
+int dsdb_check_access_on_dn(struct ldb_context *ldb,
+			      TALLOC_CTX *mem_ctx,
+			      struct ldb_dn *dn,
+			      uint32_t access,
+			      const struct GUID *guid)
+{
+	int ret;
+	struct ldb_result *acl_res;
+	struct security_descriptor *sd = NULL;
+	struct dom_sid *sid = NULL;
+	struct object_tree *root = NULL;
+	struct object_tree *new_node = NULL;
+	NTSTATUS status;
+	uint32_t access_granted;
+	static const char *acl_attrs[] = {
+		"nTSecurityDescriptor",
+		"objectSid",
+		NULL
+	};
+
+	struct auth_session_info *session_info
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	if(!session_info) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(ldb, mem_ctx, &acl_res, dn, LDB_SCOPE_BASE, acl_attrs, NULL);
+	/* we sould be able to find the parent */
+	if (ret != LDB_SUCCESS) {
+		DEBUG(10,("acl: failed to find object %s\n", ldb_dn_get_linearized(dn)));
+		return ret;
+	}
+
+	ret = dsdb_get_sd_from_ldb_message(mem_ctx, acl_res->msgs[0], &sd);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* Theoretically we pass the check if the object has no sd */
+	if (!sd) {
+		return LDB_SUCCESS;
+	}
+	ret = dsdb_get_dom_sid_from_ldb_message(mem_ctx, acl_res->msgs[0], &sid);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (guid) {
+		if (!insert_in_object_tree(mem_ctx, guid, access, &root, &new_node)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+	status = sec_access_check_ds(sd, session_info->security_token,
+				     access,
+				     &access_granted,
+				     root,
+				     sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		dsdb_acl_debug(sd,
+			       session_info->security_token,
+			       dn,
+			       true,
+			       10);
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+	return LDB_SUCCESS;
+}
