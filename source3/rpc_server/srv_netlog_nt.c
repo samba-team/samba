@@ -1113,17 +1113,23 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 	case NetlogonServiceInformation:
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
-		nt_username	= logon->password->identity_info.account_name.string;
-		nt_domain	= logon->password->identity_info.domain_name.string;
-		nt_workstation	= logon->password->identity_info.workstation.string;
+		nt_username	= logon->password->identity_info.account_name.string ?
+				  logon->password->identity_info.account_name.string : "";
+		nt_domain	= logon->password->identity_info.domain_name.string ?
+				  logon->password->identity_info.domain_name.string : "";
+		nt_workstation	= logon->password->identity_info.workstation.string ?
+				  logon->password->identity_info.workstation.string : "";
 
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
-		nt_username	= logon->network->identity_info.account_name.string;
-		nt_domain	= logon->network->identity_info.domain_name.string;
-		nt_workstation	= logon->network->identity_info.workstation.string;
+		nt_username	= logon->network->identity_info.account_name.string ?
+				  logon->network->identity_info.account_name.string : "";
+		nt_domain	= logon->network->identity_info.domain_name.string ?
+				  logon->network->identity_info.domain_name.string : "";
+		nt_workstation	= logon->network->identity_info.workstation.string ?
+				  logon->network->identity_info.workstation.string : "";
 
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
