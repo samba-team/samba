@@ -399,7 +399,6 @@ static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call
 	bool ok;
 	WERROR status;
 
-	ZERO_STRUCT(r->out.res);
 	*r->out.level_out = 1;
 
 	status = drs_security_level_check(dce_call, "DsRemoveDSServer");
