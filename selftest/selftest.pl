@@ -588,7 +588,7 @@ sub write_clientconf($$)
 	private dir = $prefix_abs/client/private
 	lock dir = $prefix_abs/client/lockdir
 	ncalrpc dir = $prefix_abs/client/ncalrpcdir
-	name resolve order = bcast
+	name resolve order = bcast file
 	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
@@ -600,6 +600,7 @@ sub write_clientconf($$)
 	gensec:require_pac = true
 	modules dir = $ENV{LD_SAMBA_MODULE_PATH}
 	setup directory = ./setup
+	resolv:host file = $prefix_abs/dns_host_file
 ";
 	close(CF);
 }
