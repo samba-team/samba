@@ -767,17 +767,23 @@ my @exported_envvars = (
 	"DC_NETBIOSNAME",
 	"DC_NETBIOSALIAS",
 
-	# domain controller stuff
+	# domain member
 	"MEMBER_SERVER",
 	"MEMBER_SERVER_IP",
 	"MEMBER_NETBIOSNAME",
 	"MEMBER_NETBIOSALIAS",
 
-	# domain controller stuff
+	# rpc proxy controller stuff
 	"RPC_PROXY_SERVER",
 	"RPC_PROXY_SERVER_IP",
 	"RPC_PROXY_NETBIOSNAME",
 	"RPC_PROXY_NETBIOSALIAS",
+
+	# domain controller stuff for Vampired DC
+	"VAMPIRE_DC_SERVER",
+	"VAMPIRE_DC_SERVER_IP",
+	"VAMPIRE_DC_NETBIOSNAME",
+	"VAMPIRE_DC_NETBIOSALIAS",
 
 	# server stuff
 	"SERVER",

@@ -905,6 +905,58 @@ sub provision_rpc_proxy($$$)
 	return $ret;
 }
 
+sub provision_vampire_dc($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+	print "PROVISIONING VAMPIRE DC...";
+
+	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
+	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
+					       "localvampiredc", "localvampiredc5", 5, $dcvars->{PASSWORD},
+					       $dcvars->{SERVER_IP});
+
+	$ctx->{smb_conf_extra_options} = "
+	max xmit = 32K
+	server max protocol = SMB2
+
+[sysvol]
+	path = $ctx->{lockdir}/sysvol
+	read only = yes
+
+[netlogon]
+	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
+	read only = no
+
+";
+
+	my $ret = $self->provision_raw_step1($ctx);
+
+	$ret or die("Unable to prepare test env");
+
+	my $net = $self->bindir_path("net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$net vampire $ret->{CONFIGURATION} $dcvars->{DOMAIN} --realm=$dcvars->{REALM}";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
+
+	$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
+	$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{VAMPIRE_DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
+
+	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
+	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
+	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+
+	return $ret;
+}
+
 sub provision_dc($$)
 {
 	my ($self, $prefix) = @_;
@@ -1011,6 +1063,11 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
+	} elsif ($envname eq "vampire_dc") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{dc});
 	} elsif ($envname eq "member") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1037,7 +1094,7 @@ sub setup_env($$$)
 	}
 }
 
-sub setup_member($$$$)
+sub setup_member($$$)
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -1052,7 +1109,7 @@ sub setup_member($$$$)
 	return $env;
 }
 
-sub setup_rpc_proxy($$$$)
+sub setup_rpc_proxy($$$)
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -1079,6 +1136,22 @@ sub setup_dc($$)
 	$self->wait_for_start($env);
 
 	$self->{vars}->{dc} = $env;
+
+	return $env;
+}
+
+sub setup_vampire_dc($$$)
+{
+	my ($self, $path, $dc_vars) = @_;
+
+	my $env = $self->provision_vampire_dc($path, $dc_vars);
+
+	$self->check_or_start($env,
+		($ENV{SMBD_MAXTIME} or 7500));
+
+	$self->wait_for_start($env);
+
+	$self->{vars}->{vampire_dc} = $env;
 
 	return $env;
 }
