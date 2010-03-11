@@ -51,6 +51,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	const char *secret1 = "abcdef12345699qwerty";
 	char *secret2;
 	char *secname;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	secname = talloc_asprintf(tctx, "torturesecret-%u", (unsigned int)random());
 
@@ -62,7 +63,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.sec_handle = &sec_handle;
 	
-	status = dcerpc_lsa_CreateSecret(p, tctx, &r);
+	status = dcerpc_lsa_CreateSecret_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "CreateSecret failed");
 	
 	status = dcerpc_fetch_session_key(p, &session_key);
@@ -79,7 +80,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	
 	torture_comment(tctx, "Testing SetSecret\n");
 	
-	status = dcerpc_lsa_SetSecret(p, tctx, &r3);
+	status = dcerpc_lsa_SetSecret_r(b, tctx, &r3);
 	torture_assert_ntstatus_ok(tctx, status, "SetSecret failed");
 		
 	r3.in.sec_handle = &sec_handle;
@@ -94,7 +95,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	
 	torture_comment(tctx, "Testing SetSecret with broken key\n");
 	
-	status = dcerpc_lsa_SetSecret(p, tctx, &r3);
+	status = dcerpc_lsa_SetSecret_r(b, tctx, &r3);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_UNKNOWN_REVISION, 
 		"SetSecret should have failed UNKNOWN_REVISION");
 	
@@ -113,7 +114,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	bufp1.buf = NULL;
 	
 	torture_comment(tctx, "Testing QuerySecret\n");
-	status = dcerpc_lsa_QuerySecret(p, tctx, &r4);
+	status = dcerpc_lsa_QuerySecret_r(b, tctx, &r4);
 	torture_assert_ntstatus_ok(tctx, status, "QuerySecret failed");
 	if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL)
 		torture_fail(tctx, "No secret buffer returned");
@@ -128,7 +129,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 	d.in.handle = &sec_handle;
 	d.out.handle = &sec_handle;
-	status = dcerpc_lsa_DeleteObject(p, tctx, &d);
+	status = dcerpc_lsa_DeleteObject_r(b, tctx, &d);
 	torture_assert_ntstatus_ok(tctx, status, "delete should have returned OKINVALID_HANDLE");
 	return true;
 }
@@ -148,6 +149,7 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	const struct secret_settings *settings = 
 		(const struct secret_settings *)_data;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b;
 
 	lp_set_cmdline(torture->lp_ctx, "ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
 	lp_set_cmdline(torture->lp_ctx, "ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
@@ -171,8 +173,9 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 				       torture->lp_ctx);
 
 	torture_assert_ntstatus_ok(torture, status, "connect");
+	b = p->binding_handle;
 
-	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
+	if (!test_lsa_OpenPolicy2(b, torture, &handle)) {
 		talloc_free(p);
 		return false;
 	}

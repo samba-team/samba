@@ -38,7 +38,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	torture_assert_ntstatus_ok(torture, status, "connecting");
 
-	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
+	if (!test_lsa_OpenPolicy2(p->binding_handle, torture, &handle)) {
 		ret = false;
 	}
 
@@ -57,7 +57,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
 
 	if (handle) {
-		ret &= test_lsa_Close(p, torture, handle);
+		ret &= test_lsa_Close(p->binding_handle, torture, handle);
 	}
 
 	syntax = p->syntax;
@@ -70,10 +70,10 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	torture_comment(torture, "testing DSSETUP pipe operations - should fault\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation_ext(torture, p, NT_STATUS_NET_WRITE_FAULT);
 
-	ret &= test_lsa_OpenPolicy2(p, torture, &handle);
+	ret &= test_lsa_OpenPolicy2(p->binding_handle, torture, &handle);
 
 	if (handle) {
-		ret &= test_lsa_Close(p, torture, handle);
+		ret &= test_lsa_Close(p->binding_handle, torture, handle);
 	}
 
 	torture_comment(torture, "testing DSSETUP pipe operations\n");

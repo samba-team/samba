@@ -4674,7 +4674,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		status = torture_rpc_connection(tctx, &lp, &ndr_table_lsarpc);
 		torture_assert_ntstatus_ok(tctx, status, "Failed to open LSA pipe");
 
-		if (!test_lsa_OpenPolicy2(lp, tctx, &lsa_handle)) {
+		if (!test_lsa_OpenPolicy2(lp->binding_handle, tctx, &lsa_handle)) {
 			ret = false;
 		}
 
@@ -4685,7 +4685,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			ret = false;
 		}
 
-		if (!test_lsa_Close(lp, tctx, lsa_handle)) {
+		if (!test_lsa_Close(lp->binding_handle, tctx, lsa_handle)) {
 			ret = false;
 		}
 
