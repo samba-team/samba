@@ -36,6 +36,7 @@
 
 struct DsGetinfoBindInfo {
 	struct dcerpc_pipe *drs_pipe;
+	struct dcerpc_binding_handle *drs_handle;
 	struct drsuapi_DsBind req;
 	struct GUID bind_guid;
 	struct drsuapi_DsBindInfoCtr our_bind_info_ctr;
@@ -164,8 +165,9 @@ static bool _test_DsBind(struct torture_context *tctx,
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
 		return false;
 	}
+	b->drs_handle = b->drs_pipe->binding_handle;
 
-	status = dcerpc_drsuapi_DsBind(b->drs_pipe, ctx, &b->req);
+	status = dcerpc_drsuapi_DsBind_r(b->drs_handle, ctx, &b->req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -217,6 +219,7 @@ static bool test_getinfo(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p = ctx->admin.drsuapi.drs_pipe;
+	struct dcerpc_binding_handle *b = ctx->admin.drsuapi.drs_handle;
 	struct drsuapi_DsReplicaGetInfo r;
 	union drsuapi_DsReplicaGetInfoRequest req;
 	union drsuapi_DsReplicaInfo info;
@@ -341,7 +344,7 @@ static bool test_getinfo(struct torture_context *tctx,
 		r.out.info		= &info;
 		r.out.info_type		= &info_type;
 
-		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
+		status = dcerpc_drsuapi_DsReplicaGetInfo_r(b, tctx, &r);
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_LEVEL)) {
 			/* this is a not yet supported level */
@@ -398,7 +401,7 @@ static bool torture_dsgetinfo_tcase_teardown(struct torture_context *tctx, void 
 
 	/* Unbing admin handle */
 	r.in.bind_handle = &ctx->admin.drsuapi.bind_handle;
-	dcerpc_drsuapi_DsUnbind(ctx->admin.drsuapi.drs_pipe, ctx, &r);
+	dcerpc_drsuapi_DsUnbind_r(ctx->admin.drsuapi.drs_handle, ctx, &r);
 
 	talloc_free(ctx);
 
