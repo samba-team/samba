@@ -25,8 +25,12 @@
 
 class ProvisioningError(Exception):
     """A generic provision error."""
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return "ProvisioningError: " + self.value
 
-class InvalidNetbiosName(Exception):
+class InvalidNetbiosName(ProvisioningError):
     """A specified name was not a valid NetBIOS name."""
     def __init__(self, name):
         super(InvalidNetbiosName, self).__init__("The name '%r' is not a valid NetBIOS name" % name)

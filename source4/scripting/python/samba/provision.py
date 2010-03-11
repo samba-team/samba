@@ -330,34 +330,36 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if dnsdomain is None:
         dnsdomain = lp.get("realm")
         if dnsdomain is None or dnsdomain == "":
-            raise ProvisioningError("guess_names: 'realm' not specified in supplied smb.conf!")
+            raise ProvisioningError("guess_names: 'realm' not specified in supplied %s!", lp.configfile)
 
     dnsdomain = dnsdomain.lower()
 
     if serverrole is None:
         serverrole = lp.get("server role")
         if serverrole is None:
-            raise ProvisioningError("guess_names: 'server role' not specified in supplied smb.conf!")
+            raise ProvisioningError("guess_names: 'server role' not specified in supplied %s!" % lp.configfile)
 
     serverrole = serverrole.lower()
 
     realm = dnsdomain.upper()
 
+    if lp.get("realm") == "":
+        raise ProvisioningError("guess_names: 'realm =' was not specified in supplied %s.  Please remove the smb.conf file and let provision generate it" % lp.configfile)
+
     if lp.get("realm").upper() != realm:
-        raise ProvisioningError("guess_names: Realm '%s' in smb.conf must match chosen realm '%s'!", lp.get("realm").upper(), realm)
+        raise ProvisioningError("guess_names: 'realm=%s' in %s must match chosen realm '%s'!  Please remove the smb.conf file and let provision generate it" % (lp.get("realm").upper(), realm, lp.configfile))
 
     if lp.get("server role").lower() != serverrole:
-        raise ProvisioningError("guess_names: server role '%s' in smb.conf must match chosen server role '%s'!", lp.get("server role").upper(), serverrole)
+        raise ProvisioningError("guess_names: 'server role=%s' in %s must match chosen server role '%s'!  Please remove the smb.conf file and let provision generate it" % (lp.get("server role").upper(), serverrole, lp.configfile))
 
     if serverrole == "domain controller":
         if domain is None:
+            # This will, for better or worse, default to 'WORKGROUP'
             domain = lp.get("workgroup")
-        if domain is None:
-            raise ProvisioningError("guess_names: 'workgroup' not specified in supplied smb.conf!")
         domain = domain.upper()
 
         if lp.get("workgroup").upper() != domain:
-            raise ProvisioningError("guess_names: Workgroup '%s' in smb.conf must match chosen domain '%s'!", lp.get("workgroup").upper(), domain)
+            raise ProvisioningError("guess_names: Workgroup '%s' in %s must match chosen domain '%s'!  Please remove the %s file and let provision generate it" % (lp.get("workgroup").upper(), domain, lp.configfile))
 
         if domaindn is None:
             domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
@@ -370,11 +372,11 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         raise InvalidNetbiosName(domain)
         
     if hostname.upper() == realm:
-        raise ProvisioningError("guess_names: Realm '%s' must not be equal to hostname '%s'!", realm, hostname)
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to hostname '%s'!" % (realm, hostname))
     if netbiosname == realm:
-        raise ProvisioningError("guess_names: Realm '%s' must not be equal to netbios hostname '%s'!", realm, netbiosname)
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to netbios hostname '%s'!" % (realm, netbiosname))
     if domain == realm:
-        raise ProvisioningError("guess_names: Realm '%s' must not be equal to short domain name '%s'!", realm, domain)
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to short domain name '%s'!" % (realm, domain))
 
     if rootdn is None:
        rootdn = domaindn
