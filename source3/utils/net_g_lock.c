@@ -57,17 +57,24 @@ fail:
 	return false;
 }
 
+struct net_g_lock_do_state {
+	const char *cmd;
+	int result;
+};
+
+static void net_g_lock_do_fn(void *private_data)
+{
+	struct net_g_lock_do_state *state =
+		(struct net_g_lock_do_state *)private_data;
+	state->result = system(state->cmd);
+}
 
 static int net_g_lock_do(struct net_context *c, int argc, const char **argv)
 {
-	struct tevent_context *ev = NULL;
-	struct messaging_context *msg = NULL;
-	struct g_lock_ctx *g_ctx = NULL;
+	struct net_g_lock_do_state state;
 	const char *name, *cmd;
-	int timeout, res;
-	bool locked = false;
+	int timeout;
 	NTSTATUS status;
-	int ret = -1;
 
 	if (argc != 3) {
 		d_printf("Usage: net g_lock do <lockname> <timeout> "
@@ -78,38 +85,26 @@ static int net_g_lock_do(struct net_context *c, int argc, const char **argv)
 	timeout = atoi(argv[1]);
 	cmd = argv[2];
 
-	if (!net_g_lock_init(talloc_tos(), &ev, &msg, &g_ctx)) {
-		goto done;
-	}
+	state.cmd = cmd;
+	state.result = -1;
 
-	status = g_lock_lock(g_ctx, name, G_LOCK_WRITE,
-			     timeval_set(timeout / 1000, timeout % 1000));
+	status = g_lock_do(name, G_LOCK_WRITE,
+			   timeval_set(timeout / 1000, timeout % 1000),
+			   net_g_lock_do_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "ERROR: Could not get lock: %s\n",
+		d_fprintf(stderr, "ERROR: g_lock_do failed: %s\n",
 			  nt_errstr(status));
 		goto done;
 	}
-	locked = true;
-
-	res = system(cmd);
-
-	if (res == -1) {
+	if (state.result == -1) {
 		d_fprintf(stderr, "ERROR: system() returned %s\n",
 			  strerror(errno));
 		goto done;
 	}
-	d_fprintf(stderr, "command returned %d\n", res);
-
-	ret = 0;
+	d_fprintf(stderr, "command returned %d\n", state.result);
 
 done:
-	if (locked) {
-		g_lock_unlock(g_ctx, name);
-	}
-	TALLOC_FREE(g_ctx);
-	TALLOC_FREE(msg);
-	TALLOC_FREE(ev);
-	return ret;
+	return state.result;
 }
 
 static int net_g_lock_dump_fn(struct server_id pid, enum g_lock_type lock_type,
