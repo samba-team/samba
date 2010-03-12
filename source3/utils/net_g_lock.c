@@ -30,17 +30,17 @@ static bool net_g_lock_init(TALLOC_CTX *mem_ctx,
 	struct messaging_context *msg = NULL;
 	struct g_lock_ctx *g_ctx = NULL;
 
-	ev = tevent_context_init(talloc_tos());
+	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;
 	}
-	msg = messaging_init(talloc_tos(), procid_self(), ev);
+	msg = messaging_init(mem_ctx, procid_self(), ev);
 	if (msg == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto fail;
 	}
-	g_ctx = g_lock_ctx_init(talloc_tos(), msg);
+	g_ctx = g_lock_ctx_init(mem_ctx, msg);
 	if (g_ctx == NULL) {
 		d_fprintf(stderr, "ERROR: could not init g_lock context\n");
 		goto fail;
