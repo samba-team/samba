@@ -2324,9 +2324,22 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 
 		s->dest_dsa.ntds_guid	= r->out.ctr->ctr3.objects[0].guid;
 	} else if (*r->out.level_out == 2) {
-		if (r->out.ctr->ctr2.count != 1) {
-			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.error.extended_err));
+		if (DRSUAPI_DIRERR_OK != r->out.ctr->ctr2.dir_err) {
+			DEBUG(0,("DsAddEntry failed with: dir_err = %d, extended_err = %s",
+				 r->out.ctr->ctr2.dir_err,
+				 win_errstr(r->out.ctr->ctr2.extended_err)));
+			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.extended_err));
 			return;
+		}
+
+		if (1 != r->out.ctr->ctr2.count) {
+			DEBUG(0,("DsAddEntry: something very wrong had happened - "
+				 "method succeeded but objects returned are %d (expected 1). "
+				 "Errors: dir_err = %d, extended_err = %s",
+				 r->out.ctr->ctr2.count,
+				 r->out.ctr->ctr2.dir_err,
+				 win_errstr(r->out.ctr->ctr2.extended_err)));
+			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		}
 
 		s->dest_dsa.ntds_guid	= r->out.ctr->ctr2.objects[0].guid;
