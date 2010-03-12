@@ -1248,26 +1248,31 @@ interface drsuapi
 		[size_is(size)] uint8 *data;
 	} drsuapi_DsAddEntryExtraErrorBuffer;
 
+	/* Attribute errors
+	 * Ref: ATRERR_DRS_WIRE_V1, [MS-DRSR]: 4.1.1.1.11 */
 	typedef struct {
-		drsuapi_DsAddEntryErrorInfoX error;
+		uint32	dsid;
+		WERROR	extended_err;
+		uint32	extended_data;
+		uint16	problem;
 		drsuapi_DsAttributeId attid;
-		uint32 unknown2;
-		drsuapi_DsAddEntryExtraErrorBuffer buffer;
-	} drsuapi_DsAddEntryExtraError1;
+		boolean32 is_val_returned;
+		drsuapi_DsAttributeValue attr_val;
+	} drsuapi_DsAddEntry_AttrErr_V1;
 
 	typedef /*[noprint]*/ struct {
-		drsuapi_DsAddEntryErrorListItem1 *next;
-		drsuapi_DsAddEntryExtraError1 error;
-	} drsuapi_DsAddEntryErrorListItem1;
+		drsuapi_DsAddEntry_AttrErrListItem_V1 *next;
+		drsuapi_DsAddEntry_AttrErr_V1 err_data;
+	} drsuapi_DsAddEntry_AttrErrListItem_V1;
 
 	typedef struct {
 		drsuapi_DsReplicaObjectIdentifier *id;
-		WERROR status;
-		drsuapi_DsAddEntryErrorListItem1 first;
-	} drsuapi_DsAddEntryErrorInfo1;
+		uint32 count;
+		drsuapi_DsAddEntry_AttrErrListItem_V1 first;
+	} drsuapi_DsAddEntryErrorInfo_Attr_V1;
 
 	typedef [switch_type(uint32)] union {
-		[case(1)] drsuapi_DsAddEntryErrorInfo1 error1;
+		[case(1)] drsuapi_DsAddEntryErrorInfo_Attr_V1 attr_err;
 /*		[case(2)] drsuapi_DsAddEntryErrorInfo2 error2;
 		[case(3)] drsuapi_DsAddEntryErrorInfo3 error3;
 */		[case(4)] drsuapi_DsAddEntryErrorInfoX errorX;
