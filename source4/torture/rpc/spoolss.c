@@ -38,6 +38,8 @@
 #define TORTURE_WELLKNOWN_PRINTER_EX	"torture_wkn_printer_ex"
 #define TORTURE_PRINTER_EX		"torture_printer_ex"
 
+#define TOP_LEVEL_PRINTER_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
+
 struct test_spoolss_context {
 	/* print server handle */
 	struct policy_handle server_handle;
@@ -3178,122 +3180,6 @@ static bool test_DeletePrinterKey(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SetPrinterData(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
-				struct policy_handle *handle,
-				const char *value_name,
-				uint8_t *data,
-				uint32_t offered)
-{
-	struct spoolss_SetPrinterData r;
-
-	r.in.handle = handle;
-	r.in.value_name = value_name;
-	r.in.data = data;
-	r.in.offered = offered;
-
-	torture_comment(tctx, "Testing SetPrinterData(%s)\n",
-		r.in.value_name);
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_SetPrinterData(p, tctx, &r),
-		"SetPrinterData failed");
-	torture_assert_werr_ok(tctx, r.out.result,
-		"SetPrinterData failed");
-
-	return true;
-}
-
-static bool test_SetPrinterData_matrix(struct torture_context *tctx,
-				       struct dcerpc_pipe *p,
-				       struct policy_handle *handle)
-{
-	const char *values[] = {
-		"spootyfoot",
-		"spooty\\foot",
-#if 0
-	/* FIXME: not working with s3 atm. */
-		"spooty,foot",
-		"spooty,fo,ot",
-#endif
-		"spooty foot",
-#if 0
-	/* FIXME: not working with s3 atm. */
-		"spooty\\fo,ot",
-		"spooty,fo\\ot"
-#endif
-	};
-	int i;
-
-	for (i=0; i < ARRAY_SIZE(values); i++) {
-
-		enum winreg_Type type;
-		DATA_BLOB blob;
-		uint8_t *data;
-		uint32_t needed;
-
-		torture_assert(tctx,
-			reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
-					  "REG_SZ", "dog", &type, &blob), "");
-
-		torture_assert(tctx,
-			test_SetPrinterData(tctx, p, handle, values[i], blob.data, blob.length),
-			"SetPrinterData failed");
-
-		torture_assert(tctx,
-			test_GetPrinterData(tctx, p, handle, values[i], &type, &data, &needed),
-			"GetPrinterData failed");
-
-		torture_assert(tctx,
-			test_DeletePrinterData(tctx, p, handle, values[i]),
-			"DeletePrinterData failed");
-
-		torture_assert_int_equal(tctx, type, REG_SZ, "type mismatch");
-		torture_assert_int_equal(tctx, needed, blob.length, "size mismatch");
-		torture_assert_mem_equal(tctx, data, blob.data, blob.length, "buffer mismatch");
-	}
-
-	return true;
-}
-
-static bool test_EnumPrinterKey(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
-				struct policy_handle *handle,
-				const char *key_name,
-				const char ***array);
-
-static bool test_SetPrinterDataEx(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  struct policy_handle *handle,
-				  const char *key_name,
-				  const char *value_name,
-				  enum winreg_Type type,
-				  uint8_t *data,
-				  uint32_t offered)
-{
-	NTSTATUS status;
-	struct spoolss_SetPrinterDataEx r;
-
-	r.in.handle = handle;
-	r.in.key_name = key_name;
-	r.in.value_name = value_name;
-	r.in.type = type;
-	r.in.data = data;
-	r.in.offered = offered;
-
-	torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s) type: %s, offered: 0x%08x\n",
-		r.in.key_name, r.in.value_name, str_regtype(r.in.type), r.in.offered);
-
-	status = dcerpc_spoolss_SetPrinterDataEx(p, tctx, &r);
-
-	torture_assert_ntstatus_ok(tctx, status, "SetPrinterDataEx failed");
-	torture_assert_werr_ok(tctx, r.out.result, "SetPrinterDataEx failed");
-
-	return true;
-}
-
-#define TOP_LEVEL_PRINTER_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
-
 static bool test_winreg_OpenHKLM(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 struct policy_handle *handle)
@@ -3422,6 +3308,173 @@ bool test_winreg_QueryValue(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_winreg_query_printerdata(struct torture_context *tctx,
+					  struct dcerpc_pipe *p,
+					  struct policy_handle *handle,
+					  const char *printer_name,
+					  const char *key_name,
+					  const char *value_name,
+					  enum winreg_Type *w_type,
+					  uint32_t *w_size,
+					  uint32_t *w_length,
+					  uint8_t **w_data)
+{
+	const char *printer_key;
+	struct policy_handle key_handle;
+
+	printer_key = talloc_asprintf(tctx, "%s\\%s\\%s",
+		TOP_LEVEL_PRINTER_KEY, printer_name, key_name);
+
+	torture_assert(tctx,
+		test_winreg_OpenKey(tctx, p, handle, printer_key, &key_handle), "");
+
+	torture_assert(tctx,
+		test_winreg_QueryValue(tctx, p, &key_handle, value_name, w_type, w_size, w_length, w_data), "");
+
+	torture_assert(tctx,
+		test_winreg_CloseKey(tctx, p, &key_handle), "");
+
+	return true;
+}
+
+static bool test_SetPrinterData(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
+				const char *value_name,
+				enum winreg_Type type,
+				uint8_t *data,
+				uint32_t offered)
+{
+	struct spoolss_SetPrinterData r;
+
+	r.in.handle = handle;
+	r.in.value_name = value_name;
+	r.in.type = type;
+	r.in.data = data;
+	r.in.offered = offered;
+
+	torture_comment(tctx, "Testing SetPrinterData(%s)\n",
+		r.in.value_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_SetPrinterData(p, tctx, &r),
+		"SetPrinterData failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"SetPrinterData failed");
+
+	return true;
+}
+
+static bool test_SetPrinterData_matrix(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct policy_handle *handle,
+				       const char *printer_name,
+				       struct dcerpc_pipe *winreg_pipe,
+				       struct policy_handle *hive_handle)
+{
+	const char *values[] = {
+		"spootyfoot",
+		"spooty\\foot",
+#if 0
+	/* FIXME: not working with s3 atm. */
+		"spooty,foot",
+		"spooty,fo,ot",
+#endif
+		"spooty foot",
+#if 0
+	/* FIXME: not working with s3 atm. */
+		"spooty\\fo,ot",
+		"spooty,fo\\ot"
+#endif
+	};
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(values); i++) {
+
+		enum winreg_Type type;
+		DATA_BLOB blob;
+		uint8_t *data;
+		uint32_t needed;
+
+		torture_assert(tctx,
+			reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
+					  "REG_SZ", "dog", &type, &blob), "");
+
+		torture_assert(tctx,
+			test_SetPrinterData(tctx, p, handle, values[i], REG_SZ, blob.data, blob.length),
+			"SetPrinterData failed");
+
+		torture_assert(tctx,
+			test_GetPrinterData(tctx, p, handle, values[i], &type, &data, &needed),
+			"GetPrinterData failed");
+
+		torture_assert_int_equal(tctx, type, REG_SZ, "type mismatch");
+		torture_assert_int_equal(tctx, needed, blob.length, "size mismatch");
+		torture_assert_mem_equal(tctx, data, blob.data, blob.length, "buffer mismatch");
+
+		if (winreg_pipe && hive_handle) {
+
+			enum winreg_Type w_type;
+			uint32_t w_size;
+			uint32_t w_length;
+			uint8_t *w_data;
+
+			torture_assert(tctx,
+				test_winreg_query_printerdata(tctx, winreg_pipe, hive_handle,
+					printer_name, "PrinterDriverData", values[i],
+					&w_type, &w_size, &w_length, &w_data), "");
+
+			torture_assert_int_equal(tctx, w_type, REG_SZ, "winreg type mismatch");
+			torture_assert_int_equal(tctx, w_size, blob.length, "winreg size mismatch");
+			torture_assert_int_equal(tctx, w_length, blob.length, "winreg length mismatch");
+			torture_assert_mem_equal(tctx, w_data, blob.data, blob.length, "winreg buffer mismatch");
+		}
+
+		torture_assert(tctx,
+			test_DeletePrinterData(tctx, p, handle, values[i]),
+			"DeletePrinterData failed");
+	}
+
+	return true;
+}
+
+
+static bool test_EnumPrinterKey(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
+				const char *key_name,
+				const char ***array);
+
+static bool test_SetPrinterDataEx(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  const char *key_name,
+				  const char *value_name,
+				  enum winreg_Type type,
+				  uint8_t *data,
+				  uint32_t offered)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinterDataEx r;
+
+	r.in.handle = handle;
+	r.in.key_name = key_name;
+	r.in.value_name = value_name;
+	r.in.type = type;
+	r.in.data = data;
+	r.in.offered = offered;
+
+	torture_comment(tctx, "Testing SetPrinterDataEx(%s - %s) type: %s, offered: 0x%08x\n",
+		r.in.key_name, r.in.value_name, str_regtype(r.in.type), r.in.offered);
+
+	status = dcerpc_spoolss_SetPrinterDataEx(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, status, "SetPrinterDataEx failed");
+	torture_assert_werr_ok(tctx, r.out.result, "SetPrinterDataEx failed");
+
+	return true;
+}
+
 static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 					 struct dcerpc_pipe *p,
 					 struct policy_handle *handle,
@@ -3519,24 +3572,20 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		}
 
 		if (winreg_pipe && hive_handle) {
-			const char *printer_key;
-			struct policy_handle key_handle;
+
 			enum winreg_Type w_type;
-			uint32_t w_size, w_length;
+			uint32_t w_size;
+			uint32_t w_length;
 			uint8_t *w_data;
 
-			printer_key = talloc_asprintf(tctx, "%s\\%s\\%s",
-				TOP_LEVEL_PRINTER_KEY, printername, keys[i]);
-
-			torture_assert(tctx, test_winreg_OpenKey(tctx, winreg_pipe, hive_handle, printer_key, &key_handle), "");
-
 			torture_assert(tctx,
-				test_winreg_QueryValue(tctx, winreg_pipe, &key_handle, value_name, &w_type, &w_size, &w_length, &w_data), "");
-
-			test_winreg_CloseKey(tctx, winreg_pipe, &key_handle);
+				test_winreg_query_printerdata(tctx, winreg_pipe, hive_handle,
+					printername, keys[i], value_name,
+					&w_type, &w_size, &w_length, &w_data), "");
 
 			torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
 			torture_assert_int_equal(tctx, w_size, offered, "winreg size mismatch");
+			torture_assert_int_equal(tctx, w_length, offered, "winreg length mismatch");
 			torture_assert_mem_equal(tctx, w_data, data.data, offered, "winreg buffer mismatch");
 		}
 
@@ -3598,7 +3647,8 @@ static bool test_PrinterData_winreg(struct torture_context *tctx,
 
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, p2, &hive_handle), "");
 
-	ret = test_SetPrinterDataEx_matrix(tctx, p, handle, printer_name, p2, &hive_handle);
+	ret &= test_SetPrinterData_matrix(tctx, p, handle, printer_name, p2, &hive_handle);
+	ret &= test_SetPrinterDataEx_matrix(tctx, p, handle, printer_name, p2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, p2, &hive_handle);
 
@@ -4016,7 +4066,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SetPrinterData_matrix(tctx, p, &handle)) {
+	if (!test_SetPrinterData_matrix(tctx, p, &handle, name, NULL, NULL)) {
 		ret = false;
 	}
 
