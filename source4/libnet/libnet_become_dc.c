@@ -2285,7 +2285,10 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 	}
 
 	if (*r->out.level_out == 3) {
-		if (r->out.ctr->ctr3.count != 1) {
+		union drsuapi_DsAddEntry_ErrData *err_data = r->out.ctr->ctr3.err_data;
+
+		/* check for errors */
+		if (err_data) {
 			WERROR status;
 
 			if (r->out.ctr->ctr3.err_ver != 1) {
@@ -2293,28 +2296,45 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				return;
 			}
 
-			if (!r->out.ctr->ctr3.err_data) {
-				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
-				return;
-			}
+			status = err_data->v1.status;
 
-			status = r->out.ctr->ctr3.err_data->v1.status;
+			DEBUG(0,("DsAddEntry (Ctr3) failed: "
+				 "Errors: dir_err = %d, status = %s",
+				 err_data->v1.dir_err,
+				 win_errstr(err_data->v1.status)));
 
-			if (!r->out.ctr->ctr3.err_data->v1.info) {
+			if (!err_data->v1.info) {
 				composite_error(c, werror_to_ntstatus(status));
 				return;
 			}
 
-			/* see if we can get a more detailed error */
+			/* dump more detailed error */
 			switch (r->out.ctr->ctr3.err_data->v1.dir_err) {
-			case 1:
-				status = r->out.ctr->ctr3.err_data->v1.info->error1.status;
+			case DRSUAPI_DIRERR_OK: /* mute compiler warnings */
 				break;
-			case 4:
-			case 5:
-			case 6:
-			case 7:
-				status = r->out.ctr->ctr3.err_data->v1.info->errorX.extended_err;
+			case DRSUAPI_DIRERR_ATTRIBUTE:
+				/* TODO: Dump attribute errors */
+				break;
+			case DRSUAPI_DIRERR_NAME:
+				/* TODO: Dump Name resolution error.*/
+				break;
+			case DRSUAPI_DIRERR_REFERRAL:
+				/* TODO: Referral. */
+				break;
+			case DRSUAPI_DIRERR_SECURITY:
+				/* TODO: Dump Security error. */
+				break;
+			case DRSUAPI_DIRERR_SERVICE:
+				/* TODO: Dump Service error. */
+				break;
+			case DRSUAPI_DIRERR_UPDATE:
+				/* TODO: Dump Update error. */
+				break;
+			case DRSUAPI_DIRERR_SYSTEM:
+				/* TODO: System error. */
+				break;
+			default:
+				DEBUGADD(0,(" Unknown DIRERR error class returned!"));
 				break;
 			}
 
@@ -2322,7 +2342,15 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			return;
 		}
 
+		if (1 != r->out.ctr->ctr3.count) {
+			DEBUG(0,("DsAddEntry - Ctr3: something very wrong had happened - "
+				 "method succeeded but objects returned are %d (expected 1). ",
+				 r->out.ctr->ctr3.count));
+			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		}
+
 		s->dest_dsa.ntds_guid	= r->out.ctr->ctr3.objects[0].guid;
+
 	} else if (*r->out.level_out == 2) {
 		if (DRSUAPI_DIRERR_OK != r->out.ctr->ctr2.dir_err) {
 			DEBUG(0,("DsAddEntry failed with: dir_err = %d, extended_err = %s",
