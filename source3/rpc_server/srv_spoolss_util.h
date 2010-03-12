@@ -82,4 +82,28 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 				 uint8_t **data,
 				 uint32_t *data_size);
 
+/**
+ * @internal
+ *
+ * @brief Enumerate on the values of a given key and provide the data.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  key      The key of the printer data to get the value.
+ *
+ * @param[out] pnum_values A pointer to store the number of values we found.
+ *
+ * @param[out] penum_values A pointer to store the values and its data.
+ *
+ * @return                   WERR_OK on success, the corresponding DOS error
+ *                           code if something gone wrong.
+ */
+WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
+				  const char *printer,
+				  const char *key,
+				  uint32_t *pnum_values,
+				  struct spoolss_PrinterEnumValues **penum_values);
+
 #endif /* _SRV_SPOOLSS_UITL_H */

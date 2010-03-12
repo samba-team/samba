@@ -24,6 +24,10 @@
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
 
+/********************************************************************
+ static helper functions
+********************************************************************/
+
 /**
  * @internal
  *
@@ -165,6 +169,170 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+/**
+ * @internal
+ *
+ * @brief Enumerate values of an opened key handle and retrieve the data.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  pipe_handle The pipe handle for the rpc connection.
+ *
+ * @param[in]  key_hnd  The opened key handle.
+ *
+ * @param[out] pnum_values A pointer to store he number of values found.
+ *
+ * @param[out] pnum_values A pointer to store the number of values we found.
+ *
+ * @return                   WERR_OK on success, the corresponding DOS error
+ *                           code if something gone wrong.
+ */
+static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
+					struct rpc_pipe_client *pipe_handle,
+					struct policy_handle *key_hnd,
+					uint32_t *pnum_values,
+					struct spoolss_PrinterEnumValues **penum_values)
+{
+	TALLOC_CTX *tmp_ctx;
+	uint32_t num_subkeys, max_subkeylen, max_classlen;
+	uint32_t num_values, max_valnamelen, max_valbufsize;
+	uint32_t secdescsize;
+	uint32_t i;
+	NTTIME last_changed_time;
+	struct winreg_String classname;
+
+	struct spoolss_PrinterEnumValues *enum_values;
+
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(classname);
+
+	status = rpccli_winreg_QueryInfoKey(pipe_handle,
+					    tmp_ctx,
+					    key_hnd,
+					    &classname,
+					    &num_subkeys,
+					    &max_subkeylen,
+					    &max_classlen,
+					    &num_values,
+					    &max_valnamelen,
+					    &max_valbufsize,
+					    &secdescsize,
+					    &last_changed_time,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_enumvalues: Could not query info: %s\n",
+			  nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto error;
+		}
+		result = ntstatus_to_werror(status);
+		goto error;
+	}
+
+	if (num_values == 0) {
+		*pnum_values = 0;
+		TALLOC_FREE(tmp_ctx);
+		return WERR_OK;
+	}
+
+	enum_values = TALLOC_ARRAY(tmp_ctx, struct spoolss_PrinterEnumValues, num_values);
+	if (enum_values == NULL) {
+		result = WERR_NOMEM;
+		goto error;
+	}
+
+	for (i = 0; i < num_values; i++) {
+		struct spoolss_PrinterEnumValues val;
+		struct winreg_ValNameBuf name_buf;
+		enum winreg_Type type = REG_NONE;
+		uint8_t *data = NULL;
+		uint32_t data_size;
+		uint32_t length;
+		char n = '\0';;
+
+		name_buf.name = &n;
+		name_buf.size = max_valnamelen + 2;
+		name_buf.length = 0;
+
+		data_size = max_valbufsize;
+		data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+		length = 0;
+
+		status = rpccli_winreg_EnumValue(pipe_handle,
+						 tmp_ctx,
+						 key_hnd,
+						 i,
+						 &name_buf,
+						 &type,
+						 data,
+						 &data_size,
+						 &length,
+						 &result);
+		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+			result = WERR_OK;
+			status = NT_STATUS_OK;
+			break;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("winreg_printer_enumvalues: Could not enumerate values: %s\n",
+				  nt_errstr(status)));
+			if (!W_ERROR_IS_OK(result)) {
+				goto error;
+			}
+			result = ntstatus_to_werror(status);
+			goto error;
+		}
+
+		if (name_buf.name == NULL) {
+			result = WERR_INVALID_PARAMETER;
+			goto error;
+		}
+
+		val.value_name = talloc_strdup(enum_values, name_buf.name);
+		if (val.value_name == NULL) {
+			result = WERR_NOMEM;
+			goto error;
+		}
+		val.value_name_len = strlen_m_term(val.value_name) * 2;
+
+		val.type = type;
+		val.data_length = data_size;
+		if (val.data_length) {
+			val.data = talloc(enum_values, DATA_BLOB);
+			if (val.data == NULL) {
+				result = WERR_NOMEM;
+				goto error;
+			}
+			*val.data = data_blob_talloc(enum_values, data, data_size);
+		}
+
+		enum_values[i] = val;
+	}
+
+	*pnum_values = num_values;
+	if (penum_values) {
+		*penum_values = talloc_move(mem_ctx, &enum_values);
+	}
+
+	result = WERR_OK;
+
+ error:
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/********************************************************************
+ Public winreg function for spoolss
+********************************************************************/
 
 /* Set printer data over the winreg pipe. */
 WERROR winreg_set_printer_dataex(struct pipes_struct *p,
@@ -341,6 +509,78 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 	*data_size = data_in_size;
 	if (data_in_size) {
 		*data = talloc_move(p->mem_ctx, &data_in);
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/* Enumerate on the values of a given key and provide the data. */
+WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
+				  const char *printer,
+				  const char *key,
+				  uint32_t *pnum_values,
+				  struct spoolss_PrinterEnumValues **penum_values)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+
+	struct spoolss_PrinterEnumValues *enum_values = NULL;
+	uint32_t num_values = 0;
+
+	WERROR result = WERR_OK;
+
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					p->server_info,
+					&winreg_pipe,
+					printer,
+					key,
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_enum_printer_dataex: Could not open key %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_enumvalues(tmp_ctx,
+					   winreg_pipe,
+					   &key_hnd,
+					   &num_values,
+					   &enum_values);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_enum_printer_dataex: Could not enumerate values in %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
+	*pnum_values = num_values;
+	if (penum_values) {
+		*penum_values = talloc_move(p->mem_ctx, &enum_values);
 	}
 
 	result = WERR_OK;
