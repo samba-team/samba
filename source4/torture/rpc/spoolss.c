@@ -3180,10 +3180,34 @@ static bool test_DeletePrinterKey(struct torture_context *tctx,
 
 static bool test_SetPrinterData(struct torture_context *tctx,
 				struct dcerpc_pipe *p,
-				struct policy_handle *handle)
+				struct policy_handle *handle,
+				const char *value_name,
+				uint8_t *data,
+				uint32_t offered)
 {
-	NTSTATUS status;
 	struct spoolss_SetPrinterData r;
+
+	r.in.handle = handle;
+	r.in.value_name = value_name;
+	r.in.data = data;
+	r.in.offered = offered;
+
+	torture_comment(tctx, "Testing SetPrinterData(%s)\n",
+		r.in.value_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_SetPrinterData(p, tctx, &r),
+		"SetPrinterData failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"SetPrinterData failed");
+
+	return true;
+}
+
+static bool test_SetPrinterData_matrix(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct policy_handle *handle)
+{
 	const char *values[] = {
 		"spootyfoot",
 		"spooty\\foot",
@@ -3204,38 +3228,29 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 	for (i=0; i < ARRAY_SIZE(values); i++) {
 
 		enum winreg_Type type;
-		uint8_t *data;
 		DATA_BLOB blob;
+		uint8_t *data;
 		uint32_t needed;
 
 		torture_assert(tctx,
 			reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
-					  "REG_SZ", "dog", &r.in.type, &blob), "");
+					  "REG_SZ", "dog", &type, &blob), "");
 
-		r.in.handle = handle;
-		r.in.value_name = values[i];
-		r.in.data = blob.data;
-		r.in.offered = blob.length;
+		torture_assert(tctx,
+			test_SetPrinterData(tctx, p, handle, values[i], blob.data, blob.length),
+			"SetPrinterData failed");
 
-		torture_comment(tctx, "Testing SetPrinterData(%s)\n",
-			r.in.value_name);
+		torture_assert(tctx,
+			test_GetPrinterData(tctx, p, handle, values[i], &type, &data, &needed),
+			"GetPrinterData failed");
 
-		status = dcerpc_spoolss_SetPrinterData(p, tctx, &r);
+		torture_assert(tctx,
+			test_DeletePrinterData(tctx, p, handle, values[i]),
+			"DeletePrinterData failed");
 
-		torture_assert_ntstatus_ok(tctx, status, "SetPrinterData failed");
-		torture_assert_werr_ok(tctx, r.out.result, "SetPrinterData failed");
-
-		if (!test_GetPrinterData(tctx, p, handle, r.in.value_name, &type, &data, &needed)) {
-			return false;
-		}
-
-		torture_assert_int_equal(tctx, r.in.type, type, "type mismatch");
-		torture_assert_int_equal(tctx, r.in.offered, needed, "size mismatch");
-		torture_assert_mem_equal(tctx, blob.data, data, needed, "buffer mismatch");
-
-		if (!test_DeletePrinterData(tctx, p, handle, r.in.value_name)) {
-			return false;
-		}
+		torture_assert_int_equal(tctx, type, REG_SZ, "type mismatch");
+		torture_assert_int_equal(tctx, needed, blob.length, "size mismatch");
+		torture_assert_mem_equal(tctx, data, blob.data, blob.length, "buffer mismatch");
 	}
 
 	return true;
@@ -4001,7 +4016,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SetPrinterData(tctx, p, &handle)) {
+	if (!test_SetPrinterData_matrix(tctx, p, &handle)) {
 		ret = false;
 	}
 
