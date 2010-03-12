@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   global locks based on ctdb
+   global locks based on dbwrap and messaging
    Copyright (C) 2009 by Volker Lendecke
 
    This program is free software; you can redistribute it and/or modify
