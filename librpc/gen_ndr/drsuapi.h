@@ -787,7 +787,7 @@ struct drsuapi_DsGetMembershipsRequest1 {
 	uint32_t count;/* [range(1,10000)] */
 	struct drsuapi_DsReplicaObjectIdentifier **info_array;/* [unique,size_is(count)] */
 	uint32_t flags;
-	enum drsuapi_DsMembershipType type;
+	enum drsuapi_DsMembershipType type;/* [range(1,7)] */
 	struct drsuapi_DsReplicaObjectIdentifier *domain;/* [unique] */
 };
 

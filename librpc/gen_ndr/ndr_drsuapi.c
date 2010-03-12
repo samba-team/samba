@@ -4992,6 +4992,9 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMembershipsRequest1(struct ndr_pu
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_drsuapi_DsMembershipType(ndr, NDR_SCALARS, &r->type));
+		if (r->type < 1 || r->type > 7) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 		if (_ptr_domain) {
 			NDR_PULL_ALLOC(ndr, r->domain);
