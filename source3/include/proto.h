@@ -6752,7 +6752,7 @@ uint32_t map_canon_ace_perms(int snum,
                                 enum security_ace_type *pacl_type,
                                 mode_t perms,
                                 bool directory_ace);
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
+NTSTATUS unpack_nt_owners(connection_struct *conn, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
@@ -7116,6 +7116,11 @@ void become_root(void);
 void unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
 bool unbecome_user(void);
+uid_t get_current_uid(connection_struct *conn);
+gid_t get_current_gid(connection_struct *conn);
+const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn);
+const NT_USER_TOKEN *get_current_nttok(connection_struct *conn);
+uint16_t get_current_vuid(connection_struct *conn);
 
 /* The following definitions come from smbd/utmp.c  */
 
