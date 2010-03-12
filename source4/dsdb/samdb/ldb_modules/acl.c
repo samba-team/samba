@@ -118,9 +118,9 @@ static int acl_module_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(ldb, mem_ctx, &res,
-			 ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
-			 LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_module_search_dn(module, mem_ctx, &res,
+				    ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
+				    attrs, 0);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -652,8 +652,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
 	}
-	ret = ldb_search(ldb, req, &acl_res, req->op.mod.message->dn,
-			 LDB_SCOPE_BASE, acl_attrs, NULL);
+	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.mod.message->dn,
+				    acl_attrs, 0);
 
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -845,9 +845,8 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 	ldb = ldb_module_get_ctx(module);
 
-	/* TODO search to include deleted objects */
-	ret = ldb_search(ldb, req, &acl_res, req->op.rename.olddn,
-			 LDB_SCOPE_BASE, acl_attrs, NULL);
+	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.rename.olddn,
+				    acl_attrs, DSDB_SEARCH_SHOW_DELETED);
 	/* we sould be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",
@@ -992,7 +991,8 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		    || ac->allowedChildClassesEffective
 		    || ac->allowedAttributesEffective
 		    || ac->sDRightsEffective) {
-			ret = ldb_search(ldb, ac, &acl_res, ares->message->dn, LDB_SCOPE_BASE, acl_attrs, NULL);
+			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
+						    acl_attrs, 0);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
