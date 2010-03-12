@@ -442,7 +442,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
 	struct GUID search_guid;
 	const char *attrs[] = {"msDS-EnabledFeature", NULL};
 	int ret;
-	int i;
+	unsigned int i;
 	struct ldb_message_element *el;
 
 	*feature_enabled = false;
