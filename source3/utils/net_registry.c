@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "utils/net_registry_util.h"
+#include "include/g_lock.h"
 
 
 /*
@@ -385,6 +386,102 @@ done:
 	return ret;
 }
 
+struct net_registry_increment_state {
+	const char *keyname;
+	const char *valuename;
+	uint32_t increment;
+	uint32_t newvalue;
+	WERROR werr;
+};
+
+static void net_registry_increment_fn(void *private_data)
+{
+	struct net_registry_increment_state *state =
+		(struct net_registry_increment_state *)private_data;
+	struct registry_value *value;
+	struct registry_key *key = NULL;
+
+	state->werr = open_key(talloc_tos(), state->keyname,
+			       REG_KEY_READ|REG_KEY_WRITE, &key);
+	if (!W_ERROR_IS_OK(state->werr)) {
+		d_fprintf(stderr, _("open_key failed: %s\n"),
+			  win_errstr(state->werr));
+		goto done;
+	}
+
+	state->werr = reg_queryvalue(key, key, state->valuename, &value);
+	if (!W_ERROR_IS_OK(state->werr)) {
+		d_fprintf(stderr, _("reg_queryvalue failed: %s\n"),
+			  win_errstr(state->werr));
+		goto done;
+	}
+
+	if (value->type != REG_DWORD) {
+		d_fprintf(stderr, _("value not a DWORD: %s\n"),
+			  reg_type_lookup(value->type));
+		goto done;
+	}
+
+	value->v.dword += state->increment;
+	state->newvalue = value->v.dword;
+
+	state->werr = reg_setvalue(key, state->valuename, value);
+	if (!W_ERROR_IS_OK(state->werr)) {
+		d_fprintf(stderr, _("reg_setvalue failed: %s\n"),
+			  win_errstr(state->werr));
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(key);
+	return;
+}
+
+static int net_registry_increment(struct net_context *c, int argc,
+				  const char **argv)
+{
+	struct net_registry_increment_state state;
+	NTSTATUS status;
+	int ret = -1;
+
+	if (argc < 2 || c->display_usage) {
+		d_fprintf(stderr, "%s\n%s",
+			  _("Usage:"),
+			  _("net registry increment <key> <valuename> "
+			    "[<increment>]\n"));
+		goto done;
+	}
+
+	state.keyname = argv[0];
+	state.valuename = argv[1];
+
+	state.increment = 1;
+	if (argc == 3) {
+		state.increment = strtoul(argv[2], NULL, 10);
+	}
+
+	status = g_lock_do("registry_increment_lock", G_LOCK_WRITE,
+			   timeval_set(600, 0),
+			   net_registry_increment_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("g_lock_do failed: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(state.werr)) {
+		d_fprintf(stderr, _("increment failed: %s\n"),
+			  win_errstr(state.werr));
+		goto done;
+	}
+
+	d_printf(_("%u\n"), (unsigned)state.newvalue);
+
+	ret = 0;
+
+done:
+	return ret;
+}
+
 static int net_registry_deletevalue(struct net_context *c, int argc,
 				    const char **argv)
 {
@@ -667,6 +764,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Set a new registry value"),
 			N_("net registry setvalue\n"
 			   "    Set a new registry value")
+		},
+		{
+			"increment",
+			net_registry_increment,
+			NET_TRANSPORT_LOCAL,
+			N_("Increment a DWORD registry value under a lock"),
+			N_("net registry increment\n"
+			   "    Increment a DWORD registry value under a lock")
 		},
 		{
 			"deletevalue",
