@@ -251,6 +251,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 {
 	struct spoolss_OpenPrinter r;
 	const char *printername;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
 
@@ -268,7 +269,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing OpenPrinter(%s)\n", r.in.printername);
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_OpenPrinter(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_OpenPrinter_r(b, tctx, &r),
 		"OpenPrinter failed");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"OpenPrinter failed");
@@ -323,7 +324,7 @@ static struct spoolss_NotifyOption *setup_printer_NotifyOption(struct torture_co
 
 
 static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tctx,
-						      struct dcerpc_pipe *p,
+						      struct dcerpc_binding_handle *b,
 						      struct policy_handle *handle,
 						      const char *address,
 						      struct spoolss_NotifyOption *option)
@@ -339,7 +340,7 @@ static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tc
 	r.in.notify_options = option;
 	r.in.handle = handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx_r(b, tctx, &r),
 		"RemoteFindFirstPrinterChangeNotifyEx failed");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"error return code for RemoteFindFirstPrinterChangeNotifyEx");
@@ -348,7 +349,7 @@ static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tc
 }
 
 static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
-						  struct dcerpc_pipe *p,
+						  struct dcerpc_binding_handle *b,
 						  struct policy_handle *handle,
 						  struct spoolss_NotifyOption *options)
 {
@@ -362,7 +363,7 @@ static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
 	r.in.options = options;
 	r.out.info = &info;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RouterRefreshPrinterChangeNotify(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RouterRefreshPrinterChangeNotify_r(b, tctx, &r),
 		"RouterRefreshPrinterChangeNotify failed");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"error return code for RouterRefreshPrinterChangeNotify");
@@ -371,7 +372,7 @@ static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
 }
 
 static bool test_ClosePrinter(struct torture_context *tctx,
-			      struct dcerpc_pipe *p,
+			      struct dcerpc_binding_handle *b,
 			      struct policy_handle *handle)
 {
 	struct spoolss_ClosePrinter r;
@@ -381,7 +382,7 @@ static bool test_ClosePrinter(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing ClosePrinter\n");
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_ClosePrinter(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_ClosePrinter_r(b, tctx, &r),
 		"ClosePrinter failed");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"ClosePrinter failed");
@@ -399,8 +400,9 @@ static bool test_SetPrinter(struct torture_context *tctx,
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
+	torture_assert(tctx, test_GetPrinter_level(tctx, b, handle, 2, &info), "");
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
@@ -436,7 +438,7 @@ static bool test_SetPrinter(struct torture_context *tctx,
 	r.in.secdesc_ctr = &secdesc_ctr;
 	r.in.command = 0;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r), "SetPrinter failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter_r(b, tctx, &r), "SetPrinter failed");
 	torture_assert_werr_ok(tctx, r.out.result, "SetPrinter failed");
 
 	return true;
@@ -514,6 +516,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 #if 0
 	struct spoolss_NotifyOption *printer_option = setup_printer_NotifyOption(tctx);
 #endif
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	received_packets = NULL;
 
@@ -521,13 +524,13 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert(tctx, test_start_dcerpc_server(tctx, p->conn->event_ctx, &dce_ctx, &address), "");
 
 	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle, NULL), "");
-	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, p, &handle, address, server_option), "");
+	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, b, &handle, address, server_option), "");
 	torture_assert(tctx, received_packets, "no packets received");
 	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
 		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
-	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, NULL), "");
-	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, server_option), "");
-	torture_assert(tctx, test_ClosePrinter(tctx, p, &handle), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, NULL), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, server_option), "");
+	torture_assert(tctx, test_ClosePrinter(tctx, b, &handle), "");
 	tmp = last_packet(received_packets);
 	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
 		"no ReplyClosePrinter packet after ClosePrinter");
@@ -563,6 +566,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	struct spoolss_ReplyOpenPrinter r;
 	struct spoolss_ReplyClosePrinter s;
 	struct policy_handle h;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
 		torture_skip(tctx, "skipping ReplyOpenPrinter server implementation test against s3\n");
@@ -576,7 +580,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	r.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyOpenPrinter(p, tctx, &r),
+			dcerpc_spoolss_ReplyOpenPrinter_r(b, tctx, &r),
 			"spoolss_ReplyOpenPrinter call failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "error return code");
@@ -585,7 +589,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	s.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyClosePrinter(p, tctx, &s),
+			dcerpc_spoolss_ReplyClosePrinter_r(b, tctx, &s),
 			"spoolss_ReplyClosePrinter call failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "error return code");
