@@ -700,3 +700,67 @@ NTSTATUS g_lock_get(struct g_lock_ctx *ctx, const char *name,
 	}
 	return NT_STATUS_OK;
 }
+
+static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
+			    struct tevent_context **pev,
+			    struct messaging_context **pmsg,
+			    struct g_lock_ctx **pg_ctx)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *g_ctx = NULL;
+
+	ev = tevent_context_init(mem_ctx);
+	if (ev == NULL) {
+		d_fprintf(stderr, "ERROR: could not init event context\n");
+		goto fail;
+	}
+	msg = messaging_init(mem_ctx, procid_self(), ev);
+	if (msg == NULL) {
+		d_fprintf(stderr, "ERROR: could not init messaging context\n");
+		goto fail;
+	}
+	g_ctx = g_lock_ctx_init(mem_ctx, msg);
+	if (g_ctx == NULL) {
+		d_fprintf(stderr, "ERROR: could not init g_lock context\n");
+		goto fail;
+	}
+
+	*pev = ev;
+	*pmsg = msg;
+	*pg_ctx = g_ctx;
+	return true;
+fail:
+	TALLOC_FREE(g_ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return false;
+}
+
+NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
+		   struct timeval timeout,
+		   void (*fn)(void *private_data), void *private_data)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *g_ctx = NULL;
+	NTSTATUS status;
+
+	if (!g_lock_init_all(talloc_tos(), &ev, &msg, &g_ctx)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	status = g_lock_lock(g_ctx, name, lock_type, timeout);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	fn(private_data);
+	g_lock_unlock(g_ctx, name);
+
+done:
+	TALLOC_FREE(g_ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return status;
+}
