@@ -1203,6 +1203,20 @@ interface drsuapi
 	 */
 	const char *DRSUAPI_NTDSDSA_KRB5_SERVICE_GUID = "E3514235-4B06-11D1-AB04-00C04FC2DCD2";
 
+	/* Error codes to classify an error that occurs
+	 * during a search for, or the update of,
+	 * a directory object */
+	typedef [v1_enum] enum {
+		DRSUAPI_DIRERR_OK         = 0,
+		DRSUAPI_DIRERR_ATTRIBUTE  = 1,
+		DRSUAPI_DIRERR_NAME       = 2,
+		DRSUAPI_DIRERR_REFERRAL   = 3,
+		DRSUAPI_DIRERR_SECURITY   = 4,
+		DRSUAPI_DIRERR_SERVICE    = 5,
+		DRSUAPI_DIRERR_UPDATE     = 6,
+		DRSUAPI_DIRERR_SYSTEM     = 7
+	} drsuapi_DsAddEntry_DirErr;
+
 	/*
 	 * please note the the current idl
 	 * for DsAddEntry does only parse
