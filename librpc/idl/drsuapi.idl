@@ -1278,13 +1278,13 @@ interface drsuapi
 
 	typedef struct {
 		WERROR status;
-		uint32 level;
-		[switch_is(level)] drsuapi_DsAddEntryErrorInfo *info;
-	} drsuapi_DsAddEntryError1;
+		drsuapi_DsAddEntry_DirErr dir_err;
+		[switch_is(dir_err)] drsuapi_DsAddEntryErrorInfo *info;
+	} drsuapi_DsAddEntry_ErrData_V1;
 
 	typedef [switch_type(uint32)] union {
-		[case(1)] drsuapi_DsAddEntryError1 info1;
-	} drsuapi_DsAddEntryError;
+		[case(1)] drsuapi_DsAddEntry_ErrData_V1 v1;
+	} drsuapi_DsAddEntry_ErrData;
 
 	typedef struct {
 		GUID guid;
@@ -1304,8 +1304,8 @@ interface drsuapi
 
 	typedef struct {
 		drsuapi_DsReplicaObjectIdentifier *id;
-		uint32 level;
-		[switch_is(level)] drsuapi_DsAddEntryError *error;
+		uint32 err_ver;	/* Must be 1 */
+		[switch_is(err_ver)] drsuapi_DsAddEntry_ErrData *err_data;
 		[range(0,10000)] uint32 count;
 		[size_is(count)] drsuapi_DsReplicaObjectIdentifier2 *objects;
 	} drsuapi_DsAddEntryCtr3;
