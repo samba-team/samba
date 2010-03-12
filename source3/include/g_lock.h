@@ -43,6 +43,10 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name);
 NTSTATUS g_lock_get(struct g_lock_ctx *ctx, const char *name,
 		struct server_id *pid);
 
+NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
+		   struct timeval timeout,
+		   void (*fn)(void *private_data), void *private_data);
+
 int g_lock_locks(struct g_lock_ctx *ctx,
 		 int (*fn)(const char *name, void *private_data),
 		 void *private_data);
