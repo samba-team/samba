@@ -2958,7 +2958,8 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 
 static bool test_GetPrinterData_list(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
-				     struct policy_handle *handle)
+				     struct policy_handle *handle,
+				     const char **architecture)
 {
 	const char *list[] = {
 		"W3SvcInstalled",
@@ -2989,6 +2990,13 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, type, type_ex, "type mismatch");
 		torture_assert_int_equal(tctx, needed, needed_ex, "needed mismatch");
 		torture_assert_mem_equal(tctx, data, data_ex, needed, "data mismatch");
+
+		if (strequal(list[i], "Architecture")) {
+			if (architecture) {
+				DATA_BLOB blob = data_blob_const(data, needed);
+				*architecture = reg_val_data_string(tctx, lp_iconv_convenience(tctx->lp_ctx), REG_SZ, blob);
+			}
+		}
 	}
 
 	return true;
@@ -4928,7 +4936,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ctx = talloc_zero(torture, struct test_spoolss_context);
 
 	ret &= test_OpenPrinter_server(torture, p, &ctx->server_handle);
-	ret &= test_GetPrinterData_list(torture, p, &ctx->server_handle);
+	ret &= test_GetPrinterData_list(torture, p, &ctx->server_handle, &environment);
 	ret &= test_EnumForms(torture, p, &ctx->server_handle, true);
 	ret &= test_AddForm(torture, p, &ctx->server_handle, true);
 	ret &= test_EnumPorts(torture, p, ctx);
