@@ -39,7 +39,7 @@ struct test_spoolss_win_context {
 
 /* This is a convenience function for all OpenPrinterEx calls */
 static bool test_OpenPrinterEx(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
 				const char *printer_name,
 				uint32_t access_mask)
@@ -66,7 +66,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	ul_1.minor			= 3;
 	ul_1.processor			= 4567;
 
-	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &op);
+	status = dcerpc_spoolss_OpenPrinterEx_r(b, tctx, &op);
 	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
 	torture_assert_werr_ok(tctx, op.out.result, "OpenPrinterEx failed");
 
@@ -74,7 +74,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 }
 
 static bool test_OpenPrinterAsAdmin(struct torture_context *tctx,
-					struct dcerpc_pipe *p,
+					struct dcerpc_binding_handle *b,
 					const char *printername)
 {
 	NTSTATUS status;
@@ -105,10 +105,10 @@ static bool test_OpenPrinterAsAdmin(struct torture_context *tctx,
 	torture_comment(tctx, "Testing OpenPrinterEx(%s) with admin rights\n",
 			op.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &op);
+	status = dcerpc_spoolss_OpenPrinterEx_r(b, tctx, &op);
 
 	if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(op.out.result)) {
-		status = dcerpc_spoolss_ClosePrinter(p, tctx, &cp);
+		status = dcerpc_spoolss_ClosePrinter_r(b, tctx, &cp);
 		torture_assert_ntstatus_ok(tctx, status, "ClosePrinter failed");
 	}
 
@@ -117,7 +117,7 @@ static bool test_OpenPrinterAsAdmin(struct torture_context *tctx,
 
 
 static bool test_ClosePrinter(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle);
 
 /* This replicates the opening sequence of OpenPrinterEx calls XP does */
@@ -128,27 +128,28 @@ static bool test_OpenPrinterSequence(struct torture_context *tctx,
 	bool ret;
 	char *printername = talloc_asprintf(tctx, "\\\\%s",
 			dcerpc_server_name(p));
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	/* First, see if we can open the printer read_only */
-	ret = test_OpenPrinterEx(tctx, p, handle, printername, 0);
+	ret = test_OpenPrinterEx(tctx, b, handle, printername, 0);
 	torture_assert(tctx, ret == true, "OpenPrinterEx failed.");
 
-	ret = test_ClosePrinter(tctx, p, handle);
+	ret = test_ClosePrinter(tctx, b, handle);
 	torture_assert(tctx, ret, "ClosePrinter failed");
 
 	/* Now let's see if we have admin rights to it. */
-	ret = test_OpenPrinterAsAdmin(tctx, p, printername);
+	ret = test_OpenPrinterAsAdmin(tctx, b, printername);
 	torture_assert(tctx, ret == true,
 			"OpenPrinterEx as admin failed unexpectedly.");
 
-	ret = test_OpenPrinterEx(tctx, p, handle, printername, SERVER_EXECUTE);
+	ret = test_OpenPrinterEx(tctx, b, handle, printername, SERVER_EXECUTE);
 	torture_assert(tctx, ret == true, "OpenPrinterEx failed.");
 
 	return true;
 }
 
 static bool test_GetPrinterData(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
 				const char *value_name,
 				WERROR expected_werr,
@@ -168,7 +169,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	gpd.out.type = &type;
 	gpd.out.data = data;
 
-	status = dcerpc_spoolss_GetPrinterData(p, tctx, &gpd);
+	status = dcerpc_spoolss_GetPrinterData_r(b, tctx, &gpd);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed.");
 	torture_assert_werr_equal(tctx, gpd.out.result, expected_werr,
 			"GetPrinterData did not return expected error value.");
@@ -193,6 +194,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	uint32_t needed;
 	uint32_t count;
 	union spoolss_PrinterInfo *info;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ep.in.flags = PRINTER_ENUM_NAME;
 	ep.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
@@ -203,14 +205,14 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	ep.out.count = &count;
 	ep.out.info = &info;
 
-	status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
+	status = dcerpc_spoolss_EnumPrinters_r(b, ctx, &ep);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed.");
 
 	if (W_ERROR_EQUAL(ep.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		blob = data_blob_talloc_zero(ctx, needed);
 		ep.in.buffer = &blob;
 		ep.in.offered = needed;
-		status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
+		status = dcerpc_spoolss_EnumPrinters_r(b, ctx, &ep);
 		torture_assert_ntstatus_ok(tctx, status,"EnumPrinters failed.");
 	}
 
@@ -225,7 +227,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 }
 
 static bool test_GetPrinter(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
 				struct test_spoolss_win_context *ctx,
 				uint32_t level,
@@ -244,14 +246,14 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	gp.in.offered = initial_blob_size;
 	gp.out.needed = &needed;
 
-	status = dcerpc_spoolss_GetPrinter(p, tctx, &gp);
+	status = dcerpc_spoolss_GetPrinter_r(b, tctx, &gp);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 
 	if (W_ERROR_EQUAL(gp.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		blob = data_blob_talloc_zero(ctx, needed);
 		gp.in.buffer = &blob;
 		gp.in.offered = needed;
-		status = dcerpc_spoolss_GetPrinter(p, tctx, &gp);
+		status = dcerpc_spoolss_GetPrinter_r(b, tctx, &gp);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 	}
 
@@ -268,7 +270,7 @@ static bool test_GetPrinter(struct torture_context *tctx,
 }
 
 static bool test_EnumJobs(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -288,13 +290,13 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	ej.out.count = &count;
 	ej.out.info = &info;
 
-	status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
+	status = dcerpc_spoolss_EnumJobs_r(b, tctx, &ej);
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
 	if (W_ERROR_EQUAL(ej.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		blob = data_blob_talloc_zero(tctx, needed);
 		ej.in.offered = needed;
 		ej.in.buffer = &blob;
-		status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
+		status = dcerpc_spoolss_EnumJobs_r(b, tctx, &ej);
 		torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
 	}
 	torture_assert_werr_ok(tctx, ej.out.result, "EnumJobs failed");
@@ -303,7 +305,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 }
 
 static bool test_GetPrinterDriver2(struct torture_context *tctx,
-					struct dcerpc_pipe *p,
+					struct dcerpc_binding_handle *b,
 					struct test_spoolss_win_context *ctx,
 					struct policy_handle *handle)
 {
@@ -327,7 +329,7 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	gpd2.out.server_major_version = &server_major_version;
 	gpd2.out.server_minor_version = &server_minor_version;
 
-	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &gpd2);
+	status = dcerpc_spoolss_GetPrinterDriver2_r(b, tctx, &gpd2);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterDriver2 failed");
 
 	if (ctx->printer_has_driver) {
@@ -339,7 +341,7 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 }
 
 static bool test_EnumForms(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
 				uint32_t initial_blob_size)
 {
@@ -360,14 +362,14 @@ static bool test_EnumForms(struct torture_context *tctx,
 	ef.out.count = &count;
 	ef.out.info = &info;
 
-	status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
+	status = dcerpc_spoolss_EnumForms_r(b, tctx, &ef);
 	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
 	if (W_ERROR_EQUAL(ef.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		blob = data_blob_talloc_zero(tctx, needed);
 		ef.in.buffer = &blob;
 		ef.in.offered = needed;
-		status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
+		status = dcerpc_spoolss_EnumForms_r(b, tctx, &ef);
 		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 	}
 
@@ -377,7 +379,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 }
 
 static bool test_EnumPrinterKey(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
 				const char* key,
 				struct test_spoolss_win_context *ctx)
@@ -397,12 +399,12 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	epk.out.key_buffer = &key_buffer;
 	epk.out._ndr_size = &_ndr_size;
 
-	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
+	status = dcerpc_spoolss_EnumPrinterKey_r(b, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
 
 	if (W_ERROR_EQUAL(epk.out.result, WERR_MORE_DATA)) {
 		epk.in.offered = needed;
-		status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
+		status = dcerpc_spoolss_EnumPrinterKey_r(b, tctx, &epk);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterKey failed");
 	}
@@ -415,7 +417,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 }
 
 static bool test_EnumPrinterDataEx(struct torture_context *tctx,
-					struct dcerpc_pipe *p,
+					struct dcerpc_binding_handle *b,
 					struct policy_handle *handle,
 					const char *key,
 					uint32_t initial_blob_size,
@@ -436,11 +438,11 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 	epde.out.count = &count;
 	epde.out.info = &info;
 
-	status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &epde);
+	status = dcerpc_spoolss_EnumPrinterDataEx_r(b, tctx, &epde);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDataEx failed.");
 	if (W_ERROR_EQUAL(epde.out.result, WERR_MORE_DATA)) {
 		epde.in.offered = needed;
-		status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &epde);
+		status = dcerpc_spoolss_EnumPrinterDataEx_r(b, tctx, &epde);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterDataEx failed.");
 	}
@@ -452,7 +454,7 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 }
 
 static bool test_ClosePrinter(struct torture_context *tctx,
-				struct dcerpc_pipe *p,
+				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -461,7 +463,7 @@ static bool test_ClosePrinter(struct torture_context *tctx,
 	cp.in.handle  = handle;
 	cp.out.handle = handle;
 
-	status = dcerpc_spoolss_ClosePrinter(p, tctx, &cp);
+	status = dcerpc_spoolss_ClosePrinter_r(b, tctx, &cp);
 	torture_assert_ntstatus_ok(tctx, status, "ClosePrinter failed");
 
 	return true;
@@ -477,6 +479,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	struct policy_handle unused_handle1, unused_handle2;
 	char *server_name;
 	uint32_t i;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ntvfs_init(tctx->lp_ctx);
 
@@ -484,130 +487,130 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	tmp_ctx = talloc_zero(tctx, struct test_spoolss_win_context);
 
 	ret &= test_OpenPrinterSequence(tctx, p, &handle01);
-	ret &= test_GetPrinterData(tctx, p, &handle01,"UISingleJobStatusString",
+	ret &= test_GetPrinterData(tctx, b, &handle01,"UISingleJobStatusString",
 			WERR_INVALID_PARAM, 0);
 	torture_comment(tctx, "Skip RemoteFindNextPrinterChangeNotifyEx test\n");
 
 	server_name = talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p));
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle1, server_name, 0);
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle1, server_name, 0);
 
 	ret &= test_EnumPrinters(tctx, p, ctx, 1024);
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle02, server_name, 0);
-	ret &= test_GetPrinterData(tctx, p, &handle02, "MajorVersion", WERR_OK,
+	ret &= test_OpenPrinterEx(tctx, b, &handle02, server_name, 0);
+	ret &= test_GetPrinterData(tctx, b, &handle02, "MajorVersion", WERR_OK,
 			3);
-	ret &= test_ClosePrinter(tctx, p, &handle02);
+	ret &= test_ClosePrinter(tctx, b, &handle02);
 
 	/* If no printers were found, skip all tests that need a printer */
 	if (ctx->printer_count == 0) {
 		goto end_testWinXP;
 	}
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle02,
+	ret &= test_OpenPrinterEx(tctx, b, &handle02,
 			ctx->printer_info[0].info2.printername,
 			PRINTER_ACCESS_USE);
-	ret &= test_GetPrinter(tctx, p, &handle02, ctx, 2, 0);
+	ret &= test_GetPrinter(tctx, b, &handle02, ctx, 2, 0);
 
 	torture_assert_str_equal(tctx, ctx->current_info->info2.printername,
 			ctx->printer_info[0].info2.printername,
 			"GetPrinter returned unexpected printername");
 	/*FIXME: Test more components of the PrinterInfo2 struct */
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle03,
+	ret &= test_OpenPrinterEx(tctx, b, &handle03,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_GetPrinter(tctx, p, &handle03, ctx, 0, 1164);
-	ret &= test_GetPrinter(tctx, p, &handle03, ctx, 2, 0);
+	ret &= test_GetPrinter(tctx, b, &handle03, ctx, 0, 1164);
+	ret &= test_GetPrinter(tctx, b, &handle03, ctx, 2, 0);
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle04,
+	ret &= test_OpenPrinterEx(tctx, b, &handle04,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_GetPrinter(tctx, p, &handle04, ctx, 2, 0);
-	ret &= test_ClosePrinter(tctx, p, &handle04);
+	ret &= test_GetPrinter(tctx, b, &handle04, ctx, 2, 0);
+	ret &= test_ClosePrinter(tctx, b, &handle04);
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle04,
+	ret &= test_OpenPrinterEx(tctx, b, &handle04,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_GetPrinter(tctx, p, &handle04, ctx, 2, 4096);
-	ret &= test_ClosePrinter(tctx, p, &handle04);
+	ret &= test_GetPrinter(tctx, b, &handle04, ctx, 2, 4096);
+	ret &= test_ClosePrinter(tctx, b, &handle04);
 
-	ret &= test_OpenPrinterAsAdmin(tctx, p,
+	ret &= test_OpenPrinterAsAdmin(tctx, b,
 			ctx->printer_info[0].info2.printername);
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle04,
+	ret &= test_OpenPrinterEx(tctx, b, &handle04,
 			ctx->printer_info[0].info2.printername, PRINTER_READ);
-	ret &= test_GetPrinterData(tctx, p, &handle04,"UISingleJobStatusString",
+	ret &= test_GetPrinterData(tctx, b, &handle04,"UISingleJobStatusString",
 			WERR_BADFILE, 0);
 	torture_comment(tctx, "Skip RemoteFindNextPrinterChangeNotifyEx test\n");
 
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle2,
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
 			ctx->printer_info[0].info2.printername, 0);
 
-	ret &= test_EnumJobs(tctx, p, &handle04);
-	ret &= test_GetPrinter(tctx, p, &handle04, ctx, 2, 4096);
+	ret &= test_EnumJobs(tctx, b, &handle04);
+	ret &= test_GetPrinter(tctx, b, &handle04, ctx, 2, 4096);
 
-	ret &= test_ClosePrinter(tctx, p, &unused_handle2);
-	ret &= test_ClosePrinter(tctx, p, &handle04);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle2);
+	ret &= test_ClosePrinter(tctx, b, &handle04);
 
 	ret &= test_EnumPrinters(tctx, p, ctx, 1556);
-	ret &= test_GetPrinterDriver2(tctx, p, ctx, &handle03);
-	ret &= test_EnumForms(tctx, p, &handle03, 0);
+	ret &= test_GetPrinterDriver2(tctx, b, ctx, &handle03);
+	ret &= test_EnumForms(tctx, b, &handle03, 0);
 
-	ret &= test_EnumPrinterKey(tctx, p, &handle03, "", ctx);
+	ret &= test_EnumPrinterKey(tctx, b, &handle03, "", ctx);
 
 	for (i=0; ctx->printer_keys && ctx->printer_keys[i] != NULL; i++) {
 
-		ret &= test_EnumPrinterKey(tctx, p, &handle03,
+		ret &= test_EnumPrinterKey(tctx, b, &handle03,
 					   ctx->printer_keys[i],
 					   tmp_ctx);
-		ret &= test_EnumPrinterDataEx(tctx, p, &handle03,
+		ret &= test_EnumPrinterDataEx(tctx, b, &handle03,
 					      ctx->printer_keys[i], 0,
 					      WERR_OK);
 	}
 
-	ret &= test_EnumPrinterDataEx(tctx, p, &handle03, "", 0,
+	ret &= test_EnumPrinterDataEx(tctx, b, &handle03, "", 0,
 			WERR_INVALID_PARAM);
 
-	ret &= test_GetPrinter(tctx, p, &handle03, tmp_ctx, 2, 0);
+	ret &= test_GetPrinter(tctx, b, &handle03, tmp_ctx, 2, 0);
 
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle2,
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_ClosePrinter(tctx, p, &unused_handle2);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle2);
 
-	ret &= test_GetPrinter(tctx, p, &handle03, tmp_ctx, 2, 2556);
+	ret &= test_GetPrinter(tctx, b, &handle03, tmp_ctx, 2, 2556);
 
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle2,
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_ClosePrinter(tctx, p, &unused_handle2);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle2);
 
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle2,
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_ClosePrinter(tctx, p, &unused_handle2);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle2);
 
-	ret &= test_GetPrinter(tctx, p, &handle03, tmp_ctx, 7, 0);
+	ret &= test_GetPrinter(tctx, b, &handle03, tmp_ctx, 7, 0);
 
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle2,
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_ClosePrinter(tctx, p, &unused_handle2);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle2);
 
-	ret &= test_ClosePrinter(tctx, p, &handle03);
+	ret &= test_ClosePrinter(tctx, b, &handle03);
 
-	ret &= test_OpenPrinterEx(tctx, p, &unused_handle2,
+	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
 			ctx->printer_info[0].info2.printername, 0);
-	ret &= test_ClosePrinter(tctx, p, &unused_handle2);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle2);
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle03, server_name, 0);
-	ret &= test_GetPrinterData(tctx, p, &handle03, "W3SvcInstalled",
+	ret &= test_OpenPrinterEx(tctx, b, &handle03, server_name, 0);
+	ret &= test_GetPrinterData(tctx, b, &handle03, "W3SvcInstalled",
 			WERR_OK, 0);
-	ret &= test_ClosePrinter(tctx, p, &handle03);
+	ret &= test_ClosePrinter(tctx, b, &handle03);
 
-	ret &= test_ClosePrinter(tctx, p, &unused_handle1);
-	ret &= test_ClosePrinter(tctx, p, &handle02);
+	ret &= test_ClosePrinter(tctx, b, &unused_handle1);
+	ret &= test_ClosePrinter(tctx, b, &handle02);
 
-	ret &= test_OpenPrinterEx(tctx, p, &handle02,
+	ret &= test_OpenPrinterEx(tctx, b, &handle02,
 			ctx->printer_info[0].info2.sharename, 0);
-	ret &= test_GetPrinter(tctx, p, &handle02, tmp_ctx, 2, 0);
-	ret &= test_ClosePrinter(tctx, p, &handle02);
+	ret &= test_GetPrinter(tctx, b, &handle02, tmp_ctx, 2, 0);
+	ret &= test_ClosePrinter(tctx, b, &handle02);
 
 end_testWinXP:
-	ret &= test_ClosePrinter(tctx, p, &handle01);
+	ret &= test_ClosePrinter(tctx, b, &handle01);
 
 	talloc_free(tmp_ctx);
 	talloc_free(ctx);
