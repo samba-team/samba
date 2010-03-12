@@ -471,8 +471,12 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 			nt_errstr(status) ));
 		return status;
 	}
-	status = smb1_file_se_access_check(parent_desc,
-					handle->conn->server_info->ptok,
+	if (pp_parent_desc) {
+		*pp_parent_desc = parent_desc;
+	}
+	status = smb1_file_se_access_check(handle->conn,
+					parent_desc,
+					get_current_nttok(handle->conn),
 					access_mask,
 					&access_granted);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -484,9 +488,6 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 			access_mask,
 			nt_errstr(status) ));
 		return status;
-	}
-	if (pp_parent_desc) {
-		*pp_parent_desc = parent_desc;
 	}
 	return NT_STATUS_OK;
 }
@@ -535,8 +536,9 @@ static int open_acl_common(vfs_handle_struct *handle,
 				&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
-		status = smb1_file_se_access_check(pdesc,
-					handle->conn->server_info->ptok,
+		status = smb1_file_se_access_check(handle->conn,
+					pdesc,
+					get_current_nttok(handle->conn),
 					fsp->access_mask,
 					&access_granted);
 		if (!NT_STATUS_IS_OK(status)) {

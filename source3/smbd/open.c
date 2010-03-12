@@ -50,11 +50,23 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
  SMB1 file varient of se_access_check. Never test FILE_READ_ATTRIBUTES.
 ****************************************************************************/
 
-NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
-                          const NT_USER_TOKEN *token,
-                          uint32_t access_desired,
-                          uint32_t *access_granted)
+NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
+				const struct security_descriptor *sd,
+				const NT_USER_TOKEN *token,
+				uint32_t access_desired,
+				uint32_t *access_granted)
 {
+	*access_granted = 0;
+
+	if (get_current_uid(conn) == (uid_t)0) {
+		/* I'm sorry sir, I didn't know you were root... */
+		*access_granted = access_desired;
+		if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+			*access_granted |= FILE_GENERIC_ALL;
+		}
+		return NT_STATUS_OK;
+	}
+
 	return se_access_check(sd,
 				token,
 				(access_desired & ~FILE_READ_ATTRIBUTES),
@@ -74,17 +86,6 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
 
-	*access_granted = 0;
-
-	if (get_current_uid(conn) == (uid_t)0) {
-		/* I'm sorry sir, I didn't know you were root... */
-		*access_granted = access_mask;
-		if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
-			*access_granted |= FILE_GENERIC_ALL;
-		}
-		return NT_STATUS_OK;
-	}
-
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(OWNER_SECURITY_INFORMATION |
 			GROUP_SECURITY_INFORMATION |
@@ -98,8 +99,9 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 		return status;
 	}
 
-	status = smb1_file_se_access_check(sd,
-				conn->server_info->ptok,
+	status = smb1_file_se_access_check(conn,
+				sd,
+				get_current_nttok(conn),
 				access_mask,
 				access_granted);
 
@@ -1419,8 +1421,9 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			status = smb1_file_se_access_check(sd,
-					conn->server_info->ptok,
+			status = smb1_file_se_access_check(conn,
+					sd,
+					get_current_nttok(conn),
 					access_mask,
 					&access_granted);
 
