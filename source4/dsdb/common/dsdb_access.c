@@ -26,22 +26,13 @@
  */
 
 #include "includes.h"
-#include "events/events.h"
 #include "ldb.h"
 #include "ldb_errors.h"
-#include "../lib/util/util_ldb.h"
-#include "../lib/crypto/crypto.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "librpc/gen_ndr/ndr_misc.h"
-#include "../libds/common/flags.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
-#include "libcli/auth/libcli_auth.h"
-#include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "system/locale.h"
 #include "auth/auth.h"
-#include "lib/util/tsort.h"
 
 void dsdb_acl_debug(struct security_descriptor *sd,
 		      struct security_token *token,
@@ -113,38 +104,20 @@ int dsdb_get_dom_sid_from_ldb_message(TALLOC_CTX *mem_ctx,
 	return LDB_SUCCESS;
 }
 
-int dsdb_check_access_on_dn(struct ldb_context *ldb,
-			      TALLOC_CTX *mem_ctx,
-			      struct ldb_dn *dn,
-			      uint32_t access,
-			      const struct GUID *guid)
+int dsdb_check_access_on_dn_internal(struct ldb_result *acl_res,
+				     TALLOC_CTX *mem_ctx,
+				     struct security_token *token,
+				     struct ldb_dn *dn,
+				     uint32_t access,
+				     const struct GUID *guid)
 {
-	int ret;
-	struct ldb_result *acl_res;
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
 	NTSTATUS status;
 	uint32_t access_granted;
-	static const char *acl_attrs[] = {
-		"nTSecurityDescriptor",
-		"objectSid",
-		NULL
-	};
-
-	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-	if(!session_info) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_search(ldb, mem_ctx, &acl_res, dn, LDB_SCOPE_BASE, acl_attrs, NULL);
-	/* we sould be able to find the parent */
-	if (ret != LDB_SUCCESS) {
-		DEBUG(10,("acl: failed to find object %s\n", ldb_dn_get_linearized(dn)));
-		return ret;
-	}
+	int ret;
 
 	ret = dsdb_get_sd_from_ldb_message(mem_ctx, acl_res->msgs[0], &sd);
 	if (ret != LDB_SUCCESS) {
@@ -164,14 +137,14 @@ int dsdb_check_access_on_dn(struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
-	status = sec_access_check_ds(sd, session_info->security_token,
+	status = sec_access_check_ds(sd, token,
 				     access,
 				     &access_granted,
 				     root,
 				     sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		dsdb_acl_debug(sd,
-			       session_info->security_token,
+			       token,
 			       dn,
 			       true,
 			       10);
@@ -179,3 +152,43 @@ int dsdb_check_access_on_dn(struct ldb_context *ldb,
 	}
 	return LDB_SUCCESS;
 }
+
+/* performs an access check from outside the module stack
+ * given the dn of the object to be checked, the required access
+ * guid is either the guid of the extended right, or NULL
+ */
+
+int dsdb_check_access_on_dn(struct ldb_context *ldb,
+			    TALLOC_CTX *mem_ctx,
+			    struct ldb_dn *dn,
+			    uint32_t access,
+			    const struct GUID *guid)
+{
+	int ret;
+	struct ldb_result *acl_res;
+	static const char *acl_attrs[] = {
+		"nTSecurityDescriptor",
+		"objectSid",
+		NULL
+	};
+
+	struct auth_session_info *session_info
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	if(!session_info) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(ldb, mem_ctx, &acl_res, dn, LDB_SCOPE_BASE, acl_attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(10,("access_check: failed to find object %s\n", ldb_dn_get_linearized(dn)));
+		return ret;
+	}
+
+	return dsdb_check_access_on_dn_internal(acl_res,
+						mem_ctx,
+						session_info->security_token,
+						dn,
+						access,
+						guid);
+}
+

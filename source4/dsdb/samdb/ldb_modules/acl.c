@@ -82,6 +82,45 @@ static struct security_token *acl_user_token(struct ldb_module *module)
 	return session_info->security_token;
 }
 
+/* performs an access check from inside the module stack
+ * given the dn of the object to be checked, the required access
+ * guid is either the guid of the extended right, or NULL
+ */
+
+int dsdb_module_check_access_on_dn(struct ldb_module *module,
+				   TALLOC_CTX *mem_ctx,
+				   struct ldb_dn *dn,
+				   uint32_t access,
+				   const struct GUID *guid)
+{
+	int ret;
+	struct ldb_result *acl_res;
+	static const char *acl_attrs[] = {
+		"nTSecurityDescriptor",
+		"objectSid",
+		NULL
+	};
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct auth_session_info *session_info
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	if(!session_info) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = dsdb_module_search_dn(module, mem_ctx, &acl_res, dn,
+				    acl_attrs, DSDB_SEARCH_SHOW_DELETED);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(10,("access_check: failed to find object %s\n", ldb_dn_get_linearized(dn)));
+		return ret;
+	}
+	return dsdb_check_access_on_dn_internal(acl_res,
+						mem_ctx,
+						session_info->security_token,
+						dn,
+						access,
+						guid);
+}
+
+
 static int acl_module_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
@@ -606,7 +645,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 
 	guid = class_schemaid_guid_by_lDAPDisplayName(dsdb_get_schema(ldb),
 						      (char *)oc_el->values[oc_el->num_values-1].data);
-	ret = dsdb_check_access_on_dn(ldb, req, parent, SEC_ADS_CREATE_CHILD, guid);
+	ret = dsdb_module_check_access_on_dn(module, req, parent, SEC_ADS_CREATE_CHILD, guid);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -787,7 +826,7 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 	ldb = ldb_module_get_ctx(module);
 	/* first check if we have delete object right */
-	ret = dsdb_check_access_on_dn(ldb, req, req->op.del.dn, SEC_STD_DELETE, NULL);
+	ret = dsdb_module_check_access_on_dn(module, req, req->op.del.dn, SEC_STD_DELETE, NULL);
 	if (ret == LDB_SUCCESS) {
 		return ldb_next_request(module, req);
 	}
@@ -801,7 +840,7 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 		return ldb_module_done(req, NULL, NULL, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS);
 	}
 
-	ret = dsdb_check_access_on_dn(ldb, req, parent, SEC_ADS_DELETE_CHILD, NULL);
+	ret = dsdb_module_check_access_on_dn(module, req, parent, SEC_ADS_DELETE_CHILD, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -932,7 +971,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_module_done(req, NULL, NULL,  LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	ret = dsdb_check_access_on_dn(ldb, req, newparent, SEC_ADS_CREATE_CHILD, guid);
+	ret = dsdb_module_check_access_on_dn(module, req, newparent, SEC_ADS_CREATE_CHILD, guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
 		return ret;
@@ -949,7 +988,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 	/* what about delete child on the current parent */
-	ret = dsdb_check_access_on_dn(ldb, req, oldparent, SEC_ADS_DELETE_CHILD, NULL);
+	ret = dsdb_module_check_access_on_dn(module, req, oldparent, SEC_ADS_DELETE_CHILD, NULL);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
 		return ldb_module_done(req, NULL, NULL, ret);
