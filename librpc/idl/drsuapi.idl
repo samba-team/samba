@@ -1260,7 +1260,7 @@ interface drsuapi
 		drsuapi_DsAttributeValue attr_val;
 	} drsuapi_DsAddEntry_AttrErr_V1;
 
-	typedef /*[noprint]*/ struct {
+	typedef [noprint] struct {
 		drsuapi_DsAddEntry_AttrErrListItem_V1 *next;
 		drsuapi_DsAddEntry_AttrErr_V1 err_data;
 	} drsuapi_DsAddEntry_AttrErrListItem_V1;

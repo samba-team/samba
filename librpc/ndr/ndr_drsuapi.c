@@ -263,3 +263,14 @@ _PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary
 	return ndr_size_struct((const struct drsuapi_DsReplicaObjectIdentifier3 *)r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3, ic);
 }
 
+_PUBLIC_ void ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsAddEntry_AttrErrListItem_V1 *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsAddEntry_AttrErrListItem_V1");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "next", r->next);
+	ndr_print_drsuapi_DsAddEntry_AttrErr_V1(ndr, "err_data", &r->err_data);
+	ndr->depth--;
+	if (r->next) {
+		ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(ndr, "next", r->next);
+	}
+}
