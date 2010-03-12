@@ -33,7 +33,9 @@
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
-static NTSTATUS spoolss__op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS spoolss__op_bind(struct dcesrv_call_state *dce_call,
+				 const struct dcesrv_interface *iface,
+				 uint32_t if_version)
 {
 	return NT_STATUS_OK;
 }
@@ -509,7 +511,9 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	const char *address;
 	struct received_packet *tmp;
 	struct spoolss_NotifyOption *server_option = setup_printserver_NotifyOption(tctx);
+#if 0
 	struct spoolss_NotifyOption *printer_option = setup_printer_NotifyOption(tctx);
+#endif
 
 	received_packets = NULL;
 
