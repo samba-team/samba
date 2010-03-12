@@ -219,7 +219,7 @@ def findnss(nssfn, names):
             return nssfn(name)
         except KeyError:
             pass
-    raise KeyError("Unable to find user/group %r" % names)
+    raise KeyError("Unable to find user/group in %r" % names)
 
 
 findnss_uid = lambda names: findnss(pwd.getpwnam, names)[2]
