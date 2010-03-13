@@ -2043,9 +2043,8 @@ static bool test_SetValue_extended(struct dcerpc_pipe *p,
 	};
 	int t, l;
 
-	if (torture_setting_bool(tctx, "samba3", false) ||
-	    torture_setting_bool(tctx, "samba4", false)) {
-		torture_skip(tctx, "skipping extended SetValue test against Samba");
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping extended SetValue test against Samba 3");
 	}
 
 	torture_comment(tctx, "Testing SetValue (extended formats)\n");
@@ -2152,8 +2151,13 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	if (created) {
 		torture_assert(tctx, test_SetValue_simple(p, tctx, &newhandle),
 			"simple SetValue test failed");
-		torture_assert(tctx, test_SetValue_extended(p, tctx, &newhandle),
-			"extended SetValue test failed");
+		if (!test_SetValue_extended(p, tctx, &newhandle)) {
+			if (torture_setting_bool(tctx, "samba3", false)) {
+				torture_warning(tctx, "extended SetValue test failed");
+			} else {
+				torture_fail(tctx, "extended SetValue test failed");
+			}
+		}
 	}
 
 	if (created && !test_CloseKey(p, tctx, &newhandle))
