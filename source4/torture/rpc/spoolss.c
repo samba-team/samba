@@ -3144,6 +3144,87 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
+					     struct dcerpc_pipe *p,
+					     struct policy_handle *handle)
+{
+	uint32_t count;
+	struct spoolss_PrinterEnumValues *info;
+	int i;
+	uint32_t value_needed, data_needed;
+	uint32_t value_offered, data_offered;
+	WERROR result;
+
+	torture_comment(tctx, "Testing EnumPrinterData vs EnumPrinterDataEx consistency");
+
+	torture_assert(tctx,
+		test_EnumPrinterDataEx(tctx, p, handle, "PrinterDriverData", &count, &info),
+		"failed to call EnumPrinterDataEx");
+
+	/* get the max sizes for value and data */
+
+	torture_assert(tctx,
+		test_EnumPrinterData(tctx, p, handle, 0, 0, 0,
+				     NULL, &value_needed, &data_needed,
+				     NULL, NULL, &result),
+		"EnumPrinterData failed");
+	torture_assert_werr_ok(tctx, result, "unexpected result");
+
+	/* check if the reply from the EnumPrinterData really matches max values */
+
+	for (i=0; i < count; i++) {
+		if (info[i].value_name_len > value_needed) {
+			torture_fail(tctx,
+				talloc_asprintf(tctx,
+				"EnumPrinterDataEx gave a reply with value length %d which is larger then expected max value length %d from EnumPrinterData",
+				info[i].value_name_len, value_needed));
+		}
+		if (info[i].data_length > data_needed) {
+			torture_fail(tctx,
+				talloc_asprintf(tctx,
+				"EnumPrinterDataEx gave a reply with data length %d which is larger then expected max data length %d from EnumPrinterData",
+				info[i].data_length, data_needed));
+		}
+	}
+
+	/* assuming that both EnumPrinterData and EnumPrinterDataEx do either
+	 * sort or not sort the replies by value name, we should be able to do
+	 * the following entry comparison */
+
+	data_offered = data_needed;
+	value_offered = value_needed;
+
+	for (i=0; i < count; i++) {
+
+		enum winreg_Type type;
+		const char *value_name;
+		uint8_t *data;
+		WERROR result;
+		uint32_t value_needed, data_needed;
+
+		torture_assert(tctx,
+			test_EnumPrinterData(tctx, p, handle, i, value_offered, data_offered,
+					     &type, &value_needed, &data_needed,
+					     &value_name, &data, &result),
+			"EnumPrinterData failed");
+
+		if (i -1 == count) {
+			torture_assert_werr_equal(tctx, result, WERR_NO_MORE_ITEMS,
+				"unexpected result");
+			break;
+		} else {
+			torture_assert_werr_ok(tctx, result, "unexpected result");
+		}
+
+		torture_assert_int_equal(tctx, type, info[i].type, "type mismatch");
+		torture_assert_int_equal(tctx, value_needed, info[i].value_name_len, "value name length mismatch");
+		torture_assert_str_equal(tctx, value_name, info[i].value_name, "value name mismatch");
+		torture_assert_int_equal(tctx, data_needed, info[i].data_length, "data length mismatch");
+		torture_assert_mem_equal(tctx, data, info[i].data->data, info[i].data_length, "data mismatch");
+	}
+
+	return true;
+}
 
 static bool test_DeletePrinterData(struct torture_context *tctx,
 				   struct dcerpc_pipe *p,
@@ -4087,6 +4168,10 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
+	if (!test_EnumPrinterData_consistency(tctx, p, handle)) {
+		ret = false;
+	}
+
 	if (!test_printer_keys(tctx, p, &handle)) {
 		ret = false;
 	}
@@ -4883,6 +4968,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_printer_keys(tctx, p, handle)) {
+		ret = false;
+	}
+
+	if (!test_EnumPrinterData_consistency(tctx, p, handle)) {
 		ret = false;
 	}
 
