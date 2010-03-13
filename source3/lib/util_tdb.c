@@ -523,15 +523,72 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 	}
 }
 
-static struct tdb_wrap *tdb_list;
+struct tdb_wrap_private {
+	struct tdb_context *tdb;
+	const char *name;
+	struct tdb_wrap_private *next, *prev;
+};
+
+static struct tdb_wrap_private *tdb_list;
 
 /* destroy the last connection to a tdb */
-static int tdb_wrap_destructor(struct tdb_wrap *w)
+static int tdb_wrap_private_destructor(struct tdb_wrap_private *w)
 {
 	tdb_close(w->tdb);
 	DLIST_REMOVE(tdb_list, w);
 	return 0;
 }				 
+
+static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
+						      const char *name,
+						      int hash_size,
+						      int tdb_flags,
+						      int open_flags,
+						      mode_t mode)
+{
+	struct tdb_wrap_private *result;
+	struct tdb_logging_context log_ctx;
+
+	result = talloc(mem_ctx, struct tdb_wrap_private);
+	if (result == NULL) {
+		return NULL;
+	}
+	result->name = talloc_strdup(result, name);
+	if (result->name == NULL) {
+		goto fail;
+	}
+
+	log_ctx.log_fn = tdb_wrap_log;
+
+	if (!lp_use_mmap()) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+
+	if ((hash_size == 0) && (name != NULL)) {
+		const char *base;
+		base = strrchr_m(name, '/');
+
+		if (base != NULL) {
+			base += 1;
+		} else {
+			base = name;
+		}
+		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
+	}
+
+	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
+				  open_flags, mode, &log_ctx, NULL);
+	if (result->tdb == NULL) {
+		goto fail;
+	}
+	talloc_set_destructor(result, tdb_wrap_private_destructor);
+	DLIST_ADD(tdb_list, result);
+	return result;
+
+fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
 
 /*
   wrapped connection to a tdb database
@@ -541,57 +598,46 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 			       const char *name, int hash_size, int tdb_flags,
 			       int open_flags, mode_t mode)
 {
-	struct tdb_wrap *w;
-	struct tdb_logging_context log_ctx;
-	log_ctx.log_fn = tdb_wrap_log;
+	struct tdb_wrap *result;
+	struct tdb_wrap_private *w;
 
-	if (!lp_use_mmap())
-		tdb_flags |= TDB_NOMMAP;
+	result = talloc(mem_ctx, struct tdb_wrap);
+	if (result == NULL) {
+		return NULL;
+	}
 
 	for (w=tdb_list;w;w=w->next) {
 		if (strcmp(name, w->name) == 0) {
-			/*
-			 * Yes, talloc_reference is exactly what we want
-			 * here. Otherwise we would have to implement our own
-			 * reference counting.
-			 */
-			return talloc_reference(mem_ctx, w);
+			break;
 		}
 	}
 
-	w = talloc(mem_ctx, struct tdb_wrap);
 	if (w == NULL) {
-		return NULL;
-	}
-
-	if (!(w->name = talloc_strdup(w, name))) {
-		talloc_free(w);
-		return NULL;
-	}
-
-	if ((hash_size == 0) && (name != NULL)) {
-		const char *base = strrchr_m(name, '/');
-		if (base != NULL) {
-			base += 1;
+		w = tdb_wrap_private_open(result, name, hash_size, tdb_flags,
+					  open_flags, mode);
+	} else {
+		/*
+		 * Correctly use talloc_reference: The tdb will be
+		 * closed when "w" is being freed. The caller never
+		 * sees "w", so an incorrect use of talloc_free(w)
+		 * instead of calling talloc_unlink is not possible.
+		 * To avoid having to refcount ourselves, "w" will
+		 * have multiple parents that hang off all the
+		 * tdb_wrap's being returned from here. Those parents
+		 * can be freed without problem.
+		 */
+		if (talloc_reference(result, w) == NULL) {
+			goto fail;
 		}
-		else {
-			base = name;
-		}
-		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
 	}
-
-	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-			     open_flags, mode, &log_ctx, NULL);
-	if (w->tdb == NULL) {
-		talloc_free(w);
-		return NULL;
+	if (w == NULL) {
+		goto fail;
 	}
-
-	talloc_set_destructor(w, tdb_wrap_destructor);
-
-	DLIST_ADD(tdb_list, w);
-
-	return w;
+	result->tdb = w->tdb;
+	return result;
+fail:
+	TALLOC_FREE(result);
+	return NULL;
 }
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)

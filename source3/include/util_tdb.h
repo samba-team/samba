@@ -28,8 +28,6 @@
 
 struct tdb_wrap {
 	struct tdb_context *tdb;
-	const char *name;
-	struct tdb_wrap *next, *prev;
 };
 
 int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
