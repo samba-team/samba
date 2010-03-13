@@ -2093,7 +2093,7 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 	devmode2 = info.info8.devmode;
 
 	if (strequal(devmode->devicename, devmode2->devicename)) {
-		torture_comment(tctx, "devicenames are the same\n");
+		torture_warning(tctx, "devicenames are the same\n");
 	} else {
 		torture_comment(tctx, "devicename passed in for open: %s\n", devmode->devicename);
 		torture_comment(tctx, "devicename after level 8 get: %s\n", devmode2->devicename);
@@ -2118,7 +2118,7 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 	devmode2 = info.info2.devmode;
 
 	if (strequal(devmode->devicename, devmode2->devicename)) {
-		torture_comment(tctx, "devicenames are the same\n");
+		torture_warning(tctx, "devicenames are the same\n");
 	} else {
 		torture_comment(tctx, "devicename passed in for open: %s\n", devmode->devicename);
 		torture_comment(tctx, "devicename after level 2 get: %s\n", devmode2->devicename);
