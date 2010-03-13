@@ -4168,7 +4168,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_EnumPrinterData_consistency(tctx, p, handle)) {
+	if (!test_EnumPrinterData_consistency(tctx, p, &handle)) {
 		ret = false;
 	}
 
