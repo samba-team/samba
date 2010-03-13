@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-static TDB_CONTEXT *tdbd = NULL;
+static struct tdb_wrap *tdbd = NULL;
 
 /* the key type used in the unexpected packet database */
 struct unexpected_key {
@@ -45,9 +45,10 @@ void unexpected_packet(struct packet_struct *p)
 	uint32_t enc_ip;
 
 	if (!tdbd) {
-		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 0,
-			       TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
-			       O_RDWR | O_CREAT, 0644);
+		tdbd = tdb_wrap_open(talloc_autofree_context(),
+				     lock_path("unexpected.tdb"), 0,
+				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+				     O_RDWR | O_CREAT, 0644);
 		if (!tdbd) {
 			DEBUG(0,("Failed to open unexpected.tdb\n"));
 			return;
@@ -74,7 +75,7 @@ void unexpected_packet(struct packet_struct *p)
 	dbuf.dptr = (uint8_t *)buf;
 	dbuf.dsize = len;
 
-	tdb_store(tdbd, kbuf, dbuf, TDB_REPLACE);
+	tdb_store(tdbd->tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
 
@@ -115,7 +116,7 @@ void clear_unexpected(time_t t)
 
 	lastt = t;
 
-	tdb_traverse(tdbd, traverse_fn, NULL);
+	tdb_traverse(tdbd->tdb, traverse_fn, NULL);
 }
 
 struct receive_unexpected_state {
@@ -185,10 +186,11 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf,
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 					 const char *mailslot_name)
 {
-	TDB_CONTEXT *tdb2;
+	struct tdb_wrap *tdb2;
 	struct receive_unexpected_state state;
 
-	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	tdb2 = tdb_wrap_open(talloc_autofree_context(),
+			     lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb2) return NULL;
 
 	state.matched_packet = NULL;
@@ -196,9 +198,9 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 	state.match_type = packet_type;
 	state.match_name = mailslot_name;
 
-	tdb_traverse(tdb2, traverse_match, &state);
+	tdb_traverse(tdb2->tdb, traverse_match, &state);
 
-	tdb_close(tdb2);
+	TALLOC_FREE(tdb2);
 
 	return state.matched_packet;
 }
