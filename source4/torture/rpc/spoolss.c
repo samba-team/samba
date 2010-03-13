@@ -3004,62 +3004,99 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pipe *p,
-				 struct policy_handle *handle)
+static bool test_EnumPrinterData(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *handle,
+				 uint32_t enum_index,
+				 uint32_t value_offered,
+				 uint32_t data_offered,
+				 enum winreg_Type *type_p,
+				 uint32_t *value_needed_p,
+				 uint32_t *data_needed_p,
+				 const char **value_name_p,
+				 uint8_t **data_p,
+				 WERROR *result_p)
 {
-	NTSTATUS status;
 	struct spoolss_EnumPrinterData r;
+	uint32_t data_needed;
+	uint32_t value_needed;
+	enum winreg_Type type;
 
-	ZERO_STRUCT(r);
 	r.in.handle = handle;
-	r.in.enum_index = 0;
+	r.in.enum_index = enum_index;
+	r.in.value_offered = value_offered;
+	r.in.data_offered = data_offered;
+	r.out.data_needed = &data_needed;
+	r.out.value_needed = &value_needed;
+	r.out.type = &type;
+	r.out.data = talloc_zero_array(tctx, uint8_t, r.in.data_offered);
+	r.out.value_name = talloc_zero_array(tctx, const char, r.in.value_offered);
+
+	torture_comment(tctx, "Testing EnumPrinterData(%d)\n", enum_index);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_EnumPrinterData(p, tctx, &r),
+		"EnumPrinterData failed");
+
+	if (type_p) {
+		*type_p = type;
+	}
+	if (value_needed_p) {
+		*value_needed_p = value_needed;
+	}
+	if (data_needed_p) {
+		*data_needed_p = data_needed;
+	}
+	if (value_name_p) {
+		*value_name_p = r.out.value_name;
+	}
+	if (data_p) {
+		*data_p = r.out.data;
+	}
+	if (result_p) {
+		*result_p = r.out.result;
+	}
+
+	return true;
+}
+
+
+static bool test_EnumPrinterData_all(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *handle)
+{
+	uint32_t enum_index = 0;
+	enum winreg_Type type;
+	uint32_t value_needed;
+	uint32_t data_needed;
+	uint8_t *data;
+	const char *value_name;
+	WERROR result;
 
 	do {
-		uint32_t value_size = 0;
-		uint32_t data_size = 0;
-		enum winreg_Type type = 0;
+		torture_assert(tctx,
+			test_EnumPrinterData(tctx, p, handle, enum_index, 0, 0,
+					     &type, &value_needed, &data_needed,
+					     &value_name, &data, &result),
+			"EnumPrinterData failed");
 
-		r.in.value_offered = value_size;
-		r.out.value_needed = &value_size;
-		r.in.data_offered = data_size;
-		r.out.data_needed = &data_size;
-
-		r.out.type = &type;
-		r.out.data = talloc_zero_array(tctx, uint8_t, 0);
-
-		torture_comment(tctx, "Testing EnumPrinterData\n");
-
-		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
-
-		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
-		if (W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
-			break;
-		}
-		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterData");
-
-		r.in.value_offered = value_size;
-		r.out.value_name = talloc_zero_array(tctx, const char, value_size);
-		r.in.data_offered = data_size;
-		r.out.data = talloc_zero_array(tctx, uint8_t, data_size);
-
-		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
-
-		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
-		if (W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
+		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS)) {
 			break;
 		}
 
-		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterData failed");
+		torture_assert(tctx,
+			test_EnumPrinterData(tctx, p, handle, enum_index, value_needed, data_needed,
+					     &type, &value_needed, &data_needed,
+					     &value_name, &data, &result),
+			"EnumPrinterData failed");
 
-		torture_assert(tctx, test_GetPrinterData(tctx, p, handle, r.out.value_name, NULL, NULL, NULL),
-			talloc_asprintf(tctx, "failed to call GetPrinterData for %s\n", r.out.value_name));
+		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS)) {
+			break;
+		}
 
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", r.out.value_name, NULL, NULL, NULL),
-			talloc_asprintf(tctx, "failed to call GetPrinterDataEx on PrinterDriverData for %s\n", r.out.value_name));
+		enum_index++;
 
-		r.in.enum_index++;
-
-	} while (W_ERROR_IS_OK(r.out.result));
+	} while (W_ERROR_IS_OK(result));
 
 	return true;
 }
@@ -4042,7 +4079,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_EnumPrinterData(tctx, p, &handle)) {
+	if (!test_EnumPrinterData_all(tctx, p, &handle)) {
 		ret = false;
 	}
 
