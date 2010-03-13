@@ -98,7 +98,6 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					      const char *name,
 					      uint32_t type, DATA_BLOB data)
 {
-	struct ldb_val val;
 	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
 	char *type_s;
 
@@ -109,11 +108,14 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	case REG_EXPAND_SZ:
 		if ((data.length > 0) && (data.data != NULL)
 		    && (data.data[0] != '\0')) {
+			struct ldb_val *val;
+
+			val = talloc_zero(msg, struct ldb_val);
 			convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
 						   (void *)data.data,
 						   data.length,
-						   (void **)&val.data, &val.length, false);
-			ldb_msg_add_value(msg, "data", &val, NULL);
+						   (void **)&val->data, &val->length, false);
+			ldb_msg_add_value(msg, "data", val, NULL);
 		} else {
 			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		}
