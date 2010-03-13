@@ -452,6 +452,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	struct ldb_context *c = kd->ldb;
 
 	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
+	W_ERROR_HAVE_NO_MEMORY(ldap_path);
 
 	ret = ldb_search(c, mem_ctx, &res, ldap_path, LDB_SCOPE_BASE, NULL, "(key=*)");
 
@@ -531,8 +532,10 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	int ret;
 
 	msg = ldb_msg_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(msg);
 
 	msg->dn = reg_path_to_ldb(msg, parent, name, NULL);
+	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
 	ldb_msg_add_string(msg, "key", talloc_strdup(mem_ctx, name));
 	if (classname != NULL)
@@ -552,6 +555,7 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	DEBUG(2, ("key added: %s\n", ldb_dn_get_linearized(msg->dn)));
 
 	newkd = talloc_zero(mem_ctx, struct ldb_key_data);
+	W_ERROR_HAVE_NO_MEMORY(newkd);
 	newkd->ldb = talloc_reference(newkd, parentkd->ldb);
 	newkd->key.ops = &reg_backend_ldb;
 	newkd->dn = talloc_steal(newkd, msg->dn);
@@ -578,7 +582,9 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 		mem_ctx = talloc_init("ldb_del_value");
 
 		msg = talloc_zero(mem_ctx, struct ldb_message);
+		W_ERROR_HAVE_NO_MEMORY(msg);
 		msg->dn = ldb_dn_copy(msg, kd->dn);
+		W_ERROR_HAVE_NO_MEMORY(msg->dn);
 		ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		ldb_msg_add_empty(msg, "type", LDB_FLAG_MOD_DELETE, NULL);
 
@@ -640,10 +646,7 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	}
 
 	ldap_path = reg_path_to_ldb(mem_ctx, key, name, NULL);
-	if (!ldap_path) {
-		talloc_free(mem_ctx);
-		return WERR_FOOBAR;
-	}
+	W_ERROR_HAVE_NO_MEMORY(ldap_path);
 
 	/* Search for subkeys */
 	ret = ldb_search(c, mem_ctx, &res_keys, ldap_path, LDB_SCOPE_ONELEVEL,
@@ -747,7 +750,10 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_set_value");
 
 	msg = reg_ldb_pack_value(kd->ldb, mem_ctx, name, type, data);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+
 	msg->dn = ldb_dn_copy(msg, kd->dn);
+	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
 	if ((name != NULL) && (name[0] != '\0')) {
 		/* For a default value, we add/overwrite the attributes to/of the hive.
