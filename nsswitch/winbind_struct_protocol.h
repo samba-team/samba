@@ -55,7 +55,7 @@ typedef char fstring[FSTRING_LEN];
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
-   between /lib/libnss_winbind.so.2 and /li64/libnss_winbind.so.2.
+   between /lib/libnss_winbind.so.2 and /lib64/libnss_winbind.so.2.
    The easiest way to do this is to always use 8byte values for time_t. */
 
 #define SMB_TIME_T int64_t
