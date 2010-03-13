@@ -3199,8 +3199,6 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 		enum winreg_Type type;
 		const char *value_name;
 		uint8_t *data;
-		WERROR result;
-		uint32_t value_needed, data_needed;
 
 		torture_assert(tctx,
 			test_EnumPrinterData(tctx, p, handle, i, value_offered, data_offered,
