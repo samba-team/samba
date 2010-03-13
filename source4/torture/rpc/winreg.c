@@ -2038,10 +2038,10 @@ static bool test_SetValue_extended(struct dcerpc_pipe *p,
 		14,
 		55,
 		123456,
-		653210
+		653210,
+		__LINE__
 	};
-	const char *str = "abcdefghijklmnopqrstuvwxzy";
-	int t, s;
+	int t, l;
 
 	if (torture_setting_bool(tctx, "samba3", false) ||
 	    torture_setting_bool(tctx, "samba4", false)) {
@@ -2051,13 +2051,13 @@ static bool test_SetValue_extended(struct dcerpc_pipe *p,
 	torture_comment(tctx, "Testing SetValue (extended formats)\n");
 
 	for (t=0; t < ARRAY_SIZE(types); t++) {
-	for (s=0; s < strlen(str); s++) {
+	for (l=0; l < 32; l++) {
 
 		enum winreg_Type w_type;
 		uint32_t w_size, w_length;
 		uint8_t *w_data;
 
-		const char *string = talloc_strndup(tctx, str, s);
+		const char *string = generate_random_str(tctx, l);
 		DATA_BLOB blob = data_blob_string_const(string);
 
 		torture_assert(tctx,
