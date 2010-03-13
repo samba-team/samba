@@ -411,7 +411,6 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	struct ldb_context *c = kd->ldb;
 	struct ldb_result *res;
 	int ret;
-	char *query;
 
 	if (name == NULL) {
 		return WERR_INVALID_PARAM;
@@ -422,9 +421,8 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 		return ldb_get_default_value(mem_ctx, k, NULL, data_type, data);
 	} else {
 		/* normal value */
-		query = talloc_asprintf(mem_ctx, "(value=%s)", name);
-		ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_ONELEVEL, NULL, "%s", query);
-		talloc_free(query);
+		ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_ONELEVEL,
+				 NULL, "(value=%s)", name);
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0, ("Error getting values for '%s': %s\n",
