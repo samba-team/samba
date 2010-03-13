@@ -98,10 +98,26 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					      const char *name,
 					      uint32_t type, DATA_BLOB data)
 {
-	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
-	char *type_s;
+	struct ldb_message *msg;
+	char *name_dup, *type_str;
+	int ret;
 
-	ldb_msg_add_string(msg, "value", talloc_strdup(mem_ctx, name));
+	msg = talloc_zero(mem_ctx, struct ldb_message);
+	if (msg == NULL) {
+		return NULL;
+	}
+
+	name_dup = talloc_strdup(msg, name);
+	if (name_dup == NULL) {
+		talloc_free(msg);
+		return NULL;
+	}
+
+	ret = ldb_msg_add_string(msg, "value", name_dup);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return NULL;
+	}
 
 	switch (type) {
 	case REG_SZ:
@@ -109,25 +125,37 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 		if ((data.length > 0) && (data.data != NULL)
 		    && (data.data[0] != '\0')) {
 			struct ldb_val *val;
+			bool ret2;
 
 			val = talloc_zero(msg, struct ldb_val);
-			convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
-						   (void *)data.data,
-						   data.length,
-						   (void **)&val->data, &val->length, false);
-			ldb_msg_add_value(msg, "data", val, NULL);
+			if (val == NULL) {
+				talloc_free(msg);
+				return NULL;
+			}
+
+			ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
+						     (void *)data.data, data.length,
+						     (void **)&val->data, &val->length,
+						     false);
+			ret = ldb_msg_add_value(msg, "data", val, NULL);
 		} else {
-			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		}
 		break;
 
 	case REG_DWORD:
 		if ((data.length > 0) && (data.data != NULL)) {
-			ldb_msg_add_string(msg, "data",
-					   talloc_asprintf(mem_ctx, "0x%x",
-							   IVAL(data.data, 0)));
+			char *conv_str;
+
+			conv_str = talloc_asprintf(msg, "0x%x", IVAL(data.data, 0));
+			if (conv_str == NULL) {
+				talloc_free(msg);
+				return NULL;
+			}
+
+			ret = ldb_msg_add_string(msg, "data", conv_str);
 		} else {
-			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		}
 		break;
 
@@ -135,15 +163,29 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	default:
 		if ((data.length > 0) && (data.data != NULL)
 		    && (data.data[0] != '\0')) {
-			ldb_msg_add_value(msg, "data", &data, NULL);
+			ret = ldb_msg_add_value(msg, "data", &data, NULL);
 		} else {
-			ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		}
 		break;
 	}
 
-	type_s = talloc_asprintf(mem_ctx, "%u", type);
-	ldb_msg_add_string(msg, "type", type_s);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return NULL;
+	}
+
+	type_str = talloc_asprintf(mem_ctx, "%u", type);
+	if (type_str == NULL) {
+		talloc_free(msg);
+		return NULL;
+	}
+
+	ret = ldb_msg_add_string(msg, "type", type_str);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return NULL;
+	}
 
 	return msg;
 }
