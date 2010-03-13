@@ -73,8 +73,11 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	case REG_DWORD:
 		if (val != NULL) {
 			uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-			*data = data_blob_talloc(mem_ctx, NULL, 4);
-			SIVAL(data->data, 0, tmp);
+			data->data = talloc_size(mem_ctx, sizeof(uint32_t) + 1);
+			if (data->data != NULL) {
+				SIVAL(data->data, 0, tmp);
+			}
+			data->length = sizeof(uint32_t);
 		} else {
 			data->data = NULL;
 			data->length = 0;
@@ -84,7 +87,9 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	case REG_BINARY:
 	default:
 		if (val != NULL) {
-			*data = data_blob_talloc(mem_ctx, val->data, val->length);
+			data->data = talloc_memdup(mem_ctx, val->data,
+						   val->length);
+			data->length = val->length;
 		} else {
 			data->data = NULL;
 			data->length = 0;
