@@ -1271,10 +1271,20 @@ interface drsuapi
 		drsuapi_DsAddEntry_AttrErrListItem_V1 first;
 	} drsuapi_DsAddEntryErrorInfo_Attr_V1;
 
+	/* Name resolution error
+	 * Ref: NAMERR_DRS_WIRE_V1, [MS-DRSR]: 4.1.1.1.14 */
+	typedef struct {
+		uint32	dsid;
+		WERROR	extended_err;
+		uint32	extended_data;
+		uint16	problem;
+		drsuapi_DsReplicaObjectIdentifier *id_matched; /* The best match for the supplied object identity */
+	} drsuapi_DsAddEntryErrorInfo_Name_V1;
+
 	typedef [switch_type(uint32)] union {
 		[case(1)] drsuapi_DsAddEntryErrorInfo_Attr_V1 attr_err;
-/*		[case(2)] drsuapi_DsAddEntryErrorInfo2 error2;
-		[case(3)] drsuapi_DsAddEntryErrorInfo3 error3;
+		[case(2)] drsuapi_DsAddEntryErrorInfo_Name_V1 name_err;
+/*		[case(3)] drsuapi_DsAddEntryErrorInfo3 error3;
 */		[case(4)] drsuapi_DsAddEntryErrorInfoX errorX;
 		[case(5)] drsuapi_DsAddEntryErrorInfoX errorX;
 		[case(6)] drsuapi_DsAddEntryErrorInfoX errorX;
