@@ -61,9 +61,22 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	case REG_SZ:
 	case REG_EXPAND_SZ:
 		if (val != NULL) {
-			convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
-						     val->data, val->length,
-						     (void **)&data->data, &data->length, false);
+			if (val->data[0] != '\0') {
+				/* The data should be provided as UTF16 string */
+				convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
+						      val->data, val->length,
+						      (void **)&data->data, &data->length, false);
+			} else {
+				/* Provide a possibility to store also UTF8
+				 * REG_SZ/REG_EXPAND_SZ values. This is done
+				 * by adding a '\0' in front of the data */
+				data->data = talloc_size(mem_ctx, val->length - 1);
+				if (data->data != NULL) {
+					memcpy(data->data, val->data + 1,
+					       val->length - 1);
+				}
+				data->length = val->length - 1;
+			}
 		} else {
 			data->data = NULL;
 			data->length = 0;
@@ -138,10 +151,29 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 				return NULL;
 			}
 
-			ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
-						     (void *)data.data, data.length,
-						     (void **)&val->data, &val->length,
-						     false);
+			if (data.length % 2 == 0) {
+				/* The data is provided as UTF16 string */
+				ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
+							     (void *)data.data, data.length,
+							     (void **)&val->data, &val->length,
+							     false);
+				if (!ret2) {
+					talloc_free(msg);
+					return NULL;
+				}
+			} else {
+				/* Provide a possibility to store also UTF8
+				 * REG_SZ/REG_EXPAND_SZ values. This is done
+				 * by adding a '\0' in front of the data */
+				val->data = talloc_size(msg, data.length + 1);
+				if (val->data == NULL) {
+					talloc_free(msg);
+					return NULL;
+				}
+				val->data[0] = '\0';
+				memcpy(val->data + 1, data.data, data.length);
+				val->length = data.length + 1;
+			}
 			ret = ldb_msg_add_value(msg, "data", val, NULL);
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
