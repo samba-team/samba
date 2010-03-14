@@ -642,39 +642,56 @@ fail:
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 {
-	struct { enum TDB_ERROR err; NTSTATUS status; }	map[] =
-		{ { TDB_SUCCESS,	NT_STATUS_OK },
-		  { TDB_ERR_CORRUPT,	NT_STATUS_INTERNAL_DB_CORRUPTION },
-		  { TDB_ERR_IO,		NT_STATUS_UNEXPECTED_IO_ERROR },
-		  { TDB_ERR_OOM,	NT_STATUS_NO_MEMORY },
-		  { TDB_ERR_EXISTS,	NT_STATUS_OBJECT_NAME_COLLISION },
+	NTSTATUS result = NT_STATUS_INTERNAL_ERROR;
 
-		  /*
-		   * TDB_ERR_LOCK is very broad, we could for example
-		   * distinguish between fcntl locks and invalid lock
-		   * sequences. So NT_STATUS_FILE_LOCK_CONFLICT is a
-		   * compromise.
-		   */
-		  { TDB_ERR_LOCK,	NT_STATUS_FILE_LOCK_CONFLICT },
-		  /*
-		   * The next two ones in the enum are not actually used
-		   */
-		  { TDB_ERR_NOLOCK,	NT_STATUS_FILE_LOCK_CONFLICT },
-		  { TDB_ERR_LOCK_TIMEOUT, NT_STATUS_FILE_LOCK_CONFLICT },
-		  { TDB_ERR_NOEXIST,	NT_STATUS_NOT_FOUND },
-		  { TDB_ERR_EINVAL,	NT_STATUS_INVALID_PARAMETER },
-		  { TDB_ERR_RDONLY,	NT_STATUS_ACCESS_DENIED }
-		};
+	switch (err) {
+	case TDB_SUCCESS:
+		result = NT_STATUS_OK;
+		break;
+	case TDB_ERR_CORRUPT:
+		result = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		break;
+	case TDB_ERR_IO:
+		result = NT_STATUS_UNEXPECTED_IO_ERROR;
+		break;
+	case TDB_ERR_OOM:
+		result = NT_STATUS_NO_MEMORY;
+		break;
+	case TDB_ERR_EXISTS:
+		result = NT_STATUS_OBJECT_NAME_COLLISION;
+		break;
 
-	int i;
+	case TDB_ERR_LOCK:
+		/*
+		 * TDB_ERR_LOCK is very broad, we could for example
+		 * distinguish between fcntl locks and invalid lock
+		 * sequences. So NT_STATUS_FILE_LOCK_CONFLICT is a
+		 * compromise.
+		 */
+		result = NT_STATUS_FILE_LOCK_CONFLICT;
+		break;
 
-	for (i=0; i < sizeof(map) / sizeof(map[0]); i++) {
-		if (err == map[i].err) {
-			return map[i].status;
-		}
-	}
-
-	return NT_STATUS_INTERNAL_ERROR;
+	case TDB_ERR_NOLOCK:
+	case TDB_ERR_LOCK_TIMEOUT:
+		/*
+		 * These two ones in the enum are not actually used
+		 */
+		result = NT_STATUS_FILE_LOCK_CONFLICT;
+		break;
+	case TDB_ERR_NOEXIST:
+		result = NT_STATUS_NOT_FOUND;
+		break;
+	case TDB_ERR_EINVAL:
+		result = NT_STATUS_INVALID_PARAMETER;
+		break;
+	case TDB_ERR_RDONLY:
+		result = NT_STATUS_ACCESS_DENIED;
+		break;
+	case TDB_ERR_NESTING:
+		result = NT_STATUS_INTERNAL_ERROR;
+		break;
+	};
+	return result;
 }
 
 int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2)
