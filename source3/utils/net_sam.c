@@ -894,7 +894,6 @@ static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **ar
 
 static NTSTATUS unmap_unix_group(const struct group *grp, GROUP_MAP *pmap)
 {
-        NTSTATUS status;
         GROUP_MAP map;
         const char *grpname;
         DOM_SID dom_sid;
@@ -914,9 +913,7 @@ static NTSTATUS unmap_unix_group(const struct group *grp, GROUP_MAP *pmap)
                 return NT_STATUS_UNSUCCESSFUL;
         }
 
-        status = pdb_delete_group_mapping_entry(dom_sid);
-
-        return status;
+        return pdb_delete_group_mapping_entry(dom_sid);
 }
 
 static int net_sam_unmapunixgroup(struct net_context *c, int argc, const char **argv)
