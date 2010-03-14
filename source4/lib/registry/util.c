@@ -71,23 +71,27 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 	switch (type) {
 		case REG_EXPAND_SZ:
 		case REG_SZ:
-			convert_string_talloc_convenience(mem_ctx,
-							  iconv_convenience,
-							  CH_UTF16, CH_UNIX,
-							  data.data,
-							  data.length,
-							  (void **)&ret,
-							  NULL, false);
+			if (data.length % 2 == 0) {
+				convert_string_talloc_convenience(mem_ctx,
+								  iconv_convenience,
+								  CH_UTF16, CH_UNIX,
+								  data.data,
+								  data.length,
+								  (void **)&ret,
+								  NULL, false);
+			}
 			break;
 		case REG_BINARY:
 			ret = data_blob_hex_string_upper(mem_ctx, &data);
 			break;
 		case REG_DWORD:
-			if (IVAL(data.data, 0) == 0) {
-				ret = talloc_strdup(mem_ctx, "0");
-			} else {
-				ret = talloc_asprintf(mem_ctx, "0x%x",
-						      IVAL(data.data, 0));
+			if (data.length == sizeof(uint32_t)) {
+				if (IVAL(data.data, 0) == 0) {
+					ret = talloc_strdup(mem_ctx, "0");
+				} else {
+					ret = talloc_asprintf(mem_ctx, "0x%x",
+							      IVAL(data.data, 0));
+				}
 			}
 			break;
 		case REG_NONE:
