@@ -21,26 +21,6 @@
 #include "includes.h"
 #include <tevent_internal.h>
 
-void event_fd_set_writeable(struct tevent_fd *fde)
-{
-	TEVENT_FD_WRITEABLE(fde);
-}
-
-void event_fd_set_not_writeable(struct tevent_fd *fde)
-{
-	TEVENT_FD_NOT_WRITEABLE(fde);
-}
-
-void event_fd_set_readable(struct tevent_fd *fde)
-{
-	TEVENT_FD_READABLE(fde);
-}
-
-void event_fd_set_not_readable(struct tevent_fd *fde)
-{
-	TEVENT_FD_NOT_READABLE(fde);
-}
-
 /*
  * Return if there's something in the queue
  */
