@@ -1213,7 +1213,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	file_save("negotiate.dat", blob1.data, blob1.length);
 #endif
 
-	p2 = (char *)req->buf + data_blob_len;
+	p2 = (char *)req->buf + blob1.length;
 
 	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
 				     STR_TERMINATE);
