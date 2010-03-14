@@ -51,13 +51,13 @@ NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name
 		DEBUG(0,("failed to initialize group mapping\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	map.gid=gid;
 	if (!string_to_sid(&map.sid, sid)) {
 		DEBUG(0, ("string_to_sid failed: %s", sid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	map.sid_name_use=sid_name_use;
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
@@ -105,7 +105,7 @@ bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	struct group *grp;
 	bool ret;
-	
+
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
@@ -114,28 +114,26 @@ bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	DEBUG(10, ("get_domain_group_from_sid\n"));
 
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
-	
+
 	become_root();
 	ret = pdb_getgrsid(map, sid);
 	unbecome_root();
-	
+
 	/* special case check for rid 513 */
-	
+
 	if ( !ret ) {
 		uint32 rid;
-		
+
 		sid_peek_rid( &sid, &rid );
-		
+
 		if ( rid == DOMAIN_GROUP_RID_USERS ) {
 			fstrcpy( map->nt_name, "None" );
 			fstrcpy( map->comment, "Ordinary Users" );
 			sid_copy( &map->sid, &sid );
 			map->sid_name_use = SID_NAME_DOM_GRP;
 			map->gid = (gid_t)-1;
-			
 			return True;
 		}
-		
 		return False;
 	}
 
@@ -147,13 +145,13 @@ bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	}
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is a domain group\n"));
- 	
+
 	if (map->gid==-1) {
 		return False;
 	}
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%lu\n",(unsigned long)map->gid));
-	
+
 	grp = getgrgid(map->gid);
 	if ( !grp ) {
 		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in UNIX security\n"));
@@ -745,22 +743,22 @@ NTSTATUS pdb_create_builtin_alias(uint32 rid)
 	fstring groupname;
 
 	DEBUG(10, ("Trying to create builtin alias %d\n", rid));
-	
+
 	if ( !sid_compose( &sid, &global_sid_Builtin, rid ) ) {
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
-	
+
 	if ( (mem_ctx = talloc_new(NULL)) == NULL ) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	if ( !lookup_sid(mem_ctx, &sid, NULL, &name, &type) ) {
 		TALLOC_FREE( mem_ctx );
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
-	
+
 	/* validate RID so copy the name and move on */
-		
+
 	fstrcpy( groupname, name );
 	TALLOC_FREE( mem_ctx );
 
