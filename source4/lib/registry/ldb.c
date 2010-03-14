@@ -85,12 +85,25 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 
 	case REG_DWORD:
 		if (val != NULL) {
-			uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-			data->data = talloc_size(mem_ctx, sizeof(uint32_t) + 1);
-			if (data->data != NULL) {
-				SIVAL(data->data, 0, tmp);
+			if (val->data[0] != '\0') {
+				/* The data is a plain DWORD */
+				uint32_t tmp = strtoul((char *)val->data, NULL, 0);
+				data->data = talloc_size(mem_ctx, sizeof(uint32_t) + 1);
+				if (data->data != NULL) {
+					SIVAL(data->data, 0, tmp);
+				}
+				data->length = sizeof(uint32_t);
+			} else {
+				/* Provide a possibility to store also UTF8
+				 * REG_DWORD values. This is done by adding a
+				 * '\0' in front of the data */
+				data->data = talloc_size(mem_ctx, val->length - 1);
+				if (data->data != NULL) {
+					memcpy(data->data, val->data + 1,
+					       val->length - 1);
+				}
+				data->length = val->length - 1;
 			}
-			data->length = sizeof(uint32_t);
 		} else {
 			data->data = NULL;
 			data->length = 0;
@@ -182,15 +195,37 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 
 	case REG_DWORD:
 		if ((data.length > 0) && (data.data != NULL)) {
-			char *conv_str;
+			if (data.length == sizeof(uint32_t)) {
+				char *conv_str;
 
-			conv_str = talloc_asprintf(msg, "0x%x", IVAL(data.data, 0));
-			if (conv_str == NULL) {
-				talloc_free(msg);
-				return NULL;
+				conv_str = talloc_asprintf(msg, "0x%x", IVAL(data.data, 0));
+				if (conv_str == NULL) {
+					talloc_free(msg);
+					return NULL;
+				}
+				ret = ldb_msg_add_string(msg, "data", conv_str);
+			} else {
+				/* Provide a possibility to store also UTF8
+				 * REG_DWORD values. This is done by adding a
+				 * '\0' in front of the data */
+				struct ldb_val *val;
+
+				val = talloc_zero(msg, struct ldb_val);
+				if (val == NULL) {
+					talloc_free(msg);
+					return NULL;
+				}
+
+				val->data = talloc_size(msg, data.length + 1);
+				if (val->data == NULL) {
+					talloc_free(msg);
+					return NULL;
+				}
+				val->data[0] = '\0';
+				memcpy(val->data + 1, data.data, data.length);
+				val->length = data.length + 1;
+				ret = ldb_msg_add_value(msg, "data", val, NULL);
 			}
-
-			ret = ldb_msg_add_string(msg, "data", conv_str);
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		}
