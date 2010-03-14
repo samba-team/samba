@@ -25,12 +25,4 @@ typedef NTSTATUS (init_module_function) (void);
 
 NTSTATUS init_samba_module(void);
 
-typedef int smb_event_id_t;
-#define SMB_EVENT_ID_INVALID	(-1)
-
-#define SMB_IDLE_EVENT_DEFAULT_INTERVAL	180
-#define SMB_IDLE_EVENT_MIN_INTERVAL	30
-
-typedef void (smb_idle_event_fn)(void **data,time_t *interval,time_t now);
-
 #endif /* _MODULE_H */
