@@ -1272,9 +1272,12 @@ extern void build_options(bool screen);
 		exit_server("open_sockets_smbd() failed");
 
 	TALLOC_FREE(frame);
+	/* make sure we always have a valid stackframe */
+	frame = talloc_stackframe();
 
 	smbd_parent_loop(parent);
 
 	exit_server_cleanly(NULL);
+	TALLOC_FREE(frame);
 	return(0);
 }
