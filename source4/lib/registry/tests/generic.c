@@ -35,6 +35,8 @@ static bool test_str_regtype(struct torture_context *ctx)
 				 "REG_SZ", "REG_SZ failed");
 	torture_assert_str_equal(ctx, str_regtype(4),
 				 "REG_DWORD", "REG_DWORD failed");
+	torture_assert_str_equal(ctx, str_regtype(5),
+				 "REG_DWORD_BIG_ENDIAN", "REG_DWORD_BIG_ENDIAN failed");
 	torture_assert_str_equal(ctx, str_regtype(11),
 				 "REG_QWORD", "REG_QWORD failed");
 
@@ -48,6 +50,16 @@ static bool test_reg_val_data_string_dword(struct torture_context *ctx)
 	DATA_BLOB db = { (uint8_t *)&d, sizeof(d) };
 	torture_assert_str_equal(ctx, "0x00000020",
 				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD, db),
+				 "dword failed");
+	return true;
+}
+
+static bool test_reg_val_data_string_dword_big_endian(struct torture_context *ctx)
+{
+	uint32_t d = 0x20;
+	DATA_BLOB db = { (uint8_t *)&d, sizeof(d) };
+	torture_assert_str_equal(ctx, "0x20000000",
+				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD_BIG_ENDIAN, db),
 				 "dword failed");
 	return true;
 }
@@ -131,6 +143,8 @@ struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx)
 				      test_str_regtype);
 	torture_suite_add_simple_test(suite, "reg_val_data_string dword",
 				      test_reg_val_data_string_dword);
+	torture_suite_add_simple_test(suite, "reg_val_data_string dword_big_endian",
+				      test_reg_val_data_string_dword_big_endian);
 	torture_suite_add_simple_test(suite, "reg_val_data_string qword",
 				      test_reg_val_data_string_qword);
 	torture_suite_add_simple_test(suite, "reg_val_data_string sz",
