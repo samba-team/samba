@@ -1,22 +1,36 @@
 # selftest main code.
 
-import Scripting, os
+import Scripting, os, Options, Utils, Environment, optparse
+
 
 ########################################################################
 # main test entry point
 def cmd_test(opt):
-    '''Run the full test suite'''
-    print "Starting full test"
-
-########################################################################
-# main test entry point
-def cmd_quicktest(opt):
     '''Run the quick test suite'''
     print "Starting quick test"
-    #Scripting.commands += ['build']
-    SELFTEST = 'PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" --exclude=./selftest/slow --quick --include=./selftest/quick --socket-wrapper | perl -W ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail | /usr/bin/perl -W ../selftest/format-subunit.pl --prefix=./st --format=plain --immediate'
-    ret = os.system(SELFTEST)
+    Scripting.commands += ['build']
+    env = Environment.Environment()
+
+    env.TESTS = Options.options.TESTS
+
+    env.OPTIONS = ''
+    if Options.options.QUICKTEST:
+        env.OPTIONS += '--exclude=./selftest/slow --quick --include=./selftest/quick'
+
+    SELFTEST = 'PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} | perl -W ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail | /usr/bin/perl -W ../selftest/format-subunit.pl --prefix=./st --format=plain --immediate'
+
+    cmd = Utils.subst_vars(SELFTEST, env)
+    print "test: running %s" % cmd
+    ret = os.system(cmd)
 
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
-    opt.ADD_COMMAND('quicktest', cmd_quicktest)
+
+    gr = opt.add_option_group('test options')
+
+    gr.add_option('--tests',
+                  help=("wildcard pattern of tests to run"),
+                  action="store", dest='TESTS', default='')
+    gr.add_option('--quick',
+                  help=("enable only quick tests"),
+                  action="store_true", dest='QUICKTEST', default=False)
