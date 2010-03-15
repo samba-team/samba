@@ -86,22 +86,14 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 			break;
 		case REG_DWORD:
 			if (data.length == sizeof(uint32_t)) {
-				if (IVAL(data.data, 0) == 0) {
-					ret = talloc_strdup(mem_ctx, "0");
-				} else {
-					ret = talloc_asprintf(mem_ctx, "0x%x",
-							      IVAL(data.data, 0));
-				}
+				ret = talloc_asprintf(mem_ctx, "0x%8.8x",
+						      IVAL(data.data, 0));
 			}
 			break;
 		case REG_QWORD:
 			if (data.length == sizeof(uint64_t)) {
-				if (BVAL(data.data, 0) == 0) {
-					ret = talloc_strdup(mem_ctx, "0");
-				} else {
-					ret = talloc_asprintf(mem_ctx, "0x%llx",
-							      BVAL(data.data, 0));
-				}
+				ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
+						      BVAL(data.data, 0));
 			}
 			break;
 		case REG_NONE:
