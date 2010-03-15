@@ -22,4 +22,34 @@
 #ifndef _SRV_SPOOLSS_UITL_H
 #define _SRV_SPOOLSS_UITL_H
 
+/**
+ * @internal
+ *
+ * @brief Set printer data over the winreg pipe.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  key      The key of the printer data to store the value.
+ *
+ * @param[in]  value    The value name to save.
+ *
+ * @param[in]  type     The type of the value to use.
+ *
+ * @param[in]  data     The data which sould be saved under the given value.
+ *
+ * @param[in]  data_size The size of the data.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_set_printer_dataex(struct pipes_struct *p,
+				 const char *printer,
+				 const char *key,
+				 const char *value,
+				 enum winreg_Type type,
+				 uint8_t *data,
+				 uint32_t data_size);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
