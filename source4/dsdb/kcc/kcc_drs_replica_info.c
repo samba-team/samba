@@ -3,7 +3,7 @@
 
  DRS Replica Information
 
- Copyright (C) Erick Nogueira do Nascimento 2009
+ Copyright (C) Erick Nogueira do Nascimento 2009-2010
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/proto.h"
 #include "auth/auth.h"
 #include "smbd/service.h"
 #include "lib/events/events.h"
@@ -35,77 +36,258 @@
 #include "param/param.h"
 #include "dsdb/common/util.h"
 
+
 /*
-  get metadata for specified object
+   get the stamp values for the linked attribute 'linked_attr_name' of the object 'dn'
 */
-static WERROR kccdrs_replica_get_info_obj_metadata(TALLOC_CTX *mem_ctx,
-					      struct ldb_context *samdb,
-					      struct drsuapi_DsReplicaGetInfo *r,
-					      union drsuapi_DsReplicaInfo *reply,
-					      struct ldb_dn *dn)
+static WERROR get_linked_attribute_value_stamp(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
+				       struct ldb_dn *dn, const char *linked_attr_name,
+				       uint32_t *attr_version, NTTIME *attr_change_time, uint32_t *attr_orig_usn)
 {
-    int ret, i;
-    const struct ldb_val *md_value;
-    struct ldb_result *result;
-    enum ndr_err_code ndr_err;
-    struct replPropertyMetaDataBlob md;
-    const struct dsdb_schema *schema;
-    const char *attrs[] = { "replPropertyMetaData", NULL };
+	struct ldb_result *res;
+	int ret;
+	const char *attrs[2];
+	struct ldb_dn *attr_ext_dn;
+	NTSTATUS ntstatus;
 
-    ret = dsdb_search_dn(samdb, mem_ctx, &result, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
-    if (ret != LDB_SUCCESS) {
-        return WERR_INTERNAL_ERROR;
-    } else if (result->count < 1) {
-        DEBUG(1, (__location__": Failed to find replPropertyMetaData for: %s\n", r->in.req->req1.object_dn));
-        return WERR_INTERNAL_ERROR;
-    }
+	attrs[0] = linked_attr_name;
+	attrs[1] = NULL;
 
-    md_value = ldb_msg_find_ldb_val(result->msgs[0], "replPropertyMetaData");
-    if (!md_value) {
-        return WERR_INTERNAL_ERROR;
-    }
+	ret = dsdb_search_dn(samdb, mem_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_REVEAL_INTERNALS);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, (__location__ ": Failed search for attribute %s on %s",
+				linked_attr_name, ldb_dn_get_linearized(dn)));
+		return WERR_INTERNAL_ERROR;
+	}
 
-    ndr_err = ndr_pull_struct_blob(md_value, mem_ctx,
-                                    lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")),
-                                    &md,
-                                    (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
-    if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-        return WERR_INTERNAL_ERROR;
-    }
+	attr_ext_dn = ldb_msg_find_attr_as_dn(samdb, mem_ctx, res->msgs[0], linked_attr_name);
+	if (!attr_ext_dn) {
+		DEBUG(0, (__location__ ": Failed search for attribute %s on %s",
+				linked_attr_name, ldb_dn_get_linearized(dn)));
+		return WERR_INTERNAL_ERROR;
+	}
 
-    if (md.version != 1) {
-        return WERR_INTERNAL_ERROR;
-    }
+	DEBUG(0, ("linked_attr_name = %s, attr_ext_dn = %s", linked_attr_name,
+		  ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
 
-    schema = dsdb_get_schema(samdb);
-    if (!schema) {
-        DEBUG(0,(__location__": Failed to get the schema\n"));
-        return WERR_INTERNAL_ERROR;
-    }
+	ntstatus = dsdb_get_extended_dn_uint32(attr_ext_dn, attr_version, "RMD_VERSION");
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"",
+				"RMD_VERSION", ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
+		return WERR_INTERNAL_ERROR;
+	}
 
-    reply->objmetadata = talloc(mem_ctx, struct drsuapi_DsReplicaObjMetaDataCtr);
-    W_ERROR_HAVE_NO_MEMORY(reply->objmetadata);
+	ntstatus = dsdb_get_extended_dn_nttime(attr_ext_dn, attr_change_time, "RMD_CHANGETIME");
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"",
+				"RMD_CHANGETIME", ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
+		return WERR_INTERNAL_ERROR;
+	}
 
-    reply->objmetadata->reserved = 0;
-    reply->objmetadata->count = md.ctr.ctr1.count;
-    reply->objmetadata->array = talloc_array(mem_ctx, struct drsuapi_DsReplicaObjMetaData, reply->objmetadata->count);
-    for (i=0; i<md.ctr.ctr1.count; i++) {
-        const struct dsdb_attribute *attr = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
-        char const* attribute_name = NULL;
-        if (!attr) {
-            DEBUG(0, (__location__": Failed to find attribute with id: %d", md.ctr.ctr1.array[i].attid));
-        } else {
-            attribute_name = attr->lDAPDisplayName;
-        }
-        reply->objmetadata->array[i].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
-        reply->objmetadata->array[i].version = md.ctr.ctr1.array[i].version;
-        reply->objmetadata->array[i].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
-        reply->objmetadata->array[i].originating_usn = md.ctr.ctr1.array[i].originating_usn;
-        reply->objmetadata->array[i].local_usn = md.ctr.ctr1.array[i].local_usn;
-        reply->objmetadata->array[i].attribute_name = attribute_name;
-    }
+	ntstatus = dsdb_get_extended_dn_uint32(attr_ext_dn, attr_version, "RMD_ORIGINATING_USN");
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"",
+				"RMD_ORIGINATING_USN", ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
+		return WERR_INTERNAL_ERROR;
+	}
 
-    return WERR_OK;
+	return WERR_OK;
+}
+
+static WERROR get_repl_prop_metadata_ctr(TALLOC_CTX *mem_ctx,
+					 struct ldb_context *samdb,
+					 struct ldb_dn *dn,
+					 struct replPropertyMetaDataBlob *obj_metadata_ctr)
+{
+	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "replPropertyMetaData", NULL };
+	const struct ldb_val *omd_value;
+	enum ndr_err_code ndr_err;
+
+	ret = ldb_search(samdb, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		DEBUG(0, (__location__ ": Failed search for replPropertyMetaData attribute on %s",
+			  ldb_dn_get_linearized(dn)));
+		return WERR_INTERNAL_ERROR;
+	}
+
+	omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
+	if (!omd_value) {
+                DEBUG(0,(__location__ ": Object %s does not have a replPropertyMetaData attribute\n",
+                         ldb_dn_get_linearized(dn)));
+		talloc_free(res);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	ndr_err = ndr_pull_struct_blob(omd_value, mem_ctx,
+				       lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")), obj_metadata_ctr,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(dn)));
+		talloc_free(res);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	talloc_free(res);
+	return WERR_OK;
+}
+
+/*
+  get the DN of the nTDSDSA object from the configuration partition
+  whose invocationId is 'invocation_id'
+  put the value on 'dn_str'
+*/
+static WERROR get_dn_from_invocation_id(TALLOC_CTX *mem_ctx,
+					struct ldb_context *samdb,
+					struct GUID *invocation_id,
+					const char **dn_str)
+{
+	char *invocation_id_str;
+	const char *attrs_invocation[] = { NULL };
+	struct ldb_message *msg;
+	int ret;
+
+	invocation_id_str = GUID_string(mem_ctx, invocation_id);
+	W_ERROR_HAVE_NO_MEMORY(invocation_id_str);
+
+	ret = dsdb_search_one(samdb, invocation_id_str, &msg, ldb_get_config_basedn(samdb), LDB_SCOPE_SUBTREE,
+			      attrs_invocation, 0, "(&(objectClass=nTDSDSA)(invocationId=%s))", invocation_id_str);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, (__location__ ": Failed search for the object DN under %s whose invocationId is %s",
+			  invocation_id_str, ldb_dn_get_linearized(ldb_get_config_basedn(samdb))));
+		talloc_free(invocation_id_str);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	*dn_str = ldb_dn_alloc_linearized(mem_ctx, msg->dn);
+	talloc_free(invocation_id_str);
+	return WERR_OK;
+}
+
+/*
+  get metadata version 2 info for a specified object DN
+*/
+static WERROR kccdrs_replica_get_info_obj_metadata2(TALLOC_CTX *mem_ctx,
+						    struct ldb_context *samdb,
+						    struct drsuapi_DsReplicaGetInfo *r,
+						    union drsuapi_DsReplicaInfo *reply,
+						    struct ldb_dn *dn,
+						    int base_index)
+{
+	WERROR status;
+	struct replPropertyMetaDataBlob omd_ctr;
+	struct replPropertyMetaData1 *attr;
+	struct drsuapi_DsReplicaObjMetaData2Ctr *metadata2;
+	uint32_t i, j;
+
+	DEBUG(0, ("kccdrs_replica_get_info_obj_metadata2() called\n"));
+
+	if (!dn) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	if (!ldb_dn_validate(dn)) {
+		return WERR_DS_DRA_BAD_DN;
+	}
+
+	status = get_repl_prop_metadata_ctr(mem_ctx, samdb, dn, &omd_ctr);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	reply->objmetadata2 = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjMetaData2Ctr);
+	W_ERROR_HAVE_NO_MEMORY(reply->objmetadata2);
+	metadata2 = reply->objmetadata2;
+	metadata2->enumeration_context = 0;
+
+	/* For each replicated attribute of the object */
+	for (i = 0, j = 0; i < omd_ctr.ctr.ctr1.count; i++) {
+		const struct dsdb_attribute *schema_attr;
+		uint32_t attr_version;
+		NTTIME attr_change_time;
+		uint32_t attr_originating_usn;
+
+		/*
+		  attr := attrsSeq[i]
+		  s := AttrStamp(object, attr)
+		*/
+		/* get a reference to the attribute on 'omd_ctr' */
+		attr = &omd_ctr.ctr.ctr1.array[j];
+
+		schema_attr = dsdb_attribute_by_attributeID_id(dsdb_get_schema(samdb), attr->attid);
+
+		DEBUG(0, ("attribute_id = %d, attribute_name: %s\n", attr->attid, schema_attr->lDAPDisplayName));
+
+		/*
+		  if (attr in Link Attributes of object and
+		    dwInVersion = 2 and DS_REPL_INFO_FLAG_IMPROVE_LINKED_ATTRS in msgIn.ulFlags)
+		*/
+		if (schema_attr &&
+		    schema_attr->linkID != 0 && /* Checks if attribute is a linked attribute */
+		    (schema_attr->linkID % 2) == 0 && /* is it a forward link? only forward links have the LinkValueStamp */
+		    r->in.level == 2 &&
+		    (r->in.req->req2.flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)) /* on MS-DRSR it is DS_REPL_INFO_FLAG_IMPROVE_LINKED_ATTRS */
+		{
+			/*
+			  ls := LinkValueStamp of the most recent
+				value change in object!attr
+			*/
+			status = get_linked_attribute_value_stamp(mem_ctx, samdb, dn, schema_attr->lDAPDisplayName,
+								  &attr_version, &attr_change_time, &attr_originating_usn);
+			W_ERROR_NOT_OK_RETURN(status);
+
+			/*
+			 Aligning to MS-DRSR 4.1.13.3:
+			 's' on the doc is 'attr->originating_change_time' here
+			 'ls' on the doc is 'attr_change_time' here
+			*/
+
+			/* if (ls is more recent than s (based on order in which the change was applied on server)) then */
+			if (attr_change_time > attr->originating_change_time) {
+				/*
+				 Improve the stamp with the link value stamp.
+				  s.dwVersion := ls.dwVersion
+				  s.timeChanged := ls.timeChanged
+				  s.uuidOriginating := NULLGUID
+				  s.usnOriginating := ls.usnOriginating
+				*/
+				attr->version = attr_version;
+				attr->originating_change_time = attr_change_time;
+				attr->originating_invocation_id = GUID_zero();
+				attr->originating_usn = attr_originating_usn;
+			}
+		}
+
+		if (i < base_index) {
+			continue;
+		}
+
+		metadata2->array = talloc_realloc(mem_ctx, metadata2->array,
+						  struct drsuapi_DsReplicaObjMetaData2, j + 1);
+		W_ERROR_HAVE_NO_MEMORY(metadata2->array);
+		metadata2->array[j].attribute_name = schema_attr->lDAPDisplayName;
+		metadata2->array[j].local_usn = attr->local_usn;
+		metadata2->array[j].originating_change_time = attr->originating_change_time;
+		metadata2->array[j].originating_invocation_id = attr->originating_invocation_id;
+		metadata2->array[j].originating_usn = attr->originating_usn;
+		metadata2->array[j].version = attr->version;
+
+		/*
+		  originating_dsa_dn := GetDNFromInvocationID(originating_invocation_id)
+		  GetDNFromInvocationID() should return the DN of the nTDSDSAobject that has the specified invocation ID
+		  See MS-DRSR 4.1.13.3 and 4.1.13.2.1
+		*/
+		status = get_dn_from_invocation_id(mem_ctx, samdb,
+						   &attr->originating_invocation_id,
+						   &metadata2->array[j].originating_dsa_dn);
+		W_ERROR_NOT_OK_RETURN(status);
+		j++;
+		metadata2->count = j;
+
+	}
+
+	return WERR_OK;
 }
 
 /*
@@ -334,7 +516,8 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 	neigh->last_attempt = reps_from->last_attempt;
 	neigh->source_dsa_obj_guid = reps_from->source_dsa_obj_guid;
 
-	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->source_dsa_obj_guid, &source_dsa_dn);
+	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->source_dsa_obj_guid,
+				   &source_dsa_dn);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find DN for neighbor GUID %s\n",
@@ -351,9 +534,9 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!GUID_all_zero(&reps_from->transport_guid)) {
-		if (dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->transport_guid,
-					 &transport_obj_dn) != LDB_SUCCESS)
-		{
+		ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->transport_guid,
+					   &transport_obj_dn);
+		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 	}
@@ -579,6 +762,8 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	struct ldb_context *samdb;
 	TALLOC_CTX *mem_ctx;
 	enum drsuapi_DsReplicaInfoType info_type;
+	uint32_t flags;
+	const char *attribute_name, *value_dn;
 
 	service = talloc_get_type(msg->private_data, struct kccsrv_service);
 	samdb = service->samdb;
@@ -603,7 +788,6 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		info_type = req1->info_type;
 		object_dn_str = req1->object_dn;
 		req_src_dsa_guid = req1->source_dsa_guid;
-
 	} else { /* r->in.level == DRSUAPI_DS_REPLICA_GET_INFO2 */
 		req2 = &req->in.req->req2;
 		if (req2->enumeration_context == 0xffffffff) {
@@ -616,6 +800,9 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		info_type = req2->info_type;
 		object_dn_str = req2->object_dn;
 		req_src_dsa_guid = req2->source_dsa_guid;
+		flags = req2->flags;
+		attribute_name = req2->attribute_name;
+		value_dn = req2->value_dn_str;
 	}
 
 	/* allocate the reply and fill in some fields */
@@ -635,7 +822,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 							    reply, base_index, req_src_dsa_guid,
 							    object_dn_str);
 		break;
-	case DRSUAPI_DS_REPLICA_INFO_REPSTO: /* On MS-DRSR it is DS_REPL_INFO_REPSTO */
+	case DRSUAPI_DS_REPLICA_INFO_REPSTO:
 		status = kccdrs_replica_get_info_repsto(mem_ctx, service, samdb, req,
 							reply, base_index, req_src_dsa_guid,
 							object_dn_str);
@@ -648,24 +835,41 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		status = kccdrs_replica_get_info_cursors2(mem_ctx, samdb, req, reply,
 							  ldb_dn_new(mem_ctx, samdb, object_dn_str));
 		break;
-	case DRSUAPI_DS_REPLICA_INFO_PENDING_OPS: /* On MS-DRSR it is DS_REPL_INFO_PENDING_OPS */
+	case DRSUAPI_DS_REPLICA_INFO_PENDING_OPS:
 		status = kccdrs_replica_get_info_pending_ops(mem_ctx, samdb, req, reply,
 							     ldb_dn_new(mem_ctx, samdb, object_dn_str));
 		break;
-
 	case DRSUAPI_DS_REPLICA_INFO_CURSORS3: /* On MS-DRSR it is DS_REPL_INFO_CURSORS_3_FOR_NC */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1: /* On MS-DRSR it is DS_REPL_INFO_UPTODATE_VECTOR_V1 */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
-                status = kccdrs_replica_get_info_obj_metadata(mem_ctx, samdb, req, reply,
-							     ldb_dn_new(mem_ctx, samdb, object_dn_str));
-                break;
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_OBJ */
+		status = kccdrs_replica_get_info_obj_metadata2(mem_ctx, samdb, req, reply,
+							       ldb_dn_new(mem_ctx, samdb, object_dn_str), base_index);
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA: /* On MS-DRSR it is DS_REPL_INFO_METADATA_FOR_ATTR_VALUE */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2: /* On MS-DRSR it is DS_REPL_INFO_METADATA_2_FOR_ATTR_VALUE */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES: /* On MS-DRSR it is DS_REPL_INFO_KCC_LINK_FAILURES */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS: /* On MS-DRSR it is DS_REPL_INFO_CLIENT_CONTEXTS */
+		status = WERR_INVALID_LEVEL;
+		break;
 	case DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS: /* On MS-DRSR it is DS_REPL_INFO_SERVER_OUTGOING_CALLS */
+		status = WERR_INVALID_LEVEL;
+		break;
 	default:
 		DEBUG(1,(__location__ ": Unsupported DsReplicaGetInfo info_type %u\n",
 			 info_type));
