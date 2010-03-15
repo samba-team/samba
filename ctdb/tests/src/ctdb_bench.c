@@ -103,7 +103,7 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 
-void send_start_messages(struct ctdb_context *ctdb, int incr)
+static void send_start_messages(struct ctdb_context *ctdb, int incr)
 {
 	/* two messages are injected into the ring, moving
 	   in opposite directions */
