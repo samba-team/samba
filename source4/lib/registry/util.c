@@ -69,6 +69,9 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 		return talloc_strdup(mem_ctx, "");
 
 	switch (type) {
+		case REG_NONE:
+			/* "NULL" is the right return value */
+			break;
 		case REG_EXPAND_SZ:
 		case REG_SZ:
 			if (data.length % 2 == 0) {
@@ -95,9 +98,6 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 				ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
 						      BVAL(data.data, 0));
 			}
-			break;
-		case REG_NONE:
-			/* "NULL" is the right return value */
 			break;
 		case REG_MULTI_SZ:
 			/* FIXME: We don't support this yet */
@@ -146,6 +146,9 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 	/* Convert data appropriately */
 
 	switch (*type) {
+		case REG_NONE:
+			ZERO_STRUCTP(data);
+			break;
 		case REG_SZ:
 		case REG_EXPAND_SZ:
 			convert_string_talloc_convenience(mem_ctx,
@@ -170,9 +173,6 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint64_t));
 			SBVAL(data->data, 0, tmp);
 			}
-			break;
-		case REG_NONE:
-			ZERO_STRUCTP(data);
 			break;
 		case REG_MULTI_SZ:
 			/* FIXME: We don't support this yet */
