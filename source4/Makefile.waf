@@ -2,7 +2,7 @@
 WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
 
 all:
-	$(WAF) build -v
+	$(WAF) build -p
 
 install:
 	$(WAF) install
@@ -21,6 +21,3 @@ clean:
 
 distclean:
 	rm -rf bin
-
-*:
-	echo "target not implemented"
