@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "security.idl", "misc.idl", "samr.idl";
+import "security.idl", "misc.idl", "lsa.idl", "samr.idl";
 
 [
   uuid("e3514235-4b06-11d1-ab04-00c04fc2dcd2"),
@@ -1281,11 +1281,59 @@ interface drsuapi
 		drsuapi_DsReplicaObjectIdentifier *id_matched; /* The best match for the supplied object identity */
 	} drsuapi_DsAddEntryErrorInfo_Name_V1;
 
+	/* Referral error
+	 * Ref: REFERR_DRS_WIRE_V1, [MS-DRSR]: 4.1.1.1.15 */
+	typedef struct {
+		[value(83)] uint8  name_res;	/* Must be 'S' */
+		[value(0)]  uint8  unused_pad;
+		[value(0)]  uint16 next_rdn;
+	} drsuapi_NameResOp_V1;
+
+	typedef [enum16bit] enum {
+		DRSUAPI_CH_REFTYPE_SUPERIOR 	= 0x0000, /* referral to a superior DC */
+		DRSUAPI_CH_REFTYPE_SUBORDINATE	= 0x0001, /* referral to a subordinate DC */
+		DRSUAPI_CH_REFTYPE_NSSR		= 0x0002, /* Not used */
+		DRSUAPI_CH_REFTYPE_CROSS	= 0x0003  /* A referral to an external crossRef object */
+	} drsuapi_DsAddEntry_RefType;
+
+	typedef [enum8bit] enum {
+		DRSUAPI_SE_CHOICE_BASE_ONLY	= 0x00,
+		DRSUAPI_SE_CHOICE_IMMED_CHLDRN	= 0x01,
+		DRSUAPI_SE_CHOICE_WHOLE_SUBTREE	= 0x02
+	} drsuapi_DsAddEntry_ChoiceType;
+
+	/* list of network names of the DCs
+	 * to which the referral is directed */
+	typedef struct  {
+		drsuapi_DsaAddressListItem_V1 *next;
+		lsa_String *address;
+	} drsuapi_DsaAddressListItem_V1;
+
+	typedef struct {
+		drsuapi_DsReplicaObjectIdentifier *id_target; /* object to which the referral is directed */
+		drsuapi_NameResOp_V1 op_state;
+		[value(0)] uint16 rdn_alias;
+		[value(0)] uint16 rdn_internal;
+		drsuapi_DsAddEntry_RefType ref_type;
+		uint16 addr_list_count;
+		drsuapi_DsaAddressListItem_V1 *addr_list;
+		drsuapi_DsAddEntry_RefErrListItem_V1 *next;
+		boolean32 is_choice_set;
+		drsuapi_DsAddEntry_ChoiceType choice;
+	} drsuapi_DsAddEntry_RefErrListItem_V1;
+
+	typedef struct {
+		uint32	dsid;
+		WERROR	extended_err;
+		uint32	extended_data;
+		drsuapi_DsAddEntry_RefErrListItem_V1 refer;
+	} drsuapi_DsAddEntryErrorInfo_Referr_V1;
+
 	typedef [switch_type(uint32)] union {
-		[case(1)] drsuapi_DsAddEntryErrorInfo_Attr_V1 attr_err;
-		[case(2)] drsuapi_DsAddEntryErrorInfo_Name_V1 name_err;
-/*		[case(3)] drsuapi_DsAddEntryErrorInfo3 error3;
-*/		[case(4)] drsuapi_DsAddEntryErrorInfoX errorX;
+		[case(1)] drsuapi_DsAddEntryErrorInfo_Attr_V1   attr_err;
+		[case(2)] drsuapi_DsAddEntryErrorInfo_Name_V1   name_err;
+		[case(3)] drsuapi_DsAddEntryErrorInfo_Referr_V1 referral_err;
+		[case(4)] drsuapi_DsAddEntryErrorInfoX errorX;
 		[case(5)] drsuapi_DsAddEntryErrorInfoX errorX;
 		[case(6)] drsuapi_DsAddEntryErrorInfoX errorX;
 		[case(7)] drsuapi_DsAddEntryErrorInfoX errorX;
