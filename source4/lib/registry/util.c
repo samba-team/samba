@@ -85,9 +85,18 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 			}
 			break;
 		case REG_DWORD:
+		case REG_DWORD_BIG_ENDIAN:
 			if (data.length == sizeof(uint32_t)) {
-				ret = talloc_asprintf(mem_ctx, "0x%8.8x",
-						      IVAL(data.data, 0));
+				if (type == REG_DWORD) {
+					ret = talloc_asprintf(mem_ctx, "0x%8.8x",
+							      IVAL(data.data, 0));
+				} else {
+					ret = talloc_asprintf(mem_ctx, "0x%2.2x%2.2x%2.2x%2.2x",
+							      CVAL(data.data, 0),
+							      CVAL(data.data, 1),
+							      CVAL(data.data, 2),
+							      CVAL(data.data, 3));
+				}
 			}
 			break;
 		case REG_QWORD:
@@ -153,7 +162,8 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 							  (void **)&data->data,
 							  &data->length, false);
 			break;
-		case REG_DWORD: {
+		case REG_DWORD:
+		case REG_DWORD_BIG_ENDIAN: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
 			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint32_t));
 			SIVAL(data->data, 0, tmp);

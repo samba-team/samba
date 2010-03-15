@@ -84,6 +84,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 		break;
 
 	case REG_DWORD:
+	case REG_DWORD_BIG_ENDIAN:
 		if (val != NULL) {
 			if (val->data[0] != '\0') {
 				/* The data is a plain DWORD */
@@ -221,11 +222,22 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 		break;
 
 	case REG_DWORD:
+	case REG_DWORD_BIG_ENDIAN:
 		if ((data.length > 0) && (data.data != NULL)) {
 			if (data.length == sizeof(uint32_t)) {
 				char *conv_str;
 
-				conv_str = talloc_asprintf(msg, "0x%8.8x", IVAL(data.data, 0));
+				if (type == REG_DWORD) {
+					conv_str = talloc_asprintf(msg, "0x%8.8x",
+								   IVAL(data.data, 0));
+				} else {
+					conv_str = talloc_asprintf(msg, "0x%2.2x%2.2x%2.2x%2.2x",
+								   CVAL(data.data, 0),
+								   CVAL(data.data, 1),
+								   CVAL(data.data, 2),
+								   CVAL(data.data, 3));
+				}
+
 				if (conv_str == NULL) {
 					talloc_free(msg);
 					return NULL;
