@@ -58,7 +58,7 @@ NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
 {
 	*access_granted = 0;
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		*access_granted = access_desired;
 		if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
@@ -2176,7 +2176,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn), 0,
+	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0,
 		       fsp->oplock_type);
 
 	/* Handle strange delete on close create semantics. */
@@ -2641,7 +2641,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn), 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0, NO_OPLOCK);
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */

@@ -35,7 +35,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 	struct security_descriptor *secdesc = NULL;
 	bool ret;
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return true;
 	}
@@ -111,7 +111,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		ret = false;
 		goto out;
 	}
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		ret = true;
 		goto out;
@@ -195,7 +195,7 @@ bool can_access_file_data(connection_struct *conn,
 	DEBUG(10,("can_access_file_data: requesting 0x%x on file %s\n",
 		  (unsigned int)access_mask, smb_fname_str_dbg(smb_fname)));
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -203,7 +203,7 @@ bool can_access_file_data(connection_struct *conn,
 	SMB_ASSERT(VALID_STAT(smb_fname->st));
 
 	/* Check primary owner access. */
-	if (get_current_uid(conn) == smb_fname->st.st_ex_uid) {
+	if (conn->server_info->utok.uid == smb_fname->st.st_ex_uid) {
 		switch (access_mask) {
 			case FILE_READ_DATA:
 				return (smb_fname->st.st_ex_mode & S_IRUSR) ?

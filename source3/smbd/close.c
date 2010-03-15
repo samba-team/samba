@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+
 /****************************************************************************
  Run a file if it is a magic script.
 ****************************************************************************/
@@ -330,12 +332,12 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		/* Initial delete on close was set and no one else
 		 * wrote a real delete on close. */
 
-		if (get_current_vuid(conn) != fsp->vuid) {
+		if (current_user.vuid != fsp->vuid) {
 			become_user(conn, fsp->vuid);
 			became_user = True;
 		}
 		fsp->delete_on_close = true;
-		set_delete_on_close_lck(lck, True, get_current_utok(fsp->conn));
+		set_delete_on_close_lck(lck, True, &current_user.ut);
 		if (became_user) {
 			unbecome_user();
 		}
@@ -387,7 +389,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 */
 	fsp->update_write_time_on_close = false;
 
-	if (!unix_token_equal(lck->delete_token, get_current_utok(conn))) {
+	if (!unix_token_equal(lck->delete_token, &current_user.ut)) {
 		/* Become the user who requested the delete. */
 
 		DEBUG(5,("close_remove_share_mode: file %s. "
@@ -953,12 +955,12 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		 * directories we don't care if anyone else
 		 * wrote a real delete on close. */
 
-		if (get_current_vuid(fsp->conn) != fsp->vuid) {
+		if (current_user.vuid != fsp->vuid) {
 			become_user(fsp->conn, fsp->vuid);
 			became_user = True;
 		}
 		send_stat_cache_delete_message(fsp->fsp_name->base_name);
-		set_delete_on_close_lck(lck, True, get_current_utok(fsp->conn));
+		set_delete_on_close_lck(lck, True, &current_user.ut);
 		fsp->delete_on_close = true;
 		if (became_user) {
 			unbecome_user();

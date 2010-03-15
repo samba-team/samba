@@ -1129,11 +1129,9 @@ static bool user_can_read_file(connection_struct *conn,
 	/*
 	 * If user is a member of the Admin group
 	 * we never hide files from them.
-	 * Use (uid_t)0 here not sec_initial_uid()
-	 * because of the RAW-SAMBA3HIDE test.
 	 */
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->admin_user) {
 		return True;
 	}
 
@@ -1153,11 +1151,9 @@ static bool user_can_write_file(connection_struct *conn,
 	/*
 	 * If user is a member of the Admin group
 	 * we never hide files from them.
-	 * Use (uid_t)0 here not sec_initial_uid()
-	 * because of the RAW-SAMBA3HIDE test.
 	 */
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->admin_user) {
 		return True;
 	}
 
@@ -1182,13 +1178,10 @@ static bool file_is_special(connection_struct *conn,
 	/*
 	 * If user is a member of the Admin group
 	 * we never hide files from them.
-	 * Use (uid_t)0 here not sec_initial_uid()
-	 * because of the RAW-SAMBA3HIDE test.
 	 */
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (conn->admin_user)
 		return False;
-	}
 
 	SMB_ASSERT(VALID_STAT(smb_fname->st));
 
