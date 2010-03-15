@@ -682,6 +682,70 @@ static BOOL test_EnumJobs(struct torture_context *tctx,
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL test_EnumPrinterData(struct torture_context *tctx,
+				 LPSTR servername,
+				 HANDLE handle)
+{
+	DWORD err = 0;
+	LPTSTR value_name;
+	LPBYTE data;
+	DWORD index = 0;
+	DWORD type;
+	DWORD value_offered = 0, value_needed;
+	DWORD data_offered = 0, data_needed;
+	char tmp[1024];
+
+	torture_comment(tctx, "Testing EnumPrinterData(%d) (value offered: %d, data_offered: %d)\n",
+		index, value_offered, data_offered);
+
+	err = EnumPrinterData(handle, 0, NULL, 0, &value_needed, NULL, NULL, 0, &data_needed);
+	if (err) {
+		sprintf(tmp, "EnumPrinterData(%d) failed on [%s] (value size = %d, data size = %d), error: %s\n",
+			index, servername, value_offered, data_offered, errstr(err));
+		torture_fail(tctx, tmp);
+	}
+
+	value_name = malloc(value_needed);
+	torture_assert(tctx, value_name, "malloc failed");
+	data = malloc(data_needed);
+	torture_assert(tctx, data, "malloc failed");
+
+	value_offered = value_needed;
+	data_offered = data_needed;
+
+	do {
+
+		value_needed = 0;
+		data_needed = 0;
+
+		torture_comment(tctx, "Testing EnumPrinterData(%d) (value offered: %d, data_offered: %d)\n",
+			index, value_offered, data_offered);
+
+		err = EnumPrinterData(handle, index++, value_name, value_offered, &value_needed, &type, data, data_offered, &data_needed);
+		if (err == ERROR_NO_MORE_ITEMS) {
+			break;
+		}
+		if (err) {
+			sprintf(tmp, "EnumPrinterData(%d) failed on [%s] (value size = %d, data size = %d), error: %s\n",
+				index, servername, value_offered, data_offered, errstr(err));
+			torture_fail(tctx, tmp);
+		}
+
+		if (tctx->print) {
+			print_printer_data(NULL, value_name, data_needed, data, type);
+		}
+
+	} while (err != ERROR_NO_MORE_ITEMS);
+
+	free(value_name);
+	free(data);
+
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL test_EnumPrinterDataEx(struct torture_context *tctx,
 				   LPSTR servername,
 				   LPSTR keyname,
@@ -985,6 +1049,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EachJob(tctx, printername, handle);
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "");
 	ret &= test_EnumPrinterKey(tctx, printername, handle, "PrinterDriverData");
+	ret &= test_EnumPrinterData(tctx, printername, handle);
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
 	ret &= test_DeviceModes(tctx, printername, handle);
 	ret &= test_PrinterData(tctx, printername, handle);
