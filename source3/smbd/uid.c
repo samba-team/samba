@@ -505,3 +505,46 @@ bool unbecome_user(void)
 	pop_conn_ctx();
 	return True;
 }
+
+/****************************************************************************
+ Return the current user we are running effectively as on this connection.
+ I'd like to make this return conn->server_info->utok.uid, but become_root()
+ doesn't alter this value.
+****************************************************************************/
+
+uid_t get_current_uid(connection_struct *conn)
+{
+	return current_user.ut.uid;
+}
+
+/****************************************************************************
+ Return the current group we are running effectively as on this connection.
+ I'd like to make this return conn->server_info->utok.gid, but become_root()
+ doesn't alter this value.
+****************************************************************************/
+
+gid_t get_current_gid(connection_struct *conn)
+{
+	return current_user.ut.gid;
+}
+
+/****************************************************************************
+ Return the UNIX token we are running effectively as on this connection.
+ I'd like to make this return &conn->server_info->utok, but become_root()
+ doesn't alter this value.
+****************************************************************************/
+
+const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn)
+{
+	return &current_user.ut;
+}
+
+const NT_USER_TOKEN *get_current_nttok(connection_struct *conn)
+{
+	return current_user.nt_user_token;
+}
+
+uint16_t get_current_vuid(connection_struct *conn)
+{
+	return current_user.vuid;
+}

@@ -7117,6 +7117,11 @@ void become_root(void);
 void unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
 bool unbecome_user(void);
+uid_t get_current_uid(connection_struct *conn);
+gid_t get_current_gid(connection_struct *conn);
+const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn);
+const NT_USER_TOKEN *get_current_nttok(connection_struct *conn);
+uint16_t get_current_vuid(connection_struct *conn);
 
 /* The following definitions come from smbd/utmp.c  */
 
