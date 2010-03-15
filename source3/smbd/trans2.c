@@ -1062,12 +1062,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	/* Any data in this call is an EA list. */
-	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
-		reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
-		goto out;
-	}
-
-	if (total_data != 4) {
+	if (total_data && (total_data != 4)) {
 		if (total_data < 10) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			goto out;
@@ -1086,9 +1081,11 @@ static void call_trans2open(connection_struct *conn,
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			goto out;
 		}
-	} else if (IVAL(pdata,0) != 4) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		goto out;
+
+		if (!lp_ea_support(SNUM(conn))) {
+			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
+			goto out;
+		}
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -7916,19 +7913,14 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		return;
         }
 
-	/* Any data in this call is an EA list. */
-	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
-		reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
-		goto out;
-	}
-
 	/*
 	 * OS/2 workplace shell seems to send SET_EA requests of "null"
 	 * length (4 bytes containing IVAL 4).
 	 * They seem to have no effect. Bug #3212. JRA.
 	 */
 
-	if (total_data != 4) {
+	if (total_data && (total_data != 4)) {
+		/* Any data in this call is an EA list. */
 		if (total_data < 10) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			goto out;
@@ -7945,6 +7937,11 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 				       total_data - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			goto out;
+		}
+
+		if (!lp_ea_support(SNUM(conn))) {
+			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
 			goto out;
 		}
 	}
