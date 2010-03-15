@@ -214,6 +214,11 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
+	if (num_nodes == 0) {
+		printf("You must specify the number of nodes\n");
+		exit(1);
+	}
+
 	ev = event_context_init(NULL);
 
 	/* initialise ctdb */
