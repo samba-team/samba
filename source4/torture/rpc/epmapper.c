@@ -39,7 +39,8 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 }
 
 
-static bool test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_Map(struct dcerpc_binding_handle *b,
+		     TALLOC_CTX *mem_ctx,
 		     struct epm_twr_t *twr)
 {
 	NTSTATUS status;
@@ -77,7 +78,7 @@ static bool test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->tower.floors[4].lhs.lhs_data = data_blob(NULL, 0);
 	twr->tower.floors[4].rhs.ip.ipaddr = "0.0.0.0";
 
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
+	status = dcerpc_epm_Map_r(b, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
@@ -90,7 +91,7 @@ static bool test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->tower.floors[3].lhs.lhs_data = data_blob(NULL, 0);
 	twr->tower.floors[3].rhs.http.port = 0;
 
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
+	status = dcerpc_epm_Map_r(b, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
@@ -103,7 +104,7 @@ static bool test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->tower.floors[3].lhs.lhs_data = data_blob(NULL, 0);
 	twr->tower.floors[3].rhs.http.port = 0;
 
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
+	status = dcerpc_epm_Map_r(b, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
@@ -120,7 +121,7 @@ static bool test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	twr->tower.floors[4].lhs.lhs_data = data_blob(NULL, 0);
 	twr->tower.floors[4].rhs.netbios.name = "";
 
-	status = dcerpc_epm_Map(p, mem_ctx, &r);
+	status = dcerpc_epm_Map_r(b, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
@@ -143,6 +144,7 @@ static bool test_Lookup(struct torture_context *tctx,
 	struct rpc_if_id_t iface;
 	struct policy_handle handle;
 	uint32_t num_ents;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(handle);
 
@@ -161,7 +163,7 @@ static bool test_Lookup(struct torture_context *tctx,
 		ZERO_STRUCT(uuid);
 		ZERO_STRUCT(iface);
 
-		status = dcerpc_epm_Lookup(p, tctx, &r);
+		status = dcerpc_epm_Lookup_r(b, tctx, &r);
 		if (!NT_STATUS_IS_OK(status) || r.out.result != 0) {
 			break;
 		}
@@ -173,7 +175,7 @@ static bool test_Lookup(struct torture_context *tctx,
 			printf("\nFound '%s'\n", r.out.entries[i].annotation);
 			display_tower(tctx, &r.out.entries[i].tower->tower);
 			if (r.out.entries[i].tower->tower.num_floors == 5) {
-				test_Map(p, tctx, r.out.entries[i].tower);
+				test_Map(b, tctx, r.out.entries[i].tower);
 			}
 		}
 	} while (NT_STATUS_IS_OK(status) && 
@@ -186,7 +188,9 @@ static bool test_Lookup(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_entry_t *entries)
+static bool test_Delete(struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
+			struct epm_entry_t *entries)
 {
 	NTSTATUS status;
 	struct epm_Delete r;
@@ -194,7 +198,7 @@ static bool test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_e
 	r.in.num_ents = 1;
 	r.in.entries = entries;
 	
-	status = dcerpc_epm_Delete(p, mem_ctx, &r);
+	status = dcerpc_epm_Delete_r(b, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("Delete failed - %s\n", nt_errstr(status));
 		return false;
@@ -214,6 +218,7 @@ static bool test_Insert(struct torture_context *tctx,
 	NTSTATUS status;
 	struct epm_Insert r;
 	struct dcerpc_binding *bd;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.num_ents = 1;
 
@@ -232,12 +237,12 @@ static bool test_Insert(struct torture_context *tctx,
 	
 	r.in.replace = 0;
 
-	status = dcerpc_epm_Insert(p, tctx, &r);
+	status = dcerpc_epm_Insert_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "Insert failed");
 
 	torture_assert(tctx, r.out.result == 0, "Insert failed");
 
-	if (!test_Delete(p, tctx, r.in.entries)) {
+	if (!test_Delete(b, tctx, r.in.entries)) {
 		return false; 
 	}
 
@@ -248,11 +253,12 @@ static bool test_InqObject(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct epm_InqObject r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.epm_object = talloc(tctx, struct GUID);
 	*r.in.epm_object = ndr_table_epmapper.syntax_id.uuid;
 
-	status = dcerpc_epm_InqObject(p, tctx, &r);
+	status = dcerpc_epm_InqObject_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "InqObject failed");
 
 	return true;
