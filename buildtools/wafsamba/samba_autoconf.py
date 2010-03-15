@@ -206,7 +206,7 @@ def CHECK_CODE(conf, code, define,
                   execute=execute,
                   define_name = define,
                   mandatory = mandatory,
-                  samba_cflags=TO_LIST(cflags),
+                  ccflags=TO_LIST(cflags),
                   includes=includes,
                   msg=msg):
         conf.DEFINE(define, 1)
