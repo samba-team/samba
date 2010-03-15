@@ -643,6 +643,7 @@ RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs_nt.o \
 RPC_DFS_OBJ =  ../librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
+		  rpc_server/srv_spoolss_util.o \
 		  ../librpc/gen_ndr/srv_spoolss.o
 
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
