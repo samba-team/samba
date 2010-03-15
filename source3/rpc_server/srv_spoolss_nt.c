@@ -7768,7 +7768,7 @@ WERROR _spoolss_EnumPrinterData(pipes_struct *p,
 			if (!r->out.value_name) {
 				return WERR_NOMEM;
 			}
-			*r->out.value_needed = strlen_m(val->value_name);
+			*r->out.value_needed = val->value_name_len;
 		} else {
 			r->out.value_name = NULL;
 			*r->out.value_needed = 0;
@@ -7785,9 +7785,9 @@ WERROR _spoolss_EnumPrinterData(pipes_struct *p,
  		 * in MS-RPRN.
  		 */
 
-		if (r->out.data && val->data &&
+		if (r->out.data && val->data && val->data->data &&
 				val->data_length && r->in.data_offered) {
-			memcpy(r->out.data, val->data,
+			memcpy(r->out.data, val->data->data,
 				MIN(val->data_length,r->in.data_offered));
 		}
 
@@ -9071,6 +9071,8 @@ static WERROR registry_value_to_printer_enum_value(TALLOC_CTX *mem_ctx,
 
 	r->value_name	= talloc_strdup(mem_ctx, regval_name(v));
 	W_ERROR_HAVE_NO_MEMORY(r->value_name);
+
+	r->value_name_len = strlen_m_term(regval_name(v)) * 2;
 
 	r->type		= regval_type(v);
 	r->data_length	= regval_size(v);
