@@ -827,7 +827,11 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	size_t sd_size;
 	int result = EXIT_OK;
 
-	sd = sec_desc_parse(talloc_tos(), cli, the_acl);
+	if (sddl) {
+		sd = sddl_decode(talloc_tos(), the_acl, get_global_sam_sid());
+	} else {
+		sd = sec_desc_parse(talloc_tos(), cli, the_acl);
+	}
 
 	if (!sd) return EXIT_PARSE_ERROR;
 	if (test_args) return EXIT_OK;
@@ -1031,7 +1035,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
 		{ "numeric", 0, POPT_ARG_NONE, &numeric, 1, "Don't resolve sids or masks to names" },
-		{ "sddl", 0, POPT_ARG_NONE, &sddl, 1, "Output acls in sddl format" },
+		{ "sddl", 0, POPT_ARG_NONE, &sddl, 1, "Output and input acls in sddl format" },
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
