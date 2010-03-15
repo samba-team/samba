@@ -1127,11 +1127,12 @@ static bool user_can_read_file(connection_struct *conn,
 			       struct smb_filename *smb_fname)
 {
 	/*
-	 * If user is a member of the Admin group
-	 * we never hide files from them.
+	 * Never hide files from the root user.
+	 * We use (uid_t)0 here not sec_initial_uid()
+	 * as make test uses a single user context.
 	 */
 
-	if (conn->admin_user) {
+	if (get_current_uid(conn) == (uid_t)0) {
 		return True;
 	}
 
@@ -1149,11 +1150,12 @@ static bool user_can_write_file(connection_struct *conn,
 				const struct smb_filename *smb_fname)
 {
 	/*
-	 * If user is a member of the Admin group
-	 * we never hide files from them.
+	 * Never hide files from the root user.
+	 * We use (uid_t)0 here not sec_initial_uid()
+	 * as make test uses a single user context.
 	 */
 
-	if (conn->admin_user) {
+	if (get_current_uid(conn) == (uid_t)0) {
 		return True;
 	}
 
@@ -1176,12 +1178,14 @@ static bool file_is_special(connection_struct *conn,
 			    const struct smb_filename *smb_fname)
 {
 	/*
-	 * If user is a member of the Admin group
-	 * we never hide files from them.
+	 * Never hide files from the root user.
+	 * We use (uid_t)0 here not sec_initial_uid()
+	 * as make test uses a single user context.
 	 */
 
-	if (conn->admin_user)
+	if (get_current_uid(conn) == (uid_t)0) {
 		return False;
+	}
 
 	SMB_ASSERT(VALID_STAT(smb_fname->st));
 
