@@ -2,7 +2,7 @@
 WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
 
 all:
-	$(WAF) build -p
+	$(WAF) build
 
 install:
 	$(WAF) install
