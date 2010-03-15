@@ -2290,6 +2290,11 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 		/* check for errors */
 		if (err_data) {
 			WERROR status;
+			struct drsuapi_DsAddEntryErrorInfo_Attr_V1 *attr_err;
+			struct drsuapi_DsAddEntry_AttrErrListItem_V1 *attr_err_li;
+			struct drsuapi_DsAddEntryErrorInfo_Name_V1 *name_err;
+			struct drsuapi_DsAddEntryErrorInfo_Referr_V1 *ref_err;
+			struct drsuapi_DsAddEntry_RefErrListItem_V1 *ref_li;
 
 			if (r->out.ctr->ctr3.err_ver != 1) {
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -2298,8 +2303,8 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 
 			status = err_data->v1.status;
 
-			DEBUG(0,("DsAddEntry (Ctr3) failed: "
-				 "Errors: dir_err = %d, status = %s",
+			DEBUG(0,("DsAddEntry (R3) failed: "
+				 "Errors: dir_err = %d, status = %s;",
 				 err_data->v1.dir_err,
 				 win_errstr(err_data->v1.status)));
 
@@ -2309,29 +2314,81 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			}
 
 			/* dump more detailed error */
-			switch (r->out.ctr->ctr3.err_data->v1.dir_err) {
+			switch (err_data->v1.dir_err) {
 			case DRSUAPI_DIRERR_OK: /* mute compiler warnings */
 				break;
 			case DRSUAPI_DIRERR_ATTRIBUTE:
-				/* TODO: Dump attribute errors */
+				/* Dump attribute errors */
+				attr_err = &err_data->v1.info->attr_err;
+				DEBUGADD(0,(" Attribute Error: object = %s, count = %d;",
+					    attr_err->id->dn,
+					    attr_err->count));
+				attr_err_li = &attr_err->first;
+				for (; attr_err_li; attr_err_li = attr_err_li->next) {
+					struct drsuapi_DsAddEntry_AttrErr_V1 *err = &attr_err_li->err_data;
+					DEBUGADD(0,(" Error: err = %s, problem = 0x%08X, attid = 0x%08X;",
+						    win_errstr(err->extended_err),
+						    err->problem,
+						    err->attid));
+					/* TODO: should we print attribute value here? */
+				}
 				break;
 			case DRSUAPI_DIRERR_NAME:
-				/* TODO: Dump Name resolution error.*/
+				/* Dump Name resolution error */
+				name_err = &err_data->v1.info->name_err;
+				DEBUGADD(0,(" Name Error: err = %s, problem = 0x%08X, id_matched = %s;",
+					    win_errstr(name_err->extended_err),
+					    name_err->problem,
+					    name_err->id_matched->dn));
 				break;
 			case DRSUAPI_DIRERR_REFERRAL:
-				/* TODO: Referral. */
+				/* Dump Referral errors */
+				ref_err = &err_data->v1.info->referral_err;
+				DEBUGADD(0,(" Referral Error: extended_err = %s",
+					    win_errstr(name_err->extended_err)));
+				ref_li = &ref_err->refer;
+				for (; ref_li; ref_li = ref_li->next) {
+					struct drsuapi_DsaAddressListItem_V1 *addr;
+					DEBUGADD(0,(" Referral: id_target = %s, ref_type = 0x%04X,",
+						    ref_li->id_target->dn,
+						    ref_li->ref_type));
+					if (ref_li->is_choice_set) {
+						DEBUGADD(0,(" choice = 0x%02X, ",
+							    ref_li->choice));
+					}
+					DEBUGADD(0,(" add_list ("));
+					for (addr = ref_li->addr_list; addr; addr = addr->next) {
+						DEBUGADD(0,("%s", addr->address->string));
+						if (addr->next) {
+							DEBUGADD(0,(", "));
+						}
+					}
+					DEBUGADD(0,(");"));
+				}
 				break;
 			case DRSUAPI_DIRERR_SECURITY:
-				/* TODO: Dump Security error. */
+				/* Dump Security error. */
+				DEBUGADD(0,(" Security Error: extended_err = %s, problem = 0x%08X",
+					    win_errstr(err_data->v1.info->security_err.extended_err),
+					    err_data->v1.info->security_err.problem));
 				break;
 			case DRSUAPI_DIRERR_SERVICE:
-				/* TODO: Dump Service error. */
+				/* Dump Service error. */
+				DEBUGADD(0,(" Service Error: extended_err = %s, problem = 0x%08X",
+					    win_errstr(err_data->v1.info->service_err.extended_err),
+					    err_data->v1.info->service_err.problem));
 				break;
 			case DRSUAPI_DIRERR_UPDATE:
-				/* TODO: Dump Update error. */
+				/* Dump Update error. */
+				DEBUGADD(0,(" Update Error: extended_err = %s, problem = 0x%08X",
+					    win_errstr(err_data->v1.info->update_err.extended_err),
+					    err_data->v1.info->update_err.problem));
 				break;
 			case DRSUAPI_DIRERR_SYSTEM:
-				/* TODO: System error. */
+				/* System error. */
+				DEBUGADD(0,(" System Error: extended_err = %s, problem = 0x%08X",
+					    win_errstr(err_data->v1.info->system_err.extended_err),
+					    err_data->v1.info->system_err.problem));
 				break;
 			default:
 				DEBUGADD(0,(" Unknown DIRERR error class returned!"));
