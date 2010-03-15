@@ -80,6 +80,7 @@ bool torture_groupinfo(struct torture_context *torture)
 	struct lsa_String name;
 	struct dom_sid2 sid;
 	uint32_t rid;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_init("test_userinfo");
 
@@ -90,18 +91,19 @@ bool torture_groupinfo(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	b = p->binding_handle;
 
 	name.string = lp_workgroup(torture->lp_ctx);
 
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_opendomain(torture, p, mem_ctx, &h, &name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_group_create(p, mem_ctx, &h, TEST_GROUPNAME, &rid)) {
+	if (!test_group_create(b, mem_ctx, &h, TEST_GROUPNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -111,7 +113,7 @@ bool torture_groupinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_group_cleanup(p, mem_ctx, &h, TEST_GROUPNAME)) {
+	if (!test_group_cleanup(b, mem_ctx, &h, TEST_GROUPNAME)) {
 		ret = false;
 		goto done;
 	}

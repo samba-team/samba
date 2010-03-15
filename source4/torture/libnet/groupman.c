@@ -60,6 +60,7 @@ bool torture_groupadd(struct torture_context *torture)
 	const char *name = TEST_GROUPNAME;
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_init("test_groupadd");
 
@@ -68,9 +69,10 @@ bool torture_groupadd(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	torture_assert_ntstatus_ok(torture, status, "RPC connection");
+	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, p, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;
 	}
@@ -80,7 +82,7 @@ bool torture_groupadd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_group_cleanup(p, mem_ctx, &h, name)) {
+	if (!test_group_cleanup(b, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}

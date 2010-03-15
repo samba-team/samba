@@ -311,6 +311,7 @@ bool torture_useradd(struct torture_context *torture)
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_init("test_useradd");
 
@@ -319,9 +320,10 @@ bool torture_useradd(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	torture_assert_ntstatus_ok(torture, status, "RPC connect failed");
+	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, p, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;
 	}
@@ -331,12 +333,12 @@ bool torture_useradd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_user_cleanup(torture, p, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(torture, b, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_opendomain(torture, p, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;
 	}
@@ -346,7 +348,7 @@ bool torture_useradd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_user_cleanup(torture, p, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(torture, b, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
@@ -368,6 +370,7 @@ bool torture_userdel(struct torture_context *torture)
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_init("test_userdel");
 
@@ -378,14 +381,15 @@ bool torture_userdel(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, p, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_user_create(torture, p, mem_ctx, &h, name, &rid)) {
+	if (!test_user_create(torture, b, mem_ctx, &h, name, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -413,6 +417,7 @@ bool torture_usermod(struct torture_context *torture)
 	char *name;
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_init("test_userdel");
 
@@ -421,16 +426,17 @@ bool torture_usermod(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	torture_assert_ntstatus_ok(torture, status, "RPC connect");
+	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
 	name = talloc_strdup(mem_ctx, TEST_USERNAME);
 
-	if (!test_opendomain(torture, p, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_user_create(torture, p, mem_ctx, &h, name, &rid)) {
+	if (!test_user_create(torture, b, mem_ctx, &h, name, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -450,7 +456,7 @@ bool torture_usermod(struct torture_context *torture)
 	}
 	
 cleanup:	
-	if (!test_user_cleanup(torture, p, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(torture, b, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}

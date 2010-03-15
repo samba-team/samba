@@ -20,25 +20,30 @@
 
 
 bool test_opendomain(struct torture_context *tctx, 
-		     struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		     struct dcerpc_binding_handle *b,
+		     TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
 		     struct dom_sid2 *sid);
 
 bool test_user_create(struct torture_context *tctx, 
-		      struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		      struct dcerpc_binding_handle *b,
+		      TALLOC_CTX *mem_ctx,
 		      struct policy_handle *handle, const char *name,
 		      uint32_t *rid);
 
 bool test_user_cleanup(struct torture_context *tctx, 
-		       struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		       struct dcerpc_binding_handle *b,
+		       TALLOC_CTX *mem_ctx,
 		       struct policy_handle *domain_handle,
 		       const char *name);
 
-bool test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_group_create(struct dcerpc_binding_handle *b,
+		       TALLOC_CTX *mem_ctx,
 		       struct policy_handle *handle, const char *name,
 		       uint32_t *rid);
 
-bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_group_cleanup(struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
 			struct policy_handle *domain_handle,
 			const char *name);
 

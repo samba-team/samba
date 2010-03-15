@@ -136,6 +136,7 @@ bool torture_userinfo(struct torture_context *torture)
 	struct lsa_String name;
 	struct dom_sid2 sid;
 	uint32_t rid;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_init("test_userinfo");
 
@@ -146,18 +147,19 @@ bool torture_userinfo(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	b = p->binding_handle;
 
 	name.string = lp_workgroup(torture->lp_ctx);
 
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_opendomain(torture, p, mem_ctx, &h, &name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_user_create(torture, p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+	if (!test_user_create(torture, b, mem_ctx, &h, TEST_USERNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -167,7 +169,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_user_cleanup(torture, p, mem_ctx, &h, TEST_USERNAME)) {
+	if (!test_user_cleanup(torture, b, mem_ctx, &h, TEST_USERNAME)) {
 		ret = false;
 		goto done;
 	}
@@ -175,12 +177,12 @@ bool torture_userinfo(struct torture_context *torture)
 	/*
 	 * Testing asynchronous version and monitor messages
 	 */
-	if (!test_opendomain(torture, p, mem_ctx, &h, &name, &sid)) {
+	if (!test_opendomain(torture, b, mem_ctx, &h, &name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_user_create(torture, p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+	if (!test_user_create(torture, b, mem_ctx, &h, TEST_USERNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -190,7 +192,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_user_cleanup(torture, p, mem_ctx, &h, TEST_USERNAME)) {
+	if (!test_user_cleanup(torture, b, mem_ctx, &h, TEST_USERNAME)) {
 		ret = false;
 		goto done;
 	}
