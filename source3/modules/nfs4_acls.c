@@ -751,7 +751,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 
 	if (params.do_chown) {
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
-		NTSTATUS status = unpack_nt_owners(SNUM(fsp->conn), &newUID, &newGID, security_info_sent, psd);
+		NTSTATUS status = unpack_nt_owners(fsp->conn, &newUID, &newGID, security_info_sent, psd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(8, ("unpack_nt_owners failed"));
 			return status;

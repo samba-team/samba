@@ -1168,7 +1168,9 @@ static mode_t map_nt_perms( uint32 *mask, int type)
  Unpack a SEC_DESC into a UNIX owner and group.
 ****************************************************************************/
 
-NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd)
+NTSTATUS unpack_nt_owners(struct connection_struct *conn,
+			uid_t *puser, gid_t *pgrp,
+			uint32 security_info_sent, const SEC_DESC *psd)
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
@@ -1198,7 +1200,7 @@ NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_i
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
 		if (!sid_to_uid(&owner_sid, puser)) {
-			if (lp_force_unknown_acl_user(snum)) {
+			if (lp_force_unknown_acl_user(SNUM(conn))) {
 				/* this allows take ownership to work
 				 * reasonably */
 				*puser = current_user.ut.uid;
@@ -1221,7 +1223,7 @@ NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_i
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->group_sid);
 		if (!sid_to_gid( &grp_sid, pgrp)) {
-			if (lp_force_unknown_acl_user(snum)) {
+			if (lp_force_unknown_acl_user(SNUM(conn))) {
 				/* this allows take group ownership to work
 				 * reasonably */
 				*pgrp = current_user.ut.gid;
@@ -1289,7 +1291,7 @@ static void apply_default_perms(const struct share_params *params,
  expensive and will need optimisation. A *lot* of optimisation :-). JRA.
 ****************************************************************************/
 
-static bool uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
+static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, canon_ace *group_ace )
 {
 	const char *u_name = NULL;
 
@@ -1341,7 +1343,7 @@ static bool uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
  type.
 ****************************************************************************/
 
-static bool ensure_canon_entry_valid(canon_ace **pp_ace,
+static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace,
 				     const struct share_params *params,
 				     const bool is_directory,
 							const DOM_SID *pfile_owner_sid,
@@ -1407,7 +1409,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 
 			for (pace_iter = *pp_ace; pace_iter; pace_iter = pace_iter->next) {
 				if (pace_iter->type == SMB_ACL_GROUP_OBJ || pace_iter->type == SMB_ACL_GROUP) {
-					if (uid_entry_in_group(pace, pace_iter)) {
+					if (uid_entry_in_group(conn, pace, pace_iter)) {
 						pace->perms |= pace_iter->perms;
 						group_matched = True;
 					}
@@ -2057,7 +2059,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
  allow entries.
 ****************************************************************************/
 
-static void process_deny_list( canon_ace **pp_ace_list )
+static void process_deny_list(connection_struct *conn, canon_ace **pp_ace_list )
 {
 	canon_ace *ace_list = *pp_ace_list;
 	canon_ace *curr_ace = NULL;
@@ -2162,7 +2164,7 @@ static void process_deny_list( canon_ace **pp_ace_list )
 			if (allow_ace_p->owner_type == UID_ACE)
 				continue;
 
-			if (uid_entry_in_group( curr_ace, allow_ace_p))
+			if (uid_entry_in_group(conn, curr_ace, allow_ace_p))
 				new_perms |= allow_ace_p->perms;
 		}
 
@@ -2206,7 +2208,7 @@ static void process_deny_list( canon_ace **pp_ace_list )
 
 			/* Mask off the deny group perms. */
 
-			if (uid_entry_in_group( allow_ace_p, curr_ace))
+			if (uid_entry_in_group(conn, allow_ace_p, curr_ace))
 				allow_ace_p->perms &= ~curr_ace->perms;
 		}
 
@@ -2256,7 +2258,7 @@ static void process_deny_list( canon_ace **pp_ace_list )
 
 			/* OR in the group perms. */
 
-			if (uid_entry_in_group( curr_ace, allow_ace_p))
+			if (uid_entry_in_group(conn, curr_ace, allow_ace_p))
 				curr_ace->perms |= allow_ace_p->perms;
 		}
 	}
@@ -2368,10 +2370,10 @@ static bool unpack_canon_ace(files_struct *fsp,
 	 */
 
 	print_canon_ace_list( "file ace - before deny", file_ace);
-	process_deny_list( &file_ace);
+	process_deny_list(fsp->conn, &file_ace);
 
 	print_canon_ace_list( "dir ace - before deny", dir_ace);
-	process_deny_list( &dir_ace);
+	process_deny_list(fsp->conn, &dir_ace);
 
 	/*
 	 * A well formed POSIX file or default ACL has at least 3 entries, a 
@@ -2390,7 +2392,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	st.st_ex_mode = create_default_mode(fsp, False);
 
-	if (!ensure_canon_entry_valid(&file_ace, fsp->conn->params,
+	if (!ensure_canon_entry_valid(fsp->conn, &file_ace, fsp->conn->params,
 			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, &st, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
@@ -2407,7 +2409,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	st.st_ex_mode = create_default_mode(fsp, True);
 
-	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp->conn->params,
+	if (dir_ace && !ensure_canon_entry_valid(fsp->conn, &dir_ace, fsp->conn->params,
 			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, &st, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
@@ -2592,7 +2594,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 	 * This next call will ensure we have at least a user/group/world set.
 	 */
 
-	if (!ensure_canon_entry_valid(&l_head, conn->params,
+	if (!ensure_canon_entry_valid(conn, &l_head, conn->params,
 				      S_ISDIR(psbuf->st_ex_mode), powner, pgroup,
 				      psbuf, False))
 		goto fail;
@@ -2636,7 +2638,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
  Check if the current user group list contains a given group.
 ****************************************************************************/
 
-static bool current_user_in_group(gid_t gid)
+static bool current_user_in_group(connection_struct *conn, gid_t gid)
 {
 	int i;
 
@@ -2662,7 +2664,7 @@ static bool acl_group_override(connection_struct *conn,
 
 	/* file primary group == user primary or supplementary group */
 	if (lp_acl_group_control(SNUM(conn)) &&
-	    current_user_in_group(smb_fname->st.st_ex_gid)) {
+	    current_user_in_group(conn, smb_fname->st.st_ex_gid)) {
 		return true;
 	}
 
@@ -3860,7 +3862,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	 * Unpack the user/group/world id's.
 	 */
 
-	status = unpack_nt_owners( SNUM(conn), &user, &grp, security_info_sent, psd);
+	status = unpack_nt_owners( conn, &user, &grp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
