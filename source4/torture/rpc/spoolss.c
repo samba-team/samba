@@ -4043,7 +4043,7 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 	op.in.access_mask	= 0;
 	op.out.handle		= &handle;
 
-	torture_comment(tctx, "\nTesting OpenPrinter(%s) with bad name\n", op.in.printername);
+	torture_comment(tctx, "Testing OpenPrinter(%s) with bad name\n", op.in.printername);
 
 	status = dcerpc_spoolss_OpenPrinter(p, tctx, &op);
 	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
@@ -4164,6 +4164,96 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_printer_rename(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
+				const char *name)
+{
+	bool ret = true;
+	union spoolss_PrinterInfo info;
+	union spoolss_SetPrinterInfo sinfo;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	const char *printer_name;
+	const char *printer_name_orig;
+	const char *printer_name_new = "SAMBA smbtorture Test Printer (Copy 2)";
+	struct policy_handle new_handle;
+	const char *q;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	torture_comment(tctx, "Testing Printer rename operations\n");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, p, handle, 2, &info),
+		"failed to call GetPrinter level 2");
+
+	printer_name_orig = talloc_strdup(tctx, info.info2.printername);
+
+	q = strrchr(info.info2.printername, '\\');
+	if (q) {
+		torture_warning(tctx,
+			"server returns printername %s incl. servername although we did not set servername", info.info2.printername);
+	}
+
+	torture_assert(tctx,
+		PrinterInfo_to_SetPrinterInfo(tctx, &info, 2, &sinfo), "");
+
+	sinfo.info2->printername = printer_name_new;
+
+	info_ctr.level = 2;
+	info_ctr.info = sinfo;
+
+	torture_assert(tctx,
+		test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),
+		"failed to call SetPrinter level 2");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, p, handle, 2, &info),
+		"failed to call GetPrinter level 2");
+
+	printer_name = talloc_strdup(tctx, info.info2.printername);
+
+	q = strrchr(info.info2.printername, '\\');
+	if (q) {
+		torture_warning(tctx,
+			"server returns printername %s incl. servername although we did not set servername", info.info2.printername);
+		q++;
+		printer_name = q;
+	}
+
+	torture_assert_str_equal(tctx, printer_name, printer_name_new,
+		"new printer name was not set");
+
+	torture_assert(tctx,
+		test_OpenPrinter_badname(tctx, p, printer_name_orig),
+		"still can open printer with oldname");
+
+	torture_assert(tctx,
+		call_OpenPrinterEx(tctx, p, printer_name_new, NULL, &new_handle),
+		"failed to open printer with new name");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, p, &new_handle, 2, &info),
+		"failed to call GetPrinter level 2");
+
+	/* FIXME: we openend with servername! */
+	printer_name = talloc_asprintf(tctx, "\\\\%s\\%s",
+		dcerpc_server_name(p), printer_name_new);
+
+	torture_assert_str_equal(tctx, info.info2.printername, printer_name,
+		"new printer name was not set");
+
+	torture_assert(tctx,
+		test_ClosePrinter(tctx, p, &new_handle),
+		"failed to close printer");
+
+	return ret;
+}
+
 
 static bool test_OpenPrinterEx(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
@@ -5013,6 +5103,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterData_winreg(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_printer_rename(tctx, p, handle, name)) {
 		ret = false;
 	}
 
