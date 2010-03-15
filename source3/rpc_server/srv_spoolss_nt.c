@@ -2037,15 +2037,6 @@ done:
 
 
 /****************************************************************************
- Internal routine for removing printerdata
- ***************************************************************************/
-
-static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value )
-{
-	return delete_printer_data( printer->info_2, key, value );
-}
-
-/****************************************************************************
  Internal routine for storing printerdata
  ***************************************************************************/
 
@@ -8735,7 +8726,7 @@ done:
 WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
 				    struct spoolss_DeletePrinterDataEx *r)
 {
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	const char *printer;
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -8749,9 +8740,6 @@ WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-		return WERR_BADFID;
-
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(3, ("_spoolss_DeletePrinterDataEx: "
 			"printer properties change denied by handle\n"));
@@ -8762,16 +8750,21 @@ WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
-	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(status))
-		return status;
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+		return WERR_BADFID;
+	}
+	printer = lp_const_servicename(snum);
 
-	status = delete_printer_dataex( printer, r->in.key_name, r->in.value_name );
-
-	if ( W_ERROR_IS_OK(status) )
-		mod_a_printer( printer, 2 );
-
-	free_a_printer(&printer, 2);
+	status = winreg_delete_printer_dataex(p->mem_ctx,
+					      p->server_info,
+					      printer,
+					      r->in.key_name,
+					      r->in.value_name);
+	if (W_ERROR_IS_OK(status)) {
+		status = winreg_printer_update_changeid(p->mem_ctx,
+							p->server_info,
+							printer);
+	}
 
 	return status;
 }
