@@ -10,6 +10,12 @@ install:
 uninstall:
 	$(WAF) uninstall
 
+test:
+	$(WAF) test
+
+quicktest:
+	$(WAF) test --quick
+
 clean:
 	$(WAF) clean
 
