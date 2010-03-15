@@ -241,3 +241,119 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
+/* Get printer data over a winreg pipe. */
+WERROR winreg_get_printer_dataex(struct pipes_struct *p,
+				 const char *printer,
+				 const char *key,
+				 const char *value,
+				 enum winreg_Type *type,
+				 uint8_t **data,
+				 uint32_t *data_size)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct winreg_String wvalue;
+	enum winreg_Type type_in;
+	uint8_t *data_in;
+	uint32_t data_in_size = 0;
+	uint32_t value_len = 0;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					p->server_info,
+					&winreg_pipe,
+					printer,
+					key,
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_get_printer_dataex: Could not open key %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
+	wvalue.name = value;
+
+	/*
+	 * call QueryValue once with data == NULL to get the
+	 * needed memory size to be allocated, then allocate
+	 * data buffer and call again.
+	 */
+	status = rpccli_winreg_QueryValue(winreg_pipe,
+					  tmp_ctx,
+					  &key_hnd,
+					  &wvalue,
+					  &type_in,
+					  NULL,
+					  &data_in_size,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_get_printer_dataex: Could not query value %s: %s\n",
+			  value, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	data_in = (uint8_t *) TALLOC(tmp_ctx, data_in_size);
+	if (data_in == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	value_len = 0;
+
+	status = rpccli_winreg_QueryValue(winreg_pipe,
+					  tmp_ctx,
+					  &key_hnd,
+					  &wvalue,
+					  &type_in,
+					  data_in,
+					  &data_in_size,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_get_printer_dataex: Could not query value %s: %s\n",
+			  value, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+		goto done;
+	}
+
+	*type = type_in;
+	*data_size = data_in_size;
+	if (data_in_size) {
+		*data = talloc_move(p->mem_ctx, &data_in);
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}

@@ -52,4 +52,34 @@ WERROR winreg_set_printer_dataex(struct pipes_struct *p,
 				 uint8_t *data,
 				 uint32_t data_size);
 
+/**
+ * @internal
+ *
+ * @brief Get printer data over a winreg pipe.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  key      The key of the printer data to get the value.
+ *
+ * @param[in]  value    The name of the value to query.
+ *
+ * @param[in]  type     The type of the value to query.
+ *
+ * @param[out] data     A pointer to store the data.
+ *
+ * @param[out] data_size A pointer to store the size of the data.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_get_printer_dataex(struct pipes_struct *p,
+				 const char *printer,
+				 const char *key,
+				 const char *value,
+				 enum winreg_Type *type,
+				 uint8_t **data,
+				 uint32_t *data_size);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
