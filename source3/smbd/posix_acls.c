@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
 extern const struct generic_mapping file_generic_mapping;
 
 #undef  DBGC_CLASS
@@ -1203,7 +1202,7 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 			if (lp_force_unknown_acl_user(SNUM(conn))) {
 				/* this allows take ownership to work
 				 * reasonably */
-				*puser = current_user.ut.uid;
+				*puser = get_current_uid(conn);
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " owner sid for %s\n",
@@ -1226,7 +1225,7 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 			if (lp_force_unknown_acl_user(SNUM(conn))) {
 				/* this allows take group ownership to work
 				 * reasonably */
-				*pgrp = current_user.ut.gid;
+				*pgrp = get_current_gid(conn);
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " group sid.\n"));
@@ -1304,15 +1303,17 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 	 * if it's the current user, we already have the unix token
 	 * and don't need to do the complex user_in_group_sid() call
 	 */
-	if (uid_ace->unix_ug.uid == current_user.ut.uid) {
+	if (uid_ace->unix_ug.uid == get_current_uid(conn)) {
+		const UNIX_USER_TOKEN *curr_utok = NULL;
 		size_t i;
 
-		if (group_ace->unix_ug.gid == current_user.ut.gid) {
+		if (group_ace->unix_ug.gid == get_current_gid(conn)) {
 			return True;
 		}
 
-		for (i=0; i < current_user.ut.ngroups; i++) {
-			if (group_ace->unix_ug.gid == current_user.ut.groups[i]) {
+		curr_utok = get_current_utok(conn);
+		for (i=0; i < curr_utok->ngroups; i++) {
+			if (group_ace->unix_ug.gid == curr_utok->groups[i]) {
 				return True;
 			}
 		}
@@ -2641,9 +2642,10 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 static bool current_user_in_group(connection_struct *conn, gid_t gid)
 {
 	int i;
+	const UNIX_USER_TOKEN *utok = get_current_utok(conn);
 
-	for (i = 0; i < current_user.ut.ngroups; i++) {
-		if (current_user.ut.groups[i] == gid) {
+	for (i = 0; i < utok->ngroups; i++) {
+		if (utok->groups[i] == gid) {
 			return True;
 		}
 	}
@@ -3542,13 +3544,13 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 	/* Case (2) / (3) */
 	if (lp_enable_privileges()) {
 
-		bool has_take_ownership_priv = user_has_privileges(current_user.nt_user_token,
+		bool has_take_ownership_priv = user_has_privileges(get_current_nttok(conn),
 							      &se_take_ownership);
-		bool has_restore_priv = user_has_privileges(current_user.nt_user_token,
+		bool has_restore_priv = user_has_privileges(get_current_nttok(conn),
 						       &se_restore);
 
 		/* Case (2) */
-		if ( ( has_take_ownership_priv && ( uid == current_user.ut.uid ) ) ||
+		if ( ( has_take_ownership_priv && ( uid == get_current_uid(conn) ) ) ||
 		/* Case (3) */
 		     ( has_restore_priv ) ) {
 
@@ -3576,7 +3578,7 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 	   and also copes with the case where the SID in a take ownership ACL is
 	   a local SID on the users workstation
 	*/
-	if (uid != current_user.ut.uid) {
+	if (uid != get_current_uid(conn)) {
 		errno = EPERM;
 		return -1;
 	}

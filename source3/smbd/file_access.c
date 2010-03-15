@@ -35,7 +35,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 	struct security_descriptor *secdesc = NULL;
 	bool ret;
 
-	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
+	if (get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return true;
 	}
@@ -51,7 +51,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 		goto out;
 	}
 
-	status = se_access_check(secdesc, conn->server_info->ptok,
+	status = se_access_check(secdesc, get_current_nttok(conn),
 				 access_mask, &access_granted);
 	ret = NT_STATUS_IS_OK(status);
 
@@ -111,7 +111,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		ret = false;
 		goto out;
 	}
-	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
+	if (get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
 		ret = true;
 		goto out;
@@ -144,9 +144,9 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		 * or the owner of the directory as we have no possible
 		 * chance of deleting. Otherwise, go on and check the ACL.
 		 */
-		if ((conn->server_info->utok.uid !=
+		if ((get_current_uid(conn) !=
 			smb_fname_parent->st.st_ex_uid) &&
-		    (conn->server_info->utok.uid != smb_fname->st.st_ex_uid)) {
+		    (get_current_uid(conn) != smb_fname->st.st_ex_uid)) {
 			DEBUG(10,("can_delete_file_in_directory: not "
 				  "owner of file %s or directory %s",
 				  smb_fname_str_dbg(smb_fname),
@@ -195,7 +195,7 @@ bool can_access_file_data(connection_struct *conn,
 	DEBUG(10,("can_access_file_data: requesting 0x%x on file %s\n",
 		  (unsigned int)access_mask, smb_fname_str_dbg(smb_fname)));
 
-	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
+	if (get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -203,7 +203,7 @@ bool can_access_file_data(connection_struct *conn,
 	SMB_ASSERT(VALID_STAT(smb_fname->st));
 
 	/* Check primary owner access. */
-	if (conn->server_info->utok.uid == smb_fname->st.st_ex_uid) {
+	if (get_current_uid(conn) == smb_fname->st.st_ex_uid) {
 		switch (access_mask) {
 			case FILE_READ_DATA:
 				return (smb_fname->st.st_ex_mode & S_IRUSR) ?
