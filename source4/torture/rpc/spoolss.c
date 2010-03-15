@@ -3155,7 +3155,7 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 	uint32_t value_offered, data_offered;
 	WERROR result;
 
-	torture_comment(tctx, "Testing EnumPrinterData vs EnumPrinterDataEx consistency");
+	torture_comment(tctx, "Testing EnumPrinterData vs EnumPrinterDataEx consistency\n");
 
 	torture_assert(tctx,
 		test_EnumPrinterDataEx(tctx, p, handle, "PrinterDriverData", &count, &info),
