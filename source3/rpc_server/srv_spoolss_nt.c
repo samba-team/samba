@@ -27,6 +27,7 @@
    up, all the errors returned are DOS errors, not NT status codes. */
 
 #include "includes.h"
+#include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
@@ -5606,16 +5607,28 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 
 	if (!strequal(printer->info_2->comment, old_printer->info_2->comment)) {
 		push_reg_sz(talloc_tos(), &buffer, printer->info_2->comment);
-		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "description",
-			REG_SZ, buffer.data, buffer.length);
+		winreg_set_printer_dataex(p->mem_ctx,
+					  p->server_info,
+					  printer->info_2->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  "description",
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
 
 		notify_printer_comment(snum, printer->info_2->comment);
 	}
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
 		push_reg_sz(talloc_tos(), &buffer, printer->info_2->sharename);
-		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shareName",
-			REG_SZ, buffer.data, buffer.length);
+		winreg_set_printer_dataex(p->mem_ctx,
+					  p->server_info,
+					  printer->info_2->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  "shareName",
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
 
 		notify_printer_sharename(snum, printer->info_2->sharename);
 	}
@@ -5630,24 +5643,42 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 
 
 		push_reg_sz(talloc_tos(), &buffer, pname);
-		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
-			REG_SZ, buffer.data, buffer.length);
+		winreg_set_printer_dataex(p->mem_ctx,
+					  p->server_info,
+					  printer->info_2->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  "printerName",
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
 
 		notify_printer_printername( snum, pname );
 	}
 
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
 		push_reg_sz(talloc_tos(), &buffer, printer->info_2->portname);
-		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "portName",
-			REG_SZ, buffer.data, buffer.length);
+		winreg_set_printer_dataex(p->mem_ctx,
+					  p->server_info,
+					  printer->info_2->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  "portName",
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
 
 		notify_printer_port(snum, printer->info_2->portname);
 	}
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location)) {
 		push_reg_sz(talloc_tos(), &buffer, printer->info_2->location);
-		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "location",
-			REG_SZ, buffer.data, buffer.length);
+		winreg_set_printer_dataex(p->mem_ctx,
+					  p->server_info,
+					  printer->info_2->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  "location",
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
 
 		notify_printer_location(snum, printer->info_2->location);
 	}
@@ -5656,16 +5687,34 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	/* uNCName, serverName, shortServerName */
 
 	push_reg_sz(talloc_tos(), &buffer, global_myname());
-	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "serverName",
-		REG_SZ, buffer.data, buffer.length);
-	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shortServerName",
-		REG_SZ, buffer.data, buffer.length);
+	winreg_set_printer_dataex(p->mem_ctx,
+				  p->server_info,
+				  printer->info_2->sharename,
+				  SPOOL_DSSPOOLER_KEY,
+				  "serverName",
+				  REG_SZ,
+				  buffer.data,
+				  buffer.length);
+	winreg_set_printer_dataex(p->mem_ctx,
+				  p->server_info,
+				  printer->info_2->sharename,
+				  SPOOL_DSSPOOLER_KEY,
+				  "shortServerName",
+				  REG_SZ,
+				  buffer.data,
+				  buffer.length);
 
 	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
                  global_myname(), printer->info_2->sharename );
 	push_reg_sz(talloc_tos(), &buffer, asc_buffer);
-	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "uNCName",
-		REG_SZ, buffer.data, buffer.length);
+	winreg_set_printer_dataex(p->mem_ctx,
+				  p->server_info,
+				  printer->info_2->sharename,
+				  SPOOL_DSSPOOLER_KEY,
+				  "uNCName",
+				  REG_SZ,
+				  buffer.data,
+				  buffer.length);
 
 	/* Update printer info */
 	result = mod_a_printer(printer, 2);
@@ -8577,7 +8626,7 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 				 struct spoolss_SetPrinterDataEx *r)
 {
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int 			snum = 0;
 	WERROR 			result = WERR_OK;
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -8618,7 +8667,10 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	result = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
+	result = winreg_get_printer(Printer, p->server_info,
+				    Printer->servername,
+				    lp_servicename(snum),
+				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
@@ -8633,8 +8685,14 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 
 	/* save the registry data */
 
-	result = set_printer_dataex(printer, r->in.key_name, r->in.value_name,
-				    r->in.type, r->in.data, r->in.offered);
+	result = winreg_set_printer_dataex(p->mem_ctx,
+					   p->server_info,
+					   pinfo2->sharename,
+					   r->in.key_name,
+					   r->in.value_name,
+					   r->in.type,
+					   r->in.data,
+					   r->in.offered);
 
 	if (W_ERROR_IS_OK(result)) {
 		/* save the OID if one was specified */
@@ -8652,18 +8710,24 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 			 * previous set_printer_dataex() call.  I have no idea if
 			 * this is right.    --jerry
 			 */
-
-			set_printer_dataex(printer, str, r->in.value_name,
-					   REG_SZ, (uint8_t *)oid_string,
-					   strlen(oid_string)+1);
+			winreg_set_printer_dataex(p->mem_ctx,
+						  p->server_info,
+						  pinfo2->sharename,
+						  str,
+						  r->in.value_name,
+						  REG_SZ,
+						  (uint8_t *) oid_string,
+						  strlen(oid_string) + 1);
 		}
 
-		result = mod_a_printer(printer, 2);
+		result = winreg_printer_update_changeid(p->mem_ctx,
+							p->server_info,
+							lp_const_servicename(snum));
+
 	}
 
- done:
-	free_a_printer(&printer, 2);
-
+done:
+	talloc_free(pinfo2);
 	return result;
 }
 
