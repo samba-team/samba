@@ -3,12 +3,7 @@
 import Scripting, os, Options, Utils, Environment, optparse
 
 
-########################################################################
-# main test entry point
-def cmd_test(opt):
-    '''Run the quick test suite'''
-    print "Starting quick test"
-    Scripting.commands += ['build']
+def cmd_testonly(opt):
     env = Environment.Environment()
 
     env.TESTS = Options.options.TESTS
@@ -23,8 +18,17 @@ def cmd_test(opt):
     print "test: running %s" % cmd
     ret = os.system(cmd)
 
+########################################################################
+# main test entry point
+def cmd_test(opt):
+    '''Run the quick test suite'''
+    print "Starting quick test"
+    Scripting.commands.append('build')
+    Scripting.commands.append('testonly')
+
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
+    opt.ADD_COMMAND('testonly', cmd_testonly)
 
     gr = opt.add_option_group('test options')
 
