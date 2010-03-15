@@ -69,6 +69,11 @@ def build(bld):
                      init_function='LDB_MODULE(rdn_name)',
                      subsystem='LIBLDB')
 
+    bld.SAMBA_MODULE('ldb_sample',
+                     'tests/sample_module.c',
+                     init_function='LDB_MODULE(sample)',
+                     subsystem='LIBLDB')
+
     bld.SAMBA_MODULE('ldb_sqlite3',
                      'sqlite3/ldb_sqlite3.c',
                      init_function='LDB_BACKEND(sqlite3)',
