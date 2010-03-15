@@ -103,8 +103,10 @@ static int talloc_pop(TALLOC_CTX *frame)
 			break;
 		}
 		talloc_free(ts->talloc_stack[i]);
+		ts->talloc_stack[i] = NULL;
 	}
 
+	ts->talloc_stack[i] = NULL;
 	ts->talloc_stacksize = i;
 	return 0;
 }
