@@ -36,7 +36,7 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 }
 
 static bool get_policy_handle(struct torture_context *tctx,
-			      struct dcerpc_pipe *p,
+			      struct dcerpc_binding_handle *b,
 			      struct policy_handle *handle)
 {
 	struct eventlog_OpenEventLogW r;
@@ -56,7 +56,7 @@ static bool get_policy_handle(struct torture_context *tctx,
 	r.out.handle = handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_OpenEventLogW(p, tctx, &r),
+			dcerpc_eventlog_OpenEventLogW_r(b, tctx, &r),
 			"OpenEventLog failed");
 
 	torture_assert_ntstatus_ok(tctx, r.out.result, "OpenEventLog failed");
@@ -72,8 +72,9 @@ static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe 
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
 	uint32_t number = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	ZERO_STRUCT(r);
@@ -81,7 +82,7 @@ static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe 
 	r.out.number = &number;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_GetNumRecords(p, tctx, &r),
+			dcerpc_eventlog_GetNumRecords_r(b, tctx, &r),
 			"GetNumRecords failed");
 
 	torture_comment(tctx, "%d records\n", *r.out.number);
@@ -89,7 +90,7 @@ static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe 
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 	return true;
 }
@@ -101,11 +102,12 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	struct eventlog_ReadEventLogW r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	uint32_t sent_size = 0;
 	uint32_t real_size = 0;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	ZERO_STRUCT(r);
@@ -116,7 +118,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	r.out.sent_size = &sent_size;
 	r.out.real_size = &real_size;
 
-	status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
+	status = dcerpc_eventlog_ReadEventLogW_r(b, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER,
 			"ReadEventLog failed");
@@ -136,7 +138,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		r.out.sent_size = &sent_size;
 		r.out.real_size = &real_size;
 
-		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
+		status = dcerpc_eventlog_ReadEventLogW_r(b, tctx, &r);
 
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_END_OF_FILE)) {
 			/* FIXME: still need to decode then */
@@ -151,7 +153,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		r.in.number_of_bytes = *r.out.real_size;
 		r.out.data = talloc_array(tctx, uint8_t, r.in.number_of_bytes);
 
-		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
+		status = dcerpc_eventlog_ReadEventLogW_r(b, tctx, &r);
 
 		torture_assert_ntstatus_ok(tctx, status, "ReadEventLog failed");
 
@@ -192,7 +194,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 
 	return true;
@@ -204,12 +206,13 @@ static bool test_ReportEventLog(struct torture_context *tctx,
 	struct eventlog_ReportEventW r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	uint32_t record_number = 0;
 	time_t time_written = 0;
 	struct lsa_String servername, *strings;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	init_lsa_String(&servername, NULL);
@@ -235,7 +238,7 @@ static bool test_ReportEventLog(struct torture_context *tctx,
 	r.in.time_written = r.out.time_written = &time_written;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_ReportEventW(p, tctx, &r),
+			dcerpc_eventlog_ReportEventW_r(b, tctx, &r),
 			"ReportEventW failed");
 
 	torture_assert_ntstatus_ok(tctx, r.out.result, "ReportEventW failed");
@@ -243,7 +246,7 @@ static bool test_ReportEventLog(struct torture_context *tctx,
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 	return true;
 }
@@ -254,22 +257,23 @@ static bool test_FlushEventLog(struct torture_context *tctx,
 	struct eventlog_FlushEventLog r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	r.in.handle = &handle;
 
 	/* Huh?  Does this RPC always return access denied? */
 	torture_assert_ntstatus_equal(tctx,
-			dcerpc_eventlog_FlushEventLog(p, tctx, &r),
+			dcerpc_eventlog_FlushEventLog_r(b, tctx, &r),
 			NT_STATUS_ACCESS_DENIED,
 			"FlushEventLog failed");
 
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 
 	return true;
@@ -281,21 +285,22 @@ static bool test_ClearEventLog(struct torture_context *tctx,
 	struct eventlog_ClearEventLogW r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	r.in.handle = &handle;
 	r.in.backupfile = NULL;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_ClearEventLogW(p, tctx, &r),
+			dcerpc_eventlog_ClearEventLogW_r(b, tctx, &r),
 			"ClearEventLog failed");
 
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 
 	return true;
@@ -309,8 +314,9 @@ static bool test_GetLogInformation(struct torture_context *tctx,
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
 	uint32_t bytes_needed = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	r.in.handle = &handle;
@@ -319,14 +325,14 @@ static bool test_GetLogInformation(struct torture_context *tctx,
 	r.out.buffer = NULL;
 	r.out.bytes_needed = &bytes_needed;
 
-	status = dcerpc_eventlog_GetLogInformation(p, tctx, &r);
+	status = dcerpc_eventlog_GetLogInformation_r(b, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_LEVEL,
 				      "GetLogInformation failed");
 
 	r.in.level = 0;
 
-	status = dcerpc_eventlog_GetLogInformation(p, tctx, &r);
+	status = dcerpc_eventlog_GetLogInformation_r(b, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_BUFFER_TOO_SMALL,
 				      "GetLogInformation failed");
@@ -334,14 +340,14 @@ static bool test_GetLogInformation(struct torture_context *tctx,
 	r.in.buf_size = bytes_needed;
 	r.out.buffer = talloc_array(tctx, uint8_t, bytes_needed);
 
-	status = dcerpc_eventlog_GetLogInformation(p, tctx, &r);
+	status = dcerpc_eventlog_GetLogInformation_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "GetLogInformation failed");
 
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 
 	return true;
@@ -353,14 +359,15 @@ static bool test_OpenEventLog(struct torture_context *tctx,
 {
 	struct policy_handle handle;
 	struct eventlog_CloseEventLog cr;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 
 	return true;
@@ -377,8 +384,9 @@ static bool test_BackupLog(struct torture_context *tctx,
 	const char *tmp;
 	struct lsa_String backup_filename;
 	struct eventlog_OpenUnknown0 unknown0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!get_policy_handle(tctx, p, &handle))
+	if (!get_policy_handle(tctx, b, &handle))
 		return false;
 
 	tmp = talloc_asprintf(tctx, "C:\\%s", TEST_BACKUP_NAME);
@@ -387,7 +395,7 @@ static bool test_BackupLog(struct torture_context *tctx,
 	r.in.handle = &handle;
 	r.in.backup_filename = &backup_filename;
 
-	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	status = dcerpc_eventlog_BackupEventLogW_r(b, tctx, &r);
 	torture_assert_ntstatus_equal(tctx, status,
 		NT_STATUS_OBJECT_PATH_SYNTAX_BAD, "BackupEventLogW failed");
 
@@ -397,17 +405,17 @@ static bool test_BackupLog(struct torture_context *tctx,
 	r.in.handle = &handle;
 	r.in.backup_filename = &backup_filename;
 
-	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	status = dcerpc_eventlog_BackupEventLogW_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BackupEventLogW failed");
 
-	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	status = dcerpc_eventlog_BackupEventLogW_r(b, tctx, &r);
 	torture_assert_ntstatus_equal(tctx, status,
 		NT_STATUS_OBJECT_NAME_COLLISION, "BackupEventLogW failed");
 
 	cr.in.handle = cr.out.handle = &handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"BackupLog failed");
 
 	unknown0.unknown0 = 0x005c;
@@ -419,14 +427,14 @@ static bool test_BackupLog(struct torture_context *tctx,
 	br.in.minor_version = 1;
 	br.out.handle = &backup_handle;
 
-	status = dcerpc_eventlog_OpenBackupEventLogW(p, tctx, &br);
+	status = dcerpc_eventlog_OpenBackupEventLogW_r(b, tctx, &br);
 
 	torture_assert_ntstatus_ok(tctx, status, "OpenBackupEventLogW failed");
 
 	cr.in.handle = cr.out.handle = &backup_handle;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			dcerpc_eventlog_CloseEventLog_r(b, tctx, &cr),
 			"CloseEventLog failed");
 
 	return true;
