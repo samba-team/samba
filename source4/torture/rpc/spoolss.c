@@ -3156,6 +3156,10 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 				enum winreg_Type type,
 				uint8_t *data,
 				uint32_t offered);
+static bool test_DeletePrinterData(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
+				   const char *value_name);
 
 static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 					     struct dcerpc_pipe *p,
@@ -3244,6 +3248,10 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, data_needed, info[i].data_length, "data length mismatch");
 		torture_assert_mem_equal(tctx, data, info[i].data->data, info[i].data_length, "data mismatch");
 	}
+
+	torture_assert(tctx,
+		test_DeletePrinterData(tctx, p, handle, "torture_value"),
+		"DeletePrinterData failed");
 
 	torture_comment(tctx, "EnumPrinterData vs EnumPrinterDataEx consistency test succeeded\n\n");
 
