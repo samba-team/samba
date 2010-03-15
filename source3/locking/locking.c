@@ -1427,7 +1427,6 @@ void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, 
 
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok)
 {
-	UNIX_USER_TOKEN *tok_copy = NULL;
 	struct share_mode_lock *lck;
 	
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
@@ -1439,16 +1438,6 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 				  NULL);
 	if (lck == NULL) {
 		return False;
-	}
-
-	if (fsp->conn->admin_user) {
-		tok_copy = copy_unix_token(lck, tok);
-		if (tok_copy == NULL) {
-			TALLOC_FREE(lck);
-			return false;
-		}
-		tok_copy->uid = (uid_t)0;
-		tok = tok_copy;
 	}
 
 	set_delete_on_close_lck(lck, delete_on_close, tok);
