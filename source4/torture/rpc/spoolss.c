@@ -4047,10 +4047,8 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_OpenPrinter(p, tctx, &op);
 	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
-	if (!W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME,op.out.result)) {
-		torture_comment(tctx, "OpenPrinter(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
-			name, win_errstr(op.out.result));
-	}
+	torture_assert_werr_equal(tctx, op.out.result, WERR_INVALID_PRINTER_NAME,
+		"unexpected result");
 
 	if (W_ERROR_IS_OK(op.out.result)) {
 		ret &=test_ClosePrinter(tctx, p, &handle);
@@ -4068,10 +4066,8 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &opEx);
 	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
-	if (!W_ERROR_EQUAL(WERR_INVALID_PARAM,opEx.out.result)) {
-		torture_comment(tctx, "OpenPrinterEx(%s) unexpected result[%s] should be WERR_INVALID_PARAM\n",
-			name, win_errstr(opEx.out.result));
-	}
+	torture_assert_werr_equal(tctx, opEx.out.result, WERR_INVALID_PARAM,
+		"unexpected result");
 
 	if (W_ERROR_IS_OK(opEx.out.result)) {
 		ret &=test_ClosePrinter(tctx, p, &handle);
