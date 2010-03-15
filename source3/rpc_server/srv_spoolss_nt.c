@@ -8503,11 +8503,14 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 {
 
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
-	struct regval_blob		*val = NULL;
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	const char *printer;
 	int 			snum = 0;
 	WERROR result = WERR_OK;
 	DATA_BLOB blob;
+	enum winreg_Type val_type;
+	uint8_t *val_data;
+	uint32_t val_size;
+
 
 	DEBUG(4,("_spoolss_GetPrinterDataEx\n"));
 
@@ -8537,13 +8540,13 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 						       r->out.type,
 						       &data);
 		if (!W_ERROR_IS_OK(result)) {
-			goto done;
+			return result;
 		}
 
 		result = push_spoolss_PrinterData(p->mem_ctx, &blob,
 						  *r->out.type, &data);
 		if (!W_ERROR_IS_OK(result)) {
-			goto done;
+			return result;
 		}
 
 		*r->out.needed = blob.length;
@@ -8556,63 +8559,57 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		result = WERR_BADFID;
-		goto done;
+		return WERR_BADFID;
 	}
-
-	result = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(result)) {
-		goto done;
-	}
+	printer = lp_const_servicename(snum);
 
 	/* check to see if the keyname is valid */
 	if (!strlen(r->in.key_name)) {
-		result = WERR_INVALID_PARAM;
-		goto done;
+		return WERR_INVALID_PARAM;
 	}
 
-	/* XP sends this and wants to change id value from the PRINTER_INFO_0 */
-
+	/* XP sends this and wants the ChangeID value from PRINTER_INFO_0 */
 	if (strequal(r->in.key_name, SPOOL_PRINTERDATA_KEY) &&
 	    strequal(r->in.value_name, "ChangeId")) {
 		*r->out.type = REG_DWORD;
 		*r->out.needed = 4;
 		if (r->in.offered >= *r->out.needed) {
-			SIVAL(r->out.data, 0, printer->info_2->changeid);
+			uint32_t changeid = 0;
+
+			result = winreg_printer_get_changeid(p->mem_ctx,
+							     p->server_info,
+							     printer,
+							     &changeid);
+			if (!W_ERROR_IS_OK(result)) {
+				return result;
+			}
+
+			SIVAL(r->out.data, 0, changeid);
 			result = WERR_OK;
 		}
 		goto done;
 	}
 
-	if (lookup_printerkey(printer->info_2->data, r->in.key_name) == -1) {
-		DEBUG(4,("_spoolss_GetPrinterDataEx: "
-			"Invalid keyname [%s]\n", r->in.key_name ));
-		result = WERR_BADFILE;
-		goto done;
-	}
-
-	val = get_printer_data(printer->info_2,
-			       r->in.key_name, r->in.value_name);
-	if (!val) {
-		result = WERR_BADFILE;
-		goto done;
-	}
-
-	*r->out.needed = regval_size(val);
-	*r->out.type = regval_type(val);
-
-	if (r->in.offered >= *r->out.needed) {
-		memcpy(r->out.data, regval_data_p(val), regval_size(val));
-	}
- done:
-	if (printer) {
-		free_a_printer(&printer, 2);
-	}
-
+	result = winreg_get_printer_dataex(p->mem_ctx,
+					   p->server_info,
+					   printer,
+					   r->in.key_name,
+					   r->in.value_name,
+					   &val_type,
+					   &val_data,
+					   &val_size);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
 
+	*r->out.needed = val_size;
+	*r->out.type = val_type;
+
+	if (r->in.offered >= *r->out.needed) {
+		memcpy(r->out.data, val_data, val_size);
+	}
+
+ done:
 	*r->out.type    = SPOOLSS_BUFFER_OK(*r->out.type, REG_NONE);
 	r->out.data     = SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
 
