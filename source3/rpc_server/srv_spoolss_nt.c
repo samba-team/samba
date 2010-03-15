@@ -8927,31 +8927,6 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
 }
 
 /****************************************************************
-****************************************************************/
-
-static WERROR registry_value_to_printer_enum_value(TALLOC_CTX *mem_ctx,
-						   struct regval_blob *v,
-						   struct spoolss_PrinterEnumValues *r)
-{
-	r->data = TALLOC_ZERO_P(mem_ctx, DATA_BLOB);
-	W_ERROR_HAVE_NO_MEMORY(r->data);
-
-	r->value_name	= talloc_strdup(mem_ctx, regval_name(v));
-	W_ERROR_HAVE_NO_MEMORY(r->value_name);
-
-	r->value_name_len = strlen_m_term(regval_name(v)) * 2;
-
-	r->type		= regval_type(v);
-	r->data_length	= regval_size(v);
-
-	if (r->data_length) {
-		*r->data = data_blob_talloc(r->data, regval_data_p(v), regval_size(v));
-	}
-
-	return WERR_OK;
-}
-
-/****************************************************************
  _spoolss_EnumPrinterDataEx
 ****************************************************************/
 
@@ -8959,14 +8934,10 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 				  struct spoolss_EnumPrinterDataEx *r)
 {
 	uint32_t	count = 0;
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	struct spoolss_PrinterEnumValues *info = NULL;
-	NT_PRINTER_DATA		*p_data;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum;
 	WERROR 		result;
-	int		key_index;
-	int		i;
 
 	DEBUG(4,("_spoolss_EnumPrinterDataEx\n"));
 
@@ -8992,68 +8963,19 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 		goto done;
 	}
 
-	/* get the printer off of disk */
-
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
 	}
 
-	ZERO_STRUCT(printer);
-	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(result)) {
-		return result;
-	}
-
 	/* now look for a match on the key name */
-
-	p_data = printer->info_2->data;
-
-	key_index = lookup_printerkey(p_data, r->in.key_name);
-	if (key_index == -1) {
-		DEBUG(10,("_spoolss_EnumPrinterDataEx: Unknown keyname [%s]\n",
-			r->in.key_name));
-		result = WERR_INVALID_PARAM;
+	result = winreg_enum_printer_dataex(p->mem_ctx,
+					    p->server_info,
+					    lp_const_servicename(snum),
+					    r->in.key_name,
+					    &count,
+					    &info);
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
-	}
-
-	/* allocate the memory for the array of pointers -- if necessary */
-
-	count = regval_ctr_numvals(p_data->keys[key_index].values);
-	if (!count) {
-		result = WERR_OK; /* ??? */
-		goto done;
-	}
-
-	info = TALLOC_ZERO_ARRAY(p->mem_ctx,
-				 struct spoolss_PrinterEnumValues,
-				 count);
-	if (!info) {
-		DEBUG(0,("_spoolss_EnumPrinterDataEx: talloc() failed\n"));
-		result = WERR_NOMEM;
-		goto done;
-	}
-
-	/*
-	 * loop through all params and build the array to pass
-	 * back to the  client
-	 */
-
-	for (i=0; i < count; i++) {
-
-		struct regval_blob	*val;
-
-		/* lookup the registry value */
-
-		val = regval_ctr_specific_value(p_data->keys[key_index].values, i);
-
-		DEBUG(10,("retrieved value number [%d] [%s]\n", i, regval_name(val)));
-
-		/* copy the data */
-
-		result = registry_value_to_printer_enum_value(info, val, &info[i]);
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 	}
 
 #if 0 /* FIXME - gd */
@@ -9072,11 +8994,6 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 	*r->out.info	= info;
 
  done:
-
-	if (printer) {
-		free_a_printer(&printer, 2);
-	}
-
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
