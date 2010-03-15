@@ -3149,6 +3149,14 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_SetPrinterData(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
+				const char *value_name,
+				enum winreg_Type type,
+				uint8_t *data,
+				uint32_t offered);
+
 static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 					     struct dcerpc_pipe *p,
 					     struct policy_handle *handle)
@@ -3160,7 +3168,18 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 	uint32_t value_offered, data_offered;
 	WERROR result;
 
+	enum winreg_Type type;
+	DATA_BLOB blob;
+
 	torture_comment(tctx, "Testing EnumPrinterData vs EnumPrinterDataEx consistency\n");
+
+	torture_assert(tctx,
+		reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
+				  "REG_SZ", "torture_data", &type, &blob), "");
+
+	torture_assert(tctx,
+		test_SetPrinterData(tctx, p, handle, "torture_value", type, blob.data, blob.length),
+		"SetPrinterData failed");
 
 	torture_assert(tctx,
 		test_EnumPrinterDataEx(tctx, p, handle, "PrinterDriverData", &count, &info),
@@ -3225,6 +3244,8 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, data_needed, info[i].data_length, "data length mismatch");
 		torture_assert_mem_equal(tctx, data, info[i].data->data, info[i].data_length, "data mismatch");
 	}
+
+	torture_comment(tctx, "EnumPrinterData vs EnumPrinterDataEx consistency test succeeded\n\n");
 
 	return true;
 }
