@@ -31,12 +31,28 @@ struct torture_suite *torture_registry_diff(TALLOC_CTX *mem_ctx);
 
 static bool test_str_regtype(struct torture_context *ctx)
 {
+	torture_assert_str_equal(ctx, str_regtype(0),
+				 "REG_NONE", "REG_NONE failed");
 	torture_assert_str_equal(ctx, str_regtype(1),
 				 "REG_SZ", "REG_SZ failed");
+	torture_assert_str_equal(ctx, str_regtype(2),
+				 "REG_EXPAND_SZ", "REG_EXPAND_SZ failed");
+	torture_assert_str_equal(ctx, str_regtype(3),
+				 "REG_BINARY", "REG_BINARY failed");
 	torture_assert_str_equal(ctx, str_regtype(4),
 				 "REG_DWORD", "REG_DWORD failed");
 	torture_assert_str_equal(ctx, str_regtype(5),
 				 "REG_DWORD_BIG_ENDIAN", "REG_DWORD_BIG_ENDIAN failed");
+	torture_assert_str_equal(ctx, str_regtype(6),
+				 "REG_LINK", "REG_LINK failed");
+	torture_assert_str_equal(ctx, str_regtype(7),
+				 "REG_MULTI_SZ", "REG_MULTI_SZ failed");
+	torture_assert_str_equal(ctx, str_regtype(8),
+				 "REG_RESOURCE_LIST", "REG_RESOURCE_LIST failed");
+	torture_assert_str_equal(ctx, str_regtype(9),
+				 "REG_FULL_RESOURCE_DESCRIPTOR", "REG_FULL_RESOURCE_DESCRIPTOR failed");
+	torture_assert_str_equal(ctx, str_regtype(10),
+				 "REG_RESOURCE_REQUIREMENTS_LIST", "REG_RESOURCE_REQUIREMENTS_LIST failed");
 	torture_assert_str_equal(ctx, str_regtype(11),
 				 "REG_QWORD", "REG_QWORD failed");
 
