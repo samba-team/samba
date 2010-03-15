@@ -372,7 +372,7 @@ static bool test_BackupLog(struct torture_context *tctx,
 	NTSTATUS status;
 	struct policy_handle handle, backup_handle;
 	struct eventlog_BackupEventLogW r;
-	struct eventlog_OpenBackupEventLogW b;
+	struct eventlog_OpenBackupEventLogW br;
 	struct eventlog_CloseEventLog cr;
 	const char *tmp;
 	struct lsa_String backup_filename;
@@ -413,13 +413,13 @@ static bool test_BackupLog(struct torture_context *tctx,
 	unknown0.unknown0 = 0x005c;
 	unknown0.unknown1 = 0x0001;
 
-	b.in.unknown0 = &unknown0;
-	b.in.backup_logname = &backup_filename;
-	b.in.major_version = 1;
-	b.in.minor_version = 1;
-	b.out.handle = &backup_handle;
+	br.in.unknown0 = &unknown0;
+	br.in.backup_logname = &backup_filename;
+	br.in.major_version = 1;
+	br.in.minor_version = 1;
+	br.out.handle = &backup_handle;
 
-	status = dcerpc_eventlog_OpenBackupEventLogW(p, tctx, &b);
+	status = dcerpc_eventlog_OpenBackupEventLogW(p, tctx, &br);
 
 	torture_assert_ntstatus_ok(tctx, status, "OpenBackupEventLogW failed");
 
