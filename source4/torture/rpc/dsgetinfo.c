@@ -59,6 +59,51 @@ struct DsGetinfoTest {
 	} admin;
 };
 
+
+
+/*
+  return the default DN for a ldap server given a connected RPC pipe to the
+  server
+ */
+static const char *torture_get_ldap_base_dn(struct torture_context *tctx, struct dcerpc_pipe *p)
+{
+	const char *hostname = p->binding->target_hostname;
+	struct ldb_context *ldb;
+	const char *ldap_url = talloc_asprintf(p, "ldap://%s", hostname);
+	const char *attrs[] = { "defaultNamingContext", NULL };
+	const char *dnstr;
+	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
+	int ret;
+	struct ldb_result *res;
+
+	ldb = ldb_init(tmp_ctx, tctx->ev);
+	if (ldb == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	ret = ldb_connect(ldb, ldap_url, 0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_comment(tctx, "Failed to make LDB connection to target");
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	ret = dsdb_search_dn(ldb, tmp_ctx, &res, ldb_dn_new(tmp_ctx, ldb, ""),
+			     attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		torture_comment(tctx, "Failed to get defaultNamingContext");
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	dnstr = ldb_msg_find_attr_as_string(res->msgs[0], "defaultNamingContext", NULL);
+	dnstr = talloc_strdup(tctx, dnstr);
+	talloc_free(tmp_ctx);
+	return dnstr;
+}
+
+
 static struct DsGetinfoTest *test_create_context(struct torture_context *tctx)
 {
 	NTSTATUS status;
@@ -177,69 +222,66 @@ static bool test_getinfo(struct torture_context *tctx,
 		int32_t level;
 		int32_t infotype;
 		const char *obj_dn;
+		const char *attribute_name;
+		uint32_t flags;
 	} array[] = {
 		{
-			DRSUAPI_DS_REPLICA_GET_INFO,
-			DRSUAPI_DS_REPLICA_INFO_NEIGHBORS,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_NEIGHBORS
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO,
-			DRSUAPI_DS_REPLICA_INFO_CURSORS,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_CURSORS
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO,
-			DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO,
-			DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO,
-			DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO,
-			DRSUAPI_DS_REPLICA_INFO_PENDING_OPS,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_PENDING_OPS
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_CURSORS2,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_CURSORS2
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_CURSORS3,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_CURSORS3
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2,
+			.obj_dn = "CN=Domain Admins,CN=Users,",
+			.flags = 0
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2,
+			.obj_dn = "CN=Domain Admins,CN=Users,",
+			.flags = DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_REPSTO,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS,
-			"__IGNORED__"
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_REPSTO
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_CLIENT_CONTEXTS
 		},{
-			DRSUAPI_DS_REPLICA_GET_INFO2,
-			DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS,
-			NULL
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_UPTODATE_VECTOR_V1
+		},{
+			.level = DRSUAPI_DS_REPLICA_GET_INFO2,
+			.infotype = DRSUAPI_DS_REPLICA_INFO_SERVER_OUTGOING_CALLS
 		}
 	};
+
+	ctx->domain_dn = torture_get_ldap_base_dn(tctx, p);
+	torture_assert(tctx, ctx->domain_dn != NULL, "Cannot get domain_dn");
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
 		torture_comment(tctx, "skipping DsReplicaGetInfo test against Samba4\n");
@@ -255,7 +297,15 @@ static bool test_getinfo(struct torture_context *tctx,
 		torture_comment(tctx, "testing DsReplicaGetInfo level %d infotype %d\n",
 				array[i].level, array[i].infotype);
 
-		object_dn = (array[i].obj_dn ? array[i].obj_dn : ctx->domain_dn);
+		if (array[i].obj_dn) {
+			object_dn = array[i].obj_dn;
+			if (object_dn[strlen(object_dn)-1] == ',') {
+				/* add the domain DN on the end */
+				object_dn = talloc_asprintf(tctx, "%s%s", object_dn, ctx->domain_dn);
+			}
+		} else {
+			object_dn = ctx->domain_dn;
+		}
 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
@@ -273,6 +323,14 @@ static bool test_getinfo(struct torture_context *tctx,
 			r.in.req->req2.value_dn_str	= NULL;
 			r.in.req->req2.enumeration_context = 0;
 			break;
+		}
+
+		/* Construct a different request for some of the infoTypes */
+		if (array[i].attribute_name != NULL) {
+			r.in.req->req2.attribute_name = array[i].attribute_name;
+		}
+		if (array[i].flags != 0) {
+			r.in.req->req2.flags |= array[i].flags;
 		}
 
 		r.out.info		= &info;
