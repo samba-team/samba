@@ -57,7 +57,7 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	}
 }
 
-static bool test_GetVersion(struct dcerpc_pipe *p,
+static bool test_GetVersion(struct dcerpc_binding_handle *b,
 			    struct torture_context *tctx,
 			    struct policy_handle *handle)
 {
@@ -68,7 +68,7 @@ static bool test_GetVersion(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.out.version = &v;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_GetVersion(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_GetVersion_r(b, tctx, &r),
 				   "GetVersion failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "GetVersion failed");
@@ -76,7 +76,7 @@ static bool test_GetVersion(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
+static bool test_NotifyChangeKeyValue(struct dcerpc_binding_handle *b,
 				      struct torture_context *tctx,
 				      struct policy_handle *handle)
 {
@@ -91,7 +91,7 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 	init_winreg_String(&r.in.string2, NULL);
 
 	torture_assert_ntstatus_ok(tctx,
-				   dcerpc_winreg_NotifyChangeKeyValue(p, tctx, &r),
+				   dcerpc_winreg_NotifyChangeKeyValue_r(b, tctx, &r),
 				   "NotifyChangeKeyValue failed");
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
@@ -104,7 +104,8 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_CreateKey(struct dcerpc_binding_handle *b,
+			   struct torture_context *tctx,
 			   struct policy_handle *handle, const char *name,
 			   const char *kclass)
 {
@@ -122,7 +123,7 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.action_taken = r.out.action_taken = &action_taken;
 	r.in.secdesc = NULL;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey_r(b, tctx, &r),
 				   "CreateKey failed");
 
 	torture_assert_werr_ok(tctx,  r.out.result, "CreateKey failed");
@@ -134,7 +135,7 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 /*
   createkey testing with a SD
 */
-static bool test_CreateKey_sd(struct dcerpc_pipe *p,
+static bool test_CreateKey_sd(struct dcerpc_binding_handle *b,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle, const char *name,
 			      const char *kclass,
@@ -177,7 +178,7 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 	r.in.action_taken = r.out.action_taken = &action_taken;
 	r.in.secdesc = &secbuf;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey_r(b, tctx, &r),
 				   "CreateKey with sd failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "CreateKey with sd failed");
@@ -196,6 +197,7 @@ static bool _test_GetKeySecurity(struct dcerpc_pipe *p,
 	struct security_descriptor *sd = NULL;
 	uint32_t sec_info;
 	DATA_BLOB sdblob;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (sec_info_ptr) {
 		sec_info = *sec_info_ptr;
@@ -211,7 +213,7 @@ static bool _test_GetKeySecurity(struct dcerpc_pipe *p,
 	r.in.sd->size = 0x1000;
 
 	torture_assert_ntstatus_ok(tctx,
-				   dcerpc_winreg_GetKeySecurity(p, tctx, &r),
+				   dcerpc_winreg_GetKeySecurity_r(b, tctx, &r),
 				   "GetKeySecurity failed");
 
 	torture_assert_werr_equal(tctx, r.out.result, get_werr,
@@ -259,6 +261,7 @@ static bool _test_SetKeySecurity(struct dcerpc_pipe *p,
 	struct KeySecurityData *sdata = NULL;
 	DATA_BLOB sdblob;
 	uint32_t sec_info;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
 
@@ -300,7 +303,7 @@ static bool _test_SetKeySecurity(struct dcerpc_pipe *p,
 	r.in.sd = sdata;
 
 	torture_assert_ntstatus_ok(tctx,
-				   dcerpc_winreg_SetKeySecurity(p, tctx, &r),
+				   dcerpc_winreg_SetKeySecurity_r(b, tctx, &r),
 				   "SetKeySecurity failed");
 
 	torture_assert_werr_equal(tctx, r.out.result, werr,
@@ -317,7 +320,8 @@ static bool test_SetKeySecurity(struct dcerpc_pipe *p,
 	return _test_SetKeySecurity(p, tctx, handle, NULL, sd, WERR_OK);
 }
 
-static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_CloseKey(struct dcerpc_binding_handle *b,
+			  struct torture_context *tctx,
 			  struct policy_handle *handle)
 {
 	struct winreg_CloseKey r;
@@ -325,7 +329,7 @@ static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ZERO_STRUCT(r);
 	r.in.handle = r.out.handle = handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CloseKey(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CloseKey_r(b, tctx, &r),
 				   "CloseKey failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "CloseKey failed");
@@ -333,7 +337,8 @@ static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_FlushKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_FlushKey(struct dcerpc_binding_handle *b,
+			  struct torture_context *tctx,
 			  struct policy_handle *handle)
 {
 	struct winreg_FlushKey r;
@@ -341,7 +346,7 @@ static bool test_FlushKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ZERO_STRUCT(r);
 	r.in.handle = handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_FlushKey(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_FlushKey_r(b, tctx, &r),
 				   "FlushKey failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "FlushKey failed");
@@ -349,7 +354,8 @@ static bool test_FlushKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool _test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool _test_OpenKey(struct dcerpc_binding_handle *b,
+			  struct torture_context *tctx,
 			  struct policy_handle *hive_handle,
 			  const char *keyname, uint32_t access_mask,
 			  struct policy_handle *key_handle,
@@ -365,7 +371,7 @@ static bool _test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.access_mask = access_mask;
 	r.out.handle = key_handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_OpenKey(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_OpenKey_r(b, tctx, &r),
 				   "OpenKey failed");
 
 	torture_assert_werr_equal(tctx, r.out.result, open_werr,
@@ -378,16 +384,18 @@ static bool _test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_OpenKey(struct dcerpc_binding_handle *b,
+			 struct torture_context *tctx,
 			 struct policy_handle *hive_handle,
 			 const char *keyname, struct policy_handle *key_handle)
 {
-	return _test_OpenKey(p, tctx, hive_handle, keyname,
+	return _test_OpenKey(b, tctx, hive_handle, keyname,
 			     SEC_FLAG_MAXIMUM_ALLOWED, key_handle,
 			     WERR_OK, NULL);
 }
 
-static bool test_Cleanup(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_Cleanup(struct dcerpc_binding_handle *b,
+			 struct torture_context *tctx,
 			 struct policy_handle *handle, const char *key)
 {
 	struct winreg_DeleteKey r;
@@ -396,7 +404,7 @@ static bool test_Cleanup(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.handle = handle;
 
 	init_winreg_String(&r.in.key, key);
-	dcerpc_winreg_DeleteKey(p, tctx, &r);
+	dcerpc_winreg_DeleteKey_r(b, tctx, &r);
 
 	return true;
 }
@@ -427,10 +435,11 @@ static bool test_SecurityDescriptor(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "SecurityDescriptor get & set\n");
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
@@ -439,7 +448,7 @@ static bool test_SecurityDescriptor(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	if (!test_CloseKey(p, tctx, &new_handle)) {
+	if (!test_CloseKey(b, tctx, &new_handle)) {
 		return false;
 	}
 
@@ -458,8 +467,9 @@ static bool _test_SecurityDescriptor(struct dcerpc_pipe *p,
 	struct policy_handle new_handle;
 	bool ret = true;
 	bool got_key = false;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!_test_OpenKey(p, tctx, handle, key, access_mask, &new_handle,
+	if (!_test_OpenKey(b, tctx, handle, key, access_mask, &new_handle,
 			   open_werr, &got_key)) {
 		return false;
 	}
@@ -473,7 +483,7 @@ static bool _test_SecurityDescriptor(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	if (!test_CloseKey(p, tctx, &new_handle)) {
+	if (!test_CloseKey(b, tctx, &new_handle)) {
 		return false;
 	}
 
@@ -513,14 +523,15 @@ static bool _test_dacl_trustee_present(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
 	ret = test_dacl_trustee_present(p, tctx, &new_handle, sid);
 
-	test_CloseKey(p, tctx, &new_handle);
+	test_CloseKey(b, tctx, &new_handle);
 
 	return ret;
 }
@@ -559,15 +570,16 @@ static bool _test_sacl_trustee_present(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!_test_OpenKey(p, tctx, handle, key, SEC_FLAG_SYSTEM_SECURITY,
+	if (!_test_OpenKey(b, tctx, handle, key, SEC_FLAG_SYSTEM_SECURITY,
 			   &new_handle, WERR_OK, NULL)) {
 		return false;
 	}
 
 	ret = test_sacl_trustee_present(p, tctx, &new_handle, sid);
 
-	test_CloseKey(p, tctx, &new_handle);
+	test_CloseKey(b, tctx, &new_handle);
 
 	return ret;
 }
@@ -599,14 +611,15 @@ static bool _test_owner_present(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
 	ret = test_owner_present(p, tctx, &new_handle, sid);
 
-	test_CloseKey(p, tctx, &new_handle);
+	test_CloseKey(b, tctx, &new_handle);
 
 	return ret;
 }
@@ -638,14 +651,15 @@ static bool _test_group_present(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
 	ret = test_group_present(p, tctx, &new_handle, sid);
 
-	test_CloseKey(p, tctx, &new_handle);
+	test_CloseKey(b, tctx, &new_handle);
 
 	return ret;
 }
@@ -710,8 +724,9 @@ static bool test_RestoreSecurity(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
@@ -719,7 +734,7 @@ static bool test_RestoreSecurity(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	if (!test_CloseKey(p, tctx, &new_handle)) {
+	if (!test_CloseKey(b, tctx, &new_handle)) {
 		ret = false;
 	}
 
@@ -734,8 +749,9 @@ static bool test_BackupSecurity(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
@@ -743,7 +759,7 @@ static bool test_BackupSecurity(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	if (!test_CloseKey(p, tctx, &new_handle)) {
+	if (!test_CloseKey(b, tctx, &new_handle)) {
 		ret = false;
 	}
 
@@ -776,10 +792,11 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	struct security_ace *ace = NULL;
 	struct policy_handle new_handle;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "SecurityDescriptor inheritance\n");
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
@@ -814,16 +831,16 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 		test_dacl_ace_present(p, tctx, &new_handle, ace),
 		"new ACE not present!");
 
-	if (!test_CloseKey(p, tctx, &new_handle)) {
+	if (!test_CloseKey(b, tctx, &new_handle)) {
 		return false;
 	}
 
-	if (!test_CreateKey(p, tctx, handle, TEST_SUBKEY_SD, NULL)) {
+	if (!test_CreateKey(b, tctx, handle, TEST_SUBKEY_SD, NULL)) {
 		ret = false;
 		goto out;
 	}
 
-	if (!test_OpenKey(p, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -834,13 +851,13 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 		goto out;
 	}
 
-	test_CloseKey(p, tctx, &new_handle);
-	if (!test_CreateKey(p, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
+	test_CloseKey(b, tctx, &new_handle);
+	if (!test_CreateKey(b, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
 		ret = false;
 		goto out;
 	}
 
-	if (!test_OpenKey(p, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -852,8 +869,8 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	}
 
  out:
-	test_CloseKey(p, tctx, &new_handle);
-	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
+	test_CloseKey(b, tctx, &new_handle);
+	test_Cleanup(b, tctx, handle, TEST_SUBKEY_SD);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
 	return true;
@@ -884,10 +901,11 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	struct dom_sid *sid = NULL;
 	bool ret = true;
 	uint8_t ace_flags = 0x0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "SecurityDescriptor inheritance block\n");
 
-	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, key, &new_handle)) {
 		return false;
 	}
 
@@ -919,15 +937,15 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 		test_dacl_ace_present(p, tctx, &new_handle, ace),
 		"new ACE not present!");
 
-	if (!test_CloseKey(p, tctx, &new_handle)) {
+	if (!test_CloseKey(b, tctx, &new_handle)) {
 		return false;
 	}
 
-	if (!test_CreateKey(p, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
+	if (!test_CreateKey(b, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
 		return false;
 	}
 
-	if (!test_OpenKey(p, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -949,9 +967,9 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 		goto out;
 	}
 
-	test_CloseKey(p, tctx, &new_handle);
+	test_CloseKey(b, tctx, &new_handle);
 
-	if (!test_OpenKey(p, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -970,8 +988,8 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	}
 
  out:
-	test_CloseKey(p, tctx, &new_handle);
-	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
+	test_CloseKey(b, tctx, &new_handle);
+	test_Cleanup(b, tctx, handle, TEST_SUBKEY_SD);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
 	return ret;
@@ -1056,12 +1074,13 @@ static bool test_SetSecurityDescriptor_SecInfo(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool open_success = false;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "SecurityDescriptor (%s) sets for secinfo: "
 			"0x%08x, access_mask: 0x%08x\n",
 			test, sec_info, access_mask);
 
-	if (!_test_OpenKey(p, tctx, handle, key,
+	if (!_test_OpenKey(b, tctx, handle, key,
 			   access_mask,
 			   &new_handle,
 			   WERR_OK,
@@ -1071,7 +1090,7 @@ static bool test_SetSecurityDescriptor_SecInfo(struct dcerpc_pipe *p,
 
 	if (!open_success) {
 		torture_comment(tctx, "key did not open\n");
-		test_CloseKey(p, tctx, &new_handle);
+		test_CloseKey(b, tctx, &new_handle);
 		return false;
 	}
 
@@ -1082,11 +1101,11 @@ static bool test_SetSecurityDescriptor_SecInfo(struct dcerpc_pipe *p,
 				"SetKeySecurity with secinfo: 0x%08x has failed\n",
 				sec_info);
 		smb_panic("");
-		test_CloseKey(p, tctx, &new_handle);
+		test_CloseKey(b, tctx, &new_handle);
 		return false;
 	}
 
-	test_CloseKey(p, tctx, &new_handle);
+	test_CloseKey(b, tctx, &new_handle);
 
 	if (W_ERROR_IS_OK(set_werr)) {
 		bool present;
@@ -1368,7 +1387,8 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_DeleteKey(struct dcerpc_binding_handle *b,
+			   struct torture_context *tctx,
 			   struct policy_handle *handle, const char *key)
 {
 	NTSTATUS status;
@@ -1377,7 +1397,7 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.handle = handle;
 	init_winreg_String(&r.in.key, key);
 
-	status = dcerpc_winreg_DeleteKey(p, tctx, &r);
+	status = dcerpc_winreg_DeleteKey_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "DeleteKey failed");
 	torture_assert_werr_ok(tctx, r.out.result, "DeleteKey failed");
@@ -1385,7 +1405,7 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_QueryInfoKey(struct dcerpc_pipe *p,
+static bool test_QueryInfoKey(struct dcerpc_binding_handle *b,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle, char *kclass)
 {
@@ -1412,7 +1432,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	init_winreg_String(r.in.classname, kclass);
 
 	torture_assert_ntstatus_ok(tctx,
-				   dcerpc_winreg_QueryInfoKey(p, tctx, &r),
+				   dcerpc_winreg_QueryInfoKey_r(b, tctx, &r),
 				   "QueryInfoKey failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "QueryInfoKey failed");
@@ -1420,7 +1440,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_SetValue(struct dcerpc_pipe *p,
+static bool test_SetValue(struct dcerpc_binding_handle *b,
 			  struct torture_context *tctx,
 			  struct policy_handle *handle,
 			  const char *value_name,
@@ -1442,7 +1462,7 @@ static bool test_SetValue(struct dcerpc_pipe *p,
 	r.in.data = data;
 	r.in.size = size;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_SetValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_SetValue_r(b, tctx, &r),
 		"winreg_SetValue failed");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"winreg_SetValue failed");
@@ -1450,7 +1470,7 @@ static bool test_SetValue(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_DeleteValue(struct dcerpc_pipe *p,
+static bool test_DeleteValue(struct dcerpc_binding_handle *b,
 			     struct torture_context *tctx,
 			     struct policy_handle *handle,
 			     const char *value_name)
@@ -1465,7 +1485,7 @@ static bool test_DeleteValue(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.in.value = value;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteValue_r(b, tctx, &r),
 		"winreg_DeleteValue failed");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"winreg_DeleteValue failed");
@@ -1485,6 +1505,7 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct winreg_StringBuf kclass, name;
 	NTSTATUS status;
 	NTTIME t = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	kclass.name   = "";
 	kclass.size   = 1024;
@@ -1501,7 +1522,7 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 		name.name   = NULL;
 		name.size   = 1024;
 
-		status = dcerpc_winreg_EnumKey(p, tctx, &r);
+		status = dcerpc_winreg_EnumKey_r(b, tctx, &r);
 
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 			struct policy_handle key_handle;
@@ -1510,7 +1531,7 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 					r.in.enum_index,
 					r.out.name->name);
 
-			if (!test_OpenKey(p, tctx, handle, r.out.name->name,
+			if (!test_OpenKey(b, tctx, handle, r.out.name->name,
 					  &key_handle)) {
 			} else {
 				test_key(p, tctx, &key_handle,
@@ -1532,7 +1553,7 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_QueryMultipleValues(struct dcerpc_pipe *p,
+static bool test_QueryMultipleValues(struct dcerpc_binding_handle *b,
 				     struct torture_context *tctx,
 				     struct policy_handle *handle,
 				     const char *valuename)
@@ -1558,7 +1579,7 @@ static bool test_QueryMultipleValues(struct dcerpc_pipe *p,
 		r.in.buffer = r.out.buffer = talloc_zero_array(tctx, uint8_t,
 							       *r.in.buffer_size);
 
-		status = dcerpc_winreg_QueryMultipleValues(p, tctx, &r);
+		status = dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r);
 
 		if(NT_STATUS_IS_ERR(status))
 			torture_fail(tctx, "QueryMultipleValues failed");
@@ -1572,7 +1593,7 @@ static bool test_QueryMultipleValues(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_QueryValue(struct dcerpc_pipe *p,
+static bool test_QueryValue(struct dcerpc_binding_handle *b,
 			    struct torture_context *tctx,
 			    struct policy_handle *handle,
 			    const char *valuename)
@@ -1592,7 +1613,7 @@ static bool test_QueryValue(struct dcerpc_pipe *p,
 	r.in.data_size = &offered;
 	r.in.data_length = &zero;
 
-	status = dcerpc_winreg_QueryValue(p, tctx, &r);
+	status = dcerpc_winreg_QueryValue_r(b, tctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		torture_fail(tctx, "QueryValue failed");
 	}
@@ -1602,7 +1623,7 @@ static bool test_QueryValue(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_QueryValue_full(struct dcerpc_pipe *p,
+static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 				 struct torture_context *tctx,
 				 struct policy_handle *handle,
 				 const char *valuename,
@@ -1630,35 +1651,35 @@ static bool test_QueryValue_full(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.in.value_name = &value_name;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r), "QueryValue failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r), "QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
 		"expected WERR_INVALID_PARAM for NULL winreg_String.name");
 
 	init_winreg_String(&value_name, valuename);
 	r.in.value_name = &value_name;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
 		"QueryValue failed");
 
 	r.in.type = &type;
 	r.out.type = &type;
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
 		"QueryValue failed");
 
 	r.in.data_length = &data_length;
 	r.out.data_length = &data_length;
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
 		"QueryValue failed");
 
 	r.in.data_size = &data_size;
 	r.out.data_size = &data_size;
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	if (existing_value) {
 		torture_assert_werr_ok(tctx, r.out.result,
@@ -1675,7 +1696,7 @@ static bool test_QueryValue_full(struct dcerpc_pipe *p,
 	r.out.data = data;
 	*r.in.data_size = 0;
 	*r.out.data_size = 0;
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	if (existing_value) {
 		torture_assert_werr_equal(tctx, r.out.result, WERR_MORE_DATA,
@@ -1690,7 +1711,7 @@ static bool test_QueryValue_full(struct dcerpc_pipe *p,
 	r.out.data = data;
 	r.in.data_size = &real_data_size;
 	r.out.data_size = &real_data_size;
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	if (existing_value) {
 		torture_assert_werr_ok(tctx, r.out.result,
@@ -1703,7 +1724,8 @@ static bool test_QueryValue_full(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
+static bool test_EnumValue(struct dcerpc_binding_handle *b,
+			   struct torture_context *tctx,
 			   struct policy_handle *handle, int max_valnamelen,
 			   int max_valbufsize)
 {
@@ -1729,13 +1751,13 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	do {
 		torture_assert_ntstatus_ok(tctx,
-					   dcerpc_winreg_EnumValue(p, tctx, &r),
+					   dcerpc_winreg_EnumValue_r(b, tctx, &r),
 					   "EnumValue failed");
 
 		if (W_ERROR_IS_OK(r.out.result)) {
-			ret &= test_QueryValue(p, tctx, handle,
+			ret &= test_QueryValue(b, tctx, handle,
 					       r.out.name->name);
-			ret &= test_QueryMultipleValues(p, tctx, handle,
+			ret &= test_QueryMultipleValues(b, tctx, handle,
 							r.out.name->name);
 		}
 
@@ -1748,7 +1770,7 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_AbortSystemShutdown(struct dcerpc_pipe *p,
+static bool test_AbortSystemShutdown(struct dcerpc_binding_handle *b,
 				     struct torture_context *tctx)
 {
 	struct winreg_AbortSystemShutdown r;
@@ -1758,7 +1780,7 @@ static bool test_AbortSystemShutdown(struct dcerpc_pipe *p,
 	r.in.server = &server;
 
 	torture_assert_ntstatus_ok(tctx,
-				   dcerpc_winreg_AbortSystemShutdown(p, tctx, &r),
+				   dcerpc_winreg_AbortSystemShutdown_r(b, tctx, &r),
 				   "AbortSystemShutdown failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
@@ -1772,6 +1794,7 @@ static bool test_InitiateSystemShutdown(struct torture_context *tctx,
 {
 	struct winreg_InitiateSystemShutdown r;
 	uint16_t hostname = 0x0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
 	r.in.hostname = &hostname;
@@ -1782,13 +1805,13 @@ static bool test_InitiateSystemShutdown(struct torture_context *tctx,
 	r.in.do_reboot = 1;
 
 	torture_assert_ntstatus_ok(tctx,
-				   dcerpc_winreg_InitiateSystemShutdown(p, tctx, &r),
+				   dcerpc_winreg_InitiateSystemShutdown_r(b, tctx, &r),
 				   "InitiateSystemShutdown failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
 			       "InitiateSystemShutdown failed");
 
-	return test_AbortSystemShutdown(p, tctx);
+	return test_AbortSystemShutdown(b, tctx);
 }
 
 
@@ -1797,6 +1820,7 @@ static bool test_InitiateSystemShutdownEx(struct torture_context *tctx,
 {
 	struct winreg_InitiateSystemShutdownEx r;
 	uint16_t hostname = 0x0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
 	r.in.hostname = &hostname;
@@ -1808,13 +1832,13 @@ static bool test_InitiateSystemShutdownEx(struct torture_context *tctx,
 	r.in.reason = 0;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_winreg_InitiateSystemShutdownEx(p, tctx, &r),
+		dcerpc_winreg_InitiateSystemShutdownEx_r(b, tctx, &r),
 		"InitiateSystemShutdownEx failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
 			       "InitiateSystemShutdownEx failed");
 
-	return test_AbortSystemShutdown(p, tctx);
+	return test_AbortSystemShutdown(b, tctx);
 }
 #define MAX_DEPTH 2		/* Only go this far down the tree */
 
@@ -1822,13 +1846,15 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 		     struct policy_handle *handle, int depth,
 		     bool test_security)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
 	if (depth == MAX_DEPTH)
 		return true;
 
-	if (!test_QueryInfoKey(p, tctx, handle, NULL)) {
+	if (!test_QueryInfoKey(b, tctx, handle, NULL)) {
 	}
 
-	if (!test_NotifyChangeKeyValue(p, tctx, handle)) {
+	if (!test_NotifyChangeKeyValue(b, tctx, handle)) {
 	}
 
 	if (test_security && !test_GetKeySecurity(p, tctx, handle, NULL)) {
@@ -1837,10 +1863,10 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	if (!test_EnumKey(p, tctx, handle, depth, test_security)) {
 	}
 
-	if (!test_EnumValue(p, tctx, handle, 0xFF, 0xFFFF)) {
+	if (!test_EnumValue(b, tctx, handle, 0xFF, 0xFFFF)) {
 	}
 
-	test_CloseKey(p, tctx, handle);
+	test_CloseKey(b, tctx, handle);
 
 	return true;
 }
@@ -1860,6 +1886,7 @@ static bool test_SetValue_simple(struct dcerpc_pipe *p,
 		REG_MULTI_SZ
 	};
 	int t;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "Testing SetValue (standard formats)\n");
 
@@ -1904,16 +1931,16 @@ static bool test_SetValue_simple(struct dcerpc_pipe *p,
 		}
 
 		torture_assert(tctx,
-			test_SetValue(p, tctx, handle, value_name, types[t], blob.data, blob.length),
+			test_SetValue(b, tctx, handle, value_name, types[t], blob.data, blob.length),
 			"test_SetValue failed");
 		torture_assert(tctx,
-			test_QueryValue_full(p, tctx, handle, value_name, true),
+			test_QueryValue_full(b, tctx, handle, value_name, true),
 			talloc_asprintf(tctx, "test_QueryValue_full for %s value failed", value_name));
 		torture_assert(tctx,
-			test_winreg_QueryValue(tctx, p->binding_handle, handle, value_name, &w_type, &w_size, &w_length, &w_data),
+			test_winreg_QueryValue(tctx, b, handle, value_name, &w_type, &w_size, &w_length, &w_data),
 			"test_winreg_QueryValue failed");
 		torture_assert(tctx,
-			test_DeleteValue(p, tctx, handle, value_name),
+			test_DeleteValue(b, tctx, handle, value_name),
 			"test_DeleteValue failed");
 
 		torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
@@ -1927,7 +1954,7 @@ static bool test_SetValue_simple(struct dcerpc_pipe *p,
 	return true;
 }
 
-typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
+typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
 
 static bool test_Open_Security(struct torture_context *tctx,
 			       struct dcerpc_pipe *p, void *userdata)
@@ -1936,6 +1963,7 @@ static bool test_Open_Security(struct torture_context *tctx,
 	bool ret = true, created2 = false;
 	bool created4 = false;
 	struct winreg_OpenHKLM r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	winreg_open_fn open_fn = userdata;
 
@@ -1944,31 +1972,31 @@ static bool test_Open_Security(struct torture_context *tctx,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 
-	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, open_fn(b, tctx, &r),
 				   "open");
 
-	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, &handle, TEST_KEY_BASE);
 
-	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
+	if (!test_CreateKey(b, tctx, &handle, TEST_KEY_BASE, NULL)) {
 		torture_comment(tctx,
 				"CreateKey (TEST_KEY_BASE) failed\n");
 	}
 
-	if (test_CreateKey_sd(p, tctx, &handle, TEST_KEY2,
+	if (test_CreateKey_sd(b, tctx, &handle, TEST_KEY2,
 			      NULL, &newhandle)) {
 		created2 = true;
 	}
 
-	if (created2 && !test_CloseKey(p, tctx, &newhandle)) {
+	if (created2 && !test_CloseKey(b, tctx, &newhandle)) {
 		torture_comment(tctx, "CloseKey failed\n");
 		ret = false;
 	}
 
-	if (test_CreateKey_sd(p, tctx, &handle, TEST_KEY4, NULL, &newhandle)) {
+	if (test_CreateKey_sd(b, tctx, &handle, TEST_KEY4, NULL, &newhandle)) {
 		created4 = true;
 	}
 
-	if (created4 && !test_CloseKey(p, tctx, &newhandle)) {
+	if (created4 && !test_CloseKey(b, tctx, &newhandle)) {
 		torture_comment(tctx, "CloseKey failed\n");
 		ret = false;
 	}
@@ -1977,18 +2005,18 @@ static bool test_Open_Security(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (created4 && !test_DeleteKey(p, tctx, &handle, TEST_KEY4)) {
+	if (created4 && !test_DeleteKey(b, tctx, &handle, TEST_KEY4)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
-	if (created2 && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
+	if (created2 && !test_DeleteKey(b, tctx, &handle, TEST_KEY2)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
 	/* The HKCR hive has a very large fanout */
-	if (open_fn == (void *)dcerpc_winreg_OpenHKCR) {
+	if (open_fn == (void *)dcerpc_winreg_OpenHKCR_r) {
 		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, true)) {
 			ret = false;
 		}
@@ -1998,12 +2026,12 @@ static bool test_Open_Security(struct torture_context *tctx,
 		}
 	}
 
-	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, &handle, TEST_KEY_BASE);
 
 	return ret;
 }
 
-static bool test_SetValue_extended(struct dcerpc_pipe *p,
+static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 				   struct torture_context *tctx,
 				   struct policy_handle *handle)
 {
@@ -2049,15 +2077,15 @@ static bool test_SetValue_extended(struct dcerpc_pipe *p,
 		DATA_BLOB blob = data_blob_string_const(string);
 
 		torture_assert(tctx,
-			test_SetValue(p, tctx, handle, value_name, types[t], blob.data, blob.length),
+			test_SetValue(b, tctx, handle, value_name, types[t], blob.data, blob.length),
 			"test_SetValue failed");
 
 		torture_assert(tctx,
-			test_winreg_QueryValue(tctx, p->binding_handle, handle, value_name, &w_type, &w_size, &w_length, &w_data),
+			test_winreg_QueryValue(tctx, b, handle, value_name, &w_type, &w_size, &w_length, &w_data),
 			"test_winreg_QueryValue failed");
 
 		torture_assert(tctx,
-			test_DeleteValue(p, tctx, handle, value_name),
+			test_DeleteValue(b, tctx, handle, value_name),
 			"test_DeleteValue failed");
 
 		torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
@@ -2082,6 +2110,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	bool ret = true, created = false, deleted = false;
 	bool created3 = false, created_subkey = false;
 	struct winreg_OpenHKLM r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	winreg_open_fn open_fn = userdata;
 
@@ -2090,78 +2119,78 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 
-	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx, open_fn(b, tctx, &r),
 				   "open");
 
-	if (open_fn == (void *)dcerpc_winreg_OpenHKLM) {
+	if (open_fn == (void *)dcerpc_winreg_OpenHKLM_r) {
 #if 0
 		torture_assert(tctx, test_OpenKey(p, tctx, &handle, KEY_CURRENT_VERSION, &newhandle),
 			"failed to open current version key");
 #else
-		torture_assert(tctx, _test_OpenKey(p, tctx, &handle, KEY_CURRENT_VERSION, KEY_QUERY_VALUE, &newhandle, WERR_OK, NULL),
+		torture_assert(tctx, _test_OpenKey(b, tctx, &handle, KEY_CURRENT_VERSION, KEY_QUERY_VALUE, &newhandle, WERR_OK, NULL),
 			"failed to open current version key");
 #endif
-		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
+		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
 			"failed to query current version");
-		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, "IDoNotExist", false),
+		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "IDoNotExist", false),
 			"failed to query current version");
-		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, NULL, false),
+		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, NULL, false),
 			"test_QueryValue_full for NULL value failed");
-		torture_assert(tctx, test_QueryValue_full(p, tctx, &newhandle, "", false),
+		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "", false),
 			"test_QueryValue_full for \"\" value failed");
 
-		torture_assert(tctx, test_CloseKey(p, tctx, &newhandle),
+		torture_assert(tctx, test_CloseKey(b, tctx, &newhandle),
 			"failed to close current version key");
 	}
 
-	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, &handle, TEST_KEY_BASE);
 
-	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
+	if (!test_CreateKey(b, tctx, &handle, TEST_KEY_BASE, NULL)) {
 		torture_comment(tctx,
 				"CreateKey (TEST_KEY_BASE) failed\n");
 	}
 
-	if (!test_CreateKey(p, tctx, &handle, TEST_KEY1, NULL)) {
+	if (!test_CreateKey(b, tctx, &handle, TEST_KEY1, NULL)) {
 		torture_comment(tctx,
 				"CreateKey failed - not considering a failure\n");
 	} else {
 		created = true;
 	}
 
-	if (created && !test_FlushKey(p, tctx, &handle)) {
+	if (created && !test_FlushKey(b, tctx, &handle)) {
 		torture_comment(tctx, "FlushKey failed\n");
 		ret = false;
 	}
 
-	if (created && !test_OpenKey(p, tctx, &handle, TEST_KEY1, &newhandle))
+	if (created && !test_OpenKey(b, tctx, &handle, TEST_KEY1, &newhandle))
 		torture_fail(tctx,
 			     "CreateKey failed (OpenKey after Create didn't work)\n");
 
 	if (created) {
 		torture_assert(tctx, test_SetValue_simple(p, tctx, &newhandle),
 			"simple SetValue test failed");
-		torture_assert(tctx, test_SetValue_extended(p, tctx, &newhandle),
+		torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 			"extended SetValue test failed");
 	}
 
-	if (created && !test_CloseKey(p, tctx, &newhandle))
+	if (created && !test_CloseKey(b, tctx, &newhandle))
 		torture_fail(tctx,
 			     "CreateKey failed (CloseKey after Open didn't work)\n");
 
-	if (created && !test_DeleteKey(p, tctx, &handle, TEST_KEY1)) {
+	if (created && !test_DeleteKey(b, tctx, &handle, TEST_KEY1)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	} else {
 		deleted = true;
 	}
 
-	if (created && !test_FlushKey(p, tctx, &handle)) {
+	if (created && !test_FlushKey(b, tctx, &handle)) {
 		torture_comment(tctx, "FlushKey failed\n");
 		ret = false;
 	}
 
 	if (created && deleted &&
-	    !_test_OpenKey(p, tctx, &handle, TEST_KEY1,
+	    !_test_OpenKey(b, tctx, &handle, TEST_KEY1,
 			   SEC_FLAG_MAXIMUM_ALLOWED, &newhandle,
 			   WERR_BADFILE, NULL)) {
 		torture_comment(tctx,
@@ -2170,28 +2199,28 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	if (!test_GetVersion(p, tctx, &handle)) {
+	if (!test_GetVersion(b, tctx, &handle)) {
 		torture_comment(tctx, "GetVersion failed\n");
 		ret = false;
 	}
 
-	if (created && test_CreateKey(p, tctx, &handle, TEST_KEY3, NULL)) {
+	if (created && test_CreateKey(b, tctx, &handle, TEST_KEY3, NULL)) {
 		created3 = true;
 	}
 
 	if (created3 &&
-	    test_CreateKey(p, tctx, &handle, TEST_SUBKEY, NULL)) {
+	    test_CreateKey(b, tctx, &handle, TEST_SUBKEY, NULL)) {
 		created_subkey = true;
 	}
 
 	if (created_subkey &&
-	    !test_DeleteKey(p, tctx, &handle, TEST_KEY3)) {
+	    !test_DeleteKey(b, tctx, &handle, TEST_KEY3)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
 	/* The HKCR hive has a very large fanout */
-	if (open_fn == (void *)dcerpc_winreg_OpenHKCR) {
+	if (open_fn == (void *)dcerpc_winreg_OpenHKCR_r) {
 		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, false)) {
 			ret = false;
 		}
@@ -2201,7 +2230,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		}
 	}
 
-	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, &handle, TEST_KEY_BASE);
 
 	return ret;
 }
@@ -2226,30 +2255,30 @@ struct torture_suite *torture_rpc_winreg(TALLOC_CTX *mem_ctx)
 	/* Basic tests without security descriptors */
 	torture_rpc_tcase_add_test_ex(tcase, "HKLM-basic",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKLM);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKLM_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKU-basic",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKU);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKU_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKCR-basic",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKCR);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCR_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKCU-basic",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKCU);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCU_r);
 
 	/* Security descriptor tests */
 	torture_rpc_tcase_add_test_ex(tcase, "HKLM-security",
 				      test_Open_Security,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKLM);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKLM_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKU-security",
 				      test_Open_Security,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKU);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKU_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKCR-security",
 				      test_Open_Security,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKCR);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCR_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKCU-security",
 				      test_Open_Security,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKCU);
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCU_r);
 
 	return suite;
 }
