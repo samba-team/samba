@@ -94,6 +94,16 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 				}
 			}
 			break;
+		case REG_QWORD:
+			if (data.length == sizeof(uint64_t)) {
+				if (BVAL(data.data, 0) == 0) {
+					ret = talloc_strdup(mem_ctx, "0");
+				} else {
+					ret = talloc_asprintf(mem_ctx, "0x%llx",
+							      BVAL(data.data, 0));
+				}
+			}
+			break;
 		case REG_NONE:
 			/* "NULL" is the right return value */
 			break;
@@ -159,8 +169,14 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 			break;
 		case REG_DWORD: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
-			*data = data_blob_talloc(mem_ctx, NULL, 4);
+			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint32_t));
 			SIVAL(data->data, 0, tmp);
+			}
+			break;
+		case REG_QWORD: {
+			uint64_t tmp = strtoll(data_str, NULL, 0);
+			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint64_t));
+			SBVAL(data->data, 0, tmp);
 			}
 			break;
 		case REG_NONE:
