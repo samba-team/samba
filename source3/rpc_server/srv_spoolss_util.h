@@ -106,4 +106,25 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
 				  uint32_t *pnum_values,
 				  struct spoolss_PrinterEnumValues **penum_values);
 
+/**
+ * @internal
+ *
+ * @brief Delete printer data over a winreg pipe.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  key      The key of the printer data to delete.
+ *
+ * @param[in]  value    The name of the value to delete.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
+				    const char *printer,
+				    const char *key,
+				    const char *value);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
