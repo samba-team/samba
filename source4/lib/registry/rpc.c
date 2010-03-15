@@ -497,11 +497,8 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 
 	status = dcerpc_pipe_connect(rctx /* TALLOC_CTX */,
 				     &p, location,
-					 &ndr_table_winreg,
+				     &ndr_table_winreg,
 				     credentials, ev, lp_ctx);
-	rctx->pipe = p;
-	rctx->binding_handle = p->binding_handle;
-
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Unable to open '%s': %s\n", location,
 			nt_errstr(status)));
@@ -509,6 +506,9 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 		*ctx = NULL;
 		return ntstatus_to_werror(status);
 	}
+
+	rctx->pipe = p;
+	rctx->binding_handle = p->binding_handle;
 
 	*ctx = (struct registry_context *)rctx;
 	(*ctx)->ops = &reg_backend_rpc;
