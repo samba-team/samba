@@ -156,6 +156,53 @@ struct test_spoolss_context {
 	}\
 } while(0)
 
+static bool PrinterInfo_to_SetPrinterInfo(struct torture_context *tctx,
+					  const union spoolss_PrinterInfo *i,
+					  uint32_t level,
+					  union spoolss_SetPrinterInfo *s)
+{
+	switch (level) {
+	case 0:
+		s->info0			= talloc(tctx, struct spoolss_SetPrinterInfo0);
+		break;
+	case 2:
+		s->info2			= talloc(tctx, struct spoolss_SetPrinterInfo2);
+		s->info2->servername		= i->info2.servername;
+		s->info2->printername		= i->info2.printername;
+		s->info2->sharename		= i->info2.sharename;
+		s->info2->portname		= i->info2.portname;
+		s->info2->drivername		= i->info2.drivername;
+		s->info2->comment		= i->info2.comment;
+		s->info2->location		= i->info2.location;
+		s->info2->devmode_ptr		= 0;
+		s->info2->sepfile		= i->info2.sepfile;
+		s->info2->printprocessor	= i->info2.printprocessor;
+		s->info2->datatype		= i->info2.datatype;
+		s->info2->parameters		= i->info2.parameters;
+		s->info2->secdesc_ptr		= 0;
+		s->info2->attributes		= i->info2.attributes;
+		s->info2->priority		= i->info2.priority;
+		s->info2->defaultpriority	= i->info2.defaultpriority;
+		s->info2->starttime		= i->info2.starttime;
+		s->info2->untiltime		= i->info2.untiltime;
+		s->info2->status		= i->info2.status;
+		s->info2->cjobs			= i->info2.cjobs;
+		s->info2->averageppm		= i->info2.averageppm;
+		break;
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+	case 9:
+	default:
+		return false;
+	}
+
+	return true;
+}
+
 static bool test_OpenPrinter_server(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    struct policy_handle *server_handle)
@@ -1596,6 +1643,7 @@ static bool test_sd_set_level(struct torture_context *tctx,
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
+	union spoolss_SetPrinterInfo sinfo;
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
@@ -1603,33 +1651,11 @@ static bool test_sd_set_level(struct torture_context *tctx,
 	switch (level) {
 	case 2: {
 		union spoolss_PrinterInfo info;
-		struct spoolss_SetPrinterInfo2 info2;
 		torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
-
-		info2.servername	= info.info2.servername;
-		info2.printername	= info.info2.printername;
-		info2.sharename		= info.info2.sharename;
-		info2.portname		= info.info2.portname;
-		info2.drivername	= info.info2.drivername;
-		info2.comment		= info.info2.comment;
-		info2.location		= info.info2.location;
-		info2.devmode_ptr	= 0;
-		info2.sepfile		= info.info2.sepfile;
-		info2.printprocessor	= info.info2.printprocessor;
-		info2.datatype		= info.info2.datatype;
-		info2.parameters	= info.info2.parameters;
-		info2.secdesc_ptr	= 0;
-		info2.attributes	= info.info2.attributes;
-		info2.priority		= info.info2.priority;
-		info2.defaultpriority	= info.info2.defaultpriority;
-		info2.starttime		= info.info2.starttime;
-		info2.untiltime		= info.info2.untiltime;
-		info2.status		= info.info2.status;
-		info2.cjobs		= info.info2.cjobs;
-		info2.averageppm	= info.info2.averageppm;
+		torture_assert(tctx, PrinterInfo_to_SetPrinterInfo(tctx, &info, 2, &sinfo), "");
 
 		info_ctr.level = 2;
-		info_ctr.info.info2 = &info2;
+		info_ctr.info = sinfo;
 
 		break;
 	}
@@ -1788,6 +1814,7 @@ static bool test_devmode_set_level(struct torture_context *tctx,
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
+	union spoolss_SetPrinterInfo sinfo;
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
@@ -1795,33 +1822,11 @@ static bool test_devmode_set_level(struct torture_context *tctx,
 	switch (level) {
 	case 2: {
 		union spoolss_PrinterInfo info;
-		struct spoolss_SetPrinterInfo2 info2;
 		torture_assert(tctx, test_GetPrinter_level(tctx, p, handle, 2, &info), "");
-
-		info2.servername	= info.info2.servername;
-		info2.printername	= info.info2.printername;
-		info2.sharename		= info.info2.sharename;
-		info2.portname		= info.info2.portname;
-		info2.drivername	= info.info2.drivername;
-		info2.comment		= info.info2.comment;
-		info2.location		= info.info2.location;
-		info2.devmode_ptr	= 0;
-		info2.sepfile		= info.info2.sepfile;
-		info2.printprocessor	= info.info2.printprocessor;
-		info2.datatype		= info.info2.datatype;
-		info2.parameters	= info.info2.parameters;
-		info2.secdesc_ptr	= 0;
-		info2.attributes	= info.info2.attributes;
-		info2.priority		= info.info2.priority;
-		info2.defaultpriority	= info.info2.defaultpriority;
-		info2.starttime		= info.info2.starttime;
-		info2.untiltime		= info.info2.untiltime;
-		info2.status		= info.info2.status;
-		info2.cjobs		= info.info2.cjobs;
-		info2.averageppm	= info.info2.averageppm;
+		torture_assert(tctx, PrinterInfo_to_SetPrinterInfo(tctx, &info, 2, &sinfo), "");
 
 		info_ctr.level = 2;
-		info_ctr.info.info2 = &info2;
+		info_ctr.info = sinfo;
 
 		break;
 	}
@@ -3887,41 +3892,23 @@ static bool test_ChangeID(struct torture_context *tctx,
 		struct spoolss_SetPrinterInfoCtr info_ctr;
 		struct spoolss_DevmodeContainer devmode_ctr;
 		struct sec_desc_buf secdesc_ctr;
-		struct spoolss_SetPrinterInfo2 info2;
+		union spoolss_SetPrinterInfo sinfo;
 
 		ZERO_STRUCT(info_ctr);
 		ZERO_STRUCT(devmode_ctr);
 		ZERO_STRUCT(secdesc_ctr);
 
-		info2.servername	= info.info2.servername;
-		info2.printername	= info.info2.printername;
-		info2.sharename		= info.info2.sharename;
-		info2.portname		= info.info2.portname;
-		info2.drivername	= info.info2.drivername;
-		info2.comment		= "torture_comment";
-		info2.location		= info.info2.location;
-		info2.devmode_ptr	= 0;
-		info2.sepfile		= info.info2.sepfile;
-		info2.printprocessor	= info.info2.printprocessor;
-		info2.datatype		= info.info2.datatype;
-		info2.parameters	= info.info2.parameters;
-		info2.secdesc_ptr	= 0;
-		info2.attributes	= info.info2.attributes;
-		info2.priority		= info.info2.priority;
-		info2.defaultpriority	= info.info2.defaultpriority;
-		info2.starttime		= info.info2.starttime;
-		info2.untiltime		= info.info2.untiltime;
-		info2.status		= info.info2.status;
-		info2.cjobs		= info.info2.cjobs;
-		info2.averageppm	= info.info2.averageppm;
+
+		torture_assert(tctx, PrinterInfo_to_SetPrinterInfo(tctx, &info, 2, &sinfo), "");
+		sinfo.info2->comment	= "torture_comment";
 
 		info_ctr.level = 2;
-		info_ctr.info.info2 = &info2;
+		info_ctr.info = sinfo;
 
 		torture_assert(tctx, test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),
 			"failed to call SetPrinter");
 
-		info2.comment		= comment;
+		sinfo.info2->comment	= comment;
 
 		torture_assert(tctx, test_SetPrinter(tctx, p, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),
 			"failed to call SetPrinter");
