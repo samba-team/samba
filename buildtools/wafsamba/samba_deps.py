@@ -556,6 +556,17 @@ def calculate_final_deps(bld, tgt_list):
                     break
             if not changed:
                 break
+
+    # we now need to make corrections for any library loops we broke up
+    # any target that depended on the target of the loop and doesn't
+    # depend on the source of the loop needs to get the loop source added
+    for type in ['BINARY']:
+        for t in tgt_list:
+            if t.samba_type != type: continue
+            for loop in loops:
+                if loop in t.final_libs and loops[loop] not in t.final_libs:
+                    t.final_libs.add(loops[loop])
+
     debug('deps: removed duplicate dependencies')
 
 
