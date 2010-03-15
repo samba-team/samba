@@ -3179,10 +3179,23 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
-				  "REG_SZ", "torture_data", &type, &blob), "");
+				  "REG_SZ", "torture_data1", &type, &blob), "");
 
 	torture_assert(tctx,
-		test_SetPrinterData(tctx, p, handle, "torture_value", type, blob.data, blob.length),
+		test_SetPrinterData(tctx, p, handle, "torture_value1", type, blob.data, blob.length),
+		"SetPrinterData failed");
+
+	blob = data_blob_string_const("torture_data2");
+
+	torture_assert(tctx,
+		test_SetPrinterData(tctx, p, handle, "torture_value2", REG_BINARY, blob.data, blob.length),
+		"SetPrinterData failed");
+
+	blob = data_blob_talloc(tctx, NULL, 4);
+	SIVAL(blob.data, 0, 0x11223344);
+
+	torture_assert(tctx,
+		test_SetPrinterData(tctx, p, handle, "torture_value3", type, blob.data, blob.length),
 		"SetPrinterData failed");
 
 	torture_assert(tctx,
@@ -3250,7 +3263,13 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_DeletePrinterData(tctx, p, handle, "torture_value"),
+		test_DeletePrinterData(tctx, p, handle, "torture_value1"),
+		"DeletePrinterData failed");
+	torture_assert(tctx,
+		test_DeletePrinterData(tctx, p, handle, "torture_value2"),
+		"DeletePrinterData failed");
+	torture_assert(tctx,
+		test_DeletePrinterData(tctx, p, handle, "torture_value3"),
 		"DeletePrinterData failed");
 
 	torture_comment(tctx, "EnumPrinterData vs EnumPrinterDataEx consistency test succeeded\n\n");
