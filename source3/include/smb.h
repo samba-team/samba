@@ -481,7 +481,6 @@ struct vuid_cache_entry {
 	struct auth_serversupplied_info *server_info;
 	uint16_t vuid;
 	bool read_only;
-	bool admin_user;
 };
 
 struct vuid_cache {
@@ -567,7 +566,6 @@ typedef struct connection_struct {
 	bool printer;
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
-	bool admin_user; /* Attributes for the current user of the share. */
 	/* Does this filesystem honor
 	   sub second timestamps on files
 	   and directories when setting time ? */

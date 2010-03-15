@@ -85,7 +85,6 @@ static int readonly_connect(vfs_handle_struct *handle,
         ent->vuid = UID_FIELD_INVALID;
         TALLOC_FREE(ent->server_info);
         ent->read_only = false;
-        ent->admin_user = false;
       }
       conn->vuid_cache.next_entry = 0;
     }

@@ -98,7 +98,6 @@ static bool check_user_ok(connection_struct *conn,
 				free_conn_server_info_if_unused(conn);
 				conn->server_info = ent->server_info;
 				conn->read_only = ent->read_only;
-				conn->admin_user = ent->admin_user;
 				return(True);
 			}
 		}
@@ -160,14 +159,16 @@ static bool check_user_ok(connection_struct *conn,
 
 		ent->vuid = vuid;
 		ent->read_only = readonly_share;
-		ent->admin_user = admin_user;
 		free_conn_server_info_if_unused(conn);
 		conn->server_info = ent->server_info;
 	}
 
 	conn->read_only = readonly_share;
-	conn->admin_user = admin_user;
-	if (conn->admin_user) {
+	if (admin_user) {
+		DEBUG(2,("check_user_ok: user %s is an admin user. "
+			"Setting uid as %d\n",
+			conn->server_info->unix_name,
+			sec_initial_uid() ));
 		conn->server_info->utok.uid = sec_initial_uid();
 	}
 
@@ -214,7 +215,6 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 				TALLOC_FREE(ent->server_info);
 			}
 			ent->read_only = False;
-			ent->admin_user = False;
 		}
 	}
 }
