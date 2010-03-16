@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    struct samu local cache for 
    Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2004.
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,7 +31,7 @@ static TDB_CONTEXT *cache;
 bool login_cache_init(void)
 {
 	char* cache_fname = NULL;
-	
+
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
@@ -152,7 +152,7 @@ bool login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 		SAFE_FREE(keystr);
 		return False;
 	}
-			 
+
 	if (tdb_pack(databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
 			 entry_timestamp,
 			 entry.acct_ctrl,
@@ -174,7 +174,7 @@ bool login_cache_delentry(const struct samu *sampass)
 {
 	int ret;
 	char *keystr;
-	
+
 	if (!login_cache_init()) 
 		return False;	
 
@@ -191,7 +191,7 @@ bool login_cache_delentry(const struct samu *sampass)
 	DEBUG(9, ("About to delete entry for %s\n", keystr));
 	ret = tdb_delete_bystring(cache, keystr);
 	DEBUG(9, ("tdb_delete returned %d\n", ret));
-	
+
 	SAFE_FREE(keystr);
 	return ret == 0;
 }
