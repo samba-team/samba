@@ -1243,11 +1243,6 @@ interface drsuapi
 		uint16	problem;	/* 0 or PROBLEM error code */
 	} drsuapi_DsAddEntryErrorInfoX;
 
-	typedef struct {
-		[range(0,10485760)] uint32 size;
-		[size_is(size)] uint8 *data;
-	} drsuapi_DsAddEntryExtraErrorBuffer;
-
 	/* Attribute errors
 	 * Ref: ATRERR_DRS_WIRE_V1, [MS-DRSR]: 4.1.1.1.11 */
 	typedef struct {
