@@ -1513,9 +1513,9 @@ struct lsa_QueryTrustedDomainInfoByName {
 struct lsa_SetTrustedDomainInfoByName {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct lsa_String trusted_domain;
+		struct lsa_String *trusted_domain;/* [ref] */
 		enum lsa_TrustDomInfoEnum level;
-		union lsa_TrustedDomainInfo *info;/* [unique,switch_is(level)] */
+		union lsa_TrustedDomainInfo *info;/* [ref,switch_is(level)] */
 	} in;
 
 	struct {

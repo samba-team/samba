@@ -373,6 +373,8 @@ void ndr_print_lsa_GetUserName(struct ndr_print *ndr, const char *name, int flag
 void ndr_print_lsa_QueryInfoPolicy2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryInfoPolicy2 *r);
 void ndr_print_lsa_SetInfoPolicy2(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetInfoPolicy2 *r);
 void ndr_print_lsa_QueryTrustedDomainInfoByName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_QueryTrustedDomainInfoByName *r);
+enum ndr_err_code ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfoByName *r);
+enum ndr_err_code ndr_pull_lsa_SetTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfoByName *r);
 void ndr_print_lsa_SetTrustedDomainInfoByName(struct ndr_print *ndr, const char *name, int flags, const struct lsa_SetTrustedDomainInfoByName *r);
 void ndr_print_lsa_EnumTrustedDomainsEx(struct ndr_print *ndr, const char *name, int flags, const struct lsa_EnumTrustedDomainsEx *r);
 void ndr_print_lsa_CreateTrustedDomainEx(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CreateTrustedDomainEx *r);

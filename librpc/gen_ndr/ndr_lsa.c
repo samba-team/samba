@@ -10623,20 +10623,23 @@ _PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfoByName(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfoByName *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfoByName *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.trusted_domain));
-		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, r->in.level));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.info));
-		if (r->in.info) {
-			NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.info, r->in.level));
-			NDR_CHECK(ndr_push_lsa_TrustedDomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+		if (r->in.trusted_domain == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trusted_domain));
+		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, r->in.level));
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_push_lsa_TrustedDomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -10644,10 +10647,10 @@ static enum ndr_err_code ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_SetTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfoByName *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_SetTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfoByName *r)
 {
-	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_trusted_domain_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -10657,21 +10660,22 @@ static enum ndr_err_code ndr_pull_lsa_SetTrustedDomainInfoByName(struct ndr_pull
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.trusted_domain));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.trusted_domain);
+		}
+		_mem_save_trusted_domain_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.trusted_domain, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trusted_domain));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domain_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, &r->in.level));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
-		if (_ptr_info) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.info);
-		} else {
-			r->in.info = NULL;
 		}
-		if (r->in.info) {
-			_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->in.info, 0);
-			NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.info, r->in.level));
-			NDR_CHECK(ndr_pull_lsa_TrustedDomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
-		}
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_pull_lsa_TrustedDomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -10693,14 +10697,15 @@ _PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfoByName(struct ndr_print *ndr, co
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_lsa_String(ndr, "trusted_domain", &r->in.trusted_domain);
+		ndr_print_ptr(ndr, "trusted_domain", r->in.trusted_domain);
+		ndr->depth++;
+		ndr_print_lsa_String(ndr, "trusted_domain", r->in.trusted_domain);
+		ndr->depth--;
 		ndr_print_lsa_TrustDomInfoEnum(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "info", r->in.info);
 		ndr->depth++;
-		if (r->in.info) {
-			ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
-			ndr_print_lsa_TrustedDomainInfo(ndr, "info", r->in.info);
-		}
+		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
+		ndr_print_lsa_TrustedDomainInfo(ndr, "info", r->in.info);
 		ndr->depth--;
 		ndr->depth--;
 	}

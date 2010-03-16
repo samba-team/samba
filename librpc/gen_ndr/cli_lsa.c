@@ -7274,9 +7274,9 @@ struct tevent_req *rpccli_lsa_SetTrustedDomainInfoByName_send(TALLOC_CTX *mem_ct
 							      struct tevent_context *ev,
 							      struct rpc_pipe_client *cli,
 							      struct policy_handle *_handle /* [in] [ref] */,
-							      struct lsa_String _trusted_domain /* [in]  */,
+							      struct lsa_String *_trusted_domain /* [in] [ref] */,
 							      enum lsa_TrustDomInfoEnum _level /* [in]  */,
-							      union lsa_TrustedDomainInfo *_info /* [in] [unique,switch_is(level)] */)
+							      union lsa_TrustedDomainInfo *_info /* [in] [ref,switch_is(level)] */)
 {
 	struct tevent_req *req;
 	struct rpccli_lsa_SetTrustedDomainInfoByName_state *state;
@@ -7374,9 +7374,9 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName_recv(struct tevent_req *req,
 NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       struct policy_handle *handle /* [in] [ref] */,
-					       struct lsa_String trusted_domain /* [in]  */,
+					       struct lsa_String *trusted_domain /* [in] [ref] */,
 					       enum lsa_TrustDomInfoEnum level /* [in]  */,
-					       union lsa_TrustedDomainInfo *info /* [in] [unique,switch_is(level)] */)
+					       union lsa_TrustedDomainInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct lsa_SetTrustedDomainInfoByName r;
 	NTSTATUS status;
