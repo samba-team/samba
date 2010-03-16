@@ -29,8 +29,11 @@ def SAMBA_BUILD_ENV(conf):
     mkdir_p(os.path.join(conf.blddir, 'python/samba/dcerpc'))
     # this allows all of the bin/shared and bin/python targets
     # to be expressed in terms of build directory paths
-    os.symlink('../python', os.path.join(conf.blddir, 'default/python'))
-    os.symlink('../shared', os.path.join(conf.blddir, 'default/shared'))
+    for p in ['python','shared']:
+        link_target = os.path.join(conf.blddir, 'default/' + p)
+        if not os.path.lexists(link_target):
+            os.symlink('../' + p, link_target)
+
 
 
 ################################################################
