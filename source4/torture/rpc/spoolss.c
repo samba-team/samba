@@ -1780,7 +1780,7 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 	struct security_descriptor *sd;
 	bool ret = true;
 
-	torture_comment(tctx, "\nTesting Printer Security Descriptors\n");
+	torture_comment(tctx, "Testing Printer Security Descriptors\n");
 
 	/* save original sd */
 
@@ -1798,7 +1798,7 @@ static bool test_PrinterInfo_SD(struct torture_context *tctx,
 	torture_assert(tctx, test_sd_set_level(tctx, p, handle, 3, sd),
 		"failed to restore initial security descriptor");
 
-	torture_comment(tctx, "Printer Security Descriptors test %s\n",
+	torture_comment(tctx, "Printer Security Descriptors test %s\n\n",
 		ret ? "succeeded" : "failed");
 
 
@@ -2161,7 +2161,7 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 	struct spoolss_DeviceMode *devmode;
 	bool ret = true;
 
-	torture_comment(tctx, "\nTesting Printer Devicemodes\n");
+	torture_comment(tctx, "Testing Printer Devicemodes\n");
 
 	/* save original devmode */
 
@@ -2179,7 +2179,7 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 	torture_assert(tctx, test_devmode_set_level(tctx, p, handle, 8, devmode),
 		"failed to restore initial global device mode");
 
-	torture_comment(tctx, "Printer Devicemodes test %s\n",
+	torture_comment(tctx, "Printer Devicemodes test %s\n\n",
 		ret ? "succeeded" : "failed");
 
 
@@ -3078,6 +3078,8 @@ static bool test_EnumPrinterData_all(struct torture_context *tctx,
 	const char *value_name;
 	WERROR result;
 
+	torture_comment(tctx, "Testing EnumPrinterData\n");
+
 	do {
 		torture_assert(tctx,
 			test_EnumPrinterData(tctx, p, handle, enum_index, 0, 0,
@@ -3102,6 +3104,8 @@ static bool test_EnumPrinterData_all(struct torture_context *tctx,
 		enum_index++;
 
 	} while (W_ERROR_IS_OK(result));
+
+	torture_comment(tctx, "EnumPrinterData test succeeded\n");
 
 	return true;
 }
@@ -3985,6 +3989,8 @@ static bool test_ChangeID(struct torture_context *tctx,
 		talloc_asprintf(tctx, "change_id %d needs to be larger than change_id %d",
 		change_id_info2, change_id_info));
 
+	torture_comment(tctx, "ChangeID tests succeeded\n\n");
+
 	return true;
 }
 
@@ -4246,6 +4252,8 @@ static bool test_printer_rename(struct torture_context *tctx,
 	torture_assert(tctx,
 		test_ClosePrinter(tctx, p, &new_handle),
 		"failed to close printer");
+
+	torture_comment(tctx, "Printer rename operations test succeeded\n\n");
 
 	return ret;
 }
@@ -5046,7 +5054,7 @@ bool test_printer_keys(struct torture_context *tctx,
 	const char **key_array = NULL;
 	int i;
 
-	torture_comment(tctx, "\nTesting Printer Keys\n");
+	torture_comment(tctx, "Testing Printer Keys\n");
 
 	torture_assert(tctx, test_EnumPrinterKey(tctx, p, handle, "", &key_array),
 		"failed to call test_EnumPrinterKey");
@@ -5059,6 +5067,8 @@ bool test_printer_keys(struct torture_context *tctx,
 		torture_assert(tctx, test_EnumPrinterDataEx(tctx, p, handle, key_array[i], NULL, NULL),
 			"failed to call test_EnumPrinterDataEx");
 	}
+
+	torture_comment(tctx, "Printer Keys test succeeded\n\n");
 
 	return true;
 }
