@@ -772,6 +772,21 @@ void initglue(void)
 	PyModule_AddObject(m, "SECINFO_DACL", PyInt_FromLong(SECINFO_DACL));
 	PyModule_AddObject(m, "SECINFO_SACL", PyInt_FromLong(SECINFO_SACL));
 
+	/* control access rights guids */
+	PyModule_AddObject(m, "GUID_DRS_ALLOCATE_RIDS", PyString_FromString(GUID_DRS_ALLOCATE_RIDS));
+	PyModule_AddObject(m, "GUID_DRS_CHANGE_DOMAIN_MASTER", PyString_FromString(GUID_DRS_CHANGE_DOMAIN_MASTER));
+	PyModule_AddObject(m, "GUID_DRS_CHANGE_INFR_MASTER", PyString_FromString(GUID_DRS_CHANGE_INFR_MASTER));
+	PyModule_AddObject(m, "GUID_DRS_CHANGE_PDC", PyString_FromString(GUID_DRS_CHANGE_PDC));
+	PyModule_AddObject(m, "GUID_DRS_CHANGE_RID_MASTER", PyString_FromString(GUID_DRS_CHANGE_RID_MASTER));
+	PyModule_AddObject(m, "GUID_DRS_CHANGE_SCHEMA_MASTER", PyString_FromString(GUID_DRS_CHANGE_SCHEMA_MASTER));
+	PyModule_AddObject(m, "GUID_DRS_GET_CHANGES", PyString_FromString(GUID_DRS_GET_CHANGES));
+	PyModule_AddObject(m, "GUID_DRS_GET_ALL_CHANGES", PyString_FromString(GUID_DRS_GET_ALL_CHANGES));
+	PyModule_AddObject(m, "GUID_DRS_GET_FILTERED_ATTRIBUTES", PyString_FromString(GUID_DRS_GET_FILTERED_ATTRIBUTES));
+	PyModule_AddObject(m, "GUID_DRS_MANAGE_TOPOLOGY", PyString_FromString(GUID_DRS_MANAGE_TOPOLOGY));
+	PyModule_AddObject(m, "GUID_DRS_MONITOR_TOPOLOGY", PyString_FromString(GUID_DRS_MONITOR_TOPOLOGY));
+	PyModule_AddObject(m, "GUID_DRS_REPL_SYNCRONIZE", PyString_FromString(GUID_DRS_REPL_SYNCRONIZE));
+	PyModule_AddObject(m, "GUID_DRS_RO_REPL_SECRET_SYNC", PyString_FromString(GUID_DRS_RO_REPL_SECRET_SYNC));
+
 	/* one of the most annoying things about python scripts is
  	   that they don't die when you hit control-C. This fixes that
  	   sillyness. As we do all database operations using

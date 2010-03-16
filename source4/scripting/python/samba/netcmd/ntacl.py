@@ -110,7 +110,7 @@ class cmd_acl_get(Command):
             acl.dump()
 
 
-class cmd_acl(SuperCommand):
+class cmd_nt_acl(SuperCommand):
     """NT ACLs manipulation"""
 
     subcommands = {}
