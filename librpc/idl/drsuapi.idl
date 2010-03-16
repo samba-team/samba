@@ -1333,10 +1333,10 @@ interface drsuapi
 		[case(1)] drsuapi_DsAddEntryErrorInfo_Attr_V1   attr_err;
 		[case(2)] drsuapi_DsAddEntryErrorInfo_Name_V1   name_err;
 		[case(3)] drsuapi_DsAddEntryErrorInfo_Referr_V1 referral_err;
-		[case(4)] drsuapi_DsAddEntryErrorInfoX errorX;
-		[case(5)] drsuapi_DsAddEntryErrorInfoX errorX;
-		[case(6)] drsuapi_DsAddEntryErrorInfoX errorX;
-		[case(7)] drsuapi_DsAddEntryErrorInfoX errorX;
+		[case(4)] drsuapi_DsAddEntryErrorInfoX 		security_err;
+		[case(5)] drsuapi_DsAddEntryErrorInfoX 		service_err;
+		[case(6)] drsuapi_DsAddEntryErrorInfoX 		update_err;
+		[case(7)] drsuapi_DsAddEntryErrorInfoX 		system_err;
 	} drsuapi_DsAddEntryErrorInfo;
 
 	typedef struct {
