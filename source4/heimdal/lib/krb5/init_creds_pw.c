@@ -107,8 +107,10 @@ free_init_creds_ctx(krb5_context context, krb5_init_creds_context ctx)
 	free (ctx->pre_auth_types);
     if (ctx->in_tkt_service)
 	free(ctx->in_tkt_service);
-    if (ctx->password)
+    if (ctx->password) {
+        memset(ctx->password, 0, strlen(ctx->password));
         free(ctx->password);
+    }
     if (ctx->keytab_data)
 	free(ctx->keytab_data);
     krb5_data_free(&ctx->req_buffer);
@@ -1355,8 +1357,10 @@ krb5_init_creds_set_password(krb5_context context,
 			     krb5_init_creds_context ctx,
 			     const char *password)
 {
-    if (ctx->password)
+    if (ctx->password) {
+        memset(ctx->password, 0, strlen(ctx->password));
         free(ctx->password);
+    }
     if (password) {
 	ctx->password = strdup(password);
 	if (ctx->password == NULL) {
