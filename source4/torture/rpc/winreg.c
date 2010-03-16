@@ -2107,6 +2107,36 @@ static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 #define KEY_CURRENT_VERSION "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION"
 #define VALUE_CURRENT_VERSION "CurrentVersion"
 
+static bool test_HKLM_wellknown(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
+				struct policy_handle *handle)
+{
+	struct policy_handle newhandle;
+
+	/* FIXME: s3 does not support SEC_FLAG_MAXIMUM_ALLOWED yet */
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_assert(tctx, _test_OpenKey(b, tctx, handle, KEY_CURRENT_VERSION, KEY_QUERY_VALUE, &newhandle, WERR_OK, NULL),
+			"failed to open current version key");
+	} else {
+		torture_assert(tctx, test_OpenKey(b, tctx, handle, KEY_CURRENT_VERSION, &newhandle),
+			"failed to open current version key");
+	}
+
+	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
+		"failed to query current version");
+	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "IDoNotExist", false),
+		"failed to query current version");
+	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, NULL, false),
+		"test_QueryValue_full for NULL value failed");
+	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "", false),
+		"test_QueryValue_full for \"\" value failed");
+
+	torture_assert(tctx, test_CloseKey(b, tctx, &newhandle),
+		"failed to close current version key");
+
+	return true;
+}
+
 static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		      void *userdata)
 {
@@ -2127,24 +2157,9 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 				   "open");
 
 	if (open_fn == (void *)dcerpc_winreg_OpenHKLM_r) {
-#if 0
-		torture_assert(tctx, test_OpenKey(p, tctx, &handle, KEY_CURRENT_VERSION, &newhandle),
-			"failed to open current version key");
-#else
-		torture_assert(tctx, _test_OpenKey(b, tctx, &handle, KEY_CURRENT_VERSION, KEY_QUERY_VALUE, &newhandle, WERR_OK, NULL),
-			"failed to open current version key");
-#endif
-		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
-			"failed to query current version");
-		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "IDoNotExist", false),
-			"failed to query current version");
-		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, NULL, false),
-			"test_QueryValue_full for NULL value failed");
-		torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "", false),
-			"test_QueryValue_full for \"\" value failed");
-
-		torture_assert(tctx, test_CloseKey(b, tctx, &newhandle),
-			"failed to close current version key");
+		torture_assert(tctx,
+			test_HKLM_wellknown(tctx, b, &handle),
+			"failed to test HKLM wellknown keys");
 	}
 
 	test_Cleanup(b, tctx, &handle, TEST_KEY_BASE);
