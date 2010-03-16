@@ -223,6 +223,7 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
  done:
 
 	talloc_free(keystr);
+	SAFE_FREE(value.dptr);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(creds);
