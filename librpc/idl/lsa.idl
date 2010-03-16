@@ -1040,11 +1040,11 @@ import "misc.idl", "security.idl";
 
 	/**********************/
 	/* Function 0x31 */
-	NTSTATUS lsa_SetTrustedDomainInfoByName(
+	[public] NTSTATUS lsa_SetTrustedDomainInfoByName(
 		[in]                   policy_handle         *handle,
-		[in]                   lsa_String             trusted_domain,
+		[in,ref]               lsa_String             *trusted_domain,
 		[in]                   lsa_TrustDomInfoEnum   level,
-		[in,unique,switch_is(level)] lsa_TrustedDomainInfo *info
+		[in,ref,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
 	/* Function 0x32 */
