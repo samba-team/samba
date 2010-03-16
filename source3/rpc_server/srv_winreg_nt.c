@@ -956,10 +956,6 @@ WERROR _winreg_LoadKey(pipes_struct *p, struct winreg_LoadKey *r)
 
 WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeKeyValue *r)
 {
-	/* fill in your code here if you think this call should
-	   do anything */
-
-	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
