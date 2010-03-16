@@ -2073,11 +2073,16 @@ static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 		uint32_t w_size, w_length;
 		uint8_t *w_data;
 
-		const char *string = generate_random_str(tctx, l);
-		DATA_BLOB blob = data_blob_string_const(string);
+		uint32_t size;
+		uint8_t *data;
+
+		size = l;
+		data = talloc_array(tctx, uint8_t, size);
+
+		generate_random_buffer(data, size);
 
 		torture_assert(tctx,
-			test_SetValue(b, tctx, handle, value_name, types[t], blob.data, blob.length),
+			test_SetValue(b, tctx, handle, value_name, types[t], data, size),
 			"test_SetValue failed");
 
 		torture_assert(tctx,
@@ -2089,9 +2094,9 @@ static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 			"test_DeleteValue failed");
 
 		torture_assert_int_equal(tctx, w_type, types[t], "winreg type mismatch");
-		torture_assert_int_equal(tctx, w_size, blob.length, "winreg size mismatch");
-		torture_assert_int_equal(tctx, w_length, blob.length, "winreg length mismatch");
-		torture_assert_mem_equal(tctx, w_data, blob.data, blob.length, "winreg buffer mismatch");
+		torture_assert_int_equal(tctx, w_size, size, "winreg size mismatch");
+		torture_assert_int_equal(tctx, w_length, size, "winreg length mismatch");
+		torture_assert_mem_equal(tctx, w_data, data, size, "winreg buffer mismatch");
 	}
 	}
 
