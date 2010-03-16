@@ -28,7 +28,8 @@ bld.SAMBA_MODULE('cyrus_sasl',
 	source='cyrus_sasl.c',
 	subsystem='gensec',
 	init_function='gensec_sasl_init',
-	deps='CREDENTIALS SASL'
+	deps='CREDENTIALS SASL',
+        enabled=bld.CONFIG_SET('HAVE_SASL')
 	)
 
 
