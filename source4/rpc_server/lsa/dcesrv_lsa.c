@@ -3250,10 +3250,10 @@ static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation(struct dcesrv_call_st
 
 
 /* 
-  lsa_LSARSETFORESTTRUSTINFORMATION 
+  lsa_lsaRSetForestTrustInformation
 */
-static NTSTATUS dcesrv_lsa_LSARSETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_lsaRSetForestTrustInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
