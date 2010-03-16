@@ -265,7 +265,21 @@ static int construct_subschema_subentry(struct ldb_module *module,
 {
 	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
 	char *subSchemaSubEntry;
-	if (data && data->aggregate_dn) {
+
+	/* We may be being called before the init function has finished */
+	if (!data) {
+		return LDB_SUCCESS;
+	}
+
+	/* Try and set this value up, if possible.  Don't worry if it
+	 * fails, we may not have the DB set up yet, and it's not
+	 * really vital anyway */
+	if (!data->aggregate_dn) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		data->aggregate_dn = samdb_aggregate_schema_dn(ldb, data);
+	}
+
+	if (data->aggregate_dn) {
 		subSchemaSubEntry = ldb_dn_alloc_linearized(msg, data->aggregate_dn);
 		return ldb_msg_add_steal_string(msg, "subSchemaSubEntry", subSchemaSubEntry);
 	}
@@ -563,22 +577,15 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 static int operational_init(struct ldb_module *ctx)
 {
 	struct operational_data *data;
-	struct ldb_context *ldb = ldb_module_get_ctx(ctx);
 	int ret = ldb_next_init(ctx);
 
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	data = talloc(ctx, struct operational_data);
+	data = talloc_zero(ctx, struct operational_data);
 	if (!data) {
 		ldb_module_oom(ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	data->aggregate_dn = samdb_aggregate_schema_dn(ldb, data);
-	if (!data->aggregate_dn) {
-		ldb_set_errstring(ldb, "Could not build aggregate schema DN");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
