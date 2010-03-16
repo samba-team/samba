@@ -1311,8 +1311,56 @@ import "misc.idl", "security.idl";
 		[out,ref] lsa_ForestTrustInformation **forest_trust_info
 		);
 
-	/* Function 0x4a */
-	[todo] NTSTATUS lsa_LSARSETFORESTTRUSTINFORMATION();
+	/*****************
+	 * Function 0x4a */
+
+	typedef [v1_enum] enum {
+		LSA_FOREST_TRUST_COLLISION_TDO = 0,
+		LSA_FOREST_TRUST_COLLISION_XREF = 1,
+		LSA_FOREST_TRUST_COLLISION_OTHER = 2
+	} lsa_ForestTrustCollisionRecordType;
+
+	/* if type is CollisionTdo, flags can be */
+	typedef [bitmap32bit] bitmap {
+		LSA_TLN_DISABLED_NEW		= 0x00000001,
+		LSA_TLN_DISABLED_ADMIN		= 0x00000002,
+		LSA_TLN_DISABLED_CONFLICT	= 0x00000004
+	} lsa_ForestTrustCollisionTDOFlags;
+
+	/* if type is CollisionXref, flags can be */
+	typedef [bitmap32bit] bitmap {
+		LSA_SID_DISABLED_ADMIN		= 0x00000001,
+		LSA_SID_DISABLED_CONFLICT	= 0x00000002,
+		LSA_NB_DISABLED_ADMIN		= 0x00000004,
+		LSA_NB_DISABLED_CONFLICT	= 0x00000008
+	} lsa_ForestTrustCollisionXrefFlags;
+
+	typedef [nodiscriminant] union {
+		[case(LSA_FOREST_TRUST_COLLISION_TDO)] lsa_ForestTrustCollisionTDOFlags flags;
+		[case(LSA_FOREST_TRUST_COLLISION_XREF)] lsa_ForestTrustCollisionXrefFlags flags;
+		[default] uint32 flags;
+	} lsa_ForestTrustCollisionFlags;
+
+	typedef struct {
+		uint32 index;
+		lsa_ForestTrustCollisionRecordType type;
+		[switch_is(type)] lsa_ForestTrustCollisionFlags flags;
+		lsa_String name;
+	} lsa_ForestTrustCollisionRecord;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_ForestTrustCollisionRecord **entries;
+	} lsa_ForestTrustCollisionInfo;
+
+	[public] NTSTATUS lsa_lsaRSetForestTrustInformation(
+		[in]      policy_handle *handle,
+		[in,ref]  lsa_StringLarge *trusted_domain_name,
+		[in]      uint16 highest_record_type,
+		[in,ref]  lsa_ForestTrustInformation *forest_trust_info,
+		[in]      uint8 check_only,
+		[out,ref] lsa_ForestTrustCollisionInfo **collision_info
+		);
 
 	/* Function 0x4b */
 	[todo] NTSTATUS lsa_CREDRRENAME();
