@@ -29,8 +29,8 @@
 /*
   get a DRSUAPI policy handle
 */
-static bool get_policy_handle(struct dcerpc_pipe *p,
-			      TALLOC_CTX *mem_ctx, 
+static bool get_policy_handle(struct dcerpc_binding_handle *b,
+			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -39,7 +39,7 @@ static bool get_policy_handle(struct dcerpc_pipe *p,
 	ZERO_STRUCT(r);
 	r.out.bind_handle = handle;
 
-	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
+	status = dcerpc_drsuapi_DsBind_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("drsuapi_DsBind failed - %s\n", nt_errstr(status));
 		return false;
@@ -51,7 +51,8 @@ static bool get_policy_handle(struct dcerpc_pipe *p,
 /*
   get a SAMR handle
 */
-static bool get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool get_policy_handle(struct dcerpc_binding_handle *b,
+			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -61,7 +62,7 @@ static bool get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = handle;
 
-	status = dcerpc_samr_Connect(p, mem_ctx, &r);
+	status = dcerpc_samr_Connect_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("samr_Connect failed - %s\n", nt_errstr(status));
 		return false;
@@ -203,7 +204,7 @@ static void test_scan_call(struct torture_context *tctx, const struct ndr_interf
 
 	reopen(tctx, &p, iface);
 
-	get_policy_handle(p, tctx, &handle);
+	get_policy_handle(p->binding_handle, tctx, &handle);
 
 	/* work out the minimum amount of input data */
 	for (i=0;i<2000;i++) {
