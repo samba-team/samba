@@ -154,7 +154,8 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		netlogon_creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
 
 		r->out.return_authenticator = NULL;
-		status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
+		status = dcerpc_netr_LogonSamLogon_r(samlogon_state->p->binding_handle,
+						     samlogon_state->mem_ctx, r);
 		if (!r->out.return_authenticator || 
 		    !netlogon_creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
 			d_printf("Credential chaining failed\n");
@@ -183,7 +184,8 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		}
 		break;
 	case NDR_NETR_LOGONSAMLOGONEX: 
-		status = dcerpc_netr_LogonSamLogonEx(samlogon_state->p, samlogon_state->mem_ctx, r_ex);
+		status = dcerpc_netr_LogonSamLogonEx_r(samlogon_state->p->binding_handle,
+						       samlogon_state->mem_ctx, r_ex);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
@@ -212,7 +214,8 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		netlogon_creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
 
 		r_flags->out.return_authenticator = NULL;
-		status = dcerpc_netr_LogonSamLogonWithFlags(samlogon_state->p, samlogon_state->mem_ctx, r_flags);
+		status = dcerpc_netr_LogonSamLogonWithFlags_r(samlogon_state->p->binding_handle,
+							      samlogon_state->mem_ctx, r_flags);
 		if (!r_flags->out.return_authenticator || 
 		    !netlogon_creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
 			d_printf("Credential chaining failed\n");
@@ -1444,6 +1447,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(a);
 	ZERO_STRUCT(r);
@@ -1490,7 +1494,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	d_printf("Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
-	status = dcerpc_netr_LogonSamLogonWithFlags(p, fn_ctx, &r);
+	status = dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r);
 	if (!r.out.return_authenticator 
 	    || !netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		d_printf("Credential chaining failed\n");
@@ -1539,6 +1543,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	};
 
 	struct netlogon_creds_CredentialState *creds;
+	struct dcerpc_pipe *tmp_p = NULL;
 
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
@@ -1565,7 +1570,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	old_user_password = user_password;
 
-	test_ChangePasswordUser3(torture_join_samr_pipe(user_ctx), torture,
+	tmp_p = torture_join_samr_pipe(user_ctx);
+	test_ChangePasswordUser3(tmp_p, torture,
 				 TEST_USER_NAME, 16 /* > 14 */, &user_password, 
 				 NULL, 0, false);
 
@@ -1587,7 +1593,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	u.info21.fields_present = SAMR_FIELD_WORKSTATIONS;
 	u.info21.workstations.string = "not" TEST_MACHINE_NAME;
 
-	status = dcerpc_samr_SetUserInfo(torture_join_samr_pipe(user_ctx_wrong_wks), mem_ctx, &s);
+	tmp_p = torture_join_samr_pipe(user_ctx_wrong_wks);
+	status = dcerpc_samr_SetUserInfo_r(tmp_p->binding_handle, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(status));
 		ret = false;
@@ -1614,7 +1621,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	u.info21.logon_hours.units_per_week = 168;
 	u.info21.logon_hours.bits = talloc_zero_array(mem_ctx, uint8_t, 168);
 
-	status = dcerpc_samr_SetUserInfo(torture_join_samr_pipe(user_ctx_wrong_time), mem_ctx, &s);
+	tmp_p = torture_join_samr_pipe(user_ctx_wrong_time);
+	status = dcerpc_samr_SetUserInfo_r(tmp_p->binding_handle, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo (logon times and list of workstations) failed - %s\n", nt_errstr(status));
 		ret = false;
