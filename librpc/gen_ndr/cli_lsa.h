@@ -1013,14 +1013,26 @@ NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
 						    struct lsa_String *trusted_domain_name /* [in] [ref] */,
 						    uint16_t unknown /* [in]  */,
 						    struct lsa_ForestTrustInformation **forest_trust_info /* [out] [ref] */);
-struct tevent_req *rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *rpccli_lsa_lsaRSetForestTrustInformation_send(TALLOC_CTX *mem_ctx,
 								 struct tevent_context *ev,
-								 struct rpc_pipe_client *cli);
-NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_recv(struct tevent_req *req,
+								 struct rpc_pipe_client *cli,
+								 struct policy_handle *_handle /* [in] [ref] */,
+								 struct lsa_StringLarge *_trusted_domain_name /* [in] [ref] */,
+								 uint16_t _highest_record_type /* [in]  */,
+								 struct lsa_ForestTrustInformation *_forest_trust_info /* [in] [ref] */,
+								 uint8_t _check_only /* [in]  */,
+								 struct lsa_ForestTrustCollisionInfo **_collision_info /* [out] [ref] */);
+NTSTATUS rpccli_lsa_lsaRSetForestTrustInformation_recv(struct tevent_req *req,
 						       TALLOC_CTX *mem_ctx,
 						       NTSTATUS *result);
-NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
-						  TALLOC_CTX *mem_ctx);
+NTSTATUS rpccli_lsa_lsaRSetForestTrustInformation(struct rpc_pipe_client *cli,
+						  TALLOC_CTX *mem_ctx,
+						  struct policy_handle *handle /* [in] [ref] */,
+						  struct lsa_StringLarge *trusted_domain_name /* [in] [ref] */,
+						  uint16_t highest_record_type /* [in]  */,
+						  struct lsa_ForestTrustInformation *forest_trust_info /* [in] [ref] */,
+						  uint8_t check_only /* [in]  */,
+						  struct lsa_ForestTrustCollisionInfo **collision_info /* [out] [ref] */);
 struct tevent_req *rpccli_lsa_CREDRRENAME_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct rpc_pipe_client *cli);

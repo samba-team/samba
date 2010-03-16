@@ -292,6 +292,12 @@ void ndr_print_lsa_ForestTrustRecord(struct ndr_print *ndr, const char *name, co
 enum ndr_err_code ndr_push_lsa_ForestTrustInformation(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustInformation *r);
 enum ndr_err_code ndr_pull_lsa_ForestTrustInformation(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustInformation *r);
 void ndr_print_lsa_ForestTrustInformation(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustInformation *r);
+void ndr_print_lsa_ForestTrustCollisionRecordType(struct ndr_print *ndr, const char *name, enum lsa_ForestTrustCollisionRecordType r);
+void ndr_print_lsa_ForestTrustCollisionTDOFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_lsa_ForestTrustCollisionXrefFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_lsa_ForestTrustCollisionFlags(struct ndr_print *ndr, const char *name, const union lsa_ForestTrustCollisionFlags *r);
+void ndr_print_lsa_ForestTrustCollisionRecord(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustCollisionRecord *r);
+void ndr_print_lsa_ForestTrustCollisionInfo(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustCollisionInfo *r);
 void ndr_print_lsa_Close(struct ndr_print *ndr, const char *name, int flags, const struct lsa_Close *r);
 enum ndr_err_code ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r);
 enum ndr_err_code ndr_pull_lsa_Delete(struct ndr_pull *ndr, int flags, struct lsa_Delete *r);
@@ -398,7 +404,9 @@ void ndr_print_lsa_LSARREGISTERAUDITEVENT(struct ndr_print *ndr, const char *nam
 void ndr_print_lsa_LSARGENAUDITEVENT(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARGENAUDITEVENT *r);
 void ndr_print_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARUNREGISTERAUDITEVENT *r);
 void ndr_print_lsa_lsaRQueryForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct lsa_lsaRQueryForestTrustInformation *r);
-void ndr_print_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARSETFORESTTRUSTINFORMATION *r);
+enum ndr_err_code ndr_push_lsa_lsaRSetForestTrustInformation(struct ndr_push *ndr, int flags, const struct lsa_lsaRSetForestTrustInformation *r);
+enum ndr_err_code ndr_pull_lsa_lsaRSetForestTrustInformation(struct ndr_pull *ndr, int flags, struct lsa_lsaRSetForestTrustInformation *r);
+void ndr_print_lsa_lsaRSetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct lsa_lsaRSetForestTrustInformation *r);
 void ndr_print_lsa_CREDRRENAME(struct ndr_print *ndr, const char *name, int flags, const struct lsa_CREDRRENAME *r);
 enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r);
 enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int flags, struct lsa_LookupSids3 *r);

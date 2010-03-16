@@ -75,7 +75,7 @@ NTSTATUS _lsa_LSARREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARREGISTERAUD
 NTSTATUS _lsa_LSARGENAUDITEVENT(pipes_struct *p, struct lsa_LSARGENAUDITEVENT *r);
 NTSTATUS _lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARUNREGISTERAUDITEVENT *r);
 NTSTATUS _lsa_lsaRQueryForestTrustInformation(pipes_struct *p, struct lsa_lsaRQueryForestTrustInformation *r);
-NTSTATUS _lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARSETFORESTTRUSTINFORMATION *r);
+NTSTATUS _lsa_lsaRSetForestTrustInformation(pipes_struct *p, struct lsa_lsaRSetForestTrustInformation *r);
 NTSTATUS _lsa_CREDRRENAME(pipes_struct *p, struct lsa_CREDRRENAME *r);
 NTSTATUS _lsa_LookupSids3(pipes_struct *p, struct lsa_LookupSids3 *r);
 NTSTATUS _lsa_LookupNames4(pipes_struct *p, struct lsa_LookupNames4 *r);
@@ -159,7 +159,7 @@ NTSTATUS _lsa_LSARREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARREGISTERAUD
 NTSTATUS _lsa_LSARGENAUDITEVENT(pipes_struct *p, struct lsa_LSARGENAUDITEVENT *r);
 NTSTATUS _lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARUNREGISTERAUDITEVENT *r);
 NTSTATUS _lsa_lsaRQueryForestTrustInformation(pipes_struct *p, struct lsa_lsaRQueryForestTrustInformation *r);
-NTSTATUS _lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARSETFORESTTRUSTINFORMATION *r);
+NTSTATUS _lsa_lsaRSetForestTrustInformation(pipes_struct *p, struct lsa_lsaRSetForestTrustInformation *r);
 NTSTATUS _lsa_CREDRRENAME(pipes_struct *p, struct lsa_CREDRRENAME *r);
 NTSTATUS _lsa_LookupSids3(pipes_struct *p, struct lsa_LookupSids3 *r);
 NTSTATUS _lsa_LookupNames4(pipes_struct *p, struct lsa_LookupNames4 *r);

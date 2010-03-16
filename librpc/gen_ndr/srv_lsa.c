@@ -5689,18 +5689,18 @@ static bool api_lsa_lsaRQueryForestTrustInformation(pipes_struct *p)
 	return true;
 }
 
-static bool api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
+static bool api_lsa_lsaRSetForestTrustInformation(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct lsa_LSARSETFORESTTRUSTINFORMATION *r;
+	struct lsa_lsaRSetForestTrustInformation *r;
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARSETFORESTTRUSTINFORMATION];
 
-	r = talloc(talloc_tos(), struct lsa_LSARSETFORESTTRUSTINFORMATION);
+	r = talloc(talloc_tos(), struct lsa_lsaRSetForestTrustInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -5724,10 +5724,17 @@ static bool api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, r);
+		NDR_PRINT_IN_DEBUG(lsa_lsaRSetForestTrustInformation, r);
 	}
 
-	r->out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.collision_info = talloc_zero(r, struct lsa_ForestTrustCollisionInfo *);
+	if (r->out.collision_info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _lsa_lsaRSetForestTrustInformation(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -5736,7 +5743,7 @@ static bool api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, r);
+		NDR_PRINT_OUT_DEBUG(lsa_lsaRSetForestTrustInformation, r);
 	}
 
 	push = ndr_push_init_ctx(r, NULL);
@@ -6369,7 +6376,7 @@ static struct api_struct api_lsarpc_cmds[] =
 	{"LSA_LSARGENAUDITEVENT", NDR_LSA_LSARGENAUDITEVENT, api_lsa_LSARGENAUDITEVENT},
 	{"LSA_LSARUNREGISTERAUDITEVENT", NDR_LSA_LSARUNREGISTERAUDITEVENT, api_lsa_LSARUNREGISTERAUDITEVENT},
 	{"LSA_LSARQUERYFORESTTRUSTINFORMATION", NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION, api_lsa_lsaRQueryForestTrustInformation},
-	{"LSA_LSARSETFORESTTRUSTINFORMATION", NDR_LSA_LSARSETFORESTTRUSTINFORMATION, api_lsa_LSARSETFORESTTRUSTINFORMATION},
+	{"LSA_LSARSETFORESTTRUSTINFORMATION", NDR_LSA_LSARSETFORESTTRUSTINFORMATION, api_lsa_lsaRSetForestTrustInformation},
 	{"LSA_CREDRRENAME", NDR_LSA_CREDRRENAME, api_lsa_CREDRRENAME},
 	{"LSA_LOOKUPSIDS3", NDR_LSA_LOOKUPSIDS3, api_lsa_LookupSids3},
 	{"LSA_LOOKUPNAMES4", NDR_LSA_LOOKUPNAMES4, api_lsa_LookupNames4},
@@ -7083,8 +7090,14 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LSARSETFORESTTRUSTINFORMATION: {
-			struct lsa_LSARSETFORESTTRUSTINFORMATION *r = (struct lsa_LSARSETFORESTTRUSTINFORMATION *)_r;
-			r->out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(cli->pipes_struct, r);
+			struct lsa_lsaRSetForestTrustInformation *r = (struct lsa_lsaRSetForestTrustInformation *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.collision_info = talloc_zero(mem_ctx, struct lsa_ForestTrustCollisionInfo *);
+			if (r->out.collision_info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _lsa_lsaRSetForestTrustInformation(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

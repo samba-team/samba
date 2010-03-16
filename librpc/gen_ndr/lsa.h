@@ -773,6 +773,48 @@ struct lsa_ForestTrustInformation {
 	struct lsa_ForestTrustRecord **entries;/* [unique,size_is(count)] */
 }/* [public] */;
 
+enum lsa_ForestTrustCollisionRecordType
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_FOREST_TRUST_COLLISION_TDO=(int)(0),
+	LSA_FOREST_TRUST_COLLISION_XREF=(int)(1),
+	LSA_FOREST_TRUST_COLLISION_OTHER=(int)(2)
+}
+#else
+ { __donnot_use_enum_lsa_ForestTrustCollisionRecordType=0x7FFFFFFF}
+#define LSA_FOREST_TRUST_COLLISION_TDO ( 0 )
+#define LSA_FOREST_TRUST_COLLISION_XREF ( 1 )
+#define LSA_FOREST_TRUST_COLLISION_OTHER ( 2 )
+#endif
+;
+
+/* bitmap lsa_ForestTrustCollisionTDOFlags */
+#define LSA_TLN_DISABLED_NEW ( 0x00000001 )
+#define LSA_TLN_DISABLED_ADMIN ( 0x00000002 )
+#define LSA_TLN_DISABLED_CONFLICT ( 0x00000004 )
+
+/* bitmap lsa_ForestTrustCollisionXrefFlags */
+#define LSA_SID_DISABLED_ADMIN ( 0x00000001 )
+#define LSA_SID_DISABLED_CONFLICT ( 0x00000002 )
+#define LSA_NB_DISABLED_ADMIN ( 0x00000004 )
+#define LSA_NB_DISABLED_CONFLICT ( 0x00000008 )
+
+union lsa_ForestTrustCollisionFlags {
+	uint32_t flags;/* [case(LSA_FOREST_TRUST_COLLISION_TDO)] */
+}/* [nodiscriminant] */;
+
+struct lsa_ForestTrustCollisionRecord {
+	uint32_t index;
+	enum lsa_ForestTrustCollisionRecordType type;
+	union lsa_ForestTrustCollisionFlags flags;/* [switch_is(type)] */
+	struct lsa_String name;
+};
+
+struct lsa_ForestTrustCollisionInfo {
+	uint32_t count;
+	struct lsa_ForestTrustCollisionRecord **entries;/* [unique,size_is(count)] */
+};
+
 
 struct lsa_Close {
 	struct {
@@ -1771,8 +1813,17 @@ struct lsa_lsaRQueryForestTrustInformation {
 };
 
 
-struct lsa_LSARSETFORESTTRUSTINFORMATION {
+struct lsa_lsaRSetForestTrustInformation {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_StringLarge *trusted_domain_name;/* [ref] */
+		uint16_t highest_record_type;
+		struct lsa_ForestTrustInformation *forest_trust_info;/* [ref] */
+		uint8_t check_only;
+	} in;
+
+	struct {
+		struct lsa_ForestTrustCollisionInfo **collision_info;/* [ref] */
 		NTSTATUS result;
 	} out;
 

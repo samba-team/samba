@@ -5355,6 +5355,328 @@ _PUBLIC_ void ndr_print_lsa_ForestTrustInformation(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_lsa_ForestTrustCollisionRecordType(struct ndr_push *ndr, int ndr_flags, enum lsa_ForestTrustCollisionRecordType r)
+{
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustCollisionRecordType(struct ndr_pull *ndr, int ndr_flags, enum lsa_ForestTrustCollisionRecordType *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustCollisionRecordType(struct ndr_print *ndr, const char *name, enum lsa_ForestTrustCollisionRecordType r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_FOREST_TRUST_COLLISION_TDO: val = "LSA_FOREST_TRUST_COLLISION_TDO"; break;
+		case LSA_FOREST_TRUST_COLLISION_XREF: val = "LSA_FOREST_TRUST_COLLISION_XREF"; break;
+		case LSA_FOREST_TRUST_COLLISION_OTHER: val = "LSA_FOREST_TRUST_COLLISION_OTHER"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustCollisionTDOFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustCollisionTDOFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustCollisionTDOFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TLN_DISABLED_NEW", LSA_TLN_DISABLED_NEW, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TLN_DISABLED_ADMIN", LSA_TLN_DISABLED_ADMIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TLN_DISABLED_CONFLICT", LSA_TLN_DISABLED_CONFLICT, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustCollisionXrefFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustCollisionXrefFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustCollisionXrefFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_SID_DISABLED_ADMIN", LSA_SID_DISABLED_ADMIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_SID_DISABLED_CONFLICT", LSA_SID_DISABLED_CONFLICT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_NB_DISABLED_ADMIN", LSA_NB_DISABLED_ADMIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_NB_DISABLED_CONFLICT", LSA_NB_DISABLED_CONFLICT, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustCollisionFlags(struct ndr_push *ndr, int ndr_flags, const union lsa_ForestTrustCollisionFlags *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
+		switch (level) {
+			case LSA_FOREST_TRUST_COLLISION_TDO: {
+				NDR_CHECK(ndr_push_lsa_ForestTrustCollisionTDOFlags(ndr, NDR_SCALARS, r->flags));
+			break; }
+
+			case LSA_FOREST_TRUST_COLLISION_XREF: {
+				NDR_CHECK(ndr_push_lsa_ForestTrustCollisionXrefFlags(ndr, NDR_SCALARS, r->flags));
+			break; }
+
+			default: {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case LSA_FOREST_TRUST_COLLISION_TDO:
+			break;
+
+			case LSA_FOREST_TRUST_COLLISION_XREF:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustCollisionFlags(struct ndr_pull *ndr, int ndr_flags, union lsa_ForestTrustCollisionFlags *r)
+{
+	int level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
+		switch (level) {
+			case LSA_FOREST_TRUST_COLLISION_TDO: {
+				NDR_CHECK(ndr_pull_lsa_ForestTrustCollisionTDOFlags(ndr, NDR_SCALARS, &r->flags));
+			break; }
+
+			case LSA_FOREST_TRUST_COLLISION_XREF: {
+				NDR_CHECK(ndr_pull_lsa_ForestTrustCollisionXrefFlags(ndr, NDR_SCALARS, &r->flags));
+			break; }
+
+			default: {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case LSA_FOREST_TRUST_COLLISION_TDO:
+			break;
+
+			case LSA_FOREST_TRUST_COLLISION_XREF:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustCollisionFlags(struct ndr_print *ndr, const char *name, const union lsa_ForestTrustCollisionFlags *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "lsa_ForestTrustCollisionFlags");
+	switch (level) {
+		case LSA_FOREST_TRUST_COLLISION_TDO:
+			ndr_print_lsa_ForestTrustCollisionTDOFlags(ndr, "flags", r->flags);
+		break;
+
+		case LSA_FOREST_TRUST_COLLISION_XREF:
+			ndr_print_lsa_ForestTrustCollisionXrefFlags(ndr, "flags", r->flags);
+		break;
+
+		default:
+			ndr_print_uint32(ndr, "flags", r->flags);
+		break;
+
+	}
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustCollisionRecord(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustCollisionRecord *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->index));
+		NDR_CHECK(ndr_push_lsa_ForestTrustCollisionRecordType(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->flags, r->type));
+		NDR_CHECK(ndr_push_lsa_ForestTrustCollisionFlags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->name));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->name));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustCollisionRecord(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustCollisionRecord *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->index));
+		NDR_CHECK(ndr_pull_lsa_ForestTrustCollisionRecordType(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->flags, r->type));
+		NDR_CHECK(ndr_pull_lsa_ForestTrustCollisionFlags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->name));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->name));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustCollisionRecord(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustCollisionRecord *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ForestTrustCollisionRecord");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "index", r->index);
+	ndr_print_lsa_ForestTrustCollisionRecordType(ndr, "type", r->type);
+	ndr_print_set_switch_value(ndr, &r->flags, r->type);
+	ndr_print_lsa_ForestTrustCollisionFlags(ndr, "flags", &r->flags);
+	ndr_print_lsa_String(ndr, "name", &r->name);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustCollisionInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustCollisionInfo *r)
+{
+	uint32_t cntr_entries_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->entries));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->entries) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->count));
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->entries[cntr_entries_1]));
+			}
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				if (r->entries[cntr_entries_1]) {
+					NDR_CHECK(ndr_push_lsa_ForestTrustCollisionRecord(ndr, NDR_SCALARS|NDR_BUFFERS, r->entries[cntr_entries_1]));
+				}
+			}
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustCollisionInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustCollisionInfo *r)
+{
+	uint32_t _ptr_entries;
+	uint32_t cntr_entries_1;
+	TALLOC_CTX *_mem_save_entries_0;
+	TALLOC_CTX *_mem_save_entries_1;
+	TALLOC_CTX *_mem_save_entries_2;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_entries));
+		if (_ptr_entries) {
+			NDR_PULL_ALLOC(ndr, r->entries);
+		} else {
+			r->entries = NULL;
+		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->entries) {
+			_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->entries));
+			NDR_PULL_ALLOC_N(ndr, r->entries, ndr_get_array_size(ndr, &r->entries));
+			_mem_save_entries_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_entries));
+				if (_ptr_entries) {
+					NDR_PULL_ALLOC(ndr, r->entries[cntr_entries_1]);
+				} else {
+					r->entries[cntr_entries_1] = NULL;
+				}
+			}
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				if (r->entries[cntr_entries_1]) {
+					_mem_save_entries_2 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->entries[cntr_entries_1], 0);
+					NDR_CHECK(ndr_pull_lsa_ForestTrustCollisionRecord(ndr, NDR_SCALARS|NDR_BUFFERS, r->entries[cntr_entries_1]));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_2, 0);
+				}
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+		}
+		if (r->entries) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->entries, r->count));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustCollisionInfo(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustCollisionInfo *r)
+{
+	uint32_t cntr_entries_1;
+	ndr_print_struct(ndr, name, "lsa_ForestTrustCollisionInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "entries", r->entries);
+	ndr->depth++;
+	if (r->entries) {
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
+		ndr->depth++;
+		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
+			char *idx_1=NULL;
+			if (asprintf(&idx_1, "[%d]", cntr_entries_1) != -1) {
+				ndr_print_ptr(ndr, "entries", r->entries[cntr_entries_1]);
+				ndr->depth++;
+				if (r->entries[cntr_entries_1]) {
+					ndr_print_lsa_ForestTrustCollisionRecord(ndr, "entries", r->entries[cntr_entries_1]);
+				}
+				ndr->depth--;
+				free(idx_1);
+			}
+		}
+		ndr->depth--;
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_lsa_Close(struct ndr_push *ndr, int flags, const struct lsa_Close *r)
 {
 	if (flags & NDR_IN) {
@@ -12345,41 +12667,136 @@ _PUBLIC_ void ndr_print_lsa_lsaRQueryForestTrustInformation(struct ndr_print *nd
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_lsaRSetForestTrustInformation(struct ndr_push *ndr, int flags, const struct lsa_lsaRSetForestTrustInformation *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		if (r->in.trusted_domain_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trusted_domain_name));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.highest_record_type));
+		if (r->in.forest_trust_info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_ForestTrustInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.forest_trust_info));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.check_only));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.collision_info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.collision_info));
+		if (*r->out.collision_info) {
+			NDR_CHECK(ndr_push_lsa_ForestTrustCollisionInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.collision_info));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_lsaRSetForestTrustInformation(struct ndr_pull *ndr, int flags, struct lsa_lsaRSetForestTrustInformation *r)
 {
+	uint32_t _ptr_collision_info;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_trusted_domain_name_0;
+	TALLOC_CTX *_mem_save_forest_trust_info_0;
+	TALLOC_CTX *_mem_save_collision_info_0;
+	TALLOC_CTX *_mem_save_collision_info_1;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.trusted_domain_name);
+		}
+		_mem_save_trusted_domain_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.trusted_domain_name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trusted_domain_name));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domain_name_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.highest_record_type));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.forest_trust_info);
+		}
+		_mem_save_forest_trust_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.forest_trust_info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_ForestTrustInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.forest_trust_info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_trust_info_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.check_only));
+		NDR_PULL_ALLOC(ndr, r->out.collision_info);
+		ZERO_STRUCTP(r->out.collision_info);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.collision_info);
+		}
+		_mem_save_collision_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.collision_info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_collision_info));
+		if (_ptr_collision_info) {
+			NDR_PULL_ALLOC(ndr, *r->out.collision_info);
+		} else {
+			*r->out.collision_info = NULL;
+		}
+		if (*r->out.collision_info) {
+			_mem_save_collision_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.collision_info, 0);
+			NDR_CHECK(ndr_pull_lsa_ForestTrustCollisionInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.collision_info));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_collision_info_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_collision_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+_PUBLIC_ void ndr_print_lsa_lsaRSetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct lsa_lsaRSetForestTrustInformation *r)
 {
-	ndr_print_struct(ndr, name, "lsa_LSARSETFORESTTRUSTINFORMATION");
+	ndr_print_struct(ndr, name, "lsa_lsaRSetForestTrustInformation");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "lsa_LSARSETFORESTTRUSTINFORMATION");
+		ndr_print_struct(ndr, "in", "lsa_lsaRSetForestTrustInformation");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "trusted_domain_name", r->in.trusted_domain_name);
+		ndr->depth++;
+		ndr_print_lsa_StringLarge(ndr, "trusted_domain_name", r->in.trusted_domain_name);
+		ndr->depth--;
+		ndr_print_uint16(ndr, "highest_record_type", r->in.highest_record_type);
+		ndr_print_ptr(ndr, "forest_trust_info", r->in.forest_trust_info);
+		ndr->depth++;
+		ndr_print_lsa_ForestTrustInformation(ndr, "forest_trust_info", r->in.forest_trust_info);
+		ndr->depth--;
+		ndr_print_uint8(ndr, "check_only", r->in.check_only);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "lsa_LSARSETFORESTTRUSTINFORMATION");
+		ndr_print_struct(ndr, "out", "lsa_lsaRSetForestTrustInformation");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "collision_info", r->out.collision_info);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "collision_info", *r->out.collision_info);
+		ndr->depth++;
+		if (*r->out.collision_info) {
+			ndr_print_lsa_ForestTrustCollisionInfo(ndr, "collision_info", *r->out.collision_info);
+		}
+		ndr->depth--;
+		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -13556,11 +13973,11 @@ static const struct ndr_interface_call lsarpc_calls[] = {
 		false,
 	},
 	{
-		"lsa_LSARSETFORESTTRUSTINFORMATION",
-		sizeof(struct lsa_LSARSETFORESTTRUSTINFORMATION),
-		(ndr_push_flags_fn_t) ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION,
-		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION,
-		(ndr_print_function_t) ndr_print_lsa_LSARSETFORESTTRUSTINFORMATION,
+		"lsa_lsaRSetForestTrustInformation",
+		sizeof(struct lsa_lsaRSetForestTrustInformation),
+		(ndr_push_flags_fn_t) ndr_push_lsa_lsaRSetForestTrustInformation,
+		(ndr_pull_flags_fn_t) ndr_pull_lsa_lsaRSetForestTrustInformation,
+		(ndr_print_function_t) ndr_print_lsa_lsaRSetForestTrustInformation,
 		false,
 	},
 	{

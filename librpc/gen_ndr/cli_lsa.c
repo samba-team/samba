@@ -10840,25 +10840,31 @@ NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
-struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state {
-	struct lsa_LSARSETFORESTTRUSTINFORMATION orig;
-	struct lsa_LSARSETFORESTTRUSTINFORMATION tmp;
+struct rpccli_lsa_lsaRSetForestTrustInformation_state {
+	struct lsa_lsaRSetForestTrustInformation orig;
+	struct lsa_lsaRSetForestTrustInformation tmp;
 	TALLOC_CTX *out_mem_ctx;
 	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 };
 
-static void rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_done(struct tevent_req *subreq);
+static void rpccli_lsa_lsaRSetForestTrustInformation_done(struct tevent_req *subreq);
 
-struct tevent_req *rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *rpccli_lsa_lsaRSetForestTrustInformation_send(TALLOC_CTX *mem_ctx,
 								 struct tevent_context *ev,
-								 struct rpc_pipe_client *cli)
+								 struct rpc_pipe_client *cli,
+								 struct policy_handle *_handle /* [in] [ref] */,
+								 struct lsa_StringLarge *_trusted_domain_name /* [in] [ref] */,
+								 uint16_t _highest_record_type /* [in]  */,
+								 struct lsa_ForestTrustInformation *_forest_trust_info /* [in] [ref] */,
+								 uint8_t _check_only /* [in]  */,
+								 struct lsa_ForestTrustCollisionInfo **_collision_info /* [out] [ref] */)
 {
 	struct tevent_req *req;
-	struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state *state;
+	struct rpccli_lsa_lsaRSetForestTrustInformation_state *state;
 	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state);
+				struct rpccli_lsa_lsaRSetForestTrustInformation_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -10866,11 +10872,23 @@ struct tevent_req *rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_send(TALLOC_CTX *mem
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.trusted_domain_name = _trusted_domain_name;
+	state->orig.in.highest_record_type = _highest_record_type;
+	state->orig.in.forest_trust_info = _forest_trust_info;
+	state->orig.in.check_only = _check_only;
 
 	/* Out parameters */
+	state->orig.out.collision_info = _collision_info;
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_lsa_lsaRSetForestTrustInformation_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -10882,16 +10900,16 @@ struct tevent_req *rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_send(TALLOC_CTX *mem
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_done, req);
+	tevent_req_set_callback(subreq, rpccli_lsa_lsaRSetForestTrustInformation_done, req);
 	return req;
 }
 
-static void rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_done(struct tevent_req *subreq)
+static void rpccli_lsa_lsaRSetForestTrustInformation_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state *state = tevent_req_data(
-		req, struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state);
+	struct rpccli_lsa_lsaRSetForestTrustInformation_state *state = tevent_req_data(
+		req, struct rpccli_lsa_lsaRSetForestTrustInformation_state);
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
@@ -10909,6 +10927,7 @@ static void rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_done(struct tevent_req *sub
 	}
 
 	/* Copy out parameters */
+	*state->orig.out.collision_info = *state->tmp.out.collision_info;
 
 	/* Copy result */
 	state->orig.out.result = state->tmp.out.result;
@@ -10919,12 +10938,12 @@ static void rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_done(struct tevent_req *sub
 	tevent_req_done(req);
 }
 
-NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_recv(struct tevent_req *req,
+NTSTATUS rpccli_lsa_lsaRSetForestTrustInformation_recv(struct tevent_req *req,
 						       TALLOC_CTX *mem_ctx,
 						       NTSTATUS *result)
 {
-	struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state *state = tevent_req_data(
-		req, struct rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_state);
+	struct rpccli_lsa_lsaRSetForestTrustInformation_state *state = tevent_req_data(
+		req, struct rpccli_lsa_lsaRSetForestTrustInformation_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -10942,13 +10961,24 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
-						  TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_lsa_lsaRSetForestTrustInformation(struct rpc_pipe_client *cli,
+						  TALLOC_CTX *mem_ctx,
+						  struct policy_handle *handle /* [in] [ref] */,
+						  struct lsa_StringLarge *trusted_domain_name /* [in] [ref] */,
+						  uint16_t highest_record_type /* [in]  */,
+						  struct lsa_ForestTrustInformation *forest_trust_info /* [in] [ref] */,
+						  uint8_t check_only /* [in]  */,
+						  struct lsa_ForestTrustCollisionInfo **collision_info /* [out] [ref] */)
 {
-	struct lsa_LSARSETFORESTTRUSTINFORMATION r;
+	struct lsa_lsaRSetForestTrustInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.highest_record_type = highest_record_type;
+	r.in.forest_trust_info = forest_trust_info;
+	r.in.check_only = check_only;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
@@ -10965,6 +10995,7 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*collision_info = *r.out.collision_info;
 
 	/* Return result */
 	return r.out.result;
