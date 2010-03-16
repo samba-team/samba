@@ -8069,7 +8069,7 @@ WERROR _spoolss_EnumPrinterData(pipes_struct *p,
 				result = WERR_NOMEM;
 				goto done;
 			}
-			*r->out.value_needed = strlen_m(regval_name(val));
+			*r->out.value_needed = strlen_m_term(regval_name(val)) * 2;
 		} else {
 			r->out.value_name = NULL;
 			*r->out.value_needed = 0;
