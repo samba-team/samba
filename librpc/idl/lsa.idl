@@ -770,7 +770,7 @@ import "misc.idl", "security.idl";
 		lsa_DATA_BUF2  data;
 	} lsa_TrustDomainInfoBuffer;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 incoming_count;
 		lsa_TrustDomainInfoBuffer *incoming_current_auth_info;
 		lsa_TrustDomainInfoBuffer *incoming_previous_auth_info;

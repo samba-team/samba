@@ -262,6 +262,8 @@ enum ndr_err_code ndr_push_lsa_TrustAuthType(struct ndr_push *ndr, int ndr_flags
 enum ndr_err_code ndr_pull_lsa_TrustAuthType(struct ndr_pull *ndr, int ndr_flags, enum lsa_TrustAuthType *r);
 void ndr_print_lsa_TrustAuthType(struct ndr_print *ndr, const char *name, enum lsa_TrustAuthType r);
 void ndr_print_lsa_TrustDomainInfoBuffer(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoBuffer *r);
+enum ndr_err_code ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoAuthInfo *r);
+enum ndr_err_code ndr_pull_lsa_TrustDomainInfoAuthInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoAuthInfo *r);
 void ndr_print_lsa_TrustDomainInfoAuthInfo(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoAuthInfo *r);
 void ndr_print_lsa_TrustDomainInfoFullInfo(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoFullInfo *r);
 void ndr_print_lsa_TrustDomainInfoAuthInfoInternal(struct ndr_print *ndr, const char *name, const struct lsa_TrustDomainInfoAuthInfoInternal *r);

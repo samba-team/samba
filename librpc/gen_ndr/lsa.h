@@ -564,7 +564,7 @@ struct lsa_TrustDomainInfoAuthInfo {
 	uint32_t outgoing_count;
 	struct lsa_TrustDomainInfoBuffer *outgoing_current_auth_info;/* [unique] */
 	struct lsa_TrustDomainInfoBuffer *outgoing_previous_auth_info;/* [unique] */
-};
+}/* [public] */;
 
 struct lsa_TrustDomainInfoFullInfo {
 	struct lsa_TrustDomainInfoInfoEx info_ex;

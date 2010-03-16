@@ -3316,7 +3316,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoBuffer(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoAuthInfo *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoAuthInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
@@ -3345,7 +3345,7 @@ static enum ndr_err_code ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *n
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_TrustDomainInfoAuthInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoAuthInfo *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_TrustDomainInfoAuthInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoAuthInfo *r)
 {
 	uint32_t _ptr_incoming_current_auth_info;
 	TALLOC_CTX *_mem_save_incoming_current_auth_info_0;
