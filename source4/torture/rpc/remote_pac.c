@@ -63,6 +63,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct auth_session_info *session_info;
 
 	char *tmp_dir;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	
@@ -174,7 +175,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.out.authoritative = &authoritative;
 	r.out.return_authenticator = &return_authenticator;
 
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
 	
@@ -193,7 +194,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
 	
@@ -215,7 +216,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
 	
@@ -263,7 +264,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 	
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
 	
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
 	
@@ -310,7 +311,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 	
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
 	
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
 	
