@@ -91,11 +91,8 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 					ret = talloc_asprintf(mem_ctx, "0x%8.8x",
 							      IVAL(data.data, 0));
 				} else {
-					ret = talloc_asprintf(mem_ctx, "0x%2.2x%2.2x%2.2x%2.2x",
-							      CVAL(data.data, 0),
-							      CVAL(data.data, 1),
-							      CVAL(data.data, 2),
-							      CVAL(data.data, 3));
+					ret = talloc_asprintf(mem_ctx, "0x%8.8x",
+							      RIVAL(data.data, 0));
 				}
 			}
 			break;

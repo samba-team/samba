@@ -231,11 +231,8 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					conv_str = talloc_asprintf(msg, "0x%8.8x",
 								   IVAL(data.data, 0));
 				} else {
-					conv_str = talloc_asprintf(msg, "0x%2.2x%2.2x%2.2x%2.2x",
-								   CVAL(data.data, 0),
-								   CVAL(data.data, 1),
-								   CVAL(data.data, 2),
-								   CVAL(data.data, 3));
+					conv_str = talloc_asprintf(msg, "0x%8.8x",
+								   RIVAL(data.data, 0));
 				}
 
 				if (conv_str == NULL) {
