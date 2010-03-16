@@ -779,7 +779,6 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	struct security_descriptor *sd_orig = NULL;
 	struct security_ace *ace = NULL;
 	struct policy_handle new_handle;
-	NTSTATUS status;
 	bool ret = true;
 
 	torture_comment(tctx, "SecurityDescriptor inheritance\n");
@@ -803,11 +802,9 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 				  SEC_STD_REQUIRED,
 				  SEC_ACE_FLAG_CONTAINER_INHERIT);
 
-	status = security_descriptor_dacl_add(sd, ace);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to add ace: %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		security_descriptor_dacl_add(sd, ace),
+		"failed to add ace");
 
 	/* FIXME: add further tests for these flags */
 	sd->type |= SEC_DESC_DACL_AUTO_INHERIT_REQ |
@@ -817,10 +814,9 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
-		printf("new ACE not present!\n");
-		return false;
-	}
+	torture_assert(tctx,
+		test_dacl_ace_present(p, tctx, &new_handle, ace),
+		"new ACE not present!");
 
 	if (!test_CloseKey(p, tctx, &new_handle)) {
 		return false;
@@ -837,7 +833,7 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	}
 
 	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
-		printf("inherited ACE not present!\n");
+		torture_comment(tctx, "inherited ACE not present!\n");
 		ret = false;
 		goto out;
 	}
@@ -854,7 +850,7 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	}
 
 	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
-		printf("inherited ACE not present!\n");
+		torture_comment(tctx, "inherited ACE not present!\n");
 		ret = false;
 		goto out;
 	}
@@ -890,7 +886,6 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	struct security_ace *ace = NULL;
 	struct policy_handle new_handle;
 	struct dom_sid *sid = NULL;
-	NTSTATUS status;
 	bool ret = true;
 	uint8_t ace_flags = 0x0;
 
@@ -916,20 +911,17 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 				  SEC_ACE_FLAG_CONTAINER_INHERIT |
 				  SEC_ACE_FLAG_NO_PROPAGATE_INHERIT);
 
-	status = security_descriptor_dacl_add(sd, ace);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to add ace: %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		security_descriptor_dacl_add(sd, ace),
+		"failed to add ace");
 
 	if (!_test_SetKeySecurity(p, tctx, &new_handle, NULL, sd, WERR_OK)) {
 		return false;
 	}
 
-	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
-		printf("new ACE not present!\n");
-		return false;
-	}
+	torture_assert(tctx,
+		test_dacl_ace_present(p, tctx, &new_handle, ace),
+		"new ACE not present!");
 
 	if (!test_CloseKey(p, tctx, &new_handle)) {
 		return false;
@@ -945,7 +937,7 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	}
 
 	if (test_dacl_ace_present(p, tctx, &new_handle, ace)) {
-		printf("inherited ACE present but should not!\n");
+		torture_comment(tctx, "inherited ACE present but should not!\n");
 		ret = false;
 		goto out;
 	}
@@ -956,7 +948,7 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	}
 
 	if (test_dacl_trustee_present(p, tctx, &new_handle, sid)) {
-		printf("inherited trustee SID present but should not!\n");
+		torture_comment(tctx, "inherited trustee SID present but should not!\n");
 		ret = false;
 		goto out;
 	}
@@ -969,13 +961,13 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	}
 
 	if (test_dacl_ace_present(p, tctx, &new_handle, ace)) {
-		printf("inherited ACE present but should not!\n");
+		torture_comment(tctx, "inherited ACE present but should not!\n");
 		ret = false;
 		goto out;
 	}
 
 	if (!test_dacl_trustee_flags_present(p, tctx, &new_handle, sid, ace_flags)) {
-		printf("inherited trustee SID with flags 0x%02x not present!\n",
+		torture_comment(tctx, "inherited trustee SID with flags 0x%02x not present!\n",
 			ace_flags);
 		ret = false;
 		goto out;
@@ -1082,7 +1074,7 @@ static bool test_SetSecurityDescriptor_SecInfo(struct dcerpc_pipe *p,
 	}
 
 	if (!open_success) {
-		printf("key did not open\n");
+		torture_comment(tctx, "key did not open\n");
 		test_CloseKey(p, tctx, &new_handle);
 		return false;
 	}
@@ -1260,7 +1252,7 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 					sec_info_owner_tests[i].fn,
 					sid))
 			{
-				printf("test_SetSecurityDescriptor_SecInfo failed for OWNER\n");
+				torture_comment(tctx, "test_SetSecurityDescriptor_SecInfo failed for OWNER\n");
 				ret = false;
 				goto out;
 			}
@@ -1284,7 +1276,7 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 					sec_info_group_tests[i].fn,
 					sid))
 			{
-				printf("test_SetSecurityDescriptor_SecInfo failed for GROUP\n");
+				torture_comment(tctx, "test_SetSecurityDescriptor_SecInfo failed for GROUP\n");
 				ret = false;
 				goto out;
 			}
@@ -1308,7 +1300,7 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 					sec_info_dacl_tests[i].fn,
 					sid))
 			{
-				printf("test_SetSecurityDescriptor_SecInfo failed for DACL\n");
+				torture_comment(tctx, "test_SetSecurityDescriptor_SecInfo failed for DACL\n");
 				ret = false;
 				goto out;
 			}
@@ -1332,7 +1324,7 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 					sec_info_sacl_tests[i].fn,
 					sid))
 			{
-				printf("test_SetSecurityDescriptor_SecInfo failed for SACL\n");
+				torture_comment(tctx, "test_SetSecurityDescriptor_SecInfo failed for SACL\n");
 				ret = false;
 				goto out;
 			}
@@ -1353,27 +1345,27 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 	bool ret = true;
 
 	if (!test_SecurityDescriptor(p, tctx, handle, key)) {
-		printf("test_SecurityDescriptor failed\n");
+		torture_comment(tctx, "test_SecurityDescriptor failed\n");
 		ret = false;
 	}
 
 	if (!test_SecurityDescriptorInheritance(p, tctx, handle, key)) {
-		printf("test_SecurityDescriptorInheritance failed\n");
+		torture_comment(tctx, "test_SecurityDescriptorInheritance failed\n");
 		ret = false;
 	}
 
 	if (!test_SecurityDescriptorBlockInheritance(p, tctx, handle, key)) {
-		printf("test_SecurityDescriptorBlockInheritance failed\n");
+		torture_comment(tctx, "test_SecurityDescriptorBlockInheritance failed\n");
 		ret = false;
 	}
 
 	if (!test_SecurityDescriptorsSecInfo(p, tctx, handle, key)) {
-		printf("test_SecurityDescriptorsSecInfo failed\n");
+		torture_comment(tctx, "test_SecurityDescriptorsSecInfo failed\n");
 		ret = false;
 	}
 
 	if (!test_SecurityDescriptorsMasks(p, tctx, handle, key)) {
-		printf("test_SecurityDescriptorsMasks failed\n");
+		torture_comment(tctx, "test_SecurityDescriptorsMasks failed\n");
 		ret = false;
 	}
 
@@ -1972,7 +1964,7 @@ static bool test_Open_Security(struct torture_context *tctx,
 	}
 
 	if (created2 && !test_CloseKey(p, tctx, &newhandle)) {
-		printf("CloseKey failed\n");
+		torture_comment(tctx, "CloseKey failed\n");
 		ret = false;
 	}
 
@@ -1981,7 +1973,7 @@ static bool test_Open_Security(struct torture_context *tctx,
 	}
 
 	if (created4 && !test_CloseKey(p, tctx, &newhandle)) {
-		printf("CloseKey failed\n");
+		torture_comment(tctx, "CloseKey failed\n");
 		ret = false;
 	}
 
@@ -1990,12 +1982,12 @@ static bool test_Open_Security(struct torture_context *tctx,
 	}
 
 	if (created4 && !test_DeleteKey(p, tctx, &handle, TEST_KEY4)) {
-		printf("DeleteKey failed\n");
+		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
 	if (created2 && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
-		printf("DeleteKey failed\n");
+		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
@@ -2202,7 +2194,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	if (created_subkey &&
 	    !test_DeleteKey(p, tctx, &handle, TEST_KEY3)) {
-		printf("DeleteKey failed\n");
+		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
