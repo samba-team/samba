@@ -55,6 +55,8 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
 	int flags = CLI_CRED_NTLM_AUTH;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
 	if (lp_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
@@ -113,7 +115,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	for (i=2;i<3;i++) {
 		r.in.validation_level = i;
 		
-		status = dcerpc_netr_LogonSamLogonEx(p, tctx, &r);
+		status = dcerpc_netr_LogonSamLogonEx_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
 	}
 
@@ -124,7 +126,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
   do some samr ops using the schannel connection
  */
 static bool test_samr_ops(struct torture_context *tctx,
-			  struct dcerpc_pipe *p)
+			  struct dcerpc_binding_handle *b)
 {
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
@@ -146,7 +148,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	
 	printf("Testing Connect and OpenDomain on BUILTIN\n");
 
-	status = dcerpc_samr_Connect(p, tctx, &connect_r);
+	status = dcerpc_samr_Connect_r(b, tctx, &connect_r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			printf("Connect failed (expected, schannel mapped to anonymous): %s\n",
@@ -161,7 +163,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 		opendom.in.sid = dom_sid_parse_talloc(tctx, "S-1-5-32");
 		opendom.out.domain_handle = &domain_handle;
 		
-		status = dcerpc_samr_OpenDomain(p, tctx, &opendom);
+		status = dcerpc_samr_OpenDomain_r(b, tctx, &opendom);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("OpenDomain failed - %s\n", nt_errstr(status));
 			return false;
@@ -172,7 +174,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	
 	/* do several ops to test credential chaining */
 	for (i=0;i<5;i++) {
-		status = dcerpc_samr_GetDomPwInfo(p, tctx, &r);
+		status = dcerpc_samr_GetDomPwInfo_r(b, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 				printf("GetDomPwInfo op %d failed - %s\n", i, nt_errstr(status));
@@ -195,6 +197,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 	bool ret = true;
 	struct lsa_String *account_name_p = NULL;
 	struct lsa_String *authority_name_p = NULL;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	printf("\nTesting GetUserName\n");
 
@@ -204,7 +207,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 	r.out.account_name = &account_name_p;
 
 	/* do several ops to test credential chaining and various operations */
-	status = dcerpc_lsa_GetUserName(p, tctx, &r);
+	status = dcerpc_lsa_GetUserName_r(b, tctx, &r);
 
 	authority_name_p = *r.out.authority_name;
 
@@ -284,7 +287,7 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, 
 		"Failed to connect with schannel");
 
-	torture_assert(tctx, test_samr_ops(tctx, p), 
+	torture_assert(tctx, test_samr_ops(tctx, p->binding_handle),
 		       "Failed to process schannel secured SAMR ops");
 
 	/* Also test that when we connect to the netlogon pipe, that
@@ -355,7 +358,7 @@ static bool test_schannel(struct torture_context *tctx,
 		"Failed to connect with schannel");
 
 	/* do a some SAMR operations.  We have *not* done a new serverauthenticate */
-	torture_assert (tctx, test_samr_ops(tctx, p_samr2), 
+	torture_assert (tctx, test_samr_ops(tctx, p_samr2->binding_handle),
 			"Failed to process schannel secured SAMR ops (on fresh connection)");
 
 	/* Swap the binding details from SAMR to NETLOGON */
@@ -804,7 +807,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 		netlogon_creds_des_encrypt(creds_state, &new_password);
 		netlogon_creds_client_authenticator(creds_state, &credential);
 
-		status = dcerpc_netr_ServerPasswordSet(net_pipe, torture, &pwset);
+		status = dcerpc_netr_ServerPasswordSet_r(net_pipe->binding_handle, torture, &pwset);
 		torture_assert_ntstatus_ok(torture, status,
 					   "ServerPasswordSet failed");
 
