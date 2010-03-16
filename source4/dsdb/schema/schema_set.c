@@ -413,9 +413,11 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 
 /**
  * Find the schema object for this ldb
+ *
+ * If reference_ctx is not NULL, then talloc_reference onto that context
  */
 
-struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
+struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *reference_ctx)
 {
 	const void *p;
 	struct dsdb_schema *schema;
@@ -431,7 +433,11 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 		return NULL;
 	}
 
-	return schema;
+	if (!reference_ctx) {
+		return schema;
+	} else {
+		return talloc_reference(reference_ctx, schema);
+	}
 }
 
 /**
@@ -440,7 +446,7 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 
 void dsdb_make_schema_global(struct ldb_context *ldb)
 {
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	if (!schema) {
 		return;
 	}
