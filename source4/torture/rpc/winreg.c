@@ -1910,7 +1910,7 @@ static bool test_SetValue_simple(struct dcerpc_pipe *p,
 			test_QueryValue_full(p, tctx, handle, value_name, true),
 			talloc_asprintf(tctx, "test_QueryValue_full for %s value failed", value_name));
 		torture_assert(tctx,
-			test_winreg_QueryValue(tctx, p, handle, value_name, &w_type, &w_size, &w_length, &w_data),
+			test_winreg_QueryValue(tctx, p->binding_handle, handle, value_name, &w_type, &w_size, &w_length, &w_data),
 			"test_winreg_QueryValue failed");
 		torture_assert(tctx,
 			test_DeleteValue(p, tctx, handle, value_name),
@@ -2053,7 +2053,7 @@ static bool test_SetValue_extended(struct dcerpc_pipe *p,
 			"test_SetValue failed");
 
 		torture_assert(tctx,
-			test_winreg_QueryValue(tctx, p, handle, value_name, &w_type, &w_size, &w_length, &w_data),
+			test_winreg_QueryValue(tctx, p->binding_handle, handle, value_name, &w_type, &w_size, &w_length, &w_data),
 			"test_winreg_QueryValue failed");
 
 		torture_assert(tctx,
