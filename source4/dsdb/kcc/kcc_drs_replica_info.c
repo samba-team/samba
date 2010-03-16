@@ -175,7 +175,7 @@ static WERROR kccdrs_replica_get_info_obj_metadata2(TALLOC_CTX *mem_ctx,
 						    struct drsuapi_DsReplicaGetInfo *r,
 						    union drsuapi_DsReplicaInfo *reply,
 						    struct ldb_dn *dn,
-						    int base_index)
+						    uint32_t base_index)
 {
 	WERROR status;
 	struct replPropertyMetaDataBlob omd_ctr;
@@ -383,7 +383,7 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 	struct ncList *nc_list = NULL;
 	struct ncList *nc_list_elem;
 	int ret;
-	int i;
+	unsigned int i;
 	char *nc_str;
 
 	ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
@@ -401,7 +401,7 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 
 	for (i = 0; i < res->count; i++) {
 		struct ldb_message_element *msg_elem = ldb_msg_find_element(res->msgs[i], "hasMasterNCs");
-		int k;
+		unsigned int k;
 
 		if (!msg_elem || msg_elem->num_values == 0) {
 			DEBUG(0,(__location__ ": Failed: Attribute hasMasterNCs not found - %s\n",
@@ -563,18 +563,18 @@ static WERROR kccdrs_replica_get_info_neighbours(TALLOC_CTX *mem_ctx,
 						 struct ldb_context *samdb,
 						 struct drsuapi_DsReplicaGetInfo *r,
 						 union drsuapi_DsReplicaInfo *reply,
-						 int base_index,
+						 uint32_t base_index,
 						 struct GUID req_src_dsa_guid,
 						 const char *object_dn_str)
 {
 	WERROR status;
-	int i, j;
+	uint32_t i, j;
 	struct ldb_dn *nc_dn = NULL;
 	struct ncList *p_nc_list = NULL;
 	struct repsFromToBlob *reps_from_blob = NULL;
 	struct repsFromTo2 *reps_from = NULL;
 	uint32_t c_reps_from;
-	int i_rep;
+	uint32_t i_rep;
 	struct drsuapi_DsReplicaNeighbour neigh;
 	struct ncList *nc_list = NULL;
 
@@ -680,18 +680,18 @@ static WERROR kccdrs_replica_get_info_repsto(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *samdb,
 					     struct drsuapi_DsReplicaGetInfo *r,
 					     union drsuapi_DsReplicaInfo *reply,
-					     int base_index,
+					     uint32_t base_index,
 					     struct GUID req_src_dsa_guid,
 					     const char *object_dn_str)
 {
 	WERROR status;
-	int i, j;
+	uint32_t i, j;
 	struct ncList *p_nc_list = NULL;
 	struct ldb_dn *nc_dn = NULL;
 	struct repsFromToBlob *reps_to_blob;
 	struct repsFromTo2 *reps_to;
 	uint32_t c_reps_to;
-	int i_rep;
+	uint32_t i_rep;
 	struct drsuapi_DsReplicaNeighbour neigh;
 	struct ncList *nc_list = NULL;
 
@@ -754,7 +754,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	WERROR status;
 	struct drsuapi_DsReplicaGetInfoRequest1 *req1;
 	struct drsuapi_DsReplicaGetInfoRequest2 *req2;
-	int base_index;
+	uint32_t base_index;
 	union drsuapi_DsReplicaInfo *reply;
 	struct GUID req_src_dsa_guid;
 	const char *object_dn_str = NULL;

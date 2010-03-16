@@ -791,7 +791,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 							NULL };
 	int ret;
 	struct GUID_list vertex_ids;
-	uint32_t i;
+	unsigned int i;
 	NTSTATUS status;
 	struct ldb_message *site;
 	uint64_t site_opts;
@@ -1075,7 +1075,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 	struct ldb_message *site, *schema;
 	const char * const dc_attrs[] = { "objectGUID", "options", NULL };
 	struct ldb_message_element *el;
-	uint32_t i;
+	unsigned int i;
 	bool rodc;
 	const char *transport_name, *transport_address_attr;
 	uint64_t site_opts;
@@ -1454,7 +1454,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 		const char * const attrs[] = { "objectGUID", "name",
 					       "transportAddressAttribute",
 					       NULL };
-		uint32_t j;
+		unsigned int j;
 
 		vertex = &graph->vertices.data[i];
 
@@ -2730,7 +2730,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 	const char * const attrs[] = { "objectGUID", "parent", "fromServer",
 				       "transportType", "schedule", "options",
 				       "enabledConnection", NULL };
-	uint32_t i, valid_connections;
+	unsigned int i, valid_connections;
 	struct GUID_list keep_connections;
 
 	tmp_ctx = talloc_new(ldb);
@@ -3369,7 +3369,7 @@ static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
 	const char * const attrs[] = { "enabled", "systemFlags", "nCName",
 					NULL };
 	int ret;
-	uint32_t i;
+	unsigned int i;
 
 	all_connected = true;
 

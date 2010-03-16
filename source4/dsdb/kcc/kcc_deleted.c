@@ -62,7 +62,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 		struct ldb_dn *do_dn;
 		struct ldb_result *res;
 		const char *attrs[] = { "whenChanged", NULL };
-		int i;
+		unsigned int i;
 
 		ret = dsdb_get_deleted_objects_dn(s->samdb, mem_ctx, part->dn, &do_dn);
 		if (ret != LDB_SUCCESS) {

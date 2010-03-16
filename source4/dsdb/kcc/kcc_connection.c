@@ -129,7 +129,8 @@ void kccsrv_apply_connections(struct kccsrv_service *s,
 			      struct kcc_connection_list *ntds_list,
 			      struct kcc_connection_list *dsa_list)
 {
-	int i, j, deleted = 0, added = 0, ret;
+	unsigned int i, j, deleted = 0, added = 0;
+	int ret;
 
 	for (i = 0; ntds_list && i < ntds_list->count; i++) {
 		struct kcc_connection *ntds = &ntds_list->servers[i];
@@ -169,7 +170,8 @@ void kccsrv_apply_connections(struct kccsrv_service *s,
 struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 						    TALLOC_CTX *mem_ctx)
 {
-	int ret, i;
+	unsigned int i;
+	int ret;
 	struct ldb_dn *base_dn;
 	struct ldb_result *res;
 	const char *attrs[] = { "objectGUID", "fromServer", NULL };

@@ -40,7 +40,7 @@
  */
 static bool reps_in_list(struct repsFromToBlob *r, struct repsFromToBlob *reps, uint32_t count)
 {
-	unsigned int i;
+	uint32_t i;
 	for (i=0; i<count; i++) {
 		if (strcmp(r->ctr.ctr1.other_info->dns_name, 
 			   reps[i].ctr.ctr1.other_info->dns_name) == 0 &&
@@ -66,7 +66,7 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 		struct repsFromToBlob *old_reps;
 		uint32_t old_count;
 		WERROR werr;
-		unsigned int i;
+		uint32_t i;
 		bool modified = false;
 
 		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsFrom", &old_reps, &old_count);
