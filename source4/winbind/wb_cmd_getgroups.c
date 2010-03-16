@@ -71,7 +71,7 @@ struct composite_context *wb_cmd_getgroups_send(TALLOC_CTX *mem_ctx,
 	state->num_groups = 0;
 
 	state->username = talloc_strdup(state,username);
-	if (composite_nomem(ctx, result)) return result;
+	if (composite_nomem(state->username, result)) return result;
 
 	ctx = wb_cmd_getpwnam_send(state, service, username);
 	if (composite_nomem(ctx, result)) return result;
