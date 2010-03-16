@@ -163,7 +163,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 
 	schema = dsdb_get_schema(ldb, res);
 	if (!schema) {
-		ldb_oom(schema);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

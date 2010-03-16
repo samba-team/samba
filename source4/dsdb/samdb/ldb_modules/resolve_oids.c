@@ -521,7 +521,10 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	talloc_reference(tree, schema);
+	if (talloc_reference(tree, schema) == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = resolve_oids_parse_tree_replace(ldb, schema,
 					      tree);
@@ -529,7 +532,8 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 		return ret;
 	}
 
-	attrs2 = str_list_copy_const(ac, req->op.search.attrs);
+	attrs2 = str_list_copy_const(ac,
+				     discard_const_p(const char *, req->op.search.attrs));
 	if (req->op.search.attrs && !attrs2) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -537,7 +541,7 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 
 	for (i=0; attrs2 && attrs2[i]; i++) {
 		const char *p;
-		struct dsdb_attribute *a;
+		const struct dsdb_attribute *a;
 
 		p = strchr(attrs2[i], '.');
 		if (p == NULL) {
