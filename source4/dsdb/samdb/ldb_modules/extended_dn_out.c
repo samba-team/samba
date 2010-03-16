@@ -592,7 +592,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	}
 
 	ac->module = module;
-	ac->schema = dsdb_get_schema(ldb);
+	ac->schema = dsdb_get_schema(ldb, ac);
 	ac->req = req;
 	ac->inject = false;
 	ac->remove_guid = false;
@@ -786,7 +786,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 		return ret;
 	}
 
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, p);
 	if (!schema) {
 		/* No schema on this DB (yet) */
 		return LDB_SUCCESS;

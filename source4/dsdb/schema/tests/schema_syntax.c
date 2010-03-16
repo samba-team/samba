@@ -204,7 +204,7 @@ static bool torture_dsdb_syntax_tcase_setup(struct torture_context *tctx, void *
 	priv->ldb = provision_get_schema(priv, tctx->lp_ctx);
 	torture_assert(tctx, priv->ldb, "Failed to load schema from disk");
 
-	priv->schema = dsdb_get_schema(priv->ldb);
+	priv->schema = dsdb_get_schema(priv->ldb, NULL);
 	torture_assert(tctx, priv->schema, "Failed to fetch schema");
 
 	/* add 'authOrig' attribute with OR-Name syntax to schema */

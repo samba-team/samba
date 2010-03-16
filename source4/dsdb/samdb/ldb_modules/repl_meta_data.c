@@ -322,6 +322,13 @@ static int replmd_add_backlink(struct ldb_module *module, const struct dsdb_sche
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* Ensure the schema does not go away before the bl->attr_name is used */
+	if (!talloc_reference(bl, schema)) {
+		talloc_free(bl);
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	bl->attr_name = target_attr->lDAPDisplayName;
 	bl->forward_guid = *forward_guid;
 	bl->target_guid = *target_guid;
@@ -489,7 +496,7 @@ static struct replmd_replicated_request *replmd_ctx_init(struct ldb_module *modu
 	ac->module = module;
 	ac->req	= req;
 
-	ac->schema = dsdb_get_schema(ldb);
+	ac->schema = dsdb_get_schema(ldb, ac);
 	if (!ac->schema) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "replmd_modify: no dsdb_schema loaded");
@@ -659,7 +666,9 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(el->values);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+
+	/* We will take a reference to the schema in replmd_add_backlink */
+	struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
@@ -1927,7 +1936,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *old_msg;
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+
+	struct dsdb_schema *schema;
 	struct GUID old_guid;
 
 	if (seq_num == 0) {
@@ -1953,6 +1963,11 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+	schema = dsdb_get_schema(ldb, res);
+	if (!schema) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	old_msg = res->msgs[0];
 
 	old_guid = samdb_result_guid(old_msg, "objectGUID");
@@ -2307,7 +2322,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *rdn_value, *new_rdn_value;
 	struct GUID guid;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct dsdb_schema *schema;
 	struct ldb_message *msg, *old_msg;
 	struct ldb_message_element *el;
 	TALLOC_CTX *tmp_ctx;
@@ -2330,6 +2345,15 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	tmp_ctx = talloc_new(ldb);
+	if (!tmp_ctx) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	schema = dsdb_get_schema(ldb, tmp_ctx);
+	if (!schema) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	old_dn = ldb_dn_copy(tmp_ctx, req->op.del.dn);
 
@@ -3418,7 +3442,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	/* Set the flags to have the replmd_op_callback run over the full set of objects */
 	ar->apply_mode = true;
 	ar->objs = objs;
-	ar->schema = dsdb_get_schema(ldb);
+	ar->schema = dsdb_get_schema(ldb, ar);
 	if (!ar->schema) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL, "replmd_ctx_init: no loaded schema found\n");
 		talloc_free(ar);
@@ -3484,9 +3508,9 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 {					   
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
 	struct dsdb_dn *dsdb_dn;

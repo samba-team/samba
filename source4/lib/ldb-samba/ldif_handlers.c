@@ -435,7 +435,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 					    const struct ldb_val *in, struct ldb_val *out)
 {
 	struct ldb_dn *dn1 = NULL;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	const struct dsdb_class *sclass;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {

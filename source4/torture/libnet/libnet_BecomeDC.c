@@ -257,7 +257,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	}
 	/* we don't want to access the self made schema anymore */
 	s->self_made_schema = NULL;
-	s->schema = dsdb_get_schema(s->ldb);
+	s->schema = dsdb_get_schema(s->ldb, s);
 
 	status = dsdb_extended_replicated_objects_convert(s->ldb,
 							  c->partition->nc.dn,
@@ -345,7 +345,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		return NT_STATUS_FOOBAR;
 	}
 
-	s->schema = dsdb_get_schema(s->ldb);
+	s->schema = dsdb_get_schema(s->ldb, s);
 	if (!s->schema) {
 		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
 		return NT_STATUS_FOOBAR;
@@ -675,7 +675,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 				      talloc_asprintf(torture,
 				      "Failed to open '%s'\n", sam_ldb_path));
 
-	s->schema = dsdb_get_schema(s->ldb);
+	s->schema = dsdb_get_schema(s->ldb, s);
 	torture_assert_int_equal_goto(torture, (s->schema?1:0), 1, ret, cleanup,
 				      "Failed to get loaded dsdb_schema\n");
 

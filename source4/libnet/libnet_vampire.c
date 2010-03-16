@@ -366,7 +366,7 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 		return NT_STATUS_FOOBAR;
 	}
 
-	s->schema = dsdb_get_schema(s->ldb);
+	s->schema = dsdb_get_schema(s->ldb, s);
 	if (!s->schema) {
 		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
 		return NT_STATUS_FOOBAR;

@@ -105,7 +105,7 @@ static int schema_data_init(struct ldb_module *module)
 	}
 
 	ldb = ldb_module_get_ctx(module);
-	schema_dn = samdb_schema_dn(ldb);
+	schema_dn = ldb_get_schema_basedn(ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(ldb);
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
@@ -154,7 +154,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, req);
 	if (!schema) {
 		return ldb_next_request(module, req);
 	}
@@ -417,7 +417,7 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 	int ret;
 	struct schema_data_search_data *search_context;
 	struct ldb_request *down_req;
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema || !ldb_module_get_private(module)) {
 		/* If there is no schema, there is little we can do */
@@ -442,7 +442,11 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 
 	search_context->module = module;
 	search_context->req = req;
-	search_context->schema = schema;
+	search_context->schema = talloc_reference(search_context, schema);
+	if (!search_context->schema) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, search_context,
 					req->op.search.base,

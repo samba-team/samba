@@ -453,10 +453,11 @@ static int objectclass_do_add(struct oc_context *ac)
 	const char *rdn_name = NULL;
 
 	ldb = ldb_module_get_ctx(ac->module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, ac);
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -695,7 +696,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	struct class_list *sorted, *current;
 	struct ldb_request *down_req;
 	struct oc_context *ac;
@@ -724,6 +725,12 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (!talloc_reference(ac, schema)) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -934,7 +941,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 	if (ac->search_res == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, ac);
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {

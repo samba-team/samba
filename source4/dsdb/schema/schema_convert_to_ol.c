@@ -261,7 +261,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 		}
 	}
 
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, mem_ctx);
 	if (!schema) {
 		DEBUG(0, ("No schema on ldb to convert!\n"));
 		return NULL;

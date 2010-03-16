@@ -178,7 +178,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	};
 
 	ldb = ldb_module_get_ctx(module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 
 	msg->dn = ldb_dn_new(msg, ldb, NULL);
 

@@ -94,7 +94,8 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 {
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedAttributes;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	/* We need to ensure that the strings returned are valid for as long as the msg is valid */
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, msg);
 	TALLOC_CTX *mem_ctx;
 	const char **attr_list;
 	unsigned int i;
@@ -143,7 +144,9 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 {
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedClasses;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+
+	/* We need to ensure that the strings returned are valid for as long as the msg is valid */
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, msg);
 	const struct dsdb_class *sclass;
 	unsigned int i, j;
 	int ret;

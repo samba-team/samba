@@ -150,7 +150,7 @@ static int schema_load_init(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	if (dsdb_get_schema(ldb)) {
+	if (dsdb_get_schema(ldb, NULL)) {
 		return LDB_SUCCESS;
 	}
 

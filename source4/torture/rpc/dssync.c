@@ -406,7 +406,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	struct ldb_extended_dn_control *extended_dn_ctrl;
 	const char *err_msg;
 	
-	if (!dsdb_get_schema(ldb)) {
+	if (!dsdb_get_schema(ldb, NULL)) {
 		struct dsdb_schema *ldap_schema;
 		struct ldb_result *a_res;
 		struct ldb_result *c_res;

@@ -139,7 +139,7 @@ static int anr_replace_value(struct anr_context *ac,
 
 	ldb = ldb_module_get_ctx(module);
 
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, ac);
 	if (!schema) {
 		ldb_asprintf_errstring(ldb, "no schema with which to construct anr filter");
 		return LDB_ERR_OPERATIONS_ERROR;

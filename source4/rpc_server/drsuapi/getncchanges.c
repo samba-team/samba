@@ -475,7 +475,7 @@ static int linked_attribute_compare(const struct drsuapi_DsReplicaLinkedAttribut
 	/* we need to get the target GUIDs to compare */
 	tmp_ctx = talloc_new(sam_ctx);
 
-	schema = dsdb_get_schema(sam_ctx);
+	schema = dsdb_get_schema(sam_ctx, tmp_ctx);
 	schema_attrib = dsdb_attribute_by_attributeID_id(schema, la1->attid);
 
 	werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, tmp_ctx, la1->value.blob, &dn1);
@@ -868,7 +868,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* Prefix mapping */
-	schema = dsdb_get_schema(b_state->sam_ctx);
+	schema = dsdb_get_schema(b_state->sam_ctx, mem_ctx);
 	if (!schema) {
 		DEBUG(0,("No schema in sam_ctx\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;

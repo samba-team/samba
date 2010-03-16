@@ -148,7 +148,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	unsigned int i;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct dsdb_schema *schema;
 	/*
 	   - load the current msg
 	   - find any linked attributes
@@ -160,6 +160,13 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	schema = dsdb_get_schema(ldb, res);
+	if (!schema) {
+		ldb_oom(schema);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	msg = res->msgs[0];
 
 	for (i=0; i<msg->num_elements; i++) {

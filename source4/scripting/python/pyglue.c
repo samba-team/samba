@@ -403,7 +403,7 @@ static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObj
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 	if (!schema) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on ldb!\n");
 		return NULL;
@@ -430,7 +430,7 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 
 	PyErr_LDB_OR_RAISE(py_from_ldb, from_ldb);
 
-	schema = dsdb_get_schema(from_ldb);
+	schema = dsdb_get_schema(from_ldb, NULL);
 	if (!schema) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on 'from' ldb!\n");
 		return NULL;

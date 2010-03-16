@@ -591,7 +591,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	uint32_t sd_flags = 0;
 
 	ldb = ldb_module_get_ctx(ac->module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, ac);
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
 	objectclass_element = ldb_msg_find_element(ac->search_oc_res->message, "objectClass");
 	objectclass = get_last_structural_class(schema, objectclass_element);
@@ -667,7 +667,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	struct ldb_request *search_req;
 
 	ldb = ldb_module_get_ctx(ac->module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, ac);
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;

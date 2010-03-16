@@ -464,7 +464,7 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 	uint32_t i;
 
 	ldb = ldb_module_get_ctx(module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		return ldb_next_request(module, req);
@@ -487,7 +487,7 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 
 	for (i=0; attrs1 && attrs1[i]; i++) {
 		const char *p;
-		struct dsdb_attribute *a;
+		const struct dsdb_attribute *a;
 
 		p = strchr(attrs1[i], '.');
 		if (p == NULL) {
@@ -520,6 +520,8 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	talloc_reference(tree, schema);
 
 	ret = resolve_oids_parse_tree_replace(ldb, schema,
 					      tree);
@@ -576,7 +578,7 @@ static int resolve_oids_add(struct ldb_module *module, struct ldb_request *req)
 	struct resolve_oids_context *ac;
 
 	ldb = ldb_module_get_ctx(module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		return ldb_next_request(module, req);
@@ -609,6 +611,11 @@ static int resolve_oids_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (!talloc_reference(msg, schema)) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	ret = resolve_oids_message_replace(ldb, schema, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -637,7 +644,7 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 	struct resolve_oids_context *ac;
 
 	ldb = ldb_module_get_ctx(module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		return ldb_next_request(module, req);
@@ -667,6 +674,11 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (!talloc_reference(msg, schema)) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

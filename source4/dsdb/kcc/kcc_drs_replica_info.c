@@ -181,6 +181,8 @@ static WERROR kccdrs_replica_get_info_obj_metadata2(TALLOC_CTX *mem_ctx,
 	struct replPropertyMetaDataBlob omd_ctr;
 	struct replPropertyMetaData1 *attr;
 	struct drsuapi_DsReplicaObjMetaData2Ctr *metadata2;
+	const struct dsdb_schema *schema;
+
 	uint32_t i, j;
 
 	DEBUG(0, ("kccdrs_replica_get_info_obj_metadata2() called\n"));
@@ -195,6 +197,12 @@ static WERROR kccdrs_replica_get_info_obj_metadata2(TALLOC_CTX *mem_ctx,
 
 	status = get_repl_prop_metadata_ctr(mem_ctx, samdb, dn, &omd_ctr);
 	W_ERROR_NOT_OK_RETURN(status);
+
+	schema = dsdb_get_schema(samdb, reply);
+	if (!schema) {
+		DEBUG(0,(__location__": Failed to get the schema\n"));
+		return WERR_INTERNAL_ERROR;
+	}
 
 	reply->objmetadata2 = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjMetaData2Ctr);
 	W_ERROR_HAVE_NO_MEMORY(reply->objmetadata2);
@@ -215,7 +223,7 @@ static WERROR kccdrs_replica_get_info_obj_metadata2(TALLOC_CTX *mem_ctx,
 		/* get a reference to the attribute on 'omd_ctr' */
 		attr = &omd_ctr.ctr.ctr1.array[j];
 
-		schema_attr = dsdb_attribute_by_attributeID_id(dsdb_get_schema(samdb), attr->attid);
+		schema_attr = dsdb_attribute_by_attributeID_id(schema, attr->attid);
 
 		DEBUG(0, ("attribute_id = %d, attribute_name: %s\n", attr->attid, schema_attr->lDAPDisplayName));
 
