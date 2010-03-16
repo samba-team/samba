@@ -165,6 +165,12 @@ bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
 	NTSTATUS status;
 	WERROR err;
 
+	/* root free-pass, like we have on all other pipes like samr, lsa, etc. */
+	if (geteuid() == sec_initial_uid()) {
+		*granted = REG_KEY_ALL;
+		return true;
+	}
+
 	/* use the default security check if the backend has not defined its
 	 * own */
 
