@@ -540,7 +540,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	char *temp = NULL;
-	struct login_cache *cache_entry = NULL;
+	struct login_cache cache_entry;
 	uint32 		pwHistLen;
 	bool expand_explicit = lp_passdb_expand_explicit();
 	bool ret = false;
@@ -1120,7 +1120,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	}
 
 	/* see if we have newer updates */
-	if (!(cache_entry = login_cache_read(sampass))) {
+	if (!login_cache_read(sampass, &cache_entry)) {
 		DEBUG (9, ("No cache entry, bad count = %u, bad time = %u\n",
 			   (unsigned int)pdb_get_bad_password_count(sampass),
 			   (unsigned int)pdb_get_bad_password_time(sampass)));
@@ -1130,10 +1130,10 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	DEBUG(7, ("ldap time is %u, cache time is %u, bad time = %u\n",
 		  (unsigned int)ldap_entry_time,
-		  (unsigned int)cache_entry->entry_timestamp,
-		  (unsigned int)cache_entry->bad_password_time));
+		  (unsigned int)cache_entry.entry_timestamp,
+		  (unsigned int)cache_entry.bad_password_time));
 
-	if (ldap_entry_time > cache_entry->entry_timestamp) {
+	if (ldap_entry_time > cache_entry.entry_timestamp) {
 		/* cache is older than directory , so
 		   we need to delete the entry but allow the
 		   fields to be written out */
@@ -1142,13 +1142,13 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		/* read cache in */
 		pdb_set_acct_ctrl(sampass,
 				  pdb_get_acct_ctrl(sampass) |
-				  (cache_entry->acct_ctrl & ACB_AUTOLOCK),
+				  (cache_entry.acct_ctrl & ACB_AUTOLOCK),
 				  PDB_SET);
 		pdb_set_bad_password_count(sampass,
-					   cache_entry->bad_password_count,
+					   cache_entry.bad_password_count,
 					   PDB_SET);
 		pdb_set_bad_password_time(sampass,
-					  cache_entry->bad_password_time,
+					  cache_entry.bad_password_time,
 					  PDB_SET);
 	}
 
@@ -1157,7 +1157,6 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
   fn_exit:
 
 	TALLOC_FREE(ctx);
-	SAFE_FREE(cache_entry);
 	return ret;
 }
 

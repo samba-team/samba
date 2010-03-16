@@ -63,24 +63,24 @@ bool login_cache_shutdown(void)
 }
 
 /* if we can't read the cache, oh well, no need to return anything */
-struct login_cache * login_cache_read(struct samu *sampass)
+bool login_cache_read(struct samu *sampass, struct login_cache *entry)
 {
 	char *keystr;
 	TDB_DATA databuf;
-	struct login_cache *entry;
 	uint32_t entry_timestamp = 0, bad_password_time = 0;
 
-	if (!login_cache_init())
-		return NULL;
+	if (!login_cache_init()) {
+		return false;
+	}
 
 	if (pdb_get_nt_username(sampass) == NULL) {
-		return NULL;
+		return false;
 	}
 
 	keystr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keystr || !keystr[0]) {
 		SAFE_FREE(keystr);
-		return NULL;
+		return false;
 	}
 
 	DEBUG(7, ("Looking up login cache for user %s\n",
@@ -88,12 +88,6 @@ struct login_cache * login_cache_read(struct samu *sampass)
 	databuf = tdb_fetch_bystring(cache, keystr);
 	SAFE_FREE(keystr);
 
-	entry = SMB_MALLOC_P(struct login_cache);
-	if (entry == NULL) {
-		DEBUG(1, ("Unable to allocate cache entry buffer!\n"));
-		SAFE_FREE(databuf.dptr);
-		return NULL;
-	}
 	ZERO_STRUCTP(entry);
 
 	if (tdb_unpack (databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
@@ -102,9 +96,8 @@ struct login_cache * login_cache_read(struct samu *sampass)
 			&entry->bad_password_count,
 			&bad_password_time) == -1) {
 		DEBUG(7, ("No cache entry found\n"));
-		SAFE_FREE(entry);
 		SAFE_FREE(databuf.dptr);
-		return NULL;
+		return false;
 	}
 
 	/* Deal with possible 64-bit time_t. */
@@ -116,7 +109,7 @@ struct login_cache * login_cache_read(struct samu *sampass)
 	DEBUG(5, ("Found login cache entry: timestamp %12u, flags 0x%x, count %d, time %12u\n",
 		  (unsigned int)entry->entry_timestamp, entry->acct_ctrl, 
 		  entry->bad_password_count, (unsigned int)entry->bad_password_time));
-	return entry;
+	return true;
 }
 
 bool login_cache_write(const struct samu *sampass, struct login_cache entry)

@@ -4409,7 +4409,7 @@ char* get_string_param( const char* param );
 
 bool login_cache_init(void);
 bool login_cache_shutdown(void);
-struct login_cache * login_cache_read(struct samu *sampass);
+bool login_cache_read(struct samu *sampass, struct login_cache *entry);
 bool login_cache_write(const struct samu *sampass, struct login_cache entry);
 bool login_cache_delentry(const struct samu *sampass);
 
