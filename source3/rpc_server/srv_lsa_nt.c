@@ -2732,7 +2732,7 @@ NTSTATUS _lsa_lsaRQueryForestTrustInformation(pipes_struct *p, struct lsa_lsaRQu
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+NTSTATUS _lsa_lsaRSetForestTrustInformation(pipes_struct *p, struct lsa_lsaRSetForestTrustInformation *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
