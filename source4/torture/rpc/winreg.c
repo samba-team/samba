@@ -112,12 +112,15 @@ static bool test_CreateKey_opts(struct torture_context *tctx,
 				enum winreg_KeyType options,
 				uint32_t access_mask,
 				struct winreg_SecBuf *secdesc,
+				WERROR expected_result,
 				enum winreg_CreateAction *action_taken_p,
 				struct policy_handle *new_handle_p)
 {
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	enum winreg_CreateAction action_taken = 0;
+
+	torture_comment(tctx, "Testing CreateKey(%s)\n", name);
 
 	ZERO_STRUCT(r);
 	r.in.handle = handle;
@@ -133,13 +136,13 @@ static bool test_CreateKey_opts(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey_r(b, tctx, &r),
 				   "CreateKey failed");
 
-	torture_assert_werr_ok(tctx,  r.out.result, "CreateKey failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result, "CreateKey failed");
 
 	if (new_handle_p) {
 		*new_handle_p = newhandle;
 	}
 	if (action_taken_p) {
-		*action_taken_p = action_taken;
+		*action_taken_p = *r.out.action_taken;
 	}
 
 	return true;
@@ -154,6 +157,7 @@ static bool test_CreateKey(struct dcerpc_binding_handle *b,
 				   REG_KEYTYPE_NON_VOLATILE,
 				   SEC_FLAG_MAXIMUM_ALLOWED,
 				   NULL, /* secdesc */
+				   WERR_OK,
 				   NULL, /* action_taken */
 				   NULL /* new_handle */);
 }
@@ -380,32 +384,29 @@ static bool test_FlushKey(struct dcerpc_binding_handle *b,
 	return true;
 }
 
-static bool _test_OpenKey(struct dcerpc_binding_handle *b,
-			  struct torture_context *tctx,
-			  struct policy_handle *hive_handle,
-			  const char *keyname, uint32_t access_mask,
-			  struct policy_handle *key_handle,
-			  WERROR open_werr,
-			  bool *success)
+static bool test_OpenKey_opts(struct torture_context *tctx,
+			      struct dcerpc_binding_handle *b,
+			      struct policy_handle *hive_handle,
+			      const char *keyname,
+			      enum winreg_KeyType options,
+			      uint32_t access_mask,
+			      struct policy_handle *key_handle,
+			      WERROR expected_result)
 {
 	struct winreg_OpenKey r;
 
 	ZERO_STRUCT(r);
 	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
-	r.in.options = REG_KEYTYPE_NON_VOLATILE;
+	r.in.options = options;
 	r.in.access_mask = access_mask;
 	r.out.handle = key_handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_OpenKey_r(b, tctx, &r),
 				   "OpenKey failed");
 
-	torture_assert_werr_equal(tctx, r.out.result, open_werr,
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
 				  "OpenKey failed");
-
-	if (success && W_ERROR_EQUAL(r.out.result, WERR_OK)) {
-		*success = true;
-	}
 
 	return true;
 }
@@ -415,9 +416,11 @@ static bool test_OpenKey(struct dcerpc_binding_handle *b,
 			 struct policy_handle *hive_handle,
 			 const char *keyname, struct policy_handle *key_handle)
 {
-	return _test_OpenKey(b, tctx, hive_handle, keyname,
-			     SEC_FLAG_MAXIMUM_ALLOWED, key_handle,
-			     WERR_OK, NULL);
+	return test_OpenKey_opts(tctx, b, hive_handle, keyname,
+				 REG_KEYTYPE_NON_VOLATILE,
+				 SEC_FLAG_MAXIMUM_ALLOWED,
+				 key_handle,
+				 WERR_OK);
 }
 
 static bool test_Cleanup(struct dcerpc_binding_handle *b,
@@ -492,15 +495,17 @@ static bool _test_SecurityDescriptor(struct dcerpc_pipe *p,
 {
 	struct policy_handle new_handle;
 	bool ret = true;
-	bool got_key = false;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!_test_OpenKey(b, tctx, handle, key, access_mask, &new_handle,
-			   open_werr, &got_key)) {
-		return false;
-	}
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, key,
+				  REG_KEYTYPE_NON_VOLATILE,
+				  access_mask,
+				  &new_handle,
+				  open_werr),
+		"failed to open key");
 
-	if (!got_key) {
+	if (!W_ERROR_IS_OK(open_werr)) {
 		return true;
 	}
 
@@ -598,10 +603,13 @@ static bool _test_sacl_trustee_present(struct dcerpc_pipe *p,
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!_test_OpenKey(b, tctx, handle, key, SEC_FLAG_SYSTEM_SECURITY,
-			   &new_handle, WERR_OK, NULL)) {
-		return false;
-	}
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, key,
+				  REG_KEYTYPE_NON_VOLATILE,
+				  SEC_FLAG_SYSTEM_SECURITY,
+				  &new_handle,
+				  WERR_OK),
+		"failed to open key");
 
 	ret = test_sacl_trustee_present(p, tctx, &new_handle, sid);
 
@@ -1099,26 +1107,19 @@ static bool test_SetSecurityDescriptor_SecInfo(struct dcerpc_pipe *p,
 					       const struct dom_sid *sid)
 {
 	struct policy_handle new_handle;
-	bool open_success = false;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "SecurityDescriptor (%s) sets for secinfo: "
 			"0x%08x, access_mask: 0x%08x\n",
 			test, sec_info, access_mask);
 
-	if (!_test_OpenKey(b, tctx, handle, key,
-			   access_mask,
-			   &new_handle,
-			   WERR_OK,
-			   &open_success)) {
-		return false;
-	}
-
-	if (!open_success) {
-		torture_comment(tctx, "key did not open\n");
-		test_CloseKey(b, tctx, &new_handle);
-		return false;
-	}
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, key,
+				  REG_KEYTYPE_NON_VOLATILE,
+				  access_mask,
+				  &new_handle,
+				  WERR_OK),
+		"failed to open key");
 
 	if (!_test_SetKeySecurity(p, tctx, &new_handle, &sec_info,
 				  sd,
@@ -2141,7 +2142,12 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 
 	/* FIXME: s3 does not support SEC_FLAG_MAXIMUM_ALLOWED yet */
 	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_assert(tctx, _test_OpenKey(b, tctx, handle, KEY_CURRENT_VERSION, KEY_QUERY_VALUE, &newhandle, WERR_OK, NULL),
+		torture_assert(tctx, test_OpenKey_opts(tctx, b, handle,
+			       KEY_CURRENT_VERSION,
+			       REG_KEYTYPE_NON_VOLATILE,
+			       KEY_QUERY_VALUE,
+			       &newhandle,
+			       WERR_OK),
 			"failed to open current version key");
 	} else {
 		torture_assert(tctx, test_OpenKey(b, tctx, handle, KEY_CURRENT_VERSION, &newhandle),
@@ -2235,9 +2241,11 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (created && deleted &&
-	    !_test_OpenKey(b, tctx, &handle, TEST_KEY1,
-			   SEC_FLAG_MAXIMUM_ALLOWED, &newhandle,
-			   WERR_BADFILE, NULL)) {
+	    !test_OpenKey_opts(tctx, b, &handle, TEST_KEY1,
+			       REG_KEYTYPE_NON_VOLATILE,
+			       SEC_FLAG_MAXIMUM_ALLOWED,
+			       &newhandle,
+			       WERR_BADFILE)) {
 		torture_comment(tctx,
 				"DeleteKey failed (OpenKey after Delete "
 				"did not return WERR_BADFILE)\n");
