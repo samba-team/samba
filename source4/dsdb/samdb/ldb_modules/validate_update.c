@@ -44,8 +44,8 @@ static int validate_update_message(struct ldb_context *ldb,
 
 			for (j=0; j < msg->elements[i].num_values; j++) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR,
-					  "TODO: value[%d] len[%d]\n", j,
-					  msg->elements[i].values[j].length);
+					  "TODO: value[%lu] len[%lu]\n", (long unsigned int)j,
+					  (long unsigned int)msg->elements[i].values[j].length);
 				dump_data(0,
 					  msg->elements[i].values[j].data,
 					  msg->elements[i].values[j].length);
@@ -65,7 +65,7 @@ static int validate_update_add(struct ldb_module *module, struct ldb_request *re
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		return ldb_next_request(module, req);
@@ -92,7 +92,7 @@ static int validate_update_modify(struct ldb_module *module, struct ldb_request 
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
-	schema = dsdb_get_schema(ldb);
+	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		return ldb_next_request(module, req);
