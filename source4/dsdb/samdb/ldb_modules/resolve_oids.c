@@ -521,7 +521,8 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (talloc_reference(tree, schema) == NULL) {
+	schema = talloc_reference(tree, schema);
+	if (!schema) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
