@@ -3241,7 +3241,6 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 
 	for (i=0; i < count; i++) {
 
-		enum winreg_Type type;
 		const char *value_name;
 		uint8_t *data;
 
