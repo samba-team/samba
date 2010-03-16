@@ -37,6 +37,9 @@
 #define TEST_SUBKEY_SD  TEST_KEY4 "\\subkey_sd"
 #define TEST_SUBSUBKEY_SD TEST_KEY4 "\\subkey_sd\\subsubkey_sd"
 #define TEST_VALUE "torture_value_name"
+#define TEST_KEY_VOLATILE "torture_volatile_key"
+#define TEST_SUBKEY_VOLATILE "torture_volatile_subkey"
+#define TEST_KEY_SYMLINK "torture_symlink_key"
 
 #define TEST_SID "S-1-5-21-1234567890-1234567890-1234567890-500"
 
@@ -2179,6 +2182,154 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_volatile_keys(struct torture_context *tctx,
+			       struct dcerpc_binding_handle *b,
+			       struct policy_handle *handle)
+{
+	struct policy_handle new_handle;
+	enum winreg_CreateAction action_taken;
+
+	torture_comment(tctx, "Testing REG_KEYTYPE_VOLATILE key\n");
+
+	torture_assert(tctx,
+		test_CreateKey_opts(tctx, b, handle, TEST_KEY_VOLATILE, NULL,
+				    REG_KEYTYPE_VOLATILE,
+				    SEC_FLAG_MAXIMUM_ALLOWED,
+				    NULL,
+				    WERR_OK,
+				    &action_taken,
+				    &new_handle),
+		"failed to create REG_KEYTYPE_VOLATILE type key");
+
+	torture_assert_int_equal(tctx, action_taken, REG_CREATED_NEW_KEY, "unexpected action");
+
+	torture_assert(tctx,
+		test_CreateKey_opts(tctx, b, &new_handle, TEST_SUBKEY_VOLATILE, NULL,
+				    REG_KEYTYPE_NON_VOLATILE,
+				    SEC_FLAG_MAXIMUM_ALLOWED,
+				    NULL,
+				    WERR_CHILD_MUST_BE_VOLATILE,
+				    NULL,
+				    NULL),
+		"failed to fail create REG_KEYTYPE_VOLATILE type key");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, TEST_KEY_VOLATILE,
+				  REG_KEYTYPE_NON_VOLATILE,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  &new_handle,
+				  WERR_OK),
+		"failed to open volatile key");
+
+	torture_assert(tctx,
+		test_DeleteKey(b, tctx, handle, TEST_KEY_VOLATILE),
+		"failed to delete key");
+
+	torture_assert(tctx,
+		test_CreateKey_opts(tctx, b, handle, TEST_KEY_VOLATILE, NULL,
+				    REG_KEYTYPE_VOLATILE,
+				    SEC_FLAG_MAXIMUM_ALLOWED,
+				    NULL,
+				    WERR_OK,
+				    &action_taken,
+				    &new_handle),
+		"failed to create REG_KEYTYPE_VOLATILE type key");
+
+	torture_assert_int_equal(tctx, action_taken, REG_CREATED_NEW_KEY, "unexpected action");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, TEST_KEY_VOLATILE,
+				  REG_KEYTYPE_VOLATILE,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  &new_handle,
+				  WERR_OK),
+		"failed to open volatile key");
+
+	torture_assert(tctx,
+		test_DeleteKey(b, tctx, handle, TEST_KEY_VOLATILE),
+		"failed to delete key");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	return true;
+}
+
+static bool test_symlink_keys(struct torture_context *tctx,
+			      struct dcerpc_binding_handle *b,
+			      struct policy_handle *handle)
+{
+	struct policy_handle new_handle;
+	enum winreg_CreateAction action_taken;
+
+	/* disable until we know how to *not* screw up a windows registry */
+	torture_skip(tctx, "symlink test disabled");
+
+	torture_comment(tctx, "Testing REG_KEYTYPE_SYMLINK key\n");
+
+	test_DeleteKey(b, tctx, handle, TEST_KEY_SYMLINK);
+
+	torture_assert(tctx,
+		test_CreateKey_opts(tctx, b, handle, TEST_KEY_SYMLINK, NULL,
+				    REG_KEYTYPE_SYMLINK,
+				    SEC_FLAG_MAXIMUM_ALLOWED,
+				    NULL,
+				    WERR_OK,
+				    &action_taken,
+				    &new_handle),
+		"failed to create REG_KEYTYPE_SYMLINK type key");
+
+	torture_assert_int_equal(tctx, action_taken, REG_CREATED_NEW_KEY, "unexpected action");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, TEST_KEY_SYMLINK,
+				  REG_KEYTYPE_SYMLINK,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  &new_handle,
+				  WERR_OK),
+		"failed to open symlink key");
+
+	torture_assert(tctx,
+		test_DeleteKey(b, tctx, &new_handle, TEST_KEY_SYMLINK),
+		"failed to delete key");
+
+	return true;
+}
+
+static bool test_CreateKey_keytypes(struct torture_context *tctx,
+				    struct dcerpc_binding_handle *b,
+				    struct policy_handle *handle)
+{
+
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "skipping CreateKey keytypes test against Samba");
+	}
+
+	torture_assert(tctx,
+		test_volatile_keys(tctx, b, handle),
+		"failed to test volatile keys");
+
+	torture_assert(tctx,
+		test_symlink_keys(tctx, b, handle),
+		"failed to test symlink keys");
+
+	return true;
+}
+
 static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		      void *userdata)
 {
@@ -2232,6 +2383,8 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 			"simple SetValue test failed");
 		torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 			"extended SetValue test failed");
+		torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle),
+			"keytype test failed");
 	}
 
 	if (created && !test_CloseKey(b, tctx, &newhandle))
