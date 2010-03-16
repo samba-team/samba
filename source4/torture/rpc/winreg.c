@@ -104,10 +104,16 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_binding_handle *b,
 	return true;
 }
 
-static bool test_CreateKey(struct dcerpc_binding_handle *b,
-			   struct torture_context *tctx,
-			   struct policy_handle *handle, const char *name,
-			   const char *kclass)
+static bool test_CreateKey_opts(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
+				struct policy_handle *handle,
+				const char *name,
+				const char *kclass,
+				enum winreg_KeyType options,
+				uint32_t access_mask,
+				struct winreg_SecBuf *secdesc,
+				enum winreg_CreateAction *action_taken_p,
+				struct policy_handle *new_handle_p)
 {
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
@@ -115,22 +121,42 @@ static bool test_CreateKey(struct dcerpc_binding_handle *b,
 
 	ZERO_STRUCT(r);
 	r.in.handle = handle;
-	r.out.new_handle = &newhandle;
 	init_winreg_String(&r.in.name, name);
 	init_winreg_String(&r.in.keyclass, kclass);
-	r.in.options = 0x0;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.in.action_taken = r.out.action_taken = &action_taken;
-	r.in.secdesc = NULL;
+	r.in.options = options;
+	r.in.access_mask = access_mask;
+	r.in.action_taken = &action_taken;
+	r.in.secdesc = secdesc;
+	r.out.new_handle = &newhandle;
+	r.out.action_taken = &action_taken;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey_r(b, tctx, &r),
 				   "CreateKey failed");
 
 	torture_assert_werr_ok(tctx,  r.out.result, "CreateKey failed");
 
+	if (new_handle_p) {
+		*new_handle_p = newhandle;
+	}
+	if (action_taken_p) {
+		*action_taken_p = action_taken;
+	}
+
 	return true;
 }
 
+static bool test_CreateKey(struct dcerpc_binding_handle *b,
+			   struct torture_context *tctx,
+			   struct policy_handle *handle, const char *name,
+			   const char *kclass)
+{
+	return test_CreateKey_opts(tctx, b, handle, name, kclass,
+				   REG_KEYTYPE_NON_VOLATILE,
+				   SEC_FLAG_MAXIMUM_ALLOWED,
+				   NULL, /* secdesc */
+				   NULL, /* action_taken */
+				   NULL /* new_handle */);
+}
 
 /*
   createkey testing with a SD
