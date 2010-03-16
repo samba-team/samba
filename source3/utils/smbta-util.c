@@ -67,10 +67,9 @@ static void create_keyfile(char *filename, char *key)
  * Load a key from a file. The caller has to free the
  * returned string.
  */
-static char *load_key_from_file(char *filename)
+static void load_key_from_file(char *filename, char *key)
 {
 	FILE *keyfile;
-	char *key = malloc(sizeof(char) * 17);
 	int l;
 	keyfile = fopen(filename, "r");
 	if (keyfile == NULL) {
@@ -83,7 +82,6 @@ static char *load_key_from_file(char *filename)
 		fclose(keyfile);
 		exit(1);
 	}
-	return key;
 }
 
 static void create_file_from_key(char *filename)
@@ -102,9 +100,8 @@ static void create_file_from_key(char *filename)
  * Generate a random key. The user has to free the returned
  * string.
  */
-static char *generate_key()
+static void generate_key(char *key)
 {
-	char *key = malloc(sizeof(char)*17);
 	int f;
 	srand( (unsigned)time( NULL ) );
 	for ( f = 0; f < 16; f++) {
@@ -112,22 +109,22 @@ static char *generate_key()
 	}
 	*(key+16)='\0';
 	printf("Random key generated.\n");
-	return key;
 }
 
 static void create_new_key_and_activate( char *filename )
 {
+	char key[17] = {0};
+
 	if (!secrets_init()) {
 		printf("Error opening secrets database.");
 		exit(1);
 	}
 
-	char *key = generate_key();
+	generate_key(key);
 	delete_key();
 	secrets_store("smb_traffic_analyzer_key", key, strlen(key)+1 );
 	printf("Key installed, encryption activated.\n");
 	create_file_from_key(filename);
-	free(key);
 }
 
 static void delete_key()
@@ -146,10 +143,10 @@ static void delete_key()
 
 static void load_key_from_file_and_activate( char *filename)
 {
-	char *key;
+	char key[17] = {0};
 	char *akey;
 	size_t size;
-	key = load_key_from_file(filename);
+	load_key_from_file(filename, key);
 	printf("Loaded key from %s.\n",filename);
 	akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
 	if (akey != NULL) {
@@ -158,7 +155,6 @@ static void load_key_from_file_and_activate( char *filename)
 	}
 	printf("Installing the key from file %s\n",filename);
 	secrets_store("smb_traffic_analyzer_key", key, strlen(key)+1);
-	free(key);
 }
 
 static void process_arguments(int argc, char **argv)
