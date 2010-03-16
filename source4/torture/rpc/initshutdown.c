@@ -35,10 +35,11 @@ static bool test_Abort(struct torture_context *tctx,
 	struct initshutdown_Abort r;
 	NTSTATUS status;
 	uint16_t server = 0x0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server = &server;
 	
-	status = dcerpc_initshutdown_Abort(p, tctx, &r);
+	status = dcerpc_initshutdown_Abort_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, 
 							   "initshutdown_Abort failed");
@@ -54,6 +55,7 @@ static bool test_Init(struct torture_context *tctx,
 	struct initshutdown_Init r;
 	NTSTATUS status;
 	uint16_t hostname = 0x0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct lsa_StringLarge);
@@ -62,7 +64,7 @@ static bool test_Init(struct torture_context *tctx,
 	r.in.timeout = 30;
 	r.in.do_reboot = 1;
 
-	status = dcerpc_initshutdown_Init(p, tctx, &r);
+	status = dcerpc_initshutdown_Init_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "initshutdown_Init failed");
 	torture_assert_werr_ok(tctx, r.out.result, "initshutdown_Init failed");
@@ -76,6 +78,7 @@ static bool test_InitEx(struct torture_context *tctx,
 	struct initshutdown_InitEx r;
 	NTSTATUS status;
 	uint16_t hostname = 0x0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.hostname = &hostname;
 	r.in.message = talloc(tctx, struct lsa_StringLarge);
@@ -85,7 +88,7 @@ static bool test_InitEx(struct torture_context *tctx,
 	r.in.do_reboot = 1;
 	r.in.reason = 0;
 
-	status = dcerpc_initshutdown_InitEx(p, tctx, &r);
+	status = dcerpc_initshutdown_InitEx_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "initshutdown_InitEx failed");
 
