@@ -124,7 +124,7 @@ static int schema_data_init(struct ldb_module *module)
 	/* Used to check to see if this is a result on the CN=Aggregate schema */
 	data->aggregate_dn = samdb_aggregate_schema_dn(ldb, data);
 	if (!data->aggregate_dn) {
-		ldb_set_errstring(ldb, "Could not build aggregate schema DN");
+		ldb_asprintf_errstring(ldb, "schema_data_init: Could not build aggregate schema DN for schema in %s", ldb_dn_get_linearized(schema_dn));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
