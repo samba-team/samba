@@ -69,6 +69,7 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	TDB_DATA databuf;
 	LOGIN_CACHE *entry;
 	uint32_t entry_timestamp = 0, bad_password_time = 0;
+	uint16_t acct_ctrl;
 
 	if (!login_cache_init())
 		return NULL;
@@ -97,7 +98,7 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 
 	if (tdb_unpack (databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
 			&entry_timestamp,
-			&entry->acct_ctrl,
+			&acct_ctrl,
 			&entry->bad_password_count,
 			&bad_password_time) == -1) {
 		DEBUG(7, ("No cache entry found\n"));
@@ -105,6 +106,12 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 		SAFE_FREE(databuf.dptr);
 		return NULL;
 	}
+
+	/*
+	 * Deal with 32-bit acct_ctrl. In the tdb we only store 16-bit
+	 * ("w" in SAM_CACHE_FORMAT). Fixes bug 7253.
+	 */
+	entry->acct_ctrl = acct_ctrl;
 
 	/* Deal with possible 64-bit time_t. */
 	entry->entry_timestamp = (time_t)entry_timestamp;
