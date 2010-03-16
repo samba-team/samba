@@ -2,7 +2,7 @@
  * traffic-analyzer VFS module. Measure the smb traffic users create
  * on the net.
  *
- * Copyright (C) Holger Hetterich, 2008
+ * Copyright (C) Holger Hetterich, 2008-2010
  * Copyright (C) Jeremy Allison, 2008
  *
  * This program is free software; you can redistribute it and/or modify
