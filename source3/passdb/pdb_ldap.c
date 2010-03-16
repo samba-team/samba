@@ -1518,7 +1518,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			cache_entry.bad_password_time = badtime;
 
 			DEBUG(7, ("Updating bad password count and time in login cache\n"));
-			login_cache_write(sampass, cache_entry);
+			login_cache_write(sampass, &cache_entry);
 		}
 	}
 

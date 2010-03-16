@@ -112,13 +112,14 @@ bool login_cache_read(struct samu *sampass, struct login_cache *entry)
 	return true;
 }
 
-bool login_cache_write(const struct samu *sampass, struct login_cache entry)
+bool login_cache_write(const struct samu *sampass,
+		       const struct login_cache *entry)
 {
 	char *keystr;
 	TDB_DATA databuf;
 	bool ret;
 	uint32_t entry_timestamp;
-	uint32_t bad_password_time = (uint32_t)entry.bad_password_time;
+	uint32_t bad_password_time = entry->bad_password_time;
 
 	if (!login_cache_init())
 		return False;
@@ -138,8 +139,8 @@ bool login_cache_write(const struct samu *sampass, struct login_cache entry)
 	databuf.dsize = 
 		tdb_pack(NULL, 0, SAM_CACHE_FORMAT,
 			 entry_timestamp,
-			 entry.acct_ctrl,
-			 entry.bad_password_count,
+			 entry->acct_ctrl,
+			 entry->bad_password_count,
 			 bad_password_time);
 	databuf.dptr = SMB_MALLOC_ARRAY(uint8, databuf.dsize);
 	if (!databuf.dptr) {
@@ -149,8 +150,8 @@ bool login_cache_write(const struct samu *sampass, struct login_cache entry)
 
 	if (tdb_pack(databuf.dptr, databuf.dsize, SAM_CACHE_FORMAT,
 			 entry_timestamp,
-			 entry.acct_ctrl,
-			 entry.bad_password_count,
+			 entry->acct_ctrl,
+			 entry->bad_password_count,
 			 bad_password_time)
 	    != databuf.dsize) {
 		SAFE_FREE(keystr);
