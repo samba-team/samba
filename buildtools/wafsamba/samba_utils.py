@@ -301,4 +301,3 @@ def mkdir_p(dir):
         return
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
-

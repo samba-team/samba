@@ -146,9 +146,9 @@ def build_includes(self):
     if getattr(self, 'local_include', True) == True and not getattr(self, 'local_include_first', True):
         includes.append('.')
 
-    self.includes = unique_list(includes)
-    debug('deps: includes for target %s: includes=%s',
-          self.sname, self.includes)
+    self.env['INC_PATHS'] = unique_list(includes)
+    debug('deps: includes for target %s: INC_PATHS=%s',
+          self.sname, self.env['INC_PATHS'])
 
 
 
@@ -572,9 +572,10 @@ def calculate_final_deps(bld, tgt_list):
 
 ######################################################################
 # this provides a way to save our dependency calculations between runs
-savedeps_version = 1
+savedeps_version = 2
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags']
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags']
+savedeps_outenv  = ['INC_PATHS']
 savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_ALIAS', 'TARGET_TYPE', 'INIT_FUNCTIONS']
 
 def save_samba_deps(bld, tgt_list):
@@ -587,6 +588,7 @@ def save_samba_deps(bld, tgt_list):
     denv.savedeps_outputs = savedeps_outputs
     denv.input = {}
     denv.output = {}
+    denv.outenv = {}
     denv.caches = {}
 
     for c in savedeps_caches:
@@ -610,6 +612,13 @@ def save_samba_deps(bld, tgt_list):
                 tdeps[attr] = v
         if tdeps != {}:
             denv.output[t.sname] = tdeps
+
+        tdeps = {}
+        for attr in savedeps_outenv:
+            if attr in t.env:
+                tdeps[attr] = t.env[attr]
+        if tdeps != {}:
+            denv.outenv[t.sname] = tdeps
 
     depsfile = os.path.join(bld.bdir, "sambadeps")
     denv.store(depsfile)
@@ -655,6 +664,13 @@ def load_samba_deps(bld, tgt_list):
         tdeps = denv.output[t.sname]
         for a in tdeps:
             setattr(t, a, tdeps[a])
+
+    # put output env vars in place
+    for t in tgt_list:
+        if not t.sname in denv.outenv: continue
+        tdeps = denv.outenv[t.sname]
+        for a in tdeps:
+            t.env[a] = tdeps[a]
 
     debug('deps: loaded saved dependencies')
     return True

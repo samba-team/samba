@@ -447,3 +447,4 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         t.env.LINK_TARGET = target
 
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
+
