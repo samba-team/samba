@@ -19,7 +19,7 @@
 #include "includes.h"
 
 
-static void delete_key();
+static void delete_key(void);
 
 
 static void help()
@@ -36,11 +36,12 @@ printf("\n");
 
 static void check_key()
 {	size_t size;
+	char *akey;
 	if (!secrets_init()) {
 		printf("Error opening secrets database.");
 		exit(1);
         }
-	char *akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
+	akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
 	if (akey != NULL) {
 		printf("A key is installed: %s\n",akey);
 		printf("Encryption activated.\n");
@@ -127,7 +128,7 @@ static void create_new_key_and_activate( char *filename )
 	create_file_from_key(filename);
 }
 
-static void delete_key()
+static void delete_key(void)
 {
 	size_t size;
 	char *akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
@@ -204,4 +205,5 @@ int main(int argc, char **argv)
 	}
 
 	process_arguments(argc, argv);
+	exit(0);
 }
