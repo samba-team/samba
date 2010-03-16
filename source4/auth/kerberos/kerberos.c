@@ -100,6 +100,7 @@
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, principal, password, 
 						 NULL, 
 						 NULL, 0, NULL, options))) {
+		krb5_get_init_creds_opt_free(ctx, options);
 		return code;
 	}
 	
