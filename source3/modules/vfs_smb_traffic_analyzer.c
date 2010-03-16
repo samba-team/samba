@@ -198,7 +198,7 @@ static char *smb_traffic_analyzer_create_header( TALLOC_CTX *ctx,
 	char *header = talloc_asprintf( ctx, "V2.%s%017u",
 					state_flags, data_len);
 	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: created Header:\n"));
-	dump_data(10, header, strlen(header));
+	dump_data(10, (uint8_t *)header, strlen(header));
 	return header;
 }
 
@@ -211,18 +211,18 @@ static char *smb_traffic_analyzer_create_header( TALLOC_CTX *ctx,
  * int socket
  */
 static void smb_traffic_analyzer_write_data( char *header, char *data,
-			int dlength, int socket)
+			int dlength, int _socket)
 {
 		int len = strlen(header);
-		if (write_data( socket, header, len) != len) {
+		if (write_data( _socket, header, len) != len) {
 			DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 						"error sending the header"
 						" over the socket!\n"));
                 }
 		DEBUG(10,("smb_traffic_analyzer_write_data: sending data:\n"));
-		dump_data( 10, data, dlength);
+		dump_data( 10, (uint8_t *)data, dlength);
 
-                if (write_data( socket, data, dlength) != dlength) {
+                if (write_data( _socket, data, dlength) != dlength) {
                         DEBUG(1, ("smb_traffic_analyzer_write_data: "
                                 "error sending crypted data to socket!\n"));
                 }
@@ -292,7 +292,6 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	va_list ap;
 	char *arg = NULL;
 	int len;
-	char *header = NULL;
 	char *common_data_count_str = NULL;
 	char *timestr = NULL;
 	char *sidstr = NULL;
@@ -395,6 +394,8 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	const char *protocol_version = NULL;
 	bool Write = false;
 	size_t len;
+	size_t size;
+	char *akey, *output;
 
 	/*
 	 * The state flags are part of the header
@@ -559,15 +560,14 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	 * If configured, optain the key and run AES encryption
 	 * over the data.
 	 */
-	size_t size;
 	become_root();
-	char *akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
+	akey = (char *) secrets_fetch("smb_traffic_analyzer_key", &size);
 	unbecome_root();
 	if ( akey != NULL ) {
 		state_flags[2] = 'E';
 		DEBUG(10, ("smb_traffic_analyzer_send_data_socket: a key was"
 			" found, encrypting data!\n"));
-		char *output = smb_traffic_analyzer_encrypt( talloc_tos(),
+		output = smb_traffic_analyzer_encrypt( talloc_tos(),
 						akey, str, &len);
 		header = smb_traffic_analyzer_create_header( talloc_tos(),
 						state_flags, len);
@@ -708,6 +708,7 @@ static int smb_traffic_analyzer_rename(vfs_handle_struct *handle, \
 	return s_data.result;
 }
 
+#if 0
 static int smb_traffic_analyzer_rmdir(vfs_handle_struct *handle, \
 			const char *path)
 {
@@ -718,6 +719,7 @@ static int smb_traffic_analyzer_rmdir(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(handle, &s_data, vfs_id_rmdir);
 	return s_data.result;
 }
+#endif
 
 static int smb_traffic_analyzer_mkdir(vfs_handle_struct *handle, \
 			const char *path, mode_t mode)
