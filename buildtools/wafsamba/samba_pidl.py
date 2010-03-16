@@ -46,9 +46,10 @@ def SAMBA_PIDL(bld, pname, source,
 
     # depend on the full pidl sources
     source = TO_LIST(source)
-    pidl_src = [x.relpath_gen(bld.path) for x in
-                bld.srcnode.ant_glob('pidl/**/*', flat=False)]
-    source.extend(pidl_src)
+    try:
+        pidl_src_nodes = bld.pidl_files_cache
+    except AttributeError:
+        pidl_src_nodes = bld.pidl_files_cache = bld.srcnode.ant_glob('pidl/**/*', flat=False)
 
     # the cd .. is needed because pidl currently is sensitive to the directory it is run in
     t = bld(rule='cd .. && ${PIDL} ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC[0].abspath(env)}',
@@ -58,6 +59,9 @@ def SAMBA_PIDL(bld, pname, source,
             source  = source,
             target  = out_files,
             name    = name)
+
+    # prime the list of nodes we are dependent on with the cached pidl sources
+    t.allnodes = pidl_src_nodes
 
     t.env.PIDL = "../pidl/pidl"
     t.env.OPTIONS = TO_LIST(options)
