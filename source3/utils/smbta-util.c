@@ -56,7 +56,7 @@ static void create_keyfile(char *filename, char *key)
 	keyfile = fopen(filename, "w");
 	if (keyfile == NULL) {
 		printf("error creating the keyfile!\n");
-		exit(0);
+		exit(1);
 	}
 	fprintf(keyfile, "%s", key);
 	fclose(keyfile);
@@ -75,13 +75,13 @@ static char *load_key_from_file(char *filename)
 	keyfile = fopen(filename, "r");
 	if (keyfile == NULL) {
 		printf("Error opening the keyfile!\n");
-		exit(0);
+		exit(1);
 	}
 	l = fscanf(keyfile, "%s", key);
 	if (strlen(key) != 16) {
 		printf("Key file in wrong format\n");
 		fclose(keyfile);
-		exit(0);
+		exit(1);
 	}
 	return key;
 }
