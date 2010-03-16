@@ -154,6 +154,19 @@
 #define DOMAIN_RID_RAS_SERVERS	( 553 )
 #define NT4_ACL_REVISION	( SECURITY_ACL_REVISION_NT4 )
 #define SD_REVISION	( SECURITY_DESCRIPTOR_REVISION_1 )
+#define GUID_DRS_ALLOCATE_RIDS	( "1abd7cf8-0a99-11d1-adbb-00c04fd8d5cd" )
+#define GUID_DRS_CHANGE_DOMAIN_MASTER	( "014bf69c-7b3b-11d1-85f6-08002be74fab" )
+#define GUID_DRS_CHANGE_INFR_MASTER	( "cc17b1fb-33d9-11d2-97d4-00c04fd8d5cd" )
+#define GUID_DRS_CHANGE_PDC	( "bae50096-4752-11d1-9052-00c04fc2d4cf" )
+#define GUID_DRS_CHANGE_RID_MASTER	( "d58d5f36-0a98-11d1-adbb-00c04fd8d5cd" )
+#define GUID_DRS_CHANGE_SCHEMA_MASTER	( "e12b56b6-0a95-11d1-adbb-00c04fd8d5cd" )
+#define GUID_DRS_GET_CHANGES	( "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2" )
+#define GUID_DRS_GET_ALL_CHANGES	( "1131f6ad-9c07-11d1-f79f-00c04fc2dcd2" )
+#define GUID_DRS_GET_FILTERED_ATTRIBUTES	( "89e95b76-444d-4c62-991a-0facbeda640c" )
+#define GUID_DRS_MANAGE_TOPOLOGY	( "1131f6ac-9c07-11d1-f79f-00c04fc2dcd2" )
+#define GUID_DRS_MONITOR_TOPOLOGY	( "f98340fb-7c5b-4cdb-a00b-2ebdfa115a96" )
+#define GUID_DRS_REPL_SYNCRONIZE	( "1131f6ab-9c07-11d1-f79f-00c04fc2dcd2" )
+#define GUID_DRS_RO_REPL_SECRET_SYNC	( "1131f6ae-9c07-11d1-f79f-00c04fc2dcd2" )
 struct dom_sid {
 	uint8_t sid_rev_num;
 	int8_t num_auths;/* [range(0,15)] */
