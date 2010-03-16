@@ -540,7 +540,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	char *temp = NULL;
-	LOGIN_CACHE	*cache_entry = NULL;
+	struct login_cache *cache_entry = NULL;
 	uint32 		pwHistLen;
 	bool expand_explicit = lp_passdb_expand_explicit();
 	bool ret = false;
@@ -1511,7 +1511,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			DEBUG(7, ("bad password count is reset, deleting login cache entry for %s\n", pdb_get_nt_username(sampass)));
 			login_cache_delentry(sampass);
 		} else {
-			LOGIN_CACHE cache_entry;
+			struct login_cache cache_entry;
 
 			cache_entry.entry_timestamp = time(NULL);
 			cache_entry.acct_ctrl = pdb_get_acct_ctrl(sampass);

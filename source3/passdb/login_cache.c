@@ -63,11 +63,11 @@ bool login_cache_shutdown(void)
 }
 
 /* if we can't read the cache, oh well, no need to return anything */
-LOGIN_CACHE * login_cache_read(struct samu *sampass)
+struct login_cache * login_cache_read(struct samu *sampass)
 {
 	char *keystr;
 	TDB_DATA databuf;
-	LOGIN_CACHE *entry;
+	struct login_cache *entry;
 	uint32_t entry_timestamp = 0, bad_password_time = 0;
 
 	if (!login_cache_init())
@@ -88,7 +88,8 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	databuf = tdb_fetch_bystring(cache, keystr);
 	SAFE_FREE(keystr);
 
-	if (!(entry = SMB_MALLOC_P(LOGIN_CACHE))) {
+	entry = SMB_MALLOC_P(struct login_cache);
+	if (entry == NULL) {
 		DEBUG(1, ("Unable to allocate cache entry buffer!\n"));
 		SAFE_FREE(databuf.dptr);
 		return NULL;
@@ -118,7 +119,7 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	return entry;
 }
 
-bool login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
+bool login_cache_write(const struct samu *sampass, struct login_cache entry)
 {
 	char *keystr;
 	TDB_DATA databuf;

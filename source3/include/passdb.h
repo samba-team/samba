@@ -104,12 +104,12 @@ enum pdb_value_state {
 #define IS_SAM_DEFAULT(x, flag)	(pdb_get_init_flags(x, flag) == PDB_DEFAULT)
 
 /* cache for bad password lockout data, to be used on replicated SAMs */
-typedef struct logon_cache_struct {
+struct login_cache {
 	time_t entry_timestamp;
 	uint32 acct_ctrl;
 	uint16 bad_password_count;
 	time_t bad_password_time;
-} LOGIN_CACHE;
+};
 
 #define SAMU_BUFFER_V0		0
 #define SAMU_BUFFER_V1		1
