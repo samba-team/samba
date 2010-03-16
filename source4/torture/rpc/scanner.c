@@ -139,7 +139,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 			continue;
 		}
 	
-		if (!test_inq_if_ids(torture, p, torture, test_num_calls, l->table)) {
+		if (!test_inq_if_ids(torture, p->binding_handle, torture, test_num_calls, l->table)) {
 			ret = false;
 		}
 	}
