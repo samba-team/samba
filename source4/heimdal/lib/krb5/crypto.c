@@ -2043,13 +2043,13 @@ evp_encrypt(krb5_context context,
     c = encryptp ? &ctx->ectx : &ctx->dctx;
     if (ivec == NULL) {
 	/* alloca ? */
-	size_t len = EVP_CIPHER_CTX_iv_length(c);
-	void *loiv = malloc(len);
+	size_t len2 = EVP_CIPHER_CTX_iv_length(c);
+	void *loiv = malloc(len2);
 	if (loiv == NULL) {
 	    krb5_clear_error_message(context);
 	    return ENOMEM;
 	}
-	memset(loiv, 0, len);
+	memset(loiv, 0, len2);
 	EVP_CipherInit_ex(c, NULL, NULL, NULL, loiv, -1);
 	free(loiv);
     } else

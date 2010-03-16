@@ -1170,10 +1170,10 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     /* win2k uses ContentInfo */
     if (type == PKINIT_WIN2K) {
-	heim_oid type;
+	heim_oid type2;
 	heim_octet_string out;
 
-	ret = hx509_cms_unwrap_ContentInfo(&content, &type, &out, NULL);
+	ret = hx509_cms_unwrap_ContentInfo(&content, &type2, &out, NULL);
 	if (ret) {
 	    /* windows LH with interesting CMS packets */
 	    size_t ph = 1 + der_length_len(content.length);
@@ -1190,19 +1190,19 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    content.data = ptr;
 	    content.length += ph;
 
-	    ret = hx509_cms_unwrap_ContentInfo(&content, &type, &out, NULL);
+	    ret = hx509_cms_unwrap_ContentInfo(&content, &type2, &out, NULL);
 	    if (ret)
 		goto out;
 	}
-	if (der_heim_oid_cmp(&type, &asn1_oid_id_pkcs7_signedData)) {
+	if (der_heim_oid_cmp(&type2, &asn1_oid_id_pkcs7_signedData)) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_message(context, ret,
 				   N_("PKINIT: Invalid content type", ""));
-	    der_free_oid(&type);
+	    der_free_oid(&type2);
 	    der_free_octet_string(&out);
 	    goto out;
 	}
-	der_free_oid(&type);
+	der_free_oid(&type2);
 	krb5_data_free(&content);
 	ret = krb5_data_copy(&content, out.data, out.length);
 	der_free_octet_string(&out);
