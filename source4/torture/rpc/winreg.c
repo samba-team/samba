@@ -1871,7 +1871,7 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SetValue_simple(struct dcerpc_pipe *p,
+static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 				 struct torture_context *tctx,
 				 struct policy_handle *handle)
 {
@@ -1886,7 +1886,6 @@ static bool test_SetValue_simple(struct dcerpc_pipe *p,
 		REG_MULTI_SZ
 	};
 	int t;
-	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_comment(tctx, "Testing SetValue (standard formats)\n");
 
@@ -2172,7 +2171,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 			     "CreateKey failed (OpenKey after Create didn't work)\n");
 
 	if (created) {
-		torture_assert(tctx, test_SetValue_simple(p, tctx, &newhandle),
+		torture_assert(tctx, test_SetValue_simple(b, tctx, &newhandle),
 			"simple SetValue test failed");
 		torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 			"extended SetValue test failed");
