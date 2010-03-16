@@ -67,7 +67,7 @@ struct DsGetinfoTest {
  */
 static const char *torture_get_ldap_base_dn(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
-	const char *hostname = p->binding->target_hostname;
+	const char *hostname = p->binding->host;
 	struct ldb_context *ldb;
 	const char *ldap_url = talloc_asprintf(p, "ldap://%s", hostname);
 	const char *attrs[] = { "defaultNamingContext", NULL };
@@ -79,6 +79,11 @@ static const char *torture_get_ldap_base_dn(struct torture_context *tctx, struct
 	ldb = ldb_init(tmp_ctx, tctx->ev);
 	if (ldb == NULL) {
 		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	if (ldb_set_opaque(ldb, "loadparm", tctx->lp_ctx)) {
+		talloc_free(ldb);
 		return NULL;
 	}
 
