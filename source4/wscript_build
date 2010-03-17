@@ -150,3 +150,4 @@ bld.BUILD_SUBDIR('../libcli/named_pipe_auth')
 bld.BUILD_SUBDIR('heimdal_build')
 
 bld.CHECK_DEPENDENCIES()
+bld.ENFORCE_GROUP_ORDERING()

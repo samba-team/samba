@@ -1,0 +1,70 @@
+bld.SAMBA_PIDL_TDR('PIDL_REG',
+               source='regf.idl')
+
+bld.SAMBA_SUBSYSTEM('TDR_REGF',
+	source='tdr_regf.c',
+	public_deps='TDR'
+	)
+
+
+bld.SAMBA_LIBRARY('registry',
+	source='interface.c util.c samba.c patchfile_dotreg.c patchfile_preg.c patchfile.c regf.c hive.c local.c ldb.c dir.c rpc.c',
+	# PC_FILES='registry.pc',
+	public_deps='LIBSAMBA-UTIL CHARSET TDR_REGF ldb RPC_NDR_WINREG LDB_WRAP',
+	public_headers='registry.h',
+	vnum='0.0.1'
+	)
+
+
+bld.SAMBA_SUBSYSTEM('registry_common',
+	source='tools/common.c',
+	autoproto='tools/common.h',
+	public_deps='registry'
+	)
+
+
+bld.SAMBA_BINARY('regdiff',
+	source='tools/regdiff.c',
+	manpages='man/regdiff.1',
+	installdir='BINDIR',
+	deps='LIBSAMBA-HOSTCONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS'
+	)
+
+
+bld.SAMBA_BINARY('regpatch',
+	source='tools/regpatch.c',
+	manpages='man/regpatch.1',
+	installdir='BINDIR',
+	deps='LIBSAMBA-HOSTCONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS registry_common'
+	)
+
+
+bld.SAMBA_BINARY('regshell',
+	source='tools/regshell.c',
+	manpages='man/regshell.1',
+	installdir='BINDIR',
+	deps='LIBSAMBA-HOSTCONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS SMBREADLINE registry_common'
+	)
+
+
+bld.SAMBA_BINARY('regtree',
+	source='tools/regtree.c',
+	manpages='man/regtree.1',
+	installdir='BINDIR',
+	deps='LIBSAMBA-HOSTCONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS registry_common'
+	)
+
+
+bld.SAMBA_SUBSYSTEM('torture_registry',
+	source='tests/generic.c hive.c tests/diff.c tests/registry.c',
+	autoproto='tests/proto.h',
+	deps='torture registry'
+	)
+
+
+bld.SAMBA_PYTHON('py_registry',
+	source='pyregistry.c',
+	public_deps='registry PYTALLOC pycredentials pyparam_util',
+	realname='samba/registry.so'
+	)
+

@@ -1,0 +1,90 @@
+# samba ASN1 rules
+
+from TaskGen import taskgen, before
+import Build, os, string, Utils
+from samba_utils import *
+
+
+# not sure if we need this exec_rule stuff ..., i'll leave it in for now
+@feature('asn1')
+@before('exec_rule')
+def add_comp(self):
+    y = self.bld.name_to_obj("asn1_compile", self.env)
+    y.post()
+
+
+def SAMBA_ASN1(bld, name, source,
+               options='',
+               directory='',
+               option_file=None):
+    '''Build a ASN1 file using the asn1 compiler.
+       This will produce 2 output files'''
+    bname = os.path.basename(source)[0:-5];
+    dname = os.path.dirname(source)
+    name = "ASN1_%s" % bname.upper()
+    asn1name = "%s_asn1" % bname
+
+    if not SET_TARGET_TYPE(bld, name, 'ASN1'):
+        return
+
+    # for ASN1 compilation, I always put it in build_source, as it doesn't make
+    # sense elsewhere
+    bld.SET_BUILD_GROUP('build_source')
+
+    # old build system for spnego.asn1:
+    # /home/tnagy/samba_old/source4/./bin/asn1_compile --sequence=MechTypeList --one-code-file /home/tnagy/samba_old/source4/heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1
+
+    # new system: hmm, maybe options need to come earlier in the command line? We put them later
+    # /home/tnagy/samba/source4/bin/asn1_compile  --one-code-file /home/tnagy/samba/source4/heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1 --sequence=MechTypeList
+
+    out_files = []
+    out_files.append("../heimdal/%s/asn1_%s_asn1.x" % (directory, bname))
+    out_files.append("../heimdal/%s/%s_asn1.hx" % (directory, bname))
+
+    # the ${TGT[0].parent.abspath(env)} expression gives us the parent directory of
+    # the first target in the build directory
+    # SRC[0].abspath(env) gives the absolute path to the source directory for the first
+    # source file. Note that in the case of a option_file, we have more than
+    # one source file
+    cd_rule = 'cd ${TGT[0].parent.abspath(env)}'
+    asn1_rule = cd_rule + ' && ${ASN1COMPILER} ${OPTION_FILE}  ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
+
+    if option_file is not None:
+        source = [ source, option_file ]
+
+    t = bld(rule=asn1_rule,
+            features = 'asn1',
+            ext_out = '.x',
+            before = 'cc',
+            shell = True,
+            source = source,
+            target = out_files,
+            name=name)
+
+    t.env.ASN1NAME     = asn1name
+    t.env.ASN1OPTIONS  = options
+    t.env.ASN1COMPILER = os.path.join(os.environ.get('PWD'), 'bin/asn1_compile')
+    if option_file is not None:
+        t.env.OPTION_FILE = "--option-file=%s" % os.path.normpath(os.path.join(bld.curdir, option_file))
+
+
+    # now generate a .c file from the .x file
+    t = bld(rule='''( echo '#include "config.h"' && cat ${SRC} ) > ${TGT}''',
+            source = out_files[0],
+            target = out_files[0][0:-2] + '.c',
+            shell = True,
+	    ext_out = '.c',
+            ext_in = '.x',
+            depends_on = name,
+            name = name + "_C")
+
+    # and generate a .h file from the .hx file
+    t = bld(rule='cp ${SRC} ${TGT}',
+            source = out_files[1],
+            ext_out = '.c',
+            ext_in = '.x',
+            target = out_files[1][0:-3] + '.h',
+            depends_on = name,
+            name = name + "_H")
+
+Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1

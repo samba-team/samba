@@ -28,7 +28,6 @@ def SAMBA_AUTOPROTO(bld, header, source):
         ext_out='.c',
         rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
         )
-    print "Added AUTOPROTO target %s" % header
 Build.BuildContext.SAMBA_AUTOPROTO = SAMBA_AUTOPROTO
 
 
