@@ -2359,6 +2359,11 @@ static bool test_key_base_sd(struct torture_context *tctx,
 	bool ret = true, created2 = false, created4 = false;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "skipping security descriptor tests against Samba");
+	}
+
 	test_Cleanup(b, tctx, handle, TEST_KEY_BASE);
 
 	if (!test_CreateKey(b, tctx, handle, TEST_KEY_BASE, NULL)) {
