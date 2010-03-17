@@ -27,6 +27,7 @@ def set_options(opt):
 @wafsamba.runonce
 def configure(conf):
     conf.env.hlist = []
+    conf.env.srcdir = conf.srcdir
 
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")

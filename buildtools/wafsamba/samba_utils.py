@@ -157,7 +157,7 @@ def ADD_COMMAND(opt, name, function):
 Options.Handler.ADD_COMMAND = ADD_COMMAND
 
 
-@feature('cprogram cc')
+@feature('cprogram','cc','cshlib')
 @before('apply_core')
 def process_depends_on(self):
     '''The new depends_on attribute for build rules
@@ -169,6 +169,27 @@ def process_depends_on(self):
             y = self.bld.name_to_obj(x, self.env)
             y.post()
 
+            if getattr(y, 'more_includes', None):
+                  self.includes += " " + y.more_includes
+
+
+#@feature('cprogram cc cshlib')
+#@before('apply_core')
+#def process_generated_dependencies(self):
+#    '''Ensure that any dependent source generation happens
+#       before any task that requires the output'''
+#    if getattr(self , 'depends_on', None):
+#        lst = self.to_list(self.depends_on)
+#        for x in lst:
+#            y = self.bld.name_to_obj(x, self.env)
+#            y.post()
+
+
+def FIND_TASKGEN(bld, name):
+    '''find a waf task generator given a target name'''
+    return bld.name_to_obj(name)
+Build.BuildContext.FIND_TASKGEN = FIND_TASKGEN
+
 
 #import TaskGen, Task
 #
@@ -179,3 +200,24 @@ def process_depends_on(self):
 #
 #for y in ['cc', 'cxx']:
 #    TaskGen.classes[y].post_run = new_post_run
+
+def ENABLE_MAGIC_ORDERING(bld):
+    '''enable automatic build order constraint calculation
+       see page 35 of the waf book'''
+    print "Enabling magic ordering"
+    bld.use_the_magic()
+Build.BuildContext.ENABLE_MAGIC_ORDERING = ENABLE_MAGIC_ORDERING
+
+
+def BUILD_PATH(bld, relpath):
+    '''return a relative build path, given a relative path
+       for example, if called in the source4/librpc directory, with the path
+       gen_ndr/tables.c, then it will return default/source4/gen_ndr/tables.c
+    '''
+
+    ret = os.path.normpath(os.path.join(os.path.relpath(bld.curdir, bld.env.TOPDIR), relpath))
+    ret = 'default/%s' % ret
+    return ret
+Build.BuildContext.BUILD_PATH = BUILD_PATH
+
+

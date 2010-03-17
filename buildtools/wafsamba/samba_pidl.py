@@ -1,53 +1,105 @@
 # waf build tool for building IDL files with pidl
 
 from TaskGen import taskgen, before
-import Build, os, string
+import Build, os, string, Utils
 from samba_utils import *
 
-def SAMBA_PIDL(bld, directory, source, options=''):
+def SAMBA_PIDL(bld, pname, source, options=''):
     '''Build a IDL file using pidl.
        This will produce 7 output files'''
 
-    name = os.path.basename(string.replace(source, '.idl', ''))
-    name = "PIDL_%s" % name.upper()
+    bname = source[0:-4];
+    name = "PIDL_%s" % bname.upper()
 
     if not SET_TARGET_TYPE(bld, name, 'PIDL'):
         return
 
     bld.SET_BUILD_GROUP('build_source')
-    t = bld(name=name, source=source, options=options)
-    t.mappings['.idl'] = process_pidl
+
+    gen_ndr_dir = '../gen_ndr/'
+    out_files = []
+    out_files.append(gen_ndr_dir + 'ndr_%s.c' % bname)
+    out_files.append(gen_ndr_dir + 'ndr_%s.h' % bname)
+    out_files.append(gen_ndr_dir + '%s.h' % bname)
+    out_files.append(gen_ndr_dir + 'ndr_%s_s.c' % bname)
+    out_files.append(gen_ndr_dir + 'ndr_%s_c.c' % bname)
+    out_files.append(gen_ndr_dir + 'ndr_%s_c.h' % bname)
+    out_files.append(gen_ndr_dir + 'py_%s.c' % bname)
+
+    pidl = bld.srcnode.find_resource('pidl/pidl').relpath_gen(bld.path)
+    t = bld(rule='${PIDL} ${PIDL_BUILD_TYPES} ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC[0].abspath(env)}',
+            ext_out = '.c',
+            before = 'cc',
+            shell = False,
+            source=source,
+            target = out_files,
+            name=name)
+
     t.env.PIDL = "../../pidl/pidl"
     t.env.PIDL_BUILD_TYPES = '--header --ndr-parser --client --python --server'.split()
     t.env.OPTIONS = options
+    t.env.OUTPUTDIR = bld.BUILD_PATH(gen_ndr_dir)
+
+    # I'm creating the list of headers for the tables rule here.
+    # then the tables rule itself is below
+    #t.collect_headers = [bld.path.find_or_declare(out_files[1])] #, bld.path.find_or_declare(out_files[6])]
+    #if name.rfind('PIDL') > -1:
+    #   print name, "t.coll", t.collect_headers
+    #print name, "so bld.PIDL_STUFF is defined", id(bld)
+    try:
+         bld.PIDL_STUFF[name] = [bld.path.find_or_declare(out_files[1])]
+    except AttributeError:
+         bld.PIDL_STUFF = {}
+         bld.PIDL_STUFF[name] = [bld.path.find_or_declare(out_files[1])]
+
+    # I think I need to build this list as absolute paths, then
+    # re-do as relative paths in the tables rule
+    t.more_includes = '#' + bld.path.relpath_gen(bld.srcnode)
+    #if not 'PIDL_HEADERS' in bld.env:
+    #    bld.env.PIDL_HEADERS = []
+    #bld.env.PIDL_HEADERS.append(gen_ndr_dir + 'ndr_%s.h' % bname)
+
+
 
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 
-@taskgen
-def process_pidl(self, node, options=''):
-    '''Generate the list of output nodes for a given input IDL
-       file, and create the task to build them'''
-    bname       = node.file_base()
-    # the output of pidl needs to go in the gen_ndr directory
-    gen_ndr_dir = "../gen_ndr/"
-    c_node     = NEW_NODE(node, gen_ndr_dir + 'ndr_%s.c' % bname)
-    h1_node    = NEW_NODE(node, gen_ndr_dir + '%s.h' % bname)
-    h2_node    = NEW_NODE(node, gen_ndr_dir + 'ndr_%s.h' % bname)
-    s_node     = NEW_NODE(node, gen_ndr_dir + 'ndr_%s_s.c' % bname)
-    cli_node   = NEW_NODE(node, gen_ndr_dir + 'ndr_%s_c.c' % bname)
-    cli_h_node = NEW_NODE(node, gen_ndr_dir + 'ndr_%s_c.h' % bname)
-    py_node    = NEW_NODE(node, gen_ndr_dir + 'py_%s.c' % bname)
-    t = self.create_task('pidl', node, [c_node, h1_node, h2_node, s_node,
-                                        cli_node, cli_h_node, py_node])
-    # setup ${OUTPUTDIR} in the pidl rule, and make sure it exists
-    t.env.OUTPUTDIR = os.path.dirname(c_node.abspath(self.env))
-    if not os.path.isdir(t.env.OUTPUTDIR):
-        os.mkdir(t.env.OUTPUTDIR, 0777)
+#################################################################
+# define a set of Samba PIDL targets
+def SAMBA_PIDL_LIST(bld, name, source, options=''):
+    for p in source.split():
+        bld.SAMBA_PIDL(name, p, options)
+Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 
-# the pidl task itself
-import Task
-Task.simple_task_type('pidl',
-                      '${PIDL} ${PIDL_BUILD_TYPES} ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC}',
-                      color='BLUE', before='cc', shell=False)
+#################################################################
+# the rule for generating the NDR tables
+from TaskGen import feature, before
+@feature('collect')
+@before('exec_rule')
+def collect(self):
+    for (name, hd) in self.bld.PIDL_STUFF.items():
+        y = self.bld.name_to_obj(name, self.env)
+        if not y:
+            raise "!"+str(name)
+        y.post()
+        for node in hd:
+            self.source += " " + node.relpath_gen(self.path)
+
+def SAMBA_PIDL_TABLES(bld, name, target):
+    headers = bld.env.PIDL_HEADERS
+    # this print line should tell us what we ended up with
+    # we're ending up with the wrong relative path
+    #print "tables target=%s curdir=%s headers=%s" % (target, bld.curdir, headers)
+    t = bld(
+            features = 'collect',
+            rule='${SRC} --output ${TGT} > ${TGT}',
+            ext_out = '.c',
+            before = 'cc',
+            shell = True,
+            source = '../../librpc/tables.pl',
+            target=target,
+            name=name)
+    print name
+Build.BuildContext.SAMBA_PIDL_TABLES = SAMBA_PIDL_TABLES
+

@@ -8,6 +8,7 @@ from TaskGen import extension
 
 # bring in the other samba modules
 from samba_utils import *
+# should be enabled from the above?
 from samba_autoconf import *
 from samba_patterns import *
 from samba_pidl import *
@@ -110,12 +111,13 @@ def ADD_DEPENDENCIES(bld, name, deps):
             sys.stderr.write("Removing dependency %s from target %s\n" % (d, name))
             del(lib_deps[name][d])
 
+    target_cache = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
     # extract out the system dependencies
     sysdeps = []
     localdeps = []
     add_objects = []
     cache = LOCAL_CACHE(bld, 'EMPTY_TARGETS')
-    target_cache = LOCAL_CACHE(bld, 'TARGET_TYPE')
     predeclare = LOCAL_CACHE(bld, 'PREDECLARED_TARGET')
     for d in list2:
         recurse = False
@@ -188,7 +190,8 @@ def SAMBA_LIBRARY(bld, libname, source,
                   cflags='',
                   output_type=None,
                   realname=None,
-                  autoproto=None):
+                  autoproto=None,
+                  depends_on=''):
     if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
         return
 
@@ -211,6 +214,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         add_objects = add_objects,
         ccflags = CURRENT_CFLAGS(bld, cflags),
         includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist,
+        depends_on=depends_on,
         vnum=vnum)
 
     # put a link to the library in bin/shared
@@ -336,14 +340,6 @@ Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
 
 
-#################################################################
-# define a set of Samba PIDL targets
-def SAMBA_PIDL_LIST(bld, directory, source, options=''):
-    for p in source.split():
-        bld.SAMBA_PIDL(directory, p, options)
-Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
-
-
 ################################################################
 # build a C prototype file automatically
 def AUTOPROTO(bld, header, source):
@@ -402,7 +398,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     cflags='',
                     group='main',
                     config_option=None,
-                    init_function_sentinal=None):
+                    init_function_sentinal=None,
+                    depends_on=''):
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
@@ -422,12 +419,14 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
     bld.SET_BUILD_GROUP(group)
-    bld(
+    t = bld(
         features = 'cc',
         source = source,
         target=modname,
         ccflags = CURRENT_CFLAGS(bld, cflags),
-        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
+        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist,
+        depends_on=depends_on)
+    return t
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 

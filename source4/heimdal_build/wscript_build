@@ -1,3 +1,18 @@
+#! /usr/bin/env python
+
+# we sould call out to a new bld.SAMBA_XXXXX() function
+# I want to hide gory details from samba devels inside the wafsamba tool
+
+print "hmmm"
+
+bld(
+    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+    source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
+    target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h',
+    before = 'cc',
+    name="gruik", always=True
+)
+
 bld.SAMBA_ASN1('HEIMDAL_SPNEGO_ASN1',
 	'../heimdal/lib/gssapi/spnego/spnego.asn1',
 	options='--sequence=MechTypeList',
