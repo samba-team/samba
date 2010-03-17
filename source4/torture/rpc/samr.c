@@ -3894,7 +3894,7 @@ static bool test_Password_lockout(struct dcerpc_pipe *p,
 
 	info.info1 = *info1;
 
-	torture_comment(tctx, "setting password history lenght.\n");
+	torture_comment(tctx, "setting password history length.\n");
 	info.info1.password_history_length = password_history_length;
 
 	torture_assert(tctx,
