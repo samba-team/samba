@@ -95,6 +95,7 @@ COMMONCONFFILE=$LIBDIR/common.conf
 PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
+EVENTLOGDIR=$LOCKDIR/eventlog
 LOGDIR=$PREFIX_ABS/logs
 SOCKET_WRAPPER_DIR=$PREFIX_ABS/sw
 CONFIGURATION="--configfile $CONFFILE"
@@ -158,7 +159,7 @@ if test "x`smbd -b | grep NSS_WRAPPER`" = "x"; then
 fi
 
 
-mkdir -p $PRIVATEDIR $NCALRPCDIR $LIBDIR $PIDDIR $LOCKDIR $LOGDIR
+mkdir -p $PRIVATEDIR $NCALRPCDIR $LIBDIR $PIDDIR $LOCKDIR $LOGDIR $EVENTLOGDIR
 mkdir -p $SOCKET_WRAPPER_DIR
 mkdir -p $WINBINDD_SOCKET_DIR
 chmod 755 $WINBINDD_SOCKET_DIR
@@ -257,6 +258,7 @@ cat >$SERVERCONFFILE<<EOF
 	addprinter command =            $PERL $SRCDIR/../source3/script/tests/printing/modprinter.pl -a -s $SERVERCONFFILE --
 	deleteprinter command =         $PERL $SRCDIR/../source3/script/tests/printing/modprinter.pl -d -s $SERVERCONFFILE --
 
+	eventlog list = "dns server" application
 	kernel oplocks = no
 	kernel change notify = no
 
@@ -351,6 +353,9 @@ nobody:x:65533:
 nogroup:x:65534:nobody
 EOF
 fi
+
+touch $EVENTLOGDIR/dns\ server.tdb
+touch $EVENTLOGDIR/application.tdb
 
 MAKE_TEST_BINARY="bin/smbpasswd"
 export MAKE_TEST_BINARY
