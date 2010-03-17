@@ -30,5 +30,5 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('tevent',
                       SRC,
-                      libdeps='replace talloc',
+                      deps='replace talloc',
                       vnum=VERSION)

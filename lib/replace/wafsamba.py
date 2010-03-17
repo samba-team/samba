@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs
+import Build, os, Logs, sys
 from Configure import conf
 
 LIB_PATH="shared"
@@ -64,6 +64,12 @@ def CONFIG_PATH(conf, name, default):
         conf.env[name] = conf.env['PREFIX'] + default
     conf.define(name, conf.env[name], quote=True)
 
+##############################################################
+# add some CFLAGS to the command line
+@conf
+def ADD_CFLAGS(conf, flags):
+    conf.env.append_value('CCFLAGS', flags.split())
+
 
 ################################################################
 # magic rpath handling
@@ -74,11 +80,22 @@ def CONFIG_PATH(conf, name, default):
 def set_rpath(bld):
     import Options
     if Options.is_install:
-        bld.env['RPATH'] = ['-Wl,-rpath=%s/%s' % (bld.env.PREFIX, LIB_PATH)]
+        if bld.env['RPATH_ON_INSTALL']:
+            bld.env['RPATH'] = ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
+        else:
+            bld.env['RPATH'] = []
     else:
-        bld.env.append_value('RPATH', '-Wl,-rpath=bin/%s' % LIB_PATH)
+        rpath = os.path.normpath('%s/bin/%s' % (bld.curdir, LIB_PATH))
+        bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
 Build.BuildContext.set_rpath = set_rpath
 
+#############################################################
+# a build assert call
+def ASSERT(ctx, expression, msg):
+    if not expression:
+        sys.stderr.write("ERROR: %s\n" % msg)
+        raise AssertionError
+Build.BuildContext.ASSERT = ASSERT
 
 ################################################################
 # create a list of files by pre-pending each with a subdir name
@@ -97,16 +114,37 @@ def SAMBA_BUILD_ENV(conf):
     if not os.path.exists(libpath):
         os.mkdir(libpath)
 
+##############################################
+# remove .. elements from a path list
+def NORMPATH(bld, ilist):
+    return " ".join([os.path.normpath(p) for p in ilist.split(" ")])
+Build.BuildContext.NORMPATH = NORMPATH
 
 ################################################################
 # this will contain the set of includes needed per Samba library
 Build.BuildContext.SAMBA_LIBRARY_INCLUDES = {}
 
+################################################################
+# init function list for a subsystem
+Build.BuildContext.SAMBA_INIT_FUNCTIONS = {}
+
+################################################################
+# add an init_function to the list for a subsystem
+def ADD_INIT_FUNCTION(bld, subsystem, init_function):
+    if init_function is None:
+        return
+    bld.ASSERT(subsystem is not None, "You must specify a subsystem for init_function '%s'" % init_function)
+    if not subsystem in bld.SAMBA_INIT_FUNCTIONS:
+        bld.SAMBA_INIT_FUNCTIONS[subsystem] = ''
+    bld.SAMBA_INIT_FUNCTIONS[subsystem] += '%s,' % init_function
+Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
+
+
 #################################################################
 # return a include list for a set of library dependencies
-def SAMBA_LIBRARY_INCLUDE_LIST(bld, libdeps):
+def SAMBA_LIBRARY_INCLUDE_LIST(bld, deps):
     ret = bld.curdir + ' '
-    for l in libdeps.split():
+    for l in deps.split():
         if l in bld.SAMBA_LIBRARY_INCLUDES:
             ret = ret + bld.SAMBA_LIBRARY_INCLUDES[l] + ' '
     return ret
@@ -115,13 +153,14 @@ Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 #################################################################
 # define a Samba library
 def SAMBA_LIBRARY(bld, libname, source_list,
-                  libdeps='', include_list='.', vnum=None):
-    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + bld.SUBDIR(bld.curdir, include_list)
+                  deps='', include_list='.', vnum=None):
+    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
+    ilist = bld.NORMPATH(ilist)
     bld(
         features = 'cc cshlib',
         source = source_list,
         target=libname,
-        uselib_local = libdeps,
+        uselib_local = deps,
         includes='. ' + os.environ.get('PWD') + '/bin/default ' + ilist,
         vnum=vnum)
 
@@ -139,24 +178,73 @@ def SAMBA_LIBRARY(bld, libname, source_list,
     bld.SAMBA_LIBRARY_INCLUDES[libname] = ilist
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
+
 #################################################################
 # define a Samba binary
-def SAMBA_BINARY(bld, binname, source_list, libdeps='', syslibs='', include_list=''):
+def SAMBA_BINARY(bld, binname, source_list, deps='', syslibs='',
+                 include_list='', modules=None):
+    ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
+    ilist = bld.NORMPATH(ilist)
+    ccflags = ''
+
+    if modules is not None:
+        for m in modules.split():
+            bld.ASSERT(m in bld.SAMBA_INIT_FUNCTIONS,
+                       "No init_function defined for module '%s' in binary '%s'" % (m, binname))
+            modlist = bld.SAMBA_INIT_FUNCTIONS[m]
+            ccflags += ' -DSTATIC_%s_MODULES="%s"' % (m, modlist)
+
     bld(
         features = 'cc cprogram',
         source = source_list,
         target = binname,
-        uselib_local = libdeps,
+        uselib_local = deps,
         uselib = syslibs,
-        includes = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list,
+        includes = ilist,
+        ccflags = ccflags,
         top=True)
     # put a link to the binary in bin/
     bld(
         source = binname,
         rule = 'ln -sf ${SRC} .',
         )
-
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
+
+
+################################################################
+# build a C prototype file automatically
+def AUTOPROTO(bld, header, source_list):
+    if header is not None:
+        bld(
+            source = source_list,
+            target = header,
+            rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
+            )
+Build.BuildContext.AUTOPROTO = AUTOPROTO
+
+
+#################################################################
+# define a Samba module.
+def SAMBA_MODULE(bld, modname, source_list,
+                 deps='', include_list='.',
+                 subsystem=None,
+                 init_function=None,
+                 autoproto=None):
+    bld.ADD_INIT_FUNCTION(subsystem, init_function)
+    bld.AUTOPROTO(autoproto, source_list)
+    bld.SAMBA_LIBRARY(modname, source_list,
+                      deps=deps, include_list=include_list)
+Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
+
+#################################################################
+# define a Samba subsystem
+def SAMBA_SUBSYSTEM(bld, modname, source_list,
+                    deps='', include_list='.',
+                    autoproto=None):
+    bld.SAMBA_LIBRARY(modname, source_list,
+                      deps=deps, include_list=include_list)
+Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
+
 
 ############################################################
 # this overrides the 'waf -v' debug output to be in a nice

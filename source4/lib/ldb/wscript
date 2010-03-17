@@ -37,7 +37,7 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('ldb',
 		      LDB_TDB_SRC + ' ' + COMMON_SRC + ' ' + MODULES_SRC,
-		      libdeps='tdb tevent',
+		      deps='tdb tevent',
 		      include_list='include',
                       vnum=VERSION)
 
@@ -45,5 +45,5 @@ def build(bld):
     for t in LDB_TOOLS.split():
         bld.SAMBA_BINARY(t,
                          'tools/%s.c tools/ldbutil.c tools/cmdline.c' % t,
-                         libdeps='ldb',
+                         deps='ldb',
                          syslibs='dl popt')

@@ -14,9 +14,12 @@ def set_options(opt):
     opt.add_option('--sbindir',
                    help=("system admin executables [PREFIX/sbin]"),
                    action="store", dest='SBINDIR', default=None)
-    opt.add_option('--disable-rpath',
-                   help=("Disable use of rpath"),
-                   action="store_true", dest='disable_rpath', default=False)
+    opt.add_option('--enable-rpath',
+                   help=("Enable use of rpath for installed binaries"),
+                   action="store_true", dest='enable_rpath', default=False)
+    opt.add_option('--enable-developer',
+                   help=("Turn on developer warnings and debugging"),
+                   action="store_true", dest='developer', default=False)
 
 @wafsamba.runonce
 def configure(conf):
@@ -30,6 +33,12 @@ def configure(conf):
     conf.CONFIG_PATH('SBINDIR', '/sbin')
 
     conf.check_tool('compiler_cc')
+
+    if Options.options.developer:
+        conf.ADD_CFLAGS('-Wall -g -DDEVELOPER')
+
+    conf.env['RPATH_ON_INSTALL'] = Options.options.enable_rpath
+
     conf.DEFUN('_GNU_SOURCE', 1)
     conf.DEFUN('_XOPEN_SOURCE_EXTENDED', 1)
     conf.DEFUN('LIBREPLACE_NETWORK_CHECKS', 1)

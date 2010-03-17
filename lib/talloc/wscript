@@ -17,7 +17,7 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('talloc',
                       'talloc.c',
-                      libdeps='replace',
+                      deps='replace',
                       vnum=VERSION)
 
     bld.SAMBA_BINARY('talloc_testsuite',

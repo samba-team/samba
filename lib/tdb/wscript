@@ -22,7 +22,7 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('tdb',
                       COMMON_SRC,
-                      libdeps='replace',
+                      deps='replace',
                       include_list='include',
                       vnum=VERSION)
 
