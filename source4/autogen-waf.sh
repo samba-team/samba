@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "Setting up for waf build"
-rm -f configure Makefile
+rm -f configure
 cp configure.waf configure
 
 # this relies on the fact that make looks for 'makefile' before 'Makefile'
