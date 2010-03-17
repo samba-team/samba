@@ -11,6 +11,8 @@ bld.SAMBA_MKVERSION('version.h')
 
 # bld.ENABLE_MAGIC_ORDERING()
 
+# we don't always use consistent names for our subsystems.
+# this sets up some aliases
 bld.TARGET_ALIAS('attr', 'XATTR')
 bld.TARGET_ALIAS('execinfo', 'EXECINFO')
 bld.TARGET_ALIAS('popt', 'LIBPOPT')
@@ -19,13 +21,13 @@ bld.TARGET_ALIAS('z', 'ZLIB')
 bld.TARGET_ALIAS('pam', 'PAM')
 bld.TARGET_ALIAS('sasl2', 'SASL')
 bld.TARGET_ALIAS('crypt', 'CRYPT')
+bld.TARGET_ALIAS('RPC_NDR_SRVSVC', 'NDR_SRVSVC')
+bld.TARGET_ALIAS('RPC_NDR_MGMT', 'dcerpc_mgmt')
 
-# missing subsystems
+# missing subsystems - need looking at
 bld.SAMBA_SUBSYSTEM('pyldb_util', '')
-bld.SAMBA_SUBSYSTEM('dcerpc_mgmt', '')
 bld.SAMBA_SUBSYSTEM('TORTURE_LDB_MODULE', '')
 bld.SAMBA_SUBSYSTEM('INTL', '')
-bld.SAMBA_SUBSYSTEM('NDR_SAMR', '')
 bld.SAMBA_SUBSYSTEM('NETAPI', '')
 bld.SAMBA_SUBSYSTEM('HDB_LDB', '')
 bld.SAMBA_SUBSYSTEM('OPENPTY', '')
@@ -33,11 +35,13 @@ bld.SAMBA_SUBSYSTEM('SMBCLIENT', '')
 bld.SAMBA_SUBSYSTEM('BLKID', '')
 bld.SAMBA_SUBSYSTEM('smbcalls', '')
 bld.SAMBA_SUBSYSTEM('SETPROCTITLE', '')
-bld.SAMBA_SUBSYSTEM('NDR_SRVSVC', '')
 bld.SAMBA_SUBSYSTEM('ICONV', '')
-bld.SAMBA_SUBSYSTEM('NDR_MISC', '')
-bld.SAMBA_SUBSYSTEM('SCHANNELDB', '')
 bld.SAMBA_SUBSYSTEM('DCOM_PROXY_DCOM', '')
+
+# subsystems that are confirmed to be missing
+bld.SAMBA_SUBSYSTEM('NDR_MISC', '')
+bld.SAMBA_SUBSYSTEM('NDR_SAMR', '')
+bld.SAMBA_SUBSYSTEM('SCHANNELDB', '')
 
 
 bld.BUILD_SUBDIR('../lib/replace')
