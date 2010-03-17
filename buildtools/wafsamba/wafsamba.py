@@ -221,6 +221,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     includes='',
                     public_headers=None,
                     cflags='',
+                    cflags_end=None,
                     group='main',
                     config_option=None,
                     init_function_sentinal=None,
@@ -268,6 +269,9 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         local_include_first  = local_include_first,
         samba_subsystem= subsystem_name
         )
+
+    if cflags_end is not None:
+        t.samba_cflags.extend(TO_LIST(cflags_end))
 
     if heimdal_autoproto is not None:
         bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source, options=heimdal_autoproto_options)
