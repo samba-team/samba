@@ -29,6 +29,7 @@ def set_options(opt):
     opt.add_option('--timestamp-dependencies',
                    help=("use file timestamps instead of content for build dependencies (BROKEN)"),
                    action="store_true", dest='timestamp_dependencies', default=False)
+    opt.add_option('-C', action='store_true', help='dummy option for autoconf compatibility')
 
 @wafsamba.runonce
 def configure(conf):
