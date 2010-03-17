@@ -331,7 +331,8 @@ def SAMBA_ERRTABLE(bld, name, source,
     bld(
         features = 'cc',
         source   = source,
-        target   = name
+        target   = name,
+        includes = '# #source4/heimdal_build #source4 #lib/replace'
     )
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
