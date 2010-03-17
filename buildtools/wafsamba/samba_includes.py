@@ -72,5 +72,17 @@ def apply_obj_vars_cc(self):
     for i in env['CPPPATH']:
         app('_CCINCFLAGS', cpppath_st % i)
 
+import Node, Environment
+
+def vari(self):
+	return "default"
+Environment.Environment.variant = vari
+
+def variant(self, env):
+	if not env: return 0
+	elif self.id & 3 == Node.FILE: return 0
+	else: return "default"
+Node.Node.variant = variant
+
 
 
