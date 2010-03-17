@@ -4,7 +4,7 @@ import Build
 from samba_utils import *
 
 # rule for heimdal prototype generation
-def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='main'):
+def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
     bld.SET_BUILD_GROUP(group)
     if options is None:
         options='-q -P comment -o'
