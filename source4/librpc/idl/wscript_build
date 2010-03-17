@@ -1,7 +1,6 @@
-bld.SAMBA_PIDL_LIST('PIDL_S4',
+bld.SAMBA_PIDL_LIST('PIDL',
                     source='''irpc.idl nfs4acl.idl notify.idl ntp_signd.idl
                               opendb.idl sasl_helpers.idl server_id.idl winbind.idl
                               winsif.idl winsrepl.idl winstation.idl''',
                     options="--includedir=../librpc/idl --header --ndr-parser --client --python --server",
                     output_dir='../gen_ndr')
-

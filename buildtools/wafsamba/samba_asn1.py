@@ -23,7 +23,6 @@ def SAMBA_ASN1(bld, name, source,
        This will produce 2 output files'''
     bname = os.path.basename(source)[0:-5];
     dname = os.path.dirname(source)
-    name = "ASN1_%s" % bname.upper()
     asn1name = "%s_asn1" % bname
 
     if not SET_TARGET_TYPE(bld, name, 'ASN1'):
