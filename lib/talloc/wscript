@@ -1,9 +1,9 @@
 VERSION = '2.0.1'
 
-srcdir = '.'
-blddir = 'build'
+srcdir = '../..'
+blddir = 'bin'
 
-LIBREPLACE_DIR='../replace'
+LIBREPLACE_DIR= srcdir + '/lib/replace'
 
 def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)

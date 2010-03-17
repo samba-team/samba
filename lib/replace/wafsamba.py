@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build
+import Build, os, Logs
 from Configure import conf
 
 
@@ -45,14 +45,14 @@ def CHECK_FUNCS_IN(conf, list, library):
     if conf.check(lib=library, uselib_store=library):
         for f in list.split():
             conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
+        conf.env['LIB_' + library.upper()] = library
 
 #################################################
 # write out config.h in the right directory
 @conf
 def SAMBA_CONFIG_H(conf):
-    import os
-    if os.path.normpath(conf.curdir) == os.path.normpath(conf.srcdir):
-        conf.write_config_header('config.h')
+    if os.path.normpath(conf.curdir) == os.path.normpath(os.environ.get('PWD')):
+        conf.write_config_header('config.h', top=True)
 
 
 ##############################################################
@@ -75,7 +75,7 @@ def set_rpath(bld):
     if Options.is_install:
         bld.env['RPATH'] = ['-Wl,-rpath=' + bld.env.PREFIX + '/lib']
     else:
-        bld.env.append_value('RPATH', '-Wl,-rpath=build/default')
+        bld.env.append_value('RPATH', '-Wl,-rpath=bin/lib')
 Build.BuildContext.set_rpath = set_rpath
 
 
@@ -87,6 +87,16 @@ def SUBDIR(bld, subdir, list):
         ret = ret + subdir + '/' + l + ' '
     return ret
 Build.BuildContext.SUBDIR = SUBDIR
+
+#################################################################
+# create the samba build environment
+def SAMBA_BUILD_ENV(bld):
+    bld(
+        target = 'binlib',
+        rule = 'test -d lib || mkdir -p lib && touch ${TGT}',
+        shell = True
+        )
+Build.BuildContext.SAMBA_BUILD_ENV = SAMBA_BUILD_ENV
 
 
 ################################################################
@@ -127,21 +137,40 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         features = 'cc cshlib',
         source = source_list,
         target=libname,
-        includes='. ' + ilist,
+        includes='. ' + os.environ.get('PWD') + '/bin/default ' + ilist,
         vnum=vnum)
+
+    # put a link to the library in bin/lib
+    soext=""
+    if vnum is not None:
+        soext = '.' + vnum.split('.')[0]
+    bld(
+        source = 'lib%s.so' % libname,
+        rule = 'ln -sf ../${SRC}%s lib' % soext,
+        after = 'binlib'
+        )
     bld.SAMBA_LIBRARY_INCLUDES[libname] = ilist
     bld.SAMBA_LIBRARY_DEPS[libname] = libdeps
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 #################################################################
 # define a Samba binary
-def SAMBA_BINARY(bld, binname, source_list, libdeps='', include_list=''):
+def SAMBA_BINARY(bld, binname, source_list, libdeps='', syslibs='', include_list=''):
+    #print('binname=%s libs=%s' % (binname, bld.SAMBA_LIBRARY_LIB_LIST(libdeps)))
     bld(
         features = 'cc cprogram',
         source = source_list,
         target = binname,
         uselib_local = bld.SAMBA_LIBRARY_LIB_LIST(libdeps),
-        includes = '. ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list)
+        uselib = syslibs,
+        includes = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list,
+        top=True)
+    # put a link to the binary in bin/
+    bld(
+        source = binname,
+        rule = 'ln -sf ${SRC} .',
+        )
+
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 ############################################################

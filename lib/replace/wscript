@@ -1,5 +1,5 @@
-srcdir = '.'
-blddir = 'build'
+srcdir = '../..'
+blddir = 'bin'
 
 import Options, os, wafsamba
 
@@ -89,6 +89,7 @@ def configure(conf):
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs')
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
+    conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
 
     conf.check_cc(fragment='''
     #include <stdarg.h>
@@ -152,6 +153,8 @@ def build(bld):
     bld.set_rpath()
 
     REPLACE_SOURCE = 'replace.c snprintf.c'
+
+    bld.SAMBA_BUILD_ENV()
 
     bld.SAMBA_LIBRARY('replace',
                       REPLACE_SOURCE)

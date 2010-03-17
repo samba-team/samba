@@ -1,26 +1,28 @@
-srcdir = '.'
-blddir = 'build'
+VERSION = '0.9.10'
 
-LIBTDB_DIR='../../../lib/tdb'
-LIBTALLOC_DIR='../../../lib/talloc'
+srcdir = '../../..'
+blddir = 'bin'
+
+LIBTDB_DIR= srcdir + '/lib/tdb'
+LIBTEVENT_DIR= srcdir + '/lib/tevent'
 
 def set_options(opt):
     opt.recurse(LIBTDB_DIR)
-    opt.recurse(LIBTALLOC_DIR)
+    opt.recurse(LIBTEVENT_DIR)
 
 def configure(conf):
     conf.sub_config(LIBTDB_DIR)
-    conf.sub_config(LIBTALLOC_DIR)
+    conf.sub_config(LIBTEVENT_DIR)
+    conf.CONFIG_PATH('LDB_MODULESDIR', conf.env['LIBDIR'] + '/ldb')
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
     bld.add_subdirs(LIBTDB_DIR)
-    bld.add_subdirs(LIBTALLOC_DIR)
+    bld.add_subdirs(LIBTEVENT_DIR)
 
     LDB_TDB_SRC = bld.SUBDIR('ldb_tdb',
                              '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
                              ldb_cache.c ldb_tdb_wrap.c''')
-    print "LDB_TDB_SRC=%s" % LDB_TDB_SRC
 
     LDB_MAP_SRC = bld.SUBDIR('ldb_map',
                              'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
@@ -35,9 +37,13 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('ldb',
 		      LDB_TDB_SRC + ' ' + COMMON_SRC + ' ' + MODULES_SRC,
-		      'tdb talloc',
-		      'include')
+		      libdeps='tdb tevent',
+		      include_list='include',
+                      vnum=VERSION)
 
-    bld.SAMBA_BINARY('ldbadd',
-		     'tools/ldbadd.c',
-		     'ldb')
+    LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename ldbtest'
+    for t in LDB_TOOLS.split():
+        bld.SAMBA_BINARY(t,
+                         'tools/%s.c tools/ldbutil.c tools/cmdline.c' % t,
+                         libdeps='ldb',
+                         syslibs='dl popt')

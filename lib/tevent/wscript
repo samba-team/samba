@@ -1,15 +1,18 @@
 VERSION = '0.9.8'
 
-srcdir = '.'
-blddir = 'build'
+srcdir = '../..'
+blddir = 'bin'
 
-LIBREPLACE_DIR='../replace'
+LIBREPLACE_DIR= srcdir + '/lib/replace'
+LIBTALLOC_DIR=  srcdir + '/lib/talloc'
 
 def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
+    opt.recurse(LIBTALLOC_DIR)
 
 def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
+    conf.sub_config(LIBTALLOC_DIR)
 
     conf.CHECK_HEADERS('sys/epoll.h')
     conf.CHECK_FUNCS('epoll_create')
@@ -18,6 +21,7 @@ def configure(conf):
 
 def build(bld):
     bld.add_subdirs(LIBREPLACE_DIR)
+    bld.add_subdirs(LIBTALLOC_DIR)
 
     SRC = '''tevent.c tevent_debug.c tevent_epoll.c tevent_fd.c tevent_immediate.c
              tevent_queue.c tevent_req.c tevent_select.c
