@@ -47,8 +47,11 @@ def build(bld):
                      'tools/tdbtool.c',
                      'tdb')
 
+    s4_build = getattr(bld.env, '_SAMBA_BUILD_', 0) == 4
+
     bld.SAMBA_PYTHON('pytdb',
                      'pytdb.c',
                      deps='tdb',
+                     enabled=s4_build,
                      realname='tdb.so')
 
