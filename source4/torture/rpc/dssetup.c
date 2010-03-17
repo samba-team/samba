@@ -31,12 +31,13 @@ bool test_DsRoleGetPrimaryDomainInformation_ext(struct torture_context *tctx,
 	struct dssetup_DsRoleGetPrimaryDomainInformation r;
 	NTSTATUS status;
 	int i;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=DS_ROLE_BASIC_INFORMATION; i <= DS_ROLE_OP_STATUS; i++) {
 		r.in.level = i;
 		torture_comment(tctx, "dcerpc_dssetup_DsRoleGetPrimaryDomainInformation level %d\n", i);
 
-		status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(p, tctx, &r);
+		status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation_r(b, tctx, &r);
 		torture_assert_ntstatus_equal(tctx, ext_status, status, "DsRoleGetPrimaryDomainInformation failed");
 		if (NT_STATUS_IS_OK(ext_status)) {
 			torture_assert_werr_ok(tctx, r.out.result, "DsRoleGetPrimaryDomainInformation failed");
