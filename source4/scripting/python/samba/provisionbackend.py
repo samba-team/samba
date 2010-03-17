@@ -356,15 +356,17 @@ class OpenLDAPBackend(LDAPBackend):
             # For now, make these equal
             mmr_pass = self.ldapadminpass
         
-            url_list=filter(None,self.ol_mmr_urls.split(' ')) 
+            url_list=filter(None,self.ol_mmr_urls.split(','))
+            for url in url_list:
+                self.message("Using LDAP-URL: "+url)
             if (len(url_list) == 1):
-                url_list=filter(None,self.ol_mmr_urls.split(',')) 
-                     
+                raise ProvisioningError("At least 2 LDAP-URLs needed for MMR!")
+
             
-                mmr_on_config = "MirrorMode On"
-                mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
-                serverid=0
-                for url in url_list:
+            mmr_on_config = "MirrorMode On"
+            mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
+            serverid=0
+            for url in url_list:
                     serverid=serverid+1
                     mmr_serverids_config += read_and_sub_file(self.setup_path("mmr_serverids.conf"),
                                                           { "SERVERID" : str(serverid),
@@ -400,7 +402,7 @@ class OpenLDAPBackend(LDAPBackend):
             olc_serverids_config = ""
             olc_syncrepl_seed_config = ""
             olc_mmr_config += read_and_sub_file(self.setup_path("olc_mmr.conf"),{})
-            rid=1000
+            rid=500
             for url in url_list:
                 serverid=serverid+1
                 olc_serverids_config += read_and_sub_file(self.setup_path("olc_serverid.conf"),
