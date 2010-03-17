@@ -1,0 +1,10 @@
+def set_options(opt):
+    # enable options related to building python extensions
+    opt.tool_options('python') # options for disabling pyc or pyo compilation
+
+
+def configure(conf):
+    # enable tool to build python extensions
+    conf.check_tool('python')
+    conf.check_python_version((2,4,2))
+    conf.check_python_headers()

@@ -1,0 +1,14 @@
+
+bld.SAMBA_PYTHON('WEB_WSGI',
+                 source='wsgi.c'
+	)
+
+
+bld.SAMBA_MODULE('WEB',
+                 source='web_server.c',
+                 autoproto='proto.h',
+                 autoproto_extra_source='wsgi.c',
+                 subsystem='service',
+                 init_function='server_service_web_init',
+                 deps='LIBTLS smbcalls process_model LIBPYTHON WEB_WSGI'
+                 )

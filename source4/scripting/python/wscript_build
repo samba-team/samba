@@ -1,0 +1,32 @@
+bld.SAMBA_PYTHON('LIBPYTHON',
+                 source='modules.c',
+                 public_deps='EXT_LIB_PYTHON',
+                 init_function_sentinal='{NULL,NULL}',
+                 deps='PYTALLOC',
+	)
+
+
+bld.SAMBA_PYTHON('PYTALLOC',
+                 source='../../../lib/talloc/pytalloc.c',
+                 public_deps='EXT_LIB_PYTHON talloc'
+                 )
+
+
+bld.SAMBA_PYTHON('python_uuid',
+                 source='uuidmodule.c',
+                 deps='LIBNDR',
+                 realname='uuid'
+                 )
+
+
+bld.SAMBA_PYTHON('python_glue',
+                 source='pyglue.c',
+                 # _PY_FILES='$(shell find samba ../lib/subunit/python -type f -name "*.py")',
+                 deps='LIBNDR ldb SAMDB CREDENTIALS pyldb python_dcerpc_misc python_dcerpc_security pyauth pyldb_util pyparam_util',
+                 # EPYDOC_OPTIONS='--no-private --url http://www.samba.org/ --no-sourcecode',
+                 realname='samba/glue.so'
+	)
+
+
+# create a dummy subsystem for EXT_LIB_PYTHON
+bld.SAMBA_SUBSYSTEM('EXT_LIB_PYTHON', '')

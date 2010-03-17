@@ -1,0 +1,8 @@
+bld.SAMBA_MODULE('TORTURE_WINBIND',
+	source='winbind.c struct_based.c ../../../nsswitch/libwbclient/tests/wbclient.c',
+	autoproto='proto.h',
+	subsystem='smbtorture',
+	init_function='torture_winbind_init',
+	deps='LIBWBCLIENT LIBWBCLIENT_ASYNC LIBWINBIND-CLIENT torture PAM_ERRORS',
+	output_type='MERGED_OBJ'
+	)

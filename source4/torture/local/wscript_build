@@ -1,0 +1,8 @@
+bld.SAMBA_MODULE('TORTURE_LOCAL',
+	source='../../../lib/util/charset/tests/iconv.c ../../../lib/talloc/testsuite.c ../../../lib/replace/test/getifaddrs.c ../../../lib/replace/test/os2_delete.c ../../../lib/replace/test/strptime.c ../../../lib/replace/test/testsuite.c ../../lib/messaging/tests/messaging.c ../../lib/messaging/tests/irpc.c ../../librpc/tests/binding_string.c ../../../lib/util/tests/idtree.c ../../../lib/util/tests/dlinklist.c ../../lib/socket/testsuite.c ../../../lib/socket_wrapper/testsuite.c ../../../lib/nss_wrapper/testsuite.c ../../libcli/resolve/testsuite.c ../../../lib/util/tests/strlist.c ../../../lib/util/tests/parmlist.c ../../../lib/util/tests/str.c ../../../lib/util/tests/time.c ../../../lib/util/tests/asn1_tests.c ../../../lib/util/tests/data_blob.c ../../../lib/util/tests/file.c ../../../lib/util/tests/genrand.c ../../../lib/compression/testsuite.c ../../../lib/util/charset/tests/charset.c ../../libcli/security/tests/sddl.c ../../../lib/tdr/testsuite.c ../../../lib/tevent/testsuite.c ../../param/tests/share.c ../../param/tests/loadparm.c ../../auth/credentials/tests/simple.c local.c dbspeed.c torture.c ../ldb/ldb.c ../../dsdb/common/tests/dsdb_dn.c ../../dsdb/schema/tests/schema_syntax.c',
+	autoproto='proto.h',
+	subsystem='smbtorture',
+	init_function='torture_local_init',
+	deps='RPC_NDR_ECHO TDR LIBCLI_SMB MESSAGING ICONV POPT_CREDENTIALS TORTURE_AUTH TORTURE_UTIL TORTURE_NDR TORTURE_LIBCRYPTO share torture_registry PROVISION NSS_WRAPPER ldb SAMDB',
+	output_type='MERGED_OBJ'
+	)

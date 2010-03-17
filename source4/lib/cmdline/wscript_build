@@ -1,0 +1,22 @@
+bld.SAMBA_SUBSYSTEM('LIBCMDLINE_CREDENTIALS',
+	source='credentials.c',
+	autoproto='credentials.h',
+	public_deps='CREDENTIALS LIBPOPT'
+	)
+
+
+bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
+	source='popt_common.c',
+	public_deps='LIBPOPT',
+	public_headers='popt_common.h',
+        deps='talloc'
+	)
+
+
+bld.SAMBA_SUBSYSTEM('POPT_CREDENTIALS',
+	source='popt_credentials.c',
+	autoproto='popt_credentials.h',
+	public_deps='CREDENTIALS LIBCMDLINE_CREDENTIALS LIBPOPT',
+	deps='LIBSAMBA-UTIL'
+	)
+
