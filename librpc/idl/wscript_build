@@ -1,0 +1,12 @@
+bld.SAMBA_PIDL_LIST('PIDL_COMMON',
+                    '''atsvc.idl dcom.idl drsuapi.idl epmapper.idl initshutdown.idl
+                       misc.idl ntlmssp.idl protected_storage.idl schannel.idl trkwks.idl
+                       wmi.idl audiosrv.idl dfsblobs.idl dsbackup.idl eventlog.idl keysvc.idl
+                       msgsvc.idl ntsvcs.idl remact.idl security.idl unixinfo.idl wzcsvc.idl
+                       browser.idl dfs.idl dssetup.idl frsapi.idl krb5pac.idl
+                       named_pipe_auth.idl orpc.idl rot.idl spoolss.idl w32time.idl xattr.idl
+                       dbgidl.idl dnsserver.idl echo.idl frsrpc.idl lsa.idl nbt.idl
+                       oxidresolver.idl samr.idl srvsvc.idl winreg.idl dcerpc.idl
+                       drsblobs.idl efs.idl frstrans.idl mgmt.idl netlogon.idl
+                       policyagent.idl scerpc.idl svcctl.idl wkssvc.idl''')
+

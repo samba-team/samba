@@ -1,5 +1,6 @@
-bld.SAMBA_PIDL_TDR('PIDL_REG',
-               source='regf.idl')
+bld.SAMBA_PIDL('PIDL_REG',
+               source='regf.idl',
+               options='--header --tdr-parser')
 
 bld.SAMBA_SUBSYSTEM('TDR_REGF',
 	source='tdr_regf.c',
