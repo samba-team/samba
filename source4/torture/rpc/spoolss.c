@@ -3691,6 +3691,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 	};
 	enum winreg_Type types[] = {
 		REG_SZ,
+		REG_MULTI_SZ,
 		REG_DWORD,
 		REG_BINARY
 	};
@@ -3714,11 +3715,19 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		uint32_t ecount;
 		struct spoolss_PrinterEnumValues *einfo;
 
+		if (types[t] == REG_DWORD) {
+			s = 0xffff;
+		}
+
 		switch (types[t]) {
 		case REG_BINARY:
-		case REG_DWORD:
 			data = blob;
 			offered = blob.length;
+			break;
+		case REG_DWORD:
+			data = data_blob_talloc(tctx, NULL, 4);
+			SIVAL(data.data, 0, 0x12345678);
+			offered = 4;
 			break;
 		case REG_SZ:
 			torture_assert(tctx,
@@ -3726,6 +3735,14 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 						  "REG_SZ", string, &type, &data), "");
 			offered = data.length;
 			/*strlen_m_term(data.string)*2;*/
+			break;
+		case REG_MULTI_SZ:
+			torture_assert(tctx,
+				reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx),
+						  "REG_SZ", string, &type, &data), "");
+			torture_assert(tctx, data_blob_realloc(tctx, &data, data.length + 2), "");
+			memset(&data.data[data.length - 2], '\0', 2);
+			offered = data.length;
 			break;
 		default:
 			torture_fail(tctx, talloc_asprintf(tctx, "type %d untested\n", types[t]));
