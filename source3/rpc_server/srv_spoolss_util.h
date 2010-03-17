@@ -127,4 +127,29 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
 				    const char *key,
 				    const char *value);
 
+/**
+ * @internal
+ *
+ * @brief Enumerate on the subkeys of a given key and provide the data.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  key      The key of the printer data to get the value.
+ *
+ * @param[out] pnum_subkeys A pointer to store the number of subkeys found.
+ *
+ * @param[in]  psubkeys A pointer to an array to store the names of the subkeys
+ *                      found.
+ *
+ * @return              WERR_OK on success, the corresponding DOS error
+ *                      code if something gone wrong.
+ */
+WERROR winreg_enum_printer_key(struct pipes_struct *p,
+			       const char *printer,
+			       const char *key,
+			       uint32_t *pnum_subkeys,
+			       const char ***psubkeys);
+
 #endif /* _SRV_SPOOLSS_UITL_H */

@@ -330,6 +330,159 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/**
+ * @internal
+ *
+ * @brief Enumerate subkeys of an opened key handle and get the names.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  pipe_handle The pipe handle for the rpc connection.
+ *
+ * @param[in]  key_hnd  The opened key handle.
+ *
+ * @param[in]  pnum_subkeys A pointer to store the number of found subkeys.
+ *
+ * @param[in]  psubkeys A pointer to an array to store the found names of
+ *                      subkeys.
+ *
+ * @return                   WERR_OK on success, the corresponding DOS error
+ *                           code if something gone wrong.
+ */
+static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
+				      struct rpc_pipe_client *pipe_handle,
+				      struct policy_handle *key_hnd,
+				      uint32_t *pnum_subkeys,
+				      const char ***psubkeys)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char **subkeys;
+	uint32_t num_subkeys, max_subkeylen, max_classlen;
+	uint32_t num_values, max_valnamelen, max_valbufsize;
+	uint32_t i;
+	NTTIME last_changed_time;
+	uint32_t secdescsize;
+	struct winreg_String classname;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(classname);
+
+	status = rpccli_winreg_QueryInfoKey(pipe_handle,
+					    tmp_ctx,
+					    key_hnd,
+					    &classname,
+					    &num_subkeys,
+					    &max_subkeylen,
+					    &max_classlen,
+					    &num_values,
+					    &max_valnamelen,
+					    &max_valbufsize,
+					    &secdescsize,
+					    &last_changed_time,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_enumkeys: Could not query info: %s\n",
+			  nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto error;
+		}
+		result = ntstatus_to_werror(status);
+		goto error;
+	}
+
+	subkeys = talloc_zero_array(tmp_ctx, const char *, num_subkeys + 2);
+	if (subkeys == NULL) {
+		result = WERR_NOMEM;
+		goto error;
+	}
+
+	if (num_subkeys == 0) {
+		subkeys[0] = talloc_strdup(subkeys, "");
+		if (subkeys[0] == NULL) {
+			result = WERR_NOMEM;
+			goto error;
+		}
+		*pnum_subkeys = 0;
+		if (psubkeys) {
+			*psubkeys = talloc_move(mem_ctx, &subkeys);
+		}
+
+		TALLOC_FREE(tmp_ctx);
+		return WERR_OK;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		char c = '\0';
+		char n = '\0';
+		char *name = NULL;
+		struct winreg_StringBuf class_buf;
+		struct winreg_StringBuf name_buf;
+		NTTIME modtime;
+
+		class_buf.name = &c;
+		class_buf.size = max_classlen + 2;
+		class_buf.length = 0;
+
+		name_buf.name = &n;
+		name_buf.size = max_subkeylen + 2;
+		name_buf.length = 0;
+
+		ZERO_STRUCT(modtime);
+
+		status = rpccli_winreg_EnumKey(pipe_handle,
+					       tmp_ctx,
+					       key_hnd,
+					       i,
+					       &name_buf,
+					       &class_buf,
+					       &modtime,
+					       &result);
+		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+			result = WERR_OK;
+			status = NT_STATUS_OK;
+			break;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("winreg_printer_enumkeys: Could not enumerate keys: %s\n",
+				  nt_errstr(status)));
+			if (!W_ERROR_IS_OK(result)) {
+				goto error;
+			}
+			result = ntstatus_to_werror(status);
+			goto error;
+		}
+
+		if (name_buf.name == NULL) {
+			result = WERR_INVALID_PARAMETER;
+			goto error;
+		}
+
+		name = talloc_strdup(subkeys, name_buf.name);
+		if (name == NULL) {
+			result = WERR_NOMEM;
+			goto error;
+		}
+
+		subkeys[i] = name;
+	}
+
+	*pnum_subkeys = num_subkeys;
+	if (psubkeys) {
+		*psubkeys = talloc_move(mem_ctx, &subkeys);
+	}
+
+ error:
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
@@ -647,6 +800,78 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
 		}
 		result = ntstatus_to_werror(status);
 		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/* Enumerate on the subkeys of a given key and provide the data. */
+WERROR winreg_enum_printer_key(struct pipes_struct *p,
+			       const char *printer,
+			       const char *key,
+			       uint32_t *pnum_subkeys,
+			       const char ***psubkeys)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+
+	const char **subkeys = NULL;
+	uint32_t num_subkeys = -1;
+
+	WERROR result = WERR_OK;
+
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					p->server_info,
+					&winreg_pipe,
+					printer,
+					key,
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_enum_printer_key: Could not open key %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_enumkeys(tmp_ctx,
+					 winreg_pipe,
+					 &key_hnd,
+					 &num_subkeys,
+					 &subkeys);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_enum_printer_key: Could not enumerate subkeys in %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
+	*pnum_subkeys = num_subkeys;
+	if (psubkeys) {
+		*psubkeys = talloc_move(p->mem_ctx, &subkeys);
 	}
 
 	result = WERR_OK;
