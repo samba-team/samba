@@ -280,8 +280,8 @@ bld.SAMBA_BINARY('compile_et',
 	'../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
 	use_hostcc=True,
         group='build_compilers',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
-	deps='HEIMDAL_ROKEN_H'
+        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_ -I../heimdal_build',
+	deps='HEIMDAL_ROKEN_H replace'
 	)
 
 

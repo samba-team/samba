@@ -1,0 +1,18 @@
+# selftest main code.
+
+########################################################################
+# main test entry point
+def cmd_test(opt):
+    '''Run the full test suite'''
+    print "Starting full test"
+
+########################################################################
+# main test entry point
+def cmd_quicktest(opt):
+    '''Run the quick test suite'''
+    print "Starting quick test"
+
+def set_options(opt):
+    opt.ADD_COMMAND('test', cmd_test)
+    opt.ADD_COMMAND('quicktest', cmd_quicktest)
+

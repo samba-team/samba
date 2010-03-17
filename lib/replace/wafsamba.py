@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs, sys, Configure, Options, string, Task
+import Build, os, Logs, sys, Configure, Options, string, Task, Utils, optparse
 from Configure import conf
 from Logs import debug
 from TaskGen import extension
@@ -522,18 +522,59 @@ Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
 
 
 ################################################################################
-# a dummy asn1 task, that actually just copies the asn1 file to a .c and .h file
+# a asn1 task which calls out to asn1_compile_wrapper.sh to do the work
 Task.simple_task_type('asn1',
-		      '../heimdal_build/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options',
-                      color='BLUE', ext_out='.c',
+		      '''
+# shell script to convert ASN1 to C. This could be separated out if we want to
+set -e
+compiler=${TGT[0].compiler}
+destdir=${TGT[0].destdir}
+wrapper=${TGT[0].asn1wrapper}
+srcfile=${SRC[0].abspath(env)}
+asn1name=${TGT[0].asn1name}
+options="${TGT[0].asn1options}"
+
+# run the wrapper
+$wrapper . $destdir $compiler $srcfile $asn1name ${options} --one-code-file
+
+# that generated 3 files:
+#    ${asn1name}.hx
+#    asn1_${asn1name}.x
+#    ${asn1name}_files
+
+
+hxfile=$destdir/$asn1name.hx
+xfile=$destdir/asn1_$asn1name.x
+listfilee=$destdir/"$asn1name"_files
+
+cfile=${TGT[0].abspath(env)}
+hfile=${TGT[1].abspath(env)}
+
+cp $hxfile $hfile
+echo '#include "config.h"' > $cfile
+cat $xfile >> $cfile
+rm -f $listfile
+
+''',
+                      color='BLUE',
+                      ext_out='.c',
                       shell = True)
 
 @extension('.asn1')
 def process_asn1(self, node):
-    cc_node = node.change_ext('.c')
-    h_node  = node.change_ext('.h')
-    self.create_task('asn1', node, [cc_node, h_node])
-    self.allnodes.append(cc_node)
+
+    asn1name = string.replace(node.file(), '.', '_')
+    c_node  = NEW_NODE(node, 'asn1_%s.c' % asn1name)
+    h_node  = NEW_NODE(node, '%s.h' % asn1name)
+
+    c_node.destdir      = "default/source4/heimdal/" + self.asn1directory
+    c_node.asn1options  = self.asn1options
+    c_node.asn1name     = asn1name
+    c_node.asn1wrapper  = "../heimdal_build/asn1_compile_wrapper.sh"
+    c_node.compiler     = "default/source4/heimdal_build/asn1_compile"
+
+    self.create_task('asn1', node, [c_node, h_node])
+    self.allnodes.append(c_node)
 
 
 #################################################################
@@ -543,57 +584,96 @@ def SAMBA_ASN1(bld, name, source,
                directory=''):
     if not SET_TARGET_TYPE(bld, name, 'ASN1'):
         return
-    debug("runner: SAMBA_ASN1 name='%s' source='%s'" % (name, source))
+    bld.SET_BUILD_GROUP('build_source')
+    bld(
+        features       = 'cc',
+        source         = source,
+        target         = name,
+        asn1options    = options,
+        asn1directory  = directory
+    )
+Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
+
+
+
+################################################################################
+# a et task which calls out to compile_et to do the work
+Task.simple_task_type('et',
+		      '../heimdal_build/et_compile_wrapper.sh . ${TGT[0].bld_dir(env)} default/source4/heimdal_build/compile_et ${SRC[0].abspath(env)} ${TGT[0].bldpath(env)}',
+                      color='BLUE', ext_out='.c',
+                      shell = False)
+
+@extension('.et')
+def process_et(self, node):
+    c_node = node.change_ext('.c')
+    h_node  = node.change_ext('.h')
+    self.create_task('et', node, [c_node, h_node])
+    self.allnodes.append(c_node)
+
+
+#################################################################
+# define a Samba ET target
+def SAMBA_ERRTABLE(bld, name, source,
+               options='',
+               directory=''):
+    if not SET_TARGET_TYPE(bld, name, 'ET'):
+        return
+    bld.SET_BUILD_GROUP('build_source')
     bld(
         features = 'cc',
         source   = source,
         target   = name
     )
-Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
-
-
-#################################################################
-# define a Samba ERRTABLE target
-def SAMBA_ERRTABLE(bld, name, source,
-                   directory=''):
-    import string
-    if not SET_TARGET_TYPE(bld, name, 'ERRTABLE'):
-        return
-    cfile = string.replace(source, '.et', '.c')
-    bld(
-        source = source,
-        target = cfile,
-        rule = 'echo ET_COMPILE ${SRC} > {$TGT}',
-        uselib = '',
-        name = name)
-    return
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
+##########################################################
+# create a node with a new name, based on an existing node
+def NEW_NODE(node, name):
+    ret = node.parent.find_or_declare([name])
+    ASSERT(node, ret is not None, "Unable to find new target with name '%s' from '%s'" % (
+            name, node.name))
+    return ret
 
-from TaskGen import extension
-Task.simple_task_type('idl', '../../pidl/pidl --header --ndr-parser --server --client --python --dcom-proxy --com-header -- ${SRC}', color='BLUE', ext_out='.c')
+################################################################################
+# a idl task which calls out to pidl to do the work
+Task.simple_task_type('idl', '../../pidl/pidl --header --ndr-parser --client --python --server --outputdir=${TGT[0].outputdir} -- ${SRC}', color='BLUE', ext_out='.c')
 
 @extension('.idl')
 def process_idl(self, node):
-    c_node = node.change_ext('.c')
-    h_node = node.change_ext('.h')
-    self.create_task('idl', node, [c_node, h_node])
+    bname      = node.file_base()
+    c_node     = NEW_NODE(node, 'ndr_%s.c' % bname)
+    h1_node    = NEW_NODE(node, '%s.h' % bname)
+    h2_node    = NEW_NODE(node, 'ndr_%s.h' % bname)
+    s_node     = NEW_NODE(node, 'ndr_%s_s.c' % bname)
+    cli_node   = NEW_NODE(node, 'ndr_%s_c.c' % bname)
+    cli_h_node = NEW_NODE(node, 'ndr_%s_c.h' % bname)
+    py_node    = NEW_NODE(node, 'py_%s.c' % bname)
+
+
+    dname = os.path.dirname(node.bld_dir(self.env)) + "/gen_ndr"
+    c_node.outputdir = dname
+
+    self.create_task('idl', node, [c_node, h1_node, h2_node, s_node, cli_node, cli_h_node, py_node])
 
     # reinject the c node to the list of nodes to process
     self.allnodes.append(c_node)
 
+
 #################################################################
 # define a PIDL target
 def SAMBA_PIDL(bld, directory, source):
-    pidl = "../../pidl/pidl"
-    idl_dir = os.path.dirname(source)
-    base = os.path.basename(string.replace(source, '.idl', ''))
-    rule = "%s --outputdir %s --header --ndr-parser --server --client --python --dcom-proxy --com-header --includedir %s -- %s" % (pidl, directory, idl_dir, source)
-    output = '%s/ndr_%s.c' % (directory, base)
-    tname = 'PIDL_%s' % base.upper()
+    name = os.path.basename(string.replace(source, '.idl', ''))
+    name = "%s/ndr_%s.o" % (directory, name)
+
+    if not SET_TARGET_TYPE(bld, name, 'PIDL'):
+        return
+
+    bld.SET_BUILD_GROUP('build_source')
     bld(
         features = 'cc',
-        source = source)
+        source   = source,
+        target   = name
+    )
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 
@@ -730,28 +810,12 @@ def exec_command(self, cmd, **kw):
 Build.BuildContext.exec_command = exec_command
 
 
-###########################################################
-# list the build targets
-def cmd_list(ctx):
-    '''List the build targets'''
-    import Utils, Environment
-    proj = Environment.Environment(Options.lockfile)
-    bld_cls = getattr(Utils.g_module, 'build_context', Utils.Context)
-    bld = bld_cls()
-    bld.load_dirs(proj['srcdir'], proj['blddir'])
-    bld.load_envs()
-    targets = bld.env['TARGET_TYPE']
-    for t in targets:
-        print "Target %20s of type %s" % (t, targets[t])
-
-
-###########################################################
-# add some extra top level targets
-@runonce
-def add_extra_targets():
-    import Utils
-    setattr(Utils.g_module, 'list', cmd_list)
-
+##########################################################
+# add a new top level command to waf
+def ADD_COMMAND(opt, name, function):
+    Utils.g_module.__dict__[name] = function
+    opt.name = function
+Options.Handler.ADD_COMMAND = ADD_COMMAND
 
 ###########################################################
 # setup build groups used to ensure that the different build
@@ -775,3 +839,14 @@ def SET_BUILD_GROUP(bld, group):
         return
     bld.set_group(group)
 Build.BuildContext.SET_BUILD_GROUP = SET_BUILD_GROUP
+
+
+#import TaskGen, Task
+#
+#old_post_run = Task.Task.post_run
+#def new_post_run(self):
+#    self.cached = True
+#    return old_post_run(self)
+#
+#for y in ['cc', 'cxx']:
+#    TaskGen.classes[y].post_run = new_post_run

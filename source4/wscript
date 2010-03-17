@@ -7,6 +7,8 @@ LIBLDB_DIR=     srcdir + '/source4/lib/ldb'
 def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
     opt.recurse(LIBLDB_DIR)
+    opt.recurse('selftest')
+
 
 def configure(conf):
     conf.DEFINE('_SAMBA_BUILD_', 4)
