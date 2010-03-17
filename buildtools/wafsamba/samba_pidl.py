@@ -29,6 +29,8 @@ def SAMBA_PIDL(bld, pname, source,
                     '--client'            : 'ndr_%s_c.c ndr_%s_c.h',
                     '--python'            : 'py_%s.c',
                     '--tdr-parser'        : 'tdr_%s.c tdr_%s.h',
+                    '--dcom-proxy'	  : '%s_p.c',
+                    '--com-header'	  : 'com_%s.h'
                     }
 
     table_header_idx = None
@@ -53,12 +55,13 @@ def SAMBA_PIDL(bld, pname, source,
 
     # the cd .. is needed because pidl currently is sensitive to the directory it is run in
     t = bld(rule='cd .. && ${PIDL} ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC[0].abspath(env)}',
-            ext_out = '.c',
-            before  = 'cc',
-            shell   = True,
-            source  = source,
-            target  = out_files,
-            name    = name)
+            ext_out    = '.c',
+            before     = 'cc',
+            shell      = True,
+            source     = source,
+            target     = out_files,
+            name       = name,
+            samba_type = 'PIDL')
 
     # prime the list of nodes we are dependent on with the cached pidl sources
     t.allnodes = pidl_src_nodes
