@@ -1,10 +1,8 @@
 # a waf tool to add autoconf-like macros to the configure section
 
-import Build, os, Logs, sys, Configure, Options
-import string, Task, Utils, optparse
+import Build, os
+import string
 from Configure import conf
-from Logs import debug
-from TaskGen import extension
 from samba_utils import *
 
 ####################################################
@@ -208,7 +206,7 @@ def CHECK_CODE(conf, code, define,
                   execute=execute,
                   define_name = define,
                   mandatory = mandatory,
-                  ccflags=TO_LIST(cflags),
+                  samba_cflags=TO_LIST(cflags),
                   includes=includes,
                   msg=msg):
         conf.DEFINE(define, 1)

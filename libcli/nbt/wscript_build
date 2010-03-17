@@ -9,7 +9,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NBT',
-	source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c',
+	source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
 	public_deps='LIBNDR NDR_NBT LIBCLI_COMPOSITE LIBEVENTS NDR_SECURITY samba_socket LIBSAMBA-UTIL'
 	)
 

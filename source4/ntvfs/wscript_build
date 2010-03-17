@@ -23,7 +23,7 @@ bld.SAMBA_MODULE('ntvfs_smb2',
 
 
 bld.SAMBA_MODULE('ntvfs_simple',
-	source='simple/vfs_simple.c cifs_posix_cli/svfs_util.c ./simple/svfs_util.c',
+	source='simple/vfs_simple.c simple/svfs_util.c',
 	autoproto='simple/proto.h',
 	subsystem='ntvfs',
 	init_function='ntvfs_simple_init'
@@ -31,7 +31,7 @@ bld.SAMBA_MODULE('ntvfs_simple',
 
 
 bld.SAMBA_MODULE('ntvfs_cifsposix',
-	source='cifs_posix_cli/vfs_cifs_posix.c cifs_posix_cli/svfs_util.c ./simple/svfs_util.c',
+	source='cifs_posix_cli/vfs_cifs_posix.c cifs_posix_cli/svfs_util.c',
 	autoproto='cifs_posix_cli/proto.h',
 	subsystem='ntvfs',
 	init_function='ntvfs_cifs_posix_init'

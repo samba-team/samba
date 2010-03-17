@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 bld.BUILD_SUBDIR('../../librpc/idl')
 bld.BUILD_SUBDIR('idl')
 
@@ -623,9 +621,8 @@ bld.SAMBA_PYTHON('python_winreg',
 
 
 bld.SAMBA_PYTHON('python_dcerpc_misc',
-	source='ndr/py_misc.c',
+	source='../../librpc/gen_ndr/py_misc.c',
 	deps='PYTALLOC python_dcerpc NDR_MISC NDR_KRB5PAC',
-        enabled=False,
 	realname='samba/dcerpc/misc.so'
 	)
 
@@ -722,18 +719,19 @@ bld.SAMBA_PYTHON('python_drsuapi',
 
 
 bld.SAMBA_PYTHON('python_dcerpc_security',
-	source='ndr/py_security.c',
+	source='../../librpc/gen_ndr/py_security.c',
 	deps='PYTALLOC python_dcerpc_misc python_dcerpc NDR_SECURITY',
-        enabled=False,
 	realname='samba/dcerpc/security.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_dcerpc_xattr',
-	source='ndr/py_xattr.c',
+	source='../../librpc/gen_ndr/py_xattr.c',
 	deps='PYTALLOC python_dcerpc_misc python_dcerpc python_dcerpc_security NDR_XATTR RPC_NDR_XATTR',
-        enabled=False,
 	realname='samba/dcerpc/xattr.so'
 	)
 
-
+bld.SAMBA_SCRIPT('python_dcerpc_init',
+                 pattern='rpc/dcerpc.py',
+                 installdir='python/samba/dcerpc',
+                 installname='__init__.py')

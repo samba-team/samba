@@ -26,29 +26,89 @@ def build(bld):
     bld.BUILD_SUBDIR(LIBTDB_DIR)
     bld.BUILD_SUBDIR(LIBTEVENT_DIR)
 
-    LDB_TDB_SRC = bld.SUBDIR('ldb_tdb',
-                             '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
-                             ldb_cache.c ldb_tdb_wrap.c''')
+    # in Samba4 we build some extra modules, and add extra
+    # capabilities to the ldb cmdline tools
+    s4_build = getattr(bld.env, '_SAMBA_BUILD_', 0) == 4
 
     LDB_MAP_SRC = bld.SUBDIR('ldb_map',
                              'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''ldb.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
-                            ldb_debug.c ldb_modules.c ldb_dn.c ldb_match.c
+                            ldb_debug.c ldb_dn.c ldb_match.c
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
-    MODULES_SRC = bld.SUBDIR('modules',
-                             'rdn_name.c asq.c paged_results.c sort.c')
+    bld.SAMBA_SUBSYSTEM('LIBLDB',
+                        includes='include',
+                        deps='tevent',
+                        source='common/ldb_modules.c')
+
+    bld.SAMBA_MODULE('ldb_asq',
+                     'modules/asq.c',
+                     init_function='LDB_MODULE(asq)',
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_server_sort',
+                     'modules/sort.c',
+                     init_function='LDB_MODULE(server_sort)',
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_paged_results',
+                     'modules/paged_results.c',
+                     init_function='LDB_MODULE(paged_results)',
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_paged_searches',
+                     'modules/paged_searches.c',
+                     init_function='LDB_MODULE(paged_searches)',
+                     enabled = s4_build,
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_rdn_name',
+                     'modules/rdn_name.c',
+                     init_function='LDB_MODULE(rdn_name)',
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_sqlite3',
+                     'sqlite3/ldb_sqlite3.c',
+                     init_function='LDB_BACKEND(sqlite3)',
+                     enabled=False,
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_tdb',
+                     bld.SUBDIR('ldb_tdb',
+                                '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
+                                ldb_cache.c ldb_tdb_wrap.c'''),
+                     init_function='LDB_BACKEND(tdb)',
+                     deps='tdb',
+                     subsystem='LIBLDB')
+
+    bld.SAMBA_MODULE('ldb_ildap', 'ldb_ildap/ldb_ildap.c',
+                     init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
+                     deps='talloc LIBCLI_LDAP CREDENTIALS',
+                     enabled=s4_build,
+                     subsystem='LIBLDB')
+
+    ldb_deps = 'tevent LIBLDB'
+    if s4_build:
+        ldb_deps += ' LDBSAMBA POPT_CREDENTIALS POPT_SAMBA LIBCMDLINE_CREDENTIALS gensec'
 
     bld.SAMBA_LIBRARY('ldb',
-		      LDB_TDB_SRC + ' ' + COMMON_SRC + ' ' + MODULES_SRC,
-		      deps='tdb tevent',
+		      COMMON_SRC + ' ' + LDB_MAP_SRC,
+		      deps=ldb_deps,
 		      includes='include',
                       vnum=VERSION)
 
+    bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
+                        'tools/ldbutil.c tools/cmdline.c',
+                        'ldb dl popt')
+
     LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename ldbtest'
     for t in LDB_TOOLS.split():
-        bld.SAMBA_BINARY(t,
-                         'tools/%s.c tools/ldbutil.c tools/cmdline.c' % t,
-                         deps='ldb dl popt')
+        bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='LIBLDB_CMDLINE')
+
+    if s4_build:
+        bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
+                         deps='ldb',
+                         realname='ldb.so')
+

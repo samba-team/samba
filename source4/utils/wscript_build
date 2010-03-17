@@ -6,7 +6,8 @@ bld.SAMBA_BINARY('ntlm_auth',
 	source='ntlm_auth.c',
 	manpages='man/ntlm_auth.1',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS gensec LIBCLI_RESOLVE auth ntlm_check MESSAGING LIBEVENTS'
+	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS gensec LIBCLI_RESOLVE auth ntlm_check MESSAGING LIBEVENTS service',
+        needs_python=True
 	)
 
 

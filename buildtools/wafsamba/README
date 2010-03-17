@@ -2,3 +2,18 @@ This is a set of waf 'tools' to help make building the Samba
 components easier, by having common functions in one place. This gives
 us a more consistent build, and ensures that our project rules are
 obeyed
+
+
+TODO:
+  - fix deps for --target
+  - cache project rules calculation
+  - make pidl rules depend on full pidl sources
+  - make script rules depend on the scripts
+  - add waf test
+  - s3 build
+  - merged build
+  - etags
+  - rest of old make targets
+  - better Makefile waf wrapper
+  -
+

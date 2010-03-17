@@ -8,6 +8,6 @@ bld.SAMBA_MODULE('gensec_ntlmssp',
 	subsystem='gensec',
 	init_function='gensec_ntlmssp_init',
 	deps='MSRPC_PARSE CREDENTIALS',
-	output_type='MERGED_OBJ'
+	internal_module=True
 	)
 

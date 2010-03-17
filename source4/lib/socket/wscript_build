@@ -13,7 +13,7 @@ bld.SAMBA_MODULE('socket_ip',
 	source='socket_ip.c',
 	subsystem='samba_socket',
 	deps='LIBSAMBA-ERRORS LIBREPLACE_NETWORK',
-	output_type='MERGED_OBJ'
+	internal_module=True
 	)
 
 
@@ -21,7 +21,7 @@ bld.SAMBA_MODULE('socket_unix',
 	source='socket_unix.c',
 	subsystem='samba_socket',
 	deps='LIBREPLACE_NETWORK',
-	output_type='MERGED_OBJ'
+	internal_module=True
 	)
 
 

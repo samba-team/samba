@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "Using waf based build"
+
+WAF=../buildtools/waf
+export WAFCACHE=$HOME/.wafcache
+mkdir -p $WAFCACHE
+
+$WAF configure $*

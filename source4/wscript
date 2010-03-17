@@ -35,10 +35,7 @@ def configure(conf):
     # set a lower limit on recursing in waf preprocessor
     conf.env.preprocessor_recursion_limit = 10
 
-    # we should use the PIC options in waf instead
-    conf.ADD_CFLAGS('-fPIC')
-
-    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include #lib/replace #lib/talloc')
+    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include #lib/replace #lib/talloc #lib/tevent')
 
     conf.sub_config('../lib/replace')
 
@@ -63,5 +60,6 @@ def configure(conf):
     conf.sub_config('../lib/nss_wrapper')
     conf.sub_config('../lib/socket_wrapper')
     conf.sub_config('../lib/uid_wrapper')
+    conf.sub_config('lib/smbreadline')
 
     conf.SAMBA_CONFIG_H('include/config.h')

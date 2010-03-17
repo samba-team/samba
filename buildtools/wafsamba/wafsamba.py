@@ -1,16 +1,16 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs, sys, Configure, Options, string, Task, Utils, optparse
+import Build, os, Options, Task, Utils
 from Configure import conf
 from Logs import debug
-from TaskGen import extension
 
 # bring in the other samba modules
 from samba_utils import *
 from samba_autoconf import *
 from samba_patterns import *
 from samba_pidl import *
+from samba_errtable import *
 from samba_asn1 import *
 from samba_autoproto import *
 from samba_python import *
@@ -19,25 +19,26 @@ from samba_deps import *
 LIB_PATH="shared"
 
 
+
 #################################################################
 # create the samba build environment
 @conf
 def SAMBA_BUILD_ENV(conf):
-    libpath="%s/%s" % (conf.blddir, LIB_PATH)
     conf.env['BUILD_DIRECTORY'] = conf.blddir
-    if not os.path.exists(libpath):
-        os.mkdir(libpath)
+    mkdir_p(os.path.join(conf.blddir, LIB_PATH))
+    mkdir_p(os.path.join(conf.blddir, 'python/samba/dcerpc'))
+
 
 ################################################################
 # add an init_function to the list for a subsystem
-def ADD_INIT_FUNCTION(bld, subsystem, init_function):
+def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):
     if init_function is None:
         return
     bld.ASSERT(subsystem is not None, "You must specify a subsystem for init_function '%s'" % init_function)
     cache = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
     if not subsystem in cache:
         cache[subsystem] = []
-    cache[subsystem].append(init_function)
+    cache[subsystem].append( { 'TARGET':target, 'INIT_FUNCTION':init_function } )
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
 
@@ -50,7 +51,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   public_headers=None,
                   vnum=None,
                   cflags='',
-                  output_type=None,
+                  external_library=False,
                   realname=None,
                   autoproto=None,
                   group='main',
@@ -73,7 +74,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         features        = 'cc cshlib symlink_lib',
         source          = source,
         target          = libname,
-        ccflags         = CURRENT_CFLAGS(bld, libname, cflags),
+        samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
         depends_on      = depends_on,
         samba_deps      = TO_LIST(deps),
         samba_includes  = includes,
@@ -98,10 +99,10 @@ def SAMBA_BINARY(bld, binname, source,
                  autoproto=None,
                  use_hostcc=None,
                  compiler=None,
-                 group='main',
+                 group='binaries',
                  manpages=None,
                  local_include=True,
-                 subsystem=None,
+                 subsystem_name=None,
                  needs_python=False):
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
@@ -116,37 +117,25 @@ def SAMBA_BINARY(bld, binname, source,
         features       = features,
         source         = source,
         target         = binname,
-        ccflags        = CURRENT_CFLAGS(bld, binname, cflags),
+        samba_cflags   = CURRENT_CFLAGS(bld, binname, cflags),
         samba_deps     = TO_LIST(deps),
         samba_includes = includes,
         local_include  = local_include,
         samba_modules  = modules,
         top            = True,
-        samba_subsystem= subsystem
+        samba_subsystem= subsystem_name
         )
+
+    # setup the subsystem_name as an alias for the real
+    # binary name, so it can be found when expanding
+    # subsystem dependencies
+    if subsystem_name is not None:
+        bld.TARGET_ALIAS(subsystem_name, binname)
 
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source)
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
-
-#################################################################
-# define a Samba ET target
-def SAMBA_ERRTABLE(bld, name, source,
-               options='',
-               directory=''):
-#    print "Skipping ERRTABLE rule for %s with source=%s" % (name, source)
-#    return
-    if not SET_TARGET_TYPE(bld, name, 'ET'):
-        return
-    bld.SET_BUILD_GROUP('build_source')
-    bld(
-        features = 'cc',
-        source   = source,
-        target   = name,
-        includes = '# #source4/heimdal_build #source4 #lib/replace'
-    )
-Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
 
 #################################################################
 # define a Samba module.
@@ -159,12 +148,12 @@ def SAMBA_MODULE(bld, modname, source,
                  autoproto_extra_source='',
                  aliases=None,
                  cflags='',
-                 output_type=None,
+                 internal_module=True,
                  local_include=True,
                  enabled=True):
 
-    if output_type == 'MERGED_OBJ':
-        # treat merged object modules as subsystems for now
+    if internal_module:
+        # treat internal modules as subsystems for now
         SAMBA_SUBSYSTEM(bld, modname, source,
                         deps=deps,
                         includes=includes,
@@ -177,7 +166,8 @@ def SAMBA_MODULE(bld, modname, source,
         # add it to the init_function list
         # TODO: we should also create an implicit dependency
         # between the subsystem target and this target
-        bld.ADD_INIT_FUNCTION(subsystem, init_function)
+        if enabled:
+            bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
         return
 
     if not enabled:
@@ -193,7 +183,7 @@ def SAMBA_MODULE(bld, modname, source,
         return
 
 
-    bld.ADD_INIT_FUNCTION(subsystem, init_function)
+    bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
 
     if subsystem is not None:
         deps += ' ' + subsystem
@@ -203,7 +193,7 @@ def SAMBA_MODULE(bld, modname, source,
         features       = 'cc',
         source         = source,
         target         = modname,
-        ccflags        = CURRENT_CFLAGS(bld, modname, cflags),
+        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
         samba_includes = includes,
         local_include  = local_include,
         samba_deps     = TO_LIST(deps)
@@ -234,16 +224,12 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     depends_on='',
                     local_include=True,
                     local_include_first=True,
-                    enabled=True):
+                    subsystem_name=None,
+                    enabled=True,
+                    needs_python=False):
 
     if not enabled:
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
-        return
-
-    # if the caller specifies a config_option, then we create a blank
-    # subsystem if that configuration option was found at configure time
-    if (config_option is not None) and bld.CONFIG_SET(config_option):
-        SET_TARGET_TYPE(bld, modname, 'EMPTY')
         return
 
     # remember empty subsystems, so we can strip the dependencies
@@ -258,16 +244,21 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     bld.SET_BUILD_GROUP(group)
 
+    features = 'cc'
+    if needs_python:
+        features += ' pyext'
+
     t = bld(
-        features       = 'cc',
+        features       = features,
         source         = source,
         target         = modname,
-        ccflags        = CURRENT_CFLAGS(bld, modname, cflags),
+        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
         depends_on     = depends_on,
         samba_deps     = TO_LIST(deps),
         samba_includes = includes,
         local_include  = local_include,
-        local_include_first  = local_include_first
+        local_include_first  = local_include_first,
+        samba_subsystem= subsystem_name
         )
 
     if heimdal_autoproto is not None:
@@ -334,6 +325,7 @@ def SETUP_BUILD_GROUPS(bld):
     bld.add_group('build_source')
     bld.add_group('prototypes')
     bld.add_group('main')
+    bld.add_group('binaries')
     bld.add_group('final')
 Build.BuildContext.SETUP_BUILD_GROUPS = SETUP_BUILD_GROUPS
 
@@ -360,3 +352,91 @@ def h_file(filename):
 @conf
 def ENABLE_TIMESTAMP_DEPENDENCIES(conf):
     Utils.h_file = h_file
+
+
+##############################
+# handle the creation of links for libraries and binaries
+# note that we use a relative symlink path to allow the whole tree
+# to me moved/copied elsewhere without breaking the links
+t = Task.simple_task_type('symlink_lib', 'ln -sf ${LINK_SOURCE} ${LINK_TARGET}',
+                          color='PINK', ext_in='.bin')
+t.quiet = True
+
+@feature('symlink_lib')
+@after('apply_link')
+def symlink_lib(self):
+    tsk = self.create_task('symlink_lib', self.link_task.outputs[0])
+
+    # calculat the link target and put it in the environment
+    soext=""
+    vnum = getattr(self, 'vnum', None)
+    if vnum is not None:
+        soext = '.' + vnum.split('.')[0]
+
+    link_target = getattr(self, 'link_name', '')
+    if link_target == '':
+        link_target = '%s/lib%s.so%s' % (LIB_PATH, self.sname, soext)
+
+
+    link_source = os_path_relpath(self.link_task.outputs[0].abspath(self.env),
+                                  os.path.join(self.env.BUILD_DIRECTORY, link_target))
+
+    tsk.env.LINK_TARGET = link_target
+    tsk.env.LINK_SOURCE = link_source[3:]
+    debug('task_gen: LINK for %s is %s -> %s',
+          self.name, tsk.env.LINK_SOURCE, tsk.env.LINK_TARGET)
+
+# for binaries we need to copy the executable to avoid the rpath changing
+# in the local bin/ directory on install
+t = Task.simple_task_type('copy_bin', 'rm -f ${BIN_TARGET} && cp ${SRC} ${BIN_TARGET}', color='PINK',
+                          ext_in='.bin', shell=True)
+t.quiet = True
+
+@feature('copy_bin')
+@after('apply_link')
+def copy_bin(self):
+    if Options.is_install:
+        # we don't want to copy the install binary, as
+        # that has the install rpath, not the build rpath
+        # The rpath of the binaries in bin/default/foo/blah is different
+        # during the install phase, as distros insist on not using rpath in installed binaries
+        return
+    tsk = self.create_task('copy_bin', self.link_task.outputs[0])
+
+    tsk.env.BIN_TARGET = self.target
+    debug('task_gen: BIN_TARGET for %s is %s', self.name, tsk.env.BIN_TARGET)
+
+
+
+
+t = Task.simple_task_type('copy_script', 'ln -sf ${SRC[0].abspath(env)} ${LINK_TARGET}',
+                          color='PINK', ext_in='.bin', shell=True)
+t.quiet = True
+
+@feature('copy_script')
+@before('apply_link')
+def copy_script(self):
+    tsk = self.create_task('copy_script', self.allnodes[0])
+    tsk.env.TARGET = self.target
+
+def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
+    '''used to copy scripts from the source tree into the build directory
+       for use by selftest'''
+
+    source = bld.path.ant_glob(pattern)
+
+    bld.SET_BUILD_GROUP('build_source')
+    for s in TO_LIST(source):
+        iname = s
+        if installname != None:
+            iname = installname
+        target = os.path.join(installdir, iname)
+        tgtdir = os.path.dirname(os.path.join(bld.srcnode.abspath(bld.env), '..', target))
+        mkdir_p(tgtdir)
+        t = bld(features='copy_script',
+                source=s,
+                target = target,
+                always=True)
+        t.env.LINK_TARGET = target
+
+Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT

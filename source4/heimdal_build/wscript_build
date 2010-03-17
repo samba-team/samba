@@ -126,68 +126,48 @@ bld.SAMBA_ASN1('HEIMDAL_PKCS10_ASN1',
 
 bld.SAMBA_ASN1('HEIMDAL_HDB_ASN1',
 	'../heimdal/lib/hdb/hdb.asn1',
-        includes='../heimdal/lib/asn1',
-	directory='lib/hdb'
-	)
+        includes='../heimdal/lib/asn1')
 
 bld.SAMBA_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
-	'../heimdal/lib/asn1/asn1_err.et',
-	directory='lib/asn1'
-	)
+	'../heimdal/lib/asn1/asn1_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_HDB_ERR_ET',
-	'../heimdal/lib/hdb/hdb_err.et',
-	directory='lib/hdb'
-	)
+	'../heimdal/lib/hdb/hdb_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
-	'../heimdal/lib/krb5/heim_err.et',
-	directory='lib/krb5'
-	)
+	'../heimdal/lib/krb5/heim_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_K524_ERR_ET',
-	'../heimdal/lib/krb5/k524_err.et',
-	directory='lib/krb5'
-	)
+	'../heimdal/lib/krb5/k524_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_KRB_ERR_ET',
-	'../heimdal/lib/krb5/krb_err.et',
-	directory='lib/krb5'
-	)
+	'../heimdal/lib/krb5/krb_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
-	'../heimdal/lib/krb5/krb5_err.et',
-	directory='lib/krb5'
-	)
+	'../heimdal/lib/krb5/krb5_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
-	'../heimdal/lib/gssapi/krb5/gkrb5_err.et',
-	directory='lib/gssapi'
-	)
+	'../heimdal/lib/gssapi/krb5/gkrb5_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_HX509_ERR_ET',
-	'../heimdal/lib/hx509/hx509_err.et',
-	directory='lib/hx509'
-	)
+	'../heimdal/lib/hx509/hx509_err.et')
 
 
 bld.SAMBA_ERRTABLE('HEIMDAL_WIND_ERR_ET',
-	'../heimdal/lib/wind/wind_err.et',
-	directory='lib/wind'
-	)
+	'../heimdal/lib/wind/wind_err.et')
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN',
 	'../heimdal/lib/roken/base64.c ../heimdal/lib/roken/ct.c ../heimdal/lib/roken/hex.c ../heimdal/lib/roken/bswap.c ../heimdal/lib/roken/dumpdata.c ../heimdal/lib/roken/emalloc.c ../heimdal/lib/roken/ecalloc.c ../heimdal/lib/roken/getarg.c ../heimdal/lib/roken/get_window_size.c ../heimdal/lib/roken/getdtablesize.c ../heimdal/lib/roken/h_errno.c ../heimdal/lib/roken/issuid.c ../heimdal/lib/roken/net_read.c ../heimdal/lib/roken/net_write.c ../heimdal/lib/roken/socket.c ../heimdal/lib/roken/parse_time.c ../heimdal/lib/roken/parse_units.c ../heimdal/lib/roken/resolve.c ../heimdal/lib/roken/roken_gethostby.c ../heimdal/lib/roken/signal.c ../heimdal/lib/roken/vis.c ../heimdal/lib/roken/strlwr.c ../heimdal/lib/roken/strsep_copy.c ../heimdal/lib/roken/strsep.c ../heimdal/lib/roken/strupr.c ../heimdal/lib/roken/strpool.c ../heimdal/lib/roken/estrdup.c ../heimdal/lib/roken/erealloc.c ../heimdal/lib/roken/simple_exec.c ../heimdal/lib/roken/strcollect.c ../heimdal/lib/roken/rtbl.c ../heimdal/lib/roken/cloexec.c ../heimdal/lib/roken/xfree.c replace.c',
 	includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
-	deps='HEIMDAL_ROKEN_PROGNAME HEIMDAL_ROKEN_CLOSEFROM resolv LIBREPLACE_NETWORK UID_WRAPPER'
+	deps='HEIMDAL_ROKEN_PROGNAME HEIMDAL_ROKEN_CLOSEFROM resolv LIBREPLACE_NETWORK UID_WRAPPER util'
 	)
 
 
@@ -218,7 +198,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB_KEYS',
 bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB',
                     source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c hdb-glue.c''',
-                    includes='../heimdal/lib/hdb',
+                    includes='../heimdal/lib/hdb ../heimdal/lib/com_err',
                     heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
                     deps='HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1'
@@ -272,14 +252,44 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_GSSAPI',
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_KRB5',
-	'../heimdal/lib/krb5/acache.c ../heimdal/lib/krb5/add_et_list.c ../heimdal/lib/krb5/addr_families.c ../heimdal/lib/krb5/appdefault.c ../heimdal/lib/krb5/asn1_glue.c ../heimdal/lib/krb5/auth_context.c ../heimdal/lib/krb5/build_ap_req.c ../heimdal/lib/krb5/build_auth.c ../heimdal/lib/krb5/cache.c ../heimdal/lib/krb5/changepw.c ../heimdal/lib/krb5/codec.c ../heimdal/lib/krb5/config_file.c ../heimdal/lib/krb5/constants.c ../heimdal/lib/krb5/context.c ../heimdal/lib/krb5/convert_creds.c ../heimdal/lib/krb5/copy_host_realm.c ../heimdal/lib/krb5/crc.c ../heimdal/lib/krb5/creds.c ../heimdal/lib/krb5/crypto.c ../heimdal/lib/krb5/data.c ../heimdal/lib/krb5/eai_to_heim_errno.c ../heimdal/lib/krb5/error_string.c ../heimdal/lib/krb5/expand_hostname.c ../heimdal/lib/krb5/fcache.c ../heimdal/lib/krb5/free.c ../heimdal/lib/krb5/free_host_realm.c ../heimdal/lib/krb5/generate_seq_number.c ../heimdal/lib/krb5/generate_subkey.c ../heimdal/lib/krb5/get_addrs.c ../heimdal/lib/krb5/get_cred.c ../heimdal/lib/krb5/get_default_principal.c ../heimdal/lib/krb5/get_default_realm.c ../heimdal/lib/krb5/get_for_creds.c ../heimdal/lib/krb5/get_host_realm.c ../heimdal/lib/krb5/get_in_tkt.c ../heimdal/lib/krb5/get_port.c ../heimdal/lib/krb5/init_creds.c ../heimdal/lib/krb5/init_creds_pw.c ../heimdal/lib/krb5/kcm.c ../heimdal/lib/krb5/keyblock.c ../heimdal/lib/krb5/keytab.c ../heimdal/lib/krb5/keytab_any.c ../heimdal/lib/krb5/keytab_file.c ../heimdal/lib/krb5/keytab_memory.c ../heimdal/lib/krb5/keytab_keyfile.c ../heimdal/lib/krb5/krbhst.c ../heimdal/lib/krb5/log.c ../heimdal/lib/krb5/mcache.c ../heimdal/lib/krb5/misc.c ../heimdal/lib/krb5/mk_error.c ../heimdal/lib/krb5/mk_priv.c ../heimdal/lib/krb5/mk_rep.c ../heimdal/lib/krb5/mk_req.c ../heimdal/lib/krb5/mk_req_ext.c ../heimdal/lib/krb5/mit_glue.c ../heimdal/lib/krb5/n-fold.c ../heimdal/lib/krb5/padata.c ../heimdal/lib/krb5/pkinit.c ../heimdal/lib/krb5/plugin.c ../heimdal/lib/krb5/principal.c ../heimdal/lib/krb5/prog_setup.c ../heimdal/lib/krb5/pac.c ../heimdal/lib/krb5/prompter_posix.c ../heimdal/lib/krb5/rd_cred.c ../heimdal/lib/krb5/rd_error.c ../heimdal/lib/krb5/rd_priv.c ../heimdal/lib/krb5/rd_rep.c ../heimdal/lib/krb5/rd_req.c ../heimdal/lib/krb5/replay.c ../heimdal/lib/krb5/send_to_kdc.c ../heimdal/lib/krb5/set_default_realm.c ../heimdal/lib/krb5/store.c ../heimdal/lib/krb5/store_emem.c ../heimdal/lib/krb5/store_fd.c ../heimdal/lib/krb5/store_mem.c ../heimdal/lib/krb5/ticket.c ../heimdal/lib/krb5/time.c ../heimdal/lib/krb5/transited.c ../heimdal/lib/krb5/v4_glue.c ../heimdal/lib/krb5/version.c ../heimdal/lib/krb5/warn.c ../heimdal/lib/krb5/krb5_err.c ../heimdal/lib/krb5/heim_err.c ../heimdal/lib/krb5/k524_err.c krb5-glue.c',
-	includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/lib/com_err',
-	public_deps='HEIMDAL_COM_ERR',
-        heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
-        heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
-        heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
-	deps='HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBNETIF LIBSAMBA-HOSTCONFIG INTL'
-	)
+                    bld.SUBDIR('../heimdal/lib/krb5/',
+                               '''acache.c add_et_list.c
+                               addr_families.c appdefault.c
+                               asn1_glue.c auth_context.c
+                               build_ap_req.c build_auth.c cache.c
+                               changepw.c codec.c config_file.c
+                               constants.c context.c convert_creds.c
+                               copy_host_realm.c crc.c creds.c
+                               crypto.c data.c eai_to_heim_errno.c
+                               error_string.c expand_hostname.c
+                               fcache.c free.c free_host_realm.c
+                               generate_seq_number.c generate_subkey.c
+                               get_addrs.c get_cred.c
+                               get_default_principal.c
+                               get_default_realm.c get_for_creds.c
+                               get_host_realm.c get_in_tkt.c
+                               get_port.c init_creds.c init_creds_pw.c
+                               kcm.c keyblock.c keytab.c keytab_any.c
+                               keytab_file.c keytab_memory.c
+                               keytab_keyfile.c krbhst.c log.c
+                               mcache.c misc.c mk_error.c mk_priv.c
+                               mk_rep.c mk_req.c mk_req_ext.c
+                               mit_glue.c n-fold.c padata.c pkinit.c
+                               plugin.c principal.c prog_setup.c pac.c
+                               prompter_posix.c rd_cred.c rd_error.c
+                               rd_priv.c rd_rep.c rd_req.c replay.c
+                               send_to_kdc.c set_default_realm.c
+                               store.c store_emem.c store_fd.c
+                               store_mem.c ticket.c time.c transited.c
+                               v4_glue.c version.c warn.c krb5_err.c
+                               heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
+                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/lib/com_err',
+                    public_deps='HEIMDAL_COM_ERR',
+                    heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
+                    heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
+                    heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
+                    deps='HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBNETIF LIBSAMBA-HOSTCONFIG INTL'
+                    )
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
@@ -320,14 +330,14 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME',
 	'../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c',
         includes='../heimdal/lib/roken',
-        config_option='HAVE_GETPROGNAME'
+        enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
 	)
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM',
 	'../heimdal/lib/roken/closefrom.c',
         includes='../heimdal/lib/roken',
-        config_option='HAVE_CLOSEFROM'
+        enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
 	)
 
 
@@ -335,7 +345,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME_H',
 	'../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
         includes='../heimdal/lib/roken',
-        config_option='HAVE_GETPROGNAME'
+        enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
 	)
 
 
@@ -343,7 +353,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM_H',
 	'../heimdal/lib/roken/closefrom.c',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
         includes='../heimdal/lib/roken',
-        config_option='HAVE_CLOSEFROM'
+        enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
 	)
 
 
@@ -359,7 +369,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_COM_ERR',
 	'../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
 	includes='../heimdal/lib/com_err',
 	deps='HEIMDAL_ROKEN',
-        config_option='HAVE_COM_ERR'
+        enabled=not bld.CONFIG_SET('HAVE_COM_ERR')
 	)
 
 

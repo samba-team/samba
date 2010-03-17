@@ -1,0 +1,20 @@
+# very crude Makefile to run waf
+WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
+
+all:
+	$(WAF) build -v
+
+install:
+	$(WAF) install
+
+uninstall:
+	$(WAF) uninstall
+
+clean:
+	$(WAF) clean
+
+distclean:
+	rm -rf bin
+
+*:
+	echo "target not implemented"

@@ -3,8 +3,9 @@
 
 
 bld.SAMBA_SUBSYSTEM('LIBWINBIND-CLIENT',
-	source='wb_common.c'
-	)
+                    source='wb_common.c',
+                    cflags='-DSOCKET_WRAPPER_DISABLE=1'
+                    )
 
 
 bld.SAMBA_BINARY('nsstest',

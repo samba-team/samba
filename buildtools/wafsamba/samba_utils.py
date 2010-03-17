@@ -1,11 +1,10 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs, sys, Configure, Options, string, Task, Utils, optparse
+import Build, os, sys, Options, Utils
 from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
-from TaskGen import extension
 import shlex
 
 # TODO: make this a --option
@@ -102,7 +101,7 @@ Build.BuildContext.ASSERT = ASSERT
 def SUBDIR(bld, subdir, list):
     ret = ''
     for l in TO_LIST(list):
-        ret = ret + subdir + '/' + l + ' '
+        ret = ret + os.path.normpath(os.path.join(subdir, l)) + ' '
     return ret
 Build.BuildContext.SUBDIR = SUBDIR
 
@@ -189,16 +188,22 @@ def ENABLE_MAGIC_ORDERING(bld):
 Build.BuildContext.ENABLE_MAGIC_ORDERING = ENABLE_MAGIC_ORDERING
 
 
-def BUILD_PATH(bld, relpath):
-    '''return a relative build path, given a relative path
-       for example, if called in the source4/librpc directory, with the path
-       gen_ndr/tables.c, then it will return default/source4/gen_ndr/tables.c
-    '''
+os_path_relpath = getattr(os.path, 'relpath', None)
+if os_path_relpath is None:
+    # Python < 2.6 does not have os.path.relpath, provide a replacement
+    # (imported from Python2.6.5~rc2)
+    def os_path_relpath(path, start):
+        """Return a relative version of a path"""
+        start_list = os.path.abspath(start).split("/")
+        path_list = os.path.abspath(path).split("/")
 
-    ret = os.path.normpath(os.path.join(os.path.relpath(bld.curdir, bld.env.TOPDIR), relpath))
-    ret = 'default/%s' % ret
-    return ret
-Build.BuildContext.BUILD_PATH = BUILD_PATH
+        # Work out how much of the filepath is shared by start and path.
+        i = len(os.path.commonprefix([start_list, path_list]))
+
+        rel_list = ['..'] * (len(start_list)-i) + path_list[i:]
+        if not rel_list:
+            return start
+        return os.path.join(*rel_list)
 
 
 # this is a useful way of debugging some of the rules in waf
@@ -276,3 +281,24 @@ Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
 #                 raise Utils.WafError('object %r was not found in uselib_local (required by add_objects %r)' % (x, self.name))
 #             y.post()
 #             self.env.append_unique('INC_PATHS', y.env.INC_PATHS)
+
+
+def recursive_dirlist(dir, relbase):
+    '''recursive directory list'''
+    ret = []
+    for f in os.listdir(dir):
+        f2 = dir + '/' + f
+        if os.path.isdir(f2):
+            ret.extend(recursive_dirlist(f2, relbase))
+        else:
+            ret.append(os_path_relpath(f2, relbase))
+    return ret
+
+
+def mkdir_p(dir):
+    '''like mkdir -p'''
+    if os.path.isdir(dir):
+        return
+    mkdir_p(os.path.dirname(dir))
+    os.mkdir(dir)
+

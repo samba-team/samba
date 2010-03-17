@@ -45,9 +45,10 @@ bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
 	)
 
 
-bld.SAMBA_LIBRARY('mit_samba',source='',
-	deps='MIT_SAMBA',
-	output_type='SHARED_LIBRARY',
-	realname='mit_samba.so'
-	)
+bld.SAMBA_LIBRARY('mit_samba',
+                  source='',
+                  deps='MIT_SAMBA',
+                  external_library=True,
+                  realname='mit_samba.so'
+                  )
 

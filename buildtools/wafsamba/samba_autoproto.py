@@ -1,7 +1,6 @@
 # waf build tool for building automatic prototypes from C source
 
-from TaskGen import taskgen, before
-import Build, os, string, Utils
+import Build
 from samba_utils import *
 
 # rule for heimdal prototype generation

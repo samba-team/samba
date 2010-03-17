@@ -73,7 +73,7 @@ bld.SAMBA_MODULE('dcerpc_winreg',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_winreg_init',
 	deps='registry NDR_STANDARD',
-	output_type='MERGED_OBJ'
+	internal_module=True
 	)
 
 
@@ -99,7 +99,7 @@ bld.SAMBA_MODULE('dcerpc_spoolss',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_spoolss_init',
 	deps='DCERPC_COMMON NDR_SPOOLSS ntptr RPC_NDR_SPOOLSS',
-	output_type='MERGED_OBJ'
+	internal_module=True
 	)
 
 
@@ -132,7 +132,7 @@ bld.SAMBA_MODULE('DCESRV',
 	autoproto='service_rpc.h',
 	subsystem='service',
 	init_function='server_service_rpc_init',
-	output_type='MERGED_OBJ',
+	internal_module=True,
 	deps='dcerpc_server'
 	)
 

@@ -28,7 +28,7 @@ def set_options(opt):
                    action="store_true", dest='developer', default=False)
     opt.add_option('--timestamp-dependencies',
                    help=("use file timestamps instead of content for build dependencies (BROKEN)"),
-                   action="store", dest='timestamp_dependencies', default=False)
+                   action="store_true", dest='timestamp_dependencies', default=False)
 
 @wafsamba.runonce
 def configure(conf):
@@ -43,7 +43,7 @@ def configure(conf):
 
     conf.check_tool('compiler_cc')
     # gccdeps can be useful for debugging recursion in #include lines
-    # conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
+    conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     # make the install paths available in environment
     conf.env.LIBDIR = Options.options.LIBDIR
@@ -51,6 +51,9 @@ def configure(conf):
     conf.env.SBINDIR = Options.options.SBINDIR
 
     conf.env.RPATH_ON_INSTALL = Options.options.enable_rpath
+
+    # we should use the PIC options in waf instead
+    conf.ADD_CFLAGS('-fPIC')
 
     # check for pkgconfig
     conf.check_cfg(atleast_pkgconfig_version='0.0.0')
@@ -163,6 +166,7 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
     conf.CHECK_FUNCS_IN('res_search', 'resolv')
     conf.CHECK_FUNCS_IN('gettext', 'intl')
+    conf.CHECK_FUNCS_IN('pthread_create', 'pthread')
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
 
@@ -269,8 +273,6 @@ def configure(conf):
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         define='HAVE_VISIBILITY_ATTR')
 
-    # use this later ->  conf.recurse('.', name='getpass')
-
     if conf.CHECK_FUNCS('getpass getpassphrase'):
         # if we have both, then we prefer getpassphrase
         conf.DEFINE(REPLACE_GETPASS_BY_GETPASSPHRASE, 1)
@@ -294,7 +296,8 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
-                      group='base_libraries')
+                      group='base_libraries',
+                      deps='LIBREPLACE_GETPASS')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''
@@ -317,3 +320,8 @@ def build(bld):
     if not 'HAVE_CRYPT' in bld.env: CRYPT_SOURCES.append('crypt.c')
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_EXT', CRYPT_SOURCES)
+
+    bld.SAMBA_SUBSYSTEM('LIBREPLACE_GETPASS', 'getpass.c',
+                        enabled=bld.CONFIG_SET('REPLACE_GETPASS'))
+
+    bld.CHECK_PROJECT_RULES()

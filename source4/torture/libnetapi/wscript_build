@@ -8,7 +8,7 @@ bld.SAMBA_MODULE('TORTURE_LIBNETAPI',
 	subsystem='smbtorture',
 	init_function='torture_libnetapi_init',
 	deps='POPT_CREDENTIALS NETAPI',
-	output_type='MERGED_OBJ',
+	internal_module=True,
         enabled=False
 	)
 

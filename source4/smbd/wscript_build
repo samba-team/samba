@@ -19,9 +19,10 @@ bld.SAMBA_BINARY('samba',
 	source='server.c',
 	manpages='samba.8',
 	installdir='SBINDIR',
-        subsystem='service',
+        subsystem_name='service',
 	deps='''LIBEVENTS process_model service LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL POPT_SAMBA PIDFILE
-                LIBPOPT gensec registry ntptr ntvfs share CLUSTER DCESRV'''
+                LIBPOPT gensec registry ntptr ntvfs share CLUSTER DCESRV''',
+        needs_python=True
 	)
 
 
@@ -35,7 +36,7 @@ bld.SAMBA_MODULE('process_model_single',
 	source='process_single.c',
 	subsystem='process_model',
 	init_function='process_model_single_init',
-	output_type='MERGED_OBJ'
+	internal_module=True
 	)
 
 
@@ -51,7 +52,8 @@ bld.SAMBA_MODULE('process_model_thread',
 	source='process_thread.c',
 	subsystem='process_model',
 	init_function='process_model_thread_init',
-	deps='PTHREAD'
+        enabled=False,
+	deps='pthread'
 	)
 
 

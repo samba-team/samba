@@ -1,0 +1,12 @@
+
+conf.CHECK_HEADERS('readline.h history.h readline/readline.h readline/history.h')
+for termlib in ['ncurses', 'curses', 'termcap', 'terminfo', 'termlib', 'tinfo']:
+    if conf.CHECK_FUNCS_IN('tgetent', termlib):
+        conf.env['READLINE_TERMLIB'] = termlib
+        break
+
+if conf.CHECK_FUNCS_IN('rl_completion_matches', 'readline'):
+    conf.DEFINE('HAVE_NEW_LIBREADLINE', 1)
+
+if conf.CHECK_FUNCS_IN('rl_event_hook', 'readline'):
+    conf.DEFINE('HAVE_HISTORY_LIST', 1)

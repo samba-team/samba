@@ -54,19 +54,19 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_DGRAM',
 bld.SAMBA_SUBSYSTEM('LIBCLI_WREPL',
 	source='wrepl/winsrepl.c',
 	autoproto='wrepl/winsrepl_proto.h',
-	public_deps='NDR_WINSREPL samba_socket LIBEVENTS LIBPACKET'
+	public_deps='NDR_WINSREPL samba_socket LIBEVENTS LIBPACKET LIBSAMBA_TSOCKET'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_RESOLVE',
 	source='resolve/resolve.c',
 	autoproto='resolve/proto.h',
-	public_deps='NDR_NBT'
+	public_deps='NDR_NBT LIBTSOCKET'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
-	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/host.c resolve/resolve_lp.c',
+	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/file.c resolve/host.c resolve/resolve_lp.c',
 	autoproto='resolve/lp_proto.h',
 	deps='LIBCLI_NBT LIBSAMBA-HOSTCONFIG LIBNETIF'
 	)

@@ -8,7 +8,7 @@ bld.SAMBA_MODULE('TORTURE_LIBSMBCLIENT',
 	subsystem='smbtorture',
 	init_function='torture_libsmbclient_init',
 	deps='POPT_CREDENTIALS SMBCLIENT',
-	output_type='MERGED_OBJ',
+	internal_module=True,
         enabled=False
 	)
 

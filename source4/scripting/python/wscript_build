@@ -15,7 +15,7 @@ bld.SAMBA_PYTHON('PYTALLOC',
 bld.SAMBA_PYTHON('python_uuid',
                  source='uuidmodule.c',
                  deps='LIBNDR',
-                 realname='uuid'
+                 realname='uuid.so'
                  )
 
 
@@ -30,3 +30,9 @@ bld.SAMBA_PYTHON('python_glue',
 
 # create a dummy subsystem for EXT_LIB_PYTHON
 bld.SAMBA_SUBSYSTEM('EXT_LIB_PYTHON', '')
+
+
+# install out various python scripts for use by make test
+bld.SAMBA_SCRIPT('samba_python',
+                 pattern='samba/**/*.py',
+                 installdir='python')

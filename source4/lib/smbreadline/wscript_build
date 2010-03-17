@@ -1,0 +1,6 @@
+
+termlib=bld.env.READLINE_TERMLIB or ''
+
+bld.SAMBA_SUBSYSTEM('SMBREADLINE',
+                    source='smbreadline.c',
+                    deps=termlib + ' readline')

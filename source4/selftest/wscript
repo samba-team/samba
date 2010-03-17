@@ -1,5 +1,7 @@
 # selftest main code.
 
+import Scripting, os
+
 ########################################################################
 # main test entry point
 def cmd_test(opt):
@@ -11,8 +13,10 @@ def cmd_test(opt):
 def cmd_quicktest(opt):
     '''Run the quick test suite'''
     print "Starting quick test"
+    #Scripting.commands += ['build']
+    SELFTEST = 'PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" --exclude=./selftest/slow --quick --include=./selftest/quick --socket-wrapper | perl -W ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail | /usr/bin/perl -W ../selftest/format-subunit.pl --prefix=./st --format=plain --immediate'
+    ret = os.system(SELFTEST)
 
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
     opt.ADD_COMMAND('quicktest', cmd_quicktest)
-

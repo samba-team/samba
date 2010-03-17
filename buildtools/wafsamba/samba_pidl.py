@@ -1,7 +1,7 @@
 # waf build tool for building IDL files with pidl
 
-from TaskGen import taskgen, before
-import Build, os, string, Utils
+from TaskGen import before
+import Build, os
 from samba_utils import *
 
 def SAMBA_PIDL(bld, pname, source, options='', output_dir='.'):
@@ -41,7 +41,11 @@ def SAMBA_PIDL(bld, pname, source, options='', output_dir='.'):
                     # remember this one for the tables generation
                     table_header_idx = len(out_files) - 1
 
-    pidl = bld.srcnode.find_resource('pidl/pidl').relpath_gen(bld.path)
+    # depend on the full pidl sources
+    source = TO_LIST(source)
+    pidl_src = [x.relpath_gen(bld.path) for x in
+                bld.srcnode.ant_glob('pidl/**/*', flat=False)]
+    source.extend(pidl_src)
 
     # the cd .. is needed because pidl currently is sensitive to the directory it is run in
     t = bld(rule='cd .. && ${PIDL} ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC[0].abspath(env)}',
@@ -54,8 +58,7 @@ def SAMBA_PIDL(bld, pname, source, options='', output_dir='.'):
 
     t.env.PIDL = "../pidl/pidl"
     t.env.OPTIONS = TO_LIST(options)
-    t.env.OUTPUTDIR = 'bin/' + bld.BUILD_PATH(output_dir)
-
+    t.env.OUTPUTDIR = bld.bldnode.name + '/' + bld.path.find_dir(output_dir).bldpath(t.env)
 
     if table_header_idx is not None:
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')

@@ -33,7 +33,7 @@ bld.SAMBA_SUBSYSTEM('auth_system_session',
 bld.SAMBA_SUBSYSTEM('auth_sam',
 	source='sam.c',
 	autoproto='auth_sam.h',
-	public_deps='SAMDB UTIL_LDB LIBSECURITY',
+	public_deps='SAMDB UTIL_LDB LIBSECURITY ldb',
 	deps=''
 	)
 

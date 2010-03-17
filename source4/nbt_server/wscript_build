@@ -11,7 +11,7 @@ bld.SAMBA_SUBSYSTEM('WINSDB',
 
 bld.SAMBA_MODULE('ldb_wins_ldb',
 	source='wins/wins_ldb.c',
-	subsystem='ldb',
+	subsystem='LIBLDB',
 	init_function='LDB_MODULE(wins_ldb)',
 	deps='ldb LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL'
 	)

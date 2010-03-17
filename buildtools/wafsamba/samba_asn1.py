@@ -1,7 +1,7 @@
 # samba ASN1 rules
 
-from TaskGen import taskgen, before
-import Build, os, string, Utils
+from TaskGen import before
+import Build, os
 from samba_utils import *
 from samba_autoconf import *
 
@@ -48,11 +48,16 @@ def SAMBA_ASN1(bld, name, source,
     # SRC[0].abspath(env) gives the absolute path to the source directory for the first
     # source file. Note that in the case of a option_file, we have more than
     # one source file
+    # SRC[1].abspath(env) gives the path of asn1_compile. This makes the asn1 output
+    # correctly depend on the compiler binary
     cd_rule = 'cd ${TGT[0].parent.abspath(env)}'
-    asn1_rule = cd_rule + ' && ${ASN1COMPILER} ${OPTION_FILE}  ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
+    asn1_rule = cd_rule + ' && ${SRC[1].abspath(env)} ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
+
+    source = TO_LIST(source)
+    source.append('asn1_compile')
 
     if option_file is not None:
-        source = [ source, option_file ]
+        source.append(option_file)
 
     t = bld(rule=asn1_rule,
             features = 'asn1',
@@ -65,7 +70,6 @@ def SAMBA_ASN1(bld, name, source,
 
     t.env.ASN1NAME     = asn1name
     t.env.ASN1OPTIONS  = options
-    t.env.ASN1COMPILER = os.path.join(os.environ.get('PWD'), 'bin/asn1_compile')
     if option_file is not None:
         t.env.OPTION_FILE = "--option-file=%s" % os.path.normpath(os.path.join(bld.curdir, option_file))
 
@@ -99,7 +103,7 @@ def SAMBA_ASN1(bld, name, source,
     t = bld(features       = 'cc',
             source         = cfile,
             target         = name,
-            ccflags        = CURRENT_CFLAGS(bld, name, ''),
+            samba_cflags   = CURRENT_CFLAGS(bld, name, ''),
             depends_on     = '',
             samba_deps     = TO_LIST('HEIMDAL_ROKEN'),
             samba_includes = includes,

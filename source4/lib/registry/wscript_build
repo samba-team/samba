@@ -57,7 +57,7 @@ bld.SAMBA_BINARY('regtree',
 
 
 bld.SAMBA_SUBSYSTEM('torture_registry',
-	source='tests/generic.c hive.c tests/diff.c tests/registry.c',
+	source='tests/generic.c tests/hive.c tests/diff.c tests/registry.c',
 	autoproto='tests/proto.h',
 	deps='torture registry'
 	)

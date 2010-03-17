@@ -3,7 +3,7 @@
 
 
 bld.SAMBA_SUBSYSTEM('LIBSECURITY_COMMON',
-	source='dom_sid.c display_sec.c secace.c secacl.c security_descriptor.c',
+	source='dom_sid.c display_sec.c secace.c secacl.c security_descriptor.c sddl.c',
 	deps='talloc'
 	)
 
