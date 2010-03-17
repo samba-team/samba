@@ -55,14 +55,26 @@ def CHECK_TYPE(conf, t, alternate):
     return False
 
 @conf
-def CHECK_VARIABLE(conf, v, define=None, always=False):
+def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
     hdrs=''
-    for h in conf.env.hlist:
+    if headers is not None:
+        hlist = headers.split()
+    else:
+        hlist = conf.env.hlist
+    for h in hlist:
         hdrs += '#include <%s>\n' % h
     if define is None:
         define = 'HAVE_%s' % v.upper()
     if conf.check(fragment=
-                  '%s\nint main(void) {void *_x; _x=(void *)&%s; return 0;}\n' % (hdrs, v),
+                  '''
+                  %s
+                  int main(void) {
+                    #ifndef %s
+                    void *_x; _x=(void *)&%s;
+                    #endif
+                    return 0;
+                  }\n
+                  ''' % (hdrs, v, v),
                   execute=0,
                   msg="Checking for variable %s" % v):
         conf.DEFINE(define, 1)
@@ -72,12 +84,19 @@ def CHECK_VARIABLE(conf, v, define=None, always=False):
         return False
 
 @conf
-def CHECK_DECLS(conf, vars):
+def CHECK_DECLS(conf, vars, reverse=False, headers=None):
     '''check a list of variable declarations, using the HAVE_DECL_xxx form
-       of define'''
+       of define
+
+       When reverse==True then use HAVE_xxx_DECL instead of HAVE_DECL_xxx
+       '''
     ret = True
     for v in vars.split():
-        if not CHECK_VARIABLE(conf, v, define='HAVE_DECL_%s' % v.upper()):
+        if not reverse:
+            define='HAVE_DECL_%s' % v.upper()
+        else:
+            define='HAVE_%s_DECL' % v.upper()
+        if not CHECK_VARIABLE(conf, v, define=define, headers=headers):
             ret = False
     return ret
 

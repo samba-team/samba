@@ -3,5 +3,7 @@ conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h', add_headers=Fal
 conf.CHECK_FUNCS('inotify_init')
 
 conf.CHECK_VARIABLE('__NR_inotify_init')
-conf.CHECK_VARIABLE('F_SETLEASE')
-conf.CHECK_VARIABLE('SA_SIGINFO')
+conf.CHECK_DECLS('F_SETLEASE', headers='linux/fcntl.h', reverse=True)
+conf.CHECK_DECLS('SA_SIGINFO', headers='signal.h', reverse=True)
+
+conf.CHECK_DECLS('__NR_inotify_init', reverse=True, headers='asm/unistd.h')

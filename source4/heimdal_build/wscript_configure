@@ -24,7 +24,9 @@ conf.DEFINE('VOID_RETSIGTYPE', 1)
 conf.CHECK_VARIABLE('h_errno')
 
 # strangely enough, we need it with another define too
-conf.CHECK_VARIABLE('h_errno', define='HAVE_DECL_H_ERRNO')
+conf.CHECK_DECLS('h_errno')
+
+conf.CHECK_DECLS('_res')
 
 conf.CHECK_HEADERS('arpa/nameser.h dns.h')
 conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv')

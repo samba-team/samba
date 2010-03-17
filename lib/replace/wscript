@@ -131,6 +131,9 @@ def configure(conf):
 
     conf.CHECK_DECLS('snprintf vsnprintf asprintf vasprintf')
 
+    conf.CHECK_DECLS('dirfd environ errno getgrent_r getpwent_r', reverse=True)
+    conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
+
     conf.check_cc(fragment='''
     #include <stdarg.h>
     va_list ap1,ap2;
