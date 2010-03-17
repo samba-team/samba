@@ -8783,14 +8783,10 @@ WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
 WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 			       struct spoolss_EnumPrinterKey *r)
 {
-	fstring		*keynames = NULL;
-	int		num_keys;
+	uint32_t	num_keys;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
-	NT_PRINTER_DATA	*data;
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 		snum = 0;
 	WERROR		result = WERR_BADFILE;
-	int i;
 	const char **array = NULL;
 	DATA_BLOB blob;
 
@@ -8806,45 +8802,14 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
+	result = winreg_enum_printer_key(p->mem_ctx,
+					 p->server_info,
+					 lp_const_servicename(snum),
+					 r->in.key_name,
+					 &num_keys,
+					 &array);
 	if (!W_ERROR_IS_OK(result)) {
-		return result;
-	}
-
-	/* get the list of subkey names */
-
-	data = printer->info_2->data;
-
-	num_keys = get_printer_subkeys(data, r->in.key_name, &keynames);
-	if (num_keys == -1) {
-		result = WERR_BADFILE;
 		goto done;
-	}
-
-	array = talloc_zero_array(r->out.key_buffer, const char *, num_keys + 2);
-	if (!array) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-
-	if (!num_keys) {
-		array[0] = talloc_strdup(array, "");
-		if (!array[0]) {
-			result = WERR_NOMEM;
-			goto done;
-		}
-	}
-
-	for (i=0; i < num_keys; i++) {
-
-		DEBUG(10,("_spoolss_EnumPrinterKey: adding keyname: %s\n",
-			keynames[i]));
-
-		array[i] = talloc_strdup(array, keynames[i]);
-		if (!array[i]) {
-			result = WERR_NOMEM;
-			goto done;
-		}
 	}
 
 	if (!push_reg_multi_sz(p->mem_ctx, &blob, array)) {
@@ -8869,9 +8834,6 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 			*r->out.needed = 0;
 		}
 	}
-
-	free_a_printer(&printer, 2);
-	SAFE_FREE(keynames);
 
 	return result;
 }
