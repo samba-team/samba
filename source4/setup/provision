@@ -109,7 +109,7 @@ parser.add_option("--partitions-only",
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
 parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
-                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with whitespaces for use with OpenLDAP-MMR (Multi-Master-Replication)")
+                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\"")
 parser.add_option("--slapd-path", type="string", metavar="SLAPD-PATH", 
 		help="Path to slapd for LDAP backend [e.g.:'/usr/local/libexec/slapd']. Required for Setup with LDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.") 
 parser.add_option("--setup-ds-path", type="string", metavar="SETUP_DS-PATH", 
