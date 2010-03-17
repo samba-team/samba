@@ -755,6 +755,13 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->binding = talloc_reference(p2, p->binding);
 
+	p2->binding_handle = talloc(p2, struct dcerpc_binding_handle);
+	if (p2->binding_handle == NULL) {
+		talloc_free(p2);
+		return NT_STATUS_NO_MEMORY;
+	}
+	p2->binding_handle->private_data = p2;
+
 	status = dcerpc_alter_context(p2, p2, &p2->syntax, &p2->transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p2);
