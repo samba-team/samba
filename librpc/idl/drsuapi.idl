@@ -1218,12 +1218,7 @@ interface drsuapi
 	} drsuapi_DsAddEntry_DirErr;
 
 	/*
-	 * please note the the current idl
-	 * for DsAddEntry does only parse
-	 * what I saw between 2 w2k3 boxes
-	 * in my dssync experiments I got some other replies
-	 * so all I want to say is that this is very incomplete yet...
-	 * --metze
+	 * Ref: DRS_MSG_ADDENTRYREQ_V2, [MS-DRSR]: 4.1.1.1.3
 	 */
 	typedef struct {
 		drsuapi_DsReplicaObjectListItem first_object;
@@ -1231,7 +1226,7 @@ interface drsuapi
 
 	/* Buffer type is actually more
 	 * like a semi Flags
-	 * Ref: DRS_SecBuffer, [MS-DRSR]: 5.41*/
+	 * Ref: DRS_SecBuffer, [MS-DRSR]: 5.41 */
 	typedef [v1_enum,noprint] enum {
 		DRSUAPI_SECBUFFER_EMPTY          = 0x00000000,
 		DRSUAPI_SECBUFFER_DATA           = 0x00000001,
@@ -1256,6 +1251,9 @@ interface drsuapi
 		[size_is(buff_count)] drsuapi_SecBuffer *buffers;
 	} drsuapi_SecBufferDesc;
 
+	/*
+	 * Ref: DRS_MSG_ADDENTRYREQ_V3, [MS-DRSR]: 4.1.1.1.4
+	 */
 	typedef struct {
 		drsuapi_DsReplicaObjectListItem first_object;
 		drsuapi_SecBufferDesc *client_creds;
