@@ -2609,9 +2609,9 @@ struct tevent_req *rpccli_drsuapi_DsAddEntry_send(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,
 						  struct rpc_pipe_client *cli,
 						  struct policy_handle *_bind_handle /* [in] [ref] */,
-						  int32_t _level /* [in]  */,
+						  uint32_t _level /* [in]  */,
 						  union drsuapi_DsAddEntryRequest *_req /* [in] [ref,switch_is(level)] */,
-						  int32_t *_level_out /* [out] [ref] */,
+						  uint32_t *_level_out /* [out] [ref] */,
 						  union drsuapi_DsAddEntryCtr *_ctr /* [out] [ref,switch_is(*level_out)] */)
 {
 	struct tevent_req *req;
@@ -2719,9 +2719,9 @@ NTSTATUS rpccli_drsuapi_DsAddEntry_recv(struct tevent_req *req,
 NTSTATUS rpccli_drsuapi_DsAddEntry(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *bind_handle /* [in] [ref] */,
-				   int32_t level /* [in]  */,
+				   uint32_t level /* [in]  */,
 				   union drsuapi_DsAddEntryRequest *req /* [in] [ref,switch_is(level)] */,
-				   int32_t *level_out /* [out] [ref] */,
+				   uint32_t *level_out /* [out] [ref] */,
 				   union drsuapi_DsAddEntryCtr *ctr /* [out] [ref,switch_is(*level_out)] */,
 				   WERROR *werror)
 {

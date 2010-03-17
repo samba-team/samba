@@ -6,6 +6,7 @@
 
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/misc.h"
+#include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/samr.h"
 #ifndef _HEADER_drsuapi
 #define _HEADER_drsuapi
@@ -1102,57 +1103,201 @@ struct drsuapi_DsReplicaObjectListItem {
 	struct drsuapi_DsReplicaObject object;
 }/* [noprint,public] */;
 
+enum drsuapi_DsAddEntry_DirErr
+#ifndef USE_UINT_ENUMS
+ {
+	DRSUAPI_DIRERR_OK=(int)(0),
+	DRSUAPI_DIRERR_ATTRIBUTE=(int)(1),
+	DRSUAPI_DIRERR_NAME=(int)(2),
+	DRSUAPI_DIRERR_REFERRAL=(int)(3),
+	DRSUAPI_DIRERR_SECURITY=(int)(4),
+	DRSUAPI_DIRERR_SERVICE=(int)(5),
+	DRSUAPI_DIRERR_UPDATE=(int)(6),
+	DRSUAPI_DIRERR_SYSTEM=(int)(7)
+}
+#else
+ { __donnot_use_enum_drsuapi_DsAddEntry_DirErr=0x7FFFFFFF}
+#define DRSUAPI_DIRERR_OK ( 0 )
+#define DRSUAPI_DIRERR_ATTRIBUTE ( 1 )
+#define DRSUAPI_DIRERR_NAME ( 2 )
+#define DRSUAPI_DIRERR_REFERRAL ( 3 )
+#define DRSUAPI_DIRERR_SECURITY ( 4 )
+#define DRSUAPI_DIRERR_SERVICE ( 5 )
+#define DRSUAPI_DIRERR_UPDATE ( 6 )
+#define DRSUAPI_DIRERR_SYSTEM ( 7 )
+#endif
+;
+
 struct drsuapi_DsAddEntryRequest2 {
 	struct drsuapi_DsReplicaObjectListItem first_object;
 };
 
+enum drsuapi_SecBufferType
+#ifndef USE_UINT_ENUMS
+ {
+	DRSUAPI_SECBUFFER_EMPTY=(int)(0x00000000),
+	DRSUAPI_SECBUFFER_DATA=(int)(0x00000001),
+	DRSUAPI_SECBUFFER_TOKEN=(int)(0x00000002),
+	DRSUAPI_SECBUFFER_PKG_PARAMS=(int)(0x00000003),
+	DRSUAPI_SECBUFFER_MISSING=(int)(0x00000004),
+	DRSUAPI_SECBUFFER_EXTRA=(int)(0x00000005),
+	DRSUAPI_SECBUFFER_STREAM_TRAILER=(int)(0x00000006),
+	DRSUAPI_SECBUFFER_STREAM_HEADER=(int)(0x00000007),
+	DRSUAPI_SECBUFFER_READONLY=(int)(0x80000000)
+}
+#else
+ { __donnot_use_enum_drsuapi_SecBufferType=0x7FFFFFFF}
+#define DRSUAPI_SECBUFFER_EMPTY ( 0x00000000 )
+#define DRSUAPI_SECBUFFER_DATA ( 0x00000001 )
+#define DRSUAPI_SECBUFFER_TOKEN ( 0x00000002 )
+#define DRSUAPI_SECBUFFER_PKG_PARAMS ( 0x00000003 )
+#define DRSUAPI_SECBUFFER_MISSING ( 0x00000004 )
+#define DRSUAPI_SECBUFFER_EXTRA ( 0x00000005 )
+#define DRSUAPI_SECBUFFER_STREAM_TRAILER ( 0x00000006 )
+#define DRSUAPI_SECBUFFER_STREAM_HEADER ( 0x00000007 )
+#define DRSUAPI_SECBUFFER_READONLY ( 0x80000000 )
+#endif
+;
+
+struct drsuapi_SecBuffer {
+	uint32_t buf_size;/* [range(0,10000)] */
+	enum drsuapi_SecBufferType buf_type;
+	uint8_t *buffer;/* [unique,size_is(buf_size)] */
+};
+
+struct drsuapi_SecBufferDesc {
+	uint32_t version;/* [value(0)] */
+	uint32_t buff_count;/* [range(0,10000)] */
+	struct drsuapi_SecBuffer *buffers;/* [unique,size_is(buff_count)] */
+};
+
+struct drsuapi_DsAddEntryRequest3 {
+	struct drsuapi_DsReplicaObjectListItem first_object;
+	struct drsuapi_SecBufferDesc *client_creds;/* [unique] */
+};
+
 union drsuapi_DsAddEntryRequest {
 	struct drsuapi_DsAddEntryRequest2 req2;/* [case(2)] */
-}/* [switch_type(int32)] */;
+	struct drsuapi_DsAddEntryRequest3 req3;/* [case(3)] */
+}/* [switch_type(uint32)] */;
 
 struct drsuapi_DsAddEntryErrorInfoX {
-	uint32_t unknown1;
-	WERROR status;
-	uint32_t unknown2;
-	uint16_t unknown3;
+	uint32_t dsid;
+	WERROR extended_err;
+	uint32_t extended_data;
+	uint16_t problem;
 };
 
-struct drsuapi_DsAddEntryExtraErrorBuffer {
-	uint32_t size;/* [range(0,10485760)] */
-	uint8_t *data;/* [unique,size_is(size)] */
-};
-
-struct drsuapi_DsAddEntryExtraError1 {
-	struct drsuapi_DsAddEntryErrorInfoX error;
+struct drsuapi_DsAddEntry_AttrErr_V1 {
+	uint32_t dsid;
+	WERROR extended_err;
+	uint32_t extended_data;
+	uint16_t problem;
 	enum drsuapi_DsAttributeId attid;
-	uint32_t unknown2;
-	struct drsuapi_DsAddEntryExtraErrorBuffer buffer;
+	uint32_t is_val_returned;
+	struct drsuapi_DsAttributeValue attr_val;
 };
 
-struct drsuapi_DsAddEntryErrorListItem1 {
-	struct drsuapi_DsAddEntryErrorListItem1 *next;/* [unique] */
-	struct drsuapi_DsAddEntryExtraError1 error;
-};
+struct drsuapi_DsAddEntry_AttrErrListItem_V1 {
+	struct drsuapi_DsAddEntry_AttrErrListItem_V1 *next;/* [unique] */
+	struct drsuapi_DsAddEntry_AttrErr_V1 err_data;
+}/* [noprint] */;
 
-struct drsuapi_DsAddEntryErrorInfo1 {
+struct drsuapi_DsAddEntryErrorInfo_Attr_V1 {
 	struct drsuapi_DsReplicaObjectIdentifier *id;/* [unique] */
-	WERROR status;
-	struct drsuapi_DsAddEntryErrorListItem1 first;
+	uint32_t count;
+	struct drsuapi_DsAddEntry_AttrErrListItem_V1 first;
+};
+
+struct drsuapi_DsAddEntryErrorInfo_Name_V1 {
+	uint32_t dsid;
+	WERROR extended_err;
+	uint32_t extended_data;
+	uint16_t problem;
+	struct drsuapi_DsReplicaObjectIdentifier *id_matched;/* [unique] */
+};
+
+struct drsuapi_NameResOp_V1 {
+	uint8_t name_res;/* [value(83)] */
+	uint8_t unused_pad;/* [value(0)] */
+	uint16_t next_rdn;/* [value(0)] */
+};
+
+enum drsuapi_DsAddEntry_RefType
+#ifndef USE_UINT_ENUMS
+ {
+	DRSUAPI_CH_REFTYPE_SUPERIOR=(int)(0x0000),
+	DRSUAPI_CH_REFTYPE_SUBORDINATE=(int)(0x0001),
+	DRSUAPI_CH_REFTYPE_NSSR=(int)(0x0002),
+	DRSUAPI_CH_REFTYPE_CROSS=(int)(0x0003)
+}
+#else
+ { __donnot_use_enum_drsuapi_DsAddEntry_RefType=0x7FFFFFFF}
+#define DRSUAPI_CH_REFTYPE_SUPERIOR ( 0x0000 )
+#define DRSUAPI_CH_REFTYPE_SUBORDINATE ( 0x0001 )
+#define DRSUAPI_CH_REFTYPE_NSSR ( 0x0002 )
+#define DRSUAPI_CH_REFTYPE_CROSS ( 0x0003 )
+#endif
+;
+
+enum drsuapi_DsAddEntry_ChoiceType
+#ifndef USE_UINT_ENUMS
+ {
+	DRSUAPI_SE_CHOICE_BASE_ONLY=(int)(0x00),
+	DRSUAPI_SE_CHOICE_IMMED_CHLDRN=(int)(0x01),
+	DRSUAPI_SE_CHOICE_WHOLE_SUBTREE=(int)(0x02)
+}
+#else
+ { __donnot_use_enum_drsuapi_DsAddEntry_ChoiceType=0x7FFFFFFF}
+#define DRSUAPI_SE_CHOICE_BASE_ONLY ( 0x00 )
+#define DRSUAPI_SE_CHOICE_IMMED_CHLDRN ( 0x01 )
+#define DRSUAPI_SE_CHOICE_WHOLE_SUBTREE ( 0x02 )
+#endif
+;
+
+struct drsuapi_DsaAddressListItem_V1 {
+	struct drsuapi_DsaAddressListItem_V1 *next;/* [unique] */
+	struct lsa_String *address;/* [unique] */
+};
+
+struct drsuapi_DsAddEntry_RefErrListItem_V1 {
+	struct drsuapi_DsReplicaObjectIdentifier *id_target;/* [unique] */
+	struct drsuapi_NameResOp_V1 op_state;
+	uint16_t rdn_alias;/* [value(0)] */
+	uint16_t rdn_internal;/* [value(0)] */
+	enum drsuapi_DsAddEntry_RefType ref_type;
+	uint16_t addr_list_count;
+	struct drsuapi_DsaAddressListItem_V1 *addr_list;/* [unique] */
+	struct drsuapi_DsAddEntry_RefErrListItem_V1 *next;/* [unique] */
+	uint32_t is_choice_set;
+	enum drsuapi_DsAddEntry_ChoiceType choice;
+};
+
+struct drsuapi_DsAddEntryErrorInfo_Referr_V1 {
+	uint32_t dsid;
+	WERROR extended_err;
+	uint32_t extended_data;
+	struct drsuapi_DsAddEntry_RefErrListItem_V1 refer;
 };
 
 union drsuapi_DsAddEntryErrorInfo {
-	struct drsuapi_DsAddEntryErrorInfo1 error1;/* [case] */
-	struct drsuapi_DsAddEntryErrorInfoX errorX;/* [case(4)] */
+	struct drsuapi_DsAddEntryErrorInfo_Attr_V1 attr_err;/* [case] */
+	struct drsuapi_DsAddEntryErrorInfo_Name_V1 name_err;/* [case(2)] */
+	struct drsuapi_DsAddEntryErrorInfo_Referr_V1 referral_err;/* [case(3)] */
+	struct drsuapi_DsAddEntryErrorInfoX security_err;/* [case(4)] */
+	struct drsuapi_DsAddEntryErrorInfoX service_err;/* [case(5)] */
+	struct drsuapi_DsAddEntryErrorInfoX update_err;/* [case(6)] */
+	struct drsuapi_DsAddEntryErrorInfoX system_err;/* [case(7)] */
 }/* [switch_type(uint32)] */;
 
-struct drsuapi_DsAddEntryError1 {
+struct drsuapi_DsAddEntry_ErrData_V1 {
 	WERROR status;
-	uint32_t level;
-	union drsuapi_DsAddEntryErrorInfo *info;/* [unique,switch_is(level)] */
+	enum drsuapi_DsAddEntry_DirErr dir_err;
+	union drsuapi_DsAddEntryErrorInfo *info;/* [unique,switch_is(dir_err)] */
 };
 
-union drsuapi_DsAddEntryError {
-	struct drsuapi_DsAddEntryError1 info1;/* [case] */
+union drsuapi_DsAddEntry_ErrData {
+	struct drsuapi_DsAddEntry_ErrData_V1 v1;/* [case] */
 }/* [switch_type(uint32)] */;
 
 struct drsuapi_DsReplicaObjectIdentifier2 {
@@ -1162,16 +1307,19 @@ struct drsuapi_DsReplicaObjectIdentifier2 {
 
 struct drsuapi_DsAddEntryCtr2 {
 	struct drsuapi_DsReplicaObjectIdentifier *id;/* [unique] */
-	uint32_t unknown1;
-	struct drsuapi_DsAddEntryErrorInfoX error;
+	enum drsuapi_DsAddEntry_DirErr dir_err;
+	uint32_t dsid;
+	WERROR extended_err;
+	uint32_t extended_data;
+	uint16_t problem;
 	uint32_t count;/* [range(0,10000)] */
 	struct drsuapi_DsReplicaObjectIdentifier2 *objects;/* [unique,size_is(count)] */
 };
 
 struct drsuapi_DsAddEntryCtr3 {
 	struct drsuapi_DsReplicaObjectIdentifier *id;/* [unique] */
-	uint32_t level;
-	union drsuapi_DsAddEntryError *error;/* [unique,switch_is(level)] */
+	uint32_t err_ver;
+	union drsuapi_DsAddEntry_ErrData *err_data;/* [unique,switch_is(err_ver)] */
 	uint32_t count;/* [range(0,10000)] */
 	struct drsuapi_DsReplicaObjectIdentifier2 *objects;/* [unique,size_is(count)] */
 };
@@ -1179,7 +1327,7 @@ struct drsuapi_DsAddEntryCtr3 {
 union drsuapi_DsAddEntryCtr {
 	struct drsuapi_DsAddEntryCtr2 ctr2;/* [case(2)] */
 	struct drsuapi_DsAddEntryCtr3 ctr3;/* [case(3)] */
-}/* [switch_type(int32)] */;
+}/* [switch_type(uint32)] */;
 
 /* bitmap drsuapi_DsExecuteKCCFlags */
 #define DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION ( 0x00000001 )
@@ -1774,12 +1922,12 @@ struct drsuapi_DsGetDomainControllerInfo {
 struct drsuapi_DsAddEntry {
 	struct {
 		struct policy_handle *bind_handle;/* [ref] */
-		int32_t level;
+		uint32_t level;
 		union drsuapi_DsAddEntryRequest *req;/* [ref,switch_is(level)] */
 	} in;
 
 	struct {
-		int32_t *level_out;/* [ref] */
+		uint32_t *level_out;/* [ref] */
 		union drsuapi_DsAddEntryCtr *ctr;/* [ref,switch_is(*level_out)] */
 		WERROR result;
 	} out;
