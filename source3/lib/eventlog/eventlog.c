@@ -65,14 +65,28 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 
 char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 {
-	char *path = talloc_asprintf(ctx, "%s/%s.tdb",
-			state_path("eventlog"),
-			name);
+	char *path;
+	char *file;
+	char *tdbname;
+
+	path = talloc_strdup(ctx, state_path("eventlog"));
 	if (!path) {
 		return NULL;
 	}
-	strlower_m(path);
-	return path;
+
+	file = talloc_asprintf_strlower_m(path, "%s.tdb", name);
+	if (!file) {
+		talloc_free(path);
+		return NULL;
+	}
+
+	tdbname = talloc_asprintf(path, "%s/%s", state_path("eventlog"), file);
+	if (!tdbname) {
+		talloc_free(path);
+		return NULL;
+	}
+
+	return tdbname;
 }
 
 
