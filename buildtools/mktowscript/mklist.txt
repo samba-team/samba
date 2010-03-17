@@ -28,7 +28,7 @@ source4/cldap_server/config.mk
 source4/smb_server/config.mk
 source4/smb_server/smb2/config.mk
 source4/smb_server/smb/config.mk
-source4/smbd/config.mk
+source4/smbd/config.mk source4/smbd/process_model.mk
 source4/kdc/config.mk
 source4/dsdb/config.mk
 source4/dsdb/samdb/ldb_modules/config.mk

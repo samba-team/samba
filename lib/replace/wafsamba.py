@@ -1,8 +1,9 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Logs, sys, Configure, Options
+import Build, os, Logs, sys, Configure, Options, string
 from Configure import conf
+from Logs import debug
 
 LIB_PATH="shared"
 
@@ -84,12 +85,12 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False):
         conf.ASSERT(not mandatory,
                     "Mandatory library '%s' not found for functions '%s'" % (library, list))
         # if it isn't a mandatory library, then remove it from dependency lists
-        cache = LOCAL_CACHE(conf, 'EMPTY_LIBS')
-        cache[library.upper()] = True
+        LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
         return
     for f in list.split():
         conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
     conf.env['LIB_' + library.upper()] = library
+    LOCAL_CACHE_SET(conf, 'TARGET_TYPE', library, 'SYSLIB')
 
 
 #################################################
@@ -132,7 +133,7 @@ def set_rpath(bld):
         else:
             bld.env['RPATH'] = []
     else:
-        rpath = os.path.normpath('%s/bin/%s' % (bld.curdir, LIB_PATH))
+        rpath = os.path.normpath('%s/%s' % (bld.env['BUILD_DIRECTORY'], LIB_PATH))
         bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
 Build.BuildContext.set_rpath = set_rpath
 
@@ -146,6 +147,38 @@ def LOCAL_CACHE(ctx, name):
         return ctx.env[name]
     ctx.env[name] = {}
     return ctx.env[name]
+
+
+#############################################################
+# set a value in a local cache
+@conf
+def LOCAL_CACHE_SET(ctx, cachename, key, value):
+    cache = LOCAL_CACHE(ctx, cachename)
+    cache[key] = value
+
+#############################################################
+# set a value in a local cache
+# return False if it's already set
+def SET_TARGET_TYPE(ctx, target, value):
+    cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
+    if target in cache:
+        ASSERT(ctx, cache[target] == value,
+               "Target '%s' re-defined as %s - was %s" % (target, value, cache[target]))
+        debug("task_gen: Skipping duplicate target %s (curdir=%s)" % (target, ctx.curdir))
+        return False
+    assumed = LOCAL_CACHE(ctx, 'ASSUMED_TARGET')
+    if target in assumed:
+        #if assumed[target] != value:
+        #    print "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value)
+        ASSERT(ctx, assumed[target] == value,
+               "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value))
+    predeclared = LOCAL_CACHE(ctx, 'PREDECLARED_TARGET')
+    if target in predeclared:
+        ASSERT(ctx, predeclared[target] == value,
+               "Target '%s' was predeclared of type '%s' but is '%s'" % (target, predeclared[target], value))
+    LOCAL_CACHE_SET(ctx, 'TARGET_TYPE', target, value)
+    debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
+    return True
 
 
 #############################################################
@@ -171,6 +204,7 @@ Build.BuildContext.SUBDIR = SUBDIR
 @conf
 def SAMBA_BUILD_ENV(conf):
     libpath="%s/%s" % (conf.blddir, LIB_PATH)
+    conf.env['BUILD_DIRECTORY'] = conf.blddir
     if not os.path.exists(libpath):
         os.mkdir(libpath)
 
@@ -216,13 +250,43 @@ def FULL_DEPENDENCIES(bld, cache, target, chain, path):
 # check our build dependencies for circular dependencies
 def CHECK_TARGET_DEPENDENCY(bld, target):
     cache = LOCAL_CACHE(bld, 'LIB_DEPS')
-    FULL_DEPENDENCIES(bld, cache, target, { target:True }, target)
+    return FULL_DEPENDENCIES(bld, cache, target, { target:True }, target)
+
+############################################################
+# check that all dependencies have been declared
+def CHECK_DEPENDENCIES(bld):
+    cache = LOCAL_CACHE(bld, 'LIB_DEPS')
+    target_cache = LOCAL_CACHE(bld, 'TARGET_TYPE')
+    debug('deps: Checking dependencies')
+    for t in cache:
+        deps = CHECK_TARGET_DEPENDENCY(bld, t)
+        for d in deps:
+            #if not d in target_cache:
+            #    print "Dependency '%s' of target '%s' not declared" % (d, t)
+            ASSERT(bld, d in target_cache,
+                   "Dependency '%s' of target '%s' not declared" % (d, t))
+    debug("deps: Dependencies checked for %u targets" % len(target_cache))
+Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
+
+
+############################################################
+# pre-declare a target as being of a particular type
+def PREDECLARE(bld, target, type):
+    cache = LOCAL_CACHE(bld, 'PREDECLARED_TARGET')
+    target_cache = LOCAL_CACHE(bld, 'TARGET_TYPE')
+    ASSERT(bld, not target in target_cache, "Target '%s' is already declared" % target)
+    ASSERT(bld, not target in cache, "Target '%s' already predeclared" % target)
+    cache[target] = type
+Build.BuildContext.PREDECLARE = PREDECLARE
+
+
 
 ################################################################
 # add to the dependency list. Return a new dependency list with
 # any circular dependencies removed
 # returns a tuple containing (systemdeps, localdeps)
 def ADD_DEPENDENCIES(bld, name, deps):
+    debug('deps: Calculating dependencies for %s' % name)
     cache = LOCAL_CACHE(bld, 'LIB_DEPS')
     if not name in cache:
         cache[name] = {}
@@ -234,24 +298,49 @@ def ADD_DEPENDENCIES(bld, name, deps):
             CHECK_TARGET_DEPENDENCY(bld, name)
             list2.append(d)
         except AssertionError:
-            print "Removing dependency %s from target %s" % (d, name)
+            debug("deps: Removing dependency %s from target %s" % (d, name))
             del(cache[name][d])
 
     # extract out the system dependencies
     sysdeps = []
     localdeps = []
-    cache = LOCAL_CACHE(bld, 'EMPTY_LIBS')
+    add_objects = []
+    cache = LOCAL_CACHE(bld, 'EMPTY_TARGETS')
+    target_cache = LOCAL_CACHE(bld, 'TARGET_TYPE')
+    predeclare = LOCAL_CACHE(bld, 'PREDECLARED_TARGET')
     for d in list2:
         # strip out any dependencies on empty libraries
         if d in cache:
-            print "Removing dependence of '%s' on empty library '%s'" % (name, d)
+            debug("deps: Removing empty dependency '%s' from '%s'" % (d, name))
             continue
-        libname = 'LIB_%s' % d.upper()
-        if libname in bld.env:
-            sysdeps.append(d)
+        type = None
+
+        if d in target_cache:
+            type = target_cache[d]
+        elif d in predeclare:
+            type = predeclare[d]
         else:
+            type = 'SUBSYSTEM'
+            LOCAL_CACHE_SET(bld, 'ASSUMED_TARGET', d, type)
+
+        if type == 'SYSLIB':
+            sysdeps.append(d)
+        elif type == 'LIBRARY':
             localdeps.append(d)
-    return (' '.join(sysdeps), ' '.join(localdeps))
+        elif type == 'SUBSYSTEM':
+            add_objects.append(d)
+        elif type == 'MODULE':
+            add_objects.append(d)
+        elif type == 'PYTHON':
+            pass
+        elif type == 'ASN1':
+            pass
+        else:
+            ASSERT(bld, False, "Unknown target type '%s' for dependency %s" % (
+                    type, d))
+    debug('deps: Dependencies for %s: sysdeps: %u  localdeps: %u  add_objects=%u' % (
+            name, len(sysdeps), len(localdeps), len(add_objects)))
+    return (' '.join(sysdeps), ' '.join(localdeps), ' '.join(add_objects))
 
 
 #################################################################
@@ -275,18 +364,15 @@ def SAMBA_LIBRARY(bld, libname, source_list,
                   vnum=None,
                   cflags=None,
                   autoproto=None):
-    # print "Declaring SAMBA_LIBRARY %s" % libname
-    #print "SAMBA_LIBRARY '%s' with deps '%s'" % (libname, deps)
+    if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
+        return
 
     # remember empty libraries, so we can strip the dependencies
     if (source_list == '') or (source_list == []):
-        cache = LOCAL_CACHE(bld, 'EMPTY_LIBS')
-        cache[libname] = True
+        LOCAL_CACHE_SET(bld, 'EMPTY_TARGETS', libname, True)
         return
 
-    (sysdeps, localdeps) = ADD_DEPENDENCIES(bld, libname, deps)
-
-    #print "SAMBA_LIBRARY: sysdeps='%s' deps='%s'" % (sysdeps, deps)
+    (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, libname, deps)
 
     ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
     ilist = bld.NORMPATH(ilist)
@@ -296,7 +382,8 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         target=libname,
         uselib_local = localdeps,
         uselib = sysdeps,
-        includes='. ' + os.environ.get('PWD') + '/bin/default ' + ilist,
+        add_objects = add_objects,
+        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist,
         vnum=vnum)
 
     # put a link to the library in bin/shared
@@ -305,13 +392,12 @@ def SAMBA_LIBRARY(bld, libname, source_list,
         soext = '.' + vnum.split('.')[0]
     bld(
         source = 'lib%s.so' % libname,
-        target = '%s.lnk' % libname,
-        rule = 'ln -sf ../${SRC}%s %s/lib%s.so%s && touch ${TGT}' %
+        rule = 'ln -sf ../${SRC}%s %s/lib%s.so%s' %
         (soext, LIB_PATH, libname, soext),
-        shell = True
+        shell = True,
+        after = 'cc_link',
         )
-    cache = LOCAL_CACHE(bld, 'INCLUDE_LIST')
-    cache[libname] = ilist
+    LOCAL_CACHE_SET(bld, 'INCLUDE_LIST', libname, ilist)
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
@@ -330,15 +416,14 @@ def SAMBA_BINARY(bld, binname, source_list,
                  use_hostcc=None,
                  compiler=None,
                  manpages=None):
-    ilist = '. ' + os.environ.get('PWD') + '/bin/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
+    ilist = '. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
     ilist = bld.NORMPATH(ilist)
     ccflags = ''
 
-    #print "SAMBA_BINARY '%s' with deps '%s'" % (binname, deps)
+    if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
+        return
 
-    (sysdeps, localdeps) = ADD_DEPENDENCIES(bld, binname, deps)
-
-    #print "SAMBA_BINARY: sysdeps='%s' deps='%s'" % (sysdeps, deps)
+    (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, binname, deps)
 
     cache = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
     if modules is not None:
@@ -355,12 +440,16 @@ def SAMBA_BINARY(bld, binname, source_list,
         uselib = sysdeps,
         includes = ilist,
         ccflags = ccflags,
+        add_objects = add_objects,
         top=True)
     # put a link to the binary in bin/
-    bld(
-        source = binname,
-        rule = 'ln -sf ${SRC} .',
-        )
+    if not Options.is_install:
+        bld(
+            source = binname,
+            rule = 'rm -f %s && cp ${SRC} .' % (binname),
+            shell = True,
+            after = 'cc_link'
+            )
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 
@@ -371,13 +460,27 @@ def SAMBA_PYTHON(bld, name, source_list,
                  public_deps='',
                  realname=''):
 
-    #print "SAMBA_PYTHON '%s' with deps '%s'" % (name, deps)
+    if not SET_TARGET_TYPE(bld, name, 'PYTHON'):
+        return
 
-    (sysdeps, localdeps) = ADD_DEPENDENCIES(bld, name, deps)
+    (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, name, deps)
 
-    #Logs.debug('runner: PYTHON_SAMBA not implemented')
     return
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
+
+
+###################################################################
+# declare the ASN1 build pattern
+@runonce
+def SAMBA_ASN1_PATTERN(bld):
+    bld(
+        name = 'asn1_compile',
+        rule = 'echo ASN1_COMPILE ${SRC} > {$TGT}',
+        shall = True,
+        ext_in = '.asn1',
+        ext_out = '.c',
+        reentrant = True,
+        install = False)
 
 
 #################################################################
@@ -386,19 +489,24 @@ def SAMBA_ASN1(bld, name, source,
                options='',
                directory=''):
     import string
+
+    if not SET_TARGET_TYPE(bld, name, 'ASN1'):
+        return
+
     cfile = string.replace(source, '.asn1', '.c')
-    bld(
-        source = source,
-        target = cfile,
-        rule = 'echo ASN1_COMPILE ${SRC} > {$TGT}',
-        uselib = '',
-        name = name)
+
+    # declare the pattern rule
+    SAMBA_ASN1_PATTERN(bld)
+
+    bld(source=source)
+
     bld(
         features = 'cc cshlib',
         source = cfile,
         target = name,
         uselib = '',
-        after = name)
+        after = 'asn1_compile'
+        )
 Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
 
 
@@ -407,6 +515,8 @@ Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
 def SAMBA_ERRTABLE(bld, name, source,
                    directory=''):
     import string
+    if not SET_TARGET_TYPE(bld, name, 'ERRTABLE'):
+        return
     cfile = string.replace(source, '.et', '.c')
     bld(
         source = source,
@@ -416,6 +526,34 @@ def SAMBA_ERRTABLE(bld, name, source,
         name = name)
     return
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
+
+
+#################################################################
+# define a PIDL target
+def SAMBA_PIDL(bld, directory, source):
+    pidl = "../../pidl/pidl"
+    idl_dir = os.path.dirname(source)
+    base = os.path.basename(string.replace(source, '.idl', ''))
+    rule = "pidl --outputdir %s --header --ndr-parser --server --client --python --dcom-proxy --com-header --includedir %s -- %s" % (directory, idl_dir, source)
+    output = '%s/ndr_%s.c' % (directory, base)
+    tname = 'PIDL_%s' % base.upper()
+    bld(
+        rule   = rule,
+        source = source,
+        target = output,
+        name   = 'pidl_compile'
+        )
+
+Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
+
+
+
+#################################################################
+# define a set of Samba PIDL targets
+def SAMBA_PIDL_LIST(bld, directory, source_list):
+    for p in source_list.split():
+        bld.SAMBA_PIDL(directory, p)
+Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 
 ################################################################
@@ -441,12 +579,30 @@ def SAMBA_MODULE(bld, modname, source_list,
                  aliases=None,
                  cflags=None,
                  output_type=None):
-    #print "SAMBA_MODULE '%s' with deps '%s'" % (modname, deps)
-    bld.ADD_INIT_FUNCTION(subsystem, init_function)
-    bld.AUTOPROTO(autoproto, source_list)
-    bld.SAMBA_LIBRARY(modname, source_list,
-                      deps=deps, include_list=include_list)
+
+    if not SET_TARGET_TYPE(bld, modname, 'MODULE'):
+        return
+
+    # remember empty modules, so we can strip the dependencies
+    if (source_list == '') or (source_list == []):
+        LOCAL_CACHE_SET(bld, 'EMPTY_TARGETS', modname, True)
+        return
+
+    (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, modname, deps)
+
+    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
+    ilist = bld.NORMPATH(ilist)
+    bld(
+        features = 'cc',
+        source = source_list,
+        target=modname,
+# we don't supply dependencies here, as this is just a compile, not a link
+#        uselib_local = localdeps,
+#        uselib = sysdeps,
+#        add_objects = add_objects,
+        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
+
 
 #################################################################
 # define a Samba subsystem
@@ -458,8 +614,28 @@ def SAMBA_SUBSYSTEM(bld, modname, source_list,
                     autoproto=None,
                     cflags=None,
                     init_function_sentinal=None):
-    bld.SAMBA_LIBRARY(modname, source_list,
-                      deps=deps, include_list=include_list)
+
+    if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
+        return
+
+    # remember empty subsystems, so we can strip the dependencies
+    if (source_list == '') or (source_list == []):
+        LOCAL_CACHE_SET(bld, 'EMPTY_TARGETS', modname, True)
+        return
+
+    (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, modname, deps)
+
+    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
+    ilist = bld.NORMPATH(ilist)
+    bld(
+        features = 'cc',
+        source = source_list,
+        target=modname,
+# we don't supply dependencies here, as this is just a compile, not a link
+#        uselib_local = localdeps,
+#        uselib = sysdeps,
+#        add_objects = add_objects,
+        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
@@ -467,9 +643,14 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 # add a new set of build rules from a subdirectory
 # the @runonce decorator ensures we don't end up
 # with duplicate rules
-@runonce
 def BUILD_SUBDIR(bld, dir):
+    path = os.path.normpath(bld.curdir + '/' + dir)
+    cache = LOCAL_CACHE(bld, 'SUBDIR_LIST')
+    if path in cache: return
+    cache[path] = True
+    debug("build: Processing subdirectory %s" % dir)
     bld.add_subdirs(dir)
+
 Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
 
 
@@ -482,7 +663,7 @@ def exec_command(self, cmd, **kw):
     _cmd = cmd
     if isinstance(cmd, list):
         _cmd = ' '.join(cmd)
-    Logs.debug('runner: %s' % _cmd)
+    debug('runner: %s' % _cmd)
     if self.log:
         self.log.write('%s\n' % cmd)
         kw['log'] = self.log
@@ -494,4 +675,26 @@ def exec_command(self, cmd, **kw):
     return Utils.exec_command(cmd, **kw)
 Build.BuildContext.exec_command = exec_command
 
+
+###########################################################
+# list the build targets
+def cmd_list(ctx):
+    '''List the build targets'''
+    import Utils, Environment
+    proj = Environment.Environment(Options.lockfile)
+    bld_cls = getattr(Utils.g_module, 'build_context', Utils.Context)
+    bld = bld_cls()
+    bld.load_dirs(proj['srcdir'], proj['blddir'])
+    bld.load_envs()
+    targets = bld.env['TARGET_TYPE']
+    for t in targets:
+        print "Target %20s of type %s" % (t, targets[t])
+
+
+###########################################################
+# add some extra top level targets
+@runonce
+def add_extra_targets():
+    import Utils
+    setattr(Utils.g_module, 'list', cmd_list)
 
