@@ -210,7 +210,7 @@ def configure(conf):
                     msg="Checking for C99 vsnprintf")
 
     if Options.options.developer:
-        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -W -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
+        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
 
     conf.SAMBA_CONFIG_H()
     conf.SAMBA_BUILD_ENV()
