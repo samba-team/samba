@@ -60,6 +60,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	struct smbcli_session *session2;
 	struct smbcli_state *cli;
 	struct dcerpc_pipe *lsa_pipe;
+	struct dcerpc_binding_handle *lsa_handle;
 	struct cli_credentials *anon_creds;
 	struct smb_composite_sesssetup setup;
 	struct smbcli_options options;
@@ -97,6 +98,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
 	}
+	lsa_handle = lsa_pipe->binding_handle;
 
 	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -119,7 +121,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	openpolicy.out.handle = &handle;
 
-	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, mem_ctx, &openpolicy);
+	status = dcerpc_lsa_OpenPolicy2_r(lsa_handle, mem_ctx, &openpolicy);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_OpenPolicy2 failed: %s\n",
@@ -130,7 +132,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	close_handle.in.handle = &handle;
 	close_handle.out.handle = &handle;
 
-	status = dcerpc_lsa_Close(lsa_pipe, mem_ctx, &close_handle);
+	status = dcerpc_lsa_Close_r(lsa_handle, mem_ctx, &close_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_Close failed: %s\n",
 			 nt_errstr(status));
@@ -165,7 +167,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	tmp = cli->tree->session;
 	cli->tree->session = session2;
 
-	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, mem_ctx, &openpolicy);
+	status = dcerpc_lsa_OpenPolicy2_r(lsa_handle, mem_ctx, &openpolicy);
 
 	cli->tree->session = tmp;
 	talloc_free(lsa_pipe);
@@ -198,6 +200,7 @@ static bool bindtest(struct smbcli_state *cli,
 	NTSTATUS status;
 
 	struct dcerpc_pipe *lsa_pipe;
+	struct dcerpc_binding_handle *lsa_handle;
 	struct lsa_ObjectAttribute objectattr;
 	struct lsa_OpenPolicy2 openpolicy;
 	struct lsa_QueryInfoPolicy query;
@@ -217,6 +220,7 @@ static bool bindtest(struct smbcli_state *cli,
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
 	}
+	lsa_handle = lsa_pipe->binding_handle;
 
 	status = dcerpc_pipe_open_smb(lsa_pipe, cli->tree, "\\lsarpc");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -240,7 +244,7 @@ static bool bindtest(struct smbcli_state *cli,
 	openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	openpolicy.out.handle = &handle;
 
-	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, mem_ctx, &openpolicy);
+	status = dcerpc_lsa_OpenPolicy2_r(lsa_handle, mem_ctx, &openpolicy);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_OpenPolicy2 failed: %s\n",
@@ -252,7 +256,7 @@ static bool bindtest(struct smbcli_state *cli,
 	query.in.level = LSA_POLICY_INFO_DOMAIN;
 	query.out.info = &info;
 
-	status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, mem_ctx, &query);
+	status = dcerpc_lsa_QueryInfoPolicy_r(lsa_handle, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_QueryInfoPolicy failed: %s\n",
 			 nt_errstr(status));
@@ -262,7 +266,7 @@ static bool bindtest(struct smbcli_state *cli,
 	close_handle.in.handle = &handle;
 	close_handle.out.handle = &handle;
 
-	status = dcerpc_lsa_Close(lsa_pipe, mem_ctx, &close_handle);
+	status = dcerpc_lsa_Close_r(lsa_handle, mem_ctx, &close_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_Close failed: %s\n",
 			 nt_errstr(status));
@@ -347,6 +351,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			       struct dom_sid **sid_p)
 {
 	struct dcerpc_pipe *samr_pipe;
+	struct dcerpc_binding_handle *samr_handle;
 	NTSTATUS status;
 	struct policy_handle conn_handle;
 	struct policy_handle domain_handle;
@@ -373,6 +378,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
+	samr_handle = samr_pipe->binding_handle;
 
 	status = dcerpc_pipe_open_smb(samr_pipe, cli->tree, "\\samr");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -405,7 +411,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	conn.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	conn.out.connect_handle = &conn_handle;
 
-	status = dcerpc_samr_Connect2(samr_pipe, mem_ctx, &conn);
+	status = dcerpc_samr_Connect2_r(samr_handle, mem_ctx, &conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("samr_Connect2 failed: %s\n", nt_errstr(status));
 		goto fail;
@@ -418,7 +424,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	enumdom.out.num_entries = &num_entries;
 	enumdom.out.sam = &sam;
 
-	status = dcerpc_samr_EnumDomains(samr_pipe, mem_ctx, &enumdom);
+	status = dcerpc_samr_EnumDomains_r(samr_handle, mem_ctx, &enumdom);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("samr_EnumDomains failed: %s\n", nt_errstr(status));
 		goto fail;
@@ -440,7 +446,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	l.in.domain_name = &domain_name;
 	l.out.sid = &sid;
 
-	status = dcerpc_samr_LookupDomain(samr_pipe, mem_ctx, &l);
+	status = dcerpc_samr_LookupDomain_r(samr_handle, mem_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("samr_LookupDomain failed: %s\n", nt_errstr(status));
 		goto fail;
@@ -451,7 +457,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
-	status = dcerpc_samr_OpenDomain(samr_pipe, mem_ctx, &o);
+	status = dcerpc_samr_OpenDomain_r(samr_handle, mem_ctx, &o);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("samr_OpenDomain failed: %s\n", nt_errstr(status));
 		goto fail;
@@ -467,7 +473,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	c.out.access_granted = &access_granted;
 	c.out.rid = &user_rid;
 
-	status = dcerpc_samr_CreateUser2(samr_pipe, mem_ctx, &c);
+	status = dcerpc_samr_CreateUser2_r(samr_handle, mem_ctx, &c);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		struct samr_LookupNames ln;
@@ -480,7 +486,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		ln.out.rids = &rids;
 		ln.out.types = &types;
 
-		status = dcerpc_samr_LookupNames(samr_pipe, mem_ctx, &ln);
+		status = dcerpc_samr_LookupNames_r(samr_handle, mem_ctx, &ln);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_LookupNames failed: %s\n",
 				 nt_errstr(status));
@@ -492,7 +498,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		user_rid = ou.in.rid = ln.out.rids->ids[0];
 		ou.out.user_handle = user_handle;
 
-		status = dcerpc_samr_OpenUser(samr_pipe, mem_ctx, &ou);
+		status = dcerpc_samr_OpenUser_r(samr_handle, mem_ctx, &ou);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_OpenUser failed: %s\n",
 				 nt_errstr(status));
@@ -530,6 +536,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	struct dcerpc_pipe *samr_pipe;
+	struct dcerpc_binding_handle *samr_handle;
 	struct policy_handle *wks_handle;
 	bool ret = false;
 
@@ -547,6 +554,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		d_printf("get_usr_handle failed: %s\n", nt_errstr(status));
 		goto done;
 	}
+	samr_handle = samr_pipe->binding_handle;
 
 	{
 		struct samr_SetUserInfo2 sui2;
@@ -576,7 +584,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		sui2.in.info = &u_info;
 		sui2.in.level = 23;
 
-		status = dcerpc_samr_SetUserInfo2(samr_pipe, tmp_ctx, &sui2);
+		status = dcerpc_samr_SetUserInfo2_r(samr_handle, tmp_ctx, &sui2);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo(23) failed: %s\n",
 				 nt_errstr(status));
@@ -588,7 +596,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		sui.in.info = &u_info;
 		sui.in.level = 16;
 
-		status = dcerpc_samr_SetUserInfo(samr_pipe, tmp_ctx, &sui);
+		status = dcerpc_samr_SetUserInfo_r(samr_handle, tmp_ctx, &sui);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo(16) failed\n");
 			goto done;
@@ -598,7 +606,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		qui.in.level = 21;
 		qui.out.info = &info;
 
-		status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
+		status = dcerpc_samr_QueryUserInfo_r(samr_handle, tmp_ctx, &qui);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_QueryUserInfo(21) failed\n");
 			goto done;
@@ -616,7 +624,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		sui.in.info = &u_info;
 		sui.in.level = 21;
 
-		status = dcerpc_samr_SetUserInfo(samr_pipe, tmp_ctx, &sui);
+		status = dcerpc_samr_SetUserInfo_r(samr_handle, tmp_ctx, &sui);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo(21) failed\n");
 			goto done;
@@ -644,6 +652,7 @@ static bool delete_user(struct smbcli_state *cli,
 	NTSTATUS status;
 	char *dom_name;
 	struct dcerpc_pipe *samr_pipe;
+	struct dcerpc_binding_handle *samr_handle;
 	struct policy_handle *user_handle;
 	bool ret = false;
 
@@ -662,6 +671,7 @@ static bool delete_user(struct smbcli_state *cli,
 		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
 		goto done;
 	}
+	samr_handle = samr_pipe->binding_handle;
 
 	{
 		struct samr_DeleteUser d;
@@ -669,7 +679,7 @@ static bool delete_user(struct smbcli_state *cli,
 		d.in.user_handle = user_handle;
 		d.out.user_handle = user_handle;
 
-		status = dcerpc_samr_DeleteUser(samr_pipe, mem_ctx, &d);
+		status = dcerpc_samr_DeleteUser_r(samr_handle, mem_ctx, &d);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_DeleteUser failed %s\n", nt_errstr(status));
 			goto done;
@@ -697,6 +707,7 @@ static bool join3(struct smbcli_state *cli,
 	NTSTATUS status;
 	char *dom_name;
 	struct dcerpc_pipe *samr_pipe;
+	struct dcerpc_binding_handle *samr_handle;
 	struct policy_handle *wks_handle;
 	bool ret = false;
 	NTTIME last_password_change;
@@ -718,6 +729,7 @@ static bool join3(struct smbcli_state *cli,
 		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
 		goto done;
 	}
+	samr_handle = samr_pipe->binding_handle;
 
 	{
 		struct samr_QueryUserInfo q;
@@ -727,7 +739,7 @@ static bool join3(struct smbcli_state *cli,
 		q.in.level = 21;
 		q.out.info = &info;
 
-		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
+		status = dcerpc_samr_QueryUserInfo_r(samr_handle, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) QueryUserInfo failed: %s\n",
 				  __location__, nt_errstr(status));
@@ -786,7 +798,7 @@ static bool join3(struct smbcli_state *cli,
 		sui2.in.level = 25;
 		sui2.in.info = &u_info;
 
-		status = dcerpc_samr_SetUserInfo2(samr_pipe, mem_ctx, &sui2);
+		status = dcerpc_samr_SetUserInfo2_r(samr_handle, mem_ctx, &sui2);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo2(25) failed: %s\n",
 				 nt_errstr(status));
@@ -815,7 +827,7 @@ static bool join3(struct smbcli_state *cli,
 		sui2.in.info = &u_info;
 		sui2.in.level = 24;
 
-		status = dcerpc_samr_SetUserInfo2(samr_pipe, mem_ctx, &sui2);
+		status = dcerpc_samr_SetUserInfo2_r(samr_handle, mem_ctx, &sui2);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo(24) failed: %s\n",
 				 nt_errstr(status));
@@ -827,7 +839,7 @@ static bool join3(struct smbcli_state *cli,
 		sui.in.info = &u_info;
 		sui.in.level = 16;
 
-		status = dcerpc_samr_SetUserInfo(samr_pipe, mem_ctx, &sui);
+		status = dcerpc_samr_SetUserInfo_r(samr_handle, mem_ctx, &sui);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo(16) failed\n");
 			goto done;
@@ -842,7 +854,7 @@ static bool join3(struct smbcli_state *cli,
 		q.in.level = 21;
 		q.out.info = &info;
 
-		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
+		status = dcerpc_samr_QueryUserInfo_r(samr_handle, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) QueryUserInfo failed: %s\n",
 				  __location__, nt_errstr(status));
@@ -886,6 +898,7 @@ static bool auth2(struct smbcli_state *cli,
 {
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *net_pipe;
+	struct dcerpc_binding_handle *net_handle;
 	bool result = false;
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
@@ -910,6 +923,7 @@ static bool auth2(struct smbcli_state *cli,
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
 	}
+	net_handle = net_pipe->binding_handle;
 
 	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -937,7 +951,7 @@ static bool auth2(struct smbcli_state *cli,
 	r.in.credentials = &netr_cli_creds;
 	r.out.return_credentials = &netr_srv_creds;
 
-	status = dcerpc_netr_ServerReqChallenge(net_pipe, mem_ctx, &r);
+	status = dcerpc_netr_ServerReqChallenge_r(net_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("netr_ServerReqChallenge failed: %s\n",
 			 nt_errstr(status));
@@ -965,7 +979,7 @@ static bool auth2(struct smbcli_state *cli,
 						 r.out.return_credentials, &mach_pw,
 						 &netr_cred, negotiate_flags);
 
-	status = dcerpc_netr_ServerAuthenticate2(net_pipe, mem_ctx, &a);
+	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("netr_ServerServerAuthenticate2 failed: %s\n",
 			 nt_errstr(status));
@@ -1000,6 +1014,7 @@ static bool schan(struct smbcli_state *cli,
 	NTSTATUS status;
 	bool ret = false;
 	struct dcerpc_pipe *net_pipe;
+	struct dcerpc_binding_handle *net_handle;
 	int i;
 	
 	mem_ctx = talloc_new(NULL);
@@ -1015,6 +1030,7 @@ static bool schan(struct smbcli_state *cli,
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
 	}
+	net_handle = net_pipe->binding_handle;
 
 	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1112,7 +1128,7 @@ static bool schan(struct smbcli_state *cli,
 		r.out.authoritative = &authoritative;
 		r.out.return_authenticator = &return_authenticator;
 
-		status = dcerpc_netr_LogonSamLogon(net_pipe, mem_ctx, &r);
+		status = dcerpc_netr_LogonSamLogon_r(net_handle, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("netr_LogonSamLogon failed: %s\n",
 				 nt_errstr(status));
@@ -1144,7 +1160,7 @@ static bool schan(struct smbcli_state *cli,
 		r.in.logon = &logon;
 		r.out.return_authenticator = &return_authenticator;
 
-		status = dcerpc_netr_LogonSamLogon(net_pipe, mem_ctx, &r);
+		status = dcerpc_netr_LogonSamLogon_r(net_handle, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("netr_LogonSamLogon failed: %s\n",
 				 nt_errstr(status));
@@ -1182,7 +1198,7 @@ static bool schan(struct smbcli_state *cli,
 		netlogon_creds_des_encrypt(creds_state, &new_password);
 		netlogon_creds_client_authenticator(creds_state, &credential);
 
-		status = dcerpc_netr_ServerPasswordSet(net_pipe, mem_ctx, &s);
+		status = dcerpc_netr_ServerPasswordSet_r(net_handle, mem_ctx, &s);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("ServerPasswordSet - %s\n", nt_errstr(status));
 			goto done;
@@ -1544,6 +1560,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	uint32_t count = 0;
 	struct dom_sid *result;
 	TALLOC_CTX *tmp_ctx;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		return NULL;
@@ -1566,7 +1583,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 
-	status = dcerpc_lsa_OpenPolicy2(p, tmp_ctx, &r);
+	status = dcerpc_lsa_OpenPolicy2_r(b, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
 		talloc_free(tmp_ctx);
@@ -1588,7 +1605,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	l.out.sids = &sids;
 	l.out.domains = &domains;
 
-	status = dcerpc_lsa_LookupNames(p, tmp_ctx, &l);
+	status = dcerpc_lsa_LookupNames_r(b, tmp_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames of %s failed - %s\n", lsa_name.string, 
 		       nt_errstr(status));
@@ -1602,7 +1619,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	c.in.handle = &handle;
 	c.out.handle = &handle;
 
-	status = dcerpc_lsa_Close(p, tmp_ctx, &c);
+	status = dcerpc_lsa_Close_r(b, tmp_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("dcerpc_lsa_Close failed - %s\n", nt_errstr(status));
 		talloc_free(tmp_ctx);
@@ -1622,6 +1639,7 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 			      struct smbcli_tree *tree)
 {
 	struct dcerpc_pipe *lsa;
+	struct dcerpc_binding_handle *lsa_handle;
 	struct lsa_GetUserName r;
 	NTSTATUS status;
 	struct lsa_String *authority_name_p = NULL;
@@ -1635,13 +1653,14 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
 			 __location__, nt_errstr(status));
 		return NULL;
 	}
+	lsa_handle = lsa->binding_handle;
 
 	r.in.system_name = "\\";
 	r.in.account_name = &account_name_p;
 	r.in.authority_name = &authority_name_p;
 	r.out.account_name = &account_name_p;
 
-	status = dcerpc_lsa_GetUserName(lsa, mem_ctx, &r);
+	status = dcerpc_lsa_GetUserName_r(lsa_handle, mem_ctx, &r);
 
 	authority_name_p = *r.out.authority_name;
 
@@ -1894,6 +1913,7 @@ static bool test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007, 1501 };
 	int i;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s",
 					  dcerpc_server_name(p));
@@ -1906,7 +1926,7 @@ static bool test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("testing NetShareGetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
 
-		status = dcerpc_srvsvc_NetShareGetInfo(p, mem_ctx, &r);
+		status = dcerpc_srvsvc_NetShareGetInfo_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("NetShareGetInfo level %u on share '%s' failed"
 			       " - %s\n", r.in.level, r.in.share_name,
@@ -1945,6 +1965,7 @@ static bool test_NetShareEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007 };
 	int i;
 	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(info_ctr);
 
@@ -1998,7 +2019,7 @@ static bool test_NetShareEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 
 		printf("testing NetShareEnum level %u\n", info_ctr.level);
-		status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
+		status = dcerpc_srvsvc_NetShareEnum_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("NetShareEnum level %u failed - %s\n",
 			       info_ctr.level, nt_errstr(status));
@@ -2071,6 +2092,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *net_pipe;
+	struct dcerpc_binding_handle *net_handle;
 	char *wksname;
 	bool result = false;
 	NTSTATUS status;
@@ -2109,6 +2131,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
 	}
+	net_handle = net_pipe->binding_handle;
 
 	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2136,7 +2159,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	r.in.credentials = &netr_cli_creds;
 	r.out.return_credentials = &netr_srv_creds;
 
-	status = dcerpc_netr_ServerReqChallenge(net_pipe, mem_ctx, &r);
+	status = dcerpc_netr_ServerReqChallenge_r(net_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("netr_ServerReqChallenge failed: %s\n",
 			 nt_errstr(status));
@@ -2165,7 +2188,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 						 &netr_cred, negotiate_flags);
 	
 
-	status = dcerpc_netr_ServerAuthenticate2(net_pipe, mem_ctx, &a);
+	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NO_TRUST_SAM_ACCOUNT)) {
 		d_printf("dcerpc_netr_ServerAuthenticate2 returned %s, "
@@ -2188,6 +2211,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 	struct smbcli_tree *tree;
 	TALLOC_CTX *tmp_ctx;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	NTSTATUS status;
 	struct srvsvc_NetShareGetInfo r;
 	union srvsvc_NetShareInfo info;
@@ -2212,6 +2236,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	b = p->binding_handle;
 
 #if 0
 	p->conn->flags |= DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT;
@@ -2223,7 +2248,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 	r.in.level = 502;
 	r.out.info = &info;
 
-	status = dcerpc_srvsvc_NetShareGetInfo(p, tmp_ctx, &r);
+	status = dcerpc_srvsvc_NetShareGetInfo_r(b, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("srvsvc_NetShareGetInfo failed: %s\n",
 			 nt_errstr(status));
@@ -2245,6 +2270,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 	struct smbcli_tree *tree;
 	TALLOC_CTX *tmp_ctx;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	NTSTATUS status;
 	struct sec_desc_buf i;
 	struct srvsvc_NetShareSetInfo r;
@@ -2270,6 +2296,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	b = p->binding_handle;
 
 #if 0
 	p->conn->flags |= DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT;
@@ -2284,7 +2311,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 	r.in.info = &info;
 	r.in.parm_error = &error;
 
-	status = dcerpc_srvsvc_NetShareSetInfo(p, tmp_ctx, &r);
+	status = dcerpc_srvsvc_NetShareSetInfo_r(b, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("srvsvc_NetShareSetInfo failed: %s\n",
 			 nt_errstr(status));
@@ -2438,6 +2465,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 	bool ret = true;
 	struct smbcli_state *cli;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	struct policy_handle lsa_handle;
 	NTSTATUS status;
 	struct dom_sid *domain_sid;
@@ -2462,6 +2490,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 		talloc_free(mem_ctx);
 		return false;
 	}
+	b = p->binding_handle;
 
 	{
 		struct lsa_ObjectAttribute attr;
@@ -2472,7 +2501,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 		o.in.attr = &attr;
 		o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		o.out.handle = &lsa_handle;
-		status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &o);
+		status = dcerpc_lsa_OpenPolicy2_r(b, mem_ctx, &o);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) dcerpc_lsa_OpenPolicy2 failed: %s\n",
 				 __location__, nt_errstr(status));
@@ -2495,7 +2524,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 			r.in.handle = &lsa_handle;
 			r.in.level = levels[i];
 			r.out.info = &info;
-			status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+			status = dcerpc_lsa_QueryInfoPolicy_r(b, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				d_printf("(%s) dcerpc_lsa_QueryInfoPolicy %d "
 					 "failed: %s\n", __location__,
@@ -2546,6 +2575,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	struct srvsvc_NetShareEnum r;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr1 c1_in;
@@ -2566,6 +2596,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 		talloc_free(mem_ctx);
 		return status;
 	}
+	b = p->binding_handle;
 
 	ZERO_STRUCT(c1_in);
 	info_ctr.level = 1;
@@ -2579,7 +2610,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 	r.out.totalentries = &totalentries;
 	r.out.info_ctr = &info_ctr;
 
-	status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
+	status = dcerpc_srvsvc_NetShareEnum_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("NetShareEnum level %u failed - %s\n",
 			 info_ctr.level, nt_errstr(status));
@@ -2614,6 +2645,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	uint32_t needed;
 	uint32_t count;
 	union spoolss_PrinterInfo *info;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
 	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", servername);
@@ -2624,7 +2656,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	r.out.count = &count;
 	r.out.info = &info;
 
-	status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumPrinters_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) dcerpc_spoolss_EnumPrinters failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -2647,7 +2679,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	r.in.buffer = &blob;
 	r.in.offered = needed;
 
-	status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
+	status = dcerpc_spoolss_EnumPrinters_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) dcerpc_spoolss_EnumPrinters failed: %s, "
 			 "%s\n", __location__, nt_errstr(status),
@@ -2669,6 +2701,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *p,
 	DATA_BLOB blob;
 	NTSTATUS status;
 	uint32_t needed;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
@@ -2681,7 +2714,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *p,
 	r.in.offered = 0;
 	r.out.needed = &needed;
 
-	status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
+	status = dcerpc_spoolss_GetPrinter_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) dcerpc_spoolss_GetPrinter failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -2708,7 +2741,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *p,
 	r.in.buffer = &blob;
 	r.in.offered = needed;
 
-	status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
+	status = dcerpc_spoolss_GetPrinter_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) dcerpc_spoolss_GetPrinter failed: %s, "
 			 "%s\n", __location__, nt_errstr(status),
@@ -2732,6 +2765,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 	bool ret = true;
 	struct smbcli_state *cli;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	NTSTATUS status;
 	struct policy_handle server_handle, printer_handle;
 	const char **printers;
@@ -2779,6 +2813,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		talloc_free(mem_ctx);
 		return false;
 	}
+	b = p->binding_handle;
 
 	ZERO_STRUCT(userlevel1);
 	userlevel1.client = talloc_asprintf(
@@ -2801,7 +2836,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.in.userlevel.level1 = &userlevel1;
 		r.out.handle = &server_handle;
 
-		status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
+		status = dcerpc_spoolss_OpenPrinterEx_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
 				 "%s, %s\n", __location__, nt_errstr(status),
@@ -2817,7 +2852,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.in.handle = &server_handle;
 		r.out.handle = &server_handle;
 
-		status = dcerpc_spoolss_ClosePrinter(p, mem_ctx, &r);
+		status = dcerpc_spoolss_ClosePrinter_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
 				 "%s, %s\n", __location__, nt_errstr(status),
@@ -2839,7 +2874,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.in.userlevel.level1 = &userlevel1;
 		r.out.handle = &printer_handle;
 
-		status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
+		status = dcerpc_spoolss_OpenPrinterEx_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
 				 "%s, %s\n", __location__, nt_errstr(status),
@@ -2869,7 +2904,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.in.handle = &printer_handle;
 		r.out.handle = &printer_handle;
 
-		status = dcerpc_spoolss_ClosePrinter(p, mem_ctx, &r);
+		status = dcerpc_spoolss_ClosePrinter_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
 				 "%s\n", __location__, nt_errstr(status));
@@ -2922,6 +2957,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct smbcli_state *cli;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	NTSTATUS status;
 	char *servername;
 
@@ -2953,6 +2989,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 		talloc_free(mem_ctx);
 		return false;
 	}
+	b = p->binding_handle;
 
 	{
 		struct wkssvc_NetWkstaInfo100 wks100;
@@ -2964,7 +3001,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 		info.info100 = &wks100;
 		r.out.info = &info;
 
-		status = dcerpc_wkssvc_NetWkstaGetInfo(p, mem_ctx, &r);
+		status = dcerpc_wkssvc_NetWkstaGetInfo_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_wkssvc_NetWksGetInfo failed: "
 				 "%s, %s\n", __location__, nt_errstr(status),
@@ -2994,6 +3031,7 @@ static NTSTATUS winreg_close(struct dcerpc_pipe *p,
 	struct winreg_CloseKey c;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	c.in.handle = c.out.handle = handle;
 
@@ -3001,7 +3039,7 @@ static NTSTATUS winreg_close(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_winreg_CloseKey(p, mem_ctx, &c);
+	status = dcerpc_winreg_CloseKey_r(b, mem_ctx, &c);
 	talloc_free(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3019,6 +3057,7 @@ static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
 			   TALLOC_CTX *mem_ctx)
 {
 	uint32_t enum_index = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	while (1) {
 		struct winreg_EnumValue r;
@@ -3040,7 +3079,7 @@ static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
 		r.in.size = &size;
 		r.in.length = &length;
 
-		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
+		status = dcerpc_winreg_EnumValue_r(b, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			return NT_STATUS_OK;
 		}
@@ -3055,6 +3094,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 	struct winreg_StringBuf kclass, name;
 	NTSTATUS status;
 	NTTIME t = 0;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (depth <= 0) {
 		return NT_STATUS_OK;
@@ -3083,7 +3123,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 		name.name = NULL;
 		name.size = 1024;
 
-		status = dcerpc_winreg_EnumKey(p, tmp_ctx, &r);
+		status = dcerpc_winreg_EnumKey_r(b, tmp_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			/* We're done enumerating */
 			talloc_free(tmp_ctx);
@@ -3101,7 +3141,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 		o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		o.out.handle = &key_handle;
 
-		status = dcerpc_winreg_OpenKey(p, tmp_ctx, &o);
+		status = dcerpc_winreg_OpenKey_r(b, tmp_ctx, &o);
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(o.out.result)) {
 			enumkeys(p, &key_handle, tmp_ctx, depth-1);
 			enumvalues(p, &key_handle, tmp_ctx);
@@ -3119,7 +3159,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 	return NT_STATUS_OK;
 }
 
-typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
+typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
 
 static bool test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		       const char *name, winreg_open_fn open_fn)
@@ -3127,12 +3167,13 @@ static bool test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle handle;
 	struct winreg_OpenHKLM r;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 	
-	status = open_fn(p, mem_ctx, &r);
+	status = open_fn(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) %s failed: %s, %s\n", __location__, name,
 			 nt_errstr(status), win_errstr(r.out.result));
@@ -3161,11 +3202,11 @@ bool torture_samba3_rpc_winreg(struct torture_context *torture)
 		const char *name;
 		winreg_open_fn fn;
 	} open_fns[] = {
-		{"OpenHKLM", (winreg_open_fn)dcerpc_winreg_OpenHKLM },
-		{"OpenHKU",  (winreg_open_fn)dcerpc_winreg_OpenHKU },
-		{"OpenHKPD", (winreg_open_fn)dcerpc_winreg_OpenHKPD },
-		{"OpenHKPT", (winreg_open_fn)dcerpc_winreg_OpenHKPT },
-		{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR }};
+		{"OpenHKLM", (winreg_open_fn)dcerpc_winreg_OpenHKLM_r },
+		{"OpenHKU",  (winreg_open_fn)dcerpc_winreg_OpenHKU_r },
+		{"OpenHKPD", (winreg_open_fn)dcerpc_winreg_OpenHKPD_r },
+		{"OpenHKPT", (winreg_open_fn)dcerpc_winreg_OpenHKPT_r },
+		{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR_r }};
 #if 0
 	int i;
 #endif
@@ -3201,6 +3242,7 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 {
 	struct smbcli_tree *ipc;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	struct srvsvc_NetShareGetInfo r;
 	union srvsvc_NetShareInfo info;
 	NTSTATUS status;
@@ -3211,6 +3253,7 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
+	b = p->binding_handle;
 
 	status = secondary_tcon(p, cli->session, "IPC$", &ipc);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3237,7 +3280,7 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 	r.in.level = 502;
 	r.out.info = &info;
 
-	status = dcerpc_srvsvc_NetShareGetInfo(p, p, &r);
+	status = dcerpc_srvsvc_NetShareGetInfo_r(b, p, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) srvsvc_NetShareGetInfo failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(r.out.result));
@@ -3265,6 +3308,7 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 {
 	struct smbcli_tree *ipc;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	struct winreg_OpenHKLM r;
 	NTSTATUS status;
 	struct policy_handle *result;
@@ -3281,6 +3325,7 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
+	b = p->binding_handle;
 
 	status = secondary_tcon(p, cli->session, "IPC$", &ipc);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3305,7 +3350,7 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
         r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
         r.out.handle = result;
 
-	status = dcerpc_winreg_OpenHKLM(p, p, &r);
+	status = dcerpc_winreg_OpenHKLM_r(b, p, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) OpenHKLM failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(r.out.result));
@@ -3327,6 +3372,7 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 					   const char *sharename)
 {
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	struct policy_handle *hklm = NULL;
 	struct policy_handle new_handle;
 	struct winreg_CreateKey c;
@@ -3343,6 +3389,7 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
+	b = p->binding_handle;
 
 	c.in.handle = hklm;
 	c.in.name.name = talloc_asprintf(
@@ -3360,7 +3407,7 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 	c.out.new_handle = &new_handle;
 	c.out.action_taken = &action_taken;
 
-	status = dcerpc_winreg_CreateKey(p, p, &c);
+	status = dcerpc_winreg_CreateKey_r(b, p, &c);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(c.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(c.out.result));
@@ -3370,7 +3417,7 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 
 	cl.in.handle = &new_handle;
 	cl.out.handle = &new_handle;
-	status = dcerpc_winreg_CloseKey(p, p, &cl);
+	status = dcerpc_winreg_CloseKey_r(b, p, &cl);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(cl.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(cl.out.result));
@@ -3389,6 +3436,7 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 					   const char *sharename)
 {
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	struct policy_handle *hklm = NULL;
 	struct winreg_DeleteKey d;
 	NTSTATUS status;
@@ -3403,6 +3451,7 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
+	b = p->binding_handle;
 
 	d.in.handle = hklm;
 	d.in.key.name = talloc_asprintf(
@@ -3412,7 +3461,7 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-	status = dcerpc_winreg_DeleteKey(p, p, &d);
+	status = dcerpc_winreg_DeleteKey_r(b, p, &d);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(d.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(d.out.result));
@@ -3432,6 +3481,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 					 const char *value)
 {
 	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b;
 	struct policy_handle *hklm = NULL, key_handle;
 	struct winreg_OpenKey o;
 	struct winreg_SetValue s;
@@ -3444,6 +3494,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
 		return status;;
 	}
+	b = p->binding_handle;
 
 	o.in.parent_handle = hklm;
 	o.in.keyname.name = talloc_asprintf(
@@ -3457,7 +3508,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.out.handle = &key_handle;
 
-	status = dcerpc_winreg_OpenKey(p, p, &o);
+	status = dcerpc_winreg_OpenKey_r(b, p, &o);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(o.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(o.out.result));
@@ -3477,7 +3528,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 	s.in.data = val.data;
 	s.in.size = val.length;
 
-	status = dcerpc_winreg_SetValue(p, p, &s);
+	status = dcerpc_winreg_SetValue_r(b, p, &s);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(s.out.result)) {
 		d_printf("(%s) SetValue failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(s.out.result));
@@ -3550,6 +3601,7 @@ bool torture_samba3_regconfig(struct torture_context *torture)
 bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding_handle *b;
 	NTSTATUS status;
 	struct samr_Connect2 c;
 	struct samr_OpenDomain o;
@@ -3564,10 +3616,12 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	b = p->binding_handle;
+
 	c.in.system_name = NULL;
 	c.in.access_mask = SAMR_ACCESS_LOOKUP_DOMAIN;
 	c.out.connect_handle = &samr;
-	status = dcerpc_samr_Connect2(p, torture, &c);
+	status = dcerpc_samr_Connect2_r(b, torture, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -3576,7 +3630,7 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 	o.in.access_mask = SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS;
 	o.in.sid = &sid;
 	o.out.domain_handle = &domain;
-	status = dcerpc_samr_OpenDomain(p, torture, &o);
+	status = dcerpc_samr_OpenDomain_r(b, torture, &o);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -3587,7 +3641,7 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 	g.in.domain_handle = &domain;
 	g.in.sids = &sids;
 	g.out.rids = &rids;
-	status = dcerpc_samr_GetAliasMembership(p, torture, &g);
+	status = dcerpc_samr_GetAliasMembership_r(b, torture, &g);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
