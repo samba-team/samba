@@ -412,6 +412,9 @@ sub provision($$$$$$)
 	my $lockdir="$prefix_abs/lockdir";
 	push(@dirs,$lockdir);
 
+	my $eventlogdir="$prefix_abs/lockdir/eventlog";
+	push(@dirs,$eventlogdir);
+
 	my $logdir="$prefix_abs/logs";
 	push(@dirs,$logdir);
 
@@ -437,6 +440,8 @@ sub provision($$$$$$)
 	my $nss_wrapper_group = "$privatedir/group";
 
 	my $mod_printer_pl = "$ENV{PERL} $RealBin/../source3/script/tests/printing/modprinter.pl";
+
+	my @eventlog_list = ("dns server", "application");
 
 	open(CONF, ">$conffile") or die("Unable to open $conffile");
 	print CONF "
@@ -473,6 +478,8 @@ sub provision($$$$$$)
 
 	addprinter command =		$mod_printer_pl -a -s $conffile --
 	deleteprinter command =		$mod_printer_pl -d -s $conffile --
+
+	eventlog list = application \"dns server\"
 
 	kernel oplocks = no
 	kernel change notify = no
@@ -556,6 +563,12 @@ root:x:65532:
 $unix_name-group:x:$unix_gids[0]:
 ";
 	close(GROUP);
+
+	foreach my $evlog (@eventlog_list) {
+		my $evlogtdb = "$eventlogdir/$evlog.tdb";
+		open(EVENTLOG, ">$evlogtdb") or die("Unable to open $evlogtdb");
+		close(EVENTLOG);
+	}
 
 	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
