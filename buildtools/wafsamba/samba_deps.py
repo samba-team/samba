@@ -146,9 +146,23 @@ def build_includes(self):
     if getattr(self, 'local_include', True) == True and not getattr(self, 'local_include_first', True):
         includes.append('.')
 
-    self.env['INC_PATHS'] = unique_list(includes)
-    debug('deps: includes for target %s: INC_PATHS=%s',
-          self.sname, self.env['INC_PATHS'])
+    # now transform the includes list to be relative to the top directory
+    # which is represented by '#' in waf. This allows waf to cache the
+    # includes lists more efficiently
+    includes_top = []
+    for i in includes:
+        if i[0] == '#':
+            # some are already top based
+            includes_top.append(i)
+            continue
+        absinc = os.path.join(self.path.abspath(), i)
+        relinc = os_path_relpath(absinc, self.bld.srcnode.abspath())
+        includes_top.append('#' + relinc)
+
+    self.includes = unique_list(includes_top)
+    debug('deps: includes for target %s: includes=%s',
+          self.sname, self.includes)
+
 
 
 
