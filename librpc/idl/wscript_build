@@ -1,4 +1,11 @@
-bld.SAMBA_PIDL_LIST('PIDL_COMMON',
+# note that we use symlink=True for the common IDL files.
+# this is because the gen_ndr output is committed in git,
+# and we don't want the result of a waf build to be a large
+# git diff of all of the changes in include paths in the gen_ndr directory
+# by using a symlink, we end up putting the generated files (and the associated
+# object files) in ../gen_ndr in the source tree, but still allow waf to be
+# happy about all the build files appearing in the expected location in bin/default
+bld.SAMBA_PIDL_LIST('PIDL',
                     '''atsvc.idl dcom.idl drsuapi.idl epmapper.idl initshutdown.idl
                        misc.idl ntlmssp.idl protected_storage.idl schannel.idl trkwks.idl
                        wmi.idl audiosrv.idl dfsblobs.idl dsbackup.idl eventlog.idl keysvc.idl
@@ -8,5 +15,8 @@ bld.SAMBA_PIDL_LIST('PIDL_COMMON',
                        dbgidl.idl dnsserver.idl echo.idl frsrpc.idl lsa.idl nbt.idl
                        oxidresolver.idl samr.idl srvsvc.idl winreg.idl dcerpc.idl
                        drsblobs.idl efs.idl frstrans.idl mgmt.idl netlogon.idl
-                       policyagent.idl scerpc.idl svcctl.idl wkssvc.idl''')
+                       policyagent.idl scerpc.idl svcctl.idl wkssvc.idl''',
+                    options='--header --ndr-parser --samba3-ndr-server --samba3-ndr-client --server --client --python --dcom-proxy --com-header',
+                    output_dir='../gen_ndr',
+                    symlink=True)
 
