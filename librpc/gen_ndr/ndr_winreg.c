@@ -2484,10 +2484,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int 
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data));
 		if (r->in.data) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->in.data_size));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.data_size?*r->in.data_size:0));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->in.data_length));
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.data, *r->in.data_length));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->in.data_length?*r->in.data_length:0));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.data, r->in.data_length?*r->in.data_length:0));
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data_size));
 		if (r->in.data_size) {
@@ -2505,10 +2505,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int 
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.data));
 		if (r->out.data) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.data_size));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->out.data_size?*r->out.data_size:0));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.data_length));
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.data, *r->out.data_length));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->out.data_length?*r->out.data_length:0));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.data, r->out.data_length?*r->out.data_length:0));
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.data_size));
 		if (r->out.data_size) {
@@ -2608,11 +2608,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int 
 		}
 		if (r->in.data) {
 			if (r->in.data_size == NULL) return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, "NULL Pointer for size_is()");
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.data, *r->in.data_size));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.data, r->in.data_size?*r->in.data_size:0));
 		}
 		if (r->in.data) {
 			if (r->in.data_length == NULL) return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, "NULL Pointer for length_is()");
-			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->in.data, *r->in.data_length));
+			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->in.data, r->in.data_length?*r->in.data_length:0));
 		}
 	}
 	if (flags & NDR_OUT) {
@@ -2673,11 +2673,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 		if (r->out.data) {
 			if (r->out.data_size == NULL) return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, "NULL Pointer for size_is()");
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.data, *r->out.data_size));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.data, r->out.data_size?*r->out.data_size:0));
 		}
 		if (r->out.data) {
 			if (r->out.data_length == NULL) return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, "NULL Pointer for length_is()");
-			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->out.data, *r->out.data_length));
+			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->out.data, r->out.data_length?*r->out.data_length:0));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2711,7 +2711,7 @@ _PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		if (r->in.data) {
 			if (r->in.data_length == NULL) return;
-			ndr_print_array_uint8(ndr, "data", r->in.data, *r->in.data_length);
+			ndr_print_array_uint8(ndr, "data", r->in.data, r->in.data_length?*r->in.data_length:0);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "data_size", r->in.data_size);
@@ -2741,7 +2741,7 @@ _PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		if (r->out.data) {
 			if (r->out.data_length == NULL) return;
-			ndr_print_array_uint8(ndr, "data", r->out.data, *r->out.data_length);
+			ndr_print_array_uint8(ndr, "data", r->out.data, r->out.data_length?*r->out.data_length:0);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "data_size", r->out.data_size);
