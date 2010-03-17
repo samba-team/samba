@@ -27,6 +27,11 @@ struct smb_signing_state;
 struct smb_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
 					   bool allowed,
 					   bool mandatory);
+struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
+					      bool allowed,
+					      bool mandatory,
+					      void *(*alloc_fn)(TALLOC_CTX *, size_t),
+					      void (*free_fn)(TALLOC_CTX *, void *));
 uint32_t smb_signing_next_seqnum(struct smb_signing_state *si, bool oneway);
 void smb_signing_cancel_reply(struct smb_signing_state *si, bool oneway);
 void smb_signing_sign_pdu(struct smb_signing_state *si,
