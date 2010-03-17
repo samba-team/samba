@@ -1,7 +1,7 @@
 srcdir = '.'
 blddir = 'build'
 
-import Options, os
+import Options, os, wafsamba
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
@@ -9,6 +9,7 @@ def set_options(opt):
                    help=("Disable use of rpath"),
                    action="store_true", dest='disable_rpath', default=False)
 
+@wafsamba.runonce
 def configure(conf):
     conf.env.hlist = []
 
@@ -20,7 +21,7 @@ def configure(conf):
     conf.DEFUN('_XOPEN_SOURCE_EXTENDED', 1)
     conf.DEFUN('LIBREPLACE_NETWORK_CHECKS', 1)
 
-    conf.CHECK_HEADERS('unistd.h sys/types.h stdlib.h stdio.h')
+    conf.CHECK_HEADERS('unistd.h sys/types.h stdlib.h stdio.h stddef.h')
     conf.CHECK_HEADERS('sys/wait.h sys/stat.h malloc.h grp.h')
     conf.CHECK_HEADERS('crypt.h dlfcn.h dl.h standards.h stdbool.h stdint.h')
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
@@ -30,6 +31,9 @@ def configure(conf):
     conf.CHECK_HEADERS('netinet/ip.h netinet/tcp.h netinet/in_ip.h sys/sockio.h sys/un.h')
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
+
+    if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
+        conf.DEFUN('STDC_HEADERS', 1)
 
     conf.check(type_name='long long')
     conf.CHECK_TYPES('intptr_t uintptr_t ptrdiff_t')
@@ -67,6 +71,20 @@ def configure(conf):
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs')
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
+
+    conf.check_cc(fragment='''
+    #include <stdarg.h>
+    va_list ap1,ap2;
+    va_copy(ap1,ap2);
+    int main(void)
+    { return 0; }''',
+                define_name="HAVE_VA_COPY",
+		execute=0,
+		link=0,
+                define_ret=0,
+                quote=0,
+		msg="Checking for va_copy")
+
 
     # we could also put code fragments like this in separate files,
     # for example in test/snprintf.c
@@ -110,7 +128,7 @@ main() { foo("hello"); }
                 quote=0,
 		msg="Checking for C99 vsnprintf")
 
-    conf.write_config_header('config.h')
+    conf.SAMBA_CONFIG_H()
 
 def build(bld):
     bld.set_rpath()

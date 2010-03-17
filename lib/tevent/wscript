@@ -1,0 +1,30 @@
+VERSION = '0.9.8'
+
+srcdir = '.'
+blddir = 'build'
+
+LIBREPLACE_DIR='../replace'
+
+def set_options(opt):
+    opt.recurse(LIBREPLACE_DIR)
+
+def configure(conf):
+    conf.sub_config(LIBREPLACE_DIR)
+
+    conf.CHECK_HEADERS('sys/epoll.h')
+    conf.CHECK_FUNCS('epoll_create')
+
+    conf.SAMBA_CONFIG_H()
+
+def build(bld):
+    bld.add_subdirs(LIBREPLACE_DIR)
+
+    SRC = '''tevent.c tevent_debug.c tevent_epoll.c tevent_fd.c tevent_immediate.c
+             tevent_queue.c tevent_req.c tevent_select.c
+             tevent_signal.c tevent_standard.c tevent_timed.c tevent_util.c tevent_wakeup.c'''
+
+
+    bld.SAMBA_LIBRARY('tevent',
+                      SRC,
+                      libdeps='replace talloc',
+                      vnum=VERSION)

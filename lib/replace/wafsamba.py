@@ -16,13 +16,13 @@ def DEFUN(conf, d, v):
 
 @conf
 def CHECK_HEADERS(conf, list):
-    for hdr in list.rsplit(' '):
+    for hdr in list.split():
         if conf.check(header_name=hdr):
             conf.env.hlist.append(hdr)
 
 @conf
 def CHECK_TYPES(conf, list):
-    for t in list.rsplit(' '):
+    for t in list.split():
         conf.check(type_name=t, header_name=conf.env.hlist)
 
 @conf
@@ -37,14 +37,23 @@ def CHECK_TYPE(conf, t, alternate):
 
 @conf
 def CHECK_FUNCS(conf, list):
-    for f in list.rsplit(' '):
+    for f in list.split():
         conf.check(function_name=f, header_name=conf.env.hlist)
 
 @conf
 def CHECK_FUNCS_IN(conf, list, library):
     if conf.check(lib=library, uselib_store=library):
-        for f in list.rsplit(' '):
+        for f in list.split():
             conf.check(function_name=f, lib=library, header_name=conf.env.hlist)
+
+#################################################
+# write out config.h in the right directory
+@conf
+def SAMBA_CONFIG_H(conf):
+    import os
+    if os.path.normpath(conf.curdir) == os.path.normpath(conf.srcdir):
+        conf.write_config_header('config.h')
+
 
 ################################################################
 # magic rpath handling
@@ -60,6 +69,16 @@ def set_rpath(bld):
         bld.env.append_value('RPATH', '-Wl,-rpath=build/default')
 Build.BuildContext.set_rpath = set_rpath
 
+
+################################################################
+# create a list of files by pre-pending each with a subdir name
+def SUBDIR(bld, subdir, list):
+    ret = ''
+    for l in list.split():
+        ret = ret + subdir + '/' + l + ' '
+    return ret
+Build.BuildContext.SUBDIR = SUBDIR
+
 ################################################################
 # this will contain the set of includes needed per Samba library
 Build.BuildContext.SAMBA_LIBRARY_INCLUDES = {}
@@ -72,7 +91,7 @@ Build.BuildContext.SAMBA_LIBRARY_DEPS = {}
 # return a include list for a set of library dependencies
 def SAMBA_LIBRARY_INCLUDE_LIST(bld, libdeps):
     ret = bld.curdir + ' '
-    for l in libdeps.rsplit(' '):
+    for l in libdeps.split():
         if l in bld.SAMBA_LIBRARY_INCLUDES:
             ret = ret + bld.SAMBA_LIBRARY_INCLUDES[l] + ' '
     return ret
@@ -81,13 +100,15 @@ Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 
 #################################################################
 # define a Samba library
-def SAMBA_LIBRARY(bld, libname, source_list, libdeps='', include_list=''):
-    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list
+def SAMBA_LIBRARY(bld, libname, source_list,
+                  libdeps='', include_list='.', vnum=None):
+    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + bld.SUBDIR(bld.curdir, include_list)
     bld(
         features = 'cc cshlib',
         source = source_list,
         target=libname,
-        includes=ilist)
+        includes='. ' + ilist,
+        vnum=vnum)
     bld.SAMBA_LIBRARY_INCLUDES[libname] = ilist
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
@@ -99,19 +120,19 @@ def SAMBA_BINARY(bld, binname, source_list, libdeps='', include_list=''):
         source = source_list,
         target = binname,
         uselib_local = libdeps,
-        includes = bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list)
+        includes = '. ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(libdeps) + include_list)
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 ############################################################
-# this overrides the normal -v debug output to be in a nice
-# unix like format. Thanks to ita on #waf for this
+# this overrides the 'waf -v' debug output to be in a nice
+# unix like format instead of a python list.
+# Thanks to ita on #waf for this
 def exec_command(self, cmd, **kw):
-    import Utils
-    from Logs import debug
+    import Utils, Logs
     _cmd = cmd
     if isinstance(cmd, list):
         _cmd = ' '.join(cmd)
-    debug('runner: %s' % _cmd)
+    Logs.debug('runner: %s' % _cmd)
     if self.log:
         self.log.write('%s\n' % cmd)
         kw['log'] = self.log
@@ -121,6 +142,20 @@ def exec_command(self, cmd, **kw):
     except AttributeError:
         self.cwd = kw['cwd'] = self.bldnode.abspath()
     return Utils.exec_command(cmd, **kw)
-
-import Build
 Build.BuildContext.exec_command = exec_command
+
+
+######################################################
+# this is used as a decorator to make functions only
+# run once. Based on the idea from
+# http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
+runonce_ret = {}
+def runonce(function):
+    def wrapper(*args):
+        if args in runonce_ret:
+            return runonce_ret[args]
+        else:
+            ret = function(*args)
+            runonce_ret[args] = ret
+            return ret
+    return wrapper

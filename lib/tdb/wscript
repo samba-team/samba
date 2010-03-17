@@ -1,23 +1,30 @@
+VERSION='1.2.1'
+
 srcdir = '.'
 blddir = 'build'
 
+LIBREPLACE_DIR='../replace'
+
 def set_options(opt):
-    opt.recurse('../talloc')
+    opt.recurse(LIBREPLACE_DIR)
 
 def configure(conf):
-    conf.recurse('../talloc')
+    conf.sub_config(LIBREPLACE_DIR)
+    conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.recurse('../talloc')
+    bld.add_subdirs(LIBREPLACE_DIR)
 
-    COMMON_SOURCE = '''common/check.c common/error.c common/tdb.c common/traverse.c
-                       common/freelistcheck.c common/lock.c common/dump.c common/freelist.c
-                       common/io.c common/open.c  common/transaction.c'''
+    COMMON_SRC = bld.SUBDIR('common',
+                            '''check.c error.c tdb.c traverse.c
+                            freelistcheck.c lock.c dump.c freelist.c
+                            io.c open.c transaction.c''')
 
     bld.SAMBA_LIBRARY('tdb',
-                      COMMON_SOURCE,
-                      'replace talloc',
-                      'include')
+                      COMMON_SRC,
+                      libdeps='replace talloc',
+                      include_list='include',
+                      vnum=VERSION)
 
     bld.SAMBA_BINARY('tdbtorture',
                      'tools/tdbtorture.c',
