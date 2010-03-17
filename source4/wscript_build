@@ -62,6 +62,3 @@ bld.BUILD_SUBDIR('../libcli/drsuapi')
 bld.BUILD_SUBDIR('../libcli/samsync')
 bld.BUILD_SUBDIR('../libgpo')
 bld.BUILD_SUBDIR('../libcli/named_pipe_auth')
-
-# check if we have any circular build dependencies
-bld.CHECK_DEPENDENCIES()

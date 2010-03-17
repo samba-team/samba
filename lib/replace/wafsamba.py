@@ -199,18 +199,6 @@ def CHECK_TARGET_DEPENDENCY(bld, target):
     cache = BUILD_CACHE(bld, 'LIB_DEPS')
     FULL_DEPENDENCIES(bld, cache, target, { target:True }, target)
 
-############################################################
-# check our build dependencies for circular dependencies
-def CHECK_DEPENDENCIES(bld):
-    cache = BUILD_CACHE(bld, 'LIB_DEPS')
-    print "Checking for circular dependencies"
-    for target in cache:
-        CHECK_TARGET_DEPENDENCY(bld, target)
-    print "No circular dependencies"
-
-Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
-
-
 ################################################################
 # add to the dependency list. Return a new dependency list with
 # any circular dependencies removed
