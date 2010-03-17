@@ -6,7 +6,7 @@ blddir = 'bin'
 import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba
-import Options, os
+import Options, os, preproc
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
@@ -34,6 +34,12 @@ def set_options(opt):
 def configure(conf):
     conf.env.hlist = []
     conf.env.srcdir = conf.srcdir
+
+    # during the configure checks we want the waf dependency checker
+    # to go into system includes. This ensures that if you add/remove
+    # a system library, that 'waf configure' will detect that, and
+    # it won't be fooled by the waf cache
+    preproc.go_absolute = True
 
     if Options.options.timestamp_dependencies:
         conf.ENABLE_TIMESTAMP_DEPENDENCIES()
