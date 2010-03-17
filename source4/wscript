@@ -17,6 +17,7 @@ def set_options(opt):
     opt.recurse('../lib/nss_wrapper')
     opt.recurse('../lib/socket_wrapper')
     opt.recurse('../lib/uid_wrapper')
+    opt.recurse('../lib/popt')
 
 def configure(conf):
     conf.define('PACKAGE_NAME', 'samba')
@@ -60,6 +61,7 @@ def configure(conf):
     conf.sub_config('../lib/nss_wrapper')
     conf.sub_config('../lib/socket_wrapper')
     conf.sub_config('../lib/uid_wrapper')
+    conf.sub_config('../lib/popt')
     conf.sub_config('lib/smbreadline')
 
     conf.SAMBA_CONFIG_H('include/config.h')
