@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 srcdir = '../..'
 blddir = 'bin'
 
@@ -8,15 +10,16 @@ import Options, os
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
+    # TODO: we are not yet obeying these default paths at install time
     opt.add_option('--libdir',
-                   help=("object code libraries [PREFIX/lib]"),
-                   action="store", dest='LIBDIR', default=None)
+                   help=("object code libraries [PREFIX/lib"),
+                   action="store", dest='LIBDIR', default='${PREFIX}/lib')
     opt.add_option('--bindir',
                    help=("user executables [PREFIX/bin]"),
-                   action="store", dest='BINDIR', default=None)
+                   action="store", dest='BINDIR', default='${PREFIX}/bin')
     opt.add_option('--sbindir',
                    help=("system admin executables [PREFIX/sbin]"),
-                   action="store", dest='SBINDIR', default=None)
+                   action="store", dest='SBINDIR', default='${PREFIX}/sbin')
     opt.add_option('--enable-rpath',
                    help=("Enable use of rpath for installed binaries"),
                    action="store_true", dest='enable_rpath', default=False)
@@ -32,11 +35,12 @@ def configure(conf):
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
-    conf.CONFIG_PATH('LIBDIR', '/lib')
-    conf.CONFIG_PATH('BINDIR', '/bin')
-    conf.CONFIG_PATH('SBINDIR', '/sbin')
-
     conf.check_tool('compiler_cc')
+
+    # make the install paths available in environment
+    conf.env.LIBDIR = Options.options.LIBDIR
+    conf.env.BINDIR = Options.options.BINDIR
+    conf.env.SBINDIR = Options.options.SBINDIR
 
     conf.env['RPATH_ON_INSTALL'] = Options.options.enable_rpath
 
@@ -180,10 +184,16 @@ main() { foo("hello"); }
 def build(bld):
     bld.set_rpath()
 
+    # libreplace needs to put the library in the right build groups
+    # as libreplace is a base library for everything, even for our
+    # compilers, we need libreplace to build very early
+    bld.SETUP_BUILD_GROUPS()
+
     REPLACE_SOURCE = 'replace.c snprintf.c'
 
     bld.SAMBA_LIBRARY('replace',
-                      REPLACE_SOURCE)
+                      source=REPLACE_SOURCE,
+                      group='base_libraries')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''

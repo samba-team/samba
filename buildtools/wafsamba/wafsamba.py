@@ -12,6 +12,8 @@ from samba_utils import *
 from samba_autoconf import *
 from samba_patterns import *
 from samba_pidl import *
+from samba_asn1 import *
+from samba_autoproto import *
 
 LIB_PATH="shared"
 
@@ -71,10 +73,10 @@ def CHECK_DEPENDENCIES(bld):
     for t in cache:
         deps = CHECK_TARGET_DEPENDENCY(bld, t)
         for d in deps:
-            #if not d in target_cache:
-            #    print "Dependency '%s' of target '%s' not declared" % (d, t)
-            ASSERT(bld, d in target_cache,
-                   "Dependency '%s' of target '%s' not declared" % (d, t))
+            if not d in target_cache:
+                print "WARNING: Dependency '%s' of target '%s' not declared" % (d, t)
+            #ASSERT(bld, d in target_cache,
+            #       "Dependency '%s' of target '%s' not declared" % (d, t))
     debug("deps: Dependencies checked for %u targets" % len(target_cache))
 Build.BuildContext.CHECK_DEPENDENCIES = CHECK_DEPENDENCIES
 
@@ -176,6 +178,8 @@ def SAMBA_LIBRARY_INCLUDE_LIST(bld, deps):
     for l in deps.split():
         if l in cache:
             ret = ret + cache[l] + ' '
+    if 'EXTRA_INCLUDES' in bld.env:
+        ret += ' ' + ' '.join(bld.env['EXTRA_INCLUDES'])
     return ret
 Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 
@@ -184,13 +188,14 @@ Build.BuildContext.SAMBA_LIBRARY_INCLUDE_LIST = SAMBA_LIBRARY_INCLUDE_LIST
 def SAMBA_LIBRARY(bld, libname, source,
                   deps='',
                   public_deps='',
-                  include_list='.',
+                  includes='.',
                   public_headers=None,
                   vnum=None,
                   cflags='',
                   output_type=None,
                   realname=None,
                   autoproto=None,
+                  group='main',
                   depends_on=''):
     if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
         return
@@ -202,9 +207,12 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, libname, deps)
 
-    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
+    ilist = bld.SUBDIR(bld.curdir, includes) + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
-    bld.SET_BUILD_GROUP('main')
+
+    # this print below should show that we're runnig this code
+    print "Setting build group for library %s to %s" % (libname, group), bld.path
+    bld.SET_BUILD_GROUP(group)   # <- here
     bld(
         features = 'cc cshlib',
         source = source,
@@ -213,32 +221,37 @@ def SAMBA_LIBRARY(bld, libname, source,
         uselib = sysdeps,
         add_objects = add_objects,
         ccflags = CURRENT_CFLAGS(bld, cflags),
-        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist,
+        includes=ilist + ' . #',
         depends_on=depends_on,
         vnum=vnum)
+
+    # I have to set it each time? I expect it to be still
+    # set from the few lines above
 
     # put a link to the library in bin/shared
     soext=""
     if vnum is not None:
         soext = '.' + vnum.split('.')[0]
-    bld.SET_BUILD_GROUP('final')
-    bld(
+
+    t = bld(
         source = 'lib%s.so' % libname,
-        rule = 'ln -sf ../${SRC}%s %s/lib%s.so%s' %
-        (soext, LIB_PATH, libname, soext),
+        rule = 'ln -sf ../${SRC}%s %s/lib%s.so%s' % (soext, LIB_PATH, libname, soext),
+#        rule = 'ln -sf ../%s.so%s %s/lib%s.so%s' % (libname, soext, LIB_PATH, libname, soext),
         shell = True,
         after = 'cc_link',
+        always = True,
+	name = 'fff' + libname,
         )
+    #print t.rule
     LOCAL_CACHE_SET(bld, 'INCLUDE_LIST', libname, ilist)
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
-
 
 #################################################################
 # define a Samba binary
 def SAMBA_BINARY(bld, binname, source,
                  deps='',
-                 include_list='',
+                 includes='',
                  public_headers=None,
                  modules=None,
                  installdir=None,
@@ -249,7 +262,7 @@ def SAMBA_BINARY(bld, binname, source,
                  compiler=None,
                  group='main',
                  manpages=None):
-    ilist = '. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + ' ' + include_list
+    ilist = includes + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
@@ -271,17 +284,21 @@ def SAMBA_BINARY(bld, binname, source,
         target = binname,
         uselib_local = localdeps,
         uselib = sysdeps,
-        includes = ilist,
+        includes = ilist + ' . #',
         ccflags = CURRENT_CFLAGS(bld, cflags),
         add_objects = add_objects,
         top=True)
-    # put a link to the binary in bin/
+
     if not Options.is_install:
         bld(
             source = binname,
             rule = 'rm -f %s && cp ${SRC} .' % (binname),
             shell = True,
-            after = 'cc_link'
+            after = 'cc_link',
+            always = True,
+            ext_in = '.bin',
+            name = binname + ".copy",
+            depends_on = binname
             )
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
@@ -301,32 +318,13 @@ def SAMBA_PYTHON(bld, name, source,
     return
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
 
-
-
-#################################################################
-# define a Samba ASN1 target
-def SAMBA_ASN1(bld, name, source,
-               options='',
-               directory=''):
-    if not SET_TARGET_TYPE(bld, name, 'ASN1'):
-        return
-    bld.SET_BUILD_GROUP('build_source')
-    bld(
-        features       = 'cc',
-        source         = source,
-        target         = name,
-        asn1options    = options,
-        asn1directory  = directory
-    )
-Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1
-
-
-
 #################################################################
 # define a Samba ET target
 def SAMBA_ERRTABLE(bld, name, source,
                options='',
                directory=''):
+#    print "Skipping ERRTABLE rule for %s with source=%s" % (name, source)
+#    return
     if not SET_TARGET_TYPE(bld, name, 'ET'):
         return
     bld.SET_BUILD_GROUP('build_source')
@@ -357,7 +355,7 @@ Build.BuildContext.AUTOPROTO = AUTOPROTO
 # define a Samba module.
 def SAMBA_MODULE(bld, modname, source,
                  deps='',
-                 include_list='.',
+                 includes='.',
                  subsystem=None,
                  init_function=None,
                  autoproto=None,
@@ -375,7 +373,7 @@ def SAMBA_MODULE(bld, modname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, modname, deps)
 
-    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
+    ilist = bld.SUBDIR(bld.curdir, includes) + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
     bld.SET_BUILD_GROUP('main')
     bld(
@@ -383,7 +381,7 @@ def SAMBA_MODULE(bld, modname, source,
         source = source,
         target=modname,
         ccflags = CURRENT_CFLAGS(bld, cflags),
-        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist)
+        includes=ilist + ' . #')
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
 
@@ -392,13 +390,15 @@ Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 def SAMBA_SUBSYSTEM(bld, modname, source,
                     deps='',
                     public_deps='',
-                    include_list='.',
+                    includes='.',
                     public_headers=None,
-                    autoproto=None,
                     cflags='',
                     group='main',
                     config_option=None,
                     init_function_sentinal=None,
+                    heimdal_autoproto=None,
+                    heimdal_autoproto_private=None,
+                    autoproto=None,
                     depends_on=''):
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
@@ -416,7 +416,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     (sysdeps, localdeps, add_objects) = ADD_DEPENDENCIES(bld, modname, deps)
 
-    ilist = bld.SAMBA_LIBRARY_INCLUDE_LIST(deps) + bld.SUBDIR(bld.curdir, include_list)
+    ilist = bld.SUBDIR(bld.curdir, includes) + ' ' + bld.SAMBA_LIBRARY_INCLUDE_LIST(deps)
     ilist = bld.NORMPATH(ilist)
     bld.SET_BUILD_GROUP(group)
     t = bld(
@@ -424,9 +424,18 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         source = source,
         target=modname,
         ccflags = CURRENT_CFLAGS(bld, cflags),
-        includes='. ' + bld.env['BUILD_DIRECTORY'] + '/default ' + ilist,
+        includes=ilist + ' . #',
         depends_on=depends_on)
+    LOCAL_CACHE_SET(bld, 'INCLUDE_LIST', modname, ilist)
+
+    if heimdal_autoproto is not None:
+        bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source)
+    if heimdal_autoproto_private is not None:
+        bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
+    if autoproto is not None:
+        bld.SAMBA_AUTOPROTO(autoproto, source)
     return t
+
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
@@ -457,8 +466,10 @@ Options.Handler.ADD_COMMAND = ADD_COMMAND
 # phases happen consecutively
 @runonce
 def SETUP_BUILD_GROUPS(bld):
+    bld.p_ln = bld.srcnode # we do want to see all targets!
     bld.env['USING_BUILD_GROUPS'] = True
     bld.add_group('setup')
+    bld.add_group('base_libraries')
     bld.add_group('build_compilers')
     bld.add_group('build_source')
     bld.add_group('prototypes')

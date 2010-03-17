@@ -17,7 +17,9 @@ def set_options(opt):
 def configure(conf):
     conf.sub_config(LIBTDB_DIR)
     conf.sub_config(LIBTEVENT_DIR)
-    conf.CONFIG_PATH('LDB_MODULESDIR', conf.env['LIBDIR'] + '/ldb')
+    # where does the default LIBDIR end up? in conf.env somewhere?
+    #
+    conf.CONFIG_PATH('LDB_MODULESDIR', conf.env.LIBDIR + '/ldb')
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
@@ -42,7 +44,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('ldb',
 		      LDB_TDB_SRC + ' ' + COMMON_SRC + ' ' + MODULES_SRC,
 		      deps='tdb tevent',
-		      include_list='include',
+		      includes='include',
                       vnum=VERSION)
 
     LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename ldbtest'

@@ -157,8 +157,8 @@ def ADD_COMMAND(opt, name, function):
 Options.Handler.ADD_COMMAND = ADD_COMMAND
 
 
-@feature('cprogram','cc','cshlib')
-@before('apply_core')
+@feature('*')
+@before('apply_core','exec_rule')
 def process_depends_on(self):
     '''The new depends_on attribute for build rules
        allow us to specify a dependency on output from
@@ -204,8 +204,8 @@ Build.BuildContext.FIND_TASKGEN = FIND_TASKGEN
 def ENABLE_MAGIC_ORDERING(bld):
     '''enable automatic build order constraint calculation
        see page 35 of the waf book'''
-    print "Enabling magic ordering"
-    bld.use_the_magic()
+    print "NOT Enabling magic ordering"
+    #bld.use_the_magic()
 Build.BuildContext.ENABLE_MAGIC_ORDERING = ENABLE_MAGIC_ORDERING
 
 

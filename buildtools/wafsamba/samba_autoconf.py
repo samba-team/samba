@@ -124,6 +124,14 @@ def ADD_CFLAGS(conf, flags):
         conf.env['EXTRA_CFLAGS'] = []
     conf.env['EXTRA_CFLAGS'].extend(flags.split())
 
+##############################################################
+# add some extra include directories to all builds
+@conf
+def ADD_EXTRA_INCLUDES(conf, includes):
+    if not 'EXTRA_INCLUDES' in conf.env:
+        conf.env['EXTRA_INCLUDES'] = []
+    conf.env['EXTRA_INCLUDES'].extend(includes.split())
+
 
 ##############################################################
 # work out the current flags. local flags are added first

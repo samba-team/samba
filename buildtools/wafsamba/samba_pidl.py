@@ -40,33 +40,51 @@ def SAMBA_PIDL(bld, pname, source, options=''):
     t.env.OPTIONS = options
     t.env.OUTPUTDIR = bld.BUILD_PATH(gen_ndr_dir)
 
-    # I'm creating the list of headers for the tables rule here.
-    # then the tables rule itself is below
-    #t.collect_headers = [bld.path.find_or_declare(out_files[1])] #, bld.path.find_or_declare(out_files[6])]
-    #if name.rfind('PIDL') > -1:
-    #   print name, "t.coll", t.collect_headers
-    #print name, "so bld.PIDL_STUFF is defined", id(bld)
     try:
          bld.PIDL_STUFF[name] = [bld.path.find_or_declare(out_files[1])]
     except AttributeError:
          bld.PIDL_STUFF = {}
          bld.PIDL_STUFF[name] = [bld.path.find_or_declare(out_files[1])]
 
-    # I think I need to build this list as absolute paths, then
-    # re-do as relative paths in the tables rule
     t.more_includes = '#' + bld.path.relpath_gen(bld.srcnode)
-    #if not 'PIDL_HEADERS' in bld.env:
-    #    bld.env.PIDL_HEADERS = []
-    #bld.env.PIDL_HEADERS.append(gen_ndr_dir + 'ndr_%s.h' % bname)
-
-
-
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
+
+
+def SAMBA_PIDL_TDR(bld, pname, source, options=''):
+    '''Build a IDL file using pidl.
+    This will only produce the header and tdr parser'''
+
+    bname = source[0:-4];
+    name = "PIDL_%s" % bname.upper()
+
+    if not SET_TARGET_TYPE(bld, name, 'PIDL'):
+        return
+
+    bld.SET_BUILD_GROUP('build_source')
+
+    out_files = []
+    out_files.append('tdr_%s.c' % bname)
+    out_files.append('tdr_%s.h' % bname)
+
+    pidl = bld.srcnode.find_resource('pidl/pidl').relpath_gen(bld.path)
+    t = bld(rule='${PIDL} ${PIDL_BUILD_TYPES} ${OPTIONS} --outputdir ${TGT[0].parent.abspath(env)} -- ${SRC[0].abspath(env)}',
+            ext_out = '.c',
+            before = 'cc',
+            shell = False,
+            source=source,
+            target = out_files,
+            name=name)
+
+    t.env.PIDL = "../../pidl/pidl"
+    t.env.PIDL_BUILD_TYPES = '--header --tdr-parser'
+    t.env.OPTIONS = options
+
+Build.BuildContext.SAMBA_PIDL_TDR = SAMBA_PIDL_TDR
 
 
 #################################################################
 # define a set of Samba PIDL targets
-def SAMBA_PIDL_LIST(bld, name, source, options=''):
+def SAMBA_PIDL_LIST(bld, name, source,options=''):
     for p in source.split():
         bld.SAMBA_PIDL(name, p, options)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST

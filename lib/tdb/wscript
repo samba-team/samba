@@ -28,7 +28,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('tdb',
                       COMMON_SRC,
                       deps='replace',
-                      include_list='include',
+                      includes='include',
                       vnum=VERSION)
 
     bld.SAMBA_BINARY('tdbtorture',
