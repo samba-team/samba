@@ -263,6 +263,29 @@ _PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary
 	return ndr_size_struct((const struct drsuapi_DsReplicaObjectIdentifier3 *)r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3, ic);
 }
 
+_PUBLIC_ void ndr_print_drsuapi_SecBufferType(struct ndr_print *ndr, const char *name, enum drsuapi_SecBufferType r)
+{
+	const char *val = NULL;
+
+	switch (r & 0x00000007) {
+		case DRSUAPI_SECBUFFER_EMPTY: val = "DRSUAPI_SECBUFFER_EMPTY"; break;
+		case DRSUAPI_SECBUFFER_DATA: val = "DRSUAPI_SECBUFFER_DATA"; break;
+		case DRSUAPI_SECBUFFER_TOKEN: val = "DRSUAPI_SECBUFFER_TOKEN"; break;
+		case DRSUAPI_SECBUFFER_PKG_PARAMS: val = "DRSUAPI_SECBUFFER_PKG_PARAMS"; break;
+		case DRSUAPI_SECBUFFER_MISSING: val = "DRSUAPI_SECBUFFER_MISSING"; break;
+		case DRSUAPI_SECBUFFER_EXTRA: val = "DRSUAPI_SECBUFFER_EXTRA"; break;
+		case DRSUAPI_SECBUFFER_STREAM_TRAILER: val = "DRSUAPI_SECBUFFER_STREAM_TRAILER"; break;
+		case DRSUAPI_SECBUFFER_STREAM_HEADER: val = "DRSUAPI_SECBUFFER_STREAM_HEADER"; break;
+	}
+
+	if (r & DRSUAPI_SECBUFFER_READONLY) {
+		char *v = talloc_asprintf(ndr, "DRSUAPI_SECBUFFER_READONLY | %s", val);
+		ndr_print_enum(ndr, name, "ENUM", v, r);
+	} else {
+		ndr_print_enum(ndr, name, "ENUM", val, r);
+	}
+}
+
 _PUBLIC_ void ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsAddEntry_AttrErrListItem_V1 *r)
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsAddEntry_AttrErrListItem_V1");
