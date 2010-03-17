@@ -1414,22 +1414,32 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static bool test_DeleteKey(struct dcerpc_binding_handle *b,
-			   struct torture_context *tctx,
-			   struct policy_handle *handle, const char *key)
+static bool test_DeleteKey_opts(struct dcerpc_binding_handle *b,
+				struct torture_context *tctx,
+				struct policy_handle *handle,
+				const char *key,
+				WERROR expected_result)
 {
-	NTSTATUS status;
 	struct winreg_DeleteKey r;
+
+	torture_comment(tctx, "Testing DeleteKey(%s)\n", key);
 
 	r.in.handle = handle;
 	init_winreg_String(&r.in.key, key);
 
-	status = dcerpc_winreg_DeleteKey_r(b, tctx, &r);
-
-	torture_assert_ntstatus_ok(tctx, status, "DeleteKey failed");
-	torture_assert_werr_ok(tctx, r.out.result, "DeleteKey failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteKey_r(b, tctx, &r),
+		"Delete Key failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"DeleteKey failed");
 
 	return true;
+}
+
+static bool test_DeleteKey(struct dcerpc_binding_handle *b,
+			   struct torture_context *tctx,
+			   struct policy_handle *handle, const char *key)
+{
+	return test_DeleteKey_opts(b, tctx, handle, key, WERR_OK);
 }
 
 static bool test_QueryInfoKey(struct dcerpc_binding_handle *b,
