@@ -1,30 +1,6 @@
 # selftest main code.
 
-import Scripting, os, Options, Utils, Environment, optparse
-
-
-def cmd_testonly(opt):
-    env = Environment.Environment()
-
-    env.TESTS = Options.options.TESTS
-
-    env.OPTIONS = ''
-    if Options.options.QUICKTEST:
-        env.OPTIONS += '--exclude=./selftest/slow --quick --include=./selftest/quick'
-
-    SELFTEST = 'PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} | perl -W ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail | /usr/bin/perl -W ../selftest/format-subunit.pl --prefix=./st --format=plain --immediate'
-
-    cmd = Utils.subst_vars(SELFTEST, env)
-    print "test: running %s" % cmd
-    ret = os.system(cmd)
-
-########################################################################
-# main test entry point
-def cmd_test(opt):
-    '''Run the quick test suite'''
-    print "Starting quick test"
-    Scripting.commands.append('build')
-    Scripting.commands.append('testonly')
+import Scripting, os, Options, Utils, Environment, optparse, sys
 
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
@@ -38,3 +14,81 @@ def set_options(opt):
     gr.add_option('--quick',
                   help=("enable only quick tests"),
                   action="store_true", dest='QUICKTEST', default=False)
+    gr.add_option('--slow',
+                  help=("enable the really slow tests"),
+                  action="store_true", dest='SLOWTEST', default=False)
+    gr.add_option('--testenv',
+                  help=("start a terminal with the test environment setup"),
+                  action="store_true", dest='TESTENV', default=False)
+    gr.add_option('--valgrind',
+                  help=("use valgrind on client programs in the tests"),
+                  action="store_true", dest='VALGRIND', default=False)
+    gr.add_option('--valgrind-log',
+                  help=("where to put the valgrind log"),
+                  action="store", dest='VALGRINDLOG', default=None)
+    gr.add_option('--valgrind-server',
+                  help=("use valgrind on the server in the tests (opens an xterm)"),
+                  action="store_true", dest='VALGRIND_SERVER', default=False)
+
+
+def cmd_testonly(opt):
+    '''run tests without doing a build first'''
+    env = Environment.Environment()
+
+    env.TESTS  = Options.options.TESTS
+    env.PERL   = 'perl -W'
+    env.PYTHON = 'python'
+
+    env.TEST_FORMAT = 'plain'
+    env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit.pl --prefix=./st --format=${TEST_FORMAT} --immediate'
+    env.FILTER_XFAIL = '${PERL} ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail'
+    env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
+
+    env.OPTIONS = ''
+    if not Options.options.SLOWTEST:
+        env.OPTIONS += ' --exclude=./selftest/slow'
+    if Options.options.QUICKTEST:
+        env.OPTIONS += ' --quick --include=./selftest/quick'
+
+    if Options.options.TESTENV:
+        env.OPTIONS += ' --testenv'
+
+    if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
+        env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
+    else:
+        env.FILTER_OPTIONS = '${FILTER_XFAIL} | ${FORMAT_TEST_OUTPUT}'
+
+    if Options.options.VALGRIND:
+	os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
+        if Options.options.VALGRINDLOG is not None:
+            os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
+
+    if Options.options.VALGRIND_SERVER:
+	os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run A=B '
+
+    st_done = 'st/st_done'
+    if os.path.exists(st_done):
+        os.unlink(st_done)
+
+    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} | ${FILTER_OPTIONS}) && touch st/st_done'
+
+    while cmd.find('${') != -1:
+        cmd = Utils.subst_vars(cmd, env)
+
+    print "test: running %s" % cmd
+    ret = os.system(cmd)
+    if ret != 0:
+        print("test failed with exit code %d" % ret)
+        sys.exit(ret)
+
+    if not os.path.exists(st_done):
+        print("test command failed to complete")
+        sys.exit(1)
+
+
+########################################################################
+# main test entry point
+def cmd_test(opt):
+    '''Run the test suite (see test options below)'''
+    Scripting.commands.append('build')
+    Scripting.commands.append('testonly')
