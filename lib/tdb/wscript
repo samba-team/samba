@@ -46,3 +46,9 @@ def build(bld):
     bld.SAMBA_BINARY('tdbtool',
                      'tools/tdbtool.c',
                      'tdb')
+
+    bld.SAMBA_PYTHON('pytdb',
+                     'pytdb.c',
+                     deps='tdb',
+                     realname='tdb.so')
+
