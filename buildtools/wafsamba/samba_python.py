@@ -20,7 +20,7 @@ def SAMBA_PYTHON(bld, name,
     # when we support static python modules we'll need to gather
     # the list from all the SAMBA_PYTHON() targets
     if init_function_sentinal is not None:
-        cflags += '-DSTATIC_LIBPYTHON_MODULES="%s"' % init_function_sentinal
+        cflags += '-DSTATIC_LIBPYTHON_MODULES=%s' % init_function_sentinal
 
     if realname is None:
         # a SAMBA_PYTHON target without a realname is just a
