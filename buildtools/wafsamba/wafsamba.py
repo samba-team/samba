@@ -1,11 +1,12 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils
+import Build, os, Options, Task, Utils, cc
 from Configure import conf
 from Logs import debug
 
 # bring in the other samba modules
+from samba_includes import *
 from samba_utils import *
 from samba_autoconf import *
 from samba_patterns import *
