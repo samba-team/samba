@@ -28,7 +28,9 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/cli_spoolss.h"
 #include "../librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../lib/util/binsearch.h"
 
 #ifdef CHECK_TYPES
@@ -3048,8 +3050,16 @@ static bool api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *QueueName = skip_string(param,tpscnt,str2);
 	int errcode = NERR_notsupported;
-	int snum;
 	WERROR werr = WERR_OK;
+	NTSTATUS status;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	enum spoolss_PrinterControl command;
 
 	if (!str1 || !str2 || !QueueName) {
 		return False;
@@ -3069,31 +3079,84 @@ static bool api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 	if (skip_string(param,tpscnt,QueueName) == NULL) {
 		return False;
 	}
-	snum = print_queue_snum(QueueName);
 
-	if (snum == -1) {
-		errcode = NERR_JobNotFound;
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_WPrintQueueCtrl: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    QueueName,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
 		goto out;
 	}
 
 	switch (function) {
 	case 74: /* Pause queue */
-		werr = print_queue_pause(conn->server_info, snum);
+		command = SPOOLSS_PRINTER_CONTROL_PAUSE;
 		break;
 	case 75: /* Resume queue */
-		werr = print_queue_resume(conn->server_info, snum);
+		command = SPOOLSS_PRINTER_CONTROL_RESUME;
 		break;
 	case 103: /* Purge */
-		werr = print_queue_purge(conn->server_info, snum);
+		command = SPOOLSS_PRINTER_CONTROL_PURGE;
 		break;
 	default:
 		werr = WERR_NOT_SUPPORTED;
 		break;
 	}
 
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	status = rpccli_spoolss_SetPrinter(cli, mem_ctx,
+					   &handle,
+					   &info_ctr,
+					   &devmode_ctr,
+					   &secdesc_ctr,
+					   command,
+					   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
 	errcode = W_ERROR_V(werr);
 
  out:
+
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	}
+
 	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
 
