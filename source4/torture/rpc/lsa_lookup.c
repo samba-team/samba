@@ -23,15 +23,15 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "libcli/security/security.h"
 
-static bool open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_binding_handle *b,
+static bool open_policy(struct torture_context *tctx,
+			struct dcerpc_binding_handle *b,
 			struct policy_handle **handle)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
 	struct lsa_OpenPolicy2 r;
-	NTSTATUS status;
 
-	*handle = talloc(mem_ctx, struct policy_handle);
+	*handle = talloc(tctx, struct policy_handle);
 	if (!*handle) {
 		return false;
 	}
@@ -53,31 +53,32 @@ static bool open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_binding_handle *b,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = *handle;
 
-	status = dcerpc_lsa_OpenPolicy2_r(b, mem_ctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenPolicy2_r(b, tctx, &r), "OpenPolicy2 failed");
 
-	return NT_STATUS_IS_OK(status);
+	return NT_STATUS_IS_OK(r.out.result);
 }
 
-static bool get_domainsid(TALLOC_CTX *mem_ctx, struct dcerpc_binding_handle *b,
+static bool get_domainsid(struct torture_context *tctx,
+			  struct dcerpc_binding_handle *b,
 			  struct policy_handle *handle,
 			  struct dom_sid **sid)
 {
 	struct lsa_QueryInfoPolicy r;
 	union lsa_PolicyInformation *info = NULL;
-	NTSTATUS status;
 
 	r.in.level = LSA_POLICY_INFO_DOMAIN;
 	r.in.handle = handle;
 	r.out.info = &info;
 
-	status = dcerpc_lsa_QueryInfoPolicy_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) return false;
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_QueryInfoPolicy_r(b, tctx, &r),
+		"QueryInfoPolicy failed");
 
 	*sid = info->domain.sid;
 	return true;
 }
 
-static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
+static NTSTATUS lookup_sids(struct torture_context *tctx,
+			    uint16_t level,
 			    struct dcerpc_binding_handle *b,
 			    struct policy_handle *handle,
 			    struct dom_sid **sids, uint32_t num_sids,
@@ -93,7 +94,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 	names->names = NULL;
 
 	sidarray.num_sids = num_sids;
-	sidarray.sids = talloc_array(mem_ctx, struct lsa_SidPtr, num_sids);
+	sidarray.sids = talloc_array(tctx, struct lsa_SidPtr, num_sids);
 
 	for (i=0; i<num_sids; i++) {
 		sidarray.sids[i].sid = sids[i];
@@ -108,7 +109,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 	r.out.count = &count;
 	r.out.domains = &domains;
 
-	return dcerpc_lsa_LookupSids_r(b, mem_ctx, &r);
+	return dcerpc_lsa_LookupSids_r(b, tctx, &r);
 }
 
 static const char *sid_type_lookup(enum lsa_SidType r)
@@ -128,7 +129,8 @@ static const char *sid_type_lookup(enum lsa_SidType r)
 	return "Invalid sid type\n";
 }
 
-static bool test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_binding_handle *b,
+static bool test_lookupsids(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b,
 			    struct policy_handle *handle,
 			    struct dom_sid **sids, uint32_t num_sids,
 			    int level, NTSTATUS expected_result, 
@@ -139,7 +141,7 @@ static bool test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_binding_handle *b
 	uint32_t i;
 	bool ret = true;
 
-	status = lookup_sids(mem_ctx, level, b, handle, sids, num_sids,
+	status = lookup_sids(tctx, level, b, handle, sids, num_sids,
 			     &names);
 	if (!NT_STATUS_EQUAL(status, expected_result)) {
 		printf("For level %d expected %s, got %s\n",
@@ -157,7 +159,7 @@ static bool test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_binding_handle *b
 		if (names.names[i].sid_type != types[i]) {
 			printf("In level %d, for sid %s expected %s, "
 			       "got %s\n", level,
-			       dom_sid_string(mem_ctx, sids[i]),
+			       dom_sid_string(tctx, sids[i]),
 			       sid_type_lookup(types[i]),
 			       sid_type_lookup(names.names[i].sid_type));
 			ret = false;
