@@ -3,7 +3,7 @@
 srcdir = '..'
 blddir = 'bin'
 
-import sys
+import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 
@@ -66,4 +66,12 @@ def configure(conf):
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
+
+def etags(ctx):
+    '''build TAGS file using etags'''
+    import Utils
+    source_root = os.path.dirname(Utils.g_module.root_path)
+    cmd = 'etags $(find %s/.. -name "*.[ch]")' % source_root
+    print "Running: %s" % cmd
+    os.system(cmd)
 
