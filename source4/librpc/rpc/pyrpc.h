@@ -21,7 +21,6 @@
 #define _PYRPC_H_
 
 #include "libcli/util/pyerrors.h"
-#include "librpc/rpc/dcerpc.h"
 
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!PyObject_TypeCheck(var, type)) {\
