@@ -1,5 +1,11 @@
-# very crude Makefile to run waf
-WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
+# simple makefile wrapper to run waf
+
+# don't enable WAFCACHE by default yet, as it doesn't
+# have any way to limit its size. This could cause
+# problems in the build farm
+# WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
+
+WAF=../buildtools/waf
 
 all:
 	$(WAF) build
