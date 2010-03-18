@@ -207,13 +207,13 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	status = dcerpc_lsa_Close(p3, mem_ctx, &c);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
 				      "closing policy handle on p3");
-	torture_assert_int_equal(torture, p1->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
+	torture_assert_int_equal(torture, p3->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH,
 				      "closing policy handle on p3");
 
 	status = dcerpc_lsa_Close(p2, mem_ctx, &c);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
 				      "closing policy handle on p2 again");
-	torture_assert_int_equal(torture, p1->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
+	torture_assert_int_equal(torture, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH,
 				      "closing policy handle on p2 again");
 
 	/*
@@ -257,13 +257,13 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	status = dcerpc_lsa_Close(p3, mem_ctx, &c);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
 				      "closing policy handle on p3");
-	torture_assert_int_equal(torture, p1->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
+	torture_assert_int_equal(torture, p3->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH,
 				      "closing policy handle on p3");
 
 	status = dcerpc_lsa_Close(p2, mem_ctx, &c);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
 				      "closing policy handle on p2 again");
-	torture_assert_int_equal(torture, p1->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
+	torture_assert_int_equal(torture, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH,
 				      "closing policy handle on p2 again");
 
 	/*
