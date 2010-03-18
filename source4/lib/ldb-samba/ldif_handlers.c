@@ -492,6 +492,19 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 }
 
 /*
+  convert a NDR formatted blob to a ldif formatted schemaInfo
+*/
+static int ldif_write_schemaInfo(struct ldb_context *ldb, void *mem_ctx,
+				 const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct repsFromToBlob),
+			      (ndr_pull_flags_fn_t)ndr_pull_schemaInfoBlob,
+			      (ndr_print_fn_t)ndr_print_schemaInfoBlob,
+			      true);
+}
+
+/*
   convert a ldif formatted prefixMap to a NDR formatted blob
 */
 static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
@@ -938,6 +951,12 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.canonicalise_fn  = ldif_canonicalise_objectCategory,
 		.comparison_fn	  = ldif_comparison_objectCategory
 	},{
+		.name		  = LDB_SYNTAX_SAMBA_SCHEMAINFO,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_schemaInfo,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary
+	},{
 		.name		  = LDB_SYNTAX_SAMBA_PREFIX_MAP,
 		.ldif_read_fn	  = ldif_read_prefixMap,
 		.ldif_write_fn	  = ldif_write_prefixMap,
@@ -1063,6 +1082,7 @@ static const struct {
 	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "msDS-OptionalFeatureGUID",	LDB_SYNTAX_SAMBA_GUID },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
+	{ "schemaInfo",			LDB_SYNTAX_SAMBA_SCHEMAINFO },
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP },
 	{ "repsFrom",                   LDB_SYNTAX_SAMBA_REPSFROMTO },
 	{ "repsTo",                     LDB_SYNTAX_SAMBA_REPSFROMTO },
