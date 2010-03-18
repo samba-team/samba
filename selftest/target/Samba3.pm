@@ -549,19 +549,47 @@ sub provision($$$$$$)
 	## create a test account
 	##
 
+	my $max_uid, $max_gid;
+	my $uid_nobody, $uid_root;
+	my $gid_nobody, $gid_nogroup, $gid_root;
+
+	if ($unix_uid < 0xffff - 2) {
+		$max_uid = 0xffff;
+	} else {
+		$max_uid = $unix_uid;
+	}
+
+	$uid_root = $max_uid - 1;
+	$uid_nobody = $max_uid - 2;
+
+	if ($unix_gids[0] < 0xffff - 3) {
+		$max_gid = 0xffff;
+	} else {
+		$max_gid = $unix_gids[0];
+	}
+
+	$gid_nobody = $max_gid - 1;
+	$gid_nogroup = $max_gid - 2;
+	$gid_root = $max_gid - 3;
+
 	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
-	print PASSWD "nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
-root:x:65533:65532:root gecos:$prefix_abs:/bin/false
+	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 ";
+	if ($unix_uid != 0) {
+		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false";
+	}
 	close(PASSWD);
 
 	open(GROUP, ">$nss_wrapper_group") or die("Unable to open $nss_wrapper_group");
-	print GROUP "nobody:x:65533:
-nogroup:x:65534:nobody
-root:x:65532:
+	print GROUP "nobody:x:$gid_nobody:
+nogroup:x:$gid_nogroup:nobody
 $unix_name-group:x:$unix_gids[0]:
 ";
+	if ($unix_gids[0] != 0) {
+		print GROUP "root:x:$gid_root:";
+	}
+
 	close(GROUP);
 
 	foreach my $evlog (@eventlog_list) {
