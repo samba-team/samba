@@ -75,3 +75,8 @@ def etags(ctx):
     print "Running: %s" % cmd
     os.system(cmd)
 
+# putting this here enabled build in the list
+# of commands in --help
+def build(bld):
+    '''build all targets'''
+    pass
