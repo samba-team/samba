@@ -42,11 +42,41 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
 
 bool smbd_lock_socket(struct smbd_server_connection *sconn)
 {
+	bool ok;
+
+	if (smbd_server_conn->smb1.echo_handler.socket_lock_fd == -1) {
+		return true;
+	}
+
+	DEBUG(10,("pid[%d] wait for socket lock\n", (int)sys_getpid()));
+
+	ok = fcntl_lock(smbd_server_conn->smb1.echo_handler.socket_lock_fd,
+			SMB_F_SETLKW, 0, 0, F_WRLCK);
+	if (!ok) {
+		return false;
+	}
+
+	DEBUG(10,("pid[%d] got for socket lock\n", (int)sys_getpid()));
+
 	return true;
 }
 
 bool smbd_unlock_socket(struct smbd_server_connection *sconn)
 {
+	bool ok;
+
+	if (smbd_server_conn->smb1.echo_handler.socket_lock_fd == -1) {
+		return true;
+	}
+
+	ok = fcntl_lock(smbd_server_conn->smb1.echo_handler.socket_lock_fd,
+			SMB_F_SETLKW, 0, 0, F_UNLCK);
+	if (!ok) {
+		return false;
+	}
+
+	DEBUG(10,("pid[%d] unlocked socket\n", (int)sys_getpid()));
+
 	return true;
 }
 
@@ -91,8 +121,8 @@ bool srv_send_smb(int fd, char *buffer,
 
 	ret = write_data(fd,buf_out+nwritten,len - nwritten);
 	if (ret <= 0) {
-		DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
-			 (int)len,(int)ret, strerror(errno) ));
+		DEBUG(0,("pid[%d] Error writing %d bytes to client. %d. (%s)\n",
+			(int)sys_getpid(), (int)len,(int)ret, strerror(errno) ));
 		srv_free_enc_buffer(buf_out);
 		goto out;
 	}
@@ -2112,12 +2142,29 @@ void check_reload(time_t t)
 	}
 }
 
+static bool fd_is_readable(int fd)
+{
+	fd_set fds;
+	struct timeval timeout = {0, };
+	int ret;
+
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+
+	ret = sys_select(fd+1, &fds, NULL, NULL, &timeout);
+	if (ret == -1) {
+		return false;
+	}
+	return FD_ISSET(fd, &fds);
+}
+
 static void smbd_server_connection_write_handler(struct smbd_server_connection *conn)
 {
 	/* TODO: make write nonblocking */
 }
 
-static void smbd_server_connection_read_handler(struct smbd_server_connection *conn)
+static void smbd_server_connection_read_handler(
+	struct smbd_server_connection *conn, int fd)
 {
 	uint8_t *inbuf = NULL;
 	size_t inbuf_len = 0;
@@ -2129,22 +2176,44 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 
 	bool ok;
 
-	ok = smbd_lock_socket(conn);
-	if (!ok) {
-		exit_server_cleanly("failed to lock socket");
-	}
+	bool from_client = (smbd_server_fd() == fd)?true:false;
 
-	/* TODO: make this completely nonblocking */
-	status = receive_smb_talloc(mem_ctx, smbd_server_fd(),
-				    (char **)(void *)&inbuf,
-				    0, /* timeout */
-				    &unread_bytes,
-				    &encrypted,
-				    &inbuf_len, &seqnum,
-				    false /* trusted channel */);
-	ok = smbd_unlock_socket(conn);
-	if (!ok) {
-		exit_server_cleanly("failed to unlock");
+	if (from_client) {
+		ok = smbd_lock_socket(conn);
+		if (!ok) {
+			exit_server_cleanly("failed to lock socket");
+		}
+
+		if (!fd_is_readable(smbd_server_fd())) {
+			DEBUG(10,("the echo listener was faster\n"));
+			ok = smbd_unlock_socket(conn);
+			if (!ok) {
+				exit_server_cleanly("failed to unlock");
+			}
+			return;
+		}
+
+		/* TODO: make this completely nonblocking */
+		status = receive_smb_talloc(mem_ctx, fd,
+					    (char **)(void *)&inbuf,
+					    0, /* timeout */
+					    &unread_bytes,
+					    &encrypted,
+					    &inbuf_len, &seqnum,
+					    false /* trusted channel */);
+		ok = smbd_unlock_socket(conn);
+		if (!ok) {
+			exit_server_cleanly("failed to unlock");
+		}
+	} else {
+		/* TODO: make this completely nonblocking */
+		status = receive_smb_talloc(mem_ctx, fd,
+					    (char **)(void *)&inbuf,
+					    0, /* timeout */
+					    &unread_bytes,
+					    &encrypted,
+					    &inbuf_len, &seqnum,
+					    true /* trusted channel */);
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
@@ -2173,10 +2242,25 @@ static void smbd_server_connection_handler(struct event_context *ev,
 	if (flags & EVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
 	} else if (flags & EVENT_FD_READ) {
-		smbd_server_connection_read_handler(conn);
+		smbd_server_connection_read_handler(conn, smbd_server_fd());
 	}
 }
 
+static void smbd_server_echo_handler(struct event_context *ev,
+				     struct fd_event *fde,
+				     uint16_t flags,
+				     void *private_data)
+{
+	struct smbd_server_connection *conn = talloc_get_type(private_data,
+					      struct smbd_server_connection);
+
+	if (flags & EVENT_FD_WRITE) {
+		smbd_server_connection_write_handler(conn);
+	} else if (flags & EVENT_FD_READ) {
+		smbd_server_connection_read_handler(
+			conn, conn->smb1.echo_handler.trusted_fd);
+	}
+}
 
 /****************************************************************************
 received when we should release a specific IP
@@ -2301,6 +2385,377 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 	return true;
 }
 
+static int create_unlink_tmp(const char *dir)
+{
+	char *fname;
+	int fd;
+
+	fname = talloc_asprintf(talloc_tos(), "%s/listenerlock_XXXXXX", dir);
+	if (fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	fd = mkstemp(fname);
+	if (fd == -1) {
+		TALLOC_FREE(fname);
+		return -1;
+	}
+	if (unlink(fname) == -1) {
+		int sys_errno = errno;
+		close(fd);
+		TALLOC_FREE(fname);
+		errno = sys_errno;
+		return -1;
+	}
+	TALLOC_FREE(fname);
+	return fd;
+}
+
+struct smbd_echo_state {
+	struct tevent_context *ev;
+	struct iovec *pending;
+	struct smbd_server_connection *sconn;
+	int parent_pipe;
+
+	struct tevent_fd *parent_fde;
+
+	struct tevent_fd *read_fde;
+	struct tevent_req *write_req;
+};
+
+static void smbd_echo_writer_done(struct tevent_req *req);
+
+static void smbd_echo_activate_writer(struct smbd_echo_state *state)
+{
+	int num_pending;
+
+	if (state->write_req != NULL) {
+		return;
+	}
+
+	num_pending = talloc_array_length(state->pending);
+	if (num_pending == 0) {
+		return;
+	}
+
+	state->write_req = writev_send(state, state->ev, NULL,
+				       state->parent_pipe, false,
+				       state->pending, num_pending);
+	if (state->write_req == NULL) {
+		DEBUG(1, ("writev_send failed\n"));
+		exit(1);
+	}
+
+	talloc_steal(state->write_req, state->pending);
+	state->pending = NULL;
+
+	tevent_req_set_callback(state->write_req, smbd_echo_writer_done,
+				state);
+}
+
+static void smbd_echo_writer_done(struct tevent_req *req)
+{
+	struct smbd_echo_state *state = tevent_req_callback_data(
+		req, struct smbd_echo_state);
+	ssize_t written;
+	int err;
+
+	written = writev_recv(req, &err);
+	TALLOC_FREE(req);
+	state->write_req = NULL;
+	if (written == -1) {
+		DEBUG(1, ("writev to parent failed: %s\n", strerror(err)));
+		exit(1);
+	}
+	DEBUG(10,("echo_handler[%d]: forwarded pdu to main\n", (int)sys_getpid()));
+	smbd_echo_activate_writer(state);
+}
+
+static bool smbd_echo_reply(int fd,
+			    uint8_t *inbuf, size_t inbuf_len,
+			    uint32_t seqnum)
+{
+	struct smb_request req;
+	uint16_t num_replies;
+	size_t out_len;
+	char *outbuf;
+	bool ok;
+
+	if (inbuf_len < smb_size) {
+		DEBUG(10, ("Got short packet: %d bytes\n", (int)inbuf_len));
+		return false;
+	}
+	if (!valid_smb_header(inbuf)) {
+		DEBUG(10, ("Got invalid SMB header\n"));
+		return false;
+	}
+
+	if (!init_smb_request(&req, inbuf, 0, false, seqnum)) {
+		return false;
+	}
+	req.inbuf = inbuf;
+
+	DEBUG(10, ("smbecho handler got cmd %d (%s)\n", (int)req.cmd,
+		   smb_messages[req.cmd].name
+		   ? smb_messages[req.cmd].name : "unknown"));
+
+	if (req.cmd != SMBecho) {
+		return false;
+	}
+	if (req.wct < 1) {
+		return false;
+	}
+
+	num_replies = SVAL(req.vwv+0, 0);
+	if (num_replies != 1) {
+		/* Not a Windows "Hey, you're still there?" request */
+		return false;
+	}
+
+	if (!create_outbuf(talloc_tos(), &req, (char *)req.inbuf, &outbuf,
+			   1, req.buflen)) {
+		DEBUG(10, ("create_outbuf failed\n"));
+		return false;
+	}
+	req.outbuf = (uint8_t *)outbuf;
+
+	SSVAL(req.outbuf, smb_vwv0, num_replies);
+
+	if (req.buflen > 0) {
+		memcpy(smb_buf(req.outbuf), req.buf, req.buflen);
+	}
+
+	out_len = smb_len(req.outbuf) + 4;
+
+	ok = srv_send_smb(smbd_server_fd(),
+			  (char *)outbuf,
+			  true, seqnum+1,
+			  false, &req.pcd);
+	TALLOC_FREE(outbuf);
+	if (!ok) {
+		exit(1);
+	}
+
+	return true;
+}
+
+static void smbd_echo_exit(struct tevent_context *ev,
+			   struct tevent_fd *fde, uint16_t flags,
+			   void *private_data)
+{
+	DEBUG(2, ("smbd_echo_exit: lost connection to parent\n"));
+	exit(0);
+}
+
+static void smbd_echo_reader(struct tevent_context *ev,
+			     struct tevent_fd *fde, uint16_t flags,
+			     void *private_data)
+{
+	struct smbd_echo_state *state = talloc_get_type_abort(
+		private_data, struct smbd_echo_state);
+	struct smbd_server_connection *sconn = state->sconn;
+	size_t unread, num_pending;
+	NTSTATUS status;
+	struct iovec *tmp;
+	uint32_t seqnum = 0;
+	bool reply;
+	bool ok;
+	bool encrypted = false;
+
+	ok = smbd_lock_socket(sconn);
+	if (!ok) {
+		DEBUG(0, ("%s: failed to lock socket\n",
+			__location__));
+		exit(1);
+	}
+
+	if (!fd_is_readable(smbd_server_fd())) {
+		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
+			  (int)sys_getpid()));
+		ok = smbd_unlock_socket(sconn);
+		if (!ok) {
+			DEBUG(1, ("%s: failed to unlock socket in\n",
+				__location__));
+			exit(1);
+		}
+		return;
+	}
+
+	num_pending = talloc_array_length(state->pending);
+	tmp = talloc_realloc(state, state->pending, struct iovec,
+			     num_pending+1);
+	if (tmp == NULL) {
+		DEBUG(1, ("talloc_realloc failed\n"));
+		exit(1);
+	}
+	state->pending = tmp;
+
+	DEBUG(10,("echo_handler[%d]: reading pdu\n", (int)sys_getpid()));
+
+	status = receive_smb_talloc(state, smbd_server_fd(),
+				    (char **)(void *)&state->pending[num_pending].iov_base,
+				    0 /* timeout */,
+				    &unread,
+				    &encrypted,
+				    &state->pending[num_pending].iov_len,
+				    &seqnum,
+				    false /* trusted_channel*/);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("echo_handler[%d]: receive_smb_raw_talloc failed: %s\n",
+			  (int)sys_getpid(), nt_errstr(status)));
+		exit(1);
+	}
+
+	ok = smbd_unlock_socket(sconn);
+	if (!ok) {
+		DEBUG(1, ("%s: failed to unlock socket in\n",
+			__location__));
+		exit(1);
+	}
+
+	/*
+	 * place the seqnum in the packet so that the main process can reply
+	 * with signing
+	 */
+	SIVAL((uint8_t *)state->pending[num_pending].iov_base, smb_ss_field, seqnum);
+	SIVAL((uint8_t *)state->pending[num_pending].iov_base, smb_ss_field+4, NT_STATUS_V(NT_STATUS_OK));
+
+	reply = smbd_echo_reply(smbd_server_fd(),
+				(uint8_t *)state->pending[num_pending].iov_base,
+				state->pending[num_pending].iov_len,
+				seqnum);
+	if (reply) {
+		DEBUG(10,("echo_handler[%d]: replied to client\n", (int)sys_getpid()));
+		/* no check, shrinking by some bytes does not fail */
+		state->pending = talloc_realloc(state, state->pending,
+						struct iovec,
+						num_pending);
+	} else {
+		DEBUG(10,("echo_handler[%d]: forward to main\n", (int)sys_getpid()));
+		smbd_echo_activate_writer(state);
+	}
+}
+
+static void smbd_echo_loop(struct smbd_server_connection *sconn,
+			   int parent_pipe)
+{
+	struct smbd_echo_state *state;
+
+	state = talloc_zero(sconn, struct smbd_echo_state);
+	if (state == NULL) {
+		DEBUG(1, ("talloc failed\n"));
+		return;
+	}
+	state->sconn = sconn;
+	state->parent_pipe = parent_pipe;
+	state->ev = s3_tevent_context_init(state);
+	if (state->ev == NULL) {
+		DEBUG(1, ("tevent_context_init failed\n"));
+		TALLOC_FREE(state);
+		return;
+	}
+	state->parent_fde = tevent_add_fd(state->ev, state, parent_pipe,
+					TEVENT_FD_READ, smbd_echo_exit,
+					state);
+	if (state->parent_fde == NULL) {
+		DEBUG(1, ("tevent_add_fd failed\n"));
+		TALLOC_FREE(state);
+		return;
+	}
+	state->read_fde = tevent_add_fd(state->ev, state, smbd_server_fd(),
+					TEVENT_FD_READ, smbd_echo_reader,
+					state);
+	if (state->read_fde == NULL) {
+		DEBUG(1, ("tevent_add_fd failed\n"));
+		TALLOC_FREE(state);
+		return;
+	}
+
+	while (true) {
+		if (tevent_loop_once(state->ev) == -1) {
+			DEBUG(1, ("tevent_loop_once failed: %s\n",
+				  strerror(errno)));
+			break;
+		}
+	}
+	TALLOC_FREE(state);
+}
+
+/*
+ * Handle SMBecho requests in a forked child process
+ */
+static bool fork_echo_handler(struct smbd_server_connection *sconn)
+{
+	int listener_pipe[2];
+	int res;
+	pid_t child;
+
+	res = pipe(listener_pipe);
+	if (res == -1) {
+		DEBUG(1, ("pipe() failed: %s\n", strerror(errno)));
+		return false;
+	}
+	sconn->smb1.echo_handler.socket_lock_fd = create_unlink_tmp(lp_lockdir());
+	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
+		DEBUG(1, ("Could not create lock fd: %s\n", strerror(errno)));
+		goto fail;
+	}
+
+	child = sys_fork();
+	if (child == 0) {
+		NTSTATUS status;
+
+		close(listener_pipe[0]);
+
+		status = reinit_after_fork(smbd_messaging_context(),
+					   smbd_event_context(), false);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("reinit_after_fork failed: %s\n",
+				  nt_errstr(status)));
+			exit(1);
+		}
+		smbd_echo_loop(sconn, listener_pipe[1]);
+		exit(0);
+	}
+	close(listener_pipe[1]);
+	listener_pipe[1] = -1;
+	sconn->smb1.echo_handler.trusted_fd = listener_pipe[0];
+
+	DEBUG(10,("fork_echo_handler: main[%d] echo_child[%d]\n", (int)sys_getpid(), child));
+
+	/*
+	 * Without smb signing this is the same as the normal smbd
+	 * listener. This needs to change once signing comes in.
+	 */
+	sconn->smb1.echo_handler.trusted_fde = event_add_fd(smbd_event_context(),
+					sconn,
+					sconn->smb1.echo_handler.trusted_fd,
+					EVENT_FD_READ,
+					smbd_server_echo_handler,
+					sconn);
+	if (sconn->smb1.echo_handler.trusted_fde == NULL) {
+		DEBUG(1, ("event_add_fd failed\n"));
+		goto fail;
+	}
+
+	return true;
+
+fail:
+	if (listener_pipe[0] != -1) {
+		close(listener_pipe[0]);
+	}
+	if (listener_pipe[1] != -1) {
+		close(listener_pipe[1]);
+	}
+	sconn->smb1.echo_handler.trusted_fd = -1;
+	if (sconn->smb1.echo_handler.socket_lock_fd != -1) {
+		close(sconn->smb1.echo_handler.socket_lock_fd);
+	}
+	sconn->smb1.echo_handler.trusted_fd = -1;
+	sconn->smb1.echo_handler.socket_lock_fd = -1;
+	return false;
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -2377,6 +2832,10 @@ void smbd_process(void)
 
 	if (!srv_init_signing(smbd_server_conn)) {
 		exit_server("Failed to init smb_signing");
+	}
+
+	if (lp_async_smb_echo_handler() && !fork_echo_handler(smbd_server_conn)) {
+		exit_server("Failed to fork echo handler");
 	}
 
 	/* Setup oplocks */
