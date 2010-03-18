@@ -40,6 +40,16 @@ extern bool global_machine_password_needs_changing;
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
 
+bool smbd_lock_socket(struct smbd_server_connection *sconn)
+{
+	return true;
+}
+
+bool smbd_unlock_socket(struct smbd_server_connection *sconn)
+{
+	return true;
+}
+
 /* Accessor function for smb_read_error for smbd functions. */
 
 /****************************************************************************
