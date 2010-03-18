@@ -1,6 +1,6 @@
 # a waf tool to add autoconf-like macros to the configure section
 
-import Build, os
+import Build, os, Options
 import string
 from Configure import conf
 from samba_utils import *
@@ -317,7 +317,9 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
 # write out config.h in the right directory
 @conf
 def SAMBA_CONFIG_H(conf, path=None):
-    if os.path.normpath(conf.curdir) != os.path.normpath(os.environ.get('PWD')):
+    # we don't want to produce a config.h in places like lib/replace
+    # when we are building projects that depend on lib/replace
+    if os.path.realpath(conf.curdir) != os.path.realpath(Options.launch_dir):
         return
     if path is None:
         conf.write_config_header('config.h', top=True)
