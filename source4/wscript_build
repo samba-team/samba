@@ -22,6 +22,7 @@ bld.TARGET_ALIAS('sasl2', 'SASL')
 bld.TARGET_ALIAS('crypt', 'CRYPT')
 bld.TARGET_ALIAS('RPC_NDR_SRVSVC', 'NDR_SRVSVC')
 bld.TARGET_ALIAS('RPC_NDR_MGMT', 'dcerpc_mgmt')
+bld.TARGET_ALIAS('iconv', 'ICONV')
 
 # missing subsystems - need looking at
 bld.SAMBA_SUBSYSTEM('pyldb_util', '')
@@ -34,7 +35,6 @@ bld.SAMBA_SUBSYSTEM('SMBCLIENT', '')
 bld.SAMBA_SUBSYSTEM('BLKID', '')
 bld.SAMBA_SUBSYSTEM('smbcalls', '')
 bld.SAMBA_SUBSYSTEM('SETPROCTITLE', '')
-bld.SAMBA_SUBSYSTEM('ICONV', '')
 bld.SAMBA_SUBSYSTEM('DCOM_PROXY_DCOM', '')
 
 # subsystems that are confirmed to be missing
