@@ -596,11 +596,12 @@ def calculate_final_deps(bld, tgt_list):
 
 ######################################################################
 # this provides a way to save our dependency calculations between runs
-savedeps_version = 2
+savedeps_version = 3
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags']
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_ALIAS', 'TARGET_TYPE', 'INIT_FUNCTIONS']
+savedeps_files   = ['buildtools/wafsamba/samba_deps.py']
 
 def save_samba_deps(bld, tgt_list):
     '''save the dependency calculations between builds, to make
@@ -614,6 +615,10 @@ def save_samba_deps(bld, tgt_list):
     denv.output = {}
     denv.outenv = {}
     denv.caches = {}
+    denv.files  = {}
+
+    for f in savedeps_files:
+        denv.files[f] = os.stat(os.path.join(bld.srcnode.abspath(), f)).st_mtime
 
     for c in savedeps_caches:
         denv.caches[c] = LOCAL_CACHE(bld, c)
@@ -661,6 +666,13 @@ def load_samba_deps(bld, tgt_list):
             return False
     except:
         return False
+
+    # check if critical files have changed
+    for f in savedeps_files:
+        if f not in denv.files:
+            return False
+        if denv.files[f] != os.stat(os.path.join(bld.srcnode.abspath(), f)).st_mtime:
+            return False
 
     # check if caches are the same
     for c in savedeps_caches:
