@@ -44,6 +44,7 @@
 typedef struct {
 	PyObject_HEAD
 	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding_handle *binding_handle;
 } dcerpc_InterfaceObject;
 
 PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
@@ -55,13 +56,14 @@ PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
 
 void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status);
 
+typedef NTSTATUS (*py_dcerpc_call_fn) (struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
 typedef bool (*py_data_pack_fn) (PyObject *args, PyObject *kwargs, void *r);
 typedef PyObject *(*py_data_unpack_fn) (void *r);
 
 struct PyNdrRpcMethodDef {
 	const char *name;
 	const char *doc;
-	dcerpc_call_fn call;
+	py_dcerpc_call_fn call;
 	py_data_pack_fn pack_in_data;
 	py_data_unpack_fn unpack_out_data;
 	uint32_t opnum;

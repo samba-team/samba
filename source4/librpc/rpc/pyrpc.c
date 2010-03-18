@@ -57,7 +57,7 @@ static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface,
 		return NULL;
 	}
 
-	status = md->call(iface->pipe, mem_ctx, r);
+	status = md->call(iface->binding_handle, mem_ctx, r);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetDCERPCStatus(iface->pipe, status);
 		talloc_free(mem_ctx);
@@ -356,6 +356,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	}
 
 	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+	ret->binding_handle = ret->pipe->binding_handle;
 	return (PyObject *)ret;
 }
 
@@ -425,6 +426,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	}
 
 	ret->pipe = NULL;
+	ret->binding_handle = NULL;
 
 	if (py_basis != Py_None) {
 		struct dcerpc_pipe *base_pipe;
@@ -451,6 +453,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 		return NULL;
 	}
 	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+	ret->binding_handle = ret->pipe->binding_handle;
 	return (PyObject *)ret;
 }
 
