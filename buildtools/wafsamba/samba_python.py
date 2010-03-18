@@ -46,9 +46,8 @@ def SAMBA_PYTHON(bld, name,
     deps += ' ' + public_deps
 
     if realname is None:
-        link_name = 'python/%s.so' % name
-    else:
-        link_name = 'python/%s' % realname
+        realname = '%s.so' % name
+    link_name = 'python/%s' % realname
 
     t = bld(
         features       = 'cc cshlib pyext symlink_lib',
@@ -58,6 +57,7 @@ def SAMBA_PYTHON(bld, name,
         samba_includes = includes,
         local_include  = local_include,
         samba_deps     = TO_LIST(deps),
-        link_name      = link_name
+        link_name      = link_name,
+        name	       = name
         )
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
