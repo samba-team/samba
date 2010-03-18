@@ -549,9 +549,9 @@ sub provision($$$$$$)
 	## create a test account
 	##
 
-	my $max_uid, $max_gid;
-	my $uid_nobody, $uid_root;
-	my $gid_nobody, $gid_nogroup, $gid_root;
+	my ($max_uid, $max_gid);
+	my ($uid_nobody, $uid_root);
+	my ($gid_nobody, $gid_nogroup, $gid_root);
 
 	if ($unix_uid < 0xffff - 2) {
 		$max_uid = 0xffff;
