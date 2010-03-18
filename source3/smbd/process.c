@@ -312,7 +312,8 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 	if (CVAL(lenbuf,0) == 0 && min_recv_size &&
 	    (smb_len_large(lenbuf) > /* Could be a UNIX large writeX. */
 		(min_recv_size + STANDARD_WRITE_AND_X_HEADER_SIZE)) &&
-	    !srv_is_signing_active(smbd_server_conn)) {
+	    !srv_is_signing_active(smbd_server_conn) &&
+	    smbd_server_conn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
 			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, plen);
