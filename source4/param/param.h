@@ -438,8 +438,9 @@ bool run_init_functions(init_module_fn *fns);
 init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem);
 const char *lp_messaging_path(TALLOC_CTX *mem_ctx, 
 				       struct loadparm_context *lp_ctx);
-struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
-							 struct loadparm_context *lp_ctx);
+struct smb_iconv_convenience *smb_iconv_convenience_reinit_lp(TALLOC_CTX *mem_ctx,
+							      struct loadparm_context *lp_ctx,
+							      struct smb_iconv_convenience *old_ic);
 
 const char *lp_sam_name(struct loadparm_context *lp_ctx);
 

@@ -163,10 +163,11 @@ codepoint_t tolower_m(codepoint_t val);
 int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 
 /* Iconv convenience functions */
-struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
-							 const char *dos_charset,
-							 const char *unix_charset,
-							 bool native_iconv);
+struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *mem_ctx,
+							   const char *dos_charset,
+							   const char *unix_charset,
+							   bool native_iconv,
+							   struct smb_iconv_convenience *old_ic);
 
 bool convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,

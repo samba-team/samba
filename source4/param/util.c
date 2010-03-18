@@ -299,12 +299,14 @@ const char *lp_messaging_path(TALLOC_CTX *mem_ctx,
 	return smbd_tmp_path(mem_ctx, lp_ctx, "messaging");
 }
 
-struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
-							 struct loadparm_context *lp_ctx)
+struct smb_iconv_convenience *smb_iconv_convenience_reinit_lp(TALLOC_CTX *mem_ctx,
+							      struct loadparm_context *lp_ctx,
+							      struct smb_iconv_convenience *old_ic)
 {
-	return smb_iconv_convenience_init(mem_ctx, lp_dos_charset(lp_ctx),
-					  lp_unix_charset(lp_ctx),
-		lp_parm_bool(lp_ctx, NULL, "iconv", "native", true));
+	return smb_iconv_convenience_reinit(mem_ctx, lp_dos_charset(lp_ctx),
+					    lp_unix_charset(lp_ctx),
+					    lp_parm_bool(lp_ctx, NULL, "iconv", "native", true),
+					    old_ic);
 }
 
 

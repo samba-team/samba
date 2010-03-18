@@ -39,6 +39,7 @@
  */
 
 struct smb_iconv_convenience {
+	TALLOC_CTX *child_ctx;
 	const char *unix_charset;
 	const char *dos_charset;
 	bool native_iconv;
@@ -83,22 +84,45 @@ static int close_iconv_convenience(struct smb_iconv_convenience *data)
 	return 0;
 }
 
-_PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
-							 const char *dos_charset,
-							 const char *unix_charset,
-							 bool native_iconv)
+/*
+  the old_ic is passed in here as the smb_iconv_convenience structure
+  is used as a global pointer in some places (eg. python modules). We
+  don't want to invalidate those global pointers, but we do want to
+  update them with the right charset information when loadparm
+  runs. To do that we need to re-use the structure pointer, but
+  re-fill the elements in the structure with the updated values
+ */
+_PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *mem_ctx,
+								    const char *dos_charset,
+								    const char *unix_charset,
+								    bool native_iconv,
+								    struct smb_iconv_convenience *old_ic)
 {
-	struct smb_iconv_convenience *ret = talloc_zero(mem_ctx, 
-					struct smb_iconv_convenience);
+	struct smb_iconv_convenience *ret;
 
+	if (old_ic != NULL) {
+		ret = old_ic;
+		close_iconv_convenience(ret);
+		talloc_free(ret->child_ctx);
+		ZERO_STRUCTP(ret);
+	} else {
+		ret = talloc_zero(mem_ctx, struct smb_iconv_convenience);
+	}
 	if (ret == NULL) {
+		return NULL;
+	}
+
+	/* we use a child context to allow us to free all ptrs without
+	   freeing the structure itself */
+	ret->child_ctx = talloc_new(ret);
+	if (ret->child_ctx == NULL) {
 		return NULL;
 	}
 
 	talloc_set_destructor(ret, close_iconv_convenience);
 
-	ret->dos_charset = talloc_strdup(ret, dos_charset);
-	ret->unix_charset = talloc_strdup(ret, unix_charset);
+	ret->dos_charset = talloc_strdup(ret->child_ctx, dos_charset);
+	ret->unix_charset = talloc_strdup(ret->child_ctx, unix_charset);
 	ret->native_iconv = native_iconv;
 
 	return ret;

@@ -260,7 +260,8 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 	 * this all the way down 
 	 */
 #if _SAMBA_BUILD_ == 4
-	ndr->iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
+	ndr->iconv_convenience = smb_iconv_convenience_reinit(talloc_autofree_context(),
+							      "ASCII", "UTF-8", true, NULL);
 #endif
 
 	fn(ndr, name, flags, ptr);
@@ -289,7 +290,8 @@ _PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, c
 	 * this all the way down 
 	 */
 #if _SAMBA_BUILD_ == 4
-	ndr->iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
+	ndr->iconv_convenience = smb_iconv_convenience_reinit(talloc_autofree_context(),
+							      "ASCII", "UTF-8", true, NULL);
 #endif
 
 	fn(ndr, name, ptr);

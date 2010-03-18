@@ -15,7 +15,7 @@ test_samba4_ndr("string-pull-empty",
 	uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
 	DATA_BLOB b = { data, 4 };
 	struct ndr_pull *ndr = ndr_pull_init_blob(&b, NULL, 
-		smb_iconv_convenience_init(NULL, "ASCII", "UTF8", true));
+		smb_iconv_convenience_reinit(NULL, "ASCII", "UTF8", true, NULL));
 	struct TestString r;
 	r.in.data = NULL;
 
@@ -38,7 +38,7 @@ test_samba4_ndr("string-ascii-pull",
 					   \'f\', \'o\', \'o\', 0 };
 	DATA_BLOB b = { data, 8 };
 	struct ndr_pull *ndr = ndr_pull_init_blob(&b, NULL,
-		smb_iconv_convenience_init(NULL, "ASCII", "UTF8", true));
+		smb_iconv_convenience_reinit(NULL, "ASCII", "UTF8", true, NULL));
 	struct TestString r;
 	r.in.data = NULL;
 
@@ -75,7 +75,7 @@ test_samba4_ndr("string-wchar-fixed-array-01",
 	};
 	DATA_BLOB b = { data, sizeof(data) };
 	struct ndr_pull *ndr = ndr_pull_init_blob(&b, NULL,
-		smb_iconv_convenience_init(NULL, "ASCII", "UTF8", true));
+		smb_iconv_convenience_reinit(NULL, "ASCII", "UTF8", true, NULL));
 	struct TestString r;
 	struct TestStringStruct str;
 	r.in.str = &str;
@@ -121,7 +121,7 @@ test_samba4_ndr("string-wchar-fixed-array-02",
 	};
 	DATA_BLOB b = { data, sizeof(data) };
 	struct ndr_pull *ndr = ndr_pull_init_blob(&b, NULL,
-		smb_iconv_convenience_init(NULL, "ASCII", "UTF8", true));
+		smb_iconv_convenience_reinit(NULL, "ASCII", "UTF8", true, NULL));
 	struct TestString r;
 	struct TestStringStruct str;
 	r.in.str = &str;
@@ -153,7 +153,7 @@ test_samba4_ndr("string-wchar-fixed-array-03",
 	};
 	DATA_BLOB b = { data, sizeof(data) };
 	struct ndr_pull *ndr = ndr_pull_init_blob(&b, NULL,
-		smb_iconv_convenience_init(NULL, "ASCII", "UTF8", true));
+		smb_iconv_convenience_reinit(NULL, "ASCII", "UTF8", true, NULL));
 	struct TestString r;
 	struct TestStringStruct str;
 	r.in.str = &str;
@@ -175,7 +175,7 @@ test_samba4_ndr("string-out",
 					   \'f\', \'o\', \'o\', 0 };
 	DATA_BLOB b = { data, 8 };
 	struct ndr_pull *ndr = ndr_pull_init_blob(&b, NULL,
-		smb_iconv_convenience_init(NULL, "ASCII", "UTF8", true));
+		smb_iconv_convenience_reinit(NULL, "ASCII", "UTF8", true, NULL));
 	struct TestString r;
 	char *str = NULL;
 	r.out.data = &str;

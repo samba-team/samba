@@ -2692,8 +2692,8 @@ struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_c
 	if (lp_ctx == NULL) {
 		static struct smb_iconv_convenience *fallback_ic = NULL;
 		if (fallback_ic == NULL)
-			fallback_ic = smb_iconv_convenience_init(talloc_autofree_context(), 
-						  "CP850", "UTF8", true);
+			fallback_ic = smb_iconv_convenience_reinit(talloc_autofree_context(),
+								   "CP850", "UTF8", true, NULL);
 		return fallback_ic;
 	}
 	return lp_ctx->iconv_convenience;
@@ -2701,8 +2701,12 @@ struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_c
 
 _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 {
-	talloc_unlink(lp_ctx, lp_ctx->iconv_convenience);
-	global_iconv_convenience = lp_ctx->iconv_convenience = smb_iconv_convenience_init_lp(lp_ctx, lp_ctx);
+	struct smb_iconv_convenience *old_ic = lp_ctx->iconv_convenience;
+	if (old_ic == NULL) {
+		old_ic = global_iconv_convenience;
+	}
+	lp_ctx->iconv_convenience = smb_iconv_convenience_reinit_lp(lp_ctx, lp_ctx, old_ic);
+	global_iconv_convenience = lp_ctx->iconv_convenience;
 }
 
 void lp_smbcli_options(struct loadparm_context *lp_ctx,

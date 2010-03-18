@@ -26,7 +26,8 @@ struct smb_iconv_convenience *global_iconv_convenience = NULL;
 static inline struct smb_iconv_convenience *get_iconv_convenience(void)
 {
 	if (global_iconv_convenience == NULL)
-		global_iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), "ASCII", "UTF-8", true);
+		global_iconv_convenience = smb_iconv_convenience_reinit(talloc_autofree_context(),
+									"ASCII", "UTF-8", true, NULL);
 	return global_iconv_convenience;
 }
 
