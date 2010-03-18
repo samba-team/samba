@@ -175,6 +175,22 @@ interface drsblobs {
 		[in] partialAttributeSetBlob blob
 		);
 
+
+	/*
+	 * schemaInfo attribute
+	 *
+	 * Used as an attribute on Schema.
+	 * Also during replication as part of
+	 * prefixMap to identify what revision
+	 * of Schema source DC has
+	 */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		[value(0xFF)] uint8 marker;
+		[flag(NDR_BIG_ENDIAN)] uint32 revision;
+		GUID   invocation_id;
+	} schemaInfoBlob;
+
+
 	/*
 	 * MS w2k3 and w2k8 prefixMap format
 	 * There is no version number. Format is:
