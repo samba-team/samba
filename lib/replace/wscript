@@ -48,6 +48,11 @@ def configure(conf):
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
+    # trim whitespaces from 'CC'.
+    # The build farm sometimes puts a space at the start
+    if os.environ.get('CC'):
+        os.environ['CC'] = os.environ.get('CC').strip()
+
     conf.check_tool('compiler_cc')
     # gccdeps can be useful for debugging recursion in #include lines
     conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
