@@ -21,3 +21,16 @@ clean:
 
 distclean:
 	rm -rf bin
+
+# some compatibility make targets
+everything: all
+
+testsuite: all
+
+check: test
+
+torture: all
+
+# this should do an install as well, once install is finished
+installcheck: test
+
