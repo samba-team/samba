@@ -584,7 +584,7 @@ def calculate_final_deps(bld, tgt_list):
     # we now need to make corrections for any library loops we broke up
     # any target that depended on the target of the loop and doesn't
     # depend on the source of the loop needs to get the loop source added
-    for type in ['BINARY']:
+    for type in ['BINARY','PYTHON']:
         for t in tgt_list:
             if t.samba_type != type: continue
             for loop in loops:
