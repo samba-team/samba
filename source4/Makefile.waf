@@ -5,7 +5,12 @@
 # problems in the build farm
 # WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
 
-WAF=../buildtools/waf
+# default to using only 1 cpu, to be friendly to build
+# farm machines. I wonder how we get at the -jN option
+# from make to pass it to waf?
+JOBS=1
+
+WAF=JOBS=$(JOBS) ../buildtools/waf
 
 all:
 	$(WAF) build
