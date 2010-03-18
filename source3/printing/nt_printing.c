@@ -5734,7 +5734,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
         /* see if we need to try the printer admin list */
 
-        if ((access_granted == 0) &&
+        if (!NT_STATUS_IS_OK(status) &&
 	    (token_contains_name_in_list(uidtoname(server_info->utok.uid),
 					 NULL, NULL, server_info->ptok,
 					 lp_printer_admin(snum)))) {
