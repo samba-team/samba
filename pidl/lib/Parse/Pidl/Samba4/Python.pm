@@ -727,7 +727,7 @@ sub register_module_typeobject($$$)
 {
 	my ($self, $name, $py_name) = @_;
 
-	$self->register_module_object($name, "(PyObject *)$py_name");
+	$self->register_module_object($name, "(PyObject *)(void *)$py_name");
 
 	$self->check_ready_type($py_name);
 
