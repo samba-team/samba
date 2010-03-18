@@ -70,19 +70,20 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} | ${FILTER_OPTIONS}) && touch st/st_done'
+    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch st/st_done) | ${FILTER_OPTIONS}'
 
+    # recursively expand variables
     while cmd.find('${') != -1:
         cmd = Utils.subst_vars(cmd, env)
 
     print "test: running %s" % cmd
     ret = os.system(cmd)
     if ret != 0:
-        print("test failed with exit code %d" % ret)
+        print("ERROR: test failed with exit code %d" % ret)
         sys.exit(ret)
 
     if not os.path.exists(st_done):
-        print("test command failed to complete")
+        print("ERROR: test command failed to complete")
         sys.exit(1)
 
 
