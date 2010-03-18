@@ -50,6 +50,7 @@ struct net_drs_connection {
 	/* DRSUAPI connection context */
 	struct dcerpc_binding 	*binding;
 	struct dcerpc_pipe 	*drs_pipe;
+	struct dcerpc_binding_handle *drs_handle;
 	struct policy_handle 	bind_handle;
 
 	/* length of bind info structure returned by remote DC

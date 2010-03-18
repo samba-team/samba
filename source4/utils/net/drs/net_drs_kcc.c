@@ -140,7 +140,7 @@ int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 	req.in.bind_handle = &drs_conn->bind_handle;
 	req.in.level = 1;
 	req.in.req = &kcc_req;
-	status = dcerpc_drsuapi_DsExecuteKCC(drs_conn->drs_pipe, drs_ctx, &req);
+	status = dcerpc_drsuapi_DsExecuteKCC_r(drs_conn->drs_handle, drs_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {

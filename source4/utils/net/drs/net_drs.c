@@ -90,6 +90,7 @@ static bool net_drs_DsBind(struct net_drs_context *drs_ctx, struct net_drs_conne
 		d_printf("Failed to connect to server: %s\n", nt_errstr(status));
 		return false;
 	}
+	conn->drs_handle = conn->drs_pipe->binding_handle;
 
 	ZERO_STRUCT(in_bind_ctr);
 	in_bind_ctr.length = 48;
@@ -99,7 +100,7 @@ static bool net_drs_DsBind(struct net_drs_context *drs_ctx, struct net_drs_conne
 	req.in.bind_info = &in_bind_ctr;
 	req.out.bind_handle = &conn->bind_handle;
 
-	status = dcerpc_drsuapi_DsBind(conn->drs_pipe, conn, &req);
+	status = dcerpc_drsuapi_DsBind_r(conn->drs_handle, conn, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -149,11 +150,12 @@ static bool net_drs_DsUnbind(struct net_drs_connection *conn)
 	r.out.bind_handle = &bind_handle;
 
 	r.in.bind_handle = &conn->bind_handle;
-	dcerpc_drsuapi_DsUnbind(conn->drs_pipe, conn, &r);
+	dcerpc_drsuapi_DsUnbind_r(conn->drs_handle, conn, &r);
 
 	/* free dcerpc pipe in case we get called more than once */
 	talloc_free(conn->drs_pipe);
 	conn->drs_pipe = NULL;
+	conn->drs_handle = NULL;
 
 	return true;
 }

@@ -170,7 +170,7 @@ static bool net_drs_replicate_sync_nc(struct net_drs_context *drs_ctx,
 	req.in.req->req1.source_dsa_guid 	= ntds_guid_src;
 
 	/* send DsReplicaSync request */
-	status = dcerpc_drsuapi_DsReplicaSync(drs_conn->drs_pipe, drs_ctx, &req);
+	status = dcerpc_drsuapi_DsReplicaSync_r(drs_conn->drs_handle, drs_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
