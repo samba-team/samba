@@ -53,7 +53,8 @@ static bool open_policy(struct torture_context *tctx,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = *handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenPolicy2_r(b, tctx, &r), "OpenPolicy2 failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenPolicy2_r(b, tctx, &r),
+		"OpenPolicy2 failed");
 
 	return NT_STATUS_IS_OK(r.out.result);
 }
@@ -72,6 +73,7 @@ static bool get_domainsid(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_QueryInfoPolicy_r(b, tctx, &r),
 		"QueryInfoPolicy failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "QueryInfoPolicy failed");
 
 	*sid = info->domain.sid;
 	return true;
@@ -89,6 +91,7 @@ static NTSTATUS lookup_sids(struct torture_context *tctx,
 	struct lsa_RefDomainList *domains;
 	uint32_t count = 0;
 	uint32_t i;
+	NTSTATUS status;
 
 	names->count = 0;
 	names->names = NULL;
@@ -109,7 +112,11 @@ static NTSTATUS lookup_sids(struct torture_context *tctx,
 	r.out.count = &count;
 	r.out.domains = &domains;
 
-	return dcerpc_lsa_LookupSids_r(b, tctx, &r);
+	status = dcerpc_lsa_LookupSids_r(b, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return r.out.result;
 }
 
 static const char *sid_type_lookup(enum lsa_SidType r)
@@ -175,7 +182,6 @@ static bool get_downleveltrust(struct torture_context *tctx, struct dcerpc_bindi
 	struct lsa_EnumTrustDom r;
 	uint32_t resume_handle = 0;
 	struct lsa_DomainList domains;
-	NTSTATUS status;
 	int i;
 
 	r.in.handle = handle;
@@ -184,9 +190,10 @@ static bool get_downleveltrust(struct torture_context *tctx, struct dcerpc_bindi
 	r.out.domains = &domains;
 	r.out.resume_handle = &resume_handle;
 
-	status = dcerpc_lsa_EnumTrustDom_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_EnumTrustDom_r(b, tctx, &r),
+		"EnumTrustDom failed");
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))
+	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NO_MORE_ENTRIES))
 		torture_fail(tctx, "no trusts");
 
 	if (domains.count == 0) {
@@ -205,8 +212,9 @@ static bool get_downleveltrust(struct torture_context *tctx, struct dcerpc_bindi
 		q.in.level = 6;
 		q.out.info = &info;
 
-		status = dcerpc_lsa_QueryTrustedDomainInfoBySid_r(b, tctx, &q);
-		if (!NT_STATUS_IS_OK(status)) continue;
+		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_QueryTrustedDomainInfoBySid_r(b, tctx, &q),
+			"QueryTrustedDomainInfoBySid failed");
+		if (!NT_STATUS_IS_OK(q.out.result)) continue;
 
 		if ((info->info_ex.trust_direction & 2) &&
 		    (info->info_ex.trust_type == 1)) {
@@ -341,7 +349,6 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	uint32_t count = 0;
 
 	uint32_t i;
-	NTSTATUS status;
 	const char *dom_sid = "S-1-5-21-1111111111-2222222222-3333333333";
 	const char *dom_admin_sid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -375,9 +382,10 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	r.out.count	= &count;
 	r.out.domains	= &domains;
 
-	status = dcerpc_lsa_LookupSids_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupSids_r(b, tctx, &r),
+		"LookupSids failed");
 
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NONE_MAPPED,
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_NONE_MAPPED,
 		"unexpected error code");
 
 	torture_assert_int_equal(tctx, names.count, num_sids,
