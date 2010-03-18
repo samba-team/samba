@@ -6,14 +6,6 @@ from samba_utils import *
 from samba_autoconf import *
 
 
-# not sure if we need this exec_rule stuff ..., i'll leave it in for now
-@feature('asn1')
-@before('exec_rule')
-def add_comp(self):
-    y = self.bld.name_to_obj("asn1_compile", self.env)
-    y.post()
-
-
 def SAMBA_ASN1(bld, name, source,
                options='',
                directory='',
@@ -32,12 +24,6 @@ def SAMBA_ASN1(bld, name, source,
     # sense elsewhere
     bld.SET_BUILD_GROUP('build_source')
 
-    # old build system for spnego.asn1:
-    # /home/tnagy/samba_old/source4/./bin/asn1_compile --sequence=MechTypeList --one-code-file /home/tnagy/samba_old/source4/heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1
-
-    # new system: hmm, maybe options need to come earlier in the command line? We put them later
-    # /home/tnagy/samba/source4/bin/asn1_compile  --one-code-file /home/tnagy/samba/source4/heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1 --sequence=MechTypeList
-
     out_files = []
     out_files.append("../heimdal/%s/asn1_%s_asn1.x" % (directory, bname))
     out_files.append("../heimdal/%s/%s_asn1.hx" % (directory, bname))
@@ -47,10 +33,8 @@ def SAMBA_ASN1(bld, name, source,
     # SRC[0].abspath(env) gives the absolute path to the source directory for the first
     # source file. Note that in the case of a option_file, we have more than
     # one source file
-    # SRC[1].abspath(env) gives the path of asn1_compile. This makes the asn1 output
-    # correctly depend on the compiler binary
     cd_rule = 'cd ${TGT[0].parent.abspath(env)}'
-    asn1_rule = cd_rule + ' && ${SRC[1].abspath(env)} ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
+    asn1_rule = cd_rule + ' && ${BLDBIN}/asn1_compile ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
 
     source = TO_LIST(source)
     source.append('asn1_compile')
@@ -59,7 +43,6 @@ def SAMBA_ASN1(bld, name, source,
         source.append(option_file)
 
     t = bld(rule=asn1_rule,
-            features = 'asn1',
             ext_out = '.x',
             before = 'cc',
             shell = True,
@@ -69,6 +52,7 @@ def SAMBA_ASN1(bld, name, source,
 
     t.env.ASN1NAME     = asn1name
     t.env.ASN1OPTIONS  = options
+    t.env.BLDBIN       = os.path.normpath(os.path.join(bld.srcnode.abspath(bld.env), '..'))
     if option_file is not None:
         t.env.OPTION_FILE = "--option-file=%s" % os.path.normpath(os.path.join(bld.curdir, option_file))
 
