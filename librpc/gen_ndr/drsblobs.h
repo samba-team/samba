@@ -135,6 +135,12 @@ struct partialAttributeSetBlob {
 	union partialAttributeSetCtr ctr;/* [switch_is(version)] */
 }/* [public] */;
 
+struct schemaInfoBlob {
+	uint8_t marker;/* [value(0xFF)] */
+	uint32_t revision;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
+	struct GUID invocation_id;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
 struct drsuapi_MSPrefixMap_Entry {
 	uint16_t entryID;
 	uint16_t length;

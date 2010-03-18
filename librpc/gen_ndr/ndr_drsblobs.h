@@ -80,6 +80,9 @@ void ndr_print_partialAttributeSetCtr(struct ndr_print *ndr, const char *name, c
 enum ndr_err_code ndr_push_partialAttributeSetBlob(struct ndr_push *ndr, int ndr_flags, const struct partialAttributeSetBlob *r);
 enum ndr_err_code ndr_pull_partialAttributeSetBlob(struct ndr_pull *ndr, int ndr_flags, struct partialAttributeSetBlob *r);
 void ndr_print_partialAttributeSetBlob(struct ndr_print *ndr, const char *name, const struct partialAttributeSetBlob *r);
+enum ndr_err_code ndr_push_schemaInfoBlob(struct ndr_push *ndr, int ndr_flags, const struct schemaInfoBlob *r);
+enum ndr_err_code ndr_pull_schemaInfoBlob(struct ndr_pull *ndr, int ndr_flags, struct schemaInfoBlob *r);
+void ndr_print_schemaInfoBlob(struct ndr_print *ndr, const char *name, const struct schemaInfoBlob *r);
 void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const char *name, const struct drsuapi_MSPrefixMap_Entry *r);
 enum ndr_err_code ndr_push_drsuapi_MSPrefixMap_Ctr(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_MSPrefixMap_Ctr *r);
 enum ndr_err_code ndr_pull_drsuapi_MSPrefixMap_Ctr(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_MSPrefixMap_Ctr *r);

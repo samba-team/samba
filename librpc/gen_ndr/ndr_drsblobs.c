@@ -1218,6 +1218,69 @@ _PUBLIC_ void ndr_print_partialAttributeSetBlob(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_schemaInfoBlob(struct ndr_push *ndr, int ndr_flags, const struct schemaInfoBlob *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0xFF));
+			{
+				uint32_t _flags_save_uint32 = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->revision));
+				ndr->flags = _flags_save_uint32;
+			}
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->invocation_id));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_schemaInfoBlob(struct ndr_pull *ndr, int ndr_flags, struct schemaInfoBlob *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->marker));
+			{
+				uint32_t _flags_save_uint32 = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->revision));
+				ndr->flags = _flags_save_uint32;
+			}
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->invocation_id));
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_schemaInfoBlob(struct ndr_print *ndr, const char *name, const struct schemaInfoBlob *r)
+{
+	ndr_print_struct(ndr, name, "schemaInfoBlob");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "marker", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0xFF:r->marker);
+		ndr_print_uint32(ndr, "revision", r->revision);
+		ndr_print_GUID(ndr, "invocation_id", &r->invocation_id);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
 static enum ndr_err_code ndr_push_drsuapi_MSPrefixMap_Entry(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_MSPrefixMap_Entry *r)
 {
 	{
