@@ -63,8 +63,9 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.sec_handle = &sec_handle;
 	
-	status = dcerpc_lsa_CreateSecret_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "CreateSecret failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_CreateSecret_r(b, tctx, &r),
+		"CreateSecret failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "CreateSecret failed");
 	
 	status = dcerpc_fetch_session_key(p, &session_key);
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_fetch_session_key failed");
@@ -80,8 +81,9 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	
 	torture_comment(tctx, "Testing SetSecret\n");
 	
-	status = dcerpc_lsa_SetSecret_r(b, tctx, &r3);
-	torture_assert_ntstatus_ok(tctx, status, "SetSecret failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_SetSecret_r(b, tctx, &r3),
+		"SetSecret failed");
+	torture_assert_ntstatus_ok(tctx, r3.out.result, "SetSecret failed");
 		
 	r3.in.sec_handle = &sec_handle;
 	r3.in.new_val = &buf1;
@@ -95,8 +97,9 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	
 	torture_comment(tctx, "Testing SetSecret with broken key\n");
 	
-	status = dcerpc_lsa_SetSecret_r(b, tctx, &r3);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_UNKNOWN_REVISION, 
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_SetSecret_r(b, tctx, &r3),
+		"SetSecret failed");
+	torture_assert_ntstatus_equal(tctx, r3.out.result, NT_STATUS_UNKNOWN_REVISION,
 		"SetSecret should have failed UNKNOWN_REVISION");
 	
 	data_blob_free(&enc_key);
@@ -114,8 +117,9 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	bufp1.buf = NULL;
 	
 	torture_comment(tctx, "Testing QuerySecret\n");
-	status = dcerpc_lsa_QuerySecret_r(b, tctx, &r4);
-	torture_assert_ntstatus_ok(tctx, status, "QuerySecret failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_QuerySecret_r(b, tctx, &r4),
+		"QuerySecret failed");
+	torture_assert_ntstatus_ok(tctx, r4.out.result, "QuerySecret failed");
 	if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL)
 		torture_fail(tctx, "No secret buffer returned");
 	blob1.data = r4.out.new_val->buf->data;
@@ -129,8 +133,9 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 	d.in.handle = &sec_handle;
 	d.out.handle = &sec_handle;
-	status = dcerpc_lsa_DeleteObject_r(b, tctx, &d);
-	torture_assert_ntstatus_ok(tctx, status, "delete should have returned OKINVALID_HANDLE");
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_DeleteObject_r(b, tctx, &d),
+		"DeleteObject failed");
+	torture_assert_ntstatus_ok(tctx, d.out.result, "delete should have returned OKINVALID_HANDLE");
 	return true;
 }
 
