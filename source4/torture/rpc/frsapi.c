@@ -25,7 +25,7 @@
 #include "param/param.h"
 
 static bool test_GetDsPollingIntervalW(struct torture_context *tctx,
-				       struct dcerpc_pipe *p,
+				       struct dcerpc_binding_handle *b,
 				       uint32_t *CurrentInterval,
 				       uint32_t *DsPollingLongInterval,
 				       uint32_t *DsPollingShortInterval)
@@ -39,7 +39,7 @@ static bool test_GetDsPollingIntervalW(struct torture_context *tctx,
 	r.out.DsPollingShortInterval = DsPollingShortInterval;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_frsapi_GetDsPollingIntervalW(p, tctx, &r),
+		dcerpc_frsapi_GetDsPollingIntervalW_r(b, tctx, &r),
 		"GetDsPollingIntervalW failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
@@ -49,7 +49,7 @@ static bool test_GetDsPollingIntervalW(struct torture_context *tctx,
 }
 
 static bool test_SetDsPollingIntervalW(struct torture_context *tctx,
-				       struct dcerpc_pipe *p,
+				       struct dcerpc_binding_handle *b,
 				       uint32_t CurrentInterval,
 				       uint32_t DsPollingLongInterval,
 				       uint32_t DsPollingShortInterval)
@@ -63,7 +63,7 @@ static bool test_SetDsPollingIntervalW(struct torture_context *tctx,
 	r.in.DsPollingShortInterval = DsPollingShortInterval;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_frsapi_SetDsPollingIntervalW(p, tctx, &r),
+		dcerpc_frsapi_SetDsPollingIntervalW_r(b, tctx, &r),
 		"SetDsPollingIntervalW failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
@@ -75,25 +75,26 @@ static bool test_SetDsPollingIntervalW(struct torture_context *tctx,
 static bool test_DsPollingIntervalW(struct torture_context *tctx,
 				    struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint32_t i1, i2, i3;
 	uint32_t k1, k2, k3;
 
-	if (!test_GetDsPollingIntervalW(tctx, p, &i1, &i2, &i3)) {
+	if (!test_GetDsPollingIntervalW(tctx, b, &i1, &i2, &i3)) {
 		return false;
 	}
 
-	if (!test_SetDsPollingIntervalW(tctx, p, i1, i2, i3)) {
+	if (!test_SetDsPollingIntervalW(tctx, b, i1, i2, i3)) {
 		return false;
 	}
 
 	k1 = i1;
 	k2 = k3 = 0;
 
-	if (!test_SetDsPollingIntervalW(tctx, p, k1, k2, k3)) {
+	if (!test_SetDsPollingIntervalW(tctx, b, k1, k2, k3)) {
 		return false;
 	}
 
-	if (!test_GetDsPollingIntervalW(tctx, p, &k1, &k2, &k3)) {
+	if (!test_GetDsPollingIntervalW(tctx, b, &k1, &k2, &k3)) {
 		return false;
 	}
 
@@ -105,7 +106,7 @@ static bool test_DsPollingIntervalW(struct torture_context *tctx,
 }
 
 static bool test_IsPathReplicated_err(struct torture_context *tctx,
-				      struct dcerpc_pipe *p,
+				      struct dcerpc_binding_handle *b,
 				      const char *path,
 				      uint32_t type,
 				      WERROR werr)
@@ -124,7 +125,7 @@ static bool test_IsPathReplicated_err(struct torture_context *tctx,
 	r.out.replica_set_guid = &guid;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_frsapi_IsPathReplicated(p, tctx, &r),
+		dcerpc_frsapi_IsPathReplicated_r(b, tctx, &r),
 		"IsPathReplicated failed");
 
 	torture_assert_werr_equal(tctx, r.out.result, werr,
@@ -134,16 +135,17 @@ static bool test_IsPathReplicated_err(struct torture_context *tctx,
 }
 
 static bool _test_IsPathReplicated(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
+				  struct dcerpc_binding_handle *b,
 				  const char *path,
 				  uint32_t type)
 {
-	return test_IsPathReplicated_err(tctx, p, path, type, WERR_OK);
+	return test_IsPathReplicated_err(tctx, b, path, type, WERR_OK);
 }
 
 static bool test_IsPathReplicated(struct torture_context *tctx,
 				  struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	const uint32_t lvls[] = {
 		FRSAPI_REPLICA_SET_TYPE_0,
 		FRSAPI_REPLICA_SET_TYPE_DOMAIN,
@@ -151,13 +153,13 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 	int i;
 	bool ret = true;
 
-	if (!test_IsPathReplicated_err(tctx, p, NULL, 0,
+	if (!test_IsPathReplicated_err(tctx, b, NULL, 0,
 				       WERR_FRS_INVALID_SERVICE_PARAMETER)) {
 		ret = false;
 	}
 
 	for (i=0; i<ARRAY_SIZE(lvls); i++) {
-		if (!_test_IsPathReplicated(tctx, p, dcerpc_server_name(p),
+		if (!_test_IsPathReplicated(tctx, b, dcerpc_server_name(p),
 					    lvls[i])) {
 			ret = false;
 		}
@@ -166,13 +168,13 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 	for (i=0; i<ARRAY_SIZE(lvls); i++) {
 		const char *path = talloc_asprintf(tctx, "\\\\%s\\SYSVOL",
 						   dcerpc_server_name(p));
-		if (!_test_IsPathReplicated(tctx, p, path, lvls[i])) {
+		if (!_test_IsPathReplicated(tctx, b, path, lvls[i])) {
 			ret = false;
 		}
 	}
 
 	for (i=0; i<ARRAY_SIZE(lvls); i++) {
-		if (!_test_IsPathReplicated(tctx, p,
+		if (!_test_IsPathReplicated(tctx, b,
 					    "C:\\windows\\sysvol\\domain",
 					    lvls[i])) {
 			ret = false;
@@ -185,6 +187,7 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 static bool test_ForceReplication(struct torture_context *tctx,
 				  struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct frsapi_ForceReplication r;
 
 	ZERO_STRUCT(r);
@@ -195,7 +198,7 @@ static bool test_ForceReplication(struct torture_context *tctx,
 	r.in.partner_dns_name = dcerpc_server_name(p);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_frsapi_ForceReplication(p, tctx, &r),
+		dcerpc_frsapi_ForceReplication_r(b, tctx, &r),
 		"ForceReplication failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
@@ -207,6 +210,7 @@ static bool test_ForceReplication(struct torture_context *tctx,
 static bool test_InfoW(struct torture_context *tctx,
 		       struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	int i;
 
 	for (i=0; i<10; i++) {
@@ -230,7 +234,7 @@ static bool test_InfoW(struct torture_context *tctx,
 		info->blob_len = 0x2c;
 
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_frsapi_InfoW(p, tctx, &r),
+			dcerpc_frsapi_InfoW_r(b, tctx, &r),
 			"InfoW failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "InfoW failed");
