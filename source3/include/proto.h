@@ -3302,7 +3302,7 @@ void cli_set_signing_negotiated(struct cli_state *cli);
 
 struct smbd_server_connection;
 bool srv_check_sign_mac(struct smbd_server_connection *conn,
-			const char *inbuf, uint32_t *seqnum);
+			const char *inbuf, uint32_t *seqnum, bool trusted_channel);
 void srv_calculate_sign_mac(struct smbd_server_connection *conn,
 			    char *outbuf, uint32_t seqnum);
 void srv_cancel_sign_response(struct smbd_server_connection *conn);
