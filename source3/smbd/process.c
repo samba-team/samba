@@ -65,6 +65,12 @@ bool srv_send_smb(int fd, char *buffer,
 	size_t nwritten=0;
 	ssize_t ret;
 	char *buf_out = buffer;
+	bool ok;
+
+	ok = smbd_lock_socket(smbd_server_conn);
+	if (!ok) {
+		exit_server_cleanly("failed to lock socket");
+	}
 
 	if (do_signing) {
 		/* Sign the outgoing packet if required. */
@@ -95,6 +101,12 @@ bool srv_send_smb(int fd, char *buffer,
 	srv_free_enc_buffer(buf_out);
 out:
 	SMB_PERFCOUNT_END(pcd);
+
+	ok = smbd_unlock_socket(smbd_server_conn);
+	if (!ok) {
+		exit_server_cleanly("failed to unlock socket");
+	}
+
 	return true;
 }
 
@@ -2113,14 +2125,25 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	/* TODO: make this completely nonblocking */
+	bool ok;
 
+	ok = smbd_lock_socket(conn);
+	if (!ok) {
+		exit_server_cleanly("failed to lock socket");
+	}
+
+	/* TODO: make this completely nonblocking */
 	status = receive_smb_talloc(mem_ctx, smbd_server_fd(),
 				    (char **)(void *)&inbuf,
 				    0, /* timeout */
 				    &unread_bytes,
 				    &encrypted,
 				    &inbuf_len, &seqnum);
+	ok = smbd_unlock_socket(conn);
+	if (!ok) {
+		exit_server_cleanly("failed to unlock");
+	}
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 		goto process;
 	}
