@@ -175,7 +175,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "asq",
 					     "extended_dn_store",
 					     "extended_dn_in",
-					     "rdn_name",
 					     "objectclass",
 					     "descriptor",
 					     "acl",
@@ -186,6 +185,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "kludge_acl",
 					     "schema_load",
 					     "instancetype",
+					     "rdn_name",
 					     NULL };
 
 	const char **link_modules;
