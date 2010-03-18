@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc
+import Build, os, Options, Task, Utils, cc, TaskGen
 from Configure import conf
 from Logs import debug
 
@@ -64,7 +64,14 @@ def SAMBA_LIBRARY(bld, libname, source,
                   autoproto=None,
                   group='main',
                   depends_on='',
-                  local_include=True):
+                  local_include=True,
+                  install_path=None,
+                  install=True,
+                  enabled=True):
+
+    if not enabled:
+        SET_TARGET_TYPE(bld, libname, 'DISABLED')
+        return
 
     # remember empty libraries, so we can strip the dependencies
     if (source == '') or (source == []):
@@ -74,25 +81,83 @@ def SAMBA_LIBRARY(bld, libname, source,
     if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
         return
 
-    deps += ' ' + public_deps
+    obj_target = libname + '.objlist'
 
-    # this print below should show that we're runnig this code
+    # first create a target for building the object files for this library
+    # by separating in this way, we avoid recompiling the C files
+    # separately for the install library and the build library
+    bld.SAMBA_SUBSYSTEM(obj_target,
+                        source         = source,
+                        deps           = deps,
+                        public_deps    = public_deps,
+                        includes       = includes,
+                        public_headers = public_headers,
+                        cflags         = cflags,
+                        group          = group,
+                        autoproto      = autoproto,
+                        depends_on     = depends_on,
+                        local_include  = local_include)
+
+    # the library itself will depend on that object target
+    deps += ' ' + public_deps
+    deps = TO_LIST(deps)
+    deps.append(obj_target)
+
     bld.SET_BUILD_GROUP(group)
     t = bld(
         features        = 'cc cshlib symlink_lib',
-        source          = source,
+        source          = [],
         target          = libname,
         samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
         depends_on      = depends_on,
-        samba_deps      = TO_LIST(deps),
+        samba_deps      = deps,
         samba_includes  = includes,
         local_include   = local_include,
-        vnum            = vnum
+        vnum            = vnum,
+        install_path    = None
         )
+
+    if install_path is None:
+        install_path = '${PREFIX}/lib'
+
+    if install:
+        # create a separate install library, which may have
+        # different rpath settings
+        SET_TARGET_TYPE(bld, libname + '.inst', 'LIBRARY')
+        t = bld(
+            features        = 'cc cshlib',
+            source          = [],
+            target          = libname + '.inst',
+            samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
+            depends_on      = depends_on,
+            samba_deps      = deps,
+            samba_includes  = includes,
+            local_include   = local_include,
+            vnum            = vnum,
+            install_as	    = libname,
+            install_path    = None,
+            )
+        t.env['RPATH'] = install_rpath(bld)
+
+        if vnum:
+            vnum_base = vnum.split('.')[0]
+            install_name = 'lib%s.so.%s' % (libname, vnum)
+            install_link = 'lib%s.so.%s' % (libname, vnum_base)
+        else:
+            install_name = 'lib%s.so' % libname
+            install_link = None
+
+        bld.install_as(os.path.join(install_path, install_name),
+                       'lib%s.inst.so' % libname)
+        if install_link:
+            bld.symlink_as(os.path.join(install_path, install_link), install_name)
+
+
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source)
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
+
 
 #################################################################
 # define a Samba binary
@@ -111,28 +176,78 @@ def SAMBA_BINARY(bld, binname, source,
                  manpages=None,
                  local_include=True,
                  subsystem_name=None,
-                 needs_python=False):
+                 needs_python=False,
+                 install=True,
+                 install_path=None):
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
 
-    features = 'cc cprogram copy_bin'
+    features = 'cc cprogram'
     if needs_python:
         features += ' pyembed'
 
     bld.SET_BUILD_GROUP(group)
+
+    obj_target = binname + '.objlist'
+
+    # first create a target for building the object files for this binary
+    # by separating in this way, we avoid recompiling the C files
+    # separately for the install binary and the build binary
+    bld.SAMBA_SUBSYSTEM(obj_target,
+                        source         = source,
+                        deps           = deps,
+                        includes       = includes,
+                        cflags         = cflags,
+                        group          = group,
+                        autoproto      = autoproto,
+                        subsystem_name = subsystem_name,
+                        needs_python   = needs_python,
+                        local_include  = local_include)
+
+    # the library itself will depend on that object target
+    deps = TO_LIST(deps)
+    deps.append(obj_target)
+
     bld(
-        features       = features,
-        source         = source,
+        features       = features + ' symlink_bin',
+        source         = [],
         target         = binname,
         samba_cflags   = CURRENT_CFLAGS(bld, binname, cflags),
-        samba_deps     = TO_LIST(deps),
+        samba_deps     = deps,
         samba_includes = includes,
         local_include  = local_include,
         samba_modules  = modules,
         top            = True,
-        samba_subsystem= subsystem_name
+        samba_subsystem= subsystem_name,
+        install_path   = None
         )
+
+    if install_path is None:
+        install_path = '${PREFIX}/bin'
+
+    if install:
+        # we create a separate 'install' binary, which
+        # will have different rpath settings
+        SET_TARGET_TYPE(bld, binname + '.inst', 'BINARY')
+        t = bld(
+            features       = features,
+            source         = [],
+            target         = binname + '.inst',
+            samba_cflags   = CURRENT_CFLAGS(bld, binname, cflags),
+            samba_deps     = deps,
+            samba_includes = includes,
+            local_include  = local_include,
+            samba_modules  = modules,
+            top            = True,
+            samba_subsystem= subsystem_name,
+            install_path   = None
+            )
+        t.env['RPATH'] = install_rpath(bld)
+
+        bld.install_as(os.path.join(install_path, binname),
+                       binname + '.inst',
+                       chmod=0755)
 
     # setup the subsystem_name as an alias for the real
     # binary name, so it can be found when expanding
@@ -223,7 +338,6 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     cflags='',
                     cflags_end=None,
                     group='main',
-                    config_option=None,
                     init_function_sentinal=None,
                     heimdal_autoproto=None,
                     heimdal_autoproto_options=None,
@@ -398,22 +512,21 @@ def symlink_lib(self):
     debug('task_gen: LINK for %s is %s -> %s',
           self.name, tsk.env.LINK_SOURCE, tsk.env.LINK_TARGET)
 
-# for binaries we need to copy the executable to avoid the rpath changing
-# in the local bin/ directory on install
-t = Task.simple_task_type('copy_bin', 'rm -f ${BIN_TARGET} && cp ${SRC} ${BIN_TARGET}', color='PINK',
-                          ext_in='.bin', shell=True)
+
+t = Task.simple_task_type('symlink_bin', 'ln -sf ${SRC} ${BIN_TARGET}',
+                          color='PINK', ext_in='.bin')
 t.quiet = True
 
-@feature('copy_bin')
+@feature('symlink_bin')
 @after('apply_link')
-def copy_bin(self):
+def symlink_bin(self):
     if Options.is_install:
         # we don't want to copy the install binary, as
         # that has the install rpath, not the build rpath
         # The rpath of the binaries in bin/default/foo/blah is different
         # during the install phase, as distros insist on not using rpath in installed binaries
         return
-    tsk = self.create_task('copy_bin', self.link_task.outputs[0])
+    tsk = self.create_task('symlink_bin', self.link_task.outputs[0])
 
     tsk.env.BIN_TARGET = self.target
     debug('task_gen: BIN_TARGET for %s is %s', self.name, tsk.env.BIN_TARGET)
@@ -446,9 +559,10 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         tgtdir = os.path.dirname(os.path.join(bld.srcnode.abspath(bld.env), '..', target))
         mkdir_p(tgtdir)
         t = bld(features='copy_script',
-                source=s,
-                target = target,
-                always=True)
+                source       = s,
+                target       = target,
+                always       = True,
+                install_path = None)
         t.env.LINK_TARGET = target
 
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT

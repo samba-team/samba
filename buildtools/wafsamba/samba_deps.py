@@ -15,7 +15,9 @@ def ADD_GLOBAL_DEPENDENCY(ctx, dep):
 def TARGET_ALIAS(bld, target, alias):
     '''define an alias for a target name'''
     cache = LOCAL_CACHE(bld, 'TARGET_ALIAS')
-    bld.ASSERT(alias not in cache, "Target alias %s already set" % alias)
+    if alias in cache:
+        print("Target alias %s already set to %s : newalias %s" % (alias, cache[alias], target))
+        raise
     cache[alias] = target
 Build.BuildContext.TARGET_ALIAS = TARGET_ALIAS
 
@@ -173,9 +175,14 @@ def add_init_functions(self):
 
     subsystems = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
 
+    # cope with the separated object lists from BINARY and LIBRARY targets
+    sname = self.sname
+    if sname.endswith('.objlist'):
+        sname = sname[0:-8]
+
     modules = []
-    if self.sname in subsystems:
-        modules.append(self.sname)
+    if sname in subsystems:
+        modules.append(sname)
 
     m = getattr(self, 'samba_modules', None)
     if m is not None:
@@ -544,6 +551,9 @@ def calculate_final_deps(bld, tgt_list):
             for l in t.final_libs.copy():
                 t2 = bld.name_to_obj(l, bld.env)
                 if t.sname in t2.final_libs:
+                    # we could break this in either direction. If one of the libraries
+                    # has a version number, and will this be distributed publicly, then
+                    # we should make it the lower level library in the DAG
                     debug('deps: removing library loop %s<->%s', t.sname, l)
                     t2.final_libs.remove(t.sname)
                     loops[t2.sname] = t.sname;
@@ -702,6 +712,9 @@ def check_project_rules(bld):
         if not type in ['SUBSYSTEM', 'MODULE', 'BINARY', 'LIBRARY', 'ASN1', 'PYTHON']:
             continue
         t = bld.name_to_obj(tgt, bld.env)
+        if t is None:
+            print "Target %s of type %s has no task generator" % (tgt, type)
+            raise
         tgt_list.append(t)
 
     add_samba_attributes(bld, tgt_list)

@@ -51,22 +51,17 @@ def runonce(function):
 
 
 
-################################################################
-# magic rpath handling
-#
-# we want a different rpath when installing and when building
-# Note that this should really check if rpath is available on this platform
-# and it should also honor an --enable-rpath option
 def set_rpath(bld):
-    if Options.is_install:
-        if bld.env['RPATH_ON_INSTALL']:
-            bld.env['RPATH'] = ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
-        else:
-            bld.env['RPATH'] = []
-    else:
-        rpath = os.path.normpath('%s/%s' % (bld.env['BUILD_DIRECTORY'], LIB_PATH))
-        bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
+    '''setup the default rpath'''
+    rpath = os.path.normpath('%s/%s' % (bld.env['BUILD_DIRECTORY'], LIB_PATH))
+    bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
 Build.BuildContext.set_rpath = set_rpath
+
+def install_rpath(bld):
+    '''the rpath value for installation'''
+    if bld.env['RPATH_ON_INSTALL']:
+        return ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
+    return []
 
 
 #############################################################
