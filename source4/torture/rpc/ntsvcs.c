@@ -26,13 +26,14 @@
 static bool test_PNP_GetVersion(struct torture_context *tctx,
 				struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
 	struct PNP_GetVersion r;
 	uint16_t version = 0;
 
 	r.out.version = &version;
 
-	status = dcerpc_PNP_GetVersion(p, tctx, &r);
+	status = dcerpc_PNP_GetVersion_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "PNP_GetVersion");
 	torture_assert_werr_ok(tctx, r.out.result, "PNP_GetVersion");
@@ -44,6 +45,7 @@ static bool test_PNP_GetVersion(struct torture_context *tctx,
 static bool test_PNP_GetDeviceListSize(struct torture_context *tctx,
 				       struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct PNP_GetDeviceListSize r;
 	uint32_t size = 0;
 
@@ -52,7 +54,7 @@ static bool test_PNP_GetDeviceListSize(struct torture_context *tctx,
 	r.out.size = &size;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_PNP_GetDeviceListSize(p, tctx, &r),
+		dcerpc_PNP_GetDeviceListSize_r(b, tctx, &r),
 		"PNP_GetDeviceListSize");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_CM_INVALID_POINTER,
 		"PNP_GetDeviceListSize");
@@ -60,7 +62,7 @@ static bool test_PNP_GetDeviceListSize(struct torture_context *tctx,
 	r.in.devicename = "Spooler";
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_PNP_GetDeviceListSize(p, tctx, &r),
+		dcerpc_PNP_GetDeviceListSize_r(b, tctx, &r),
 		"PNP_GetDeviceListSize");
 	torture_assert_werr_ok(tctx, r.out.result,
 		"PNP_GetDeviceListSize");
@@ -71,6 +73,7 @@ static bool test_PNP_GetDeviceListSize(struct torture_context *tctx,
 static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 				   struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct PNP_GetDeviceList r;
 	uint16_t *buffer = NULL;
 	uint32_t length = 0;
@@ -84,7 +87,7 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 	r.out.buffer = buffer;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_PNP_GetDeviceList(p, tctx, &r),
+		dcerpc_PNP_GetDeviceList_r(b, tctx, &r),
 		"PNP_GetDeviceList failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_CM_INVALID_POINTER,
 		"PNP_GetDeviceList failed");
@@ -92,7 +95,7 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 	r.in.filter = "Spooler";
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_PNP_GetDeviceList(p, tctx, &r),
+		dcerpc_PNP_GetDeviceList_r(b, tctx, &r),
 		"PNP_GetDeviceList failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_CM_BUFFER_SMALL)) {
@@ -103,7 +106,7 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 		s.out.size = &length;
 
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_PNP_GetDeviceListSize(p, tctx, &s),
+			dcerpc_PNP_GetDeviceListSize_r(b, tctx, &s),
 			"PNP_GetDeviceListSize failed");
 		torture_assert_werr_ok(tctx, s.out.result,
 			"PNP_GetDeviceListSize failed");
@@ -116,7 +119,7 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 	r.out.buffer = buffer;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_PNP_GetDeviceList(p, tctx, &r),
+		dcerpc_PNP_GetDeviceList_r(b, tctx, &r),
 		"PNP_GetDeviceList failed");
 
 	torture_assert_werr_ok(tctx, r.out.result,
@@ -128,6 +131,7 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 static bool test_PNP_GetDeviceRegProp(struct torture_context *tctx,
 				      struct dcerpc_pipe *p)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
 	struct PNP_GetDeviceRegProp r;
 
@@ -149,7 +153,7 @@ static bool test_PNP_GetDeviceRegProp(struct torture_context *tctx,
 	r.out.buffer_size = &buffer_size;
 	r.out.needed = &needed;
 
-	status = dcerpc_PNP_GetDeviceRegProp(p, tctx, &r);
+	status = dcerpc_PNP_GetDeviceRegProp_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceRegProp");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_CM_BUFFER_SMALL)) {
@@ -157,7 +161,7 @@ static bool test_PNP_GetDeviceRegProp(struct torture_context *tctx,
 		buffer = talloc_array(tctx, uint8_t, needed);
 		r.in.buffer_size = &needed;
 
-		status = dcerpc_PNP_GetDeviceRegProp(p, tctx, &r);
+		status = dcerpc_PNP_GetDeviceRegProp_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceRegProp");
 	}
 
