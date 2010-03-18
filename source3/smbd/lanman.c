@@ -2967,10 +2967,16 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 	uint32 jobid;
-	int snum;
 	fstring sharename;
 	int errcode;
 	WERROR werr = WERR_OK;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	enum spoolss_JobControl command;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2996,38 +3002,76 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 	}
 	*rdata_len = 0;
 
-	if (!print_job_exists(sharename, jobid)) {
-		errcode = NERR_JobNotFound;
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_RDosPrintJobDel: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
 
-	snum = lp_servicenumber( sharename);
-	if (snum == -1) {
-		errcode = NERR_DestNotFound;
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    sharename,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
 		goto out;
 	}
 
-	errcode = NERR_notsupported;
+	/* FIXME: formerly NERR_JobNotFound was returned if job did not exist
+	 * and NERR_DestNotFound if share did not exist */
+
+	errcode = NERR_Success;
 
 	switch (function) {
-	case 81:		/* delete */ 
-		if (print_job_delete(conn->server_info, snum, jobid, &werr))
-			errcode = NERR_Success;
+	case 81:		/* delete */
+		command = SPOOLSS_JOB_CONTROL_DELETE;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(conn->server_info, snum, jobid, &werr))
-			errcode = NERR_Success;
+		command = SPOOLSS_JOB_CONTROL_PAUSE;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(conn->server_info, snum, jobid, &werr))
-			errcode = NERR_Success;
+		command = SPOOLSS_JOB_CONTROL_RESUME;
+		break;
+	default:
+		errcode = NERR_notsupported;
 		break;
 	}
 
-	if (!W_ERROR_IS_OK(werr))
+	status = rpccli_spoolss_SetJob(cli, mem_ctx,
+				       &handle,
+				       jobid,
+				       NULL, /* unique ptr ctr */
+				       command,
+				       &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
 		errcode = W_ERROR_V(werr);
+		goto out;
+	}
 
  out:
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	}
+
 	SSVAL(*rparam,0,errcode);	
 	SSVAL(*rparam,2,0);		/* converter word */
 
