@@ -349,7 +349,8 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 				   char **buffer, unsigned int timeout,
 				   size_t *p_unread, bool *p_encrypted,
 				   size_t *p_len,
-				   uint32_t *seqnum)
+				   uint32_t *seqnum,
+				   bool trusted_channel)
 {
 	size_t len = 0;
 	NTSTATUS status;
@@ -374,7 +375,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(smbd_server_conn, *buffer, seqnum, false)) {
+	if (!srv_check_sign_mac(smbd_server_conn, *buffer, seqnum, trusted_channel)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -2138,7 +2139,8 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 				    0, /* timeout */
 				    &unread_bytes,
 				    &encrypted,
-				    &inbuf_len, &seqnum);
+				    &inbuf_len, &seqnum,
+				    false /* trusted channel */);
 	ok = smbd_unlock_socket(conn);
 	if (!ok) {
 		exit_server_cleanly("failed to unlock");
