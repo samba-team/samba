@@ -657,14 +657,14 @@ sub Interface($$$)
 
 			my ($infn, $outfn, $fndocstring) = $self->PythonFunction($d, $interface->{NAME}, $prettyname);
 
-			push (@fns, [$infn, $outfn, "dcerpc_$d->{NAME}", $prettyname, $fndocstring, $d->{OPNUM}]);
+			push (@fns, [$infn, $outfn, "dcerpc_$d->{NAME}_r", $prettyname, $fndocstring, $d->{OPNUM}]);
 		}
 
 		$self->pidl("const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[] = {");
 		$self->indent;
 		foreach my $d (@fns) {
 			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;
-			$self->pidl("{ \"$prettyname\", $docstring, (dcerpc_call_fn)$callfn, (py_data_pack_fn)$infn, (py_data_unpack_fn)$outfn, $opnum, &ndr_table_$interface->{NAME} },");
+			$self->pidl("{ \"$prettyname\", $docstring, (py_dcerpc_call_fn)$callfn, (py_data_pack_fn)$infn, (py_data_unpack_fn)$outfn, $opnum, &ndr_table_$interface->{NAME} },");
 		}
 		$self->pidl("{ NULL }");
 		$self->deindent;
