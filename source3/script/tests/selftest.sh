@@ -325,33 +325,49 @@ EOF
 ## create a test account
 ##
 
-if [ "$USERID" != 0 ]; then
-cat >$NSS_WRAPPER_PASSWD<<EOF
-root:x:65533:65532:root gecos:$PREFIX_ABS:/bin/false
-nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
-$USERNAME:x:$USERID:$GROUPID:$USERNAME gecos:$PREFIX_ABS:/bin/false
-EOF
-
-cat >$NSS_WRAPPER_GROUP<<EOF
-nobody:x:65533:
-nogroup:x:65534:nobody
-root:x:65532:
-$USERNAME-group:x:$GROUPID:
-EOF
+if [ $USERID -lt $(( 0xffff - 2 )) ]; then
+	MAXUID=0xffff
 else
-##
-## Running as root...
-##
+	MAXUID=$USERID
+fi
+
+UID_ROOT=$(( $MAXUID - 1 ))
+UID_NOBODY=$(( MAXUID - 2 ))
+
+if [ $GROUPID -lt $(( 0xffff - 3 )) ]; then
+	MAXGID=0xffff
+else
+	MAXGID=$GROUPID
+fi
+
+GID_NOBODY=$(( $MAXGID - 3 ))
+GID_NOGROUP=$(( $MAXGID - 2 ))
+GID_ROOT=$(( $MAXGID - 1 ))
+
 cat >$NSS_WRAPPER_PASSWD<<EOF
+nobody:x:$UID_NOBODY:$GID_NOBODY:nobody gecos:$PREFIX_ABS:/bin/false
 $USERNAME:x:$USERID:$GROUPID:$USERNAME gecos:$PREFIX_ABS:/bin/false
-nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
 EOF
 
 cat >$NSS_WRAPPER_GROUP<<EOF
+nobody:x:$GID_NOBODY:
+nogroup:x:$GID_NOGROUP:nobody
 $USERNAME-group:x:$GROUPID:
-nobody:x:65533:
-nogroup:x:65534:nobody
 EOF
+
+##
+## add fake root user when not running as root
+##
+if [ "$USERID" != 0 ]; then
+
+cat >>$NSS_WRAPPER_PASSWD<<EOF
+root:x:$UID_ROOT:$GID_ROOT:root gecos:$PREFIX_ABS:/bin/false
+EOF
+
+cat >>$NSS_WRAPPER_GROUP<<EOF
+root:x:$GID_ROOT:
+EOF
+
 fi
 
 touch $EVENTLOGDIR/dns\ server.tdb
