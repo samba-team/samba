@@ -1,0 +1,1 @@
+bld.install_files('${DATAROOTDIR}', ['upcase.dat', 'lowcase.dat', 'valid.dat'])
