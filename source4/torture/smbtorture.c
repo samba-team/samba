@@ -33,6 +33,9 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 
+#if HAVE_READLINE_HISTORY_H
+#include <readline/history.h>
+#endif
 
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 
@@ -386,7 +389,11 @@ static void run_shell(struct torture_context *tctx)
 
 		if (cline == NULL)
 			return;
-	
+
+#if HAVE_ADD_HISTORY
+		add_history(cline);
+#endif
+
 		ret = poptParseArgvString(cline, &argc, &argv);
 		if (ret != 0) {
 			fprintf(stderr, "Error parsing line\n");

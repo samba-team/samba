@@ -78,6 +78,11 @@ AC_CHECK_LIB(readline, history_list,
 	     [],
 	     [$TERMLIBS])
 
+AC_CHECK_LIB(readline, add_history,
+	     [AC_DEFINE(HAVE_ADD_HISTORY, 1, [Do we have add_history?])],
+	     [],
+	     [$TERMLIBS])
+
 AC_MSG_CHECKING(whether to use extern readline)
 if test x"$EXTERNAL_READLINE" = x"yes"; then
 	AC_MSG_RESULT(yes)
