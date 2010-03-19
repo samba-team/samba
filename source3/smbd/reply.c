@@ -3454,6 +3454,10 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		goto nosendfile_read;
 	}
 
+	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
+		goto nosendfile_read;
+	}
+
 #if defined(WITH_SENDFILE)
 	/*
 	 * We can only use sendfile on a non-chained packet
