@@ -3459,6 +3459,13 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	char *p2;
 	int struct_len;
 
+	NTSTATUS status;
+	WERROR werr;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	struct rpc_pipe_client *cli = NULL;
+	union srvsvc_NetSrvInfo info;
+	int errcode;
+
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
@@ -3519,64 +3526,55 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 
 	p = *rdata;
 	p2 = p + struct_len;
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_srvsvc.syntax_id,
+					rpc_srvsvc_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_RNetServerGetInfo: could not connect to srvsvc: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
+					     NULL,
+					     101,
+					     &info,
+					     &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	if (info.info101 == NULL) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
 	if (uLevel != 20) {
-		srvstr_push(NULL, 0, p,global_myname(),16,
+		srvstr_push(NULL, 0, p, info.info101->server_name, 16,
 			STR_ASCII|STR_UPPER|STR_TERMINATE);
   	}
 	p += 16;
 	if (uLevel > 0) {
-		struct srv_info_struct *servers=NULL;
-		int i,count;
-		char *comment = NULL;
-		TALLOC_CTX *ctx = talloc_tos();
-		uint32 servertype= lp_default_server_announce();
-
-		comment = talloc_strdup(ctx,lp_serverstring());
-		if (!comment) {
-			return false;
-		}
-
-		if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
-			for (i=0;i<count;i++) {
-				if (strequal(servers[i].name,global_myname())) {
-					servertype = servers[i].type;
-					TALLOC_FREE(comment);
-					comment = talloc_strdup(ctx,
-							servers[i].comment);
-					if (comment) {
-						return false;
-					}
-				}
-			}
-		}
-
-		SAFE_FREE(servers);
-
-		SCVAL(p,0,lp_major_announce_version());
-		SCVAL(p,1,lp_minor_announce_version());
-		SIVAL(p,2,servertype);
+		SCVAL(p,0,info.info101->version_major);
+		SCVAL(p,1,info.info101->version_minor);
+		SIVAL(p,2,info.info101->server_type);
 
 		if (mdrcnt == struct_len) {
 			SIVAL(p,6,0);
 		} else {
 			SIVAL(p,6,PTR_DIFF(p2,*rdata));
-			comment = talloc_sub_advanced(
-				ctx,
-				lp_servicename(SNUM(conn)),
-				conn->server_info->unix_name,
-				conn->connectpath,
-				conn->server_info->utok.gid,
-				conn->server_info->sanitized_username,
-				pdb_get_domain(conn->server_info->sam_account),
-				comment);
-			if (comment) {
-				return false;
-			}
 			if (mdrcnt - struct_len <= 0) {
 				return false;
 			}
 			push_ascii(p2,
-				comment,
+				info.info101->comment,
 				MIN(mdrcnt - struct_len,
 					MAX_SERVER_STRING_LENGTH),
 				STR_TERMINATE);
@@ -3591,6 +3589,10 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 		return False;		/* not yet implemented */
 	}
 
+	errcode = NERR_Success;
+
+ out:
+
 	*rdata_len = PTR_DIFF(p2,*rdata);
 
 	*rparam_len = 6;
@@ -3598,7 +3600,7 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	if (!*rparam) {
 		return False;
 	}
-	SSVAL(*rparam,0,NERR_Success);
+	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);
 
