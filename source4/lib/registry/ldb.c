@@ -89,7 +89,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 			if (val->data[0] != '\0') {
 				/* The data is a plain DWORD */
 				uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-				data->data = talloc_size(mem_ctx, sizeof(uint32_t) + 1);
+				data->data = talloc_size(mem_ctx, sizeof(uint32_t));
 				if (data->data != NULL) {
 					SIVAL(data->data, 0, tmp);
 				}
@@ -116,7 +116,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 			if (val->data[0] != '\0') {
 				/* The data is a plain QWORD */
 				uint64_t tmp = strtoull((char *)val->data, NULL, 0);
-				data->data = talloc_size(mem_ctx, sizeof(uint64_t) + 1);
+				data->data = talloc_size(mem_ctx, sizeof(uint64_t));
 				if (data->data != NULL) {
 					SBVAL(data->data, 0, tmp);
 				}
