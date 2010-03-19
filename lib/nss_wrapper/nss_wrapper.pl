@@ -13,18 +13,19 @@ my $opt_action = undef;
 my $opt_type = undef;
 my $opt_name = undef;
 my $opt_member = undef;
+my $opt_gid = 65534;# nogroup gid
 
 my $passwdfn = undef;
 my $groupfn = undef;
 my $memberfn = undef;
 my $actionfn = undef;
 
-sub passwd_add($$$$);
-sub passwd_delete($$$$);
-sub group_add($$$$);
-sub group_delete($$$$);
-sub member_add($$$$);
-sub member_delete($$$$);
+sub passwd_add($$$$$);
+sub passwd_delete($$$$$);
+sub group_add($$$$$);
+sub group_delete($$$$$);
+sub member_add($$$$$);
+sub member_delete($$$$$);
 
 sub check_path($$);
 
@@ -35,7 +36,8 @@ my $result = GetOptions(
 	'action=s'	=> \$opt_action,
 	'type=s'	=> \$opt_type,
 	'name=s'	=> \$opt_name,
-	'member=s'	=> \$opt_member
+	'member=s'	=> \$opt_member,
+	'gid=i'		=> \$opt_gid
 );
 
 sub usage($;$)
@@ -58,6 +60,8 @@ sub usage($;$)
 	--name <name>		The name of the object.
 
 	--member <member>	The name of the member.
+
+	--gid <gid>		Primary Group ID for new users.
 ";
 	exit($ret);
 }
@@ -110,7 +114,7 @@ if ($opt_name eq "") {
 	usage(1, "invalid: --name <name>");
 }
 
-exit $actionfn->($opt_fullpath_passwd, $opt_member, $opt_fullpath_group, $opt_name);
+exit $actionfn->($opt_fullpath_passwd, $opt_member, $opt_fullpath_group, $opt_name, $opt_gid);
 
 sub check_path($$)
 {
@@ -388,9 +392,9 @@ sub group_save($)
 	rename($tmppath, $path) or die("Unable to rename $tmppath => $path");
 }
 
-sub passwd_add($$$$)
+sub passwd_add($$$$$)
 {
-	my ($path, $dummy, $dummy2, $name) = @_;
+	my ($path, $dummy, $dummy2, $name, $gid) = @_;
 
 	#print "passwd_add: '$name' in '$path'\n";
 
@@ -400,7 +404,6 @@ sub passwd_add($$$$)
 	die("account[$name] already exists in '$path'") if defined($e);
 
 	my $uid = passwd_get_free_uid($passwd);
-	my $gid = 65534;# nogroup gid
 
 	my $pwent = $name.":x:".$uid.":".$gid.":".$name." gecos:/nodir:/bin/false";
 
@@ -411,9 +414,9 @@ sub passwd_add($$$$)
 	return 0;
 }
 
-sub passwd_delete($$$$)
+sub passwd_delete($$$$$)
 {
-	my ($path, $dummy, $dummy2, $name) = @_;
+	my ($path, $dummy, $dummy2, $name, $dummy3) = @_;
 
 	#print "passwd_delete: '$name' in '$path'\n";
 
@@ -429,9 +432,9 @@ sub passwd_delete($$$$)
 	return 0;
 }
 
-sub group_add($$$$)
+sub group_add($$$$$)
 {
-	my ($dummy, $dummy2, $path, $name) = @_;
+	my ($dummy, $dummy2, $path, $name, $dummy3) = @_;
 
 	#print "group_add: '$name' in '$path'\n";
 
@@ -453,9 +456,9 @@ sub group_add($$$$)
 	return 0;
 }
 
-sub group_delete($$$$)
+sub group_delete($$$$$)
 {
-	my ($dummy, $dummy2, $path, $name) = @_;
+	my ($dummy, $dummy2, $path, $name, $dummy3) = @_;
 
 	#print "group_delete: '$name' in '$path'\n";
 
@@ -471,9 +474,9 @@ sub group_delete($$$$)
 	return 0;
 }
 
-sub member_add($$$$)
+sub member_add($$$$$)
 {
-	my ($passwd_path, $username, $group_path, $groupname) = @_;
+	my ($passwd_path, $username, $group_path, $groupname, $dummy) = @_;
 
 	#print "member_add: adding '$username' in '$passwd_path' to '$groupname' in '$group_path'\n";
 
@@ -494,9 +497,9 @@ sub member_add($$$$)
 	return 0;
 }
 
-sub member_delete($$$$)
+sub member_delete($$$$$)
 {
-	my ($passwd_path, $username, $group_path, $groupname) = @_;
+	my ($passwd_path, $username, $group_path, $groupname, $dummy) = @_;
 
 	#print "member_delete: removing '$username' in '$passwd_path' from '$groupname' in '$group_path'\n";
 
