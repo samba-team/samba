@@ -3,7 +3,10 @@
 echo "Using waf based build"
 
 WAF=../buildtools/waf
-export WAFCACHE=$HOME/.wafcache
-mkdir -p $WAFCACHE
+
+# don't enable WAFCACHE by default till it is
+# size limited
+#export WAFCACHE=$HOME/.wafcache
+#mkdir -p $WAFCACHE
 
 $WAF configure $*
