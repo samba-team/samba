@@ -21,14 +21,14 @@ def apply_incpaths(self):
 
 	for path in self.to_list(self.includes):
 		if not path in lst:
-			if preproc.go_absolute or not os.path.isabs(path):
+			if preproc.go_absolute or path[0] != '/': #os.path.isabs(path):
 				lst.append(path)
 			else:
 				self.env.prepend_value('CPPPATH', path)
 
 	for path in lst:
 		node = None
-		if os.path.isabs(path):
+		if path[0] == '/': # os.path.isabs(path):
 			if preproc.go_absolute:
 				node = self.bld.root.find_dir(path)
 		elif path[0] == '#':
@@ -56,6 +56,8 @@ def apply_obj_vars_cc(self):
     app = env.append_unique
     cpppath_st = env['CPPPATH_ST']
 
+    lss = env['_CCINCFLAGS']
+
     global cac
 
     # local flags come first
@@ -63,11 +65,13 @@ def apply_obj_vars_cc(self):
     for i in env['INC_PATHS']:
 
         try:
-            app('_CCINCFLAGS', cac[i.id])
+            lss.extend(cac[i.id])
         except KeyError:
-            cac[i.id] = [cpppath_st % i.bldpath(env), cpppath_st % i.srcpath(env)]
-            app('_CCINCFLAGS', cac[i.id])
 
+            cac[i.id] = [cpppath_st % i.bldpath(env), cpppath_st % i.srcpath(env)]
+            lss.extend(cac[i.id])
+
+    env['_CCINCFLAGS'] = lss
     # set the library include paths
     for i in env['CPPPATH']:
         app('_CCINCFLAGS', cpppath_st % i)
@@ -85,4 +89,50 @@ def variant(self, env):
 Node.Node.variant = variant
 
 
+import TaskGen, Task
+
+def create_task(self, name, src=None, tgt=None):
+    task = Task.TaskBase.classes[name](self.env, generator=self)
+    if src:
+        task.set_inputs(src)
+    if tgt:
+        task.set_outputs(tgt)
+    return task
+TaskGen.task_gen.create_task = create_task
+
+def hash_constraints(self):
+	a = self.attr
+	sum = hash((str(a('before', '')),
+            str(a('after', '')),
+            str(a('ext_in', '')),
+            str(a('ext_out', '')),
+            self.__class__.maxjobs))
+	return sum
+Task.TaskBase.hash_constraints = hash_constraints
+
+
+# import cc
+# from TaskGen import extension
+# import Utils
+
+# @extension(cc.EXT_CC)
+# def c_hook(self, node):
+# 	task = self.create_task('cc', node, node.change_ext('.o'))
+# 	try:
+# 		self.compiled_tasks.append(task)
+# 	except AttributeError:
+# 		raise Utils.WafError('Have you forgotten to set the feature "cc" on %s?' % str(self))
+
+# 	bld = self.bld
+# 	try:
+# 		dc = bld.dc
+# 	except AttributeError:
+# 		dc = bld.dc = {}
+
+# 	if task.outputs[0].id in dc:
+# 		raise Utils.WafError('Samba, you are doing it wrong %r %s %s' % (task.outputs, task.generator, dc[task.outputs[0].id].generator))
+# 	else:
+# 		dc[task.outputs[0].id] = task
+
+# 	return task
 
