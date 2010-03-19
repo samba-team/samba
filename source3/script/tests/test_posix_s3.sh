@@ -54,12 +54,14 @@ local="LOCAL-NSS-WRAPPER LOCAL-NDR"
 
 winbind="WINBIND-STRUCT WINBIND-WBCLIENT"
 
+rap="RAP-BASIC"
+
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
 # tests, so leaving it alone for now -- jpeach
 unix="UNIX-INFO2"
 
-tests="$base $raw $rpc $unix $local $winbind"
+tests="$base $raw $rpc $unix $local $winbind $rap"
 
 if test "x$POSIX_SUBTESTS" != "x" ; then
 	tests="$POSIX_SUBTESTS"
