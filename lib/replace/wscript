@@ -30,6 +30,9 @@ def set_options(opt):
                    help=("use file timestamps instead of content for build dependencies (BROKEN)"),
                    action="store_true", dest='timestamp_dependencies', default=False)
     opt.add_option('-C', action='store_true', help='dummy option for autoconf compatibility')
+    opt.add_option('--pedantic',
+		   help=("Enable even more compiler warnings"),
+		   action='store_true', dest='pedantic', default=False)
 
 @wafsamba.runonce
 def configure(conf):
@@ -213,6 +216,9 @@ def configure(conf):
                     execute=1,
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
+
+    if Options.options.pedantic:
+	conf.ADD_CFLAGS('-W')
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
