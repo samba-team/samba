@@ -70,8 +70,9 @@ static bool test_handles_lsa(struct torture_context *torture)
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 
-	status = dcerpc_lsa_OpenPolicy_r(b1, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_OpenPolicy_r(b1, mem_ctx, &r),
+		"OpenPolicy failed");
+	if (!NT_STATUS_IS_OK(r.out.result)) {
 		torture_comment(torture, "lsa_OpenPolicy not supported - skipping\n");
 		talloc_free(mem_ctx);
 		return true;
@@ -86,8 +87,9 @@ static bool test_handles_lsa(struct torture_context *torture)
 	torture_assert_int_equal(torture, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
 				      "closing policy handle on p2");
 
-	status = dcerpc_lsa_Close_r(b1, mem_ctx, &c);
-	torture_assert_ntstatus_ok(torture, status, "closing policy handle on p1");
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_Close_r(b1, mem_ctx, &c),
+		"Close failed");
+	torture_assert_ntstatus_ok(torture, c.out.result, "closing policy handle on p1");
 
 	status = dcerpc_lsa_Close_r(b1, mem_ctx, &c);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
@@ -158,8 +160,9 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	r.out.handle = &handle;
 
 	torture_comment(torture, "open lsa policy handle\n");
-	status = dcerpc_lsa_OpenPolicy_r(b1, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_OpenPolicy_r(b1, mem_ctx, &r),
+		"OpenPolicy failed");
+	if (!NT_STATUS_IS_OK(r.out.result)) {
 		torture_comment(torture, "lsa_OpenPolicy not supported - skipping\n");
 		talloc_free(mem_ctx);
 		return true;
@@ -185,27 +188,32 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	 * use policy handle on all 3 connections
 	 */
 	torture_comment(torture, "use the policy handle on p1,p2,p3\n");
-	status = dcerpc_lsa_QuerySecurity_r(b1, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b1, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "use policy handle on p1");
 
-	status = dcerpc_lsa_QuerySecurity_r(b2, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b2, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "use policy handle on p2");
 
-	status = dcerpc_lsa_QuerySecurity_r(b3, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b3, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "use policy handle on p3");
 
 	/*
 	 * close policy handle on connection 2 and the others get a fault
 	 */
 	torture_comment(torture, "close the policy handle on p2 others get a fault\n");
-	status = dcerpc_lsa_Close_r(b2, mem_ctx, &c);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_Close_r(b2, mem_ctx, &c),
+		"Close failed");
+	torture_assert_ntstatus_equal(torture, c.out.result, NT_STATUS_OK,
 				      "closing policy handle on p2");
 
 	status = dcerpc_lsa_Close_r(b1, mem_ctx, &c);
+
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
 				      "closing policy handle on p1 again");
 	torture_assert_int_equal(torture, p1->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
@@ -227,23 +235,27 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	 * open a new policy handle on p3
 	 */
 	torture_comment(torture, "open a new policy handle on p3\n");
-	status = dcerpc_lsa_OpenPolicy_r(b3, mem_ctx, &r);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_OpenPolicy_r(b3, mem_ctx, &r),
+		"OpenPolicy failed");
+	torture_assert_ntstatus_equal(torture, r.out.result, NT_STATUS_OK,
 				      "open policy handle on p3");
 
 	/*
 	 * use policy handle on all 3 connections
 	 */
 	torture_comment(torture, "use the policy handle on p1,p2,p3\n");
-	status = dcerpc_lsa_QuerySecurity_r(b1, mem_ctx, &qsec);
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b1, mem_ctx, &qsec),
+		"Query Security failed");
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
 				      "use policy handle on p1");
 
-	status = dcerpc_lsa_QuerySecurity_r(b2, mem_ctx, &qsec);
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b2, mem_ctx, &qsec),
+		"Query Security failed");
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
 				      "use policy handle on p2");
 
-	status = dcerpc_lsa_QuerySecurity_r(b3, mem_ctx, &qsec);
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b3, mem_ctx, &qsec),
+		"Query Security failed");
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
 				      "use policy handle on p3");
 
@@ -251,8 +263,9 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	 * close policy handle on connection 2 and the others get a fault
 	 */
 	torture_comment(torture, "close the policy handle on p2 others get a fault\n");
-	status = dcerpc_lsa_Close_r(b2, mem_ctx, &c);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_Close_r(b2, mem_ctx, &c),
+		"Close failed");
+	torture_assert_ntstatus_equal(torture, c.out.result, NT_STATUS_OK,
 				      "closing policy handle on p2");
 
 	status = dcerpc_lsa_Close_r(b1, mem_ctx, &c);
@@ -277,12 +290,14 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	 * open a new policy handle
 	 */
 	torture_comment(torture, "open a new policy handle on p1 and use it\n");
-	status = dcerpc_lsa_OpenPolicy_r(b1, mem_ctx, &r);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_OpenPolicy_r(b1, mem_ctx, &r),
+		"OpenPolicy failed");
+	torture_assert_ntstatus_equal(torture, r.out.result, NT_STATUS_OK,
 				      "open 2nd policy handle on p1");
 
-	status = dcerpc_lsa_QuerySecurity_r(b1, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b1, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "QuerySecurity handle on p1");
 
 	/* close first connection */
@@ -294,12 +309,14 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	 * and it's still available on p2,p3
 	 */
 	torture_comment(torture, "use policy handle on p2,p3\n");
-	status = dcerpc_lsa_QuerySecurity_r(b2, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b2, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "QuerySecurity handle on p2 after p1 was disconnected");
 
-	status = dcerpc_lsa_QuerySecurity_r(b3, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b3, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "QuerySecurity handle on p3 after p1 was disconnected");
 
 	/*
@@ -313,8 +330,9 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe4");
 	b4 = p4->binding_handle;
 
-	status = dcerpc_lsa_QuerySecurity_r(b4, mem_ctx, &qsec);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_OK, 
+	torture_assert_ntstatus_ok(torture, dcerpc_lsa_QuerySecurity_r(b4, mem_ctx, &qsec),
+		"QuerySecurity failed");
+	torture_assert_ntstatus_equal(torture, qsec.out.result, NT_STATUS_OK,
 				      "using policy handle on p4");
 
 	/*
@@ -368,8 +386,9 @@ static bool test_handles_samr(struct torture_context *torture)
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &handle;
 
-	status = dcerpc_samr_Connect_r(b1, mem_ctx, &r);
-	torture_assert_ntstatus_ok(torture, status, "opening policy handle on p1");
+	torture_assert_ntstatus_ok(torture, dcerpc_samr_Connect_r(b1, mem_ctx, &r),
+		"Connect failed");
+	torture_assert_ntstatus_ok(torture, r.out.result, "opening policy handle on p1");
 
 	c.in.handle = &handle;
 	c.out.handle = &handle2;
@@ -380,8 +399,9 @@ static bool test_handles_samr(struct torture_context *torture)
 	torture_assert_int_equal(torture, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
 				      "closing policy handle on p2");
 
-	status = dcerpc_samr_Close_r(b1, mem_ctx, &c);
-	torture_assert_ntstatus_ok(torture, status, "closing policy handle on p1");
+	torture_assert_ntstatus_ok(torture, dcerpc_samr_Close_r(b1, mem_ctx, &c),
+		"Close failed");
+	torture_assert_ntstatus_ok(torture, c.out.result, "closing policy handle on p1");
 
 	status = dcerpc_samr_Close_r(b1, mem_ctx, &c);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_NET_WRITE_FAULT, 
@@ -434,8 +454,9 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	r.out.connect_handle = &handle;
 
 	torture_comment(torture, "samr_Connect to open a policy handle on samr p1\n");
-	status = dcerpc_samr_Connect_r(b1, mem_ctx, &r);
-	torture_assert_ntstatus_ok(torture, status, "opening policy handle on p1");
+	torture_assert_ntstatus_ok(torture, dcerpc_samr_Connect_r(b1, mem_ctx, &r),
+		"Connect failed");
+	torture_assert_ntstatus_ok(torture, r.out.result, "opening policy handle on p1");
 
 	lc.in.handle 		= &handle;
 	lc.out.handle		= &handle2;
@@ -450,8 +471,9 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 				      "closing handle on lsa p2");
 
 	torture_comment(torture, "closing policy handle on samr p1\n");
-	status = dcerpc_samr_Close_r(b1, mem_ctx, &sc);
-	torture_assert_ntstatus_ok(torture, status, "closing policy handle on p1");
+	torture_assert_ntstatus_ok(torture, dcerpc_samr_Close_r(b1, mem_ctx, &sc),
+		"Close failed");
+	torture_assert_ntstatus_ok(torture, sc.out.result, "closing policy handle on p1");
 
 	talloc_free(p1);
 	talloc_free(p2);
