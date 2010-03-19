@@ -181,10 +181,9 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		if ((data.length > 0) && (data.data != NULL)
-		    && (data.data[0] != '\0')) {
+		if ((data.length > 0) && (data.data != NULL)) {
 			struct ldb_val *val;
-			bool ret2;
+			bool ret2 = false;
 
 			val = talloc_zero(msg, struct ldb_val);
 			if (val == NULL) {
@@ -192,20 +191,22 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 				return NULL;
 			}
 
+			/* Only when the "data.length" is dividable by two try
+			 * the charset conversion, otherwise stick with the
+			 * default of the "ret2" variable set to "false" (which
+			 * means binary storage and no conversion) */
 			if (data.length % 2 == 0) {
 				/* The data is provided as UTF16 string */
 				ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
 							     (void *)data.data, data.length,
 							     (void **)&val->data, &val->length,
 							     false);
-				if (!ret2) {
-					talloc_free(msg);
-					return NULL;
-				}
-			} else {
-				/* Provide a possibility to store also UTF8
-				 * REG_SZ/REG_EXPAND_SZ values. This is done
-				 * by adding a '\0' in front of the data */
+			}
+			if (!ret2) {
+				/* Provide a possibility to store also binary
+				 * UTF8 REG_SZ/REG_EXPAND_SZ values as fallback
+				 * mechanism. This is done by adding a '\0' in
+				 * front of the data */
 				val->data = talloc_size(msg, data.length + 1);
 				if (val->data == NULL) {
 					talloc_free(msg);
