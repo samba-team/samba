@@ -113,12 +113,14 @@ def build(bld):
                         'tools/ldbutil.c tools/cmdline.c',
                         'ldb dl popt')
 
-    LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename ldbtest'
+    LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
     for t in LDB_TOOLS.split():
         bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='LIBLDB_CMDLINE')
+
+    # ldbtest doesn't get installed
+    bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='LIBLDB_CMDLINE', install=False)
 
     if s4_build:
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='ldb',
                          realname='ldb.so')
-
