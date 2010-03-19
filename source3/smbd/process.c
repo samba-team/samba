@@ -2234,7 +2234,22 @@ static int client_get_tcp_info(struct sockaddr_storage *server,
  */
 static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
-	if (!send_keepalive(smbd_server_fd())) {
+	bool ok;
+	bool ret;
+
+	ok = smbd_lock_socket(smbd_server_conn);
+	if (!ok) {
+		exit_server_cleanly("failed to lock socket");
+	}
+
+	ret = send_keepalive(smbd_server_fd());
+
+	ok = smbd_unlock_socket(smbd_server_conn);
+	if (!ok) {
+		exit_server_cleanly("failed to unlock socket");
+	}
+
+	if (!ret) {
 		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
 		return False;
 	}
