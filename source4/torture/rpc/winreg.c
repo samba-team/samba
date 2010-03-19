@@ -1919,11 +1919,13 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 {
 	const char *value_name = TEST_VALUE;
 	uint32_t value = 0x12345678;
+	uint64_t value2 = 0x12345678;
 	const char *string = "torture";
 	DATA_BLOB blob;
 	enum winreg_Type types[] = {
 		REG_DWORD,
 		REG_DWORD_BIG_ENDIAN,
+		REG_QWORD,
 		REG_BINARY,
 		REG_SZ,
 		REG_MULTI_SZ
@@ -1944,6 +1946,9 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 			blob = data_blob_talloc_zero(tctx, 4);
 			SIVAL(blob.data, 0, value);
 			break;
+		case REG_QWORD:
+			blob = data_blob_talloc_zero(tctx, 8);
+			SBVAL(blob.data, 0, value2);
 		case REG_BINARY:
 			blob = data_blob_string_const("binary_blob");
 			break;
