@@ -4,6 +4,7 @@
 import Build, os, Options, Task, Utils, cc, TaskGen
 from Configure import conf
 from Logs import debug
+from samba_utils import SUBST_VARS_RECURSIVE
 
 # bring in the other samba modules
 from samba_optimisation import *
@@ -118,7 +119,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         )
 
     if install_path is None:
-        install_path = '${PREFIX}/lib'
+        install_path = '${LIBDIR}'
+    install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
 
     if install:
         # create a separate install library, which may have
@@ -224,7 +226,8 @@ def SAMBA_BINARY(bld, binname, source,
         )
 
     if install_path is None:
-        install_path = '${PREFIX}/bin'
+        install_path = '${BINDIR}'
+    install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
 
     if install:
         # we create a separate 'install' binary, which
