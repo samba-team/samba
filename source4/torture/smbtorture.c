@@ -406,7 +406,9 @@ static void run_shell(struct torture_context *tctx)
 			print_structured_test_list();
 		} else if (!strcmp(argv[0], "set")) {
 			if (argc < 3) {
-				fprintf(stderr, "Usage: set <variable> <value>\n");
+				lp_dump(tctx->lp_ctx, stdout,
+					false /* show_defaults */,
+					0 /* skip services */);
 			} else {
 				char *name = talloc_asprintf(NULL, "torture:%s", argv[1]);
 				lp_set_cmdline(tctx->lp_ctx, name, argv[2]);
