@@ -27,8 +27,6 @@ sub parse_results($$$)
 {
 	my ($msg_ops, $statistics, $fh) = @_;
 	my $expected_fail = 0;
-	my $unexpected_fail = 0;
-	my $unexpected_err = 0;
 	my $open_tests = [];
 
 	while(<$fh>) {
@@ -72,7 +70,6 @@ sub parse_results($$$)
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$statistics->{TESTS_UNEXPECTED_FAIL}++;
 				$msg_ops->end_test($testname, "failure", 1, $reason);
-				$unexpected_fail++;
 			} elsif ($result eq "skip") {
 				$statistics->{TESTS_SKIP}++;
 				# Allow tests to be skipped without prior announcement of test
@@ -85,7 +82,6 @@ sub parse_results($$$)
 				$statistics->{TESTS_ERROR}++;
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$msg_ops->end_test($testname, "error", 1, $reason);
-				$unexpected_err++;
 			} elsif ($result eq "skip-testsuite") {
 				$msg_ops->skip_testsuite($testname);
 			} elsif ($result eq "testsuite-success") {
@@ -110,11 +106,18 @@ sub parse_results($$$)
 		$msg_ops->end_test(pop(@$open_tests), "error", 1,
 				   "was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
-		$unexpected_err++;
 	}
 
-	return 1 if $unexpected_err > 0;
-	return 1 if $unexpected_fail > 0;
+	# if the Filter module is in use, it will have the right counts
+	if (defined($msg_ops->{total_error})) {
+		$statistics->{TESTS_ERROR} = $msg_ops->{total_error};
+		$statistics->{TESTS_UNEXPECTED_FAIL} = $msg_ops->{total_fail};
+		$statistics->{TESTS_EXPECTED_FAIL} = $msg_ops->{total_xfail};
+	}
+
+	return 1 if $statistics->{TESTS_ERROR} > 0;
+	return 1 if $statistics->{TESTS_UNEXPECTED_FAIL} > 0;
+
 	return 0;
 }
 
