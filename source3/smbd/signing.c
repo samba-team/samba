@@ -87,6 +87,62 @@ void srv_cancel_sign_response(struct smbd_server_connection *conn)
 	smb_signing_cancel_reply(conn->smb1.signing_state, true);
 }
 
+struct smbd_shm_signing {
+	size_t shm_size;
+	uint8_t *shm_ptr;
+
+	/* we know the signing engine will only allocate 2 chunks */
+	uint8_t *ptr1;
+	size_t len1;
+	uint8_t *ptr2;
+	size_t len2;
+};
+
+static void *smbd_shm_signing_alloc(TALLOC_CTX *mem_ctx, size_t len)
+{
+	struct smbd_shm_signing *s = talloc_get_type_abort(mem_ctx,
+				     struct smbd_shm_signing);
+
+	if (s->ptr1 == NULL) {
+		s->len1 = len;
+		if (len % 8) {
+			s->len1 += (8 - (len % 8));
+		}
+		if (s->len1 > s->shm_size) {
+			s->len1 = 0;
+			errno = ENOMEM;
+			return NULL;
+		}
+		s->ptr1 = s->shm_ptr;
+		return s->ptr1;
+	}
+
+	if (s->ptr2 == NULL) {
+		s->len2 = len;
+		if (s->len2 > (s->shm_size - s->len1)) {
+			s->len2 = 0;
+			errno = ENOMEM;
+			return NULL;
+		}
+		s->ptr2 = s->shm_ptr + s->len1;
+		return s->ptr2;
+	}
+
+	errno = ENOMEM;
+	return NULL;
+}
+
+static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
+{
+	struct smbd_shm_signing *s = talloc_get_type_abort(mem_ctx,
+				     struct smbd_shm_signing);
+
+	if (s->ptr2 == ptr) {
+		s->ptr2 = NULL;
+		s->len2 = 0;
+	}
+}
+
 /***********************************************************
  Called by server negprot when signing has been negotiated.
 ************************************************************/
@@ -107,6 +163,30 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	case False:
 		allowed = false;
 		break;
+	}
+
+	if (lp_async_smb_echo_handler()) {
+		struct smbd_shm_signing *s;
+
+		/* setup the signing state in shared memory */
+		s = talloc_zero(smbd_event_context(), struct smbd_shm_signing);
+		if (s == NULL) {
+			return false;
+		}
+		s->shm_size = 4096;
+		s->shm_ptr = (uint8_t *)allocate_anonymous_shared(s->shm_size);
+		if (s->shm_ptr == NULL) {
+			talloc_free(s);
+			return false;
+		}
+		conn->smb1.signing_state = smb_signing_init_ex(s,
+							allowed, mandatory,
+							smbd_shm_signing_alloc,
+							smbd_shm_signing_free);
+		if (!conn->smb1.signing_state) {
+			return false;
+		}
+		return true;
 	}
 
 	conn->smb1.signing_state = smb_signing_init(smbd_event_context(),
