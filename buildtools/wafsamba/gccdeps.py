@@ -9,12 +9,23 @@ and prepare the dependency calculation for the next run
 
 import os, re, threading
 import Task, Logs, Utils, preproc
+from TaskGen import before, after, feature
 
 lock = threading.Lock()
 
+preprocessor_flag = '-MD'
 
-def detect(conf):
-	conf.env.append_unique('CCFLAGS', '-MD')
+@feature('cc')
+@before('apply_core')
+def add_mmd_cc(self):
+	if self.env.get_flat('CCFLAGS').find(preprocessor_flag) < 0:
+		self.env.append_value('CCFLAGS', preprocessor_flag)
+
+@feature('cxx')
+@before('apply_core')
+def add_mmd_cxx(self):
+	if self.env.get_flat('CXXFLAGS').find(preprocessor_flag) < 0:
+		self.env.append_value('CXXFLAGS', preprocessor_flag)
 
 def scan(self):
 	"the scanner does not do anything initially"
@@ -22,6 +33,7 @@ def scan(self):
 	names = []
 	return (nodes, names)
 
+re_o = re.compile("\.o$")
 re_src = re.compile("^(\.\.)[\\/](.*)$")
 
 def post_run(self):
@@ -31,7 +43,7 @@ def post_run(self):
 		return Task.Task.post_run(self)
 
 	name = self.outputs[0].abspath(self.env)
-	name = name.rstrip('.o') + '.d'
+	name = re_o.sub('.d', name)
 	txt = Utils.readf(name)
 	#os.unlink(name)
 
@@ -97,6 +109,13 @@ def post_run(self):
 
 	Task.Task.post_run(self)
 
+import Constants, Utils
+def sig_implicit_deps(self):
+	try:
+		return Task.Task.sig_implicit_deps(self)
+	except Utils.WafError:
+		return Constants.SIG_NIL
+
 for name in 'cc cxx'.split():
 	try:
 		cls = Task.TaskBase.classes[name]
@@ -105,4 +124,5 @@ for name in 'cc cxx'.split():
 	else:
 		cls.post_run = post_run
 		cls.scan = scan
+		cls.sig_implicit_deps = sig_implicit_deps
 
