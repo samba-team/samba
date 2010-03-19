@@ -296,3 +296,21 @@ def mkdir_p(dir):
         return
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
+
+
+def RUN_COMMAND(cmd,
+                env=None,
+                shell=False):
+    '''run a external command, return exit code or signal'''
+    # recursively expand variables
+    if env:
+        while cmd.find('${') != -1:
+            cmd = Utils.subst_vars(cmd, env)
+
+    status = os.system(cmd)
+    if os.WIFEXITED(status):
+        return os.WEXITSTATUS(status)
+    if os.WIFSIGNALED(status):
+        return - os.WTERMSIG(status)
+    print "Unknown exit reason %d for command: %s" (status, cmd)
+    return -1

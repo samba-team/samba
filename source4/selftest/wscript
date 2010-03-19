@@ -1,6 +1,7 @@
 # selftest main code.
 
 import Scripting, os, Options, Utils, Environment, optparse, sys
+from samba_utils import RUN_COMMAND
 
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
@@ -70,14 +71,10 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch st/st_done) | ${FILTER_OPTIONS}'
-
-    # recursively expand variables
-    while cmd.find('${') != -1:
-        cmd = Utils.subst_vars(cmd, env)
+    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch st/st_done) | tee st/test.out | ${FILTER_OPTIONS}'
 
     print "test: running %s" % cmd
-    ret = os.system(cmd)
+    ret = RUN_COMMAND(cmd, env=env)
     if ret != 0:
         print("ERROR: test failed with exit code %d" % ret)
         sys.exit(ret)
