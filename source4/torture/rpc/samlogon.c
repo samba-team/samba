@@ -156,15 +156,21 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		r->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogon_r(samlogon_state->p->binding_handle,
 						     samlogon_state->mem_ctx, r);
-		if (!r->out.return_authenticator || 
-		    !netlogon_creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
-			d_printf("Credential chaining failed\n");
-		}
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
 			}
 			return status;
+		}
+		if (!r->out.return_authenticator || 
+		    !netlogon_creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
+			d_printf("Credential chaining failed\n");
+		}
+		if (!NT_STATUS_IS_OK(r->out.result)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(r->out.result));
+			}
+			return r->out.result;
 		}
 
 		validation_level = r->in.validation_level;
@@ -192,6 +198,12 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			}
 			return status;
 		}
+		if (!NT_STATUS_IS_OK(r_ex->out.result)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(r_ex->out.result));
+			}
+			return r_ex->out.result;
+		}
 
 		validation_level = r_ex->in.validation_level;
 
@@ -216,15 +228,21 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		r_flags->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogonWithFlags_r(samlogon_state->p->binding_handle,
 							      samlogon_state->mem_ctx, r_flags);
-		if (!r_flags->out.return_authenticator || 
-		    !netlogon_creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
-			d_printf("Credential chaining failed\n");
-		}
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
 			}
 			return status;
+		}
+		if (!r_flags->out.return_authenticator || 
+		    !netlogon_creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
+			d_printf("Credential chaining failed\n");
+		}
+		if (!NT_STATUS_IS_OK(r_flags->out.result)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(r_flags->out.result));
+			}
+			return r_flags->out.result;
 		}
 		
 		validation_level = r_flags->in.validation_level;
@@ -1495,6 +1513,11 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	d_printf("Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
 	status = dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s: netr_LogonSamLogonWithFlags - %s\n",
+			 __location__, nt_errstr(status));
+		return false;
+	}
 	if (!r.out.return_authenticator 
 	    || !netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		d_printf("Credential chaining failed\n");
@@ -1504,9 +1527,9 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	talloc_free(fn_ctx);
 
-	if (!NT_STATUS_EQUAL(expected_error, status)) {
+	if (!NT_STATUS_EQUAL(expected_error, r.out.result)) {
 		d_printf("[%s]\\[%s] netr_LogonSamLogonWithFlags - expected %s got %s\n", 
-		       account_domain, account_name, nt_errstr(expected_error), nt_errstr(status));
+		       account_domain, account_name, nt_errstr(expected_error), nt_errstr(r.out.result));
 		return false;
 	}
 
@@ -1600,6 +1623,11 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		ret = false;
 		goto failed;
 	}
+	if (!NT_STATUS_IS_OK(s.out.result)) {
+		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result));
+		ret = false;
+		goto failed;
+	}
 
 	user_ctx_wrong_time
 		= torture_create_testuser(torture, TEST_USER_NAME_WRONG_TIME,
@@ -1625,6 +1653,11 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	status = dcerpc_samr_SetUserInfo_r(tmp_p->binding_handle, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo (logon times and list of workstations) failed - %s\n", nt_errstr(status));
+		ret = false;
+		goto failed;
+	}
+	if (!NT_STATUS_IS_OK(s.out.result)) {
+		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result));
 		ret = false;
 		goto failed;
 	}
