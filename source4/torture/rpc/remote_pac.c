@@ -175,9 +175,10 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.out.authoritative = &authoritative;
 	r.out.return_authenticator = &return_authenticator;
 
-	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+		"LogonSamLogon failed");
 
-	torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
 	
 	/* This will break the signature nicely (even in the crypto wrapping), check we get a logon failure */
 	generic.data[generic.length-1]++;
@@ -194,9 +195,10 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
-	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+		"LogonSamLogon failed");
 
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
 	
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
@@ -216,9 +218,10 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
-	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+		"LogonSamLogon failed");
 
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
 	
 	torture_assert(tctx, netlogon_creds_client_check(creds, 
 							 &r.out.return_authenticator->cred), 
@@ -264,9 +267,10 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 	
-	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+		"LogonSamLogon failed");
 	
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
 	
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
@@ -311,9 +315,10 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 	
-	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+		"LogonSamLogon failed");
 	
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
 	
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
