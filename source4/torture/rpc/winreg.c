@@ -1923,6 +1923,7 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 	DATA_BLOB blob;
 	enum winreg_Type types[] = {
 		REG_DWORD,
+		REG_DWORD_BIG_ENDIAN,
 		REG_BINARY,
 		REG_SZ,
 		REG_MULTI_SZ
@@ -1939,6 +1940,7 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 
 		switch (types[t]) {
 		case REG_DWORD:
+		case REG_DWORD_BIG_ENDIAN:
 			blob = data_blob_talloc_zero(tctx, 4);
 			SIVAL(blob.data, 0, value);
 			break;
