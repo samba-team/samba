@@ -31,7 +31,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "ldb_wrap.h"
 #include "libcli/security/security.h"
-#include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 
 struct samsync_ldb_secret {

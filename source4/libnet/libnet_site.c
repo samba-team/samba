@@ -22,7 +22,6 @@
 #include "libcli/cldap/cldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "librpc/rpc/dcerpc.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "lib/tsocket/tsocket.h"
