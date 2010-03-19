@@ -26,6 +26,9 @@ def set_options(opt):
     opt.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    opt.add_option('--enable-gccdeps',
+                   help=("Enable use gcc -MD dependency module"),
+                   action="store_true", dest='enable_gccdeps', default=False)
     opt.add_option('--timestamp-dependencies',
                    help=("use file timestamps instead of content for build dependencies (BROKEN)"),
                    action="store_true", dest='timestamp_dependencies', default=False)
@@ -57,8 +60,10 @@ def configure(conf):
         os.environ['CC'] = os.environ.get('CC').strip()
 
     conf.check_tool('compiler_cc')
-    # gccdeps can be useful for debugging recursion in #include lines
-    conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
+
+    if Options.options.enable_gccdeps:
+        # don't enable gccdeps by default as it needs a very recent version gcc
+        conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     # make the install paths available in environment
     conf.env.LIBDIR = Options.options.LIBDIR
@@ -322,7 +327,8 @@ def build(bld):
 
     bld.SAMBA_BINARY('replace_testsuite',
                      TEST_SOURCES,
-                     deps='replace')
+                     deps='replace',
+                     install=False)
 
     NET_SOURCES = []
     if bld.CONFIG_SET('HAVE_INET_NTOA'):  NET_SOURCES.append('inet_ntoa.c')
