@@ -38,7 +38,7 @@ struct dcerpc_binding_handle;
 enum dcerpc_transport_t {
 	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
 	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
-	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX };
+	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
 
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
