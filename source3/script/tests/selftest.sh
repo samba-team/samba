@@ -229,6 +229,29 @@ cat >$SAMBA4CONFFILE<<EOF
 	ncalrpc dir = $NCALRPCDIR
 EOF
 
+##
+## calculate uids and gids
+##
+
+if [ $USERID -lt $(( 0xffff - 2 )) ]; then
+	MAXUID=0xffff
+else
+	MAXUID=$USERID
+fi
+
+UID_ROOT=$(( $MAXUID - 1 ))
+UID_NOBODY=$(( MAXUID - 2 ))
+
+if [ $GROUPID -lt $(( 0xffff - 3 )) ]; then
+	MAXGID=0xffff
+else
+	MAXGID=$GROUPID
+fi
+
+GID_NOBODY=$(( $MAXGID - 3 ))
+GID_NOGROUP=$(( $MAXGID - 2 ))
+GID_ROOT=$(( $MAXGID - 1 ))
+
 cat >$SERVERCONFFILE<<EOF
 [global]
 	netbios name = $SERVER
@@ -247,10 +270,10 @@ cat >$SERVERCONFFILE<<EOF
 	lanman auth = yes
 	time server = yes
 
-	add user script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --passwd_path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
+	add user script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --passwd_path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u --gid $GID_NOGROUP
 	add group script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --group_path  $NSS_WRAPPER_GROUP  --type group  --action add --name %g
 	add user to group script =	$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --group_path  $NSS_WRAPPER_GROUP  --type member --action add --name %g --member %u --passwd_path $NSS_WRAPPER_PASSWD
-	add machine script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --passwd_path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
+	add machine script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --passwd_path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u --gid $GID_NOGROUP
 	delete user script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --passwd_path $NSS_WRAPPER_PASSWD --type passwd --action delete --name %u
 	delete group script =		$PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --group_path  $NSS_WRAPPER_GROUP  --type group  --action delete --name %g
 	delete user from group script = $PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --group_path  $NSS_WRAPPER_GROUP  --type member --action delete --name %g --member %u --passwd_path $NSS_WRAPPER_PASSWD
@@ -324,25 +347,6 @@ EOF
 ##
 ## create a test account
 ##
-
-if [ $USERID -lt $(( 0xffff - 2 )) ]; then
-	MAXUID=0xffff
-else
-	MAXUID=$USERID
-fi
-
-UID_ROOT=$(( $MAXUID - 1 ))
-UID_NOBODY=$(( MAXUID - 2 ))
-
-if [ $GROUPID -lt $(( 0xffff - 3 )) ]; then
-	MAXGID=0xffff
-else
-	MAXGID=$GROUPID
-fi
-
-GID_NOBODY=$(( $MAXGID - 3 ))
-GID_NOGROUP=$(( $MAXGID - 2 ))
-GID_ROOT=$(( $MAXGID - 1 ))
 
 cat >$NSS_WRAPPER_PASSWD<<EOF
 nobody:x:$UID_NOBODY:$GID_NOBODY:nobody gecos:$PREFIX_ABS:/bin/false
