@@ -443,6 +443,37 @@ sub provision($$$$$$)
 
 	my @eventlog_list = ("dns server", "application");
 
+	##
+	## calculate uids and gids
+	##
+
+	my ($max_uid, $max_gid);
+	my ($uid_nobody, $uid_root);
+	my ($gid_nobody, $gid_nogroup, $gid_root);
+
+	if ($unix_uid < 0xffff - 2) {
+		$max_uid = 0xffff;
+	} else {
+		$max_uid = $unix_uid;
+	}
+
+	$uid_root = $max_uid - 1;
+	$uid_nobody = $max_uid - 2;
+
+	if ($unix_gids[0] < 0xffff - 3) {
+		$max_gid = 0xffff;
+	} else {
+		$max_gid = $unix_gids[0];
+	}
+
+	$gid_nobody = $max_gid - 1;
+	$gid_nogroup = $max_gid - 2;
+	$gid_root = $max_gid - 3;
+
+	##
+	## create conffile
+	##
+
 	open(CONF, ">$conffile") or die("Unable to open $conffile");
 	print CONF "
 [global]
@@ -468,9 +499,9 @@ sub provision($$$$$$)
 
 	time server = yes
 
-	add user script =		$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type passwd --action add --name %u
+	add user script =		$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type passwd --action add --name %u --gid $gid_nogroup
 	add group script =		$nss_wrapper_pl --group_path  $nss_wrapper_group  --type group  --action add --name %g
-	add machine script =		$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type passwd --action add --name %u
+	add machine script =		$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type passwd --action add --name %u --gid $gid_nogroup
 	add user to group script =	$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type member --action add --member %u --name %g --group_path $nss_wrapper_group
 	delete user script =		$nss_wrapper_pl --passwd_path $nss_wrapper_passwd --type passwd --action delete --name %u
 	delete group script =		$nss_wrapper_pl --group_path  $nss_wrapper_group  --type group  --action delete --name %g
@@ -548,29 +579,6 @@ sub provision($$$$$$)
 	##
 	## create a test account
 	##
-
-	my ($max_uid, $max_gid);
-	my ($uid_nobody, $uid_root);
-	my ($gid_nobody, $gid_nogroup, $gid_root);
-
-	if ($unix_uid < 0xffff - 2) {
-		$max_uid = 0xffff;
-	} else {
-		$max_uid = $unix_uid;
-	}
-
-	$uid_root = $max_uid - 1;
-	$uid_nobody = $max_uid - 2;
-
-	if ($unix_gids[0] < 0xffff - 3) {
-		$max_gid = 0xffff;
-	} else {
-		$max_gid = $unix_gids[0];
-	}
-
-	$gid_nobody = $max_gid - 1;
-	$gid_nogroup = $max_gid - 2;
-	$gid_root = $max_gid - 3;
 
 	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
 	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
