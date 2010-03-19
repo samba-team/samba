@@ -6,7 +6,7 @@ from Configure import conf
 from Logs import debug
 
 # bring in the other samba modules
-from samba_includes import *
+from samba_optimisation import *
 from samba_utils import *
 from samba_autoconf import *
 from samba_patterns import *

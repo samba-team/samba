@@ -1,4 +1,10 @@
-# a includes processing tool to speed up include path calculations
+# This file contains waf optimisations for Samba
+
+# most of these optimisations are possible because of the restricted build environment
+# that Samba has. For example, Samba doesn't attempt to cope with Win32 paths during the
+# build, and Samba doesn't need build varients
+
+# overall this makes some build tasks quite a bit faster
 
 from TaskGen import feature, before, after
 import preproc
