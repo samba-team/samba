@@ -74,7 +74,7 @@ static bool test_reg_val_data_string_dword_big_endian(struct torture_context *ct
 {
 	uint32_t d = 0x20;
 	DATA_BLOB db = { (uint8_t *)&d, sizeof(d) };
-	torture_assert_str_equal(ctx, "0x20000000",
+	torture_assert_str_equal(ctx, "0x00000020",
 				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD_BIG_ENDIAN, db),
 				 "dword failed");
 	return true;

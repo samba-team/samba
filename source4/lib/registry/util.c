@@ -87,13 +87,8 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
 			if (data.length == sizeof(uint32_t)) {
-				if (type == REG_DWORD) {
-					ret = talloc_asprintf(mem_ctx, "0x%8.8x",
-							      IVAL(data.data, 0));
-				} else {
-					ret = talloc_asprintf(mem_ctx, "0x%8.8x",
-							      RIVAL(data.data, 0));
-				}
+				ret = talloc_asprintf(mem_ctx, "0x%8.8x",
+						      IVAL(data.data, 0));
 			}
 			break;
 		case REG_QWORD:

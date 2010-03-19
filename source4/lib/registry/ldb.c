@@ -228,14 +228,8 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 			if (data.length == sizeof(uint32_t)) {
 				char *conv_str;
 
-				if (type == REG_DWORD) {
-					conv_str = talloc_asprintf(msg, "0x%8.8x",
-								   IVAL(data.data, 0));
-				} else {
-					conv_str = talloc_asprintf(msg, "0x%8.8x",
-								   RIVAL(data.data, 0));
-				}
-
+				conv_str = talloc_asprintf(msg, "0x%8.8x",
+							   IVAL(data.data, 0));
 				if (conv_str == NULL) {
 					talloc_free(msg);
 					return NULL;
