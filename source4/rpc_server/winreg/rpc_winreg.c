@@ -144,12 +144,21 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 		
 		result = reg_key_add_name(newh, key, r->in.name.name, NULL,
 			r->in.secdesc?&sd:NULL, (struct registry_key **)&newh->data);
+
+		r->out.action_taken = talloc(mem_ctx, enum winreg_CreateAction);
+		if (r->out.action_taken == NULL) {
+			talloc_free(newh);
+			return WERR_NOMEM;
+		}
+		*r->out.action_taken = REG_ACTION_NONE;
+
 		if (W_ERROR_IS_OK(result)) {
 			r->out.new_handle = &newh->wire_handle;
+			*r->out.action_taken = REG_CREATED_NEW_KEY;
 		} else {
 			talloc_free(newh);
 		}
-		
+
 		return result;
 	default:
 		return WERR_ACCESS_DENIED;
