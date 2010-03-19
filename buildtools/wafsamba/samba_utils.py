@@ -298,14 +298,23 @@ def mkdir_p(dir):
     os.mkdir(dir)
 
 
+def SUBST_VARS_RECURSIVE(string, env):
+    '''recursively expand variables'''
+    if string is None:
+        return string
+    limit=100
+    while (string.find('${') != -1 and limit > 0):
+        string = Utils.subst_vars(string, env)
+        limit -= 1
+    return string
+
+
 def RUN_COMMAND(cmd,
                 env=None,
                 shell=False):
     '''run a external command, return exit code or signal'''
-    # recursively expand variables
     if env:
-        while cmd.find('${') != -1:
-            cmd = Utils.subst_vars(cmd, env)
+        cmd = SUBST_VARS_RECURSIVE(cmd, env)
 
     status = os.system(cmd)
     if os.WIFEXITED(status):
