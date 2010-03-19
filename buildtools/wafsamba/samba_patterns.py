@@ -7,9 +7,10 @@ from samba_utils import *
 def SAMBA_MKVERSION(bld, target):
     '''generate the version.h header for Samba'''
     bld.SET_BUILD_GROUP('setup')
-    t = bld(rule="${SRC} ${TGT}",
+    t = bld(rule="cd .. && ${SRC[0].abspath(env)} VERSION ${TGT[0].abspath(env)}",
             source= [ "script/mkversion.sh", 'VERSION' ],
             target=target,
+            shell=True,
             before="cc")
     # force this rule to be constructed now
     t.post()
