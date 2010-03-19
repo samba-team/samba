@@ -1,0 +1,5 @@
+conf.CHECK_HEADERS('nss.h nss_common.h ns_api.h')
+
+conf.CHECK_HEADERS('security/pam_appl.h')
+conf.CHECK_FUNCS_IN('pam_start', 'pam')
+conf.CHECK_HEADERS('security/pam_modules.h pam/pam_modules.h')
