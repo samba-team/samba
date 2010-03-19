@@ -185,6 +185,47 @@ static void parse_dns(struct loadparm_context *lp_ctx, const char *dns)
 
 }
 
+/* Print the full test list, formatted into separate labelled test
+ * groups.
+ */
+static void print_structured_test_list(void)
+{
+	struct torture_suite *o;
+	struct torture_suite *s;
+	struct torture_tcase *t;
+	int i;
+
+	if (torture_root == NULL) {
+	    printf("NO TESTS LOADED\n");
+	    return;
+	}
+
+	for (o = torture_root->children; o; o = o->next) {
+		printf("\n%s (%s):\n  ", o->description, o->name);
+
+		i = 0;
+		for (s = o->children; s; s = s->next) {
+			if (i + strlen(o->name) + strlen(s->name) >= (MAX_COLS - 3)) {
+				printf("\n  ");
+				i = 0;
+			}
+			i+=printf("%s-%s ", o->name, s->name);
+		}
+
+		for (t = o->testcases; t; t = t->next) {
+			if (i + strlen(o->name) + strlen(t->name) >= (MAX_COLS - 3)) {
+				printf("\n  ");
+				i = 0;
+			}
+			i+=printf("%s-%s ", o->name, t->name);
+		}
+
+		if (i) printf("\n");
+	}
+
+	printf("\nThe default test is ALL.\n");
+}
+
 static void print_test_list(void)
 {
 	struct torture_suite *o;
@@ -207,11 +248,6 @@ static void print_test_list(void)
 
 _NORETURN_ static void usage(poptContext pc)
 {
-	struct torture_suite *o;
-	struct torture_suite *s;
-	struct torture_tcase *t;
-	int i;
-
 	poptPrintUsage(pc, stdout, 0);
 	printf("\n");
 
@@ -264,35 +300,7 @@ _NORETURN_ static void usage(poptContext pc)
 
 	printf("Tests are:");
 
-	if (torture_root == NULL) {
-	    printf("NO TESTS LOADED\n");
-	    exit(1);
-	}
-
-	for (o = torture_root->children; o; o = o->next) {
-		printf("\n%s (%s):\n  ", o->description, o->name);
-
-		i = 0;
-		for (s = o->children; s; s = s->next) {
-			if (i + strlen(o->name) + strlen(s->name) >= (MAX_COLS - 3)) {
-				printf("\n  ");
-				i = 0;
-			}
-			i+=printf("%s-%s ", o->name, s->name);
-		}
-
-		for (t = o->testcases; t; t = t->next) {
-			if (i + strlen(o->name) + strlen(t->name) >= (MAX_COLS - 3)) {
-				printf("\n  ");
-				i = 0;
-			}
-			i+=printf("%s-%s ", o->name, t->name);
-		}
-
-		if (i) printf("\n");
-	}
-
-	printf("\nThe default test is ALL.\n");
+	print_structured_test_list();
 
 	exit(1);
 }
@@ -366,6 +374,54 @@ const static struct torture_ui_ops std_ui_ops = {
 	.progress = simple_progress,
 };
 
+static void run_shell(struct torture_context *tctx)
+{
+	char *cline;
+	int argc;
+	const char **argv;
+	int ret;
+
+	while (1) {
+		cline = smb_readline("torture> ", NULL, NULL);
+
+		if (cline == NULL)
+			return;
+	
+		ret = poptParseArgvString(cline, &argc, &argv);
+		if (ret != 0) {
+			fprintf(stderr, "Error parsing line\n");
+			continue;
+		}
+
+		if (!strcmp(argv[0], "quit")) {
+			return;
+		} else if (!strcmp(argv[0], "list")) {
+			print_structured_test_list();
+		} else if (!strcmp(argv[0], "set")) {
+			if (argc < 3) {
+				fprintf(stderr, "Usage: set <variable> <value>\n");
+			} else {
+				char *name = talloc_asprintf(NULL, "torture:%s", argv[1]);
+				lp_set_cmdline(tctx->lp_ctx, name, argv[2]);
+				talloc_free(name);
+			}
+		} else if (!strcmp(argv[0], "help")) {
+			fprintf(stderr, "Available commands:\n"
+							" help - This help command\n"
+							" list - List the available\n"
+							" run - Run test\n"
+							" set - Change variables\n"
+							"\n");
+		} else if (!strcmp(argv[0], "run")) {
+			if (argc < 2) {
+				fprintf(stderr, "Usage: run TEST-NAME [OPTIONS...]\n");
+			} else {
+				run_test(tctx, argv[1]);
+			}
+		}
+		free(cline);
+	}
+}
 
 /****************************************************************************
   main program
@@ -484,8 +540,10 @@ int main(int argc,char *argv[])
 			}
 			break;
 		default:
-			printf("bad command line option\n");
-			exit(1);
+			if (opt < 0) {
+				printf("bad command line option %d\n", opt);
+				exit(1);
+			}
 		}
 	}
 
