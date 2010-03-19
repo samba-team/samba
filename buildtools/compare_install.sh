@@ -1,0 +1,8 @@
+#!/bin/bash
+
+prefix1="$1"
+prefix2="$2"
+
+(cd $prefix1 && find . -type f) | sort > p1.txt
+(cd $prefix2 && find . -type f) | sort > p2.txt
+diff -u p[12].txt
