@@ -432,7 +432,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_lsa_trusted_domains(suite));
 	torture_suite_add_suite(suite, torture_rpc_lsa_privileges(suite));
 	torture_suite_add_suite(suite, torture_rpc_echo(suite));
-	torture_suite_add_simple_test(suite, "DFS", torture_rpc_dfs);
+	torture_suite_add_suite(suite, torture_rpc_dfs(suite));
 	torture_suite_add_suite(suite, torture_rpc_frsapi(suite));
 	torture_suite_add_suite(suite, torture_rpc_unixinfo(suite));
 	torture_suite_add_suite(suite, torture_rpc_eventlog(suite));
