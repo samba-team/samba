@@ -381,6 +381,7 @@ bld.SAMBA_BINARY('asn1_compile',
         includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
         group='build_compilers',
 	deps='HEIMDAL_ROKEN_H replace',
+        install=False
 	)
 
 
@@ -389,14 +390,16 @@ bld.SAMBA_BINARY('compile_et',
 	use_hostcc=True,
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_ -DFOO2',
-	deps='HEIMDAL_ROKEN_H replace'
+	deps='HEIMDAL_ROKEN_H replace',
+        install=False
 	)
 
 
 bld.SAMBA_BINARY('samba4kinit',
 	'../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
-	deps='HEIMDAL_KRB5 HEIMDAL_NTLM'
+	deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
+        install=False
 	)
 
 
@@ -404,14 +407,16 @@ bld.SAMBA_BINARY('samba4kpasswd',
 	'../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
         cflags='-DFOO3',
         includes='../heimdal/lib/roken',
-	deps='HEIMDAL_KRB5 HEIMDAL_NTLM'
+	deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
+        install=False
 	)
 
 
 bld.SAMBA_BINARY('rkpty',
 	'../heimdal/lib/roken/rkpty.c ../../lib/socket_wrapper/socket_wrapper.c',
 	deps='HEIMDAL_ROKEN OPENPTY',
-        cflags='-DPACKAGE="Samba"'
+        cflags='-DPACKAGE="Samba"',
+        install=False
 	)
 
 HEIMDAL_GSSAPI_SPNEGO_SOURCE = '''
