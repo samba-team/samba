@@ -510,9 +510,18 @@ static bool test_netservergetinfo(struct torture_context *tctx,
 	r.in.bufsize = 0xffff;
 
 	r.in.level = 0;
-	torture_assert_ntstatus_ok(tctx, smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r), "");
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"rap_netservergetinfo level 0 failed");
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping netservergetinfo level 1 against samba3");
+	}
+
 	r.in.level = 1;
-	torture_assert_ntstatus_ok(tctx, smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r), "");
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"rap_netservergetinfo level 1 failed");
 
 	return res;
 }
