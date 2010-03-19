@@ -2895,10 +2895,21 @@ static void sendfile_short_send(files_struct *fsp,
 
 static void reply_readbraw_error(void)
 {
+	bool ok;
 	char header[4];
+
 	SIVAL(header,0,0);
+
+	ok = smbd_lock_socket(smbd_server_conn);
+	if (!ok) {
+		exit_server_cleanly("failed to lock socket");
+	}
 	if (write_data(smbd_server_fd(),header,4) != 4) {
 		fail_readraw();
+	}
+	ok = smbd_unlock_socket(smbd_server_conn);
+	if (!ok) {
+		exit_server_cleanly("failed to unlock socket");
 	}
 }
 
