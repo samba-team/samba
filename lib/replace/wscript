@@ -134,6 +134,11 @@ def configure(conf):
     conf.CHECK_TYPE('offset_t', 'loff_t')
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
 
+    conf.CHECK_CODE('long one = 1; return ((char *)(&one))[0]',
+                    execute=True,
+                    define='WORDS_BIGENDIAN')
+
+
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
     conf.CHECK_TYPE_IN('struct sockaddr', 'sys/socket.h')
