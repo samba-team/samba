@@ -173,7 +173,7 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
 @conf
 def CHECK_CODE(conf, code, define,
                always=False, execute=False, addmain=True, mandatory=False,
-               headers=None, msg=None, cflags='', includes='# . ../default',
+               headers=None, msg=None, cflags='', includes='# .',
                local_include=True):
     '''check if some code compiles and/or runs'''
     hdrs=''
@@ -199,8 +199,11 @@ def CHECK_CODE(conf, code, define,
     if msg is None:
         msg="Checking for %s" % define
 
+    # include the directory containing __confdefs.h
+    cflags += ' -I../../default'
+
     if local_include:
-        cflags = cflags + ' -I%s' % conf.curdir
+        cflags += ' -I%s' % conf.curdir
 
     if conf.check(fragment=fragment,
                   execute=execute,
