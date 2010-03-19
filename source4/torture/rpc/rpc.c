@@ -476,27 +476,11 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "COUNTCALLS", torture_rpc_countcalls);
 	torture_suite_add_simple_test(suite, "MULTIBIND", torture_multi_bind);
 	torture_suite_add_simple_test(suite, "AUTHCONTEXT", torture_bind_authcontext);
-	torture_suite_add_simple_test(suite, "BINDSAMBA3", torture_bind_samba3);
-	torture_suite_add_simple_test(suite, "NETLOGSAMBA3", torture_netlogon_samba3);
-	torture_suite_add_simple_test(suite, "SAMBA3SESSIONKEY", torture_samba3_sessionkey);
-	torture_suite_add_simple_test(suite, "SAMBA3-SRVSVC", torture_samba3_rpc_srvsvc);
-	torture_suite_add_simple_test(suite, "SAMBA3-SHARESEC",
-			    torture_samba3_rpc_sharesec);
-	torture_suite_add_simple_test(suite, "SAMBA3-GETUSERNAME",
-			    torture_samba3_rpc_getusername);
-	torture_suite_add_simple_test(suite, "SAMBA3-RANDOMAUTH2",
-				      torture_samba3_rpc_randomauth2);
-	torture_suite_add_simple_test(suite, "SAMBA3-LSA", torture_samba3_rpc_lsa);
-	torture_suite_add_simple_test(suite, "SAMBA3-SPOOLSS", torture_samba3_rpc_spoolss);
-	torture_suite_add_simple_test(suite, "SAMBA3-WKSSVC", torture_samba3_rpc_wkssvc);
-	torture_suite_add_simple_test(suite, "SAMBA3-WINREG", torture_samba3_rpc_winreg);
-	torture_suite_add_simple_test(suite, "SAMBA3-GETALIASMEMBERSHIP-0",
-				      torture_samba3_getaliasmembership_0);
+	torture_suite_add_suite(suite, torture_rpc_samba3(suite));
 	torture_rpc_drsuapi_tcase(suite);
 	torture_rpc_drsuapi_cracknames_tcase(suite);
 	torture_suite_add_suite(suite, torture_rpc_dssetup(suite));
 	torture_suite_add_suite(suite, torture_rpc_browser(suite));
-	torture_suite_add_simple_test(suite, "SAMBA3-REGCONFIG", torture_samba3_regconfig);
 	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
 	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);
 	torture_drs_rpc_dssync_tcase(suite);

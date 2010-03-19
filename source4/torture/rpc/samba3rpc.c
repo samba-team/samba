@@ -283,7 +283,7 @@ static bool bindtest(struct smbcli_state *cli,
  * test authenticated RPC binds with the variants Samba3 does support
  */
 
-bool torture_bind_samba3(struct torture_context *torture) 
+static bool torture_bind_samba3(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -1241,7 +1241,7 @@ static bool leave(struct smbcli_state *cli,
  * Test the Samba3 DC code a bit. Join, do some schan netlogon ops, leave
  */
 
-bool torture_netlogon_samba3(struct torture_context *torture)
+static bool torture_netlogon_samba3(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -1427,7 +1427,7 @@ static bool test_join3(struct torture_context *tctx,
  * session key in the setpassword routine. Test the join by doing the auth2.
  */
 
-bool torture_samba3_sessionkey(struct torture_context *torture)
+static bool torture_samba3_sessionkey(struct torture_context *torture)
 {
 	bool ret = false;
 	struct cli_credentials *anon_creds;
@@ -1733,7 +1733,7 @@ NTSTATUS secondary_tcon(TALLOC_CTX *mem_ctx,
  * Test the getusername behaviour
  */
 
-bool torture_samba3_rpc_getusername(struct torture_context *torture)
+static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct smbcli_state *cli;
@@ -2042,7 +2042,7 @@ static bool test_NetShareEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
+static bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
@@ -2088,7 +2088,7 @@ bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
  * NT_STATUS_NO_SAM_ACCOUNT
  */
 
-bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
+static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *net_pipe;
@@ -2413,7 +2413,7 @@ bool try_tcon(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-bool torture_samba3_rpc_sharesec(struct torture_context *torture)
+static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
@@ -2459,7 +2459,7 @@ bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 	return ret;
 }
 
-bool torture_samba3_rpc_lsa(struct torture_context *torture)
+static bool torture_samba3_rpc_lsa(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
@@ -2759,7 +2759,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *p,
 	return NT_STATUS_OK;
 }
 
-bool torture_samba3_rpc_spoolss(struct torture_context *torture)
+static bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
@@ -2952,7 +2952,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 	return ret;
 }
 
-bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
+static bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	struct smbcli_state *cli;
@@ -3192,7 +3192,7 @@ static bool test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-bool torture_samba3_rpc_winreg(struct torture_context *torture)
+static bool torture_samba3_rpc_winreg(struct torture_context *torture)
 {
         NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -3541,7 +3541,7 @@ done:
 	return status;
 }
 
-bool torture_samba3_regconfig(struct torture_context *torture)
+static bool torture_samba3_regconfig(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	struct srvsvc_NetShareInfo502 *i = NULL;
@@ -3653,4 +3653,27 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 		return false;
 	}
 	return true;
+}
+
+struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMBA3");
+
+	torture_suite_add_simple_test(suite, "BIND", torture_bind_samba3);
+	torture_suite_add_simple_test(suite, "NETLOGON", torture_netlogon_samba3);
+	torture_suite_add_simple_test(suite, "SESSIONKEY", torture_samba3_sessionkey);
+	torture_suite_add_simple_test(suite, "SRVSVC", torture_samba3_rpc_srvsvc);
+	torture_suite_add_simple_test(suite, "SHARESEC", torture_samba3_rpc_sharesec);
+	torture_suite_add_simple_test(suite, "GETUSERNAME", torture_samba3_rpc_getusername);
+	torture_suite_add_simple_test(suite, "RANDOMAUTH2", torture_samba3_rpc_randomauth2);
+	torture_suite_add_simple_test(suite, "LSA", torture_samba3_rpc_lsa);
+	torture_suite_add_simple_test(suite, "SPOOLSS", torture_samba3_rpc_spoolss);
+	torture_suite_add_simple_test(suite, "WKSSVC", torture_samba3_rpc_wkssvc);
+	torture_suite_add_simple_test(suite, "WINREG", torture_samba3_rpc_winreg);
+	torture_suite_add_simple_test(suite, "GETALIASMEMBERSHIP-0", torture_samba3_getaliasmembership_0);
+	torture_suite_add_simple_test(suite, "REGCONFIG", torture_samba3_regconfig);
+
+	suite->description = talloc_strdup(suite, "samba3 DCERPC interface tests");
+
+	return suite;
 }
