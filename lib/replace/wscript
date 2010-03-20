@@ -158,6 +158,10 @@ def configure(conf):
 
     conf.CHECK_TYPE_IN('sig_atomic_t', 'signal.h', define='HAVE_SIG_ATOMIC_T_TYPE')
 
+    conf.CHECK_FUNCS_IN('''inet_ntoa inet_aton inet_ntop inet_pton connect gethostbyname
+                           getaddrinfo getnameinfo freeaddrinfo gai_strerror''',
+                        'socket nsl', checklibc=True)
+
     conf.CHECK_CODE('''
                        struct sockaddr_storage sa_store;
                        struct addrinfo *ai = NULL;
@@ -188,15 +192,12 @@ def configure(conf):
     conf.CHECK_FUNCS('link readlink symlink realpath fdatasync snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
-    conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
-    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog getaddrinfo freeaddrinfo')
+    conf.CHECK_FUNCS('if_nametoindex socketpair')
+    conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
-
-
-    conf.CHECK_FUNCS_IN('inet_ntoa inet_aton inet_ntop inet_pton', 'socket nsl', checklibc=True)
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True)
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')

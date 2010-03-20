@@ -11,11 +11,17 @@ conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
 
 conf.CHECK_HEADERS('curses.h term.h termcap.h', add_headers=False)
 
-conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname inet_aton gethostname getnameinfo
-                    putenv rcmd readv sendmsg setitimer socket strlwr strncasecmp
+conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
+                    putenv rcmd readv sendmsg setitimer strlwr strncasecmp
 		    strptime strsep strsep_copy	strtok_r strupr swab umask uname unsetenv
-		    closefrom hstrerror err warn errx warnx flock getipnodebyname
-		    getipnodebyaddr freehostent	writev''')
+		    closefrom err warn errx warnx flock writev''')
+
+conf.CHECK_FUNCS_IN('hstrerror', 'resolv socket nsl', checklibc=True)
+conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent gethostent_r
+                       sethostent endhostent getipnodebyaddr freehostent gethostbyname
+                       gethostbyname_r gethostbyaddr''',
+                    'socket nsl',
+                    checklibc=True)
 
 conf.CHECK_FUNCS('iruserok', checklink=True)
 
