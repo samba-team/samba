@@ -18,7 +18,6 @@ rpc.handles.*.lsarpc-shared
 rpc.handles.*.mixed-shared
 rpc.epmapper.*.Insert
 rpc.epmapper.*.InqObject
-rpc.dfs.*
 rpc.drsuapi.*
 rpc.lsalookup
 rpc.cracknames
