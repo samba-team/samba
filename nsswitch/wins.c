@@ -333,10 +333,13 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	int i, count;
 	fstring name;
 	size_t namelen;
+	TALLOC_CTX *frame;
 
 #if HAVE_PTHREAD
 	pthread_mutex_lock(&wins_nss_mutex);
 #endif
+
+	frame = talloc_stackframe();
 
 	memset(he, '\0', sizeof(*he));
 	fstrcpy(name, hostname);
@@ -420,6 +423,8 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	nss_status = NSS_STATUS_SUCCESS;
 
   out:
+
+	TALLOC_FREE(frame);
 
 #if HAVE_PTHREAD
 	pthread_mutex_unlock(&wins_nss_mutex);
