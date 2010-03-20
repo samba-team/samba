@@ -189,13 +189,14 @@ def configure(conf):
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
     conf.CHECK_FUNCS('connect gethostbyname if_nametoindex socketpair')
-    conf.CHECK_FUNCS('inet_ntoa inet_aton inet_ntop inet_pton')
     conf.CHECK_FUNCS('dirfd getdirentries getdents syslog getaddrinfo freeaddrinfo')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
+
+    conf.CHECK_FUNCS_IN('inet_ntoa inet_aton inet_ntop inet_pton', 'socket nsl')
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True)
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')

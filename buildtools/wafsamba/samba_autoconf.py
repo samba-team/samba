@@ -299,21 +299,21 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
             SET_TARGET_TYPE(conf, library, 'EMPTY')
         return True
 
-    if not conf.check(lib=library, uselib_store=library):
-        conf.ASSERT(not mandatory,
-                    "Mandatory library '%s' not found for functions '%s'" % (library, list))
-        # if it isn't a mandatory library, then remove it from dependency lists
-        SET_TARGET_TYPE(conf, library, 'EMPTY')
-        return False
-
-    conf.define('HAVE_LIB%s' % string.replace(library.upper(),'-','_'), 1)
+    for lib in TO_LIST(library):
+        if not conf.check(lib=lib, uselib_store=lib):
+            conf.ASSERT(not mandatory,
+                        "Mandatory library '%s' not found for functions '%s'" % (library, list))
+            # if it isn't a mandatory library, then remove it from dependency lists
+            SET_TARGET_TYPE(conf, library, 'EMPTY')
+            return False
+        conf.define('HAVE_LIB%s' % string.replace(lib.upper(),'-','_'), 1)
+        conf.env['LIB_' + lib.upper()] = lib
+        LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
 
     ret = True
     for f in remaining:
         if not conf.check(function_name=f, lib=library, header_name=conf.env.hlist):
             ret = False
-    conf.env['LIB_' + library.upper()] = library
-    LOCAL_CACHE_SET(conf, 'TARGET_TYPE', library, 'SYSLIB')
     return ret
 
 
