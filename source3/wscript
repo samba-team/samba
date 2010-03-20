@@ -47,4 +47,12 @@ def configure(conf):
     conf.CHECK_HEADERS('ldap.h lber.h')
     conf.CHECK_TYPE('ber_tag_t', 'unsigned int')
 
+    # Check for kerberos
+    conf.find_program('krb5-config', var='KRB5_CONFIG')
+    if conf.env.KRB5_CONFIG:
+        conf.check_cfg(path="krb5-config", args="--cflags --libs",
+                       package="gssapi", uselib_store="KRB5")
+        conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h')
+        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h')
+
     conf.SAMBA_CONFIG_H('include/config.h')
