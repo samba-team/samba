@@ -4,12 +4,12 @@ conf.CHECK_TYPE('u_int32_t', 'uint32_t')
 conf.CHECK_HEADERS('err.h')
 
 conf.CHECK_HEADERS('ifaddrs.h')
-conf.CHECK_HEADERS('''crypt.h curses.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
+conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
 	              sys/file.h sys/stropts.h sys/timeb.h sys/times.h sys/uio.h sys/un.h
 		      sys/utsname.h time.h timezone.h ttyname.h netinet/in.h
 		      netinet/in6.h netinet6/in6.h libintl.h''')
 
-conf.CHECK_HEADERS('term.h termcap.h', add_headers=False)
+conf.CHECK_HEADERS('curses.h term.h termcap.h', add_headers=False)
 
 conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname inet_aton gethostname getnameinfo
                     putenv rcmd readv sendmsg setitimer socket strlwr strncasecmp
