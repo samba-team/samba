@@ -288,41 +288,56 @@ Build.BuildContext.CONFIG_SET = CONFIG_SET
 # optionally check for the functions first in libc
 @conf
 def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
-    # first see if the functions are in libc
+    remaining = TO_LIST(list)
+    liblist   = TO_LIST(library)
+
+    # check if some already found
+    for f in remaining[:]:
+        if CONFIG_SET(conf, 'HAVE_%s' % f.upper()):
+            remaining.remove(f)
+
+    # see if the functions are in libc
     if checklibc:
-        remaining = []
-        for f in TO_LIST(list):
-            if not CHECK_FUNC(conf, f):
-                remaining.append(f)
-    else:
-        remaining = TO_LIST(list)
+        for f in remaining[:]:
+            if CHECK_FUNC(conf, f):
+                remaining.remove(f)
 
     if remaining == []:
-        for lib in TO_LIST(library):
+        for lib in liblist:
             if GET_TARGET_TYPE(conf, lib) != 'SYSLIB':
                 SET_TARGET_TYPE(conf, lib, 'EMPTY')
         return True
 
     ret = True
-    for lib in TO_LIST(library):
+    for lib in liblist[:]:
+        if GET_TARGET_TYPE(conf, lib):
+            continue
         if not conf.check(lib=lib, uselib_store=lib):
             conf.ASSERT(not mandatory,
-                        "Mandatory library '%s' not found for functions '%s'" % (library, list))
+                        "Mandatory library '%s' not found for functions '%s'" % (lib, list))
             # if it isn't a mandatory library, then remove it from dependency lists
-            SET_TARGET_TYPE(conf, library, 'EMPTY')
+            SET_TARGET_TYPE(conf, lib, 'EMPTY')
             ret = False
         else:
             conf.define('HAVE_LIB%s' % string.replace(lib.upper(),'-','_'), 1)
-            conf.env['LIB_' + lib.upper()] = lib
-            LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
 
     if not ret:
         return ret
 
     ret = True
     for f in remaining:
-        if not conf.check(function_name=f, lib=TO_LIST(library), header_name=conf.env.hlist):
+        if not conf.check(function_name=f, lib=liblist, header_name=conf.env.hlist):
             ret = False
+
+    if not ret:
+        return ret
+
+    for lib in liblist:
+        if GET_TARGET_TYPE(conf, lib):
+            continue
+        conf.env['LIB_' + lib.upper()] = lib
+        LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
+
     return ret
 
 
