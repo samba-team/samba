@@ -318,7 +318,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
 
     ret = True
     for f in remaining:
-        if not conf.check(function_name=f, lib=library, header_name=conf.env.hlist):
+        if not conf.check(function_name=f, lib=TO_LIST(library), header_name=conf.env.hlist):
             ret = False
     return ret
 
