@@ -18,13 +18,20 @@ def DEFINE(conf, d, v, add_to_cflags=False):
     if add_to_cflags:
         conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
-@runonce
+
 def CHECK_HEADER(conf, h, add_headers=True):
     '''check for a header'''
-    if conf.check(header_name=h) and add_headers:
-        conf.env.hlist.append(h)
+    d = 'HAVE_%s' % string.replace(h.upper(), '/', '_')
+    if CONFIG_SET(conf, d):
+        if add_headers:
+            conf.env.hlist.append(h)
+            conf.env.hlist = unique_list(conf.env.hlist)
         return True
-    return False
+    ret = conf.check(header_name=h)
+    if ret and add_headers:
+        conf.env.hlist.append(h)
+        conf.env.hlist = unique_list(conf.env.hlist)
+    return ret
 
 
 @conf
@@ -122,23 +129,27 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
     return ret
 
 
-@runonce
-def CHECK_FUNC(conf, f, checklink=False):
+def CHECK_FUNC(conf, f, checklink=False, header=''):
     '''check for a function'''
+    hlist = conf.env.hlist[:]
+    for h in TO_LIST(header):
+        if CHECK_HEADER(conf, h, add_headers=False):
+            hlist.append(h)
     define='HAVE_%s' % f.upper()
     if CONFIG_SET(conf, define):
         return True
     if checklink:
-        return CHECK_CODE(conf, '%s()' % f, execute=False, define=define)
-    return conf.check(function_name=f, header_name=conf.env.hlist)
+        return CHECK_CODE(conf, 'void *x = (void *)%s' % f, execute=False, define=define)
+
+    return conf.check_cc(function_name=f, header_name=hlist)
 
 
 @conf
-def CHECK_FUNCS(conf, list, checklink=False):
+def CHECK_FUNCS(conf, list, checklink=False, header=''):
     '''check for a list of functions'''
     ret = True
     for f in TO_LIST(list):
-        if not CHECK_FUNC(conf, f, checklink):
+        if not CHECK_FUNC(conf, f, checklink=checklink, header=header):
             ret = False
     return ret
 
@@ -287,9 +298,14 @@ Build.BuildContext.CONFIG_SET = CONFIG_SET
 #
 # optionally check for the functions first in libc
 @conf
-def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
+def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header=''):
     remaining = TO_LIST(list)
     liblist   = TO_LIST(library)
+
+    hlist = conf.env.hlist[:]
+    for h in TO_LIST(header):
+        if CHECK_HEADER(conf, h, add_headers=False):
+            hlist.append(h)
 
     # check if some already found
     for f in remaining[:]:
@@ -299,7 +315,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
     # see if the functions are in libc
     if checklibc:
         for f in remaining[:]:
-            if CHECK_FUNC(conf, f):
+            if CHECK_FUNC(conf, f, checklink=True, header=header):
                 remaining.remove(f)
 
     if remaining == []:
@@ -326,7 +342,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
 
     ret = True
     for f in remaining:
-        if not conf.check(function_name=f, lib=liblist, header_name=conf.env.hlist):
+        if not conf.check_cc(function_name=f, lib=liblist, header_name=hlist):
             ret = False
 
     if not ret:
