@@ -20,9 +20,12 @@ def set_options(opt):
     opt.add_option('--sbindir',
                    help=("system admin executables [PREFIX/sbin]"),
                    action="store", dest='SBINDIR', default='${PREFIX}/sbin')
-    opt.add_option('--enable-rpath',
-                   help=("Enable use of rpath for installed binaries"),
-                   action="store_true", dest='enable_rpath', default=False)
+    opt.add_option('--disable-rpath',
+                   help=("Disable use of rpath for build binaries"),
+                   action="store_true", dest='disable_rpath_build', default=False)
+    opt.add_option('--disable-rpath-install',
+                   help=("Disable use of rpath for installed binaries"),
+                   action="store_true", dest='disable_rpath_install', default=False)
     opt.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
@@ -71,7 +74,14 @@ def configure(conf):
     conf.env.BINDIR = Options.options.BINDIR
     conf.env.SBINDIR = Options.options.SBINDIR
 
-    conf.env.RPATH_ON_INSTALL = Options.options.enable_rpath
+    # check for rpath
+    if conf.CHECK_RPATH_SUPPORT():
+        conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
+        conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
+                                     not Options.options.disable_rpath_install)
+    else:
+        conf.env.RPATH_ON_INSTALL = False
+        conf.env.RPATH_ON_BUILD   = False
 
     # we should use the PIC options in waf instead
     conf.ADD_CFLAGS('-fPIC')

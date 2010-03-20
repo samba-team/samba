@@ -67,6 +67,9 @@ def cmd_testonly(opt):
     if Options.options.VALGRIND_SERVER:
 	os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run A=B '
 
+    # this is needed for systems without rpath, or with rpath disabled
+    os.environ['LD_LIBRARY_PATH'] = 'bin/shared'
+
     st_done = 'st/st_done'
     if os.path.exists(st_done):
         os.unlink(st_done)
