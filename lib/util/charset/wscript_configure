@@ -1,6 +1,6 @@
 conf.CHECK_HEADERS('iconv.h')
 
-conf.CHECK_FUNCS_IN('iconv_open', 'iconv')
+conf.CHECK_FUNCS_IN('iconv_open', 'iconv', checklibc=True)
 
 conf.CHECK_CODE('''
                    iconv_t cd = iconv_open("ASCII","UCS-2LE");

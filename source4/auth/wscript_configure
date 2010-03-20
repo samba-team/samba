@@ -1,5 +1,5 @@
 conf.CHECK_HEADERS('security/pam_appl.h')
-conf.CHECK_FUNCS_IN('pam_start', 'pam')
+conf.CHECK_FUNCS_IN('pam_start', 'pam', checklibc=True)
 
 if (conf.CHECK_HEADERS('sasl/sasl.h') and
     conf.CHECK_FUNCS_IN('sasl_client_init', 'sasl2')):

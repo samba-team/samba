@@ -34,11 +34,11 @@ conf.CHECK_DECLS('h_errno')
 conf.CHECK_DECLS('_res')
 
 conf.CHECK_HEADERS('arpa/nameser.h dns.h')
-conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv')
+conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv', checklibc=True)
 conf.CHECK_VARIABLE('_res')
 conf.CHECK_HEADERS('pty.h util.h libutil.h')
-conf.CHECK_FUNCS_IN('openpty', 'util')
-conf.CHECK_FUNCS_IN('gettext', 'intl')
+conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True)
+conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True)
 
 
 conf.DEFINE('HAVE_KRB5',1)

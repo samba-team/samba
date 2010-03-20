@@ -196,11 +196,11 @@ def configure(conf):
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
 
-    conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl')
+    conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True)
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
-    conf.CHECK_FUNCS_IN('res_search', 'resolv')
+    conf.CHECK_FUNCS_IN('res_search', 'resolv', checklibc=True)
     conf.CHECK_FUNCS_IN('gettext', 'intl')
-    conf.CHECK_FUNCS_IN('pthread_create', 'pthread')
+    conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True)
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
 
