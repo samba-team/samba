@@ -38,8 +38,6 @@ conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 
 conf.CHECK_VARIABLE('_res')
 conf.CHECK_HEADERS('pty.h util.h libutil.h')
 conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True)
-conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True)
-
 
 conf.DEFINE('HAVE_KRB5',1)
 conf.DEFINE('HAVE_GSSAPI',1)
