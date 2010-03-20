@@ -336,7 +336,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
-                      deps='LIBREPLACE_GETPASS')
+                      deps='LIBREPLACE_GETPASS nsl socket')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''
