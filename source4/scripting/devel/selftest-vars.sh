@@ -6,4 +6,4 @@ export SOCKET_WRAPPER_DEFAULT_IFACE=6
 export SOCKET_WRAPPER_DIR=./st/w
 export UID_WRAPPER=1
 export NSS_WRAPPER_PASSWD=st/dc/passwd
-export NSS_WRAPPER_GROUP=st/dc/passwd
+export NSS_WRAPPER_GROUP=st/dc/group
