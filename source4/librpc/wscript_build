@@ -322,7 +322,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NTLMSSP',
 
 
 bld.SAMBA_LIBRARY('NDR_STANDARD',
-	source='../../librpc/gen_ndr/ndr_echo.c ../../librpc/gen_ndr/ndr_lsa.c ../../librpc/gen_ndr/ndr_samr.c ../../librpc/ndr/ndr_netlogon.c ../../librpc/gen_ndr/ndr_netlogon.c ../../libcli/ndr_netlogon.c ../../librpc/gen_ndr/ndr_dfs.c ../../librpc/gen_ndr/ndr_atsvc.c ../../librpc/gen_ndr/ndr_wkssvc.c ../../librpc/gen_ndr/ndr_srvsvc.c ../../librpc/ndr/ndr_svcctl.c ../../librpc/gen_ndr/ndr_svcctl.c ../../librpc/gen_ndr/ndr_winreg.c ../../librpc/gen_ndr/ndr_initshutdown.c ../../librpc/gen_ndr/ndr_eventlog.c ../../librpc/gen_ndr/ndr_ntsvcs.c',
+	source='../../librpc/gen_ndr/ndr_echo.c ../../librpc/gen_ndr/ndr_lsa.c ../../librpc/gen_ndr/ndr_samr.c ../../librpc/ndr/ndr_netlogon.c ../../librpc/gen_ndr/ndr_netlogon.c ../../librpc/gen_ndr/ndr_dfs.c ../../librpc/gen_ndr/ndr_atsvc.c ../../librpc/gen_ndr/ndr_wkssvc.c ../../librpc/gen_ndr/ndr_srvsvc.c ../../librpc/ndr/ndr_svcctl.c ../../librpc/gen_ndr/ndr_svcctl.c ../../librpc/gen_ndr/ndr_winreg.c ../../librpc/gen_ndr/ndr_initshutdown.c ../../librpc/gen_ndr/ndr_eventlog.c ../../librpc/gen_ndr/ndr_ntsvcs.c',
 	vnum='0.0.1',
 	# PC_FILES='../librpc/ndr_standard.pc',
 	deps='NDR_SECURITY',
