@@ -1,0 +1,41 @@
+#! /usr/bin/env python
+
+srcdir = '..'
+blddir = 'bin'
+
+import sys, os
+sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+import wafsamba, Options
+
+def set_options(opt):
+    opt.recurse('../lib/replace')
+    opt.recurse('../lib/nss_wrapper')
+    opt.recurse('../lib/socket_wrapper')
+    opt.recurse('../lib/uid_wrapper')
+
+def configure(conf):
+    conf.define('PACKAGE_NAME', 'samba')
+    conf.define('PACKAGE_STRING', 'samba 3')
+    conf.define('PACKAGE_TARNAME', 'samba')
+    conf.define('PACKAGE_URL', '')
+    conf.define('PACKAGE_VERSION', '3')
+    conf.define('PACKAGE_BUGREPORT', 'samba-technical@samba.org')
+
+    conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
+    conf.DEFINE('_SAMBA_BUILD_', 3, add_to_cflags=True)
+    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+    if Options.options.developer:
+        conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
+
+    # set a limit on recursing in the waf preprocessor
+    conf.env.preprocessor_recursion_limit = 10
+
+    conf.ADD_EXTRA_INCLUDES('#source3 #source3/include #lib/replace #lib/talloc #lib/tevent #source3/libaddns #source3/librpc')
+
+    conf.sub_config('../lib/replace')
+    conf.sub_config('../lib/nss_wrapper')
+    conf.sub_config('../lib/socket_wrapper')
+    conf.sub_config('../lib/uid_wrapper')
+
+
+    conf.SAMBA_CONFIG_H('include/config.h')
