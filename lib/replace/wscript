@@ -108,9 +108,9 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h popt.h sasl/sasl.h')
     conf.CHECK_HEADERS('security/pam_appl.h sys/inotify.h zlib.h asm/unistd.h')
     conf.CHECK_HEADERS('aio.h sys/unistd.h rpc/rpc.h rpc/nettype.h alloca.h float.h')
-    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/prctl.h sys/sysctl.h')
-    conf.CHECK_HEADERS('sys/fileio.h sys/filesys.h sys/dustat.h sys/sysmacros.h')
 
+    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/prctl.h sys/sysctl.h', add_headers=False)
+    conf.CHECK_HEADERS('sys/fileio.h sys/filesys.h sys/dustat.h sys/sysmacros.h', add_headers=False)
     conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h rpcsvc/yp_prot.h', add_headers=False)
     conf.CHECK_HEADERS('valgrind.h valgrind/valgrind.h valgrind/memcheck.h', add_headers=False)
     conf.CHECK_HEADERS('nss_common.h nsswitch.h ns_api.h', add_headers=False)
