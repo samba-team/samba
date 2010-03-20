@@ -34,6 +34,15 @@ def SET_TARGET_TYPE(ctx, target, value):
     debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
     return True
 
+
+def GET_TARGET_TYPE(ctx, target):
+    '''get target type from cache'''
+    cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
+    if not target in cache:
+        return None
+    return cache[target]
+
+
 ######################################################
 # this is used as a decorator to make functions only
 # run once. Based on the idea from

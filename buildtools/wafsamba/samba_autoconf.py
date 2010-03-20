@@ -295,7 +295,8 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
         remaining = TO_LIST(list)
 
     if remaining == []:
-        SET_TARGET_TYPE(conf, library, 'EMPTY')
+        if GET_TARGET_TYPE(conf, library) != 'SYSLIB':
+            SET_TARGET_TYPE(conf, library, 'EMPTY')
         return True
 
     if not conf.check(lib=library, uselib_store=library):
