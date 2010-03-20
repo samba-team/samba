@@ -305,7 +305,7 @@ bool torture_run_suite(struct torture_context *context,
 }
 
 bool torture_run_suite_restricted(struct torture_context *context, 
-		       struct torture_suite *suite, char **restricted)
+		       struct torture_suite *suite, const char **restricted)
 {
 	/* FIXME */
 	return false;

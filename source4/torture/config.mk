@@ -280,7 +280,10 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY smbtorture
 #################################
 
-smbtorture_OBJ_FILES = $(torturesrcdir)/smbtorture.o $(torturesrcdir)/torture.o 
+smbtorture_OBJ_FILES = \
+		$(torturesrcdir)/smbtorture.o \
+		$(torturesrcdir)/torture.o  \
+		$(torturesrcdir)/shell.o
 
 PUBLIC_HEADERS += $(torturesrcdir)/smbtorture.h
 MANPAGES += $(torturesrcdir)/man/smbtorture.1

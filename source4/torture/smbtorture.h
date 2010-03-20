@@ -36,6 +36,11 @@ extern int torture_numasync;
 struct torture_test;
 int torture_init(void);
 bool torture_register_suite(struct torture_suite *suite);
+void torture_shell(struct torture_context *tctx);
+void torture_print_tests(bool structured);
+bool torture_run_named_tests(struct torture_context *torture, const char *name,
+			    const char **restricted);
+bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target);
 
 /* Server Functionality Support */
 

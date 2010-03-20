@@ -141,7 +141,7 @@ bld.SAMBA_MODULE('TORTURE_NTP',
 TORTURE_MODULES = 'TORTURE_BASIC TORTURE_RAW torture_rpc TORTURE_RAP TORTURE_AUTH TORTURE_NBENCH TORTURE_UNIX TORTURE_LDAP TORTURE_NBT TORTURE_NET TORTURE_NTP torture_registry'
 
 bld.SAMBA_SUBSYSTEM('torturemain',
-                    source='smbtorture.c torture.c',
+                    source='smbtorture.c torture.c shell.c',
                     subsystem_name='smbtorture',
                     deps='torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
                     needs_python=True
