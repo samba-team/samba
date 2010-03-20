@@ -242,9 +242,6 @@ def configure(conf):
     if Options.options.pedantic:
 	conf.ADD_CFLAGS('-W')
 
-    if Options.options.developer:
-        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
-
     conf.SAMBA_CONFIG_H()
     conf.SAMBA_BUILD_ENV()
 

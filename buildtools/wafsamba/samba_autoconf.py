@@ -139,7 +139,9 @@ def CHECK_FUNC(conf, f, checklink=False, header=''):
     if CONFIG_SET(conf, define):
         return True
     if checklink:
-        return CHECK_CODE(conf, 'void *x = (void *)%s' % f, execute=False, define=define)
+        return CHECK_CODE(conf, 'void *x = (void *)%s' % f,
+                          execute=False, define=define,
+                          msg='Checking for %s' % f)
 
     return conf.check_cc(function_name=f, header_name=hlist)
 
@@ -365,6 +367,11 @@ def SAMBA_CONFIG_H(conf, path=None):
     # when we are building projects that depend on lib/replace
     if os.path.realpath(conf.curdir) != os.path.realpath(Options.launch_dir):
         return
+
+    if Options.options.developer:
+        # we add these here to ensure that -Wstrict-prototypes is not set during configure
+        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
+
     if path is None:
         conf.write_config_header('config.h', top=True)
     else:
