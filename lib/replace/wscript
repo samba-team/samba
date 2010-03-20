@@ -57,7 +57,8 @@ def configure(conf):
     # trim whitespaces from 'CC'.
     # The build farm sometimes puts a space at the start
     if os.environ.get('CC'):
-        os.environ['CC'] = os.environ.get('CC').strip()
+        conf.env['CC'] = os.environ.get('CC').strip()
+        os.environ['CC'] = conf.env['CC']
 
     conf.check_tool('compiler_cc')
 
