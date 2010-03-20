@@ -303,6 +303,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct tevent_context *ev,
 			       struct loadparm_context *lp_ctx);
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
+NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 
 NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  struct dcerpc_pipe **p, 

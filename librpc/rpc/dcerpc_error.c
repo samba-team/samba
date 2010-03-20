@@ -95,3 +95,27 @@ _PUBLIC_ const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code)
 
 	return win_errstr(werr);
 }
+
+_PUBLIC_ NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code)
+{
+	/* TODO: add more mappings */
+	switch (fault_code) {
+	case DCERPC_FAULT_OP_RNG_ERROR:
+		return NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE;
+	case DCERPC_FAULT_UNK_IF:
+		return NT_STATUS_RPC_UNKNOWN_IF;
+	case DCERPC_FAULT_NDR:
+		return NT_STATUS_RPC_BAD_STUB_DATA;
+	case DCERPC_FAULT_INVALID_TAG:
+		return NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE;
+	case DCERPC_FAULT_CONTEXT_MISMATCH:
+		return NT_STATUS_RPC_SS_CONTEXT_MISMATCH;
+	case DCERPC_FAULT_OTHER:
+		return NT_STATUS_RPC_CALL_FAILED;
+	case DCERPC_FAULT_ACCESS_DENIED:
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_RPC_PROTOCOL_ERROR;
+}
+
