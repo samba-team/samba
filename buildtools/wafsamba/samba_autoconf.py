@@ -338,6 +338,8 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
             ret = False
         else:
             conf.define('HAVE_LIB%s' % string.replace(lib.upper(),'-','_'), 1)
+            conf.env['LIB_' + lib.upper()] = lib
+            LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
 
     if not ret:
         return ret
@@ -346,15 +348,6 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
     for f in remaining:
         if not conf.check_cc(function_name=f, lib=liblist, header_name=hlist):
             ret = False
-
-    if not ret:
-        return ret
-
-    for lib in liblist:
-        if GET_TARGET_TYPE(conf, lib):
-            continue
-        conf.env['LIB_' + lib.upper()] = lib
-        LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
 
     return ret
 
