@@ -278,6 +278,11 @@ def SAMBA_MODULE(bld, modname, source,
                  local_include=True,
                  enabled=True):
 
+    # we add the init function regardless of whether the module
+    # is enabled or not, as we need to generate a null list if
+    # all disabled
+    bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
+
     if internal_module:
         # treat internal modules as subsystems for now
         SAMBA_SUBSYSTEM(bld, modname, source,
@@ -288,12 +293,6 @@ def SAMBA_MODULE(bld, modname, source,
                         cflags=cflags,
                         local_include=local_include,
                         enabled=enabled)
-        # even though we're treating it as a subsystem, we need to
-        # add it to the init_function list
-        # TODO: we should also create an implicit dependency
-        # between the subsystem target and this target
-        if enabled:
-            bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
         return
 
     if not enabled:
@@ -307,9 +306,6 @@ def SAMBA_MODULE(bld, modname, source,
 
     if not SET_TARGET_TYPE(bld, modname, 'MODULE'):
         return
-
-
-    bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
 
     if subsystem is not None:
         deps += ' ' + subsystem
