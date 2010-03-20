@@ -37,5 +37,10 @@ def configure(conf):
     conf.sub_config('../lib/socket_wrapper')
     conf.sub_config('../lib/uid_wrapper')
 
+    # Look for CUPS
+    conf.find_program('cups-config', var='CUPS_CONFIG')
+    if conf.env.CUPS_CONFIG:
+        conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs", package="", uselib_store="CUPS")
+        conf.CHECK_HEADERS('cups/cups.h cups/language.h', add_headers=False)
 
     conf.SAMBA_CONFIG_H('include/config.h')
