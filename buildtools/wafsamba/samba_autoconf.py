@@ -125,8 +125,11 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
 @runonce
 def CHECK_FUNC(conf, f, checklink=False):
     '''check for a function'''
+    define='HAVE_%s' % f.upper()
+    if CONFIG_SET(define):
+        return True
     if checklink:
-        return CHECK_CODE(conf, '%s()' % f, execute=False, define='HAVE_%s' % f.upper())
+        return CHECK_CODE(conf, '%s()' % f, execute=False, define=define)
     return conf.check(function_name=f, header_name=conf.env.hlist)
 
 
