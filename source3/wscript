@@ -43,4 +43,8 @@ def configure(conf):
         conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs", package="", uselib_store="CUPS")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', add_headers=False)
 
+    # Check for LDAP
+    conf.CHECK_HEADERS('ldap.h lber.h')
+    conf.CHECK_TYPE('ber_tag_t', 'unsigned int')
+
     conf.SAMBA_CONFIG_H('include/config.h')
