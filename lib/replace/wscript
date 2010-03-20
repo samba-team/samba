@@ -196,7 +196,7 @@ def configure(conf):
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
 
-    conf.CHECK_FUNCS_IN('inet_ntoa inet_aton inet_ntop inet_pton', 'socket nsl')
+    conf.CHECK_FUNCS_IN('inet_ntoa inet_aton inet_ntop inet_pton', 'socket nsl', checklibc=True)
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True)
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
