@@ -15,7 +15,7 @@ def configure(conf):
     if 'HAVE_GNUTLS' in conf.env and not Options.options.disable_gnutls:
         conf.DEFINE('ENABLE_GNUTLS', 1)
 
-    conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls')
+    conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls', header='gnutls/gnutls.h')
 
     conf.CHECK_HEADERS('gnutls/gnutls.h')
 
