@@ -25,22 +25,24 @@ bld.TARGET_ALIAS('RPC_NDR_MGMT', 'dcerpc_mgmt')
 bld.TARGET_ALIAS('iconv', 'ICONV')
 
 # missing subsystems - need looking at
-bld.SAMBA_SUBSYSTEM('pyldb_util', '')
-bld.SAMBA_SUBSYSTEM('TORTURE_LDB_MODULE', '')
-bld.SAMBA_SUBSYSTEM('INTL', '')
-bld.SAMBA_SUBSYSTEM('NETAPI', '')
-bld.SAMBA_SUBSYSTEM('HDB_LDB', '')
-bld.SAMBA_SUBSYSTEM('OPENPTY', '')
-bld.SAMBA_SUBSYSTEM('SMBCLIENT', '')
-bld.SAMBA_SUBSYSTEM('BLKID', '')
-bld.SAMBA_SUBSYSTEM('smbcalls', '')
-bld.SAMBA_SUBSYSTEM('SETPROCTITLE', '')
-bld.SAMBA_SUBSYSTEM('DCOM_PROXY_DCOM', '')
+bld.SAMBA_SUBSYSTEM('INTL', '')         # external gettext library
+bld.SAMBA_SUBSYSTEM('NETAPI', '')       # for external libnet
+bld.SAMBA_SUBSYSTEM('OPENPTY', '')      # external openpty library
+bld.SAMBA_SUBSYSTEM('SMBCLIENT', '')    # for external libsmbclient
+bld.SAMBA_SUBSYSTEM('BLKID', '')        # blkid library from e2fsprogs
+bld.SAMBA_SUBSYSTEM('SETPROCTITLE', '') # external setproctitle library
 
-# subsystems that are confirmed to be missing
+# subsystems that are confirmed to be missing. These should
+# be removed from the build completely when we only have
+# one build system
+bld.SAMBA_SUBSYSTEM('DCOM_PROXY_DCOM', '')
+bld.SAMBA_SUBSYSTEM('smbcalls', '')
+bld.SAMBA_SUBSYSTEM('HDB_LDB', '')
 bld.SAMBA_SUBSYSTEM('NDR_MISC', '')
 bld.SAMBA_SUBSYSTEM('NDR_SAMR', '')
 bld.SAMBA_SUBSYSTEM('SCHANNELDB', '')
+bld.SAMBA_SUBSYSTEM('pyldb_util', '')
+bld.SAMBA_SUBSYSTEM('TORTURE_LDB_MODULE', '')
 
 
 bld.BUILD_SUBDIR('../lib/replace')
