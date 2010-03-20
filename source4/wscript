@@ -5,20 +5,18 @@ blddir = 'bin'
 
 import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba
-
-LIBREPLACE_DIR= srcdir + '/lib/replace'
-LIBLDB_DIR=     srcdir + '/source4/lib/ldb'
+import wafsamba, Options
 
 def set_options(opt):
-    opt.recurse(LIBREPLACE_DIR)
-    opt.recurse(LIBLDB_DIR)
+    opt.recurse('../lib/replace')
+    opt.recurse('dynconfig')
+    opt.recurse('scripting/python')
+    opt.recurse('lib/ldb')
     opt.recurse('selftest')
     opt.recurse('lib/tls')
     opt.recurse('../lib/nss_wrapper')
     opt.recurse('../lib/socket_wrapper')
     opt.recurse('../lib/uid_wrapper')
-
 
 def configure(conf):
     conf.define('PACKAGE_NAME', 'samba')
@@ -28,11 +26,33 @@ def configure(conf):
     conf.define('PACKAGE_VERSION', "4")
     conf.define('PACKAGE_BUGREPORT', 'samba-technical@samba.org')
 
-    conf.DEFINE('_SAMBA_BUILD_', 4)
+    conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
+    conf.DEFINE('_SAMBA_BUILD_', 4, add_to_cflags=True)
+    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+    if Options.options.developer:
+        conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
+
+    # set a lower limit on recursing in waf preprocessor
+    conf.env.preprocessor_recursion_limit = 10
+
+    # we should use the PIC options in waf instead
+    conf.ADD_CFLAGS('-fPIC')
+
+    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include #lib/replace #lib/talloc')
+
+    conf.sub_config('../lib/replace')
+
     conf.find_program('python', var='PYTHON', mandatory=True)
     conf.find_program('perl', var='PERL', mandatory=True)
-    conf.sub_config(LIBREPLACE_DIR)
-    conf.sub_config(LIBLDB_DIR)
+
+    # enable tool to build python extensions
+    conf.check_tool('python')
+    conf.check_python_version((2,4,2))
+    conf.check_python_headers()
+
+    conf.sub_config('dynconfig')
+    conf.sub_config('scripting/python')
+    conf.sub_config('lib/ldb')
     conf.sub_config('heimdal_build')
     conf.sub_config('lib/tls')
     conf.sub_config('ntvfs/sysdep')
@@ -43,8 +63,5 @@ def configure(conf):
     conf.sub_config('../lib/nss_wrapper')
     conf.sub_config('../lib/socket_wrapper')
     conf.sub_config('../lib/uid_wrapper')
-
-    conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
-    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib  #source4/include #lib/socket_wrapper #lib/talloc #lib/replace #lib/event')
 
     conf.SAMBA_CONFIG_H('include/config.h')

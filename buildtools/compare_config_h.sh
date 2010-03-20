@@ -8,6 +8,5 @@ grep ^.define $HOME/samba_old/source4/include/config.h | sort > old-config.h
 
 comm -23 old-config.h waf-config.h
 
-echo
-
-diff -u old-config.h waf-config.h
+#echo
+#diff -u old-config.h waf-config.h

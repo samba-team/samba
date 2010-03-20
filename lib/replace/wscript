@@ -26,16 +26,24 @@ def set_options(opt):
     opt.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    opt.add_option('--timestamp-dependencies',
+                   help=("use file timestamps instead of content for build dependencies (BROKEN)"),
+                   action="store", dest='timestamp_dependencies', default=False)
 
 @wafsamba.runonce
 def configure(conf):
     conf.env.hlist = []
     conf.env.srcdir = conf.srcdir
 
+    if Options.options.timestamp_dependencies:
+        conf.ENABLE_TIMESTAMP_DEPENDENCIES()
+
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     conf.check_tool('compiler_cc')
+    # gccdeps can be useful for debugging recursion in #include lines
+    # conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     # make the install paths available in environment
     conf.env.LIBDIR = Options.options.LIBDIR
@@ -191,7 +199,7 @@ def configure(conf):
                     msg="Checking for C99 vsnprintf")
 
     if Options.options.developer:
-        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -DDEVELOPER -W -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
+        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -W -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
 
     conf.SAMBA_CONFIG_H()
     conf.SAMBA_BUILD_ENV()
@@ -302,7 +310,7 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_INET_PTON'):  NET_SOURCES.append('inet_pton.c')
     if bld.CONFIG_SET('HAVE_SOCKETPAIR'): NET_SOURCES.append('socketpair.c')
 
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES)
+    bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES, deps='replace')
 
 
     CRYPT_SOURCES = []

@@ -3,6 +3,7 @@
 from TaskGen import taskgen, before
 import Build, os, string, Utils
 from samba_utils import *
+from samba_autoconf import *
 
 
 # not sure if we need this exec_rule stuff ..., i'll leave it in for now
@@ -16,7 +17,8 @@ def add_comp(self):
 def SAMBA_ASN1(bld, name, source,
                options='',
                directory='',
-               option_file=None):
+               option_file=None,
+               includes=''):
     '''Build a ASN1 file using the asn1 compiler.
        This will produce 2 output files'''
     bname = os.path.basename(source)[0:-5];
@@ -59,7 +61,7 @@ def SAMBA_ASN1(bld, name, source,
             shell = True,
             source = source,
             target = out_files,
-            name=name)
+            name=name + '_ASN1')
 
     t.env.ASN1NAME     = asn1name
     t.env.ASN1OPTIONS  = options
@@ -67,24 +69,40 @@ def SAMBA_ASN1(bld, name, source,
     if option_file is not None:
         t.env.OPTION_FILE = "--option-file=%s" % os.path.normpath(os.path.join(bld.curdir, option_file))
 
+    cfile = out_files[0][0:-2] + '.c'
+    hfile = out_files[1][0:-3] + '.h',
 
     # now generate a .c file from the .x file
     t = bld(rule='''( echo '#include "config.h"' && cat ${SRC} ) > ${TGT}''',
             source = out_files[0],
-            target = out_files[0][0:-2] + '.c',
+            target = cfile,
             shell = True,
 	    ext_out = '.c',
             ext_in = '.x',
-            depends_on = name,
-            name = name + "_C")
+            depends_on = name + '_ASN1',
+            name = name + '_C')
 
     # and generate a .h file from the .hx file
     t = bld(rule='cp ${SRC} ${TGT}',
             source = out_files[1],
             ext_out = '.c',
             ext_in = '.x',
-            target = out_files[1][0:-3] + '.h',
-            depends_on = name,
-            name = name + "_H")
+            target = hfile,
+            depends_on = name + '_ASN1',
+            name = name + '_H')
+
+    bld.SET_BUILD_GROUP('main')
+
+    includes = TO_LIST(includes)
+    includes.append(os.path.dirname(out_files[0]))
+
+    t = bld(features       = 'cc',
+            source         = cfile,
+            target         = name,
+            ccflags        = CURRENT_CFLAGS(bld, name, ''),
+            depends_on     = '',
+            samba_deps     = TO_LIST('HEIMDAL_ROKEN'),
+            samba_includes = includes,
+            local_include  = True)
 
 Build.BuildContext.SAMBA_ASN1 = SAMBA_ASN1

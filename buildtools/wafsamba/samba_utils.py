@@ -8,6 +8,7 @@ from Logs import debug
 from TaskGen import extension
 import shlex
 
+# TODO: make this a --option
 LIB_PATH="shared"
 
 
@@ -30,16 +31,6 @@ def SET_TARGET_TYPE(ctx, target, value):
                "Target '%s' re-defined as %s - was %s" % (target, value, cache[target]))
         debug("task_gen: Skipping duplicate target %s (curdir=%s)" % (target, ctx.curdir))
         return False
-    assumed = LOCAL_CACHE(ctx, 'ASSUMED_TARGET')
-    if target in assumed:
-        #if assumed[target] != value:
-        #    print "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value)
-        ASSERT(ctx, assumed[target] == value,
-               "Target '%s' was assumed of type '%s' but is '%s'" % (target, assumed[target], value))
-    predeclared = LOCAL_CACHE(ctx, 'PREDECLARED_TARGET')
-    if target in predeclared:
-        ASSERT(ctx, predeclared[target] == value,
-               "Target '%s' was predeclared of type '%s' but is '%s'" % (target, predeclared[target], value))
     LOCAL_CACHE_SET(ctx, 'TARGET_TYPE', target, value)
     debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
     return True
@@ -110,16 +101,10 @@ Build.BuildContext.ASSERT = ASSERT
 # create a list of files by pre-pending each with a subdir name
 def SUBDIR(bld, subdir, list):
     ret = ''
-    for l in to_list(list):
+    for l in TO_LIST(list):
         ret = ret + subdir + '/' + l + ' '
     return ret
 Build.BuildContext.SUBDIR = SUBDIR
-
-##############################################
-# remove .. elements from a path list
-def NORMPATH(bld, ilist):
-    return " ".join([os.path.normpath(p) for p in to_list(ilist)])
-Build.BuildContext.NORMPATH = NORMPATH
 
 #######################################################
 # d1 += d2
@@ -158,7 +143,7 @@ def ADD_COMMAND(opt, name, function):
 Options.Handler.ADD_COMMAND = ADD_COMMAND
 
 
-@feature('*')
+@feature('cc', 'cshlib', 'cprogram')
 @before('apply_core','exec_rule')
 def process_depends_on(self):
     '''The new depends_on attribute for build rules
@@ -174,7 +159,7 @@ def process_depends_on(self):
                   self.includes += " " + y.more_includes
 
 
-#@feature('cprogram cc cshlib')
+#@feature('cprogram', 'cc', 'cshlib')
 #@before('apply_core')
 #def process_generated_dependencies(self):
 #    '''Ensure that any dependent source generation happens
@@ -184,12 +169,6 @@ def process_depends_on(self):
 #        for x in lst:
 #            y = self.bld.name_to_obj(x, self.env)
 #            y.post()
-
-
-def FIND_TASKGEN(bld, name):
-    '''find a waf task generator given a target name'''
-    return bld.name_to_obj(name)
-Build.BuildContext.FIND_TASKGEN = FIND_TASKGEN
 
 
 #import TaskGen, Task
@@ -230,22 +209,39 @@ def dbg(self):
 	if self.target == 'HEIMDAL_HEIM_ASN1':
 		print "@@@@@@@@@@@@@@2", self.includes, self.env._CCINCFLAGS
 
+def unique_list(seq):
+    '''return a uniquified list in the same order as the existing list'''
+    seen = {}
+    result = []
+    for item in seq:
+        if item in seen: continue
+        seen[item] = True
+        result.append(item)
+    return result
 
-def to_list(str):
+def TO_LIST(str):
     '''Split a list, preserving quoted strings and existing lists'''
     if isinstance(str, list):
         return str
-    return shlex.split(str)
+    lst = str.split()
+    # the string may have had quotes in it, now we
+    # check if we did have quotes, and use the slower shlex
+    # if we need to
+    for e in lst:
+        if e[0] == '"':
+            return shlex.split(str)
+    return lst
 
 @conf
-def SUBST_ENV_VAR(conf, varname):
+def SUBST_ENV_VAR(ctx, varname):
     '''Substitute an environment variable for any embedded variables'''
-    return Utils.subst_vars(conf.env[varname], conf.env)
+    return Utils.subst_vars(ctx.env[varname], ctx.env)
+Build.BuildContext.SUBST_ENV_VAR = SUBST_ENV_VAR
 
 
 def ENFORCE_GROUP_ORDERING(bld):
     '''enforce group ordering for the project. This
-       makes the group ordering apply even when you specify
+       makes the group ordering apply only when you specify
        a target with --target'''
     if Options.options.compile_targets:
         @feature('*')
@@ -280,4 +276,3 @@ Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
 #                 raise Utils.WafError('object %r was not found in uselib_local (required by add_objects %r)' % (x, self.name))
 #             y.post()
 #             self.env.append_unique('INC_PATHS', y.env.INC_PATHS)
-

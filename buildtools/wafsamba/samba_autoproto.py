@@ -5,7 +5,10 @@ import Build, os, string, Utils
 from samba_utils import *
 
 # rule for heimdal prototype generation
-def HEIMDAL_AUTOPROTO(bld, header, source, options='-q -P comment -o'):
+def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='main'):
+    bld.SET_BUILD_GROUP(group)
+    if options is None:
+        options='-q -P comment -o'
     t = bld(rule='${PERL} -W ../heimdal/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
@@ -26,8 +29,8 @@ def SAMBA_AUTOPROTO(bld, header, source):
         source = source,
         target = header,
         ext_out='.c',
+        before ='cc',
         rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
         )
 Build.BuildContext.SAMBA_AUTOPROTO = SAMBA_AUTOPROTO
-
 

@@ -12,14 +12,14 @@ bld.SAMBA_SUBSYSTEM('SAMDB',
 
 
 bld.SAMBA_SUBSYSTEM('SAMDB_COMMON',
-	source='common/util.c ./samdb/ldb_modules/util.c common/dsdb_dn.c ./common/tests/dsdb_dn.c ../../libds/common/flag_mapping.c',
+	source='common/util.c ./samdb/ldb_modules/util.c common/dsdb_dn.c ../../libds/common/flag_mapping.c',
 	autoproto='common/proto.h',
 	deps='ldb NDR_DRSBLOBS LIBCLI_LDAP_NDR UTIL_LDB LIBCLI_AUTH'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('SAMDB_SCHEMA',
-	source='schema/schema_init.c schema/schema_set.c schema/schema_query.c schema/schema_syntax.c ./schema/tests/schema_syntax.c schema/schema_description.c schema/schema_convert_to_ol.c schema/schema_inferiors.c schema/schema_prefixmap.c',
+	source='schema/schema_init.c schema/schema_set.c schema/schema_query.c schema/schema_syntax.c schema/schema_description.c schema/schema_convert_to_ol.c schema/schema_inferiors.c schema/schema_prefixmap.c',
 	autoproto='schema/proto.h',
 	deps='SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS LDBSAMBA'
 	)

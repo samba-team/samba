@@ -50,6 +50,10 @@ sub strlist($)
 	$s =~ s/\bLIBTALLOC\b/talloc/g;
 	$s =~ s/\bTALLOC\b/talloc/g;
 	$s =~ s/\bLIBTEVENT\b/tevent/g;
+	$s =~ s/\bTEVENT\b/tevent/g;
+	$s =~ s/\bTSOCKET\b/LIBTSOCKET/g;
+	$s =~ s/\bGENSEC\b/gensec/g;
+	$s =~ s/\bLIBTDB\b/tdb/g;
 	$s =~ s/\bRESOLV\b/resolv/g;
 
 	return trim(join(' ', split(/\s+/, $s)));

@@ -33,7 +33,7 @@ def CHECK_HEADER(conf, h, add_headers=True):
 def CHECK_HEADERS(conf, list, add_headers=True):
     '''check for a list of headers'''
     ret = True
-    for hdr in to_list(list):
+    for hdr in TO_LIST(list):
         if not CHECK_HEADER(conf, hdr, add_headers):
             ret = False
     return ret
@@ -43,7 +43,8 @@ def CHECK_HEADERS(conf, list, add_headers=True):
 def CHECK_TYPES(conf, list):
     '''check for a list of types'''
     ret = True
-    for t in to_list(list):
+    lst = TO_LIST(list)
+    for t in TO_LIST(list):
         if not conf.check(type_name=t, header_name=conf.env.hlist):
             ret = False
     return ret
@@ -80,7 +81,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
     '''check for a variable declaration (or define)'''
     hdrs=''
     if headers is not None:
-        hlist = to_list(headers)
+        hlist = TO_LIST(headers)
     else:
         hlist = conf.env.hlist
     for h in hlist:
@@ -113,7 +114,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
        When reverse==True then use HAVE_xxx_DECL instead of HAVE_DECL_xxx
        '''
     ret = True
-    for v in to_list(vars):
+    for v in TO_LIST(vars):
         if not reverse:
             define='HAVE_DECL_%s' % v.upper()
         else:
@@ -135,7 +136,7 @@ def CHECK_FUNC(conf, f, checklink=False):
 def CHECK_FUNCS(conf, list, checklink=False):
     '''check for a list of functions'''
     ret = True
-    for f in to_list(list):
+    for f in TO_LIST(list):
         if not CHECK_FUNC(conf, f, checklink):
             ret = False
     return ret
@@ -146,12 +147,12 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
     '''check the size of a type'''
     hdrs=''
     if headers is not None:
-        hlist = to_list(headers)
+        hlist = TO_LIST(headers)
     else:
         hlist = conf.env.hlist
     for h in hlist:
         hdrs += '#include <%s>\n' % h
-    for v in to_list(vars):
+    for v in TO_LIST(vars):
         if define is None:
             define_name = 'SIZEOF_%s' % string.replace(v.upper(), ' ', '_')
         else:
@@ -179,7 +180,7 @@ def CHECK_CODE(conf, code, define,
     '''check if some code compiles and/or runs'''
     hdrs=''
     if headers is not None:
-        hlist = to_list(headers)
+        hlist = TO_LIST(headers)
     else:
         hlist = conf.env.hlist
     for h in hlist:
@@ -207,7 +208,7 @@ def CHECK_CODE(conf, code, define,
                   execute=execute,
                   define_name = define,
                   mandatory = mandatory,
-                  ccflags=to_list(cflags),
+                  ccflags=TO_LIST(cflags),
                   includes=includes,
                   msg=msg):
         conf.DEFINE(define, 1)
@@ -224,7 +225,7 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
     '''check for a structure member'''
     hdrs=''
     if headers is not None:
-        hlist = to_list(headers)
+        hlist = TO_LIST(headers)
     else:
         hlist = conf.env.hlist
     for h in hlist:
@@ -286,21 +287,21 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False):
     # first see if the functions are in libc
     if checklibc:
         remaining = []
-        for f in to_list(list):
+        for f in TO_LIST(list):
             if not CHECK_FUNC(conf, f):
                 remaining.append(f)
     else:
-        remaining = to_list(list)
+        remaining = TO_LIST(list)
 
     if remaining == []:
-        LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
+        SET_TARGET_TYPE(conf, library, 'EMPTY')
         return True
 
     if not conf.check(lib=library, uselib_store=library):
         conf.ASSERT(not mandatory,
                     "Mandatory library '%s' not found for functions '%s'" % (library, list))
         # if it isn't a mandatory library, then remove it from dependency lists
-        LOCAL_CACHE_SET(conf, 'EMPTY_TARGETS', library.upper(), True)
+        SET_TARGET_TYPE(conf, library, 'EMPTY')
         return False
 
     conf.define('HAVE_LIB%s' % string.replace(library.upper(),'-','_'), 1)
@@ -343,7 +344,7 @@ def CONFIG_PATH(conf, name, default):
 def ADD_CFLAGS(conf, flags):
     if not 'EXTRA_CFLAGS' in conf.env:
         conf.env['EXTRA_CFLAGS'] = []
-    conf.env['EXTRA_CFLAGS'].extend(to_list(flags))
+    conf.env['EXTRA_CFLAGS'].extend(TO_LIST(flags))
 
 ##############################################################
 # add some extra include directories to all builds
@@ -351,16 +352,16 @@ def ADD_CFLAGS(conf, flags):
 def ADD_EXTRA_INCLUDES(conf, includes):
     if not 'EXTRA_INCLUDES' in conf.env:
         conf.env['EXTRA_INCLUDES'] = []
-    conf.env['EXTRA_INCLUDES'].extend(to_list(includes))
+    conf.env['EXTRA_INCLUDES'].extend(TO_LIST(includes))
 
 
 ##############################################################
 # work out the current flags. local flags are added first
-def CURRENT_CFLAGS(bld, cflags):
+def CURRENT_CFLAGS(bld, target, cflags):
     if not 'EXTRA_CFLAGS' in bld.env:
         list = []
     else:
         list = bld.env['EXTRA_CFLAGS'];
-    ret = to_list(cflags)
+    ret = TO_LIST(cflags)
     ret.extend(list)
     return ret

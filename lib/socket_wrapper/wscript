@@ -8,4 +8,5 @@ def set_options(opt):
 def configure(conf):
     if Options.options.enable_socket_wrapper or Options.options.developer:
         conf.DEFINE('SOCKET_WRAPPER', 1)
+	conf.ADD_GLOBAL_DEPENDENCY('SOCKET_WRAPPER')
 

@@ -30,11 +30,11 @@ def SAMBA_PIDL(bld, pname, source, options='', output_dir='.'):
 
     table_header_idx = None
     out_files = []
-    options_list = to_list(options)
+    options_list = TO_LIST(options)
 
     for o in options_list:
         if o in options_map:
-            ofiles = to_list(options_map[o])
+            ofiles = TO_LIST(options_map[o])
             for f in ofiles:
                 out_files.append(os.path.join(output_dir, f % bname))
                 if f == 'ndr_%s.h':
@@ -53,7 +53,7 @@ def SAMBA_PIDL(bld, pname, source, options='', output_dir='.'):
             name    = name)
 
     t.env.PIDL = "../pidl/pidl"
-    t.env.OPTIONS = to_list(options)
+    t.env.OPTIONS = TO_LIST(options)
     t.env.OUTPUTDIR = 'bin/' + bld.BUILD_PATH(output_dir)
 
 
@@ -67,7 +67,7 @@ Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 def SAMBA_PIDL_LIST(bld, name, source, options='', output_dir='.'):
     '''A wrapper for building a set of IDL files'''
-    for p in to_list(source):
+    for p in TO_LIST(source):
         bld.SAMBA_PIDL(name, p, options=options, output_dir=output_dir)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
@@ -91,13 +91,12 @@ def SAMBA_PIDL_TABLES(bld, name, target):
     headers = bld.env.PIDL_HEADERS
     t = bld(
             features = 'collect',
-            rule     = '${SRC} --output ${TGT} > ${TGT}',
+            rule     = '${SRC} --output ${TGT} | sed "s|default/||" > ${TGT}',
             ext_out  = '.c',
             before   = 'cc',
             shell    = True,
             source   = '../../librpc/tables.pl',
             target   = target,
             name     = name)
-    print name
 Build.BuildContext.SAMBA_PIDL_TABLES = SAMBA_PIDL_TABLES
 

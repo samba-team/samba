@@ -39,7 +39,6 @@ conf.CHECK_FUNCS_IN('openpty', 'util')
 conf.CHECK_FUNCS_IN('gettext', 'intl')
 
 
-conf.DEFINE('HAVE_COM_ERR',1)
 conf.DEFINE('HAVE_KRB5',1)
 conf.DEFINE('HAVE_GSSAPI',1)
 

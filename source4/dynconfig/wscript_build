@@ -1,2 +1,0 @@
-bld.SAMBA_SUBSYSTEM('DYNCONFIG',
-                    'dynconfig.c')

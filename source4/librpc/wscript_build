@@ -4,7 +4,7 @@ bld.BUILD_SUBDIR('../../librpc/idl')
 bld.BUILD_SUBDIR('idl')
 
 bld.SAMBA_LIBRARY('LIBNDR',
-	source='ndr/ndr_string.c ../../librpc/ndr/ndr_basic.c ../../librpc/ndr/uuid.c ../torture/ndr/ndr.c ../../librpc/ndr/ndr_misc.c ../../librpc/gen_ndr/ndr_misc.c',
+	source='ndr/ndr_string.c ../../librpc/ndr/ndr_basic.c ../../librpc/ndr/uuid.c ../../librpc/ndr/ndr.c ../../librpc/ndr/ndr_misc.c ../../librpc/gen_ndr/ndr_misc.c',
 	# PC_FILES='../librpc/ndr.pc',
 	public_deps='LIBSAMBA-ERRORS talloc LIBSAMBA-UTIL CHARSET LIBSAMBA-HOSTCONFIG',
 	public_headers='../../librpc/ndr/libndr.h PIDL_COMMON/misc.h PIDL_COMMON/ndr_misc.h',
@@ -625,6 +625,7 @@ bld.SAMBA_PYTHON('python_winreg',
 bld.SAMBA_PYTHON('python_dcerpc_misc',
 	source='ndr/py_misc.c',
 	deps='PYTALLOC python_dcerpc NDR_MISC NDR_KRB5PAC',
+        enabled=False,
 	realname='samba/dcerpc/misc.so'
 	)
 
@@ -723,6 +724,7 @@ bld.SAMBA_PYTHON('python_drsuapi',
 bld.SAMBA_PYTHON('python_dcerpc_security',
 	source='ndr/py_security.c',
 	deps='PYTALLOC python_dcerpc_misc python_dcerpc NDR_SECURITY',
+        enabled=False,
 	realname='samba/dcerpc/security.so'
 	)
 
@@ -730,6 +732,7 @@ bld.SAMBA_PYTHON('python_dcerpc_security',
 bld.SAMBA_PYTHON('python_dcerpc_xattr',
 	source='ndr/py_xattr.c',
 	deps='PYTALLOC python_dcerpc_misc python_dcerpc python_dcerpc_security NDR_XATTR RPC_NDR_XATTR',
+        enabled=False,
 	realname='samba/dcerpc/xattr.so'
 	)
 
