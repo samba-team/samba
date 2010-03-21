@@ -140,8 +140,8 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 
 	error = reg_get_sec_desc(ctx, ctx->current, &sec_desc);
 	if (!W_ERROR_IS_OK(error)) {
-		printf("Error getting security descriptor\n");
-		return error;
+		printf("Error getting security descriptor: %s\n", win_errstr(error));
+		return WERR_OK;
 	}
 	ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor,
 			"Security", sec_desc);
