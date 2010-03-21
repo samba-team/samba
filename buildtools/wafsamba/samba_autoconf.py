@@ -428,3 +428,14 @@ def CHECK_CC_ENV(conf):
         if len(conf.env.CC) == 1:
             # make for nicer logs if just a single command
             conf.env.CC = conf.env.CC[0]
+
+@conf
+def ENABLE_CONFIGURE_CACHE(conf):
+    '''enable cache of configure results'''
+    if os.environ.get('WAFCACHE'):
+        # already setup
+        return
+    cache_path = os.path.join(conf.blddir, '.confcache')
+    mkdir_p(cache_path)
+    Options.cache_global = os.environ['WAFCACHE'] = cache_path
+

@@ -38,7 +38,9 @@ def set_options(opt):
     opt.add_option('--timestamp-dependencies',
                    help=("use file timestamps instead of content for build dependencies (BROKEN)"),
                    action="store_true", dest='timestamp_dependencies', default=False)
-    opt.add_option('-C', action='store_true', help='dummy option for autoconf compatibility')
+    opt.add_option('-C',
+                   help='enable configure cacheing',
+                   action='store_true', dest='enable_configure_cache')
     opt.add_option('--pedantic',
 		   help=("Enable even more compiler warnings"),
 		   action='store_true', dest='pedantic', default=False)
@@ -48,14 +50,17 @@ def configure(conf):
     conf.env.hlist = []
     conf.env.srcdir = conf.srcdir
 
-    # during the configure checks we want the waf dependency checker
-    # to go into system includes. This ensures that if you add/remove
-    # a system library, that 'waf configure' will detect that, and
-    # it won't be fooled by the waf cache
-    preproc.go_absolute = True
-
     if Options.options.timestamp_dependencies:
         conf.ENABLE_TIMESTAMP_DEPENDENCIES()
+
+    if Options.options.enable_configure_cache:
+        conf.ENABLE_CONFIGURE_CACHE()
+    else:
+        # during the configure checks we want the waf dependency checker
+        # to go into system includes. This ensures that if you add/remove
+        # a system library, that 'waf configure' will detect that, and
+        # it won't be fooled by the waf cache
+        preproc.go_absolute = True
 
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
