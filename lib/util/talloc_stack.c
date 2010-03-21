@@ -72,8 +72,8 @@ static struct talloc_stackframe *talloc_stackframe_create(void)
 #undef malloc
 #endif
 #endif
-	struct talloc_stackframe *ts =
-		(struct talloc_stackframe *)malloc(sizeof(struct talloc_stackframe));
+	struct talloc_stackframe *ts = (struct talloc_stackframe *)malloc(
+		sizeof(struct talloc_stackframe));
 #if defined(PARANOID_MALLOC_CHECKER)
 #define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
 #endif
