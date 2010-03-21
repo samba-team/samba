@@ -110,6 +110,13 @@ main() {
 }''', 'HAVE_KERNEL_SHARE_MODES', addmain=False, execute=True,
         msg="Checking for krenel share modes")
 
+    # Check for various members of the stat structure
+    conf.CHECK_TYPES('blksize_t blkcnt_t')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blocks', define='HAVE_STAT_ST_BLOCKS',
+                                headers='sys/types.h sys/stat.h unistd.h',)
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blksize', define='HAVE_STAT_ST_BLKSIZE',
+                                headers='sys/types.h sys/stat.h unistd.h')
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
