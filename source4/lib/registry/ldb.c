@@ -48,7 +48,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	if (name != NULL) {
 		*name = talloc_strdup(mem_ctx,
 				      ldb_msg_find_attr_as_string(msg, "value",
-				      NULL));
+				      ""));
 	}
 
 	value_type = ldb_msg_find_attr_as_uint(msg, "type", 0);
