@@ -487,8 +487,8 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
-				  const char **name, uint32_t *data_type,
-				   DATA_BLOB *data)
+				    const char **name, uint32_t *data_type,
+				    DATA_BLOB *data)
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 	struct ldb_context *c = kd->ldb;
