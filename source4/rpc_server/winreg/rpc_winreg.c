@@ -300,11 +300,6 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		data.length = *r->in.length;
 	}
 
-	/* check if there is enough room for the name */
-	if (r->in.name->size < 2*strlen_m_term(data_name)) {
-		return WERR_MORE_DATA;
-	}
-
 	/* "data_name" is NULL when we query the default attribute */
 	if (data_name != NULL) {
 		r->out.name->name = data_name;
