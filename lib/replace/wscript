@@ -57,11 +57,7 @@ def configure(conf):
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
-    # trim whitespaces from 'CC'.
-    # The build farm sometimes puts a space at the start
-    if os.environ.get('CC'):
-        conf.env['CC'] = os.environ.get('CC').strip()
-        os.environ['CC'] = conf.env['CC']
+    conf.CHECK_CC_ENV()
 
     conf.check_tool('compiler_cc')
 

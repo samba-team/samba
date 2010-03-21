@@ -418,3 +418,13 @@ def CHECK_RPATH_SUPPORT(conf):
                            execute=True,
                            msg='Checking for rpath support',
                            cflags='-Wl,-rpath=.')
+
+@conf
+def CHECK_CC_ENV(conf):
+    '''trim whitespaces from 'CC'.
+    The build farm sometimes puts a space at the start'''
+    if os.environ.get('CC'):
+        conf.env.CC = TO_LIST(os.environ.get('CC'))
+        if len(conf.env.CC) == 1:
+            # make for nicer logs if just a single command
+            conf.env.CC = conf.env.CC[0]
