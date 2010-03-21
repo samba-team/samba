@@ -1,6 +1,6 @@
 # a waf tool to add autoconf-like macros to the configure section
 
-import Build, os, Options
+import Build, os, Options, preproc
 import string
 from Configure import conf
 from samba_utils import *
@@ -429,13 +429,22 @@ def CHECK_CC_ENV(conf):
             # make for nicer logs if just a single command
             conf.env.CC = conf.env.CC[0]
 
-@conf
-def ENABLE_CONFIGURE_CACHE(conf):
-    '''enable cache of configure results'''
-    if os.environ.get('WAFCACHE'):
-        # already setup
-        return
-    cache_path = os.path.join(conf.blddir, '.confcache')
-    mkdir_p(cache_path)
-    Options.cache_global = os.environ['WAFCACHE'] = cache_path
 
+@conf
+def SETUP_CONFIGURE_CACHE(conf, enable):
+    '''enable/disable cache of configure results'''
+    if enable:
+        # when -C is chosen, we will use a private cache and will
+        # not look into system includes. This roughtly matches what
+        # autoconf does with -C
+        cache_path = os.path.join(conf.blddir, '.confcache')
+        mkdir_p(cache_path)
+        Options.cache_global = os.environ['WAFCACHE'] = cache_path
+    else:
+        # when -C is not chosen we will not cache configure checks
+        # We set the recursion limit low to prevent waf from spending
+        # a lot of time on the signatures of the files.
+        Options.cache_global = os.environ['WAFCACHE'] = ''
+        preproc.recursion_limit = 1
+    # in either case we don't need to scan system includes
+    preproc.go_absolute = False

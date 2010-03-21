@@ -53,14 +53,7 @@ def configure(conf):
     if Options.options.timestamp_dependencies:
         conf.ENABLE_TIMESTAMP_DEPENDENCIES()
 
-    if Options.options.enable_configure_cache:
-        conf.ENABLE_CONFIGURE_CACHE()
-    else:
-        # during the configure checks we want the waf dependency checker
-        # to go into system includes. This ensures that if you add/remove
-        # a system library, that 'waf configure' will detect that, and
-        # it won't be fooled by the waf cache
-        preproc.go_absolute = True
+    conf.SETUP_CONFIGURE_CACHE(Options.options.enable_configure_cache)
 
     # load our local waf extensions
     conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
