@@ -141,7 +141,7 @@ def configure(conf):
     conf.CHECK_HEADERS('nss_common.h nsswitch.h ns_api.h', add_headers=False)
     conf.CHECK_HEADERS('sys/extattr.h sys/ea.h sys/proplist.h sys/cdefs.h', add_headers=False)
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h', add_headers=False)
-    conf.CHECK_HEADERS('syscall.h sys/syscall.h', add_headers=False)
+    conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h', add_headers=False)
 
     if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
         conf.DEFINE('STDC_HEADERS', 1)
