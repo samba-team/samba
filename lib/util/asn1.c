@@ -600,6 +600,10 @@ static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
 	tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  b[0]%40);
 	if (!tmp_oid) goto nomem;
 
+	if (bytes_eaten != NULL) {
+		*bytes_eaten = 0;
+	}
+
 	for(i = 1, v = 0; i < blob.length; i++) {
 		v = (v<<7) | (b[i]&0x7f);
 		if ( ! (b[i] & 0x80)) {
