@@ -125,7 +125,7 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 	if (classname != NULL)
 		printf("Key Class: %s\n", classname);
 	last_mod = nt_time_to_unix(last_change);
-	printf("Time Last Modified: %s\n", ctime(&last_mod));
+	printf("Time Last Modified: %s", ctime(&last_mod));
 	printf("Number of subkeys: %d\n", num_subkeys);
 	printf("Number of values: %d\n", num_values);
 
