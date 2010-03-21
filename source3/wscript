@@ -76,6 +76,21 @@ main() {
                     'HAVE_KERNEL_OPLOCKS_IRIX', headers='sys/types.h fcntl.h',
                     msg="Checking for IRIX kernel oplock types")
 
+    # Check for krenel share modes
+    conf.CHECK_CODE('''
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/file.h>
+#ifndef LOCK_MAND
+#define LOCK_MAND	32
+#define LOCK_READ	64
+#endif
+main() {
+        exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
+}''', 'HAVE_KERNEL_SHARE_MODES', addmain=False, execute=True,
+        msg="Checking for krenel share modes")
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
