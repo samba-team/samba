@@ -68,21 +68,19 @@ static void talloc_stackframe_init(void * unused)
 static struct talloc_stackframe *talloc_stackframe_create(void)
 {
 #if defined(PARANOID_MALLOC_CHECKER)
-#ifdef malloc
-#undef malloc
+#ifdef calloc
+#undef calloc
 #endif
 #endif
-	struct talloc_stackframe *ts = (struct talloc_stackframe *)malloc(
-		sizeof(struct talloc_stackframe));
+	struct talloc_stackframe *ts = (struct talloc_stackframe *)calloc(
+		1, sizeof(struct talloc_stackframe));
 #if defined(PARANOID_MALLOC_CHECKER)
-#define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
+#define calloc(n, s) __ERROR_DONT_USE_MALLOC_DIRECTLY
 #endif
 
 	if (!ts) {
 		smb_panic("talloc_stackframe_init malloc failed");
 	}
-
-	ZERO_STRUCTP(ts);
 
 	SMB_THREAD_ONCE(&ts_initialized, talloc_stackframe_init, NULL);
 
