@@ -37,6 +37,8 @@ def configure(conf):
     conf.sub_config('../lib/socket_wrapper')
     conf.sub_config('../lib/uid_wrapper')
 
+    conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h')
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
