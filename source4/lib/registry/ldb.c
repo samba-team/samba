@@ -302,8 +302,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 
 	case REG_BINARY:
 	default:
-		if ((data.length > 0) && (data.data != NULL)
-		    && (data.data[0] != '\0')) {
+		if ((data.length > 0) && (data.data != NULL)) {
 			ret = ldb_msg_add_value(msg, "data", &data, NULL);
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
