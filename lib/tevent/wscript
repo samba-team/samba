@@ -27,10 +27,12 @@ def build(bld):
     bld.BUILD_SUBDIR(LIBREPLACE_DIR)
     bld.BUILD_SUBDIR(LIBTALLOC_DIR)
 
-    SRC = '''tevent.c tevent_debug.c tevent_epoll.c tevent_fd.c tevent_immediate.c
+    SRC = '''tevent.c tevent_debug.c tevent_fd.c tevent_immediate.c
              tevent_queue.c tevent_req.c tevent_select.c
              tevent_signal.c tevent_standard.c tevent_timed.c tevent_util.c tevent_wakeup.c'''
 
+    if bld.CONFIG_SET('HAVE_EPOLL'):
+        SRC += ' tevent_epoll.c'
 
     bld.SAMBA_LIBRARY('tevent',
                       SRC,
