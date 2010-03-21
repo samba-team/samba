@@ -430,7 +430,7 @@ bld.SAMBA_BINARY('samba4kpasswd',
 
 
 bld.SAMBA_BINARY('rkpty',
-	'../heimdal/lib/roken/rkpty.c ../../lib/socket_wrapper/socket_wrapper.c',
+	'../heimdal/lib/roken/rkpty.c',
 	deps='HEIMDAL_ROKEN OPENPTY',
         cflags='-DPACKAGE="Samba"',
         install=False
