@@ -39,6 +39,12 @@ def configure(conf):
 
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h')
 
+    # Check for inotify support
+    conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h', add_headers=False)
+    conf.CHECK_FUNCS('inotify_init')
+    if "HAVE_LINUX_INOTIFY_H" in conf.env and "HAVE_INOTIFY_INIT" in conf.env:
+        conf.DEFINE('HAVE_INOTIFY', 1)
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
