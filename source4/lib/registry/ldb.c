@@ -508,8 +508,10 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx,
 	if (res->count == 0 || res->msgs[0]->num_elements == 0)
 		return WERR_BADFILE;
 
-	reg_ldb_unpack_value(mem_ctx,
-		 res->msgs[0], name, data_type, data);
+	if ((data_type != NULL) && (data != NULL)) {
+		reg_ldb_unpack_value(mem_ctx, res->msgs[0], name, data_type,
+				     data);
+	}
 
 	talloc_free(res);
 
@@ -955,6 +957,9 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 			       uint32_t *max_valbufsize)
 {
 	struct ldb_key_data *kd = talloc_get_type(key, struct ldb_key_data);
+	uint32_t default_value_type = REG_NONE;
+	DATA_BLOB default_value = { NULL, 0 };
+	WERROR werr;
 
 	/* Initialization */
 	if (classname != NULL)
@@ -972,6 +977,16 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 	if (max_valbufsize != NULL)
 		*max_valbufsize = 0;
 
+	/* We need this to get the default value (if it exists) for counting
+	 * the values under the key and for finding out the longest value buffer
+	 * size. If no default value exists the DATA_BLOB "default_value" will
+	 * remain { NULL, 0 }. */
+	werr = ldb_get_default_value(mem_ctx, key, NULL, &default_value_type,
+				     &default_value);
+	if ((!W_ERROR_IS_OK(werr)) && (!W_ERROR_EQUAL(werr, WERR_BADFILE))) {
+		return werr;
+	}
+
 	if (kd->subkeys == NULL) {
 		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
 	}
@@ -985,6 +1000,10 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 	}
 	if (num_values != NULL) {
 		*num_values = kd->value_count;
+		/* also consider the default value if it exists */
+		if (default_value.data != NULL) {
+			++(*num_values);
+		}
 	}
 
 
@@ -1005,6 +1024,12 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 		unsigned int i;
 		struct ldb_message_element *el;
 		W_ERROR_NOT_OK_RETURN(cache_values(kd));
+
+		/* also consider the default value if it exists */
+		if ((max_valbufsize != NULL) && (default_value.data != NULL)) {
+				*max_valbufsize = MAX(*max_valbufsize,
+						      default_value.length);
+		}
 
 		for (i = 0; i < kd->value_count; i++) {
 			if (max_valnamelen != NULL) {
@@ -1028,6 +1053,8 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 			*max_valnamelen *= 2;
 		}
 	}
+
+	talloc_free(default_value.data);
 
 	return WERR_OK;
 }
