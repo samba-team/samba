@@ -411,7 +411,7 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
         return
 
     if not enabled:
-        return False
+        return
 
     bld.SET_BUILD_GROUP(group)
     bld(
@@ -455,6 +455,7 @@ def SETUP_BUILD_GROUPS(bld):
     bld.p_ln = bld.srcnode # we do want to see all targets!
     bld.env['USING_BUILD_GROUPS'] = True
     bld.add_group('setup')
+    bld.add_group('build_compiler_source')
     bld.add_group('base_libraries')
     bld.add_group('build_compilers')
     bld.add_group('build_source')
