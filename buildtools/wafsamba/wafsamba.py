@@ -402,11 +402,14 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
 def SAMBA_GENERATOR(bld, name, rule, source, target,
-                    group='build_source'):
+                    group='build_source', enabled=True):
     '''A generic source generator target'''
 
     if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
         return
+
+    if not enabled:
+        return False
 
     bld.SET_BUILD_GROUP(group)
     bld(
@@ -414,7 +417,8 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
         source=source,
         target=target,
         before='cc',
-        ext_out='.c')
+        ext_out='.c',
+        name=name)
 Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
 
