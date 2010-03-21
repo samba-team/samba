@@ -169,6 +169,7 @@ def configure(conf):
     conf.CHECK_TYPE('bool', 'off_t')
     conf.CHECK_TYPE('offset_t', 'loff_t')
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
+    conf.CHECK_TYPE('uint_t', 'unsigned int')
 
     conf.CHECK_CODE('long one = 1; return ((char *)(&one))[0]',
                     execute=True,
