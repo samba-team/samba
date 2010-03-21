@@ -262,6 +262,7 @@ def configure(conf):
     conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
 
     conf.CHECK_SIZEOF('char int "long long" long off_t short size_t ssize_t')
+    conf.CHECK_SIZEOF('dev_t ino_t time_t')
     conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
 
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
