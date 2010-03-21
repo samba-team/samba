@@ -14,8 +14,8 @@ def set_options(opt):
     opt.recurse('../lib/uid_wrapper')
 
 def configure(conf):
-    conf.define('PACKAGE_NAME', 'samba')
-    conf.define('PACKAGE_STRING', 'samba 3')
+    conf.define('PACKAGE_NAME', 'Samba')
+    conf.define('PACKAGE_STRING', 'Samba 3')
     conf.define('PACKAGE_TARNAME', 'samba')
     conf.define('PACKAGE_URL', '')
     conf.define('PACKAGE_VERSION', '3')
