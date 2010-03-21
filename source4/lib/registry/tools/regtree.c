@@ -33,7 +33,7 @@
  * @param fullpath Whether the full pat hshould be printed or just the last bit
  * @param novals Whether values should not be printed
  */
-static void print_tree(int level, struct registry_key *p,
+static void print_tree(unsigned int level, struct registry_key *p,
 		       const char *name,
 		       bool fullpath, bool novals)
 {
@@ -78,7 +78,7 @@ static void print_tree(int level, struct registry_key *p,
 		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(
 			mem_ctx, p, i, &valuename, &valuetype, &valuedata));
 			i++) {
-			int j;
+			unsigned int j;
 			for(j = 0; j < level+1; j++) putchar(' ');
 			printf("%s\n",  reg_val_description(mem_ctx,
 				lp_iconv_convenience(cmdline_lp_ctx), valuename,
@@ -101,7 +101,8 @@ static void print_tree(int level, struct registry_key *p,
 
 int main(int argc, char **argv)
 {
-	int opt, i;
+	int opt;
+	unsigned int i;
 	const char *file = NULL;
 	const char *remote = NULL;
 	poptContext pc;
