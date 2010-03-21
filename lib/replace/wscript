@@ -20,6 +20,9 @@ def set_options(opt):
     opt.add_option('--sbindir',
                    help=("system admin executables [PREFIX/sbin]"),
                    action="store", dest='SBINDIR', default='${PREFIX}/sbin')
+    opt.add_option('--disable-shared',
+                   help=("Disable all use of shared libraries"),
+                   action="store_true", dest='disable_shared', default=False)
     opt.add_option('--disable-rpath',
                    help=("Disable use of rpath for build binaries"),
                    action="store_true", dest='disable_rpath_build', default=False)
@@ -70,8 +73,10 @@ def configure(conf):
     conf.env.BINDIR = Options.options.BINDIR
     conf.env.SBINDIR = Options.options.SBINDIR
 
+    conf.env.DISABLE_SHARED = Options.options.disable_shared
+
     # check for rpath
-    if conf.CHECK_RPATH_SUPPORT():
+    if not conf.env.DISABLE_SHARED and conf.CHECK_RPATH_SUPPORT():
         conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
         conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
                                      not Options.options.disable_rpath_install)

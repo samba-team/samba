@@ -79,10 +79,10 @@ def SAMBA_LIBRARY(bld, libname, source,
         SET_TARGET_TYPE(bld, libname, 'EMPTY')
         return
 
-    if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
-        return
-
-    obj_target = libname + '.objlist'
+    if bld.env.DISABLE_SHARED:
+        obj_target = libname
+    else:
+        obj_target = libname + '.objlist'
 
     # first create a target for building the object files for this library
     # by separating in this way, we avoid recompiling the C files
@@ -98,6 +98,12 @@ def SAMBA_LIBRARY(bld, libname, source,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
                         local_include  = local_include)
+
+    if bld.env.DISABLE_SHARED:
+        return
+
+    if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
+        return
 
     # the library itself will depend on that object target
     deps += ' ' + public_deps
@@ -283,7 +289,7 @@ def SAMBA_MODULE(bld, modname, source,
     # all disabled
     bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
 
-    if internal_module:
+    if internal_module or bld.env.DISABLE_SHARED:
         # treat internal modules as subsystems for now
         SAMBA_SUBSYSTEM(bld, modname, source,
                         deps=deps,
