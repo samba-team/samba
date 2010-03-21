@@ -6280,6 +6280,7 @@ if test x"$PTHREAD_CFLAGS" != xerror -a x"$PTHREAD_LDFLAGS" != xerror; then
 	AC_CHECK_HEADERS(pthread.h)
 	CFLAGS=$ac_save_CFLAGS
 	LDFLAGS=$ac_save_LDFLAGS
+	AC_DEFINE(HAVE_PTHREAD, 1, [Do we have pthreads around?])
 fi
 
 #################################################
