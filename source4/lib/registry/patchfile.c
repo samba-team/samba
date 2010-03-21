@@ -280,6 +280,15 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 			continue;
 		}
 
+		if ((r1 == NULL) && (r2 != NULL)) {
+			callbacks->add_key(callback_data,
+					   reg_predefined_keys[i].name);
+		}
+		if ((r1 != NULL) && (r2 == NULL)) {
+			callbacks->del_key(callback_data,
+					   reg_predefined_keys[i].name);
+		}
+
 		error = reg_generate_diff_key(r1, r2,
 			reg_predefined_keys[i].name, callbacks,
 			callback_data);
