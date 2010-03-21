@@ -154,7 +154,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			return error2;
 		}
 
-		/* oldkey didn't have such a subkey, add add diff */
+		/* oldkey didn't have such a subkey, add a add diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
 		callbacks->add_key(callback_data, tmppath);
 
