@@ -100,8 +100,7 @@ static int talloc_pop(TALLOC_CTX *frame)
 		if (frame == ts->talloc_stack[i]) {
 			break;
 		}
-		talloc_free(ts->talloc_stack[i]);
-		ts->talloc_stack[i] = NULL;
+		TALLOC_FREE(ts->talloc_stack[i]);
 	}
 
 	ts->talloc_stack[i] = NULL;
