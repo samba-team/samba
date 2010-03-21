@@ -45,6 +45,19 @@ def configure(conf):
     if "HAVE_LINUX_INOTIFY_H" in conf.env and "HAVE_INOTIFY_INIT" in conf.env:
         conf.DEFINE('HAVE_INOTIFY', 1)
 
+    # Check for kernel change notify support
+    conf.CHECK_CODE('''
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+#ifndef F_NOTIFY
+#define F_NOTIFY 1026
+#endif
+main() {
+        exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
+}''', 'HAVE_KERNEL_CHANGE_NOTIFY', addmain=False, execute=True,
+        msg="Checking for kernel change notify support")
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
