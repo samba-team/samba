@@ -58,7 +58,7 @@ struct registry_key *reg_import_hive_key(struct registry_context *ctx,
 
 	local_key = talloc(ctx, struct local_key);
 	if (local_key != NULL) {
-		local_key->hive_key = talloc_steal(local_key, hive);
+		local_key->hive_key = talloc_reference(local_key, hive);
 		local_key->global.context = talloc_reference(local_key, ctx);
 		local_key->path = parent_path;
 	}
