@@ -175,7 +175,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 	for(i = 0; i < new_num_values; i++) {
 		const char *name;
 		uint32_t type1, type2;
-		DATA_BLOB contents1, contents2;
+		DATA_BLOB contents1 = { NULL, 0 }, contents2 = { NULL, 0 };
 
 		error1 = reg_key_get_value_by_index(mem_ctx, newkey, i,
 						    &name, &type1, &contents1);
@@ -222,7 +222,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 	for (i = 0; i < old_num_values; i++) {
 		const char *name;
 		uint32_t type;
-		DATA_BLOB contents;
+		DATA_BLOB contents = { NULL, 0 };
 
 		error1 = reg_key_get_value_by_index(mem_ctx, oldkey, i, &name,
 						    &type, &contents);
