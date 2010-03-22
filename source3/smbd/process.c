@@ -2311,7 +2311,8 @@ void smbd_process(void)
 	char remaddr[INET6_ADDRSTRLEN];
 
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
-	    lp_security() != SEC_SHARE) {
+	    lp_security() != SEC_SHARE &&
+	    !lp_async_smb_echo_handler()) {
 		smbd_server_conn->allow_smb2 = true;
 	}
 
