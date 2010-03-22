@@ -229,7 +229,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	*value_name = talloc_reference(mem_ctx, r.out.name->name);
+	*value_name = talloc_steal(mem_ctx, r.out.name->name);
 	*type = *(r.out.type);
 	*data = data_blob_talloc(mem_ctx, r.out.value, *r.out.length);
 
@@ -319,9 +319,9 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name != NULL)
-		*name = talloc_reference(mem_ctx, r.out.name->name);
+		*name = talloc_steal(mem_ctx, r.out.name->name);
 	if (keyclass != NULL)
-		*keyclass = talloc_reference(mem_ctx, r.out.keyclass->name);
+		*keyclass = talloc_steal(mem_ctx, r.out.keyclass->name);
 	if (last_changed_time != NULL)
 		*last_changed_time = *(r.out.last_changed_time);
 
@@ -394,7 +394,7 @@ static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 		return ntstatus_to_werror(status);
 	}
 
-	mykeydata->classname = talloc_reference(mem_ctx, r.out.classname->name);
+	mykeydata->classname = talloc_steal(mem_ctx, r.out.classname->name);
 
 	return r.out.result;
 }
