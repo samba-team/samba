@@ -61,6 +61,7 @@ static WERROR dcesrv_winreg_openhive(struct dcesrv_call_state *dce_call,
 	WERROR result;
 
 	h = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
+	W_ERROR_HAVE_NO_MEMORY(h);
 
 	result = reg_get_predefined_key(ctx, hkey,
 				       (struct registry_key **)&h->data);
