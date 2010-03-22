@@ -368,7 +368,7 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
     '''verify that a C prototype matches the one on the current system'''
     if not conf.CHECK_DECLS(function, headers=headers):
         return False
-    return conf.CHECK_CODE('%s;\n%s()' % (prototype, function),
+    return conf.CHECK_CODE('%s; void *_x = (void *)%s' % (prototype, function),
                            define=define,
                            msg='Checking C prototype for %s' % function)
 
