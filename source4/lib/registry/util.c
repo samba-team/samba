@@ -192,6 +192,7 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle,
 		predeflength = strlen(name);
 
 	predefname = talloc_strndup(mem_ctx, name, predeflength);
+	W_ERROR_HAVE_NO_MEMORY(predefname);
 	error = reg_get_predefined_key_by_name(handle, predefname, &predef);
 	talloc_free(predefname);
 
@@ -220,13 +221,15 @@ static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	}
 
 	parent_name = talloc_strndup(mem_ctx, path, strrchr(path, '\\')-path);
-
+	W_ERROR_HAVE_NO_MEMORY(parent_name);
 	error = reg_open_key_abs(mem_ctx, ctx, parent_name, parent);
+	talloc_free(parent_name);
 	if (!W_ERROR_IS_OK(error)) {
 		return error;
 	}
 
 	*name = talloc_strdup(mem_ctx, strrchr(path, '\\')+1);
+	W_ERROR_HAVE_NO_MEMORY(*name);
 
 	return WERR_OK;
 }
@@ -248,6 +251,9 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 	}
 
 	talloc_free(mem_ctx);
+
+	talloc_free(parent);
+	talloc_free(n);
 
 	return error;
 }
@@ -273,6 +279,9 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	}
 
 	error = reg_key_add_name(mem_ctx, parent, n, NULL, sec_desc, result);
+
+	talloc_free(parent);
+	talloc_free(n);
 
 	return error;
 }
