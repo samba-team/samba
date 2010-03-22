@@ -280,10 +280,16 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 			continue;
 		}
 
+		/* if "r1" is NULL (old hive) and "r2" isn't (new hive) then
+		 * the hive doesn't exist yet and we have to generate an add
+		 * diff */
 		if ((r1 == NULL) && (r2 != NULL)) {
 			callbacks->add_key(callback_data,
 					   reg_predefined_keys[i].name);
 		}
+		/* if "r1" isn't NULL (old hive) and "r2" is (new hive) then
+		 * the hive shouldn't exist anymore and we have to generate a
+		 * del diff */
 		if ((r1 != NULL) && (r2 == NULL)) {
 			callbacks->del_key(callback_data,
 					   reg_predefined_keys[i].name);
