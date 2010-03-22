@@ -265,6 +265,8 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	char *n;
 	WERROR error;
 
+	*result = NULL;
+
 	if (!strchr(path, '\\')) {
 		return WERR_ALREADY_EXISTS;
 	}
