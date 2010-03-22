@@ -379,7 +379,7 @@ int dsdb_module_add(struct ldb_module *module,
 const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element)
 {
 	const struct dsdb_class *last_class = NULL;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < element->num_values; i++){
 		const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
@@ -413,7 +413,7 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
 				  const struct ldb_message_element *el)
 {
 	bool found_active = false;
-	int i;
+	unsigned int i;
 
 	if (!(attr->ldb_schema_attribute->flags & LDB_ATTR_FLAG_SINGLE_VALUE) ||
 	    el->num_values < 2) {
