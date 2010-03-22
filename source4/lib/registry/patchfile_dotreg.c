@@ -181,9 +181,11 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 			/* Deleting key */
 			if (line[1] == '-') {
 				curkey = talloc_strndup(line, line+2, strlen(line)-3);
+				W_ERROR_HAVE_NO_MEMORY(curkey);
 
 				error = callbacks->del_key(callback_data,
 							   curkey);
+
 				if (!W_ERROR_IS_OK(error)) {
 					DEBUG(0,("Error deleting key %s\n",
 						curkey));
@@ -196,6 +198,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 				continue;
 			}
 			curkey = talloc_strndup(mem_ctx, line+1, strlen(line)-2);
+			W_ERROR_HAVE_NO_MEMORY(curkey);
 
 			error = callbacks->add_key(callback_data, curkey);
 			if (!W_ERROR_IS_OK(error)) {

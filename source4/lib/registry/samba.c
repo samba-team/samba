@@ -40,6 +40,7 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 	location = talloc_asprintf(ctx, "%s/%s.ldb",
 				   lp_private_dir(lp_ctx),
 				   name);
+	W_ERROR_HAVE_NO_MEMORY(location);
 
 	error = reg_open_hive(ctx, location, auth_info, creds, event_ctx, lp_ctx, &hive);
 

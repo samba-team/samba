@@ -117,6 +117,7 @@ static WERROR rpc_get_predefined_key(struct registry_context *ctx,
 	}
 
 	mykeydata = talloc_zero(ctx, struct rpc_key);
+	W_ERROR_HAVE_NO_MEMORY(mykeydata);
 	mykeydata->key.context = ctx;
 	mykeydata->binding_handle = rctx->binding_handle;
 	mykeydata->num_values = -1;
@@ -160,6 +161,7 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h,
 	NTSTATUS status;
 
 	mykeydata = talloc_zero(mem_ctx, struct rpc_key);
+	W_ERROR_HAVE_NO_MEMORY(mykeydata);
 	mykeydata->key.context = parentkeydata->key.context;
 	mykeydata->binding_handle = parentkeydata->binding_handle;
 	mykeydata->num_values = -1;
@@ -487,6 +489,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 	dcerpc_init(lp_ctx);
 
 	rctx = talloc(NULL, struct rpc_registry_context);
+	W_ERROR_HAVE_NO_MEMORY(rctx);
 
 	/* Default to local smbd if no connection is specified */
 	if (!location) {

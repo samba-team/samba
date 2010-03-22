@@ -455,6 +455,7 @@ static WERROR regf_get_info(TALLOC_CTX *mem_ctx,
 			*classname = talloc_strndup(mem_ctx,
 						    (char*)data.data,
 						    private_data->nk->clsname_length);
+			W_ERROR_HAVE_NO_MEMORY(*classname);
 		} else
 			*classname = NULL;
 	}
@@ -540,8 +541,10 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 	}
 
 	/* FIXME: name character set ?*/
-	if (name != NULL)
+	if (name != NULL) {
 		*name = talloc_strndup(ctx, vk->data_name, vk->name_length);
+		W_ERROR_HAVE_NO_MEMORY(*name);
+	}
 
 	if (data_type != NULL)
 		*data_type = vk->data_type;
@@ -549,6 +552,7 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 	if (vk->data_length & 0x80000000) {
 		vk->data_length &=~0x80000000;
 		data->data = (uint8_t *)talloc_memdup(ctx, (uint8_t *)&vk->data_offset, vk->data_length);
+		W_ERROR_HAVE_NO_MEMORY(data->data);
 		data->length = vk->data_length;
 	} else {
 		*data = hbin_get(regf, vk->data_offset);
@@ -773,6 +777,7 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 			*classname = talloc_strndup(ctx,
 						    (char*)db.data,
 						    ret->nk->clsname_length);
+			W_ERROR_HAVE_NO_MEMORY(*classname);
 		} else
 			*classname = NULL;
 	}
