@@ -152,6 +152,15 @@ main() {
                         headers='sys/types.h rpc/rpc.h',
                         msg="Checking for uint32 typedef included by rpc/rpc.h")
 
+    # Check if the compiler will optimize out functions
+    conf.CHECK_CODE('''
+if (0) {
+    this_function_does_not_exist();
+} else {
+    return 1;
+}''', 'HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS',
+        msg="Checking if the compiler will optimize out functions")
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
