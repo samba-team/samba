@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "system/readline.h"
 #include "lib/smbreadline/smbreadline.h"
+#include "lib/cmdline/popt_common.h"
+#include "auth/credentials/credentials.h"
 #include "torture/smbtorture.h"
 
 struct shell_command;
@@ -38,6 +40,8 @@ static void shell_set(const struct shell_command *,
 static void shell_run(const struct shell_command *,
 	struct torture_context *, int, const char **);
 static void shell_list(const struct shell_command *,
+	struct torture_context *, int, const char **);
+static void shell_auth(const struct shell_command *,
 	struct torture_context *, int, const char **);
 
 static void shell_usage(const struct shell_command *);
@@ -76,6 +80,12 @@ static const struct shell_command commands[] =
     {
 	shell_run, "run", "[TESTNAME]",
 	"run the specified test"
+    },
+
+    {
+	shell_auth, "auth",
+	"[[username | principal | domain | realm | password] STRING]",
+	"set authentication parameters"
     }
 };
 
@@ -86,6 +96,15 @@ void torture_shell(struct torture_context *tctx)
 	const char **argv;
 	int ret;
 	int i;
+
+	/* If we don't have a specified password, specify it as empty. This
+	 * stops the credentials system prompting when we use the "auth"
+	 * command to display the current auth parameters.
+	 */
+	if (cmdline_credentials->password_obtained != CRED_SPECIFIED) {
+	    cli_credentials_set_password(cmdline_credentials, "",
+		    CRED_SPECIFIED);
+	}
 
 	while (1) {
 		cline = smb_readline("torture> ", NULL, NULL);
@@ -178,6 +197,60 @@ static void shell_list(const struct shell_command * command,
     }
 
     torture_print_tests(true);
+}
+
+static void shell_auth(const struct shell_command * command,
+	struct torture_context *tctx, int argc, const char **argv)
+{
+
+    if (argc == 0) {
+	    const char * username;
+	    const char * domain;
+	    const char * realm;
+	    const char * password;
+	    const char * principal;
+
+	    username = cli_credentials_get_username(cmdline_credentials);
+	    principal = cli_credentials_get_principal(cmdline_credentials, tctx);
+	    domain = cli_credentials_get_domain(cmdline_credentials);
+	    realm = cli_credentials_get_realm(cmdline_credentials);
+	    password = cli_credentials_get_password(cmdline_credentials);
+
+	    printf("Username: %s\n", username ? username : "");
+	    printf("User Principal: %s\n", principal ? principal : "");
+	    printf("Domain: %s\n", domain ? domain : "");
+	    printf("Realm: %s\n", realm ? realm : "");
+	    printf("Password: %s\n", password ? password : "");
+    } else if (argc == 2) {
+	    bool result;
+
+	    if (!strcmp(argv[0], "username")) {
+		    result = cli_credentials_set_username(
+			cmdline_credentials, argv[1], CRED_SPECIFIED);
+	    } else if (!strcmp(argv[0], "principal")) {
+		    result = cli_credentials_set_principal(
+			cmdline_credentials, argv[1], CRED_SPECIFIED);
+	    } else if (!strcmp(argv[0], "domain")) {
+		    result = cli_credentials_set_domain(
+			cmdline_credentials, argv[1], CRED_SPECIFIED);
+	    } else if (!strcmp(argv[0], "realm")) {
+		    result = cli_credentials_set_realm(
+			cmdline_credentials, argv[1], CRED_SPECIFIED);
+	    } else if (!strcmp(argv[0], "password")) {
+		    result = cli_credentials_set_password(
+			cmdline_credentials, argv[1], CRED_SPECIFIED);
+	    } else {
+		    shell_usage(command);
+		    return;
+	    }
+
+	    if (!result) {
+		    printf("failed to set %s\n", argv[0]);
+	    }
+    } else {
+	    shell_usage(command);
+    }
+
 }
 
 static void shell_usage(const struct shell_command * command)
