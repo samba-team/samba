@@ -135,6 +135,22 @@ main() {
  }''', 'HAVE_POSIX_CAPABILITIES', addmain=False, execute=True, cflags="-lcap",
             msg="Checking whether POSIX capabilities are available")
 
+    # Check for int16, uint16, int32 and uint32 in rpc/types.h included from
+    # rpc/rpc.h. This is *really* broken but some systems (DEC OSF1) do this.
+    # -- JRA.
+    if "HAVE_RPC_RPC_H" in conf.env:
+        conf.CHECK_CODE('int16 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
+                        headers='sys/types.h rpc/rpc.h',
+                        msg="Checking for int16 typedef included by rpc/rpc.h")
+        conf.CHECK_CODE('uint16 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
+                        headers='sys/types.h rpc/rpc.h',
+                        msg="Checking for uint16 typedef included by rpc/rpc.h")
+        conf.CHECK_CODE('int32 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
+                        headers='sys/types.h rpc/rpc.h',
+                        msg="Checking for int32 typedef included by rpc/rpc.h")
+        conf.CHECK_CODE('uint32 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
+                        headers='sys/types.h rpc/rpc.h',
+                        msg="Checking for uint32 typedef included by rpc/rpc.h")
 
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
