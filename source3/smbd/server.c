@@ -157,7 +157,6 @@ static void msg_inject_fault(struct messaging_context *msg,
 	int sig;
 
 	if (data->length != sizeof(sig)) {
-		
 		DEBUG(0, ("Process %s sent bogus signal injection request\n",
 			  procid_str_static(&src)));
 		return;

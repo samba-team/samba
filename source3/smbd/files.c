@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    Files[] structure handling
    Copyright (C) Andrew Tridgell 1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -142,7 +142,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 void file_close_conn(connection_struct *conn)
 {
 	files_struct *fsp, *next;
-	
+
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn) {
@@ -158,7 +158,7 @@ void file_close_conn(connection_struct *conn)
 void file_close_pid(uint16 smbpid, int vuid)
 {
 	files_struct *fsp, *next;
-	
+
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if ((fsp->file_pid == smbpid) && (fsp->vuid == vuid)) {
@@ -196,7 +196,7 @@ open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	SMB_ASSERT(real_max_open_files > 100);
 
 	file_bmap = bitmap_allocate(real_max_open_files);
-	
+
 	if (!file_bmap) {
 		exit_server("out of memory in file_init");
 	}
