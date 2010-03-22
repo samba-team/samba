@@ -2567,6 +2567,24 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	return NT_STATUS_OK;
 }
 
+static bool rap_get_servername(struct torture_context *tctx,
+			       char **servername)
+{
+	struct smbcli_state *cli;
+
+	torture_assert(tctx,
+		torture_open_connection_share(tctx, &cli, tctx, torture_setting_string(tctx, "host", NULL),
+					      "IPC$", tctx->ev),
+		"IPC$ connection failed");
+
+	torture_assert_ntstatus_ok(tctx,
+		get_servername(tctx, cli->tree, lp_iconv_convenience(tctx->lp_ctx), servername),
+		"get_servername failed");
+
+	talloc_free(cli);
+
+	return true;
+}
 
 static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 			      struct smbcli_tree *tree,
