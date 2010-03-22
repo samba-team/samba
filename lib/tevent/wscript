@@ -18,8 +18,8 @@ def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBTALLOC_DIR)
 
-    conf.CHECK_HEADERS('sys/epoll.h')
-    conf.CHECK_FUNCS('epoll_create')
+    if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
+        conf.DEFINE('HAVE_EPOLL', 1)
 
     conf.SAMBA_CONFIG_H()
 

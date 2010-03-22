@@ -9,7 +9,7 @@ conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
 		      sys/utsname.h time.h timezone.h ttyname.h netinet/in.h
 		      netinet/in6.h netinet6/in6.h libintl.h''')
 
-conf.CHECK_HEADERS('curses.h term.h termcap.h', add_headers=False)
+conf.CHECK_HEADERS('curses.h term.h termcap.h')
 
 conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
                     putenv rcmd readv sendmsg setitimer strlwr strncasecmp
@@ -23,27 +23,25 @@ conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent get
                     'socket nsl',
                     checklibc=True)
 
-conf.CHECK_FUNCS('iruserok', checklink=True)
+conf.CHECK_FUNCS('iruserok')
 
 conf.CHECK_FUNCS('bswap16')
 conf.CHECK_FUNCS('bswap32')
 
-conf.CHECK_TYPE('struct winsize', define='HAVE_STRUCT_WINSIZE')
+conf.CHECK_TYPE('struct winsize', define='HAVE_STRUCT_WINSIZE', headers='sys/termios.h sys/ioctl.h')
 conf.DEFINE('HAVE_KRB_STRUCT_WINSIZE', 1)
 conf.DEFINE('VOID_RETSIGTYPE', 1)
 
-conf.CHECK_VARIABLE('h_errno')
+conf.CHECK_VARIABLE('h_errno', headers='netdb.h')
 
 # strangely enough, we need it with another define too
-conf.CHECK_DECLS('h_errno')
+conf.CHECK_DECLS('h_errno', headers='netdb.h')
 
-conf.CHECK_DECLS('_res')
-
-conf.CHECK_HEADERS('arpa/nameser.h dns.h')
-conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv', checklibc=True)
-conf.CHECK_VARIABLE('_res')
-conf.CHECK_HEADERS('pty.h util.h libutil.h')
-conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True)
+conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv',
+                    checklibc=True, headers='netinet/in.h arpa/nameser.h resolv.h dns.h')
+conf.CHECK_VARIABLE('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
+conf.CHECK_DECLS('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
+conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h libutil.h')
 
 conf.DEFINE('HAVE_KRB5',1)
 conf.DEFINE('HAVE_GSSAPI',1)

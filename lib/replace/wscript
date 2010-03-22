@@ -101,19 +101,20 @@ def configure(conf):
     conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
-    conf.CHECK_HEADERS('unistd.h sys/types.h stdlib.h stdio.h stddef.h')
-    conf.CHECK_HEADERS('ctype.h locale.h acl/libacl.h compat.h')
+    conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h', add_headers=True)
+    conf.CHECK_HEADERS('strings.h inttypes.h stdint.h unistd.h minix/config.h', add_headers=True)
+    conf.CHECK_HEADERS('ctype.h standards.h stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
+    conf.CHECK_HEADERS('crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
-    conf.CHECK_HEADERS('libaio.h locale.h ndir.h net/if.h pwd.h readline.h')
-    conf.CHECK_HEADERS('readline/history.h readline/readline.h shadow.h sys/acl.h')
+    conf.CHECK_HEADERS('libaio.h locale.h ndir.h net/if.h pwd.h')
+    conf.CHECK_HEADERS('shadow.h sys/acl.h')
     conf.CHECK_HEADERS('sys/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
     conf.CHECK_HEADERS('sys/fcntl.h sys/filio.h sys/filsys.h sys/fs/s5param.h sys/fs/vx/quota.h')
     conf.CHECK_HEADERS('sys/id.h sys/ioctl.h sys/ipc.h sys/mman.h sys/mode.h sys/ndir.h sys/priv.h')
     conf.CHECK_HEADERS('sys/resource.h sys/security.h sys/shm.h sys/statfs.h sys/statvfs.h sys/termio.h')
     conf.CHECK_HEADERS('sys/vfs.h sys/xattr.h termio.h termios.h')
     conf.CHECK_HEADERS('sys/wait.h sys/stat.h malloc.h grp.h')
-    conf.CHECK_HEADERS('crypt.h dlfcn.h dl.h standards.h stdbool.h stdint.h')
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
     conf.CHECK_HEADERS('sys/time.h time.h stdarg.h vararg.h sys/mount.h mntent.h')
     conf.CHECK_HEADERS('stropts.h unix.h string.h strings.h sys/param.h limits.h')
@@ -170,7 +171,8 @@ def configure(conf):
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
     conf.CHECK_TYPE_IN('struct sockaddr', 'sys/socket.h')
-    conf.CHECK_CODE('struct sockaddr_in6 x', define='HAVE_STRUCT_SOCKADDR_IN6')
+    conf.CHECK_CODE('struct sockaddr_in6 x', define='HAVE_STRUCT_SOCKADDR_IN6',
+                    headers='sys/socket.h netdb.h netinet/in.h')
     conf.CHECK_TYPE_IN('struct sockaddr_storage', 'sys/socket.h')
     conf.CHECK_TYPE_IN('sa_family_t', 'sys/socket.h')
 
@@ -178,7 +180,8 @@ def configure(conf):
 
     conf.CHECK_FUNCS_IN('''inet_ntoa inet_aton inet_ntop inet_pton connect gethostbyname
                            getaddrinfo getnameinfo freeaddrinfo gai_strerror''',
-                        'socket nsl', checklibc=True)
+                        'socket nsl', checklibc=True,
+                        headers='sys/socket.h netinet/in.h arpa/inet.h')
 
     conf.CHECK_CODE('''
                        struct sockaddr_storage sa_store;
@@ -192,7 +195,8 @@ def configure(conf):
                        }
                        freeaddrinfo(ai);
                        ''',
-                    define='HAVE_IPV6')
+                    define='HAVE_IPV6',
+                    headers='sys/socket.h netdb.h netinet/in.h')
 
     # check if signal() takes a void function
     if conf.CHECK_CODE('return *(signal (0, 0)) (0) == 1', define='RETSIGTYPE_INT', msg='Checking return type of signal handlers'):
@@ -200,16 +204,19 @@ def configure(conf):
     else:
         conf.DEFINE('RETSIGTYPE', 'void')
 
+    # these may be builtins, so we need the link=False strategy
+    conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
+
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
     conf.CHECK_FUNCS('lstat getpgrp utime utimes seteuid setresuid setegid')
-    conf.CHECK_FUNCS('setresgid chroot bzero strerror vsyslog setlinebuf mktime')
+    conf.CHECK_FUNCS('setresgid chroot strerror vsyslog setlinebuf mktime')
     conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4 strlcpy strlcat')
-    conf.CHECK_FUNCS('initgroups memmove strdup pread pwrite strndup strcasestr')
+    conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
     conf.CHECK_FUNCS('strtok_r mkdtemp dup2 dprintf vdprintf isatty chown lchown')
     conf.CHECK_FUNCS('link readlink symlink realpath fdatasync snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
-    conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memmem printf memset memcpy')
+    conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq')
     conf.CHECK_FUNCS('if_nametoindex socketpair')
     conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
@@ -217,21 +224,25 @@ def configure(conf):
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
-    conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True)
+    conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True, headers='dlfcn.h dl.h')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
-    conf.CHECK_FUNCS_IN('res_search', 'resolv', checklibc=True)
+    conf.CHECK_FUNCS_IN('res_search', 'resolv', checklibc=True,
+                        headers='netinet/in.h arpa/nameser.h resolv.h')
     conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True)
-    conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, header='pthread.h')
+    conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, headers='pthread.h')
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
 
-    conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True)
+    conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True,
+                        headers='readline.h readline/readline.h readline/history.h')
 
     conf.CHECK_VARIABLE('__FUNCTION__', define='HAVE_FUNCTION_MACRO')
 
     conf.CHECK_DECLS('snprintf vsnprintf asprintf vasprintf')
 
-    conf.CHECK_DECLS('dirfd environ errno getgrent_r getpwent_r', reverse=True)
+    conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
+    conf.CHECK_DECLS('errno', headers='errno.h', reverse=True)
+    conf.CHECK_DECLS('environ getgrent_r getpwent_r', reverse=True, headers='pwd.h grp.h')
     conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
 
     conf.CHECK_SIZEOF('char int "long long" long off_t short size_t ssize_t')
@@ -257,7 +268,7 @@ def configure(conf):
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
 
-    if Options.options.pedantic:
+    if Options.options.pedantic and conf.CHECK_CFLAGS('-W'):
 	conf.ADD_CFLAGS('-W')
 
     conf.SAMBA_CONFIG_H()
@@ -296,16 +307,18 @@ def configure(conf):
                     ''',
                     define='HAVE_IMMEDIATE_STRUCTURES')
 
-    conf.CHECK_CODE('mkdir("foo",0777)', define='HAVE_MKDIR_MODE')
+    conf.CHECK_CODE('mkdir("foo",0777)', define='HAVE_MKDIR_MODE', headers='sys/stat.h')
 
-    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec', define='HAVE_STAT_TV_NSEC')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec', define='HAVE_STAT_TV_NSEC',
+                                headers='sys/stat.h')
     # we need the st_rdev test under two names
-    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_STRUCT_STAT_ST_RDEV')
-    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_ST_RDEV')
-    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', 'ss_family')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_STRUCT_STAT_ST_RDEV',
+                                headers='sys/stat.h')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_ST_RDEV', headers='sys/stat.h')
+    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', 'ss_family', headers='sys/socket.h netinet/in.h')
 
     conf.CHECK_CODE('struct sockaddr_un sunaddr; sunaddr.sun_family = AF_UNIX;',
-                    define='HAVE_UNIXSOCKET')
+                    define='HAVE_UNIXSOCKET', headers='sys/socket.h sys/un.h')
 
 
     conf.CHECK_CODE('''
@@ -322,7 +335,8 @@ def configure(conf):
                     execute=True,
                     mandatory=True) # lets see if we get a mandatory failure for this one
 
-    if conf.CHECK_CFLAGS('-fvisibility=hidden', 'VISIBILITY_CFLAGS'):
+    if conf.CHECK_CFLAGS('-fvisibility=hidden'):
+        conf.env.VISIBILITY_CFLAGS = '-fvisibility=hidden'
         conf.CHECK_CODE('''void vis_foo1(void) {}
                            __attribute__((visibility("default"))) void vis_foo2(void) {}''',
                         cflags=conf.env.VISIBILITY_CFLAGS,

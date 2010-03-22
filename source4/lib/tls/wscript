@@ -15,15 +15,12 @@ def configure(conf):
     if 'HAVE_GNUTLS' in conf.env and not Options.options.disable_gnutls:
         conf.DEFINE('ENABLE_GNUTLS', 1)
 
-    conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls', header='gnutls/gnutls.h')
-
-    conf.CHECK_HEADERS('gnutls/gnutls.h')
+    conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls', headers='gnutls/gnutls.h')
 
     # check for gnutls_datum types
-    conf.CHECK_TYPES('gnutls_datum gnutls_datum_t')
+    conf.CHECK_TYPES('gnutls_datum gnutls_datum_t', headers='gnutls/gnutls.h')
 
-    conf.CHECK_HEADERS('gcrypt.h')
-    conf.CHECK_FUNCS_IN('gcry_control', 'gcrypt')
+    conf.CHECK_FUNCS_IN('gcry_control', 'gcrypt', headers='gcrypt.h')
     conf.CHECK_FUNCS_IN('gpg_err_code_from_errno', 'gpg-error')
 
 

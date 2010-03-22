@@ -8,8 +8,7 @@ def set_options(opt):
 def configure(conf):
     conf.CHECK_HEADERS('float.h')
     if not Options.options.INCLUDED_POPT:
-        if (conf.CHECK_HEADERS('popt.h') and
-            conf.CHECK_FUNCS_IN('poptGetContext', 'popt')):
+        if conf.CHECK_FUNCS_IN('poptGetContext', 'popt', headers='popt.h'):
             conf.DEFINE('HAVE_SYSTEM_POPT', 1)
 
 def build(bld):
