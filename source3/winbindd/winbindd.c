@@ -668,7 +668,8 @@ static void wb_request_done(struct tevent_req *req)
 		req, struct winbindd_cli_state);
 	NTSTATUS status;
 
-	state->response = talloc_zero(state, struct winbindd_response);
+	state->response = talloc_zero(state->mem_ctx,
+				      struct winbindd_response);
 	if (state->response == NULL) {
 		DEBUG(0, ("wb_request_done[%d:%s]: talloc_zero failed - removing client\n",
 			  (int)state->pid, state->cmd_name));
