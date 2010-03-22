@@ -5792,7 +5792,6 @@ static void init_copymap(struct service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static void free_param_opts(struct param_opt_struct **popts);
-static char * canonicalize_servicename(const char *name);
 static void show_parameter(int parmIndex);
 static bool is_synonym_of(int parm1, int parm2, bool *inverse);
 
@@ -6117,6 +6116,7 @@ static void free_service_byindex(int idx)
 
 	if (ServicePtrs[idx]->szService) {
 		char *canon_name = canonicalize_servicename(
+			talloc_tos(),
 			ServicePtrs[idx]->szService );
 
 		dbwrap_delete_bystring(ServiceHash, canon_name );
@@ -6208,7 +6208,7 @@ static int add_a_service(const struct service *pservice, const char *name)
   Convert a string to uppercase and remove whitespaces.
 ***************************************************************************/
 
-static char *canonicalize_servicename(const char *src)
+char *canonicalize_servicename(TALLOC_CTX *ctx, const char *src)
 {
 	char *result;
 
@@ -6217,7 +6217,7 @@ static char *canonicalize_servicename(const char *src)
 		return NULL;
 	}
 
-	result = talloc_strdup(talloc_tos(), src);
+	result = talloc_strdup(ctx, src);
 	SMB_ASSERT(result != NULL);
 
 	strlower_m(result);
@@ -6244,7 +6244,7 @@ static bool hash_a_service(const char *name, int idx)
 	DEBUG(10,("hash_a_service: hashing index %d for service name %s\n",
 		idx, name));
 
-	canon_name = canonicalize_servicename( name );
+	canon_name = canonicalize_servicename(talloc_tos(), name );
 
 	dbwrap_store_bystring(ServiceHash, canon_name,
 			      make_tdb_data((uint8 *)&idx, sizeof(idx)),
@@ -6751,7 +6751,7 @@ static int getservicebyname(const char *pszServiceName, struct service *pservice
 		return -1;
 	}
 
-	canon_name = canonicalize_servicename(pszServiceName);
+	canon_name = canonicalize_servicename(talloc_tos(), pszServiceName);
 
 	data = dbwrap_fetch_bystring(ServiceHash, canon_name, canon_name);
 
@@ -8732,7 +8732,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	{
-		char *canon_name = canonicalize_servicename(service_name);
+		char *canon_name = canonicalize_servicename(talloc_tos(), service_name);
 		TDB_DATA data = dbwrap_fetch_bystring(
 			ServiceHash, canon_name, canon_name);
 

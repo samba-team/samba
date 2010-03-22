@@ -4275,6 +4275,7 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def);
 int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def);
+char *canonicalize_servicename(TALLOC_CTX *ctx, const char *src);
 bool lp_add_home(const char *pszHomename, int iDefaultService,
 		 const char *user, const char *pszHomedir);
 int lp_add_service(const char *pszService, int iDefaultService);
