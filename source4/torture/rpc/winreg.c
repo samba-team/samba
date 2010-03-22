@@ -2032,8 +2032,9 @@ static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 	};
 	int t, l;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping extended SetValue test against Samba 3");
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "skipping extended SetValue test against Samba");
 	}
 
 	torture_comment(tctx, "Testing SetValue (extended formats)\n");
