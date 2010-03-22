@@ -3056,6 +3056,14 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
+	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
+		DEBUG(2,("SMBreadbraw rejected with NOT_SUPPORTED because of"
+			 "'fork echo handler = yes'\n"));
+		reply_readbraw_error();
+		END_PROFILE(SMBreadbraw);
+		return;
+	}
+
 	/*
 	 * Special check if an oplock break has been issued
 	 * and the readraw request croses on the wire, we must
@@ -3763,6 +3771,15 @@ void reply_writebraw(struct smb_request *req)
 
 	if (req->wct < 12) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		error_to_writebrawerr(req);
+		END_PROFILE(SMBwritebraw);
+		return;
+	}
+
+	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
+		DEBUG(2,("SMBwritebraw rejected with NOT_SUPPORTED because of"
+			 "'fork echo handler = yes'\n"));
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
 		return;
