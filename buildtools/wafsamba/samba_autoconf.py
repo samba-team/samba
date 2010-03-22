@@ -427,6 +427,7 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
     return conf.CHECK_CODE('%s; void *_x = (void *)%s' % (prototype, function),
                            define=define,
                            local_include=False,
+                           headers=headers,
                            msg='Checking C prototype for %s' % function)
 
 
