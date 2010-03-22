@@ -128,14 +128,21 @@ def SAMBA_LIBRARY(bld, libname, source,
         install_path = '${LIBDIR}'
     install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
 
-    if install:
+    # we don't need the double libraries if rpath is off
+    if (bld.env.RPATH_ON_INSTALL == False and
+        bld.env.RPATH_ON_BUILD == False):
+        install_target = libname
+    else:
+        install_target = libname + '.inst'
+
+    if install and install_target != libname:
         # create a separate install library, which may have
         # different rpath settings
-        SET_TARGET_TYPE(bld, libname + '.inst', 'LIBRARY')
+        SET_TARGET_TYPE(bld, install_target, 'LIBRARY')
         t = bld(
             features        = 'cc cshlib',
             source          = [],
-            target          = libname + '.inst',
+            target          = install_target,
             samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
             depends_on      = depends_on,
             samba_deps      = deps,
@@ -147,6 +154,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             )
         t.env['RPATH'] = install_rpath(bld)
 
+    if install:
         if vnum:
             vnum_base = vnum.split('.')[0]
             install_name = 'lib%s.so.%s' % (libname, vnum)
@@ -159,7 +167,6 @@ def SAMBA_LIBRARY(bld, libname, source,
                        'lib%s.inst.so' % libname)
         if install_link:
             bld.symlink_as(os.path.join(install_path, install_link), install_name)
-
 
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source)
@@ -235,14 +242,21 @@ def SAMBA_BINARY(bld, binname, source,
         install_path = '${BINDIR}'
     install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
 
-    if install:
+    # we don't need the double binaries if rpath is off
+    if (bld.env.RPATH_ON_INSTALL == False and
+        bld.env.RPATH_ON_BUILD == False):
+        install_target = binname
+    else:
+        install_target = binname + '.inst'
+
+    if install and install_target != binname:
         # we create a separate 'install' binary, which
         # will have different rpath settings
-        SET_TARGET_TYPE(bld, binname + '.inst', 'BINARY')
+        SET_TARGET_TYPE(bld, install_target, 'BINARY')
         t = bld(
             features       = features,
             source         = [],
-            target         = binname + '.inst',
+            target         = install_target,
             samba_cflags   = CURRENT_CFLAGS(bld, binname, cflags),
             samba_deps     = deps,
             samba_includes = includes,
@@ -254,8 +268,9 @@ def SAMBA_BINARY(bld, binname, source,
             )
         t.env['RPATH'] = install_rpath(bld)
 
+    if install:
         bld.install_as(os.path.join(install_path, binname),
-                       binname + '.inst',
+                       install_target,
                        chmod=0755)
 
     # setup the subsystem_name as an alias for the real
