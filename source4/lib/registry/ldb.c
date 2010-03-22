@@ -61,22 +61,10 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	case REG_SZ:
 	case REG_EXPAND_SZ:
 		if (val != NULL) {
-			if (val->data[0] != '\0') {
-				/* The data should be provided as UTF16 string */
-				convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
-						      val->data, val->length,
-						      (void **)&data->data, &data->length, false);
-			} else {
-				/* Provide a possibility to store also UTF8
-				 * REG_SZ/REG_EXPAND_SZ values. This is done
-				 * by adding a '\0' in front of the data */
-				data->data = talloc_size(mem_ctx, val->length - 1);
-				if (data->data != NULL) {
-					memcpy(data->data, val->data + 1,
-					       val->length - 1);
-				}
-				data->length = val->length - 1;
-			}
+			/* The data should be provided as UTF16 string */
+			convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
+					      val->data, val->length,
+					      (void **)&data->data, &data->length, false);
 		} else {
 			data->data = NULL;
 			data->length = 0;
@@ -86,25 +74,13 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 	case REG_DWORD:
 	case REG_DWORD_BIG_ENDIAN:
 		if (val != NULL) {
-			if (val->data[0] != '\0') {
-				/* The data is a plain DWORD */
-				uint32_t tmp = strtoul((char *)val->data, NULL, 0);
-				data->data = talloc_size(mem_ctx, sizeof(uint32_t));
-				if (data->data != NULL) {
-					SIVAL(data->data, 0, tmp);
-				}
-				data->length = sizeof(uint32_t);
-			} else {
-				/* Provide a possibility to store also UTF8
-				 * REG_DWORD values. This is done by adding a
-				 * '\0' in front of the data */
-				data->data = talloc_size(mem_ctx, val->length - 1);
-				if (data->data != NULL) {
-					memcpy(data->data, val->data + 1,
-					       val->length - 1);
-				}
-				data->length = val->length - 1;
+			/* The data is a plain DWORD */
+			uint32_t tmp = strtoul((char *)val->data, NULL, 0);
+			data->data = talloc_size(mem_ctx, sizeof(uint32_t));
+			if (data->data != NULL) {
+				SIVAL(data->data, 0, tmp);
 			}
+			data->length = sizeof(uint32_t);
 		} else {
 			data->data = NULL;
 			data->length = 0;
@@ -113,25 +89,13 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 
 	case REG_QWORD:
 		if (val != NULL) {
-			if (val->data[0] != '\0') {
-				/* The data is a plain QWORD */
-				uint64_t tmp = strtoull((char *)val->data, NULL, 0);
-				data->data = talloc_size(mem_ctx, sizeof(uint64_t));
-				if (data->data != NULL) {
-					SBVAL(data->data, 0, tmp);
-				}
-				data->length = sizeof(uint64_t);
-			} else {
-				/* Provide a possibility to store also UTF8
-				 * REG_QWORD values. This is done by adding a
-				 * '\0' in front of the data */
-				data->data = talloc_size(mem_ctx, val->length - 1);
-				if (data->data != NULL) {
-					memcpy(data->data, val->data + 1,
-					       val->length - 1);
-				}
-				data->length = val->length - 1;
+			/* The data is a plain QWORD */
+			uint64_t tmp = strtoull((char *)val->data, NULL, 0);
+			data->data = talloc_size(mem_ctx, sizeof(uint64_t));
+			if (data->data != NULL) {
+				SBVAL(data->data, 0, tmp);
 			}
+			data->length = sizeof(uint64_t);
 		} else {
 			data->data = NULL;
 			data->length = 0;
@@ -193,8 +157,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 
 			/* Only when the "data.length" is dividable by two try
 			 * the charset conversion, otherwise stick with the
-			 * default of the "ret2" variable set to "false" (which
-			 * means binary storage and no conversion) */
+			 * default of the "ret2" variable set to "false". */
 			if (data.length % 2 == 0) {
 				/* The data is provided as UTF16 string */
 				ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
@@ -202,21 +165,9 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 							     (void **)&val->data, &val->length,
 							     false);
 			}
-			if (!ret2) {
-				/* Provide a possibility to store also binary
-				 * UTF8 REG_SZ/REG_EXPAND_SZ values as fallback
-				 * mechanism. This is done by adding a '\0' in
-				 * front of the data */
-				val->data = talloc_size(msg, data.length + 1);
-				if (val->data == NULL) {
-					talloc_free(msg);
-					return NULL;
-				}
-				val->data[0] = '\0';
-				memcpy(val->data + 1, data.data, data.length);
-				val->length = data.length + 1;
+			if (ret2) {
+				ret = ldb_msg_add_value(msg, "data", val, NULL);
 			}
-			ret = ldb_msg_add_value(msg, "data", val, NULL);
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 		}
@@ -235,27 +186,6 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					return NULL;
 				}
 				ret = ldb_msg_add_string(msg, "data", conv_str);
-			} else {
-				/* Provide a possibility to store also UTF8
-				 * REG_DWORD values. This is done by adding a
-				 * '\0' in front of the data */
-				struct ldb_val *val;
-
-				val = talloc_zero(msg, struct ldb_val);
-				if (val == NULL) {
-					talloc_free(msg);
-					return NULL;
-				}
-
-				val->data = talloc_size(msg, data.length + 1);
-				if (val->data == NULL) {
-					talloc_free(msg);
-					return NULL;
-				}
-				val->data[0] = '\0';
-				memcpy(val->data + 1, data.data, data.length);
-				val->length = data.length + 1;
-				ret = ldb_msg_add_value(msg, "data", val, NULL);
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
@@ -273,27 +203,6 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					return NULL;
 				}
 				ret = ldb_msg_add_string(msg, "data", conv_str);
-			} else {
-				/* Provide a possibility to store also UTF8
-				 * REG_QWORD values. This is done by adding a
-				 * '\0' in front of the data */
-				struct ldb_val *val;
-
-				val = talloc_zero(msg, struct ldb_val);
-				if (val == NULL) {
-					talloc_free(msg);
-					return NULL;
-				}
-
-				val->data = talloc_size(msg, data.length + 1);
-				if (val->data == NULL) {
-					talloc_free(msg);
-					return NULL;
-				}
-				val->data[0] = '\0';
-				memcpy(val->data + 1, data.data, data.length);
-				val->length = data.length + 1;
-				ret = ldb_msg_add_value(msg, "data", val, NULL);
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
