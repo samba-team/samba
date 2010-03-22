@@ -74,7 +74,7 @@ def configure(conf):
     conf.env.DISABLE_SHARED = Options.options.disable_shared
 
     # see if we can compile and run a simple C program
-    conf.CHECK_CODE('#include "test/simple.c"',
+    conf.CHECK_CODE('#include "test/simple.c"\n',
                     addmain=False,
                     define='HAVE_SIMPLE_C_PROG',
                     mandatory=True,
