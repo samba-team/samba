@@ -82,7 +82,7 @@ def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
 
 
 @conf
-def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
+def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None, msg=None):
     '''check for a variable declaration (or define)'''
     hdrs=''
     if headers is not None:
@@ -93,6 +93,13 @@ def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
         hdrs += '#include <%s>\n' % h
     if define is None:
         define = 'HAVE_%s' % v.upper()
+
+    if CONFIG_SET(conf, define):
+        return True
+
+    if msg is None:
+        msg="Checking for variable %s" % v
+
     if conf.check(fragment=
                   '''
                   %s
@@ -104,7 +111,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None):
                   }
                   ''' % (hdrs, v, v),
                   execute=0,
-                  msg="Checking for variable %s" % v):
+                  msg=msg):
         conf.DEFINE(define, 1)
         return True
     elif always:
@@ -124,7 +131,10 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
             define='HAVE_DECL_%s' % v.upper()
         else:
             define='HAVE_%s_DECL' % v.upper()
-        if not CHECK_VARIABLE(conf, v, define=define, headers=headers):
+        if not CHECK_VARIABLE(conf, v,
+                              define=define,
+                              headers=headers,
+                              msg='Checking for declaration of %s' % v):
             ret = False
     return ret
 
@@ -190,7 +200,7 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
 def CHECK_CODE(conf, code, define,
                always=False, execute=False, addmain=True, mandatory=False,
                headers=None, msg=None, cflags='', includes='# .',
-               local_include=True):
+               local_include=True, lib='c'):
     '''check if some code compiles and/or runs'''
     hdrs=''
     if headers is not None:
@@ -227,6 +237,7 @@ def CHECK_CODE(conf, code, define,
                   mandatory = mandatory,
                   ccflags=TO_LIST(cflags),
                   includes=includes,
+                  lib=lib, # how do I make this conditional, so I can avoid the -lc?
                   msg=msg):
         conf.DEFINE(define, 1)
         return True
@@ -350,6 +361,18 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
             ret = False
 
     return ret
+
+
+@conf
+def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
+    '''verify that a C prototype matches the one on the current system'''
+    if not conf.CHECK_DECLS(function, headers=headers):
+        return False
+    return conf.CHECK_CODE('%s;\n%s()' % (prototype, function),
+                           define=define,
+                           msg='Checking C prototype for %s' % function)
+
+
 
 
 #################################################
