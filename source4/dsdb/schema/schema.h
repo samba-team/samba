@@ -167,6 +167,7 @@ struct dsdb_class {
 
 
 struct dsdb_schema {
+	struct ldb_dn *base_dn;
 
 	struct dsdb_schema_prefixmap *prefixmap;
 
@@ -179,6 +180,9 @@ struct dsdb_schema {
 	 * Schema-Partition head object.
 	 */
 	const char *schema_info;
+
+	/* We can also tell the schema version from the USN on the partition */
+	uint64_t loaded_usn;
 
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
@@ -204,6 +208,11 @@ struct dsdb_schema {
 	} fsmo;
 
 	struct smb_iconv_convenience *iconv_convenience;
+
+	/* Was this schema loaded from ldb (if so, then we will reload it when we detect a change in ldb) */
+	struct ldb_module *loaded_from_module;
+	struct dsdb_schema *(*refresh_fn)(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema);
+	bool refresh_in_progress;
 };
 
 enum dsdb_attr_list_query {

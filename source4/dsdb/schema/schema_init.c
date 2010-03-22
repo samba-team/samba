@@ -725,6 +725,8 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	schema->base_dn = talloc_steal(schema, schema_res->msgs[0]->dn);
+
 	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
 	if (!prefix_val) {
 		*error_string = talloc_asprintf(mem_ctx, 
