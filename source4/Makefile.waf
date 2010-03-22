@@ -45,3 +45,9 @@ torture: all
 # this should do an install as well, once install is finished
 installcheck: test
 
+etags:
+	$(WAF) etags
+
+ctags:
+	$(WAF) ctags
+
