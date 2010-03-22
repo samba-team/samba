@@ -357,6 +357,11 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 		return ret;
 	}
 
+	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	/* Set the new attributes based on the new schema */
 	ret = dsdb_schema_set_attributes(ldb, schema, true);
 	if (ret != LDB_SUCCESS) {
@@ -385,17 +390,6 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 		return ret;
 	}
 
-	/* Set the new attributes based on the new schema */
-	ret = dsdb_schema_set_attributes(ldb, schema, write_attributes);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* Keep a reference to this schema, just incase the original copy is replaced */
-	if (talloc_reference(ldb, schema) == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	return LDB_SUCCESS;
 }
 
@@ -404,11 +398,27 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
  */
 int dsdb_set_global_schema(struct ldb_context *ldb)
 {
+	int ret;
+	void *use_global_schema = (void *)1;
 	if (!global_schema) {
 		return LDB_SUCCESS;
 	}
 
-	return dsdb_reference_schema(ldb, global_schema, false /* Don't write attributes, it's expensive */);
+	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", use_global_schema);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Set the new attributes based on the new schema */
+	ret = dsdb_schema_set_attributes(ldb, global_schema, false /* Don't write attributes, it's expensive */);
+	if (ret == LDB_SUCCESS) {
+		/* Keep a reference to this schema, just incase the original copy is replaced */
+		if (talloc_reference(ldb, global_schema) == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	return ret;
 }
 
 /**
@@ -420,23 +430,41 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *reference_ctx)
 {
 	const void *p;
-	struct dsdb_schema *schema;
+	struct dsdb_schema *schema_out;
+	struct dsdb_schema *schema_in;
+	bool use_global_schema;
 
 	/* see if we have a cached copy */
-	p = ldb_get_opaque(ldb, "dsdb_schema");
-	if (!p) {
-		return NULL;
+	use_global_schema = (ldb_get_opaque(ldb, "dsdb_use_global_schema") != NULL);
+	if (use_global_schema) {
+		schema_in = global_schema;
+	} else {
+		p = ldb_get_opaque(ldb, "dsdb_schema");
+
+		schema_in = talloc_get_type(p, struct dsdb_schema);
+		if (!schema_in) {
+			return NULL;
+		}
 	}
 
-	schema = talloc_get_type(p, struct dsdb_schema);
-	if (!schema) {
-		return NULL;
+	if (schema_in->refresh_fn && !schema_in->refresh_in_progress) {
+		schema_in->refresh_in_progress = true;
+		/* This may change schema, if it needs to reload it from disk */
+		schema_out = schema_in->refresh_fn(schema_in->loaded_from_module,
+						   schema_in,
+						   use_global_schema);
+		schema_in->refresh_in_progress = false;
+		if (schema_out != schema_in) {
+			talloc_unlink(schema_in, ldb);
+		}
+	} else {
+		schema_out = schema_in;
 	}
 
 	if (!reference_ctx) {
-		return schema;
+		return schema_out;
 	} else {
-		return talloc_reference(reference_ctx, schema);
+		return talloc_reference(reference_ctx, schema_out);
 	}
 }
 
@@ -444,9 +472,8 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
  * Make the schema found on this ldb the 'global' schema
  */
 
-void dsdb_make_schema_global(struct ldb_context *ldb)
+void dsdb_make_schema_global(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
-	struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	if (!schema) {
 		return;
 	}
@@ -455,11 +482,14 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 		talloc_unlink(talloc_autofree_context(), global_schema);
 	}
 
-	/* we want the schema to be around permanently */
-	talloc_reparent(talloc_parent(schema), talloc_autofree_context(), schema);
+	/* Wipe any reference to the exact schema - we will set 'use the global schema' below */
+	ldb_set_opaque(ldb, "dsdb_schema", NULL);
 
+	/* we want the schema to be around permanently */
+	talloc_reparent(ldb, talloc_autofree_context(), schema);
 	global_schema = schema;
 
+	/* This calls the talloc_reference() of the global schema back onto the ldb */
 	dsdb_set_global_schema(ldb);
 }
 

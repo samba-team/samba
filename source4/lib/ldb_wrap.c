@@ -250,7 +250,10 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	/* make the resulting schema global */
 	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
-		dsdb_make_schema_global(ldb);
+		struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
+		if (schema) {
+			dsdb_make_schema_global(ldb, schema);
+		}
 	}
 
 	DEBUG(3,("ldb_wrap open of %s\n", url));

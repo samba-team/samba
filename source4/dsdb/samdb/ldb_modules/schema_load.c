@@ -5,8 +5,8 @@
    checkings, it also loads the dsdb_schema.
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
-    
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009-2010
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -31,19 +31,58 @@
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+struct schema_load_private_data {
+	bool in_transaction;
+};
+
+static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_dn, uint64_t current_usn,
+			       struct dsdb_schema **schema);
+
+struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema)
+{
+	uint64_t current_usn;
+	int ret;
+	struct schema_load_private_data *private_data = talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+	if (!private_data) {
+		/* We can't refresh until the init function has run */
+		return schema;
+	}
+
+	/* We don't allow a schema reload during a transaction - nobody else can modify our schema behind our backs */
+	if (private_data->in_transaction) {
+		return schema;
+	}
+
+	ret = dsdb_module_load_partition_usn(module, schema->base_dn, &current_usn, NULL);
+	if (ret == LDB_SUCCESS && current_usn != schema->loaded_usn) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		struct dsdb_schema *new_schema;
+
+		ret = dsdb_schema_from_db(module, schema->base_dn, current_usn, &new_schema);
+		if (ret != LDB_SUCCESS) {
+			return schema;
+		}
+
+		if (is_global_schema) {
+			dsdb_make_schema_global(ldb, new_schema);
+		}
+		return new_schema;
+	}
+	return schema;
+}
+
+
 /*
   Given an LDB module (pointing at the schema DB), and the DN, set the populated schema
 */
 
-static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *module,
-				      struct smb_iconv_convenience *iconv_convenience, 
-				      struct ldb_dn *schema_dn,
-				      struct dsdb_schema **schema) 
+static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_dn, uint64_t current_usn,
+			       struct dsdb_schema **schema)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx;
 	char *error_string;
 	int ret;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_result *schema_res;
 	struct ldb_result *a_res;
 	struct ldb_result *c_res;
@@ -55,7 +94,7 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 	};
 	unsigned flags;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_new(module);
 	if (!tmp_ctx) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -71,6 +110,9 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
 				    schema_dn, schema_attrs, 0);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_reset_err_string(ldb);
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "schema_load_init: no schema head present: (skip schema loading)\n");
 		goto failed;
 	} else if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
@@ -112,11 +154,31 @@ static int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_module *mo
 					   schema_res, a_res, c_res, schema, &error_string);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
-						    "dsdb_schema load failed: %s",
-						    error_string);
+				       "dsdb_schema load failed: %s",
+				       error_string);
 		goto failed;
 	}
-	talloc_steal(mem_ctx, *schema);
+
+	(*schema)->refresh_fn = dsdb_schema_refresh;
+	(*schema)->loaded_from_module = module;
+	(*schema)->loaded_usn = current_usn;
+
+	/* dsdb_set_schema() steal schema into the ldb_context */
+	ret = dsdb_set_schema(ldb, (*schema));
+
+	if (ret != LDB_SUCCESS) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "schema_load_init: dsdb_set_schema() failed: %d:%s: %s",
+			      ret, ldb_strerror(ret), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* Ensure this module won't go away before the callback */
+	if (talloc_reference(*schema, ldb) == NULL) {
+		ldb_oom(ldb);
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
 
 failed:
 	if (flags & LDB_FLG_ENABLE_TRACING) {
@@ -130,18 +192,30 @@ failed:
 
 static int schema_load_init(struct ldb_module *module)
 {
-	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
-	struct ldb_dn *schema_dn;
+	struct schema_load_private_data *private_data;
 	struct dsdb_schema *schema;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
+	uint64_t current_usn;
+	struct ldb_dn *schema_dn;
+
+	private_data = talloc_zero(module, struct schema_load_private_data);
+	if (private_data == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ldb_module_set_private(module, private_data);
 
 	ret = ldb_next_init(module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	ldb = ldb_module_get_ctx(module);
+	if (dsdb_get_schema(ldb, NULL)) {
+		return LDB_SUCCESS;
+	}
+
 	schema_dn = samdb_schema_dn(ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(ldb);
@@ -150,54 +224,51 @@ static int schema_load_init(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	if (dsdb_get_schema(ldb, NULL)) {
-		return LDB_SUCCESS;
-	}
-
-	mem_ctx = talloc_new(module);
-	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = dsdb_schema_from_schema_dn(mem_ctx, module,
-					 lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					 schema_dn, &schema);
-
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_load_init: no schema head present: (skip schema loading)\n");
-		talloc_free(mem_ctx);
-		return LDB_SUCCESS;
-	}
-
+	ret = dsdb_module_load_partition_usn(module, schema_dn, &current_usn, NULL);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
+		ldb_asprintf_errstring(ldb,
+				       "dsdb_load_partition_usn failed: %s",
+				       ldb_errstring(ldb));
 		return ret;
 	}
 
-	/* dsdb_set_schema() steal schema into the ldb_context */
-	ret = dsdb_set_schema(ldb, schema);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "schema_load_init: dsdb_set_schema() failed: %d:%s: %s",
-			      ret, ldb_strerror(ret), ldb_errstring(ldb));
-		talloc_free(mem_ctx);
-		return ret;
-	}
+	return dsdb_schema_from_db(module, schema_dn, current_usn, &schema);
+}
 
-	talloc_free(mem_ctx);
-	return LDB_SUCCESS;
+static int schema_load_start_transaction(struct ldb_module *module)
+{
+	struct schema_load_private_data *private_data =
+		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+
+	private_data->in_transaction = true;
+
+	return ldb_next_start_trans(module);
+}
+
+static int schema_load_del_transaction(struct ldb_module *module)
+{
+	struct schema_load_private_data *private_data =
+		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+
+	private_data->in_transaction = false;
+
+	return ldb_next_del_trans(module);
+}
+
+static int schema_load_prepare_commit(struct ldb_module *module)
+{
+	int ret;
+	struct schema_load_private_data *private_data =
+		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+
+	ret = ldb_next_prepare_commit(module);
+	private_data->in_transaction = false;
+	return ret;
 }
 
 static int schema_load_extended(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	struct ldb_dn *schema_dn;
-	struct dsdb_schema *schema;
-	int ret;
-	TALLOC_CTX *mem_ctx;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -205,60 +276,7 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 		return ldb_next_request(module, req);
 	}
 
-	/*
-	 * TODO:
-	 *
-	 * We should check "schemaInfo" if we really need to reload the schema!
-	 *
-	 * We should also for a new schema version at the start of each
-	 * "write" (add/modify/rename/delete) operation. And have tests
-	 * to prove that windows does the same.
-	 */
-
-	schema_dn = samdb_schema_dn(ldb);
-	if (!schema_dn) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_load_extended: no schema dn present: (skip schema loading)\n");
-		return ldb_next_request(module, req);
-	}
-	
-	mem_ctx = talloc_new(module);
-	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	ret = dsdb_schema_from_schema_dn(mem_ctx, module,
-					 lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-					 schema_dn, &schema);
-
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_load_extended: no schema head present: (skip schema loading)\n");
-		talloc_free(mem_ctx);
-		return ldb_next_request(module, req);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ldb_next_request(module, req);
-	}
-
-	/* Replace the old schema*/
-	ret = dsdb_set_schema(ldb, schema);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "schema_load_extended: dsdb_set_schema() failed: %d:%s: %s",
-			      ret, ldb_strerror(ret), ldb_errstring(ldb));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	dsdb_make_schema_global(ldb);
-
-	talloc_free(mem_ctx);
+	/* This is a no-op.  We reload as soon as we can */
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
 
@@ -267,4 +285,7 @@ _PUBLIC_ const struct ldb_module_ops ldb_schema_load_module_ops = {
 	.name		= "schema_load",
 	.init_context	= schema_load_init,
 	.extended	= schema_load_extended,
+	.start_transaction = schema_load_start_transaction,
+	.prepare_commit    = schema_load_prepare_commit,
+	.del_transaction   = schema_load_del_transaction,
 };
