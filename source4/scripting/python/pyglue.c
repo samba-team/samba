@@ -442,21 +442,6 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_dsdb_make_schema_global(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	dsdb_make_schema_global(ldb);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 {
 	PyObject *py_dn, *py_ldb, *result;
@@ -695,8 +680,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
 		NULL },
 	{ "dsdb_convert_schema_to_openldap", (PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS,
-		NULL },
-	{ "dsdb_make_schema_global", (PyCFunction)py_dsdb_make_schema_global, METH_VARARGS,
 		NULL },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
 		"set debug level" },
