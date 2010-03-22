@@ -61,10 +61,12 @@ static WERROR reg_dotreg_diff_set_value(void *_data, const char *path,
 					uint32_t value_type, DATA_BLOB value)
 {
 	struct dotreg_data *data = (struct dotreg_data *)_data;
-
+	char *data_string = reg_val_data_string(NULL, data->iconv_convenience,
+						value_type, value);
+	W_ERROR_HAVE_NO_MEMORY(data_string);
 	fdprintf(data->fd, "\"%s\"=%s:%s\n",
-			value_name, str_regtype(value_type),
-			reg_val_data_string(NULL, data->iconv_convenience, value_type, value));
+		 value_name, str_regtype(value_type), data_string);
+	talloc_free(data_string);
 
 	return WERR_OK;
 }
