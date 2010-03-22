@@ -155,16 +155,11 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 				return NULL;
 			}
 
-			/* Only when the "data.length" is dividable by two try
-			 * the charset conversion, otherwise stick with the
-			 * default of the "ret2" variable set to "false". */
-			if (data.length % 2 == 0) {
-				/* The data is provided as UTF16 string */
-				ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
-							     (void *)data.data, data.length,
-							     (void **)&val->data, &val->length,
-							     false);
-			}
+			/* The data is provided as UTF16 string */
+			ret2 = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
+						     (void *)data.data, data.length,
+						     (void **)&val->data, &val->length,
+						     false);
 			if (ret2) {
 				ret = ldb_msg_add_value(msg, "data", val, NULL);
 			}
