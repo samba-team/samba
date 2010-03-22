@@ -20,7 +20,7 @@ from samba_deps import *
 
 LIB_PATH="shared"
 
-
+os.putenv('PYTHONUNBUFFERED', '1')
 
 #################################################################
 # create the samba build environment
