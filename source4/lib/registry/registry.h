@@ -460,7 +460,8 @@ bool reg_string_to_val(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_
 		       const char *data_str, uint32_t *type, DATA_BLOB *data);
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle,
 			const char *name, struct registry_key **result);
-WERROR reg_key_del_abs(struct registry_context *ctx, const char *path);
+WERROR reg_key_del_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
+		       const char *path);
 WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 		       const char *path, uint32_t access_mask,
 		       struct security_descriptor *sec_desc,
