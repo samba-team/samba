@@ -391,6 +391,7 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 
 	/* Recursively create the path */
 	buf = talloc_strdup(ctx, key_name);
+	W_ERROR_HAVE_NO_MEMORY(buf);
 	buf_ptr = buf;
 
 	while (*buf_ptr++ != '\0' ) {
