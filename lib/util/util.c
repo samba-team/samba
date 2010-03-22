@@ -25,6 +25,8 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#include "system/shmem.h"
+
 #undef malloc
 #undef strcasecmp
 #undef strncasecmp
@@ -862,4 +864,30 @@ bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
 	return next_token_internal_talloc(ctx, ptr, pp_buff, sep, false);
 }
 
+/* Map a shared memory buffer of at least nelem counters. */
+void *allocate_anonymous_shared(size_t bufsz)
+{
+	void *buf;
+	size_t pagesz = getpagesize();
+
+	if (bufsz % pagesz) {
+		bufsz = (bufsz + pagesz) % pagesz; /* round up to pagesz */
+	}
+
+#ifdef MAP_ANON
+	/* BSD */
+	buf = mmap(NULL, bufsz, PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED,
+			-1 /* fd */, 0 /* offset */);
+#else
+	buf = mmap(NULL, bufsz, PROT_READ|PROT_WRITE, MAP_FILE|MAP_SHARED,
+			open("/dev/zero", O_RDWR), 0 /* offset */);
+#endif
+
+	if (buf == MAP_FAILED) {
+		return NULL;
+	}
+
+	return buf;
+
+}
 
