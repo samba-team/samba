@@ -434,7 +434,7 @@ static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 	/* therefore all children recursively and the "WERR_BADFILE" result is */
 	/* expected. */
 
-	reg_key_del_abs(ctx, key_name);
+	reg_key_del_abs(ctx, ctx, key_name);
 
 	return WERR_OK;
 }

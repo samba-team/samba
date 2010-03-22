@@ -61,7 +61,7 @@ static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &path))
 		return NULL;
 
-	result = reg_key_del_abs(ctx, path);
+	result = reg_key_del_abs(NULL, ctx, path);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	Py_RETURN_NONE;
