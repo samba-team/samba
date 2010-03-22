@@ -58,13 +58,14 @@ struct shell_command
 static const struct shell_command commands[] =
 {
     {
-	shell_help, "help", NULL,
-	"print this help message"
+	shell_auth, "auth",
+	"[[username | principal | domain | realm | password] STRING]",
+	"set authentication parameters"
     },
 
     {
-	shell_quit, "quit", NULL,
-	"exit smbtorture"
+	shell_help, "help", NULL,
+	"print this help message"
     },
 
     {
@@ -73,8 +74,8 @@ static const struct shell_command commands[] =
     },
 
     {
-	shell_set, "set", "[NAME VALUE]",
-	"print or set test configuration parameters"
+	shell_quit, "quit", NULL,
+	"exit smbtorture"
     },
 
     {
@@ -83,10 +84,10 @@ static const struct shell_command commands[] =
     },
 
     {
-	shell_auth, "auth",
-	"[[username | principal | domain | realm | password] STRING]",
-	"set authentication parameters"
+	shell_set, "set", "[NAME VALUE]",
+	"print or set test configuration parameters"
     }
+
 };
 
 void torture_shell(struct torture_context *tctx)
@@ -147,10 +148,19 @@ static void shell_help(const struct shell_command * command,
 {
     int i;
 
-    fprintf(stdout, "Available commands:\n");
-    for (i = 0; i < ARRAY_SIZE(commands); i++) {
-	    fprintf(stdout, "\t%s - %s\n",
-		    commands[i].name, commands[i].help);
+    if (argc == 1) {
+	    for (i = 0; i < ARRAY_SIZE(commands); i++) {
+		    if (match_command(argv[0], &commands[i])) {
+			    shell_usage(&commands[i]);
+			    return;
+		    }
+	    }
+    } else {
+	    fprintf(stdout, "Available commands:\n");
+	    for (i = 0; i < ARRAY_SIZE(commands); i++) {
+		    fprintf(stdout, "\t%s - %s\n",
+			    commands[i].name, commands[i].help);
+	    }
     }
 }
 
