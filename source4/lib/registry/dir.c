@@ -40,9 +40,11 @@ static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx,
 	int ret;
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
+	W_ERROR_HAVE_NO_MEMORY(path);
 	ret = mkdir(path, 0700);
 	if (ret == 0) {
 		struct dir_key *key = talloc(mem_ctx, struct dir_key);
+		W_ERROR_HAVE_NO_MEMORY(key);
 		key->key.ops = &reg_backend_dir;
 		key->path = talloc_steal(key, path);
 		*result = (struct hive_key *)key;
@@ -76,8 +78,7 @@ static WERROR reg_dir_delete_recursive(const char *name)
 			continue;
 
 		path = talloc_asprintf(name, "%s/%s", name, e->d_name);
-		if (!path)
-			return WERR_NOMEM;
+		W_ERROR_HAVE_NO_MEMORY(path);
 
 		stat(path, &stbuf);
 
@@ -112,8 +113,11 @@ static WERROR reg_dir_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *k,
 			      const char *name)
 {
 	struct dir_key *dk = talloc_get_type(k, struct dir_key);
-	char *child = talloc_asprintf(NULL, "%s/%s", dk->path, name);
+	char *child;
 	WERROR ret;
+
+	child = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
+	W_ERROR_HAVE_NO_MEMORY(child);
 
 	ret = reg_dir_delete_recursive(child);
 
@@ -137,11 +141,13 @@ static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx,
 	}
 
 	fullpath = talloc_asprintf(mem_ctx, "%s/%s", p->path, name);
+	W_ERROR_HAVE_NO_MEMORY(fullpath);
 
 	d = opendir(fullpath);
 	if (d == NULL) {
 		DEBUG(3,("Unable to open '%s': %s\n", fullpath,
 			strerror(errno)));
+		talloc_free(fullpath);
 		return WERR_BADFILE;
 	}
 	closedir(d);
@@ -174,27 +180,30 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx,
 			char *thispath;
 
 			/* Check if file is a directory */
-			asprintf(&thispath, "%s/%s", dk->path, e->d_name);
+			thispath = talloc_asprintf(mem_ctx, "%s/%s", dk->path,
+						   e->d_name);
+			W_ERROR_HAVE_NO_MEMORY(thispath);
 			stat(thispath, &stbuf);
 
 			if (!S_ISDIR(stbuf.st_mode)) {
-				SAFE_FREE(thispath);
+				talloc_free(thispath);
 				continue;
 			}
 
 			if (i == idx) {
 				struct stat st;
 				*name = talloc_strdup(mem_ctx, e->d_name);
+				W_ERROR_HAVE_NO_MEMORY(*name);
 				*classname = NULL;
 				stat(thispath, &st);
 				unix_to_nt_time(last_mod_time, st.st_mtime);
-				SAFE_FREE(thispath);
+				talloc_free(thispath);
 				closedir(d);
 				return WERR_OK;
 			}
 			i++;
 
-			SAFE_FREE(thispath);
+			talloc_free(thispath);
 		}
 	}
 
@@ -212,6 +221,7 @@ WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
 		return WERR_INVALID_PARAM;
 
 	dk = talloc(parent_ctx, struct dir_key);
+	W_ERROR_HAVE_NO_MEMORY(dk);
 	dk->key.ops = &reg_backend_dir;
 	dk->path = talloc_strdup(dk, location);
 	*key = (struct hive_key *)dk;
@@ -271,10 +281,12 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 		if(!ISDOT(e->d_name) && !ISDOTDOT(e->d_name)) {
 			char *path = talloc_asprintf(ctx, "%s/%s",
 						     dk->path, e->d_name);
+			W_ERROR_HAVE_NO_MEMORY(path);
 
 			if (stat(path, &st) < 0) {
 				DEBUG(0, ("Error statting %s: %s\n", path,
 					strerror(errno)));
+				talloc_free(path);
 				continue;
 			}
 
@@ -309,10 +321,19 @@ static WERROR reg_dir_set_value(struct hive_key *key, const char *name,
 				uint32_t type, const DATA_BLOB data)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
-	char *path = talloc_asprintf(dk, "%s/%s", dk->path, name);
+	char *path;
+	bool ret;
 
-	if (!file_save(path, data.data, data.length))
+	path = talloc_asprintf(dk, "%s/%s", dk->path, name);
+	W_ERROR_HAVE_NO_MEMORY(path);
+
+	ret = file_save(path, data.data, data.length);
+
+	talloc_free(path);
+
+	if (!ret) {
 		return WERR_GENERAL_FAILURE;
+	}
 
 	/* FIXME: Type */
 
@@ -324,12 +345,17 @@ static WERROR reg_dir_get_value(TALLOC_CTX *mem_ctx,
 				uint32_t *type, DATA_BLOB *data)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
-	char *path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
+	char *path;
 	size_t size;
 	char *contents;
 
+	path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
+	W_ERROR_HAVE_NO_MEMORY(path);
+
 	contents = file_load(path, &size, 0, mem_ctx);
+
 	talloc_free(path);
+
 	if (contents == NULL)
 		return WERR_BADFILE;
 
@@ -365,8 +391,10 @@ static WERROR reg_dir_enum_value(TALLOC_CTX *mem_ctx,
 			continue;
 
 		if (i == idx) {
-			if (name != NULL)
+			if (name != NULL) {
 				*name = talloc_strdup(mem_ctx, e->d_name);
+				W_ERROR_HAVE_NO_MEMORY(*name);
+			}
 			W_ERROR_NOT_OK_RETURN(reg_dir_get_value(mem_ctx, key,
 								*name, type,
 								data));
@@ -385,14 +413,21 @@ static WERROR reg_dir_del_value(TALLOC_CTX *mem_ctx,
 				struct hive_key *key, const char *name)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
-	char *path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
-	if (unlink(path) < 0) {
-		talloc_free(path);
+	char *path;
+	int ret;
+
+	path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
+	W_ERROR_HAVE_NO_MEMORY(path);
+
+	ret = unlink(path);
+
+	talloc_free(path);
+
+	if (ret < 0) {
 		if (errno == ENOENT)
 			return WERR_BADFILE;
 		return WERR_GENERAL_FAILURE;
 	}
-	talloc_free(path);
 
 	return WERR_OK;
 }
