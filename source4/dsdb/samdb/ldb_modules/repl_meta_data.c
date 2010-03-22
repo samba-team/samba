@@ -454,15 +454,14 @@ static int replmd_notify_store(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	while (replmd_private->ncs) {
 		int ret;
 		struct nc_entry *modified_partition = replmd_private->ncs;
 
-		ret = dsdb_save_partition_usn(ldb, modified_partition->dn,
-						modified_partition->mod_usn,
-						modified_partition->mod_usn_urgent);
+		ret = dsdb_module_save_partition_usn(module, modified_partition->dn,
+						     modified_partition->mod_usn,
+						     modified_partition->mod_usn_urgent);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to save partition uSN for %s\n",
 				 ldb_dn_get_linearized(modified_partition->dn)));
