@@ -237,7 +237,8 @@ convert:
 				reason="Illegal multibyte sequence";
 				break;
 		}
-		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+		DEBUG(0,("Conversion error: %s - ",reason));
+		dump_data(0, (const uint8_t *) inbuf, i_len);
 		talloc_free(ob);
 		return (size_t)-1;
 	}
