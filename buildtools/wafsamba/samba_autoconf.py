@@ -5,6 +5,8 @@ import string
 from Configure import conf
 from samba_utils import *
 
+missing_headers = set()
+
 ####################################################
 # some autoconf like helpers, to make the transition
 # to waf a bit easier for those used to autoconf
@@ -18,105 +20,130 @@ def DEFINE(conf, d, v, add_to_cflags=False):
     if add_to_cflags:
         conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
+def hlist_to_string(conf, headers=None):
+    '''convert a headers list to a set of #include lines'''
+    hdrs=''
+    hlist = conf.env.hlist
+    if headers:
+        hlist = hlist[:]
+        hlist.extend(TO_LIST(headers))
+    for h in hlist:
+        hdrs += '#include <%s>\n' % h
+    return hdrs
 
-def CHECK_HEADER(conf, h, add_headers=True):
+
+@feature('nolink')
+def nolink(self):
+    '''using the nolink type in conf.check() allows us to avoid
+       the link stage of a test, thus speeding it up for tests
+       that where linking is not needed'''
+    pass
+
+
+def CHECK_HEADER(conf, h, add_headers=False):
     '''check for a header'''
-    d = 'HAVE_%s' % string.replace(h.upper(), '/', '_')
+    if h in missing_headers:
+        return False
+    d = h.upper().replace('/', '_')
+    d = d.replace('.', '_')
+    d = 'HAVE_%s' % d
     if CONFIG_SET(conf, d):
         if add_headers:
-            conf.env.hlist.append(h)
-            conf.env.hlist = unique_list(conf.env.hlist)
+            if not h in conf.env.hlist:
+                conf.env.hlist.append(h)
         return True
-    ret = conf.check(header_name=h)
-    if ret and add_headers:
+
+    hdrs = hlist_to_string(conf, headers=h)
+    ret = conf.check(fragment='%s\nint main(void) { return 0; }' % hdrs,
+                     type='nolink',
+                     execute=0,
+                     msg="Checking for header %s" % h)
+    if not ret:
+        missing_headers.add(h)
+        return False
+
+    conf.DEFINE(d, 1)
+    if add_headers and not h in conf.env.hlist:
         conf.env.hlist.append(h)
-        conf.env.hlist = unique_list(conf.env.hlist)
     return ret
 
 
 @conf
-def CHECK_HEADERS(conf, list, add_headers=True):
+def CHECK_HEADERS(conf, headers, add_headers=False):
     '''check for a list of headers'''
     ret = True
-    for hdr in TO_LIST(list):
+    for hdr in TO_LIST(headers):
         if not CHECK_HEADER(conf, hdr, add_headers):
             ret = False
     return ret
 
-
-@conf
-def CHECK_TYPES(conf, list):
-    '''check for a list of types'''
-    ret = True
-    lst = TO_LIST(list)
-    for t in TO_LIST(list):
-        if not conf.check(type_name=t, header_name=conf.env.hlist):
-            ret = False
-    return ret
-
-
-@conf
-def CHECK_TYPE_IN(conf, t, hdr, define=None):
-    '''check for a type in a specific header'''
-    if conf.check(header_name=hdr):
-        if define is None:
-            ret = conf.check(type_name=t, header_name=hdr)
-        else:
-            ret = conf.check(type_name=t, header_name=hdr, define_name=define)
-        return ret
-    return False
+def header_list(conf, headers=None):
+    '''form a list of headers which exist, as a string'''
+    hlist=[]
+    if headers is not None:
+        for h in TO_LIST(headers):
+            if CHECK_HEADER(conf, h, add_headers=False):
+                hlist.append(h)
+    return hlist_to_string(conf, headers=hlist)
 
 
 @conf
 def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
-    '''check for a type with an alternate'''
-    if headers is None:
-        headers = conf.env.hlist
-    if define is not None:
-        ret = conf.check(type_name=t, header_name=headers, define_name=define)
-    else:
-        ret = conf.check(type_name=t, header_name=headers)
-    if not ret and alternate is not None:
+    '''check for a single type'''
+    if define is None:
+        define = 'HAVE_' + t.upper().replace(' ', '_')
+    ret = CHECK_CODE(conf, '%s _x' % t,
+                     define,
+                     execute=False,
+                     headers=headers,
+                     msg='Checking for %s' % t,
+                     local_include=False,
+                     link=False)
+    if not ret and alternate:
         conf.DEFINE(t, alternate)
     return ret
 
 
 @conf
+def CHECK_TYPES(conf, list, headers=None, define=None, alternate=None):
+    '''check for a list of types'''
+    ret = True
+    for t in TO_LIST(list):
+        if not CHECK_TYPE(conf, t, headers=headers, define=define, alternate=alternate):
+            ret = False
+    return ret
+
+
+@conf
+def CHECK_TYPE_IN(conf, t, headers=None, alternate=None, define=None):
+    '''check for a single type with a header'''
+    return CHECK_TYPE(conf, t, headers=headers, alternate=alternate, define=define)
+
+
+@conf
 def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None, msg=None):
     '''check for a variable declaration (or define)'''
-    hdrs=''
-    if headers is not None:
-        hlist = TO_LIST(headers)
-    else:
-        hlist = conf.env.hlist
-    for h in hlist:
-        hdrs += '#include <%s>\n' % h
     if define is None:
         define = 'HAVE_%s' % v.upper()
-
-    if CONFIG_SET(conf, define):
-        return True
 
     if msg is None:
         msg="Checking for variable %s" % v
 
-    if conf.check(fragment=
-                  '''
-                  %s
-                  int main(void) {
-                    #ifndef %s
-                    void *_x; _x=(void *)&%s;
-                    #endif
-                    return 0;
-                  }
-                  ''' % (hdrs, v, v),
-                  execute=0,
-                  msg=msg):
-        conf.DEFINE(define, 1)
-        return True
-    elif always:
-        conf.DEFINE(define, 0)
-        return False
+    return CHECK_CODE(conf,
+                      '''
+                      #ifndef %s
+                      void *_x; _x=(void *)&%s;
+                      #endif
+                      return 0
+                      ''' % (v, v),
+                      execute=False,
+                      link=False,
+                      msg=msg,
+                      local_include=False,
+                      headers=headers,
+                      define=define,
+                      always=always)
+
 
 @conf
 def CHECK_DECLS(conf, vars, reverse=False, headers=None):
@@ -139,29 +166,50 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
     return ret
 
 
-def CHECK_FUNC(conf, f, checklink=False, header=''):
+def CHECK_FUNC(conf, f, link=None, lib='c', headers=None):
     '''check for a function'''
-    hlist = conf.env.hlist[:]
-    for h in TO_LIST(header):
-        if CHECK_HEADER(conf, h, add_headers=False):
-            hlist.append(h)
     define='HAVE_%s' % f.upper()
-    if CONFIG_SET(conf, define):
-        return True
-    if checklink:
-        return CHECK_CODE(conf, 'void *x = (void *)%s' % f,
-                          execute=False, define=define,
-                          msg='Checking for %s' % f)
 
-    return conf.check_cc(function_name=f, header_name=hlist)
+    # there are two ways to find a function. The first is
+    # to see if there is a declaration of the function, the
+    # 2nd is to try and link a program that calls the function
+    # unfortunately both strategies have problems.
+    # the 'check the declaration' approach works fine as long
+    # as the function has a declaraion in a header. If there is
+    # no header declaration we can get a false negative.
+    # The link method works fine as long as the compiler
+    # doesn't have a builtin for the function, which could cause
+    # a false negative due to mismatched parameters
+    # so to be sure, we need to try both
+    ret = False
+
+    if link is None or link == True:
+        ret = CHECK_CODE(conf,
+                         'int main(void) { extern void %s(void); %s(); return 0; }' % (f, f),
+                         execute=False,
+                         link=True,
+                         addmain=False,
+                         add_headers=False,
+                         define=define,
+                         local_include=False,
+                         lib=lib,
+                         headers=headers,
+                         msg='Checking for %s' % f)
+
+    if not ret and (link is None or link == False):
+        ret = CHECK_VARIABLE(conf, f,
+                             define=define,
+                             headers=headers,
+                             msg='Checking for declaration of %s' % f)
+    return ret
 
 
 @conf
-def CHECK_FUNCS(conf, list, checklink=False, header=''):
+def CHECK_FUNCS(conf, list, link=None, lib='c', headers=None):
     '''check for a list of functions'''
     ret = True
     for f in TO_LIST(list):
-        if not CHECK_FUNC(conf, f, checklink=checklink, header=header):
+        if not CHECK_FUNC(conf, f, link=link, lib=lib, headers=headers):
             ret = False
     return ret
 
@@ -169,47 +217,44 @@ def CHECK_FUNCS(conf, list, checklink=False, header=''):
 @conf
 def CHECK_SIZEOF(conf, vars, headers=None, define=None):
     '''check the size of a type'''
-    hdrs=''
-    if headers is not None:
-        hlist = TO_LIST(headers)
-    else:
-        hlist = conf.env.hlist
-    for h in hlist:
-        hdrs += '#include <%s>\n' % h
+    ret = True
     for v in TO_LIST(vars):
-        if define is None:
-            define_name = 'SIZEOF_%s' % string.replace(v.upper(), ' ', '_')
-        else:
-            define_name = define
-        conf.check(fragment=
-                   '''
-                  %s
-                  int main(void) {
-                    printf("%%u\\n", (unsigned)sizeof(%s));
-                    return 0;
-                  }
-                  ''' % (hdrs, v),
-                   execute=1,
-                   define_ret=True,
-                   define_name=define_name,
-                   quote=False,
-                   msg="Checking size of %s" % v)
+        v_define = define
+        if v_define is None:
+            v_define = 'SIZEOF_%s' % v.upper().replace(' ', '_')
+        if not CHECK_CODE(conf,
+                          'printf("%%u\\n", (unsigned)sizeof(%s))' % v,
+                          define=v_define,
+                          execute=True,
+                          define_ret=True,
+                          quote=False,
+                          headers=headers,
+                          local_include=False,
+                          msg="Checking size of %s" % v):
+            ret = False
+    return ret
+
 
 
 @conf
 def CHECK_CODE(conf, code, define,
-               always=False, execute=False, addmain=True, mandatory=False,
+               always=False, execute=False, addmain=True,
+               add_headers=True, mandatory=False,
                headers=None, msg=None, cflags='', includes='# .',
-               local_include=True, lib='c'):
+               local_include=True, lib='c', link=True,
+               define_ret=False, quote=False):
     '''check if some code compiles and/or runs'''
-    hdrs=''
-    if headers is not None:
-        hlist = TO_LIST(headers)
-    else:
-        hlist = conf.env.hlist
-    for h in hlist:
-        hdrs += '#include <%s>\n' % h
 
+    if CONFIG_SET(conf, define):
+        return True
+
+    if headers is not None:
+        CHECK_HEADERS(conf, headers=headers)
+
+    if add_headers:
+        hdrs = header_list(conf, headers=headers)
+    else:
+        hdrs = ''
     if execute:
         execute = 1
     else:
@@ -231,6 +276,11 @@ def CHECK_CODE(conf, code, define,
     if local_include:
         cflags += ' -I%s' % conf.curdir
 
+    if not link:
+        type='nolink'
+    else:
+        type='cprogram'
+
     if conf.check(fragment=fragment,
                   execute=execute,
                   define_name = define,
@@ -238,8 +288,12 @@ def CHECK_CODE(conf, code, define,
                   ccflags=TO_LIST(cflags),
                   includes=includes,
                   lib=lib, # how do I make this conditional, so I can avoid the -lc?
-                  msg=msg):
-        conf.DEFINE(define, 1)
+                  type=type,
+                  msg=msg,
+                  quote=quote,
+                  define_ret=define_ret):
+        if not define_ret:
+            conf.DEFINE(define, 1)
         return True
     if always:
         conf.DEFINE(define, 0)
@@ -251,43 +305,27 @@ def CHECK_CODE(conf, code, define,
 def CHECK_STRUCTURE_MEMBER(conf, structname, member,
                            always=False, define=None, headers=None):
     '''check for a structure member'''
-    hdrs=''
-    if headers is not None:
-        hlist = TO_LIST(headers)
-    else:
-        hlist = conf.env.hlist
-    for h in hlist:
-        hdrs += '#include <%s>\n' % h
     if define is None:
         define = 'HAVE_%s' % member.upper()
-    if conf.check(fragment=
-                  '''
-                  %s
-                  int main(void) {
-                    %s s;
-                    void *_x; _x=(void *)&s.%s;
-                    return 0;
-                  }
-                  ''' % (hdrs, structname, member),
-                  execute=0,
-                  msg="Checking for member %s in %s" % (member, structname)):
-        conf.DEFINE(define, 1)
-        return True
-    elif always:
-        conf.DEFINE(define, 0)
-        return False
+    return CHECK_CODE(conf,
+                      '%s s; void *_x; _x=(void *)&s.%s' % (structname, member),
+                      define,
+                      execute=False,
+                      link=False,
+                      always=always,
+                      headers=headers,
+                      local_include=False,
+                      msg="Checking for member %s in %s" % (member, structname))
 
 
 @conf
-def CHECK_CFLAGS(conf, cflags, variable):
-    '''check if the given cflags are accepted by the compiler'''
-    if conf.check(fragment='int main(void) { return 0; }',
-                  execute=0,
-                  ccflags=cflags,
-                  msg="Checking compiler accepts %s" % cflags):
-        conf.env[variable] = cflags
-        return True
-    return False
+def CHECK_CFLAGS(conf, cflags):
+    '''check if the given cflags are accepted by the compiler
+    '''
+    return conf.check(fragment='int main(void) { return 0; }',
+                      execute=0,
+                      ccflags=cflags,
+                      msg="Checking compiler accepts %s" % cflags)
 
 
 #################################################
@@ -296,6 +334,29 @@ def CHECK_CFLAGS(conf, cflags, variable):
 def CONFIG_SET(conf, option):
     return (option in conf.env) and (conf.env[option] != ())
 Build.BuildContext.CONFIG_SET = CONFIG_SET
+
+
+@conf
+def CHECK_LIB(conf, libs):
+    '''check if a set of libraries exist'''
+    liblist   = TO_LIST(library)
+
+    ret = True
+    for lib in liblist[:]:
+        if GET_TARGET_TYPE(conf, lib):
+            continue
+        if not conf.check(lib=lib, uselib_store=lib):
+            conf.ASSERT(not mandatory,
+                        "Mandatory library '%s' not found for functions '%s'" % (lib, list))
+            # if it isn't a mandatory library, then remove it from dependency lists
+            SET_TARGET_TYPE(conf, lib, 'EMPTY')
+            ret = False
+        else:
+            conf.define('HAVE_LIB%s' % lib.upper().replace('-','_'), 1)
+            conf.env['LIB_' + lib.upper()] = lib
+            LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
+
+    return ret
 
 
 ###########################################################
@@ -311,14 +372,9 @@ Build.BuildContext.CONFIG_SET = CONFIG_SET
 #
 # optionally check for the functions first in libc
 @conf
-def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header=''):
+def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, headers=None, link=None):
     remaining = TO_LIST(list)
     liblist   = TO_LIST(library)
-
-    hlist = conf.env.hlist[:]
-    for h in TO_LIST(header):
-        if CHECK_HEADER(conf, h, add_headers=False):
-            hlist.append(h)
 
     # check if some already found
     for f in remaining[:]:
@@ -328,7 +384,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
     # see if the functions are in libc
     if checklibc:
         for f in remaining[:]:
-            if CHECK_FUNC(conf, f, checklink=True, header=header):
+            if CHECK_FUNC(conf, f, link=True, headers=headers):
                 remaining.remove(f)
 
     if remaining == []:
@@ -348,7 +404,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
             SET_TARGET_TYPE(conf, lib, 'EMPTY')
             ret = False
         else:
-            conf.define('HAVE_LIB%s' % string.replace(lib.upper(),'-','_'), 1)
+            conf.define('HAVE_LIB%s' % lib.upper().replace('-','_'), 1)
             conf.env['LIB_' + lib.upper()] = lib
             LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
 
@@ -357,7 +413,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
 
     ret = True
     for f in remaining:
-        if not conf.check_cc(function_name=f, lib=liblist, header_name=hlist):
+        if not CHECK_FUNC(conf, f, lib=' '.join(liblist), headers=headers, link=link):
             ret = False
 
     return ret
@@ -370,6 +426,7 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
         return False
     return conf.CHECK_CODE('%s; void *_x = (void *)%s' % (prototype, function),
                            define=define,
+                           local_include=False,
                            msg='Checking C prototype for %s' % function)
 
 
@@ -439,6 +496,7 @@ def CHECK_RPATH_SUPPORT(conf):
     return conf.CHECK_CODE('int x',
                            define='HAVE_RPATH_SUPPORT',
                            execute=True,
+                           local_include=False,
                            msg='Checking for rpath support',
                            cflags='-Wl,-rpath=.')
 
