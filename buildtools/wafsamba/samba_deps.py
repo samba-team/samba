@@ -525,7 +525,6 @@ def break_dependency_loops(bld, tgt_list):
     for t in tgt_list:
         indirect_objects(bld, t, set(), loops)
         indirect_libs(bld, t, set(), loops)
-        indirect_syslibs(bld, t, set(), loops)
         includes_objects(bld, t, set(), inc_loops)
 
     # break the loops
@@ -570,6 +569,9 @@ def break_dependency_loops(bld, tgt_list):
                     debug('deps: setting %s %s to %s', t.sname, attr, objs)
                 setattr(t, attr, objs)
 
+    # now calculate the indirect syslibs, which can change from the loop expansion
+    for t in tgt_list:
+        indirect_syslibs(bld, t, set(), loops)
 
 
 def calculate_final_deps(bld, tgt_list, loops):
