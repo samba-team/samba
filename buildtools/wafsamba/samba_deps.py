@@ -107,7 +107,7 @@ def build_includes(self):
 
     bld = self.bld
 
-    inc_deps = self.includes_objects
+    inc_deps = includes_objects(bld, self, set(), {})
 
     includes = []
 
@@ -312,6 +312,7 @@ def add_samba_attributes(bld, tgt_list):
         t.samba_includes_extended = TO_LIST(t.samba_includes)[:]
         t.ccflags = getattr(t, 'samba_cflags', '')
 
+
 def build_direct_deps(bld, tgt_list):
     '''build the direct_objects and direct_libs sets for each target'''
 
@@ -326,6 +327,7 @@ def build_direct_deps(bld, tgt_list):
         deps.extend(global_deps)
         for d in deps:
             d = EXPAND_ALIAS(bld, d)
+            if d == t.sname: continue
             if not d in targets:
                 print "Unknown dependency %s in %s" % (d, t.sname)
                 raise
@@ -344,8 +346,17 @@ def build_direct_deps(bld, tgt_list):
     debug('deps: built direct dependencies')
 
 
+def dependency_loop(loops, t, target):
+    '''add a dependency loop to the loops dictionary'''
+    if t.sname == target:
+        return
+    if not target in loops:
+        loops[target] = set()
+    if not t.sname in loops[target]:
+        loops[target].add(t.sname)
 
-def indirect_libs(bld, t, chain):
+
+def indirect_libs(bld, t, chain, loops):
     '''recursively calculate the indirect library dependencies for a target
 
     An indirect library is a library that results from a dependency on
@@ -359,20 +370,22 @@ def indirect_libs(bld, t, chain):
     ret = set()
     for obj in t.direct_objects:
         if obj in chain:
+            dependency_loop(loops, t, obj)
             continue
         chain.add(obj)
         t2 = bld.name_to_obj(obj, bld.env)
-        r2 = indirect_libs(bld, t2, chain)
+        r2 = indirect_libs(bld, t2, chain, loops)
         chain.remove(obj)
         ret = ret.union(t2.direct_libs)
         ret = ret.union(r2)
 
-    for obj in t.indirect_objects:
+    for obj in indirect_objects(bld, t, set(), loops):
         if obj in chain:
+            dependency_loop(loops, t, obj)
             continue
         chain.add(obj)
         t2 = bld.name_to_obj(obj, bld.env)
-        r2 = indirect_libs(bld, t2, chain)
+        r2 = indirect_libs(bld, t2, chain, loops)
         chain.remove(obj)
         ret = ret.union(t2.direct_libs)
         ret = ret.union(r2)
@@ -382,7 +395,7 @@ def indirect_libs(bld, t, chain):
     return ret
 
 
-def indirect_syslibs(bld, t, chain):
+def indirect_syslibs(bld, t, chain, loops):
     '''recursively calculate the indirect system library dependencies for a target
 
     An indirect syslib results from a subsystem dependency
@@ -391,13 +404,15 @@ def indirect_syslibs(bld, t, chain):
     ret = getattr(t, 'indirect_syslibs', None)
     if ret is not None:
         return ret
+
     ret = set()
     for obj in t.direct_objects:
         if obj in chain:
+            dependency_loop(loops, t, obj)
             continue
         chain.add(obj)
         t2 = bld.name_to_obj(obj, bld.env)
-        r2 = indirect_syslibs(bld, t2, chain)
+        r2 = indirect_syslibs(bld, t2, chain, loops)
         chain.remove(obj)
         ret = ret.union(t2.direct_syslibs)
         ret = ret.union(r2)
@@ -406,7 +421,7 @@ def indirect_syslibs(bld, t, chain):
     return ret
 
 
-def indirect_objects(bld, t, chain):
+def indirect_objects(bld, t, chain, loops):
     '''recursively calculate the indirect object dependencies for a target
 
     indirect objects are the set of objects from expanding the
@@ -419,10 +434,11 @@ def indirect_objects(bld, t, chain):
     ret = set()
     for lib in t.direct_objects:
         if lib in chain:
+            dependency_loop(loops, t, lib)
             continue
         chain.add(lib)
         t2 = bld.name_to_obj(lib, bld.env)
-        r2 = indirect_objects(bld, t2, chain)
+        r2 = indirect_objects(bld, t2, chain, loops)
         chain.remove(lib)
         ret = ret.union(t2.direct_objects)
         ret = ret.union(r2)
@@ -431,71 +447,38 @@ def indirect_objects(bld, t, chain):
     return ret
 
 
-def expanded_targets(bld, t, chain):
-    '''recursively calculate the expanded targets for a target
+def extended_objects(bld, t, chain):
+    '''recursively calculate the extended object dependencies for a target
 
-    expanded objects are the set of objects, libraries and syslibs
-    from expanding the subsystem dependencies, library dependencies
-    and syslib dependencies
+    extended objects are the union of:
+       - direct objects
+       - indirect objects
+       - direct and indirect objects of all direct and indirect libraries
     '''
 
-    ret = getattr(t, 'expanded_targets', None)
+    ret = getattr(t, 'extended_objects', None)
     if ret is not None: return ret
 
-    ret = t.direct_objects.copy()
-    ret = ret.union(t.direct_libs)
-    ret = ret.union(t.direct_syslibs)
+    ret = set()
+    ret = ret.union(t.direct_objects)
+    ret = ret.union(t.indirect_objects)
 
-    direct = ret.copy()
-
-    for d in direct:
-        if d in chain: continue
-        chain.add(d)
-        t2 = bld.name_to_obj(d, bld.env)
-        if t2 is None: continue
-        r2 = expanded_targets(bld, t2, chain)
-        chain.remove(d)
+    for lib in t.direct_libs:
+        if lib in chain:
+            continue
+        t2 = bld.name_to_obj(lib, bld.env)
+        chain.add(lib)
+        r2 = extended_objects(bld, t2, chain)
+        chain.remove(lib)
+        ret = ret.union(t2.direct_objects)
+        ret = ret.union(t2.indirect_objects)
         ret = ret.union(r2)
 
-    if t.sname in ret:
-        ret.remove(t.sname)
-
-    t.expanded_targets = ret
+    t.extended_objects = ret
     return ret
 
 
-def expanded_targets2(bld, t, chain):
-    '''recursively calculate the expanded targets for a target
-
-    expanded objects are the set of objects from expanding the
-    subsystem dependencies and library dependencies
-    '''
-
-    ret = getattr(t, 'expanded_targets2', None)
-    if ret is not None: return ret
-
-    ret = t.final_objects.copy()
-
-    for attr in [ 'final_objects', 'final_libs' ]:
-        f = getattr(t, attr, set())
-        for d in f.copy():
-            if d in chain:
-                continue
-            chain.add(d)
-            t2 = bld.name_to_obj(d, bld.env)
-            if t2 is None: continue
-            r2 = expanded_targets2(bld, t2, chain)
-            chain.remove(d)
-            ret = ret.union(r2)
-
-    if t.sname in ret:
-        ret.remove(t.sname)
-
-    t.expanded_targets2 = ret
-    return ret
-
-
-def includes_objects(bld, t, chain):
+def includes_objects(bld, t, chain, inc_loops):
     '''recursively calculate the includes object dependencies for a target
 
     includes dependencies come from either library or object dependencies
@@ -509,20 +492,22 @@ def includes_objects(bld, t, chain):
 
     for obj in t.direct_objects:
         if obj in chain:
+            dependency_loop(inc_loops, t, obj)
             continue
         chain.add(obj)
         t2 = bld.name_to_obj(obj, bld.env)
-        r2 = includes_objects(bld, t2, chain)
+        r2 = includes_objects(bld, t2, chain, inc_loops)
         chain.remove(obj)
         ret = ret.union(t2.direct_objects)
         ret = ret.union(r2)
 
     for lib in t.direct_libs:
         if lib in chain:
+            dependency_loop(inc_loops, t, lib)
             continue
         chain.add(lib)
         t2 = bld.name_to_obj(lib, bld.env)
-        r2 = includes_objects(bld, t2, chain)
+        r2 = includes_objects(bld, t2, chain, inc_loops)
         chain.remove(lib)
         ret = ret.union(t2.direct_objects)
         ret = ret.union(r2)
@@ -531,35 +516,69 @@ def includes_objects(bld, t, chain):
     return ret
 
 
-def build_indirect_deps(bld, tgt_list):
-    '''build the indirect_objects and indirect_libs sets for each target'''
+def break_dependency_loops(bld, tgt_list):
+    '''find and break dependency loops'''
+    loops = {}
+    inc_loops = {}
+
+    # build up the list of loops
     for t in tgt_list:
-        indirect_objects(bld, t, set())
-        indirect_libs(bld, t, set())
-        indirect_syslibs(bld, t, set())
-        includes_objects(bld, t, set())
-        expanded_targets(bld, t, set())
-    debug('deps: built indirect dependencies')
+        indirect_objects(bld, t, set(), loops)
+        indirect_libs(bld, t, set(), loops)
+        indirect_syslibs(bld, t, set(), loops)
+        includes_objects(bld, t, set(), inc_loops)
 
-
-def re_expand2(bld, tgt_list):
+    # break the loops
     for t in tgt_list:
-        t.expanded_targets2 = None
-    for type in ['BINARY','LIBRARY','PYTHON']:
-        for t in tgt_list:
-            if t.samba_type == type:
-                expanded_targets2(bld, t, set())
+        if t.sname in loops:
+            for attr in ['direct_objects', 'indirect_objects', 'direct_libs', 'indirect_libs']:
+                objs = getattr(t, attr, set())
+                setattr(t, attr, objs.difference(loops[t.sname]))
+
+    for loop in loops:
+        debug('deps: Found dependency loops for target %s : %s', loop, loops[loop])
+
+    # expand the loops mapping by one level
+    for loop in loops.copy():
+        for tgt in loops[loop]:
+            if tgt in loops:
+                loops[loop] = loops[loop].union(loops[tgt])
+
+    # expand indirect subsystem and library loops
+    for loop in loops.copy():
+        t = bld.name_to_obj(loop, bld.env)
+        if t.samba_type in ['SUBSYSTEM']:
+            loops[loop] = loops[loop].union(t.indirect_objects, t.direct_objects)
+        if t.samba_type in ['LIBRARY']:
+            loops[loop] = loops[loop].union(t.indirect_libs, t.direct_libs)
+        if loop in loops[loop]:
+            loops[loop].remove(loop)
+
+    # add in the replacement dependencies
     for t in tgt_list:
-        expanded_targets2(bld, t, set())
+        for loop in loops:
+            for attr in ['direct_objects', 'indirect_objects', 'direct_libs', 'indirect_libs']:
+                objs = getattr(t, attr, set())
+                if loop in objs:
+                    diff = loops[loop].difference(objs)
+                    if t.sname in diff:
+                        diff.remove(t.sname)
+                    if diff:
+                        debug('deps: Expanded target %s of type %s from loop %s by %s', t.sname, t.samba_type, loop, diff)
+                        objs = objs.union(diff)
+                if t.sname == 'ldb_password_hash':
+                    debug('deps: setting %s %s to %s', t.sname, attr, objs)
+                setattr(t, attr, objs)
 
 
-def calculate_final_deps(bld, tgt_list):
+
+def calculate_final_deps(bld, tgt_list, loops):
     '''calculate the final library and object dependencies'''
     for t in tgt_list:
         # start with the maximum possible list
-        t.final_syslibs = t.direct_syslibs.union(t.indirect_syslibs)
-        t.final_libs    = t.direct_libs.union(t.indirect_libs)
-        t.final_objects = t.direct_objects.union(t.indirect_objects)
+        t.final_syslibs = t.direct_syslibs.union(indirect_syslibs(bld, t, set(), loops))
+        t.final_libs    = t.direct_libs.union(indirect_libs(bld, t, set(), loops))
+        t.final_objects = t.direct_objects.union(indirect_objects(bld, t, set(), loops))
 
     for t in tgt_list:
         # don't depend on ourselves
@@ -567,10 +586,6 @@ def calculate_final_deps(bld, tgt_list):
             t.final_libs.remove(t.sname)
         if t.sname in t.final_objects:
             t.final_objects.remove(t.sname)
-
-    re_expand2(bld, tgt_list)
-
-    loops = {}
 
     # find any library loops
     for t in tgt_list:
@@ -581,42 +596,43 @@ def calculate_final_deps(bld, tgt_list):
                     # we could break this in either direction. If one of the libraries
                     # has a version number, and will this be distributed publicly, then
                     # we should make it the lower level library in the DAG
-                    debug('deps: removing library loop %s<->%s', t.sname, l)
+                    debug('deps: removing library loop %s from %s', t.sname, t2.sname)
+                    dependency_loop(loops, t, t2.sname)
                     t2.final_libs.remove(t.sname)
-                    loops[t2.sname] = t.sname;
-
-    re_expand2(bld, tgt_list)
 
     for type in ['BINARY']:
-        while True:
-            changed = False
-            for t in tgt_list:
-                if t.samba_type != type: continue
-                # if we will indirectly link to a target then we don't need it
-                new = t.final_objects.copy()
-                for l in t.final_libs:
-                    t2 = bld.name_to_obj(l, bld.env)
-                    dup = new.intersection(t2.expanded_targets2)
-                    if dup:
-                        debug('deps: removing dups from %s: %s also in %s %s',
-                              t.sname, dup, t2.samba_type, l)
-                        new = new.difference(dup)
-                        changed = True
-                if changed:
-                    t.final_objects = new
-                    break
-            if not changed:
-                break
+        for t in tgt_list:
+            if t.samba_type != type: continue
+            # if we will indirectly link to a target then we don't need it
+            new = t.final_objects.copy()
+            for l in t.final_libs:
+                t2 = bld.name_to_obj(l, bld.env)
+                t2_obj = extended_objects(bld, t2, set())
+                dup = new.intersection(t2_obj)
+                if dup:
+                    debug('deps: removing dups from %s of type %s: %s also in %s %s',
+                          t.sname, t.samba_type, dup, t2.samba_type, l)
+                    new = new.difference(dup)
+                    changed = True
+            t.final_objects = new
+
+    for loop in loops:
+        debug('deps: Found dependency loops for target %s : %s', loop, loops[loop])
 
     # we now need to make corrections for any library loops we broke up
     # any target that depended on the target of the loop and doesn't
     # depend on the source of the loop needs to get the loop source added
-    for type in ['BINARY','PYTHON']:
+    for type in ['BINARY','PYTHON','LIBRARY']:
         for t in tgt_list:
             if t.samba_type != type: continue
             for loop in loops:
-                if loop in t.final_libs and loops[loop] not in t.final_libs:
-                    t.final_libs.add(loops[loop])
+                if loop in t.final_libs:
+                    diff = loops[loop].difference(t.final_libs)
+                    if t.sname in diff:
+                        diff.remove(t.sname)
+                    if diff:
+                        debug('deps: Expanded target %s by loop %s libraries %s', t.sname, loop, diff)
+                        t.final_libs = t.final_libs.union(diff)
 
     debug('deps: removed duplicate dependencies')
 
@@ -743,6 +759,8 @@ def check_project_rules(bld):
     '''check the project rules - ensuring the targets are sane'''
 
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+    loops = {}
+    inc_loops = {}
 
     # build a list of task generators we are interested in
     tgt_list = []
@@ -767,8 +785,8 @@ def check_project_rules(bld):
 
     expand_subsystem_deps(bld)
     build_direct_deps(bld, tgt_list)
-    build_indirect_deps(bld, tgt_list)
-    calculate_final_deps(bld, tgt_list)
+    break_dependency_loops(bld, tgt_list)
+    calculate_final_deps(bld, tgt_list, loops)
 
     # run the various attribute generators
     for f in [ build_dependencies, build_includes, add_init_functions ]:
