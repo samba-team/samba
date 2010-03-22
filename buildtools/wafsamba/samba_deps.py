@@ -547,9 +547,11 @@ def break_dependency_loops(bld, tgt_list):
     for loop in loops.copy():
         t = bld.name_to_obj(loop, bld.env)
         if t.samba_type in ['SUBSYSTEM']:
-            loops[loop] = loops[loop].union(t.indirect_objects, t.direct_objects)
+            loops[loop] = loops[loop].union(t.indirect_objects)
+            loops[loop] = loops[loop].union(t.direct_objects)
         if t.samba_type in ['LIBRARY']:
-            loops[loop] = loops[loop].union(t.indirect_libs, t.direct_libs)
+            loops[loop] = loops[loop].union(t.indirect_libs)
+            loops[loop] = loops[loop].union(t.direct_libs)
         if loop in loops[loop]:
             loops[loop].remove(loop)
 
