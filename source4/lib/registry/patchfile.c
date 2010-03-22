@@ -4,7 +4,7 @@
 
    Copyright (C) Jelmer Vernooij 2004-2007
    Copyright (C) Wilco Baan Hofman 2006
-   Copyright (C) Matthias Dieter Wallnöfer 2008
+   Copyright (C) Matthias Dieter Wallnöfer 2008-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -202,12 +202,20 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		}
 
 		if (W_ERROR_IS_OK(error2)
-			&& (data_blob_cmp(&contents1, &contents2) == 0)
-			&& (type1 == type2))
+		    && (data_blob_cmp(&contents1, &contents2) == 0)
+		    && (type1 == type2)) {
+			talloc_free(discard_const_p(char, name));
+			talloc_free(contents1.data);
+			talloc_free(contents2.data);
 			continue;
+		}
 
 		callbacks->set_value(callback_data, path, name,
 				     type1, contents1);
+
+		talloc_free(discard_const_p(char, name));
+		talloc_free(contents1.data);
+		talloc_free(contents2.data);
 	}
 
 	/* Values that were deleted */
@@ -231,8 +239,11 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		else
 			error2 = WERR_BADFILE;
 
-		if (W_ERROR_IS_OK(error2))
+		if (W_ERROR_IS_OK(error2)) {
+			talloc_free(discard_const_p(char, name));
+			talloc_free(contents.data);
 			continue;
+		}
 
 		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
 			DEBUG(0, ("Error occurred while getting value by name: %s\n",
@@ -242,6 +253,9 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		}
 
 		callbacks->del_value(callback_data, path, name);
+
+		talloc_free(discard_const_p(char, name));
+		talloc_free(contents.data);
 	}
 
 	talloc_free(mem_ctx);
@@ -381,8 +395,11 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 				return error;
 			}
 			*buf_ptr++ = '\\';
+			talloc_free(tmp);
 		}
 	}
+
+	talloc_free(buf);
 
 	/* Add the key */
 	error = reg_key_add_abs(ctx, ctx, key_name, 0, NULL, &tmp);
@@ -393,6 +410,8 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 			key_name, win_errstr(error)));
 		return error;
 	}
+	talloc_free(tmp);
+
 	return WERR_OK;
 }
 
@@ -434,6 +453,8 @@ static WERROR reg_diff_apply_set_value(void *_ctx, const char *path,
 		return error;
 	}
 
+	talloc_free(tmp);
+
 	return WERR_OK;
 }
 
@@ -458,6 +479,7 @@ static WERROR reg_diff_apply_del_value(void *_ctx, const char *key_name,
 		return error;
 	}
 
+	talloc_free(tmp);
 
 	return WERR_OK;
 }
@@ -467,7 +489,7 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *key;
 	WERROR error;
-	const char* value_name;
+	const char *value_name;
 
 	error = reg_open_key_abs(ctx, ctx, key_name, &key);
 
@@ -486,7 +508,10 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 			DEBUG(0, ("Error deleting value '%s'\n", value_name));
 			return error;
 		}
+		talloc_free(discard_const_p(char, value_name));
 	}
+
+	talloc_free(key);
 
 	return WERR_OK;
 }
