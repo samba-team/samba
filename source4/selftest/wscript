@@ -9,6 +9,9 @@ def set_options(opt):
 
     gr = opt.add_option_group('test options')
 
+    gr.add_option('--with-selftest-prefix',
+                  help=("specify location of selftest directory"),
+                  action="store", dest='SELFTEST_PREFIX', default='./st')
     gr.add_option('--tests',
                   help=("wildcard pattern of tests to run"),
                   action="store", dest='TESTS', default='')
@@ -41,7 +44,7 @@ def cmd_testonly(opt):
     env.PYTHON = 'python'
 
     env.TEST_FORMAT = 'plain'
-    env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit.pl --prefix=./st --format=${TEST_FORMAT} --immediate'
+    env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit.pl --prefix=${SELFTEST_PREFIX} --format=${TEST_FORMAT} --immediate'
     env.FILTER_XFAIL = '${PERL} ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail'
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
 
@@ -67,14 +70,16 @@ def cmd_testonly(opt):
     if Options.options.VALGRIND_SERVER:
 	os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run A=B '
 
+    env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
+
     # this is needed for systems without rpath, or with rpath disabled
     os.environ['LD_LIBRARY_PATH'] = 'bin/shared'
 
-    st_done = 'st/st_done'
+    st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=./st --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch st/st_done) | tee st/test.out | ${FILTER_OPTIONS}'
+    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
 
     print "test: running %s" % cmd
     ret = RUN_COMMAND(cmd, env=env)
