@@ -248,10 +248,10 @@ WERROR reg_key_del_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
 	if (W_ERROR_IS_OK(error)) {
 		error = reg_key_del(mem_ctx, parent, n);
-	}
 
-	talloc_free(parent);
-	talloc_free(n);
+		talloc_free(parent);
+		talloc_free(n);
+	}
 
 	return error;
 }
@@ -275,10 +275,10 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	if (W_ERROR_IS_OK(error)) {
 		error = reg_key_add_name(mem_ctx, parent, n, NULL, sec_desc,
 					 result);
-	}
 
-	talloc_free(parent);
-	talloc_free(n);
+		talloc_free(parent);
+		talloc_free(n);
+	}
 
 	return error;
 }
