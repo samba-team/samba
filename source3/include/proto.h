@@ -6378,7 +6378,7 @@ void file_close_pid(uint16 smbpid, int vuid);
 void file_init(void);
 void file_close_user(int vuid);
 void file_dump_open_table(void);
-struct files_struct *file_walk_table(
+struct files_struct *files_forall(
 	struct files_struct *(*fn)(struct files_struct *fsp,
 				   void *private_data),
 	void *private_data);

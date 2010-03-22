@@ -222,7 +222,7 @@ void file_close_user(int vuid)
  * Walk the files table until "fn" returns non-NULL
  */
 
-struct files_struct *file_walk_table(
+struct files_struct *files_forall(
 	struct files_struct *(*fn)(struct files_struct *fsp,
 				   void *private_data),
 	void *private_data)

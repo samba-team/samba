@@ -479,7 +479,7 @@ static NTSTATUS create_aio_child(struct aio_child_list *children,
 	if (result->pid == 0) {
 		close(fdpair[0]);
 		result->sockfd = fdpair[1];
-		file_walk_table(close_fsp_fd, NULL);
+		files_forall(close_fsp_fd, NULL);
 		aio_child_loop(result->sockfd, result->map);
 	}
 
