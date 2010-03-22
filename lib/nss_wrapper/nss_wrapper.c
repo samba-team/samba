@@ -34,6 +34,10 @@
 
 #ifdef _SAMBA_BUILD_
 
+/* defining this gives us the posix getpwnam_r() calls on solaris
+   Thanks to heimdal for this */
+#define _POSIX_PTHREAD_SEMANTICS
+
 #define NSS_WRAPPER_NOT_REPLACE
 #include "../replace/replace.h"
 #include "system/passwd.h"
