@@ -88,15 +88,23 @@ static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 	struct preg_data *data = (struct preg_data *)_data;
 	char *parent_name;
 	DATA_BLOB blob;
+	WERROR werr;
 
 	parent_name = talloc_strndup(data->ctx, key_name, strrchr(key_name, '\\')-key_name);
+	W_ERROR_HAVE_NO_MEMORY(parent_name);
 	blob.data = (uint8_t *)talloc_strndup(data->ctx, key_name+(strrchr(key_name, '\\')-key_name)+1,
 			strlen(key_name)-(strrchr(key_name, '\\')-key_name));
+	W_ERROR_HAVE_NO_MEMORY(blob.data);
 	blob.length = strlen((char *)blob.data)+1;
 	
 
 	/* FIXME: These values should be accumulated to be written at done(). */
-	return reg_preg_diff_set_value(data, parent_name, "**DeleteKeys", REG_SZ, blob);
+	werr = reg_preg_diff_set_value(data, parent_name, "**DeleteKeys", REG_SZ, blob);
+
+	talloc_free(parent_name);
+	talloc_free(blob.data);
+
+	return werr;
 }
 
 static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
@@ -105,25 +113,39 @@ static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
 	struct preg_data *data = (struct preg_data *)_data;
 	char *val;
 	DATA_BLOB blob;
+	WERROR werr;
 
 	val = talloc_asprintf(data->ctx, "**Del.%s", value_name);
-
+	W_ERROR_HAVE_NO_MEMORY(val);
 	blob.data = (uint8_t *)talloc(data->ctx, uint32_t);
+	W_ERROR_HAVE_NO_MEMORY(blob.data);
 	SIVAL(blob.data, 0, 0);
 	blob.length = 4;
-	return reg_preg_diff_set_value(data, key_name, val, REG_DWORD, blob);
+
+	werr = reg_preg_diff_set_value(data, key_name, val, REG_DWORD, blob);
+
+	talloc_free(val);
+	talloc_free(blob.data);
+
+	return werr;
 }
 
 static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 {
 	struct preg_data *data = (struct preg_data *)_data;
 	DATA_BLOB blob;
+	WERROR werr;
 
 	blob.data = (uint8_t *)talloc(data->ctx, uint32_t);
+	W_ERROR_HAVE_NO_MEMORY(blob.data);
 	SIVAL(blob.data, 0, 0);
 	blob.length = 4;
 
-	return reg_preg_diff_set_value(data, key_name, "**DelVals.", REG_DWORD, blob);
+	werr = reg_preg_diff_set_value(data, key_name, "**DelVals.", REG_DWORD, blob);
+
+	talloc_free(blob.data);
+
+	return werr;
 }
 
 static WERROR reg_preg_diff_done(void *_data)
