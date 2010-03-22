@@ -164,11 +164,11 @@ static char *smb_traffic_analyzer_encrypt( TALLOC_CTX *ctx,
 {
 	int s1,s2,h,d;
 	AES_KEY key;
-	char filler[17]= "................";
+	unsigned char filler[17]= "................";
 	char *output;
-	char crypted[18];
+	unsigned char crypted[18];
 	if (akey == NULL) return NULL;
-	samba_AES_set_encrypt_key(akey, 128, &key);
+	samba_AES_set_encrypt_key((unsigned char *) akey, 128, &key);
 	s1 = strlen(str) / 16;
 	s2 = strlen(str) % 16;
 	for (h = 0; h < s2; h++) *(filler+h)=*(str+(s1*16)+h);
@@ -177,10 +177,10 @@ static char *smb_traffic_analyzer_encrypt( TALLOC_CTX *ctx,
 	output = talloc_array(ctx, char, (s1*16)+17 );
 	d=0;
 	for (h = 0; h < s1; h++) {
-		samba_AES_encrypt(str+(16*h), crypted, &key);
+		samba_AES_encrypt((unsigned char *) str+(16*h), crypted, &key);
 		for (d = 0; d<16; d++) output[d+(16*h)]=crypted[d];
 	}
-	samba_AES_encrypt( str+(16*h), filler, &key );
+	samba_AES_encrypt( (unsigned char *) str+(16*h), filler, &key );
 	for (d = 0;d < 16; d++) output[d+(16*h)]=*(filler+d);
 	*len = (s1*16)+16;
 	return output;	
@@ -196,7 +196,7 @@ static char *smb_traffic_analyzer_create_header( TALLOC_CTX *ctx,
 	const char *state_flags, size_t data_len)
 {
 	char *header = talloc_asprintf( ctx, "V2.%s%017u",
-					state_flags, data_len);
+					state_flags, (unsigned int) data_len);
 	DEBUG(10, ("smb_traffic_analyzer_send_data_socket: created Header:\n"));
 	dump_data(10, (uint8_t *)header, strlen(header));
 	return header;
@@ -347,17 +347,18 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	buf = talloc_asprintf(ctx,
 		"%s%04u%s%04u%s%04u%s%04u%s%04u%s%04u%s",
 		common_data_count_str,
-		strlen(vfs_operation_str),
+		(unsigned int) strlen(vfs_operation_str),
 		vfs_operation_str,
-		strlen(username),
+		(unsigned int) strlen(username),
 		username,
-		strlen(sidstr),
+		(unsigned int) strlen(sidstr),
 		sidstr,
-		strlen(handle->conn->connectpath),
+		(unsigned int) strlen(handle->conn->connectpath),
 		handle->conn->connectpath,
+		(unsigned int)
 		strlen(pdb_get_domain(handle->conn->server_info->sam_account)),
 		pdb_get_domain(handle->conn->server_info->sam_account),
-		strlen(timestr),
+		(unsigned int) strlen(timestr),
 		timestr);
 
 	talloc_free(common_data_count_str);
@@ -535,7 +536,8 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 				tm, seconds, handle, username, vfs_operation,
 				2, ((struct rw_data *) data)->filename, \
 				talloc_asprintf(talloc_tos(), "%u", \
-				((struct rw_data *) data)->len));
+				(unsigned int)
+					((struct rw_data *) data)->len));
 			break;
 		default:
 			DEBUG(1, ("smb_traffic_analyzer: error! "
@@ -708,7 +710,6 @@ static int smb_traffic_analyzer_rename(vfs_handle_struct *handle, \
 	return s_data.result;
 }
 
-#if 0
 static int smb_traffic_analyzer_rmdir(vfs_handle_struct *handle, \
 			const char *path)
 {
@@ -719,7 +720,6 @@ static int smb_traffic_analyzer_rmdir(vfs_handle_struct *handle, \
 	smb_traffic_analyzer_send_data(handle, &s_data, vfs_id_rmdir);
 	return s_data.result;
 }
-#endif
 
 static int smb_traffic_analyzer_mkdir(vfs_handle_struct *handle, \
 			const char *path, mode_t mode)
@@ -811,6 +811,7 @@ static int smb_traffic_analyzer_open(vfs_handle_struct *handle, \
 	DEBUG(10,("smb_traffic_analyzer_open: OPEN: %s\n",
 		fsp_str_dbg(fsp)));
 	s_data.filename = fsp->fsp_name->base_name;
+	s_data.mode = mode;
 	smb_traffic_analyzer_send_data(handle,
 			&s_data,
 			vfs_id_open);
@@ -842,6 +843,7 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 	.rename = smb_traffic_analyzer_rename,
 	.chdir = smb_traffic_analyzer_chdir,
 	.open = smb_traffic_analyzer_open,
+	.rmdir = smb_traffic_analyzer_rmdir,
 	.close_fn = smb_traffic_analyzer_close
 };
 
