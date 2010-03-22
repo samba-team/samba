@@ -117,6 +117,25 @@ main() {
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blksize', define='HAVE_STAT_ST_BLKSIZE',
                                 headers='sys/types.h sys/stat.h unistd.h')
 
+    # Check for POSIX capability support
+    if "HAVE_SYS_CAPABILITY_H" in conf.env:
+        conf.CHECK_FUNCS_IN('cap_get_proc', 'cap')
+        conf.CHECK_CODE('''
+#include <sys/types.h>
+#include <sys/capability.h>
+main() {
+ cap_t cap;
+ cap_value_t vals[1];
+ if (!(cap = cap_get_proc()))
+   exit(1);
+ vals[0] = CAP_CHOWN;
+ cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
+ cap_set_proc(cap);
+ exit(0);
+ }''', 'HAVE_POSIX_CAPABILITIES', addmain=False, execute=True, cflags="-lcap",
+            msg="Checking whether POSIX capabilities are available")
+
+
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
