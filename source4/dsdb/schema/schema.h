@@ -213,6 +213,8 @@ struct dsdb_schema {
 	struct ldb_module *loaded_from_module;
 	struct dsdb_schema *(*refresh_fn)(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema);
 	bool refresh_in_progress;
+	/* an 'opaque' sequence number that the reload function may also wish to use */
+	uint64_t reload_seq_number;
 };
 
 enum dsdb_attr_list_query {
