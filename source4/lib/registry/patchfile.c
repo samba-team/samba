@@ -95,6 +95,11 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		/* if "error2" is going to be "WERR_BADFILE", then newkey */
 		/* didn't have such a subkey and therefore add a del diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
+		if (tmppath == NULL) {
+			DEBUG(0, ("Out of memory\n"));
+			talloc_free(mem_ctx);
+			return WERR_NOMEM;
+		}
 		if (!W_ERROR_IS_OK(error2))
 			callbacks->del_key(callback_data, tmppath);
 
@@ -156,6 +161,11 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 
 		/* oldkey didn't have such a subkey, add a add diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
+		if (tmppath == NULL) {
+			DEBUG(0, ("Out of memory\n"));
+			talloc_free(mem_ctx);
+			return WERR_NOMEM;
+		}
 		callbacks->add_key(callback_data, tmppath);
 
 		/* perform here also the recursive invocation */
