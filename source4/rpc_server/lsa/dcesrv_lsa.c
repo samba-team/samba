@@ -807,6 +807,95 @@ static NTSTATUS get_trustauth_inout_blob(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
+			       struct ldb_context *sam_ldb,
+			       struct ldb_dn *base_dn,
+			       const char *netbios_name,
+			       struct trustCurrentPasswords *in,
+			       struct ldb_dn **user_dn)
+{
+	struct ldb_message *msg;
+	struct ldb_dn *dn;
+	uint32_t i;
+	int ret;
+
+	dn = ldb_dn_copy(mem_ctx, base_dn);
+	if (!dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!ldb_dn_add_child_fmt(dn, "cn=%s$,cn=users", netbios_name)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msg = ldb_msg_new(mem_ctx);
+	if (!msg) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg->dn = dn;
+
+	ret = ldb_msg_add_string(msg, "objectClass", "user");
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ldb_msg_add_fmt(msg, "samAccountName", "%s$", netbios_name);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ldb_msg_add_fmt(msg, "userAccountControl", "%u",
+			      UF_INTERDOMAIN_TRUST_ACCOUNT);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < in->count; i++) {
+		const char *attribute;
+		struct ldb_val v;
+		switch (in->current[i]->AuthType) {
+		case TRUST_AUTH_TYPE_NT4OWF:
+			attribute = "unicodePwd";
+			v.data = (uint8_t *)&in->current[i]->AuthInfo.nt4owf.password;
+			v.length = 16;
+			break;
+		case TRUST_AUTH_TYPE_CLEAR:
+			attribute = "clearTextPassword";
+			v.data = in->current[i]->AuthInfo.clear.password;
+			v.length = in->current[i]->AuthInfo.clear.size;
+			break;
+		default:
+			continue;
+		}
+
+		ret = ldb_msg_add_value(msg, attribute, &v, NULL);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	/* create the trusted_domain user account */
+	ret = ldb_add(sam_ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(sam_ldb)));
+
+		switch (ret) {
+		case LDB_ERR_ENTRY_ALREADY_EXISTS:
+			return NT_STATUS_DOMAIN_EXISTS;
+		case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+			return NT_STATUS_ACCESS_DENIED;
+		default:
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	if (user_dn) {
+		*user_dn = dn;
+	}
+	return NT_STATUS_OK;
+}
+
 /*
   lsa_CreateTrustedDomainEx2
 */
@@ -819,7 +908,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	struct lsa_policy_state *policy_state;
 	struct lsa_trusted_domain_state *trusted_domain_state;
 	struct dcesrv_handle *handle;
-	struct ldb_message **msgs, *msg, *msg_user;
+	struct ldb_message **msgs, *msg;
 	const char *attrs[] = {
 		NULL
 	};
@@ -1021,81 +1110,21 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 
 	if (r->in.info->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-		msg_user = ldb_msg_new(mem_ctx);
-		if (msg_user == NULL) {
-			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_NO_MEMORY;
-		}
-
+		struct ldb_dn *user_dn;
 		/* Inbound trusts must also create a cn=users object to match */
-
-		trusted_domain_state->trusted_domain_user_dn = msg_user->dn
-			= ldb_dn_copy(trusted_domain_state, policy_state->domain_dn);
-		if ( ! ldb_dn_add_child_fmt(msg_user->dn, "cn=users")) {
+		nt_status = add_trust_user(mem_ctx, sam_ldb,
+					   policy_state->domain_dn,
+					   netbios_name,
+					   &auth_struct.incoming,
+					   &user_dn);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_NO_MEMORY;
+			return nt_status;
 		}
 
-		if ( ! ldb_dn_add_child_fmt(msg_user->dn, "cn=%s", netbios_name)) {
-			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		ldb_msg_add_string(msg_user, "objectClass", "user");
-
-		ldb_msg_add_steal_string(msg_user, "samAccountName",
-					 talloc_asprintf(mem_ctx, "%s$", netbios_name));
-
-		if (samdb_msg_add_uint(sam_ldb, mem_ctx, msg_user,
-				       "userAccountControl",
-				       UF_INTERDOMAIN_TRUST_ACCOUNT) != 0) {
-			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (auth_struct.incoming.count) {
-			uint32_t i;
-			for (i=0; i < auth_struct.incoming.count; i++ ) {
-				if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-					samdb_msg_add_hash(sam_ldb,
-							   mem_ctx, msg_user, "unicodePwd",
-							   &auth_struct.incoming.current[i]->AuthInfo.nt4owf.password);
-				} else if (auth_struct.incoming.current[i]->AuthType == TRUST_AUTH_TYPE_CLEAR) {
-					DATA_BLOB new_password = data_blob_const(auth_struct.incoming.current[i]->AuthInfo.clear.password,
-										 auth_struct.incoming.current[i]->AuthInfo.clear.size);
-					ret = ldb_msg_add_value(msg_user, "clearTextPassword", &new_password, NULL);
-					if (ret != LDB_SUCCESS) {
-						ldb_transaction_cancel(sam_ldb);
-						return NT_STATUS_NO_MEMORY;
-					}
-				}
-			}
-		}
-
-		/* create the cn=users trusted_domain account */
-		ret = ldb_add(sam_ldb, msg_user);
-		switch (ret) {
-		case  LDB_SUCCESS:
-			break;
-		case  LDB_ERR_ENTRY_ALREADY_EXISTS:
-			ldb_transaction_cancel(sam_ldb);
-			DEBUG(0,("Failed to create trusted domain record %s: %s\n",
-				 ldb_dn_get_linearized(msg_user->dn),
-				 ldb_errstring(sam_ldb)));
-			return NT_STATUS_DOMAIN_EXISTS;
-		case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
-			ldb_transaction_cancel(sam_ldb);
-			DEBUG(0,("Failed to create trusted domain record %s: %s\n",
-				 ldb_dn_get_linearized(msg_user->dn),
-				 ldb_errstring(sam_ldb)));
-			return NT_STATUS_ACCESS_DENIED;
-		default:
-			ldb_transaction_cancel(sam_ldb);
-			DEBUG(0,("Failed to create user record %s: %s\n",
-				 ldb_dn_get_linearized(msg_user->dn),
-				 ldb_errstring(sam_ldb)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+		/* save the trust user dn */
+		trusted_domain_state->trusted_domain_user_dn
+			= talloc_steal(trusted_domain_state, user_dn);
 	}
 
 	ret = ldb_transaction_commit(sam_ldb);
