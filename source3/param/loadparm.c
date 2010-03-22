@@ -353,6 +353,7 @@ struct global {
 	int iIdmapCacheTime;
 	int iIdmapNegativeCacheTime;
 	bool bResetOnZeroVC;
+	bool bLogWriteableFilesOnExit;
 	int iKeepalive;
 	int iminreceivefile;
 	struct param_opt_struct *param_opt;
@@ -2073,6 +2074,15 @@ static struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.bResetOnZeroVC,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "log writeable files on exit",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bLogWriteableFilesOnExit,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -5087,6 +5097,7 @@ static void init_globals(bool first_time_only)
 #endif
 	Globals.bUnixExtensions = True;
 	Globals.bResetOnZeroVC = False;
+	Globals.bLogWriteableFilesOnExit = False;
 	Globals.bCreateKrb5Conf = true;
 
 	/* hostname lookups can be very expensive and are broken on
@@ -5483,6 +5494,8 @@ FN_GLOBAL_BOOL(lp_usershare_allow_guests, &Globals.bUsershareAllowGuests)
 FN_GLOBAL_BOOL(lp_usershare_owner_only, &Globals.bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_reset_on_zero_vc, &Globals.bResetOnZeroVC)
+FN_GLOBAL_BOOL(lp_log_writeable_files_on_exit,
+	       &Globals.bLogWriteableFilesOnExit)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
 FN_GLOBAL_BOOL(lp_dns_proxy, &Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)

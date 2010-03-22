@@ -847,6 +847,32 @@ bool reload_services(bool test)
 	return(ret);
 }
 
+static struct files_struct *log_writeable_file_fn(
+	struct files_struct *fsp, void *private_data)
+{
+	bool *found = (bool *)private_data;
+	char *path;
+
+	if (!fsp->can_write) {
+		return NULL;
+	}
+	if (!(*found)) {
+		DEBUG(0, ("Writable files open at exit:\n"));
+		*found = true;
+	}
+
+	path = talloc_asprintf(talloc_tos(), "%s/%s", fsp->conn->connectpath,
+			       smb_fname_str_dbg(fsp->fsp_name));
+	if (path == NULL) {
+		DEBUGADD(0, ("<NOMEM>\n"));
+	}
+
+	DEBUGADD(0, ("%s\n", path));
+
+	TALLOC_FREE(path);
+	return NULL;
+}
+
 /****************************************************************************
  Exit the server.
 ****************************************************************************/
@@ -872,6 +898,11 @@ static void exit_server_common(enum server_exit_reason how,
 	if (sconn && sconn->smb1.negprot.auth_context) {
 		struct auth_context *a = sconn->smb1.negprot.auth_context;
 		a->free(&sconn->smb1.negprot.auth_context);
+	}
+
+	if (lp_log_writeable_files_on_exit()) {
+		bool found = false;
+		files_forall(log_writeable_file_fn, &found);
 	}
 
 	if (sconn) {

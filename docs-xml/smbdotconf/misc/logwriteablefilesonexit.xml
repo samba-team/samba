@@ -1,0 +1,16 @@
+<samba:parameter name="log writeable files on exit"
+		 context="G"
+		 type="boolean"
+		 advanced="1" developer="0"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This boolean option controls whether at exit time the server
+	dumps a list of files with debug level 0 that were still open
+	for write. This is an administrative aid to find the files
+	that were potentially corrupt if the network connection died.
+	</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
