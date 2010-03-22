@@ -564,6 +564,11 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 
 	struct extended_dn_out_private *p = talloc_get_type(ldb_module_get_private(module), struct extended_dn_out_private);
 
+	/* The schema manipulation does not apply to special DNs */
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
 	/* check if there's an extended dn control */
 	control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
 	if (control && control->data) {

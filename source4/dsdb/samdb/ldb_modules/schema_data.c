@@ -417,12 +417,17 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 	int ret;
 	struct schema_data_search_data *search_context;
 	struct ldb_request *down_req;
-	struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
-
-	if (!schema || !ldb_module_get_private(module)) {
-		/* If there is no schema, there is little we can do */
+	const struct dsdb_schema *schema;
+	if (!ldb_module_get_private(module)) {
+		/* If there is no module data, there is little we can do */
 		return ldb_next_request(module, req);
 	}
+
+	/* The schema manipulation does not apply to special DNs */
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
 	for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
 		if (ldb_attr_in_list(req->op.search.attrs, generated_attrs[i].attr)) {
 			break;
@@ -431,6 +436,12 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 	if (i == ARRAY_SIZE(generated_attrs)) {
 		/* No request for a generated attr found, nothing to
 		 * see here, move along... */
+		return ldb_next_request(module, req);
+	}
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (!schema || !ldb_module_get_private(module)) {
+		/* If there is no schema, there is little we can do */
 		return ldb_next_request(module, req);
 	}
 
