@@ -748,7 +748,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 	struct dsdb_openldap_dereference_control *dereference_control;
 	struct dsdb_attribute *cur;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct dsdb_schema *schema;
+	const struct dsdb_schema *schema;
 
 	ldb_module_set_private(module, p);
 

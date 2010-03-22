@@ -668,7 +668,7 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	/* We will take a reference to the schema in replmd_add_backlink */
-	struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
@@ -1537,7 +1537,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
   handle adding a linked attribute
  */
 static int replmd_modify_la_add(struct ldb_module *module,
-				struct dsdb_schema *schema,
+				const struct dsdb_schema *schema,
 				struct ldb_message *msg,
 				struct ldb_message_element *el,
 				struct ldb_message_element *old_el,
@@ -1656,7 +1656,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
   handle deleting all active linked attributes
  */
 static int replmd_modify_la_delete(struct ldb_module *module,
-				   struct dsdb_schema *schema,
+				   const struct dsdb_schema *schema,
 				   struct ldb_message *msg,
 				   struct ldb_message_element *el,
 				   struct ldb_message_element *old_el,
@@ -1775,7 +1775,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
   handle replacing a linked attribute
  */
 static int replmd_modify_la_replace(struct ldb_module *module,
-				    struct dsdb_schema *schema,
+				    const struct dsdb_schema *schema,
 				    struct ldb_message *msg,
 				    struct ldb_message_element *el,
 				    struct ldb_message_element *old_el,
@@ -1937,7 +1937,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *old_msg;
 
-	struct dsdb_schema *schema;
+	const struct dsdb_schema *schema;
 	struct GUID old_guid;
 
 	if (seq_num == 0) {
@@ -2235,7 +2235,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
    is deleted
  */
 static int replmd_delete_remove_link(struct ldb_module *module,
-				     struct dsdb_schema *schema,
+				     const struct dsdb_schema *schema,
 				     struct ldb_dn *dn,
 				     struct ldb_message_element *el,
 				     const struct dsdb_attribute *sa)
@@ -2322,7 +2322,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *rdn_value, *new_rdn_value;
 	struct GUID guid;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct dsdb_schema *schema;
+	const struct dsdb_schema *schema;
 	struct ldb_message *msg, *old_msg;
 	struct ldb_message_element *el;
 	TALLOC_CTX *tmp_ctx;
@@ -3510,7 +3510,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
-	struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
 	struct dsdb_dn *dsdb_dn;
