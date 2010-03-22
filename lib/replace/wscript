@@ -339,6 +339,9 @@ def configure(conf):
                     define='REPLACE_GETPASS',
                     cflags='-DNO_CONFIG_H')
 
+    conf.sub_config('system')
+
+
 def build(bld):
     bld.set_rpath()
 
