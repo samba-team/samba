@@ -325,7 +325,7 @@ static WERROR cmd_rmkey(struct regshell_context *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	error = reg_key_del(ctx->current, argv[1]);
+	error = reg_key_del(ctx, ctx->current, argv[1]);
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Error deleting '%s'\n", argv[1]);
 		return error;
@@ -345,7 +345,7 @@ static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
 		return WERR_INVALID_PARAM;
 	}
 
-	error = reg_del_value(ctx->current, argv[1]);
+	error = reg_del_value(ctx, ctx->current, argv[1]);
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Error deleting value '%s'\n", argv[1]);
 		return error;

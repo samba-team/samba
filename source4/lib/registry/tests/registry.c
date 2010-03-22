@@ -200,10 +200,10 @@ static bool test_del_key(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "Creating key return code");
 	torture_assert(tctx, newkey != NULL, "Creating new key");
 
-	error = reg_key_del(root, "Polen");
+	error = reg_key_del(tctx, root, "Polen");
 	torture_assert_werr_ok(tctx, error, "Delete key");
 
-	error = reg_key_del(root, "Polen");
+	error = reg_key_del(tctx, root, "Polen");
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "Delete missing key");
 
@@ -464,7 +464,7 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
-	error = reg_del_value(subkey, __FUNCTION__);
+	error = reg_del_value(tctx, subkey, __FUNCTION__);
 	torture_assert_werr_ok (tctx, error, "unsetting value");
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__,

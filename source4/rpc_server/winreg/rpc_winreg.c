@@ -189,7 +189,7 @@ static WERROR dcesrv_winreg_DeleteKey(struct dcesrv_call_state *dce_call,
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
-		result = reg_key_del(key, r->in.key.name);
+		result = reg_key_del(mem_ctx, key, r->in.key.name);
 		talloc_unlink(dce_call->context, h);
 
 		return result;
@@ -216,7 +216,7 @@ static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call,
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
-		return reg_del_value(key, r->in.value.name);
+		return reg_del_value(mem_ctx, key, r->in.value.name);
 	default:
 		return WERR_ACCESS_DENIED;
 	}

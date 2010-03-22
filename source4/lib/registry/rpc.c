@@ -399,20 +399,18 @@ static WERROR rpc_query_key(TALLOC_CTX *mem_ctx, const struct registry_key *k)
 	return r.out.result;
 }
 
-static WERROR rpc_del_key(struct registry_key *parent, const char *name)
+static WERROR rpc_del_key(TALLOC_CTX *mem_ctx, struct registry_key *parent,
+			  const char *name)
 {
 	NTSTATUS status;
 	struct rpc_key *mykeydata = talloc_get_type(parent, struct rpc_key);
 	struct winreg_DeleteKey r;
-	TALLOC_CTX *mem_ctx = talloc_init("del_key");
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
 	r.in.key.name = name;
 
 	status = dcerpc_winreg_DeleteKey_r(mykeydata->binding_handle, mem_ctx, &r);
-
-	talloc_free(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("DeleteKey failed - %s\n", nt_errstr(status)));

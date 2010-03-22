@@ -172,7 +172,7 @@ static PyObject *py_hive_key_del(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	result = hive_key_del(key, name);
+	result = hive_key_del(NULL, key, name);
 
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
@@ -199,7 +199,7 @@ static PyObject *py_hive_key_del_value(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	result = hive_key_del_value(key, name);
+	result = hive_key_del_value(NULL, key, name);
 
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
@@ -220,7 +220,7 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 	if (value.data != NULL)
 		result = hive_key_set_value(key, name, type, value);
 	else
-		result = hive_key_del_value(key, name);
+		result = hive_key_del_value(NULL, key, name);
 
 	PyErr_WERROR_IS_ERR_RAISE(result);
 

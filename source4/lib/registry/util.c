@@ -244,7 +244,7 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 
 	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
 	if (W_ERROR_IS_OK(error)) {
-		error = reg_key_del(parent, n);
+		error = reg_key_del(mem_ctx, parent, n);
 	}
 
 	talloc_free(mem_ctx);

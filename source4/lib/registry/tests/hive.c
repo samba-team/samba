@@ -32,7 +32,7 @@ static bool test_del_nonexistant_key(struct torture_context *tctx,
 				     const void *test_data)
 {
 	const struct hive_key *root = (const struct hive_key *)test_data;
-	WERROR error = hive_key_del(root, "bla");
+	WERROR error = hive_key_del(tctx, root, "bla");
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "invalid return code");
 
@@ -107,7 +107,7 @@ static bool test_add_subkey(struct torture_context *tctx,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
-	error = hive_key_del(root, "Nested Key");
+	error = hive_key_del(mem_ctx, root, "Nested Key");
 	torture_assert_werr_ok(tctx, error, "reg_key_del");
 
 	return true;
@@ -140,7 +140,7 @@ static bool test_del_recursive(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	/* Deleting "Parent Key" will also delete "Child Key" and the value. */
-	error = hive_key_del(root, "Parent Key");
+	error = hive_key_del(mem_ctx, root, "Parent Key");
 	torture_assert_werr_ok(tctx, error, "hive_key_del");
 
 	return true;
@@ -166,10 +166,10 @@ static bool test_del_key(struct torture_context *tctx, const void *test_data)
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
-	error = hive_key_del(root, "Nested Key");
+	error = hive_key_del(mem_ctx, root, "Nested Key");
 	torture_assert_werr_ok(tctx, error, "reg_key_del");
 
-	error = hive_key_del(root, "Nested Key");
+	error = hive_key_del(mem_ctx, root, "Nested Key");
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE, "reg_key_del");
 
 	return true;
@@ -252,13 +252,13 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
-	error = hive_key_del_value(subkey, "Answer");
+	error = hive_key_del_value(mem_ctx, subkey, "Answer");
 	torture_assert_werr_ok(tctx, error, "deleting value");
 
 	error = hive_get_value(mem_ctx, subkey, "Answer", &type, &value);
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE, "getting value");
 
-	error = hive_key_del_value(subkey, "Answer");
+	error = hive_key_del_value(mem_ctx, subkey, "Answer");
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "deleting value");
 

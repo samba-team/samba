@@ -91,9 +91,10 @@ _PUBLIC_ WERROR hive_key_add_name(TALLOC_CTX *ctx,
 					desc, key);
 }
 
-_PUBLIC_ WERROR hive_key_del(const struct hive_key *key, const char *name)
+_PUBLIC_ WERROR hive_key_del(TALLOC_CTX *mem_ctx, const struct hive_key *key,
+			     const char *name)
 {
-	return key->ops->del_key(key, name);
+	return key->ops->del_key(mem_ctx, key, name);
 }
 
 _PUBLIC_ WERROR hive_get_key_by_name(TALLOC_CTX *mem_ctx,
@@ -163,12 +164,13 @@ WERROR hive_set_sec_desc(struct hive_key *key,
 	return key->ops->set_sec_desc(key, security);
 }
 
-WERROR hive_key_del_value(struct hive_key *key, const char *name)
+WERROR hive_key_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
+			  const char *name)
 {
 	if (key->ops->delete_value == NULL)
 		return WERR_NOT_SUPPORTED;
 
-	return key->ops->delete_value(key, name);
+	return key->ops->delete_value(mem_ctx, key, name);
 }
 
 WERROR hive_key_flush(struct hive_key *key)

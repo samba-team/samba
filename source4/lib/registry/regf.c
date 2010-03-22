@@ -1542,7 +1542,8 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 	return WERR_OK;
 }
 
-static WERROR regf_del_value (struct hive_key *key, const char *name)
+static WERROR regf_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
+			     const char *name)
 {
 	struct regf_key_data *private_data = (struct regf_key_data *)key;
 	struct regf_data *regf = private_data->hive;
@@ -1600,7 +1601,8 @@ static WERROR regf_del_value (struct hive_key *key, const char *name)
 }
 
 
-static WERROR regf_del_key(const struct hive_key *parent, const char *name)
+static WERROR regf_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
+			   const char *name)
 {
 	const struct regf_key_data *private_data =
 		(const struct regf_key_data *)parent;
@@ -1639,7 +1641,7 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 			}
 
 			/* Delete subkey. */
-			error = regf_del_key(sk, sk_name);
+			error = regf_del_key(NULL, sk, sk_name);
 			if (!W_ERROR_IS_OK(error)) {
 				DEBUG(0, ("Can't delete key '%s'.\n", sk_name));
 				return error;
@@ -1665,7 +1667,7 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 			}
 
 			/* Delete value. */
-			error = regf_del_value(sk, val_name);
+			error = regf_del_value(NULL, sk, val_name);
 			if (!W_ERROR_IS_OK(error)) {
 				DEBUG(0, ("Can't delete value '%s'.\n", val_name));
 				return error;

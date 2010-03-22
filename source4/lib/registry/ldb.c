@@ -712,18 +712,16 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	return WERR_OK;
 }
 
-static WERROR ldb_del_value (struct hive_key *key, const char *child)
+static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
+			    const char *child)
 {
 	int ret;
 	struct ldb_key_data *kd = talloc_get_type(key, struct ldb_key_data);
-	TALLOC_CTX *mem_ctx;
 	struct ldb_message *msg;
 	struct ldb_dn *childdn;
 
 	if ((child == NULL) || (child[0] == '\0')) {
 		/* default value */
-		mem_ctx = talloc_init("ldb_del_value");
-
 		msg = talloc_zero(mem_ctx, struct ldb_message);
 		W_ERROR_HAVE_NO_MEMORY(msg);
 		msg->dn = ldb_dn_copy(msg, kd->dn);
@@ -734,11 +732,8 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 		ret = ldb_modify(kd->ldb, msg);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
-			talloc_free(mem_ctx);
 			return WERR_FOOBAR;
 		}
-
-		talloc_free(mem_ctx);
 	} else {
 		/* normal value */
 		childdn = ldb_dn_copy(kd->ldb, kd->dn);
@@ -768,13 +763,13 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 	return WERR_OK;
 }
 
-static WERROR ldb_del_key(const struct hive_key *key, const char *name)
+static WERROR ldb_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *key,
+			  const char *name)
 {
 	unsigned int i;
 	int ret;
 	struct ldb_key_data *parentkd = talloc_get_type(key, struct ldb_key_data);
 	struct ldb_dn *ldap_path;
-	TALLOC_CTX *mem_ctx = talloc_init("ldb_del_key");
 	struct ldb_context *c = parentkd->ldb;
 	struct ldb_result *res_keys;
 	struct ldb_result *res_vals;
@@ -784,7 +779,6 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	/* Verify key exists by opening it */
 	werr = ldb_open_key(mem_ctx, key, name, &hk);
 	if (!W_ERROR_IS_OK(werr)) {
-		talloc_free(mem_ctx);
 		return werr;
 	}
 
@@ -798,7 +792,6 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
 		      ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
-		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
 
@@ -809,7 +802,6 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",
 		      ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
-		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
 
@@ -818,7 +810,6 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("ldb_transaction_start: %s\n", ldb_errstring(c)));
-		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
 
@@ -827,12 +818,12 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 		/* Delete any subkeys */
 		for (i = 0; i < res_keys->count; i++)
 		{
-			werr = ldb_del_key(hk, ldb_msg_find_attr_as_string(
+			werr = ldb_del_key(mem_ctx, hk,
+					   ldb_msg_find_attr_as_string(
 							res_keys->msgs[i],
 							"key", NULL));
 			if (!W_ERROR_IS_OK(werr)) {
 				ret = ldb_transaction_cancel(c);
-				talloc_free(mem_ctx);
 				return werr;
 			}
 		}
@@ -840,12 +831,12 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 		/* Delete any values */
 		for (i = 0; i < res_vals->count; i++)
 		{
-			werr = ldb_del_value(hk, ldb_msg_find_attr_as_string(
+			werr = ldb_del_value(mem_ctx, hk,
+					     ldb_msg_find_attr_as_string(
 							res_vals->msgs[i],
 							"value", NULL));
 			if (!W_ERROR_IS_OK(werr)) {
 				ret = ldb_transaction_cancel(c);
-				talloc_free(mem_ctx);
 				return werr;
 			}
 		}
@@ -858,7 +849,6 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	{
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(c)));
 		ret = ldb_transaction_cancel(c);
-		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
 
@@ -869,11 +859,8 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	{
 		DEBUG(0, ("ldb_transaction_commit: %s\n", ldb_errstring(c)));
 		ret = ldb_transaction_cancel(c);
-		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
-
-	talloc_free(mem_ctx);
 
 	/* reset cache */
 	talloc_free(parentkd->subkeys);

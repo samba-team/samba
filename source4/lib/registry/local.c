@@ -236,18 +236,20 @@ static WERROR local_enum_value(TALLOC_CTX *mem_ctx,
 				       name, type, data);
 }
 
-static WERROR local_delete_key(struct registry_key *key, const char *name)
+static WERROR local_delete_key(TALLOC_CTX *mem_ctx, struct registry_key *key,
+			       const char *name)
 {
 	const struct local_key *local = (const struct local_key *)key;
 
-	return hive_key_del(local->hive_key, name);
+	return hive_key_del(mem_ctx, local->hive_key, name);
 }
 
-static WERROR local_delete_value(struct registry_key *key, const char *name)
+static WERROR local_delete_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
+				 const char *name)
 {
 	const struct local_key *local = (const struct local_key *)key;
 
-	return hive_key_del_value(local->hive_key, name);
+	return hive_key_del_value(mem_ctx, local->hive_key, name);
 }
 
 static WERROR local_flush_key(struct registry_key *key)

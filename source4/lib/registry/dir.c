@@ -108,7 +108,8 @@ static WERROR reg_dir_delete_recursive(const char *name)
 		return WERR_GENERAL_FAILURE;
 }
 
-static WERROR reg_dir_del_key(const struct hive_key *k, const char *name)
+static WERROR reg_dir_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *k,
+			      const char *name)
 {
 	struct dir_key *dk = talloc_get_type(k, struct dir_key);
 	char *child = talloc_asprintf(NULL, "%s/%s", dk->path, name);
@@ -380,10 +381,11 @@ static WERROR reg_dir_enum_value(TALLOC_CTX *mem_ctx,
 }
 
 
-static WERROR reg_dir_del_value (struct hive_key *key, const char *name)
+static WERROR reg_dir_del_value(TALLOC_CTX *mem_ctx,
+				struct hive_key *key, const char *name)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
-	char *path = talloc_asprintf(key, "%s/%s", dk->path, name);
+	char *path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
 	if (unlink(path) < 0) {
 		talloc_free(path);
 		if (errno == ENOENT)

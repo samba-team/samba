@@ -185,7 +185,8 @@ _PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx,
 /**
  * Delete a key.
  */
-_PUBLIC_ WERROR reg_key_del(struct registry_key *parent, const char *name)
+_PUBLIC_ WERROR reg_key_del(TALLOC_CTX *mem_ctx, struct registry_key *parent,
+			    const char *name)
 {
 	if (parent == NULL)
 		return WERR_INVALID_PARAM;
@@ -193,7 +194,7 @@ _PUBLIC_ WERROR reg_key_del(struct registry_key *parent, const char *name)
 	if (parent->context->ops->delete_key == NULL)
 		return WERR_NOT_SUPPORTED;
 
-	return parent->context->ops->delete_key(parent, name);
+	return parent->context->ops->delete_key(mem_ctx, parent, name);
 }
 
 /**
@@ -257,7 +258,8 @@ _PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx,
 /**
  * Delete a value.
  */
-_PUBLIC_ WERROR reg_del_value(struct registry_key *key, const char *valname)
+_PUBLIC_ WERROR reg_del_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
+			      const char *valname)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
@@ -265,7 +267,7 @@ _PUBLIC_ WERROR reg_del_value(struct registry_key *key, const char *valname)
 	if (key->context->ops->delete_value == NULL)
 		return WERR_NOT_SUPPORTED;
 
-	return key->context->ops->delete_value(key, valname);
+	return key->context->ops->delete_value(mem_ctx, key, valname);
 }
 
 /**

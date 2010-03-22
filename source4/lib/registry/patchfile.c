@@ -483,7 +483,7 @@ static WERROR reg_diff_apply_del_value(void *_ctx, const char *key_name,
 		return error;
 	}
 
-	error = reg_del_value(tmp, value_name);
+	error = reg_del_value(ctx, tmp, value_name);
 	if (!W_ERROR_IS_OK(error)) {
 		DEBUG(0, ("Error deleting value '%s'\n", value_name));
 		return error;
@@ -513,7 +513,7 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 
 	while (W_ERROR_IS_OK(reg_key_get_value_by_index(
 			ctx, key, 0, &value_name, NULL, NULL))) {
-		error = reg_del_value(key, value_name);
+		error = reg_del_value(ctx, key, value_name);
 		if (!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error deleting value '%s'\n", value_name));
 			return error;
