@@ -435,6 +435,25 @@ struct smbd_server_connection {
 	bool allow_smb2;
 	struct {
 		struct fd_event *fde;
+
+		struct {
+			/*
+			 * fd for the fcntl lock mutexing access to smbd_server_fd
+			 */
+			int socket_lock_fd;
+
+			/*
+			 * fd for the trusted pipe from
+			 * echo handler child
+			 */
+			int trusted_fd;
+
+			/*
+			 * fde for the trusted_fd
+			 */
+			struct fd_event *trusted_fde;
+		} echo_handler;
+
 		uint64_t num_requests;
 		struct {
 			bool encrypted_passwords;
