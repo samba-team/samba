@@ -77,7 +77,8 @@ struct hive_operations {
 	/**
 	 * Remove an existing key.
 	 */
-	WERROR (*del_key) (const struct hive_key *key, const char *name);
+	WERROR (*del_key) (TALLOC_CTX *mem_ctx,
+			   const struct hive_key *key, const char *name);
 
 	/**
 	 * Force write of a key to disk.
@@ -108,7 +109,8 @@ struct hive_operations {
 	/**
 	 * Remove a value.
 	 */
-	WERROR (*delete_value) (struct hive_key *key, const char *name);
+	WERROR (*delete_value) (TALLOC_CTX *mem_ctx,
+				struct hive_key *key, const char *name);
 
 	/* Security Descriptors */
 
@@ -166,7 +168,8 @@ WERROR hive_key_add_name(TALLOC_CTX *ctx, const struct hive_key *parent_key,
 			 const char *name, const char *classname,
 			 struct security_descriptor *desc,
 			 struct hive_key **key);
-WERROR hive_key_del(const struct hive_key *key, const char *name);
+WERROR hive_key_del(TALLOC_CTX *mem_ctx,
+		    const struct hive_key *key, const char *name);
 WERROR hive_get_key_by_name(TALLOC_CTX *mem_ctx,
 			    const struct hive_key *key, const char *name,
 			    struct hive_key **subkey);
@@ -193,7 +196,8 @@ WERROR hive_get_sec_desc(TALLOC_CTX *mem_ctx,
 WERROR hive_set_sec_desc(struct hive_key *key, 
 			 const struct security_descriptor *security);
 
-WERROR hive_key_del_value(struct hive_key *key, const char *name);
+WERROR hive_key_del_value(TALLOC_CTX *mem_ctx,
+			  struct hive_key *key, const char *name);
 
 WERROR hive_key_flush(struct hive_key *key);
 
@@ -304,9 +308,11 @@ struct registry_operations {
 			      struct security_descriptor *security,
 			      struct registry_key **key);
 
-	WERROR (*delete_key) (struct registry_key *key, const char *name);
+	WERROR (*delete_key) (TALLOC_CTX *mem_ctx,
+			      struct registry_key *key, const char *name);
 
-	WERROR (*delete_value) (struct registry_key *key, const char *name);
+	WERROR (*delete_value) (TALLOC_CTX *mem_ctx,
+				struct registry_key *key, const char *name);
 
 	WERROR (*enum_key) (TALLOC_CTX *mem_ctx,
 			    const struct registry_key *key, uint32_t idx,
@@ -424,7 +430,8 @@ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx,
 				 const char *name,
 				 uint32_t *type,
 				 DATA_BLOB *data);
-WERROR reg_key_del(struct registry_key *parent, const char *name);
+WERROR reg_key_del(TALLOC_CTX *mem_ctx,
+		   struct registry_key *parent, const char *name);
 WERROR reg_key_add_name(TALLOC_CTX *mem_ctx,
 			struct registry_key *parent, const char *name,
 			const char *classname,
@@ -434,7 +441,8 @@ WERROR reg_val_set(struct registry_key *key, const char *value,
 		   uint32_t type, DATA_BLOB data);
 WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key,
 			struct security_descriptor **secdesc);
-WERROR reg_del_value(struct registry_key *key, const char *valname);
+WERROR reg_del_value(TALLOC_CTX *mem_ctx,
+		     struct registry_key *key, const char *valname);
 WERROR reg_key_flush(struct registry_key *key);
 WERROR reg_create_key(TALLOC_CTX *mem_ctx,
 		      struct registry_key *parent,
