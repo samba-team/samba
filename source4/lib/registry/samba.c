@@ -48,6 +48,8 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 		error = reg_open_ldb_file(ctx, location, auth_info,
 					  creds, event_ctx, lp_ctx, &hive);
 
+	talloc_free(discard_const_p(char, location));
+
 	if (!W_ERROR_IS_OK(error))
 		return error;
 
