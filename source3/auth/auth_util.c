@@ -420,7 +420,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 	DEBUG(5,("make_user_info_for_reply: User passwords not in encrypted "
 		 "format.\n"));
 
-	if (plaintext_password.data) {
+	if (plaintext_password.data && plaintext_password.length) {
 		unsigned char local_lm_response[24];
 
 #ifdef DEBUG_PASSWORD
@@ -448,7 +448,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 		local_lm_blob.data ? &local_lm_blob : NULL,
 		local_nt_blob.data ? &local_nt_blob : NULL,
 		NULL, NULL,
-		plaintext_password.data ? &plaintext_password : NULL, 
+		plaintext_password.data && plaintext_password.length ? &plaintext_password : NULL, 
 		False);
 
 	data_blob_free(&local_lm_blob);
