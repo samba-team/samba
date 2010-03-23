@@ -148,7 +148,7 @@ bool test_user_create(struct torture_context *tctx,
 
 	status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateUser failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(status));
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", name);
@@ -169,7 +169,8 @@ bool test_user_create(struct torture_context *tctx,
 }
 
 
-bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+bool test_group_cleanup(struct torture_context *tctx,
+			struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			struct policy_handle *domain_handle,
 			const char *name)
 {
@@ -190,11 +191,11 @@ bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
 
-	printf("group account lookup '%s'\n", name);
+	torture_comment(tctx, "group account lookup '%s'\n", name);
 
 	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -205,22 +206,22 @@ bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r2.in.rid            = rid;
 	r2.out.group_handle  = &group_handle;
 
-	printf("opening group account\n");
+	torture_comment(tctx, "opening group account\n");
 
 	status = dcerpc_samr_OpenGroup_r(b, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenGroup failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenGroup failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	r3.in.group_handle  = &group_handle;
 	r3.out.group_handle = &group_handle;
 
-	printf("deleting group account\n");
+	torture_comment(tctx, "deleting group account\n");
 
 	status = dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteGroup failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "DeleteGroup failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -228,7 +229,8 @@ bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 }
 
 
-bool test_group_create(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+bool test_group_create(struct torture_context *tctx,
+		       struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *handle, const char *name,
 		       uint32_t *rid)
 {
@@ -245,23 +247,23 @@ bool test_group_create(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r.out.group_handle  = &group_handle;
 	r.out.rid           = rid;
 
-	printf("creating group account %s\n", name);
+	torture_comment(tctx, "creating group account %s\n", name);
 
 	status = dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateGroup failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(status));
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			printf("Group (%s) already exists - attempting to delete and recreate account again\n", name);
-			if (!test_group_cleanup(b, mem_ctx, handle, name)) {
+			torture_comment(tctx, "Group (%s) already exists - attempting to delete and recreate account again\n", name);
+			if (!test_group_cleanup(tctx, b, mem_ctx, handle, name)) {
 				return false;
 			}
 
-			printf("creating group account\n");
+			torture_comment(tctx, "creating group account\n");
 
 			status = dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("CreateGroup failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(status));
 				return false;
 			}
 			return true;

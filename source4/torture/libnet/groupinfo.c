@@ -29,7 +29,8 @@
 #define TEST_GROUPNAME  "libnetgroupinfotest"
 
 
-static bool test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_groupinfo(struct torture_context *tctx,
+			   struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle,
 			   struct dom_sid2 *domain_sid, const char* group_name,
 			   uint32_t *rid)
@@ -45,10 +46,10 @@ static bool test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	group.in.sid           = dom_sid_string(mem_ctx, group_sid);
 	group.in.level         = level;       /* this should be extended */
 
-	printf("Testing sync libnet_rpc_groupinfo (SID argument)\n");
+	torture_comment(tctx, "Testing sync libnet_rpc_groupinfo (SID argument)\n");
 	status = libnet_rpc_groupinfo(p, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -62,7 +63,7 @@ static bool test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing sync libnet_rpc_groupinfo (groupname argument)\n");
 	status = libnet_rpc_groupinfo(p, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync libnet_rpc_groupinfo - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to call sync libnet_rpc_groupinfo - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -103,17 +104,17 @@ bool torture_groupinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_group_create(b, mem_ctx, &h, TEST_GROUPNAME, &rid)) {
+	if (!test_group_create(torture, b, mem_ctx, &h, TEST_GROUPNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_groupinfo(p, mem_ctx, &h, &sid, TEST_GROUPNAME, &rid)) {
+	if (!test_groupinfo(torture, p, mem_ctx, &h, &sid, TEST_GROUPNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_group_cleanup(b, mem_ctx, &h, TEST_GROUPNAME)) {
+	if (!test_group_cleanup(torture, b, mem_ctx, &h, TEST_GROUPNAME)) {
 		ret = false;
 		goto done;
 	}

@@ -29,7 +29,8 @@
 
 #define TEST_USERNAME  "libnetuserinfotest"
 
-static bool test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_userinfo(struct torture_context *tctx,
+			  struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *domain_handle,
 			  struct dom_sid2 *domain_sid, const char* user_name,
 			  uint32_t *rid)
@@ -45,10 +46,10 @@ static bool test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
 	user.in.level         = level;       /* this should be extended */
 
-	printf("Testing sync libnet_rpc_userinfo (SID argument)\n");
+	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (SID argument)\n");
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -59,10 +60,10 @@ static bool test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.username      = TEST_USERNAME;
 	user.in.level         = level;
 
-	printf("Testing sync libnet_rpc_userinfo (username argument)\n");
+	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (username argument)\n");
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -70,7 +71,8 @@ static bool test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_userinfo_async(struct torture_context *tctx,
+				struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				struct policy_handle *domain_handle,
 				struct dom_sid2 *domain_sid, const char* user_name,
 				uint32_t *rid)
@@ -87,17 +89,17 @@ static bool test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
 	user.in.level         = level;       /* this should be extended */
 
-	printf("Testing async libnet_rpc_userinfo (SID argument)\n");
+	torture_comment(tctx, "Testing async libnet_rpc_userinfo (SID argument)\n");
 
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
 	if (!c) {
-		printf("Failed to call sync libnet_rpc_userinfo_send\n");
+		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo_send\n");
 		return false;
 	}
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -108,17 +110,17 @@ static bool test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.username      = TEST_USERNAME;
 	user.in.level         = level;
 
-	printf("Testing async libnet_rpc_userinfo (username argument)\n");
+	torture_comment(tctx, "Testing async libnet_rpc_userinfo (username argument)\n");
 
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
 	if (!c) {
-		printf("Failed to call sync libnet_rpc_userinfo_send\n");
+		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo_send\n");
 		return false;
 	}
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -164,7 +166,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_userinfo(p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
+	if (!test_userinfo(torture, p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -187,7 +189,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_userinfo_async(p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
+	if (!test_userinfo_async(torture, p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
 		ret = false;
 		goto done;
 	}

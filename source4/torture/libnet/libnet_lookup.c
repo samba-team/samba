@@ -55,14 +55,14 @@ bool torture_lookup(struct torture_context *torture)
 	status = libnet_Lookup(ctx, mem_ctx, &lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't lookup name %s: %s\n", lookup.in.hostname, nt_errstr(status));
+		torture_comment(torture, "Couldn't lookup name %s: %s\n", lookup.in.hostname, nt_errstr(status));
 		ret = false;
 		goto done;
 	}
 
 	ret = true;
 
-	printf("Name [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
+	torture_comment(torture, "Name [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
 
 done:
 	talloc_free(mem_ctx);
@@ -98,14 +98,14 @@ bool torture_lookup_host(struct torture_context *torture)
 	status = libnet_LookupHost(ctx, mem_ctx, &lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't lookup host %s: %s\n", lookup.in.hostname, nt_errstr(status));
+		torture_comment(torture, "Couldn't lookup host %s: %s\n", lookup.in.hostname, nt_errstr(status));
 		ret = false;
 		goto done;
 	}
 
 	ret = true;
 
-	printf("Host [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
+	torture_comment(torture, "Host [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
 
 done:
 	talloc_free(mem_ctx);
@@ -141,7 +141,7 @@ bool torture_lookup_pdc(struct torture_context *torture)
 	status = libnet_LookupDCs(ctx, mem_ctx, lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't lookup pdc %s: %s\n", lookup->in.domain_name,
+		torture_comment(torture, "Couldn't lookup pdc %s: %s\n", lookup->in.domain_name,
 		       nt_errstr(status));
 		ret = false;
 		goto done;
@@ -149,9 +149,9 @@ bool torture_lookup_pdc(struct torture_context *torture)
 
 	ret = true;
 
-	printf("DCs of domain [%s] found.\n", lookup->in.domain_name);
+	torture_comment(torture, "DCs of domain [%s] found.\n", lookup->in.domain_name);
 	for (i = 0; i < lookup->out.num_dcs; i++) {
-		printf("\tDC[%d]: name=%s, address=%s\n", i, lookup->out.dcs[i].name,
+		torture_comment(torture, "\tDC[%d]: name=%s, address=%s\n", i, lookup->out.dcs[i].name,
 		       lookup->out.dcs[i].address);
 	}
 

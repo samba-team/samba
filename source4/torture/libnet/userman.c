@@ -28,7 +28,8 @@
 #include "torture/libnet/utils.h"
 
 
-static bool test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_useradd(struct torture_context *tctx,
+			 struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle,
 			 const char *name)
 {
@@ -39,11 +40,11 @@ static bool test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.domain_handle = *domain_handle;
 	user.in.username      = name;
 
-	printf("Testing libnet_rpc_useradd\n");
+	torture_comment(tctx, "Testing libnet_rpc_useradd\n");
 
 	status = libnet_rpc_useradd(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call libnet_rpc_useradd - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to call libnet_rpc_useradd - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -51,7 +52,8 @@ static bool test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_useradd_async(struct torture_context *tctx,
+			       struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle, const char* username)
 {
 	NTSTATUS status;
@@ -61,17 +63,17 @@ static bool test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.domain_handle = *handle;
 	user.in.username      = username;
 
-	printf("Testing async libnet_rpc_useradd\n");
+	torture_comment(tctx, "Testing async libnet_rpc_useradd\n");
 
 	c = libnet_rpc_useradd_send(p, &user, msg_handler);
 	if (!c) {
-		printf("Failed to call async libnet_rpc_useradd\n");
+		torture_comment(tctx, "Failed to call async libnet_rpc_useradd\n");
 		return false;
 	}
 
 	status = libnet_rpc_useradd_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Calling async libnet_rpc_useradd failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Calling async libnet_rpc_useradd failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -212,7 +214,8 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 }
 
 
-static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_userdel(struct torture_context *tctx,
+			 struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, const char *username)
 {
 	NTSTATUS status;
@@ -223,7 +226,7 @@ static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = libnet_rpc_userdel(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -234,9 +237,9 @@ static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 #define CMP_LSA_STRING_FLD(fld, flags) \
 	if ((mod->in.change.fields & flags) && \
 	    !strequal(i->fld.string, mod->in.change.fld)) { \
-		printf("'%s' field does not match\n", #fld); \
-		printf("received: '%s'\n", i->fld.string); \
-		printf("expected: '%s'\n", mod->in.change.fld); \
+		torture_comment(tctx, "'%s' field does not match\n", #fld); \
+		torture_comment(tctx, "received: '%s'\n", i->fld.string); \
+		torture_comment(tctx, "expected: '%s'\n", mod->in.change.fld); \
 		return false; \
 	}
 
@@ -245,10 +248,10 @@ static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (mod->in.change.fields & flags) { \
 		nttime_to_timeval(&t, i->fld); \
 		if (timeval_compare(&t, mod->in.change.fld)) { \
-			printf("'%s' field does not match\n", #fld); \
-			printf("received: '%s (+%ld us)'\n", \
+			torture_comment(tctx, "'%s' field does not match\n", #fld); \
+			torture_comment(tctx, "received: '%s (+%ld us)'\n", \
 			       timestring(mem_ctx, t.tv_sec), t.tv_usec); \
-			printf("expected: '%s (+%ld us)'\n", \
+			torture_comment(tctx, "expected: '%s (+%ld us)'\n", \
 			       timestring(mem_ctx, mod->in.change.fld->tv_sec), \
 			       mod->in.change.fld->tv_usec); \
 			return false; \
@@ -258,9 +261,9 @@ static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 #define CMP_NUM_FLD(fld, flags) \
 	if ((mod->in.change.fields & flags) && \
 	    (i->fld != mod->in.change.fld)) { \
-		printf("'%s' field does not match\n", #fld); \
-		printf("received: '%04x'\n", i->fld); \
-		printf("expected: '%04x'\n", mod->in.change.fld); \
+		torture_comment(tctx, "'%s' field does not match\n", #fld); \
+		torture_comment(tctx, "received: '%04x'\n", i->fld); \
+		torture_comment(tctx, "expected: '%04x'\n", mod->in.change.fld); \
 		return false; \
 	}
 
@@ -328,7 +331,7 @@ bool torture_useradd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_useradd(p, mem_ctx, &h, name)) {
+	if (!test_useradd(torture, p, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
@@ -343,7 +346,7 @@ bool torture_useradd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_useradd_async(p, mem_ctx, &h, name)) {
+	if (!test_useradd_async(torture, p, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
@@ -394,7 +397,7 @@ bool torture_userdel(struct torture_context *torture)
 		goto done;
 	}
 
-       	if (!test_userdel(p, mem_ctx, &h, name)) {
+	if (!test_userdel(torture, p, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}

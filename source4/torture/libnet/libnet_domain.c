@@ -28,7 +28,8 @@
 #include "param/param.h"
 
 
-static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_opendomain_samr(struct torture_context *tctx,
+				 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle, struct lsa_String *domname,
 				 uint32_t *access_mask, struct dom_sid **sid_p)
 {
@@ -39,7 +40,7 @@ static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *me
 	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
 
-	printf("connecting\n");
+	torture_comment(tctx, "connecting\n");
 
 	*access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
@@ -49,7 +50,7 @@ static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *me
 
 	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connect failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Connect failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -57,11 +58,11 @@ static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *me
 	r2.in.domain_name = domname;
 	r2.out.sid = &sid;
 
-	printf("domain lookup on %s\n", domname->string);
+	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
 	status = dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -70,11 +71,11 @@ static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *me
 	r3.in.sid = *sid_p = *r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
-	printf("opening domain\n");
+	torture_comment(tctx, "opening domain\n");
 
 	status = dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(status));
 		return false;
 	} else {
 		*handle = domain_handle;
@@ -135,7 +136,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	if (ctx == NULL) {
-		d_printf("failed to create libnet context\n");
+		torture_comment(torture, "failed to create libnet context\n");
 		return false;
 	}
 
@@ -148,7 +149,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 
 	status = libnet_DomainOpen(ctx, torture, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to open domain on lsa service: %s\n", nt_errstr(status));
+		torture_comment(torture, "failed to open domain on lsa service: %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
@@ -159,7 +160,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 
 	status = dcerpc_lsa_Close_r(ctx->lsa.pipe->binding_handle, ctx, &lsa_close);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to close domain on lsa service: %s\n", nt_errstr(status));
+		torture_comment(torture, "failed to close domain on lsa service: %s\n", nt_errstr(status));
 		ret = false;
 	}
 
@@ -189,7 +190,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	if (ctx == NULL) {
-		d_printf("failed to create libnet context\n");
+		torture_comment(torture, "failed to create libnet context\n");
 		ret = false;
 		goto done;
 	}
@@ -200,7 +201,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_lsarpc,
 				     cmdline_credentials, torture->ev, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to connect to server: %s\n", nt_errstr(status));
+		torture_comment(torture, "failed to connect to server: %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
@@ -208,7 +209,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 	domain_name.string = lp_workgroup(torture->lp_ctx);
 
 	if (!test_opendomain_lsa(p->binding_handle, torture, &h, &domain_name, &access_mask)) {
-		d_printf("failed to open domain on lsa service\n");
+		torture_comment(torture, "failed to open domain on lsa service\n");
 		ret = false;
 		goto done;
 	}
@@ -262,7 +263,7 @@ bool torture_domain_open_samr(struct torture_context *torture)
 	/*
 	 * Testing synchronous version
 	 */
-	printf("opening domain\n");
+	torture_comment(torture, "opening domain\n");
 
 	io.in.type         = DOMAIN_SAMR;
 	io.in.domain_name  = domain_name;
@@ -270,7 +271,7 @@ bool torture_domain_open_samr(struct torture_context *torture)
 
 	status = libnet_DomainOpen(ctx, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Composite domain open failed - %s\n", nt_errstr(status));
+		torture_comment(torture, "Composite domain open failed - %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
@@ -280,11 +281,11 @@ bool torture_domain_open_samr(struct torture_context *torture)
 	r.in.handle   = &domain_handle;
 	r.out.handle  = &handle;
 
-	printf("closing domain handle\n");
+	torture_comment(torture, "closing domain handle\n");
 
 	status = dcerpc_samr_Close_r(ctx->samr.pipe->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
+		torture_comment(torture, "Close failed - %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
@@ -318,7 +319,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	if (ctx == NULL) {
-		d_printf("failed to create libnet context\n");
+		torture_comment(torture, "failed to create libnet context\n");
 		ret = false;
 		goto done;
 	}
@@ -329,15 +330,15 @@ bool torture_domain_close_samr(struct torture_context *torture)
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_samr,
 				     ctx->cred, torture->ev, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("failed to connect to server: %s\n", nt_errstr(status));
+		torture_comment(torture, "failed to connect to server: %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
 
 	domain_name.string = talloc_strdup(mem_ctx, lp_workgroup(torture->lp_ctx));
 
-	if (!test_opendomain_samr(p->binding_handle, torture, &h, &domain_name, &access_mask, &sid)) {
-		d_printf("failed to open domain on samr service\n");
+	if (!test_opendomain_samr(torture, p->binding_handle, torture, &h, &domain_name, &access_mask, &sid)) {
+		torture_comment(torture, "failed to open domain on samr service\n");
 		ret = false;
 		goto done;
 	}
@@ -386,7 +387,7 @@ bool torture_domain_list(struct torture_context *torture)
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	if (ctx == NULL) {
-		d_printf("failed to create libnet context\n");
+		torture_comment(torture, "failed to create libnet context\n");
 		ret = false;
 		goto done;
 	}
@@ -408,10 +409,10 @@ bool torture_domain_list(struct torture_context *torture)
 		goto done;
 	}
 
-	d_printf("Received list or domains (everything in one piece):\n");
+	torture_comment(torture, "Received list or domains (everything in one piece):\n");
 
 	for (i = 0; i < r.out.count; i++) {
-		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
+		torture_comment(torture, "Name[%d]: %s\n", i, r.out.domains[i].name);
 	}
 
 	/*
@@ -429,14 +430,14 @@ bool torture_domain_list(struct torture_context *torture)
 		goto done;
 	}
 
-	d_printf("Received list or domains (collected in more than one round):\n");
+	torture_comment(torture, "Received list or domains (collected in more than one round):\n");
 
 	for (i = 0; i < r.out.count; i++) {
-		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
+		torture_comment(torture, "Name[%d]: %s\n", i, r.out.domains[i].name);
 	}
 
 done:
-	d_printf("\nStatus: %s\n", nt_errstr(status));
+	torture_comment(torture, "\nStatus: %s\n", nt_errstr(status));
 
 	talloc_free(mem_ctx);
 	talloc_free(ctx);

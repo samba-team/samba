@@ -29,7 +29,8 @@
 #include "param/param.h"
 
 
-static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_cleanup(struct torture_context *tctx,
+			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *username)
 {
 	NTSTATUS status;
@@ -49,11 +50,11 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
 
-	printf("user account lookup '%s'\n", username);
+	torture_comment(tctx, "user account lookup '%s'\n", username);
 
 	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -64,22 +65,22 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r2.in.rid            = rid;
 	r2.out.user_handle   = &user_handle;
 
-	printf("opening user account\n");
+	torture_comment(tctx, "opening user account\n");
 
 	status = dcerpc_samr_OpenUser_r(b, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenUser failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenUser failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	r3.in.user_handle  = &user_handle;
 	r3.out.user_handle = &user_handle;
 
-	printf("deleting user account\n");
+	torture_comment(tctx, "deleting user account\n");
 
 	status = dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteUser failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "DeleteUser failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -87,7 +88,8 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_opendomain(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, struct lsa_String *domname)
 {
 	NTSTATUS status;
@@ -97,7 +99,7 @@ static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
 
-	printf("connecting\n");
+	torture_comment(tctx, "connecting\n");
 
 	r1.in.system_name = 0;
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -105,7 +107,7 @@ static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 
 	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connect failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Connect failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -113,11 +115,11 @@ static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	r2.in.domain_name = domname;
 	r2.out.sid = &sid;
 
-	printf("domain lookup on %s\n", domname->string);
+	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
 	status = dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -126,11 +128,11 @@ static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	r3.in.sid = *r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
-	printf("opening domain\n");
+	torture_comment(tctx, "opening domain\n");
 
 	status = dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(status));
 		return false;
 	} else {
 		*handle = domain_handle;
@@ -140,7 +142,8 @@ static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 }
 
 
-static bool test_samr_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_samr_close(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -151,7 +154,7 @@ static bool test_samr_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 
 	status = dcerpc_samr_Close_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close samr domain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Close samr domain failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -159,7 +162,8 @@ static bool test_samr_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 }
 
 
-static bool test_lsa_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_lsa_close(struct torture_context *tctx,
+			   struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -170,7 +174,7 @@ static bool test_lsa_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_lsa_Close_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close lsa domain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Close lsa domain failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -178,7 +182,8 @@ static bool test_lsa_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_createuser(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_createuser(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
  			    struct policy_handle *handle, const char* user)
 {
 	NTSTATUS status;
@@ -196,23 +201,23 @@ static bool test_createuser(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	r1.out.user_handle = &user_handle;
 	r1.out.rid = &user_rid;
 
-	printf("creating user '%s'\n", username.string);
+	torture_comment(tctx, "creating user '%s'\n", username.string);
 
 	status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateUser failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(status));
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			printf("User (%s) already exists - attempting to delete and recreate account again\n", user);
-			if (!test_cleanup(b, mem_ctx, handle, TEST_USERNAME)) {
+			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", user);
+			if (!test_cleanup(tctx, b, mem_ctx, handle, TEST_USERNAME)) {
 				return false;
 			}
 
-			printf("creating user account\n");
+			torture_comment(tctx, "creating user account\n");
 
 			status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r1);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("CreateUser failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(status));
 				return false;
 			}
 			return true;
@@ -223,11 +228,11 @@ static bool test_createuser(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	r2.in.handle = &user_handle;
 	r2.out.handle = &user_handle;
 
-	printf("closing user '%s'\n", username.string);
+	torture_comment(tctx, "closing user '%s'\n", username.string);
 
 	status = dcerpc_samr_Close_r(b, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Close failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -254,19 +259,19 @@ bool torture_createuser(struct torture_context *torture)
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_CreateUser call failed: %s\n", nt_errstr(status));
+		torture_comment(torture, "libnet_CreateUser call failed: %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
 
-	if (!test_cleanup(ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
-		printf("cleanup failed\n");
+	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
+		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
 	}
 
-	if (!test_samr_close(ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
-		printf("domain close failed\n");
+	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
+		torture_comment(torture, "domain close failed\n");
 		ret = false;
 	}
 
@@ -306,12 +311,12 @@ bool torture_deleteuser(struct torture_context *torture)
 	}
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(p->binding_handle, prep_mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(torture, p->binding_handle, prep_mem_ctx, &h, &domain_name)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_createuser(p->binding_handle, prep_mem_ctx, &h, name)) {
+	if (!test_createuser(torture, p->binding_handle, prep_mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
@@ -320,7 +325,7 @@ bool torture_deleteuser(struct torture_context *torture)
 
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_DeleteUser call failed: %s\n", nt_errstr(status));
+		torture_comment(torture, "libnet_DeleteUser call failed: %s\n", nt_errstr(status));
 		ret = false;
 	}
 
@@ -337,7 +342,8 @@ done:
   Generate testing set of random changes
 */
 
-static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
+static void set_test_changes(struct torture_context *tctx,
+			     TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 			     int num_changes, char **user_name, enum test_fields req_change)
 {
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
@@ -350,7 +356,7 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 	struct timeval now;
 	int i, testfld;
 
-	printf("Fields to change: [");
+	torture_comment(tctx, "Fields to change: [");
 
 	for (i = 0; i < num_changes && i < FIELDS_NUM; i++) {
 		const char *fldname;
@@ -437,33 +443,33 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 			fldname = "unknown_field";
 		}
 
-		printf(((i < num_changes - 1) ? "%s," : "%s"), fldname);
+		torture_comment(tctx, ((i < num_changes - 1) ? "%s," : "%s"), fldname);
 
 		/* disable requested field (it's supposed to be the only one used) */
 		if (req_change != none) req_change = none;
 	}
 
-	printf("]\n");
+	torture_comment(tctx, "]\n");
 }
 
 
 #define TEST_STR_FLD(fld) \
 	if (!strequal(req.in.fld, user_req.out.fld)) { \
-		printf("failed to change '%s'\n", #fld); \
+		torture_comment(torture, "failed to change '%s'\n", #fld); \
 		ret = false; \
 		goto cleanup; \
 	}
 
 #define TEST_TIME_FLD(fld) \
 	if (timeval_compare(req.in.fld, user_req.out.fld)) { \
-		printf("failed to change '%s'\n", #fld); \
+		torture_comment(torture, "failed to change '%s'\n", #fld); \
 		ret = false; \
 		goto cleanup; \
 	}
 
 #define TEST_NUM_FLD(fld) \
 	if (req.in.fld != user_req.out.fld) { \
-		printf("failed to change '%s'\n", #fld); \
+		torture_comment(torture, "failed to change '%s'\n", #fld); \
 		ret = false; \
 		goto cleanup; \
 	}
@@ -502,12 +508,12 @@ bool torture_modifyuser(struct torture_context *torture)
 	name = talloc_strdup(prep_mem_ctx, TEST_USERNAME);
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(b, prep_mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(torture, b, prep_mem_ctx, &h, &domain_name)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_createuser(b, prep_mem_ctx, &h, name)) {
+	if (!test_createuser(torture, b, prep_mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
@@ -518,18 +524,18 @@ bool torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	printf("Testing change of all fields - each single one in turn\n");
+	torture_comment(torture, "Testing change of all fields - each single one in turn\n");
 
 	for (fld = 1; fld < FIELDS_NUM - 1; fld++) {
 		ZERO_STRUCT(req);
 		req.in.domain_name = lp_workgroup(torture->lp_ctx);
 		req.in.user_name = name;
 
-		set_test_changes(torture, &req, 1, &name, fld);
+		set_test_changes(torture, torture, &req, 1, &name, fld);
 
 		status = libnet_ModifyUser(ctx, torture, &req);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
+			torture_comment(torture, "libnet_ModifyUser call failed: %s\n", nt_errstr(status));
 			ret = false;
 			continue;
 		}
@@ -541,7 +547,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 		status = libnet_UserInfo(ctx, torture, &user_req);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
+			torture_comment(torture, "libnet_UserInfo call failed: %s\n", nt_errstr(status));
 			ret = false;
 			continue;
 		}
@@ -581,7 +587,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 			status = libnet_ModifyUser(ctx, torture, &req);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
+				torture_comment(torture, "libnet_ModifyUser call failed: %s\n", nt_errstr(status));
 				ret = false;
 				goto done;
 			}
@@ -591,14 +597,14 @@ bool torture_modifyuser(struct torture_context *torture)
 	}
 
 cleanup:
-	if (!test_cleanup(ctx->samr.pipe->binding_handle, torture, &ctx->samr.handle, name)) {
-		printf("cleanup failed\n");
+	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle, torture, &ctx->samr.handle, name)) {
+		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
 	}
 
-	if (!test_samr_close(ctx->samr.pipe->binding_handle, torture, &ctx->samr.handle)) {
-		printf("domain close failed\n");
+	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, torture, &ctx->samr.handle)) {
+		torture_comment(torture, "domain close failed\n");
 		ret = false;
 	}
 
@@ -636,12 +642,12 @@ bool torture_userinfo_api(struct torture_context *torture)
 	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(b, prep_mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(torture, b, prep_mem_ctx, &h, &domain_name)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_createuser(b, prep_mem_ctx, &h, name)) {
+	if (!test_createuser(torture, b, prep_mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
@@ -656,19 +662,19 @@ bool torture_userinfo_api(struct torture_context *torture)
 
 	status = libnet_UserInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
+		torture_comment(torture, "libnet_UserInfo call failed: %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
 
-	if (!test_cleanup(ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
-		printf("cleanup failed\n");
+	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
+		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
 	}
 
-	if (!test_samr_close(ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
-		printf("domain close failed\n");
+	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
+		torture_comment(torture, "domain close failed\n");
 		ret = false;
 	}
 
@@ -698,7 +704,7 @@ bool torture_userlist(struct torture_context *torture)
 
 	ZERO_STRUCT(req);
 
-	printf("listing user accounts:\n");
+	torture_comment(torture, "listing user accounts:\n");
 
 	do {
 
@@ -711,7 +717,7 @@ bool torture_userlist(struct torture_context *torture)
 		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) break;
 
 		for (i = 0; i < req.out.count; i++) {
-			printf("\tuser: %s, sid=%s\n",
+			torture_comment(torture, "\tuser: %s, sid=%s\n",
 			       req.out.users[i].username, req.out.users[i].sid);
 		}
 
@@ -719,19 +725,19 @@ bool torture_userlist(struct torture_context *torture)
 
 	if (!(NT_STATUS_IS_OK(status) ||
 	      NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))) {
-		printf("libnet_UserList call failed: %s\n", nt_errstr(status));
+		torture_comment(torture, "libnet_UserList call failed: %s\n", nt_errstr(status));
 		ret = false;
 		goto done;
 	}
 
-	if (!test_samr_close(ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
-		printf("samr domain close failed\n");
+	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
+		torture_comment(torture, "samr domain close failed\n");
 		ret = false;
 		goto done;
 	}
 
-	if (!test_lsa_close(ctx->lsa.pipe->binding_handle, mem_ctx, &ctx->lsa.handle)) {
-		printf("lsa domain close failed\n");
+	if (!test_lsa_close(torture, ctx->lsa.pipe->binding_handle, mem_ctx, &ctx->lsa.handle)) {
+		torture_comment(torture, "lsa domain close failed\n");
 		ret = false;
 	}
 

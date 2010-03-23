@@ -82,7 +82,7 @@ bool torture_groupadd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_group_cleanup(b, mem_ctx, &h, name)) {
+	if (!test_group_cleanup(torture, b, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
