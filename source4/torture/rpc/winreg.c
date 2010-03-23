@@ -1949,6 +1949,7 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 		case REG_QWORD:
 			blob = data_blob_talloc_zero(tctx, 8);
 			SBVAL(blob.data, 0, value2);
+			break;
 		case REG_BINARY:
 			blob = data_blob_string_const("binary_blob");
 			break;
