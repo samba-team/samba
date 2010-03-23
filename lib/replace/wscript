@@ -145,7 +145,7 @@ def configure(conf):
     conf.define('SHLIBEXT', "so", quote=True)
 
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t')
-    conf.CHECK_TYPES('comparison_fn_t socklen_t bool')
+    conf.CHECK_TYPES('comparison_fn_t bool')
     conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
 
     conf.CHECK_TYPE('int8_t', 'char')
@@ -168,6 +168,7 @@ def configure(conf):
                     define='WORDS_BIGENDIAN')
 
 
+    conf.CHECK_TYPES('socklen_t', headers='sys/socket.h')
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
     conf.CHECK_TYPE_IN('struct sockaddr', 'sys/socket.h')
