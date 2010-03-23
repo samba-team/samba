@@ -1140,7 +1140,7 @@ def provision(setup_dir, message, session_info,
 
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])
-    users_gid = findnss_gid([users or "users"])
+    users_gid = findnss_gid([users or "users", 'users', 'other'])
     if wheel is None:
         wheel_gid = findnss_gid(["wheel", "adm"])
     else:
