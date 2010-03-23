@@ -24,21 +24,22 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
 
-static bool test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
+static bool test_domainopen(struct torture_context *tctx,
+			    struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
 			    struct lsa_String *domname,
 			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
 	struct libnet_DomainOpen io;
 
-	printf("opening domain\n");
+	torture_comment(tctx, "opening domain\n");
 
 	io.in.domain_name  = talloc_strdup(mem_ctx, domname->string);
 	io.in.access_mask  = SEC_FLAG_MAXIMUM_ALLOWED;
 
 	status = libnet_DomainOpen(net_ctx, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Composite domain open failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Composite domain open failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -47,7 +48,8 @@ static bool test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
 }
 
 
-static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_cleanup(struct torture_context *tctx,
+			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -57,11 +59,11 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r.in.handle   = domain_handle;
 	r.out.handle  = &handle;
 
-	printf("closing domain handle\n");
+	torture_comment(tctx, "closing domain handle\n");
 
 	status = dcerpc_samr_Close_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Close failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -95,12 +97,12 @@ bool torture_domainopen(struct torture_context *torture)
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_domainopen(net_ctx, mem_ctx, &name, &h)) {
+	if (!test_domainopen(torture, net_ctx, mem_ctx, &name, &h)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_cleanup(net_ctx->samr.pipe->binding_handle, mem_ctx, &h)) {
+	if (!test_cleanup(torture, net_ctx->samr.pipe->binding_handle, mem_ctx, &h)) {
 		ret = false;
 		goto done;
 	}
