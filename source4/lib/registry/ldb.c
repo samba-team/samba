@@ -162,6 +162,9 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 						     false);
 			if (ret2) {
 				ret = ldb_msg_add_value(msg, "data", val, NULL);
+			} else {
+				/* workaround for non-standard data */
+				ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
@@ -181,6 +184,9 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					return NULL;
 				}
 				ret = ldb_msg_add_string(msg, "data", conv_str);
+			} else {
+				/* workaround for non-standard data */
+				ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
@@ -199,6 +205,9 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 					return NULL;
 				}
 				ret = ldb_msg_add_string(msg, "data", conv_str);
+			} else {
+				/* workaround for non-standard data */
+				ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
