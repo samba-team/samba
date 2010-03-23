@@ -43,6 +43,14 @@ static const struct rid_name_map builtin_aliases[] = {
 		"Network Configuration Operators" },
 	{ BUILTIN_ALIAS_RID_INCOMING_FOREST_TRUST,
 		"Incoming Forest Trust Builders" },
+	{ BUILTIN_ALIAS_RID_PERFMON_USERS,
+		"Performance Monitor Users" },
+	{ BUILTIN_ALIAS_RID_PERFLOG_USERS,
+		"Performance Log Users" },
+	{ BUILTIN_ALIAS_RID_AUTH_ACCESS,
+		"Windows Authorization Access Group" },
+	{ BUILTIN_ALIAS_RID_TS_LICENSE_SERVERS,
+		"Terminal Server License Servers" },
 	{  0, NULL}};
 
 /*******************************************************************
