@@ -66,10 +66,6 @@ def build_dependencies(self):
     the full dependency list for a target until we have all of the targets declared.
     '''
 
-    # we only should add extra library and object deps on libraries and binaries
-    if not self.samba_type in ['LIBRARY', 'BINARY', 'PYTHON']:
-        return
-
     # we need to link against:
 
     #  1) any direct system libs
@@ -79,12 +75,27 @@ def build_dependencies(self):
     #  5) any direct objects
     #  6) any indirect objects that come from subsystem dependencies
 
-    self.uselib        = list(self.final_syslibs)
-    self.uselib_local  = list(self.final_libs)
-    self.add_objects   = list(self.final_objects)
+    if self.samba_type in ['LIBRARY', 'BINARY', 'PYTHON']:
+        self.uselib        = list(self.final_syslibs)
+        self.uselib_local  = list(self.final_libs)
+        self.add_objects   = list(self.final_objects)
 
-    debug('deps: computed dependencies for target %s: uselib=%s uselib_local=%s add_objects=%s',
-          self.sname, self.uselib, self.uselib_local, self.add_objects)
+        # extra link flags from pkg_config
+        libs = self.final_syslibs.copy()
+        libs = libs.union(self.indirect_libs)
+
+        (ccflags, ldflags) = library_flags(self, list(libs))
+        new_ldflags        = getattr(self, 'ldflags', [])
+        new_ldflags.extend(ldflags)
+        self.ldflags       = new_ldflags
+
+        debug('deps: computed dependencies for target %s: uselib=%s uselib_local=%s add_objects=%s',
+              self.sname, self.uselib, self.uselib_local, self.add_objects)
+
+    if self.samba_type in ['SUBSYSTEM']:
+        # this is needed for the ccflags of libs that come from pkg_config
+        self.uselib = list(self.direct_syslibs)
+
 
 
 
@@ -549,7 +560,7 @@ def break_dependency_loops(bld, tgt_list):
         if t.samba_type in ['SUBSYSTEM']:
             loops[loop] = loops[loop].union(t.indirect_objects)
             loops[loop] = loops[loop].union(t.direct_objects)
-        if t.samba_type in ['LIBRARY']:
+        if t.samba_type in ['LIBRARY','PYTHON']:
             loops[loop] = loops[loop].union(t.indirect_libs)
             loops[loop] = loops[loop].union(t.direct_libs)
         if loop in loops[loop]:
