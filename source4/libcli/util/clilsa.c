@@ -125,6 +125,11 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 		return status;
 	}
 
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		talloc_free(lsa);
+		return r.out.result;
+	}
+
 	cli->lsa = lsa;
 	
 	return NT_STATUS_OK;
@@ -150,7 +155,12 @@ NTSTATUS smblsa_sid_privileges(struct smbcli_state *cli, struct dom_sid *sid,
 	r.in.sid = sid;
 	r.out.rights = rights;
 
-	return dcerpc_lsa_EnumAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	status = dcerpc_lsa_EnumAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return r.out.result;
 }
 
 
@@ -239,6 +249,10 @@ NTSTATUS smblsa_lookup_sid(struct smbcli_state *cli,
 		talloc_free(mem_ctx2);
 		return status;
 	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		talloc_free(mem_ctx2);
+		return r.out.result;
+	}
 	if (names.count != 1) {
 		talloc_free(mem_ctx2);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -296,6 +310,10 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 		talloc_free(mem_ctx2);
 		return status;
 	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		talloc_free(mem_ctx2);
+		return r.out.result;
+	}
 	if (sids.count != 1) {
 		talloc_free(mem_ctx2);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -332,7 +350,12 @@ NTSTATUS smblsa_sid_add_privileges(struct smbcli_state *cli, struct dom_sid *sid
 	r.in.sid = sid;
 	r.in.rights = rights;
 
-	return dcerpc_lsa_AddAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	status = dcerpc_lsa_AddAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return r.out.result;
 }
 
 /*
@@ -355,5 +378,10 @@ NTSTATUS smblsa_sid_del_privileges(struct smbcli_state *cli, struct dom_sid *sid
 	r.in.remove_all = 0;
 	r.in.rights = rights;
 
-	return dcerpc_lsa_RemoveAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	status = dcerpc_lsa_RemoveAccountRights_r(cli->lsa->pipe->binding_handle, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return r.out.result;
 }
