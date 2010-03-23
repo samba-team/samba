@@ -33,7 +33,6 @@ static bool test_cleanup(struct torture_context *tctx,
 			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *username)
 {
-	NTSTATUS status;
 	struct samr_LookupNames r1;
 	struct samr_OpenUser r2;
 	struct samr_DeleteUser r3;
@@ -52,11 +51,11 @@ static bool test_cleanup(struct torture_context *tctx,
 
 	torture_comment(tctx, "user account lookup '%s'\n", username);
 
-	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
+		"LookupNames failed");
+	torture_assert_ntstatus_ok(tctx, r1.out.result,
+		"LookupNames failed");
 
 	rid = r1.out.rids->ids[0];
 
@@ -67,22 +66,22 @@ static bool test_cleanup(struct torture_context *tctx,
 
 	torture_comment(tctx, "opening user account\n");
 
-	status = dcerpc_samr_OpenUser_r(b, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenUser failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenUser_r(b, mem_ctx, &r2),
+		"OpenUser failed");
+	torture_assert_ntstatus_ok(tctx, r2.out.result,
+		"OpenUser failed");
 
 	r3.in.user_handle  = &user_handle;
 	r3.out.user_handle = &user_handle;
 
 	torture_comment(tctx, "deleting user account\n");
 
-	status = dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "DeleteUser failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3),
+		"DeleteUser failed");
+	torture_assert_ntstatus_ok(tctx, r3.out.result,
+		"DeleteUser failed");
 
 	return true;
 }
@@ -92,7 +91,6 @@ static bool test_opendomain(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, struct lsa_String *domname)
 {
-	NTSTATUS status;
 	struct policy_handle h, domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
@@ -105,11 +103,11 @@ static bool test_opendomain(struct torture_context *tctx,
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r1.out.connect_handle = &h;
 
-	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Connect failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Connect_r(b, mem_ctx, &r1),
+		"Connect failed");
+	torture_assert_ntstatus_ok(tctx, r1.out.result,
+		"Connect failed");
 
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
@@ -117,11 +115,11 @@ static bool test_opendomain(struct torture_context *tctx,
 
 	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
-	status = dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2),
+		"LookupDomain failed");
+	torture_assert_ntstatus_ok(tctx, r2.out.result,
+		"LookupDomain failed");
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -130,13 +128,13 @@ static bool test_opendomain(struct torture_context *tctx,
 
 	torture_comment(tctx, "opening domain\n");
 
-	status = dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(status));
-		return false;
-	} else {
-		*handle = domain_handle;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3),
+		"OpenDomain failed");
+	torture_assert_ntstatus_ok(tctx, r3.out.result,
+		"OpenDomain failed");
+
+	*handle = domain_handle;
 
 	return true;
 }
@@ -146,17 +144,16 @@ static bool test_samr_close(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *domain_handle)
 {
-	NTSTATUS status;
 	struct samr_Close r;
 
 	r.in.handle = domain_handle;
 	r.out.handle = domain_handle;
 
-	status = dcerpc_samr_Close_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Close samr domain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Close_r(b, mem_ctx, &r),
+		"Close samr domain failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"Close samr domain failed");
 
 	return true;
 }
@@ -166,17 +163,16 @@ static bool test_lsa_close(struct torture_context *tctx,
 			   struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle)
 {
-	NTSTATUS status;
 	struct lsa_Close r;
 
 	r.in.handle = domain_handle;
 	r.out.handle = domain_handle;
 
-	status = dcerpc_lsa_Close_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Close lsa domain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_Close_r(b, mem_ctx, &r),
+		"Close lsa domain failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"Close lsa domain failed");
 
 	return true;
 }
@@ -186,7 +182,6 @@ static bool test_createuser(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
  			    struct policy_handle *handle, const char* user)
 {
-	NTSTATUS status;
 	struct policy_handle user_handle;
 	struct lsa_String username;
 	struct samr_CreateUser r1;
@@ -203,11 +198,13 @@ static bool test_createuser(struct torture_context *tctx,
 
 	torture_comment(tctx, "creating user '%s'\n", username.string);
 
-	status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(status));
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_CreateUser_r(b, mem_ctx, &r1),
+		"CreateUser failed");
+	if (!NT_STATUS_IS_OK(r1.out.result)) {
+		torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(r1.out.result));
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+		if (NT_STATUS_EQUAL(r1.out.result, NT_STATUS_USER_EXISTS)) {
 			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", user);
 			if (!test_cleanup(tctx, b, mem_ctx, handle, TEST_USERNAME)) {
 				return false;
@@ -215,11 +212,12 @@ static bool test_createuser(struct torture_context *tctx,
 
 			torture_comment(tctx, "creating user account\n");
 
-			status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r1);
-			if (!NT_STATUS_IS_OK(status)) {
-				torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(status));
-				return false;
-			}
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_samr_CreateUser_r(b, mem_ctx, &r1),
+				"CreateUser failed");
+			torture_assert_ntstatus_ok(tctx, r1.out.result,
+				"CreateUser failed");
+
 			return true;
 		}
 		return false;
@@ -230,11 +228,11 @@ static bool test_createuser(struct torture_context *tctx,
 
 	torture_comment(tctx, "closing user '%s'\n", username.string);
 
-	status = dcerpc_samr_Close_r(b, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Close failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Close_r(b, mem_ctx, &r2),
+		"Close failed");
+	torture_assert_ntstatus_ok(tctx, r2.out.result,
+		"Close failed");
 
 	return true;
 }

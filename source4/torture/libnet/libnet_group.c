@@ -35,7 +35,6 @@ static bool test_cleanup(struct torture_context *tctx,
 			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *groupname)
 {
-	NTSTATUS status;
 	struct samr_LookupNames r1;
 	struct samr_OpenGroup r2;
 	struct samr_DeleteDomainGroup r3;
@@ -54,11 +53,11 @@ static bool test_cleanup(struct torture_context *tctx,
 
 	torture_comment(tctx, "group account lookup '%s'\n", groupname);
 
-	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
+		"LookupNames failed");
+	torture_assert_ntstatus_ok(tctx, r1.out.result,
+		"LookupNames failed");
 
 	rid = r1.out.rids->ids[0];
 
@@ -69,22 +68,22 @@ static bool test_cleanup(struct torture_context *tctx,
 
 	torture_comment(tctx, "opening group account\n");
 
-	status = dcerpc_samr_OpenGroup_r(b, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenGroup failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenGroup_r(b, mem_ctx, &r2),
+		"OpenGroup failed");
+	torture_assert_ntstatus_ok(tctx, r2.out.result,
+		"OpenGroup failed");
 
 	r3.in.group_handle  = &group_handle;
 	r3.out.group_handle = &group_handle;
 
 	torture_comment(tctx, "deleting group account\n");
 
-	status = dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "DeleteGroup failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3),
+		"DeleteGroup failed");
+	torture_assert_ntstatus_ok(tctx, r3.out.result,
+		"DeleteGroup failed");
 
 	return true;
 }
@@ -94,7 +93,6 @@ static bool test_creategroup(struct torture_context *tctx,
 			     struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			     struct policy_handle *handle, const char *name)
 {
-	NTSTATUS status;
 	struct lsa_String groupname;
 	struct samr_CreateDomainGroup r;
 	struct policy_handle group_handle;
@@ -110,11 +108,14 @@ static bool test_creategroup(struct torture_context *tctx,
 
 	torture_comment(tctx, "creating group account %s\n", name);
 
-	status = dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(status));
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
+		"CreateGroup failed");
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS)) {
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(r.out.result));
+
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_GROUP_EXISTS)) {
 			torture_comment(tctx, "Group (%s) already exists - attempting to delete and recreate group again\n", name);
 			if (!test_cleanup(tctx, b, mem_ctx, handle, TEST_GROUPNAME)) {
 				return false;
@@ -122,11 +123,12 @@ static bool test_creategroup(struct torture_context *tctx,
 
 			torture_comment(tctx, "creating group account\n");
 
-			status = dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(status));
-				return false;
-			}
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
+				"CreateGroup failed");
+			torture_assert_ntstatus_ok(tctx, r.out.result,
+				"CreateGroup failed");
+
 			return true;
 		}
 		return false;
@@ -140,7 +142,6 @@ static bool test_opendomain(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, struct lsa_String *domname)
 {
-	NTSTATUS status;
 	struct policy_handle h, domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
@@ -153,11 +154,11 @@ static bool test_opendomain(struct torture_context *tctx,
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r1.out.connect_handle = &h;
 
-	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Connect failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Connect_r(b, mem_ctx, &r1),
+		"Connect failed");
+	torture_assert_ntstatus_ok(tctx, r1.out.result,
+		"Connect failed");
 
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
@@ -165,11 +166,11 @@ static bool test_opendomain(struct torture_context *tctx,
 
 	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
-	status = dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2),
+		"LookupDomain failed");
+	torture_assert_ntstatus_ok(tctx, r2.out.result,
+		"LookupDomain failed");
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -178,13 +179,13 @@ static bool test_opendomain(struct torture_context *tctx,
 
 	torture_comment(tctx, "opening domain\n");
 
-	status = dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(status));
-		return false;
-	} else {
-		*handle = domain_handle;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3),
+		"OpenDomain failed");
+	torture_assert_ntstatus_ok(tctx, r3.out.result,
+		"OpenDomain failed");
+
+	*handle = domain_handle;
 
 	return true;
 }
@@ -194,17 +195,16 @@ static bool test_samr_close(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *domain_handle)
 {
-	NTSTATUS status;
 	struct samr_Close r;
 
 	r.in.handle = domain_handle;
 	r.out.handle = domain_handle;
 
-	status = dcerpc_samr_Close_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Close samr domain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Close_r(b, mem_ctx, &r),
+		"Close samr domain failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"Close samr domain failed");
 
 	return true;
 }
@@ -214,17 +214,16 @@ static bool test_lsa_close(struct torture_context *tctx,
 			   struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle)
 {
-	NTSTATUS status;
 	struct lsa_Close r;
 
 	r.in.handle = domain_handle;
 	r.out.handle = domain_handle;
 
-	status = dcerpc_lsa_Close_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Close lsa domain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_Close_r(b, mem_ctx, &r),
+		"Close lsa domain failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"Close lsa domain failed");
 
 	return true;
 }

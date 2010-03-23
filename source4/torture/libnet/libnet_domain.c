@@ -33,7 +33,6 @@ static bool test_opendomain_samr(struct torture_context *tctx,
 				 struct policy_handle *handle, struct lsa_String *domname,
 				 uint32_t *access_mask, struct dom_sid **sid_p)
 {
-	NTSTATUS status;
 	struct policy_handle h, domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
@@ -48,11 +47,11 @@ static bool test_opendomain_samr(struct torture_context *tctx,
 	r1.in.access_mask = *access_mask;
 	r1.out.connect_handle = &h;
 
-	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Connect failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Connect_r(b, mem_ctx, &r1),
+		"Connect failed");
+	torture_assert_ntstatus_ok(tctx, r1.out.result,
+		"Connect failed");
 
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
@@ -60,11 +59,11 @@ static bool test_opendomain_samr(struct torture_context *tctx,
 
 	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
-	status = dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2),
+		"LookupDomain failed");
+	torture_assert_ntstatus_ok(tctx, r2.out.result,
+		"LookupDomain failed");
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = *access_mask;
@@ -73,23 +72,23 @@ static bool test_opendomain_samr(struct torture_context *tctx,
 
 	torture_comment(tctx, "opening domain\n");
 
-	status = dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(status));
-		return false;
-	} else {
-		*handle = domain_handle;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3),
+		"OpenDomain failed");
+	torture_assert_ntstatus_ok(tctx, r3.out.result,
+		"OpenDomain failed");
+
+	*handle = domain_handle;
 
 	return true;
 }
 
 
-static bool test_opendomain_lsa(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+static bool test_opendomain_lsa(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle, struct lsa_String *domname,
 				uint32_t *access_mask)
 {
-	NTSTATUS status;
 	struct lsa_OpenPolicy2 open;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -111,10 +110,11 @@ static bool test_opendomain_lsa(struct dcerpc_binding_handle *b, TALLOC_CTX *mem
 	open.in.access_mask = *access_mask;
 	open.out.handle     = handle;
 
-	status = dcerpc_lsa_OpenPolicy2_r(b, mem_ctx, &open);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_OpenPolicy2_r(b, mem_ctx, &open),
+		"OpenPolicy2 failed");
+	torture_assert_ntstatus_ok(tctx, open.out.result,
+		"OpenPolicy2 failed");
 
 	return true;
 }
@@ -158,11 +158,11 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 	lsa_close.in.handle  = &ctx->lsa.handle;
 	lsa_close.out.handle = &h;
 
-	status = dcerpc_lsa_Close_r(ctx->lsa.pipe->binding_handle, ctx, &lsa_close);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "failed to close domain on lsa service: %s\n", nt_errstr(status));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(torture,
+		dcerpc_lsa_Close_r(ctx->lsa.pipe->binding_handle, ctx, &lsa_close),
+		"failed to close domain on lsa service");
+	torture_assert_ntstatus_ok(torture, lsa_close.out.result,
+		"failed to close domain on lsa service");
 
 done:
 	talloc_free(ctx);
@@ -208,7 +208,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
 
-	if (!test_opendomain_lsa(p->binding_handle, torture, &h, &domain_name, &access_mask)) {
+	if (!test_opendomain_lsa(torture, p->binding_handle, torture, &h, &domain_name, &access_mask)) {
 		torture_comment(torture, "failed to open domain on lsa service\n");
 		ret = false;
 		goto done;
@@ -283,12 +283,11 @@ bool torture_domain_open_samr(struct torture_context *torture)
 
 	torture_comment(torture, "closing domain handle\n");
 
-	status = dcerpc_samr_Close_r(ctx->samr.pipe->binding_handle, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "Close failed - %s\n", nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(torture,
+		dcerpc_samr_Close_r(ctx->samr.pipe->binding_handle, mem_ctx, &r),
+		"Close failed");
+	torture_assert_ntstatus_ok(torture, r.out.result,
+		"Close failed");
 
 done:
 	talloc_free(mem_ctx);

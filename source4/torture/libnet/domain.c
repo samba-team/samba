@@ -52,7 +52,6 @@ static bool test_cleanup(struct torture_context *tctx,
 			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle)
 {
-	NTSTATUS status;
 	struct samr_Close r;
 	struct policy_handle handle;
 
@@ -61,11 +60,11 @@ static bool test_cleanup(struct torture_context *tctx,
 
 	torture_comment(tctx, "closing domain handle\n");
 
-	status = dcerpc_samr_Close_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Close failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_Close_r(b, mem_ctx, &r),
+		"Close failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"Close failed");
 
 	return true;
 }
