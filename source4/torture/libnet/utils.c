@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "torture/libnet/utils.h"
 
-bool test_opendomain(struct torture_context *tctx, 
+bool test_opendomain(struct torture_context *tctx,
 		     struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
 		     struct dom_sid2 *sid_p)
@@ -39,16 +39,16 @@ bool test_opendomain(struct torture_context *tctx,
 	struct samr_LookupDomain r2;
 	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
-	
+
 	torture_comment(tctx, "connecting\n");
-	
+
 	r1.in.system_name = 0;
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r1.out.connect_handle = &h;
-	
+
 	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
 	torture_assert_ntstatus_ok(tctx, status, "Connect failed");
-	
+
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
 	r2.out.sid = &sid;
@@ -95,14 +95,14 @@ bool test_user_cleanup(struct torture_context *tctx,
 	r1.in.names          = names;
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
-	
+
 	torture_comment(tctx, "user account lookup '%s'\n", name);
 
 	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
 	torture_assert_ntstatus_ok(tctx, status, "LookupNames failed");
 
 	rid = r1.out.rids->ids[0];
-	
+
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
 	r2.in.rid            = rid;
@@ -117,15 +117,15 @@ bool test_user_cleanup(struct torture_context *tctx,
 	r3.out.user_handle = &user_handle;
 
 	torture_comment(tctx, "deleting user account\n");
-	
+
 	status = dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3);
 	torture_assert_ntstatus_ok(tctx, status, "DeleteUser failed");
-	
+
 	return true;
 }
 
 
-bool test_user_create(struct torture_context *tctx, 
+bool test_user_create(struct torture_context *tctx,
 		      struct dcerpc_binding_handle *b,
 		      TALLOC_CTX *mem_ctx,
 		      struct policy_handle *handle, const char *name,
@@ -135,9 +135,9 @@ bool test_user_create(struct torture_context *tctx,
 	struct lsa_String username;
 	struct samr_CreateUser r;
 	struct policy_handle user_handle;
-	
+
 	username.string = name;
-	
+
 	r.in.domain_handle = handle;
 	r.in.account_name  = &username;
 	r.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -157,7 +157,7 @@ bool test_user_create(struct torture_context *tctx,
 			}
 
 			torture_comment(tctx, "creating user account\n");
-			
+
 			status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r);
 			torture_assert_ntstatus_ok(tctx, status, "CreateUser failed");
 			return true;
@@ -189,7 +189,7 @@ bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r1.in.names          = names;
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
-	
+
 	printf("group account lookup '%s'\n", name);
 
 	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
@@ -199,7 +199,7 @@ bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	}
 
 	rid = r1.out.rids->ids[0];
-	
+
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
 	r2.in.rid            = rid;
@@ -217,13 +217,13 @@ bool test_group_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r3.out.group_handle = &group_handle;
 
 	printf("deleting group account\n");
-	
+
 	status = dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteGroup failed - %s\n", nt_errstr(status));
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -236,9 +236,9 @@ bool test_group_create(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	struct lsa_String groupname;
 	struct samr_CreateDomainGroup r;
 	struct policy_handle group_handle;
-	
+
 	groupname.string = name;
-	
+
 	r.in.domain_handle  = handle;
 	r.in.name           = &groupname;
 	r.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -258,7 +258,7 @@ bool test_group_create(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			}
 
 			printf("creating group account\n");
-			
+
 			status = dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("CreateGroup failed - %s\n", nt_errstr(status));

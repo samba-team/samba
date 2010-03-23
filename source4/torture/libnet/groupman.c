@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -37,7 +37,7 @@ static bool test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	group.in.domain_handle = *domain_handle;
 	group.in.groupname     = name;
-	
+
 	printf("Testing libnet_rpc_groupadd\n");
 
 	status = libnet_rpc_groupadd(p, mem_ctx, &group);
@@ -45,7 +45,7 @@ static bool test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("Failed to call sync libnet_rpc_groupadd - %s\n", nt_errstr(status));
 		return false;
 	}
-	
+
 	return ret;
 }
 
@@ -64,10 +64,10 @@ bool torture_groupadd(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_groupadd");
 
-	status = torture_rpc_connection(torture, 
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
-	
+
 	torture_assert_ntstatus_ok(torture, status, "RPC connection");
 	b = p->binding_handle;
 
@@ -86,7 +86,7 @@ bool torture_groupadd(struct torture_context *torture)
 		ret = false;
 		goto done;
 	}
-	
+
 done:
 	talloc_free(mem_ctx);
 	return ret;

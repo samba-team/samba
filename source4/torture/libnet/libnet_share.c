@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Gregory LEOCADIE <gleocadie@idealx.com> 2005
    Copyright (C) Rafal Szczesniak  2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -139,9 +139,9 @@ bool torture_listshares(struct torture_context *torture)
 	}
 
 	libnetctx->cred = cmdline_credentials;
-	
+
 	printf("Testing libnet_ListShare\n");
-	
+
 	share.in.server_name = talloc_asprintf(mem_ctx, "%s", binding->host);
 
 	for (i = 0; i < ARRAY_SIZE(levels); i++) {
@@ -172,7 +172,7 @@ static bool test_addshare(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx, 
 	struct srvsvc_NetShareAdd add;
 	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 i;
-	
+
 	i.name         = share;
 	i.type         = STYPE_DISKTREE;
 	i.path         = "C:\\WINDOWS\\TEMP";
@@ -208,7 +208,7 @@ bool torture_delshare(struct torture_context *torture)
 	NTSTATUS  status;
 	bool ret = true;
 	struct libnet_DelShare share;
-	
+
 	host = torture_setting_string(torture, "host", NULL);
 	status = torture_rpc_binding(torture, &binding);
 	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");

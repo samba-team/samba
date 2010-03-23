@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -89,7 +89,7 @@ static bool torture_rpc_connect(struct torture_context *torture,
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
-	
+
 	d_printf("Testing connection to LSA interface\n");
 	if (!test_connect_service(ctx, &ndr_table_lsarpc, bindstr,
 				  hostname, level, false, NT_STATUS_OK)) {
@@ -152,7 +152,7 @@ bool torture_rpc_connect_pdc(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *domain_name;
-	
+
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
@@ -172,7 +172,7 @@ bool torture_rpc_connect_dc(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *domain_name;
-	
+
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
@@ -192,7 +192,7 @@ bool torture_rpc_connect_dc_info(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *domain_name;
-	
+
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
@@ -212,7 +212,7 @@ bool torture_rpc_connect_binding(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 	const char *bindstr;
-	
+
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;

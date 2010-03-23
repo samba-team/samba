@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -38,21 +38,21 @@ static bool test_opendomain_samr(struct dcerpc_binding_handle *b, TALLOC_CTX *me
 	struct samr_LookupDomain r2;
 	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
-	
+
 	printf("connecting\n");
 
 	*access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	
+
 	r1.in.system_name = 0;
 	r1.in.access_mask = *access_mask;
 	r1.out.connect_handle = &h;
-	
+
 	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
 		return false;
 	}
-	
+
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
 	r2.out.sid = &sid;
@@ -102,14 +102,14 @@ static bool test_opendomain_lsa(struct dcerpc_binding_handle *b, TALLOC_CTX *mem
 	qos.impersonation_level = 2;
 	qos.context_mode        = 1;
 	qos.effective_only      = 0;
-	
+
 	attr.sec_qos = &qos;
 
 	open.in.system_name = domname->string;
 	open.in.attr        = &attr;
 	open.in.access_mask = *access_mask;
 	open.out.handle     = handle;
-	
+
 	status = dcerpc_lsa_OpenPolicy2_r(b, mem_ctx, &open);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
@@ -156,7 +156,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 	ZERO_STRUCT(lsa_close);
 	lsa_close.in.handle  = &ctx->lsa.handle;
 	lsa_close.out.handle = &h;
-	
+
 	status = dcerpc_lsa_Close_r(ctx->lsa.pipe->binding_handle, ctx, &lsa_close);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to close domain on lsa service: %s\n", nt_errstr(status));
@@ -206,13 +206,13 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 	}
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	
+
 	if (!test_opendomain_lsa(p->binding_handle, torture, &h, &domain_name, &access_mask)) {
 		d_printf("failed to open domain on lsa service\n");
 		ret = false;
 		goto done;
 	}
-	
+
 	ctx->lsa.pipe        = p;
 	ctx->lsa.name        = domain_name.string;
 	ctx->lsa.access_mask = access_mask;
@@ -224,7 +224,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_LSA;
 	r.in.domain_name = domain_name.string;
-	
+
 	status = libnet_DomainClose(ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
@@ -263,7 +263,7 @@ bool torture_domain_open_samr(struct torture_context *torture)
 	 * Testing synchronous version
 	 */
 	printf("opening domain\n");
-	
+
 	io.in.type         = DOMAIN_SAMR;
 	io.in.domain_name  = domain_name;
 	io.in.access_mask  = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -279,9 +279,9 @@ bool torture_domain_open_samr(struct torture_context *torture)
 
 	r.in.handle   = &domain_handle;
 	r.out.handle  = &handle;
-	
+
 	printf("closing domain handle\n");
-	
+
 	status = dcerpc_samr_Close_r(ctx->samr.pipe->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
@@ -335,13 +335,13 @@ bool torture_domain_close_samr(struct torture_context *torture)
 	}
 
 	domain_name.string = talloc_strdup(mem_ctx, lp_workgroup(torture->lp_ctx));
-	
+
 	if (!test_opendomain_samr(p->binding_handle, torture, &h, &domain_name, &access_mask, &sid)) {
 		d_printf("failed to open domain on samr service\n");
 		ret = false;
 		goto done;
 	}
-	
+
 	ctx->samr.pipe        = p;
 	ctx->samr.name        = talloc_steal(ctx, domain_name.string);
 	ctx->samr.access_mask = access_mask;
@@ -355,7 +355,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_SAMR;
 	r.in.domain_name = domain_name.string;
-	
+
 	status = libnet_DomainClose(ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
@@ -392,7 +392,7 @@ bool torture_domain_list(struct torture_context *torture)
 	}
 
 	ctx->cred = cmdline_credentials;
-	
+
 	mem_ctx = talloc_init("torture_domain_close_samr");
 
 	/*
@@ -409,7 +409,7 @@ bool torture_domain_list(struct torture_context *torture)
 	}
 
 	d_printf("Received list or domains (everything in one piece):\n");
-	
+
 	for (i = 0; i < r.out.count; i++) {
 		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
 	}
@@ -430,7 +430,7 @@ bool torture_domain_list(struct torture_context *torture)
 	}
 
 	d_printf("Received list or domains (collected in more than one round):\n");
-	
+
 	for (i = 0; i < r.out.count; i++) {
 		d_printf("Name[%d]: %s\n", i, r.out.domains[i].name);
 	}

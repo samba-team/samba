@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -35,7 +35,7 @@ static bool test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	bool ret = true;
 	struct libnet_rpc_useradd user;
-	
+
 	user.in.domain_handle = *domain_handle;
 	user.in.username      = name;
 
@@ -46,7 +46,7 @@ static bool test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("Failed to call libnet_rpc_useradd - %s\n", nt_errstr(status));
 		return false;
 	}
-	
+
 	return ret;
 }
 
@@ -60,9 +60,9 @@ static bool test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	user.in.domain_handle = *handle;
 	user.in.username      = username;
-	
+
 	printf("Testing async libnet_rpc_useradd\n");
-	
+
 	c = libnet_rpc_useradd_send(p, &user, msg_handler);
 	if (!c) {
 		printf("Failed to call async libnet_rpc_useradd\n");
@@ -79,7 +79,7 @@ static bool test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 }
 
-static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p, 
+static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			 TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, int num_changes,
 			 struct libnet_rpc_usermod *mod, char **username)
@@ -103,7 +103,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 	mod->in.username = talloc_strdup(mem_ctx, *username);
 	mod->in.domain_handle = *handle;
 
-	torture_comment(tctx, "modifying user (%d simultaneous change(s))\n", 
+	torture_comment(tctx, "modifying user (%d simultaneous change(s))\n",
 			num_changes);
 
 	torture_comment(tctx, "fields to change: [");
@@ -140,7 +140,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			mod->in.change.fields |= USERMOD_FIELD_DESCRIPTION;
 			fldname = "description";
 			break;
-			
+
 		case home_directory:
 			continue_if_field_set(mod->in.change.home_directory);
 			homedir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
@@ -217,10 +217,10 @@ static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct libnet_rpc_userdel user;
-	
+
 	user.in.domain_handle = *handle;
 	user.in.username = username;
-	
+
 	status = libnet_rpc_userdel(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
@@ -265,7 +265,7 @@ static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 
-static bool test_compare(struct torture_context *tctx, 
+static bool test_compare(struct torture_context *tctx,
 			 struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, struct libnet_rpc_usermod *mod,
 			 const char *username)
@@ -315,10 +315,10 @@ bool torture_useradd(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_useradd");
 
-	status = torture_rpc_connection(torture, 
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
-	
+
 	torture_assert_ntstatus_ok(torture, status, "RPC connect failed");
 	b = p->binding_handle;
 
@@ -374,10 +374,10 @@ bool torture_userdel(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_userdel");
 
-	status = torture_rpc_connection(torture, 
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -393,12 +393,12 @@ bool torture_userdel(struct torture_context *torture)
 		ret = false;
 		goto done;
 	}
-	
+
        	if (!test_userdel(p, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;
 	}
-	
+
 done:
 	talloc_free(mem_ctx);
 	return ret;
@@ -421,10 +421,10 @@ bool torture_usermod(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_userdel");
 
-	status = torture_rpc_connection(torture, 
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
-	
+
 	torture_assert_ntstatus_ok(torture, status, "RPC connect");
 	b = p->binding_handle;
 
@@ -440,7 +440,7 @@ bool torture_usermod(struct torture_context *torture)
 		ret = false;
 		goto done;
 	}
-	
+
 	for (i = 1; i < FIELDS_NUM; i++) {
 		struct libnet_rpc_usermod m;
 
@@ -454,8 +454,8 @@ bool torture_usermod(struct torture_context *torture)
 			goto cleanup;
 		}
 	}
-	
-cleanup:	
+
+cleanup:
 	if (!test_user_cleanup(torture, b, mem_ctx, &h, name)) {
 		ret = false;
 		goto done;

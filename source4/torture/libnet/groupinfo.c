@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -38,9 +38,9 @@ static bool test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct libnet_rpc_groupinfo group;
 	struct dom_sid *group_sid;
-	
+
 	group_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
-	
+
 	group.in.domain_handle = *domain_handle;
 	group.in.sid           = dom_sid_string(mem_ctx, group_sid);
 	group.in.level         = level;       /* this should be extended */
@@ -84,10 +84,10 @@ bool torture_groupinfo(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_userinfo");
 
-	status = torture_rpc_connection(torture, 
+	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}

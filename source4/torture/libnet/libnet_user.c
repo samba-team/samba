@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test suite for libnet calls.
 
    Copyright (C) Rafal Szczesniak 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -48,7 +48,7 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r1.in.names          = names;
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
-	
+
 	printf("user account lookup '%s'\n", username);
 
 	status = dcerpc_samr_LookupNames_r(b, mem_ctx, &r1);
@@ -58,7 +58,7 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	}
 
 	rid = r1.out.rids->ids[0];
-	
+
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
 	r2.in.rid            = rid;
@@ -76,7 +76,7 @@ static bool test_cleanup(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 	r3.out.user_handle = &user_handle;
 
 	printf("deleting user account\n");
-	
+
 	status = dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteUser failed - %s\n", nt_errstr(status));
@@ -96,19 +96,19 @@ static bool test_opendomain(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	struct samr_LookupDomain r2;
 	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
-	
+
 	printf("connecting\n");
-	
+
 	r1.in.system_name = 0;
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r1.out.connect_handle = &h;
-	
+
 	status = dcerpc_samr_Connect_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
 		return false;
 	}
-	
+
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
 	r2.out.sid = &sid;
@@ -145,7 +145,7 @@ static bool test_samr_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 {
 	NTSTATUS status;
 	struct samr_Close r;
-  
+
 	r.in.handle = domain_handle;
 	r.out.handle = domain_handle;
 
@@ -154,7 +154,7 @@ static bool test_samr_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 		printf("Close samr domain failed - %s\n", nt_errstr(status));
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -167,7 +167,7 @@ static bool test_lsa_close(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 
 	r.in.handle = domain_handle;
 	r.out.handle = domain_handle;
-	
+
 	status = dcerpc_lsa_Close_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close lsa domain failed - %s\n", nt_errstr(status));
@@ -189,7 +189,7 @@ static bool test_createuser(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	uint32_t user_rid;
 
 	username.string = user;
-	
+
 	r1.in.domain_handle = handle;
 	r1.in.account_name = &username;
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -197,7 +197,7 @@ static bool test_createuser(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 	r1.out.rid = &user_rid;
 
 	printf("creating user '%s'\n", username.string);
-	
+
 	status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateUser failed - %s\n", nt_errstr(status));
@@ -209,20 +209,20 @@ static bool test_createuser(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx
 			}
 
 			printf("creating user account\n");
-			
+
 			status = dcerpc_samr_CreateUser_r(b, mem_ctx, &r1);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("CreateUser failed - %s\n", nt_errstr(status));
 				return false;
 			}
 			return true;
-		}		
+		}
 		return false;
 	}
 
 	r2.in.handle = &user_handle;
 	r2.out.handle = &user_handle;
-	
+
 	printf("closing user '%s'\n", username.string);
 
 	status = dcerpc_samr_Close_r(b, mem_ctx, &r2);
@@ -359,14 +359,14 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 
 		/* get one in case we hit time field this time */
 		gettimeofday(&now, NULL);
-		
+
 		switch (testfld) {
 		case account_name:
 			continue_if_field_set(r->in.account_name);
 			r->in.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
 							     (int)(random() % 100));
 			fldname = "account_name";
-			
+
 			/* update the test's user name in case it's about to change */
 			*user_name = talloc_strdup(mem_ctx, r->in.account_name);
 			break;
@@ -412,7 +412,7 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 			r->in.logon_script = talloc_strdup(mem_ctx, logonscript);
 			fldname = "logon_script";
 			break;
-			
+
 		case profile_path:
 			continue_if_field_set(r->in.profile_path);
 			r->in.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
@@ -436,7 +436,7 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 		default:
 			fldname = "unknown_field";
 		}
-		
+
 		printf(((i < num_changes - 1) ? "%s," : "%s"), fldname);
 
 		/* disable requested field (it's supposed to be the only one used) */
@@ -578,14 +578,14 @@ bool torture_modifyuser(struct torture_context *torture)
 			req.in.domain_name = lp_workgroup(torture->lp_ctx);
 			req.in.user_name = name;
 			req.in.account_name = TEST_USERNAME;
-			
+
 			status = libnet_ModifyUser(ctx, torture, &req);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
 				ret = false;
 				goto done;
 			}
-			
+
 			name = talloc_strdup(torture, TEST_USERNAME);
 		}
 	}
@@ -649,7 +649,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 	mem_ctx = talloc_init("torture user info");
 
 	ZERO_STRUCT(req);
-	
+
 	req.in.domain_name = domain_name.string;
 	req.in.data.user_name   = name;
 	req.in.level = USER_INFO_BY_NAME;
@@ -699,7 +699,7 @@ bool torture_userlist(struct torture_context *torture)
 	ZERO_STRUCT(req);
 
 	printf("listing user accounts:\n");
-	
+
 	do {
 
 		req.in.domain_name = domain_name.string;
