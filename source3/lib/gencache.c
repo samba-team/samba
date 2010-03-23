@@ -40,6 +40,13 @@ static struct tdb_context *cache_notrans;
  * @brief Generic, persistent and shared between processes cache mechanism
  *        for use by various parts of the Samba code
  *
+ * We have two cache files, one with transactions (gencache.tdb) and
+ * one without (gencache_notrans.tdb) that is CLEAR_IF_FIRST. Normal
+ * writes go to the gencache_notrans.tdb to be fast. Every 100 writes
+ * to the gencache (settable with gencache:stabilize_count) or every 5
+ * minutes (settable with gencache:stabilize_interval) we stabilize
+ * gencache_notrans.tdb with one transaction to gencache.tdb.
+ *
  **/
 
 
@@ -107,7 +114,8 @@ again:
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache_notrans = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST,
+	cache_notrans = tdb_open_log(cache_fname, 0,
+				     TDB_CLEAR_IF_FIRST | TDB_SEQNUM,
 				     open_flags, 0644);
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
@@ -128,6 +136,51 @@ static TDB_DATA last_stabilize_key(void)
 	return result;
 }
 
+struct gencache_parse_last_stabilize_state {
+	bool found;
+	int last_time;
+	int last_seqnum;
+};
+
+static int gencache_parse_last_stabilize_fn(TDB_DATA key, TDB_DATA data,
+					    void *private_data)
+{
+	struct gencache_parse_last_stabilize_state *state =
+		(struct gencache_parse_last_stabilize_state *)private_data;
+
+	if ((data.dptr == NULL) || (data.dsize == 0) ||
+	    (data.dptr[data.dsize-1] != '\0')) {
+		return -1;
+	}
+
+	if (sscanf((char *)data.dptr, "%d/%d", &state->last_time,
+		   &state->last_seqnum) != 2) {
+		return -1;
+	}
+
+	state->found = true;
+	return 0;
+}
+
+static bool gencache_parse_last_stabilize(time_t *last_time, int *last_seqnum)
+{
+	struct gencache_parse_last_stabilize_state state;
+
+	state.found = false;
+
+	if (tdb_parse_record(cache_notrans, last_stabilize_key(),
+			     gencache_parse_last_stabilize_fn,
+			     &state) == -1) {
+		return false;
+	}
+	if (!state.found) {
+		return false;
+	}
+	*last_time = state.last_time;
+	*last_seqnum = state.last_seqnum;
+	return true;
+}
+
 /**
  * Set an entry in the cache file. If there's no such
  * one, then add it.
@@ -144,9 +197,9 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 			    time_t timeout)
 {
 	int ret;
-	TDB_DATA databuf;
 	char* val;
 	time_t last_stabilize;
+	int last_seqnum;
 	static int writecount;
 
 	if (tdb_data_cmp(string_term_tdb_data(keystr),
@@ -206,17 +259,15 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	 * gencache_notrans.tdb too large.
 	 */
 
-	last_stabilize = 0;
-	databuf = tdb_fetch(cache_notrans, last_stabilize_key());
-	if ((databuf.dptr != NULL)
-	    && (databuf.dptr[databuf.dsize-1] == '\0')) {
-		last_stabilize = atoi((char *)databuf.dptr);
-		SAFE_FREE(databuf.dptr);
-	}
-	if ((last_stabilize
-	     + lp_parm_int(-1, "gencache", "stabilize_interval", 300))
-	    < time(NULL)) {
-		gencache_stabilize();
+	if (gencache_parse_last_stabilize(&last_stabilize, &last_seqnum)) {
+		time_t next;
+
+		next = last_stabilize + lp_parm_int(
+			-1, "gencache", "stabilize_interval", 300);
+
+		if (next < time(NULL)) {
+			gencache_stabilize();
+		}
 	}
 
 done:
@@ -411,9 +462,17 @@ bool gencache_stabilize(void)
 	struct stabilize_state state;
 	int res;
 	char *now;
+	time_t last_time;
+	int last_seqnum;
 
 	if (!gencache_init()) {
 		return false;
+	}
+
+	if (gencache_parse_last_stabilize(&last_time, &last_seqnum)
+	    && (last_seqnum == tdb_get_seqnum(cache_notrans))) {
+		/* Nothing changed */
+		return true;
 	}
 
 	res = tdb_transaction_start(cache);
@@ -468,7 +527,9 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	now = talloc_asprintf(talloc_tos(), "%d", (int)time(NULL));
+	now = talloc_asprintf(talloc_tos(), "%d/%d",
+			      (int)time(NULL),
+			      tdb_get_seqnum(cache_notrans)+1);
 	if (now != NULL) {
 		tdb_store(cache_notrans, last_stabilize_key(),
 			  string_term_tdb_data(now), 0);
