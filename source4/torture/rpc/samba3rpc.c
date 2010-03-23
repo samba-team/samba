@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    dcerpc torture tests, designed to walk Samba3 code paths
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -47,7 +47,7 @@
  * This tests a RPC call using an invalid vuid
  */
 
-bool torture_bind_authcontext(struct torture_context *torture) 
+bool torture_bind_authcontext(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -79,7 +79,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, 
+					"IPC$", NULL,
 					lp_socket_options(torture->lp_ctx),
 					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
@@ -305,7 +305,7 @@ static bool torture_bind_samba3(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, 
+					"IPC$", NULL,
 					lp_socket_options(torture->lp_ctx),
 					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
@@ -972,8 +972,8 @@ static bool auth2(struct smbcli_state *cli,
 	a.in.credentials = &netr_cred;
 	a.out.return_credentials = &netr_cred;
 
-	creds_state = netlogon_creds_client_init(mem_ctx, 
-						 a.in.account_name, 
+	creds_state = netlogon_creds_client_init(mem_ctx,
+						 a.in.account_name,
 						 a.in.computer_name,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
@@ -1016,7 +1016,7 @@ static bool schan(struct smbcli_state *cli,
 	struct dcerpc_pipe *net_pipe;
 	struct dcerpc_binding_handle *net_handle;
 	int i;
-	
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		d_printf("talloc_new failed\n");
@@ -1082,7 +1082,7 @@ static bool schan(struct smbcli_state *cli,
 
 		generate_random_buffer(chal.data, chal.length);
 		names_blob = NTLMv2_generate_names_blob(
-			mem_ctx, 
+			mem_ctx,
 			cli_credentials_get_workstation(user_creds),
 			cli_credentials_get_domain(user_creds));
 		status = cli_credentials_get_ntlm_response(
@@ -1277,9 +1277,9 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, 
+					"IPC$", NULL,
 					lp_socket_options(torture->lp_ctx),
-					anon_creds, 
+					anon_creds,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lp_iconv_convenience(torture->lp_ctx),
@@ -1514,7 +1514,7 @@ static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (!(result = dcerpc_pipe_init(
-		      mem_ctx, tree->session->transport->socket->event.ctx, 
+		      mem_ctx, tree->session->transport->socket->event.ctx,
 		      lp_iconv_convenience(lp_ctx)))) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1607,7 +1607,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_lsa_LookupNames_r(b, tmp_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames of %s failed - %s\n", lsa_name.string, 
+		printf("LookupNames of %s failed - %s\n", lsa_name.string,
 		       nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return NULL;
@@ -1625,7 +1625,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
-	
+
 	talloc_free(tmp_ctx);
 	return result;
 }
@@ -1634,8 +1634,8 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
  * Find out the user SID on this connection
  */
 
-static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, 
-			      struct loadparm_context *lp_ctx, 
+static struct dom_sid *whoami(TALLOC_CTX *mem_ctx,
+			      struct loadparm_context *lp_ctx,
 			      struct smbcli_tree *tree)
 {
 	struct dcerpc_pipe *lsa;
@@ -1757,7 +1757,7 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		lp_smb_ports(torture->lp_ctx),
-		"IPC$", NULL, lp_socket_options(torture->lp_ctx), cmdline_credentials, 
+		"IPC$", NULL, lp_socket_options(torture->lp_ctx), cmdline_credentials,
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
 		lp_iconv_convenience(torture->lp_ctx),
@@ -1785,8 +1785,8 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
-		lp_smb_ports(torture->lp_ctx), "IPC$", NULL, 
-		lp_socket_options(torture->lp_ctx), anon_creds, 
+		lp_smb_ports(torture->lp_ctx), "IPC$", NULL,
+		lp_socket_options(torture->lp_ctx), anon_creds,
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
 		lp_iconv_convenience(torture->lp_ctx),
@@ -1892,7 +1892,7 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	}
 
  del:
-	if (!delete_user(cli, torture->lp_ctx, 
+	if (!delete_user(cli, torture->lp_ctx,
 			 cmdline_credentials,
 			 cli_credentials_get_username(user_creds))) {
 		d_printf("(%s) delete_user failed\n", __location__);
@@ -1923,7 +1923,7 @@ static bool test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
 
-		printf("testing NetShareGetInfo level %u on share '%s'\n", 
+		printf("testing NetShareGetInfo level %u on share '%s'\n",
 		       r.in.level, r.in.share_name);
 
 		status = dcerpc_srvsvc_NetShareGetInfo_r(b, mem_ctx, &r);
@@ -2062,7 +2062,7 @@ static bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 		return false;
 	}
 
-	status = pipe_bind_smb(mem_ctx, torture->lp_ctx, cli->tree, 
+	status = pipe_bind_smb(mem_ctx, torture->lp_ctx, cli->tree,
 			       "\\pipe\\srvsvc", &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
@@ -2180,13 +2180,13 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	a.in.credentials = &netr_cred;
 	a.out.return_credentials = &netr_cred;
 
-	creds_state = netlogon_creds_client_init(mem_ctx, 
+	creds_state = netlogon_creds_client_init(mem_ctx,
 						 a.in.account_name,
 						 a.in.computer_name,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
 						 &netr_cred, negotiate_flags);
-	
+
 
 	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);
 
@@ -2439,7 +2439,7 @@ static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 		return false;
 	}
 
-	sd = get_sharesec(mem_ctx, torture->lp_ctx, cli->session, 
+	sd = get_sharesec(mem_ctx, torture->lp_ctx, cli->session,
 			  torture_setting_string(torture, "share", NULL));
 
 	ret &= try_tcon(mem_ctx, torture->lp_ctx, sd, cli->session,
@@ -2588,7 +2588,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pipe_bind_smb(mem_ctx, lp_ctx, 
+	status = pipe_bind_smb(mem_ctx, lp_ctx,
 			       tree, "\\srvsvc", &ndr_table_srvsvc,
 			       &p);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3066,7 +3066,7 @@ static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
 		uint8_t buf8[1024];
 		NTSTATUS status;
 		uint32_t size, length;
-		
+
 		r.in.handle = handle;
 		r.in.enum_index = enum_index;
 		name.name = "";
@@ -3087,7 +3087,7 @@ static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
 	}
 }
 
-static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle, 
+static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 			 TALLOC_CTX *mem_ctx, int depth)
 {
 	struct winreg_EnumKey r;
@@ -3133,7 +3133,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 		for (i=0; i<10-depth; i++)
 			printf(" ");
 		printf("%s\n", r.out.name->name);
-			
+
 
 		o.in.parent_handle = handle;
 		o.in.keyname.name = r.out.name->name;
@@ -3161,7 +3161,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 
 typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
 
-static bool test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       const char *name, winreg_open_fn open_fn)
 {
 	struct policy_handle handle;
@@ -3172,7 +3172,7 @@ static bool test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
-	
+
 	status = open_fn(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) %s failed: %s, %s\n", __location__, name,
@@ -3516,7 +3516,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 		goto done;
 	}
 
-	if (!reg_string_to_val(hklm, lp_iconv_convenience(lp_ctx), "REG_SZ", 
+	if (!reg_string_to_val(hklm, lp_iconv_convenience(lp_ctx), "REG_SZ",
 			       value, &type, &val)) {
 		d_printf("(%s) reg_string_to_val failed\n", __location__);
 		goto done;
