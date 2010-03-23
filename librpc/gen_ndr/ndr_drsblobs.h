@@ -40,7 +40,9 @@ extern const struct ndr_interface_table ndr_table_drsblobs;
 
 #define NDR_DECODE_EXTENDEDERRORINFO (0x0d)
 
-#define NDR_DRSBLOBS_CALL_COUNT (14)
+#define NDR_DECODE_FORESTTRUSTINFO (0x0e)
+
+#define NDR_DRSBLOBS_CALL_COUNT (15)
 void ndr_print_replPropertyMetaData1(struct ndr_print *ndr, const char *name, const struct replPropertyMetaData1 *r);
 void ndr_print_replPropertyMetaDataCtr1(struct ndr_print *ndr, const char *name, const struct replPropertyMetaDataCtr1 *r);
 void ndr_print_replPropertyMetaDataCtr(struct ndr_print *ndr, const char *name, const union replPropertyMetaDataCtr *r);
@@ -156,6 +158,14 @@ enum ndr_err_code ndr_push_ExtendedErrorInfo(struct ndr_push *ndr, int ndr_flags
 enum ndr_err_code ndr_pull_ExtendedErrorInfo(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorInfo *r);
 void ndr_print_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfo *r);
 void ndr_print_ExtendedErrorInfoPtr(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfoPtr *r);
+void ndr_print_ForestTrustDataDomainInfo(struct ndr_print *ndr, const char *name, const struct ForestTrustDataDomainInfo *r);
+void ndr_print_ForestTrustDataBinaryData(struct ndr_print *ndr, const char *name, const struct ForestTrustDataBinaryData *r);
+void ndr_print_ForestTrustData(struct ndr_print *ndr, const char *name, const union ForestTrustData *r);
+void ndr_print_ForestTrustInfoRecordType(struct ndr_print *ndr, const char *name, enum ForestTrustInfoRecordType r);
+void ndr_print_ForestTrustInfoRecord(struct ndr_print *ndr, const char *name, const struct ForestTrustInfoRecord *r);
+enum ndr_err_code ndr_push_ForestTrustInfo(struct ndr_push *ndr, int ndr_flags, const struct ForestTrustInfo *r);
+enum ndr_err_code ndr_pull_ForestTrustInfo(struct ndr_pull *ndr, int ndr_flags, struct ForestTrustInfo *r);
+void ndr_print_ForestTrustInfo(struct ndr_print *ndr, const char *name, const struct ForestTrustInfo *r);
 void ndr_print_decode_replPropertyMetaData(struct ndr_print *ndr, const char *name, int flags, const struct decode_replPropertyMetaData *r);
 void ndr_print_decode_replUpToDateVector(struct ndr_print *ndr, const char *name, int flags, const struct decode_replUpToDateVector *r);
 void ndr_print_decode_repsFromTo(struct ndr_print *ndr, const char *name, int flags, const struct decode_repsFromTo *r);
@@ -170,4 +180,5 @@ void ndr_print_decode_PrimaryWDigest(struct ndr_print *ndr, const char *name, in
 void ndr_print_decode_trustAuthInOut(struct ndr_print *ndr, const char *name, int flags, const struct decode_trustAuthInOut *r);
 void ndr_print_decode_trustDomainPasswords(struct ndr_print *ndr, const char *name, int flags, const struct decode_trustDomainPasswords *r);
 void ndr_print_decode_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, int flags, const struct decode_ExtendedErrorInfo *r);
+void ndr_print_decode_ForestTrustInfo(struct ndr_print *ndr, const char *name, int flags, const struct decode_ForestTrustInfo *r);
 #endif /* _HEADER_NDR_drsblobs */

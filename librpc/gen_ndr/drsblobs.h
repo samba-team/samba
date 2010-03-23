@@ -8,6 +8,7 @@
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/security.h"
 #ifndef _HEADER_drsblobs
 #define _HEADER_drsblobs
 
@@ -456,6 +457,53 @@ struct ExtendedErrorInfoPtr {
 	struct ExtendedErrorInfo *info;/* [unique] */
 };
 
+struct ForestTrustDataDomainInfo {
+	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
+	struct dom_sid sid;/* [subcontext_size(sid_size),subcontext(0)] */
+	const char * dns_name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_SIZE4)] */
+	const char * netbios_name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_SIZE4)] */
+}/* [flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct ForestTrustDataBinaryData {
+	uint32_t size;
+	uint8_t *data;
+}/* [flag(LIBNDR_FLAG_NOALIGN)] */;
+
+union ForestTrustData {
+	const char * name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_SIZE4),case(FOREST_TRUST_TOP_LEVEL_NAME)] */
+	struct ForestTrustDataDomainInfo info;/* [case(FOREST_TRUST_DOMAIN_INFO)] */
+	struct ForestTrustDataBinaryData data;/* [default] */
+}/* [nodiscriminant] */;
+
+enum ForestTrustInfoRecordType
+#ifndef USE_UINT_ENUMS
+ {
+	FOREST_TRUST_TOP_LEVEL_NAME=(int)(0),
+	FOREST_TRUST_TOP_LEVEL_NAME_EX=(int)(1),
+	FOREST_TRUST_DOMAIN_INFO=(int)(2)
+}
+#else
+ { __donnot_use_enum_ForestTrustInfoRecordType=0x7FFFFFFF}
+#define FOREST_TRUST_TOP_LEVEL_NAME ( 0 )
+#define FOREST_TRUST_TOP_LEVEL_NAME_EX ( 1 )
+#define FOREST_TRUST_DOMAIN_INFO ( 2 )
+#endif
+;
+
+struct ForestTrustInfoRecord {
+	uint32_t length;
+	uint32_t flags;
+	NTTIME timestamp;
+	enum ForestTrustInfoRecordType type;
+	union ForestTrustData data;/* [switch_is(type)] */
+}/* [flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct ForestTrustInfo {
+	uint32_t version;
+	uint32_t count;
+	struct ForestTrustInfoRecord *records;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
 
 struct decode_replPropertyMetaData {
 	struct {
@@ -564,6 +612,14 @@ struct decode_trustDomainPasswords {
 struct decode_ExtendedErrorInfo {
 	struct {
 		struct ExtendedErrorInfoPtr ptr;/* [subcontext(0xFFFFFC01)] */
+	} in;
+
+};
+
+
+struct decode_ForestTrustInfo {
+	struct {
+		struct ForestTrustInfo blob;
 	} in;
 
 };
