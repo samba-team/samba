@@ -96,7 +96,11 @@ def build_dependencies(self):
         # this is needed for the ccflags of libs that come from pkg_config
         self.uselib = list(self.direct_syslibs)
 
-
+    if getattr(self, 'uselib', None):
+        up_list = []
+	for l in self.uselib:
+	    up_list.append(l.upper())
+	self.uselib = up_list
 
 
 def build_includes(self):
