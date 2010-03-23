@@ -40,7 +40,7 @@ def nolink(self):
     pass
 
 
-def CHECK_HEADER(conf, h, add_headers=False):
+def CHECK_HEADER(conf, h, add_headers=False, lib=None):
     '''check for a header'''
     if h in missing_headers:
         return False
@@ -53,10 +53,13 @@ def CHECK_HEADER(conf, h, add_headers=False):
                 conf.env.hlist.append(h)
         return True
 
+    (ccflags, ldflags) = library_flags(conf, lib)
+
     hdrs = hlist_to_string(conf, headers=h)
     ret = conf.check(fragment='%s\nint main(void) { return 0; }' % hdrs,
                      type='nolink',
                      execute=0,
+                     ccflags=ccflags,
                      msg="Checking for header %s" % h)
     if not ret:
         missing_headers.add(h)
@@ -69,7 +72,7 @@ def CHECK_HEADER(conf, h, add_headers=False):
 
 
 @conf
-def CHECK_HEADERS(conf, headers, add_headers=False, together=False):
+def CHECK_HEADERS(conf, headers, add_headers=False, together=False, lib=None):
     '''check for a list of headers
 
     when together==True, then the headers accumulate within this test.
@@ -82,25 +85,25 @@ def CHECK_HEADERS(conf, headers, add_headers=False, together=False):
     else:
         set_add_headers = add_headers
     for hdr in TO_LIST(headers):
-        if not CHECK_HEADER(conf, hdr, set_add_headers):
+        if not CHECK_HEADER(conf, hdr, set_add_headers, lib=lib):
             ret = False
     if not add_headers and together:
         conf.env.hlist = saved_hlist
     return ret
 
 
-def header_list(conf, headers=None):
+def header_list(conf, headers=None, lib=None):
     '''form a list of headers which exist, as a string'''
     hlist=[]
     if headers is not None:
         for h in TO_LIST(headers):
-            if CHECK_HEADER(conf, h, add_headers=False):
+            if CHECK_HEADER(conf, h, add_headers=False, lib=lib):
                 hlist.append(h)
     return hlist_to_string(conf, headers=hlist)
 
 
 @conf
-def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
+def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None, lib=None):
     '''check for a single type'''
     if define is None:
         define = 'HAVE_' + t.upper().replace(' ', '_')
@@ -110,6 +113,7 @@ def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
                      headers=headers,
                      msg='Checking for %s' % t,
                      local_include=False,
+                     lib=lib,
                      link=False)
     if not ret and alternate:
         conf.DEFINE(t, alternate)
@@ -117,11 +121,12 @@ def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None):
 
 
 @conf
-def CHECK_TYPES(conf, list, headers=None, define=None, alternate=None):
+def CHECK_TYPES(conf, list, headers=None, define=None, alternate=None, lib=None):
     '''check for a list of types'''
     ret = True
     for t in TO_LIST(list):
-        if not CHECK_TYPE(conf, t, headers=headers, define=define, alternate=alternate):
+        if not CHECK_TYPE(conf, t, headers=headers,
+                          define=define, alternate=alternate, lib=lib):
             ret = False
     return ret
 
@@ -133,7 +138,8 @@ def CHECK_TYPE_IN(conf, t, headers=None, alternate=None, define=None):
 
 
 @conf
-def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None, msg=None):
+def CHECK_VARIABLE(conf, v, define=None, always=False,
+                   headers=None, msg=None, lib=None):
     '''check for a variable declaration (or define)'''
     if define is None:
         define = 'HAVE_%s' % v.upper()
@@ -152,6 +158,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False, headers=None, msg=None):
                       link=False,
                       msg=msg,
                       local_include=False,
+                      lib=lib,
                       headers=headers,
                       define=define,
                       always=always)
@@ -261,10 +268,10 @@ def CHECK_CODE(conf, code, define,
         return True
 
     if headers is not None:
-        CHECK_HEADERS(conf, headers=headers)
+        CHECK_HEADERS(conf, headers=headers, lib=lib)
 
     if add_headers:
-        hdrs = header_list(conf, headers=headers)
+        hdrs = header_list(conf, headers=headers, lib=lib)
     else:
         hdrs = ''
     if execute:
@@ -293,16 +300,19 @@ def CHECK_CODE(conf, code, define,
     else:
         type='cprogram'
 
-    if lib is not None:
-        uselib = TO_LIST(lib)
-    else:
-        uselib = []
+    uselib = TO_LIST(lib)
+
+    (ccflags, ldflags) = library_flags(conf, uselib)
+
+    cflags = TO_LIST(cflags)
+    cflags.extend(ccflags)
 
     ret = conf.check(fragment=fragment,
                      execute=execute,
                      define_name = define,
                      mandatory = mandatory,
-                     ccflags=TO_LIST(cflags),
+                     ccflags=cflags,
+                     ldflags=ldflags,
                      includes=includes,
                      uselib=uselib,
                      type=type,
@@ -359,16 +369,34 @@ def CONFIG_SET(conf, option):
 Build.BuildContext.CONFIG_SET = CONFIG_SET
 
 
-@conf
-def CHECK_LIB(conf, libs):
-    '''check if a set of libraries exist'''
-    liblist   = TO_LIST(library)
+def library_flags(conf, libs):
+    '''work out flags from pkg_config'''
+    ccflags = []
+    ldflags = []
+    for lib in TO_LIST(libs):
+        inc_path = None
+        inc_path = getattr(conf.env, 'CPPPATH_%s' % lib.upper(), [])
+        lib_path = getattr(conf.env, 'LIBPATH_%s' % lib.upper(), [])
+        for i in inc_path:
+            ccflags.append('-I%s' % i)
+        for l in lib_path:
+            ldflags.append('-L%s' % l)
+    return (ccflags, ldflags)
 
+
+@conf
+def CHECK_LIB(conf, libs, mandatory=False):
+    '''check if a set of libraries exist'''
+
+    liblist  = TO_LIST(libs)
     ret = True
     for lib in liblist[:]:
         if GET_TARGET_TYPE(conf, lib):
             continue
-        if not conf.check(lib=lib, uselib_store=lib):
+
+        (ccflags, ldflags) = library_flags(conf, lib)
+
+        if not conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags):
             conf.ASSERT(not mandatory,
                         "Mandatory library '%s' not found for functions '%s'" % (lib, list))
             # if it isn't a mandatory library, then remove it from dependency lists
@@ -416,23 +444,14 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
                 SET_TARGET_TYPE(conf, lib, 'EMPTY')
         return True
 
-    ret = True
+    conf.CHECK_LIB(liblist)
     for lib in liblist[:]:
-        if GET_TARGET_TYPE(conf, lib):
-            continue
-        if not conf.check(lib=lib, uselib_store=lib):
+        if not GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
             conf.ASSERT(not mandatory,
                         "Mandatory library '%s' not found for functions '%s'" % (lib, list))
             # if it isn't a mandatory library, then remove it from dependency lists
-            SET_TARGET_TYPE(conf, lib, 'EMPTY')
-            ret = False
-        else:
-            conf.define('HAVE_LIB%s' % lib.upper().replace('-','_'), 1)
-            conf.env['LIB_' + lib.upper()] = lib
-            LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
-
-    if not ret:
-        return ret
+            liblist.remove(lib)
+            continue
 
     ret = True
     for f in remaining:

@@ -112,7 +112,7 @@ def configure(conf):
     conf.CHECK_HEADERS('crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
-    conf.CHECK_HEADERS('libaio.h locale.h ndir.h net/if.h pwd.h')
+    conf.CHECK_HEADERS('libaio.h locale.h ndir.h pwd.h')
     conf.CHECK_HEADERS('shadow.h sys/acl.h')
     conf.CHECK_HEADERS('sys/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
     conf.CHECK_HEADERS('sys/fcntl.h sys/filio.h sys/filsys.h sys/fs/s5param.h sys/fs/vx/quota.h')
@@ -123,11 +123,12 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
     conf.CHECK_HEADERS('sys/time.h time.h stdarg.h vararg.h sys/mount.h mntent.h')
     conf.CHECK_HEADERS('stropts.h unix.h string.h strings.h sys/param.h limits.h')
-    conf.CHECK_HEADERS('sys/socket.h netinet/in.h netdb.h arpa/inet.h netinet/in_systm.h')
-    conf.CHECK_HEADERS('netinet/ip.h netinet/tcp.h netinet/in_ip.h sys/sockio.h sys/un.h')
+    conf.CHECK_HEADERS('''sys/socket.h netinet/in.h netdb.h arpa/inet.h netinet/in_systm.h
+                          netinet/ip.h netinet/tcp.h netinet/in_ip.h
+                          sys/sockio.h sys/un.h''', together=True)
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
-    conf.CHECK_HEADERS('resolv.h libintl.h errno.h')
+    conf.CHECK_HEADERS('libintl.h errno.h')
     conf.CHECK_HEADERS('gcrypt.h getopt.h iconv.h')
     conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h popt.h sasl/sasl.h')
     conf.CHECK_HEADERS('security/pam_appl.h sys/inotify.h zlib.h asm/unistd.h')
@@ -231,10 +232,16 @@ def configure(conf):
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
-    conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl', checklibc=True, headers='dlfcn.h dl.h')
+    conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl',
+                        checklibc=True, headers='dlfcn.h dl.h')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
+
+    # these headers need to be tested as a group on freebsd
+    conf.CHECK_HEADERS(headers='sys/socket.h net/if.h', together=True)
+    conf.CHECK_HEADERS(headers='netinet/in.h arpa/nameser.h resolv.h', together=True)
     conf.CHECK_FUNCS_IN('res_search', 'resolv', checklibc=True,
                         headers='netinet/in.h arpa/nameser.h resolv.h')
+
     conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h')
     conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, headers='pthread.h')
 
@@ -329,10 +336,24 @@ def configure(conf):
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec', define='HAVE_STAT_TV_NSEC',
                                 headers='sys/stat.h')
     # we need the st_rdev test under two names
-    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_STRUCT_STAT_ST_RDEV',
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev',
+                                define='HAVE_STRUCT_STAT_ST_RDEV',
                                 headers='sys/stat.h')
-    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_ST_RDEV', headers='sys/stat.h')
-    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', 'ss_family', headers='sys/socket.h netinet/in.h')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev', define='HAVE_ST_RDEV',
+                                headers='sys/stat.h')
+    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', 'ss_family',
+                                headers='sys/socket.h netinet/in.h')
+
+
+    if conf.CHECK_STRUCTURE_MEMBER('struct sockaddr', 'sa_len',
+                                   headers='sys/socket.h netinet/in.h',
+                                   define='HAVE_SOCKADDR_SA_LEN'):
+        # the old build system produced both defines
+        conf.DEFINE('HAVE_STRUCT_SOCKADDR_SA_LEN', 1)
+
+    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_in', 'sin_len',
+                                headers='sys/socket.h netinet/in.h',
+                                define='HAVE_SOCK_SIN_LEN')
 
     conf.CHECK_CODE('struct sockaddr_un sunaddr; sunaddr.sun_family = AF_UNIX;',
                     define='HAVE_UNIXSOCKET', headers='sys/socket.h sys/un.h')

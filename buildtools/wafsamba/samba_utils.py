@@ -236,6 +236,8 @@ def unique_list(seq):
 
 def TO_LIST(str):
     '''Split a list, preserving quoted strings and existing lists'''
+    if str is None:
+        return []
     if isinstance(str, list):
         return str
     lst = str.split()
