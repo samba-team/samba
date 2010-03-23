@@ -47,19 +47,21 @@ def configure(conf):
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
     conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64')
-    conf.CHECK_FUNCS('fseek64 fseeko64 ftell64 ftello64 setluid getpwanam')
+    conf.CHECK_FUNCS('fseek64 fseeko64 ftell64 ftello64 setluid')
+    conf.CHECK_FUNCS('getpwanam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
     conf.CHECK_FUNCS('getpwent_r getdents64 setenv strcasecmp fcvt fcvtl')
     conf.CHECK_FUNCS('syslog vsyslog timegm setlocale nl_langinfo')
-    #TODO convert AC_CHECK_FUNCS(nanosleep,,[AC_CHECK_LIB_EXT(rt, LIBS, nanosleep)])
+    conf.CHECK_FUNCS_IN('nanosleep', 'rt')
     conf.CHECK_FUNCS('lutimes futimes utimensat futimens')
     conf.CHECK_FUNCS('mlock munlock mlockall munlockall')
     conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
-    conf.CHECK_FUNCS('shmget shm_open')
+    conf.CHECK_FUNCS('shmget')
+    conf.CHECK_FUNCS_IN('shm_open', 'rt', checklibc=True)
     conf.CHECK_FUNCS('gettext dgettext bindtextdomain textdomain')
 
     # Check for inotify support
-    conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h', add_headers=False)
+    conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h')
     conf.CHECK_FUNCS('inotify_init')
     if "HAVE_LINUX_INOTIFY_H" in conf.env and "HAVE_INOTIFY_INIT" in conf.env:
         conf.DEFINE('HAVE_INOTIFY', 1)
@@ -132,7 +134,7 @@ main() {
  cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
  cap_set_proc(cap);
  exit(0);
- }''', 'HAVE_POSIX_CAPABILITIES', addmain=False, execute=True, cflags="-lcap",
+ }''', 'HAVE_POSIX_CAPABILITIES', addmain=False, execute=True, lib="cap",
             msg="Checking whether POSIX capabilities are available")
 
     # Check for int16, uint16, int32 and uint32 in rpc/types.h included from
@@ -165,11 +167,11 @@ if (0) {
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
         conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs", package="", uselib_store="CUPS")
-        conf.CHECK_HEADERS('cups/cups.h cups/language.h', add_headers=False)
+        conf.CHECK_HEADERS('cups/cups.h cups/language.h')
 
     # Check for LDAP
     conf.CHECK_HEADERS('ldap.h lber.h')
-    conf.CHECK_TYPE('ber_tag_t', 'unsigned int')
+    conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
 
     # Check for kerberos
     conf.find_program('krb5-config', var='KRB5_CONFIG')
