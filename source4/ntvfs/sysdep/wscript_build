@@ -4,21 +4,24 @@ bld.SAMBA_MODULE('sys_notify_inotify',
                  init_function='sys_notify_inotify_init',
                  deps='LIBEVENTS',
                  enabled = bld.CONFIG_SET('HAVE_LINUX_INOTIFY')
-	)
+                 )
 
 
 bld.SAMBA_SUBSYSTEM('sys_notify',
-	source='sys_notify.c'
-	)
+                    source='sys_notify.c'
+                    )
 
 
-bld.SAMBA_SUBSYSTEM('sys_lease_linux',
-	source='sys_lease_linux.c',
-	deps='tevent'
-	)
+bld.SAMBA_MODULE('sys_lease_linux',
+                 source='sys_lease_linux.c',
+                 deps='tevent',
+                 subsystem='sys_lease',
+                 init_function='sys_lease_linux_init',
+                 enabled = bld.CONFIG_SET('HAVE_F_SETLEASE_DECL')
+                 )
 
 
 bld.SAMBA_SUBSYSTEM('sys_lease',
-	source='sys_lease.c'
-	)
+                    source='sys_lease.c'
+                    )
 
