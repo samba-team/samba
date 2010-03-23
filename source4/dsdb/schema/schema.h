@@ -165,6 +165,14 @@ struct dsdb_class {
 	uint32_t subClass_order;
 };
 
+/**
+ * data stored in schemaInfo attribute
+ */
+struct dsdb_schema_info {
+	uint32_t 	revision;
+	struct GUID	invocation_id;
+};
+
 
 struct dsdb_schema {
 	struct ldb_dn *base_dn;
