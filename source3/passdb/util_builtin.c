@@ -35,7 +35,14 @@ static const struct rid_name_map builtin_aliases[] = {
 	{ BUILTIN_ALIAS_RID_BACKUP_OPS,		"Backup Operators" },
 	{ BUILTIN_ALIAS_RID_REPLICATOR,		"Replicator" },
 	{ BUILTIN_ALIAS_RID_RAS_SERVERS,	"RAS Servers" },
-	{ BUILTIN_ALIAS_RID_PRE_2K_ACCESS,	"Pre-Windows 2000 Compatible Access" },
+	{ BUILTIN_ALIAS_RID_PRE_2K_ACCESS,
+		"Pre-Windows 2000 Compatible Access" },
+	{ BUILTIN_ALIAS_RID_REMOTE_DESKTOP_USERS,
+		"Remote Desktop Users" },
+	{ BUILTIN_ALIAS_RID_NETWORK_CONF_OPERATORS,
+		"Network Configuration Operators" },
+	{ BUILTIN_ALIAS_RID_INCOMING_FOREST_TRUST,
+		"Incoming Forest Trust Builders" },
 	{  0, NULL}};
 
 /*******************************************************************
