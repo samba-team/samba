@@ -78,8 +78,6 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	char *unix_address;
 	int sys_errno;
 
-	NTSTATUS status;
-
 	struct MD5Context ctx;
 	uint8_t sig[16];
 	enum ndr_err_code ndr_err;
@@ -97,8 +95,11 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge_r(p->binding_handle, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "ServerReqChallenge");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_netr_ServerReqChallenge_r(p->binding_handle, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"ServerReqChallenge failed");
 
 	a.in.server_name = NULL;
 	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
@@ -120,8 +121,11 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing ServerAuthenticate3\n");
 
-	status = dcerpc_netr_ServerAuthenticate3_r(p->binding_handle, tctx, &a);
-	torture_assert_ntstatus_ok(tctx, status, "ServerAuthenticate3");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_netr_ServerAuthenticate3_r(p->binding_handle, tctx, &a),
+		"ServerAuthenticate3 failed");
+	torture_assert_ntstatus_ok(tctx, a.out.result,
+		"ServerAuthenticate3 failed");
 	torture_assert(tctx,
 		       netlogon_creds_client_check(creds, &credentials3),
 		       "Credential chaining failed");
