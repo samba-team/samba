@@ -69,13 +69,25 @@ def CHECK_HEADER(conf, h, add_headers=False):
 
 
 @conf
-def CHECK_HEADERS(conf, headers, add_headers=False):
-    '''check for a list of headers'''
+def CHECK_HEADERS(conf, headers, add_headers=False, together=False):
+    '''check for a list of headers
+
+    when together==True, then the headers accumulate within this test.
+    This is useful for interdependent headers
+    '''
     ret = True
+    if not add_headers and together:
+        saved_hlist = conf.env.hlist[:]
+        set_add_headers = True
+    else:
+        set_add_headers = add_headers
     for hdr in TO_LIST(headers):
-        if not CHECK_HEADER(conf, hdr, add_headers):
+        if not CHECK_HEADER(conf, hdr, set_add_headers):
             ret = False
+    if not add_headers and together:
+        conf.env.hlist = saved_hlist
     return ret
+
 
 def header_list(conf, headers=None):
     '''form a list of headers which exist, as a string'''
@@ -166,7 +178,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
     return ret
 
 
-def CHECK_FUNC(conf, f, link=None, lib='c', headers=None):
+def CHECK_FUNC(conf, f, link=None, lib=None, headers=None):
     '''check for a function'''
     define='HAVE_%s' % f.upper()
 
@@ -205,7 +217,7 @@ def CHECK_FUNC(conf, f, link=None, lib='c', headers=None):
 
 
 @conf
-def CHECK_FUNCS(conf, list, link=None, lib='c', headers=None):
+def CHECK_FUNCS(conf, list, link=None, lib=None, headers=None):
     '''check for a list of functions'''
     ret = True
     for f in TO_LIST(list):
@@ -241,7 +253,7 @@ def CHECK_CODE(conf, code, define,
                always=False, execute=False, addmain=True,
                add_headers=True, mandatory=False,
                headers=None, msg=None, cflags='', includes='# .',
-               local_include=True, lib='c', link=True,
+               local_include=True, lib=None, link=True,
                define_ret=False, quote=False):
     '''check if some code compiles and/or runs'''
 
@@ -261,9 +273,9 @@ def CHECK_CODE(conf, code, define,
         execute = 0
 
     if addmain:
-        fragment='#include "__confdefs.h"\n%s\n int main(void) { %s; return 0; }' % (hdrs, code)
+        fragment='#include "__confdefs.h"\n%s\n int main(void) { %s; return 0; }\n' % (hdrs, code)
     else:
-        fragment='#include "__confdefs.h"\n%s\n%s' % (hdrs, code)
+        fragment='#include "__confdefs.h"\n%s\n%s\n' % (hdrs, code)
 
     conf.write_config_header('__confdefs.h', top=True)
 
@@ -281,17 +293,27 @@ def CHECK_CODE(conf, code, define,
     else:
         type='cprogram'
 
-    if conf.check(fragment=fragment,
-                  execute=execute,
-                  define_name = define,
-                  mandatory = mandatory,
-                  ccflags=TO_LIST(cflags),
-                  includes=includes,
-                  lib=lib, # how do I make this conditional, so I can avoid the -lc?
-                  type=type,
-                  msg=msg,
-                  quote=quote,
-                  define_ret=define_ret):
+    if lib is not None:
+        uselib = TO_LIST(lib)
+    else:
+        uselib = []
+
+    ret = conf.check(fragment=fragment,
+                     execute=execute,
+                     define_name = define,
+                     mandatory = mandatory,
+                     ccflags=TO_LIST(cflags),
+                     includes=includes,
+                     uselib=uselib,
+                     type=type,
+                     msg=msg,
+                     quote=quote,
+                     define_ret=define_ret)
+    if not ret and CONFIG_SET(conf, define):
+        # sometimes conf.check() returns false, but it
+        # sets the define. Maybe a waf bug?
+        ret = True
+    if ret:
         if not define_ret:
             conf.DEFINE(define, 1)
         return True
@@ -430,6 +452,23 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
                            headers=headers,
                            msg='Checking C prototype for %s' % function)
 
+
+@conf
+def CHECK_LARGEFILE(conf):
+    '''see what we need for largefile support'''
+    if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
+                       'HAVE_LARGEFILE',
+                       execute=True,
+                       msg='Checking for large file support'):
+        return True
+    if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
+                       'HAVE_LARGEFILE',
+                       execute=True,
+                       cflags='-D_FILE_OFFSET_BITS=64',
+                       msg='Checking for -D_FILE_OFFSET_BITS=64'):
+        conf.DEFINE('_FILE_OFFSET_BITS', 64)
+        return True
+    return False
 
 
 

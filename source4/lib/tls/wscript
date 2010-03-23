@@ -17,6 +17,13 @@ def configure(conf):
 
     conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls', headers='gnutls/gnutls.h')
 
+    conf.CHECK_VARIABLE('gnutls_x509_crt_set_version',
+                        headers='gnutls/gnutls.h gnutls/x509.h',
+                        define='HAVE_GNUTLS_X509_CRT_SET_VERSION')
+    conf.CHECK_VARIABLE('gnutls_x509_crt_set_subject_key_id',
+                        headers='gnutls/gnutls.h gnutls/x509.h',
+                        define='HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID')
+
     # check for gnutls_datum types
     conf.CHECK_TYPES('gnutls_datum gnutls_datum_t', headers='gnutls/gnutls.h')
 

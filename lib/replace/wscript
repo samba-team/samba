@@ -81,7 +81,6 @@ def configure(conf):
                     execute=True,
                     msg='Checking simple C program')
 
-
     # check for rpath
     if not conf.env.DISABLE_SHARED and conf.CHECK_RPATH_SUPPORT():
         conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
@@ -101,9 +100,15 @@ def configure(conf):
     conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
-    conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h', add_headers=True)
+    # get the base headers we'll use for the rest of the tests
+    conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h',
+                       add_headers=True)
     conf.CHECK_HEADERS('strings.h inttypes.h stdint.h unistd.h minix/config.h', add_headers=True)
     conf.CHECK_HEADERS('ctype.h standards.h stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
+
+    # see if we need special largefile flags
+    conf.CHECK_LARGEFILE()
+
     conf.CHECK_HEADERS('crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
@@ -180,9 +185,9 @@ def configure(conf):
     conf.CHECK_TYPE_IN('sig_atomic_t', 'signal.h', define='HAVE_SIG_ATOMIC_T_TYPE')
 
     conf.CHECK_FUNCS_IN('''inet_ntoa inet_aton inet_ntop inet_pton connect gethostbyname
-                           getaddrinfo getnameinfo freeaddrinfo gai_strerror''',
+                           getaddrinfo getnameinfo freeaddrinfo gai_strerror socketpair''',
                         'socket nsl', checklibc=True,
-                        headers='sys/socket.h netinet/in.h arpa/inet.h')
+                        headers='sys/socket.h netinet/in.h arpa/inet.h netdb.h')
 
     conf.CHECK_CODE('''
                        struct sockaddr_storage sa_store;
@@ -197,6 +202,7 @@ def configure(conf):
                        freeaddrinfo(ai);
                        ''',
                     define='HAVE_IPV6',
+                    lib='nsl socket',
                     headers='sys/socket.h netdb.h netinet/in.h')
 
     # check if signal() takes a void function
@@ -218,7 +224,7 @@ def configure(conf):
     conf.CHECK_FUNCS('link readlink symlink realpath fdatasync snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq')
-    conf.CHECK_FUNCS('if_nametoindex socketpair')
+    conf.CHECK_FUNCS('if_nametoindex')
     conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
@@ -229,7 +235,7 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
     conf.CHECK_FUNCS_IN('res_search', 'resolv', checklibc=True,
                         headers='netinet/in.h arpa/nameser.h resolv.h')
-    conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True)
+    conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h')
     conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, headers='pthread.h')
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
@@ -251,6 +257,15 @@ def configure(conf):
 
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
         conf.DEFINE('HAVE_EPOLL', 1)
+
+    if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
+		       #include "$libreplacedir/test/strptime.c"''',
+                           define='HAVE_STRPTIME',
+                           msg='Checking for working strptime'):
+        conf.DEFINE('REPLACE_STRPTIME', 1)
+
+
+
 
     conf.CHECK_CODE('va_list ap1,ap2; va_copy(ap1,ap2)',
                     define="HAVE_VA_COPY",
@@ -290,6 +305,7 @@ def configure(conf):
                            #include "test/getifaddrs.c"
                            ''' % method,
                            method,
+                           lib='nsl socket',
                            addmain=False,
                            execute=True):
             break
@@ -367,6 +383,10 @@ def build(bld):
 
     REPLACE_SOURCE = 'replace.c snprintf.c'
 
+
+    if bld.CONFIG_SET('REPLACE_STRPTIME'):
+        REPLACE_SOURCE += ' strptime.c'
+
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
@@ -374,6 +394,7 @@ def build(bld):
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''
+
 
     bld.SAMBA_BINARY('replace_testsuite',
                      TEST_SOURCES,
