@@ -336,6 +336,16 @@ int rep_dlclose(void *handle);
 /* prototype is in system/network.h */
 #endif
 
+#ifndef HAVE_VDPRINTF
+#define vdprintf rep_vdprintf
+int rep_vdprintf(int fd, const char *format, va_list ap);
+#endif
+
+#ifndef HAVE_DPRINTF
+#define dprintf rep_dprintf
+int rep_dprintf(int fd, const char *format, ...);
+#endif
+
 #ifndef PRINTF_ATTRIBUTE
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
