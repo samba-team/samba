@@ -43,6 +43,8 @@ static void shell_list(const struct shell_command *,
 	struct torture_context *, int, const char **);
 static void shell_auth(const struct shell_command *,
 	struct torture_context *, int, const char **);
+static void shell_target(const struct shell_command *,
+	struct torture_context *, int, const char **);
 
 static void shell_usage(const struct shell_command *);
 static bool match_command(const char *, const struct shell_command *);
@@ -86,6 +88,11 @@ static const struct shell_command commands[] =
     {
 	shell_set, "set", "[NAME VALUE]",
 	"print or set test configuration parameters"
+    },
+
+    {
+	shell_target, "target", "[TARGET]",
+	"print or set the test target"
     }
 
 };
@@ -263,6 +270,28 @@ static void shell_auth(const struct shell_command * command,
 
 }
 
+static void shell_target(const struct shell_command *command,
+	struct torture_context *tctx, int argc, const char **argv)
+{
+	if (argc == 0) {
+		const char * host;
+		const char * share;
+		const char * binding;
+
+		host = torture_setting_string(tctx, "host", NULL);
+		share = torture_setting_string(tctx, "share", NULL);
+		binding = torture_setting_string(tctx, "binding", NULL);
+
+		printf("Target host: %s\n", host ? host : "");
+		printf("Target share: %s\n", share ? share : "");
+		printf("Target binding: %s\n", binding ? binding : "");
+	} else if (argc == 1) {
+		torture_parse_target(tctx->lp_ctx, argv[0]);
+	} else {
+		shell_usage(command);
+	}
+}
+
 static void shell_usage(const struct shell_command * command)
 {
     if (command->usage) {
@@ -287,4 +316,3 @@ static bool match_command(const char * name,
 
 	return false;
 }
-

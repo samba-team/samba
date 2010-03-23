@@ -122,7 +122,7 @@ bool torture_run_named_tests(struct torture_context *torture, const char *name,
 	return ret;
 }
 
-static bool parse_target(struct loadparm_context *lp_ctx, const char *target)
+bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target)
 {
 	char *host = NULL, *share = NULL;
 	struct dcerpc_binding *binding_struct;
@@ -607,16 +607,6 @@ int main(int argc,char *argv[])
 		}
 	}
 
-	if (!(argc_new >= 3)) {
-		usage(pc);
-		exit(1);
-	}
-
-	if (!parse_target(cmdline_lp_ctx, argv_new[1])) {
-		usage(pc);
-		exit(1);
-	}
-
 	if (!strcmp(ui_ops_name, "simple")) {
 		ui_ops = &std_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
@@ -649,12 +639,29 @@ int main(int argc,char *argv[])
 
 	gensec_init(cmdline_lp_ctx);
 
-	if (argc_new == 0) {
-		printf("You must specify a testsuite to run, or 'ALL'\n");
-	} else if (shell) {
+	// At this point, we should just have a target string,
+	// followed by a series of test names. Unless we are in
+	// shell mode, in which case we don't need anythig more.
+
+	if (argc_new > 1) {
+		// Take the target name or binding.
+		if (!torture_parse_target(cmdline_lp_ctx, argv_new[1])) {
+			usage(pc);
+			exit(1);
+		}
+
+		argc_new--;
+	}
+
+	if (shell) {
+		// In shell mode, just ignore any remaining test names.
 		torture_shell(torture);
+	} else if (argc_new == 1) {
+		printf("You must specify a test to run, or 'ALL'\n");
+		usage(pc);
+		exit(1);
 	} else {
-		for (i=2;i<argc_new;i++) {
+		for (i=1;i<argc_new;i++) {
 			if (!torture_run_named_tests(torture, argv_new[i],
 				    (const char **)restricted)) {
 				correct = false;
