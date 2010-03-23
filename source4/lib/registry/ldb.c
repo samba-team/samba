@@ -192,7 +192,8 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 			if (data.length == sizeof(uint64_t)) {
 				char *conv_str;
 
-				conv_str = talloc_asprintf(msg, "0x%16.16llx", BVAL(data.data, 0));
+				conv_str = talloc_asprintf(msg, "0x%16.16llx",
+							   BVAL(data.data, 0));
 				if (conv_str == NULL) {
 					talloc_free(msg);
 					return NULL;
