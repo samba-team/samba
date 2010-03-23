@@ -460,8 +460,8 @@ struct ExtendedErrorInfoPtr {
 struct ForestTrustDataDomainInfo {
 	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
 	struct dom_sid sid;/* [subcontext_size(sid_size),subcontext(0)] */
-	const char * dns_name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_SIZE4)] */
-	const char * netbios_name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_SIZE4)] */
+	const char * dns_name;/* [flag(LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM)] */
+	const char * netbios_name;/* [flag(LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM)] */
 }/* [flag(LIBNDR_FLAG_NOALIGN)] */;
 
 struct ForestTrustDataBinaryData {
@@ -470,7 +470,7 @@ struct ForestTrustDataBinaryData {
 }/* [flag(LIBNDR_FLAG_NOALIGN)] */;
 
 union ForestTrustData {
-	const char * name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_SIZE4),case(FOREST_TRUST_TOP_LEVEL_NAME)] */
+	const char * name;/* [flag(LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM),case(FOREST_TRUST_TOP_LEVEL_NAME)] */
 	struct ForestTrustDataDomainInfo info;/* [case(FOREST_TRUST_DOMAIN_INFO)] */
 	struct ForestTrustDataBinaryData data;/* [default] */
 }/* [nodiscriminant] */;
@@ -491,17 +491,21 @@ enum ForestTrustInfoRecordType
 ;
 
 struct ForestTrustInfoRecord {
-	uint32_t length;
 	uint32_t flags;
 	NTTIME timestamp;
 	enum ForestTrustInfoRecordType type;
 	union ForestTrustData data;/* [switch_is(type)] */
+}/* [gensize,public,flag(LIBNDR_FLAG_NOALIGN)] */;
+
+struct ForestTrustInfoRecordArmor {
+	uint32_t record_size;/* [value(ndr_size_ForestTrustInfoRecord(&record,ndr->iconv_convenience,ndr->flags))] */
+	struct ForestTrustInfoRecord record;
 }/* [flag(LIBNDR_FLAG_NOALIGN)] */;
 
 struct ForestTrustInfo {
 	uint32_t version;
 	uint32_t count;
-	struct ForestTrustInfoRecord *records;
+	struct ForestTrustInfoRecordArmor *records;
 }/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
 

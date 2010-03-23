@@ -602,18 +602,22 @@ interface drsblobs {
 
         /* meaning of flags depends on record type and values are
            the same as in lsa.idl, see collision record types */
-        typedef [flag(NDR_NOALIGN)] struct {
-                uint32 length;
+        typedef [public,gensize,flag(NDR_NOALIGN)] struct {
                 uint32 flags;
                 NTTIME timestamp;
                 ForestTrustInfoRecordType type;
                 [switch_is(type)] ForestTrustData data;
         } ForestTrustInfoRecord;
 
+        typedef [flag(NDR_NOALIGN)] struct {
+                [value(ndr_size_ForestTrustInfoRecord(&record, ndr->iconv_convenience, ndr->flags))] uint32 record_size;
+                ForestTrustInfoRecord record;
+        } ForestTrustInfoRecordArmor;
+
         typedef [public,flag(NDR_NOALIGN)] struct {
                 uint32 version;
                 uint32 count;
-                ForestTrustInfoRecord records[count];
+                ForestTrustInfoRecordArmor records[count];
         } ForestTrustInfo;
 
 	void decode_ForestTrustInfo(

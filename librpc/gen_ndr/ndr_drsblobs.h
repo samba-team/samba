@@ -162,7 +162,11 @@ void ndr_print_ForestTrustDataDomainInfo(struct ndr_print *ndr, const char *name
 void ndr_print_ForestTrustDataBinaryData(struct ndr_print *ndr, const char *name, const struct ForestTrustDataBinaryData *r);
 void ndr_print_ForestTrustData(struct ndr_print *ndr, const char *name, const union ForestTrustData *r);
 void ndr_print_ForestTrustInfoRecordType(struct ndr_print *ndr, const char *name, enum ForestTrustInfoRecordType r);
+enum ndr_err_code ndr_push_ForestTrustInfoRecord(struct ndr_push *ndr, int ndr_flags, const struct ForestTrustInfoRecord *r);
+enum ndr_err_code ndr_pull_ForestTrustInfoRecord(struct ndr_pull *ndr, int ndr_flags, struct ForestTrustInfoRecord *r);
 void ndr_print_ForestTrustInfoRecord(struct ndr_print *ndr, const char *name, const struct ForestTrustInfoRecord *r);
+size_t ndr_size_ForestTrustInfoRecord(const struct ForestTrustInfoRecord *r, struct smb_iconv_convenience *ic, int flags);
+void ndr_print_ForestTrustInfoRecordArmor(struct ndr_print *ndr, const char *name, const struct ForestTrustInfoRecordArmor *r);
 enum ndr_err_code ndr_push_ForestTrustInfo(struct ndr_push *ndr, int ndr_flags, const struct ForestTrustInfo *r);
 enum ndr_err_code ndr_pull_ForestTrustInfo(struct ndr_pull *ndr, int ndr_flags, struct ForestTrustInfo *r);
 void ndr_print_ForestTrustInfo(struct ndr_print *ndr, const char *name, const struct ForestTrustInfo *r);
