@@ -263,6 +263,10 @@ interface security
 	const string SID_BUILTIN_REMOTE_DESKTOP_USERS   = "S-1-5-32-555";
 	const string SID_BUILTIN_NETWORK_CONF_OPERATORS = "S-1-5-32-556";
 	const string SID_BUILTIN_INCOMING_FOREST_TRUST  = "S-1-5-32-557";
+	const string SID_BUILTIN_PERFMON_USERS		= "S-1-5-32-558";
+	const string SID_BUILTIN_PERFLOG_USERS		= "S-1-5-32-559";
+	const string SID_BUILTIN_AUTH_ACCESS 		= "S-1-5-32-560";
+	const string SID_BUILTIN_TS_LICENSE_SERVERS	= "S-1-5-32-561";
 
 	/* SECURITY_NT_SERVICE */
 	const string NAME_NT_SERVICE            = "NT SERVICE";
