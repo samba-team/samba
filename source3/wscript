@@ -39,6 +39,25 @@ def configure(conf):
 
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h')
 
+    conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknod64')
+    conf.CHECK_FUNCS('strtol strchr strupr chflags')
+    conf.CHECK_FUNCS('getrlimit fsync fdatasync setpgid')
+    conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
+    conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent')
+    conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
+    conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
+    conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64')
+    conf.CHECK_FUNCS('fseek64 fseeko64 ftell64 ftello64 setluid getpwanam')
+    conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
+    conf.CHECK_FUNCS('getpwent_r getdents64 setenv strcasecmp fcvt fcvtl')
+    conf.CHECK_FUNCS('syslog vsyslog timegm setlocale nl_langinfo')
+    #TODO convert AC_CHECK_FUNCS(nanosleep,,[AC_CHECK_LIB_EXT(rt, LIBS, nanosleep)])
+    conf.CHECK_FUNCS('lutimes futimes utimensat futimens')
+    conf.CHECK_FUNCS('mlock munlock mlockall munlockall')
+    conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
+    conf.CHECK_FUNCS('shmget shm_open')
+    conf.CHECK_FUNCS('gettext dgettext bindtextdomain textdomain')
+
     # Check for inotify support
     conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h', add_headers=False)
     conf.CHECK_FUNCS('inotify_init')
