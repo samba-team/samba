@@ -344,8 +344,9 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
 def CHECK_CFLAGS(conf, cflags):
     '''check if the given cflags are accepted by the compiler
     '''
-    return conf.check(fragment='int main(void) { return 0; }',
+    return conf.check(fragment='int main(void) { return 0; }\n',
                       execute=0,
+                      type='nolink',
                       ccflags=cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
@@ -483,7 +484,8 @@ def SAMBA_CONFIG_H(conf, path=None):
 
     if Options.options.developer:
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
-        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k')
+        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k',
+                        testflags=True)
 
     if path is None:
         conf.write_config_header('config.h', top=True)
@@ -502,13 +504,22 @@ def CONFIG_PATH(conf, name, default):
             conf.env[name] = conf.env['PREFIX'] + default
     conf.define(name, conf.env[name], quote=True)
 
-##############################################################
-# add some CFLAGS to the command line
+
 @conf
-def ADD_CFLAGS(conf, flags):
+def ADD_CFLAGS(conf, flags, testflags=False):
+    '''add some CFLAGS to the command line
+       optionally set testflags to ensure all the flags work
+    '''
+    if testflags:
+        ok_flags=[]
+        for f in flags.split():
+            if CHECK_CFLAGS(conf, f):
+                ok_flags.append(f)
+        flags = ok_flags
     if not 'EXTRA_CFLAGS' in conf.env:
         conf.env['EXTRA_CFLAGS'] = []
     conf.env['EXTRA_CFLAGS'].extend(TO_LIST(flags))
+
 
 ##############################################################
 # add some extra include directories to all builds
