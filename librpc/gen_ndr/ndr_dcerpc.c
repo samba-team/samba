@@ -689,6 +689,76 @@ _PUBLIC_ void ndr_print_dcerpc_response(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_dcerpc_nca_status(struct ndr_push *ndr, int ndr_flags, enum dcerpc_nca_status r)
+{
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_dcerpc_nca_status(struct ndr_pull *ndr, int ndr_flags, enum dcerpc_nca_status *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_dcerpc_nca_status(struct ndr_print *ndr, const char *name, enum dcerpc_nca_status r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DERPC_NCA_S_COMM_FAILURE: val = "DERPC_NCA_S_COMM_FAILURE"; break;
+		case DERPC_NCA_S_OP_RNG_ERROR: val = "DERPC_NCA_S_OP_RNG_ERROR"; break;
+		case DERPC_NCA_S_UNKNOWN_IF: val = "DERPC_NCA_S_UNKNOWN_IF"; break;
+		case DERPC_NCA_S_WRONG_BOOT_TIME: val = "DERPC_NCA_S_WRONG_BOOT_TIME"; break;
+		case DERPC_NCA_S_YOU_CRASHED: val = "DERPC_NCA_S_YOU_CRASHED"; break;
+		case DERPC_NCA_S_PROTO_ERROR: val = "DERPC_NCA_S_PROTO_ERROR"; break;
+		case DERPC_NCA_S_OUT_ARGS_TOO_BIG: val = "DERPC_NCA_S_OUT_ARGS_TOO_BIG"; break;
+		case DERPC_NCA_S_SERVER_TOO_BUSY: val = "DERPC_NCA_S_SERVER_TOO_BUSY"; break;
+		case DERPC_NCA_S_FAULT_STRING_TOO_LARGE: val = "DERPC_NCA_S_FAULT_STRING_TOO_LARGE"; break;
+		case DERPC_NCA_S_UNSUPPORTED_TYPE: val = "DERPC_NCA_S_UNSUPPORTED_TYPE"; break;
+		case DERPC_NCA_S_FAULT_INT_DIV_BY_ZERO: val = "DERPC_NCA_S_FAULT_INT_DIV_BY_ZERO"; break;
+		case DERPC_NCA_S_FAULT_ADDR_ERROR: val = "DERPC_NCA_S_FAULT_ADDR_ERROR"; break;
+		case DERPC_NCA_S_FAULT_FP_DIV_BY_ZERO: val = "DERPC_NCA_S_FAULT_FP_DIV_BY_ZERO"; break;
+		case DERPC_NCA_S_FAULT_FP_UNDERFLOW: val = "DERPC_NCA_S_FAULT_FP_UNDERFLOW"; break;
+		case DERPC_NCA_S_FAULT_FP_OVERRFLOW: val = "DERPC_NCA_S_FAULT_FP_OVERRFLOW"; break;
+		case DERPC_NCA_S_FAULT_INVALID_TAG: val = "DERPC_NCA_S_FAULT_INVALID_TAG"; break;
+		case DERPC_NCA_S_FAULT_INVALID_BOUND: val = "DERPC_NCA_S_FAULT_INVALID_BOUND"; break;
+		case DERPC_NCA_S_FAULT_RPC_VERSION_MISMATCH: val = "DERPC_NCA_S_FAULT_RPC_VERSION_MISMATCH"; break;
+		case DERPC_NCA_S_FAULT_UNSPEC_REJECT: val = "DERPC_NCA_S_FAULT_UNSPEC_REJECT"; break;
+		case DERPC_NCA_S_FAULT_BAD_ACTID: val = "DERPC_NCA_S_FAULT_BAD_ACTID"; break;
+		case DERPC_NCA_S_FAULT_WHO_ARE_YOU_FAILED: val = "DERPC_NCA_S_FAULT_WHO_ARE_YOU_FAILED"; break;
+		case DERPC_NCA_S_FAULT_MANAGER_NOT_ENTERED: val = "DERPC_NCA_S_FAULT_MANAGER_NOT_ENTERED"; break;
+		case DERPC_NCA_S_FAULT_CANCEL: val = "DERPC_NCA_S_FAULT_CANCEL"; break;
+		case DERPC_NCA_S_FAULT_ILL_INST: val = "DERPC_NCA_S_FAULT_ILL_INST"; break;
+		case DERPC_NCA_S_FAULT_FP_ERROR: val = "DERPC_NCA_S_FAULT_FP_ERROR"; break;
+		case DERPC_NCA_S_FAULT_INT_OVERFLOW: val = "DERPC_NCA_S_FAULT_INT_OVERFLOW"; break;
+		case DERPC_NCA_S_UNUSED_1C000011: val = "DERPC_NCA_S_UNUSED_1C000011"; break;
+		case DERPC_NCA_S_FAULT_UNSPEC: val = "DERPC_NCA_S_FAULT_UNSPEC"; break;
+		case DERPC_NCA_S_FAULT_REMOTE_COMM_FAILURE: val = "DERPC_NCA_S_FAULT_REMOTE_COMM_FAILURE"; break;
+		case DERPC_NCA_S_FAULT_PIPE_EMPTY: val = "DERPC_NCA_S_FAULT_PIPE_EMPTY"; break;
+		case DERPC_NCA_S_FAULT_PIPE_CLOSED: val = "DERPC_NCA_S_FAULT_PIPE_CLOSED"; break;
+		case DERPC_NCA_S_FAULT_PIPE_ORDER: val = "DERPC_NCA_S_FAULT_PIPE_ORDER"; break;
+		case DERPC_NCA_S_FAULT_PIPE_DISCIPLINE: val = "DERPC_NCA_S_FAULT_PIPE_DISCIPLINE"; break;
+		case DERPC_NCA_S_FAULT_PIPE_COMM_ERROR: val = "DERPC_NCA_S_FAULT_PIPE_COMM_ERROR"; break;
+		case DERPC_NCA_S_FAULT_PIPE_MEMORY: val = "DERPC_NCA_S_FAULT_PIPE_MEMORY"; break;
+		case DERPC_NCA_S_FAULT_CONTEXT_MISMATCH: val = "DERPC_NCA_S_FAULT_CONTEXT_MISMATCH"; break;
+		case DERPC_NCA_S_FAULT_REMOTE_NO_MEMORY: val = "DERPC_NCA_S_FAULT_REMOTE_NO_MEMORY"; break;
+		case DERPC_NCA_S_INVALID_PRES_CONTEXT_ID: val = "DERPC_NCA_S_INVALID_PRES_CONTEXT_ID"; break;
+		case DERPC_NCA_S_UNSUPPORTED_AUTHN_LEVEL: val = "DERPC_NCA_S_UNSUPPORTED_AUTHN_LEVEL"; break;
+		case DERPC_NCA_S_UNUSED_1C00001E: val = "DERPC_NCA_S_UNUSED_1C00001E"; break;
+		case DERPC_NCA_S_INVALID_CHECKSUM: val = "DERPC_NCA_S_INVALID_CHECKSUM"; break;
+		case DERPC_NCA_S_INVALID_CRC: val = "DERPC_NCA_S_INVALID_CRC"; break;
+		case DERPC_NCA_S_FAULT_USER_DEFINED: val = "DERPC_NCA_S_FAULT_USER_DEFINED"; break;
+		case DERPC_NCA_S_FAULT_TX_OPEN_FAILED: val = "DERPC_NCA_S_FAULT_TX_OPEN_FAILED"; break;
+		case DERPC_NCA_S_FAULT_CODESET_CONV_ERROR: val = "DERPC_NCA_S_FAULT_CODESET_CONV_ERROR"; break;
+		case DERPC_NCA_S_FAULT_OBJECT_NOT_FOUND: val = "DERPC_NCA_S_FAULT_OBJECT_NOT_FOUND"; break;
+		case DERPC_NCA_S_FAULT_NO_CLIENT_STUB: val = "DERPC_NCA_S_FAULT_NO_CLIENT_STUB"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_dcerpc_fault(struct ndr_push *ndr, int ndr_flags, const struct dcerpc_fault *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -696,7 +766,7 @@ static enum ndr_err_code ndr_push_dcerpc_fault(struct ndr_push *ndr, int ndr_fla
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->alloc_hint));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->context_id));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->cancel_count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_dcerpc_nca_status(ndr, NDR_SCALARS, r->status));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -717,7 +787,7 @@ static enum ndr_err_code ndr_pull_dcerpc_fault(struct ndr_pull *ndr, int ndr_fla
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->alloc_hint));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->context_id));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->cancel_count));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_dcerpc_nca_status(ndr, NDR_SCALARS, &r->status));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
@@ -738,7 +808,7 @@ _PUBLIC_ void ndr_print_dcerpc_fault(struct ndr_print *ndr, const char *name, co
 	ndr_print_uint32(ndr, "alloc_hint", r->alloc_hint);
 	ndr_print_uint16(ndr, "context_id", r->context_id);
 	ndr_print_uint8(ndr, "cancel_count", r->cancel_count);
-	ndr_print_uint32(ndr, "status", r->status);
+	ndr_print_dcerpc_nca_status(ndr, "status", r->status);
 	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
 	ndr->depth--;
 }

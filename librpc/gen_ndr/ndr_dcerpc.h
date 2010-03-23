@@ -18,6 +18,7 @@ void ndr_print_dcerpc_bind_nak_versions(struct ndr_print *ndr, const char *name,
 void ndr_print_dcerpc_bind_nak_versions_ctr(struct ndr_print *ndr, const char *name, const union dcerpc_bind_nak_versions_ctr *r);
 void ndr_print_dcerpc_bind_nak(struct ndr_print *ndr, const char *name, const struct dcerpc_bind_nak *r);
 void ndr_print_dcerpc_response(struct ndr_print *ndr, const char *name, const struct dcerpc_response *r);
+void ndr_print_dcerpc_nca_status(struct ndr_print *ndr, const char *name, enum dcerpc_nca_status r);
 void ndr_print_dcerpc_fault(struct ndr_print *ndr, const char *name, const struct dcerpc_fault *r);
 void ndr_print_dcerpc_AuthType(struct ndr_print *ndr, const char *name, enum dcerpc_AuthType r);
 void ndr_print_dcerpc_AuthLevel(struct ndr_print *ndr, const char *name, enum dcerpc_AuthLevel r);
