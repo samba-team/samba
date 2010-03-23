@@ -59,20 +59,23 @@ def runonce(function):
     return wrapper
 
 
-
-def set_rpath(bld):
-    '''setup the default rpath'''
-    if bld.env.RPATH_ON_BUILD:
-        rpath = os.path.normpath('%s/%s' % (bld.env['BUILD_DIRECTORY'], LIB_PATH))
-        bld.env.append_value('RPATH', '-Wl,-rpath=%s' % rpath)
-    else:
-        os.environ['LD_LIBRARY_PATH'] = os.path.normpath('%s/../shared' % bld.srcnode.abspath(bld.env))
-Build.BuildContext.set_rpath = set_rpath
-
 def install_rpath(bld):
     '''the rpath value for installation'''
+    bld.env['RPATH'] = []
+    bld.env['RPATH_ST'] = []
     if bld.env.RPATH_ON_INSTALL:
         return ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
+    return []
+
+
+def build_rpath(bld):
+    '''the rpath value for build'''
+    rpath = os.path.normpath('%s/%s' % (bld.env['BUILD_DIRECTORY'], LIB_PATH))
+    bld.env['RPATH'] = []
+    bld.env['RPATH_ST'] = []
+    if bld.env.RPATH_ON_BUILD:
+        return ['-Wl,-rpath=%s' % rpath]
+    os.environ['LD_LIBRARY_PATH'] = rpath
     return []
 
 

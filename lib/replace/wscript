@@ -374,8 +374,6 @@ def configure(conf):
 
 
 def build(bld):
-    bld.set_rpath()
-
     # libreplace needs to put the library in the right build groups
     # as libreplace is a base library for everything, even for our
     # compilers, we need libreplace to build very early

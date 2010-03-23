@@ -121,7 +121,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         samba_includes  = includes,
         local_include   = local_include,
         vnum            = vnum,
-        install_path    = None
+        install_path    = None,
+        ldflags         = build_rpath(bld)
         )
 
     if install_path is None:
@@ -151,8 +152,8 @@ def SAMBA_LIBRARY(bld, libname, source,
             vnum            = vnum,
             install_as	    = libname,
             install_path    = None,
+            ldflags         = install_rpath(bld)
             )
-        t.env['RPATH'] = install_rpath(bld)
 
     if install:
         if vnum:
@@ -235,7 +236,8 @@ def SAMBA_BINARY(bld, binname, source,
         samba_modules  = modules,
         top            = True,
         samba_subsystem= subsystem_name,
-        install_path   = None
+        install_path   = None,
+        ldflags        = build_rpath(bld)
         )
 
     if install_path is None:
@@ -264,9 +266,9 @@ def SAMBA_BINARY(bld, binname, source,
             samba_modules  = modules,
             top            = True,
             samba_subsystem= subsystem_name,
-            install_path   = None
+            install_path   = None,
+            ldflags        = install_rpath(bld)
             )
-        t.env['RPATH'] = install_rpath(bld)
 
     if install:
         bld.install_as(os.path.join(install_path, binname),
