@@ -128,6 +128,11 @@ bool torture_bind_authcontext(struct torture_context *torture)
 			 nt_errstr(status));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(openpolicy.out.result)) {
+		torture_comment(torture, "dcerpc_lsa_OpenPolicy2 failed: %s\n",
+			 nt_errstr(openpolicy.out.result));
+		goto done;
+	}
 
 	close_handle.in.handle = &handle;
 	close_handle.out.handle = &handle;
@@ -136,6 +141,11 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(torture, "dcerpc_lsa_Close failed: %s\n",
 			 nt_errstr(status));
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(close_handle.out.result)) {
+		torture_comment(torture, "dcerpc_lsa_Close failed: %s\n",
+			 nt_errstr(close_handle.out.result));
 		goto done;
 	}
 
@@ -251,6 +261,11 @@ static bool bindtest(struct torture_context *tctx,
 			 nt_errstr(status));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(openpolicy.out.result)) {
+		torture_comment(tctx, "dcerpc_lsa_OpenPolicy2 failed: %s\n",
+			 nt_errstr(openpolicy.out.result));
+		goto done;
+	}
 
 	query.in.handle = &handle;
 	query.in.level = LSA_POLICY_INFO_DOMAIN;
@@ -260,6 +275,11 @@ static bool bindtest(struct torture_context *tctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "dcerpc_lsa_QueryInfoPolicy failed: %s\n",
 			 nt_errstr(status));
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(query.out.result)) {
+		torture_comment(tctx, "dcerpc_lsa_QueryInfoPolicy failed: %s\n",
+			 nt_errstr(query.out.result));
 		goto done;
 	}
 
@@ -272,6 +292,12 @@ static bool bindtest(struct torture_context *tctx,
 			 nt_errstr(status));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(close_handle.out.result)) {
+		torture_comment(tctx, "dcerpc_lsa_Close failed: %s\n",
+			 nt_errstr(close_handle.out.result));
+		goto done;
+	}
+
 
 	ret = true;
  done:
@@ -402,6 +428,8 @@ static bool get_usr_handle(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_Connect2_r(samr_handle, mem_ctx, &conn),
 		"samr_Connect2 failed");
+	torture_assert_ntstatus_ok(tctx, conn.out.result,
+		"samr_Connect2 failed");
 
 	enumdom.in.connect_handle = &conn_handle;
 	enumdom.in.resume_handle = &resume_handle;
@@ -412,6 +440,8 @@ static bool get_usr_handle(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_EnumDomains_r(samr_handle, mem_ctx, &enumdom),
+		"samr_EnumDomains failed");
+	torture_assert_ntstatus_ok(tctx, enumdom.out.result,
 		"samr_EnumDomains failed");
 
 	torture_assert_int_equal(tctx, *enumdom.out.num_entries, 2,
@@ -429,6 +459,8 @@ static bool get_usr_handle(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_LookupDomain_r(samr_handle, mem_ctx, &l),
 		"samr_LookupDomain failed");
+	torture_assert_ntstatus_ok(tctx, l.out.result,
+		"samr_LookupDomain failed");
 
 	o.in.connect_handle = &conn_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -437,6 +469,8 @@ static bool get_usr_handle(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_OpenDomain_r(samr_handle, mem_ctx, &o),
+		"samr_OpenDomain failed");
+	torture_assert_ntstatus_ok(tctx, o.out.result,
 		"samr_OpenDomain failed");
 
 	c.in.domain_handle = &domain_handle;
@@ -449,9 +483,11 @@ static bool get_usr_handle(struct torture_context *tctx,
 	c.out.access_granted = &access_granted;
 	c.out.rid = &user_rid;
 
-	status = dcerpc_samr_CreateUser2_r(samr_handle, mem_ctx, &c);
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_CreateUser2_r(samr_handle, mem_ctx, &c),
+		"samr_CreateUser2 failed");
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+	if (NT_STATUS_EQUAL(c.out.result, NT_STATUS_USER_EXISTS)) {
 		struct samr_LookupNames ln;
 		struct samr_OpenUser ou;
 		struct samr_Ids rids, types;
@@ -465,6 +501,8 @@ static bool get_usr_handle(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			dcerpc_samr_LookupNames_r(samr_handle, mem_ctx, &ln),
 			"samr_LookupNames failed");
+		torture_assert_ntstatus_ok(tctx, ln.out.result,
+			"samr_LookupNames failed");
 
 		ou.in.domain_handle = &domain_handle;
 		ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -475,6 +513,8 @@ static bool get_usr_handle(struct torture_context *tctx,
 			dcerpc_samr_OpenUser_r(samr_handle, mem_ctx, &ou),
 			"samr_OpenUser failed");
 		status = ou.out.result;
+	} else {
+		status = c.out.result;
 	}
 
 	torture_assert_ntstatus_ok(tctx, status,
@@ -557,6 +597,11 @@ static bool create_user(struct torture_context *tctx,
 				 nt_errstr(status));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(sui2.out.result)) {
+			torture_comment(tctx, "samr_SetUserInfo(23) failed: %s\n",
+				 nt_errstr(sui2.out.result));
+			goto done;
+		}
 
 		u_info.info16.acct_flags = ACB_NORMAL;
 		sui.in.user_handle = wks_handle;
@@ -564,7 +609,7 @@ static bool create_user(struct torture_context *tctx,
 		sui.in.level = 16;
 
 		status = dcerpc_samr_SetUserInfo_r(samr_handle, tmp_ctx, &sui);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(sui.out.result)) {
 			torture_comment(tctx, "samr_SetUserInfo(16) failed\n");
 			goto done;
 		}
@@ -574,7 +619,7 @@ static bool create_user(struct torture_context *tctx,
 		qui.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo_r(samr_handle, tmp_ctx, &qui);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(qui.out.result)) {
 			torture_comment(tctx, "samr_QueryUserInfo(21) failed\n");
 			goto done;
 		}
@@ -592,7 +637,7 @@ static bool create_user(struct torture_context *tctx,
 		sui.in.level = 21;
 
 		status = dcerpc_samr_SetUserInfo_r(samr_handle, tmp_ctx, &sui);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(sui.out.result)) {
 			torture_comment(tctx, "samr_SetUserInfo(21) failed\n");
 			goto done;
 		}
@@ -650,6 +695,11 @@ static bool delete_user(struct torture_context *tctx,
 			torture_comment(tctx, "samr_DeleteUser failed %s\n", nt_errstr(status));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(d.out.result)) {
+			torture_comment(tctx, "samr_DeleteUser failed %s\n", nt_errstr(d.out.result));
+			goto done;
+		}
+
 	}
 
 	ret = true;
@@ -710,6 +760,12 @@ static bool join3(struct torture_context *tctx,
 				  nt_errstr(status));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(q.out.result)) {
+			torture_warning(tctx, "QueryUserInfo failed: %s\n",
+				  nt_errstr(q.out.result));
+			goto done;
+		}
+
 
 		last_password_change = info->info21.last_password_change;
 	}
@@ -769,6 +825,11 @@ static bool join3(struct torture_context *tctx,
 				 nt_errstr(status));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(sui2.out.result)) {
+			torture_comment(tctx, "samr_SetUserInfo2(25) failed: %s\n",
+				 nt_errstr(sui2.out.result));
+			goto done;
+		}
 	} else {
 		struct samr_SetUserInfo2 sui2;
 		struct samr_SetUserInfo sui;
@@ -798,6 +859,11 @@ static bool join3(struct torture_context *tctx,
 				 nt_errstr(status));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(sui2.out.result)) {
+			torture_comment(tctx, "samr_SetUserInfo(24) failed: %s\n",
+				 nt_errstr(sui2.out.result));
+			goto done;
+		}
 
 		u_info.info16.acct_flags = ACB_WSTRUST;
 		sui.in.user_handle = wks_handle;
@@ -805,7 +871,7 @@ static bool join3(struct torture_context *tctx,
 		sui.in.level = 16;
 
 		status = dcerpc_samr_SetUserInfo_r(samr_handle, mem_ctx, &sui);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(sui.out.result)) {
 			torture_comment(tctx, "samr_SetUserInfo(16) failed\n");
 			goto done;
 		}
@@ -823,6 +889,11 @@ static bool join3(struct torture_context *tctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_warning(tctx, "QueryUserInfo failed: %s\n",
 				  nt_errstr(status));
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(q.out.result)) {
+			torture_warning(tctx, "QueryUserInfo failed: %s\n",
+				  nt_errstr(q.out.result));
 			goto done;
 		}
 
@@ -922,6 +993,11 @@ static bool auth2(struct torture_context *tctx,
 			 nt_errstr(status));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(tctx, "netr_ServerReqChallenge failed: %s\n",
+			 nt_errstr(r.out.result));
+		goto done;
+	}
 
 	negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	E_md4hash(cli_credentials_get_password(wks_cred), mach_pw.hash);
@@ -948,6 +1024,11 @@ static bool auth2(struct torture_context *tctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "netr_ServerServerAuthenticate2 failed: %s\n",
 			 nt_errstr(status));
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(a.out.result)) {
+		torture_comment(tctx, "netr_ServerServerAuthenticate2 failed: %s\n",
+			 nt_errstr(a.out.result));
 		goto done;
 	}
 
@@ -1099,6 +1180,11 @@ static bool schan(struct torture_context *tctx,
 				 nt_errstr(status));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(r.out.result)) {
+			torture_comment(tctx, "netr_LogonSamLogon failed: %s\n",
+				 nt_errstr(r.out.result));
+			goto done;
+		}
 
 		if ((r.out.return_authenticator == NULL) ||
 		    (!netlogon_creds_client_check(creds_state,
@@ -1129,6 +1215,11 @@ static bool schan(struct torture_context *tctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_comment(tctx, "netr_LogonSamLogon failed: %s\n",
 				 nt_errstr(status));
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(r.out.result)) {
+			torture_comment(tctx, "netr_LogonSamLogon failed: %s\n",
+				 nt_errstr(r.out.result));
 			goto done;
 		}
 
@@ -1166,6 +1257,10 @@ static bool schan(struct torture_context *tctx,
 		status = dcerpc_netr_ServerPasswordSet_r(net_handle, mem_ctx, &s);
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_comment(tctx, "ServerPasswordSet - %s\n", nt_errstr(status));
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(s.out.result)) {
+			torture_comment(tctx, "ServerPasswordSet - %s\n", nt_errstr(s.out.result));
 			goto done;
 		}
 
@@ -1522,6 +1617,11 @@ static struct dom_sid *name2sid(struct torture_context *tctx,
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(tctx, "OpenPolicy2 failed - %s\n", nt_errstr(r.out.result));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -1545,6 +1645,12 @@ static struct dom_sid *name2sid(struct torture_context *tctx,
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	if (!NT_STATUS_IS_OK(l.out.result)) {
+		torture_comment(tctx, "LookupNames of %s failed - %s\n", lsa_name.string,
+		       nt_errstr(l.out.result));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
 	result = dom_sid_add_rid(mem_ctx, domains->domains[0].sid,
 				 l.out.sids->sids[0].rid);
@@ -1555,6 +1661,11 @@ static struct dom_sid *name2sid(struct torture_context *tctx,
 	status = dcerpc_lsa_Close_r(b, tmp_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "dcerpc_lsa_Close failed - %s\n", nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	if (!NT_STATUS_IS_OK(c.out.result)) {
+		torture_comment(tctx, "dcerpc_lsa_Close failed - %s\n", nt_errstr(c.out.result));
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
@@ -1600,6 +1711,12 @@ static struct dom_sid *whoami(struct torture_context *tctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(tctx, "GetUserName failed - %s\n",
 		       nt_errstr(status));
+		talloc_free(lsa);
+		return NULL;
+	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_warning(tctx, "GetUserName failed - %s\n",
+		       nt_errstr(r.out.result));
 		talloc_free(lsa);
 		return NULL;
 	}
@@ -2076,6 +2193,11 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 			 nt_errstr(status));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(torture, "netr_ServerReqChallenge failed: %s\n",
+			 nt_errstr(r.out.result));
+		goto done;
+	}
 
 	negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	E_md4hash("foobar", mach_pw.hash);
@@ -2100,11 +2222,13 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 
 
 	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NO_TRUST_SAM_ACCOUNT)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_EQUAL(a.out.result, NT_STATUS_NO_TRUST_SAM_ACCOUNT)) {
 		torture_comment(torture, "dcerpc_netr_ServerAuthenticate2 returned %s, "
 			 "expected NT_STATUS_NO_TRUST_SAM_ACCOUNT\n",
-			 nt_errstr(status));
+			 nt_errstr(a.out.result));
 		goto done;
 	}
 
@@ -2405,6 +2529,8 @@ static bool torture_samba3_rpc_lsa(struct torture_context *torture)
 		torture_assert_ntstatus_ok(torture,
 			dcerpc_lsa_OpenPolicy2_r(b, torture, &o),
 			"dcerpc_lsa_OpenPolicy2 failed");
+		torture_assert_ntstatus_ok(torture, o.out.result,
+			"dcerpc_lsa_OpenPolicy2 failed");
 	}
 
 	{
@@ -2420,6 +2546,8 @@ static bool torture_samba3_rpc_lsa(struct torture_context *torture)
 
 			torture_assert_ntstatus_ok(torture,
 				dcerpc_lsa_QueryInfoPolicy_r(b, torture, &r),
+				talloc_asprintf(torture, "dcerpc_lsa_QueryInfoPolicy level %d failed", levels[i]));
+			torture_assert_ntstatus_ok(torture, r.out.result,
 				talloc_asprintf(torture, "dcerpc_lsa_QueryInfoPolicy level %d failed", levels[i]));
 		}
 	}
@@ -3197,6 +3325,8 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture,
 		dcerpc_samr_Connect2_r(b, torture, &c),
 		"");
+	torture_assert_ntstatus_ok(torture, c.out.result,
+		"");
 	dom_sid_parse("S-1-5-32", &sid);
 	o.in.connect_handle = &samr;
 	o.in.access_mask = SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS;
@@ -3204,6 +3334,8 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 	o.out.domain_handle = &domain;
 	torture_assert_ntstatus_ok(torture,
 		dcerpc_samr_OpenDomain_r(b, torture, &o),
+		"");
+	torture_assert_ntstatus_ok(torture, o.out.result,
 		"");
 	dom_sid_parse("S-1-2-3-4-5", &sid);
 	ptr.sid = &sid;
@@ -3214,6 +3346,8 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 	g.out.rids = &rids;
 	torture_assert_ntstatus_ok(torture,
 		dcerpc_samr_GetAliasMembership_r(b, torture, &g),
+		"");
+	torture_assert_ntstatus_ok(torture, g.out.result,
 		"");
 	if (rids.ids == NULL) {
 		/* This is the piece to test here */
