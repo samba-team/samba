@@ -103,16 +103,18 @@ def header_list(conf, headers=None, lib=None):
 
 
 @conf
-def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None, lib=None):
+def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None, lib=None, msg=None):
     '''check for a single type'''
     if define is None:
         define = 'HAVE_' + t.upper().replace(' ', '_')
+    if msg is None:
+        msg='Checking for %s' % t
     ret = CHECK_CODE(conf, '%s _x' % t,
                      define,
                      execute=False,
                      headers=headers,
-                     msg='Checking for %s' % t,
                      local_include=False,
+                     msg=msg,
                      lib=lib,
                      link=False)
     if not ret and alternate:
