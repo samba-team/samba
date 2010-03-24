@@ -12,6 +12,9 @@ def set_options(opt):
 def configure(conf):
     conf.env.enable_gnutls = Options.options.enable_gnutls
     if not conf.env.enable_gnutls:
+        conf.SET_TARGET_TYPE('gnutls', 'DISABLED')
+        conf.SET_TARGET_TYPE('gcrypt', 'DISABLED')
+        conf.SET_TARGET_TYPE('gpg-error', 'DISABLED')
         return
 
     conf.check_cfg(package='gnutls',
@@ -44,6 +47,5 @@ def configure(conf):
 def build(bld):
     bld.SAMBA_SUBSYSTEM('LIBTLS',
                         source='tls.c tlscert.c',
-                        public_deps='talloc gnutls gcrypt LIBSAMBA-HOSTCONFIG samba_socket',
-                        enabled = bld.env.enable_gnutls
+                        public_deps='talloc gnutls gcrypt LIBSAMBA-HOSTCONFIG samba_socket'
                         )

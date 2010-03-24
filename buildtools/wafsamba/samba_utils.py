@@ -23,6 +23,7 @@ def NEW_NODE(node, name):
 #############################################################
 # set a value in a local cache
 # return False if it's already set
+@conf
 def SET_TARGET_TYPE(ctx, target, value):
     cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
     if target in cache:
