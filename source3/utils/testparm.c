@@ -77,6 +77,12 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
+	if (strequal(lp_workgroup(), global_myname())) {
+		fprintf(stderr, "WARNING: 'workgroup' and 'netbios name' " \
+			"must differ.\n");
+		ret = 1;
+	}
+
 	if (!directory_exist_stat(lp_lockdir(), &st)) {
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
