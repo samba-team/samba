@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # 
 # Works out the minimal schema for a set of objectclasses
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Unix SMB/CIFS implementation.
 # A script to compare differences of objects and attributes between

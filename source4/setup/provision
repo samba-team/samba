@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Unix SMB/CIFS implementation.
 # provision a Samba4 server

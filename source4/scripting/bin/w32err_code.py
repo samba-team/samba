@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Unix SMB/CIFS implementation.
 # Copyright (C) Kamen Mazdrashki <kamen.mazdrashki@postpath.com> 2009
