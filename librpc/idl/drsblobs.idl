@@ -572,53 +572,53 @@ interface drsblobs {
 		[in,subcontext(0xFFFFFC01)] ExtendedErrorInfoPtr ptr
 		);
 
-        /* MS-ADTS 7.1.6.9.3 msDS-TrustForestTrustInfo Attribute */
+	/* MS-ADTS 7.1.6.9.3 msDS-TrustForestTrustInfo Attribute */
 
-        typedef [flag(NDR_NOALIGN)] struct {
-                [value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
-                [subcontext(0),subcontext_size(sid_size)] dom_sid sid;
-                utf8string2 dns_name;
-                utf8string2 netbios_name;
-        } ForestTrustDataDomainInfo;
+	typedef [flag(NDR_NOALIGN)] struct {
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid sid;
+		utf8string2 dns_name;
+		utf8string2 netbios_name;
+	} ForestTrustDataDomainInfo;
 
-        typedef [flag(NDR_NOALIGN)] struct {
-                uint32 size;
-                uint8 data[size];
-        } ForestTrustDataBinaryData;
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32 size;
+		uint8 data[size];
+	} ForestTrustDataBinaryData;
 
-        typedef [nodiscriminant] union {
-                [case(FOREST_TRUST_TOP_LEVEL_NAME)] utf8string2 name;
-                [case(FOREST_TRUST_TOP_LEVEL_NAME_EX)] utf8string2 name;
-                [case(FOREST_TRUST_DOMAIN_INFO)] ForestTrustDataDomainInfo info;
-                [default] ForestTrustDataBinaryData data;
-        } ForestTrustData;
+	typedef [nodiscriminant] union {
+		[case(FOREST_TRUST_TOP_LEVEL_NAME)] utf8string2 name;
+		[case(FOREST_TRUST_TOP_LEVEL_NAME_EX)] utf8string2 name;
+		[case(FOREST_TRUST_DOMAIN_INFO)] ForestTrustDataDomainInfo info;
+		[default] ForestTrustDataBinaryData data;
+	} ForestTrustData;
 
-        /* same as lsa_ForestTrustRecordType */
-        typedef [enum8bit] enum {
+	/* same as lsa_ForestTrustRecordType */
+	typedef [enum8bit] enum {
 		FOREST_TRUST_TOP_LEVEL_NAME = 0,
 		FOREST_TRUST_TOP_LEVEL_NAME_EX = 1,
 		FOREST_TRUST_DOMAIN_INFO = 2
-        } ForestTrustInfoRecordType;
+	} ForestTrustInfoRecordType;
 
-        /* meaning of flags depends on record type and values are
-           the same as in lsa.idl, see collision record types */
-        typedef [public,gensize,flag(NDR_NOALIGN)] struct {
-                uint32 flags;
-                NTTIME timestamp;
-                ForestTrustInfoRecordType type;
-                [switch_is(type)] ForestTrustData data;
-        } ForestTrustInfoRecord;
+	/* meaning of flags depends on record type and values are
+	   the same as in lsa.idl, see collision record types */
+	typedef [public,gensize,flag(NDR_NOALIGN)] struct {
+		uint32 flags;
+		NTTIME timestamp;
+		ForestTrustInfoRecordType type;
+		[switch_is(type)] ForestTrustData data;
+	} ForestTrustInfoRecord;
 
-        typedef [flag(NDR_NOALIGN)] struct {
-                [value(ndr_size_ForestTrustInfoRecord(&record, ndr->iconv_convenience, ndr->flags))] uint32 record_size;
-                ForestTrustInfoRecord record;
-        } ForestTrustInfoRecordArmor;
+	typedef [flag(NDR_NOALIGN)] struct {
+		[value(ndr_size_ForestTrustInfoRecord(&record, ndr->iconv_convenience, ndr->flags))] uint32 record_size;
+		ForestTrustInfoRecord record;
+	} ForestTrustInfoRecordArmor;
 
-        typedef [public,flag(NDR_NOALIGN)] struct {
-                uint32 version;
-                uint32 count;
-                ForestTrustInfoRecordArmor records[count];
-        } ForestTrustInfo;
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32 version;
+		uint32 count;
+		ForestTrustInfoRecordArmor records[count];
+	} ForestTrustInfo;
 
 	void decode_ForestTrustInfo(
 		[in] ForestTrustInfo blob
