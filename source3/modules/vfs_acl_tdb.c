@@ -37,12 +37,11 @@ static struct db_context *acl_db;
  Open acl_db if not already open, increment ref count.
 *******************************************************************/
 
-static bool acl_tdb_init(struct db_context **pp_db)
+static bool acl_tdb_init(void)
 {
 	char *dbname;
 
 	if (acl_db) {
-		*pp_db = acl_db;
 		ref_count++;
 		return true;
 	}
@@ -55,10 +54,10 @@ static bool acl_tdb_init(struct db_context **pp_db)
 	}
 
 	become_root();
-	*pp_db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	acl_db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	unbecome_root();
 
-	if (*pp_db == NULL) {
+	if (acl_db == NULL) {
 #if defined(ENOTSUP)
 		errno = ENOTSUP;
 #else
@@ -77,14 +76,12 @@ static bool acl_tdb_init(struct db_context **pp_db)
  Lower ref count and close acl_db if zero.
 *******************************************************************/
 
-static void free_acl_tdb_data(void **pptr)
+static void disconnect_acl_tdb(struct vfs_handle_struct *handle)
 {
-	struct db_context **pp_db = (struct db_context **)pptr;
-
+	SMB_VFS_NEXT_DISCONNECT(handle);
 	ref_count--;
 	if (ref_count == 0) {
-		TALLOC_FREE(*pp_db);
-		acl_db = NULL;
+		TALLOC_FREE(acl_db);
 	}
 }
 
@@ -146,12 +143,9 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	uint8 id_buf[16];
 	TDB_DATA data;
 	struct file_id id;
-	struct db_context *db;
+	struct db_context *db = acl_db;
 	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
-		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
 	ZERO_STRUCT(sbuf);
 
@@ -204,15 +198,12 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	uint8 id_buf[16];
 	struct file_id id;
 	TDB_DATA data;
-	struct db_context *db;
+	struct db_context *db = acl_db;
 	struct db_record *rec;
 	NTSTATUS status;
 
 	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
 		  (unsigned int)pblob->length, fsp_str_dbg(fsp)));
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
-		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -243,11 +234,9 @@ static int unlink_acl_tdb(vfs_handle_struct *handle,
 			  const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
-	struct db_context *db;
+	struct db_context *db = acl_db;
 	NTSTATUS status;
 	int ret = -1;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -284,10 +273,8 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 {
 
 	SMB_STRUCT_STAT sbuf;
-	struct db_context *db;
+	struct db_context *db = acl_db;
 	int ret = -1;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (lp_posix_pathnames()) {
 		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
@@ -316,20 +303,16 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 				const char *service,
 				const char *user)
 {
-	struct db_context *db;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
 	if (ret < 0) {
 		return ret;
 	}
 
-	if (!acl_tdb_init(&db)) {
+	if (!acl_tdb_init()) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		return -1;
 	}
-
-	SMB_VFS_HANDLE_SET_DATA(handle, db, free_acl_tdb_data,
-				struct db_context, return -1);
 
 	/* Ensure we have "inherit acls = yes" if we're
 	 * using this module. */
@@ -352,10 +335,8 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
                               SMB_ACL_T theacl)
 {
 	SMB_STRUCT_STAT sbuf;
-	struct db_context *db;
+	struct db_context *db = acl_db;
 	int ret = -1;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (lp_posix_pathnames()) {
 		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
@@ -387,11 +368,9 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
                             files_struct *fsp,
                             SMB_ACL_T theacl)
 {
-	struct db_context *db;
+	struct db_context *db = acl_db;
 	NTSTATUS status;
 	int ret;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -411,6 +390,7 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
+	.disconnect = disconnect_acl_tdb,
 	.opendir = opendir_acl_common,
 	.mkdir = mkdir_acl_common,
 	.open = open_acl_common,

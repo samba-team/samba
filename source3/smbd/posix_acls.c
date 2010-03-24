@@ -2698,7 +2698,9 @@ static bool set_canon_ace_list(files_struct *fsp,
 	mode_t mask_perms = 0;
 
 	/* Use the psbuf that was passed in. */
-	fsp->fsp_name->st = *psbuf;
+	if (psbuf != &fsp->fsp_name->st) {
+		fsp->fsp_name->st = *psbuf;
+	}
 
 #if defined(POSIX_ACL_NEEDS_MASK)
 	/* HP-UX always wants to have a mask (called "class" there). */
