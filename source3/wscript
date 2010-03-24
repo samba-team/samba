@@ -9,6 +9,7 @@ import wafsamba, Options
 
 def set_options(opt):
     opt.recurse('../lib/replace')
+    opt.recurse('build')
     opt.recurse('../lib/nss_wrapper')
     opt.recurse('../lib/socket_wrapper')
     opt.recurse('../lib/uid_wrapper')
@@ -33,6 +34,10 @@ def configure(conf):
     conf.ADD_EXTRA_INCLUDES('#source3 #source3/include #lib/replace #lib/talloc #lib/tevent #source3/libaddns #source3/librpc')
 
     conf.sub_config('../lib/replace')
+    conf.sub_config('build')
+    conf.sub_config('../lib/tdb')
+    conf.sub_config('../lib/talloc')
+    conf.sub_config('../lib/tevent')
     conf.sub_config('../lib/nss_wrapper')
     conf.sub_config('../lib/socket_wrapper')
     conf.sub_config('../lib/uid_wrapper')
