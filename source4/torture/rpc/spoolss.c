@@ -2537,14 +2537,14 @@ static bool test_GetJob(struct torture_context *tctx,
 	r.out.needed = &needed;
 	r.out.info = &info;
 
-	torture_comment(tctx, "Testing GetJob level %d\n", r.in.level);
+	torture_comment(tctx, "Testing GetJob(%d), level %d\n", job_id, r.in.level);
 
 	status = dcerpc_spoolss_GetJob_r(b, tctx, &r);
 	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "Unexpected return code");
 
 	for (i = 0; i < ARRAY_SIZE(levels); i++) {
 
-		torture_comment(tctx, "Testing GetJob level %d\n", r.in.level);
+		torture_comment(tctx, "Testing GetJob(%d), level %d\n", job_id, r.in.level);
 
 		needed = 0;
 
