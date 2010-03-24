@@ -2166,6 +2166,12 @@ static struct security_descriptor *get_sharesec(struct torture_context *tctx,
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		torture_comment(tctx, "srvsvc_NetShareGetInfo failed: %s\n",
+			 win_errstr(r.out.result));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
 	result = talloc_steal(mem_ctx, info.info502->sd_buf.sd);
 	talloc_free(tmp_ctx);
@@ -2227,7 +2233,11 @@ static NTSTATUS set_sharesec(struct torture_context *tctx,
 		torture_comment(tctx, "srvsvc_NetShareSetInfo failed: %s\n",
 			 nt_errstr(status));
 	}
-
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		torture_comment(tctx, "srvsvc_NetShareSetInfo failed: %s\n",
+			win_errstr(r.out.result));
+		status = werror_to_ntstatus(r.out.result);
+	}
 	talloc_free(tmp_ctx);
 	return status;
 }
@@ -2489,6 +2499,8 @@ static bool find_printers(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_srvsvc_NetShareEnum_r(b, tctx, &r),
+		"NetShareEnum level 1 failed");
+	torture_assert_werr_ok(tctx, r.out.result,
 		"NetShareEnum level 1 failed");
 
 	*printers = NULL;
@@ -2766,6 +2778,8 @@ static bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 		torture_assert_ntstatus_ok(torture,
 			dcerpc_wkssvc_NetWkstaGetInfo_r(b, torture, &r),
 			"dcerpc_wkssvc_NetWksGetInfo failed");
+		torture_assert_werr_ok(torture, r.out.result,
+			"dcerpc_wkssvc_NetWksGetInfo failed");
 
 		torture_assert_str_equal(torture, servername, r.out.info->info100->server_name,
 			"servername RAP / DCERPC inconsistency");
@@ -2902,6 +2916,8 @@ static bool test_Open3(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		open_fn(b, tctx, &r),
+		talloc_asprintf(tctx, "%s failed", name));
+	torture_assert_werr_ok(tctx, r.out.result,
 		talloc_asprintf(tctx, "%s failed", name));
 
 	enumkeys(tctx, b, &handle, 4);
