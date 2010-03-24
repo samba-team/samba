@@ -2589,34 +2589,34 @@ static bool test_SetJob(struct torture_context *tctx,
 
 	switch (command) {
 	case SPOOLSS_JOB_CONTROL_PAUSE:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_PAUSE\n");
+		torture_comment(tctx, "Testing SetJob(%d) SPOOLSS_JOB_CONTROL_PAUSE\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_RESUME:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RESUME\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_RESUME\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_CANCEL:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_CANCEL\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_CANCEL\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_RESTART:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RESTART\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_RESTART\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_DELETE:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_DELETE\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_DELETE\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_RETAIN:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RETAIN\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_RETAIN\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_RELEASE:
-		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RELEASE\n");
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_RELEASE\n", job_id);
 		break;
 	default:
-		torture_comment(tctx, "Testing SetJob\n");
+		torture_comment(tctx, "Testing SetJob(%d)\n", job_id);
 		break;
 	}
 
