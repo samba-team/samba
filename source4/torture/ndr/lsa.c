@@ -21,17 +21,6 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "libcli/security/security.h"
-
-#define torture_assert_sid_equal(torture_ctx,got,expected,cmt)\
-	do { struct dom_sid *__got = (got), *__expected = (expected); \
-	if (!dom_sid_equal(__got, __expected)) { \
-		torture_result(torture_ctx, TORTURE_FAIL, \
-					   __location__": "#got" was %s, expected %s: %s", \
-					   dom_sid_string(torture_ctx, __got), dom_sid_string(torture_ctx, __expected), cmt); \
-		return false; \
-	} \
-	} while(0)
 
 static const uint8_t lsarlookupnames_in_data[] = {
   0x00, 0x00, 0x00, 0x00, 0x2a, 0xab, 0xb8, 0x84, 0x36, 0xc6, 0xed, 0x4f,
