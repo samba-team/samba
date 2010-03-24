@@ -575,15 +575,6 @@ PRINTBACKEND_SRC = 'printing/printing.c printing/nt_printing.c ${PRINTBASE_SRC}'
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
 
-def EXPAND_VARIABLES(varstr, envlist):
-    import Environment
-    env = Environment.Environment()
-    for v in envlist:
-        env[v] = eval(v)
-    return SUBST_VARS_RECURSIVE(varstr, env)
-
-src =EXPAND_VARIABLES(SMBD_SRC, dir())
-
 bld.env.AWK = 'gawk'
 
 bld.SAMBA_GENERATOR('build_options',
@@ -598,8 +589,9 @@ print "SBINDIR=%s" % bld.env.SBINDIR
 bld.BUILD_SUBDIR('build')
 
 bld.SAMBA_BINARY('smbd/smbd',
-                 source=src,
-                 deps='tdb DYNCONFIG')
+                 source=SMBD_SRC,
+                 deps='tdb DYNCONFIG',
+                 vars=locals())
 
 bld.BUILD_SUBDIR('../lib/socket_wrapper')
 bld.BUILD_SUBDIR('../lib/talloc')
