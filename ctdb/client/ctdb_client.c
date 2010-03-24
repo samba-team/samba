@@ -1906,7 +1906,7 @@ int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, v
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
 
-	fprintf(f, "data(%u) = \"", (unsigned)data.dsize);
+	fprintf(f, "data(%u) = \"", (unsigned)data.dsize - sizeof(*h));
 	for (i=sizeof(*h);i<data.dsize;i++) {
 		if (ISASCII(data.dptr[i])) {
 			fprintf(f, "%c", data.dptr[i]);
