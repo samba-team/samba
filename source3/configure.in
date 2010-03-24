@@ -6315,7 +6315,7 @@ AC_ARG_ENABLE(pthreadpool,
 [AS_HELP_STRING([--enable-pthreadpool], [Enable pthreads pool helper support (default=no)])])
 
 if test x"$enable_pthreadpool" = xyes -a x"$samba_cv_HAVE_PTHREAD" != x"yes"; then
-	AC_MSG_ERROR([pthreadpool support cannot be enabled when pthread support was found])
+	AC_MSG_ERROR([pthreadpool support cannot be enabled when pthread support was not found])
 fi
 
 if test x"$enable_pthreadpool" = x"yes" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; then
