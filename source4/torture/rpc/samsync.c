@@ -494,7 +494,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		ret = false;
 	}
 
-	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &user_handle)) {
+	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &user_handle)) {
 		torture_comment(tctx, "samr_handle_Close failed - %s\n",
 		       nt_errstr(nt_status));
 		ret = false;
@@ -763,7 +763,7 @@ static bool samsync_handle_alias(struct torture_context *tctx,
 	TEST_SEC_DESC_EQUAL(alias->sdbuf, samr, &alias_handle);
 
 	nt_status = dcerpc_samr_QueryAliasInfo_r(samsync_state->b_samr, mem_ctx, &q);
-	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &alias_handle)) {
+	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &alias_handle)) {
 		return false;
 	}
 
@@ -815,7 +815,7 @@ static bool samsync_handle_group(struct torture_context *tctx,
 	TEST_SEC_DESC_EQUAL(group->sdbuf, samr, &group_handle);
 
 	nt_status = dcerpc_samr_QueryGroupInfo_r(samsync_state->b_samr, mem_ctx, &q);
-	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &group_handle)) {
+	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &group_handle)) {
 		return false;
 	}
 
@@ -1586,7 +1586,7 @@ bool torture_rpc_samsync(struct torture_context *torture)
 				  timestring(mem_ctx, time(NULL)));
 	status = dcerpc_samr_SetDomainInfo_r(samsync_state->b_samr, mem_ctx, &s);
 
-	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, domain_policy)) {
+	if (!test_samr_handle_Close(samsync_state->b_samr, torture, domain_policy)) {
 		ret = false;
 		goto failed;
 	}
