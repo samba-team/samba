@@ -5151,6 +5151,18 @@ static bool test_one_printer(struct torture_context *tctx,
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	if (!test_PausePrinter(tctx, b, handle)) {
+		ret = false;
+	}
+
+	if (!test_DoPrintTest(tctx, b, handle)) {
+		ret = false;
+	}
+
+	if (!test_ResumePrinter(tctx, b, handle)) {
+		ret = false;
+	}
+
 	if (!test_printer_info(tctx, b, handle)) {
 		ret = false;
 	}
