@@ -4,7 +4,7 @@
 
 bld.SAMBA_SUBSYSTEM('CHARSET',
 	source='iconv.c charcnv.c util_unistr.c codepoints.c',
-	public_deps='ICONV',
+	public_deps='iconv',
 	public_headers='charset.h',
 	deps='DYNCONFIG'
 	)
