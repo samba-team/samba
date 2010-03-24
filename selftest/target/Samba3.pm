@@ -535,6 +535,15 @@ sub provision($$$$$$)
 	create mask = 755
 	vfs objects = $bindir_abs/xattr_tdb.so $bindir_abs/streams_depot.so
 
+	printing = vlp
+	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
+	lpq command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpq %p
+	lp rm command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lprm %p %j
+	lp pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lppause %p %j
+	lp resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpresume %p %j
+	queue pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queuepause %p
+	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
+
 	# Begin extra options
 	$extra_options
 	# End extra options
@@ -558,14 +567,6 @@ sub provision($$$$$$)
 [print1]
 	copy = tmp
 	printable = yes
-	printing = vlp
-	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
-	lpq command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpq %p
-	lp rm command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lprm %p %j
-	lp pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lppause %p %j
-	lp resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpresume %p %j
-	queue pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queuepause %p
-	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 
 [print2]
 	copy = print1
