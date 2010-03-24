@@ -11,6 +11,7 @@ def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
     t = bld(rule='${PERL} -W ../heimdal/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
+            on_results=True,
             ext_out='.c',
             before='cc')
     t.env.OPTIONS = options
@@ -27,6 +28,7 @@ def SAMBA_AUTOPROTO(bld, header, source):
     bld(
         source = source,
         target = header,
+        on_results=True,
         ext_out='.c',
         before ='cc',
         rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'

@@ -11,6 +11,7 @@ def SAMBA_MKVERSION(bld, target):
             source= [ "script/mkversion.sh", 'VERSION' ],
             target=target,
             shell=True,
+            on_results=True,
             before="cc")
     # force this rule to be constructed now
     t.post()
