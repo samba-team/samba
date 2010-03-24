@@ -39,7 +39,7 @@
 
 static bool dont_ask;
 
-enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS };
+enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS, OPT_SIGN, OPT_ENCRYPT };
 
 /*
   disable asking for a password
@@ -66,6 +66,7 @@ static void popt_common_credentials_callback(poptContext con,
 			cli_credentials_set_cmdline_callbacks(cmdline_credentials);
 		}
 		return;
+
 	}
 
 	switch(opt->val) {
@@ -119,8 +120,32 @@ static void popt_common_credentials_callback(poptContext con,
 	}
 		
 	case OPT_SIMPLE_BIND_DN:
+	{
 		cli_credentials_set_bind_dn(cmdline_credentials, arg);
 		break;
+	}
+	case OPT_SIGN:
+	{
+		uint32_t gensec_features;
+
+		gensec_features = cli_credentials_get_gensec_features(cmdline_credentials);
+
+		gensec_features |= GENSEC_FEATURE_SIGN;
+		cli_credentials_set_gensec_features(cmdline_credentials,
+						    gensec_features);
+		break;
+	}
+	case OPT_ENCRYPT:
+	{
+		uint32_t gensec_features;
+
+		gensec_features = cli_credentials_get_gensec_features(cmdline_credentials);
+
+		gensec_features |= GENSEC_FEATURE_SEAL;
+		cli_credentials_set_gensec_features(cmdline_credentials,
+						    gensec_features);
+		break;
+	}
 	}
 }
 
@@ -135,5 +160,7 @@ struct poptOption popt_common_credentials[] = {
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
 	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
 	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos" },
+	{ "sign", 'S', POPT_ARG_NONE, NULL, OPT_SIGN, "Sign connection to prevent modification in transit" },
+	{ "encrypt", 'e', POPT_ARG_NONE, NULL, OPT_ENCRYPT, "Encrypt connection for privacy" },
 	{ NULL }
 };
