@@ -1,0 +1,611 @@
+from samba_utils import *
+
+TDB_LIB_SRC = '''lib/util_tdb.c ../lib/util/util_tdb.c
+	  lib/dbwrap.c lib/dbwrap_tdb.c
+	  lib/dbwrap_ctdb.c
+	  lib/g_lock.c
+	  lib/dbwrap_rbt.c'''
+
+TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
+
+SMBLDAP_SRC = '''${SMBLDAP} ${SMBLDAPUTIL}'''
+
+VERSION_SRC = '''lib/version.c'''
+
+WBCOMMON_SRC = '../nsswitch/wb_common.c'
+
+AFS_SRC = 'lib/afs.c'
+
+AFS_SETTOKEN_SRC = 'lib/afs_settoken.c'
+
+AVAHI_SRC = '' # TODO: fix
+
+SERVER_MUTEX_SRC = 'lib/server_mutex.c'
+
+PASSCHANGE_SRC = '''libsmb/passchange.c'''
+
+LIBNDR_DRSUAPI_SRC = '''../librpc/ndr/ndr_drsuapi.c
+		     ../librpc/ndr/ndr_compression.c
+		     ../librpc/gen_ndr/ndr_drsuapi.c
+		     ../librpc/ndr/ndr_drsblobs.c
+		     ../librpc/gen_ndr/ndr_drsblobs.c'''
+
+ZLIB_SRC = '''${ZLIB_SRCS}'''
+
+COMPRESSION_SRC = '''../lib/compression/mszip.c
+				  ../lib/compression/lzxpress.c
+				  ${ZLIB_SRC}'''
+
+DRSUAPI_SRC = '''${LIBNDR_DRSUAPI_SRC}
+	      ${COMPRESSION_SRC}'''
+
+LIBNDR_NTLMSSP_SRC = '''../librpc/gen_ndr/ndr_ntlmssp.c
+		     ../librpc/ndr/ndr_ntlmssp.c'''
+
+LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
+	     ../librpc/ndr/ndr.c
+	     ../librpc/ndr/ndr_misc.c
+	     ../librpc/gen_ndr/ndr_misc.c
+	     ../librpc/gen_ndr/ndr_security.c
+	     ../librpc/ndr/ndr_sec_helper.c
+	     librpc/ndr/ndr_string.c
+	     ../librpc/ndr/uuid.c
+	     librpc/ndr/util.c
+	     ../librpc/gen_ndr/ndr_dcerpc.c'''
+
+RPCCLIENT_NDR_SRC = '''rpc_client/ndr.c'''
+
+LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c
+		  ../librpc/gen_ndr/ndr_lsa.c'''
+
+LIBNDR_GEN_SRC1 = '''../librpc/gen_ndr/ndr_netlogon.c
+		  ../librpc/ndr/ndr_netlogon.c'''
+
+LIBNDR_GEN_SRC2 = '''../librpc/gen_ndr/ndr_spoolss.c
+		  ../librpc/ndr/ndr_spoolss_buf.c'''
+
+LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
+		 ${LIBNDR_GEN_SRC0}
+		 ../librpc/gen_ndr/ndr_dfs.c
+		 ../librpc/gen_ndr/ndr_echo.c
+		 ../librpc/gen_ndr/ndr_winreg.c
+		 ../librpc/gen_ndr/ndr_initshutdown.c
+		 ../librpc/gen_ndr/ndr_srvsvc.c
+		 ../librpc/gen_ndr/ndr_eventlog.c
+		 ${LIBNDR_GEN_SRC1}
+		 ../librpc/gen_ndr/ndr_dssetup.c
+		 librpc/gen_ndr/ndr_notify.c
+		 ../librpc/gen_ndr/ndr_xattr.c
+		 ../librpc/ndr/ndr_xattr.c
+		 ../librpc/gen_ndr/ndr_epmapper.c
+		 ../librpc/gen_ndr/ndr_named_pipe_auth.c
+		 ../librpc/gen_ndr/ndr_ntsvcs.c
+		 ${LIBNDR_GEN_SRC2}'''
+
+RPC_PARSE_SRC0 = '''rpc_parse/parse_prs.c rpc_parse/parse_misc.c'''
+
+# this includes only the low level parse code, not stuff
+# that requires knowledge of security contexts
+RPC_PARSE_SRC1 = '''${RPC_PARSE_SRC0}'''
+
+RPC_PARSE_SRC2 = '''rpc_parse/parse_rpc.c
+		 rpc_client/init_netlogon.c
+		 rpc_client/init_lsa.c'''
+
+LIBREPLACE_SRC = '''${LIBREPLACE_SRCS}'''
+
+SOCKET_WRAPPER_SRC = '''${SOCKET_WRAPPER_SRCS}'''
+NSS_WRAPPER_SRC = '''${NSS_WRAPPER_SRCS}'''
+
+LIBSAMBAUTIL_SRC = '''
+		${LIBREPLACE_SRC}
+		${SOCKET_WRAPPER_SRC}
+		${NSS_WRAPPER_SRC}'''
+
+UTIL_SRC = '''../lib/util/rbtree.c ../lib/util/signal.c ../lib/util/time.c
+		   ../lib/util/xfile.c ../lib/util/util_strlist.c
+		   ../lib/util/util_file.c ../lib/util/data_blob.c
+		   ../lib/util/util.c ../lib/util/fsusage.c
+		   ../lib/util/params.c ../lib/util/talloc_stack.c
+		   ../lib/util/genrand.c ../lib/util/util_net.c
+		   ../lib/util/become_daemon.c ../lib/util/system.c
+		   ../lib/util/tevent_unix.c ../lib/util/tevent_ntstatus.c
+		   ../lib/util/smb_threads.c ../lib/util/util_id.c
+		   ../lib/util/blocking.c ../lib/util/rfc1738.c '''
+
+CRYPTO_SRC = '''../lib/crypto/crc32.c ../lib/crypto/md5.c
+			 ../lib/crypto/hmacmd5.c ../lib/crypto/arcfour.c
+			 ../lib/crypto/md4.c
+			 ../lib/crypto/sha256.c ../lib/crypto/hmacsha256.c
+			 ../lib/crypto/aes.c ../lib/crypto/rijndael-alg-fst.c'''
+
+LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC} ${CRYPTO_SRC}
+	  lib/messages.c librpc/gen_ndr/ndr_messaging.c lib/messages_local.c
+	  lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
+	  lib/interfaces.c lib/memcache.c
+	  lib/talloc_dict.c
+	  lib/serverid.c
+	  lib/util_transfer_file.c ../lib/async_req/async_sock.c
+	  ${TDB_LIB_SRC}
+	  ${VERSION_SRC} lib/charcnv.c lib/debug.c lib/fault.c
+	  lib/interface.c lib/pidfile.c
+	  lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
+	  lib/username.c
+	  ../libds/common/flag_mapping.c
+	  lib/util_pw.c lib/access.c lib/smbrun.c
+	  lib/bitmap.c lib/dprintf.c ${UTIL_REG_SRC}
+	  lib/wins_srv.c
+	  lib/util_str.c lib/clobber.c lib/util_sid.c lib/util_uuid.c
+	  lib/util_unistr.c lib/util_file.c
+	  lib/util.c lib/util_sock.c lib/sock_exec.c lib/util_sec.c
+	  lib/substitute.c lib/dbwrap_util.c
+	  lib/ms_fnmatch.c lib/select.c lib/errmap_unix.c
+	  lib/tallocmsg.c lib/dmallocmsg.c
+	  libsmb/clisigning.c libsmb/smb_signing.c
+	  lib/iconv.c lib/pam_errors.c intl/lang_tdb.c
+	  lib/conn_tdb.c lib/adt_tree.c lib/gencache.c
+	  lib/sessionid_tdb.c
+	  lib/module.c lib/events.c ${LIBTEVENT_SRC0}
+	  lib/ldap_escape.c ${CHARSET_STATIC}
+	  lib/secdesc.c lib/util_seaccess.c ../libcli/security/secace.c
+	  ../libcli/security/sddl.c
+	  ../libcli/security/secacl.c ${PTHREADPOOL_SRC}
+	  lib/fncall.c
+	  libads/krb5_errs.c lib/system_smbd.c lib/audit.c ${LIBNDR_SRC}
+	  lib/file_id.c lib/idmap_cache.c
+	  ../libcli/security/dom_sid.c ../libcli/security/security_descriptor.c'''
+
+LIB_DUMMY_SRC = '''lib/dummysmbd.c lib/dummyroot.c'''
+LIB_NONSMBD_SRC = '''${LIB_SRC} ${LIB_DUMMY_SRC}'''
+
+READLINE_SRC = '''lib/readline.c'''
+
+# Also depends on  ${SECRETS_SRC} ${LIBSAMBA_SRC}
+# Be sure to include them into your application
+POPT_LIB_SRC = '''lib/popt_common.c'''
+
+PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c lib/sharesec.c lib/ldap_debug_handler.c'''
+PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC} ${LIBSMBCONF_SRC} ${PRIVILEGES_BASIC_SRC}'''
+PARAM_SRC = '''${PARAM_WITHOUT_REG_SRC} ${PARAM_REG_ADD_SRC}'''
+
+KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
+
+LIBADDNS_SRC0 = '''libaddns/dnsrecord.c libaddns/dnsutils.c  libaddns/dnssock.c
+	       libaddns/dnsgss.c libaddns/dnsmarshall.c'''
+LIBADDNS_SRC = '''${LIBADDNS_SRC0} ${SOCKET_WRAPPER_SRC}'''
+
+GPEXT_SRC = '''../libgpo/gpext/gpext.c ${GPEXT_STATIC}'''
+
+LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
+	      ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
+	      libgpo/gpo_reg.c
+	      ${GPEXT_SRC}'''
+LIBGPO_SRC = '''${LIBGPO_SRC0}'''
+
+LIBADS_SRC = '''libads/ldap.c libads/ldap_printer.c
+	     libads/sasl.c libads/sasl_wrapping.c
+	     libads/krb5_setpw.c libads/ldap_user.c
+	     libads/ads_struct.c libads/kerberos_keytab.c
+             libads/disp_sec.c libads/ads_utils.c libads/ldap_utils.c
+	     libads/ldap_schema.c libads/util.c libads/ndr.c'''
+
+LIBADS_SERVER_SRC = '''libads/kerberos_verify.c libads/authdata.c
+		    ../librpc/ndr/ndr_krb5pac.c
+		    ../librpc/gen_ndr/ndr_krb5pac.c'''
+
+SECRETS_SRC = '''passdb/secrets.c passdb/machine_sid.c
+	      librpc/gen_ndr/ndr_secrets.c'''
+
+LIBNBT_SRC = '''../libcli/nbt/nbtname.c
+	     ../libcli/netlogon.c
+	     ../libcli/ndr_netlogon.c
+	     ../librpc/gen_ndr/ndr_nbt.c
+	     ../librpc/gen_ndr/ndr_svcctl.c
+	     ../librpc/ndr/ndr_svcctl.c'''
+
+LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
+	     libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
+	     libads/dns.c libads/sitename_cache.c'''
+
+NTERR_SRC = '''libsmb/nterr.c libsmb/smberr.c'''
+DOSERR_SRC = '../libcli/util/doserr.c'
+ERRORMAP_SRC = 'libsmb/errormap.c'
+DCE_RPC_ERR_SRC = '../librpc/rpc/dcerpc_error.c'
+
+LIBSMB_ERR_SRC0 = '''${NTERR_SRC} ${DOSERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SRC}'''
+
+LIBSMB_ERR_SRC1 = '''../libcli/auth/smbdes.c ../libcli/auth/smbencrypt.c ../libcli/auth/msrpc_parse.c ../libcli/auth/session.c'''
+
+LIBSMB_ERR_SRC = '''${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1}
+		 ${RPC_PARSE_SRC1}
+		 ${SECRETS_SRC}'''
+
+LIBSMB_SRC0 = '''
+	       ../libcli/auth/ntlm_check.c
+	       libsmb/ntlmssp.c
+	       libsmb/ntlmssp_sign.c
+	       ${LIBNDR_NTLMSSP_SRC}
+	       ../libcli/auth/ntlmssp_ndr.c'''
+
+LIBSAMBA_SRC = '''${LIBSMB_SRC0}
+	       ${LIBSMB_ERR_SRC}'''
+
+LIBCLI_LDAP_MESSAGE_SRC = '''../libcli/ldap/ldap_message.c'''
+LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c'''
+
+LIBTSOCKET_SRC = '''../lib/tsocket/tsocket.c
+		../lib/tsocket/tsocket_helpers.c
+		../lib/tsocket/tsocket_bsd.c'''
+
+CLDAP_SRC = '''libads/cldap.c
+	../libcli/cldap/cldap.c
+	../lib/util/idtree.c
+	${LIBCLI_LDAP_MESSAGE_SRC} ${LIBCLI_LDAP_NDR_SRC} ${LIBTSOCKET_SRC}'''
+
+TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
+
+SCHANNEL_SRC = '''../libcli/auth/credentials.c
+	       ../libcli/auth/schannel_sign.c
+	       ../libcli/auth/schannel_state_tdb.c
+	       ../librpc/gen_ndr/ndr_schannel.c
+	       ../librpc/ndr/ndr_schannel.c'''
+
+LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
+	     libsmb/clikrb5.c libsmb/clispnego.c
+	     ../libcli/auth/spnego_parse.c
+	     ../lib/util/asn1.c
+	     libsmb/clirap.c libsmb/clierror.c libsmb/climessage.c
+	     libsmb/clireadwrite.c libsmb/clilist.c libsmb/cliprint.c
+	     libsmb/clitrans.c libsmb/clisecdesc.c libsmb/clidgram.c
+	     libsmb/clistr.c libsmb/cliquota.c libsmb/clifsinfo.c libsmb/clidfs.c
+	     libsmb/clioplock.c libsmb/clirap2.c
+	     libsmb/smb_seal.c libsmb/async_smb.c
+	     ${LIBSAMBA_SRC}
+	     ${LIBNMB_SRC}
+	     ${LIBNBT_SRC}
+	     ${CLDAP_SRC}
+	     ${DRSUAPI_SRC}'''
+
+RPC_CLIENT_SRC1 = '''rpc_client/cli_netlogon.c
+		  ${SCHANNEL_SRC}'''
+
+LIBMSRPC_SRC = '''rpc_client/cli_lsarpc.c rpc_client/cli_samr.c
+	       ${RPC_CLIENT_SRC1}
+	       ${RPC_CLIENT_SRC}
+	       rpc_client/cli_spoolss.c
+	       rpc_client/init_spoolss.c
+	       rpc_client/init_samr.c
+		   ../librpc/rpc/binding.c'''
+
+LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
+		   ../librpc/gen_ndr/cli_dfs.c
+		   ../librpc/gen_ndr/cli_echo.c
+		   ../librpc/gen_ndr/cli_srvsvc.c
+		   ../librpc/gen_ndr/cli_svcctl.c
+		   ../librpc/gen_ndr/cli_winreg.c
+		   ../librpc/gen_ndr/cli_initshutdown.c
+		   ../librpc/gen_ndr/cli_eventlog.c
+		   ../librpc/gen_ndr/cli_wkssvc.c
+		   ../librpc/gen_ndr/cli_netlogon.c
+		   ../librpc/gen_ndr/cli_samr.c
+		   ../librpc/gen_ndr/cli_dssetup.c
+		   ../librpc/gen_ndr/cli_ntsvcs.c
+		   ../librpc/gen_ndr/cli_epmapper.c
+		   ../librpc/gen_ndr/cli_drsuapi.c
+		   ../librpc/gen_ndr/cli_spoolss.c
+		   ${LIBNDR_GEN_SRC}
+		   ${RPCCLIENT_NDR_SRC}'''
+
+#
+# registry-related objects
+#
+UTIL_REG_SRC = '''lib/util_reg.c'''
+UTIL_REG_API_SRC = '''lib/util_reg_api.c'''
+
+REG_INIT_BASIC_SRC = '''registry/reg_init_basic.c'''
+REG_INIT_SMBCONF_SRC = '''registry/reg_init_smbconf.c'''
+REG_INIT_FULL_SRC = '''registry/reg_init_full.c'''
+
+REGFIO_SRC = '''registry/regfio.c'''
+
+REGSRCS_SRC = '''registry/reg_objects.c'''
+
+REG_BACKENDS_BASE_SRC = '''registry/reg_backend_db.c'''
+
+REG_BACKENDS_SMBCONF_SRC = '''registry/reg_backend_smbconf.c'''
+
+REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
+			 registry/reg_backend_shares.c
+			 registry/reg_backend_netlogon_params.c
+			 registry/reg_backend_prod_options.c
+			 registry/reg_backend_tcpip_params.c
+			 registry/reg_backend_hkpt_params.c
+			 registry/reg_backend_current_version.c
+			 registry/reg_backend_perflib.c'''
+
+REG_BASE_SRC = '''registry/reg_api.c
+	       registry/reg_dispatcher.c
+	       registry/reg_cachehook.c
+	       ${REGFIO_SRC}
+	       ${REGSRCS_SRC}
+	       registry/reg_util.c
+	       ${UTIL_REG_API_SRC}
+	       lib/util_nttoken.c
+	       ${REG_BACKENDS_BASE_SRC}
+	       ${REG_INIT_BASIC_SRC}'''
+
+REG_SMBCONF_SRC = '''${REG_BASE_SRC}
+		  ${REG_BACKENDS_SMBCONF_SRC}
+		  ${REG_INIT_SMBCONF_SRC}'''
+
+REG_FULL_SRC = '''${REG_SMBCONF_SRC}
+	       ${REG_BACKENDS_EXTRA_SRC}
+	       ${REG_INIT_FULL_SRC}
+	       registry/reg_eventlog.c
+	       registry/reg_perfcount.c
+	       librpc/gen_ndr/ndr_perfcount.c
+	       registry/reg_util_legacy.c'''
+
+LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
+
+RPC_LSA_SRC = '''rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c'''
+
+RPC_NETLOG_SRC = '''rpc_server/srv_netlog_nt.c
+		 ../librpc/gen_ndr/srv_netlogon.c'''
+
+RPC_SAMR_SRC = '''rpc_server/srv_samr_nt.c
+               rpc_server/srv_samr_util.c
+	       ../librpc/gen_ndr/srv_samr.c'''
+
+RPC_INITSHUTDOWN_SRC = ''' ../librpc/gen_ndr/srv_initshutdown.c rpc_server/srv_initshutdown_nt.c'''
+
+RPC_REG_SRC = ''' rpc_server/srv_winreg_nt.c
+	       ../librpc/gen_ndr/srv_winreg.c'''
+
+RPC_DSSETUP_SRC = ''' rpc_server/srv_dssetup_nt.c ../librpc/gen_ndr/srv_dssetup.c'''
+
+RPC_SVC_SRC = '''rpc_server/srv_srvsvc_nt.c
+	      ../librpc/gen_ndr/srv_srvsvc.c'''
+
+RPC_WKS_SRC = ''' ../librpc/gen_ndr/srv_wkssvc.c rpc_server/srv_wkssvc_nt.c'''
+
+RPC_SVCCTL_SRC = ''' rpc_server/srv_svcctl_nt.c
+		  ../librpc/gen_ndr/srv_svcctl.c
+                  services/svc_spoolss.c services/svc_rcinit.c services/services_db.c
+                  services/svc_netlogon.c services/svc_winreg.c
+                  services/svc_wins.c'''
+
+RPC_NTSVCS_SRC = '''rpc_server/srv_ntsvcs_nt.c
+		 ../librpc/gen_ndr/srv_ntsvcs.c'''
+
+RPC_DFS_SRC = ''' ../librpc/gen_ndr/srv_dfs.c rpc_server/srv_dfs_nt.c'''
+
+RPC_SPOOLSS_SRC = '''rpc_server/srv_spoolss_nt.c
+		  ../librpc/gen_ndr/srv_spoolss.c'''
+
+RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
+		   ${LIB_EVENTLOG_SRC} ../librpc/gen_ndr/srv_eventlog.c'''
+
+RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c
+               rpc_server/srv_pipe.c rpc_server/srv_lsa_hnd.c'''
+
+RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
+
+RPC_SERVER_SRC = '''${RPC_STATIC} ${RPC_PIPE_SRC}'''
+
+RPC_PARSE_SRC = '''${RPC_PARSE_SRC2}'''
+
+RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c rpc_client/rpc_transport_np.c
+	rpc_client/rpc_transport_sock.c rpc_client/rpc_transport_smbd.c'''
+
+LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
+
+PRIVILEGES_BASIC_SRC = '''lib/privileges_basic.c'''
+
+PRIVILEGES_SRC = '''lib/privileges.c'''
+
+PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
+
+PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
+		passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
+		passdb/util_unixsids.c passdb/lookup_sid.c
+		passdb/login_cache.c ${PDB_STATIC}
+		lib/account_pol.c ${PRIVILEGES_SRC}
+		lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
+
+DEVEL_HELP_WEIRD_SRC = '''modules/weird.c'''
+CP850_SRC = '''modules/CP850.c'''
+CP437_SRC = '''modules/CP437.c'''
+CHARSET_MACOSXFS_SRC = '''modules/charset_macosxfs.c'''
+
+GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
+
+PROFILE_SRC = '''profile/profile.c'''
+PROFILES_SRC = '''utils/profiles.c
+	       ${LIBSMB_ERR_SRC}
+	       ${PARAM_SRC}
+               ${LIB_SRC} ${LIB_DUMMY_SRC}
+               ${POPT_LIB_SRC}'''
+
+OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c
+	     smbd/oplock_onefs.c'''
+
+NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
+
+FNAME_UTIL_SRC = '''smbd/filename_util.c'''
+
+VFS_DEFAULT_SRC = '''modules/vfs_default.c'''
+VFS_AUDIT_SRC = '''modules/vfs_audit.c'''
+VFS_EXTD_AUDIT_SRC = '''modules/vfs_extd_audit.c'''
+VFS_FULL_AUDIT_SRC = '''modules/vfs_full_audit.c'''
+VFS_FAKE_PERMS_SRC = '''modules/vfs_fake_perms.c'''
+VFS_RECYCLE_SRC = '''modules/vfs_recycle.c'''
+VFS_NETATALK_SRC = '''modules/vfs_netatalk.c'''
+VFS_DEFAULT_QUOTA_SRC = '''modules/vfs_default_quota.c'''
+VFS_READONLY_SRC = '''modules/vfs_readonly.c modules/getdate.c'''
+VFS_CAP_SRC = '''modules/vfs_cap.c'''
+VFS_EXPAND_MSDFS_SRC = '''modules/vfs_expand_msdfs.c'''
+VFS_SHADOW_COPY_SRC = '''modules/vfs_shadow_copy.c'''
+VFS_SHADOW_COPY2_SRC = '''modules/vfs_shadow_copy2.c'''
+VFS_AFSACL_SRC = '''modules/vfs_afsacl.c'''
+VFS_XATTR_TDB_SRC = '''modules/vfs_xattr_tdb.c'''
+VFS_POSIXACL_SRC = '''modules/vfs_posixacl.c'''
+VFS_AIXACL_SRC = '''modules/vfs_aixacl.c modules/vfs_aixacl_util.c'''
+VFS_AIXACL2_SRC = '''modules/vfs_aixacl2.c modules/vfs_aixacl_util.c modules/nfs4_acls.c'''
+VFS_SOLARISACL_SRC = '''modules/vfs_solarisacl.c'''
+VFS_ZFSACL_SRC = '''modules/vfs_zfsacl.c modules/nfs4_acls.c'''
+VFS_HPUXACL_SRC = '''modules/vfs_hpuxacl.c'''
+VFS_IRIXACL_SRC = '''modules/vfs_irixacl.c'''
+VFS_TRU64ACL_SRC = '''modules/vfs_tru64acl.c'''
+VFS_CATIA_SRC = 'modules/vfs_catia.c'
+VFS_STREAMS_XATTR_SRC = 'modules/vfs_streams_xattr.c'
+VFS_STREAMS_DEPOT_SRC = 'modules/vfs_streams_depot.c'
+VFS_CACHEPRIME_SRC = 'modules/vfs_cacheprime.c'
+VFS_PREALLOC_SRC = 'modules/vfs_prealloc.c'
+VFS_COMMIT_SRC = 'modules/vfs_commit.c'
+VFS_GPFS_SRC = 'modules/vfs_gpfs.c modules/gpfs.c modules/nfs4_acls.c'
+VFS_NOTIFY_FAM_SRC = 'modules/vfs_notify_fam.c'
+VFS_READAHEAD_SRC = 'modules/vfs_readahead.c'
+VFS_TSMSM_SRC = 'modules/vfs_tsmsm.c'
+VFS_FILEID_SRC = 'modules/vfs_fileid.c'
+VFS_AIO_FORK_SRC = 'modules/vfs_aio_fork.c'
+VFS_PREOPEN_SRC = 'modules/vfs_preopen.c'
+VFS_SYNCOPS_SRC = 'modules/vfs_syncops.c'
+VFS_ACL_XATTR_SRC = 'modules/vfs_acl_xattr.c'
+VFS_ACL_TDB_SRC = 'modules/vfs_acl_tdb.c'
+VFS_SMB_TRAFFIC_ANALYZER_SRC = 'modules/vfs_smb_traffic_analyzer.c'
+VFS_ONEFS_SRC = '''modules/vfs_onefs.c modules/onefs_acl.c modules/onefs_system.c
+		modules/onefs_open.c modules/onefs_streams.c modules/onefs_dir.c
+		modules/onefs_cbrl.c modules/onefs_notify.c modules/onefs_config.c'''
+VFS_ONEFS_SHADOW_COPY_SRC = 'modules/vfs_onefs_shadow_copy.c modules/onefs_shadow_copy.c'
+PERFCOUNT_ONEFS_SRC = 'modules/perfcount_onefs.c'
+PERFCOUNT_TEST_SRC = 'modules/perfcount_test.c'
+VFS_DIRSORT_SRC = 'modules/vfs_dirsort.c'
+VFS_SCANNEDONLY_SRC = 'modules/vfs_scannedonly.c'
+VFS_CROSSRENAME_SRC = 'modules/vfs_crossrename.c'
+
+PLAINTEXT_AUTH_SRC = '''auth/pampass.c auth/pass_check.c'''
+
+SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
+
+DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/trusts_util.c libsmb/dsgetdcname.c'''
+
+AUTH_BUILTIN_SRC = 'auth/auth_builtin.c'
+AUTH_DOMAIN_SRC = 'auth/auth_domain.c'
+AUTH_SAM_SRC = 'auth/auth_sam.c'
+AUTH_SERVER_SRC = 'auth/auth_server.c'
+AUTH_UNIX_SRC = 'auth/auth_unix.c'
+AUTH_WINBIND_SRC = 'auth/auth_winbind.c'
+AUTH_WBC_SRC = 'auth/auth_wbc.c'
+AUTH_SCRIPT_SRC = 'auth/auth_script.c'
+AUTH_NETLOGOND_SRC = 'auth/auth_netlogond.c'
+
+AUTH_SRC = '''auth/auth.c ${AUTH_STATIC} auth/auth_util.c auth/token_util.c
+	   auth/auth_compat.c auth/auth_ntlmssp.c
+	   ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
+
+MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
+
+SMBD_SRC_MAIN = '''smbd/server.c'''
+
+BUILDOPT_SRC = '''smbd/build_options.c'''
+
+SMBD_SRC_SRV = '''smbd/files.c smbd/chgpasswd.c smbd/connection.c
+	       smbd/utmp.c smbd/session.c smbd/map_username.c
+               smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn.c
+	       smbd/share_access.c smbd/fileio.c
+               smbd/ipc.c smbd/lanman.c smbd/negprot.c
+               smbd/message.c smbd/nttrans.c smbd/pipes.c
+               smbd/reply.c smbd/sesssetup.c smbd/trans2.c smbd/uid.c
+	       smbd/dosmode.c smbd/filename.c smbd/open.c smbd/close.c
+	       smbd/blocking.c smbd/sec_ctx.c smbd/srvstr.c
+	       smbd/vfs.c smbd/perfcount.c smbd/statcache.c smbd/seal.c
+               smbd/posix_acls.c lib/sysacls.c
+	       smbd/process.c smbd/service.c smbd/error.c
+	       printing/printfsp.c lib/sysquotas.c lib/sysquotas_linux.c
+	       lib/sysquotas_xfs.c lib/sysquotas_4A.c
+	       smbd/change_trust_pw.c smbd/fake_file.c
+	       smbd/quotas.c smbd/ntquotas.c ${AFS_SRC} smbd/msdfs.c
+	       ${AFS_SETTOKEN_SRC} smbd/aio.c smbd/statvfs.c
+	       smbd/dmapi.c smbd/signing.c
+	       smbd/file_access.c
+	       smbd/dnsregister.c smbd/globals.c
+	       smbd/smb2_server.c
+	       smbd/smb2_signing.c
+	       smbd/smb2_glue.c
+	       smbd/smb2_negprot.c
+	       smbd/smb2_sesssetup.c
+	       smbd/smb2_tcon.c
+	       smbd/smb2_create.c
+	       smbd/smb2_close.c
+	       smbd/smb2_flush.c
+	       smbd/smb2_read.c
+	       smbd/smb2_write.c
+	       smbd/smb2_lock.c
+	       smbd/smb2_ioctl.c
+	       smbd/smb2_keepalive.c
+	       smbd/smb2_find.c
+	       smbd/smb2_notify.c
+	       smbd/smb2_getinfo.c
+	       smbd/smb2_setinfo.c
+	       smbd/smb2_break.c
+	       ../libcli/smb/smb2_create_blob.c
+	       ${MANGLE_SRC} ${VFS_STATIC}'''
+
+SMBD_SRC_BASE = '''${PARAM_WITHOUT_REG_SRC} ${SMBD_SRC_SRV} ${LIBSMB_SRC}
+		${RPC_SERVER_SRC} ${RPC_PARSE_SRC}
+		${LOCKING_SRC} ${PASSDB_SRC} ${PRINTING_SRC} ${PROFILE_SRC}
+		${LIB_SRC} ${PRINTBACKEND_SRC} ${OPLOCK_SRC}
+		${NOTIFY_SRC} ${FNAME_UTIL_SRC} ${GROUPDB_SRC} ${AUTH_SRC}
+		${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC} ${AVAHI_SRC}
+		${LIBADS_SRC} ${KRBCLIENT_SRC} ${LIBADS_SERVER_SRC}
+		${REG_FULL_SRC} ${POPT_LIB_SRC} ${BUILDOPT_SRC}
+		${SMBLDAP_SRC} ${LDB_SRC} ${LIBNET_SRC}
+		${LIBSMBCONF_SRC}
+		${PRIVILEGES_BASIC_SRC}'''
+
+PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
+               printing/print_cups.c printing/print_generic.c
+               printing/lpq_parse.c printing/load.c
+               printing/print_iprint.c'''
+
+PRINTBASE_SRC = '''printing/notify.c printing/printing_db.c'''
+PRINTBACKEND_SRC = 'printing/printing.c printing/nt_printing.c ${PRINTBASE_SRC}'
+
+SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
+
+
+def EXPAND_VARIABLES(varstr, envlist):
+    import Environment
+    env = Environment.Environment()
+    for v in envlist:
+        env[v] = eval(v)
+    return SUBST_VARS_RECURSIVE(varstr, env)
+
+src =EXPAND_VARIABLES(SMBD_SRC, dir())
+
+bld.env.AWK = 'gawk'
+
+bld.SAMBA_GENERATOR('build_options',
+                    source='include/config.h script/mkbuildoptions.awk',
+                    target='smbd/build_options.c',
+                    rule='${AWK} -f ${SRC[1].abspath(env)} > ${TGT} < ${SRC[0].abspath(env)}')
+
+bld.SETUP_BUILD_GROUPS()
+
+bld.BUILD_SUBDIR('../lib/replace')
+print "SBINDIR=%s" % bld.env.SBINDIR
+bld.BUILD_SUBDIR('build')
+
+bld.SAMBA_BINARY('smbd/smbd',
+                 source=src,
+                 deps='tdb DYNCONFIG')
+
+bld.BUILD_SUBDIR('../lib/socket_wrapper')
+bld.BUILD_SUBDIR('../lib/talloc')
+bld.BUILD_SUBDIR('../lib/tdb')
+bld.BUILD_SUBDIR('../lib/nss_wrapper')
+bld.BUILD_SUBDIR('../lib/uid_wrapper')
+
+bld.ENFORCE_GROUP_ORDERING()
+bld.CHECK_PROJECT_RULES()
