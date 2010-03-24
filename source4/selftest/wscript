@@ -79,7 +79,7 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(PYTHON=/usr/bin/python perl -W ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
+    cmd = '(perl -W ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
 
     print "test: running %s" % cmd
     ret = RUN_COMMAND(cmd, env=env)
