@@ -53,7 +53,7 @@ def configure(conf):
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
     conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64')
     conf.CHECK_FUNCS('fseek64 fseeko64 ftell64 ftello64 setluid')
-    conf.CHECK_FUNCS('getpwanam', headers='sys/types.h pwd.h')
+    conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
     conf.CHECK_FUNCS('getpwent_r getdents64 setenv strcasecmp fcvt fcvtl')
     conf.CHECK_FUNCS('syslog vsyslog timegm setlocale nl_langinfo')
@@ -73,15 +73,13 @@ def configure(conf):
 
     # Check for kernel change notify support
     conf.CHECK_CODE('''
-#include <sys/types.h>
-#include <fcntl.h>
-#include <signal.h>
 #ifndef F_NOTIFY
 #define F_NOTIFY 1026
 #endif
 main() {
         exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
 }''', 'HAVE_KERNEL_CHANGE_NOTIFY', addmain=False, execute=True,
+        headers='fcntl.h signal.h',
         msg="Checking for kernel change notify support")
 
     # Check for Linux kernel oplocks
@@ -99,7 +97,7 @@ main() {
 
     # Check for IRIX kernel oplock types
     conf.CHECK_CODE('oplock_stat_t t; t.os_state = OP_REVOKE; t.os_dev = 1; t.os_ino = 1;',
-                    'HAVE_KERNEL_OPLOCKS_IRIX', headers='sys/types.h fcntl.h',
+                    'HAVE_KERNEL_OPLOCKS_IRIX', headers='fcntl.h',
                     msg="Checking for IRIX kernel oplock types")
 
     # Check for krenel share modes
@@ -120,34 +118,30 @@ main() {
     # Check for various members of the stat structure
     conf.CHECK_TYPES('blksize_t blkcnt_t')
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blocks', define='HAVE_STAT_ST_BLOCKS',
-                                headers='sys/types.h sys/stat.h unistd.h',)
+                                headers='sys/stat.h')
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blksize', define='HAVE_STAT_ST_BLKSIZE',
-                                headers='sys/types.h sys/stat.h unistd.h')
+                                headers='sys/stat.h')
 
     # Check for POSIX capability support
     if "HAVE_SYS_CAPABILITY_H" in conf.env:
         conf.CHECK_FUNCS_IN('cap_get_proc', 'cap')
         conf.CHECK_CODE('''
-#include <sys/types.h>
-#include <sys/capability.h>
-main() {
- cap_t cap;
- cap_value_t vals[1];
- if (!(cap = cap_get_proc()))
-   exit(1);
- vals[0] = CAP_CHOWN;
- cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
- cap_set_proc(cap);
- exit(0);
- }''', 'HAVE_POSIX_CAPABILITIES', addmain=False, execute=True, lib="cap",
-            msg="Checking whether POSIX capabilities are available")
+        cap_t cap;
+        cap_value_t vals[1];
+        if (!(cap = cap_get_proc())) exit(1);
+        vals[0] = CAP_CHOWN;
+        cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
+        cap_set_proc(cap);''',
+                        'HAVE_POSIX_CAPABILITIES', execute=True, lib="cap",
+                        headers='sys/capability.h',
+                        msg="Checking whether POSIX capabilities are available")
 
     # Check for int16, uint16, int32 and uint32 in rpc/types.h included from
     # rpc/rpc.h. This is *really* broken but some systems (DEC OSF1) do this.
     # -- JRA.
-    if "HAVE_RPC_RPC_H" in conf.env:
-        conf.CHECK_CODE('int16 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
-                        headers='sys/types.h rpc/rpc.h',
+    if conf.CONFIG_SET("HAVE_RPC_RPC_H"):
+        conf.CHECK_TYPE('int16', headers='rpc/rpc.h',
+                        define='HAVE_INT16_FROM_RPC_RPC_H',
                         msg="Checking for int16 typedef included by rpc/rpc.h")
         conf.CHECK_CODE('uint16 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
                         headers='sys/types.h rpc/rpc.h',
@@ -172,7 +166,7 @@ if (0) {
     conf.find_program('cups-config', var='CUPS_CONFIG')
     if conf.env.CUPS_CONFIG:
         conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs", package="", uselib_store="CUPS")
-        conf.CHECK_HEADERS('cups/cups.h cups/language.h')
+        conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='CUPS')
 
     # Check for LDAP
     conf.CHECK_HEADERS('ldap.h lber.h')
@@ -183,7 +177,47 @@ if (0) {
     if conf.env.KRB5_CONFIG:
         conf.check_cfg(path="krb5-config", args="--cflags --libs",
                        package="gssapi", uselib_store="KRB5")
-        conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h')
-        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h')
+        conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='KRB5')
+        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h', lib='KRB5')
+
+    conf.CHECK_FUNCS('''
+_acl __acl add_proplist_entry atexit attr_getf attr_list attr_listf
+attropen attr_remove attr_removef attr_set attr_setf backtrace_symbols
+bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
+__closedir closedir64 creat64 crypt16 delproplist devnm dgettext dirfd
+DNSServiceRegister _dup __dup _dup2 __dup2 endmntent endnetgrent execl
+extattr_delete_fd extattr_delete_link extattr_get_fd extattr_get_file
+extattr_get_link extattr_list_fd extattr_list_file extattr_list_link
+extattr_set_fd extattr_set_file extattr_set_link _facl __facl _fchdir
+__fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
+fdelproplist fgetea fgetproplist fgetxattr flistea flistxattr fopen64
+_fork __fork fremoveea fremovexattr fseek64 fseeko64 fsetea
+fsetproplist fsetxattr _fstat __fstat fstat64 _fstat64 __fstat64 fsync
+ftell64 ftello64 ftruncate64 futimens futimes __fxstat getauthuid
+getcwd _getcwd __getcwd getdents __getdents getdents64 getdirentries
+getgrent getgrnam getgrouplist getmntent getnetgrent getpagesize
+getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
+getutmpx getutxent glob grantpt hstrerror initgroups innetgr
+inotify_init lgetea lgetxattr listea listxattr llistea llistxattr
+llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek lseek64
+lsetea lsetxattr _lstat __lstat lstat64 _lstat64 __lstat64 lutimes
+__lxstat memalign mknod mknod64 mlock mlockall munlock munlockall
+nl_langinfo _open __open open64 _open64 __open64 _opendir __opendir
+opendir64 pathconf poll posix_fallocate posix_fallocate64
+posix_memalign prctl pread _pread __pread pread64 _pread64 __pread64
+pututline pututxline pwrite _pwrite __pwrite pwrite64 _pwrite64
+__pwrite64 rdchk _read __read _readdir __readdir readdir64 _readdir64
+__readdir64 removeea removexattr rewinddir64 _seekdir __seekdir
+seekdir64 select setea setenv setgidx setgroups setlocale setluid
+setmntent setnetgrent setpgid setpriv setproplist setsid setuidx
+setxattr shmget shm_open sigaction sigblock sigprocmask sigset
+sizeof_proplist_entry _stat __stat stat64 _stat64 __stat64 statvfs
+strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctlbyname
+__sys_llseek syslog _telldir __telldir telldir64 textdomain timegm
+updwtmp updwtmpx utimensat vsyslog _write __write __xstat
+yp_get_default_domain
+''')
+
+    conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
 
     conf.SAMBA_CONFIG_H('include/config.h')
