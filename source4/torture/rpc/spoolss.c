@@ -2715,11 +2715,11 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_DoPrintTest(struct torture_context *tctx,
-			     struct dcerpc_binding_handle *b,
-			     struct policy_handle *handle)
+static bool test_DoPrintTest_one_job(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
+				     struct policy_handle *handle,
+				     uint32_t *job_id)
 {
-	bool ret = true;
 	NTSTATUS status;
 	struct spoolss_StartDocPrinter s;
 	struct spoolss_DocumentInfo1 info1;
@@ -2728,7 +2728,6 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	struct spoolss_EndPagePrinter ep;
 	struct spoolss_EndDocPrinter e;
 	int i;
-	uint32_t job_id;
 	uint32_t num_written;
 
 	torture_comment(tctx, "Testing StartDocPrinter\n");
@@ -2736,7 +2735,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	s.in.handle		= handle;
 	s.in.level		= 1;
 	s.in.info.info1		= &info1;
-	s.out.job_id		= &job_id;
+	s.out.job_id		= job_id;
 	info1.document_name	= "TorturePrintJob";
 	info1.output_file	= NULL;
 	info1.datatype		= "RAW";
@@ -2746,7 +2745,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, s.out.result, "StartDocPrinter failed");
 
 	for (i=1; i < 4; i++) {
-		torture_comment(tctx, "Testing StartPagePrinter: Page[%d]\n", i);
+		torture_comment(tctx, "Testing StartPagePrinter: Page[%d], JobId[%d]\n", i, *job_id);
 
 		sp.in.handle		= handle;
 
@@ -2755,7 +2754,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 					   "dcerpc_spoolss_StartPagePrinter failed");
 		torture_assert_werr_ok(tctx, sp.out.result, "StartPagePrinter failed");
 
-		torture_comment(tctx, "Testing WritePrinter: Page[%d]\n", i);
+		torture_comment(tctx, "Testing WritePrinter: Page[%d], JobId[%d]\n", i, *job_id);
 
 		w.in.handle		= handle;
 		w.in.data		= data_blob_string_const(talloc_asprintf(tctx,"TortureTestPage: %d\nData\n",i));
@@ -2765,7 +2764,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_WritePrinter failed");
 		torture_assert_werr_ok(tctx, w.out.result, "WritePrinter failed");
 
-		torture_comment(tctx, "Testing EndPagePrinter: Page[%d]\n", i);
+		torture_comment(tctx, "Testing EndPagePrinter: Page[%d], JobId[%d]\n", i, *job_id);
 
 		ep.in.handle		= handle;
 
@@ -2774,7 +2773,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 		torture_assert_werr_ok(tctx, ep.out.result, "EndPagePrinter failed");
 	}
 
-	torture_comment(tctx, "Testing EndDocPrinter\n");
+	torture_comment(tctx, "Testing EndDocPrinter: JobId[%d]\n", *job_id);
 
 	e.in.handle = handle;
 
@@ -2782,10 +2781,30 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EndDocPrinter failed");
 	torture_assert_werr_ok(tctx, e.out.result, "EndDocPrinter failed");
 
+	return true;
+}
+
+static bool test_DoPrintTest(struct torture_context *tctx,
+			     struct dcerpc_binding_handle *b,
+			     struct policy_handle *handle)
+{
+	bool ret = true;
+	uint32_t num_jobs = 8;
+	uint32_t *job_ids;
+	int i;
+
+	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
+
+	for (i=0; i < num_jobs; i++) {
+		ret &= test_DoPrintTest_one_job(tctx, b, handle, &job_ids[i]);
+	}
+
 	ret &= test_AddJob(tctx, b, handle);
 	ret &= test_EnumJobs(tctx, b, handle);
 
-	ret &= test_SetJob(tctx, b, handle, job_id, SPOOLSS_JOB_CONTROL_DELETE);
+	for (i=0; i < num_jobs; i++) {
+		ret &= test_SetJob(tctx, b, handle, job_ids[i], SPOOLSS_JOB_CONTROL_DELETE);
+	}
 
 	return ret;
 }
