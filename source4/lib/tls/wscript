@@ -21,7 +21,7 @@ def configure(conf):
                    args='"gnutls >= 1.4.0" --cflags --libs',
                    msg='Checking for gnutls >= 1.4.0', mandatory=False)
 
-    if 'HAVE_GNUTLS' in conf.env and not Options.options.disable_gnutls:
+    if 'HAVE_GNUTLS' in conf.env:
         conf.DEFINE('ENABLE_GNUTLS', 1)
 
     conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls',
