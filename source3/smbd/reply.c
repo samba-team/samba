@@ -3803,6 +3803,11 @@ void reply_writebraw(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+3, 0);
 	write_through = BITSETW(req->vwv+7,0);
 
+	if (fsp->print_file) {
+		/* Print files ignore the offset - use end of file. */
+		startpos = (SMB_OFF_T)-1;
+	}
+
 	/* We have to deal with slightly different formats depending
 		on whether we are using the core+ or lanman1.0 protocol */
 
@@ -3822,15 +3827,17 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	init_strict_lock_struct(fsp, (uint32)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)tcount, WRITE_LOCK,
-	    &lock);
+	if (!fsp->print_file) {
+		init_strict_lock_struct(fsp, (uint32)req->smbpid,
+		    (uint64_t)startpos, (uint64_t)tcount, WRITE_LOCK,
+		    &lock);
 
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-		error_to_writebrawerr(req);
-		END_PROFILE(SMBwritebraw);
-		return;
+		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			error_to_writebrawerr(req);
+			END_PROFILE(SMBwritebraw);
+			return;
+		}
 	}
 
 	if (numtowrite>0) {
@@ -3909,7 +3916,11 @@ void reply_writebraw(struct smb_request *req)
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
-		nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
+		if (fsp->print_file) {
+			nwritten = write_file(req,fsp,buf+4,(SMB_OFF_T)-1,numtowrite);
+		} else {
+			nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
+		}
 		if (nwritten == -1) {
 			TALLOC_FREE(buf);
 			reply_nterror(req, map_nt_error_from_unix(errno));
@@ -3944,7 +3955,9 @@ void reply_writebraw(struct smb_request *req)
 		fsp->fnum, (double)startpos, (int)numtowrite,
 		(int)total_written));
 
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	if (!fsp->print_file) {
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	}
 
 	/* We won't return a status if write through is not selected - this
 	 * follows what WfWg does */
@@ -3968,7 +3981,9 @@ void reply_writebraw(struct smb_request *req)
 	return;
 
 strict_unlock:
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	if (!fsp->print_file) {
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	}
 
 	END_PROFILE(SMBwritebraw);
 	return;
@@ -4018,7 +4033,10 @@ void reply_writeunlock(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
-	if (numtowrite) {
+	if (fsp->print_file) {
+		/* Print files ignore the offset - use end of file. */
+		startpos = (SMB_OFF_T)-1;
+	} else if (numtowrite) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
@@ -4058,7 +4076,7 @@ void reply_writeunlock(struct smb_request *req)
 		goto strict_unlock;
 	}
 
-	if (numtowrite) {
+	if (numtowrite && !fsp->print_file) {
 		status = do_unlock(smbd_messaging_context(),
 				fsp,
 				req->smbpid,
@@ -4080,7 +4098,7 @@ void reply_writeunlock(struct smb_request *req)
 		 fsp->fnum, (int)numtowrite, (int)nwritten));
 
 strict_unlock:
-	if (numtowrite) {
+	if (numtowrite && !fsp->print_file) {
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 	}
 
@@ -4139,14 +4157,19 @@ void reply_write(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
-	init_strict_lock_struct(fsp, (uint32)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-	    &lock);
+	if (fsp->print_file) {
+		/* Print files ignore the offset - use end of file. */
+		startpos = (SMB_OFF_T)-1;
+	} else {
+		init_strict_lock_struct(fsp, (uint32)req->smbpid,
+			(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
+			&lock);
 
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-		END_PROFILE(SMBwrite);
-		return;
+		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			END_PROFILE(SMBwrite);
+			return;
+		}
 	}
 
 	/*
@@ -4204,7 +4227,9 @@ void reply_write(struct smb_request *req)
 	DEBUG(3,("write fnum=%d num=%d wrote=%d\n", fsp->fnum, (int)numtowrite, (int)nwritten));
 
 strict_unlock:
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	if (!fsp->print_file) {
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	}
 
 	END_PROFILE(SMBwrite);
 	return;
@@ -4741,7 +4766,10 @@ void reply_writeclose(struct smb_request *req)
 	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
 
-	if (numtowrite) {
+	if (fsp->print_file) {
+		/* Print files ignore the offset - use end of file. */
+		startpos = (SMB_OFF_T)-1;
+	} else if (numtowrite) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
@@ -4787,7 +4815,7 @@ void reply_writeclose(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
 strict_unlock:
-	if (numtowrite) {
+	if (numtowrite && !fsp->print_file) {
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 	}
 
@@ -5244,7 +5272,7 @@ void reply_printwrite(struct smb_request *req)
 
 	data = (const char *)req->buf + 3;
 
-	if (write_file(req,fsp,data,-1,numtowrite) != numtowrite) {
+	if (write_file(req,fsp,data,(SMB_OFF_T)-1,numtowrite) != numtowrite) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBsplwr);
 		return;
