@@ -341,3 +341,24 @@ def RUN_COMMAND(cmd,
         return - os.WTERMSIG(status)
     print "Unknown exit reason %d for command: %s" (status, cmd)
     return -1
+
+
+# make sure we have md5. some systems don't have it
+try:
+    from hashlib import md5
+except:
+    try:
+        import md5
+    except:
+        import Constants
+        Constants.SIG_NIL = hash('abcd')
+        class replace_md5(object):
+            def __init__(self):
+                self.val = None
+            def update(self, val):
+                self.val = hash((self.val, val))
+            def digest(self):
+                return str(self.val)
+            def hexdigest(self):
+                return self.digest().encode('hex')
+        Utils.md5 = replace_md5
