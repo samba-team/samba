@@ -208,7 +208,6 @@ static bool test_testcall(struct torture_context *tctx,
 static bool test_testcall2(struct torture_context *tctx,
 						  struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
 	struct echo_TestCall2 r;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -218,8 +217,9 @@ static bool test_testcall2(struct torture_context *tctx,
 		r.out.info = talloc(tctx, union echo_Info);
 
 		torture_comment(tctx, "Testing TestCall2 level %d\n", i);
-		status = dcerpc_echo_TestCall2_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "TestCall2 failed");
+		torture_assert_ntstatus_ok(tctx, dcerpc_echo_TestCall2_r(b, tctx, &r),
+			"TestCall2 failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result, "TestCall2 failed");
 	}
 	return true;
 }
