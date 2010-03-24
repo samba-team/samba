@@ -114,8 +114,8 @@ echo "OPTIONS $TORTURE_OPTIONS"
 
 # Simple tests for LDAP and CLDAP
 
-for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD"; do
-    plantest "ldb.ldap with options $options" dc $bbdir/test_ldb.sh ldap \$SERVER_IP $options
+for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD" "-U\$USERNAME%\$PASSWORD -k yes" "-U\$USERNAME%\$PASSWORD -k no" "-U\$USERNAME%\$PASSWORD -k no --sign" "-U\$USERNAME%\$PASSWORD -k no --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --sign"; do
+    plantest "ldb.ldap with options $options" dc $bbdir/test_ldb.sh ldap \$SERVER $options
 done
 # see if we support ldaps
 if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
