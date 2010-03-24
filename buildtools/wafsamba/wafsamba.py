@@ -436,6 +436,7 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
         source=source,
         target=target,
         shell=True,
+        on_results=True,
         before='cc',
         ext_out='.c',
         name=name)
