@@ -307,6 +307,15 @@ cat >$SERVERCONFFILE<<EOF
 	create mask = 755
 	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_depot.so
 
+	printing = vlp
+	print command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb print %p %s
+	lpq command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpq %p
+	lp rm command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lprm %p %j
+	lp pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lppause %p %j
+	lp resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpresume %p %j
+	queue pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queuepause %p
+	queue resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queueresume %p
+
 	#Include user defined custom parameters if set
 	$INCLUDE_CUSTOM_CONF
 
@@ -327,14 +336,6 @@ cat >$SERVERCONFFILE<<EOF
 [print1]
 	copy = tmp
 	printable = yes
-	printing = vlp
-	print command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb print %p %s
-	lpq command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpq %p
-	lp rm command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lprm %p %j
-	lp pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lppause %p %j
-	lp resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpresume %p %j
-	queue pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queuepause %p
-	queue resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queueresume %p
 
 [print2]
 	copy = print1
