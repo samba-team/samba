@@ -351,6 +351,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME',
 	'../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c',
         includes='../heimdal/lib/roken',
+	deps='replace',
         enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
 	)
 
@@ -358,6 +359,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME',
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM',
 	'../heimdal/lib/roken/closefrom.c',
         includes='../heimdal/lib/roken',
+	deps='replace',
         enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
 	)
 
@@ -366,6 +368,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME_H',
 	'../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
         includes='../heimdal/lib/roken',
+	deps='replace',
         enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
 	)
 
@@ -374,6 +377,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM_H',
 	'../heimdal/lib/roken/closefrom.c',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
         includes='../heimdal/lib/roken',
+	deps='replace',
         enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
 	)
 
