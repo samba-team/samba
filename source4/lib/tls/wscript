@@ -1,13 +1,19 @@
 import Options
+from optparse import SUPPRESS_HELP
 
 def set_options(opt):
     # allow users to disable gnutls
-    opt.add_option('--disable-gnutls',
-                   help=("Disable use of gnutls"),
-                   action="store_true", dest='disable_gnutls', default=False)
+    opt.add_option('--enable-gnutls',
+                   help=("Enable use of gnutls"),
+                   action="store_true", dest='enable_gnutls', default=True)
+    opt.add_option('--disable-gnutls', help=SUPPRESS_HELP, action="store_false", dest='enable_gnutls')
+
 
 def configure(conf):
-    # check for gnutls
+    conf.env.enable_gnutls = Options.options.enable_gnutls
+    if not conf.env.enable_gnutls:
+        return
+
     conf.check_cfg(package='gnutls',
                    args='"gnutls >= 1.4.0" --cflags --libs',
                    msg='Checking for gnutls >= 1.4.0', mandatory=False)
@@ -38,5 +44,6 @@ def configure(conf):
 def build(bld):
     bld.SAMBA_SUBSYSTEM('LIBTLS',
                         source='tls.c tlscert.c',
-                        public_deps='talloc gnutls gcrypt LIBSAMBA-HOSTCONFIG samba_socket'
+                        public_deps='talloc gnutls gcrypt LIBSAMBA-HOSTCONFIG samba_socket',
+                        enabled = bld.env.enable_gnutls
                         )
