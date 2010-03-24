@@ -10,7 +10,7 @@ for d in lib/replace lib/talloc lib/tevent lib/tdb source4/lib/ldb; do
     pushd $d || exit 1
     rm -rf bin
     type waf
-    waf configure --enable-developer --prefix=$PREFIX || exit 1
+    waf configure -C --enable-developer --prefix=$PREFIX || exit 1
     time waf build || exit 1
     time waf build || exit 1
     waf install || exit 1

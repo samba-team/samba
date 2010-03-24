@@ -508,6 +508,9 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k',
                         testflags=True)
 
+    if Options.options.pedantic:
+	conf.ADD_CFLAGS('-W', testflags=True)
+
     if path is None:
         conf.write_config_header('config.h', top=True)
     else:

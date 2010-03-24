@@ -3,7 +3,6 @@ import string, Utils, Options
 # list of directory options to offer in configure
 dir_options = {
     'with-piddir'                         : [ '${PREFIX}/var/run', 'where to put pid files' ],
-    'with-modulesdir'                     : [ '${PREFIX}/modules', 'Where to put dynamically loadable modules' ],
     'with-privatedir'                     : [ '${PREFIX}/private', 'Where to put sam.ldb and other private files' ],
     'with-winbindd-socket-dir'            : [ '${PREFIX}/var/lib/winbindd', 'winbind socket directory' ],
     'with-winbindd-privileged-socket-dir' : [ '${PREFIX}/var/lib/winbindd_privileged', 'winbind privileged socket directory'],

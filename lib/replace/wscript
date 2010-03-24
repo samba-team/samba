@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 srcdir = '../..'
 blddir = 'bin'
 
@@ -9,105 +7,13 @@ import wafsamba
 import Options, os, preproc
 
 def set_options(opt):
-    opt.tool_options('compiler_cc')
-    # TODO: we are not yet obeying these default paths at install time
-    opt.add_option('--libdir',
-                   help=("object code libraries [PREFIX/lib"),
-                   action="store", dest='LIBDIR', default='${PREFIX}/lib')
-    opt.add_option('--bindir',
-                   help=("user executables [PREFIX/bin]"),
-                   action="store", dest='BINDIR', default='${PREFIX}/bin')
-    opt.add_option('--sbindir',
-                   help=("system admin executables [PREFIX/sbin]"),
-                   action="store", dest='SBINDIR', default='${PREFIX}/sbin')
-    opt.add_option('--disable-shared',
-                   help=("Disable all use of shared libraries"),
-                   action="store_true", dest='disable_shared', default=False)
-    opt.add_option('--disable-rpath',
-                   help=("Disable use of rpath for build binaries"),
-                   action="store_true", dest='disable_rpath_build', default=False)
-    opt.add_option('--disable-rpath-install',
-                   help=("Disable use of rpath for installed binaries"),
-                   action="store_true", dest='disable_rpath_install', default=False)
-    opt.add_option('--enable-developer',
-                   help=("Turn on developer warnings and debugging"),
-                   action="store_true", dest='developer', default=False)
-    opt.add_option('--enable-gccdeps',
-                   help=("Enable use gcc -MD dependency module"),
-                   action="store_true", dest='enable_gccdeps', default=False)
-    opt.add_option('--timestamp-dependencies',
-                   help=("use file timestamps instead of content for build dependencies (BROKEN)"),
-                   action="store_true", dest='timestamp_dependencies', default=False)
-    opt.add_option('-C',
-                   help='enable configure cacheing',
-                   action='store_true', dest='enable_configure_cache')
-    opt.add_option('--pedantic',
-		   help=("Enable even more compiler warnings"),
-		   action='store_true', dest='pedantic', default=False)
+    opt.recurse('../../buildtools/wafsamba')
 
 @wafsamba.runonce
 def configure(conf):
-    conf.env.hlist = []
-    conf.env.srcdir = conf.srcdir
+    conf.sub_config('../../buildtools/wafsamba')
 
-    if Options.options.timestamp_dependencies:
-        conf.ENABLE_TIMESTAMP_DEPENDENCIES()
-
-    conf.SETUP_CONFIGURE_CACHE(Options.options.enable_configure_cache)
-
-    # load our local waf extensions
-    conf.check_tool('wafsamba', tooldir=conf.srcdir + "/buildtools/wafsamba")
-
-    conf.CHECK_CC_ENV()
-
-    conf.check_tool('compiler_cc')
-
-    if Options.options.enable_gccdeps:
-        # don't enable gccdeps by default as it needs a very recent version gcc
-        conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
-
-    # make the install paths available in environment
-    conf.env.LIBDIR = Options.options.LIBDIR
-    conf.env.BINDIR = Options.options.BINDIR
-    conf.env.SBINDIR = Options.options.SBINDIR
-
-    conf.env.DISABLE_SHARED = Options.options.disable_shared
-
-    # see if we can compile and run a simple C program
-    conf.CHECK_CODE('#include "test/simple.c"\n',
-                    addmain=False,
-                    define='HAVE_SIMPLE_C_PROG',
-                    mandatory=True,
-                    execute=True,
-                    msg='Checking simple C program')
-
-    # check for rpath
-    if not conf.env.DISABLE_SHARED and conf.CHECK_RPATH_SUPPORT():
-        conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
-        conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
-                                     not Options.options.disable_rpath_install)
-    else:
-        conf.env.RPATH_ON_INSTALL = False
-        conf.env.RPATH_ON_BUILD   = False
-
-    # we should use the PIC options in waf instead
-    conf.ADD_CFLAGS('-fPIC')
-
-    # check for pkgconfig
-    conf.check_cfg(atleast_pkgconfig_version='0.0.0')
-
-    conf.DEFINE('_GNU_SOURCE', 1, add_to_cflags=True)
-    conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
-
-    # get the base headers we'll use for the rest of the tests
-    conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h',
-                       add_headers=True)
-    conf.CHECK_HEADERS('strings.h inttypes.h stdint.h unistd.h minix/config.h', add_headers=True)
-    conf.CHECK_HEADERS('ctype.h standards.h stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
-
-    # see if we need special largefile flags
-    conf.CHECK_LARGEFILE()
 
     conf.CHECK_HEADERS('crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
@@ -121,7 +27,7 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/vfs.h sys/xattr.h termio.h termios.h')
     conf.CHECK_HEADERS('sys/wait.h sys/stat.h malloc.h grp.h')
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
-    conf.CHECK_HEADERS('sys/time.h time.h stdarg.h vararg.h sys/mount.h mntent.h')
+    conf.CHECK_HEADERS('stdarg.h vararg.h sys/mount.h mntent.h')
     conf.CHECK_HEADERS('stropts.h unix.h string.h strings.h sys/param.h limits.h')
     conf.CHECK_HEADERS('''sys/socket.h netinet/in.h netdb.h arpa/inet.h netinet/in_systm.h
                           netinet/ip.h netinet/tcp.h netinet/in_ip.h
@@ -143,14 +49,6 @@ def configure(conf):
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h')
     conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h')
 
-    if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
-        conf.DEFINE('STDC_HEADERS', 1)
-
-    if 'HAVE_SYS_TIME_H' in conf.env and 'HAVE_TIME_H' in conf.env:
-        conf.DEFINE('TIME_WITH_SYS_TIME', 1)
-
-    conf.define('SHLIBEXT', "so", quote=True)
-
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t')
     conf.CHECK_TYPES('comparison_fn_t bool')
     conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
@@ -170,11 +68,6 @@ def configure(conf):
     conf.CHECK_TYPE('offset_t', 'loff_t')
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
     conf.CHECK_TYPE('uint_t', 'unsigned int')
-
-    conf.CHECK_CODE('long one = 1; return ((char *)(&one))[0]',
-                    execute=True,
-                    define='WORDS_BIGENDIAN')
-
 
     conf.CHECK_TYPES('socklen_t', headers='sys/socket.h')
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
@@ -207,12 +100,6 @@ def configure(conf):
                     define='HAVE_IPV6',
                     lib='nsl socket',
                     headers='sys/socket.h netdb.h netinet/in.h')
-
-    # check if signal() takes a void function
-    if conf.CHECK_CODE('return *(signal (0, 0)) (0) == 1', define='RETSIGTYPE_INT', msg='Checking return type of signal handlers'):
-        conf.DEFINE('RETSIGTYPE', 'int')
-    else:
-        conf.DEFINE('RETSIGTYPE', 'void')
 
     # these may be builtins, so we need the link=False strategy
     conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
@@ -252,8 +139,6 @@ def configure(conf):
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True,
                         headers='readline.h readline/readline.h readline/history.h')
 
-    conf.CHECK_VARIABLE('__FUNCTION__', define='HAVE_FUNCTION_MACRO')
-
     conf.CHECK_DECLS('snprintf vsnprintf asprintf vasprintf')
 
     conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
@@ -275,17 +160,6 @@ def configure(conf):
         conf.DEFINE('REPLACE_STRPTIME', 1)
 
 
-
-
-    conf.CHECK_CODE('va_list ap1,ap2; va_copy(ap1,ap2)',
-                    define="HAVE_VA_COPY",
-                    msg="Checking for va_copy")
-
-    conf.CHECK_CODE('''
-                    #define eprintf(...) fprintf(stderr, __VA_ARGS__)
-                    eprintf("bla", "bar")
-                    ''', define='HAVE__VA_ARGS__MACRO')
-
     conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
 
     conf.CHECK_CODE('#include "test/snprintf.c"',
@@ -294,31 +168,7 @@ def configure(conf):
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
 
-    if Options.options.pedantic and conf.CHECK_CFLAGS('-W'):
-	conf.ADD_CFLAGS('-W')
-
-    conf.SAMBA_CONFIG_H()
     conf.SAMBA_BUILD_ENV()
-
-    # look for a method of finding the list of network interfaces
-    for method in ['HAVE_IFACE_GETIFADDRS', 'HAVE_IFACE_AIX', 'HAVE_IFACE_IFCONF', 'HAVE_IFACE_IFREQ']:
-        if conf.CHECK_CODE('''
-                           #define %s 1
-                           #define NO_CONFIG_H 1
-                           #define AUTOCONF_TEST 1
-                           #define SOCKET_WRAPPER_NOT_REPLACE
-                           #include "replace.c"
-                           #include "inet_ntop.c"
-                           #include "snprintf.c"
-                           #include "getifaddrs.c"
-                           #define getifaddrs_test main
-                           #include "test/getifaddrs.c"
-                           ''' % method,
-                           method,
-                           lib='nsl socket',
-                           addmain=False,
-                           execute=True):
-            break
 
     conf.CHECK_CODE('''
 		    typedef struct {unsigned x;} FOOBAR;
@@ -383,6 +233,33 @@ def configure(conf):
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         define='HAVE_VISIBILITY_ATTR')
 
+    if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
+		       #include "$libreplacedir/test/strptime.c"''',
+                           define='HAVE_STRPTIME',
+                           msg='Checking for working strptime'):
+        conf.DEFINE('REPLACE_STRPTIME', 1)
+
+
+    # look for a method of finding the list of network interfaces
+    for method in ['HAVE_IFACE_GETIFADDRS', 'HAVE_IFACE_AIX', 'HAVE_IFACE_IFCONF', 'HAVE_IFACE_IFREQ']:
+        if conf.CHECK_CODE('''
+                           #define %s 1
+                           #define NO_CONFIG_H 1
+                           #define AUTOCONF_TEST 1
+                           #define SOCKET_WRAPPER_NOT_REPLACE
+                           #include "replace.c"
+                           #include "inet_ntop.c"
+                           #include "snprintf.c"
+                           #include "getifaddrs.c"
+                           #define getifaddrs_test main
+                           #include "test/getifaddrs.c"
+                           ''' % method,
+                           method,
+                           lib='nsl socket',
+                           addmain=False,
+                           execute=True):
+            break
+
     if conf.CHECK_FUNCS('getpass getpassphrase'):
         # if we have both, then we prefer getpassphrase
         conf.DEFINE('REPLACE_GETPASS_BY_GETPASSPHRASE', 1)
@@ -395,13 +272,11 @@ def configure(conf):
                     cflags='-DNO_CONFIG_H')
 
     conf.sub_config('system')
+    conf.SAMBA_CONFIG_H()
 
 
 def build(bld):
-    # libreplace needs to put the library in the right build groups
-    # as libreplace is a base library for everything, even for our
-    # compilers, we need libreplace to build very early
-    bld.SETUP_BUILD_GROUPS()
+    bld.BUILD_SUBDIR('../../buildtools/wafsamba')
 
     REPLACE_SOURCE = 'replace.c snprintf.c'
 
@@ -443,5 +318,3 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_GETPASS', 'getpass.c',
                         enabled=bld.CONFIG_SET('REPLACE_GETPASS'))
-
-    bld.CHECK_PROJECT_RULES()

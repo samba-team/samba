@@ -1,0 +1,151 @@
+# this is a base set of waf rules that everything else pulls in first
+
+import sys, wafsamba
+import Options, os, preproc
+
+def set_options(opt):
+    opt.tool_options('compiler_cc')
+
+    opt.add_option('--libdir',
+                   help=("object code libraries [PREFIX/lib"),
+                   action="store", dest='LIBDIR', default='${PREFIX}/lib')
+    opt.add_option('--bindir',
+                   help=("user executables [PREFIX/bin]"),
+                   action="store", dest='BINDIR', default='${PREFIX}/bin')
+    opt.add_option('--sbindir',
+                   help=("system admin executables [PREFIX/sbin]"),
+                   action="store", dest='SBINDIR', default='${PREFIX}/sbin')
+    opt.add_option('--with-modulesdir',
+                   help=("modules directory [PREFIX/modules]"),
+                   action="store", dest='MODULESDIR', default='${PREFIX}/modules')
+    opt.add_option('--disable-shared',
+                   help=("Disable all use of shared libraries"),
+                   action="store_true", dest='disable_shared', default=False)
+    opt.add_option('--disable-rpath',
+                   help=("Disable use of rpath for build binaries"),
+                   action="store_true", dest='disable_rpath_build', default=False)
+    opt.add_option('--disable-rpath-install',
+                   help=("Disable use of rpath for installed binaries"),
+                   action="store_true", dest='disable_rpath_install', default=False)
+    opt.add_option('--enable-developer',
+                   help=("Turn on developer warnings and debugging"),
+                   action="store_true", dest='developer', default=False)
+    opt.add_option('--enable-gccdeps',
+                   help=("Enable use gcc -MD dependency module"),
+                   action="store_true", dest='enable_gccdeps', default=False)
+    opt.add_option('--timestamp-dependencies',
+                   help=("use file timestamps instead of content for build dependencies (BROKEN)"),
+                   action="store_true", dest='timestamp_dependencies', default=False)
+    opt.add_option('-C',
+                   help='enable configure cacheing',
+                   action='store_true', dest='enable_configure_cache')
+    opt.add_option('--pedantic',
+		   help=("Enable even more compiler warnings"),
+		   action='store_true', dest='pedantic', default=False)
+
+@wafsamba.runonce
+def configure(conf):
+    conf.env.hlist = []
+    conf.env.srcdir = conf.srcdir
+
+    if Options.options.timestamp_dependencies:
+        conf.ENABLE_TIMESTAMP_DEPENDENCIES()
+
+    conf.SETUP_CONFIGURE_CACHE(Options.options.enable_configure_cache)
+
+    # load our local waf extensions
+    conf.check_tool('wafsamba')
+
+    conf.CHECK_CC_ENV()
+
+    conf.check_tool('compiler_cc')
+
+    if Options.options.enable_gccdeps:
+        # don't enable gccdeps by default as it needs a very recent version gcc
+        conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
+
+    # make the install paths available in environment
+    conf.env.LIBDIR = Options.options.LIBDIR
+    conf.env.BINDIR = Options.options.BINDIR
+    conf.env.SBINDIR = Options.options.SBINDIR
+    conf.env.MODULESDIR = Options.options.MODULESDIR
+
+    conf.env.DISABLE_SHARED = Options.options.disable_shared
+
+    # see if we can compile and run a simple C program
+    conf.CHECK_CODE('printf("hello world\\n")',
+                    define='HAVE_SIMPLE_C_PROG',
+                    mandatory=True,
+                    execute=True,
+                    headers='stdio.h',
+                    msg='Checking simple C program')
+
+    # check for rpath
+    if not conf.env.DISABLE_SHARED and conf.CHECK_RPATH_SUPPORT():
+        conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
+        conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
+                                     not Options.options.disable_rpath_install)
+    else:
+        conf.env.RPATH_ON_INSTALL = False
+        conf.env.RPATH_ON_BUILD   = False
+
+    # we should use the PIC options in waf instead
+    conf.ADD_CFLAGS('-fPIC')
+
+    # check for pkgconfig
+    conf.check_cfg(atleast_pkgconfig_version='0.0.0')
+
+    conf.DEFINE('_GNU_SOURCE', 1, add_to_cflags=True)
+    conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
+
+    # get the base headers we'll use for the rest of the tests
+    conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h',
+                       add_headers=True)
+    conf.CHECK_HEADERS('strings.h inttypes.h stdint.h unistd.h minix/config.h', add_headers=True)
+    conf.CHECK_HEADERS('ctype.h standards.h stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
+
+    # see if we need special largefile flags
+    conf.CHECK_LARGEFILE()
+
+    if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
+        conf.DEFINE('STDC_HEADERS', 1)
+
+    conf.CHECK_HEADERS('sys/time.h time.h', together=True)
+
+    if 'HAVE_SYS_TIME_H' in conf.env and 'HAVE_TIME_H' in conf.env:
+        conf.DEFINE('TIME_WITH_SYS_TIME', 1)
+
+    conf.define('SHLIBEXT', "so", quote=True)
+
+    conf.CHECK_CODE('long one = 1; return ((char *)(&one))[0]',
+                    execute=True,
+                    define='WORDS_BIGENDIAN')
+
+    # check if signal() takes a void function
+    if conf.CHECK_CODE('return *(signal (0, 0)) (0) == 1',
+                       define='RETSIGTYPE_INT',
+                       execute=False,
+                       headers='signal.h',
+                       msg='Checking if signal handlers return int'):
+        conf.DEFINE('RETSIGTYPE', 'int')
+    else:
+        conf.DEFINE('RETSIGTYPE', 'void')
+
+    conf.CHECK_VARIABLE('__FUNCTION__', define='HAVE_FUNCTION_MACRO')
+
+    conf.CHECK_CODE('va_list ap1,ap2; va_copy(ap1,ap2)',
+                    define="HAVE_VA_COPY",
+                    msg="Checking for va_copy")
+
+    conf.CHECK_CODE('''
+                    #define eprintf(...) fprintf(stderr, __VA_ARGS__)
+                    eprintf("bla", "bar")
+                    ''', define='HAVE__VA_ARGS__MACRO')
+
+    conf.SAMBA_BUILD_ENV()
+
+
+def build(bld):
+    bld.SETUP_BUILD_GROUPS()
+    bld.ENFORCE_GROUP_ORDERING()
+    bld.CHECK_PROJECT_RULES()

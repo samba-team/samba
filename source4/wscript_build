@@ -118,5 +118,4 @@ bld.BUILD_SUBDIR('heimdal_build')
 bld.BUILD_SUBDIR('lib/smbreadline')
 bld.BUILD_SUBDIR('../codepages')
 
-bld.ENFORCE_GROUP_ORDERING()
 
