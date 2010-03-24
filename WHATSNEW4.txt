@@ -62,6 +62,25 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
+CHANGES SINCE alpha11
+=====================
+
+Since the alpha10 release, we have fixed a number of serious bugs in
+the implementation of AD-compatible 'Directory Replication Services'.
+We can now join an AD domain as a read-write DC
+
+This release includes changes related to:
+
+* winbind, to allow a fairly good implementation of functions needed by
+libnss_winbind and pam_winbind.
+The usage of this two library allow to have domain users and groups information
+available on the unix and unix-like side. It allow to be able to use domain user
+to connect to all the services (ssh, login, X session, ...)
+More information available at http://wiki.samba.org/index.php/Samba4/Winbind
+
+* server side NTACL manipulation, NTACL of shared file can now be set from the command line
+directly on the server. See net acl for more information.
+
 CHANGES SINCE alpha10
 =====================
 
