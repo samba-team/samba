@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _LIBCLI_SECURITY_SECURITY_H_
+#define _LIBCLI_SECURITY_SECURITY_H_
+
 #include "librpc/gen_ndr/security.h"
 
 enum security_user_level {
@@ -43,3 +46,5 @@ struct object_tree {
 #include "libcli/security/proto.h"
 #include "libcli/security/security_descriptor.h"
 #include "libcli/security/sddl.h"
+
+#endif
