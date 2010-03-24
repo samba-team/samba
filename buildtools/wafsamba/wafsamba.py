@@ -17,6 +17,7 @@ from samba_asn1 import *
 from samba_autoproto import *
 from samba_python import *
 from samba_deps import *
+import samba_conftests
 
 LIB_PATH="shared"
 

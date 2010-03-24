@@ -463,37 +463,6 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
     return ret
 
 
-@conf
-def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
-    '''verify that a C prototype matches the one on the current system'''
-    if not conf.CHECK_DECLS(function, headers=headers):
-        return False
-    return conf.CHECK_CODE('%s; void *_x = (void *)%s' % (prototype, function),
-                           define=define,
-                           local_include=False,
-                           headers=headers,
-                           msg='Checking C prototype for %s' % function)
-
-
-@conf
-def CHECK_LARGEFILE(conf):
-    '''see what we need for largefile support'''
-    if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
-                       'HAVE_LARGEFILE',
-                       execute=True,
-                       msg='Checking for large file support'):
-        return True
-    if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
-                       'HAVE_LARGEFILE',
-                       execute=True,
-                       cflags='-D_FILE_OFFSET_BITS=64',
-                       msg='Checking for -D_FILE_OFFSET_BITS=64'):
-        conf.DEFINE('_FILE_OFFSET_BITS', 64)
-        return True
-    return False
-
-
-
 #################################################
 # write out config.h in the right directory
 @conf
