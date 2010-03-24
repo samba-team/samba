@@ -14,6 +14,7 @@ def SAMBA_PYTHON(bld, name,
                  includes='',
                  init_function_sentinal=None,
                  local_include=True,
+                 vars=None,
                  enabled=True):
     '''build a python extension for Samba'''
 
@@ -21,6 +22,8 @@ def SAMBA_PYTHON(bld, name,
     # the list from all the SAMBA_PYTHON() targets
     if init_function_sentinal is not None:
         cflags += '-DSTATIC_LIBPYTHON_MODULES=%s' % init_function_sentinal
+
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     if realname is None:
         # a SAMBA_PYTHON target without a realname is just a

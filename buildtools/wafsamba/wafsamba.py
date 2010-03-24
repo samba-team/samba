@@ -66,6 +66,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   group='main',
                   depends_on='',
                   local_include=True,
+                  vars=None,
                   install_path=None,
                   install=True,
                   enabled=True):
@@ -73,6 +74,8 @@ def SAMBA_LIBRARY(bld, libname, source,
     if not enabled:
         SET_TARGET_TYPE(bld, libname, 'DISABLED')
         return
+
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     # remember empty libraries, so we can strip the dependencies
     if (source == '') or (source == []):
@@ -193,6 +196,7 @@ def SAMBA_BINARY(bld, binname, source,
                  local_include=True,
                  subsystem_name=None,
                  needs_python=False,
+                 vars=None,
                  install=True,
                  install_path=None):
 
@@ -206,6 +210,8 @@ def SAMBA_BINARY(bld, binname, source,
     bld.SET_BUILD_GROUP(group)
 
     obj_target = binname + '.objlist'
+
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     # first create a target for building the object files for this binary
     # by separating in this way, we avoid recompiling the C files
@@ -299,6 +305,7 @@ def SAMBA_MODULE(bld, modname, source,
                  cflags='',
                  internal_module=True,
                  local_include=True,
+                 vars=None,
                  enabled=True):
 
     # we add the init function regardless of whether the module
@@ -321,6 +328,8 @@ def SAMBA_MODULE(bld, modname, source,
     if not enabled:
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
         return
+
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     # remember empty modules, so we can strip the dependencies
     if (source == '') or (source == []):
@@ -371,6 +380,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     local_include_first=True,
                     subsystem_name=None,
                     enabled=True,
+                    vars=None,
                     needs_python=False):
 
     if not enabled:
@@ -384,6 +394,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
+
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     deps += ' ' + public_deps
 
@@ -421,7 +433,8 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
 def SAMBA_GENERATOR(bld, name, rule, source, target,
-                    group='build_source', enabled=True):
+                    group='build_source', enabled=True,
+                    vars=None):
     '''A generic source generator target'''
 
     if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
@@ -433,7 +446,7 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
     bld.SET_BUILD_GROUP(group)
     bld(
         rule=rule,
-        source=source,
+        source=bld.EXPAND_VARIABLES(source, vars=vars),
         target=target,
         shell=True,
         on_results=True,

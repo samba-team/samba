@@ -337,6 +337,40 @@ def SUBST_VARS_RECURSIVE(string, env):
         limit -= 1
     return string
 
+@conf
+def EXPAND_VARIABLES(ctx, varstr, vars=None):
+    '''expand variables from a user supplied dictionary
+
+    This is most useful when you pass vars=locals() to expand
+    all your local variables in strings
+    '''
+
+    if isinstance(varstr, list):
+        ret = []
+        for s in varstr:
+            ret.append(EXPAND_VARIABLES(ctx, s, vars=vars))
+        return ret
+
+    import Environment
+    env = Environment.Environment()
+    ret = varstr
+    # substitute on user supplied dict if avaiilable
+    if vars is not None:
+        for v in vars.keys():
+            env[v] = vars[v]
+        ret = SUBST_VARS_RECURSIVE(ret, env)
+
+    # if anything left, subst on the environment as well
+    if ret.find('${'):
+        ret = SUBST_VARS_RECURSIVE(ret, ctx.env)
+    # make sure there is nothing left. Also check for the common
+    # typo of $( instead of ${
+    if ret.find('${') != -1 or ret.find('$(') != -1:
+        print('Failed to substitute all variables in varstr=%s' % ret)
+        raise
+    return ret
+Build.BuildContext.EXPAND_VARIABLES = EXPAND_VARIABLES
+
 
 def RUN_COMMAND(cmd,
                 env=None,
