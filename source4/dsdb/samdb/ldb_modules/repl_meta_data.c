@@ -2338,6 +2338,10 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated",
 		"whenChanged", NULL};
 	unsigned int i, el_count = 0;
+	enum deletion_state { OBJECT_NOT_DELETED=1, OBJECT_DELETED=2, OBJECT_RECYCLED=3,
+						OBJECT_TOMBSTONE=4, OBJECT_REMOVED=5 };
+	enum deletion_state deletion_state, next_deletion_state;
+	bool enabled;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
@@ -2368,12 +2372,39 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 	old_msg = res->msgs[0];
 
+
+	ret = dsdb_recyclebin_enabled(module, &enabled);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	if (ldb_msg_check_string_attribute(old_msg, "isDeleted", "TRUE")) {
+		if (!enabled) {
+			deletion_state = OBJECT_TOMBSTONE;
+			next_deletion_state = OBJECT_REMOVED;
+		} else if (ldb_msg_check_string_attribute(old_msg, "isRecycled", "TRUE")) {
+			deletion_state = OBJECT_RECYCLED;
+			next_deletion_state = OBJECT_REMOVED;
+		} else {
+			deletion_state = OBJECT_DELETED;
+			next_deletion_state = OBJECT_RECYCLED;
+		}
+	} else {
+		deletion_state = OBJECT_NOT_DELETED;
+		if (enabled) {
+			next_deletion_state = OBJECT_DELETED;
+		} else {
+			next_deletion_state = OBJECT_TOMBSTONE;
+		}
+	}
+
+	if (next_deletion_state == OBJECT_REMOVED) {
 		struct auth_session_info *session_info =
-			(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+				(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 		if (security_session_user_level(session_info) != SECURITY_SYSTEM) {
 			ldb_asprintf_errstring(ldb, "Refusing to delete deleted object %s",
-					       ldb_dn_get_linearized(old_msg->dn));
+					ldb_dn_get_linearized(old_msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
@@ -2382,34 +2413,54 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* work out where we will be renaming this object to */
-	ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn, &new_dn);
-	if (ret != LDB_SUCCESS) {
-		/* this is probably an attempted delete on a partition
-		 * that doesn't allow delete operations, such as the
-		 * schema partition */
-		ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
-				       ldb_dn_get_linearized(old_dn));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
 	rdn_name = ldb_dn_get_rdn_name(old_dn);
 	rdn_value = ldb_dn_get_rdn_val(old_dn);
 
-	/* get the objects GUID from the search we just did */
-	guid = samdb_result_guid(old_msg, "objectGUID");
-
-	/* Add a formatted child */
-	retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
-				    rdn_name,
-				    rdn_value->data,
-				    GUID_string(tmp_ctx, &guid));
-	if (!retb) {
-		DEBUG(0,(__location__ ": Unable to add a formatted child to dn: %s",
-				ldb_dn_get_linearized(new_dn)));
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = old_dn;
+
+	if (deletion_state == OBJECT_NOT_DELETED){
+		/* work out where we will be renaming this object to */
+		ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn, &new_dn);
+		if (ret != LDB_SUCCESS) {
+			/* this is probably an attempted delete on a partition
+			 * that doesn't allow delete operations, such as the
+			 * schema partition */
+			ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
+						   ldb_dn_get_linearized(old_dn));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		/* get the objects GUID from the search we just did */
+		guid = samdb_result_guid(old_msg, "objectGUID");
+
+		/* Add a formatted child */
+		retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
+						rdn_name,
+						rdn_value->data,
+						GUID_string(tmp_ctx, &guid));
+		if (!retb) {
+			DEBUG(0,(__location__ ": Unable to add a formatted child to dn: %s",
+					ldb_dn_get_linearized(new_dn)));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldb_msg_add_string(msg, "isDeleted", "TRUE");
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to add isDeleted string to the msg\n"));
+			ldb_module_oom(module);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 	}
 
 	/*
@@ -2429,30 +2480,22 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	  see MS-ADTS "Tombstone Requirements" section 3.1.1.5.5.1.1
 	 */
 
-	msg = ldb_msg_new(tmp_ctx);
-	if (msg == NULL) {
-		ldb_module_oom(module);
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	msg->dn = old_dn;
-
-	ret = ldb_msg_add_string(msg, "isDeleted", "TRUE");
+	/* we need the storage form of the parent GUID */
+	ret = dsdb_module_search_dn(module, tmp_ctx, &parent_res,
+				    ldb_dn_get_parent(tmp_ctx, old_dn), NULL,
+				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+				    DSDB_SEARCH_REVEAL_INTERNALS|
+				    DSDB_SEARCH_SHOW_DELETED);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to add isDeleted string to the msg\n"));
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
-	/* we also mark it as recycled, meaning this object can't be
-	   recovered (we are stripping its attributes) */
-	if (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008_R2) {
-		ret = ldb_msg_add_string(msg, "isRecycled", "TRUE");
+	if (deletion_state == OBJECT_NOT_DELETED){
+		ret = ldb_msg_add_steal_string(msg, "lastKnownParent",
+						   ldb_dn_get_extended_linearized(tmp_ctx, parent_res->msgs[0]->dn, 1));
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to add isRecycled string to the msg\n"));
+			DEBUG(0,(__location__ ": Failed to add lastKnownParent string to the msg\n"));
 			ldb_module_oom(module);
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2460,79 +2503,109 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 	}
 
-	/* we need the storage form of the parent GUID */
-	ret = dsdb_module_search_dn(module, tmp_ctx, &parent_res,
-				    ldb_dn_get_parent(tmp_ctx, old_dn), NULL,
-				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
-				    DSDB_SEARCH_REVEAL_INTERNALS);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
+	switch (next_deletion_state){
 
-	ret = ldb_msg_add_steal_string(msg, "lastKnownParent",
-				       ldb_dn_get_extended_linearized(tmp_ctx, parent_res->msgs[0]->dn, 1));
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to add lastKnownParent string to the msg\n"));
-		ldb_module_oom(module);
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+	case OBJECT_DELETED:
 
-	/* work out which of the old attributes we will be removing */
-	for (i=0; i<old_msg->num_elements; i++) {
-		const struct dsdb_attribute *sa;
-		el = &old_msg->elements[i];
-		sa = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
-		if (!sa) {
+		ret = ldb_msg_add_value(msg, "msDS-LastKnownRDN", rdn_value, NULL);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to add msDS-LastKnownRDN string to the msg\n"));
+			ldb_module_oom(module);
 			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
-		if (ldb_attr_cmp(el->name, rdn_name) == 0) {
-			/* don't remove the rDN */
-			continue;
-		}
+		msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
-		if (sa->linkID && sa->linkID & 1) {
-			ret = replmd_delete_remove_link(module, schema, old_dn, el, sa);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			continue;
-		}
-
-		if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
-			continue;
-		}
-
-		ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
+		ret = ldb_msg_add_empty(msg, "objectCategory", LDB_FLAG_MOD_DELETE, NULL);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			ldb_module_oom(module);
 			return ret;
 		}
+
+		ret = ldb_msg_add_empty(msg, "sAMAccountType", LDB_FLAG_MOD_DELETE, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			ldb_module_oom(module);
+			return ret;
+		}
+
+		break;
+
+	case OBJECT_RECYCLED:
+	case OBJECT_TOMBSTONE:
+
+		/* we also mark it as recycled, meaning this object can't be
+		   recovered (we are stripping its attributes) */
+		if (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008_R2) {
+			ret = ldb_msg_add_string(msg, "isRecycled", "TRUE");
+			if (ret != LDB_SUCCESS) {
+				DEBUG(0,(__location__ ": Failed to add isRecycled string to the msg\n"));
+				ldb_module_oom(module);
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+		}
+
+		/* work out which of the old attributes we will be removing */
+		for (i=0; i<old_msg->num_elements; i++) {
+			const struct dsdb_attribute *sa;
+			el = &old_msg->elements[i];
+			sa = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+			if (!sa) {
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			if (ldb_attr_cmp(el->name, rdn_name) == 0) {
+				/* don't remove the rDN */
+				continue;
+			}
+			if (sa->linkID && sa->linkID & 1) {
+			ret = replmd_delete_remove_link(module, schema, old_dn, el, sa);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+				continue;
+			}
+			if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
+				continue;
+			}
+			ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				ldb_module_oom(module);
+				return ret;
+			}
+		}
+		break;
+
+	default:
+		break;
 	}
 
-	/* work out what the new rdn value is, for updating the
-	   rDN and name fields */
-	new_rdn_value = ldb_dn_get_rdn_val(new_dn);
-	ret = ldb_msg_add_value(msg, rdn_name, new_rdn_value, &el);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-	el->flags = LDB_FLAG_MOD_REPLACE;
+	if (deletion_state == OBJECT_NOT_DELETED) {
+		/* work out what the new rdn value is, for updating the
+		   rDN and name fields */
+		new_rdn_value = ldb_dn_get_rdn_val(new_dn);
 
-	el = ldb_msg_find_element(old_msg, "name");
-	if (el) {
-		ret = ldb_msg_add_value(msg, "name", new_rdn_value, &el);
+		ret = ldb_msg_add_value(msg, strlower_talloc(tmp_ctx, rdn_name), new_rdn_value, &el);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
 		el->flags = LDB_FLAG_MOD_REPLACE;
+
+		el = ldb_msg_find_element(old_msg, "name");
+		if (el) {
+			ret = ldb_msg_add_value(msg, "name", new_rdn_value, &el);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			el->flags = LDB_FLAG_MOD_REPLACE;
+		}
 	}
 
 	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE);
@@ -2543,15 +2616,17 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	/* now rename onto the new DN */
-	ret = dsdb_module_rename(module, old_dn, new_dn, 0);
-	if (ret != LDB_SUCCESS){
-		DEBUG(0,(__location__ ": Failed to rename object from '%s' to '%s' - %s\n",
-			 ldb_dn_get_linearized(old_dn),
-			 ldb_dn_get_linearized(new_dn),
-			 ldb_errstring(ldb)));
-		talloc_free(tmp_ctx);
-		return ret;
+	if (deletion_state == OBJECT_NOT_DELETED) {
+		/* now rename onto the new DN */
+		ret = dsdb_module_rename(module, old_dn, new_dn, 0);
+		if (ret != LDB_SUCCESS){
+			DEBUG(0,(__location__ ": Failed to rename object from '%s' to '%s' - %s\n",
+				 ldb_dn_get_linearized(old_dn),
+				 ldb_dn_get_linearized(new_dn),
+				 ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	talloc_free(tmp_ctx);

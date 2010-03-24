@@ -491,7 +491,6 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
 	return LDB_SUCCESS;
 }
 
-
 /*
   find a 'reference' DN that points at another object
   (eg. serverReference, rIDManagerReference etc)
@@ -801,4 +800,29 @@ bool dsdb_module_am_system(struct ldb_module *module)
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 	return security_session_user_level(session_info) == SECURITY_SYSTEM;
+}
+
+/*
+  check if the recyclebin is enabled
+ */
+int dsdb_recyclebin_enabled(struct ldb_module *module, bool *enabled)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_dn *partitions_dn;
+	struct GUID recyclebin_guid;
+	int ret;
+
+	partitions_dn = samdb_partitions_dn(ldb, module);
+
+	GUID_from_string(DS_GUID_FEATURE_RECYCLE_BIN, &recyclebin_guid);
+
+	ret = dsdb_check_optional_feature(module, partitions_dn, recyclebin_guid, enabled);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Could not verify if Recycle Bin is enabled \n");
+		talloc_free(partitions_dn);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	talloc_free(partitions_dn);
+	return LDB_SUCCESS;
 }
