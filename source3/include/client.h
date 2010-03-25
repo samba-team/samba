@@ -112,6 +112,7 @@ struct rpc_cli_transport {
 			       uint8_t **prdata, uint32_t *prdata_len);
 
 	bool (*is_connected)(void *priv);
+	unsigned int (*set_timeout)(void *priv, unsigned int timeout);
 
 	void *priv;
 };

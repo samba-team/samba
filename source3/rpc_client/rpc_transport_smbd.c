@@ -464,6 +464,24 @@ static bool rpc_smbd_is_connected(void *priv)
 	return true;
 }
 
+static unsigned int rpc_smbd_set_timeout(void *priv, unsigned int timeout)
+{
+	struct rpc_transport_smbd_state *transp = talloc_get_type_abort(
+		priv, struct rpc_transport_smbd_state);
+	bool ok;
+
+	ok = rpc_smbd_is_connected(transp);
+	if (!ok) {
+		return 0;
+	}
+
+	if (transp->sub_transp->set_timeout == NULL) {
+		return 0;
+	}
+
+	return transp->sub_transp->set_timeout(transp->sub_transp->priv, timeout);
+}
+
 struct rpc_smbd_write_state {
 	struct rpc_transport_smbd_state *transp;
 	ssize_t written;
@@ -709,6 +727,7 @@ NTSTATUS rpc_transport_smbd_init_recv(struct tevent_req *req,
 	state->transport->trans_send = NULL;
 	state->transport->trans_recv = NULL;
 	state->transport->is_connected = rpc_smbd_is_connected;
+	state->transport->set_timeout = rpc_smbd_set_timeout;
 
 	*presult = talloc_move(mem_ctx, &state->transport);
 	return NT_STATUS_OK;
