@@ -34,7 +34,8 @@ static int rpc_transport_np_state_destructor(struct rpc_transport_np_state *s)
 		DEBUG(10, ("socket was closed, no need to send close request.\n"));
 		return 0;
 	}
-	
+
+	/* TODO: do not use a sync call with a destructor!!! */
 	if (!NT_STATUS_IS_OK(cli_close(s->cli, s->fnum))) {
 		DEBUG(1, ("rpc_transport_np_state_destructor: cli_close "
 			  "failed on pipe %s. Error was %s\n", s->pipe_name,
