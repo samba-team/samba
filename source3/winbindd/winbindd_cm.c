@@ -2007,6 +2007,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	TALLOC_FREE(conn->samr_pipe);
 
 	/*
 	 * No SAMR pipe yet. Attempt to get an NTLMSSP SPNEGO authenticated
@@ -2234,6 +2235,8 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	TALLOC_FREE(conn->lsa_pipe);
+
 	if ((conn->cli->user_name[0] == '\0') ||
 	    (conn->cli->domain[0] == '\0') || 
 	    (conn->cli->password == NULL || conn->cli->password[0] == '\0')) {
@@ -2365,6 +2368,8 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		*cli = conn->netlogon_pipe;
 		return NT_STATUS_OK;
 	}
+
+	TALLOC_FREE(conn->netlogon_pipe);
 
 	result = cli_rpc_pipe_open_noauth(conn->cli,
 					  &ndr_table_netlogon.syntax_id,
