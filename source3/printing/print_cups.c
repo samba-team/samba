@@ -905,6 +905,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
+	ipp_attribute_t *attr_job_id = NULL;	/* IPP Attribute "job-id" */
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 	const char 	*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
@@ -919,7 +920,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	size_t size;
 	char addr[INET6_ADDRSTRLEN];
 
-	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
+	DEBUG(5,("cups_job_submit(%d, %p)\n", snum, pjob));
 
        /*
         * Make sure we don't ask for passwords...
@@ -1026,6 +1027,13 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 			         ippErrorString(cupsLastError())));
 		} else {
 			ret = 0;
+			attr_job_id = ippFindAttribute(response, "job-id", IPP_TAG_INTEGER);
+			if(attr_job_id) {
+				pjob->sysjob = attr_job_id->values[0].integer;
+				DEBUG(5,("cups_job_submit: job-id %d\n", pjob->sysjob));
+			} else {
+				DEBUG(0,("Missing job-id attribute in IPP response"));
+			}
 		}
 	} else {
 		DEBUG(0,("Unable to print file to `%s' - %s\n", PRINTERNAME(snum),
