@@ -1300,6 +1300,10 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	if (!notify_internal_parent_init()) {
+		exit(1);
+	}
+
 	namecache_enable();
 
 	if (!W_ERROR_IS_OK(registry_init_full()))

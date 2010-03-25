@@ -128,6 +128,33 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	return notify;
 }
 
+bool notify_internal_parent_init(void)
+{
+	struct tdb_wrap *db1, *db2;
+
+	if (lp_clustering()) {
+		return true;
+	}
+
+	db1 = tdb_wrap_open(talloc_autofree_context(), lock_path("notify.tdb"),
+			    0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+			   O_RDWR|O_CREAT, 0644);
+	if (db1 == NULL) {
+		DEBUG(1, ("could not open notify.tdb: %s\n", strerror(errno)));
+		return false;
+	}
+	db2 = tdb_wrap_open(talloc_autofree_context(),
+			    lock_path("notify_onelevel.tdb"),
+			    0, TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0644);
+	if (db2 == NULL) {
+		DEBUG(1, ("could not open notify_onelevel.tdb: %s\n",
+			  strerror(errno)));
+		TALLOC_FREE(db1);
+		return false;
+	}
+	return true;
+}
+
 /*
   lock and fetch the record
 */

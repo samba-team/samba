@@ -6545,6 +6545,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
 				   connection_struct *conn);
+bool notify_internal_parent_init(void);
 NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *), 
 		    void *private_data);
