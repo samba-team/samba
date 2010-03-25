@@ -47,6 +47,24 @@ static bool rpc_np_is_connected(void *priv)
 	return true;
 }
 
+static unsigned int rpc_np_set_timeout(void *priv, unsigned int timeout)
+{
+	struct rpc_transport_np_state *np_transport = talloc_get_type_abort(
+		priv, struct rpc_transport_np_state);
+	bool ok;
+
+	if (np_transport->cli == NULL) {
+		return false;
+	}
+
+	ok = rpc_np_is_connected(np_transport);
+	if (!ok) {
+		return 0;
+	}
+
+	return cli_set_timeout(np_transport->cli, timeout);
+}
+
 static int rpc_transport_np_state_destructor(struct rpc_transport_np_state *s)
 {
 	if (!rpc_np_is_connected(s)) {
@@ -447,6 +465,7 @@ NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 	state->transport->trans_send = rpc_np_trans_send;
 	state->transport->trans_recv = rpc_np_trans_recv;
 	state->transport->is_connected = rpc_np_is_connected;
+	state->transport->set_timeout = rpc_np_set_timeout;
 
 	*presult = talloc_move(mem_ctx, &state->transport);
 	return NT_STATUS_OK;
