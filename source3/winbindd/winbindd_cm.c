@@ -1607,21 +1607,11 @@ void close_conns_after_fork(void)
 
 static bool connection_ok(struct winbindd_domain *domain)
 {
-	if (domain->conn.cli == NULL) {
-		DEBUG(8, ("connection_ok: Connection to %s for domain %s has NULL "
-			  "cli!\n", domain->dcname, domain->name));
-		return False;
-	}
+	bool ok;
 
-	if (!domain->conn.cli->initialised) {
-		DEBUG(3, ("connection_ok: Connection to %s for domain %s was never "
-			  "initialised!\n", domain->dcname, domain->name));
-		return False;
-	}
-
-	if (domain->conn.cli->fd == -1) {
-		DEBUG(3, ("connection_ok: Connection to %s for domain %s has died or was "
-			  "never started (fd == -1)\n", 
+	ok = cli_state_is_connected(domain->conn.cli);
+	if (!ok) {
+		DEBUG(3, ("connection_ok: Connection to %s for domain %s is not connected\n",
 			  domain->dcname, domain->name));
 		return False;
 	}
