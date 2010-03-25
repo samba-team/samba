@@ -111,6 +111,8 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 			    TALLOC_CTX *mem_ctx,
 			    struct messaging_backend **presult);
 
+bool messaging_tdb_parent_init(void);
+
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      TALLOC_CTX *mem_ctx,
 			      struct messaging_backend **presult);

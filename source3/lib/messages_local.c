@@ -133,6 +133,22 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	return NT_STATUS_OK;
 }
 
+bool messaging_tdb_parent_init(void)
+{
+	struct tdb_wrap *db;
+
+	db = tdb_wrap_open(talloc_autofree_context(),
+			   lock_path("messages.tdb"), 0,
+			   TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE,
+			   O_RDWR|O_CREAT,0600);
+	if (db == NULL) {
+		DEBUG(1, ("could not open messaging.tdb: %s\n",
+			  strerror(errno)));
+		return false;
+	}
+	return true;
+}
+
 /*******************************************************************
  Form a static tdb key from a pid.
 ******************************************************************/

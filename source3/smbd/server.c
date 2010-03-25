@@ -1296,6 +1296,10 @@ extern void build_options(bool screen);
 	if (!locking_init())
 		exit(1);
 
+	if (!messaging_tdb_parent_init()) {
+		exit(1);
+	}
+
 	namecache_enable();
 
 	if (!W_ERROR_IS_OK(registry_init_full()))
