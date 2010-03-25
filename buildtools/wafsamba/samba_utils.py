@@ -362,3 +362,11 @@ except:
             def hexdigest(self):
                 return self.digest().encode('hex')
         Utils.md5 = replace_md5
+        def h_file(filename):
+            f = open(filename, 'rb')
+            m = replace_md5()
+            while (filename):
+                filename = f.read(100000)
+                m.update(filename)
+            f.close()
+            return m.digest()
