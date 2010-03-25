@@ -26,6 +26,7 @@
 #include "libcli/rap/rap.h"
 #include "librpc/ndr/libndr.h"
 #include "param/param.h"
+#include "torture/rap/proto.h"
 
 #define RAP_GOTO(call) do { \
 	NTSTATUS _status; \
