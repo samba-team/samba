@@ -574,6 +574,7 @@ PRINTBACKEND_SRC = 'printing/printing.c printing/nt_printing.c ${PRINTBASE_SRC}'
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
+LIBS='ICONV'
 
 bld.env.AWK = 'gawk'
 

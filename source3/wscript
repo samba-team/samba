@@ -6,6 +6,7 @@ blddir = 'bin'
 import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
+import build.charset
 
 def set_options(opt):
     opt.recurse('../lib/replace')
@@ -219,5 +220,7 @@ yp_get_default_domain
 ''')
 
     conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
+
+    conf.CHECK_SAMBA3_CHARSET() # see build/charset.py
 
     conf.SAMBA_CONFIG_H('include/config.h')
