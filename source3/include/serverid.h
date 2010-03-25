@@ -63,4 +63,9 @@ bool serverid_traverse_read(int (*fn)(const struct server_id *id,
 				      uint32_t msg_flags,
 				      void *private_data),
 			    void *private_data);
+/*
+ * Ensure CLEAR_IF_FIRST works fine, to be called from the parent smbd
+ */
+bool serverid_parent_init(void);
+
 #endif

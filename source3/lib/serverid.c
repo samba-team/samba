@@ -27,6 +27,22 @@ struct serverid_key {
 #endif
 };
 
+bool serverid_parent_init(void)
+{
+	struct tdb_wrap *db;
+
+	db = tdb_wrap_open(talloc_autofree_context(),
+			   lock_path("serverid.tdb"),
+			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT,
+			   0644);
+	if (db == NULL) {
+		DEBUG(1, ("could not open serverid.tdb: %s\n",
+			  strerror(errno)));
+		return false;
+	}
+	return true;
+}
+
 struct serverid_data {
 	uint64_t unique_id;
 	uint32_t msg_flags;
