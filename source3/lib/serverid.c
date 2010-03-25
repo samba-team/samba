@@ -31,6 +31,12 @@ bool serverid_parent_init(void)
 {
 	struct tdb_wrap *db;
 
+	/*
+	 * Open the tdb in the parent process (smbd) so that our
+	 * CLEAR_IF_FIRST optimization in tdb_reopen_all can properly
+	 * work.
+	 */
+
 	db = tdb_wrap_open(talloc_autofree_context(),
 			   lock_path("serverid.tdb"),
 			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT,
