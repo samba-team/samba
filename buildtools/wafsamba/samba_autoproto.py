@@ -8,7 +8,7 @@ def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
     bld.SET_BUILD_GROUP(group)
     if options is None:
         options='-q -P comment -o'
-    t = bld(rule='${PERL} -W ../heimdal/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
+    t = bld(rule='${PERL} ../heimdal/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
             on_results=True,
