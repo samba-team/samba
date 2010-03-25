@@ -5386,7 +5386,6 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
-void rpccli_close_np_fd(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_client/rpc_transport_smbd.c  */
 
@@ -5423,9 +5422,6 @@ struct cli_state *rpc_pipe_smbd_smb_conn(struct rpc_pipe_client *p);
 
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
-int rpccli_set_sock_timeout(struct rpc_pipe_client *rpccli, int timeout);
-void rpccli_close_sock_fd(struct rpc_pipe_client *rpccli);
-bool rpc_pipe_tcp_connection_ok(struct rpc_pipe_client *rpccli);
 
 /* The following definitions come from rpc_client/cli_samr.c  */
 
