@@ -551,6 +551,7 @@ NTSTATUS torture_rap_init(void)
 	struct torture_suite *suite_basic = torture_suite_create(suite, "BASIC");
 
 	torture_suite_add_suite(suite, suite_basic);
+	torture_suite_add_suite(suite, torture_rap_rpc(suite));
 
 	torture_suite_add_1smb_test(suite_basic, "netserverenum", 
 				    test_netserverenum);
