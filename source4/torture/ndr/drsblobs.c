@@ -43,15 +43,18 @@ static bool forest_trust_info_check_out(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->records[0].record.flags, 0, "record flags");
 	torture_assert_u64_equal(tctx, r->records[0].record.timestamp, 0x9BD5AF0001CACA3E, "record timestamp");
 	torture_assert_int_equal(tctx, r->records[0].record.type, FOREST_TRUST_TOP_LEVEL_NAME, "record type");
-	torture_assert_str_equal(tctx, r->records[0].record.data.name, "f2.test", "record name");
+	torture_assert_int_equal(tctx, r->records[0].record.data.name.size, 7, "record name size");
+	torture_assert_str_equal(tctx, r->records[0].record.data.name.string, "f2.test", "record name string");
 	torture_assert_int_equal(tctx, r->records[1].record_size, 0x0000003a, "record size");
 	torture_assert_int_equal(tctx, r->records[1].record.flags, 0, "record flags");
 	torture_assert_u64_equal(tctx, r->records[1].record.timestamp, 0x9BD5AF0001CACA3E, "record timestamp");
 	torture_assert_int_equal(tctx, r->records[1].record.type, FOREST_TRUST_DOMAIN_INFO, "record type");
 	torture_assert_int_equal(tctx, r->records[1].record.data.info.sid_size, 0x00000018, "record info sid_size");
 	torture_assert_sid_equal(tctx, &r->records[1].record.data.info.sid, dom_sid_parse_talloc(tctx, "S-1-5-21-677661288-1956808876-2402106903"), "record info sid");
-	torture_assert_str_equal(tctx, r->records[1].record.data.info.dns_name, "f2.test", "record info dns_name");
-	torture_assert_str_equal(tctx, r->records[1].record.data.info.netbios_name, "F2", "record info netbios_name");
+	torture_assert_int_equal(tctx, r->records[1].record.data.info.dns_name.size, 7, "record name size");
+	torture_assert_str_equal(tctx, r->records[1].record.data.info.dns_name.string, "f2.test", "record info dns_name string");
+	torture_assert_int_equal(tctx, r->records[1].record.data.info.netbios_name.size, 2, "record info netbios_name size");
+	torture_assert_str_equal(tctx, r->records[1].record.data.info.netbios_name.string, "F2", "record info netbios_name string");
 
 	return true;
 }
