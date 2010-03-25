@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, sys, Options, Utils
+import Build, os, sys, Options, Utils, Task
 from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
@@ -370,4 +370,5 @@ except:
             f.close()
             return m.digest()
         Utils.md5 = replace_md5
+        Task.md5 = replace_md5
         Utils.h_file = replace_h_file
