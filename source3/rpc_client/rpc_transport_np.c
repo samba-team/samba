@@ -28,9 +28,28 @@ struct rpc_transport_np_state {
 	uint16_t fnum;
 };
 
+static bool rpc_np_is_connected(void *priv)
+{
+	struct rpc_transport_np_state *np_transport = talloc_get_type_abort(
+		priv, struct rpc_transport_np_state);
+	bool ok;
+
+	if (np_transport->cli == NULL) {
+		return false;
+	}
+
+	ok = cli_state_is_connected(np_transport->cli);
+	if (!ok) {
+		np_transport->cli = NULL;
+		return false;
+	}
+
+	return true;
+}
+
 static int rpc_transport_np_state_destructor(struct rpc_transport_np_state *s)
 {
-	if (!cli_state_is_connected(s->cli)) {
+	if (!rpc_np_is_connected(s)) {
 		DEBUG(10, ("socket was closed, no need to send close request.\n"));
 		return 0;
 	}
@@ -49,6 +68,7 @@ static int rpc_transport_np_state_destructor(struct rpc_transport_np_state *s)
 }
 
 struct rpc_np_write_state {
+	struct rpc_transport_np_state *np_transport;
 	size_t size;
 	size_t written;
 };
@@ -64,12 +84,22 @@ static struct tevent_req *rpc_np_write_send(TALLOC_CTX *mem_ctx,
 		priv, struct rpc_transport_np_state);
 	struct tevent_req *req, *subreq;
 	struct rpc_np_write_state *state;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_np_write_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	ok = rpc_np_is_connected(np_transport);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
+	}
+
+	state->np_transport = np_transport;
 	state->size = size;
+
 
 	subreq = cli_write_andx_send(mem_ctx, ev, np_transport->cli,
 				     np_transport->fnum,
@@ -93,6 +123,7 @@ static void rpc_np_write_done(struct tevent_req *subreq)
 	status = cli_write_andx_recv(subreq, &state->written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -113,6 +144,7 @@ static NTSTATUS rpc_np_write_recv(struct tevent_req *req, ssize_t *pwritten)
 }
 
 struct rpc_np_read_state {
+	struct rpc_transport_np_state *np_transport;
 	uint8_t *data;
 	size_t size;
 	ssize_t received;
@@ -129,11 +161,20 @@ static struct tevent_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
 		priv, struct rpc_transport_np_state);
 	struct tevent_req *req, *subreq;
 	struct rpc_np_read_state *state;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_np_read_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	ok = rpc_np_is_connected(np_transport);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
+	}
+
+	state->np_transport = np_transport;
 	state->data = data;
 	state->size = size;
 
@@ -171,18 +212,21 @@ static void rpc_np_read_done(struct tevent_req *subreq)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (state->received > state->size) {
 		TALLOC_FREE(subreq);
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
 	if (state->received == 0) {
 		TALLOC_FREE(subreq);
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, NT_STATUS_PIPE_BROKEN);
 		return;
 	}
@@ -206,6 +250,7 @@ static NTSTATUS rpc_np_read_recv(struct tevent_req *req, ssize_t *preceived)
 }
 
 struct rpc_np_trans_state {
+	struct rpc_transport_np_state *np_transport;
 	uint16_t setup[2];
 	uint32_t max_rdata_len;
 	uint8_t *rdata;
@@ -224,12 +269,20 @@ static struct tevent_req *rpc_np_trans_send(TALLOC_CTX *mem_ctx,
 		priv, struct rpc_transport_np_state);
 	struct tevent_req *req, *subreq;
 	struct rpc_np_trans_state *state;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_np_trans_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
+	ok = rpc_np_is_connected(np_transport);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
+	}
+
+	state->np_transport = np_transport;
 	state->max_rdata_len = max_rdata_len;
 
 	SSVAL(state->setup+0, 0, TRANSACT_DCERPCCMD);
@@ -265,16 +318,19 @@ static void rpc_np_trans_done(struct tevent_req *subreq)
 		status = NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (state->rdata_len > state->max_rdata_len) {
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
 	if (state->rdata_len == 0) {
+		state->np_transport->cli = NULL;
 		tevent_req_nterror(req, NT_STATUS_PIPE_BROKEN);
 		return;
 	}
@@ -311,11 +367,18 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct rpc_transport_np_init_state *state;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct rpc_transport_np_init_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	ok = cli_state_is_connected(cli);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
 	}
 
 	state->transport = talloc(state, struct rpc_cli_transport);
@@ -383,6 +446,7 @@ NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 	state->transport->read_recv = rpc_np_read_recv;
 	state->transport->trans_send = rpc_np_trans_send;
 	state->transport->trans_recv = rpc_np_trans_recv;
+	state->transport->is_connected = rpc_np_is_connected;
 
 	*presult = talloc_move(mem_ctx, &state->transport);
 	return NT_STATUS_OK;
