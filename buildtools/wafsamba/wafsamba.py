@@ -513,8 +513,8 @@ def ENABLE_TIMESTAMP_DEPENDENCIES(conf):
 # handle the creation of links for libraries and binaries
 # note that we use a relative symlink path to allow the whole tree
 # to me moved/copied elsewhere without breaking the links
-t = Task.simple_task_type('symlink_lib', 'ln -sf ${LINK_SOURCE} ${LINK_TARGET}',
-                          color='PINK', ext_in='.bin')
+t = Task.simple_task_type('symlink_lib', 'rm -f ${LINK_TARGET} && ln -s ${LINK_SOURCE} ${LINK_TARGET}',
+                          shell=True, color='PINK', ext_in='.bin')
 t.quiet = True
 
 @feature('symlink_lib')
@@ -542,8 +542,8 @@ def symlink_lib(self):
           self.name, tsk.env.LINK_SOURCE, tsk.env.LINK_TARGET)
 
 
-t = Task.simple_task_type('symlink_bin', 'ln -sf ${SRC} ${BIN_TARGET}',
-                          color='PINK', ext_in='.bin')
+t = Task.simple_task_type('symlink_bin', 'rm -f ${BIN_TARGET} && ln -s ${SRC} ${BIN_TARGET}',
+                          shell=True, color='PINK', ext_in='.bin')
 t.quiet = True
 
 @feature('symlink_bin')
@@ -563,8 +563,8 @@ def symlink_bin(self):
 
 
 
-t = Task.simple_task_type('copy_script', 'ln -sf ${SRC[0].abspath(env)} ${LINK_TARGET}',
-                          color='PINK', ext_in='.bin', shell=True)
+t = Task.simple_task_type('copy_script', 'rm -f && ln -s ${SRC[0].abspath(env)} ${LINK_TARGET}',
+                          shell=True, color='PINK', ext_in='.bin')
 t.quiet = True
 
 @feature('copy_script')
