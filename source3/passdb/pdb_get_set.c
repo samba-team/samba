@@ -572,6 +572,7 @@ bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_
 bool pdb_set_group_sid(struct samu *sampass, const DOM_SID *g_sid, enum pdb_value_state flag)
 {
 	gid_t gid;
+	DOM_SID dug_sid;
 
 	if (!g_sid)
 		return False;
@@ -583,11 +584,14 @@ bool pdb_set_group_sid(struct samu *sampass, const DOM_SID *g_sid, enum pdb_valu
 	/* if we cannot resolve the SID to gid, then just ignore it and 
 	   store DOMAIN_USERS as the primary groupSID */
 
-	if ( sid_to_gid( g_sid, &gid ) ) {
+	sid_compose(&dug_sid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
+
+	if (sid_equal(&dug_sid, g_sid)) {
+		sid_copy(sampass->group_sid, &dug_sid);
+	} else if (sid_to_gid( g_sid, &gid ) ) {
 		sid_copy(sampass->group_sid, g_sid);
 	} else {
-		sid_compose(sampass->group_sid, get_global_sam_sid(),
-			    DOMAIN_GROUP_RID_USERS);
+		sid_copy(sampass->group_sid, &dug_sid);
 	}
 
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
