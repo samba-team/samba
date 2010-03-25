@@ -78,6 +78,7 @@
 		size in MiB to prevent timeouts. The default sizelimit is
 		20 (MiB)
 		</para>
+		</listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
