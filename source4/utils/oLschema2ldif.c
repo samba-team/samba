@@ -37,6 +37,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "../lib/crypto/sha256.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
+#include "lib/cmdline/popt_common.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
@@ -583,55 +584,86 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 	return ret;
 }
 
+static struct options {
+	const char *basedn;
+	const char *input;
+	const char *output;
+} options;
+
+static struct poptOption popt_options[] = {
+	POPT_AUTOHELP
+	{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
+	{ "input", 'I', POPT_ARG_STRING, &options.input, 0, 
+	  "inputfile of OpenLDAP style schema otherwise STDIN", "inputfile"},
+	{ "output", 'O', POPT_ARG_STRING, &options.output, 0, 
+	  "outputfile otherwise STDOUT", "outputfile"},
+	POPT_COMMON_VERSION
+	{ NULL }
+};
+
+
 static void usage(void)
 {
-	printf("Usage: oLschema2ldif -H NONE <options>\n");
+	poptContext pc;
+	printf("Usage: oLschema2ldif <options>\n");
 	printf("\nConvert OpenLDAP schema to AD-like LDIF format\n\n");
-	printf("Options:\n");
-	printf("  -I inputfile     inputfile of OpenLDAP style schema otherwise STDIN\n");
-	printf("  -O outputfile    outputfile otherwise STDOUT\n");
-	printf("  -o options       pass options like modules to activate\n");
-	printf("              e.g: -o modules:timestamps\n");
-	printf("\n");
 	printf("Converts records from an openLdap formatted schema to an ldif schema\n\n");
+	pc = poptGetContext("oLschema2ldif", 0, NULL, popt_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+	poptPrintHelp(pc, stdout, 0);
 	exit(1);
 }
+
 
  int main(int argc, const char **argv)
 {
 	TALLOC_CTX *ctx;
 	struct schema_conv ret;
-	struct ldb_cmdline *options;
 	FILE *in = stdin;
 	FILE *out = stdout;
+	poptContext pc;
+	int opt;
+
 	ctx = talloc_new(NULL);
 	ldb_ctx = ldb_init(ctx, NULL);
 
 	setenv("LDB_URL", "NONE", 1);
-	options = ldb_cmdline_process(ldb_ctx, argc, argv, usage);
 
-	if (options->basedn == NULL) {
-		perror("Base DN not specified");
+	pc = poptGetContext(argv[0], argc, argv, popt_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		fprintf(stderr, "Invalid option %s: %s\n", 
+			poptBadOption(pc, 0), poptStrerror(opt));
+		usage();
+	}
+
+	if (options.basedn == NULL) {		
+		printf("Base DN not specified\n");
+		usage();
 		exit(1);
 	} else {
-		basedn = ldb_dn_new(ctx, ldb_ctx, options->basedn);
+		basedn = ldb_dn_new(ctx, ldb_ctx, options.basedn);
 		if ( ! ldb_dn_validate(basedn)) {
-			perror("Malformed Base DN");
+			printf("Malformed Base DN\n");
+			usage();
 			exit(1);
 		}
 	}
 
-	if (options->input) {
-		in = fopen(options->input, "r");
+	if (options.input) {
+		in = fopen(options.input, "r");
 		if (!in) {
-			perror(options->input);
+			perror(options.input);
+			usage();
 			exit(1);
 		}
 	}
-	if (options->output) {
-		out = fopen(options->output, "w");
+	if (options.output) {
+		out = fopen(options.output, "w");
 		if (!out) {
-			perror(options->output);
+			perror(options.output);
+			usage();
 			exit(1);
 		}
 	}
