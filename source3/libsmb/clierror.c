@@ -359,3 +359,21 @@ void cli_reset_error(struct cli_state *cli)
 		SSVAL(cli->inbuf,smb_err,0);
 	}
 }
+
+bool cli_state_is_connected(struct cli_state *cli)
+{
+	if (cli == NULL) {
+		return false;
+	}
+
+	if (!cli->initialised) {
+		return false;
+	}
+
+	if (cli->fd == -1) {
+		return false;
+	}
+
+	return true;
+}
+
