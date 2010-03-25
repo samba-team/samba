@@ -136,6 +136,12 @@ bool notify_internal_parent_init(void)
 		return true;
 	}
 
+	/*
+	 * Open the tdbs in the parent process (smbd) so that our
+	 * CLEAR_IF_FIRST optimization in tdb_reopen_all can properly
+	 * work.
+	 */
+
 	db1 = tdb_wrap_open(talloc_autofree_context(), lock_path("notify.tdb"),
 			    0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
 			   O_RDWR|O_CREAT, 0644);
