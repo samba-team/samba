@@ -183,20 +183,6 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 	status = cli_do_rpc_ndr_recv(req, mem_ctx);
 
-	/*
-	 * NT_STATUS_IO_TIMEOUT indicates network problem,
-	 * tear the connection apart.
-	 */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		if (cli->transport->transport == NCACN_IP_TCP ||
-		    cli->transport->transport == NCALRPC) {
-			rpccli_close_sock_fd(cli);
-		}
-
-		if (cli->transport->transport == NCACN_NP) {
-			rpccli_close_np_fd(cli);
-		}
-	}
  fail:
 	TALLOC_FREE(frame);
 	return status;
