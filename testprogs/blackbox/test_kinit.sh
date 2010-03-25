@@ -23,6 +23,8 @@ samba4bindir="$BUILDDIR/bin"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 net="$samba4bindir/net$EXEEXT"
+ldbmodify="$samba4bindir/ldbmodify$EXEEXT"
+ldbsearch="$samba4bindir/ldbsearch$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
 enableaccount="$samba4bindir/net enableaccount"
@@ -67,6 +69,18 @@ testit "check time with kerberos ccache" $VALGRIND $net time $SERVER $CONFIGURAT
 testit "add user with kerberos ccache" $VALGRIND $net user add nettestuser $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 USERPASS=testPass@12%
 echo $USERPASS > ./tmpuserpassfile
+
+echo "Getting defaultNamingContext"
+BASEDN=`$ldbsearch $options --basedn='' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
+
+cat > ./tmpldbmodify <<EOF
+dn: cn=nettestuser,cn=users,$BASEDN
+changetype: modify
+add: servicePrincipalName
+servicePrincipalName: host/nettestuser
+EOF
+
+testit "modify servicePrincipalName" $VALGRIND $ldbmodify -H ldap://$SERVER ./tmpldbmodify -k yes $@ || failed=`expr $failed + 1`
 
 testit "set user password with kerberos ccache" $VALGRIND $net password set $DOMAIN\\nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 
@@ -120,6 +134,23 @@ expect Success
 EOF
 
 testit "set user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd --cache=$PREFIX/tmpccache nettestuser@$REALM || failed=`expr $failed + 1`
+
+testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+
+test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+
+NEWUSERPASS=testPaSS@910%
+echo $NEWUSERPASS > ./tmpuserpassfile
+
+cat > ./tmpkpasswdscript <<EOF
+expect New password
+send ${NEWUSERPASS}\n
+expect New password
+send ${NEWUSERPASS}\n
+expect Success
+EOF
+
+testit "set user password with kpasswd and servicePrincipalName" $rkpty ./tmpkpasswdscript $samba4kpasswd --cache=$PREFIX/tmpccache host/nettestuser@$REALM || failed=`expr $failed + 1`
 
 testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
