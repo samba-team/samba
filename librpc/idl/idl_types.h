@@ -48,12 +48,6 @@
 #define utf8string	[flag(STR_UTF8|STR_NULLTERM)] string
 
 /*
-  an utf8 string prefixed with [size], 32 bits
-  not null terminated
-*/
-#define utf8string2	[flag(STR_SIZE4|STR_UTF8|STR_NOTERM)] string
-
-/*
   a null terminated UCS2 string
 */
 #define nstring_array	[flag(STR_NULLTERM)] string_array
