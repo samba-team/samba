@@ -56,8 +56,6 @@ static struct poptOption popt_options[] = {
 	{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "(|(objectClass=*)(distinguishedName=*))", NULL },
 	{ "nosync", 0,   POPT_ARG_NONE, &options.nosync, 0, "non-synchronous transactions", NULL },
 	{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
-	{ "input", 'I', POPT_ARG_STRING, &options.input, 0, "Input File", "Input" },
-	{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
 	{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
 	{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
 	{ "show-binary", 0, POPT_ARG_NONE, &options.show_binary, 0, "display binary LDIF", NULL },
