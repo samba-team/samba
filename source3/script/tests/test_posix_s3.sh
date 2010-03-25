@@ -54,7 +54,7 @@ local="LOCAL-NSS-WRAPPER LOCAL-NDR"
 
 winbind="WINBIND-STRUCT WINBIND-WBCLIENT"
 
-rap="RAP-BASIC"
+rap="RAP-BASIC RAP-RPC"
 
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
