@@ -30,7 +30,7 @@ struct rpc_transport_np_state {
 
 static int rpc_transport_np_state_destructor(struct rpc_transport_np_state *s)
 {
-	if (s->cli->fd == -1) {
+	if (!cli_state_is_connected(s->cli)) {
 		DEBUG(10, ("socket was closed, no need to send close request.\n"));
 		return 0;
 	}
