@@ -413,6 +413,11 @@ static void wrepl_request_trigger(struct tevent_req *req,
 					    struct wrepl_request_state);
 	struct tevent_req *subreq;
 
+	if (state->caller.wrepl_socket->stream == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return;
+	}
+
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Sending WINS packet of length %u\n",
 			  (unsigned)state->req.blob.length));
@@ -445,7 +450,13 @@ static void wrepl_request_writev_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		TALLOC_FREE(state->caller.wrepl_socket->stream);
 		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (state->caller.wrepl_socket->stream == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
 		return;
 	}
 
@@ -490,12 +501,13 @@ static void wrepl_request_disconnect_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		TALLOC_FREE(state->caller.wrepl_socket->stream);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	DEBUG(10,("WINS connection disconnected\n"));
-	state->caller.wrepl_socket->stream = NULL;
+	TALLOC_FREE(state->caller.wrepl_socket->stream);
 
 	tevent_req_done(req);
 }
@@ -512,6 +524,7 @@ static void wrepl_request_read_pdu_done(struct tevent_req *subreq)
 
 	status = tstream_read_pdu_blob_recv(subreq, state, &state->rep.blob);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state->caller.wrepl_socket->stream);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -554,6 +567,7 @@ NTSTATUS wrepl_request_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		TALLOC_FREE(state->caller.wrepl_socket->stream);
 		tevent_req_received(req);
 		return status;
 	}
