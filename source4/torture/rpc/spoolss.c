@@ -2701,11 +2701,8 @@ static bool test_EnumJobs(struct torture_context *tctx,
 			torture_assert(tctx, test_GetJob(tctx, b, handle, info[j].info1.job_id),
 				"failed to call test_GetJob");
 
-			/* FIXME - gd */
-			if (!torture_setting_bool(tctx, "samba3", false)) {
-				test_SetJob(tctx, b, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
-				test_SetJob(tctx, b, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
-			}
+			test_SetJob(tctx, b, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
+			test_SetJob(tctx, b, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
 		}
 
 	} else {
