@@ -1,6 +1,6 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
-
+from Configure import conf
 
 @conf
 def CHECK_ICONV(conf, define='HAVE_NATIVE_ICONV'):
