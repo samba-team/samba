@@ -361,8 +361,7 @@ except:
                 return str(self.val)
             def hexdigest(self):
                 return self.digest().encode('hex')
-        Utils.md5 = replace_md5
-        def h_file(filename):
+        def replace_h_file(filename):
             f = open(filename, 'rb')
             m = replace_md5()
             while (filename):
@@ -370,3 +369,5 @@ except:
                 m.update(filename)
             f.close()
             return m.digest()
+        Utils.md5 = replace_md5
+        Utils.h_file = replace_h_file
