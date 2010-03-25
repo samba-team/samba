@@ -318,3 +318,15 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_GETPASS', 'getpass.c',
                         enabled=bld.CONFIG_SET('REPLACE_GETPASS'))
+
+    # build replacements for stdint.h and stdbool.h if needed
+    bld.SAMBA_GENERATOR('replace_stdint_h',
+                        rule='cp ${SRC} ${TGT}',
+                        source='hdr_replace.h',
+                        target='stdint.h',
+                        enabled = not bld.CONFIG_SET('HAVE_STDINT_H'))
+    bld.SAMBA_GENERATOR('replace_stdbool_h',
+                        rule='cp ${SRC} ${TGT}',
+                        source='hdr_replace.h',
+                        target='stdbool.h',
+                        enabled = not bld.CONFIG_SET('HAVE_STDBOOL_H'))
