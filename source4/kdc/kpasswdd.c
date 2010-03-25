@@ -250,6 +250,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		krb5_principal principal;
 		char *set_password_on_princ;
 		struct ldb_dn *set_password_on_dn;
+		bool service_principal_name = false;
 
 		size_t len;
 		int ret;
@@ -311,14 +312,29 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		}
 		free_ChangePasswdDataMS(&chpw);
 
-		if (krb5_unparse_name(context, principal, &set_password_on_princ) != 0) {
-			krb5_free_principal(context, principal);
-			return kpasswdd_make_error_reply(kdc, mem_ctx,
-							KRB5_KPASSWD_MALFORMED,
-							"krb5_unparse_name failed!",
-							reply);
-		}
+		if (principal->name.name_string.len >= 2) {
+			service_principal_name = true;
 
+			/* We use this, rather than 'no realm' flag,
+			 * as we don't want to accept a password
+			 * change on a principal from another realm */
+
+			if (krb5_unparse_name_short(context, principal, &set_password_on_princ) != 0) {
+				krb5_free_principal(context, principal);
+				return kpasswdd_make_error_reply(kdc, mem_ctx,
+								 KRB5_KPASSWD_MALFORMED,
+								 "krb5_unparse_name failed!",
+								 reply);
+			}
+		} else {
+			if (krb5_unparse_name(context, principal, &set_password_on_princ) != 0) {
+				krb5_free_principal(context, principal);
+				return kpasswdd_make_error_reply(kdc, mem_ctx,
+								 KRB5_KPASSWD_MALFORMED,
+								 "krb5_unparse_name failed!",
+								 reply);
+			}
+		}
 		krb5_free_principal(context, principal);
 
 		samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, session_info);
@@ -344,9 +360,15 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							   reply);
 		}
 
-		status = crack_user_principal_name(samdb, mem_ctx,
-						   set_password_on_princ,
-						   &set_password_on_dn, NULL);
+		if (service_principal_name) {
+			status = crack_service_principal_name(samdb, mem_ctx,
+							      set_password_on_princ,
+							      &set_password_on_dn, NULL);
+		} else {
+			status = crack_user_principal_name(samdb, mem_ctx,
+							   set_password_on_princ,
+							   &set_password_on_dn, NULL);
+		}
 		free(set_password_on_princ);
 		if (!NT_STATUS_IS_OK(status)) {
 			ldb_transaction_cancel(samdb);
