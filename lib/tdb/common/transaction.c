@@ -8,7 +8,7 @@
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -59,7 +59,7 @@
   - allow for nested calls to tdb_transaction_start(), re-using the
     existing transaction record. If the inner transaction is cancelled
     then a subsequent commit will fail
- 
+
   - keep a mirrored copy of the tdb hash chain heads to allow for the
     fast hash heads scan on traverse, updating the mirrored copy in
     the transaction version of tdb_write
@@ -185,7 +185,7 @@ static int transaction_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 			goto fail;
 		}
 	}
-	
+
 	/* now copy it out of this block */
 	memcpy(buf, tdb->transaction->blocks[blk] + (off % tdb->transaction->block_size), len);
 	if (cv) {
@@ -292,7 +292,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 			}			
 		}
 	}
-	
+
 	/* overwrite part of an existing block */
 	if (buf == NULL) {
 		memset(tdb->transaction->blocks[blk] + off, 0, len);
@@ -478,7 +478,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		SAFE_FREE(tdb->transaction);
 		return -1;
 	}
-	
+
 	/* get a read lock from the freelist to the end of file. This
 	   is upgraded to a write lock during the commit */
 	if (tdb_allrecord_lock(tdb, F_RDLCK, TDB_LOCK_WAIT, true) == -1) {
@@ -514,7 +514,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	/* Trace at the end, so we get sequence number correct. */
 	tdb_trace(tdb, "tdb_transaction_start");
 	return 0;
-	
+
 fail:
 	tdb_allrecord_unlock(tdb, F_RDLCK, false);
 fail_allrecord_lock:
@@ -601,7 +601,7 @@ static int _tdb_transaction_cancel(struct tdb_context *tdb)
 
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
-	
+
 	return ret;
 }
 
@@ -787,7 +787,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 		if (i == tdb->transaction->num_blocks-1) {
 			length = tdb->transaction->last_block_size;
 		}
-		
+
 		if (offset >= old_map_size) {
 			continue;
 		}
@@ -900,7 +900,7 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	}
 
 	methods = tdb->transaction->io_methods;
-	
+
 	/* if there are any locks pending then the caller has not
 	   nested their locks properly, so fail the transaction */
 	if (tdb_have_extra_locks(tdb)) {
@@ -1024,7 +1024,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 		if (methods->tdb_write(tdb, offset, tdb->transaction->blocks[i], length) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_commit: write failed during commit\n"));
-			
+
 			/* we've overwritten part of the data and
 			   possibly expanded the file, so we need to
 			   run the crash recovery code */
@@ -1179,7 +1179,7 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 		tdb->ecode = TDB_ERR_IO;
 		return -1;			
 	}
-	
+
 	if (transaction_sync(tdb, 0, recovery_eof) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_recover: failed to sync2 recovery\n"));
 		tdb->ecode = TDB_ERR_IO;
