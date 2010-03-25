@@ -1,7 +1,7 @@
 # selftest main code.
 
 import Scripting, os, Options, Utils, Environment, optparse, sys
-from samba_utils import RUN_COMMAND
+from samba_utils import RUN_COMMAND, ADD_LD_LIBRARY_PATH
 
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
@@ -73,7 +73,7 @@ def cmd_testonly(opt):
     env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
     # this is needed for systems without rpath, or with rpath disabled
-    os.environ['LD_LIBRARY_PATH'] = 'bin/shared'
+    ADD_LD_LIBRARY_PATH('bin/shared')
 
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):

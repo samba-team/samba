@@ -60,6 +60,17 @@ def runonce(function):
     return wrapper
 
 
+def ADD_LD_LIBRARY_PATH(path):
+    '''add something to LD_LIBRARY_PATH'''
+    if 'LD_LIBRARY_PATH' in os.environ:
+        oldpath = os.environ['LD_LIBRARY_PATH']
+    else:
+        oldpath = ''
+    newpath = oldpath.split(':')
+    if not path in newpath:
+        newpath.append(path)
+        os.environ['LD_LIBRARY_PATH'] = ':'.join(newpath)
+
 def install_rpath(bld):
     '''the rpath value for installation'''
     bld.env['RPATH'] = []
@@ -76,7 +87,7 @@ def build_rpath(bld):
     bld.env['RPATH_ST'] = []
     if bld.env.RPATH_ON_BUILD:
         return ['-Wl,-rpath=%s' % rpath]
-    os.environ['LD_LIBRARY_PATH'] = rpath
+    ADD_LD_LIBRARY_PATH(rpath)
     return []
 
 
