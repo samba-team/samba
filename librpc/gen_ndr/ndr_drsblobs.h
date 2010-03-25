@@ -158,6 +158,7 @@ enum ndr_err_code ndr_push_ExtendedErrorInfo(struct ndr_push *ndr, int ndr_flags
 enum ndr_err_code ndr_pull_ExtendedErrorInfo(struct ndr_pull *ndr, int ndr_flags, struct ExtendedErrorInfo *r);
 void ndr_print_ExtendedErrorInfo(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfo *r);
 void ndr_print_ExtendedErrorInfoPtr(struct ndr_print *ndr, const char *name, const struct ExtendedErrorInfoPtr *r);
+void ndr_print_ForestTrustString(struct ndr_print *ndr, const char *name, const struct ForestTrustString *r);
 void ndr_print_ForestTrustDataDomainInfo(struct ndr_print *ndr, const char *name, const struct ForestTrustDataDomainInfo *r);
 void ndr_print_ForestTrustDataBinaryData(struct ndr_print *ndr, const char *name, const struct ForestTrustDataBinaryData *r);
 void ndr_print_ForestTrustData(struct ndr_print *ndr, const char *name, const union ForestTrustData *r);

@@ -4058,6 +4058,41 @@ _PUBLIC_ void ndr_print_ExtendedErrorInfoPtr(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_ForestTrustString(struct ndr_push *ndr, int ndr_flags, const struct ForestTrustString *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m(r->string)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, strlen_m(r->string), sizeof(uint8_t), CH_UTF8));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_ForestTrustString(struct ndr_pull *ndr, int ndr_flags, struct ForestTrustString *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, r->size, sizeof(uint8_t), CH_UTF8));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_ForestTrustString(struct ndr_print *ndr, const char *name, const struct ForestTrustString *r)
+{
+	ndr_print_struct(ndr, name, "ForestTrustString");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->string):r->size);
+	ndr_print_string(ndr, "string", r->string);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_ForestTrustDataDomainInfo(struct ndr_push *ndr, int ndr_flags, const struct ForestTrustDataDomainInfo *r)
 {
 	{
@@ -4072,18 +4107,8 @@ static enum ndr_err_code ndr_push_ForestTrustDataDomainInfo(struct ndr_push *ndr
 				NDR_CHECK(ndr_push_dom_sid(_ndr_sid, NDR_SCALARS, &r->sid));
 				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 			}
-			{
-				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dns_name));
-				ndr->flags = _flags_save_string;
-			}
-			{
-				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->netbios_name));
-				ndr->flags = _flags_save_string;
-			}
+			NDR_CHECK(ndr_push_ForestTrustString(ndr, NDR_SCALARS, &r->dns_name));
+			NDR_CHECK(ndr_push_ForestTrustString(ndr, NDR_SCALARS, &r->netbios_name));
 			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -4107,18 +4132,8 @@ static enum ndr_err_code ndr_pull_ForestTrustDataDomainInfo(struct ndr_pull *ndr
 				NDR_CHECK(ndr_pull_dom_sid(_ndr_sid, NDR_SCALARS, &r->sid));
 				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sid, 0, r->sid_size));
 			}
-			{
-				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dns_name));
-				ndr->flags = _flags_save_string;
-			}
-			{
-				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->netbios_name));
-				ndr->flags = _flags_save_string;
-			}
+			NDR_CHECK(ndr_pull_ForestTrustString(ndr, NDR_SCALARS, &r->dns_name));
+			NDR_CHECK(ndr_pull_ForestTrustString(ndr, NDR_SCALARS, &r->netbios_name));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -4137,8 +4152,8 @@ _PUBLIC_ void ndr_print_ForestTrustDataDomainInfo(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid0(&r->sid, ndr->flags):r->sid_size);
 		ndr_print_dom_sid(ndr, "sid", &r->sid);
-		ndr_print_string(ndr, "dns_name", r->dns_name);
-		ndr_print_string(ndr, "netbios_name", r->netbios_name);
+		ndr_print_ForestTrustString(ndr, "dns_name", &r->dns_name);
+		ndr_print_ForestTrustString(ndr, "netbios_name", &r->netbios_name);
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}
@@ -4202,21 +4217,11 @@ static enum ndr_err_code ndr_push_ForestTrustData(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_union_align(ndr, 4));
 		switch (level) {
 			case FOREST_TRUST_TOP_LEVEL_NAME: {
-				{
-					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->name));
-					ndr->flags = _flags_save_string;
-				}
+				NDR_CHECK(ndr_push_ForestTrustString(ndr, NDR_SCALARS, &r->name));
 			break; }
 
 			case FOREST_TRUST_TOP_LEVEL_NAME_EX: {
-				{
-					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->name));
-					ndr->flags = _flags_save_string;
-				}
+				NDR_CHECK(ndr_push_ForestTrustString(ndr, NDR_SCALARS, &r->name));
 			break; }
 
 			case FOREST_TRUST_DOMAIN_INFO: {
@@ -4257,21 +4262,11 @@ static enum ndr_err_code ndr_pull_ForestTrustData(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case FOREST_TRUST_TOP_LEVEL_NAME: {
-				{
-					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->name));
-					ndr->flags = _flags_save_string;
-				}
+				NDR_CHECK(ndr_pull_ForestTrustString(ndr, NDR_SCALARS, &r->name));
 			break; }
 
 			case FOREST_TRUST_TOP_LEVEL_NAME_EX: {
-				{
-					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM);
-					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->name));
-					ndr->flags = _flags_save_string;
-				}
+				NDR_CHECK(ndr_pull_ForestTrustString(ndr, NDR_SCALARS, &r->name));
 			break; }
 
 			case FOREST_TRUST_DOMAIN_INFO: {
@@ -4310,11 +4305,11 @@ _PUBLIC_ void ndr_print_ForestTrustData(struct ndr_print *ndr, const char *name,
 	ndr_print_union(ndr, name, level, "ForestTrustData");
 	switch (level) {
 		case FOREST_TRUST_TOP_LEVEL_NAME:
-			ndr_print_string(ndr, "name", r->name);
+			ndr_print_ForestTrustString(ndr, "name", &r->name);
 		break;
 
 		case FOREST_TRUST_TOP_LEVEL_NAME_EX:
-			ndr_print_string(ndr, "name", r->name);
+			ndr_print_ForestTrustString(ndr, "name", &r->name);
 		break;
 
 		case FOREST_TRUST_DOMAIN_INFO:

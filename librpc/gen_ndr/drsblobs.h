@@ -457,11 +457,16 @@ struct ExtendedErrorInfoPtr {
 	struct ExtendedErrorInfo *info;/* [unique] */
 };
 
+struct ForestTrustString {
+	uint32_t size;/* [value(strlen_m(string))] */
+	const char *string;/* [charset(UTF8)] */
+};
+
 struct ForestTrustDataDomainInfo {
 	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
 	struct dom_sid sid;/* [subcontext_size(sid_size),subcontext(0)] */
-	const char * dns_name;/* [flag(LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM)] */
-	const char * netbios_name;/* [flag(LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM)] */
+	struct ForestTrustString dns_name;
+	struct ForestTrustString netbios_name;
 }/* [flag(LIBNDR_FLAG_NOALIGN)] */;
 
 struct ForestTrustDataBinaryData {
@@ -470,7 +475,7 @@ struct ForestTrustDataBinaryData {
 }/* [flag(LIBNDR_FLAG_NOALIGN)] */;
 
 union ForestTrustData {
-	const char * name;/* [flag(LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NOTERM),case(FOREST_TRUST_TOP_LEVEL_NAME)] */
+	struct ForestTrustString name;/* [case(FOREST_TRUST_TOP_LEVEL_NAME)] */
 	struct ForestTrustDataDomainInfo info;/* [case(FOREST_TRUST_DOMAIN_INFO)] */
 	struct ForestTrustDataBinaryData data;/* [default] */
 }/* [nodiscriminant] */;
