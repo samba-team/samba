@@ -2592,8 +2592,6 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 		return True;
 	}
 
-	pjob->smbjob = jobid;
-
 	ret = (*(current_printif->job_submit))(snum, pjob);
 
 	if (ret)
