@@ -155,8 +155,9 @@ int get_socket_port(int fd)
 	}
 
 	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n",
-			strerror(errno) ));
+		int level = (errno == ENOTCONN) ? 2 : 0;
+		DEBUG(level, ("getpeername failed. Error was %s\n",
+			       strerror(errno)));
 		return -1;
 	}
 
@@ -1428,8 +1429,9 @@ static const char *get_peer_addr_internal(int fd,
 	}
 
 	if (getpeername(fd, (struct sockaddr *)pss, plength) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n",
-					strerror(errno) ));
+		int level = (errno == ENOTCONN) ? 2 : 0;
+		DEBUG(level, ("getpeername failed. Error was %s\n",
+			       strerror(errno)));
 		return addr_buf;
 	}
 
