@@ -36,7 +36,7 @@ void start_smbd(void)
 	}
 
 	if (asprintf(&binfile, "%s/smbd", get_dyn_SBINDIR()) > 0) {
-		become_daemon(true, false);
+		become_daemon(true, false, false);
 		execl(binfile, binfile, "-D", NULL);
 	}
 	exit(0);
@@ -56,7 +56,7 @@ void start_nmbd(void)
 	}
 
 	if (asprintf(&binfile, "%s/nmbd", get_dyn_SBINDIR()) > 0) {
-		become_daemon(true, false);
+		become_daemon(true, false, false);
 		execl(binfile, binfile, "-D", NULL);
 	}
 	exit(0);
@@ -76,7 +76,7 @@ void start_winbindd(void)
 	}
 
 	if (asprintf(&binfile, "%s/winbindd", get_dyn_SBINDIR()) > 0) {
-		become_daemon(true, false);
+		become_daemon(true, false, false);
 		execl(binfile, binfile, NULL);
 	}
 	exit(0);

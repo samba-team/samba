@@ -336,7 +336,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	if (opt_daemon) {
 		DEBUG(3,("Becoming a daemon.\n"));
-		become_daemon(true, false);
+		become_daemon(true, false, false);
 	}
 
 	cleanup_tmp_files(cmdline_lp_ctx);

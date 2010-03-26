@@ -889,7 +889,7 @@ static bool open_sockets(bool isdaemon, int port)
   
 	if (is_daemon && !opt_interactive) {
 		DEBUG( 2, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork, no_process_group);
+		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
 #if HAVE_SETPGID

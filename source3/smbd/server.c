@@ -1235,7 +1235,7 @@ extern void build_options(bool screen);
 
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork, no_process_group);
+		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
 #if HAVE_SETPGID

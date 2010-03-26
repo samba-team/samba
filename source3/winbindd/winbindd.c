@@ -1185,7 +1185,7 @@ int main(int argc, char **argv, char **envp)
 	BlockSignals(False, SIGCHLD);
 
 	if (!interactive)
-		become_daemon(Fork, no_process_group);
+		become_daemon(Fork, no_process_group, log_stdout);
 
 	pidfile_create("winbindd");
 
