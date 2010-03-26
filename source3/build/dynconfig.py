@@ -26,6 +26,7 @@ dyn_cflags = {
     'DATADIR'                        : '${DATADIR}',
     'LOGFILEBASE'                    : '${LOCALSTATEDIR}',
     'CONFIGDIR'                      : '${SYSCONFDIR}',
+    'CONFIGFILE'                     : '${CONFIGDIR}/smb.conf',
     'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
     'SWATDIR'                        : '${DATADIR}/swat',
     'PRIVATE_DIR'                    : '${PRIVATEDIR}',
