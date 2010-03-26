@@ -82,7 +82,6 @@ def build_dependencies(self):
 
         # extra link flags from pkg_config
         libs = self.final_syslibs.copy()
-        libs = libs.union(self.indirect_libs)
 
         (ccflags, ldflags) = library_flags(self, list(libs))
         new_ldflags        = getattr(self, 'ldflags', [])
@@ -410,32 +409,6 @@ def indirect_libs(bld, t, chain, loops):
     return ret
 
 
-def indirect_syslibs(bld, t, chain, loops):
-    '''recursively calculate the indirect system library dependencies for a target
-
-    An indirect syslib results from a subsystem dependency
-    '''
-
-    ret = getattr(t, 'indirect_syslibs', None)
-    if ret is not None:
-        return ret
-
-    ret = set()
-    for obj in t.direct_objects:
-        if obj in chain:
-            dependency_loop(loops, t, obj)
-            continue
-        chain.add(obj)
-        t2 = bld.name_to_obj(obj, bld.env)
-        r2 = indirect_syslibs(bld, t2, chain, loops)
-        chain.remove(obj)
-        ret = ret.union(t2.direct_syslibs)
-        ret = ret.union(r2)
-
-    t.indirect_syslibs = ret
-    return ret
-
-
 def indirect_objects(bld, t, chain, loops):
     '''recursively calculate the indirect object dependencies for a target
 
@@ -586,16 +559,10 @@ def break_dependency_loops(bld, tgt_list):
                     debug('deps: setting %s %s to %s', t.sname, attr, objs)
                 setattr(t, attr, objs)
 
-    # now calculate the indirect syslibs, which can change from the loop expansion
-    for t in tgt_list:
-        indirect_syslibs(bld, t, set(), loops)
-
-
 def calculate_final_deps(bld, tgt_list, loops):
     '''calculate the final library and object dependencies'''
     for t in tgt_list:
         # start with the maximum possible list
-        t.final_syslibs = t.direct_syslibs.union(indirect_syslibs(bld, t, set(), loops))
         t.final_libs    = t.direct_libs.union(indirect_libs(bld, t, set(), loops))
         t.final_objects = t.direct_objects.union(indirect_objects(bld, t, set(), loops))
 
@@ -652,6 +619,21 @@ def calculate_final_deps(bld, tgt_list, loops):
                     if diff:
                         debug('deps: Expanded target %s by loop %s libraries %s', t.sname, loop, diff)
                         t.final_libs = t.final_libs.union(diff)
+
+    # add in any syslib dependencies
+    for t in tgt_list:
+        if not t.samba_type in ['BINARY','PYTHON','LIBRARY']:
+            continue
+        syslibs = set()
+        for d in t.final_objects:
+            t2 = bld.name_to_obj(d, bld.env)
+            syslibs = syslibs.union(t2.direct_syslibs)
+        # this adds the indirect syslibs as well, which may not be needed
+        # depending on the linker flags
+        for d in t.final_libs:
+            t2 = bld.name_to_obj(d, bld.env)
+            syslibs = syslibs.union(t2.direct_syslibs)
+        t.final_syslibs = syslibs
 
     debug('deps: removed duplicate dependencies')
 
