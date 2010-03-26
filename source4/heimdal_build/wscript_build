@@ -253,7 +253,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_GSSAPI',
 
 bld.SAMBA_GENERATOR(
     name="HEIMDAL_IFADDRS_H",
-    rule="ln -f ${SRC} ${TGT}",
+    rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
     source = 'ifaddrs.hin',
     target = 'ifaddrs.h',
     enabled = not bld.CONFIG_SET('HAVE_IFADDRS_H')
@@ -262,7 +262,7 @@ bld.SAMBA_GENERATOR(
 bld.SAMBA_GENERATOR(
     group='build_compiler_source',
     name="HEIMDAL_ERR_H",
-    rule="ln -f ${SRC} ${TGT}",
+    rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
     source = '../heimdal/lib/roken/err.hin',
     target = '../heimdal/lib/roken/err.h',
     enabled = not bld.CONFIG_SET('HAVE_ERR_H')
