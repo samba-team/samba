@@ -9,3 +9,14 @@ def configure(conf):
                     #endif
                     ''',
                     define='HAVE_ZLIB')
+
+def build(bld):
+    if bld.CONFIG_SET('HAVE_ZLIB'):
+        bld.TARGET_ALIAS('z', 'ZLIB')
+    else:
+        bld.SAMBA_LIBRARY('ZLIB',
+                          source='''adler32.c compress.c crc32.c gzio.c
+                                    uncompr.c deflate.c trees.c zutil.c
+                                    inflate.c infback.c inftrees.c inffast.c''')
+
+
