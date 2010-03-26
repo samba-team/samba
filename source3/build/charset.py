@@ -13,19 +13,19 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
 
         # check for default dos charset name
         for charset in ['CP850', 'IBM850']:
-            if conf.CHECK_CHARSET_EXISTS(charset):
+            if conf.CHECK_CHARSET_EXISTS(charset, headers='iconv.h'):
                 default_dos_charset=charset
                 break
 
         # check for default display charset name
         for charset in ['ASCII', '646']:
-            if conf.CHECK_CHARSET_EXISTS(charset):
+            if conf.CHECK_CHARSET_EXISTS(charset, headers='iconv.h'):
                 default_display_charset=charset
                 break
 
         # check for default unix charset name
         for charset in ['UTF-8', 'UTF8']:
-            if conf.CHECK_CHARSET_EXISTS(charset):
+            if conf.CHECK_CHARSET_EXISTS(charset, headers='iconv.h'):
                 default_unix_charset=charset
                 break
 

@@ -44,7 +44,7 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
 
 
 @conf
-def CHECK_CHARSET_EXISTS(conf, charset, outcharset='UCS2-LE', libs=None, headers=None, define=None):
+def CHECK_CHARSET_EXISTS(conf, charset, outcharset='UCS-2LE', headers=None, define=None):
     '''check that a named charset is able to be used with iconv_open() for conversion
     to a target charset
     '''
@@ -53,15 +53,12 @@ def CHECK_CHARSET_EXISTS(conf, charset, outcharset='UCS2-LE', libs=None, headers
         define = 'HAVE_CHARSET_%s' % charset.upper().replace('-','_')
     return conf.CHECK_CODE('''
                            iconv_t cd = iconv_open("%s", "%s");
-                           if (cd == 0 || cd == (iconv_t)-1) {
-                             return -1;
-                             }
-                             return 0;
-                             ''' % (charset, outcharset),
+                           if (cd == 0 || cd == (iconv_t)-1) return -1;
+                           ''' % (charset, outcharset),
                            define=define,
                            execute=True,
-                           libs=libs,
                            msg=msg,
+                           lib='iconv',
                            headers=headers)
 
 
