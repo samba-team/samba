@@ -1,5 +1,6 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
+import os, Build, shutil, Utils
 from Configure import conf
 
 @conf
@@ -62,3 +63,108 @@ def CHECK_CHARSET_EXISTS(conf, charset, outcharset='UCS2-LE', libs=None, headers
                            libs=libs,
                            msg=msg,
                            headers=headers)
+
+
+
+# this one is quite complex, and should probably be broken up
+# into several parts. I'd quite like to create a set of CHECK_COMPOUND()
+# functions that make writing complex compound tests like this much easier
+@conf
+def CHECK_RPATH_SUPPORT(conf):
+    '''see if the platform supports rpath for libraries'''
+    k = 0
+    while k < 10000:
+        dir = os.path.join(conf.blddir, '.conf_check_%d' % k)
+        try:
+            shutil.rmtree(dir)
+        except OSError:
+            pass
+        try:
+            os.stat(dir)
+        except:
+            break
+        k += 1
+
+    try:
+        os.makedirs(dir)
+    except:
+        conf.fatal('cannot create a configuration test folder %r' % dir)
+
+    try:
+        os.stat(dir)
+    except:
+        conf.fatal('cannot use the configuration test folder %r' % dir)
+
+    bdir = os.path.join(dir, 'testbuild')
+    if not os.path.exists(bdir):
+        os.makedirs(bdir)
+
+    env = conf.env
+
+    subdir = os.path.join(dir, "libdir")
+
+    os.makedirs(subdir)
+
+    dest = open(os.path.join(subdir, 'lib1.c'), 'w')
+    dest.write('int lib_func(void) { return 42; }\n')
+    dest.close()
+
+    dest = open(os.path.join(dir, 'main.c'), 'w')
+    dest.write('int main(void) {return !(lib_func() == 42);}\n')
+    dest.close()
+
+    back = os.path.abspath('.')
+
+    bld = Build.BuildContext()
+    bld.log = conf.log
+    bld.all_envs.update(conf.all_envs)
+    bld.all_envs['default'] = env
+    bld.lst_variants = bld.all_envs.keys()
+    bld.load_dirs(dir, bdir)
+
+    os.chdir(dir)
+
+    bld.rescan(bld.srcnode)
+
+    bld(features='cc cshlib',
+        source='libdir/lib1.c',
+        target='libdir/lib1',
+        name='lib1')
+
+    o = bld(features='cc cprogram',
+            source='main.c',
+            target='prog1',
+            uselib_local='lib1',
+            rpath=os.path.join(bdir, 'default/libdir'))
+
+    # compile the program
+    try:
+        bld.compile()
+    except Utils.WafError:
+        ret = Utils.ex_stack()
+    else:
+        ret = 0
+
+    # chdir before returning
+    os.chdir(back)
+
+    if ret:
+        conf.log.write('command returned %r' % ret)
+        conf.fatal(str(ret))
+
+    # path for execution
+    lastprog = o.link_task.outputs[0].abspath(env)
+
+    # we need to run the program, try to get its result
+    args = []
+    proc = Utils.pproc.Popen([lastprog] + args, stdout=Utils.pproc.PIPE, stderr=Utils.pproc.PIPE)
+    (out, err) = proc.communicate()
+    w = conf.log.write
+    w(str(out))
+    w('\n')
+    w(str(err))
+    w('\nreturncode %r\n' % proc.returncode)
+    ret = (proc.returncode == 0)
+
+    conf.check_message('rpath support', '', ret)
+    return ret

@@ -534,15 +534,6 @@ def CURRENT_CFLAGS(bld, target, cflags):
     ret.extend(list)
     return ret
 
-@conf
-def CHECK_RPATH_SUPPORT(conf):
-    '''see if the system supports rpath'''
-    return conf.CHECK_CODE('int x',
-                           define='HAVE_RPATH_SUPPORT',
-                           execute=True,
-                           local_include=False,
-                           msg='Checking for rpath support',
-                           cflags='-Wl,-rpath=.')
 
 @conf
 def CHECK_CC_ENV(conf):
