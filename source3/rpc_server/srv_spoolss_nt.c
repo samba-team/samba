@@ -8481,9 +8481,10 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 	int i = 0;
 	bool found = false;
 
-	for (i=0; i<count && found == false; i++) {
+	for (i=0; i<count; i++) {
 		if (queue[i].job == (int)jobid) {
 			found = true;
+			break;
 		}
 	}
 
@@ -8494,7 +8495,7 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 
 	return fill_job_info1(mem_ctx,
 			      r,
-			      &queue[i-1],
+			      &queue[i],
 			      i,
 			      snum,
 			      ntprinter);
@@ -8516,9 +8517,10 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	NT_DEVICEMODE *nt_devmode;
 	WERROR result;
 
-	for (i=0; i<count && found == false; i++) {
+	for (i=0; i<count; i++) {
 		if (queue[i].job == (int)jobid) {
 			found = true;
+			break;
 		}
 	}
 
@@ -8549,7 +8551,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 
 	return fill_job_info2(mem_ctx,
 			      r,
-			      &queue[i-1],
+			      &queue[i],
 			      i,
 			      snum,
 			      ntprinter,
