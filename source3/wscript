@@ -7,6 +7,7 @@ import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 import build.charset
+from samba_utils import *
 
 def set_options(opt):
     opt.recurse('../lib/replace')
@@ -14,6 +15,14 @@ def set_options(opt):
     opt.recurse('../lib/nss_wrapper')
     opt.recurse('../lib/socket_wrapper')
     opt.recurse('../lib/uid_wrapper')
+
+    opt.add_option('--with-static-modules',
+                   help=("Comma-separated list of names of modules to statically link in"),
+                   action="store", dest='static_modules', default='')
+    opt.add_option('--with-shared-modules',
+                   help=("Comma-separated list of names of modules to build shared"),
+                   action="store", dest='shared_modules', default='')
+
 
 def configure(conf):
     conf.define('PACKAGE_NAME', 'Samba')
@@ -223,4 +232,55 @@ yp_get_default_domain
 
     conf.CHECK_SAMBA3_CHARSET() # see build/charset.py
 
+
+    default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam rpc_lsarpc rpc_samr
+                                      rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl
+                                      rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss
+                                      rpc_eventlog auth_sam auth_unix auth_winbind auth_wbc auth_server
+                                      auth_domain auth_builtin auth_netlogond vfs_default
+                                      nss_info_template''')
+
+    default_shared_modules=TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
+                                      vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
+                                      vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850
+                                      charset_CP437 auth_script vfs_readahead vfs_xattr_tdb
+                                      vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
+                                      vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
+                                      vfs_crossrename''')
+
+    if Options.options.developer:
+        default_static_modules.extend(TO_LIST('rpc_rpcecho pdb_ads'))
+        default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
+
+    move_to_shared = TO_LIST(Options.options.shared_modules)
+    move_to_static = TO_LIST(Options.options.static_modules)
+
+    for m in move_to_static:
+        if m in default_shared_modules:
+            default_shared_modules.remove(m)
+            default_static_modules.append(m)
+    for m in move_to_shared:
+        if m in default_static_modules:
+            default_static_modules.remove(m)
+            default_shared_modules.append(m)
+
+    conf.DEFINE('STRING_STATIC_MODULES', ' '.join(default_static_modules), quote=True)
+
+    static_list = {}
+
+    prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap']
+    for p in prefixes:
+        for m in default_static_modules:
+            if m.find(p) == 0:
+                if not p in static_list:
+                    static_list[p] = []
+                static_list[p].append(m)
+
+    for p in prefixes:
+        if p in static_list:
+            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init(); '.join(static_list[p]))
+        else:
+            conf.DEFINE('static_init_%s' % p, '{}')
+
     conf.SAMBA_CONFIG_H('include/config.h')
+#define static_init_idmap {  idmap_tdb_init();  idmap_passdb_init();  idmap_nss_init();}
