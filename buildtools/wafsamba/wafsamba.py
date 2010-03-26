@@ -577,7 +577,7 @@ def symlink_bin(self):
 
 
 
-t = Task.simple_task_type('copy_script', 'rm -f && ln -s ${SRC[0].abspath(env)} ${LINK_TARGET}',
+t = Task.simple_task_type('copy_script', 'rm -f ${LINK_TARGET} && ln -s ${SRC[0].abspath(env)} ${LINK_TARGET}',
                           shell=True, color='PINK', ext_in='.bin')
 t.quiet = True
 
