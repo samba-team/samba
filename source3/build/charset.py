@@ -41,12 +41,12 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
 	    default_unix_charset="UTF-8"
             # TODO: this used to warn about the set charset on cross builds
 
-        conf.DEFINE('DEFAULT_DOS_CHARSET', default_dos_charset)
-        conf.DEFINE('DEFAULT_DISPLAY_CHARSET', default_display_charset)
-        conf.DEFINE('DEFAULT_UNIX_CHARSET', default_unix_charset)
+        conf.DEFINE('DEFAULT_DOS_CHARSET', default_dos_charset, quote=True)
+        conf.DEFINE('DEFAULT_DISPLAY_CHARSET', default_display_charset, quote=True)
+        conf.DEFINE('DEFAULT_UNIX_CHARSET', default_unix_charset, quote=True)
 
     else:
-        conf.DEFINE('DEFAULT_DOS_CHARSET', "ASCII")
-        conf.DEFINE('DEFAULT_DISPLAY_CHARSET', "ASCII")
-        conf.DEFINE('DEFAULT_UNIX_CHARSET', "UTF8")
+        conf.DEFINE('DEFAULT_DOS_CHARSET', "ASCII", quote=True)
+        conf.DEFINE('DEFAULT_DISPLAY_CHARSET', "ASCII", quote=True)
+        conf.DEFINE('DEFAULT_UNIX_CHARSET', "UTF8", quote=True)
 
