@@ -120,7 +120,9 @@ static void standard_accept_connection(struct tevent_context *ev,
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
 	talloc_free(sock);
-	talloc_free(ev);
+	if (tevent_re_initialise(ev) != 0) {
+		smb_panic("Failed to re-initialise tevent after fork");
+	}
 
 	/* we don't care if the dup fails, as its only a select()
 	   speed optimisation */
@@ -192,7 +194,9 @@ static void standard_new_task(struct tevent_context *ev,
 
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
-	talloc_free(ev);
+	if (tevent_re_initialise(ev) != 0) {
+		smb_panic("Failed to re-initialise tevent after fork");
+	}
 
 	/* ldb/tdb need special fork handling */
 	ldb_wrap_fork_hook();
