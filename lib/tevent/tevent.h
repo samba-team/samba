@@ -366,6 +366,8 @@ int _tevent_loop_until(struct tevent_context *ev,
 	_tevent_loop_until(ev, finished, private_data, __location__)
 #endif
 
+int tevent_re_initialise(struct tevent_context *ev);
+
 
 /**
  * The following structure and registration functions are exclusively

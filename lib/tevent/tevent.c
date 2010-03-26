@@ -616,3 +616,18 @@ int _tevent_loop_wait(struct tevent_context *ev, const char *location)
 {
 	return ev->ops->loop_wait(ev, location);
 }
+
+
+/*
+  re-initialise a tevent context. This leaves you with the same
+  event context, but all events are wiped and the structure is
+  re-initialised. This is most useful after a fork()  
+
+  zero is returned on success, non-zero on failure
+*/
+int tevent_re_initialise(struct tevent_context *ev)
+{
+	tevent_common_context_destructor(ev);
+
+	return ev->ops->context_init(ev);
+}
