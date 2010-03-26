@@ -111,7 +111,7 @@ def configure(conf):
     conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4 strlcpy strlcat')
     conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
     conf.CHECK_FUNCS('strtok_r mkdtemp dup2 dprintf vdprintf isatty chown lchown')
-    conf.CHECK_FUNCS('link readlink symlink realpath fdatasync snprintf vsnprintf')
+    conf.CHECK_FUNCS('link readlink symlink realpath snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq')
     conf.CHECK_FUNCS('if_nametoindex strerror_r')
@@ -124,6 +124,8 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl',
                         checklibc=True, headers='dlfcn.h dl.h')
     conf.CHECK_FUNCS_IN('poptGetContext', 'popt')
+
+    conf.CHECK_FUNCS_IN('fdatasync', 'rt', checklibc=True)
 
     # these headers need to be tested as a group on freebsd
     conf.CHECK_HEADERS(headers='sys/socket.h net/if.h', together=True)
