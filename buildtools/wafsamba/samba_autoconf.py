@@ -14,9 +14,9 @@ missing_headers = set()
 
 @runonce
 @conf
-def DEFINE(conf, d, v, add_to_cflags=False):
+def DEFINE(conf, d, v, add_to_cflags=False, quote=False):
     '''define a config option'''
-    conf.define(d, v, quote=False)
+    conf.define(d, v, quote=quote)
     if add_to_cflags:
         conf.env.append_value('CCDEFINES', d + '=' + str(v))
 
