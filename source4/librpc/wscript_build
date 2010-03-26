@@ -5,7 +5,8 @@ bld.SAMBA_LIBRARY('LIBNDR',
 	source='ndr/ndr_string.c ../../librpc/ndr/ndr_basic.c ../../librpc/ndr/uuid.c ../../librpc/ndr/ndr.c ../../librpc/ndr/ndr_misc.c ../../librpc/gen_ndr/ndr_misc.c',
 	# PC_FILES='../librpc/ndr.pc',
 	public_deps='LIBSAMBA-ERRORS talloc LIBSAMBA-UTIL CHARSET LIBSAMBA-HOSTCONFIG',
-	public_headers='../../librpc/ndr/libndr.h PIDL_COMMON/misc.h PIDL_COMMON/ndr_misc.h',
+	public_headers='../../librpc/gen_ndr/misc.h ../../librpc/gen_ndr/ndr_misc.h',
+        header_path='gen_ndr',
         depends_on='PIDL_MISC',
 	vnum='0.0.1'
 	)
@@ -327,7 +328,7 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	# PC_FILES='../librpc/ndr_standard.pc',
 	deps='NDR_SECURITY',
 	public_deps='LIBNDR',
-	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../rpc_server/lsa/lsa.h ../torture/rpc/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/ndr/ndr_svcctl.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h'
+	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../rpc_server/lsa/lsa.h ../torture/rpc/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h'
 	)
 
 

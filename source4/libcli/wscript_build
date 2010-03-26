@@ -4,7 +4,7 @@ bld.BUILD_SUBDIR('wbclient')
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA-ERRORS',
 	source='../../libcli/util/doserr.c util/errormap.c util/nterr.c',
-	public_headers='../../libcli/util/error.h ../../testprogs/win32/spoolss/error.h ../../libcli/util/ntstatus.h ../../libcli/util/doserr.h ../../libcli/util/werror.h',
+	public_headers='../../libcli/util/error.h ../../libcli/util/ntstatus.h ../../libcli/util/doserr.h ../../libcli/util/werror.h',
         deps='talloc'
 	)
 

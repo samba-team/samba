@@ -59,6 +59,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   public_deps='',
                   includes='',
                   public_headers=None,
+                  header_path=None,
                   vnum=None,
                   cflags='',
                   external_library=False,
@@ -97,6 +98,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         public_deps    = public_deps,
                         includes       = includes,
                         public_headers = public_headers,
+                        header_path    = header_path,
                         cflags         = cflags,
                         group          = group,
                         autoproto      = autoproto,
@@ -176,6 +178,9 @@ def SAMBA_LIBRARY(bld, libname, source,
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source)
 
+    if public_headers is not None:
+        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
+
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 
@@ -185,6 +190,7 @@ def SAMBA_BINARY(bld, binname, source,
                  deps='',
                  includes='',
                  public_headers=None,
+                 header_path=None,
                  modules=None,
                  installdir=None,
                  ldflags=None,
@@ -290,6 +296,8 @@ def SAMBA_BINARY(bld, binname, source,
 
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source)
+    if public_headers is not None:
+        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 
@@ -367,6 +375,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     public_deps='',
                     includes='',
                     public_headers=None,
+                    header_path=None,
                     cflags='',
                     cflags_end=None,
                     group='main',
@@ -428,7 +437,10 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source + ' ' + autoproto_extra_source)
+    if public_headers is not None:
+        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
     return t
+
 
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
@@ -609,4 +621,34 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         t.env.LINK_TARGET = target
 
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
+
+
+def INSTALL_FILES(bld, destdir, files, chmod=0644, flat=False,
+                  python_fixup=False):
+    '''install a set of files'''
+    destdir = bld.EXPAND_VARIABLES(destdir)
+    bld.install_files(destdir, files, chmod=chmod, relative_trick=not flat)
+Build.BuildContext.INSTALL_FILES = INSTALL_FILES
+
+
+def INSTALL_WILDCARD(bld, destdir, pattern, chmod=0644, flat=False,
+                     python_fixup=False):
+    '''install a set of files matching a wildcard pattern'''
+    files=bld.path.ant_glob(pattern)
+    INSTALL_FILES(bld, destdir, files, chmod=chmod, flat=flat)
+Build.BuildContext.INSTALL_WILDCARD = INSTALL_WILDCARD
+
+
+def PUBLIC_HEADERS(bld, public_headers, header_path=None):
+    '''install some headers'''
+    dest = '${INCLUDEDIR}'
+    if header_path:
+        dest += '/' + header_path
+    for h in TO_LIST(public_headers):
+        if header_path is None and h.find('/gen_ndr/') != -1:
+            # a special hack for gen_ndr headers
+            INSTALL_FILES(bld, '${INCLUDEDIR}/gen_ndr', h, flat=True)
+        else:
+            INSTALL_FILES(bld, dest, h, flat=True)
+Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
 

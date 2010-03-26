@@ -26,6 +26,7 @@ dyn_cflags = {
     'PRIVATE_DIR'                    : '${PRIVATEDIR}',
     'MODULESDIR'                     : '${PREFIX}/modules',
     'SETUPDIR'                       : '${DATADIR}/setup',
+    'INCLUDEDIR'                     : '${PREFIX}/include',
     'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${WINBINDD_PRIVILEGED_SOCKET_DIR}',
     'WINBINDD_SOCKET_DIR'            : '${WINBINDD_SOCKET_DIR}',
     'NTP_SIGND_SOCKET_DIR'           : '${NTP_SIGND_SOCKET_DIR}',
@@ -61,16 +62,19 @@ def configure(conf):
         conf.ASSERT(varname not in conf.env, "Variable %s already defined" % varname)
         conf.env[varname] = value
 
+    for f in dyn_cflags.keys():
+        # substitute twice, as we could have substitutions containing variables
+        v = Utils.subst_vars(dyn_cflags[f], conf.env)
+        v = Utils.subst_vars(v, conf.env)
+        conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
+        conf.ASSERT(v.find('${') == -1, "Unsubstituted variable in %s : %s : %s" % (f, dyn_cflags[f], v))
+        conf.env[f] = v
+
 def dynconfig_cflags(bld):
     '''work out the extra CFLAGS for dynconfig.c'''
     cflags = []
     for f in dyn_cflags.keys():
-        # substitute twice, as we could have substitutions containing variables
-        v = Utils.subst_vars(dyn_cflags[f], bld.env)
-        v = Utils.subst_vars(v, bld.env)
-        bld.ASSERT(v != '', "Empty dynconfig value for %s" % f)
-        bld.ASSERT(v.find('${') == -1, "Unsubstituted variable in %s : %s : %s" % (f, dyn_cflags[f], v))
-        cflags.append('-D%s="%s"' % (f, v))
+        cflags.append('-D%s="%s"' % (f, bld.env[f]))
     return cflags
 
 def build(bld):
