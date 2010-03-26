@@ -747,3 +747,11 @@ char *rep_get_current_dir_name(void)
 	return strdup(p);
 }
 #endif
+
+#ifndef HAVE_STRERROR_R
+char *rep_strerror_r(int errnum, char *buf, size_t buflen)
+{
+	strncpy(buf, strerror(errnum), buflen);
+	return buf;
+}
+#endif

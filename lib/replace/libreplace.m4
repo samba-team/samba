@@ -104,7 +104,7 @@ AC_CHECK_HEADERS(sys/mount.h mntent.h)
 AC_CHECK_HEADERS(stropts.h)
 AC_CHECK_HEADERS(unix.h)
 
-AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
+AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror strerror_r)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid wait4 strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp dup2 dprintf vdprintf)

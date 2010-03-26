@@ -512,6 +512,11 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 char *rep_get_current_dir_name(void);
 #endif
 
+#ifndef HAVE_STRERROR_R
+#define strerror_r rep_strerror_r
+char *rep_strerror_r(int errnum, char *buf, size_t buflen);
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
