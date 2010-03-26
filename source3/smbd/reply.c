@@ -3803,11 +3803,6 @@ void reply_writebraw(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+3, 0);
 	write_through = BITSETW(req->vwv+7,0);
 
-	if (fsp->print_file) {
-		/* Print files ignore the offset - use end of file. */
-		startpos = (SMB_OFF_T)-1;
-	}
-
 	/* We have to deal with slightly different formats depending
 		on whether we are using the core+ or lanman1.0 protocol */
 
@@ -3916,11 +3911,7 @@ void reply_writebraw(struct smb_request *req)
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
-		if (fsp->print_file) {
-			nwritten = write_file(req,fsp,buf+4,(SMB_OFF_T)-1,numtowrite);
-		} else {
-			nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
-		}
+		nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
 		if (nwritten == -1) {
 			TALLOC_FREE(buf);
 			reply_nterror(req, map_nt_error_from_unix(errno));
@@ -4033,10 +4024,7 @@ void reply_writeunlock(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
-	if (fsp->print_file) {
-		/* Print files ignore the offset - use end of file. */
-		startpos = (SMB_OFF_T)-1;
-	} else if (numtowrite) {
+	if (numtowrite && !fsp->print_file) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
@@ -4157,10 +4145,7 @@ void reply_write(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
-	if (fsp->print_file) {
-		/* Print files ignore the offset - use end of file. */
-		startpos = (SMB_OFF_T)-1;
-	} else {
+	if (!fsp->print_file) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 			(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 			&lock);
@@ -4766,10 +4751,7 @@ void reply_writeclose(struct smb_request *req)
 	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
 
-	if (fsp->print_file) {
-		/* Print files ignore the offset - use end of file. */
-		startpos = (SMB_OFF_T)-1;
-	} else if (numtowrite) {
+	if (numtowrite && !fsp->print_file) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
