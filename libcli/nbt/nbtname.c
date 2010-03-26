@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/locale.h"
+#include "lib/util/util_net.h"
 
 /* don't allow an unlimited number of name components */
 #define MAX_COMPONENTS 10

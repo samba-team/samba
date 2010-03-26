@@ -24,6 +24,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "torture/torture.h"
+#include "lib/util/util_net.h"
 
 static bool test_BindingString(struct torture_context *tctx,
 							   const void *test_data)

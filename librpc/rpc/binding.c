@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "../../lib/util/util_net.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/rpc/dcerpc.h"

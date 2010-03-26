@@ -22,6 +22,7 @@
 #include "nsswitch/libwbclient/wbc_async.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
+#include "lib/util/util_net.h"
 
 #define WBC_ERROR_EQUAL(x,y) (x == y)
 

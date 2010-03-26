@@ -24,6 +24,7 @@
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
 #include "system/network.h"
+#include "lib/util/util_net.h"
 
 static bool test_async_resolve(struct torture_context *tctx)
 {

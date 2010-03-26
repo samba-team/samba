@@ -30,6 +30,7 @@
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "lib/util/util_net.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_SOCKET, 

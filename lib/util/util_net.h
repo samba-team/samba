@@ -45,4 +45,32 @@ bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
 
 void set_sockaddr_port(struct sockaddr *psa, uint16_t port);
 
+/**
+ Check if an IP is the 0.0.0.0.
+**/
+_PUBLIC_ bool is_zero_ip_v4(struct in_addr ip);
+
+/**
+ Are two IPs on the same subnet?
+**/
+_PUBLIC_ bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
+
+/**
+ Return true if a string could be a pure IP address.
+**/
+_PUBLIC_ bool is_ipaddress(const char *str);
+
+/**
+ Interpret an internet address or name into an IP address in 4 byte form.
+**/
+_PUBLIC_ uint32_t interpret_addr(const char *str);
+
+/**
+ A convenient addition to interpret_addr().
+**/
+_PUBLIC_ struct in_addr interpret_addr2(const char *str);
+
+_PUBLIC_ bool is_ipaddress_v4(const char *str);
+
+
 #endif /* _SAMBA_UTIL_NET_H_ */

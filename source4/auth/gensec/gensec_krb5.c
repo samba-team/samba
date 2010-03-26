@@ -35,6 +35,7 @@
 #include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
 #include "auth/auth_sam_reply.h"
+#include "lib/util/util_net.h"
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,

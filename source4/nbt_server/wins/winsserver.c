@@ -35,6 +35,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/util/util_net.h"
 
 /*
   work out the ttl we will use given a client requested ttl

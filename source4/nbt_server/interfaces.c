@@ -29,6 +29,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
+#include "lib/util/util_net.h"
 
 
 /*

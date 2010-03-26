@@ -34,6 +34,7 @@
 #include "system/network.h"
 #include "lib/socket/socket.h"
 #include "system/locale.h"
+#include "lib/util/util_net.h"
 
 #define	FAIL		(-1)
 #define ALLONES  ((uint32_t)0xFFFFFFFF)

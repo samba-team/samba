@@ -28,6 +28,7 @@
 #include "lib/socket/socket.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/tsocket/tsocket.h"
+#include "lib/util/util_net.h"
 
 struct resolve_state {
 	struct resolve_context *ctx;

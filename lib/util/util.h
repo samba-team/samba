@@ -663,33 +663,6 @@ _PUBLIC_ void msleep(unsigned int t);
 _PUBLIC_ char* get_myname(TALLOC_CTX *mem_ctx);
 
 /**
- Return true if a string could be a pure IP address.
-**/
-_PUBLIC_ bool is_ipaddress(const char *str);
-
-/**
- Interpret an internet address or name into an IP address in 4 byte form.
-**/
-_PUBLIC_ uint32_t interpret_addr(const char *str);
-
-/**
- A convenient addition to interpret_addr().
-**/
-_PUBLIC_ struct in_addr interpret_addr2(const char *str);
-
-/**
- Check if an IP is the 0.0.0.0.
-**/
-_PUBLIC_ bool is_zero_ip_v4(struct in_addr ip);
-
-/**
- Are two IPs on the same subnet?
-**/
-_PUBLIC_ bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
-
-_PUBLIC_ bool is_ipaddress_v4(const char *str);
-
-/**
  Check if a process exists. Does this work on all unixes?
 **/
 _PUBLIC_ bool process_exists_by_pid(pid_t pid);
