@@ -416,8 +416,17 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	res = tdb_transaction_start(cache);
+	res = tdb_transaction_start_nonblock(cache);
 	if (res == -1) {
+
+		if (tdb_error(cache) == TDB_ERR_NOLOCK) {
+			/*
+			 * Someone else already does the stabilize,
+			 * this does not have to be done twice
+			 */
+			return true;
+		}
+
 		DEBUG(10, ("Could not start transaction on gencache.tdb: "
 			   "%s\n", tdb_errorstr(cache)));
 		return false;
