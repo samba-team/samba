@@ -1,2 +1,7 @@
-if conf.CHECK_FUNCS_IN('iconv_open', 'iconv', checklibc=True, headers='iconv.h'):
+# rather strangely, we need to look for libiconv before checking libc
+# as the external libiconv can use a macro to override iconv_open to libiconv_open
+# and then we may find the wrong iconv.h later due to other packages looking
+# in /usr/local
+if (conf.CHECK_FUNCS_IN('iconv_open', 'iconv', checklibc=False, headers='iconv.h') or
+    conf.CHECK_FUNCS('iconv_open', headers='iconv.h')):
     conf.DEFINE('HAVE_NATIVE_ICONV', 1)
