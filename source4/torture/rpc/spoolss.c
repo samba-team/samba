@@ -2655,9 +2655,12 @@ static bool test_AddJob(struct torture_context *tctx,
 }
 
 
-static bool test_EnumJobs(struct torture_context *tctx,
-			  struct dcerpc_binding_handle *b,
-			  struct policy_handle *handle)
+static bool test_EnumJobs_args(struct torture_context *tctx,
+			       struct dcerpc_binding_handle *b,
+			       struct policy_handle *handle,
+			       uint32_t level,
+			       uint32_t *count_p,
+			       union spoolss_JobInfo **info_p)
 {
 	NTSTATUS status;
 	struct spoolss_EnumJobs r;
@@ -2668,21 +2671,20 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	r.in.handle = handle;
 	r.in.firstjob = 0;
 	r.in.numjobs = 0xffffffff;
-	r.in.level = 1;
+	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
 	r.out.count = &count;
 	r.out.info = &info;
 
-	torture_comment(tctx, "Testing EnumJobs\n");
+	torture_comment(tctx, "Testing EnumJobs level %d\n", level);
 
 	status = dcerpc_spoolss_EnumJobs_r(b, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		int j;
 		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
@@ -2696,26 +2698,24 @@ static bool test_EnumJobs(struct torture_context *tctx,
 
 		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumJobs, *r.out.info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
-		for (j = 0; j < count; j++) {
-
-			torture_assert(tctx, test_GetJob(tctx, b, handle, info[j].info1.job_id),
-				"failed to call test_GetJob");
-
-			test_SetJob(tctx, b, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
-			test_SetJob(tctx, b, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
-		}
-
 	} else {
 		torture_assert_werr_ok(tctx, r.out.result, "EnumJobs failed");
+	}
+
+	if (count_p) {
+		*count_p = count;
+	}
+	if (info_p) {
+		*info_p = info;
 	}
 
 	return true;
 }
 
-static bool test_DoPrintTest_one_job(struct torture_context *tctx,
-				     struct dcerpc_binding_handle *b,
-				     struct policy_handle *handle,
-				     uint32_t *job_id)
+static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 struct policy_handle *handle,
+					 uint32_t *job_id)
 {
 	NTSTATUS status;
 	struct spoolss_StartDocPrinter s;
@@ -2781,6 +2781,46 @@ static bool test_DoPrintTest_one_job(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
+					struct dcerpc_binding_handle *b,
+					struct policy_handle *handle,
+					uint32_t num_jobs,
+					uint32_t *job_ids)
+{
+	uint32_t count;
+	union spoolss_JobInfo *info = NULL;
+	int i;
+
+	torture_assert(tctx,
+		test_AddJob(tctx, b, handle),
+		"AddJob failed");
+
+	torture_assert(tctx,
+		test_EnumJobs_args(tctx, b, handle, 1, &count, &info),
+		"EnumJobs level 1 failed");
+
+	torture_assert_int_equal(tctx, count, num_jobs, "unexpected number of jobs in queue");
+
+	for (i=0; i < num_jobs; i++) {
+		torture_assert_int_equal(tctx, info[i].info1.job_id, job_ids[i], "job id mismatch");
+
+		torture_assert(tctx,
+			test_GetJob(tctx, b, handle, info[i].info1.job_id),
+			"failed to call test_GetJob");
+	}
+
+	for (i=0; i < num_jobs; i++) {
+		torture_assert(tctx,
+			test_SetJob(tctx, b, handle, info[i].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE),
+			"failed to pause printjob");
+		torture_assert(tctx,
+			test_SetJob(tctx, b, handle, info[i].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME),
+			"failed to resume printjob");
+	}
+
+	return true;
+}
+
 static bool test_DoPrintTest(struct torture_context *tctx,
 			     struct dcerpc_binding_handle *b,
 			     struct policy_handle *handle)
@@ -2793,11 +2833,10 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
 
 	for (i=0; i < num_jobs; i++) {
-		ret &= test_DoPrintTest_one_job(tctx, b, handle, &job_ids[i]);
+		ret &= test_DoPrintTest_add_one_job(tctx, b, handle, &job_ids[i]);
 	}
 
-	ret &= test_AddJob(tctx, b, handle);
-	ret &= test_EnumJobs(tctx, b, handle);
+	ret &= test_DoPrintTest_check_jobs(tctx, b, handle, num_jobs, job_ids);
 
 	for (i=0; i < num_jobs; i++) {
 		ret &= test_SetJob(tctx, b, handle, job_ids[i], SPOOLSS_JOB_CONTROL_DELETE);
