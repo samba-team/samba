@@ -8,6 +8,7 @@
  *  Copyright (C) Gerald Carter		       2000-2004,
  *  Copyright (C) Tim Potter                   2001-2002.
  *  Copyright (C) Guenther Deschner            2009-2010.
+ *  Copyright (C) Andreas Schneider            2010.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -8839,9 +8840,9 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
 				 struct spoolss_DeletePrinterKey *r)
 {
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum=0;
 	WERROR			status;
+	const char *printer;
 
 	DEBUG(5,("_spoolss_DeletePrinterKey\n"));
 
@@ -8852,12 +8853,12 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
 	}
 
 	/* if keyname == NULL, return error */
-
 	if ( !r->in.key_name )
 		return WERR_INVALID_PARAM;
 
-	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(3, ("_spoolss_DeletePrinterKey: "
@@ -8865,18 +8866,18 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(status))
-		return status;
+	printer = lp_const_servicename(snum);
 
-	/* delete the key and all subneys */
-
-	status = delete_all_printer_data( printer->info_2, r->in.key_name );
-
-	if ( W_ERROR_IS_OK(status) )
-		status = mod_a_printer(printer, 2);
-
-	free_a_printer( &printer, 2 );
+	/* delete the key and all subkeys */
+	status = winreg_delete_printer_key(p->mem_ctx,
+					   p->server_info,
+					   printer,
+					   r->in.key_name);
+	if (W_ERROR_IS_OK(status)) {
+		status = winreg_printer_update_changeid(p->mem_ctx,
+							p->server_info,
+							printer);
+	}
 
 	return status;
 }
