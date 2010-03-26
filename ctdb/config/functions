@@ -162,7 +162,7 @@ ctdb_check_directories_probe() {
 		continue
 		;;
 	    *)
-		[ -d "$d" ] || return 1
+		[ -d "${d}/." ] || return 1
 	esac
     done
 }
