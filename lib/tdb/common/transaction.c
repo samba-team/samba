@@ -421,7 +421,8 @@ static const struct tdb_methods transaction_methods = {
   start a tdb transaction. No token is returned, as only a single
   transaction is allowed to be pending per tdb_context
 */
-int tdb_transaction_start(struct tdb_context *tdb)
+static int _tdb_transaction_start(struct tdb_context *tdb,
+				  enum tdb_lock_flags lockflags)
 {
 	/* some sanity checks */
 	if (tdb->read_only || (tdb->flags & TDB_INTERNAL) || tdb->traverse_read) {
@@ -473,9 +474,12 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	/* get the transaction write lock. This is a blocking lock. As
 	   discussed with Volker, there are a number of ways we could
 	   make this async, which we will probably do in the future */
-	if (tdb_transaction_lock(tdb, F_WRLCK) == -1) {
+	if (tdb_transaction_lock(tdb, F_WRLCK, lockflags) == -1) {
 		SAFE_FREE(tdb->transaction->blocks);
 		SAFE_FREE(tdb->transaction);
+		if ((lockflags & TDB_LOCK_WAIT) == 0) {
+			tdb->ecode = TDB_ERR_NOLOCK;
+		}
 		return -1;
 	}
 
@@ -525,6 +529,15 @@ fail_allrecord_lock:
 	return -1;
 }
 
+int tdb_transaction_start(struct tdb_context *tdb)
+{
+	return _tdb_transaction_start(tdb, TDB_LOCK_WAIT);
+}
+
+int tdb_transaction_start_nonblock(struct tdb_context *tdb)
+{
+	return _tdb_transaction_start(tdb, TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
+}
 
 /*
   sync to disk
