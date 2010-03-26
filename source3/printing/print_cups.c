@@ -918,6 +918,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	char *cupsoptions = NULL;
 	char *filename = NULL;
 	size_t size;
+	uint32_t jobid = (uint32_t)-1;
 	char addr[INET6_ADDRSTRLEN];
 
 	DEBUG(5,("cups_job_submit(%d, %p)\n", snum, pjob));
@@ -984,12 +985,20 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	             "job-originating-host-name", NULL,
 		      clientname);
 
+	/* Get the jobid from the filename. */
+	jobid = print_parse_jobid(pjob->filename);
+	if (jobid == (uint32_t)-1) {
+		DEBUG(0,("cups_job_submit: failed to parse jobid from name %s\n",
+				pjob->filename ));
+		jobid = 0;
+	}
+
 	if (!push_utf8_talloc(frame, &jobname, pjob->jobname, &size)) {
 		goto out;
 	}
 	new_jobname = talloc_asprintf(frame,
 			"%s%.8u %s", PRINT_SPOOL_PREFIX,
-			(unsigned int)pjob->smbjob,
+			(unsigned int)jobid,
 			jobname);
 	if (new_jobname == NULL) {
 		goto out;
