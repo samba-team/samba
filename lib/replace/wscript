@@ -114,7 +114,7 @@ def configure(conf):
     conf.CHECK_FUNCS('link readlink symlink realpath fdatasync snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq')
-    conf.CHECK_FUNCS('if_nametoindex')
+    conf.CHECK_FUNCS('if_nametoindex strerror_r')
     conf.CHECK_FUNCS('dirfd getdirentries getdents syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
