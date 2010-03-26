@@ -252,7 +252,7 @@ sub check_or_start($$$$$) {
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
 
-		exec(@preargs, $self->binpath("nmbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, $self->binpath("nmbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -294,7 +294,7 @@ sub check_or_start($$$$$) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
 
-		exec(@preargs, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+		exec(@preargs, $self->binpath("winbindd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
@@ -333,7 +333,7 @@ sub check_or_start($$$$$) {
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
-		exec(@preargs, $self->binpath("smbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
+		exec(@preargs, $self->binpath("smbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
