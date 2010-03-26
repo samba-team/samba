@@ -2518,20 +2518,21 @@ static bool test_AddPort(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetJob(struct torture_context *tctx,
-			struct dcerpc_binding_handle *b,
-			struct policy_handle *handle, uint32_t job_id)
+static bool test_GetJob_args(struct torture_context *tctx,
+			     struct dcerpc_binding_handle *b,
+			     struct policy_handle *handle,
+			     uint32_t job_id,
+			     uint32_t level,
+			     union spoolss_JobInfo *info_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetJob r;
 	union spoolss_JobInfo info;
 	uint32_t needed;
-	uint32_t levels[] = {1, 2 /* 3, 4 */};
-	uint32_t i;
 
 	r.in.handle = handle;
 	r.in.job_id = job_id;
-	r.in.level = 0;
+	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
@@ -2540,35 +2541,44 @@ static bool test_GetJob(struct torture_context *tctx,
 	torture_comment(tctx, "Testing GetJob(%d), level %d\n", job_id, r.in.level);
 
 	status = dcerpc_spoolss_GetJob_r(b, tctx, &r);
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "Unexpected return code");
+	torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
+	if (level == 0) {
+		torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "Unexpected return code");
+	}
 
-	for (i = 0; i < ARRAY_SIZE(levels); i++) {
-
-		torture_comment(tctx, "Testing GetJob(%d), level %d\n", job_id, r.in.level);
-
-		needed = 0;
-
-		r.in.level = levels[i];
-		r.in.offered = 0;
-		r.in.buffer = NULL;
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
 
 		status = dcerpc_spoolss_GetJob_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
-
-		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
-			r.in.buffer = &blob;
-			r.in.offered = needed;
-
-			status = dcerpc_spoolss_GetJob_r(b, tctx, &r);
-			torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
-
-		}
-		torture_assert(tctx, r.out.info, "No job info returned");
 		torture_assert_werr_ok(tctx, r.out.result, "GetJob failed");
+		torture_assert(tctx, r.out.info, "No job info returned");
 
 		CHECK_NEEDED_SIZE_LEVEL(spoolss_JobInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+	}
+
+	if (info_p) {
+		*info_p = *r.out.info;
+	}
+
+	return true;
+}
+
+static bool test_GetJob(struct torture_context *tctx,
+			struct dcerpc_binding_handle *b,
+			struct policy_handle *handle,
+			uint32_t job_id)
+{
+	uint32_t levels[] = {0, 1, 2 /* 3, 4 */};
+	uint32_t i;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+		torture_assert(tctx,
+			test_GetJob_args(tctx, b, handle, job_id, levels[i], NULL),
+			"GetJob failed");
 	}
 
 	return true;
@@ -2802,11 +2812,15 @@ static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, count, num_jobs, "unexpected number of jobs in queue");
 
 	for (i=0; i < num_jobs; i++) {
+		union spoolss_JobInfo ginfo;
+
 		torture_assert_int_equal(tctx, info[i].info1.job_id, job_ids[i], "job id mismatch");
 
 		torture_assert(tctx,
-			test_GetJob(tctx, b, handle, info[i].info1.job_id),
+			test_GetJob_args(tctx, b, handle, info[i].info1.job_id, 1, &ginfo),
 			"failed to call test_GetJob");
+
+		torture_assert_int_equal(tctx, ginfo.info1.job_id, info[i].info1.job_id, "job id mismatch");
 	}
 
 	for (i=0; i < num_jobs; i++) {
