@@ -1631,7 +1631,10 @@ struct printif	cups_printif =
 	cups_job_submit,
 };
 
-bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
+bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
+				const char *printername,
+				char **comment,
+				char **location)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	http_t		*http = NULL;		/* HTTP connection to server */
@@ -1652,7 +1655,7 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	bool ret = False;
 	size_t size;
 
-	DEBUG(5, ("pulling %s location\n", printer->sharename));
+	DEBUG(5, ("pulling %s location\n", printername));
 
 	/*
 	 * Make sure we don't ask for passwords...
@@ -1691,7 +1694,7 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	if (server) {
 		goto out;
 	}
-	if (!push_utf8_talloc(frame, &sharename, printer->sharename, &size)) {
+	if (!push_utf8_talloc(frame, &sharename, printername, &size)) {
 		goto out;
 	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://%s/printers/%s",
@@ -1743,40 +1746,30 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 
 			/* Grab the comment if we don't have one */
         		if ( (strcmp(attr->name, "printer-info") == 0)
-			     && (attr->value_tag == IPP_TAG_TEXT)
-			     && !strlen(printer->comment) )
+			     && (attr->value_tag == IPP_TAG_TEXT))
 			{
-				char *comment = NULL;
-				if (!pull_utf8_talloc(frame,
-						&comment,
+				if (!pull_utf8_talloc(mem_ctx,
+						comment,
 						attr->values[0].string.text,
 						&size)) {
 					goto out;
 				}
 				DEBUG(5,("cups_pull_comment_location: Using cups comment: %s\n",
-					 comment));
-			    	strlcpy(printer->comment,
-					comment,
-					sizeof(printer->comment));
+					 *comment));
 			}
 
 			/* Grab the location if we don't have one */
 			if ( (strcmp(attr->name, "printer-location") == 0)
-			     && (attr->value_tag == IPP_TAG_TEXT)
-			     && !strlen(printer->location) )
+			     && (attr->value_tag == IPP_TAG_TEXT))
 			{
-				char *location = NULL;
-				if (!pull_utf8_talloc(frame,
-						&location,
+				if (!pull_utf8_talloc(mem_ctx,
+						location,
 						attr->values[0].string.text,
 						&size)) {
 					goto out;
 				}
 				DEBUG(5,("cups_pull_comment_location: Using cups location: %s\n",
-					 location));
-			    	strlcpy(printer->location,
-					location,
-					sizeof(printer->location));
+					 *location));
 			}
 
         		attr = attr->next;

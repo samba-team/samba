@@ -3831,8 +3831,17 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info,
 	if (get_loc_com && (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {
 		/* Pull the location and comment strings from cups if we don't
 		   already have one */
-		if ( !strlen(info->location) || !strlen(info->comment) )
-			cups_pull_comment_location( info );
+		if ( !strlen(info->location) || !strlen(info->comment) ) {
+			char *comment = NULL;
+			char *location = NULL;
+			if (cups_pull_comment_location(info, info->sharename,
+						       &comment, &location)) {
+				strlcpy(info->comment, comment, sizeof(info->comment));
+				fstrcpy(info->location, location);
+				TALLOC_FREE(comment);
+				TALLOC_FREE(location);
+			}
+		}
 	}
 #endif
 
@@ -3953,8 +3962,17 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
 	if (get_loc_com && (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {
 		/* Pull the location and comment strings from cups if we don't
 		   already have one */
-		if ( !strlen(info->location) || !strlen(info->comment) )
-			cups_pull_comment_location( info );
+		if ( !strlen(info->location) || !strlen(info->comment) ) {
+			char *location = NULL;
+			comment = NULL;
+			if (cups_pull_comment_location(info, info->sharename,
+						       &comment, &location)) {
+				strlcpy(info->comment, comment, sizeof(info->comment));
+				fstrcpy(info->location, location);
+				TALLOC_FREE(comment);
+				TALLOC_FREE(location);
+			}
+		}
 	}
 #endif
 

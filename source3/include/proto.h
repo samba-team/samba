@@ -4897,7 +4897,10 @@ bool aix_cache_reload(void);
 /* The following definitions come from printing/print_cups.c  */
 
 bool cups_cache_reload(void);
-bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer);
+bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
+				const char *printername,
+				char **comment,
+				char **location);
 
 /* The following definitions come from printing/print_generic.c  */
 
