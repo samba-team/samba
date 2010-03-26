@@ -1082,18 +1082,18 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(const char *, 2);
+	spnego.negTokenInit.mechTypes = talloc_array(ctx, const char *, 2);
 #ifdef HAVE_KRB5
-	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
-	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_KERBEROS5_OLD);
+	spnego.negTokenInit.mechTypes[1] = talloc_strdup(ctx, OID_NTLMSSP);
 	spnego.negTokenInit.mechTypes[2] = NULL;
 #else
-	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_NTLMSSP);
 	spnego.negTokenInit.mechTypes[1] = NULL;
 #endif
 
 
-	spnego.negTokenInit.mechListMIC = data_blob(principal,
+	spnego.negTokenInit.mechListMIC = data_blob_talloc(ctx, principal,
 						    strlen(principal));
 
 	len = write_spnego_data(&token, &spnego);
@@ -1218,8 +1218,8 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 				  request.negTokenInit.mechToken.length);
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
-			response.negTokenTarg.supportedMech = SMB_STRDUP(OID_NTLMSSP);
-			response.negTokenTarg.mechListMIC = data_blob_null;
+			response.negTokenTarg.supportedMech = talloc_strdup(ctx, OID_NTLMSSP);
+			response.negTokenTarg.mechListMIC = data_blob_talloc(ctx, NULL, 0);
 
 			status = ntlmssp_update(ntlmssp_state,
 						       request.negTokenInit.mechToken,
@@ -1243,9 +1243,9 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			}
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
-			response.negTokenTarg.supportedMech = SMB_STRDUP(OID_KERBEROS5_OLD);
-			response.negTokenTarg.mechListMIC = data_blob_null;
-			response.negTokenTarg.responseToken = data_blob_null;
+			response.negTokenTarg.supportedMech = talloc_strdup(ctx, OID_KERBEROS5_OLD);
+			response.negTokenTarg.mechListMIC = data_blob_talloc(ctx, NULL, 0);
+			response.negTokenTarg.responseToken = data_blob_talloc(ctx, NULL, 0);
 
 			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
 						   &request.negTokenInit.mechToken,
@@ -1304,8 +1304,8 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					       &response.negTokenTarg.responseToken);
 
 		response.type = SPNEGO_NEG_TOKEN_TARG;
-		response.negTokenTarg.supportedMech = SMB_STRDUP(OID_NTLMSSP);
-		response.negTokenTarg.mechListMIC = data_blob_null;
+		response.negTokenTarg.supportedMech = talloc_strdup(ctx, OID_NTLMSSP);
+		response.negTokenTarg.mechListMIC = data_blob_talloc(ctx, NULL, 0);
 
 		if (NT_STATUS_IS_OK(status)) {
 			user = SMB_STRDUP(ntlmssp_state->user);
