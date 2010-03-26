@@ -4772,6 +4772,7 @@ void load_printers(void);
 bool parse_lpq_entry(enum printing_types printing_type,char *line,
 		     print_queue_struct *buf,
 		     print_status_struct *status,bool first);
+uint32_t print_parse_jobid(const char *fname);
 
 /* The following definitions come from printing/notify.c  */
 

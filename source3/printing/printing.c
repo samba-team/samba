@@ -644,25 +644,6 @@ void pjob_delete(const char* sharename, uint32 jobid)
 }
 
 /****************************************************************************
- Parse a file name from the system spooler to generate a jobid.
-****************************************************************************/
-
-static uint32 print_parse_jobid(char *fname)
-{
-	int jobid;
-
-	if (strncmp(fname,PRINT_SPOOL_PREFIX,strlen(PRINT_SPOOL_PREFIX)) != 0)
-		return (uint32)-1;
-	fname += strlen(PRINT_SPOOL_PREFIX);
-
-	jobid = atoi(fname);
-	if (jobid <= 0)
-		return (uint32)-1;
-
-	return (uint32)jobid;
-}
-
-/****************************************************************************
  List a unix job in the print database.
 ****************************************************************************/
 
