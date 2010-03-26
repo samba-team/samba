@@ -589,6 +589,8 @@ bld.BUILD_SUBDIR('../lib/replace')
 print "SBINDIR=%s" % bld.env.SBINDIR
 bld.BUILD_SUBDIR('build')
 
+bld.SAMBA_MKVERSION('include/version.h')
+
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='tdb DYNCONFIG',
