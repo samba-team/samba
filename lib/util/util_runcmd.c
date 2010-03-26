@@ -183,7 +183,7 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 	}
 	va_end(ap);
 
-	ret = execv(state->arg0, argv);
+	ret = execvp(state->arg0, argv);
 	fprintf(stderr, "Failed to exec child - %s\n", strerror(errno));
 	_exit(255);
 	return NULL;

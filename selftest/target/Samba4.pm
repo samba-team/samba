@@ -584,7 +584,7 @@ sub provision_raw_step1($$)
 	gensec:require_pac = true
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
-	rndc command = /bin/true
+	rndc command = true
         dns update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}
         resolv:host file = $ctx->{dns_host_file}
 ";
