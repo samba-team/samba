@@ -361,7 +361,7 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
         ret = SUBST_VARS_RECURSIVE(ret, env)
 
     # if anything left, subst on the environment as well
-    if ret.find('${'):
+    if ret.find('${') != -1:
         ret = SUBST_VARS_RECURSIVE(ret, ctx.env)
     # make sure there is nothing left. Also check for the common
     # typo of $( instead of ${
@@ -417,3 +417,4 @@ except:
         Utils.md5 = replace_md5
         Task.md5 = replace_md5
         Utils.h_file = replace_h_file
+
