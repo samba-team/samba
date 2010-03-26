@@ -110,16 +110,12 @@ def CHECK_RPATH_SUPPORT(conf):
     dest.write('int main(void) {return !(lib_func() == 42);}\n')
     dest.close()
 
-    back = os.path.abspath('.')
-
     bld = Build.BuildContext()
     bld.log = conf.log
     bld.all_envs.update(conf.all_envs)
     bld.all_envs['default'] = env
     bld.lst_variants = bld.all_envs.keys()
     bld.load_dirs(dir, bdir)
-
-    os.chdir(dir)
 
     bld.rescan(bld.srcnode)
 
@@ -140,9 +136,6 @@ def CHECK_RPATH_SUPPORT(conf):
     except:
         conf.check_message('rpath support', '', False)
         return False
-
-    # chdir before returning
-    os.chdir(back)
 
     # path for execution
     lastprog = o.link_task.outputs[0].abspath(env)
