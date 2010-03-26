@@ -338,7 +338,7 @@ int find_service(fstring service)
 		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) < 0) {
 			iPrinterService = load_registry_service(PRINTERS_NAME);
 		}
-		if (iPrinterService) {
+		if (iPrinterService >= 0) {
 			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
 			if (pcap_printername_ok(service)) {
 				DEBUG(3,("%s is a valid printer name\n", service));
