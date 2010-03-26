@@ -543,6 +543,7 @@ sub provision($$$$$$)
 	lp resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpresume %p %j
 	queue pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queuepause %p
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
+	lpq cache time = 0
 
 	# Begin extra options
 	$extra_options
