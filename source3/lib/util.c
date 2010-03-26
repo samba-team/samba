@@ -931,8 +931,8 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	if (ev_ctx) {
-		event_context_reinit(ev_ctx);
+	if (ev_ctx && tevent_re_initialise(ev_ctx) != 0) {
+		smb_panic(__location__ ": Failed to re-initialise event context");
 	}
 
 	if (msg_ctx) {

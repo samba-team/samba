@@ -34,7 +34,6 @@ bool run_events(struct event_context *event_ctx,
 		int selrtn, fd_set *read_fds, fd_set *write_fds);
 struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
 					 struct timeval *to_ret);
-void event_context_reinit(struct event_context *ev);
 void dump_event_list(struct event_context *event_ctx);
 struct tevent_context *s3_tevent_context_init(TALLOC_CTX *mem_ctx);
 
