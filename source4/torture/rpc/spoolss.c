@@ -5026,6 +5026,10 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 				torture_warning(tctx, "samba3 does not handle 4 byte emtpy REG_MULTI_SZ buffers");
 				continue;
 			}
+			if ((types[t] == REG_BINARY) && s == 0) {
+				torture_warning(tctx, "samba3 does not handle emtpy REG_BINARY buffers");
+				continue;
+			}
 		}
 
 		switch (types[t]) {
