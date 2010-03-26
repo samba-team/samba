@@ -140,17 +140,12 @@ def CHECK_RPATH_SUPPORT(conf):
     # compile the program
     try:
         bld.compile()
-    except Utils.WafError:
-        ret = Utils.ex_stack()
-    else:
-        ret = 0
+    except:
+        conf.check_message('rpath support', '', False)
+        return False
 
     # chdir before returning
     os.chdir(back)
-
-    if ret:
-        conf.log.write('command returned %r' % ret)
-        conf.fatal(str(ret))
 
     # path for execution
     lastprog = o.link_task.outputs[0].abspath(env)
