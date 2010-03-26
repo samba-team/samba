@@ -315,6 +315,7 @@ cat >$SERVERCONFFILE<<EOF
 	lp resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpresume %p %j
 	queue pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queuepause %p
 	queue resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queueresume %p
+	lpq cache time = 0
 
 	#Include user defined custom parameters if set
 	$INCLUDE_CUSTOM_CONF
