@@ -36,3 +36,7 @@ bld.SAMBA_SUBSYSTEM('EXT_LIB_PYTHON', '')
 bld.SAMBA_SCRIPT('samba_python',
                  pattern='samba/**/*.py',
                  installdir='python')
+
+bld.BUILD_SUBDIR('samba_external')
+
+bld.INSTALL_WILDCARD('${PYTHONDIR}', 'samba/**/*.py', flat=False)

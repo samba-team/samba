@@ -744,3 +744,5 @@ bld.SAMBA_SCRIPT('python_dcerpc_init',
                  pattern='rpc/dcerpc.py',
                  installdir='python/samba/dcerpc',
                  installname='__init__.py')
+
+bld.INSTALL_FILES('${PYTHONDIR}/samba/dcerpc', 'rpc/dcerpc.py', destname='__init__.py')
