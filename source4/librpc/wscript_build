@@ -466,7 +466,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SVCCTL',
 
 bld.SAMBA_LIBRARY('dcerpc_atsvc',
 	source='../../librpc/gen_ndr/ndr_atsvc_c.c',
-	# PC_FILES='dcerpc_atsvc.pc',
+	pc_files='dcerpc_atsvc.pc',
 	vnum='0.0.1',
 	public_deps='dcerpc NDR_STANDARD',
 	public_headers='../../librpc/gen_ndr/ndr_atsvc_c.h',
