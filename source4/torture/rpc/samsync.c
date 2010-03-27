@@ -105,6 +105,9 @@ static NTSTATUS test_SamLogon(struct torture_context *tctx,
 	r.in.validation_level = 3;
 
 	status = dcerpc_netr_LogonSamLogon_r(b, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (!netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		torture_comment(tctx, "Credential chaining failed\n");
@@ -114,7 +117,7 @@ static NTSTATUS test_SamLogon(struct torture_context *tctx,
 		*info3 = validation.sam3;
 	}
 
-	return status;
+	return r.out.result;
 }
 
 struct samsync_state {
@@ -174,6 +177,10 @@ static struct policy_handle *samsync_open_domain(struct torture_context *tctx,
 		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(nt_status));
 		return NULL;
 	}
+	if (!NT_STATUS_IS_OK(l.out.result)) {
+		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(l.out.result));
+		return NULL;
+	}
 
 	o.in.connect_handle = samsync_state->connect_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -187,6 +194,10 @@ static struct policy_handle *samsync_open_domain(struct torture_context *tctx,
 	nt_status = dcerpc_samr_OpenDomain_r(samsync_state->b_samr, mem_ctx, &o);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(nt_status));
+		return NULL;
+	}
+	if (!NT_STATUS_IS_OK(o.out.result)) {
+		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(o.out.result));
 		return NULL;
 	}
 
@@ -211,6 +222,10 @@ static struct sec_desc_buf *samsync_query_samr_sec_desc(struct torture_context *
 		torture_comment(tctx, "SAMR QuerySecurity failed - %s\n", nt_errstr(status));
 		return NULL;
 	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(tctx, "SAMR QuerySecurity failed - %s\n", nt_errstr(r.out.result));
+		return NULL;
+	}
 
 	return sdbuf;
 }
@@ -231,6 +246,10 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(struct torture_context *t
 	status = dcerpc_lsa_QuerySecurity_r(samsync_state->b_lsa, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "LSA QuerySecurity failed - %s\n", nt_errstr(status));
+		return NULL;
+	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(tctx, "LSA QuerySecurity failed - %s\n", nt_errstr(r.out.result));
 		return NULL;
 	}
 
@@ -315,7 +334,6 @@ static bool samsync_handle_domain(struct torture_context *tctx, TALLOC_CTX *mem_
 	struct samr_QueryDomainInfo q[14]; /* q[0] will be unused simple for clarity */
 	union samr_DomainInfo *info[14];
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
-	NTSTATUS nt_status;
 	int i;
 	bool ret = true;
 
@@ -367,13 +385,11 @@ static bool samsync_handle_domain(struct torture_context *tctx, TALLOC_CTX *mem_
 		q[levels[i]].in.level = levels[i];
 		q[levels[i]].out.info = &info[levels[i]];
 
-		nt_status = dcerpc_samr_QueryDomainInfo_r(samsync_state->b_samr, mem_ctx, &q[levels[i]]);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			torture_comment(tctx, "QueryDomainInfo level %u failed - %s\n",
-			       q[levels[i]].in.level, nt_errstr(nt_status));
-			return false;
-		}
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_QueryDomainInfo_r(samsync_state->b_samr, mem_ctx, &q[levels[i]]),
+			talloc_asprintf(tctx, "QueryDomainInfo level %u failed", q[levels[i]].in.level));
+		torture_assert_ntstatus_ok(tctx, q[levels[i]].out.result,
+			talloc_asprintf(tctx, "QueryDomainInfo level %u failed", q[levels[i]].in.level));
 	}
 
 	TEST_STRING_EQUAL(info[5]->info5.domain_name, domain->domain_name);
@@ -465,11 +481,11 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	r.in.rid = rid;
 	r.out.user_handle = &user_handle;
 
-	nt_status = dcerpc_samr_OpenUser_r(samsync_state->b_samr, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		torture_comment(tctx, "OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenUser_r(samsync_state->b_samr, mem_ctx, &r),
+		talloc_asprintf(tctx, "OpenUser(%u) failed", rid));
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		talloc_asprintf(tctx, "OpenUser(%u) failed", rid));
 
 	q.in.user_handle = &user_handle;
 	q.in.level = 21;
@@ -477,22 +493,20 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 
 	TEST_SEC_DESC_EQUAL(user->sdbuf, samr, &user_handle);
 
-	nt_status = dcerpc_samr_QueryUserInfo_r(samsync_state->b_samr, mem_ctx, &q);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		torture_comment(tctx, "QueryUserInfo level %u failed - %s\n",
-		       q.in.level, nt_errstr(nt_status));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_QueryUserInfo_r(samsync_state->b_samr, mem_ctx, &q),
+		talloc_asprintf(tctx, "OpenUserInfo level %u failed", q.in.level));
+	torture_assert_ntstatus_ok(tctx, q.out.result,
+		talloc_asprintf(tctx, "OpenUserInfo level %u failed", q.in.level));
 
 	getgroups.in.user_handle = &user_handle;
 	getgroups.out.rids = &rids;
 
-	nt_status = dcerpc_samr_GetGroupsForUser_r(samsync_state->b_samr, mem_ctx, &getgroups);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		torture_comment(tctx, "GetGroupsForUser failed - %s\n",
-		       nt_errstr(nt_status));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_GetGroupsForUser_r(samsync_state->b_samr, mem_ctx, &getgroups),
+		"GetGroupsForUser failed");
+	torture_assert_ntstatus_ok(tctx, getgroups.out.result,
+		"GetGroupsForUser failed");
 
 	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &user_handle)) {
 		torture_comment(tctx, "samr_handle_Close failed - %s\n",
@@ -732,7 +746,6 @@ static bool samsync_handle_alias(struct torture_context *tctx,
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_ALIAS *alias = delta->delta_union.alias;
-	NTSTATUS nt_status;
 	bool ret = true;
 
 	struct samr_OpenAlias r;
@@ -750,11 +763,11 @@ static bool samsync_handle_alias(struct torture_context *tctx,
 	r.in.rid = rid;
 	r.out.alias_handle = &alias_handle;
 
-	nt_status = dcerpc_samr_OpenAlias_r(samsync_state->b_samr, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		torture_comment(tctx, "OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenAlias_r(samsync_state->b_samr, mem_ctx, &r),
+		talloc_asprintf(tctx, "OpenUser(%u) failed", rid));
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		talloc_asprintf(tctx, "OpenUser(%u) failed", rid));
 
 	q.in.alias_handle = &alias_handle;
 	q.in.level = 1;
@@ -762,14 +775,16 @@ static bool samsync_handle_alias(struct torture_context *tctx,
 
 	TEST_SEC_DESC_EQUAL(alias->sdbuf, samr, &alias_handle);
 
-	nt_status = dcerpc_samr_QueryAliasInfo_r(samsync_state->b_samr, mem_ctx, &q);
-	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &alias_handle)) {
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_QueryAliasInfo_r(samsync_state->b_samr, mem_ctx, &q),
+		"QueryAliasInfo failed");
+	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &alias_handle)) {
 		return false;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(q.out.result)) {
 		torture_comment(tctx, "QueryAliasInfo level %u failed - %s\n",
-		       q.in.level, nt_errstr(nt_status));
+		       q.in.level, nt_errstr(q.out.result));
 		return false;
 	}
 
@@ -784,7 +799,6 @@ static bool samsync_handle_group(struct torture_context *tctx,
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_GROUP *group = delta->delta_union.group;
-	NTSTATUS nt_status;
 	bool ret = true;
 
 	struct samr_OpenGroup r;
@@ -802,11 +816,11 @@ static bool samsync_handle_group(struct torture_context *tctx,
 	r.in.rid = rid;
 	r.out.group_handle = &group_handle;
 
-	nt_status = dcerpc_samr_OpenGroup_r(samsync_state->b_samr, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		torture_comment(tctx, "OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_OpenGroup_r(samsync_state->b_samr, mem_ctx, &r),
+		talloc_asprintf(tctx, "OpenUser(%u) failed", rid));
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		talloc_asprintf(tctx, "OpenUser(%u) failed", rid));
 
 	q.in.group_handle = &group_handle;
 	q.in.level = 1;
@@ -814,14 +828,16 @@ static bool samsync_handle_group(struct torture_context *tctx,
 
 	TEST_SEC_DESC_EQUAL(group->sdbuf, samr, &group_handle);
 
-	nt_status = dcerpc_samr_QueryGroupInfo_r(samsync_state->b_samr, mem_ctx, &q);
-	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &group_handle)) {
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_samr_QueryGroupInfo_r(samsync_state->b_samr, mem_ctx, &q),
+		"QueryGroupInfo failed");
+	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &group_handle)) {
 		return false;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(q.out.result)) {
 		torture_comment(tctx, "QueryGroupInfo level %u failed - %s\n",
-		       q.in.level, nt_errstr(nt_status));
+		       q.in.level, nt_errstr(q.out.result));
 		return false;
 	}
 
@@ -866,11 +882,11 @@ static bool samsync_handle_secret(struct torture_context *tctx,
 	o.in.name.string = name;
 	o.out.sec_handle = &sec_handle;
 
-	status = dcerpc_lsa_OpenSecret_r(samsync_state->b_lsa, mem_ctx, &o);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenSecret failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_OpenSecret_r(samsync_state->b_lsa, mem_ctx, &o),
+		"OpenSecret failed");
+	torture_assert_ntstatus_ok(tctx, o.out.result,
+		"OpenSecret failed");
 
 /*
   We would like to do this, but it is NOT_SUPPORTED on win2k3
@@ -896,12 +912,14 @@ static bool samsync_handle_secret(struct torture_context *tctx,
 	bufp1.buf = NULL;
 	bufp2.buf = NULL;
 
-	status = dcerpc_lsa_QuerySecret_r(samsync_state->b_lsa, mem_ctx, &q);
-	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_QuerySecret_r(samsync_state->b_lsa, mem_ctx, &q),
+		"QuerySecret failed");
+	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, q.out.result)) {
 		/* some things are just off limits */
 		return true;
-	} else if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "QuerySecret failed - %s\n", nt_errstr(status));
+	} else if (!NT_STATUS_IS_OK(q.out.result)) {
+		torture_comment(tctx, "QuerySecret failed - %s\n", nt_errstr(q.out.result));
 		return false;
 	}
 
@@ -991,7 +1009,6 @@ static bool samsync_handle_trusted_domain(struct torture_context *tctx,
 					  TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 					  int database_id, struct netr_DELTA_ENUM *delta)
 {
-	NTSTATUS status;
 	bool ret = true;
 	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
@@ -1013,24 +1030,26 @@ static bool samsync_handle_trusted_domain(struct torture_context *tctx,
 	t.in.sid = dom_sid;
 	t.out.trustdom_handle = &trustdom_handle;
 
-	status = dcerpc_lsa_OpenTrustedDomain_r(samsync_state->b_lsa, mem_ctx, &t);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenTrustedDomain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_OpenTrustedDomain_r(samsync_state->b_lsa, mem_ctx, &t),
+		"OpenTrustedDomain failed");
+	torture_assert_ntstatus_ok(tctx, t.out.result,
+		"OpenTrustedDomain failed");
 
 	for (i=0; i< ARRAY_SIZE(levels); i++) {
 		q.in.trustdom_handle = &trustdom_handle;
 		q.in.level = levels[i];
 		q.out.info = &_info;
-		status = dcerpc_lsa_QueryTrustedDomainInfo_r(samsync_state->b_lsa, mem_ctx, &q);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (q.in.level == 8 && NT_STATUS_EQUAL(status,NT_STATUS_INVALID_PARAMETER)) {
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_lsa_QueryTrustedDomainInfo_r(samsync_state->b_lsa, mem_ctx, &q),
+			"QueryTrustedDomainInfo failed");
+		if (!NT_STATUS_IS_OK(q.out.result)) {
+			if (q.in.level == 8 && NT_STATUS_EQUAL(q.out.result, NT_STATUS_INVALID_PARAMETER)) {
 				info[levels[i]] = NULL;
 				continue;
 			}
 			torture_comment(tctx, "QueryInfoTrustedDomain level %d failed - %s\n",
-			       levels[i], nt_errstr(status));
+			       levels[i], nt_errstr(q.out.result));
 			return false;
 		}
 		info[levels[i]]  = _info;
@@ -1056,7 +1075,6 @@ static bool samsync_handle_account(struct torture_context *tctx,
 				   TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 					  int database_id, struct netr_DELTA_ENUM *delta)
 {
-	NTSTATUS status;
 	bool ret = true;
 	struct netr_DELTA_ACCOUNT *account = delta->delta_union.account;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
@@ -1076,11 +1094,11 @@ static bool samsync_handle_account(struct torture_context *tctx,
 	a.in.sid = dom_sid;
 	a.out.acct_handle = &acct_handle;
 
-	status = dcerpc_lsa_OpenAccount_r(samsync_state->b_lsa, mem_ctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "OpenTrustedDomain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_OpenAccount_r(samsync_state->b_lsa, mem_ctx, &a),
+		"OpenAccount failed");
+	torture_assert_ntstatus_ok(tctx, a.out.result,
+		"OpenAccount failed");
 
 	TEST_SEC_DESC_EQUAL(account->sdbuf, lsa, &acct_handle);
 
@@ -1089,11 +1107,11 @@ static bool samsync_handle_account(struct torture_context *tctx,
 	e.in.handle = &acct_handle;
 	e.out.privs = &privs;
 
-	status = dcerpc_lsa_EnumPrivsAccount_r(samsync_state->b_lsa, mem_ctx, &e);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "EnumPrivsAccount failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_lsa_EnumPrivsAccount_r(samsync_state->b_lsa, mem_ctx, &e),
+		"EnumPrivsAccount failed");
+	torture_assert_ntstatus_ok(tctx, e.out.result,
+		"EnumPrivsAccount failed");
 
 	if ((account->privilege_entries && !privs)) {
 		torture_comment(tctx, "Account %s has privileges in SamSync, but not LSA\n",
@@ -1117,11 +1135,11 @@ static bool samsync_handle_account(struct torture_context *tctx,
 		r.in.luid = &privs->set[i].luid;
 		r.out.name = &name;
 
-		status = dcerpc_lsa_LookupPrivName_r(samsync_state->b_lsa, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_comment(tctx, "\nLookupPrivName failed - %s\n", nt_errstr(status));
-			return false;
-		}
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_lsa_LookupPrivName_r(samsync_state->b_lsa, mem_ctx, &r),
+			"\nLookupPrivName failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"\nLookupPrivName failed");
 
 		if (!r.out.name) {
 			torture_comment(tctx, "\nLookupPrivName failed to return a name\n");
@@ -1151,7 +1169,6 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 							  struct samsync_state *samsync_state,
 							  TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	TALLOC_CTX *loop_ctx, *delta_ctx, *trustdom_ctx;
 	struct netr_DatabaseSync r;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS};
@@ -1189,10 +1206,12 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 
 			r.in.credential = &credential;
 
-			status = dcerpc_netr_DatabaseSync_r(samsync_state->b, loop_ctx, &r);
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				torture_comment(tctx, "DatabaseSync - %s\n", nt_errstr(status));
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_netr_DatabaseSync_r(samsync_state->b, loop_ctx, &r),
+				"DatabaseSync failed");
+			if (!NT_STATUS_IS_OK(r.out.result) &&
+			    !NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES)) {
+				torture_comment(tctx, "DatabaseSync - %s\n", nt_errstr(r.out.result));
 				ret = false;
 				break;
 			}
@@ -1294,7 +1313,7 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 				talloc_free(delta_ctx);
 			}
 			talloc_free(loop_ctx);
-		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+		} while (NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES));
 
 	}
 
@@ -1368,7 +1387,6 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 static bool test_DatabaseDeltas(struct torture_context *tctx,
 				struct samsync_state *samsync_state, TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	TALLOC_CTX *loop_ctx;
 	struct netr_DatabaseDeltas r;
 	struct netr_Authenticator credential;
@@ -1411,11 +1429,13 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 			loop_ctx = talloc_named(mem_ctx, 0, "test_DatabaseDeltas loop context");
 			netlogon_creds_client_authenticator(samsync_state->creds, &credential);
 
-			status = dcerpc_netr_DatabaseDeltas_r(samsync_state->b, loop_ctx, &r);
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_SYNCHRONIZATION_REQUIRED)) {
-				torture_comment(tctx, "DatabaseDeltas - %s\n", nt_errstr(status));
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_netr_DatabaseDeltas_r(samsync_state->b, loop_ctx, &r),
+				"DatabaseDeltas failed");
+			if (!NT_STATUS_IS_OK(r.out.result) &&
+			    !NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES) &&
+			    !NT_STATUS_EQUAL(r.out.result, NT_STATUS_SYNCHRONIZATION_REQUIRED)) {
+				torture_comment(tctx, "DatabaseDeltas - %s\n", nt_errstr(r.out.result));
 				ret = false;
 			}
 
@@ -1425,7 +1445,7 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 
 			seq_num++;
 			talloc_free(loop_ctx);
-		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+		} while (NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES));
 	}
 
 	return ret;
@@ -1439,7 +1459,6 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 			       struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct netlogon_creds_CredentialState *creds)
 {
-	NTSTATUS status;
 	TALLOC_CTX *loop_ctx;
 	struct netr_DatabaseSync2 r;
 	const uint32_t database_ids[] = {0, 1, 2};
@@ -1475,10 +1494,12 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 
 			r.in.credential = &credential;
 
-			status = dcerpc_netr_DatabaseSync2_r(b, loop_ctx, &r);
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				torture_comment(tctx, "DatabaseSync2 - %s\n", nt_errstr(status));
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_netr_DatabaseSync2_r(b, loop_ctx, &r),
+				"DatabaseSync2 failed");
+			if (!NT_STATUS_IS_OK(r.out.result) &&
+			    !NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES)) {
+				torture_comment(tctx, "DatabaseSync2 - %s\n", nt_errstr(r.out.result));
 				ret = false;
 			}
 
@@ -1487,7 +1508,7 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 			}
 
 			talloc_free(loop_ctx);
-		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+		} while (NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES));
 	}
 
 	return ret;
@@ -1562,12 +1583,13 @@ bool torture_rpc_samsync(struct torture_context *torture)
 	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	c.out.connect_handle = samsync_state->connect_handle;
 
-	status = dcerpc_samr_Connect_r(samsync_state->b_samr, mem_ctx, &c);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "samr_Connect failed\n");
-		ret = false;
-		goto failed;
-	}
+	torture_assert_ntstatus_ok_goto(torture,
+		dcerpc_samr_Connect_r(samsync_state->b_samr, mem_ctx, &c),
+		ret, failed,
+		"samr_Connect failed");
+	torture_assert_ntstatus_ok_goto(torture, c.out.result,
+		ret, failed,
+		"samr_Connect failed");
 
 	domain_policy = samsync_open_domain(torture, mem_ctx, samsync_state, lp_workgroup(torture->lp_ctx), NULL);
 	if (!domain_policy) {
@@ -1584,20 +1606,19 @@ bool torture_rpc_samsync(struct torture_context *torture)
 		= talloc_asprintf(mem_ctx,
 				  "Tortured by Samba4: %s",
 				  timestring(mem_ctx, time(NULL)));
-	status = dcerpc_samr_SetDomainInfo_r(samsync_state->b_samr, mem_ctx, &s);
+	torture_assert_ntstatus_ok_goto(torture,
+		dcerpc_samr_SetDomainInfo_r(samsync_state->b_samr, mem_ctx, &s),
+		ret, failed,
+		"SetDomainInfo failed");
 
 	if (!test_samr_handle_Close(samsync_state->b_samr, torture, domain_policy)) {
 		ret = false;
 		goto failed;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "SetDomainInfo level %u failed - %s\n",
-		       s.in.level, nt_errstr(status));
-		ret = false;
-		goto failed;
-	}
-
+	torture_assert_ntstatus_ok_goto(torture, s.out.result,
+		ret, failed,
+		talloc_asprintf(torture, "SetDomainInfo level %u failed", s.in.level));
 
 	status = torture_rpc_connection(torture,
 					&samsync_state->p_lsa,
@@ -1626,12 +1647,13 @@ bool torture_rpc_samsync(struct torture_context *torture)
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = samsync_state->lsa_handle;
 
-	status = dcerpc_lsa_OpenPolicy2_r(samsync_state->b_lsa, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "OpenPolicy2 failed - %s\n", nt_errstr(status));
-		ret = false;
-		goto failed;
-	}
+	torture_assert_ntstatus_ok_goto(torture,
+		dcerpc_lsa_OpenPolicy2_r(samsync_state->b_lsa, mem_ctx, &r),
+		ret, failed,
+		"OpenPolicy2 failed");
+	torture_assert_ntstatus_ok_goto(torture, r.out.result,
+		ret, failed,
+		"OpenPolicy2 failed");
 
 	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
