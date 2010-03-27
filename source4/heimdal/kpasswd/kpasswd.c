@@ -132,8 +132,8 @@ main (int argc, char **argv)
 	print_version(NULL);
 	return 0;
     }
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     ret = krb5_init_context (&context);
     if (ret)
