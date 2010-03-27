@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.SAMBA_LIBRARY('gensec',
 	source='gensec.c socket.c',
 	pc_files='gensec.pc',

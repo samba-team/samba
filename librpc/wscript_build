@@ -1,2 +1,4 @@
+#!/usr/bin/env python
+
 bld.BUILD_SUBDIR('idl')
 

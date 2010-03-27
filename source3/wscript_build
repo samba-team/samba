@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from samba_utils import *
 
 TDB_LIB_SRC = '''lib/util_tdb.c ../lib/util/util_tdb.c

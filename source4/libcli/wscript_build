@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.BUILD_SUBDIR('ldap')
 bld.BUILD_SUBDIR('security')
 bld.BUILD_SUBDIR('wbclient')

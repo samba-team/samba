@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.SAMBA_MODULE('KDC',
 	source='kdc.c kpasswdd.c',
 	subsystem='service',

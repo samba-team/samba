@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 def set_options(opt):
     # enable options related to building python extensions
     opt.tool_options('python') # options for disabling pyc or pyo compilation

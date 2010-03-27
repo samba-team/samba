@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # note that we use symlink=True for the common IDL files.
 # this is because the gen_ndr output is committed in git,
 # and we don't want the result of a waf build to be a large

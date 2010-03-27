@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.SAMBA_SUBSYSTEM('COM',
 	source='tables.c rot.c main.c',
 	deps='LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG LIBEVENTS LIBNDR PIDL_DCOM'

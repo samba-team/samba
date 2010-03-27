@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.SAMBA_SUBSYSTEM('SOCKET_WRAPPER',
 	source='socket_wrapper.c'
 	)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate',
                   chmod=0755, python_fixup=True, flat=True)
 

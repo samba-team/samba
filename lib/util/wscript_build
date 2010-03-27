@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 bld.SAMBA_LIBRARY('LIBSAMBA-UTIL',
 	source='xfile.c debug.c fault.c signal.c system.c time.c genrand.c dprintf.c util_str.c rfc1738.c substitute.c util_strlist.c util_file.c data_blob.c util.c blocking.c util_net.c fsusage.c ms_fnmatch.c mutex.c idtree.c become_daemon.c rbtree.c talloc_stack.c smb_threads.c params.c parmlist.c util_id.c',
 	public_deps='talloc LIBCRYPTO LIBREPLACE_NETWORK CHARSET execinfo UID_WRAPPER',

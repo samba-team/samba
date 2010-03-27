@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # work out what external modules need to be installed
 external_list = []
 try:
