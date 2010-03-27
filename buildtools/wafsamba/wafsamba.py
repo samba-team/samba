@@ -447,6 +447,8 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 def SAMBA_GENERATOR(bld, name, rule, source, target,
                     group='build_source', enabled=True,
+                    public_headers=None,
+                    header_path=None,
                     vars=None):
     '''A generic source generator target'''
 
@@ -466,6 +468,9 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
         before='cc',
         ext_out='.c',
         name=name)
+
+    if public_headers is not None:
+        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
 Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
 
@@ -624,10 +629,13 @@ Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
 
 
 def INSTALL_FILES(bld, destdir, files, chmod=0644, flat=False,
-                  python_fixup=False):
+                  python_fixup=False, destname=None):
     '''install a set of files'''
     destdir = bld.EXPAND_VARIABLES(destdir)
-    bld.install_files(destdir, files, chmod=chmod, relative_trick=not flat)
+    if destname:
+        bld.install_as(os.path.join(destdir,destname), files, chmod=chmod)
+    else:
+        bld.install_files(destdir, files, chmod=chmod, relative_trick=not flat)
 Build.BuildContext.INSTALL_FILES = INSTALL_FILES
 
 
@@ -640,15 +648,33 @@ Build.BuildContext.INSTALL_WILDCARD = INSTALL_WILDCARD
 
 
 def PUBLIC_HEADERS(bld, public_headers, header_path=None):
-    '''install some headers'''
+    '''install some headers
+
+    header_path may either be a string that is added to the INCLUDEDIR,
+    or it can be a dictionary of wildcard patterns which map to destination
+    directories relative to INCLUDEDIR
+    '''
+    import fnmatch
     dest = '${INCLUDEDIR}'
-    if header_path:
+    if isinstance(header_path, str):
         dest += '/' + header_path
     for h in TO_LIST(public_headers):
-        if header_path is None and h.find('/gen_ndr/') != -1:
-            # a special hack for gen_ndr headers
-            INSTALL_FILES(bld, '${INCLUDEDIR}/gen_ndr', h, flat=True)
+        hdest = dest
+        if isinstance(header_path, list):
+            for (p1, dir) in header_path:
+                found_match=False
+                lst = TO_LIST(p1)
+                for p2 in lst:
+                    if fnmatch.fnmatch(h, p2):
+                        if dir:
+                            hdest = os.path.join(hdest, dir)
+                        found_match=True
+                        break
+                if found_match: break
+        if h.find(':') != -1:
+            hs=h.split(':')
+            INSTALL_FILES(bld, hdest, hs[0], flat=True, destname=hs[1])
         else:
-            INSTALL_FILES(bld, dest, h, flat=True)
+            INSTALL_FILES(bld, hdest, h, flat=True)
 Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
 
