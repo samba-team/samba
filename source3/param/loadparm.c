@@ -8514,6 +8514,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			int numlines,
 			char **pp_sharepath,
 			char **pp_comment,
+			char **pp_cp_servicename,
 			SEC_DESC **ppsd,
 			bool *pallow_guest)
 {
@@ -8580,6 +8581,27 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		}
 		if (lines[4][9] == 'y') {
 			*pallow_guest = True;
+		}
+
+		/* Backwards compatible extension to file version #2. */
+		if (numlines > 5) {
+			if (strncmp(lines[5], "sharename=", 10) != 0) {
+				return USERSHARE_MALFORMED_SHARENAME_DEF;
+			}
+			if (!strequal(&lines[5][10], servicename)) {
+				return USERSHARE_BAD_SHARENAME;
+			}
+			*pp_cp_servicename = talloc_strdup(ctx, &lines[5][10]);
+			if (!*pp_cp_servicename) {
+				return USERSHARE_POSIX_ERR;
+			}
+		}
+	}
+
+	if (*pp_cp_servicename == NULL) {
+		*pp_cp_servicename = talloc_strdup(ctx, servicename);
+		if (!*pp_cp_servicename) {
+			return USERSHARE_POSIX_ERR;
 		}
 	}
 
@@ -8692,26 +8714,34 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	char *fname = NULL;
 	char *sharepath = NULL;
 	char *comment = NULL;
-	fstring service_name;
+	char *cp_service_name = NULL;
 	char **lines = NULL;
 	int numlines = 0;
 	int fd = -1;
 	int iService = -1;
-	TALLOC_CTX *ctx = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
 	SEC_DESC *psd = NULL;
 	bool guest_ok = False;
+	char *canon_name = NULL;
+	bool added_service = false;
+	int ret = -1;
 
 	/* Ensure share name doesn't contain invalid characters. */
 	if (!validate_net_name(file_name, INVALID_SHARENAME_CHARS, strlen(file_name))) {
 		DEBUG(0,("process_usershare_file: share name %s contains "
 			"invalid characters (any of %s)\n",
 			file_name, INVALID_SHARENAME_CHARS ));
-		return -1;
+		goto out;
 	}
 
-	fstrcpy(service_name, file_name);
+	canon_name = canonicalize_servicename(ctx, file_name);
+	if (!canon_name) {
+		goto out;
+	}
 
-	if (asprintf(&fname, "%s/%s", dir_name, file_name) < 0) {
+	fname = talloc_asprintf(ctx, "%s/%s", dir_name, file_name);
+	if (!fname) {
+		goto out;
 	}
 
 	/* Minimize the race condition by doing an lstat before we
@@ -8720,19 +8750,16 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (sys_lstat(fname, &lsbuf, false) != 0) {
 		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
 			fname, strerror(errno) ));
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
 	/* This must be a regular file, not a symlink, directory or
 	   other strange filetype. */
 	if (!check_usershare_stat(fname, &lsbuf)) {
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
 	{
-		char *canon_name = canonicalize_servicename(talloc_tos(), service_name);
 		TDB_DATA data = dbwrap_fetch_bystring(
 			ServiceHash, canon_name, canon_name);
 
@@ -8741,7 +8768,6 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		if ((data.dptr != NULL) && (data.dsize == sizeof(iService))) {
 			iService = *(int *)data.dptr;
 		}
-		TALLOC_FREE(canon_name);
 	}
 
 	if (iService != -1 &&
@@ -8749,10 +8775,10 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 			     &lsbuf.st_ex_mtime) == 0) {
 		/* Nothing changed - Mark valid and return. */
 		DEBUG(10,("process_usershare_file: service %s not changed.\n",
-			service_name ));
+			canon_name ));
 		ServicePtrs[iService]->usershare = USERSHARE_VALID;
-		SAFE_FREE(fname);
-		return iService;
+		ret = iService;
+		goto out;
 	}
 
 	/* Try and open the file read only - no symlinks allowed. */
@@ -8765,8 +8791,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (fd == -1) {
 		DEBUG(0,("process_usershare_file: unable to open %s. %s\n",
 			fname, strerror(errno) ));
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
 	/* Now fstat to be *SURE* it's a regular file. */
@@ -8774,8 +8799,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s failed. %s\n",
 			fname, strerror(errno) ));
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
 	/* Is it the same dev/inode as was lstated ? */
@@ -8783,15 +8807,13 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s is a different file from lstat. "
 			"Symlink spoofing going on ?\n", fname ));
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
 	/* This must be a regular file, not a symlink, directory or
 	   other strange filetype. */
 	if (!check_usershare_stat(fname, &sbuf)) {
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
 	lines = fd_lines_load(fd, &numlines, MAX_USERSHARE_FILE_SIZE, NULL);
@@ -8800,28 +8822,15 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (lines == NULL) {
 		DEBUG(0,("process_usershare_file: loading file %s owned by %u failed.\n",
 			fname, (unsigned int)sbuf.st_ex_uid ));
-		SAFE_FREE(fname);
-		return -1;
+		goto out;
 	}
 
-	SAFE_FREE(fname);
-
-	/* Should we allow printers to be shared... ? */
-	ctx = talloc_init("usershare_sd_xctx");
-	if (!ctx) {
-		TALLOC_FREE(lines);
-		return 1;
-	}
-
-	if (parse_usershare_file(ctx, &sbuf, service_name,
+	if (parse_usershare_file(ctx, &sbuf, file_name,
 			iService, lines, numlines, &sharepath,
-			&comment, &psd, &guest_ok) != USERSHARE_OK) {
-		talloc_destroy(ctx);
-		TALLOC_FREE(lines);
-		return -1;
+			&comment, &cp_service_name,
+			&psd, &guest_ok) != USERSHARE_OK) {
+		goto out;
 	}
-
-	TALLOC_FREE(lines);
 
 	/* Everything ok - add the service possibly using a template. */
 	if (iService < 0) {
@@ -8830,25 +8839,24 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 			sp = ServicePtrs[snum_template];
 		}
 
-		if ((iService = add_a_service(sp, service_name)) < 0) {
+		if ((iService = add_a_service(sp, cp_service_name)) < 0) {
 			DEBUG(0, ("process_usershare_file: Failed to add "
-				"new service %s\n", service_name));
-			talloc_destroy(ctx);
-			return -1;
+				"new service %s\n", cp_service_name));
+			goto out;
 		}
+
+		added_service = true;
 
 		/* Read only is controlled by usershare ACL below. */
 		ServicePtrs[iService]->bRead_only = False;
 	}
 
 	/* Write the ACL of the new/modified share. */
-	if (!set_share_security(service_name, psd)) {
+	if (!set_share_security(canon_name, psd)) {
 		 DEBUG(0, ("process_usershare_file: Failed to set share "
 			"security for user share %s\n",
-			service_name ));
-		lp_remove_service(iService);
-		talloc_destroy(ctx);
-		return -1;
+			canon_name ));
+		goto out;
 	}
 
 	/* If from a template it may be marked invalid. */
@@ -8867,9 +8875,17 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	string_set(&ServicePtrs[iService]->szPath, sharepath);
 	string_set(&ServicePtrs[iService]->comment, comment);
 
-	talloc_destroy(ctx);
+	ret = iService;
 
-	return iService;
+  out:
+
+	if (ret == -1 && iService != -1 && added_service) {
+		lp_remove_service(iService);
+	}
+
+	TALLOC_FREE(lines);
+	TALLOC_FREE(ctx);
+	return ret;
 }
 
 /***************************************************************************

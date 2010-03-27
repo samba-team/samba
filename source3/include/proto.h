@@ -4318,6 +4318,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			int numlines,
 			char **pp_sharepath,
 			char **pp_comment,
+			char **pp_cp_share_name,
 			SEC_DESC **ppsd,
 			bool *pallow_guest);
 int load_usershare_service(const char *servicename);
