@@ -145,7 +145,7 @@ echo $NEWUSERPASS > ./tmpuserpassfile
 cat > ./tmpkpasswdscript <<EOF
 expect New password
 send ${NEWUSERPASS}\n
-expect New password
+expect Verify password
 send ${NEWUSERPASS}\n
 expect Success
 EOF
