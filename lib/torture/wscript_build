@@ -5,7 +5,7 @@
 bld.SAMBA_LIBRARY('torture',
 	source='torture.c subunit.c',
 	vnum='0.0.1',
-	# PC_FILES='torture.pc',
+	pc_files='torture.pc',
 	public_deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-ERRORS talloc tevent',
 	public_headers='torture.h'
 	)

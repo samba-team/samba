@@ -1,6 +1,6 @@
 bld.SAMBA_LIBRARY('gensec',
 	source='gensec.c socket.c',
-	# PC_FILES='gensec.pc',
+	pc_files='gensec.pc',
 	autoproto='gensec_proto.h',
 	public_deps='CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba_socket LIBPACKET LIBTSOCKET UTIL_TEVENT',
 	public_headers='gensec.h',

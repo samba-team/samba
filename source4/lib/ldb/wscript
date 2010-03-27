@@ -108,6 +108,7 @@ def build(bld):
 		      deps=ldb_deps,
 		      includes='include',
                       public_headers='include/ldb.h include/ldb_errors.h',
+                      pc_files='ldb.pc',
                       vnum=VERSION)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
