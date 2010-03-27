@@ -61,6 +61,14 @@ def SAMBA_PYTHON(bld, name,
         local_include  = local_include,
         samba_deps     = TO_LIST(deps),
         link_name      = link_name,
-        name	       = name
+        name	       = name,
+        install_path   = None
         )
+
+    destdir='${PYTHONDIR}'
+    dname=os.path.dirname(realname)
+    if dname:
+        destdir += '/' + dname
+    bld.INSTALL_FILES(destdir, name + '.so', destname=os.path.basename(realname))
+
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
