@@ -51,7 +51,9 @@ def SAMBA_PIDL(bld, pname, source,
     try:
         pidl_src_nodes = bld.pidl_files_cache
     except AttributeError:
-        pidl_src_nodes = bld.pidl_files_cache = bld.srcnode.ant_glob('pidl/**/*', flat=False)
+        bld.pidl_files_cache = bld.srcnode.ant_glob('pidl/**/*.pm', flat=False)
+        bld.pidl_files_cache.extend(bld.srcnode.ant_glob('pidl', flat=False))
+        pidl_src_nodes = bld.pidl_files_cache
 
     # the cd .. is needed because pidl currently is sensitive to the directory it is run in
     t = bld(rule='cd .. && ${PIDL} ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC[0].abspath(env)}',
