@@ -1403,15 +1403,17 @@ krb5_error_code samba_kdc_nextkey(krb5_context context,
 	return samba_kdc_seq(context, kdc_db_ctx, entry);
 }
 
-/* Check if a given entry may delegate to this target principal
+/* Check if a given entry may delegate or do s4u2self to this target principal
  *
  * This is currently a very nasty hack - allowing only delegation to itself.
+ *
+ * This is shared between the constrained delegation and S4U2Self code.
  */
 krb5_error_code
-samba_kdc_check_constrained_delegation(krb5_context context,
-				       struct samba_kdc_db_context *kdc_db_ctx,
-					hdb_entry_ex *entry,
-					krb5_const_principal target_principal)
+samba_kdc_check_identical_client_and_server(krb5_context context,
+					    struct samba_kdc_db_context *kdc_db_ctx,
+					    hdb_entry_ex *entry,
+					    krb5_const_principal target_principal)
 {
 	krb5_error_code ret;
 	krb5_principal enterprise_prinicpal = NULL;

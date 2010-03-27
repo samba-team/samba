@@ -134,7 +134,7 @@ static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
 }
 
 static krb5_error_code
-hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
+hdb_samba4_check_identical_client_and_server(krb5_context context, HDB *db,
 					hdb_entry_ex *entry,
 					krb5_const_principal target_principal)
 {
@@ -143,9 +143,9 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	return samba_kdc_check_constrained_delegation(context, kdc_db_ctx,
-						      entry,
-						      target_principal);
+	return samba_kdc_check_identical_client_and_server(context, kdc_db_ctx,
+							   entry,
+							   target_principal);
 }
 
 static krb5_error_code
@@ -251,8 +251,9 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb_destroy = hdb_samba4_destroy;
 
 	(*db)->hdb_auth_status = NULL;
-	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_constrained_delegation;
+	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_identical_client_and_server;
 	(*db)->hdb_check_pkinit_ms_upn_match = hdb_samba4_check_pkinit_ms_upn_match;
+	(*db)->hdb_check_s4u2self = hdb_samba4_check_identical_client_and_server;
 
 	return NT_STATUS_OK;
 }
