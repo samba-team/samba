@@ -641,14 +641,32 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
 
 
+def install_file(bld, destdir, file, chmod=0644, flat=False,
+                 python_fixup=False, destname=None):
+    '''install a file'''
+    destdir = bld.EXPAND_VARIABLES(destdir)
+    if not destname:
+        destname = file
+        if flat:
+            destname = os.path.basename(destname)
+    dest = os.path.join(destdir, destname)
+    if python_fixup:
+        # fixup the python path it will use to find Samba modules
+        inst_file = file + '.inst'
+        bld.SAMBA_GENERATOR('python_%s' % destname,
+                            rule="sed 's|\(sys.path.insert.*\)bin/python\(.*\)$|\\1${PYTHONDIR}\\2|g' < ${SRC} > ${TGT}",
+                            source=file,
+                            target=inst_file)
+        file = inst_file
+    bld.install_as(dest, file, chmod=chmod)
+
+
 def INSTALL_FILES(bld, destdir, files, chmod=0644, flat=False,
                   python_fixup=False, destname=None):
     '''install a set of files'''
-    destdir = bld.EXPAND_VARIABLES(destdir)
-    if destname:
-        bld.install_as(os.path.join(destdir,destname), files, chmod=chmod)
-    else:
-        bld.install_files(destdir, files, chmod=chmod, relative_trick=not flat)
+    for f in TO_LIST(files):
+        install_file(bld, destdir, f, chmod=chmod, flat=flat,
+                     python_fixup=python_fixup, destname=destname)
 Build.BuildContext.INSTALL_FILES = INSTALL_FILES
 
 
