@@ -1,0 +1,38 @@
+import os
+
+def set_options(opt):
+    opt.tool_options('perl')
+
+def configure(conf):
+    conf.check_tool('perl')
+    if conf.check_perl_module('ExtUtils::MakeMaker'):
+        conf.DEFINE('HAVE_PERL_MAKEMAKER', 1)
+
+def build(bld):
+    bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
+
+    bld.BUILD_SUBDIR('lib')
+
+    if not bld.CONFIG_SET('HAVE_PERL_MAKEMAKER'):
+        return
+
+    pidl_src = ['pidl']
+    pidl_src.extend(bld.path.ant_glob('lib/**/*.pm').split())
+
+    pidl_manpages = '''blib/man1/pidl.1p blib/man3/Parse::Pidl::NDR.3pm
+                       blib/man3/Parse::Pidl::Wireshark::Conformance.3pm
+                       blib/man3/Parse::Pidl::Dump.3pm
+                       blib/man3/Parse::Pidl::Util.3pm
+                       blib/man3/Parse::Pidl::Wireshark::NDR.3pm'''.split()
+
+    # use perl to build the manpages
+    bld.env.pidl_srcdir = os.path.join(bld.srcnode.abspath(), 'pidl')
+
+    bld.SAMBA_GENERATOR('pidl_manpages',
+                        source=pidl_src,
+                        target=pidl_manpages,
+                        rule='cd ${pidl_srcdir} && ${PERL} Makefile.PL && make && rm -f Makefile Makefile.old')
+
+    for m in pidl_manpages:
+        dname=os.path.dirname(m)[5:]
+        bld.INSTALL_FILES('${MANDIR}/'+dname, m, flat=True)
