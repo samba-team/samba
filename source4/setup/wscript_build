@@ -1,0 +1,20 @@
+bld.INSTALL_WILDCARD('${SETUPDIR}', 'ad-schema/*.txt')
+bld.INSTALL_WILDCARD('${SETUPDIR}', 'display-specifiers/*.txt')
+
+bld.INSTALL_FILES('${SBINDIR}','provision', chmod=0755, python_fixup=True)
+
+bld.INSTALL_FILES('${PRIVATEDIR}', 'dns_update_list')
+
+for p in '''schema-map-* DB_CONFIG *.inf *.ldif *.reg *.zone *.conf *.php *.txt
+            named.conf named.conf.update provision.smb.conf.dc provision.smb.conf.member
+            provision.smb.conf.standalone'''.split():
+    bld.INSTALL_WILDCARD('${SETUPDIR}', p)
+
+# echo "Installing external python libraries"
+# mkdir -p $PYTHONDIR/samba_external || exit 1
+# for p in $($PYTHON scripting/python/samba_external/missing.py);
+# do
+#   echo "Installing missing python library $p"
+#   mkdir -p $PYTHONDIR/samba_external/$p
+#   cp -r scripting/python/samba_external/$p/* $PYTHONDIR/samba_external/$p/ || exit 1
+# done
