@@ -99,6 +99,14 @@ def build(bld):
                      enabled=s4_build,
                      subsystem='LIBLDB')
 
+    # we're not currently linking against the ldap libs, but ldb.pc.in
+    # has @LDAP_LIBS@
+    bld.env.LDAP_LIBS = ''
+
+    if not 'PACKAGE_VERSION' in bld.env:
+        bld.env.PACKAGE_VERSION = VERSION
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+
     ldb_deps = 'tevent LIBLDB'
     if s4_build:
         ldb_deps += ' LDBSAMBA POPT_CREDENTIALS POPT_SAMBA LIBCMDLINE_CREDENTIALS gensec'
@@ -126,3 +134,4 @@ def build(bld):
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='ldb',
                          realname='ldb.so')
+
