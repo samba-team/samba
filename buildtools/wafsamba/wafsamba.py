@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch
+import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
@@ -475,7 +475,7 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
         rule=rule,
         source=bld.EXPAND_VARIABLES(source, vars=vars),
         target=target,
-        shell=True,
+        shell=isinstance(rule, str),
         on_results=True,
         before='cc',
         ext_out='.c',
@@ -713,12 +713,44 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None):
 Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
 
 
+def subst_at_vars(task):
+    '''substiture @VAR@ style variables in a file'''
+    src = task.inputs[0].srcpath(task.env)
+    tgt = task.outputs[0].bldpath(task.env)
+
+    f = open(src, 'r')
+    s = f.read()
+    f.close()
+    # split on the vars
+    a = re.split('(@\w+@)', s)
+    out = []
+    for v in a:
+        if re.match('@\w+@', v):
+            vname = v[1:-1]
+            if not vname in task.env and vname.upper() in task.env:
+                vname = vname.upper()
+            if not vname in task.env:
+                print "Unknown substitution %s in %s" % (v, task.name)
+                raise
+            v = task.env[vname]
+        out.append(v)
+    contents = ''.join(out)
+    f = open(tgt, 'w')
+    s = f.write(contents)
+    f.close()
+    return 0
+
+
+
 def PKG_CONFIG_FILES(bld, pc_files):
     '''install some pkg_config pc files'''
-    # TODO: replace the @VAR@ variables
     dest = '${PKGCONFIGDIR}'
     dest = bld.EXPAND_VARIABLES(dest)
     for f in TO_LIST(pc_files):
-        INSTALL_FILES(bld, dest, f+'.in', flat=True,
-                      destname=os.path.basename(f))
+        base=os.path.basename(f)
+        bld.SAMBA_GENERATOR('PKGCONFIG_%s' % base,
+                            rule=subst_at_vars,
+                            source=f+'.in',
+                            target=f)
+        INSTALL_FILES(bld, dest, f, flat=True, destname=base)
 Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
