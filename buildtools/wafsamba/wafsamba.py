@@ -68,6 +68,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   includes='',
                   public_headers=None,
                   header_path=None,
+                  pc_files=None,
                   vnum=None,
                   cflags='',
                   external_library=False,
@@ -188,6 +189,9 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if public_headers is not None:
         bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
+
+    if pc_files is not None:
+        bld.PKG_CONFIG_FILES(pc_files)
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
@@ -690,3 +694,12 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None):
             INSTALL_FILES(bld, hdest, h, flat=True)
 Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
 
+
+def PKG_CONFIG_FILES(bld, pc_files):
+    '''install some pkg_config pc files'''
+    # TODO: replace the @VAR@ variables
+    dest = '${PKGCONFIGDIR}'
+    dest = bld.EXPAND_VARIABLES(dest)
+    for f in TO_LIST(pc_files):
+        INSTALL_FILES(bld, dest, f+'.in', flat=True, destname=f)
+Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
