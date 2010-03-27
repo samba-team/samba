@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, sys, Options, Utils, Task
+import Build, os, sys, Options, Utils, Task, re
 from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
@@ -228,14 +228,6 @@ if os_path_relpath is None:
         return os.path.join(*rel_list)
 
 
-# this is a useful way of debugging some of the rules in waf
-from TaskGen import feature, after
-@feature('dbg')
-@after('apply_core', 'apply_obj_vars_cc')
-def dbg(self):
-	if self.target == 'HEIMDAL_HEIM_ASN1':
-		print "@@@@@@@@@@@@@@2", self.includes, self.env._CCINCFLAGS
-
 def unique_list(seq):
     '''return a uniquified list in the same order as the existing list'''
     seen = {}
@@ -261,10 +253,25 @@ def TO_LIST(str):
             return shlex.split(str)
     return lst
 
+
+def subst_vars_error(string, env):
+    '''substitute vars, throw an error if a variable is not defined'''
+    lst = re.split('(\$\{\w+\})', string)
+    out = []
+    for v in lst:
+        if re.match('\$\{\w+\}', v):
+            vname = v[2:-1]
+            if not vname in env:
+                print "Failed to find variable %s in %s" % (vname, string)
+                raise
+            v = env[vname]
+        out.append(v)
+    return ''.join(out)
+
 @conf
 def SUBST_ENV_VAR(ctx, varname):
     '''Substitute an environment variable for any embedded variables'''
-    return Utils.subst_vars(ctx.env[varname], ctx.env)
+    return subst_vars_error(ctx.env[varname], ctx.env)
 Build.BuildContext.SUBST_ENV_VAR = SUBST_ENV_VAR
 
 
@@ -326,14 +333,13 @@ def mkdir_p(dir):
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
 
-
 def SUBST_VARS_RECURSIVE(string, env):
     '''recursively expand variables'''
     if string is None:
         return string
     limit=100
     while (string.find('${') != -1 and limit > 0):
-        string = Utils.subst_vars(string, env)
+        string = subst_vars_error(string, env)
         limit -= 1
     return string
 
