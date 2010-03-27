@@ -52,6 +52,8 @@ def SAMBA_PYTHON(bld, name,
         realname = '%s.so' % name
     link_name = 'python/%s' % realname
 
+    bld.SET_BUILD_GROUP('main')
+
     t = bld(
         features       = 'cc cshlib pyext symlink_lib',
         source         = source,
