@@ -111,7 +111,7 @@ expect Password
 password ${USERPASS}\n
 expect New password
 send ${NEWUSERPASS}\n
-expect New password
+expect Verify password
 send ${NEWUSERPASS}\n
 expect Success
 EOF
@@ -128,7 +128,7 @@ test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`exp
 cat > ./tmpkpasswdscript <<EOF
 expect New password
 send ${NEWUSERPASS}\n
-expect New password
+expect Verify password
 send ${NEWUSERPASS}\n
 expect Success
 EOF
