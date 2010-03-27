@@ -738,9 +738,11 @@ do_getticket (krb5_context context,
 				      config->v4_realm, &sname,
 				      &sinstance, &ad);
 	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0,
-		    "kaserver: decomp failed for %s.%s with %d",
-		    sname, sinstance, ret);
+		    "kaserver: decomp failed for %s.%s with %s %d",
+		    msg, sname, sinstance, ret);
+	    krb5_free_error_message(context, msg);
 	    make_error_reply (hdr, KABADTICKET, reply);
 	    goto out;
 	}

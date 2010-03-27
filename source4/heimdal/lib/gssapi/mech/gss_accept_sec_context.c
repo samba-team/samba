@@ -263,8 +263,8 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	if (mech_ret_flags & GSS_C_DELEG_FLAG) {
 		if (!delegated_cred_handle) {
 			m->gm_release_cred(minor_status, &delegated_mc);
-			if (ret_flags)
-				*ret_flags &= ~GSS_C_DELEG_FLAG;
+			mech_ret_flags &=
+			    ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 		} else if (gss_oid_equal(mech_ret_type, &m->gm_mech_oid) == 0) {
 			/* 
 			 * If the returned mech_type is not the same

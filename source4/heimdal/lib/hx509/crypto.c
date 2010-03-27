@@ -740,7 +740,7 @@ rsa_create_signature(hx509_context context,
     if (ret <= 0) {
 	ret = HX509_CMS_FAILED_CREATE_SIGATURE;
 	hx509_set_error_string(context, 0, ret,
-			       "RSA private decrypt failed: %d", ret);
+			       "RSA private encrypt failed: %d", ret);
 	return ret;
     }
     if (ret > sig->length)

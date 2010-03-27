@@ -1551,3 +1551,17 @@ krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
 			   N_("Failed to find name type %s", ""), str);
     return KRB5_PARSE_MALFORMED;
 }
+
+/**
+ * Check if the cname part of the principal is a krbtgt principal
+ *
+ * @ingroup krb5_principal
+ */
+
+krb5_boolean
+krb5_principal_is_krbtgt(krb5_context context, krb5_const_principal p)
+{
+    return p->name.name_string.len == 2 &&
+	strcmp(p->name.name_string.val[0], KRB5_TGS_NAME) == 0;
+
+}

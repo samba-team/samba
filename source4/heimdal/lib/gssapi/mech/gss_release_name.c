@@ -28,6 +28,21 @@
 
 #include "mech_locl.h"
 
+/**
+ * Free a name
+ *
+ * import_name can point to NULL or be NULL, or a pointer to a
+ * gss_name_t structure. If it was a pointer to gss_name_t, the
+ * pointer will be set to NULL on success and failure.
+ *
+ * @param minor_status minor status code
+ * @param input_name name to free
+ *
+ * @returns a gss_error code, see gss_display_status() about printing
+ *        the error code.
+ *  
+ * @ingroup gssapi
+ */
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_name(OM_uint32 *minor_status,
     gss_name_t *input_name)

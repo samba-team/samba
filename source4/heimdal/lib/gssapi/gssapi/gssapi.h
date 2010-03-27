@@ -862,18 +862,18 @@ OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_unseal
             int * /*qop_state*/
            );
 
-/*
+/**
  *
  */
 
 OM_uint32 GSSAPI_LIB_FUNCTION
-gss_encapsulate_token(gss_buffer_t /* input_token */,
-		      gss_OID /* oid */,
+gss_encapsulate_token(const gss_buffer_t /* input_token */,
+		      const gss_OID /* oid */,
 		      gss_buffer_t /* output_token */);
 
 OM_uint32 GSSAPI_LIB_FUNCTION
-gss_decapsulate_token(gss_buffer_t /* input_token */,
-		      gss_OID /* oid */,
+gss_decapsulate_token(const gss_buffer_t /* input_token */,
+		      const gss_OID /* oid */,
 		      gss_buffer_t /* output_token */);
 
 

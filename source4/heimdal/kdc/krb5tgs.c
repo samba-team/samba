@@ -33,8 +33,6 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id$");
-
 /*
  * return the realm of a krbtgt-ticket or NULL
  */

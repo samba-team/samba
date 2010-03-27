@@ -46,8 +46,8 @@
  * Unix /dev/random
  */
 
-static int
-get_device_fd(int flags)
+int
+_hc_unix_device_fd(int flags, char **fn)
 {
     static const char *rnd_devices[] = {
 	"/dev/urandom",
@@ -61,6 +61,8 @@ get_device_fd(int flags)
     for(p = rnd_devices; *p; p++) {
 	int fd = open(*p, flags | O_NDELAY);
 	if(fd >= 0) {
+	    if (fn)
+		*fn = *p;
 	    rk_cloexec(fd);
 	    return fd;
 	}
@@ -76,7 +78,7 @@ unix_seed(const void *indata, int size)
     if (size <= 0)
 	return;
 
-    fd = get_device_fd(O_WRONLY);
+    fd = _hc_unix_device_fd(O_WRONLY, NULL);
     if (fd < 0)
 	return;
 
@@ -97,7 +99,7 @@ unix_bytes(unsigned char *outdata, int size)
     else if (size == 0)
 	return 1;
 
-    fd = get_device_fd(O_RDONLY);
+    fd = _hc_unix_device_fd(O_RDONLY, NULL);
     if (fd < 0)
 	return 0;
 
@@ -139,7 +141,7 @@ unix_status(void)
 {
     int fd;
 
-    fd = get_device_fd(O_RDONLY);
+    fd = _hc_unix_device_fd(O_RDONLY, NULL);
     if (fd < 0)
 	return 0;
     close(fd);

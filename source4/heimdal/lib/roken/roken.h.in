@@ -471,7 +471,7 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL getdtablesize(void);
 ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL strerror(int);
 #endif
 
-#if !defined(HAVE_STRERROR_R) && !defined(strerror_r) && !defined(STRERROR_R_PROTO_COMPATIBLE)
+#if (!defined(HAVE_STRERROR_R) && !defined(strerror_r)) || (!defined(STRERROR_R_PROTO_COMPATIBLE) && defined(HAVE_STRERROR_R))
 int ROKEN_LIB_FUNCTION rk_strerror_r(int, char *, size_t);
 #else
 #define rk_strerror_r strerror_r
@@ -652,8 +652,14 @@ ROKEN_LIB_FUNCTION unsigned short ROKEN_LIB_CALL bswap16(unsigned short);
 int rk_flock(int fd, int operation);
 #endif /* HAVE_FLOCK */
 
-#if defined(SunOS) || defined(_AIX)
+#ifndef HAVE_DIRFD
+#ifdef HAVE_DIR_DD_FD
 #define dirfd(x) ((x)->dd_fd)
+#else
+#ifndef _WIN32 /* Windows code never calls dirfd */
+#error Missing dirfd() and ->dd_fd
+#endif
+#endif
 #endif
 
 ROKEN_LIB_FUNCTION time_t ROKEN_LIB_CALL tm2time (struct tm, int);
@@ -1031,6 +1037,12 @@ rk_timegm(struct tm *tm);
 #define qsort rk_qsort
 void
 rk_qsort(void *, size_t, size_t, int (*)(const void *, const void *));
+#endif
+
+#if defined(__linux__) && SOCK_CLOEXEC && !defined(SOCKET_WRAPPER_REPLACE) 
+#undef socket
+#define socket(_fam,_type,_prot) rk_socket(_fam,_type,_prot)
+int ROKEN_LIB_FUNCTION rk_socket(int, int, int);
 #endif
 
 #ifdef SOCKET_WRAPPER_REPLACE

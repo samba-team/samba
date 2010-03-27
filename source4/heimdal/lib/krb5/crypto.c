@@ -67,6 +67,7 @@ struct krb5_crypto_data {
 #define F_PSEUDO	16	/* not a real protocol type */
 #define F_SPECIAL	32	/* backwards */
 #define F_DISABLED	64	/* enctype/checksum disabled */
+#define F_WEAK	       128	/* enctype is considered weak */
 
 struct salt_type {
     krb5_salttype type;
@@ -2612,7 +2613,7 @@ static struct encryption_type enctype_des_cbc_crc = {
     &keytype_des,
     &checksum_crc32,
     NULL,
-    F_DISABLED,
+    F_DISABLED|F_WEAK,
     evp_des_encrypt_key_ivec,
     0,
     NULL
@@ -2626,7 +2627,7 @@ static struct encryption_type enctype_des_cbc_md4 = {
     &keytype_des,
     &checksum_rsa_md4,
     &checksum_rsa_md4_des,
-    F_DISABLED,
+    F_DISABLED|F_WEAK,
     evp_des_encrypt_null_ivec,
     0,
     NULL
@@ -2640,7 +2641,7 @@ static struct encryption_type enctype_des_cbc_md5 = {
     &keytype_des,
     &checksum_rsa_md5,
     &checksum_rsa_md5_des,
-    F_DISABLED,
+    F_DISABLED|F_WEAK,
     evp_des_encrypt_null_ivec,
     0,
     NULL
@@ -2654,7 +2655,7 @@ static struct encryption_type enctype_des_cbc_none = {
     &keytype_des,
     &checksum_none,
     NULL,
-    F_PSEUDO|F_DISABLED,
+    F_PSEUDO|F_DISABLED|F_WEAK,
     evp_des_encrypt_null_ivec,
     0,
     NULL
@@ -2668,7 +2669,7 @@ static struct encryption_type enctype_des_cfb64_none = {
     &keytype_des_old,
     &checksum_none,
     NULL,
-    F_PSEUDO|F_DISABLED,
+    F_PSEUDO|F_DISABLED|F_WEAK,
     DES_CFB64_encrypt_null_ivec,
     0,
     NULL
@@ -2682,7 +2683,7 @@ static struct encryption_type enctype_des_pcbc_none = {
     &keytype_des_old,
     &checksum_none,
     NULL,
-    F_PSEUDO|F_DISABLED,
+    F_PSEUDO|F_DISABLED|F_WEAK,
     DES_PCBC_encrypt_key_ivec,
     0,
     NULL
@@ -3143,8 +3144,14 @@ decrypt_internal(krb5_context context,
 	krb5_clear_error_message(context);
 	return KRB5_BAD_MSIZE;
     }
-
     checksum_sz = CHECKSUMSIZE(et->checksum);
+    if (len < checksum_sz + et->confoundersize) {
+	krb5_set_error_message(context, KRB5_BAD_MSIZE,
+			       N_("Encrypted data shorter then "
+				  "checksum + confunder", ""));
+	return KRB5_BAD_MSIZE;
+    }
+
     p = malloc(len);
     if(len != 0 && p == NULL) {
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
@@ -3204,6 +3211,12 @@ decrypt_internal_special(krb5_context context,
 
     if ((len % et->padsize) != 0) {
 	krb5_clear_error_message(context);
+	return KRB5_BAD_MSIZE;
+    }
+    if (len < cksum_sz + et->confoundersize) {
+	krb5_set_error_message(context, KRB5_BAD_MSIZE,
+			       N_("Encrypted data shorter then "
+				  "checksum + confunder", ""));
 	return KRB5_BAD_MSIZE;
     }
 
@@ -4399,6 +4412,33 @@ krb5_enctype_enable(krb5_context context,
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     et->flags &= ~F_DISABLED;
+    return 0;
+}
+
+/**
+ * Enable or disable all weak encryption types
+ *
+ * @param context Kerberos 5 context
+ * @param enable true to enable, false to disable
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_crypto
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_allow_weak_crypto(krb5_context context,
+		       krb5_boolean enable)
+{
+    int i;
+
+    for(i = 0; i < num_etypes; i++)
+	if(etypes[i]->flags & F_WEAK) {
+	    if(enable)
+		etypes[i]->flags &= ~F_DISABLED;
+	    else
+		etypes[i]->flags |= F_DISABLED;
+	}
     return 0;
 }
 

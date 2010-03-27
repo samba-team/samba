@@ -521,8 +521,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     struct rk_dns_reply *r;
     void *reply = NULL;
-    int size;
-    int len;
+    int size, len;
 #if defined(HAVE_DNS_SEARCH)
     struct sockaddr_storage from;
     uint32_t fromsize = sizeof(from);
@@ -540,15 +539,12 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	return NULL; /* is this the best we can do? */
 #endif
 
-    size = 0;
-    len = 1000;
-    do {
+    len = 1500;
+    while(1) {
 	if (reply) {
 	    free(reply);
 	    reply = NULL;
 	}
-	if (size <= len)
-	    size = len;
 	if (_resolve_debug) {
 #if defined(HAVE_DNS_SEARCH)
 	    dns_set_debug(handle, 1);
@@ -556,27 +552,37 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	    state.options |= RES_DEBUG;
 #endif
 	    fprintf(stderr, "dns_lookup(%s, %d, %s), buffer size %d\n", domain,
-		    rr_class, rk_dns_type_to_string(rr_type), size);
+		    rr_class, rk_dns_type_to_string(rr_type), len);
 	}
-	reply = malloc(size);
+	reply = malloc(len);
 	if (reply == NULL) {
 	    resolve_free_handle(handle);
 	    return NULL;
 	}
 
-	len = resolve_search(handle, domain, rr_class, rr_type, reply, size);
+	size = resolve_search(handle, domain, rr_class, rr_type, reply, len);
 
 	if (_resolve_debug) {
 	    fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
-		    domain, rr_class, rk_dns_type_to_string(rr_type), len);
+		    domain, rr_class, rk_dns_type_to_string(rr_type), size);
 	}
-	if (len <= 0) {
+	if (size > len) {
+	    /* resolver thinks it know better, go for it */
+	    len = size;
+	} else if (size > 0) {
+	    /* got a good reply */
+	    break;
+	} else if (size <= 0 && len < rk_DNS_MAX_PACKET_SIZE) {
+	    len *= 2;
+	    if (len > rk_DNS_MAX_PACKET_SIZE)
+		len = rk_DNS_MAX_PACKET_SIZE;
+	} else {
+	    /* the end, leave */
 	    resolve_free_handle(handle);
 	    free(reply);
 	    return NULL;
 	}
-    } while (size < len && len < rk_DNS_MAX_PACKET_SIZE);
-    resolve_free_handle(handle);
+    }
 
     len = min(len, size);
     r = parse_reply(reply, len);

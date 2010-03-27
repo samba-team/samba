@@ -158,6 +158,8 @@ typedef struct HDB{
     krb5_error_code (*hdb_unlock)(krb5_context, struct HDB*);
     /**
      * Rename the data base.
+     *
+     * Assume that the database is not hdb_open'ed and not locked.
      */
     krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
     /**

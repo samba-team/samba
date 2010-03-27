@@ -52,12 +52,12 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
 	ctx->buf = NULL;
     }
     if (ctx->opad) {
-	memset(ctx->ipad, 0, ctx->key_length);
+	memset(ctx->opad, 0, EVP_MD_block_size(ctx->md));
 	free(ctx->opad);
 	ctx->opad = NULL;
     }
     if (ctx->ipad) {
-	memset(ctx->ipad, 0, ctx->key_length);
+	memset(ctx->ipad, 0, EVP_MD_block_size(ctx->md));
 	free(ctx->ipad);
 	ctx->ipad = NULL;
     }

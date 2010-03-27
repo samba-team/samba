@@ -342,23 +342,32 @@ RAND_write_file(const char *filename)
 const char *
 RAND_file_name(char *filename, size_t size)
 {
-    const char *e = NULL;
+    char *e = NULL;
     int pathp = 0, ret;
 
     if (!issuid()) {
 	e = getenv("RANDFILE");
-	if (e == NULL) {
+	if (e == NULL)
 	    e = getenv("HOME");
-	    if (e)
-		pathp = 1;
-	}
+	if (e)
+	    pathp = 1;
     }
     /*
      * Here we really want to call getpwuid(getuid()) but this will
      * cause recursive lookups if the nss library uses
      * gssapi/krb5/hcrypto to authenticate to the ldap servers.
+     *
+     * So at least return the unix /dev/random if we have one
      */
+#ifndef _WIN32
+    if (e == NULL) {
+	int fd;
 
+	fd = _hc_unix_device_fd(O_RDONLY, &e);
+	if (fd >= 0)
+	    close(fd);
+    }
+#endif
     if (e == NULL)
 	return NULL;
 

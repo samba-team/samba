@@ -35,8 +35,6 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id$");
-
 #ifdef PKINIT
 
 #include <heim_asn1.h>

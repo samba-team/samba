@@ -138,6 +138,31 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	return (GSS_S_COMPLETE);
 }
 
+/**
+ * Import a name internal or mechanism name
+ *
+ * Type of name and their format:
+ * - GSS_C_NO_OID
+ * - GSS_C_NT_USER_NAME
+ * - GSS_C_NT_HOSTBASED_SERVICE
+ * - GSS_C_NT_EXPORT_NAME
+ * - GSS_C_NT_ANONYMOUS
+ * - GSS_KRB5_NT_PRINCIPAL_NAME
+ *
+ * For more information about @ref internalVSmechname.
+ *
+ * @param minor_status minor status code
+ * @param input_name_buffer import name buffer
+ * @param input_name_type type of the import name buffer
+ * @param output_name the resulting type, release with
+ *        gss_release_name(), independent of input_name
+ *
+ * @returns a gss_error code, see gss_display_status() about printing
+ *        the error code.
+ *  
+ * @ingroup gssapi
+ */
+
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_import_name(OM_uint32 *minor_status,
     const gss_buffer_t input_name_buffer,

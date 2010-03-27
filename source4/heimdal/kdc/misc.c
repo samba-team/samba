@@ -33,8 +33,6 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id$");
-
 struct timeval _kdc_now;
 
 krb5_error_code

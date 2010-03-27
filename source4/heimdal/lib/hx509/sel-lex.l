@@ -53,6 +53,10 @@ static int lex_input(char *, int);
 
 struct hx_expr_input _hx509_expr_input;
 
+#ifndef YY_NULL
+#define YY_NULL 0
+#endif
+
 #define YY_NO_UNPUT 1
 
 #undef YY_INPUT

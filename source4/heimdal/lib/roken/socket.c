@@ -315,3 +315,24 @@ socket_to_fd(rk_socket_t sock, int flags)
     return _open_osfhandle((intptr_t) sock, flags);
 #endif
 }
+
+#ifndef HEIMDAL_SMALLER
+#undef socket
+
+int rk_socket(int, int, int);
+
+int
+rk_socket(int domain, int type, int protocol)
+{
+    int s;
+    s = socket (domain, type, protocol);
+#ifdef SOCK_CLOEXEC
+    if ((SOCK_CLOEXEC & type) && s < 0 && errno == EINVAL) {
+	type &= ~SOCK_CLOEXEC;
+	s = socket (domain, type, protocol);
+    }
+#endif
+    return s;
+}
+
+#endif /* HEIMDAL_SMALLER */

@@ -34,8 +34,8 @@
 #include "mech_locl.h"
 
 OM_uint32 GSSAPI_LIB_FUNCTION
-gss_encapsulate_token(gss_buffer_t input_token,
-		      gss_OID oid,
+gss_encapsulate_token(const gss_buffer_t input_token,
+		      const gss_OID oid,
 		      gss_buffer_t output_token)
 {
     GSSAPIContextToken ct;

@@ -535,7 +535,8 @@ krb5_free_context(krb5_context context)
     krb5_set_send_to_kdc_func(context, NULL, NULL);
 
 #ifdef PKINIT
-    hx509_context_free(&context->hx509ctx);
+    if (context->hx509ctx)
+	hx509_context_free(&context->hx509ctx);
 #endif
 
     HEIMDAL_MUTEX_destroy(context->mutex);
@@ -824,23 +825,33 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_default_in_tkt_etypes(krb5_context context,
 			       const krb5_enctype *etypes)
 {
+    krb5_error_code ret;
     krb5_enctype *p = NULL;
-    int i;
+    unsigned int n, m;
 
     if(etypes) {
-	for (i = 0; etypes[i]; ++i) {
-	    krb5_error_code ret;
-	    ret = krb5_enctype_valid(context, etypes[i]);
-	    if (ret)
-		return ret;
-	}
-	++i;
-	ALLOC(p, i);
+	for (n = 0; etypes[n]; n++)
+	    ;
+	n++;
+	ALLOC(p, n);
 	if(!p) {
-	    krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
+	    krb5_set_error_message (context, ENOMEM,
+				    N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
-	memmove(p, etypes, i * sizeof(krb5_enctype));
+	for (n = 0, m = 0; etypes[n]; n++) {
+	    ret = krb5_enctype_valid(context, etypes[n]);
+	    if (ret)
+		continue;
+	    p[m++] = etypes[n];
+	}
+	p[m] = ETYPE_NULL;
+	if (m == 0) {
+	    free(p);
+	    krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
+				    N_("no valid enctype set", ""));
+	    return KRB5_PROG_ETYPE_NOSUPP;
+	}
     }
     if(context->etypes)
 	free(context->etypes);
@@ -1375,6 +1386,7 @@ _krb5_homedir_access(krb5_context context)
  * @param allow allow if TRUE home directory
  * @return the old value
  *
+ * @ingroup krb5
  */
 
 krb5_boolean

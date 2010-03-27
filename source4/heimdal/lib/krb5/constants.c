@@ -42,6 +42,7 @@ KRB5_LIB_VARIABLE const char *krb5_config_file =
 "~/Library/Preferences/edu.mit.Kerberos:"
 "/Library/Preferences/edu.mit.Kerberos:"
 #endif	/* __APPLE__ */
+"~/.krb5/config:"
 SYSCONFDIR "/krb5.conf"
 #ifndef _WIN32
 ":/etc/krb5.conf"

@@ -37,8 +37,6 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 
-RCSID("$Id$");
-
 krb5_error_code
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 {

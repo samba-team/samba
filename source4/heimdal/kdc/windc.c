@@ -33,8 +33,6 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id$");
-
 static krb5plugin_windc_ftable *windcft;
 static void *windcctx;
 

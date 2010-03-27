@@ -952,9 +952,7 @@ get_cred_kdc_referral(krb5_context context,
 					     ticket.server))
 	    break;
 
-	if (ticket.server->name.name_string.len != 2 &&
-	    strcmp(ticket.server->name.name_string.val[0], KRB5_TGS_NAME) != 0)
-	{
+	if (!krb5_principal_is_krbtgt(context, ticket.server)) {
 	    krb5_set_error_message(context, KRB5KRB_AP_ERR_NOT_US,
 				   N_("Got back an non krbtgt "
 				      "ticket referrals", ""));

@@ -107,7 +107,7 @@
 #include <windc_plugin.h>
 
 #undef ALLOC
-#define ALLOC(X) ((X) = malloc(sizeof(*(X))))
+#define ALLOC(X) ((X) = calloc(1, sizeof(*(X))))
 #undef ALLOC_SEQ
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); \
 (X)->val = calloc((X)->len, sizeof(*(X)->val)); } while(0)

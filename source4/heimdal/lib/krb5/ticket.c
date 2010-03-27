@@ -443,9 +443,7 @@ check_server_referral(krb5_context context,
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
-    if (returned->name.name_string.len == 2 &&
-	strcmp(returned->name.name_string.val[0], KRB5_TGS_NAME) == 0)
-    {
+    if (krb5_principal_is_krbtgt(context, returned)) {
 	const char *realm = returned->name.name_string.val[1];
 
 	if (ref.referred_realm == NULL
@@ -485,7 +483,13 @@ check_server_referral(krb5_context context,
 
     return ret;
 noreferral:
-    if (krb5_principal_compare(context, requested, returned) == FALSE) {
+    /*
+     * Expect excact match or that we got a krbtgt
+     */
+    if (krb5_principal_compare(context, requested, returned) != TRUE &&
+	(krb5_realm_compare(context, requested, returned) != TRUE &&
+	 krb5_principal_is_krbtgt(context, returned) != TRUE))
+    {
 	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
 			       N_("Not same server principal returned "
 				  "as requested", ""));
