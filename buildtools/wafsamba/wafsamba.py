@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc, TaskGen
+import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
@@ -640,10 +640,14 @@ Build.BuildContext.INSTALL_FILES = INSTALL_FILES
 
 
 def INSTALL_WILDCARD(bld, destdir, pattern, chmod=0644, flat=False,
-                     python_fixup=False):
+                     python_fixup=False, exclude=None):
     '''install a set of files matching a wildcard pattern'''
-    files=bld.path.ant_glob(pattern)
-    INSTALL_FILES(bld, destdir, files, chmod=chmod, flat=flat)
+    files=TO_LIST(bld.path.ant_glob(pattern))
+    if exclude:
+        for f in files[:]:
+            if fnmatch.fnmatch(f, exclude):
+                files.remove(f)
+    INSTALL_FILES(bld, destdir, files, chmod=chmod, flat=flat, python_fixup=python_fixup)
 Build.BuildContext.INSTALL_WILDCARD = INSTALL_WILDCARD
 
 
@@ -654,7 +658,6 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None):
     or it can be a dictionary of wildcard patterns which map to destination
     directories relative to INCLUDEDIR
     '''
-    import fnmatch
     dest = '${INCLUDEDIR}'
     if isinstance(header_path, str):
         dest += '/' + header_path
