@@ -701,5 +701,6 @@ def PKG_CONFIG_FILES(bld, pc_files):
     dest = '${PKGCONFIGDIR}'
     dest = bld.EXPAND_VARIABLES(dest)
     for f in TO_LIST(pc_files):
-        INSTALL_FILES(bld, dest, f+'.in', flat=True, destname=f)
+        INSTALL_FILES(bld, dest, f+'.in', flat=True,
+                      destname=os.path.basename(f))
 Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
