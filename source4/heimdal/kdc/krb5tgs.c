@@ -486,7 +486,7 @@ check_tgs_flags(krb5_context context,
 }
 
 /*
- *
+ * Determine if constrained delegation is allowed from this client to this server
  */
 
 static krb5_error_code
@@ -525,6 +525,38 @@ check_constrained_delegation(krb5_context context,
     }
     kdc_log(context, config, 0,
 	    "Bad request for constrained delegation");
+    return ret;
+}
+
+/*
+ * Determine if s4u2self is allowed from this client to this server
+ *
+ * For example, regardless of the principal being impersonated, if the
+ * 'client' and 'server' are the same, then it's safe.
+ */
+
+static krb5_error_code
+check_s4u2self(krb5_context context,
+	       krb5_kdc_configuration *config,
+	       HDB *clientdb,
+	       hdb_entry_ex *client,
+	       krb5_const_principal server)
+{
+    const HDB_Ext_Constrained_delegation_acl *acl;
+    krb5_error_code ret;
+    int i;
+
+    /* if client does a s4u2self to itself, that ok */
+    if (krb5_principal_compare(context, client->entry.principal, server) == TRUE)
+	return 0;
+
+    if (clientdb->hdb_check_s4u2self) {
+	ret = clientdb->hdb_check_s4u2self(context, clientdb, client, server);
+	if (ret == 0)
+	    return 0;
+    } else {
+	ret = KRB5KDC_ERR_BADOPTION;
+    }
     return ret;
 }
 
@@ -1783,13 +1815,13 @@ server_lookup:
 	     * Check that service doing the impersonating is
 	     * requesting a ticket to it-self.
 	     */
-	    if (krb5_principal_compare(context, cp, sp) != TRUE) {
+	    ret = check_s4u2self(context, config, clientdb, client, sp);
+	    if (ret) {
 		kdc_log(context, config, 0, "S4U2Self: %s is not allowed "
-			"to impersonate some other user "
+			"to impersonate to service "
 			"(tried for user %s to service %s)",
 			cpn, selfcpn, spn);
 		free(selfcpn);
-		ret = KRB5KDC_ERR_BADOPTION; /* ? */
 		goto out;
 	    }
 

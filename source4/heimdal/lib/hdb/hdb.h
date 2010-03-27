@@ -235,9 +235,14 @@ typedef struct HDB{
      * Check if this name is an alias for the supplied client for PKINIT userPrinicpalName logins
      */
     krb5_error_code (*hdb_check_pkinit_ms_upn_match)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
+
+    /**
+     * Check if s4u2self is allowed from this client to this server
+     */
+    krb5_error_code (*hdb_check_s4u2self)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	6
+#define HDB_INTERFACE_VERSION	7
 
 struct hdb_so_method {
     int version;
