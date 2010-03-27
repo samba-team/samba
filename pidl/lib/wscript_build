@@ -1,0 +1,2 @@
+# install the pidl modules
+bld.INSTALL_WILDCARD('${DATAROOTDIR}/perl5', '**/*.pm', flat=False)

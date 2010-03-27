@@ -1,2 +1,4 @@
 
 bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
+
+bld.BUILD_SUBDIR('lib')
