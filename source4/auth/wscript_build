@@ -12,6 +12,7 @@ bld.SAMBA_SUBSYSTEM('auth_session',
 	autoproto='session_proto.h',
 	public_deps='CREDENTIALS',
 	public_headers='session.h',
+        header_path='samba',
 	deps='SAMDB'
 	)
 

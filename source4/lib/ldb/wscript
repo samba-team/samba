@@ -107,6 +107,7 @@ def build(bld):
 		      COMMON_SRC + ' ' + LDB_MAP_SRC,
 		      deps=ldb_deps,
 		      includes='include',
+                      public_headers='include/ldb.h include/ldb_errors.h',
                       vnum=VERSION)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',

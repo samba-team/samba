@@ -82,4 +82,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
                         'dynconfig.c',
                         deps='replace talloc',
+                        public_headers='../version.h',
+                        header_path='samba',
                         cflags=cflags)
