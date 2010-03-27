@@ -44,7 +44,6 @@ def get_varname(v):
 
 def set_options(opt):
     # get all the basic GNU options from the gnu_dirs tool
-    opt.tool_options('gnu_dirs')
     for option in dir_options.keys():
         default = dir_options[option][0]
         help    = dir_options[option][1]
@@ -55,7 +54,6 @@ def set_options(opt):
 
 def configure(conf):
     # get all the basic GNU options from the gnu_dirs tool
-    conf.check_tool('gnu_dirs')
     for option in dir_options.keys():
         varname = get_varname(option)
         value = getattr(Options.options, varname, None)

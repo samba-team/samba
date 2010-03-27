@@ -6,6 +6,7 @@ import Options, os, preproc
 def set_options(opt):
     opt.tool_options('compiler_cc')
 
+    opt.tool_options('gnu_dirs')
     opt.add_option('--libdir',
                    help=("object code libraries [PREFIX/lib"),
                    action="store", dest='LIBDIR', default='${PREFIX}/lib')
@@ -54,6 +55,7 @@ def configure(conf):
     conf.SETUP_CONFIGURE_CACHE(Options.options.enable_configure_cache)
 
     # load our local waf extensions
+    conf.check_tool('gnu_dirs')
     conf.check_tool('wafsamba')
 
     conf.CHECK_CC_ENV()
