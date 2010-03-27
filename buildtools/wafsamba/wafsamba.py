@@ -37,6 +37,14 @@ def SAMBA_BUILD_ENV(conf):
         if not os.path.lexists(link_target):
             os.symlink('../' + p, link_target)
 
+    # get perl to put the blib files in the build directory
+    blib_bld = os.path.join(conf.blddir, 'default/pidl/blib')
+    blib_src = os.path.join(conf.srcdir, 'pidl/blib')
+    mkdir_p(blib_bld + '/man1')
+    mkdir_p(blib_bld + '/man3')
+    if not os.path.lexists(blib_src):
+        os.symlink(blib_bld, blib_src)
+
 
 
 ################################################################
@@ -459,7 +467,7 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
         return
 
     bld.SET_BUILD_GROUP(group)
-    bld(
+    t = bld(
         rule=rule,
         source=bld.EXPAND_VARIABLES(source, vars=vars),
         target=target,
@@ -471,6 +479,7 @@ def SAMBA_GENERATOR(bld, name, rule, source, target,
 
     if public_headers is not None:
         bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
+    return t
 Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
 
