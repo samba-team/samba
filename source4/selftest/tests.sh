@@ -118,7 +118,10 @@ for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD -
     plantest "ldb.ldap with options $options" dc $bbdir/test_ldb.sh ldap \$SERVER $options
 done
 # see if we support ldaps
-if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
+[ -n "$CONFIG_H" ] || {
+    CONFIG_H="include/config.h"
+}
+if grep ENABLE_GNUTLS.1 $CONFIG_H > /dev/null; then
     for options in "" "-U\$USERNAME%\$PASSWORD"; do
 	plantest "ldb.ldaps with options $options" dc $bbdir/test_ldb.sh ldaps \$SERVER_IP $options
     done
