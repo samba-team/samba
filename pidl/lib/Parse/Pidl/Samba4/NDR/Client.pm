@@ -280,7 +280,22 @@ sub ParseFunction_r_Sync($$$)
 	$res .= "\t\tstruct dcerpc_pipe);\n";
 	$res .= "\n";
 
-	$res .= "\treturn dcerpc_$name(p, mem_ctx, r);\n";
+	$res .= "
+	NTSTATUS status;
+
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+		NDR_PRINT_IN_DEBUG($name, r);
+	}
+
+	status = dcerpc_ndr_request(p, NULL, &ndr_table_$interface->{NAME},
+				    NDR_$uname, mem_ctx, r);
+
+	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
+		NDR_PRINT_OUT_DEBUG($name, r);
+	}
+	return status;
+";
+
 	$res .= "}\n";
 	$res .= "\n";
 }
