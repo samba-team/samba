@@ -75,6 +75,9 @@ def cmd_testonly(opt):
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')
 
+    # tell build system where to find config.h
+    os.environ['CONFIG_H'] = 'bin/default/source4/include/config.h'
+
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):
         os.unlink(st_done)
