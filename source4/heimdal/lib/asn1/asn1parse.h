@@ -225,7 +225,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 65 "heimdal/lib/asn1/asn1parse.y"
+#line 67 "heimdal/lib/asn1/asn1parse.y"
 
     int constant;
     struct value *value;
