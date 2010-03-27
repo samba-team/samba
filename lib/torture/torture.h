@@ -238,6 +238,13 @@ void torture_result(struct torture_context *test,
 		return false; \
 	}
 
+#define torture_assert_goto(torture_ctx,expr,ret,label,cmt) \
+	if (!(expr)) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": Expression `%s' failed: %s", __STRING(expr), cmt); \
+		ret = false; \
+		goto label; \
+	}
+
 #define torture_assert_werr_equal(torture_ctx, got, expected, cmt) \
 	do { WERROR __got = got, __expected = expected; \
 	if (!W_ERROR_EQUAL(__got, __expected)) { \
