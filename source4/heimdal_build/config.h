@@ -6,10 +6,6 @@
 #ifndef HAVE_HEIMDAL_CONFIG_H
 #define HAVE_HEIMDAL_CONFIG_H
 
-#ifndef HAVE_STRERROR_R
-#define HAVE_STRERROR_R
-#endif
-
 #include "include/config.h"
 #include "../replace/replace.h"
 
