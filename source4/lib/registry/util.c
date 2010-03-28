@@ -71,31 +71,27 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 	switch (type) {
 		case REG_EXPAND_SZ:
 		case REG_SZ:
-			if (data.length % 2 == 0) {
-				convert_string_talloc_convenience(mem_ctx,
-								  iconv_convenience,
-								  CH_UTF16, CH_UNIX,
-								  data.data,
-								  data.length,
-								  (void **)&ret,
-								  NULL, false);
-			}
+			convert_string_talloc_convenience(mem_ctx,
+							  iconv_convenience,
+							  CH_UTF16, CH_UNIX,
+							  data.data,
+							  data.length,
+							  (void **)&ret,
+							  NULL, false);
 			break;
 		case REG_BINARY:
 			ret = data_blob_hex_string_upper(mem_ctx, &data);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
-			if (data.length == sizeof(uint32_t)) {
+			SMB_ASSERT(data.length == sizeof(uint32_t));
 				ret = talloc_asprintf(mem_ctx, "0x%8.8x",
 						      IVAL(data.data, 0));
-			}
 			break;
 		case REG_QWORD:
-			if (data.length == sizeof(uint64_t)) {
-				ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
-						      BVAL(data.data, 0));
-			}
+			SMB_ASSERT(data.length == sizeof(uint64_t));
+			ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
+					      BVAL(data.data, 0));
 			break;
 		case REG_NONE:
 			/* "NULL" is the right return value */
