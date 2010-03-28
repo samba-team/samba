@@ -42,7 +42,7 @@ bld.SAMBA_MODULE('share_ldb',
 
 bld.SAMBA_SUBSYSTEM('SECRETS',
 	source='secrets.c',
-	deps='ldb TDB_WRAP UTIL_TDB NDR_SECURITY'
+	deps='ldb TDB_WRAP UTIL_TDB NDR_SECURITY tevent'
 	)
 
 

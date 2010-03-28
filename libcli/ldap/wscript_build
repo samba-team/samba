@@ -12,6 +12,6 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP_NDR',
 	source='ldap_ndr.c',
 	public_deps='LIBSAMBA-ERRORS talloc',
 	public_headers='ldap_ndr.h',
-	deps='LIBSAMBA-UTIL ldb NDR_MISC NDR_SECURITY'
+	deps='LIBSAMBA-UTIL ldb NDR_MISC NDR_SECURITY tevent'
 	)
 
