@@ -195,7 +195,8 @@ open files, %d are available.\n", request_max_open_files, real_max_open_files));
 
 	SMB_ASSERT(real_max_open_files > 100);
 
-	file_bmap = bitmap_allocate(real_max_open_files);
+	file_bmap = bitmap_talloc(talloc_autofree_context(),
+				  real_max_open_files);
 
 	if (!file_bmap) {
 		exit_server("out of memory in file_init");
