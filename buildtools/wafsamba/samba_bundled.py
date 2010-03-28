@@ -59,7 +59,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         conf.env[found] = True
         return True
     if checkfunctions is not None:
-        if conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers):
+        if conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers, empty_decl=False):
             conf.env[found] = True
             return True
     conf.env[found] = False
