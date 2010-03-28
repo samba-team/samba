@@ -2950,18 +2950,27 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	return status;
 }
 
+#define RPCCLI_DEFAULT_TIMEOUT 10000 /* 10 seconds. */
+
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *rpc_cli,
 				unsigned int timeout)
 {
+	unsigned int old;
+
 	if (rpc_cli->transport == NULL) {
-		return 0;
+		return RPCCLI_DEFAULT_TIMEOUT;
 	}
 
 	if (rpc_cli->transport->set_timeout == NULL) {
-		return 0;
+		return RPCCLI_DEFAULT_TIMEOUT;
 	}
 
-	return rpc_cli->transport->set_timeout(rpc_cli->transport->priv, timeout);
+	old = rpc_cli->transport->set_timeout(rpc_cli->transport->priv, timeout);
+	if (old == 0) {
+		return RPCCLI_DEFAULT_TIMEOUT;
+	}
+
+	return old;
 }
 
 bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
