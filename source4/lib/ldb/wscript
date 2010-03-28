@@ -22,6 +22,13 @@ def configure(conf):
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
+
+    s4_build = getattr(conf.env, '_SAMBA_BUILD_', 0) == 4
+
+    if not s4_build:
+        # we need this for the ldap backend
+        conf.CHECK_FUNCS_IN('ber_flush ldap_open', 'lber ldap', headers='lber.h ldap.h', mandatory=True)
+
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
@@ -95,10 +102,18 @@ def build(bld):
                      deps='tdb',
                      subsystem='LIBLDB')
 
+    # this is only in the s4 build
     bld.SAMBA_MODULE('ldb_ildap', 'ldb_ildap/ldb_ildap.c',
                      init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
                      deps='talloc LIBCLI_LDAP CREDENTIALS',
                      enabled=s4_build,
+                     subsystem='LIBLDB')
+
+    # this is not included in the s4 build
+    bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
+                     init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
+                     deps='talloc lber ldap',
+                     enabled=not s4_build,
                      subsystem='LIBLDB')
 
     # we're not currently linking against the ldap libs, but ldb.pc.in
@@ -111,9 +126,16 @@ def build(bld):
 
     ldb_deps = 'tevent LIBLDB'
     if s4_build:
+        # the s4 build of ldb is really quite different from the normal build
+        # so we give the library a different name to prevent problems with apps
+        # that may depend on the distro version of ldb
+        lib_name = 'ldb-s4'
+        bld.TARGET_ALIAS(lib_name, 'ldb')
         ldb_deps += ' LDBSAMBA POPT_CREDENTIALS POPT_SAMBA LIBCMDLINE_CREDENTIALS gensec'
+    else:
+        lib_name = 'ldb'
 
-    bld.SAMBA_LIBRARY('ldb',
+    bld.SAMBA_LIBRARY(lib_name,
 		      COMMON_SRC + ' ' + LDB_MAP_SRC,
 		      deps=ldb_deps,
 		      includes='include',
