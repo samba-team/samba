@@ -61,23 +61,22 @@ static void recycle_disconnect(vfs_handle_struct *handle)
 static const char *recycle_repository(vfs_handle_struct *handle)
 {
 	const char *tmp_str = NULL;
-	
 
 	tmp_str = lp_parm_const_string(SNUM(handle->conn), "recycle", "repository",".recycle");
 
 	DEBUG(10, ("recycle: repository = %s\n", tmp_str));
-	
+
 	return tmp_str;
 }
 
 static bool recycle_keep_dir_tree(vfs_handle_struct *handle)
 {
 	bool ret;
-	
+
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "keeptree", False);
 
 	DEBUG(10, ("recycle_bin: keeptree = %s\n", ret?"True":"False"));
-	
+
 	return ret;
 }
 
@@ -88,7 +87,7 @@ static bool recycle_versions(vfs_handle_struct *handle)
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "versions", False);
 
 	DEBUG(10, ("recycle: versions = %s\n", ret?"True":"False"));
-	
+
 	return ret;
 }
 
@@ -99,7 +98,7 @@ static bool recycle_touch(vfs_handle_struct *handle)
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch", False);
 
 	DEBUG(10, ("recycle: touch = %s\n", ret?"True":"False"));
-	
+
 	return ret;
 }
 
@@ -110,64 +109,64 @@ static bool recycle_touch_mtime(vfs_handle_struct *handle)
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch_mtime", False);
 
 	DEBUG(10, ("recycle: touch_mtime = %s\n", ret?"True":"False"));
-	
+
 	return ret;
 }
 
 static const char **recycle_exclude(vfs_handle_struct *handle)
 {
 	const char **tmp_lp;
-	
+
 	tmp_lp = lp_parm_string_list(SNUM(handle->conn), "recycle", "exclude", NULL);
 
 	DEBUG(10, ("recycle: exclude = %s ...\n", tmp_lp?*tmp_lp:""));
-	
+
 	return tmp_lp;
 }
 
 static const char **recycle_exclude_dir(vfs_handle_struct *handle)
 {
 	const char **tmp_lp;
-	
+
 	tmp_lp = lp_parm_string_list(SNUM(handle->conn), "recycle", "exclude_dir", NULL);
 
 	DEBUG(10, ("recycle: exclude_dir = %s ...\n", tmp_lp?*tmp_lp:""));
-	
+
 	return tmp_lp;
 }
 
 static const char **recycle_noversions(vfs_handle_struct *handle)
 {
 	const char **tmp_lp;
-	
+
 	tmp_lp = lp_parm_string_list(SNUM(handle->conn), "recycle", "noversions", NULL);
 
 	DEBUG(10, ("recycle: noversions = %s\n", tmp_lp?*tmp_lp:""));
-	
+
 	return tmp_lp;
 }
 
 static SMB_OFF_T recycle_maxsize(vfs_handle_struct *handle)
 {
 	SMB_OFF_T maxsize;
-	
+
 	maxsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
 					    "recycle", "maxsize", NULL));
 
 	DEBUG(10, ("recycle: maxsize = %lu\n", (long unsigned int)maxsize));
-	
+
 	return maxsize;
 }
 
 static SMB_OFF_T recycle_minsize(vfs_handle_struct *handle)
 {
 	SMB_OFF_T minsize;
-	
+
 	minsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
 					    "recycle", "minsize", NULL));
 
 	DEBUG(10, ("recycle: minsize = %lu\n", (long unsigned int)minsize));
-	
+
 	return minsize;
 }
 
@@ -474,7 +473,7 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	/* shouldn't we allow absolute path names here? --metze */
 	/* Yes :-). JRA. */
 	trim_char(repository, '\0', '/');
-	
+
 	if(!repository || *(repository) == '\0') {
 		DEBUG(3, ("recycle: repository path not set, purging %s...\n",
 			  smb_fname_str_dbg(smb_fname)));
@@ -673,7 +672,7 @@ NTSTATUS vfs_recycle_init(void)
 
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;
-	
+
 	vfs_recycle_debug_level = debug_add_class("recycle");
 	if (vfs_recycle_debug_level == -1) {
 		vfs_recycle_debug_level = DBGC_VFS;
@@ -681,6 +680,6 @@ NTSTATUS vfs_recycle_init(void)
 	} else {
 		DEBUG(10, ("vfs_recycle: Debug class number of 'recycle': %d\n", vfs_recycle_debug_level));
 	}
-	
+
 	return ret;
 }
