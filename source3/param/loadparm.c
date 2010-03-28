@@ -6091,7 +6091,7 @@ static void free_service(struct service *pservice)
 	free_parameters(pservice);
 
 	string_free(&pservice->szService);
-	bitmap_free(pservice->copymap);
+	TALLOC_FREE(pservice->copymap);
 
 	free_param_opts(&pservice->param_opt);
 
@@ -7572,10 +7572,11 @@ static bool handle_printing(int snum, const char *pszParmValue, char **ptr)
 static void init_copymap(struct service *pservice)
 {
 	int i;
-	if (pservice->copymap) {
-		bitmap_free(pservice->copymap);
-	}
-	pservice->copymap = bitmap_allocate(NUMPARAMETERS);
+
+	TALLOC_FREE(pservice->copymap);
+
+	pservice->copymap = bitmap_talloc(talloc_autofree_context(),
+					  NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
