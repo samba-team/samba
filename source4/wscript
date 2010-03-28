@@ -40,7 +40,7 @@ def configure(conf):
     # set a lower limit on recursing in waf preprocessor
     conf.env.preprocessor_recursion_limit = 10
 
-    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include #lib/replace #lib/talloc #lib/tevent')
+    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include')
 
     conf.sub_config('../lib/replace')
 
