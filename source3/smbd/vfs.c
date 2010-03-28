@@ -111,7 +111,8 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	const struct vfs_init_function_entry *entry;
 
 	if (!conn||!vfs_object||!vfs_object[0]) {
-		DEBUG(0,("vfs_init_custon() called with NULL pointer or emtpy vfs_object!\n"));
+		DEBUG(0, ("vfs_init_custom() called with NULL pointer or "
+			  "empty vfs_object!\n"));
 		return False;
 	}
 
