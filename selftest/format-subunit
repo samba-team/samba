@@ -7,7 +7,7 @@
 
 =head1 NAME
 
-format-subunit [--format=<NAME>] [--immediate] < instream > outstream
+format-subunit [--immediate] < instream > outstream
 
 =head1 SYNOPSIS
 
@@ -20,10 +20,6 @@ Format the output of a subunit stream.
 =item I<--immediate>
 
 Show errors as soon as they happen rather than at the end of the test run.
-
-=item I<--format>=FORMAT
-
-Choose the format to print. Currently supported are plain or html.
 
 =head1 LICENSE
 
@@ -41,7 +37,6 @@ use FindBin qw($RealBin $Script);
 use lib "$RealBin";
 use Subunit qw(parse_results);
 
-my $opt_format = "plain";
 my $opt_help = undef;
 my $opt_verbose = 0;
 my $opt_immediate = 0;
@@ -49,7 +44,6 @@ my $opt_prefix = ".";
 
 my $result = GetOptions (
 		'help|h|?' => \$opt_help,
-		'format=s' => \$opt_format,
 		'verbose' => \$opt_verbose,
 		'immediate' => \$opt_immediate,
 		'prefix:s' => \$opt_prefix,
@@ -73,16 +67,8 @@ my $statistics = {
 	TESTS_SKIP => 0,
 };
 
-if ($opt_format eq "plain") {
-	require output::plain;
-	$msg_ops = new output::plain("$opt_prefix/summary", $opt_verbose, $opt_immediate, $statistics, undef);
-} elsif ($opt_format eq "html") {
-	require output::html;
-	mkdir("test-results", 0777);
-	$msg_ops = new output::html("test-results", $statistics);
-} else {
-	die("Invalid output format '$opt_format'");
-}
+require output::plain;
+$msg_ops = new output::plain("$opt_prefix/summary", $opt_verbose, $opt_immediate, $statistics, undef);
 
 my $expected_ret = parse_results($msg_ops, $statistics, *STDIN);
 
