@@ -52,4 +52,8 @@ conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h lib
 conf.DEFINE('HAVE_KRB5',1)
 conf.DEFINE('HAVE_GSSAPI',1)
 
+conf.CHECK_FUNCS('dirfd', headers='dirent.h')
+conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
+conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='dirent.h')
+
 conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
