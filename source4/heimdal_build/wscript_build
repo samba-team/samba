@@ -167,7 +167,7 @@ bld.SAMBA_ERRTABLE('HEIMDAL_WIND_ERR_ET',
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN',
-	'../heimdal/lib/roken/base64.c ../heimdal/lib/roken/ct.c ../heimdal/lib/roken/hex.c ../heimdal/lib/roken/bswap.c ../heimdal/lib/roken/dumpdata.c ../heimdal/lib/roken/emalloc.c ../heimdal/lib/roken/ecalloc.c ../heimdal/lib/roken/getarg.c ../heimdal/lib/roken/get_window_size.c ../heimdal/lib/roken/getdtablesize.c ../heimdal/lib/roken/h_errno.c ../heimdal/lib/roken/issuid.c ../heimdal/lib/roken/net_read.c ../heimdal/lib/roken/net_write.c ../heimdal/lib/roken/socket.c ../heimdal/lib/roken/parse_time.c ../heimdal/lib/roken/parse_units.c ../heimdal/lib/roken/resolve.c ../heimdal/lib/roken/roken_gethostby.c ../heimdal/lib/roken/signal.c ../heimdal/lib/roken/vis.c ../heimdal/lib/roken/strlwr.c ../heimdal/lib/roken/strsep_copy.c ../heimdal/lib/roken/strsep.c ../heimdal/lib/roken/strupr.c ../heimdal/lib/roken/strpool.c ../heimdal/lib/roken/estrdup.c ../heimdal/lib/roken/erealloc.c ../heimdal/lib/roken/simple_exec.c ../heimdal/lib/roken/strcollect.c ../heimdal/lib/roken/rtbl.c ../heimdal/lib/roken/cloexec.c ../heimdal/lib/roken/xfree.c replace.c',
+	'../heimdal/lib/roken/base64.c ../heimdal/lib/roken/ct.c ../heimdal/lib/roken/hex.c ../heimdal/lib/roken/bswap.c ../heimdal/lib/roken/dumpdata.c ../heimdal/lib/roken/emalloc.c ../heimdal/lib/roken/ecalloc.c ../heimdal/lib/roken/getarg.c ../heimdal/lib/roken/get_window_size.c ../heimdal/lib/roken/getdtablesize.c ../heimdal/lib/roken/h_errno.c ../heimdal/lib/roken/issuid.c ../heimdal/lib/roken/net_read.c ../heimdal/lib/roken/net_write.c ../heimdal/lib/roken/socket.c ../heimdal/lib/roken/parse_time.c ../heimdal/lib/roken/parse_units.c ../heimdal/lib/roken/resolve.c ../heimdal/lib/roken/roken_gethostby.c ../heimdal/lib/roken/signal.c ../heimdal/lib/roken/vis.c ../heimdal/lib/roken/strlwr.c ../heimdal/lib/roken/strsep_copy.c ../heimdal/lib/roken/strsep.c ../heimdal/lib/roken/strupr.c ../heimdal/lib/roken/strpool.c ../heimdal/lib/roken/estrdup.c ../heimdal/lib/roken/erealloc.c ../heimdal/lib/roken/simple_exec.c ../heimdal/lib/roken/strcollect.c ../heimdal/lib/roken/strerror_r.c ../heimdal/lib/roken/rtbl.c ../heimdal/lib/roken/cloexec.c ../heimdal/lib/roken/xfree.c replace.c',
 	includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
 	deps='HEIMDAL_ROKEN_PROGNAME HEIMDAL_ROKEN_CLOSEFROM resolv LIBREPLACE_NETWORK UID_WRAPPER util'
 	)
@@ -198,8 +198,10 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB_KEYS',
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB',
-                    source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c
-                              ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c hdb-glue.c''',
+                    source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
+                              ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
+                              ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
+                              hdb-glue.c''',
                     includes='../heimdal/lib/hdb ../heimdal/lib/com_err',
                     heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
@@ -377,7 +379,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM_H',
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_H',
-	'../heimdal/lib/roken/base64.c ../heimdal/lib/roken/ct.c ../heimdal/lib/roken/hex.c ../heimdal/lib/roken/bswap.c ../heimdal/lib/roken/dumpdata.c ../heimdal/lib/roken/emalloc.c ../heimdal/lib/roken/ecalloc.c ../heimdal/lib/roken/getarg.c ../heimdal/lib/roken/get_window_size.c ../heimdal/lib/roken/getdtablesize.c ../heimdal/lib/roken/h_errno.c ../heimdal/lib/roken/issuid.c ../heimdal/lib/roken/net_read.c ../heimdal/lib/roken/net_write.c ../heimdal/lib/roken/socket.c ../heimdal/lib/roken/parse_time.c ../heimdal/lib/roken/parse_units.c ../heimdal/lib/roken/resolve.c ../heimdal/lib/roken/roken_gethostby.c ../heimdal/lib/roken/signal.c ../heimdal/lib/roken/vis.c ../heimdal/lib/roken/strlwr.c ../heimdal/lib/roken/strsep_copy.c ../heimdal/lib/roken/strsep.c ../heimdal/lib/roken/strupr.c ../heimdal/lib/roken/strpool.c ../heimdal/lib/roken/estrdup.c ../heimdal/lib/roken/erealloc.c ../heimdal/lib/roken/simple_exec.c ../heimdal/lib/roken/strcollect.c ../heimdal/lib/roken/rtbl.c ../heimdal/lib/roken/cloexec.c ../heimdal/lib/roken/xfree.c replace.c',
+	'../heimdal/lib/roken/base64.c ../heimdal/lib/roken/ct.c ../heimdal/lib/roken/hex.c ../heimdal/lib/roken/bswap.c ../heimdal/lib/roken/dumpdata.c ../heimdal/lib/roken/emalloc.c ../heimdal/lib/roken/ecalloc.c ../heimdal/lib/roken/getarg.c ../heimdal/lib/roken/get_window_size.c ../heimdal/lib/roken/getdtablesize.c ../heimdal/lib/roken/h_errno.c ../heimdal/lib/roken/issuid.c ../heimdal/lib/roken/net_read.c ../heimdal/lib/roken/net_write.c ../heimdal/lib/roken/socket.c ../heimdal/lib/roken/parse_time.c ../heimdal/lib/roken/parse_units.c ../heimdal/lib/roken/resolve.c ../heimdal/lib/roken/roken_gethostby.c ../heimdal/lib/roken/signal.c ../heimdal/lib/roken/vis.c ../heimdal/lib/roken/strlwr.c ../heimdal/lib/roken/strsep_copy.c ../heimdal/lib/roken/strsep.c ../heimdal/lib/roken/strupr.c ../heimdal/lib/roken/strpool.c ../heimdal/lib/roken/estrdup.c ../heimdal/lib/roken/erealloc.c ../heimdal/lib/roken/simple_exec.c ../heimdal/lib/roken/strcollect.c ../heimdal/lib/roken/strerror_r.c ../heimdal/lib/roken/rtbl.c ../heimdal/lib/roken/cloexec.c ../heimdal/lib/roken/xfree.c replace.c',
 	includes='../heimdal/lib/roken',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
 	deps='HEIMDAL_ROKEN_PROGNAME_H HEIMDAL_ROKEN_CLOSEFROM_H resolv LIBREPLACE_NETWORK'
@@ -394,7 +396,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_COM_ERR',
 
 # here is the asn1 compiler build rule
 bld.SAMBA_BINARY('asn1_compile',
-	'../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
+	'../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
 	use_hostcc=True,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
@@ -555,4 +557,10 @@ bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
                       HEIMDAL_HEIM_ASN1_DER_SOURCE,
                       group = 'build_compilers',
                       options="-q -P comment -o")
+
+
+bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
+                      HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                      group = 'build_compilers',
+                      options="-q -P comment -p")
 

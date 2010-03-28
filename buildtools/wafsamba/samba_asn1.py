@@ -27,6 +27,7 @@ def SAMBA_ASN1(bld, name, source,
     out_files = []
     out_files.append("../heimdal/%s/asn1_%s_asn1.x" % (directory, bname))
     out_files.append("../heimdal/%s/%s_asn1.hx" % (directory, bname))
+    out_files.append("../heimdal/%s/%s_asn1-priv.hx" % (directory, bname))
 
     # the ${TGT[0].parent.abspath(env)} expression gives us the parent directory of
     # the first target in the build directory
@@ -59,6 +60,7 @@ def SAMBA_ASN1(bld, name, source,
 
     cfile = out_files[0][0:-2] + '.c'
     hfile = out_files[1][0:-3] + '.h',
+    hpriv = out_files[2][0:-3] + '.h',
 
     # now generate a .c file from the .x file
     t = bld(rule='''( echo '#include "config.h"' && cat ${SRC} ) > ${TGT}''',
@@ -80,6 +82,16 @@ def SAMBA_ASN1(bld, name, source,
             target = hfile,
             depends_on = name + '_ASN1',
             name = name + '_H')
+
+    # and generate a .h file from the .hx file
+    t = bld(rule='cp ${SRC} ${TGT}',
+            source = out_files[2],
+            ext_out = '.c',
+            ext_in = '.x',
+            on_results=True,
+            target = hpriv,
+            depends_on = name + '_ASN1',
+            name = name + '_PRIV_H')
 
     bld.SET_BUILD_GROUP('main')
 
