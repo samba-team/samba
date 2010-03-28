@@ -16,6 +16,7 @@ def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
 
 def configure(conf):
+    conf.BUNDLED_LIBRARY_EXTENSION('tdb')
     conf.sub_config(LIBREPLACE_DIR)
     conf.SAMBA_CONFIG_H()
 

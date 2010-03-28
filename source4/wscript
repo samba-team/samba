@@ -21,16 +21,19 @@ def set_options(opt):
     opt.recurse('../pidl')
 
 def configure(conf):
-    conf.define('PACKAGE_NAME', 'samba')
-    conf.define('PACKAGE_STRING', 'samba 4')
-    conf.define('PACKAGE_TARNAME',  'samba')
-    conf.define('PACKAGE_URL', "")
-    conf.define('PACKAGE_VERSION', "4")
-    conf.define('PACKAGE_BUGREPORT', 'samba-technical@samba.org')
+    conf.DEFINE('PACKAGE_NAME', 'samba', quote=True)
+    conf.DEFINE('PACKAGE_STRING', 'samba 4', quote=True)
+    conf.DEFINE('PACKAGE_TARNAME',  'samba', quote=True)
+    conf.DEFINE('PACKAGE_URL', "http://www.samba.org/", quote=True)
+    conf.DEFINE('PACKAGE_VERSION', "4", quote=True)
+    conf.DEFINE('PACKAGE_BUGREPORT', 'http://bugzilla.samba.org/', quote=True)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.DEFINE('_SAMBA_BUILD_', 4, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+
+    conf.BUNDLED_LIBRARY_EXTENSION('s4')
+
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
 

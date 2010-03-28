@@ -17,6 +17,8 @@ def set_options(opt):
     opt.recurse(LIBTEVENT_DIR)
 
 def configure(conf):
+    conf.BUNDLED_LIBRARY_EXTENSION('ldb')
+
     conf.sub_config(LIBTDB_DIR)
     conf.sub_config(LIBTEVENT_DIR)
     # where does the default LIBDIR end up? in conf.env somewhere?
@@ -126,16 +128,9 @@ def build(bld):
 
     ldb_deps = 'tevent LIBLDB'
     if s4_build:
-        # the s4 build of ldb is really quite different from the normal build
-        # so we give the library a different name to prevent problems with apps
-        # that may depend on the distro version of ldb
-        lib_name = 'ldb-s4'
-        bld.TARGET_ALIAS(lib_name, 'ldb')
         ldb_deps += ' LDBSAMBA POPT_CREDENTIALS POPT_SAMBA LIBCMDLINE_CREDENTIALS gensec'
-    else:
-        lib_name = 'ldb'
 
-    bld.SAMBA_LIBRARY(lib_name,
+    bld.SAMBA_LIBRARY('ldb',
 		      COMMON_SRC + ' ' + LDB_MAP_SRC,
 		      deps=ldb_deps,
 		      includes='include',

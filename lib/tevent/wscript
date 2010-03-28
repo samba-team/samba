@@ -17,6 +17,7 @@ def set_options(opt):
     opt.recurse(LIBTALLOC_DIR)
 
 def configure(conf):
+    conf.BUNDLED_LIBRARY_EXTENSION('tevent')
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBTALLOC_DIR)
 
