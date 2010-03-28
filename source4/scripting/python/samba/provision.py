@@ -236,7 +236,7 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
     """
     assert isinstance(ldif_path, str)
     data = read_and_sub_file(ldif_path, subst_vars)
-    ldb.add_ldif(data,controls)
+    ldb.add_ldif(data, controls)
 
 
 def setup_modify_ldif(ldb, ldif_path, subst_vars=None):
@@ -247,7 +247,6 @@ def setup_modify_ldif(ldb, ldif_path, subst_vars=None):
     :param subst_vars: Optional dictionary with substitution variables.
     """
     data = read_and_sub_file(ldif_path, subst_vars)
-
     ldb.modify_ldif(data)
 
 
@@ -301,13 +300,9 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.hku = "hku.ldb"
     paths.hkpd = "hkpd.ldb"
     paths.hkpt = "hkpt.ldb"
-
     paths.sysvol = lp.get("path", "sysvol")
-
     paths.netlogon = lp.get("path", "netlogon")
-
     paths.smbconf = lp.configfile
-
     return paths
 
 
