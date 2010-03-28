@@ -30,7 +30,7 @@ bld.SAMBA_BINARY('regdiff',
 	source='tools/regdiff.c',
 	manpages='man/regdiff.1',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS'
+	deps='LIBSAMBA-HOSTCONFIG registry popt POPT_SAMBA POPT_CREDENTIALS'
 	)
 
 
@@ -38,7 +38,7 @@ bld.SAMBA_BINARY('regpatch',
 	source='tools/regpatch.c',
 	manpages='man/regpatch.1',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS registry_common'
+	deps='LIBSAMBA-HOSTCONFIG registry popt POPT_SAMBA POPT_CREDENTIALS registry_common'
 	)
 
 
@@ -46,7 +46,7 @@ bld.SAMBA_BINARY('regshell',
 	source='tools/regshell.c',
 	manpages='man/regshell.1',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS SMBREADLINE registry_common'
+	deps='LIBSAMBA-HOSTCONFIG popt registry POPT_SAMBA POPT_CREDENTIALS SMBREADLINE registry_common'
 	)
 
 
@@ -54,7 +54,7 @@ bld.SAMBA_BINARY('regtree',
 	source='tools/regtree.c',
 	manpages='man/regtree.1',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS registry_common'
+	deps='LIBSAMBA-HOSTCONFIG popt registry POPT_SAMBA POPT_CREDENTIALS registry_common'
 	)
 
 

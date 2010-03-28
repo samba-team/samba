@@ -13,7 +13,7 @@ bld.SAMBA_BINARY('net',
 	source='net.c net_machinepw.c net_password.c net_time.c net_join.c net_vampire.c net_user.c net_export_keytab.c',
 	autoproto='net_proto.h',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-NET LIBPOPT POPT_SAMBA POPT_CREDENTIALS net_drs',
+	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-NET popt POPT_SAMBA POPT_CREDENTIALS net_drs',
         needs_python=True
 	)
 

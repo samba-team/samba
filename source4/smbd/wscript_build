@@ -23,7 +23,7 @@ bld.SAMBA_BINARY('samba',
 	installdir='SBINDIR',
         subsystem_name='service',
 	deps='''LIBEVENTS process_model service LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL POPT_SAMBA PIDFILE
-                LIBPOPT gensec registry ntptr ntvfs share CLUSTER DCESRV''',
+                popt gensec registry ntptr ntvfs share CLUSTER DCESRV''',
         needs_python=True,
         install_path='${SBINDIR}'
 	)

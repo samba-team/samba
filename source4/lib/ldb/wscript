@@ -11,6 +11,7 @@ import wafsamba
 
 LIBTDB_DIR= srcdir + '/lib/tdb'
 LIBTEVENT_DIR= srcdir + '/lib/tevent'
+LIBPOPT_DIR= srcdir + '/lib/popt'
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
@@ -21,6 +22,7 @@ def set_options(opt):
 def configure(conf):
     conf.sub_config(LIBTDB_DIR)
     conf.sub_config(LIBTEVENT_DIR)
+    conf.sub_config(LIBPOPT_DIR)
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
@@ -39,6 +41,7 @@ def configure(conf):
 def build(bld):
     bld.BUILD_SUBDIR(LIBTDB_DIR)
     bld.BUILD_SUBDIR(LIBTEVENT_DIR)
+    bld.BUILD_SUBDIR(LIBPOPT_DIR)
 
     # in Samba4 we build some extra modules, and add extra
     # capabilities to the ldb cmdline tools

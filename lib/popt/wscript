@@ -2,23 +2,17 @@
 
 import Options
 
-def set_options(opt):
-    opt.add_option('--with-included-popt',
-                   help=("use bundled popt library, not from system"),
-                   action="store_true", dest='INCLUDED_POPT', default=False)
-
 def configure(conf):
     conf.CHECK_HEADERS('float.h')
-    if not Options.options.INCLUDED_POPT:
-        if conf.CHECK_FUNCS_IN('poptGetContext', 'popt', headers='popt.h'):
-            conf.DEFINE('HAVE_SYSTEM_POPT', 1)
+
+    if conf.CHECK_BUNDLED_SYSTEM('popt', checkfunctions='poptGetContext', headers='popt.h'):
+        conf.define('USING_SYSTEM_POPT', 1)
 
 def build(bld):
-    if not bld.CONFIG_SET('HAVE_SYSTEM_POPT'):
-        bld.SAMBA_SUBSYSTEM('LIBPOPT',
-                            source='findme.c popt.c poptconfig.c popthelp.c poptparse.c',
-                            cflags='-DDBL_EPSILON=__DBL_EPSILON__'
-                            )
-        bld.TARGET_ALIAS('LIBPOPT', 'popt')
-    else:
-        bld.TARGET_ALIAS('popt', 'LIBPOPT')
+    if bld.CONFIG_SET('USING_SYSTEM_POPT'):
+        return
+
+    bld.SAMBA_LIBRARY('popt',
+                      source='findme.c popt.c poptconfig.c popthelp.c poptparse.c',
+                      cflags='-DDBL_EPSILON=__DBL_EPSILON__'
+                      )

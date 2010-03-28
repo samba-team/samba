@@ -18,7 +18,7 @@ bld.SAMBA_BINARY('ndrdump',
 	source='../../librpc/tools/ndrdump.c',
 	manpages='../../librpc/tools/ndrdump.1',
 	installdir='BINDIR',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBPOPT POPT_SAMBA NDR_TABLE LIBSAMBA-ERRORS'
+	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA NDR_TABLE LIBSAMBA-ERRORS'
 	)
 
 

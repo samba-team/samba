@@ -19,7 +19,6 @@ def set_options(opt):
     opt.recurse('../lib/nss_wrapper')
     opt.recurse('../lib/socket_wrapper')
     opt.recurse('../lib/uid_wrapper')
-    opt.recurse('../lib/popt')
     opt.recurse('../pidl')
 
 def configure(conf):
