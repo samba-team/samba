@@ -15,7 +15,7 @@ format-subunit.pl, which is used by default as part of "make test".
 Available testsuites
 ====================
 The available testsuites are obtained from a script, usually 
-selftest/samba{3,4}_tests.sh. This script should for each testsuite output 
+source{3,4}/selftest/tests.sh. This script should for each testsuite output 
 the name of the test, the command to run and the environment that should be 
 provided. Use the included "plantest" function to generate the required output.
 
