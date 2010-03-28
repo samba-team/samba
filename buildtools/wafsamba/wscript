@@ -14,12 +14,21 @@ def set_options(opt):
     opt.add_option('--bundled-libraries',
                    help=("list of bundled libraries. Can be 'NONE' or 'ALL' [auto]"),
                    action="store", dest='BUNDLED_LIBS', default='')
+
+    extension_default = Options.options['BUNDLED_EXTENSION_DEFAULT']
     opt.add_option('--bundled-library-extension',
-                   help=("name extension for bundled libraries [auto]"),
-                   action="store", dest='BUNDLED_EXTENSION', default=None)
+                   help=("name extension for bundled libraries [%s]" % extension_default),
+                   action="store", dest='BUNDLED_EXTENSION', default=extension_default)
+
+    extension_exception = Options.options['BUNDLED_EXTENSION_EXCEPTION']
+    opt.add_option('--bundled-extension-exception',
+                   help=("list of libraries to not apply extension to [%s]" % extension_exception),
+                   action="store", dest='BUNDLED_EXTENSION_EXCEPTION', default=extension_exception)
+
+    builtin_defauilt = Options.options['BUILTIN_LIBRARIES_DEFAULT']
     opt.add_option('--builtin-libraries',
-                   help=("list of libraries to build directly into binaries [none]"),
-                   action="store", dest='BUILTIN_LIBRARIES', default='')
+                   help=("list of libraries to build directly into binaries [%s]" % builtin_defauilt),
+                   action="store", dest='BUILTIN_LIBRARIES', default=builtin_defauilt)
 
     opt.add_option('--libdir',
                    help=("object code libraries [PREFIX/lib]"),
@@ -87,11 +96,10 @@ def configure(conf):
     conf.env.MODULESDIR = Options.options.MODULESDIR
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
     conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
-
     conf.env.DISABLE_SHARED = Options.options.disable_shared
 
-    if Options.options.BUNDLED_EXTENSION:
-        conf.env.BUNDLED_EXTENSION = Options.options.BUNDLED_EXTENSION
+    conf.env.BUNDLED_EXTENSION = Options.options.BUNDLED_EXTENSION
+    conf.env.BUNDLED_EXTENSION_EXCEPTION = Options.options.BUNDLED_EXTENSION_EXCEPTION.split(',')
 
     # see if we can compile and run a simple C program
     conf.CHECK_CODE('printf("hello world\\n")',
