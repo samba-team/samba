@@ -79,9 +79,6 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 							  (void **)&ret,
 							  NULL, false);
 			break;
-		case REG_BINARY:
-			ret = data_blob_hex_string_upper(mem_ctx, &data);
-			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
 			SMB_ASSERT(data.length == sizeof(uint32_t));
@@ -92,6 +89,9 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 			SMB_ASSERT(data.length == sizeof(uint64_t));
 			ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
 					      BVAL(data.data, 0));
+			break;
+		case REG_BINARY:
+			ret = data_blob_hex_string_upper(mem_ctx, &data);
 			break;
 		case REG_NONE:
 			/* "NULL" is the right return value */
