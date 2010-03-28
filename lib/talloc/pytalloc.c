@@ -20,7 +20,7 @@
 #include <Python.h>
 #include "replace.h"
 #include <talloc.h>
-#include <pytalloc.h>
+#include "pytalloc.h"
 
 /**
  * Simple dealloc for talloc-wrapping PyObjects

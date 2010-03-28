@@ -20,7 +20,7 @@
 #define _PYCREDENTIALS_H_
 
 #include "auth/credentials/credentials.h"
-#include "pytalloc.h"
+#include "lib/talloc/pytalloc.h"
 
 PyAPI_DATA(PyTypeObject) PyCredentials;
 PyAPI_DATA(PyTypeObject) PyCredentialCacheContainer;

@@ -23,7 +23,7 @@
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
 #include "scripting/python/modules.h" /* for py_iconv_convenience() */
-#include <pytalloc.h>
+#include "lib/talloc/pytalloc.h"
 #include "auth/credentials/pycredentials.h"
 #include "param/pyparam.h"
 

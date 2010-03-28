@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "param/param.h"
 #include "param/loadparm.h"
-#include "pytalloc.h"
+#include "lib/talloc/pytalloc.h"
 
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_type(obj, struct loadparm_context)
 

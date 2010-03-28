@@ -20,7 +20,7 @@
 #ifndef _PYAUTH_H_
 #define _PYAUTH_H_
 
-#include "pytalloc.h"
+#include "lib/talloc/pytalloc.h"
 #include "auth/session.h"
 
 PyAPI_DATA(PyTypeObject) PyAuthSession;

@@ -22,7 +22,7 @@
 #include "auth/gensec/gensec.h"
 #include "libcli/util/pyerrors.h"
 #include "scripting/python/modules.h"
-#include "pytalloc.h"
+#include "lib/talloc/pytalloc.h"
 #include <tevent.h>
 
 static PyObject *py_get_name_by_authtype(PyObject *self, PyObject *args)
