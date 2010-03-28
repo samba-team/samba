@@ -46,7 +46,7 @@ Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
-                         checkfunctions=None, headers=None):
+                         checkfunctions=None, headers=None, onlyif=None):
     '''check if a library is available as a system library.
     this first tries via pkg-config, then if that fails
     tries by testing for a specified function in the specified lib
@@ -56,6 +56,20 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     found = 'FOUND_SYSTEMLIB_%s' % libname
     if found in conf.env:
         return conf.env[found]
+
+    # see if the library should only use a system version if another dependent
+    # system version is found. That prevents possible use of mixed library
+    # versions
+    if onlyif:
+        for syslib in TO_LIST(onlyif):
+            f = 'FOUND_SYSTEM_%s' % syslib
+            if not f in conf.env:
+                if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
+                    print('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
+                    sys.exit(1)
+                conf.env[found] = False
+                return False
+
     # try pkgconfig first
     if conf.check_cfg(package=libname,
                       args='"%s >= %s" --cflags --libs' % (libname, minversion),
