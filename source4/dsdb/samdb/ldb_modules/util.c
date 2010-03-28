@@ -675,7 +675,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+	if (ret == LDB_ERR_NO_SUCH_OBJECT || ret == LDB_ERR_INVALID_DN_SYNTAX) {
 		/* it hasn't been created yet, which means
 		   an implicit value of zero */
 		*uSN = 0;
