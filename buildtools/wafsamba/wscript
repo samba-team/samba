@@ -30,15 +30,6 @@ def set_options(opt):
                    help=("command separated list of libraries to build directly into binaries [%s]" % builtin_defauilt),
                    action="store", dest='BUILTIN_LIBRARIES', default=builtin_defauilt)
 
-    opt.add_option('--libdir',
-                   help=("object code libraries [PREFIX/lib]"),
-                   action="store", dest='LIBDIR', default='${PREFIX}/lib')
-    opt.add_option('--bindir',
-                   help=("user executables [PREFIX/bin]"),
-                   action="store", dest='BINDIR', default='${PREFIX}/bin')
-    opt.add_option('--sbindir',
-                   help=("system admin executables [PREFIX/sbin]"),
-                   action="store", dest='SBINDIR', default='${PREFIX}/sbin')
     opt.add_option('--with-modulesdir',
                    help=("modules directory [PREFIX/modules]"),
                    action="store", dest='MODULESDIR', default='${PREFIX}/modules')
@@ -90,9 +81,9 @@ def configure(conf):
         conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     # make the install paths available in environment
-    conf.env.LIBDIR = Options.options.LIBDIR
-    conf.env.BINDIR = Options.options.BINDIR
-    conf.env.SBINDIR = Options.options.SBINDIR
+    conf.env.LIBDIR = Options.options.LIBDIR or '${PREFIX}/lib'
+    conf.env.BINDIR = Options.options.BINDIR or '${PREFIX}/bin'
+    conf.env.SBINDIR = Options.options.SBINDIR or '${PREFIX}/sbin'
     conf.env.MODULESDIR = Options.options.MODULESDIR
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
     conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
