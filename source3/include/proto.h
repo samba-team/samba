@@ -334,8 +334,6 @@ const char *audit_policy_str(TALLOC_CTX *mem_ctx, uint32 policy);
 
 /* The following definitions come from lib/bitmap.c  */
 
-struct bitmap *bitmap_allocate(int n);
-void bitmap_free(struct bitmap *bm);
 struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n);
 int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src);
 bool bitmap_set(struct bitmap *bm, unsigned i);

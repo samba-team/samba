@@ -23,42 +23,6 @@
    pool without repetition */
 
 /****************************************************************************
-allocate a bitmap of the specified size
-****************************************************************************/
-struct bitmap *bitmap_allocate(int n)
-{
-	struct bitmap *bm;
-
-	bm = SMB_MALLOC_P(struct bitmap);
-
-	if (!bm) return NULL;
-
-	bm->n = n;
-	bm->b = SMB_MALLOC_ARRAY(uint32, (n+31)/32);
-	if (!bm->b) {
-		SAFE_FREE(bm);
-		return NULL;
-	}
-
-	memset(bm->b, 0, sizeof(uint32)*((n+31)/32));
-
-	return bm;
-}
-
-/****************************************************************************
-free a bitmap.
-****************************************************************************/
-
-void bitmap_free(struct bitmap *bm)
-{
-	if (!bm)
-		return;
-
-	SAFE_FREE(bm->b);
-	SAFE_FREE(bm);
-}
-
-/****************************************************************************
 talloc a bitmap
 ****************************************************************************/
 struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
