@@ -36,7 +36,6 @@ import param
 import registry
 import urllib
 import shutil
-import string
 
 import ldb
 
@@ -472,7 +471,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "SIDGENERATOR_LINE": sid_generator_line,
             "PRIVATEDIR_LINE": privatedir_line,
             "LOCKDIR_LINE": lockdir_line,
-			"POSIXEADB_LINE": posixeadb_line
+            "POSIXEADB_LINE": posixeadb_line
             })
 
 
@@ -807,10 +806,11 @@ def setup_self_join(samdb, names,
               "NTDSGUID": names.ntdsguid,
               "DNSPASS_B64": b64encode(dnspass),
               })
-def getpolicypath(sysvolpath,dnsdomain,guid):
-    if string.find(guid,"{",0,1) == -1:
-        guid = "{%s}"%guid
-    policy_path = os.path.join(sysvolpath, dnsdomain, "Policies",  guid )
+
+def getpolicypath(sysvolpath, dnsdomain, guid):
+    if guid[0] != "{":
+        guid = "{%s}" % guid
+    policy_path = os.path.join(sysvolpath, dnsdomain, "Policies", guid)
     return policy_path
 
 def create_gpo_struct(policy_path):
@@ -820,8 +820,7 @@ def create_gpo_struct(policy_path):
     os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
     os.makedirs(os.path.join(policy_path, "USER"), 0755)
 
-def setup_gpo(sysvolpath,dnsdomain,policyguid,policyguid_dc):
-
+def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid)
     create_gpo_struct(policy_path)
 
@@ -1037,46 +1036,48 @@ FILL_DRS = "DRS"
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 
-def set_dir_acl(path,acl,lp,domsid):
-	setntacl(lp,path,acl,domsid)
-	for root, dirs, files in os.walk(path, topdown=False):
-		for name in files:
-			setntacl(lp,os.path.join(root, name),acl,domsid)
-		for name in dirs:
-			setntacl(lp,os.path.join(root, name),acl,domsid)
-
-def set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp):
-	# Set ACL for GPO
-	policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-	set_dir_acl(policy_path,dsacl2fsacl(POLICIES_ACL,str(domainsid)),lp,str(domainsid))
-	res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
-						attrs=["cn","nTSecurityDescriptor"],
-						expression="", scope=ldb.SCOPE_ONELEVEL)
-	for policy in res:
-		acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
-		policy_path = getpolicypath(sysvol,dnsdomain,str(policy["cn"]))
-		set_dir_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
-
-def setsysvolacl(samdb,netlogon,sysvol,gid,domainsid,dnsdomain,domaindn,lp):
-	canchown = 1
-	try:
-		os.chown(sysvol,-1,gid)
-	except:
-		canchown = 0
-
-	setntacl(lp,sysvol,SYSVOL_ACL,str(domainsid))
-	for root, dirs, files in os.walk(sysvol, topdown=False):
-		for name in files:
-			if canchown:
-				os.chown(os.path.join(root, name),-1,gid)
-			setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
-		for name in dirs:
-			if canchown:
-				os.chown(os.path.join(root, name),-1,gid)
-			setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
-	set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp)
+def set_dir_acl(path, acl, lp, domsid):
+    setntacl(lp, path, acl, domsid)
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            setntacl(lp, os.path.join(root, name), acl, domsid)
+        for name in dirs:
+            setntacl(lp, os.path.join(root, name), acl, domsid)
 
 
+def set_gpo_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
+    # Set ACL for GPO
+    policy_path = os.path.join(sysvol, dnsdomain, "Policies")
+    set_dir_acl(policy_path,dsacl2fsacl(POLICIES_ACL, str(domainsid)), 
+        lp, str(domainsid))
+    res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
+                        attrs=["cn","nTSecurityDescriptor"],
+                        expression="", scope=ldb.SCOPE_ONELEVEL)
+    for policy in res:
+        acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
+        policy_path = getpolicypath(sysvol,dnsdomain,str(policy["cn"]))
+        set_dir_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
+
+def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
+    lp):
+    try:
+        os.chown(sysvol,-1,gid)
+    except:
+        canchown = False
+    else:
+        canchown = True
+
+    setntacl(lp,sysvol,SYSVOL_ACL,str(domainsid))
+    for root, dirs, files in os.walk(sysvol, topdown=False):
+        for name in files:
+            if canchown:
+                os.chown(os.path.join(root, name),-1,gid)
+            setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
+        for name in dirs:
+            if canchown:
+                os.chown(os.path.join(root, name),-1,gid)
+            setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
+    set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp)
 
 
 def provision(setup_dir, message, session_info, 
