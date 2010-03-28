@@ -24,7 +24,7 @@ bld.SAMBA_MODULE('pvfs_acl_nfs4',
 
 bld.SAMBA_SUBSYSTEM('pvfs_aio',
 	source='pvfs_aio.c',
-	deps='tevent LIBTEVENT_EXT',
+	deps='tevent',
         enabled=False
 	)
 

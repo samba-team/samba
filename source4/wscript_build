@@ -16,7 +16,6 @@ bld.SAMBA_MKVERSION('version.h')
 # we don't always use consistent names for our subsystems.
 # this sets up some aliases
 bld.TARGET_ALIAS('attr', 'XATTR')
-bld.TARGET_ALIAS('tevent', 'LIBTEVENT_EXT')
 bld.TARGET_ALIAS('sasl2', 'SASL')
 bld.TARGET_ALIAS('RPC_NDR_SRVSVC', 'NDR_SRVSVC')
 bld.TARGET_ALIAS('RPC_NDR_MGMT', 'dcerpc_mgmt')
