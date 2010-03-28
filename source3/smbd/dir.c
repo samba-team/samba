@@ -121,7 +121,8 @@ bool init_dptrs(struct smbd_server_connection *sconn)
 		return true;
 	}
 
-	sconn->smb1.searches.dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
+	sconn->smb1.searches.dptr_bmap = bitmap_talloc(
+		sconn, MAX_DIRECTORY_HANDLES);
 
 	if (sconn->smb1.searches.dptr_bmap == NULL) {
 		return false;
