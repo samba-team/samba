@@ -26,7 +26,7 @@ bld.SAMBA_SUBSYSTEM('LDB_WRAP',
 
 bld.SAMBA_SUBSYSTEM('TDB_WRAP',
 	source='tdb_wrap.c',
-	public_deps='tdb',
+	public_deps='tdb talloc',
 	public_headers='tdb_wrap.h'
 	)
 

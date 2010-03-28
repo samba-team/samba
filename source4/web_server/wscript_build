@@ -2,8 +2,9 @@
 
 
 bld.SAMBA_PYTHON('WEB_WSGI',
-                 source='wsgi.c'
-	)
+                 source='wsgi.c',
+                 deps='talloc'
+                 )
 
 
 bld.SAMBA_MODULE('WEB',

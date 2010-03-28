@@ -13,6 +13,7 @@ bld.SAMBA_SUBSYSTEM('service',
 
 bld.SAMBA_SUBSYSTEM('PIDFILE',
 	source='pidfile.c',
+        deps='talloc',
 	autoproto='pidfile.h'
 	)
 

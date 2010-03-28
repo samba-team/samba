@@ -43,6 +43,7 @@ bld.SAMBA_SUBSYSTEM('auth_sam',
 
 bld.SAMBA_SUBSYSTEM('auth_sam_reply',
 	source='auth_sam_reply.c',
+        deps='talloc',
 	autoproto='auth_sam_reply.h'
 	)
 

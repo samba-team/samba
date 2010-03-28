@@ -22,7 +22,7 @@ bld.SAMBA_MODULE('socket_ip',
 bld.SAMBA_MODULE('socket_unix',
 	source='socket_unix.c',
 	subsystem='samba_socket',
-	deps='LIBREPLACE_NETWORK',
+	deps='LIBREPLACE_NETWORK talloc',
 	internal_module=True
 	)
 

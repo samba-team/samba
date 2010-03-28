@@ -47,7 +47,8 @@ bld.SAMBA_MODULE('auth_unix',
 
 
 bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
-	source='pam_errors.c'
+	source='pam_errors.c',
+        deps='talloc'
 	)
 
 

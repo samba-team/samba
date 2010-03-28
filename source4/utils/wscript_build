@@ -16,7 +16,7 @@ bld.SAMBA_BINARY('ntlm_auth',
 bld.SAMBA_BINARY('setnttoken',
 	source='setnttoken.c',
 	installdir='BINDIR',
-	deps='replace'
+	deps='talloc'
 	)
 
 
