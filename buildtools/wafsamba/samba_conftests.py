@@ -1,7 +1,9 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
+
 import os, Build, shutil, Utils
 from Configure import conf
+from samba_utils import *
 
 @conf
 def CHECK_ICONV(conf, define='HAVE_NATIVE_ICONV'):
@@ -67,8 +69,15 @@ def CHECK_CHARSET_EXISTS(conf, charset, outcharset='UCS-2LE', headers=None, defi
 # into several parts. I'd quite like to create a set of CHECK_COMPOUND()
 # functions that make writing complex compound tests like this much easier
 @conf
-def CHECK_RPATH_SUPPORT(conf):
-    '''see if the platform supports rpath for libraries'''
+def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
+    '''see if the platform supports building libraries'''
+
+    if msg is None:
+        if rpath:
+            msg = "rpath library support"
+        else:
+            msg = "building library support"
+
     k = 0
     while k < 10000:
         dir = os.path.join(conf.blddir, '.conf_check_%d' % k)
@@ -127,18 +136,27 @@ def CHECK_RPATH_SUPPORT(conf):
     o = bld(features='cc cprogram',
             source='main.c',
             target='prog1',
-            uselib_local='lib1',
-            rpath=os.path.join(bdir, 'default/libdir'))
+            uselib_local='lib1')
+
+    if rpath:
+        o.rpath=os.path.join(bdir, 'default/libdir')
 
     # compile the program
     try:
         bld.compile()
     except:
-        conf.check_message('rpath support', '', False)
+        conf.check_message(msg, '', False)
         return False
 
     # path for execution
     lastprog = o.link_task.outputs[0].abspath(env)
+
+    if not rpath:
+        if 'LD_LIBRARY_PATH' in os.environ:
+            old_ld_library_path = os.environ['LD_LIBRARY_PATH']
+        else:
+            old_ld_library_path = None
+        ADD_LD_LIBRARY_PATH(os.path.join(bdir, 'default/libdir'))
 
     # we need to run the program, try to get its result
     args = []
@@ -151,5 +169,8 @@ def CHECK_RPATH_SUPPORT(conf):
     w('\nreturncode %r\n' % proc.returncode)
     ret = (proc.returncode == 0)
 
-    conf.check_message('rpath support', '', ret)
+    if not rpath:
+        os.environ['LD_LIBRARY_PATH'] = old_ld_library_path or ''
+
+    conf.check_message(msg, '', ret)
     return ret

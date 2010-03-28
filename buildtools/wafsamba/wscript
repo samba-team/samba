@@ -109,8 +109,12 @@ def configure(conf):
                     headers='stdio.h',
                     msg='Checking simple C program')
 
+    # see if we can build shared libs
+    if not conf.CHECK_LIBRARY_SUPPORT():
+        conf.env.DISABLE_SHARED = True
+
     # check for rpath
-    if not conf.env.DISABLE_SHARED and conf.CHECK_RPATH_SUPPORT():
+    if not conf.env.DISABLE_SHARED and conf.CHECK_LIBRARY_SUPPORT(rpath=True):
         conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
         conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
                                      not Options.options.disable_rpath_install)
