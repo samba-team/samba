@@ -33,7 +33,7 @@ def build(bld):
     bld.SAMBA_GENERATOR('pidl_manpages',
                         source=pidl_src,
                         target=pidl_manpages,
-                        rule='cd ${pidl_srcdir} && ${PERL} Makefile.PL && make && rm -f Makefile Makefile.old')
+                        rule='cd ${pidl_srcdir} && ${PERL} Makefile.PL && make && rm -f Makefile Makefile.old && ls -lR blib/')
 
     for m in pidl_manpages:
         dname=os.path.dirname(m)[5:]
