@@ -34,7 +34,7 @@ void conn_init(struct smbd_server_connection *sconn)
 {
 	sconn->smb1.tcons.Connections = NULL;
 	sconn->smb1.tcons.num_open = 0;
-	sconn->smb1.tcons.bmap = bitmap_allocate(BITMAP_BLOCK_SZ);
+	sconn->smb1.tcons.bmap = bitmap_talloc(sconn, BITMAP_BLOCK_SZ);
 }
 
 /****************************************************************************
@@ -124,14 +124,14 @@ find_again:
 		DEBUG(4,("resizing connections bitmap from %d to %d\n",
                         oldsz, newsz));
 
-                nbmap = bitmap_allocate(newsz);
+                nbmap = bitmap_talloc(sconn, newsz);
 		if (!nbmap) {
 			DEBUG(0,("ERROR! malloc fail.\n"));
 			return NULL;
 		}
 
                 bitmap_copy(nbmap, sconn->smb1.tcons.bmap);
-                bitmap_free(sconn->smb1.tcons.bmap);
+		TALLOC_FREE(sconn->smb1.tcons.bmap);
 
                 sconn->smb1.tcons.bmap = nbmap;
                 find_offset = oldsz; /* Start next search in the new portion. */
