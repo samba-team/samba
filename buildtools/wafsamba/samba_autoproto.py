@@ -3,8 +3,8 @@
 import Build
 from samba_utils import *
 
-# rule for heimdal prototype generation
 def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
+    '''rule for heimdal prototype generation'''
     bld.SET_BUILD_GROUP(group)
     if options is None:
         options='-q -P comment -o'
@@ -17,13 +17,15 @@ def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
     t.env.OPTIONS = options
 Build.BuildContext.HEIMDAL_AUTOPROTO = HEIMDAL_AUTOPROTO
 
-# rule for private heimdal prototype generation
+
 def HEIMDAL_AUTOPROTO_PRIVATE(bld, header, source):
+    '''rule for private heimdal prototype generation'''
     bld.HEIMDAL_AUTOPROTO(header, source, options='-q -P comment -p')
 Build.BuildContext.HEIMDAL_AUTOPROTO_PRIVATE = HEIMDAL_AUTOPROTO_PRIVATE
 
-# rule for samba prototype generation
+
 def SAMBA_AUTOPROTO(bld, header, source):
+    '''rule for samba prototype generation'''
     bld.SET_BUILD_GROUP('prototypes')
     bld(
         source = source,

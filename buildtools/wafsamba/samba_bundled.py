@@ -42,10 +42,15 @@ def BUNDLED_EXTENSION_DEFAULT(opt, extension, noextenion=''):
 Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
 
 
+
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                          checkfunctions=None, headers=None):
+    '''check if a library is available as a system library.
+    this first tries via pkg-config, then if that fails
+    tries by testing for a specified function in the specified lib
+    '''
     if 'ALL' in conf.env.BUNDLED_LIBS or libname in conf.env.BUNDLED_LIBS:
         return False
     found = 'FOUND_SYSTEMLIB_%s' % libname

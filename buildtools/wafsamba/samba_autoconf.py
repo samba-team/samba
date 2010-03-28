@@ -363,10 +363,9 @@ def CHECK_CFLAGS(conf, cflags):
                       msg="Checking compiler accepts %s" % cflags)
 
 
-#################################################
-# return True if a configuration option was found
 @conf
 def CONFIG_SET(conf, option):
+    '''return True if a configuration option was found'''
     return (option in conf.env) and (conf.env[option] != ())
 Build.BuildContext.CONFIG_SET = CONFIG_SET
 
@@ -414,21 +413,23 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
     return ret
 
 
-###########################################################
-# check that the functions in 'list' are available in 'library'
-# if they are, then make that library available as a dependency
-#
-# if the library is not available and mandatory==True, then
-# raise an error.
-#
-# If the library is not available and mandatory==False, then
-# add the library to the list of dependencies to remove from
-# build rules
-#
-# optionally check for the functions first in libc
+
 @conf
 def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
                    headers=None, link=None, empty_decl=True):
+    """
+    check that the functions in 'list' are available in 'library'
+    if they are, then make that library available as a dependency
+
+    if the library is not available and mandatory==True, then
+    raise an error.
+
+    If the library is not available and mandatory==False, then
+    add the library to the list of dependencies to remove from
+    build rules
+
+    optionally check for the functions first in libc
+    """
     remaining = TO_LIST(list)
     liblist   = TO_LIST(library)
 
@@ -466,16 +467,16 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
 
     return ret
 
+
 @conf
 def IN_LAUNCH_DIR(conf):
     '''return True if this rule is being run from the launch directory'''
     return os.path.realpath(conf.curdir) == os.path.realpath(Options.launch_dir)
 
 
-#################################################
-# write out config.h in the right directory
 @conf
 def SAMBA_CONFIG_H(conf, path=None):
+    '''write out config.h in the right directory'''
     # we don't want to produce a config.h in places like lib/replace
     # when we are building projects that depend on lib/replace
     if not IN_LAUNCH_DIR(conf):
@@ -495,10 +496,9 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.write_config_header(path)
 
 
-##############################################################
-# setup a configurable path
 @conf
 def CONFIG_PATH(conf, name, default):
+    '''setup a configurable path'''
     if not name in conf.env:
         if default[0] == '/':
             conf.env[name] = default
@@ -523,18 +523,18 @@ def ADD_CFLAGS(conf, flags, testflags=False):
     conf.env['EXTRA_CFLAGS'].extend(TO_LIST(flags))
 
 
-##############################################################
-# add some extra include directories to all builds
+
 @conf
 def ADD_EXTRA_INCLUDES(conf, includes):
+    '''add some extra include directories to all builds'''
     if not 'EXTRA_INCLUDES' in conf.env:
         conf.env['EXTRA_INCLUDES'] = []
     conf.env['EXTRA_INCLUDES'].extend(TO_LIST(includes))
 
 
-##############################################################
-# work out the current flags. local flags are added first
+
 def CURRENT_CFLAGS(bld, target, cflags):
+    '''work out the current flags. local flags are added first'''
     if not 'EXTRA_CFLAGS' in bld.env:
         list = []
     else:
@@ -546,8 +546,8 @@ def CURRENT_CFLAGS(bld, target, cflags):
 
 @conf
 def CHECK_CC_ENV(conf):
-    '''trim whitespaces from 'CC'.
-    The build farm sometimes puts a space at the start'''
+    """trim whitespaces from 'CC'.
+    The build farm sometimes puts a space at the start"""
     if os.environ.get('CC'):
         conf.env.CC = TO_LIST(os.environ.get('CC'))
         if len(conf.env.CC) == 1:

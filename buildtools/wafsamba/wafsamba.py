@@ -24,10 +24,9 @@ LIB_PATH="shared"
 
 os.putenv('PYTHONUNBUFFERED', '1')
 
-#################################################################
-# create the samba build environment
 @conf
 def SAMBA_BUILD_ENV(conf):
+    '''create the samba build environment'''
     conf.env['BUILD_DIRECTORY'] = conf.blddir
     mkdir_p(os.path.join(conf.blddir, LIB_PATH))
     mkdir_p(os.path.join(conf.blddir, 'python/samba/dcerpc'))
@@ -48,9 +47,8 @@ def SAMBA_BUILD_ENV(conf):
 
 
 
-################################################################
-# add an init_function to the list for a subsystem
 def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):
+    '''add an init_function to the list for a subsystem'''
     if init_function is None:
         return
     bld.ASSERT(subsystem is not None, "You must specify a subsystem for init_function '%s'" % init_function)
@@ -61,8 +59,8 @@ def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
 
+
 #################################################################
-# define a Samba library
 def SAMBA_LIBRARY(bld, libname, source,
                   deps='',
                   public_deps='',
@@ -83,6 +81,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   install=True,
                   bundled_extension=True,
                   enabled=True):
+    '''define a Samba library'''
 
     if not enabled:
         SET_TARGET_TYPE(bld, libname, 'DISABLED')
@@ -202,7 +201,6 @@ Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
 
 #################################################################
-# define a Samba binary
 def SAMBA_BINARY(bld, binname, source,
                  deps='',
                  includes='',
@@ -223,6 +221,7 @@ def SAMBA_BINARY(bld, binname, source,
                  vars=None,
                  install=True,
                  install_path=None):
+    '''define a Samba binary'''
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
@@ -319,7 +318,6 @@ Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 
 #################################################################
-# define a Samba module.
 def SAMBA_MODULE(bld, modname, source,
                  deps='',
                  includes='',
@@ -333,6 +331,7 @@ def SAMBA_MODULE(bld, modname, source,
                  local_include=True,
                  vars=None,
                  enabled=True):
+    '''define a Samba module.'''
 
     # we add the init function regardless of whether the module
     # is enabled or not, as we need to generate a null list if
@@ -386,7 +385,6 @@ Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
 
 #################################################################
-# define a Samba subsystem
 def SAMBA_SUBSYSTEM(bld, modname, source,
                     deps='',
                     public_deps='',
@@ -409,6 +407,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     enabled=True,
                     vars=None,
                     needs_python=False):
+    '''define a Samba subsystem'''
 
     if not enabled:
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
@@ -493,33 +492,22 @@ Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
 
 
-###############################################################
-# add a new set of build rules from a subdirectory
-# the @runonce decorator ensures we don't end up
-# with duplicate rules
 def BUILD_SUBDIR(bld, dir):
+    '''add a new set of build rules from a subdirectory'''
     path = os.path.normpath(bld.curdir + '/' + dir)
     cache = LOCAL_CACHE(bld, 'SUBDIR_LIST')
     if path in cache: return
     cache[path] = True
     debug("build: Processing subdirectory %s" % dir)
     bld.add_subdirs(dir)
-
 Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
 
 
-##########################################################
-# add a new top level command to waf
-def ADD_COMMAND(opt, name, function):
-    Utils.g_module.__dict__[name] = function
-    opt.name = function
-Options.Handler.ADD_COMMAND = ADD_COMMAND
 
-###########################################################
-# setup build groups used to ensure that the different build
-# phases happen consecutively
 @runonce
 def SETUP_BUILD_GROUPS(bld):
+    '''setup build groups used to ensure that the different build
+    phases happen consecutively'''
     bld.p_ln = bld.srcnode # we do want to see all targets!
     bld.env['USING_BUILD_GROUPS'] = True
     bld.add_group('setup')
@@ -534,28 +522,30 @@ def SETUP_BUILD_GROUPS(bld):
 Build.BuildContext.SETUP_BUILD_GROUPS = SETUP_BUILD_GROUPS
 
 
-###########################################################
-# set the current build group
 def SET_BUILD_GROUP(bld, group):
+    '''set the current build group'''
     if not 'USING_BUILD_GROUPS' in bld.env:
         return
     bld.set_group(group)
 Build.BuildContext.SET_BUILD_GROUP = SET_BUILD_GROUP
 
 
-def h_file(filename):
-    import stat
-    st = os.stat(filename)
-    if stat.S_ISDIR(st[stat.ST_MODE]): raise IOError('not a file')
-    m = Utils.md5()
-    m.update(str(st.st_mtime))
-    m.update(str(st.st_size))
-    m.update(filename)
-    return m.digest()
 
 @conf
 def ENABLE_TIMESTAMP_DEPENDENCIES(conf):
+    """use timestamps instead of file contents for deps
+    this currently doesn't work"""
+    def h_file(filename):
+        import stat
+        st = os.stat(filename)
+        if stat.S_ISDIR(st[stat.ST_MODE]): raise IOError('not a file')
+        m = Utils.md5()
+        m.update(str(st.st_mtime))
+        m.update(str(st.st_size))
+        m.update(filename)
+        return m.digest()
     Utils.h_file = h_file
+
 
 
 ##############################
@@ -569,6 +559,7 @@ t.quiet = True
 @feature('symlink_lib')
 @after('apply_link')
 def symlink_lib(self):
+    '''symlink a shared lib'''
     tsk = self.create_task('symlink_lib', self.link_task.outputs[0])
 
     # calculat the link target and put it in the environment
@@ -598,6 +589,7 @@ t.quiet = True
 @feature('symlink_bin')
 @after('apply_link')
 def symlink_bin(self):
+    '''symlink a binary'''
     if Options.is_install:
         # we don't want to copy the install binary, as
         # that has the install rpath, not the build rpath

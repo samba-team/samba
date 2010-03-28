@@ -11,20 +11,9 @@ import shlex
 LIB_PATH="shared"
 
 
-##########################################################
-# create a node with a new name, based on an existing node
-def NEW_NODE(node, name):
-    ret = node.parent.find_or_declare([name])
-    ASSERT(node, ret is not None, "Unable to find new target with name '%s' from '%s'" % (
-            name, node.name))
-    return ret
-
-
-#############################################################
-# set a value in a local cache
-# return False if it's already set
 @conf
 def SET_TARGET_TYPE(ctx, target, value):
+    '''set the target type of a target'''
     cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
     if target in cache:
         ASSERT(ctx, cache[target] == value,
@@ -50,14 +39,14 @@ def GET_TARGET_TYPE(ctx, target):
 # http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
 runonce_ret = {}
 def runonce(function):
-    def wrapper(*args):
+    def runonce_wrapper(*args):
         if args in runonce_ret:
             return runonce_ret[args]
         else:
             ret = function(*args)
             runonce_ret[args] = ret
             return ret
-    return wrapper
+    return runonce_wrapper
 
 
 def ADD_LD_LIBRARY_PATH(path):
@@ -70,6 +59,7 @@ def ADD_LD_LIBRARY_PATH(path):
     if not path in newpath:
         newpath.append(path)
         os.environ['LD_LIBRARY_PATH'] = ':'.join(newpath)
+
 
 def install_rpath(bld):
     '''the rpath value for installation'''
@@ -91,54 +81,52 @@ def build_rpath(bld):
     return []
 
 
-#############################################################
-# return a named build cache dictionary, used to store
-# state inside the following functions
 @conf
 def LOCAL_CACHE(ctx, name):
+    '''return a named build cache dictionary, used to store
+       state inside other functions'''
     if name in ctx.env:
         return ctx.env[name]
     ctx.env[name] = {}
     return ctx.env[name]
 
 
-#############################################################
-# set a value in a local cache
 @conf
 def LOCAL_CACHE_SET(ctx, cachename, key, value):
+    '''set a value in a local cache'''
     cache = LOCAL_CACHE(ctx, cachename)
     cache[key] = value
 
-#############################################################
-# a build assert call
+
 @conf
 def ASSERT(ctx, expression, msg):
+    '''a build assert call'''
     if not expression:
         sys.stderr.write("ERROR: %s\n" % msg)
         raise AssertionError
 Build.BuildContext.ASSERT = ASSERT
 
-################################################################
-# create a list of files by pre-pending each with a subdir name
+
 def SUBDIR(bld, subdir, list):
+    '''create a list of files by pre-pending each with a subdir name'''
     ret = ''
     for l in TO_LIST(list):
         ret = ret + os.path.normpath(os.path.join(subdir, l)) + ' '
     return ret
 Build.BuildContext.SUBDIR = SUBDIR
 
-#######################################################
-# d1 += d2
+
 def dict_concat(d1, d2):
+    '''concatenate two dictionaries d1 += d2'''
     for t in d2:
         if t not in d1:
             d1[t] = d2[t]
 
-############################################################
-# this overrides the 'waf -v' debug output to be in a nice
-# unix like format instead of a python list.
-# Thanks to ita on #waf for this
+
 def exec_command(self, cmd, **kw):
+    '''this overrides the 'waf -v' debug output to be in a nice
+    unix like format instead of a python list.
+    Thanks to ita on #waf for this'''
     import Utils, Logs
     _cmd = cmd
     if isinstance(cmd, list):
@@ -156,9 +144,8 @@ def exec_command(self, cmd, **kw):
 Build.BuildContext.exec_command = exec_command
 
 
-##########################################################
-# add a new top level command to waf
 def ADD_COMMAND(opt, name, function):
+    '''add a new top level command to waf'''
     Utils.g_module.__dict__[name] = function
     opt.name = function
 Options.Handler.ADD_COMMAND = ADD_COMMAND
@@ -178,36 +165,6 @@ def process_depends_on(self):
             y.post()
             if getattr(y, 'more_includes', None):
                   self.includes += " " + y.more_includes
-
-
-#@feature('cprogram', 'cc', 'cshlib')
-#@before('apply_core')
-#def process_generated_dependencies(self):
-#    '''Ensure that any dependent source generation happens
-#       before any task that requires the output'''
-#    if getattr(self , 'depends_on', None):
-#        lst = self.to_list(self.depends_on)
-#        for x in lst:
-#            y = self.bld.name_to_obj(x, self.env)
-#            y.post()
-
-
-#import TaskGen, Task
-#
-#old_post_run = Task.Task.post_run
-#def new_post_run(self):
-#    self.cached = True
-#    return old_post_run(self)
-#
-#for y in ['cc', 'cxx']:
-#    TaskGen.classes[y].post_run = new_post_run
-
-def ENABLE_MAGIC_ORDERING(bld):
-    '''enable automatic build order constraint calculation
-       see page 35 of the waf book'''
-    print "NOT Enabling magic ordering"
-    #bld.use_the_magic()
-Build.BuildContext.ENABLE_MAGIC_ORDERING = ENABLE_MAGIC_ORDERING
 
 
 os_path_relpath = getattr(os.path, 'relpath', None)
@@ -238,6 +195,7 @@ def unique_list(seq):
         result.append(item)
     return result
 
+
 def TO_LIST(str):
     '''Split a list, preserving quoted strings and existing lists'''
     if str is None:
@@ -267,6 +225,7 @@ def subst_vars_error(string, env):
             v = env[vname]
         out.append(v)
     return ''.join(out)
+
 
 @conf
 def SUBST_ENV_VAR(ctx, varname):
@@ -301,18 +260,6 @@ def ENFORCE_GROUP_ORDERING(bld):
                         t.post()
 Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
 
-# @feature('cc')
-# @before('apply_lib_vars')
-# def process_objects(self):
-#     if getattr(self, 'add_objects', None):
-#         lst = self.to_list(self.add_objects)
-#         for x in lst:
-#             y = self.name_to_obj(x)
-#             if not y:
-#                 raise Utils.WafError('object %r was not found in uselib_local (required by add_objects %r)' % (x, self.name))
-#             y.post()
-#             self.env.append_unique('INC_PATHS', y.env.INC_PATHS)
-
 
 def recursive_dirlist(dir, relbase):
     '''recursive directory list'''
@@ -333,6 +280,7 @@ def mkdir_p(dir):
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
 
+
 def SUBST_VARS_RECURSIVE(string, env):
     '''recursively expand variables'''
     if string is None:
@@ -342,6 +290,7 @@ def SUBST_VARS_RECURSIVE(string, env):
         string = subst_vars_error(string, env)
         limit -= 1
     return string
+
 
 @conf
 def EXPAND_VARIABLES(ctx, varstr, vars=None):

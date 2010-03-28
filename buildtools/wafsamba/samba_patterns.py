@@ -13,7 +13,5 @@ def SAMBA_MKVERSION(bld, target):
             shell=True,
             on_results=True,
             before="cc")
-    # force this rule to be constructed now
-    t.post()
 Build.BuildContext.SAMBA_MKVERSION = SAMBA_MKVERSION
 

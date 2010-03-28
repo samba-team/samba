@@ -5,15 +5,4 @@ obeyed
 
 
 TODO:
-  - fix deps for --target
-  - cache project rules calculation
-  - make pidl rules depend on full pidl sources
-  - make script rules depend on the scripts
-  - add waf test
-  - s3 build
-  - merged build
-  - etags
-  - rest of old make targets
-  - better Makefile waf wrapper
-  -
-
+	see http://wiki.samba.org/index.php/Waf

@@ -121,6 +121,7 @@ def collect(self):
 
 
 def SAMBA_PIDL_TABLES(bld, name, target):
+    '''generate the pidl NDR tables file'''
     headers = bld.env.PIDL_HEADERS
     bld.SET_BUILD_GROUP('main')
     t = bld(
