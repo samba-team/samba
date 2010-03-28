@@ -2012,9 +2012,9 @@ SMB_OFF_T conv_str_size(const char * str)
 
 #ifdef HAVE_STRTOULL
 	if (sizeof(SMB_OFF_T) == 8) {
-	    lval = strtoull(str, &end, 10 /* base */);
+		lval = strtoull(str, &end, 10 /* base */);
 	} else {
-	    lval = strtoul(str, &end, 10 /* base */);
+		lval = strtoul(str, &end, 10 /* base */);
 	}
 #else
 	lval = strtoul(str, &end, 10 /* base */);
