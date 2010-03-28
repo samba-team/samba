@@ -431,22 +431,19 @@ static bool log_failure(vfs_handle_struct *handle, vfs_op_type op)
 	return bitmap_query(pd->failure_ops, op);
 }
 
-static void init_bitmap(struct bitmap **bm, const char **ops)
+static struct bitmap *init_bitmap(TALLOC_CTX *mem_ctx, const char **ops)
 {
-	if (*bm != NULL) {
-		return;
-	}
+	struct bitmap *bm;
 
 	if (ops == NULL) {
-		*bm = NULL;
-		return;
+		return NULL;
 	}
 
-	*bm = bitmap_allocate(SMB_VFS_OP_LAST);
-	if (*bm == NULL) {
+	bm = bitmap_talloc(mem_ctx, SMB_VFS_OP_LAST);
+	if (bm == NULL) {
 		DEBUG(0, ("Could not alloc bitmap -- "
 			  "defaulting to logging everything\n"));
-		return;
+		return NULL;
 	}
 
 	for (; *ops != NULL; ops += 1) {
@@ -456,7 +453,7 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 
 		if (strequal(*ops, "all")) {
 			for (i=0; i<SMB_VFS_OP_LAST; i++) {
-				bitmap_set(*bm, i);
+				bitmap_set(bm, i);
 			}
 			continue;
 		}
@@ -478,9 +475,9 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 			}
 			if (strequal(op, vfs_op_names[i].name)) {
 				if (neg) {
-					bitmap_clear(*bm, i);
+					bitmap_clear(bm, i);
 				} else {
-					bitmap_set(*bm, i);
+					bitmap_set(bm, i);
 				}
 				break;
 			}
@@ -488,11 +485,11 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 		if (i == SMB_VFS_OP_LAST) {
 			DEBUG(0, ("Could not find opname %s, logging all\n",
 				  *ops));
-			bitmap_free(*bm);
-			*bm = NULL;
-			break;
+			TALLOC_FREE(bm);
+			return NULL;
 		}
 	}
+	return bm;
 }
 
 static const char *audit_opname(vfs_op_type op)
@@ -588,22 +585,6 @@ static const char *fsp_str_do_log(const struct files_struct *fsp)
 	return smb_fname_str_do_log(fsp->fsp_name);
 }
 
-/* Free function for the private data. */
-
-static void free_private_data(void **p_data)
-{
-	struct vfs_full_audit_private_data *pd = *(struct vfs_full_audit_private_data **)p_data;
-
-	if (pd->success_ops) {
-		bitmap_free(pd->success_ops);
-	}
-	if (pd->failure_ops) {
-		bitmap_free(pd->failure_ops);
-	}
-	SAFE_FREE(pd);
-	*p_data = NULL;
-}
-
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
@@ -618,26 +599,25 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 		return result;
 	}
 
-	pd = SMB_MALLOC_P(struct vfs_full_audit_private_data);
+	pd = TALLOC_ZERO_P(handle, struct vfs_full_audit_private_data);
 	if (!pd) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		return -1;
 	}
-	ZERO_STRUCTP(pd);
 
 #ifndef WITH_SYSLOG
 	openlog("smbd_audit", 0, audit_syslog_facility(handle));
 #endif
 
-	init_bitmap(&pd->success_ops,
-		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "success",
-					NULL));
-	init_bitmap(&pd->failure_ops,
-		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "failure",
-					NULL));
+	pd->success_ops = init_bitmap(
+		pd, lp_parm_string_list(SNUM(handle->conn), "full_audit",
+					"success", NULL));
+	pd->failure_ops = init_bitmap(
+		pd, lp_parm_string_list(SNUM(handle->conn), "full_audit",
+					"failure", NULL));
 
 	/* Store the private data. */
-	SMB_VFS_HANDLE_SET_DATA(handle, pd, free_private_data,
+	SMB_VFS_HANDLE_SET_DATA(handle, pd, NULL,
 				struct vfs_full_audit_private_data, return -1);
 
 	do_log(SMB_VFS_OP_CONNECT, True, handle,
