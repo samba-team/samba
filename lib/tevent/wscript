@@ -22,6 +22,9 @@ def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBTALLOC_DIR)
 
+    if conf.CHECK_BUNDLED_SYSTEM('tevent', minversion=VERSION):
+        conf.define('USING_SYSTEM_TEVENT', 1)
+
     if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
         conf.DEFINE('HAVE_EPOLL', 1)
 
@@ -38,7 +41,9 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_EPOLL'):
         SRC += ' tevent_epoll.c'
 
-    bld.SAMBA_LIBRARY('tevent',
-                      SRC,
-                      deps='replace talloc',
-                      vnum=VERSION)
+    if not bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
+        bld.SAMBA_LIBRARY('tevent',
+                          SRC,
+                          deps='replace talloc',
+                          enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
+                          vnum=VERSION)

@@ -399,8 +399,9 @@ def CHECK_LIB(conf, libs, mandatory=False):
         (ccflags, ldflags) = library_flags(conf, lib)
 
         if not conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags):
-            conf.ASSERT(not mandatory,
-                        "Mandatory library '%s' not found for functions '%s'" % (lib, list))
+            if mandatory:
+                print("Mandatory library '%s' not found for functions '%s'" % (lib, list))
+                sys.exit(1)
             # if it isn't a mandatory library, then remove it from dependency lists
             SET_TARGET_TYPE(conf, lib, 'EMPTY')
             ret = False
@@ -449,8 +450,9 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
     conf.CHECK_LIB(liblist)
     for lib in liblist[:]:
         if not GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
-            conf.ASSERT(not mandatory,
-                        "Mandatory library '%s' not found for functions '%s'" % (lib, list))
+            if mandatory:
+                print("Mandatory library '%s' not found for functions '%s'" % (lib, list))
+                sys.exit(1)
             # if it isn't a mandatory library, then remove it from dependency lists
             liblist.remove(lib)
             continue
@@ -462,6 +464,11 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
 
     return ret
 
+@conf
+def IN_LAUNCH_DIR(conf):
+    '''return True if this rule is being run from the launch directory'''
+    return os.path.realpath(conf.curdir) == os.path.realpath(Options.launch_dir)
+
 
 #################################################
 # write out config.h in the right directory
@@ -469,7 +476,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False, header
 def SAMBA_CONFIG_H(conf, path=None):
     # we don't want to produce a config.h in places like lib/replace
     # when we are building projects that depend on lib/replace
-    if os.path.realpath(conf.curdir) != os.path.realpath(Options.launch_dir):
+    if not IN_LAUNCH_DIR(conf):
         return
 
     if Options.options.developer:

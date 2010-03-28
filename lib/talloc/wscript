@@ -18,15 +18,22 @@ def set_options(opt):
 
 def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
+
+    if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION):
+        conf.define('USING_SYSTEM_TALLOC', 1)
+
     conf.SAMBA_CONFIG_H()
+
+
 
 def build(bld):
     bld.BUILD_SUBDIR(LIBREPLACE_DIR)
 
-    bld.SAMBA_LIBRARY('talloc',
-                      'talloc.c',
-                      deps='replace',
-                      vnum=VERSION)
+    if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
+        bld.SAMBA_LIBRARY('talloc',
+                          'talloc.c',
+                          deps='replace',
+                          vnum=VERSION)
 
     bld.SAMBA_BINARY('talloc_testsuite',
                      'testsuite.c testsuite_main.c',

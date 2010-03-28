@@ -19,6 +19,10 @@ def set_options(opt):
 
 def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
+
+    if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION):
+        conf.define('USING_SYSTEM_TDB', 1)
+
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
@@ -29,11 +33,12 @@ def build(bld):
                             freelistcheck.c lock.c dump.c freelist.c
                             io.c open.c transaction.c''')
 
-    bld.SAMBA_LIBRARY('tdb',
-                      COMMON_SRC,
-                      deps='replace rt',
-                      includes='include',
-                      vnum=VERSION)
+    if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
+        bld.SAMBA_LIBRARY('tdb',
+                          COMMON_SRC,
+                          deps='replace rt',
+                          includes='include',
+                          vnum=VERSION)
 
     bld.SAMBA_BINARY('tdbtorture',
                      'tools/tdbtorture.c',

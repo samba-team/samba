@@ -40,3 +40,18 @@ def BUNDLED_EXTENSION_DEFAULT(opt, extension, noextenion=''):
     Options.options['BUNDLED_EXTENSION_DEFAULT'] = extension
     Options.options['BUNDLED_EXTENSION_EXCEPTION'] = noextenion
 Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
+
+
+@conf
+def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0'):
+    if 'ALL' in conf.env.BUNDLED_LIBS or libname in conf.env.BUNDLED_LIBS:
+        return False
+    if conf.check_cfg(package=libname,
+                      args='"%s >= %s" --cflags --libs' % (libname, minversion),
+                      msg='Checking for system %s >= %s' % (libname, minversion)):
+        conf.SET_TARGET_TYPE(libname, 'SYSLIB')
+        return True
+    if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
+        print('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
+        sys.exit(1)
+    return False
