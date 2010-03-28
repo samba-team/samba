@@ -495,8 +495,8 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 {
 	char *sddl = NULL;
 	TALLOC_CTX *tmp_ctx;
-	const char *s_type="", *s_flags="", *s_mask="", 
-		*s_object="", *s_iobject="", *s_trustee="";
+	const char *sddl_type="", *sddl_flags="", *sddl_mask="",
+		*sddl_object="", *sddl_iobject="", *sddl_trustee="";
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -504,16 +504,25 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 		return NULL;
 	}
 
-	s_type = sddl_flags_to_string(tmp_ctx, ace_types, ace->type, true);
-	if (s_type == NULL) goto failed;
+	sddl_type = sddl_flags_to_string(tmp_ctx, ace_types, ace->type, true);
+	if (sddl_type == NULL) {
+		goto failed;
+	}
 
-	s_flags = sddl_flags_to_string(tmp_ctx, ace_flags, ace->flags, true);
-	if (s_flags == NULL) goto failed;
+	sddl_flags = sddl_flags_to_string(tmp_ctx, ace_flags, ace->flags,
+					  true);
+	if (sddl_flags == NULL) {
+		goto failed;
+	}
 
-	s_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask, ace->access_mask, true);
-	if (s_mask == NULL) {
-		s_mask = talloc_asprintf(tmp_ctx, "0x%08x", ace->access_mask);
-		if (s_mask == NULL) goto failed;
+	sddl_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask,
+					 ace->access_mask, true);
+	if (sddl_mask == NULL) {
+		sddl_mask = talloc_asprintf(tmp_ctx, "0x%08x",
+					     ace->access_mask);
+		if (sddl_mask == NULL) {
+			goto failed;
+		}
 	}
 
 	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
@@ -521,21 +530,29 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
 	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT) {
 		if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
-			s_object = GUID_string(tmp_ctx, &ace->object.object.type.type);
-			if (s_object == NULL) goto failed;
+			sddl_object = GUID_string(
+				tmp_ctx, &ace->object.object.type.type);
+			if (sddl_object == NULL) {
+				goto failed;
+			}
 		}
 
 		if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
-			s_iobject = GUID_string(tmp_ctx, &ace->object.object.inherited_type.inherited_type);
-			if (s_iobject == NULL) goto failed;
+			sddl_iobject = GUID_string(tmp_ctx, &ace->object.object.inherited_type.inherited_type);
+			if (sddl_iobject == NULL) {
+				goto failed;
+			}
 		}
 	}
-	
-	s_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, domain_sid);
-	if (s_trustee == NULL) goto failed;
+
+	sddl_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, domain_sid);
+	if (sddl_trustee == NULL) {
+		goto failed;
+	}
 
 	sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s",
-			       s_type, s_flags, s_mask, s_object, s_iobject, s_trustee);
+			       sddl_type, sddl_flags, sddl_mask, sddl_object,
+			       sddl_iobject, sddl_trustee);
 
 failed:
 	talloc_free(tmp_ctx);
