@@ -34,7 +34,7 @@ import samba
 import samba.getopt as options
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
-from samba import Ldb
+from samba import Ldb, version
 from ldb import SCOPE_SUBTREE, SCOPE_BASE, \
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,\
                 MessageElement, Message, Dn
@@ -82,7 +82,7 @@ hashAttrNotCopied = {     "dn": 1, "whenCreated": 1, "whenChanged": 1, "objectGU
 # mandatory to replace them otherwise the provision will be broken somehow.
 hashOverwrittenAtt = {    "prefixMap": replace, "systemMayContain": replace, "systemOnly":replace, "searchFlags":replace,
                         "mayContain":replace,  "systemFlags":replace, "description":replace,
-                        "oEMInformation":replace, "operatingSystemVersion":replace, "adminPropertyPages":replace,
+                        "oEMInformation":never, "operatingSystemVersion":replace, "adminPropertyPages":replace,
                         "defaultSecurityDescriptor": replace, "wellKnownObjects":replace, "privilege":delete, "groupType":replace,
                         "rIDAvailablePool": never}
 
@@ -885,6 +885,18 @@ def update_gpo(paths,creds,session,names):
 	samdb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
 	set_gpo_acl(path.sysvol,names.dnsdomain,names.domainsid,names.domaindn,samdb,lp)
 
+def updateOEMInfo(paths,creds,session,names):
+    sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp, options=["modules:samba_dsdb"])
+    res = sam_ldb.search(expression="(objectClass=*)",base=str(names.rootdn),
+                            scope=SCOPE_BASE, attrs=["dn","oEMInformation"])
+    if len(res) > 0:
+        info = res[0]["oEMInformation"]
+        info = "%s, upgrade to %s"%(info,version)
+        delta = Message()
+        delta.dn = Dn(sam_ldb,str(res[0]["dn"]))
+        descr = get_schema_descriptor(names.domainsid)
+        delta["oEMInformation"] = MessageElement(info, FLAG_MOD_REPLACE, "oEMInformation" )
+        sam_ldb.modify(delta)
 
 
 def setup_path(file):
@@ -928,6 +940,7 @@ if __name__ == '__main__':
     update_sd(paths, creds, session,names)
     update_sd(paths, creds, admin_session_info, names)
     check_updated_sd(newpaths, paths, creds, session, names)
+    updateOEMInfo(paths,creds,session,names)
     message(SIMPLE, "Upgrade finished !")
     # remove reference provision now that everything is done !
     shutil.rmtree(provisiondir)
