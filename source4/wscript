@@ -9,7 +9,7 @@ import wafsamba, Options
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
-    opt.BUNDLED_EXTENSION_DEFAULT('s4')
+    opt.BUNDLED_EXTENSION_DEFAULT('samba4')
     opt.recurse('../lib/replace')
     opt.recurse('dynconfig')
     opt.recurse('scripting/python')
