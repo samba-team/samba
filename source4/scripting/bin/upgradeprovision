@@ -41,7 +41,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE, \
 from samba import param
 from samba import glue
 from samba.misc import messageEltFlagToString
-from samba.provision import  find_setup_dir, get_domain_descriptor, get_config_descriptor, secretsdb_self_join
+from samba.provision import  find_setup_dir, get_domain_descriptor, get_config_descriptor, secretsdb_self_join,set_gpo_acl,getpolicypath,create_gpo_struct
 from samba.provisionexceptions import ProvisioningError
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security
@@ -868,6 +868,23 @@ def update_machine_account_password(paths, creds, session, names):
         secrets_ldb.transaction_commit()
     else:
         secrets_ldb.transaction_cancel()
+
+
+def update_gpo(paths,creds,session,names):
+	"""Create missing GPO file object if needed
+
+	Set ACL correctly also.
+	"""
+	dir = getpolicypath(paths.sysvol,names.dnsdomain,names.policyid)
+	if not os.path.isdir(dir):
+		create_gpo_struct(dir)
+
+	dir = getpolicypath(paths.sysvol,names.dnsdomain,names.policyid_dc)
+	if not os.path.isdir(dir):
+		create_gpo_struct(dir)
+	samdb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
+	set_gpo_acl(path.sysvol,names.dnsdomain,names.domainsid,names.domaindn,samdb,lp)
+
 
 
 def setup_path(file):
