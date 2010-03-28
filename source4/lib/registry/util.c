@@ -234,11 +234,12 @@ static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	return WERR_OK;
 }
 
-WERROR reg_key_del_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
-		       const char *path)
+WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 {
 	struct registry_key *parent;
 	char *n;
+	const char *n;
+	TALLOC_CTX *mem_ctx = talloc_init("reg_key_del_abs");
 	WERROR error;
 
 	if (!strchr(path, '\\')) {
@@ -252,6 +253,8 @@ WERROR reg_key_del_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 		talloc_free(parent);
 		talloc_free(n);
 	}
+	talloc_free(mem_ctx);
+
 
 	return error;
 }
