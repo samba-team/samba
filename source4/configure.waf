@@ -2,7 +2,7 @@
 
 echo "Using waf based build"
 
-WAF=../buildtools/waf
+WAF=../buildtools/bin/waf
 
 # don't enable WAFCACHE by default till it is
 # size limited

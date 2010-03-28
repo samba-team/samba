@@ -10,7 +10,7 @@
 # from make to pass it to waf?
 JOBS=1
 
-WAF=JOBS=$(JOBS) ../buildtools/waf
+WAF=JOBS=$(JOBS) ../buildtools/bin/waf
 
 all:
 	$(WAF) build
@@ -30,7 +30,7 @@ quicktest:
 clean:
 	$(WAF) clean
 
-distclean:
+distclean: clean
 	rm -rf bin
 
 # some compatibility make targets
