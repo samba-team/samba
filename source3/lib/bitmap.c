@@ -72,7 +72,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 	if (!bm) return NULL;
 
 	bm->n = n;
-	bm->b = TALLOC_ARRAY(mem_ctx, uint32, (n+31)/32);
+	bm->b = TALLOC_ARRAY(bm, uint32, (n+31)/32);
 	if (!bm->b) {
 		return NULL;
 	}
