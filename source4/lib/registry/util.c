@@ -272,13 +272,16 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 	}
 
 	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
-	if (W_ERROR_IS_OK(error)) {
-		error = reg_key_add_name(mem_ctx, parent, n, NULL, sec_desc,
-					 result);
-
-		talloc_free(parent);
-		talloc_free(n);
+	if (!W_ERROR_IS_OK(error)) {
+		DEBUG(2, ("Opening parent of %s failed with %s\n", path,
+				  win_errstr(error)));
+		return error;
 	}
+
+	error = reg_key_add_name(mem_ctx, parent, n, NULL, sec_desc, result);
+
+	talloc_free(parent);
+	talloc_free(n);
 
 	return error;
 }
