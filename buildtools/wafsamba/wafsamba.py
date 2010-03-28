@@ -17,6 +17,7 @@ from samba_asn1 import *
 from samba_autoproto import *
 from samba_python import *
 from samba_deps import *
+from samba_bundled import *
 import samba_conftests
 
 LIB_PATH="shared"
@@ -80,6 +81,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   vars=None,
                   install_path=None,
                   install=True,
+                  bundled_extension=True,
                   enabled=True):
 
     if not enabled:
@@ -93,7 +95,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         SET_TARGET_TYPE(bld, libname, 'EMPTY')
         return
 
-    if bld.env.DISABLE_SHARED:
+    if BUILTIN_LIBRARY(bld, libname):
         obj_target = libname
     else:
         obj_target = libname + '.objlist'
@@ -114,7 +116,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         depends_on     = depends_on,
                         local_include  = local_include)
 
-    if bld.env.DISABLE_SHARED:
+    if BUILTIN_LIBRARY(bld, libname):
         return
 
     if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
@@ -125,11 +127,13 @@ def SAMBA_LIBRARY(bld, libname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
+    bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
+
     bld.SET_BUILD_GROUP(group)
     t = bld(
         features        = 'cc cshlib symlink_lib',
         source          = [],
-        target          = libname,
+        target          = bundled_name,
         samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
         depends_on      = depends_on,
         samba_deps      = deps,
@@ -137,7 +141,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         local_include   = local_include,
         vnum            = vnum,
         install_path    = None,
-        ldflags         = build_rpath(bld)
+        ldflags         = build_rpath(bld),
+        name	        = libname
         )
 
     if install_path is None:
@@ -147,11 +152,11 @@ def SAMBA_LIBRARY(bld, libname, source,
     # we don't need the double libraries if rpath is off
     if (bld.env.RPATH_ON_INSTALL == False and
         bld.env.RPATH_ON_BUILD == False):
-        install_target = libname
+        install_target = bundled_name
     else:
-        install_target = libname + '.inst'
+        install_target = bundled_name + '.inst'
 
-    if install and install_target != libname:
+    if install and install_target != bundled_name:
         # create a separate install library, which may have
         # different rpath settings
         SET_TARGET_TYPE(bld, install_target, 'LIBRARY')
@@ -165,7 +170,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             samba_includes  = includes,
             local_include   = local_include,
             vnum            = vnum,
-            install_as	    = libname,
+            install_as	    = bundled_name,
             install_path    = None,
             ldflags         = install_rpath(bld)
             )
@@ -173,14 +178,14 @@ def SAMBA_LIBRARY(bld, libname, source,
     if install:
         if vnum:
             vnum_base = vnum.split('.')[0]
-            install_name = 'lib%s.so.%s' % (libname, vnum)
-            install_link = 'lib%s.so.%s' % (libname, vnum_base)
+            install_name = 'lib%s.so.%s' % (bundled_name, vnum)
+            install_link = 'lib%s.so.%s' % (bundled_name, vnum_base)
         else:
-            install_name = 'lib%s.so' % libname
+            install_name = 'lib%s.so' % bundled_name
             install_link = None
 
         bld.install_as(os.path.join(install_path, install_name),
-                       'lib%s.inst.so' % libname)
+                       'lib%s.inst.so' % bundled_name)
         if install_link:
             bld.symlink_as(os.path.join(install_path, install_link), install_name)
 
@@ -334,7 +339,7 @@ def SAMBA_MODULE(bld, modname, source,
     # all disabled
     bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
 
-    if internal_module or bld.env.DISABLE_SHARED:
+    if internal_module or BUILTIN_LIBRARY(bld, modname):
         # treat internal modules as subsystems for now
         SAMBA_SUBSYSTEM(bld, modname, source,
                         deps=deps,
@@ -574,7 +579,7 @@ def symlink_lib(self):
 
     link_target = getattr(self, 'link_name', '')
     if link_target == '':
-        link_target = '%s/lib%s.so%s' % (LIB_PATH, self.sname, soext)
+        link_target = '%s/lib%s.so%s' % (LIB_PATH, self.target, soext)
 
 
     link_source = os_path_relpath(self.link_task.outputs[0].abspath(self.env),

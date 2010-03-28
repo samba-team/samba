@@ -4,13 +4,25 @@
 
 import sys, wafsamba
 import Options, os, preproc
+from samba_utils import *
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
 
     opt.tool_options('gnu_dirs')
+
+    opt.add_option('--bundled-libraries',
+                   help=("list of bundled libraries. Can be 'NONE' or 'ALL' [auto]"),
+                   action="store", dest='BUNDLED_LIBS', default='')
+    opt.add_option('--bundled-library-extension',
+                   help=("name extension for bundled libraries [auto]"),
+                   action="store", dest='BUNDLED_EXTENSION', default=None)
+    opt.add_option('--builtin-libraries',
+                   help=("list of libraries to build directly into binaries [none]"),
+                   action="store", dest='BUILTIN_LIBRARIES', default='')
+
     opt.add_option('--libdir',
-                   help=("object code libraries [PREFIX/lib"),
+                   help=("object code libraries [PREFIX/lib]"),
                    action="store", dest='LIBDIR', default='${PREFIX}/lib')
     opt.add_option('--bindir',
                    help=("user executables [PREFIX/bin]"),
@@ -73,8 +85,13 @@ def configure(conf):
     conf.env.BINDIR = Options.options.BINDIR
     conf.env.SBINDIR = Options.options.SBINDIR
     conf.env.MODULESDIR = Options.options.MODULESDIR
+    conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
+    conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
 
     conf.env.DISABLE_SHARED = Options.options.disable_shared
+
+    if Options.options.BUNDLED_EXTENSION:
+        conf.env.BUNDLED_EXTENSION = Options.options.BUNDLED_EXTENSION
 
     # see if we can compile and run a simple C program
     conf.CHECK_CODE('printf("hello world\\n")',
