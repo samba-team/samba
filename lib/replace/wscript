@@ -306,11 +306,11 @@ def build(bld):
                      install=False)
 
     NET_SOURCES = []
-    if bld.CONFIG_SET('HAVE_INET_NTOA'):  NET_SOURCES.append('inet_ntoa.c')
-    if bld.CONFIG_SET('HAVE_INET_ATON'):  NET_SOURCES.append('inet_aton.c')
-    if bld.CONFIG_SET('HAVE_INET_NTOP'):  NET_SOURCES.append('inet_ntop.c')
-    if bld.CONFIG_SET('HAVE_INET_PTON'):  NET_SOURCES.append('inet_pton.c')
-    if bld.CONFIG_SET('HAVE_SOCKETPAIR'): NET_SOURCES.append('socketpair.c')
+    if not bld.CONFIG_SET('HAVE_INET_NTOA'):  NET_SOURCES.append('inet_ntoa.c')
+    if not bld.CONFIG_SET('HAVE_INET_ATON'):  NET_SOURCES.append('inet_aton.c')
+    if not bld.CONFIG_SET('HAVE_INET_NTOP'):  NET_SOURCES.append('inet_ntop.c')
+    if not bld.CONFIG_SET('HAVE_INET_PTON'):  NET_SOURCES.append('inet_pton.c')
+    if not bld.CONFIG_SET('HAVE_SOCKETPAIR'): NET_SOURCES.append('socketpair.c')
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES, deps='replace')
 
