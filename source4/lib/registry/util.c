@@ -84,6 +84,9 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 								  NULL, false);
 			}
 			break;
+		case REG_BINARY:
+			ret = data_blob_hex_string_upper(mem_ctx, &data);
+			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
 			if (data.length == sizeof(uint32_t)) {
@@ -97,9 +100,12 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 						      BVAL(data.data, 0));
 			}
 			break;
-		case REG_BINARY:
+		case REG_MULTI_SZ:
+			/* FIXME: We don't support this yet */
+			break;
 		default:
-			ret = data_blob_hex_string_upper(mem_ctx, &data);
+			/* FIXME */
+			/* Other datatypes aren't supported -> return "NULL" */
 			break;
 	}
 
@@ -154,7 +160,10 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 								 (void **)&data->data,
 								 &data->length, false);
 			break;
-		case REG_DWORD:
+		case REG_BINARY:
+			*data = strhex_to_data_blob(mem_ctx, data_str);
+			break;
+		case REG_DWORD: {
 		case REG_DWORD_BIG_ENDIAN: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
 			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint32_t));
@@ -169,10 +178,13 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 			SBVAL(data->data, 0, tmp);
 			}
 			break;
-		case REG_BINARY:
+		case REG_MULTI_SZ:
+			/* FIXME: We don't support this yet */
+			return false;
 		default:
-			*data = strhex_to_data_blob(mem_ctx, data_str);
-			break;
+			/* FIXME */
+			/* Other datatypes aren't supported -> return no success */
+			return false;
 	}
 	return true;
 }
