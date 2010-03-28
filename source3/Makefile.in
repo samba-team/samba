@@ -3237,7 +3237,6 @@ valgrindtest:: all torture timelimit
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all ${TEST_EXTRA_ARGS}
 
-SELFTEST_FORMAT = plain
 selftestdir = ../selftest
 
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
@@ -3254,8 +3253,7 @@ selftest:: all torture timelimit
 		--socket-wrapper $(TESTS) | \
 		$(PERL) $(selftestdir)/filter-subunit.pl \
 		--expected-failures=$(srcdir)/selftest/knownfail | \
-		$(PERL) $(selftestdir)/format-subunit.pl --format=$(SELFTEST_FORMAT) \
-		--immediate
+		$(PERL) $(selftestdir)/format-subunit --immediate
 
 selftest-%:
 	$(MAKE) selftest TESTS=$*

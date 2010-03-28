@@ -1,5 +1,3 @@
-TEST_FORMAT = plain
-
 SELFTEST = $(LD_LIBPATH_OVERRIDE) PYTHON=$(PYTHON) \
     $(PERL) $(selftestdir)/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
@@ -16,7 +14,7 @@ ST_DONE_TEST = @test -f $(selftest_prefix)/st_done || { echo "SELFTEST FAILED"; 
 SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/selftest/slow
 SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick --include=$(srcdir)/selftest/quick
 FILTER_XFAIL = $(PERL) $(selftestdir)/filter-subunit.pl --expected-failures=$(srcdir)/selftest/knownfail
-SUBUNIT_FORMATTER ?= $(PERL) $(selftestdir)/format-subunit.pl --prefix=${selftest_prefix} --format=$(TEST_FORMAT) --immediate
+SUBUNIT_FORMATTER ?= $(PERL) $(selftestdir)/format-subunit --prefix=${selftest_prefix} --immediate
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(SUBUNIT_FORMATTER)
 
 test-subunit:: everything
