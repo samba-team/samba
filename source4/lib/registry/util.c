@@ -238,7 +238,7 @@ WERROR reg_key_del_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 		       const char *path)
 {
 	struct registry_key *parent;
-	const char *n;
+	char *n;
 	WERROR error;
 
 	if (!strchr(path, '\\')) {
@@ -262,7 +262,7 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 		       struct registry_key **result)
 {
 	struct registry_key *parent;
-	const char *n;
+	char *n;
 	WERROR error;
 
 	*result = NULL;
