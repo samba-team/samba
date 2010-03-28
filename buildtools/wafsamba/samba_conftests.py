@@ -1,7 +1,7 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
 
-import os, Build, shutil, Utils
+import os, Build, shutil, Utils, re
 from Configure import conf
 from samba_utils import *
 
@@ -63,21 +63,8 @@ def CHECK_CHARSET_EXISTS(conf, charset, outcharset='UCS-2LE', headers=None, defi
                            lib='iconv',
                            headers=headers)
 
-
-
-# this one is quite complex, and should probably be broken up
-# into several parts. I'd quite like to create a set of CHECK_COMPOUND()
-# functions that make writing complex compound tests like this much easier
-@conf
-def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
-    '''see if the platform supports building libraries'''
-
-    if msg is None:
-        if rpath:
-            msg = "rpath library support"
-        else:
-            msg = "building library support"
-
+def find_config_dir(conf):
+    '''find a directory to run tests in'''
     k = 0
     while k < 10000:
         dir = os.path.join(conf.blddir, '.conf_check_%d' % k)
@@ -100,6 +87,23 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
         os.stat(dir)
     except:
         conf.fatal('cannot use the configuration test folder %r' % dir)
+    return dir
+
+
+# this one is quite complex, and should probably be broken up
+# into several parts. I'd quite like to create a set of CHECK_COMPOUND()
+# functions that make writing complex compound tests like this much easier
+@conf
+def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
+    '''see if the platform supports building libraries'''
+
+    if msg is None:
+        if rpath:
+            msg = "rpath library support"
+        else:
+            msg = "building library support"
+
+    dir = find_config_dir(conf)
 
     bdir = os.path.join(dir, 'testbuild')
     if not os.path.exists(bdir):
@@ -174,3 +178,60 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
 
     conf.check_message(msg, '', ret)
     return ret
+
+
+
+@conf
+def CHECK_PERL_MANPAGE(conf, msg=None, section=None):
+    '''work out what extension perl uses for manpages'''
+
+    if msg is None:
+        if section:
+            msg = "perl man%s extension" % section
+        else:
+            msg = "perl manpage generation"
+
+    conf.check_message_1(msg)
+
+    dir = find_config_dir(conf)
+
+    bdir = os.path.join(dir, 'testbuild')
+    if not os.path.exists(bdir):
+        os.makedirs(bdir)
+
+    dest = open(os.path.join(bdir, 'Makefile.PL'), 'w')
+    dest.write("""
+use ExtUtils::MakeMaker;
+WriteMakefile(
+    'NAME'	=> 'WafTest',
+    'EXE_FILES' => [ 'WafTest' ]
+);
+""")
+    dest.close()
+    back = os.path.abspath('.')
+    os.chdir(bdir)
+    proc = Utils.pproc.Popen(['perl', 'Makefile.PL'],
+                             stdout=Utils.pproc.PIPE,
+                             stderr=Utils.pproc.PIPE)
+    (out, err) = proc.communicate()
+    os.chdir(back)
+
+    ret = (proc.returncode == 0)
+    if not ret:
+        conf.check_message_2('not found', color='YELLOW')
+        return
+
+    if section:
+        f = open(os.path.join(bdir,'Makefile'), 'r')
+        man = f.read()
+        f.close()
+        m = re.search('MAN%sEXT\s+=\s+(\w+)' % section, man)
+        if not m:
+            conf.check_message_2('not found', color='YELLOW')
+            return
+        ext = m.group(1)
+        conf.check_message_2(ext)
+        return ext
+
+    conf.check_message_2('ok')
+    return True

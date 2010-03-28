@@ -8,8 +8,9 @@ def set_options(opt):
 def configure(conf):
     conf.check_tool('perl')
     # we need a recent version of MakeMaker to get the right man page names
-    if conf.check_perl_module('ExtUtils::MakeMaker 6.42'):
-        conf.DEFINE('HAVE_PERL_MAKEMAKER', 1)
+    if conf.CHECK_PERL_MANPAGE():
+        conf.env.PERLMAN1EXT = conf.CHECK_PERL_MANPAGE(section='1')
+        conf.env.PERLMAN3EXT = conf.CHECK_PERL_MANPAGE(section='3')
 
 def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
@@ -22,11 +23,13 @@ def build(bld):
     pidl_src = ['pidl']
     pidl_src.extend(bld.path.ant_glob('lib/**/*.pm').split())
 
-    pidl_manpages = '''blib/man1/pidl.1p blib/man3/Parse::Pidl::NDR.3pm
-                       blib/man3/Parse::Pidl::Wireshark::Conformance.3pm
-                       blib/man3/Parse::Pidl::Dump.3pm
-                       blib/man3/Parse::Pidl::Util.3pm
-                       blib/man3/Parse::Pidl::Wireshark::NDR.3pm'''.split()
+    pidl_manpages = '''blib/man1/pidl.${PERLMAN1EXT} blib/man3/Parse::Pidl::NDR.${PERLMAN3EXT}
+                       blib/man3/Parse::Pidl::Wireshark::Conformance.${PERLMAN3EXT}
+                       blib/man3/Parse::Pidl::Dump.${PERLMAN3EXT}
+                       blib/man3/Parse::Pidl::Util.${PERLMAN3EXT}
+                       blib/man3/Parse::Pidl::Wireshark::NDR.${PERLMAN3EXT}'''.split()
+
+    pidl_manpages = bld.EXPAND_VARIABLES(pidl_manpages)
 
     # use perl to build the manpages
     bld.env.pidl_srcdir = os.path.join(bld.srcnode.abspath(), 'pidl')
