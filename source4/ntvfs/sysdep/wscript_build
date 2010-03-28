@@ -25,6 +25,7 @@ bld.SAMBA_MODULE('sys_lease_linux',
 
 
 bld.SAMBA_SUBSYSTEM('sys_lease',
-                    source='sys_lease.c'
+                    source='sys_lease.c',
+                    deps='talloc'
                     )
 
