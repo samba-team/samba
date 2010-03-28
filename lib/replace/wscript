@@ -9,6 +9,8 @@ import wafsamba
 import Options, os, preproc
 
 def set_options(opt):
+    opt.BUILTIN_DEFAULT('NONE')
+    opt.BUNDLED_EXTENSION_DEFAULT('')
     opt.recurse('../../buildtools/wafsamba')
 
 @wafsamba.runonce

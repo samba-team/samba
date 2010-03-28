@@ -13,12 +13,12 @@ LIBTDB_DIR= srcdir + '/lib/tdb'
 LIBTEVENT_DIR= srcdir + '/lib/tevent'
 
 def set_options(opt):
+    opt.BUILTIN_DEFAULT('replace')
+    opt.BUNDLED_EXTENSION_DEFAULT('ldb', noextenion='ldb')
     opt.recurse(LIBTDB_DIR)
     opt.recurse(LIBTEVENT_DIR)
 
 def configure(conf):
-    conf.BUNDLED_LIBRARY_EXTENSION('ldb')
-
     conf.sub_config(LIBTDB_DIR)
     conf.sub_config(LIBTEVENT_DIR)
     # where does the default LIBDIR end up? in conf.env somewhere?

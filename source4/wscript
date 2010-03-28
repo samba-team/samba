@@ -8,6 +8,8 @@ sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 
 def set_options(opt):
+    opt.BUILTIN_DEFAULT('NONE')
+    opt.BUNDLED_EXTENSION_DEFAULT('s4')
     opt.recurse('../lib/replace')
     opt.recurse('dynconfig')
     opt.recurse('scripting/python')
@@ -31,8 +33,6 @@ def configure(conf):
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.DEFINE('_SAMBA_BUILD_', 4, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
-
-    conf.BUNDLED_LIBRARY_EXTENSION('s4')
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')

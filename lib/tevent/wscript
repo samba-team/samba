@@ -13,11 +13,12 @@ LIBREPLACE_DIR= srcdir + '/lib/replace'
 LIBTALLOC_DIR=  srcdir + '/lib/talloc'
 
 def set_options(opt):
+    opt.BUILTIN_DEFAULT('replace')
+    opt.BUNDLED_EXTENSION_DEFAULT('tevent', noextenion='tevent')
     opt.recurse(LIBREPLACE_DIR)
     opt.recurse(LIBTALLOC_DIR)
 
 def configure(conf):
-    conf.BUNDLED_LIBRARY_EXTENSION('tevent')
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBTALLOC_DIR)
 

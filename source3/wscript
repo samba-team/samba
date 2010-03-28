@@ -10,6 +10,8 @@ import build.charset
 from samba_utils import *
 
 def set_options(opt):
+    opt.BUILTIN_DEFAULT('NONE')
+    opt.BUNDLED_EXTENSION_DEFAULT('s3')
     opt.recurse('../lib/replace')
     opt.recurse('build')
     opt.recurse('../lib/nss_wrapper')
