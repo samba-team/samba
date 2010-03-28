@@ -754,19 +754,21 @@ Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
 
 
 # override the display of the compilation and linking messages
-def progress(self):
+def build_progress(self):
     return "[%d/%d]" % (self.position[0], self.position[1])
 
 def cc_display(self):
     if Options.options.progress_bar != 0:
         return Task.Task.display(self)
-    fname = self.inputs[0].bldpath(self.env)[3:]
-    return "%s Compiling %s\n" % (progress(self), fname)
+    fname = self.inputs[0].bldpath(self.env)
+    if fname[0:3] == '../':
+        fname = fname[3:]
+    return "%s Compiling %s\n" % (build_progress(self), fname)
 Task.TaskBase.classes['cc'].display = cc_display
 
 def link_display(self):
     if Options.options.progress_bar != 0:
         return Task.Task.display(self)
     fname = self.outputs[0].bldpath(self.env)
-    return "%s Linking %s\n" % (progress(self), fname)
+    return "%s Linking %s\n" % (build_progress(self), fname)
 Task.TaskBase.classes['cc_link'].display = link_display
