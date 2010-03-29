@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, sys, Options, Utils, Task, re
+import Build, os, sys, Options, Utils, Task, re, fnmatch
 from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
@@ -261,7 +261,7 @@ def ENFORCE_GROUP_ORDERING(bld):
 Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
 
 
-def recursive_dirlist(dir, relbase):
+def recursive_dirlist(dir, relbase, pattern=None):
     '''recursive directory list'''
     ret = []
     for f in os.listdir(dir):
@@ -269,6 +269,8 @@ def recursive_dirlist(dir, relbase):
         if os.path.isdir(f2):
             ret.extend(recursive_dirlist(f2, relbase))
         else:
+            if pattern and not fnmatch.fnmatch(f, pattern):
+                continue
             ret.append(os_path_relpath(f2, relbase))
     return ret
 
@@ -373,3 +375,11 @@ except:
         Task.md5 = replace_md5
         Utils.h_file = replace_h_file
 
+
+def LOAD_ENVIRONMENT():
+    '''load the configuration environment, allowing access to env vars
+       from new commands'''
+    import Environment
+    env = Environment.Environment()
+    env.load('bin/c4che/default.cache.py')
+    return env
