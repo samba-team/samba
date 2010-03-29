@@ -508,6 +508,10 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	struct ldb_key_data *kd = talloc_get_type(h, struct ldb_key_data);
 	struct ldb_context *c = kd->ldb;
 
+	if (name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
 	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 	W_ERROR_HAVE_NO_MEMORY(ldap_path);
 
@@ -588,6 +592,10 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	struct ldb_key_data *newkd;
 	int ret;
 
+	if (name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
 
@@ -634,7 +642,11 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 	struct ldb_message *msg;
 	struct ldb_dn *childdn;
 
-	if ((child == NULL) || (child[0] == '\0')) {
+	if (child == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (child[0] == '\0') {
 		/* default value */
 		msg = talloc_zero(mem_ctx, struct ldb_message);
 		W_ERROR_HAVE_NO_MEMORY(msg);
@@ -689,6 +701,10 @@ static WERROR ldb_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 	struct ldb_result *res_vals;
 	WERROR werr;
 	struct hive_key *hk;
+
+	if (name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
 
 	/* Verify key exists by opening it */
 	werr = ldb_open_key(mem_ctx, key, name, &hk);
@@ -793,13 +809,17 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_set_value");
 
+	if (name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
 	msg = reg_ldb_pack_value(kd->ldb, mem_ctx, name, type, data);
 	W_ERROR_HAVE_NO_MEMORY(msg);
 
 	msg->dn = ldb_dn_copy(msg, kd->dn);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
-	if ((name != NULL) && (name[0] != '\0')) {
+	if (name[0] != '\0') {
 		/* For a default value, we add/overwrite the attributes to/of the hive.
 		   For a normal value, we create a new child. */
 		if (!ldb_dn_add_child_fmt(msg->dn, "value=%s",
