@@ -641,7 +641,8 @@ int main(int argc,char *argv[])
 
 	results = torture_results_init(talloc_autofree_context(), ui_ops);
 
-	torture = torture_context_init(s4_event_context_init(NULL), results);
+	torture = torture_context_init(s4_event_context_init(talloc_autofree_context()),
+	                               results);
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");
