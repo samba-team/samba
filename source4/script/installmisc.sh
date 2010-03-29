@@ -87,7 +87,7 @@ for p in $($PYTHON scripting/python/samba_external/missing.py);
 do
   echo "Installing missing python library $p"
   mkdir -p $PYTHONDIR/samba_external/$p
-  cp -r scripting/python/samba_external/$p/* $PYTHONDIR/samba_external/$p/ || exit 1
+  cp -r ../lib/$p/* $PYTHONDIR/samba_external/$p/ || exit 1
 done
 
 echo "Installing stuff in $PRIVATEDIR"
