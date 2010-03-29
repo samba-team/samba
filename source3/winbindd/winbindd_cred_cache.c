@@ -47,7 +47,12 @@ static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *,
 /* The Krb5 ticket refresh handler should be scheduled
    at one-half of the period from now till the tkt
    expiration */
-#define KRB5_EVENT_REFRESH_TIME(x) ((x) - (((x) - time(NULL))/2))
+
+static time_t krb5_event_refresh_time(time_t end_time)
+{
+	time_t rest = end_time - time(NULL);
+	return end_time - rest/2;
+}
 
 /****************************************************************
  Find an entry by name.
@@ -183,7 +188,7 @@ rekinit:
 			/* The tkt should be refreshed at one-half the period
 			   from now to the expiration time */
 			expire_time = entry->refresh_time;
-			new_start = KRB5_EVENT_REFRESH_TIME(entry->refresh_time);
+			new_start = krb5_event_refresh_time(entry->refresh_time);
 #endif
 			goto done;
 		} else {
@@ -207,7 +212,7 @@ rekinit:
 	new_start = time(NULL) + 30;
 #else
 	expire_time = new_start;
-	new_start = KRB5_EVENT_REFRESH_TIME(new_start);
+	new_start = krb5_event_refresh_time(new_start);
 #endif
 
 	gain_root_privilege();
@@ -373,7 +378,7 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
 	t = timeval_set(time(NULL) + 30, 0);
 #else
-	t = timeval_set(KRB5_EVENT_REFRESH_TIME(entry->refresh_time), 0);
+	t = timeval_set(krb5_event_refresh_time(entry->refresh_time), 0);
 #endif
 
 	if (entry->refresh_time == 0) {
@@ -558,7 +563,8 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
 				t = timeval_set(time(NULL)+30, 0);
 #else
-				t = timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0);
+				t = timeval_set(krb5_event_refresh_time(ticket_end),
+						0);
 #endif
 				if (!entry->refresh_time) {
 					entry->refresh_time = t.tv_sec;
@@ -642,7 +648,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
 		t = timeval_set(time(NULL)+30, 0);
 #else
-		t = timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0);
+		t = timeval_set(krb5_event_refresh_time(ticket_end), 0);
 #endif
 		if (entry->refresh_time == 0) {
 			entry->refresh_time = t.tv_sec;
