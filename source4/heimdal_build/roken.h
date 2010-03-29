@@ -111,6 +111,14 @@
 #define HAVE_GETTIMEOFDAY
 #endif
 
+#ifndef HAVE_SETEGID
+#define HAVE_SETEGID
+#endif
+
+#ifndef HAVE_SETEUID
+#define HAVE_SETEUID
+#endif
+
 /* force the use of the libreplace strerror_r */
 #ifndef HAVE_STRERROR_R
 #define HAVE_STRERROR_R
