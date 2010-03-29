@@ -291,10 +291,8 @@ static int schema_load_init(struct ldb_module *module)
 
 	ret = dsdb_module_load_partition_usn(module, schema_dn, &current_usn, NULL);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb,
-				       "dsdb_load_partition_usn failed: %s",
-				       ldb_errstring(ldb));
-		return ret;
+		/* Ignore the error and just reload the DB more often */
+		current_usn = 0;
 	}
 
 	return dsdb_schema_from_db(module, schema_dn, current_usn, &schema);
