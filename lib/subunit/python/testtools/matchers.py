@@ -12,6 +12,7 @@ $ python -c 'import testtools.matchers; print testtools.matchers.__all__'
 
 __metaclass__ = type
 __all__ = [
+    'Annotate',
     'DocTestMatches',
     'Equals',
     'MatchesAll',
@@ -249,3 +250,33 @@ class MatchedUnexpectedly:
 
     def describe(self):
         return "%r matches %s" % (self.other, self.matcher)
+
+
+class Annotate:
+    """Annotates a matcher with a descriptive string.
+
+    Mismatches are then described as '<mismatch>: <annotation>'.
+    """
+
+    def __init__(self, annotation, matcher):
+        self.annotation = annotation
+        self.matcher = matcher
+
+    def __str__(self):
+        return 'Annotate(%r, %s)' % (self.annotation, self.matcher)
+
+    def match(self, other):
+        mismatch = self.matcher.match(other)
+        if mismatch is not None:
+            return AnnotatedMismatch(self.annotation, mismatch)
+
+
+class AnnotatedMismatch:
+    """A mismatch annotated with a descriptive string."""
+
+    def __init__(self, annotation, mismatch):
+        self.annotation = annotation
+        self.mismatch = mismatch
+
+    def describe(self):
+        return '%s: %s' % (self.mismatch.describe(), self.annotation)

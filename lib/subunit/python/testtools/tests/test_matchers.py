@@ -9,6 +9,7 @@ from testtools import (
     TestCase,
     )
 from testtools.matchers import (
+    Annotate,
     Equals,
     DocTestMatches,
     MatchesAny,
@@ -151,6 +152,18 @@ class TestMatchesAllInterface(TestCase, TestMatchersInterface):
 ]
 """,
                           1, MatchesAll(NotEquals(1), NotEquals(2)))]
+
+
+class TestAnnotate(TestCase, TestMatchersInterface):
+
+    matches_matcher = Annotate("foo", Equals(1))
+    matches_matches = [1]
+    matches_mismatches = [2]
+
+    str_examples = [
+        ("Annotate('foo', Equals(1))", Annotate("foo", Equals(1)))]
+
+    describe_examples = [("1 != 2: foo", 2, Annotate('foo', Equals(1)))]
 
 
 def test_suite():

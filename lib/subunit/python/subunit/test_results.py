@@ -83,8 +83,8 @@ class TestResultDecorator(object):
     def stop(self):
         return self.decorated.stop()
 
-    def tags(self, gone_tags, new_tags):
-        return self.decorated.time(gone_tags, new_tags)
+    def tags(self, new_tags, gone_tags):
+        return self.decorated.time(new_tags, gone_tags)
 
     def time(self, a_datetime):
         return self.decorated.time(a_datetime)
