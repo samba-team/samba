@@ -44,7 +44,7 @@ def SAMBA_BUILD_ENV(conf):
     mkdir_p(blib_bld + '/man3')
     if os.path.islink(blib_src):
         os.unlink(blib_src)
-    else:
+    elif os.path.exists(blib_src):
         shutil.rmtree(blib_src)
     os.symlink(blib_bld, blib_src)
 
