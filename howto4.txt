@@ -63,9 +63,11 @@ Run this::
 Step 2bis: recompile Samba4
 ---------------------------
 
-This part only apply for those who are recompiling samba 4 after updating the code (with rsync or git).
+This only applies for those who are recompiling Samba4 after updating the code
+(using "rsync" or "git").
 
-Due to some imperfection in the our build system it recommended to do the following sequence after updating the code:
+Due to some imperfections in our actual build system (hope that this changes
+soon) it is recommended to perform this after the source upgrade:
 
   $ cd samba4/source
   $ make clean
@@ -74,8 +76,9 @@ Due to some imperfection in the our build system it recommended to do the follow
   $ make idl_full
   $ make
 
-Not all the steps are needed everytime but doing so insure that you won't have old compiled objects mixed with new code.
-It also insure that change in the idl are correctly catched up.
+Not all the steps are needed every time but doing so makes sure that you won't
+have old compiled objects standing in the way and cause malfunctions.
+It also makes sure that changes in the IDL files are correctly catched up.
 
 Step 3: install Samba4
 ----------------------
