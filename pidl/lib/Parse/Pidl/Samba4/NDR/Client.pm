@@ -60,6 +60,10 @@ sub ParseFunctionOldRecv($$$)
 
 	status = dcerpc_ndr_request_recv(rreq);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		status = dcerpc_fault_to_nt_status(p->last_fault_code);
+	}
+
 	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);
 	}
@@ -289,6 +293,10 @@ sub ParseFunction_r_Sync($$$)
 
 	status = dcerpc_ndr_request(p, NULL, &ndr_table_$interface->{NAME},
 				    NDR_$uname, mem_ctx, r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		status = dcerpc_fault_to_nt_status(p->last_fault_code);
+	}
 
 	if (NT_STATUS_IS_OK(status) && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG($name, r);
