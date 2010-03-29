@@ -217,7 +217,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
 
     if pc_files is not None:
-        bld.PKG_CONFIG_FILES(pc_files)
+        bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 
@@ -761,16 +761,18 @@ def subst_at_vars(task):
 
 
 
-def PKG_CONFIG_FILES(bld, pc_files):
+def PKG_CONFIG_FILES(bld, pc_files, vnum=None):
     '''install some pkg_config pc files'''
     dest = '${PKGCONFIGDIR}'
     dest = bld.EXPAND_VARIABLES(dest)
     for f in TO_LIST(pc_files):
         base=os.path.basename(f)
-        bld.SAMBA_GENERATOR('PKGCONFIG_%s' % base,
-                            rule=subst_at_vars,
-                            source=f+'.in',
-                            target=f)
+        t = bld.SAMBA_GENERATOR('PKGCONFIG_%s' % base,
+                                rule=subst_at_vars,
+                                source=f+'.in',
+                                target=f)
+        if vnum:
+            t.env.PACKAGE_VERSION = vnum
         INSTALL_FILES(bld, dest, f, flat=True, destname=base)
 Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
 
