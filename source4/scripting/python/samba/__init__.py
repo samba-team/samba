@@ -392,6 +392,21 @@ def valid_netbios_name(name):
     return True
 
 
+def ensure_external_module(modulename, location):
+    """Add a location to sys.path if an external dependency can't be found.
+
+    :param modulename: Module name to import
+    :param location: Location to add to sys.path (can be relative to 
+        ${srcdir}/lib
+    """
+    try:
+        __import__(modulename)
+    except ImportError:
+        sys.path.insert(0, 
+            os.path.join(os.path.dirname(__file__),
+                         "../../../../lib", location))
+        __import__(modulename)
+
 version = glue.version
 
 # "userAccountControl" flags

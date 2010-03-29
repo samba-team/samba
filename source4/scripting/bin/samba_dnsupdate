@@ -37,9 +37,9 @@ from ldb import SCOPE_BASE
 from samba import glue
 from samba.auth import system_session
 from samba.samdb import SamDB
-import samba.external
 
-resolver = samba.external.dns_resolver()
+samba.ensure_external_module("dns.resolver", "dnspython")
+import dns.resolver as resolver
 
 default_ttl = 900
 
