@@ -1017,12 +1017,8 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 			torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
 		} else if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				struct dcerpc_pipe *p = ctx->new_dc.drsuapi.drs_pipe;
-				if (p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
-					torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
-				}
-				errstr = dcerpc_errstr(ctx, p->last_fault_code);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+				torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
 			}
 			torture_fail(tctx,
 				     talloc_asprintf(tctx, "dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n",
