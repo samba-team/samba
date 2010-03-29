@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re
+import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
@@ -42,8 +42,11 @@ def SAMBA_BUILD_ENV(conf):
     blib_src = os.path.join(conf.srcdir, 'pidl/blib')
     mkdir_p(blib_bld + '/man1')
     mkdir_p(blib_bld + '/man3')
-    if not os.path.lexists(blib_src):
-        os.symlink(blib_bld, blib_src)
+    if os.path.islink(blib_src):
+        os.unlink(blib_src)
+    else:
+        shutil.rmtree(blib_src)
+    os.symlink(blib_bld, blib_src)
 
 
 
@@ -79,7 +82,10 @@ def SAMBA_LIBRARY(bld, libname, source,
                   vars=None,
                   install_path=None,
                   install=True,
+                  needs_python=False,
+                  target_type='LIBRARY',
                   bundled_extension=True,
+                  link_name=None,
                   enabled=True):
     '''define a Samba library'''
 
@@ -113,12 +119,13 @@ def SAMBA_LIBRARY(bld, libname, source,
                         group          = group,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
+                        needs_python   = needs_python,
                         local_include  = local_include)
 
     if BUILTIN_LIBRARY(bld, libname):
         return
 
-    if not SET_TARGET_TYPE(bld, libname, 'LIBRARY'):
+    if not SET_TARGET_TYPE(bld, libname, target_type):
         return
 
     # the library itself will depend on that object target
@@ -126,11 +133,18 @@ def SAMBA_LIBRARY(bld, libname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
-    bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
+    if needs_python:
+        bundled_name = libname
+    else:
+        bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
+
+    features = 'cc cshlib'
+    if needs_python:
+        features += ' pyext'
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
-        features        = 'cc cshlib symlink_lib',
+        features        = features + ' symlink_lib',
         source          = [],
         target          = bundled_name,
         samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
@@ -143,6 +157,9 @@ def SAMBA_LIBRARY(bld, libname, source,
         ldflags         = build_rpath(bld),
         name	        = libname
         )
+
+    if link_name:
+        t.link_name = link_name
 
     if install_path is None:
         install_path = '${LIBDIR}'
@@ -158,9 +175,9 @@ def SAMBA_LIBRARY(bld, libname, source,
     if install and install_target != bundled_name:
         # create a separate install library, which may have
         # different rpath settings
-        SET_TARGET_TYPE(bld, install_target, 'LIBRARY')
+        SET_TARGET_TYPE(bld, install_target, target_type)
         t = bld(
-            features        = 'cc cshlib',
+            features        = features,
             source          = [],
             target          = install_target,
             samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
@@ -175,16 +192,21 @@ def SAMBA_LIBRARY(bld, libname, source,
             )
 
     if install:
-        if vnum:
+        if realname:
+            install_name = realname
+            install_link = None
+            inst_name    = libname + '.inst.so'
+        elif vnum:
             vnum_base = vnum.split('.')[0]
             install_name = 'lib%s.so.%s' % (bundled_name, vnum)
             install_link = 'lib%s.so.%s' % (bundled_name, vnum_base)
+            inst_name    = 'lib%s.inst.so' % bundled_name
         else:
             install_name = 'lib%s.so' % bundled_name
             install_link = None
+            inst_name    = 'lib%s.inst.so' % bundled_name
 
-        bld.install_as(os.path.join(install_path, install_name),
-                       'lib%s.inst.so' % bundled_name)
+        bld.install_as(os.path.join(install_path, install_name), inst_name)
         if install_link:
             bld.symlink_as(os.path.join(install_path, install_link), install_name)
 
