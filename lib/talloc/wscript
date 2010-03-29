@@ -19,7 +19,8 @@ def set_options(opt):
 def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
 
-    if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION):
+    if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
+                                 implied_deps='replace'):
         conf.define('USING_SYSTEM_TALLOC', 1)
 
     conf.SAMBA_CONFIG_H()

@@ -46,7 +46,8 @@ Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
-                         checkfunctions=None, headers=None, onlyif=None):
+                         checkfunctions=None, headers=None,
+                         onlyif=None, implied_deps=None):
     '''check if a library is available as a system library.
     this first tries via pkg-config, then if that fails
     tries by testing for a specified function in the specified lib
@@ -76,10 +77,14 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                       msg='Checking for system %s >= %s' % (libname, minversion)):
         conf.SET_TARGET_TYPE(libname, 'SYSLIB')
         conf.env[found] = True
+        if implied_deps:
+            conf.SET_SYSLIB_DEPS(libname, implied_deps)
         return True
     if checkfunctions is not None:
         if conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers, empty_decl=False):
             conf.env[found] = True
+            if implied_deps:
+                conf.SET_SYSLIB_DEPS(libname, implied_deps)
             return True
     conf.env[found] = False
     if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:

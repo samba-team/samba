@@ -20,7 +20,8 @@ def set_options(opt):
 def configure(conf):
     conf.sub_config(LIBREPLACE_DIR)
 
-    if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION):
+    if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
+                                 implied_deps='replace'):
         conf.define('USING_SYSTEM_TDB', 1)
 
     conf.SAMBA_CONFIG_H()

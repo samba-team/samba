@@ -22,6 +22,13 @@ def TARGET_ALIAS(bld, target, alias):
 Build.BuildContext.TARGET_ALIAS = TARGET_ALIAS
 
 
+@conf
+def SET_SYSLIB_DEPS(conf, target, deps):
+    '''setup some implied dependencies for a SYSLIB'''
+    cache = LOCAL_CACHE(conf, 'SYSLIB_DEPS')
+    cache[target] = deps
+
+
 def EXPAND_ALIAS(bld, target):
     '''expand a target name via an alias'''
     aliases = LOCAL_CACHE(bld, 'TARGET_ALIAS')
@@ -308,6 +315,7 @@ def build_direct_deps(bld, tgt_list):
     '''build the direct_objects and direct_libs sets for each target'''
 
     targets  = LOCAL_CACHE(bld, 'TARGET_TYPE')
+    syslib_deps  = LOCAL_CACHE(bld, 'SYSLIB_DEPS')
     global_deps = bld.env.GLOBAL_DEPENDENCIES
 
     for t in tgt_list:
@@ -326,6 +334,10 @@ def build_direct_deps(bld, tgt_list):
                 continue
             if targets[d] == 'SYSLIB':
                 t.direct_syslibs.add(d)
+                if d in syslib_deps:
+                    for implied in TO_LIST(syslib_deps[d]):
+                        print("Adding implied lib %s to %s" % (implied, t.sname))
+                        t.direct_libs.add(implied)
                 continue
             t2 = bld.name_to_obj(d, bld.env)
             if t2 is None:
@@ -622,7 +634,7 @@ savedeps_version = 3
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags', 'source']
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags']
 savedeps_outenv  = ['INC_PATHS']
-savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_ALIAS', 'TARGET_TYPE', 'INIT_FUNCTIONS']
+savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_ALIAS', 'TARGET_TYPE', 'INIT_FUNCTIONS', 'SYSLIB_DEPS']
 savedeps_files   = ['buildtools/wafsamba/samba_deps.py']
 
 def save_samba_deps(bld, tgt_list):
