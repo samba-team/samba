@@ -382,7 +382,6 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 bool check_request_flags(uint32_t flags);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
-void winbindd_pam_auth(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) ;
 void winbindd_pam_auth_crap(struct winbindd_cli_state *state);
@@ -851,5 +850,12 @@ struct tevent_req *winbindd_set_hwm_send(TALLOC_CTX *mem_ctx,
 					 struct winbindd_request *request);
 NTSTATUS winbindd_set_hwm_recv(struct tevent_req *req,
 			       struct winbindd_response *response);
+
+struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_cli_state *cli,
+					  struct winbindd_request *request);
+NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
+				struct winbindd_response *response);
 
 #endif /*  _WINBINDD_PROTO_H_  */
