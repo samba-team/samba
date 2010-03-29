@@ -1360,7 +1360,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
+		if (!rpccli_is_connected(netlogon_pipe)) {
 			retry = true;
 			continue;
 		}
@@ -1935,7 +1935,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
+		if (!rpccli_is_connected(netlogon_pipe)) {
 			retry = true;
 			continue;
 		}
