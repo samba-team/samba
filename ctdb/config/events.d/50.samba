@@ -53,7 +53,7 @@ start_samba() {
 		}
 	}
 
-	# restart the winbind service
+	# make sure winbind is not already started
 	check_ctdb_manages_winbind
 	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
 		service "$CTDB_SERVICE_WINBIND" stop > /dev/null 2>&1
@@ -62,6 +62,13 @@ start_samba() {
           	    # make absolutely sure winbindd is dead
 		    killall -q -9 winbindd
 		}
+
+	}
+
+	/usr/bin/net serverid wipe
+
+	# start the winbind service
+	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
 		service "$CTDB_SERVICE_WINBIND" start
 	}
 
