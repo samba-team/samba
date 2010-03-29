@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/smbtorture.h"
 #include "torture/rpc/drsuapi.h"
+#include "dsdb/samdb/samdb.h"
 #include "torture/drs/proto.h"
 
 /**
@@ -46,6 +47,7 @@ static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx)
 		"UNIT");
 
 	torture_drs_unit_prefixmap(suite);
+	torture_drs_unit_schemainfo(suite);
 
 	return suite;
 }
