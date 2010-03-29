@@ -186,7 +186,8 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 				ret = ldb_msg_add_string(msg, "data", conv_str);
 			} else {
 				/* workaround for non-standard data */
-				ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+				talloc_free(msg);
+				return NULL;
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
@@ -207,7 +208,9 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 				ret = ldb_msg_add_string(msg, "data", conv_str);
 			} else {
 				/* workaround for non-standard data */
-				ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+				talloc_free(msg);
+				return NULL;
+
 			}
 		} else {
 			ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
