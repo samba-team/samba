@@ -737,6 +737,9 @@ static void _cli_shutdown(struct cli_state *cli)
 void cli_shutdown(struct cli_state *cli)
 {
 	struct cli_state *cli_head;
+	if (cli == NULL) {
+		return;
+	}
 	DLIST_HEAD(cli, cli_head);
 	if (cli_head == cli) {
 		/*
