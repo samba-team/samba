@@ -45,8 +45,7 @@ def cmd_testonly(opt):
     env.PERL   = 'perl -W'
     env.PYTHON = 'python'
 
-    env.TEST_FORMAT = 'plain'
-    env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit.pl --prefix=${SELFTEST_PREFIX} --format=${TEST_FORMAT} --immediate'
+    env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
     env.FILTER_XFAIL = '${PERL} ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail'
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
 
