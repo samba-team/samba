@@ -35,7 +35,9 @@ def build(bld):
                           deps='replace',
                           vnum=VERSION)
 
-    bld.SAMBA_BINARY('talloc_testsuite',
-                     'testsuite.c testsuite_main.c',
-                     deps='talloc',
-                     install=False)
+    if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
+        # s4 already has the talloc testsuite builtin to smbtorture
+        bld.SAMBA_BINARY('talloc_testsuite',
+                         'testsuite_main.c testsuite.c',
+                         deps='talloc',
+                         install=False)
