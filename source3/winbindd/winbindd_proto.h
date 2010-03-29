@@ -385,10 +385,6 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
 NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 			      const char *group_sid);
-NTSTATUS append_auth_data(struct winbindd_cli_state *state,
-			  struct netr_SamInfo3 *info3,
-			  const char *name_domain,
-			  const char *name_user);
 void winbindd_pam_auth(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) ;

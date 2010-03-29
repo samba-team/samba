@@ -733,10 +733,10 @@ bool check_request_flags(uint32_t flags)
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS append_auth_data(struct winbindd_cli_state *state,
-			  struct netr_SamInfo3 *info3,
-			  const char *name_domain,
-			  const char *name_user)
+static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
+				 struct netr_SamInfo3 *info3,
+				 const char *name_domain,
+				 const char *name_user)
 {
 	NTSTATUS result;
 	uint32_t flags = state->request->flags;
