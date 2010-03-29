@@ -156,6 +156,7 @@ source4/heimdal/kdc/kdc-private.h
 source4/heimdal/kdc/kdc-protos.h
 source4/heimdal/lib/asn1/asn1_*
 source4/heimdal/lib/asn1/*_asn1-priv.h*
+source4/heimdal/lib/asn1/der-private.h
 source4/heimdal/lib/asn1/der-protos.h
 source4/heimdal/lib/asn1/krb5_asn1_files
 source4/heimdal/lib/asn1/krb5_asn1.h
