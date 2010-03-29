@@ -464,6 +464,15 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 			r->out.last_changed_time, r->out.max_subkeylen,
 			r->out.max_valnamelen, r->out.max_valbufsize);
 
+		if (r->out.max_subkeylen != NULL) {
+			/* for UTF16 encoding */
+			*r->out.max_subkeylen *= 2;
+		}
+		if (r->out.max_valnamelen != NULL) {
+			/* for UTF16 encoding */
+			*r->out.max_valnamelen *= 2;
+		}
+
 		if (classname != NULL) {
 			r->out.classname->name = classname;
 			r->out.classname->name_len = 2*strlen_m_term(classname);

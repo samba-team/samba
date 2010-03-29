@@ -916,9 +916,6 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 			el = ldb_msg_find_element(kd->subkeys[i], "key");
 			*max_subkeynamelen = MAX(*max_subkeynamelen, el->values[0].length);
 		}
-
-		/* for UTF16 encoding */
-		*max_subkeynamelen *= 2;
 	}
 
 	if (max_valnamelen != NULL || max_valbufsize != NULL) {
@@ -947,11 +944,6 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 				*max_valbufsize = MAX(*max_valbufsize, data.length);
 				talloc_free(data.data);
 			}
-		}
-
-		if (max_valnamelen != NULL) {
-			/* for UTF16 encoding */
-			*max_valnamelen *= 2;
 		}
 	}
 
