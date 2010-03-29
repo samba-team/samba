@@ -2765,7 +2765,7 @@ bool test_lsa_Close(struct dcerpc_binding_handle *b,
 	}
 
 	torture_assert_ntstatus_equal(tctx, dcerpc_lsa_Close_r(b, tctx, &r),
-		NT_STATUS_NET_WRITE_FAULT, "Close should failed");
+		NT_STATUS_RPC_SS_CONTEXT_MISMATCH, "Close should failed");
 
 	torture_comment(tctx, "\n");
 
