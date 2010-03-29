@@ -42,7 +42,7 @@ def cmd_testonly(opt):
     env = Environment.Environment()
 
     env.TESTS  = Options.options.TESTS
-    env.PERL   = 'perl -W'
+    env.PERL   = 'perl'
     env.PYTHON = 'python'
 
     env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
@@ -83,7 +83,7 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(perl -W ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
+    cmd = '(${PERL} ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
 
     print "test: running %s" % cmd
     ret = RUN_COMMAND(cmd, env=env)
