@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: expandtab
 # Pretty-format subunit output
 # Copyright (C) 2008-2010 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later
@@ -9,24 +10,179 @@ import sys
 
 import subunithelper
 
+class PlainFormatter(object):
+
+    def __init__(self, summaryfile, verbose, immediate, statistics, totaltests=None):
+        self.verbose = verbose
+        self.immediate = immediate
+        self.statistics = statistics
+        self.start_time = None
+        self.test_output = {}
+        self.suitesfailed = []
+        self.suites_ok = 0
+        self.skips = {}
+        self.summaryfile = summaryfile
+        self.index = 0
+        self.NAME = None
+        self.totalsuites = totaltests
+
+    def testsuite_count(self, count):
+        self.totalsuites = count
+
+    def report_time(self, time):
+        if self.start_time is None:
+            self.start_time = time
+        self.last_time = time
+
+    def start_testsuite(self, name):
+        self.index += 1
+        self.NAME = name
+        self.START_TIME = self.last_time
+
+        duration = self.START_TIME - self.start_time
+
+        if not self.verbose:
+            self.test_output[name] = "" 
+
+        out = ""
+        out += "[%d" % self.index
+        if self.totalsuites is not None:
+            out += "/%d" % self.totalsuites
+        out += " in %ds" % duration
+        if self.suitesfailed:
+            out += ", %d errors" % (len(self.suitesfailed),)
+        out += "] %s" % name 
+        if self.immediate:
+            sys.stdout.write(out + "\n")
+        else:
+            sys.stdout.write(out + ": ")
+
+    def output_msg(self, output):
+        if self.verbose:
+            sys.stdout.write(output)
+        elif self.NAME is not None:
+            self.test_output[self.NAME] += output
+        else:
+            sys.stdout.write(output)
+
+    def control_msg(self, output):
+        #$self->output_msg($output)
+        pass
+
+    def end_testsuite(self, name, result, reason):
+        out = ""
+        unexpected = 0
+
+        if not name in self.test_output:
+            print "no output for name[%s]" % name
+
+        if result in ("success", "xfail"):
+            self.suites_ok+=1
+        else:
+            self.output_msg("ERROR: Testsuite[%s]\nREASON: %s\n" % (name, reason))
+            self.suitesfailed.append(name)
+            if self.immediate and not self.verbose:
+                out += self.test_output[name]
+            unexpected = 1
+
+        if not self.immediate:
+            if not unexpected:
+                out += " ok\n"
+            else:
+                out += " " + result.upper() + "\n"
+
+        sys.stdout.write(out)
+
+    def start_test(self, testname):
+        pass
+
+    def end_test(self, testname, result, unexpected, reason):
+        append = ""
+
+        if not unexpected:
+            self.test_output[self.NAME] = ""
+            if not self.immediate:
+                sys.stdout.write({
+                    'failure': 'f',
+                    'xfail': 'X',
+                    'skip': 's',
+                    'success': '.'}.get(result, "?(%s)" % result))
+            return
+
+        reason = reason.strip()
+
+        append = "UNEXPECTED(%s): %s\nREASON: %s\n" % (result, testname, reason)
+
+        self.test_output[self.NAME] += append
+
+        if self.immediate and not self.verbose:
+            print self.test_output[self.NAME]
+            self.test_output[self.NAME] = ""
+
+        if not self.immediate:
+            sys.stdout.write({
+               'error': 'E',
+               'failure': 'F',
+               'success': 'S'}.get(result, "?"))
+
+    def summary(self):
+        f = open(self.summaryfile, 'w+')
+
+        if self.suitesfailed:
+            f.write("= Failed tests =\n")
+
+            for suite in self.suitesfailed:
+                f.write("== %s ==\n" % suite)
+                f.write(self.test_output[suite]+"\n\n")
+
+            f.write("\n")
+
+        if not self.immediate and not self.verbose:
+            for suite in self.suitesfailed:
+                print "==============================================================================="
+                print "FAIL: %s" % suite
+                print self.test_output[suite]
+                print ""
+
+        f.write("= Skipped tests =\n")
+        for reason in self.skips.keys():
+            f.write(reason + "\n")
+            for name in self.skips[reason]:
+                f.write("\t%s\n" % name)
+            f.write("\n")
+        f.close()
+
+        print "\nA summary with detailed information can be found in:\n  %s\n" % self.summaryfile
+
+        if not self.suitesfailed:
+            ok = self.statistics['TESTS_EXPECTED_OK'] + self.statistics['TESTS_EXPECTED_FAIL']
+            print "\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok)
+        else:
+            print "\nFAILED (%d failures and %d errors in %d testsuites)" % (self.statistics['TESTS_UNEXPECTED_FAIL'], self.statistics['TESTS_ERROR'], len(self.suitesfailed))
+
+    def skip_testsuite(self, name, reason="UNKNOWN"):
+        self.skips.setdefault(reason, []).append(name)
+        if self.totalsuites:
+            self.totalsuites-=1
+
 parser = optparse.OptionParser("format-subunit [options]")
 parser.add_option("--verbose", action="store_true",
-	help="Be verbose")
+    help="Be verbose")
 parser.add_option("--immediate", action="store_true", 
-	help="Show failures immediately, don't wait until test run has finished")
+    help="Show failures immediately, don't wait until test run has finished")
 parser.add_option("--prefix", type="string", default=".",
-	help="Prefix to write summary to")
+    help="Prefix to write summary to")
 
 opts, args = parser.parse_args()
 
 statistics = {
-	'SUITES_FAIL': 0,
-	'TESTS_UNEXPECTED_OK': 0,
-	'TESTS_EXPECTED_OK': 0,
-	'TESTS_UNEXPECTED_FAIL': 0,
-	'TESTS_EXPECTED_FAIL': 0,
-	'TESTS_ERROR': 0,
-	'TESTS_SKIP': 0,
+    'SUITES_FAIL': 0,
+    'TESTS_UNEXPECTED_OK': 0,
+    'TESTS_EXPECTED_OK': 0,
+    'TESTS_UNEXPECTED_FAIL': 0,
+    'TESTS_EXPECTED_FAIL': 0,
+    'TESTS_ERROR': 0,
+    'TESTS_SKIP': 0,
 }
 
 msg_ops = PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose, opts.immediate, statistics)

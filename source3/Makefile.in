@@ -3253,7 +3253,7 @@ selftest:: all torture timelimit
 		--socket-wrapper $(TESTS) | \
 		$(PERL) $(selftestdir)/filter-subunit.pl \
 		--expected-failures=$(srcdir)/selftest/knownfail | \
-		$(PERL) $(selftestdir)/format-subunit --immediate
+		$(PYTHON) $(selftestdir)/format-subunit --immediate
 
 selftest-%:
 	$(MAKE) selftest TESTS=$*

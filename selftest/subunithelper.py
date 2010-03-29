@@ -28,24 +28,29 @@ def parse_results(msg_ops, statistics, fh):
 
     while fh:
         l = fh.readline()
+        if l == "":
+            break
         if l.startswith("test: "):
             msg_ops.control_msg(l)
             name = l.split(":", 1)[1].strip()
             msg_ops.start_test(name)
             open_tests.append(name)
         elif l.startswith("time: "):
-            (year, month, day, hour, minute, second) = re.match(
-                "^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n/", l)
-            msg_ops.report_time(time.mktime(second, minute, hour, day, month-1, year-1900))
+            grp = re.match(
+                "^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n", l)
+            msg_ops.report_time(time.mktime((int(grp.group(1)), int(grp.group(2)), int(grp.group(3)), int(grp.group(4)), int(grp.group(5)), int(grp.group(6)), 0, 0, 0)))
         elif re.match("^(" + "|".join(VALID_RESULTS) + "): (.*?)( \[)?([ \t]*)( multipart)?\n", l):
             msg_ops.control_msg(l)
-            (result, testname, hasreason) = re.match("^(" + "|".join(VALID_RESULTS) + "): (.*?)( \[)?([ \t]*)( multipart)?\n", l)
+            grp = re.match("^(" + "|".join(VALID_RESULTS) + "): (.*?)( \[)?([ \t]*)( multipart)?\n", l)
+            (result, testname, hasreason) = (grp.group(1), grp.group(2), grp.group(3))
             if hasreason:
                 reason = ""
                 # reason may be specified in next lines
                 terminated = False
                 while fh:
                     l = fh.readline()
+                    if l == "":
+                        break
                     msg_ops.control_msg(l)
                     if l == "]\n":
                         terminated = True
@@ -58,6 +63,8 @@ def parse_results(msg_ops, statistics, fh):
                     msg_ops.end_test(testname, "error", 1, 
                                        "reason (%s) interrupted" % result)
                     return 1
+            else:
+                reason = None
             if result in ("success", "successful"):
                 open_tests.pop() #FIXME: Check that popped value == $testname 
                 statistics['TESTS_EXPECTED_OK']+=1
@@ -103,12 +110,6 @@ def parse_results(msg_ops, statistics, fh):
         msg_ops.end_test(open_tests.pop(), "error", 1,
                    "was started but never finished!")
         statistics['TESTS_ERROR']+=1
-
-    # if the Filter module is in use, it will have the right counts
-    if 'total_error' in msg_ops:
-        statistics['TESTS_ERROR'] = msg_ops['total_error']
-        statistics['TESTS_UNEXPECTED_FAIL'] = msg_ops['total_fail']
-        statistics['TESTS_EXPECTED_FAIL'] = msg_ops['total_xfail']
 
     if statistics['TESTS_ERROR'] > 0:
         return 1
