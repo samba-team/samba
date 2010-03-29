@@ -599,6 +599,10 @@ void cli_nt_pipes_close(struct cli_state *cli)
 
 void cli_shutdown(struct cli_state *cli)
 {
+	if (cli == NULL) {
+		return;
+	}
+
 	if (cli->prev == NULL) {
 		/*
 		 * Possible head of a DFS list,
