@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
-<refentry id="smbta-tool.8">
+<refentry id="smbta-util.8">
 
 <refmeta>
-	<refentrytitle>smbta-tool</refentrytitle>
+	<refentrytitle>smbta-util</refentrytitle>
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
@@ -12,18 +12,18 @@
 
 
 <refnamediv>
-	<refname>smbta-tool</refname>
+	<refname>smbta-util</refname>
 	<refpurpose>control encryption in VFS smb_traffic_analyzer</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 
 	<cmdsynopsis>
-		<command>smbta-tool</command>
+		<command>smbta-util</command>
 	</cmdsynopsis>
 
 	<cmdsynopsis>
-		<command>smbta-tool</command>
+		<command>smbta-util</command>
 		<arg rep="repeat" choice="opt">
 		<replaceable>COMMANDS</replaceable>
 		</arg>
@@ -38,7 +38,7 @@
 	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> suite.</para>
 
-	<para><command>smbta-tool</command> is a tool to ease the
+	<para><command>smbta-util</command> is a tool to ease the
 	configuration of the vfs_smb_traffic_analyzer module regarding
 	data encryption.</para>
 	<para>The user can generate a key, install a key (activating
