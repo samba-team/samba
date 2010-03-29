@@ -89,7 +89,7 @@ void srv_cancel_sign_response(struct smbd_server_connection *conn)
 
 struct smbd_shm_signing {
 	size_t shm_size;
-	uint8_t *shm_ptr;
+	uint8_t *shm_pointer;
 
 	/* we know the signing engine will only allocate 2 chunks */
 	uint8_t *ptr1;
@@ -113,7 +113,7 @@ static void *smbd_shm_signing_alloc(TALLOC_CTX *mem_ctx, size_t len)
 			errno = ENOMEM;
 			return NULL;
 		}
-		s->ptr1 = s->shm_ptr;
+		s->ptr1 = s->shm_pointer;
 		return s->ptr1;
 	}
 
@@ -124,7 +124,7 @@ static void *smbd_shm_signing_alloc(TALLOC_CTX *mem_ctx, size_t len)
 			errno = ENOMEM;
 			return NULL;
 		}
-		s->ptr2 = s->shm_ptr + s->len1;
+		s->ptr2 = s->shm_pointer + s->len1;
 		return s->ptr2;
 	}
 
@@ -174,8 +174,9 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 			return false;
 		}
 		s->shm_size = 4096;
-		s->shm_ptr = (uint8_t *)allocate_anonymous_shared(s->shm_size);
-		if (s->shm_ptr == NULL) {
+		s->shm_pointer =
+			(uint8_t *)allocate_anonymous_shared(s->shm_size);
+		if (s->shm_pointer == NULL) {
 			talloc_free(s);
 			return false;
 		}
