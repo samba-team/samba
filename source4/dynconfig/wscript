@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import string, Utils, Options
+from samba_utils import EXPAND_VARIABLES
 
 # list of directory options to offer in configure
 dir_options = {
@@ -35,6 +36,27 @@ dyn_cflags = {
     'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
     }
 
+# changes for when FHS is enabled
+dyn_cflags_fhs = {
+    'CONFIGDIR'                      : '${SYSCONFDIR}/samba',
+    'CONFIGFILE'                     : '${CONFIGDIR}/smb.conf',
+    'LMHOSTSFILE'                    : '${CONFIGDIR}/lmhosts',
+    'LOCKDIR'                        : '${LOCALSTATEDIR}/lib/samba',
+    'PIDDIR'                         : '${LOCALSTATEDIR}/run/samba',
+    'LOGFILEBASE'                    : '${LOCALSTATEDIR}/log/samba',
+    'PRIVATE_DIR'                    : '${LOCALSTATEDIR}/lib/samba/private',
+    'MODULESDIR'                     : '${LIBDIR}/samba',
+    'DATADIR'                        : '${DATADIR}/samba',
+    'INCLUDEDIR'                     : '${INCLUDEDIR}/samba-4.0',
+    'NTP_SIGND_SOCKET_DIR'           : '${LOCALSTATEDIR}/var/run/samba/ntp_signd',
+    'WINBINDD_SOCKET_DIR'            : '${LOCALSTATEDIR}/var/run/samba/winbindd',
+    'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${LOCALSTATEDIR}/var/run/samba/winbindd_privileged',
+    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
+    'SWATDIR'                        : '${DATADIR}/swat',
+    'SETUPDIR'                       : '${DATADIR}/setup',
+    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
+    }
+
 def get_varname(v):
     '''work out a variable name from a configure option name'''
     if v.startswith('with-'):
@@ -46,6 +68,9 @@ def get_varname(v):
 
 def set_options(opt):
     # get all the basic GNU options from the gnu_dirs tool
+    opt.add_option('--enable-fhs',
+                   help=("Use FHS-compliant paths (default no)"),
+                   action="store_true", dest='ENABLE_FHS', default=False)
     for option in dir_options.keys():
         default = dir_options[option][0]
         help    = dir_options[option][1]
@@ -64,12 +89,21 @@ def configure(conf):
         conf.env[varname] = value
 
     for f in dyn_cflags.keys():
-        # substitute twice, as we could have substitutions containing variables
-        v = Utils.subst_vars(dyn_cflags[f], conf.env)
-        v = Utils.subst_vars(v, conf.env)
+        v = EXPAND_VARIABLES(conf, dyn_cflags[f])
         conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
-        conf.ASSERT(v.find('${') == -1, "Unsubstituted variable in %s : %s : %s" % (f, dyn_cflags[f], v))
         conf.env[f] = v
+
+    if Options.options.ENABLE_FHS:
+        for f in dyn_cflags_fhs.keys():
+            v = EXPAND_VARIABLES(conf, dyn_cflags_fhs[f])
+            conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
+            conf.env[f] = v
+
+    if (not Options.options.ENABLE_FHS and
+        (conf.env.PREFIX == '/usr' or conf.env.PREFIX == '/usr/local')):
+        print "ERROR: Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)"
+        sys.exit(1)
+
 
 def dynconfig_cflags(bld):
     '''work out the extra CFLAGS for dynconfig.c'''
@@ -86,3 +120,4 @@ def build(bld):
                         public_headers='../version.h',
                         header_path='samba',
                         cflags=cflags)
+
