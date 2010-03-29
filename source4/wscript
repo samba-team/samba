@@ -93,3 +93,23 @@ def ctags(ctx):
 def build(bld):
     '''build all targets'''
     pass
+
+
+def pydoctor(ctx):
+    '''build python apidocs'''
+    cmd='LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba'
+    print "Running: %s" % cmd
+    os.system(cmd)
+
+def wafdocs(ctx):
+    '''build wafsamba apidocs'''
+    from samba_utils import recursive_dirlist
+    os.system('pwd')
+    list = recursive_dirlist('../buildtools/wafsamba', '.', pattern='*.py')
+
+    cmd='LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext'
+    print list
+    for f in list:
+        cmd += ' --add-module %s' % f
+    print "Running: %s" % cmd
+    os.system(cmd)
