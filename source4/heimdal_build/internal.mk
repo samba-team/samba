@@ -640,7 +640,6 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/erealloc.o \
 	$(heimdalsrcdir)/lib/roken/simple_exec.o \
 	$(heimdalsrcdir)/lib/roken/strcollect.o \
-	$(heimdalsrcdir)/lib/roken/strerror_r.o \
 	$(heimdalsrcdir)/lib/roken/rtbl.o \
 	$(heimdalsrcdir)/lib/roken/cloexec.o \
 	$(heimdalsrcdir)/lib/roken/xfree.o \

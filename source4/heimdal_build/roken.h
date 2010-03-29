@@ -111,6 +111,15 @@
 #define HAVE_GETTIMEOFDAY
 #endif
 
+/* force the use of the libreplace strerror_r */
+#ifndef HAVE_STRERROR_R
+#define HAVE_STRERROR_R
+#endif
+#ifndef STRERROR_R_PROTO_COMPATIBLE
+#define STRERROR_R_PROTO_COMPATIBLE
+#endif
+
+
 /* we lie about having pidfile() so that NetBSD5 can compile. Nothing
    in the parts of heimdal we use actually uses pidfile(), and we
    don't use it in Samba, so this works, although its ugly */
