@@ -27,10 +27,11 @@ _PY_FILES = $(shell find $(pyscriptsrcdir)/samba ../lib/subunit/python -type f -
 
 $(eval $(foreach pyfile, $(_PY_FILES),$(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(subst ../lib/subunit/python,,$(pyfile))),$(pyfile))))
 
-EPYDOC_OPTIONS = --no-private --url http://www.samba.org/ --no-sourcecode
-
-epydoc:: pythonmods
-	PYTHONPATH=$(pythonbuilddir):../lib/subunit/python epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit testtools dnspython
+PYDOCTOR = pydoctor
+PYDOCTOR_OPTIONS = --project-name Samba --project-url http://www.samba.org/ \
+	--make-html
+pydoctor:: pythonmods
+	LD_LIBRARY_PATH=bin/shared PYTHONPATH=$(pythonbuilddir) pydoctor --project-name=Samba --project-url=http://www.samba.org/ --make-html --docformat=restructuredtext $(addprefix --add-package $(pythonbuilddir)/, samba)
 
 install:: installpython
 

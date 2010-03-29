@@ -46,9 +46,6 @@ clean::
 	@echo "Removing python modules"
 	@rm -rf $(pythonbuilddir)
 
-pydoctor:: pythonmods
-	LD_LIBRARY_PATH=bin/shared PYTHONPATH=$(pythonbuilddir) pydoctor --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package $(pythonbuilddir)/samba
-
 bin/python/%.py: 
 	mkdir -p $(@D)
 	cp $< $@
