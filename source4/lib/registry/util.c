@@ -287,8 +287,5 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 
 	error = reg_key_add_name(mem_ctx, parent, n, NULL, sec_desc, result);
 
-	talloc_free(parent);
-	talloc_free(n);
-
 	return error;
 }
