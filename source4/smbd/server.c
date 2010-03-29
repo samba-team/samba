@@ -40,6 +40,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "cluster/cluster.h"
+#include "dynconfig/dynconfig.h"
 
 /*
   recursively delete a directory tree
@@ -232,6 +233,43 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 }
 
 
+/*
+  show build info
+ */
+static void show_build(void)
+{
+#define CONFIG_OPTION(n) { #n, dyn_ ## n }
+	struct {
+		const char *name;
+		const char *value;
+	} config_options[] = {
+		CONFIG_OPTION(BINDIR),
+		CONFIG_OPTION(SBINDIR),
+		CONFIG_OPTION(CONFIGFILE),
+		CONFIG_OPTION(NCALRPCDIR),
+		CONFIG_OPTION(LOGFILEBASE),
+		CONFIG_OPTION(LMHOSTSFILE),
+		CONFIG_OPTION(DATADIR),
+		CONFIG_OPTION(MODULESDIR),
+		CONFIG_OPTION(LOCKDIR),
+		CONFIG_OPTION(PIDDIR),
+		CONFIG_OPTION(PRIVATE_DIR),
+		CONFIG_OPTION(SWATDIR),
+		CONFIG_OPTION(SETUPDIR),
+		CONFIG_OPTION(WINBINDD_SOCKET_DIR),
+		CONFIG_OPTION(WINBINDD_PRIVILEGED_SOCKET_DIR),
+		CONFIG_OPTION(NTP_SIGND_SOCKET_DIR),
+		{ NULL, NULL}
+	};
+	int i;
+
+	printf("Paths:\n");
+	for (i=0; config_options[i].name; i++) {
+		printf("   %s: %s\n", config_options[i].name, config_options[i].value);
+	}
+
+	exit(0);
+}
 
 /*
  main server.
@@ -268,7 +306,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	enum {
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
-		OPT_PROCESS_MODEL
+		OPT_PROCESS_MODEL,
+		OPT_SHOW_BUILD
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -280,6 +319,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		 "Select process model", "MODEL"},
 		{"maximum-runtime",0, POPT_ARG_INT, &max_runtime, 0, 
 		 "set maximum runtime of the server process, till autotermination", "seconds"},
+		{"show-build", 'b', POPT_ARG_NONE, NULL, OPT_SHOW_BUILD, "show build info", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -296,6 +336,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 			break;
 		case OPT_PROCESS_MODEL:
 			model = poptGetOptArg(pc);
+			break;
+		case OPT_SHOW_BUILD:
+			show_build();
 			break;
 		default:
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
