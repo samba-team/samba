@@ -62,8 +62,8 @@ static bool test_str_regtype(struct torture_context *ctx)
 
 static bool test_reg_val_data_string_dword(struct torture_context *ctx)
 {
-	uint32_t d = 0x20;
-	DATA_BLOB db = { (uint8_t *)&d, sizeof(d) };
+	uint8_t d[] = { 0x20, 0x00, 0x00, 0x00 };
+	DATA_BLOB db = { d, 4 };
 	torture_assert_str_equal(ctx, "0x00000020",
 				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD, db),
 				 "dword failed");
@@ -72,8 +72,8 @@ static bool test_reg_val_data_string_dword(struct torture_context *ctx)
 
 static bool test_reg_val_data_string_dword_big_endian(struct torture_context *ctx)
 {
-	uint32_t d = 0x20;
-	DATA_BLOB db = { (uint8_t *)&d, sizeof(d) };
+	uint8_t d[] = { 0x20, 0x00, 0x00, 0x00 };
+	DATA_BLOB db = { d, 4 };
 	torture_assert_str_equal(ctx, "0x00000020",
 				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD_BIG_ENDIAN, db),
 				 "dword failed");
@@ -82,8 +82,8 @@ static bool test_reg_val_data_string_dword_big_endian(struct torture_context *ct
 
 static bool test_reg_val_data_string_qword(struct torture_context *ctx)
 {
-	uint64_t d = 0x20;
-	DATA_BLOB db = { (uint8_t *)&d, sizeof(d) };
+	uint8_t d[] = { 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	DATA_BLOB db = { d, 8 };
 	torture_assert_str_equal(ctx, "0x0000000000000020",
 				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_QWORD, db),
 				 "qword failed");
