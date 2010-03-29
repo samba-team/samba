@@ -3562,14 +3562,14 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	return status;
 }
 
-static int rpc_pipe_client_np_destructor(struct rpc_pipe_client *p)
-{
+struct rpc_pipe_client_np_ref {
 	struct cli_state *cli;
+	struct rpc_pipe_client *pipe;
+};
 
-	cli = rpc_pipe_np_smb_conn(p);
-	if (cli != NULL) {
-		DLIST_REMOVE(cli->pipe_list, p);
-	}
+static int rpc_pipe_client_np_ref_destructor(struct rpc_pipe_client_np_ref *np_ref)
+{
+	DLIST_REMOVE(np_ref->cli->pipe_list, np_ref->pipe);
 	return 0;
 }
 
@@ -3592,6 +3592,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 {
 	struct rpc_pipe_client *result;
 	NTSTATUS status;
+	struct rpc_pipe_client_np_ref *np_ref;
 
 	/* sanity check to protect against crashes */
 
@@ -3630,8 +3631,16 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 
 	result->transport->transport = NCACN_NP;
 
-	DLIST_ADD(cli->pipe_list, result);
-	talloc_set_destructor(result, rpc_pipe_client_np_destructor);
+	np_ref = talloc(result->transport, struct rpc_pipe_client_np_ref);
+	if (np_ref == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+	np_ref->cli = cli;
+	np_ref->pipe = result;
+
+	DLIST_ADD(np_ref->cli->pipe_list, np_ref->pipe);
+	talloc_set_destructor(np_ref, rpc_pipe_client_np_ref_destructor);
 
 	*presult = result;
 	return NT_STATUS_OK;
