@@ -49,6 +49,7 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->gstate = gstate;
 	state->gr = gr;
+	state->max_nesting = max_nesting;
 
 	if (state->gstate->next_group >= state->gstate->num_groups) {
 		TALLOC_FREE(state->gstate->groups);
