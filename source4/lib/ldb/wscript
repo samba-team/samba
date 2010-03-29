@@ -37,6 +37,8 @@ def configure(conf):
         # we need this for the ldap backend
         conf.CHECK_FUNCS_IN('ber_flush ldap_open', 'lber ldap', headers='lber.h ldap.h', mandatory=True)
 
+    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
