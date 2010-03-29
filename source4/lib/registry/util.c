@@ -156,7 +156,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 		case REG_BINARY:
 			*data = strhex_to_data_blob(mem_ctx, data_str);
 			break;
-		case REG_DWORD: {
+		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
 			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint32_t));
@@ -245,7 +245,6 @@ static WERROR get_abs_parent(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 {
 	struct registry_key *parent;
-	char *n;
 	const char *n;
 	TALLOC_CTX *mem_ctx = talloc_init("reg_key_del_abs");
 	WERROR error;
@@ -257,12 +256,9 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 	error = get_abs_parent(mem_ctx, ctx, path, &parent, &n);
 	if (W_ERROR_IS_OK(error)) {
 		error = reg_key_del(mem_ctx, parent, n);
-
-		talloc_free(parent);
-		talloc_free(n);
 	}
-	talloc_free(mem_ctx);
 
+	talloc_free(mem_ctx);
 
 	return error;
 }
@@ -273,7 +269,7 @@ WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx,
 		       struct registry_key **result)
 {
 	struct registry_key *parent;
-	char *n;
+	const char *n;
 	WERROR error;
 
 	*result = NULL;
