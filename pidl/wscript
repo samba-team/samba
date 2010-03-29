@@ -11,6 +11,7 @@ def configure(conf):
     if conf.CHECK_PERL_MANPAGE():
         conf.env.PERLMAN1EXT = conf.CHECK_PERL_MANPAGE(section='1')
         conf.env.PERLMAN3EXT = conf.CHECK_PERL_MANPAGE(section='3')
+        conf.DEFINE('HAVE_PERL_MAKEMAKER', 1)
 
 def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
