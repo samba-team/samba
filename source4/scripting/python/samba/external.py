@@ -17,34 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, os
+import os, sys
 
-def samba_find_external(directory):
-    '''insert into out module search path the path to an
-       external library'''
-    for p in sys.path:
-        dir = os.path.join(p, directory)
-        if os.path.isdir(dir):
-            sys.path.insert(0, dir)
-            return
-
-    # finally try in the local directory, to handle in-tree testing
-    dir = os.path.join("scripting/python", directory)
-    if os.path.isdir(dir):
-        sys.path.insert(0, dir)
-        return
-
-    print "Failed to find external python library %s" % directory
-    raise
-
-
-def samba_external_dns_resolver():
+def dns_resolver():
     '''try and import the dns.resolver library, and if it fails
     then use a local copy from the external directory'''
 
     try:
         import dns.resolver as dns
-    except:
-        samba_find_external("samba_external/dnspython")
+    except ImportError:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../lib/dnspython"))
         import dns.resolver as dns
     return dns

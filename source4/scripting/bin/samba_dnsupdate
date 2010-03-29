@@ -18,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import getopt
 import os
 import fcntl
 import sys
@@ -33,15 +32,14 @@ sys.path.insert(0, "bin/python")
 
 import samba
 import optparse
-from samba import getopt as options, Ldb
-from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
-import ldb
+from samba import getopt as options
+from ldb import SCOPE_BASE
 from samba import glue
 from samba.auth import system_session
 from samba.samdb import SamDB
 import samba.external
 
-resolver = samba.external.samba_external_dns_resolver()
+resolver = samba.external.dns_resolver()
 
 default_ttl = 900
 
