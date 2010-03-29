@@ -119,6 +119,15 @@
 #define STRERROR_R_PROTO_COMPATIBLE
 #endif
 
+#ifndef HAVE_DIRFD
+#ifdef HAVE_DIR_DD_FD
+#define dirfd(x) ((x)->dd_fd)
+#else
+#define dirfd(d) (-1)
+#endif
+#define HAVE_DIRFD 1
+#endif
+
 
 /* we lie about having pidfile() so that NetBSD5 can compile. Nothing
    in the parts of heimdal we use actually uses pidfile(), and we
