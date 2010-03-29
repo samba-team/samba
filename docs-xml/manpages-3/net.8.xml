@@ -1312,7 +1312,7 @@ can create user defined shares on demand using the commands below.
 <para>The usershare commands are:
 
 <simplelist>
-<member>net usershare add sharename path [comment] [acl] [guest_ok=[y|n]] - to add or change a user defined share.</member>
+<member>net usershare add sharename path [comment [acl] [guest_ok=[y|n]]] - to add or change a user defined share.</member>
 <member>net usershare delete sharename - to delete a user defined share.</member>
 <member>net usershare info [-l|--long] [wildcard sharename] - to print info about a user defined share.</member>
 <member>net usershare list [-l|--long] [wildcard sharename] - to list user defined shares.</member>
