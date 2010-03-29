@@ -13,6 +13,10 @@ def configure(conf):
         conf.env.PERLMAN3EXT = conf.CHECK_PERL_MANPAGE(section='3')
         conf.DEFINE('HAVE_PERL_MAKEMAKER', 1)
 
+    # yapp is used for building the parser
+    conf.find_program('yapp', var='YAPP')
+
+
 def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
 
@@ -34,6 +38,13 @@ def build(bld):
 
     # use perl to build the manpages
     bld.env.pidl_srcdir = os.path.join(bld.srcnode.abspath(), 'pidl')
+
+    # we want to prefer the git version if we can. Only if the
+    # source has changed do we want to re-run yapp
+    if ('YAPP' in bld.env and (
+        bld.IS_NEWER('idl.yp', 'lib/Parse/Pidl/IDL.pm') or
+        bld.IS_NEWER('expr.yp', 'lib/Parse/Pidl/Expr.pm'))):
+        pidl_src.extend(['idl.yp', 'expr.yp'])
 
     bld.SAMBA_GENERATOR('pidl_manpages',
                         source=pidl_src,

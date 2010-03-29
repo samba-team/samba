@@ -383,3 +383,12 @@ def LOAD_ENVIRONMENT():
     env = Environment.Environment()
     env.load('bin/c4che/default.cache.py')
     return env
+
+
+def IS_NEWER(bld, file1, file2):
+    '''return True if file1 is newer than file2'''
+    t1 = os.stat(os.path.join(bld.curdir, file1)).st_mtime
+    t2 = os.stat(os.path.join(bld.curdir, file2)).st_mtime
+    return t1 > t2
+Build.BuildContext.IS_NEWER = IS_NEWER
+
