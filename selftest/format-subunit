@@ -12,7 +12,8 @@ import subunithelper
 
 class PlainFormatter(object):
 
-    def __init__(self, summaryfile, verbose, immediate, statistics, totaltests=None):
+    def __init__(self, summaryfile, verbose, immediate, statistics,
+            totaltests=None):
         self.verbose = verbose
         self.immediate = immediate
         self.statistics = statistics
@@ -23,7 +24,7 @@ class PlainFormatter(object):
         self.skips = {}
         self.summaryfile = summaryfile
         self.index = 0
-        self.NAME = None
+        self.name = None
         self.totalsuites = totaltests
 
     def testsuite_count(self, count):
@@ -36,16 +37,15 @@ class PlainFormatter(object):
 
     def start_testsuite(self, name):
         self.index += 1
-        self.NAME = name
-        self.START_TIME = self.last_time
+        self.name = name
+        testsuite_start_time = self.last_time
 
-        duration = self.START_TIME - self.start_time
+        duration = testsuite_start_time - self.start_time
 
         if not self.verbose:
             self.test_output[name] = "" 
 
-        out = ""
-        out += "[%d" % self.index
+        out = "[%d" % self.index
         if self.totalsuites is not None:
             out += "/%d" % self.totalsuites
         out += " in %ds" % duration
@@ -60,8 +60,8 @@ class PlainFormatter(object):
     def output_msg(self, output):
         if self.verbose:
             sys.stdout.write(output)
-        elif self.NAME is not None:
-            self.test_output[self.NAME] += output
+        elif self.name is not None:
+            self.test_output[self.name] += output
         else:
             sys.stdout.write(output)
 
@@ -97,10 +97,8 @@ class PlainFormatter(object):
         pass
 
     def end_test(self, testname, result, unexpected, reason):
-        append = ""
-
         if not unexpected:
-            self.test_output[self.NAME] = ""
+            self.test_output[self.name] = ""
             if not self.immediate:
                 sys.stdout.write({
                     'failure': 'f',
@@ -111,13 +109,11 @@ class PlainFormatter(object):
 
         reason = reason.strip()
 
-        append = "UNEXPECTED(%s): %s\nREASON: %s\n" % (result, testname, reason)
-
-        self.test_output[self.NAME] += append
+        self.test_output[self.name] += "UNEXPECTED(%s): %s\nREASON: %s\n" % (result, testname, reason)
 
         if self.immediate and not self.verbose:
-            print self.test_output[self.NAME]
-            self.test_output[self.NAME] = ""
+            print self.test_output[self.name]
+            self.test_output[self.name] = ""
 
         if not self.immediate:
             sys.stdout.write({
@@ -139,7 +135,7 @@ class PlainFormatter(object):
 
         if not self.immediate and not self.verbose:
             for suite in self.suitesfailed:
-                print "==============================================================================="
+                print "=" * 78
                 print "FAIL: %s" % suite
                 print self.test_output[suite]
                 print ""
@@ -152,13 +148,18 @@ class PlainFormatter(object):
             f.write("\n")
         f.close()
 
-        print "\nA summary with detailed information can be found in:\n  %s\n" % self.summaryfile
+        print "\nA summary with detailed information can be found in:"
+        print "  %s" % self.summaryfile
 
         if not self.suitesfailed:
-            ok = self.statistics['TESTS_EXPECTED_OK'] + self.statistics['TESTS_EXPECTED_FAIL']
+            ok = (self.statistics['TESTS_EXPECTED_OK'] +
+                  self.statistics['TESTS_EXPECTED_FAIL'])
             print "\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok)
         else:
-            print "\nFAILED (%d failures and %d errors in %d testsuites)" % (self.statistics['TESTS_UNEXPECTED_FAIL'], self.statistics['TESTS_ERROR'], len(self.suitesfailed))
+            print "\nFAILED (%d failures and %d errors in %d testsuites)" % (
+                self.statistics['TESTS_UNEXPECTED_FAIL'],
+                self.statistics['TESTS_ERROR'],
+                len(self.suitesfailed))
 
     def skip_testsuite(self, name, reason="UNKNOWN"):
         self.skips.setdefault(reason, []).append(name)
@@ -185,7 +186,8 @@ statistics = {
     'TESTS_SKIP': 0,
 }
 
-msg_ops = PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose, opts.immediate, statistics)
+msg_ops = PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose,
+    opts.immediate, statistics)
 
 expected_ret = subunithelper.parse_results(msg_ops, statistics, sys.stdin)
 

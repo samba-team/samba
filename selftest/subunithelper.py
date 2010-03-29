@@ -60,7 +60,7 @@ def parse_results(msg_ops, statistics, fh):
                 
                 if not terminated:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.end_test(testname, "error", 1, 
+                    msg_ops.end_test(testname, "error", True, 
                                        "reason (%s) interrupted" % result)
                     return 1
             else:
@@ -68,27 +68,27 @@ def parse_results(msg_ops, statistics, fh):
             if result in ("success", "successful"):
                 open_tests.pop() #FIXME: Check that popped value == $testname 
                 statistics['TESTS_EXPECTED_OK']+=1
-                msg_ops.end_test(testname, "success", 0, reason)
+                msg_ops.end_test(testname, "success", False, reason)
             elif result in ("xfail", "knownfail"):
                 open_tests.pop() #FIXME: Check that popped value == $testname
                 statistics['TESTS_EXPECTED_FAIL']+=1
-                msg_ops.end_test(testname, "xfail", 0, reason)
+                msg_ops.end_test(testname, "xfail", False, reason)
                 expected_fail+=1
             elif result in ("failure", "fail"):
                 open_tests.pop() #FIXME: Check that popped value == $testname
                 statistics['TESTS_UNEXPECTED_FAIL']+=1
-                msg_ops.end_test(testname, "failure", 1, reason)
+                msg_ops.end_test(testname, "failure", True, reason)
             elif result == "skip":
                 statistics['TESTS_SKIP']+=1
                 # Allow tests to be skipped without prior announcement of test
                 last = open_tests.pop()
                 if last is not None and last != testname:
                     open_tests.append(testname)
-                msg_ops.end_test(testname, "skip", 0, reason)
+                msg_ops.end_test(testname, "skip", False, reason)
             elif result == "error":
                 statistics['TESTS_ERROR']+=1
                 open_tests.pop() #FIXME: Check that popped value == $testname
-                msg_ops.end_test(testname, "error", 1, reason)
+                msg_ops.end_test(testname, "error", True, reason)
             elif result == "skip-testsuite":
                 msg_ops.skip_testsuite(testname)
             elif result == "testsuite-success":
@@ -107,7 +107,7 @@ def parse_results(msg_ops, statistics, fh):
             msg_ops.output_msg(l)
 
     while open_tests:
-        msg_ops.end_test(open_tests.pop(), "error", 1,
+        msg_ops.end_test(open_tests.pop(), "error", True,
                    "was started but never finished!")
         statistics['TESTS_ERROR']+=1
 
@@ -118,54 +118,52 @@ def parse_results(msg_ops, statistics, fh):
     return 0
 
 
-def start_test(testname):
-    print "test: %s" % testname
+class SubunitOps(object):
 
-def end_test(name, result, reason=None):
-    if reason:
-        print "%s: %s [" % (result, name)
-        print "%s" % reason
-        print "]"
-    else:
-        print "%s: %s" % (result, name)
+    def start_test(self, testname):
+        print "test: %s" % testname
 
+    def end_test(self, name, result, reason=None):
+        if reason:
+            print "%s: %s [" % (result, name)
+            print "%s" % reason
+            print "]"
+        else:
+            print "%s: %s" % (result, name)
 
-def skip_test(name, reason=None):
-    end_test(name, "skip", reason)
+    def skip_test(self, name, reason=None):
+        self.end_test(name, "skip", reason)
 
+    def fail_test(self, name, reason=None):
+        self.end_test(name, "fail", reason)
 
-def fail_test(name, reason=None):
-    end_test(name, "fail", reason)
+    def success_test(self, name, reason=None):
+        self.end_test(name, "success", reason)
 
+    def xfail_test(self, name, reason=None):
+        self.end_test(name, "xfail", reason)
 
-def success_test(name, reason=None):
-    end_test(name, "success", reason)
+    def report_time(self, t):
+        (sec, min, hour, mday, mon, year, wday, yday, isdst) = time.localtimet(t)
+        print "time: %04d-%02d-%02d %02d:%02d:%02d" % (year+1900, mon+1, mday, hour, min, sec)
 
-def xfail_test(name, reason=None):
-    end_test(name, "xfail", reason)
+    # The following are Samba extensions:
+    def start_testsuite(self, name):
+        print "testsuite: %s" % name
 
-def report_time(t):
-    (sec, min, hour, mday, mon, year, wday, yday, isdst) = time.localtimet(t)
-    print "time: %04d-%02d-%02d %02d:%02d:%02d" % (year+1900, mon+1, mday, hour, min, sec)
+    def skip_testsuite(self, name, reason=None):
+        if reason:
+            print "skip-testsuite: %s [\n%s\n]" % (name, reason)
+        else:
+            print "skip-testsuite: %s" % name
 
+    def end_testsuite(self, name, result, reason=None):
+        if reason:
+            print "testsuite-$result: %s [" % name
+            print "%s" % reason
+            print "]"
+        else:
+            print "testsuite-$result: %s" % name
 
-# The following are Samba extensions:
-def start_testsuite(name):
-    print "testsuite: %s" % name
-
-def skip_testsuite(name, reason=None):
-    if reason:
-        print "skip-testsuite: %s [\n%s\n]" % (name, reason)
-    else:
-        print "skip-testsuite: %s" % name
-
-def end_testsuite(name, result, reason=None):
-    if reason:
-        print "testsuite-$result: %s [" % name
-        print "%s" % reason
-        print "]"
-    else:
-        print "testsuite-$result: %s" % name
-
-def testsuite_count(count):
-    print "testsuite-count: %d" % count
+    def testsuite_count(self, count):
+        print "testsuite-count: %d" % count
