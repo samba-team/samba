@@ -54,6 +54,7 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
 class BasicTests(unittest.TestCase):
+
     def delete_force(self, ldb, dn):
         try:
             ldb.delete(dn)
@@ -78,7 +79,7 @@ class BasicTests(unittest.TestCase):
 
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
+       return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
     def setUp(self):
         self.ldb = ldb
@@ -971,24 +972,24 @@ objectClass: container
                  "cn": "LDAPtestCOMPUTER3"
                  })
 
-	print "Testing ldb.search for (&(cn=ldaptestcomputer3)(objectClass=user))";
+        print "Testing ldb.search for (&(cn=ldaptestcomputer3)(objectClass=user))";
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestcomputer3)(objectClass=user))");
         self.assertEquals(len(res), 1, "Found only %d for (&(cn=ldaptestcomputer3)(objectClass=user))" % len(res))
 
-	self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer3,CN=Computers," + self.base_dn));
-	self.assertEquals(res[0]["cn"][0], "ldaptestcomputer3");
-	self.assertEquals(res[0]["name"][0], "ldaptestcomputer3");
-	self.assertEquals(res[0]["objectClass"][0], "top");
-	self.assertEquals(res[0]["objectClass"][1], "person");
-	self.assertEquals(res[0]["objectClass"][2], "organizationalPerson");
-	self.assertEquals(res[0]["objectClass"][3], "user");
-	self.assertEquals(res[0]["objectClass"][4], "computer");
+        self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer3,CN=Computers," + self.base_dn));
+        self.assertEquals(res[0]["cn"][0], "ldaptestcomputer3");
+        self.assertEquals(res[0]["name"][0], "ldaptestcomputer3");
+        self.assertEquals(res[0]["objectClass"][0], "top");
+        self.assertEquals(res[0]["objectClass"][1], "person");
+        self.assertEquals(res[0]["objectClass"][2], "organizationalPerson");
+        self.assertEquals(res[0]["objectClass"][3], "user");
+        self.assertEquals(res[0]["objectClass"][4], "computer");
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-	self.assertEquals(res[0]["objectCategory"][0], ("CN=Computer,CN=Schema,CN=Configuration," + self.base_dn));
-	self.assertEquals(int(res[0]["primaryGroupID"][0]), 513);
-	self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT);
-	self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE);
+        self.assertEquals(res[0]["objectCategory"][0], ("CN=Computer,CN=Schema,CN=Configuration," + self.base_dn));
+        self.assertEquals(int(res[0]["primaryGroupID"][0]), 513);
+        self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT);
+        self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE);
 
         self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
 
@@ -1224,24 +1225,24 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(str(res[0]["cn"]), "ldaptestUSER3")
         self.assertEquals(str(res[0]["name"]), "ldaptestUSER3")
 
- 	#"Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))"
-	res = ldb.search(expression="(&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))")
+         #"Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))"
+        res = ldb.search(expression="(&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))")
         self.assertEquals(len(res), 1, "(&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))")
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestUSER3,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestUSER3")
         self.assertEquals(str(res[0]["name"]), "ldaptestUSER3")
 
- 	#"Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))"
-	res = ldb.search(expression="(&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))")
+         #"Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))"
+        res = ldb.search(expression="(&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))")
         self.assertEquals(len(res), 1, "(&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))")
 
         self.assertEquals(str(res[0].dn), ("CN=ldaptestUSER3,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestUSER3")
         self.assertEquals(str(res[0]["name"]), "ldaptestUSER3")
 
- 	#"Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))"
-	res = ldb.search(expression="(&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))")
+         #"Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))"
+        res = ldb.search(expression="(&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))")
         self.assertEquals(len(res), 0, "(&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))")
 
         # This is a Samba special, and does not exist in real AD

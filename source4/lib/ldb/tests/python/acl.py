@@ -86,7 +86,7 @@ class AclTests(unittest.TestCase):
     def modify_desc(self, object_dn, desc):
         """ Modify security descriptor using either SDDL string
             or security.descriptor object
-        """	
+        """
         assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
         mod = """
 dn: """ + object_dn + """

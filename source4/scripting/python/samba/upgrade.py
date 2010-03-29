@@ -1,8 +1,8 @@
 #!/usr/bin/python
 #
-#	backend code for upgrading from Samba3
-#	Copyright Jelmer Vernooij 2005-2007
-#	Released under the GNU GPL v3 or later
+#    backend code for upgrading from Samba3
+#    Copyright Jelmer Vernooij 2005-2007
+#    Released under the GNU GPL v3 or later
 #
 
 """Support code for upgrading from Samba 3 to Samba 4."""
