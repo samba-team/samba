@@ -7,6 +7,10 @@ import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 
+# install in /usr/local/samba by default
+Options.default_prefix = '/usr/local/samba'
+
+
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.BUNDLED_EXTENSION_DEFAULT('samba4')

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import string, Utils, Options
+import string, Utils, Options, sys
 from samba_utils import EXPAND_VARIABLES
 
 # list of directory options to offer in configure
