@@ -98,7 +98,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	torture_comment(torture, "Testing DSSETUP pipe operations - should fault\n");
-	ret &= test_DsRoleGetPrimaryDomainInformation_ext(torture, p, NT_STATUS_NET_WRITE_FAULT);
+	ret &= test_DsRoleGetPrimaryDomainInformation_ext(torture, p, NT_STATUS_RPC_BAD_STUB_DATA);
 
 	ret &= test_lsa_OpenPolicy2(p->binding_handle, torture, &handle);
 
