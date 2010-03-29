@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil
+import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
@@ -777,22 +777,42 @@ def PKG_CONFIG_FILES(bld, pc_files, vnum=None):
 Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
 
 
-# override the display of the compilation and linking messages
-def build_progress(self):
-    return "[%d/%d]" % (self.position[0], self.position[1])
 
-def cc_display(self):
-    if Options.options.progress_bar != 0:
-        return Task.Task.display(self)
-    fname = self.inputs[0].bldpath(self.env)
-    if fname[0:3] == '../':
-        fname = fname[3:]
-    return "%s Compiling %s\n" % (build_progress(self), fname)
-Task.TaskBase.classes['cc'].display = cc_display
+#############################################################
+# give a nicer display when building different types of files
+def progress_display(self, msg, fname):
+    col1 = Logs.colors(self.color)
+    col2 = Logs.colors.NORMAL
+    total = self.position[1]
+    n = len(str(total))
+    fs = '[%%%dd/%%%dd] %s %%s%%s%%s\n' % (n, n, msg)
+    return fs % (self.position[0], self.position[1], col1, fname, col2)
 
 def link_display(self):
     if Options.options.progress_bar != 0:
-        return Task.Task.display(self)
+        return Task.Task.old_display(self)
     fname = self.outputs[0].bldpath(self.env)
-    return "%s Linking %s\n" % (build_progress(self), fname)
+    return progress_display(self, 'Linking', fname)
 Task.TaskBase.classes['cc_link'].display = link_display
+
+def samba_display(self):
+    if Options.options.progress_bar != 0:
+        return Task.Task.old_display(self)
+    fname = self.inputs[0].bldpath(self.env)
+    if fname[0:3] == '../':
+        fname = fname[3:]
+    ext_loc = fname.rfind('.')
+    if ext_loc == -1:
+        return Task.Task.old_display(self)
+    ext = fname[ext_loc:]
+
+    ext_map = { '.idl' : 'Compiling IDL',
+                '.et'  : 'Compiling ERRTABLE',
+                '.asn1': 'Compiling ASN1',
+                '.c'   : 'Compiling' }
+    if ext in ext_map:
+        return progress_display(self, ext_map[ext], fname)
+    return Task.Task.old_display(self)
+
+Task.TaskBase.classes['Task'].old_display = Task.TaskBase.classes['Task'].display
+Task.TaskBase.classes['Task'].display = samba_display

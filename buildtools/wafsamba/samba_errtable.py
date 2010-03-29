@@ -16,12 +16,12 @@ def SAMBA_ERRTABLE(bld, name, source):
     out_files.append('%s.c' % bname)
     out_files.append('%s.h' % bname)
 
-    t = bld(rule='${SRC[0].abspath(env)} . ${TGT[0].parent.abspath(env)} default/source4/heimdal_build/compile_et ${SRC[2].abspath(env)} ${TGT[0].bldpath(env)}',
+    t = bld(rule='${SRC[1].abspath(env)} . ${TGT[0].parent.abspath(env)} default/source4/heimdal_build/compile_et ${SRC[0].abspath(env)} ${TGT[0].bldpath(env)}',
             ext_out = '.c',
             before  = 'cc',
             on_results = True,
             shell   = True,
-            source  = ['et_compile_wrapper.sh', 'compile_et', source],
+            source  = [source, 'et_compile_wrapper.sh', 'compile_et'],
             target  = out_files,
             name    = name)
 Build.BuildContext.SAMBA_ERRTABLE = SAMBA_ERRTABLE
