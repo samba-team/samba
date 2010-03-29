@@ -1,77 +1,38 @@
-#!/usr/bin/perl
+#!/usr/bin/env python
 # Pretty-format subunit output
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2008-2010 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later
 
-=pod
+import optparse
+import os
+import sys
 
-=head1 NAME
+import subunithelper
 
-format-subunit [--immediate] < instream > outstream
+parser = optparse.OptionParser("format-subunit [options]")
+parser.add_option("--verbose", action="store_true",
+	help="Be verbose")
+parser.add_option("--immediate", action="store_true", 
+	help="Show failures immediately, don't wait until test run has finished")
+parser.add_option("--prefix", type="string", default=".",
+	help="Prefix to write summary to")
 
-=head1 SYNOPSIS
+opts, args = parser.parse_args()
 
-Format the output of a subunit stream.
+statistics = {
+	'SUITES_FAIL': 0,
+	'TESTS_UNEXPECTED_OK': 0,
+	'TESTS_EXPECTED_OK': 0,
+	'TESTS_UNEXPECTED_FAIL': 0,
+	'TESTS_EXPECTED_FAIL': 0,
+	'TESTS_ERROR': 0,
+	'TESTS_SKIP': 0,
+}
 
-=head1 OPTIONS
+msg_ops = PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose, opts.immediate, statistics)
 
-=over 4
+expected_ret = subunithelper.parse_results(msg_ops, statistics, sys.stdin)
 
-=item I<--immediate>
+msg_ops.summary()
 
-Show errors as soon as they happen rather than at the end of the test run.
-
-=head1 LICENSE
-
-GNU General Public License, version 3 or later.
-
-=head1 AUTHOR
-
-Jelmer Vernooij <jelmer@samba.org>
-		
-=cut
-
-use Getopt::Long;
-use strict;
-use FindBin qw($RealBin $Script);
-use lib "$RealBin";
-use Subunit qw(parse_results);
-
-my $opt_help = undef;
-my $opt_verbose = 0;
-my $opt_immediate = 0;
-my $opt_prefix = ".";
-
-my $result = GetOptions (
-		'help|h|?' => \$opt_help,
-		'verbose' => \$opt_verbose,
-		'immediate' => \$opt_immediate,
-		'prefix:s' => \$opt_prefix,
-	    );
-
-exit(1) if (not $result);
-
-my $msg_ops;
-
-# we want unbuffered output
-$| = 1;
-
-my $statistics = {
-	SUITES_FAIL => 0,
-
-	TESTS_UNEXPECTED_OK => 0,
-	TESTS_EXPECTED_OK => 0,
-	TESTS_UNEXPECTED_FAIL => 0,
-	TESTS_EXPECTED_FAIL => 0,
-	TESTS_ERROR => 0,
-	TESTS_SKIP => 0,
-};
-
-require output::plain;
-$msg_ops = new output::plain("$opt_prefix/summary", $opt_verbose, $opt_immediate, $statistics, undef);
-
-my $expected_ret = parse_results($msg_ops, $statistics, *STDIN);
-
-$msg_ops->summary();
-
-exit($expected_ret);
+sys.exit(expected_ret)
