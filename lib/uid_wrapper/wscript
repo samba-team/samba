@@ -8,6 +8,8 @@ def set_options(opt):
                    action="store_true", dest='enable_uid_wrapper', default=False)
 
 def configure(conf):
-    if Options.options.enable_uid_wrapper or Options.options.developer:
+    if (Options.options.enable_uid_wrapper or
+	Options.options.developer or
+	Options.options.enable_selftest):
         conf.DEFINE('UID_WRAPPER', 1)
 
