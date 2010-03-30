@@ -21,7 +21,6 @@ bld.TARGET_ALIAS('RPC_NDR_SRVSVC', 'NDR_SRVSVC')
 bld.TARGET_ALIAS('RPC_NDR_MGMT', 'dcerpc_mgmt')
 
 # missing subsystems - need looking at
-bld.SAMBA_SUBSYSTEM('INTL', '')         # external gettext library
 bld.SAMBA_SUBSYSTEM('NETAPI', '')       # for external libnet
 bld.SAMBA_SUBSYSTEM('OPENPTY', '')      # external openpty library
 bld.SAMBA_SUBSYSTEM('SMBCLIENT', '')    # for external libsmbclient

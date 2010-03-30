@@ -309,7 +309,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_KRB5',
                     heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
                     heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
                     heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
-                    deps='HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBNETIF LIBSAMBA-HOSTCONFIG INTL'
+                    deps='HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBNETIF LIBSAMBA-HOSTCONFIG intl'
                     )
 
 

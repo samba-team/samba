@@ -25,6 +25,8 @@ conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent get
                     'socket nsl',
                     checklibc=True)
 
+conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', headers='libintl.h')
+
 conf.CHECK_FUNCS('iruserok')
 
 conf.CHECK_FUNCS('bswap16')
