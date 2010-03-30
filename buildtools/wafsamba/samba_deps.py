@@ -603,7 +603,9 @@ def calculate_final_deps(bld, tgt_list, loops):
                     dependency_loop(loops, t, t2.sname)
                     t2.final_libs.remove(t.sname)
 
-    for type in ['BINARY', 'PYTHON']:
+    rely_on = {}
+
+    for type in ['BINARY', 'PYTHON', 'LIBRARY']:
         for t in tgt_list:
             if t.samba_type != type: continue
             # if we will indirectly link to a target then we don't need it
@@ -617,7 +619,15 @@ def calculate_final_deps(bld, tgt_list, loops):
                           t.sname, t.samba_type, dup, t2.samba_type, l)
                     new = new.difference(dup)
                     changed = True
+                    if not l in rely_on:
+                        rely_on[l] = set()
+                    rely_on[l] = rely_on[l].union(dup)
             t.final_objects = new
+
+    # add back in any objects that were relied upon by the reduction rules
+    for r in rely_on:
+        t = bld.name_to_obj(r, bld.env)
+        t.final_objects = t.final_objects.union(rely_on[r])
 
     for loop in loops:
         debug('deps: Found dependency loops for target %s : %s', loop, loops[loop])
@@ -625,7 +635,7 @@ def calculate_final_deps(bld, tgt_list, loops):
     # we now need to make corrections for any library loops we broke up
     # any target that depended on the target of the loop and doesn't
     # depend on the source of the loop needs to get the loop source added
-    for type in ['BINARY','PYTHON','LIBRARY']:
+    for type in ['BINARY','PYTHON','LIBRARY','BINARY']:
         for t in tgt_list:
             if t.samba_type != type: continue
             for loop in loops:
