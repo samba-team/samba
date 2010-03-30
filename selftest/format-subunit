@@ -81,7 +81,7 @@ class PlainFormatter(object):
 
     def end_testsuite(self, name, result, reason):
         out = ""
-        unexpected = 0
+        unexpected = False
 
         if not name in self.test_output:
             print "no output for name[%s]" % name
@@ -93,7 +93,7 @@ class PlainFormatter(object):
             self.suitesfailed.append(name)
             if self.immediate and not self.verbose:
                 out += self.test_output[name]
-            unexpected = 1
+            unexpected = True
 
         if not self.immediate:
             if not unexpected:
