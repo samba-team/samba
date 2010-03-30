@@ -1027,7 +1027,9 @@ static int test_memmem(void)
 	}
 
 	s = memmem("foo", 3, "", 0);
-	if (strcmp(s, "foo") != 0) {
+	/* it is allowable for this to return NULL (as happens on
+	   FreeBSD) */
+	if (s && strcmp(s, "foo") != 0) {
 		printf(__location__ ": Failed memmem\n");
 		return false;
 	}
