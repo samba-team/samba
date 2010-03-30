@@ -195,16 +195,16 @@ def SAMBA_LIBRARY(bld, libname, source,
         if realname:
             install_name = realname
             install_link = None
-            inst_name    = libname + '.inst.so'
+            inst_name    = install_target + '.so'
         elif vnum:
             vnum_base = vnum.split('.')[0]
             install_name = 'lib%s.so.%s' % (bundled_name, vnum)
             install_link = 'lib%s.so.%s' % (bundled_name, vnum_base)
-            inst_name    = 'lib%s.inst.so' % bundled_name
+            inst_name    = 'lib%s.so' % install_target
         else:
             install_name = 'lib%s.so' % bundled_name
             install_link = None
-            inst_name    = 'lib%s.inst.so' % bundled_name
+            inst_name    = 'lib%s.so' % install_target
 
         bld.install_as(os.path.join(install_path, install_name), inst_name)
         if install_link:
