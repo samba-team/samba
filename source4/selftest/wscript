@@ -40,6 +40,7 @@ def set_options(opt):
 def cmd_testonly(opt):
     '''run tests without doing a build first'''
     env = LOAD_ENVIRONMENT()
+    opt.env = env
 
     env.TESTS  = Options.options.TESTS
 
@@ -82,6 +83,7 @@ def cmd_testonly(opt):
         os.unlink(st_done)
 
     cmd = '(${PERL} ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
+    cmd = EXPAND_VARIABLES(opt, cmd)
 
     print "test: running %s" % cmd
     ret = RUN_COMMAND(cmd, env=env)
