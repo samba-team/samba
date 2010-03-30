@@ -107,6 +107,14 @@
 #define HAVE_INET_ATON
 #endif
 
+#ifndef HAVE_INET_NTOP
+#define HAVE_INET_NTOP
+#endif
+
+#ifndef HAVE_INET_PTON
+#define HAVE_INET_PTON
+#endif
+
 #ifndef HAVE_GETTIMEOFDAY
 #define HAVE_GETTIMEOFDAY
 #endif
