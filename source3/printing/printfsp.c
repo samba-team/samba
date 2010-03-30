@@ -114,3 +114,23 @@ void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 
 	print_job_end(SNUM(fsp->conn),jobid, close_type);
 }
+
+/****************************************************************************
+ Discovered by Sebastian Kloska <oncaphillis@snafu.de>. When print files
+ go beyond 4GB, the 32-bit offset sent in old SMBwrite calls is relative
+ to the current 4GB chunk we're writing to.
+****************************************************************************/
+
+SMB_OFF_T printfile_offset(files_struct *fsp, SMB_OFF_T offset)
+{
+	SMB_STRUCT_STAT st;
+
+	if (sys_fstat(fsp->fh->fd, &st, false) == -1) {
+		DEBUG(3,("printfile_offset: sys_fstat failed on %s (%s)\n",
+			fsp_str_dbg(fsp),
+			strerror(errno) ));
+		return offset;
+	}
+
+	return (st.st_ex_size & 0xffffffff00000000LL) + offset;
+}

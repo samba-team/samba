@@ -3822,7 +3822,9 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	if (!fsp->print_file) {
+	if (fsp->print_file) {
+		startpos = printfile_offset(fsp, startpos);
+	} else {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)tcount, WRITE_LOCK,
 		    &lock);
@@ -4024,7 +4026,9 @@ void reply_writeunlock(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
-	if (numtowrite && !fsp->print_file) {
+	if (fsp->print_file) {
+		startpos = printfile_offset(fsp, startpos);
+	} else if (numtowrite) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
@@ -4145,7 +4149,9 @@ void reply_write(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
-	if (!fsp->print_file) {
+	if (fsp->print_file) {
+		startpos = printfile_offset(fsp, startpos);
+	} else {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 			(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 			&lock);
@@ -4751,7 +4757,9 @@ void reply_writeclose(struct smb_request *req)
 	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
 
-	if (numtowrite && !fsp->print_file) {
+	if (fsp->print_file) {
+		startpos = printfile_offset(fsp, startpos);
+	} else if (numtowrite) {
 		init_strict_lock_struct(fsp, (uint32)req->smbpid,
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);

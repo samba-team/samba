@@ -4919,6 +4919,7 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			const char *fname,
 			uint16_t current_vuid, files_struct *fsp);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
+SMB_OFF_T printfile_offset(files_struct *fsp, SMB_OFF_T offset);
 
 /* The following definitions come from printing/printing.c  */
 
