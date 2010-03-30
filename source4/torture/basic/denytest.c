@@ -2095,11 +2095,11 @@ static int cxd_find_known(struct createx_data *cxd)
 	return -1;
 }
 
-#define FILL_NTCREATEX(_struct, _init...)                       \
-	do {                                                    \
-		(_struct)->generic.level = RAW_OPEN_NTCREATEX;  \
-		(_struct)->ntcreatex.in                         \
-		    = (typeof((_struct)->ntcreatex.in)) {_init};\
+#define FILL_NTCREATEX(_struct, _init...)                            \
+	do {                                                         \
+		(_struct)->generic.level = RAW_OPEN_NTCREATEX;       \
+		(_struct)->ntcreatex.in                              \
+		    = (__typeof__((_struct)->ntcreatex.in)) {_init}; \
 	} while (0)
 
 #define CREATEX_NAME "\\createx_dir"
