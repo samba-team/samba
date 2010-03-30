@@ -3,10 +3,11 @@
 
 TARGETDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
+
 bzr export "$WORKDIR/subunit" lp:subunit 
 bzr export "$WORKDIR/testtools" lp:testtools 
 
-for p in python/ filters/tap2subunit;
+for p in python/ filters/ perl/
 do
 	rsync -avz --delete "$WORKDIR/subunit/$p" "$TARGETDIR/$p"
 done
