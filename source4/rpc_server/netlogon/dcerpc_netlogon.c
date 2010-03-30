@@ -617,8 +617,58 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	nt_status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	switch (r->in.validation_level) {
+	case 2:
+		nt_status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+
+		sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
+		NT_STATUS_HAVE_NO_MEMORY(sam2);
+		sam2->base = *sam;
+
+		/* And put into the talloc tree */
+		talloc_steal(sam2, sam);
+		r->out.validation->sam2 = sam2;
+
+		sam = &sam2->base;
+		break;
+
+	case 3:
+		nt_status = auth_convert_server_info_saminfo3(mem_ctx,
+							      server_info,
+							      &sam3);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+
+		r->out.validation->sam3 = sam3;
+
+		sam = &sam3->base;
+		break;
+
+	case 6:
+		nt_status = auth_convert_server_info_saminfo3(mem_ctx,
+							   server_info,
+							   &sam3);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+
+		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
+		NT_STATUS_HAVE_NO_MEMORY(sam6);
+		sam6->base = sam3->base;
+		sam6->sidcount = sam3->sidcount;
+		sam6->sids = sam3->sids;
+
+		sam6->forest.string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
+		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s",
+							 sam->account_name.string, sam6->forest.string);
+		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
+		/* And put into the talloc tree */
+		talloc_steal(sam6, sam3);
+
+		r->out.validation->sam6 = sam6;
+		break;
+
+	default:
+		break;
+	}
 
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	/* It appears that level 6 is not individually encrypted */
@@ -644,36 +694,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 			netlogon_creds_des_encrypt_LMKey(creds,
 						&sam->LMSessKey);
 		}
-	}
-
-	switch (r->in.validation_level) {
-	case 2:
-		sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
-		NT_STATUS_HAVE_NO_MEMORY(sam2);
-		sam2->base = *sam;
-		r->out.validation->sam2 = sam2;
-		break;
-
-	case 3:
-		sam3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
-		NT_STATUS_HAVE_NO_MEMORY(sam3);
-		sam3->base = *sam;
-		r->out.validation->sam3 = sam3;
-		break;
-
-	case 6:
-		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
-		NT_STATUS_HAVE_NO_MEMORY(sam6);
-		sam6->base = *sam;
-		sam6->forest.string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
-		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s",
-							 sam->account_name.string, sam6->forest.string);
-		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
-		r->out.validation->sam6 = sam6;
-		break;
-
-	default:
-		break;
 	}
 
 	*r->out.authoritative = 1;
