@@ -32,6 +32,43 @@ def hlist_to_string(conf, headers=None):
     return hdrs
 
 
+@conf
+def COMPOUND_START(conf, msg):
+    '''start a compound test'''
+    def null_check_message_1(self,*k,**kw):
+        return
+    def null_check_message_2(self,*k,**kw):
+        return
+
+    v = getattr(conf.env, 'in_compound', [])
+    if v != [] and v != 0:
+        conf.env.in_compound = v + 1
+        return
+    conf.check_message_1(msg)
+    conf.saved_check_message_1 = conf.check_message_1
+    conf.check_message_1 = null_check_message_1
+    conf.saved_check_message_2 = conf.check_message_2
+    conf.check_message_2 = null_check_message_2
+    conf.env.in_compound = 1
+
+
+@conf
+def COMPOUND_END(conf, result):
+    '''start a compound test'''
+    conf.env.in_compound -= 1
+    if conf.env.in_compound != 0:
+        return
+    conf.check_message_1 = conf.saved_check_message_1
+    conf.check_message_2 = conf.saved_check_message_2
+    p = conf.check_message_2
+    if result == True:
+        p('ok ')
+    elif result == False:
+        p('not found', 'YELLOW')
+    else:
+        p(result)
+
+
 @feature('nolink')
 def nolink(self):
     '''using the nolink type in conf.check() allows us to avoid
@@ -191,27 +228,27 @@ def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
     '''check for a function'''
     define='HAVE_%s' % f.upper()
 
-    # there are two ways to find a function. The first is
-    # to see if there is a declaration of the function, the
-    # 2nd is to try and link a program that calls the function
-    # unfortunately both strategies have problems.
-    # the 'check the declaration' approach works fine as long
-    # as the function has a declaraion in a header. If there is
-    # no header declaration we can get a false negative.
-    # The link method works fine as long as the compiler
-    # doesn't have a builtin for the function, which could cause
-    # a false negative due to mismatched parameters
-    # so to be sure, we need to try both
     ret = False
+
+    conf.COMPOUND_START('Checking for %s' % f)
 
     if link is None or link == True:
         ret = CHECK_CODE(conf,
-                         '''int main(void) {
-                         #ifndef %s
-                         extern void %s(void); %s();
+                         # this is based on the autoconf strategy
+                         '''
+                         #define %s __fake__%s
+                         #ifdef HAVE_LIMITS_H
+                         # include <limits.h>
+                         #else
+                         # include <assert.h>
                          #endif
-                         return 0;
-                         }''' % (f, f, f),
+                         #undef %s
+                         #if defined __stub_%s || defined __stub___%s
+                         #error "bad glibc stub"
+                         #endif
+                         extern char %s();
+                         int main() { return %s(); }
+                         ''' % (f, f, f, f, f, f, f),
                          execute=False,
                          link=True,
                          addmain=False,
@@ -222,11 +259,26 @@ def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
                          headers=headers,
                          msg='Checking for %s' % f)
 
+        if not ret:
+            ret = CHECK_CODE(conf,
+                             # it might be a macro
+                             'void *__x = (void *)%s' % f,
+                             execute=False,
+                             link=True,
+                             addmain=True,
+                             add_headers=True,
+                             define=define,
+                             local_include=False,
+                             lib=lib,
+                             headers=headers,
+                             msg='Checking for macro %s' % f)
+
     if not ret and (link is None or link == False):
         ret = CHECK_VARIABLE(conf, f,
                              define=define,
                              headers=headers,
                              msg='Checking for declaration of %s' % f)
+    conf.COMPOUND_END(ret)
     return ret
 
 
