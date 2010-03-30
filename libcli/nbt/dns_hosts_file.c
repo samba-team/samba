@@ -119,7 +119,7 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 				continue;
 			}
 			*p_port = strtoul(port, NULL, 10);
-			if (*p_port == ULONG_MAX) {
+			if (*p_port == UINT32_MAX) {
 				DEBUG(0, ("getdns_hosts_fileent: Ill formed hosts SRV record [%s] (invalid port: %s)\n",
 					  line, port));
 				continue;
