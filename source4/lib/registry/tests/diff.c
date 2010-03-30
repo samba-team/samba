@@ -227,10 +227,11 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Explorer", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\..\\Policies\\Explorer failed");
 
-
-	blob.data = (void *)talloc(r2_ctx, uint32_t);
-	SIVAL(blob.data, 0, 0x03ffffff);
-	blob.length = sizeof(uint32_t);
+	blob.data = talloc_array(r2_ctx, uint8_t, 4);
+	/* set "0x03FFFFFF" in little endian format */
+	blob.data[0] = 0xFF; blob.data[1] = 0xFF;
+	blob.data[2] = 0xFF; blob.data[3] = 0x03;
+	blob.length = 4;
 
 	r1_ctx->ops->set_value(newkey, "NoDrives", REG_DWORD, blob);
 
