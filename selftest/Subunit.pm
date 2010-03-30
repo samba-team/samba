@@ -95,8 +95,6 @@ sub parse_results($$$)
 			} 
 		} elsif (/^testsuite: (.*)\n/) {
 			$msg_ops->start_testsuite($1);
-		} elsif (/^testsuite-count: (\d+)\n/) {
-			$msg_ops->testsuite_count($1);
 		} else {
 			$msg_ops->output_msg($_);
 		}
@@ -227,12 +225,6 @@ sub end_testsuite($$;$)
 	} else {
 		print "testsuite-$result: $name\n";
 	}
-}
-
-sub testsuite_count($)
-{
-	my ($count) = @_;
-	print "testsuite-count: $count\n";
 }
 
 1;

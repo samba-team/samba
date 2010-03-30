@@ -103,8 +103,6 @@ def parse_results(msg_ops, statistics, fh):
                 msg_ops.end_testsuite(testname, "error", reason)
         elif l.startswith("testsuite: "):
             msg_ops.start_testsuite(l.split(":", 1)[1].strip())
-        elif l.startswith("testsuite-count: "):
-            msg_ops.testsuite_count(int(l.split(":", 1)[1].strip()))
         elif l.startswith("progress: "):
             arg = l.split(":", 1)[1].strip()
             if arg == "pop":
@@ -189,9 +187,6 @@ class SubunitOps(object):
             print "]"
         else:
             print "testsuite-%s: %s" % (result, name)
-
-    def testsuite_count(self, count):
-        print "testsuite-count: %d" % count
 
 
 def read_test_regexes(name):
@@ -309,9 +304,6 @@ class FilterOps(object):
             reason += "\n errors[%d]" % self.error_added
 
         self._ops.end_testsuite(name, result, reason)
-
-    def testsuite_count(self, count):
-        self._ops.testsuite_count(count)
 
     def __init__(self, prefix, expected_failures, strip_ok_output):
         self._ops = SubunitOps()

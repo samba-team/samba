@@ -9,6 +9,7 @@ import os
 import signal
 import sys
 import subunithelper
+import subunit
 
 class PlainFormatter(object):
 
@@ -25,13 +26,19 @@ class PlainFormatter(object):
         self.summaryfile = summaryfile
         self.index = 0
         self.name = None
+        self._progress_level = 0
         self.totalsuites = totaltests
 
-    def testsuite_count(self, count):
-        self.totalsuites = count
-
     def progress(self, offset, whence):
-        pass
+        if whence == subunit.PROGRESS_POP:
+            self._progress_level -= 1
+        elif whence == subunit.PROGRESS_PUSH:
+            self._progress_level += 1
+        elif whence == subunit.PROGRESS_SET:
+            if self._progress_level == 0:
+                self.totalsuites = offset
+        elif whence == subunit.PROGRESS_CUR:
+            raise NotImplementedError
 
     def report_time(self, time):
         if self.start_time is None:
