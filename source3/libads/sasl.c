@@ -1117,7 +1117,17 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 		for (j=0;values && values[j];j++) {
 			if (strcmp(values[j], sasl_mechanisms[i].name) == 0) {
 				DEBUG(4,("Found SASL mechanism %s\n", values[j]));
+retry:
 				status = sasl_mechanisms[i].fn(ads);
+				if (status.error_type == ENUM_ADS_ERROR_LDAP &&
+				    status.err.rc == LDAP_STRONG_AUTH_REQUIRED &&
+				    ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_PLAIN)
+				{
+					DEBUG(3,("SASL bin got LDAP_STRONG_AUTH_REQUIRED "
+						 "retrying with signing enabled\n"));
+					ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SIGN;
+					goto retry;
+				}
 				ldap_value_free(values);
 				ldap_msgfree(res);
 				return status;
