@@ -3,7 +3,7 @@
 # selftest main code.
 
 import Scripting, os, Options, Utils, Environment, optparse, sys
-from samba_utils import RUN_COMMAND, ADD_LD_LIBRARY_PATH
+from samba_utils import *
 
 def set_options(opt):
     opt.ADD_COMMAND('test', cmd_test)
@@ -39,11 +39,9 @@ def set_options(opt):
 
 def cmd_testonly(opt):
     '''run tests without doing a build first'''
-    env = Environment.Environment()
+    env = LOAD_ENVIRONMENT()
 
     env.TESTS  = Options.options.TESTS
-    env.PERL   = 'perl'
-    env.PYTHON = 'python'
 
     env.SUBUNIT_FORMATTER = '${PERL} ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
     env.FILTER_XFAIL = '${PERL} ../selftest/filter-subunit.pl --expected-failures=./selftest/knownfail'
