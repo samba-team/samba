@@ -35,7 +35,7 @@ static NTSTATUS get_server_id(struct messaging_context *msg_ctx,
 {
 	*ids = irpc_servers_byname(msg_ctx, mem_ctx, "winbind_server");
 	if (*ids == NULL || (*ids)[0].id == 0) {
-		DEBUG(0, ("Geting the winbind server ID failed.\n"));
+		DEBUG(0, ("Getting the winbind server ID failed.\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	return NT_STATUS_OK;
