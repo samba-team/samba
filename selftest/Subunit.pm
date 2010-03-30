@@ -176,6 +176,27 @@ sub report_time($)
 	printf "time: %04d-%02d-%02d %02d:%02d:%02d\n", $year+1900, $mon+1, $mday, $hour, $min, $sec;
 }
 
+sub progress_pop()
+{
+	print "progress: pop\n";
+}
+
+sub progress_push()
+{
+	print "progress: push\n";
+}
+
+sub progress($;$)
+{
+	my ($count, $whence) = @_;
+
+	unless(defined($whence)) {
+		$whence = "";
+	}
+
+	print "progress: $whence$count\n";
+}
+
 # The following are Samba extensions:
 
 sub start_testsuite($)
