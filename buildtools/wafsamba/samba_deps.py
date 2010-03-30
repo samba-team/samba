@@ -3,6 +3,7 @@
 import Build, os, re, Environment
 from samba_utils import *
 from samba_autoconf import *
+from samba_bundled import BUILTIN_LIBRARY
 
 @conf
 def ADD_GLOBAL_DEPENDENCY(ctx, dep):
@@ -336,7 +337,10 @@ def build_direct_deps(bld, tgt_list):
                 t.direct_syslibs.add(d)
                 if d in syslib_deps:
                     for implied in TO_LIST(syslib_deps[d]):
-                        t.direct_libs.add(implied)
+                        if BUILTIN_LIBRARY(bld, implied):
+                            t.direct_objects.add(implied)
+                        else:
+                            t.direct_libs.add(implied)
                 continue
             t2 = bld.name_to_obj(d, bld.env)
             if t2 is None:
@@ -513,11 +517,20 @@ def break_dependency_loops(bld, tgt_list):
     for loop in loops:
         debug('deps: Found dependency loops for target %s : %s', loop, loops[loop])
 
+    for loop in inc_loops:
+        debug('deps: Found include loops for target %s : %s', loop, inc_loops[loop])
+
     # expand the loops mapping by one level
     for loop in loops.copy():
         for tgt in loops[loop]:
             if tgt in loops:
                 loops[loop] = loops[loop].union(loops[tgt])
+
+    for loop in inc_loops.copy():
+        for tgt in inc_loops[loop]:
+            if tgt in inc_loops:
+                inc_loops[loop] = inc_loops[loop].union(inc_loops[tgt])
+
 
     # expand indirect subsystem and library loops
     for loop in loops.copy():
@@ -531,6 +544,13 @@ def break_dependency_loops(bld, tgt_list):
         if loop in loops[loop]:
             loops[loop].remove(loop)
 
+    # expand indirect includes loops
+    for loop in inc_loops.copy():
+        t = bld.name_to_obj(loop, bld.env)
+        inc_loops[loop] = inc_loops[loop].union(t.includes_objects)
+        if loop in inc_loops[loop]:
+            inc_loops[loop].remove(loop)
+
     # add in the replacement dependencies
     for t in tgt_list:
         for loop in loops:
@@ -543,9 +563,18 @@ def break_dependency_loops(bld, tgt_list):
                     if diff:
                         debug('deps: Expanded target %s of type %s from loop %s by %s', t.sname, t.samba_type, loop, diff)
                         objs = objs.union(diff)
-                if t.sname == 'ldb_password_hash':
-                    debug('deps: setting %s %s to %s', t.sname, attr, objs)
                 setattr(t, attr, objs)
+
+        for loop in inc_loops:
+            objs = getattr(t, 'includes_objects', set())
+            if loop in objs:
+                diff = inc_loops[loop].difference(objs)
+                if t.sname in diff:
+                    diff.remove(t.sname)
+                if diff:
+                    debug('deps: Expanded target %s includes of type %s from loop %s by %s', t.sname, t.samba_type, loop, diff)
+                    objs = objs.union(diff)
+            setattr(t, 'includes_objects', objs)
 
 def calculate_final_deps(bld, tgt_list, loops):
     '''calculate the final library and object dependencies'''
