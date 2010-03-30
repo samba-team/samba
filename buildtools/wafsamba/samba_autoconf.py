@@ -187,7 +187,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
     return ret
 
 
-def CHECK_FUNC(conf, f, link=None, lib=None, headers=None):
+def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
     '''check for a function'''
     define='HAVE_%s' % f.upper()
 
@@ -206,7 +206,12 @@ def CHECK_FUNC(conf, f, link=None, lib=None, headers=None):
 
     if link is None or link == True:
         ret = CHECK_CODE(conf,
-                         'int main(void) { extern void %s(void); %s(); return 0; }' % (f, f),
+                         '''int main(void) {
+                         #ifndef %s
+                         extern void %s(void); %s();
+                         #endif
+                         return 0;
+                         }''' % (f, f, f),
                          execute=False,
                          link=True,
                          addmain=False,
@@ -226,7 +231,7 @@ def CHECK_FUNC(conf, f, link=None, lib=None, headers=None):
 
 
 @conf
-def CHECK_FUNCS(conf, list, link=None, lib=None, headers=None):
+def CHECK_FUNCS(conf, list, link=True, lib=None, headers=None):
     '''check for a list of functions'''
     ret = True
     for f in TO_LIST(list):
@@ -416,7 +421,7 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
 
 @conf
 def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
-                   headers=None, link=None, empty_decl=True):
+                   headers=None, link=True, empty_decl=True):
     """
     check that the functions in 'list' are available in 'library'
     if they are, then make that library available as a dependency
