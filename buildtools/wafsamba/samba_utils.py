@@ -241,22 +241,36 @@ def ENFORCE_GROUP_ORDERING(bld):
     if Options.options.compile_targets:
         @feature('*')
         def force_previous_groups(self):
-            my_id = id(self)
+            if getattr(self.bld, 'enforced_group_ordering', False) == True:
+                return
+            self.bld.enforced_group_ordering = True
 
+            def group_name(g):
+                tm = self.bld.task_manager
+                return [x for x in tm.groups_names if id(tm.groups_names[x]) == id(g)][0]
+
+            my_id = id(self)
             bld = self.bld
             stop = None
             for g in bld.task_manager.groups:
                 for t in g.tasks_gen:
                     if id(t) == my_id:
                         stop = id(g)
+                        debug('group: Forcing up to group %s', group_name(g))
                         break
-                if stop is None:
-                    return
+                if stop != None:
+                    break
+            if stop is None:
+                return
 
-                for g in bld.task_manager.groups:
-                    if id(g) == stop:
-                        break
-                    for t in g.tasks_gen:
+            for g in bld.task_manager.groups:
+                if id(g) == stop:
+                    break
+                debug('group: Forcing group %s', group_name(g))
+                for t in g.tasks_gen:
+                    if getattr(t, 'forced_groups', False) != True:
+                        debug('group: Posting %s', t.name or t.target)
+                        t.forced_groups = True
                         t.post()
 Build.BuildContext.ENFORCE_GROUP_ORDERING = ENFORCE_GROUP_ORDERING
 

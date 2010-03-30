@@ -316,15 +316,20 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_SOCKETPAIR'): NET_SOURCES.append('socketpair.c')
     if not bld.CONFIG_SET('HAVE_GETADDRINFO'):NET_SOURCES.append('getaddrinfo.c')
 
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES, deps='replace')
+    bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES,
+                        group='base_libraries',
+                        deps='replace')
 
 
     CRYPT_SOURCES = []
     if not 'HAVE_CRYPT' in bld.env: CRYPT_SOURCES.append('crypt.c')
 
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_EXT', CRYPT_SOURCES)
+    bld.SAMBA_SUBSYSTEM('LIBREPLACE_EXT',
+                        CRYPT_SOURCES,
+                        group='base_libraries')
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_GETPASS', 'getpass.c',
+                        group='base_libraries',
                         enabled=bld.CONFIG_SET('REPLACE_GETPASS'))
 
     # build replacements for stdint.h and stdbool.h if needed

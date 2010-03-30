@@ -252,8 +252,6 @@ def SAMBA_BINARY(bld, binname, source,
     if needs_python:
         features += ' pyembed'
 
-    bld.SET_BUILD_GROUP(group)
-
     obj_target = binname + '.objlist'
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
@@ -271,6 +269,8 @@ def SAMBA_BINARY(bld, binname, source,
                         subsystem_name = subsystem_name,
                         needs_python   = needs_python,
                         local_include  = local_include)
+
+    bld.SET_BUILD_GROUP(group)
 
     # the library itself will depend on that object target
     deps = TO_LIST(deps)
@@ -484,7 +484,7 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
 def SAMBA_GENERATOR(bld, name, rule, source, target,
-                    group='build_source', enabled=True,
+                    group='generators', enabled=True,
                     public_headers=None,
                     header_path=None,
                     vars=None):
@@ -535,6 +535,9 @@ def SETUP_BUILD_GROUPS(bld):
     bld.add_group('setup')
     bld.add_group('build_compiler_source')
     bld.add_group('base_libraries')
+    bld.add_group('generators')
+    bld.add_group('compiler_prototypes')
+    bld.add_group('compiler_libraries')
     bld.add_group('build_compilers')
     bld.add_group('build_source')
     bld.add_group('prototypes')

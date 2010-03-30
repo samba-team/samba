@@ -369,6 +369,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME_H',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
         includes='../heimdal/lib/roken',
 	deps='replace',
+        group='compiler_libraries',
         enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
 	)
 
@@ -378,6 +379,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM_H',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
         includes='../heimdal/lib/roken',
 	deps='replace',
+        group='compiler_libraries',
         enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
 	)
 
@@ -386,6 +388,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_H',
 	'../heimdal/lib/roken/base64.c ../heimdal/lib/roken/ct.c ../heimdal/lib/roken/hex.c ../heimdal/lib/roken/bswap.c ../heimdal/lib/roken/dumpdata.c ../heimdal/lib/roken/emalloc.c ../heimdal/lib/roken/ecalloc.c ../heimdal/lib/roken/getarg.c ../heimdal/lib/roken/get_window_size.c ../heimdal/lib/roken/getdtablesize.c ../heimdal/lib/roken/h_errno.c ../heimdal/lib/roken/issuid.c ../heimdal/lib/roken/net_read.c ../heimdal/lib/roken/net_write.c ../heimdal/lib/roken/socket.c ../heimdal/lib/roken/parse_time.c ../heimdal/lib/roken/parse_units.c ../heimdal/lib/roken/resolve.c ../heimdal/lib/roken/roken_gethostby.c ../heimdal/lib/roken/signal.c ../heimdal/lib/roken/vis.c ../heimdal/lib/roken/strlwr.c ../heimdal/lib/roken/strsep_copy.c ../heimdal/lib/roken/strsep.c ../heimdal/lib/roken/strupr.c ../heimdal/lib/roken/strpool.c ../heimdal/lib/roken/estrdup.c ../heimdal/lib/roken/erealloc.c ../heimdal/lib/roken/simple_exec.c ../heimdal/lib/roken/strcollect.c ../heimdal/lib/roken/strerror_r.c ../heimdal/lib/roken/rtbl.c ../heimdal/lib/roken/cloexec.c ../heimdal/lib/roken/xfree.c replace.c',
 	includes='../heimdal/lib/roken',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
+        group='compiler_libraries',
 	deps='HEIMDAL_ROKEN_PROGNAME_H HEIMDAL_ROKEN_CLOSEFROM_H resolv LIBREPLACE_NETWORK'
 	)
 
@@ -559,12 +562,12 @@ HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
 
 bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
                       HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                      group = 'build_compilers',
+                      group = 'compiler_prototypes',
                       options="-q -P comment -o")
 
 
 bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
                       HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                      group = 'build_compilers',
+                      group = 'compiler_prototypes',
                       options="-q -P comment -p")
 
