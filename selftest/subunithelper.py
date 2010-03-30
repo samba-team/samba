@@ -18,6 +18,7 @@
 __all__ = ['parse_results']
 
 import re
+import sys
 import time
 
 VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error']
@@ -144,8 +145,8 @@ class SubunitOps(object):
         self.end_test(name, "xfail", reason)
 
     def report_time(self, t):
-        (sec, min, hour, mday, mon, year, wday, yday, isdst) = time.localtimet(t)
-        print "time: %04d-%02d-%02d %02d:%02d:%02d" % (year+1900, mon+1, mday, hour, min, sec)
+        (year, mon, mday, hour, min, sec, wday, yday, isdst) = time.localtime(t)
+        print "time: %04d-%02d-%02d %02d:%02d:%02d" % (year, mon, mday, hour, min, sec)
 
     # The following are Samba extensions:
     def start_testsuite(self, name):
@@ -159,11 +160,139 @@ class SubunitOps(object):
 
     def end_testsuite(self, name, result, reason=None):
         if reason:
-            print "testsuite-$result: %s [" % name
+            print "testsuite-%s: %s [" % (result, name)
             print "%s" % reason
             print "]"
         else:
-            print "testsuite-$result: %s" % name
+            print "testsuite-%s: %s" % (result, name)
 
     def testsuite_count(self, count):
         print "testsuite-count: %d" % count
+
+
+def read_test_regexes(name):
+    f = open(name, 'r')
+    try:
+        for l in f:
+            l = l.strip()
+            if l == "" or l[0] == "#":
+                continue
+            if "#" in l:
+                (regex, reason) = l.split("#", 1)
+                yield (regex.strip(), reason.strip())
+            else:
+                yield l, None
+    finally:
+        f.close()
+
+
+def find_in_list(regexes, fullname):
+    for regex, reason in regexes:
+        if re.match(regex, fullname):
+            if reason is None:
+                return ""
+            return reason
+    return None
+
+
+class FilterOps(object):
+
+    def control_msg(self, msg):
+        pass # We regenerate control messages, so ignore this
+
+    def report_time(self, time):
+        self._ops.report_time(time)
+
+    def output_msg(self, msg):
+        if self.output is None:
+            sys.stdout.write(msg)
+        else:
+            self.output+=msg
+
+    def start_test(self, testname):
+        if self.prefix is not None:
+            testname = self.prefix + testname
+
+        if self.strip_ok_output:
+           self.output = ""
+
+        self._ops.start_test(testname)
+
+    def end_test(self, testname, result, unexpected, reason):
+        if self.prefix is not None:
+            testname = self.prefix + testname
+
+        if result in ("fail", "failure") and not unexpected:
+            result = "xfail"
+            self.xfail_added+=1
+            self.total_xfail+=1
+        xfail_reason = find_in_list(self.expected_failures, testname)
+        if xfail_reason is not None and result in ("fail", "failure"):
+            result = "xfail"
+            self.xfail_added+=1
+            self.total_xfail+=1
+            reason += xfail_reason
+
+        if result in ("fail", "failure"):
+            self.fail_added+=1
+            self.total_fail+=1
+
+        if result == "error":
+            self.error_added+=1
+            self.total_error+=1
+
+        if self.strip_ok_output:
+            if result not in ("success", "xfail", "skip"):
+                print self.output
+        self.output = None
+
+        self._ops.end_test(testname, result, reason)
+
+    def skip_testsuite(self, name, reason=None):
+        self._ops.skip_testsuite(name, reason)
+
+    def start_testsuite(self, name):
+        self._ops.start_testsuite(name)
+
+        self.error_added = 0
+        self.fail_added = 0
+        self.xfail_added = 0
+
+    def end_testsuite(self, name, result, reason=None):
+        xfail = False
+
+        if self.xfail_added > 0:
+            xfail = True
+        if self.fail_added > 0 or self.error_added > 0:
+            xfail = False
+
+        if xfail and result in ("fail", "failure"):
+            result = "xfail"
+
+        if self.fail_added > 0 and result != "failure":
+            result = "failure"
+            if reason is None:
+                reason = "Subunit/Filter Reason"
+            reason += "\n failures[%d]" % self.fail_added
+
+        if self.error_added > 0 and result != "error":
+            result = "error"
+            if reason is None:
+                reason = "Subunit/Filter Reason"
+            reason += "\n errors[%d]" % self.error_added
+
+        self._ops.end_testsuite(name, result, reason)
+
+    def testsuite_count(self, count):
+        self._ops.testsuite_count(count)
+
+    def __init__(self, prefix, expected_failures, strip_ok_output):
+        self._ops = SubunitOps()
+        self.output = None
+        self.prefix = prefix
+        self.expected_failures = expected_failures
+        self.strip_ok_output = strip_ok_output
+        self.xfail_added = 0
+        self.total_xfail = 0
+        self.total_error = 0
+        self.total_fail = 0

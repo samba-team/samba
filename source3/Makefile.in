@@ -3251,7 +3251,7 @@ selftest:: all torture timelimit
 		--testlist="$(srcdir)/selftest/tests.sh|" \
 		--exclude=$(srcdir)/selftest/skip \
 		--socket-wrapper $(TESTS) | \
-		$(PERL) $(selftestdir)/filter-subunit.pl \
+		$(PYTHON) $(selftestdir)/filter-subunit \
 		--expected-failures=$(srcdir)/selftest/knownfail | \
 		$(PYTHON) $(selftestdir)/format-subunit --immediate
 

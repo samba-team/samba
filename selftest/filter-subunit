@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# Filter a subunit stream
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org>
+# Published under the GNU GPL, v3 or later
+
+import optparse
+import subunithelper
+import sys
+import signal
+
+parser = optparse.OptionParser("filter-subunit [options] < instream > outstream")
+parser.add_option("--expected-failures", type="string", 
+	help="File containing list of regexes matching tests to consider known "
+	     "failures")
+parser.add_option("--strip-passed-output", action="store_true", 
+    help="Whether to strip output from tests that passed")
+
+parser.add_option("--prefix", type="string",
+	help="Add prefix to all test names")
+
+opts, args = parser.parse_args()
+
+if opts.expected_failures:
+	expected_failures = list(subunithelper.read_test_regexes(opts.expected_failures))
+else:
+	expected_failures = []
+
+statistics = {
+	'TESTS_UNEXPECTED_OK': 0,
+	'TESTS_EXPECTED_OK': 0,
+	'TESTS_UNEXPECTED_FAIL': 0,
+	'TESTS_EXPECTED_FAIL': 0,
+	'TESTS_ERROR': 0,
+	'TESTS_SKIP': 0,
+}
+
+def handle_sigint(sig, stack):
+	sys.exit(0)
+signal.signal(signal.SIGINT, handle_sigint)
+
+msg_ops = subunithelper.FilterOps(opts.prefix, expected_failures, 
+	opts.strip_passed_output)
+
+sys.exit(subunithelper.parse_results(msg_ops, statistics, sys.stdin))
