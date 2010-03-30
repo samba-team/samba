@@ -42,6 +42,8 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
                            define=define,
                            local_include=False,
                            headers=headers,
+                           link=False,
+                           execute=False,
                            msg='Checking C prototype for %s' % function)
 
 
