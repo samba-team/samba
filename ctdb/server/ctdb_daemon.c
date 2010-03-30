@@ -1153,7 +1153,7 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
         struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client); 
 	struct ctdb_client_notify_list *nl;
 
-	DEBUG(DEBUG_ERR,("Register srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
+	DEBUG(DEBUG_INFO,("Register srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
 
 	if (indata.dsize < offsetof(struct ctdb_client_notify_register, notify_data)) {
 		DEBUG(DEBUG_ERR,(__location__ " Too little data in control : %d\n", (int)indata.dsize));
@@ -1202,7 +1202,7 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
         struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client); 
 	struct ctdb_client_notify_list *nl;
 
-	DEBUG(DEBUG_ERR,("Deregister srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
+	DEBUG(DEBUG_INFO,("Deregister srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
 
         if (client == NULL) {
                 DEBUG(DEBUG_ERR,(__location__ " Could not find client parent structure. You can not send this control to a remote node\n"));
