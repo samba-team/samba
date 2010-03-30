@@ -47,7 +47,8 @@ Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                          checkfunctions=None, headers=None,
-                         onlyif=None, implied_deps=None):
+                         onlyif=None, implied_deps=None,
+                         require_headers=True):
     '''check if a library is available as a system library.
     this first tries via pkg-config, then if that fails
     tries by testing for a specified function in the specified lib
@@ -81,7 +82,10 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
             conf.SET_SYSLIB_DEPS(libname, implied_deps)
         return True
     if checkfunctions is not None:
-        if conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers, empty_decl=False):
+        headers_ok = True
+        if require_headers and headers and not conf.CHECK_HEADERS(headers):
+            headers_ok = False
+        if headers_ok and conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers, empty_decl=False):
             conf.env[found] = True
             if implied_deps:
                 conf.SET_SYSLIB_DEPS(libname, implied_deps)
