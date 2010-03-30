@@ -25,6 +25,7 @@
 __docformat__ = "restructuredText"
 
 import os
+import sys
 
 def _in_source_tree():
     """Check whether the script is being run from the source dir. """
@@ -33,7 +34,6 @@ def _in_source_tree():
 
 # When running, in-tree, make sure bin/python is in the PYTHONPATH
 if _in_source_tree():
-    import sys
     srcdir = "%s/../../.." % os.path.dirname(__file__)
     sys.path.append("%s/bin/python" % srcdir)
     default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
