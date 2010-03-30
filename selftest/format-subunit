@@ -6,8 +6,8 @@
 
 import optparse
 import os
+import signal
 import sys
-
 import subunithelper
 
 class PlainFormatter(object):
@@ -187,6 +187,10 @@ statistics = {
     'TESTS_ERROR': 0,
     'TESTS_SKIP': 0,
 }
+
+def handle_sigint(sig, stack):
+	sys.exit(0)
+signal.signal(signal.SIGINT, handle_sigint)
 
 msg_ops = PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose,
     opts.immediate, statistics)
