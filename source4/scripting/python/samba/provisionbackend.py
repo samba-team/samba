@@ -582,7 +582,7 @@ class FDSBackend(LDAPBackend):
         self.samba3_schema = self.setup_path("../../examples/LDAP/samba.schema")
         self.samba3_ldif = os.path.join(self.ldapdir, "samba3.ldif")
 
-        self.retcode = subprocess.call(["bin/oLschema2ldif", "-H", "NONE",
+        self.retcode = subprocess.call(["bin/oLschema2ldif", 
                 "-I", self.samba3_schema,
                 "-O", self.samba3_ldif,
                 "-b", self.names.domaindn],
