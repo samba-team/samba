@@ -42,6 +42,11 @@
 #include "auth/gensec/gensec_gssapi.h"
 #include "lib/util/util_net.h"
 
+/* There are "gssapi.h" header files which don't define all needed constants */
+#ifndef GSS_C_DELEG_POLICY_FLAG
+#define GSS_C_DELEG_POLICY_FLAG 32768
+#endif
+
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
 
