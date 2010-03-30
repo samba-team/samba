@@ -2095,13 +2095,6 @@ static int cxd_find_known(struct createx_data *cxd)
 	return -1;
 }
 
-#define FILL_NTCREATEX(_struct, _init...)                            \
-	do {                                                         \
-		(_struct)->generic.level = RAW_OPEN_NTCREATEX;       \
-		(_struct)->ntcreatex.in                              \
-		    = (__typeof__((_struct)->ntcreatex.in)) {_init}; \
-	} while (0)
-
 #define CREATEX_NAME "\\createx_dir"
 
 static bool createx_make_dir(struct torture_context *tctx,
@@ -2124,15 +2117,16 @@ static bool createx_make_file(struct torture_context *tctx,
 	bool ret = true;
 	NTSTATUS status;
 
-	FILL_NTCREATEX(&open_parms,
-	    .flags = 0,
-	    .access_mask = SEC_RIGHTS_FILE_ALL,
-	    .file_attr = FILE_ATTRIBUTE_NORMAL,
-	    .share_access = 0,
-	    .open_disposition = NTCREATEX_DISP_CREATE,
-	    .create_options = 0,
-	    .fname = fname
-	);
+	ZERO_STRUCT(open_parms);
+	open_parms.generic.level = RAW_OPEN_NTCREATEX;
+	open_parms.ntcreatex.in.flags = 0;
+	open_parms.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	open_parms.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	open_parms.ntcreatex.in.share_access = 0;
+	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	open_parms.ntcreatex.in.create_options = 0;
+	open_parms.ntcreatex.in.fname = fname;
+
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -2146,30 +2140,30 @@ static bool createx_make_file(struct torture_context *tctx,
 static void createx_fill_dir(union smb_open *open_parms, int accessmode,
     int sharemode, const char *fname)
 {
-	FILL_NTCREATEX(open_parms,
-	    .flags = 0,
-	    .access_mask = accessmode,
-	    .file_attr = FILE_ATTRIBUTE_DIRECTORY,
-	    .share_access = sharemode,
-	    .open_disposition = NTCREATEX_DISP_OPEN_IF,
-	    .create_options = NTCREATEX_OPTIONS_DIRECTORY,
-	    .fname = fname
-	);
+	ZERO_STRUCTP(open_parms);
+	open_parms->generic.level = RAW_OPEN_NTCREATEX;
+	open_parms->ntcreatex.in.flags = 0;
+	open_parms->ntcreatex.in.access_mask = accessmode;
+	open_parms->ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	open_parms->ntcreatex.in.share_access = sharemode;
+	open_parms->ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	open_parms->ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	open_parms->ntcreatex.in.fname = fname;
 }
 
 static void createx_fill_file(union smb_open *open_parms, int accessmode,
     int sharemode, const char *fname)
 {
-	FILL_NTCREATEX(open_parms,
-	    .flags = 0,
-	    .access_mask = accessmode,
-	    .file_attr = FILE_ATTRIBUTE_NORMAL,
-	    .share_access = sharemode,
-	    .open_disposition = NTCREATEX_DISP_OPEN_IF,
-	    .create_options = 0,
-	    .fname = fname,
-            .root_fid = { .fnum = 0 }
-	);
+	ZERO_STRUCTP(open_parms);
+	open_parms->generic.level = RAW_OPEN_NTCREATEX;
+	open_parms->ntcreatex.in.flags = 0;
+	open_parms->ntcreatex.in.access_mask = accessmode;
+	open_parms->ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	open_parms->ntcreatex.in.share_access = sharemode;
+	open_parms->ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	open_parms->ntcreatex.in.create_options = 0;
+	open_parms->ntcreatex.in.fname = fname;
+	open_parms->ntcreatex.in.root_fid.fnum = 0;
 }
 
 static int data_file_fd = -1;
@@ -2184,15 +2178,16 @@ static bool createx_test_dir(struct torture_context *tctx,
 	union smb_open open_parms;
 
 	/* bypass original handle to guarantee creation */
-	FILL_NTCREATEX(&open_parms,
-	    .flags = 0,
-	    .access_mask = SEC_RIGHTS_FILE_ALL,
-	    .file_attr = FILE_ATTRIBUTE_NORMAL,
-	    .share_access = 0,
-	    .open_disposition = NTCREATEX_DISP_CREATE,
-	    .create_options = 0,
-	    .fname = CREATEX_NAME "\\" KNOWN
-	);
+	ZERO_STRUCT(open_parms);
+	open_parms.generic.level = RAW_OPEN_NTCREATEX;
+	open_parms.ntcreatex.in.flags = 0;
+	open_parms.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	open_parms.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	open_parms.ntcreatex.in.share_access = 0;
+	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	open_parms.ntcreatex.in.create_options = 0;
+	open_parms.ntcreatex.in.fname = CREATEX_NAME "\\" KNOWN;
+
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(tree, open_parms.ntcreatex.out.file.fnum);
@@ -2200,32 +2195,32 @@ static bool createx_test_dir(struct torture_context *tctx,
 	result[CXD_DIR_ENUMERATE] = NT_STATUS_OK;
 
 	/* try to create a child */
-	FILL_NTCREATEX(&open_parms,
-	    .flags = 0,
-	    .access_mask = SEC_RIGHTS_FILE_ALL,
-	    .file_attr = FILE_ATTRIBUTE_NORMAL,
-	    .share_access = 0,
-	    .open_disposition = NTCREATEX_DISP_CREATE,
-	    .create_options = 0,
-	    .fname = CHILD,
-	    .root_fid = { .fnum = fnum }
-	);
+	ZERO_STRUCT(open_parms);
+	open_parms.generic.level = RAW_OPEN_NTCREATEX;
+	open_parms.ntcreatex.in.flags = 0;
+	open_parms.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	open_parms.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	open_parms.ntcreatex.in.share_access = 0;
+	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	open_parms.ntcreatex.in.create_options = 0;
+	open_parms.ntcreatex.in.fname = CHILD;
+	open_parms.ntcreatex.in.root_fid.fnum = fnum;
 
 	result[CXD_DIR_CREATE_CHILD] =
 	    smb_raw_open(tree, mem_ctx, &open_parms);
 	smbcli_close(tree, open_parms.ntcreatex.out.file.fnum);
 
 	/* try to traverse dir to known good file */
-	FILL_NTCREATEX(&open_parms,
-	    .flags = 0,
-	    .access_mask = SEC_RIGHTS_FILE_ALL,
-	    .file_attr = FILE_ATTRIBUTE_NORMAL,
-	    .share_access = 0,
-	    .open_disposition = NTCREATEX_DISP_OPEN,
-	    .create_options = 0,
-	    .fname = KNOWN,
-	    .root_fid = {.fnum = fnum}
-	);
+	ZERO_STRUCT(open_parms);
+	open_parms.generic.level = RAW_OPEN_NTCREATEX;
+	open_parms.ntcreatex.in.flags = 0;
+	open_parms.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	open_parms.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	open_parms.ntcreatex.in.share_access = 0;
+	open_parms.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	open_parms.ntcreatex.in.create_options = 0;
+	open_parms.ntcreatex.in.fname = KNOWN;
+	open_parms.ntcreatex.in.root_fid.fnum = fnum;
 
 	result[CXD_DIR_TRAVERSE] =
 	    smb_raw_open(tree, mem_ctx, &open_parms);
