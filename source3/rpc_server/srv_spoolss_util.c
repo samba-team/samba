@@ -24,6 +24,11 @@
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
 
+#define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
+#define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
+#define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
+#define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
+
 /********************************************************************
  static helper functions
 ********************************************************************/
@@ -41,7 +46,7 @@
  *
  * @param[out] winreg_pipe   A pointer for the winreg rpc client pipe.
  *
- * @param[in]  name          The name of the printer.
+ * @param[in]  path          The path to the key to open.
  *
  * @param[in]  key           The key to open.
  *
@@ -60,7 +65,7 @@
 static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 			      struct auth_serversupplied_info *server_info,
 			      struct rpc_pipe_client **winreg_pipe,
-			      const char *name,
+			      const char *path,
 			      const char *key,
 			      bool create_key,
 			      uint32_t access_mask,
@@ -102,14 +107,9 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	}
 
 	if (key && *key) {
-		keyname = talloc_asprintf(mem_ctx,
-				    "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers\\%s\\%s",
-				    name,
-				    key);
+		keyname = talloc_asprintf(mem_ctx, "%s\\%s", path, key);
 	} else {
-		keyname = talloc_asprintf(mem_ctx,
-				    "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers\\%s",
-				    name);
+		keyname = talloc_strdup(mem_ctx, path);
 	}
 	if (keyname == NULL) {
 		talloc_free(pipe_handle);
@@ -168,6 +168,19 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	*winreg_pipe = pipe_handle;
 
 	return WERR_OK;
+}
+
+/**
+ * @brief Create the registry keyname for the given printer.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  printer  The name of the printer to get the registry key.
+ *
+ * @return     The registry key or NULL on error.
+ */
+static char *winreg_printer_data_keyname(TALLOC_CTX *mem_ctx, const char *printer) {
+	return talloc_asprintf(mem_ctx, "%s\\%s", TOP_LEVEL_PRINT_PRINTERS_KEY, printer);
 }
 
 /**
@@ -601,12 +614,19 @@ WERROR winreg_set_printer_dataex(struct pipes_struct *p,
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
+	char *path;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return WERR_NOMEM;
 	}
 
@@ -618,7 +638,7 @@ WERROR winreg_set_printer_dataex(struct pipes_struct *p,
 	result = winreg_printer_openkey(tmp_ctx,
 					p->server_info,
 					&winreg_pipe,
-					printer,
+					path,
 					key,
 					true,
 					access_mask,
@@ -678,6 +698,7 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	enum winreg_Type type_in;
+	char *path;
 	uint8_t *data_in;
 	uint32_t data_in_size = 0;
 	uint32_t value_len = 0;
@@ -690,13 +711,19 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
 					p->server_info,
 					&winreg_pipe,
-					printer,
+					path,
 					key,
 					false,
 					access_mask,
@@ -793,7 +820,7 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
 
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
 	uint32_t num_values = 0;
-
+	char *path;
 	WERROR result = WERR_OK;
 
 	TALLOC_CTX *tmp_ctx;
@@ -803,10 +830,16 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
 	result = winreg_printer_openkey(tmp_ctx,
 					p->server_info,
 					&winreg_pipe,
-					printer,
+					path,
 					key,
 					false,
 					access_mask,
@@ -859,6 +892,7 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
+	char *path;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 
@@ -869,13 +903,19 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
 					p->server_info,
 					&winreg_pipe,
-					printer,
+					path,
 					key,
 					false,
 					access_mask,
@@ -928,7 +968,7 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
-
+	char *path;
 	const char **subkeys = NULL;
 	uint32_t num_subkeys = -1;
 
@@ -941,13 +981,19 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
 					p->server_info,
 					&winreg_pipe,
-					printer,
+					path,
 					key,
 					false,
 					access_mask,
@@ -999,6 +1045,7 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	char *keyname;
+	char *path;
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
@@ -1007,10 +1054,16 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
 	result = winreg_printer_openkey(tmp_ctx,
 					p->server_info,
 					&winreg_pipe,
-					printer,
+					path,
 					key,
 					false,
 					access_mask,
@@ -1033,8 +1086,8 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 	}
 
 	keyname = talloc_asprintf(tmp_ctx,
-				  "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers\\%s\\%s",
-				  printer,
+				  "%s\\%s",
+				  path,
 				  key);
 	if (keyname == NULL) {
 		result = WERR_NOMEM;
