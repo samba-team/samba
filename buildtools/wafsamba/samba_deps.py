@@ -603,7 +603,7 @@ def calculate_final_deps(bld, tgt_list, loops):
                     dependency_loop(loops, t, t2.sname)
                     t2.final_libs.remove(t.sname)
 
-    for type in ['BINARY']:
+    for type in ['BINARY', 'PYTHON']:
         for t in tgt_list:
             if t.samba_type != type: continue
             # if we will indirectly link to a target then we don't need it
