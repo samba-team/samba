@@ -19,6 +19,7 @@ __all__ = ['parse_results']
 
 import re
 import sys
+import subunit
 import time
 
 VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error']
@@ -104,6 +105,16 @@ def parse_results(msg_ops, statistics, fh):
             msg_ops.start_testsuite(l.split(":", 1)[1].strip())
         elif l.startswith("testsuite-count: "):
             msg_ops.testsuite_count(int(l.split(":", 1)[1].strip()))
+        elif l.startswith("progress: "):
+            arg = l.split(":", 1)[1].strip()
+            if arg == "pop":
+                msg_ops.progress(None, subunit.PROGRESS_POP)
+            elif arg == "push":
+                msg_ops.progress(None, subunit.PROGRESS_PUSH)
+            elif arg[0] in '+-':
+                msg_ops.progress(int(arg), subunit.PROGRESS_CUR)
+            else:
+                msg_ops.progress(int(arg), subunit.PROGRESS_SET)
         else:
             msg_ops.output_msg(l)
 
@@ -147,6 +158,19 @@ class SubunitOps(object):
     def report_time(self, t):
         (year, mon, mday, hour, min, sec, wday, yday, isdst) = time.localtime(t)
         print "time: %04d-%02d-%02d %02d:%02d:%02d" % (year, mon, mday, hour, min, sec)
+
+    def progress(self, offset, whence):
+        if whence == subunit.PROGRESS_CUR and offset > -1:
+            prefix = "+"
+        elif whence == subunit.PROGRESS_PUSH:
+            prefix = ""
+            offset = "push"
+        elif whence == subunit.PROGRESS_POP:
+            prefix = ""
+            offset = "pop"
+        else:
+            prefix = ""
+        print "progress: %s%s" % (prefix, offset)
 
     # The following are Samba extensions:
     def start_testsuite(self, name):
@@ -202,6 +226,9 @@ class FilterOps(object):
 
     def report_time(self, time):
         self._ops.report_time(time)
+
+    def progress(self, delta, whence):
+        self._ops.progress(delta, whence)
 
     def output_msg(self, msg):
         if self.output is None:

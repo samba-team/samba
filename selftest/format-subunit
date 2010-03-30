@@ -30,6 +30,9 @@ class PlainFormatter(object):
     def testsuite_count(self, count):
         self.totalsuites = count
 
+    def progress(self, offset, whence):
+        pass
+
     def report_time(self, time):
         if self.start_time is None:
             self.start_time = time
