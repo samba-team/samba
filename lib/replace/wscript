@@ -128,6 +128,9 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl',
                         checklibc=True, headers='dlfcn.h dl.h')
 
+    conf.CHECK_C_PROTOTYPE('dlopen', 'void *dlopen(const char* filename, unsigned int flags)',
+                           define='DLOPEN_TAKES_UNSIGNED_FLAGS', headers='dlfcn.h dl.h')
+
     conf.CHECK_FUNCS_IN('fdatasync', 'rt', checklibc=True)
 
     # these headers need to be tested as a group on freebsd
