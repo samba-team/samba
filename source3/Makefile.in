@@ -1238,6 +1238,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_remove_mapping.o \
 		winbindd/winbindd_set_hwm.o \
 		winbindd/winbindd_pam_auth.o \
+		winbindd/winbindd_pam_auth_crap.o \
 		auth/token_util.o \
 		auth/check_samsec.o \
 		auth/server_info.o \

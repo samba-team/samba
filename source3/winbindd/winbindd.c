@@ -444,7 +444,6 @@ static struct winbindd_dispatch_table {
 
 	/* PAM auth functions */
 
-	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 	{ WINBINDD_PAM_LOGOFF, winbindd_pam_logoff, "PAM_LOGOFF" },
 	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, winbindd_pam_chng_pswd_auth_crap, "CHNG_PSWD_AUTH_CRAP" },
@@ -570,6 +569,8 @@ static struct winbindd_async_dispatch_table async_priv_table[] = {
 	  winbindd_set_hwm_send, winbindd_set_hwm_recv },
 	{ WINBINDD_CHANGE_MACHACC, "CHANGE_MACHACC",
 	  winbindd_change_machine_acct_send, winbindd_change_machine_acct_recv },
+	{ WINBINDD_PAM_AUTH_CRAP, "PAM_AUTH_CRAP",
+	  winbindd_pam_auth_crap_send, winbindd_pam_auth_crap_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
