@@ -336,7 +336,6 @@ def build_direct_deps(bld, tgt_list):
                 t.direct_syslibs.add(d)
                 if d in syslib_deps:
                     for implied in TO_LIST(syslib_deps[d]):
-                        print("Adding implied lib %s to %s" % (implied, t.sname))
                         t.direct_libs.add(implied)
                 continue
             t2 = bld.name_to_obj(d, bld.env)
