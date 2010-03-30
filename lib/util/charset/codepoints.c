@@ -49,14 +49,14 @@ void load_case_tables(void)
 	talloc_free(mem_ctx);
 	if (upcase_table == NULL) {
 		/* try also under codepages for testing purposes */
-		upcase_table = map_file("codepages/upcase.dat", 0x20000);
+		upcase_table = map_file("../codepages/upcase.dat", 0x20000);
 		if (upcase_table == NULL) {
 			upcase_table = (void *)-1;
 		}
 	}
 	if (lowcase_table == NULL) {
 		/* try also under codepages for testing purposes */
-		lowcase_table = map_file("codepages/lowcase.dat", 0x20000);
+		lowcase_table = map_file("../codepages/lowcase.dat", 0x20000);
 		if (lowcase_table == NULL) {
 			lowcase_table = (void *)-1;
 		}
