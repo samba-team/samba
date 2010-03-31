@@ -1305,7 +1305,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 	} else {
 		DEBUG(10, ("fork_domain_child called without domain.\n"));
 	}
-	child_domain = child->domain;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",
@@ -1335,6 +1334,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	/* Child */
+	child_domain = child->domain;
 
 	DEBUG(10, ("Child process %d\n", (int)sys_getpid()));
 
