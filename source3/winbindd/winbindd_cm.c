@@ -1594,14 +1594,19 @@ void close_conns_after_fork(void)
 	struct winbindd_domain *domain;
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		if (domain->conn.cli == NULL)
-			continue;
+		struct cli_state *cli = domain->conn.cli;
 
-		if (domain->conn.cli->fd == -1)
-			continue;
+		/*
+		 * first close the low level SMB TCP connection
+		 * so that we don't generate any SMBclose
+		 * requests in invalidate_cm_connection()
+		 */
+		if (cli && cli->fd != -1) {
+			close(domain->conn.cli->fd);
+			domain->conn.cli->fd = -1;
+		}
 
-		close(domain->conn.cli->fd);
-		domain->conn.cli->fd = -1;
+		invalidate_cm_connection(&domain->conn);
 	}
 }
 
