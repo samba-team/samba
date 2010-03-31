@@ -6596,58 +6596,6 @@ static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
- spoolss_enumforms_level1
-****************************************************************/
-
-static WERROR spoolss_enumforms_level1(TALLOC_CTX *mem_ctx,
-				       const nt_forms_struct *builtin_forms,
-				       uint32_t num_builtin_forms,
-				       const nt_forms_struct *user_forms,
-				       uint32_t num_user_forms,
-				       union spoolss_FormInfo **info_p,
-				       uint32_t *count)
-{
-	union spoolss_FormInfo *info;
-	WERROR result = WERR_OK;
-	int i;
-
-	*count = num_builtin_forms + num_user_forms;
-
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_FormInfo, *count);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	/* construct the list of form structures */
-	for (i=0; i<num_builtin_forms; i++) {
-		DEBUGADD(6,("Filling builtin form number [%d]\n",i));
-		result = fill_form_info_1(info, &info[i].info1,
-					  &builtin_forms[i]);
-		if (!W_ERROR_IS_OK(result)) {
-			goto out;
-		}
-	}
-
-	for (i=0; i<num_user_forms; i++) {
-		DEBUGADD(6,("Filling user form number [%d]\n",i));
-		result = fill_form_info_1(info, &info[i+num_builtin_forms].info1,
-					  &user_forms[i]);
-		if (!W_ERROR_IS_OK(result)) {
-			goto out;
-		}
-	}
-
- out:
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(info);
-		*count = 0;
-		return result;
-	}
-
-	*info_p = info;
-
-	return WERR_OK;
-}
-
-/****************************************************************
  _spoolss_EnumForms
 ****************************************************************/
 
@@ -6655,10 +6603,6 @@ WERROR _spoolss_EnumForms(pipes_struct *p,
 			  struct spoolss_EnumForms *r)
 {
 	WERROR result;
-	nt_forms_struct *user_forms = NULL;
-	nt_forms_struct *builtin_forms = NULL;
-	uint32_t num_user_forms;
-	uint32_t num_builtin_forms;
 
 	*r->out.count = 0;
 	*r->out.needed = 0;
@@ -6674,37 +6618,24 @@ WERROR _spoolss_EnumForms(pipes_struct *p,
 	DEBUGADD(5,("Offered buffer size [%d]\n", r->in.offered));
 	DEBUGADD(5,("Info level [%d]\n",          r->in.level));
 
-	num_builtin_forms = get_builtin_ntforms(&builtin_forms);
-	DEBUGADD(5,("Number of builtin forms [%d]\n", num_builtin_forms));
-	num_user_forms = get_ntforms(&user_forms);
-	DEBUGADD(5,("Number of user forms [%d]\n", num_user_forms));
-
-	if (num_user_forms + num_builtin_forms == 0) {
-		SAFE_FREE(builtin_forms);
-		SAFE_FREE(user_forms);
-		return WERR_NO_MORE_ITEMS;
-	}
-
 	switch (r->in.level) {
 	case 1:
-		result = spoolss_enumforms_level1(p->mem_ctx,
-						  builtin_forms,
-						  num_builtin_forms,
-						  user_forms,
-						  num_user_forms,
-						  r->out.info,
-						  r->out.count);
+		result = winreg_printer_enumforms1(p->mem_ctx,
+						   p->server_info,
+						   r->out.count,
+						   r->out.info);
 		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
 		break;
 	}
 
-	SAFE_FREE(user_forms);
-	SAFE_FREE(builtin_forms);
-
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
+	}
+
+	if (*r->out.count == 0) {
+		return WERR_NO_MORE_ITEMS;
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
