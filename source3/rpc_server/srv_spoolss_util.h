@@ -171,6 +171,24 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 				 const char *key);
 
 /**
+ * @internal
+ *
+ * @brief This function adds a form to the list of available forms that can be
+ * selected for the specified printer.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  form     The form to add.
+ *
+ * @return              WERR_OK on success.
+ *                      WERR_ALREADY_EXISTS if the form already exists or is a
+ *                                          builtin form.
+ *                      A corresponding DOS error is something went wrong.
+ */
+WERROR winreg_printer_addform1(struct pipes_struct *p,
+			       struct spoolss_AddFormInfo1 *form);
+
+/*
  * @brief This function enumerates the forms supported by the specified printer.
  *
  * @param[in]  p        The pipes structure to be able to open a new pipe.
