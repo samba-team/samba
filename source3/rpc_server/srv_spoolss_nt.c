@@ -7730,15 +7730,11 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 			   struct spoolss_DeleteForm *r)
 {
 	const char *form_name = r->in.form_name;
-	nt_forms_struct tmpForm;
-	int count=0;
-	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
-	bool ret = false;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
 
@@ -7771,20 +7767,10 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-
-	/* can't delete if builtin */
-
-	if (get_a_builtin_ntform_by_string(form_name,&tmpForm)) {
-		status = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	count = get_ntforms(&list);
-
-	become_root();
-	ret = delete_a_form(&list, form_name, &count, &status);
-	unbecome_root();
-	if (ret == false) {
+	status = winreg_printer_deleteform1(p->mem_ctx,
+					    p->server_info,
+					    form_name);
+	if (!W_ERROR_IS_OK(status)) {
 		goto done;
 	}
 
@@ -7798,7 +7784,6 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 done:
 	if ( printer )
 		free_a_printer(&printer, 2);
-	SAFE_FREE(list);
 
 	return status;
 }
