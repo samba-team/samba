@@ -221,7 +221,7 @@ def subst_vars_error(string, env):
             vname = v[2:-1]
             if not vname in env:
                 print "Failed to find variable %s in %s" % (vname, string)
-                raise
+                sys.exit(1)
             v = env[vname]
         out.append(v)
     return ''.join(out)
@@ -338,7 +338,7 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
     # typo of $( instead of ${
     if ret.find('${') != -1 or ret.find('$(') != -1:
         print('Failed to substitute all variables in varstr=%s' % ret)
-        raise
+        sys.exit(1)
     return ret
 Build.BuildContext.EXPAND_VARIABLES = EXPAND_VARIABLES
 
