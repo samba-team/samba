@@ -4,6 +4,11 @@ echo "Using waf based build"
 
 WAF=../buildtools/bin/waf
 
+# using JOBS=1 gives maximum compatibility with
+# systems like AIX which have broken threading in python
+JOBS=1
+export JOBS
+
 # don't enable WAFCACHE by default till it is
 # size limited
 #export WAFCACHE=$HOME/.wafcache
