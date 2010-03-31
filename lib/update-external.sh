@@ -7,10 +7,7 @@ WORKDIR="`mktemp -d`"
 
 echo "Updating subunit..."
 bzr export "$WORKDIR/subunit" lp:subunit 
-for p in python/ filters/ perl/
-do
-	rsync -avz --delete "$WORKDIR/subunit/$p" "$TARGETDIR/subunit/$p"
-done
+rsync -avz --delete "$WORKDIR/subunit/" "$TARGETDIR/subunit/"
 
 echo "Updating testtools..."
 bzr export "$WORKDIR/testtools" lp:testtools 
