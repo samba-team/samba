@@ -11,6 +11,9 @@ import sys
 import subunithelper
 import subunit
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
+
 class PlainFormatter(object):
 
     def __init__(self, summaryfile, verbose, immediate, statistics,

@@ -4,9 +4,13 @@
 # Published under the GNU GPL, v3 or later
 
 import optparse
+import os
 import subunithelper
 import sys
 import signal
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
 
 parser = optparse.OptionParser("filter-subunit [options] < instream > outstream")
 parser.add_option("--expected-failures", type="string", 
