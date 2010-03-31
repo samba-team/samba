@@ -383,8 +383,6 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 bool check_request_flags(uint32_t flags);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
-NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
-			      const char *group_sid);
 void winbindd_pam_auth(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) ;

@@ -234,8 +234,8 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
-			      const char *group_sid)
+static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
+				     const char *group_sid)
 /**
  * Check whether a user belongs to a group or list of groups.
  *
