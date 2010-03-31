@@ -89,9 +89,9 @@ class PlainFormatter(object):
         if result in ("success", "xfail"):
             self.suites_ok+=1
         else:
-            self.output_msg("ERROR: Testsuite[%s]\n")
+            self.output_msg("ERROR: Testsuite[%s]\n" % name)
             if reason is not None:
-                self.output_msg("REASON: %s\n" % (name, reason or ''))
+                self.output_msg("REASON: %s\n" % (reason,))
             self.suitesfailed.append(name)
             if self.immediate and not self.verbose:
                 out += self.test_output[name]
@@ -108,7 +108,7 @@ class PlainFormatter(object):
     def start_test(self, testname):
         pass
 
-    def end_test(self, testname, result, unexpected, reason):
+    def end_test(self, testname, result, unexpected, reason=None):
         if not unexpected:
             self.test_output[self.name] = ""
             if not self.immediate:
@@ -119,11 +119,9 @@ class PlainFormatter(object):
                     'success': '.'}.get(result, "?(%s)" % result))
             return
 
-        if reason is None:
-            reason = ''
-        reason = reason.strip()
-
-        self.test_output[self.name] += "UNEXPECTED(%s): %s\nREASON: %s\n" % (result, testname, reason)
+        self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
+        if reason is not None:
+            self.test_output[self.name] += "REASON: %s\n" % (reason.strip(),)
 
         if self.immediate and not self.verbose:
             print self.test_output[self.name]
