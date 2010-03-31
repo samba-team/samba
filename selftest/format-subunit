@@ -89,7 +89,9 @@ class PlainFormatter(object):
         if result in ("success", "xfail"):
             self.suites_ok+=1
         else:
-            self.output_msg("ERROR: Testsuite[%s]\nREASON: %s\n" % (name, reason or ''))
+            self.output_msg("ERROR: Testsuite[%s]\n")
+            if reason is not None:
+                self.output_msg("REASON: %s\n" % (name, reason or ''))
             self.suitesfailed.append(name)
             if self.immediate and not self.verbose:
                 out += self.test_output[name]
