@@ -162,16 +162,18 @@ def SAMBA_LIBRARY(bld, libname, source,
     if link_name:
         t.link_name = link_name
 
-    if install_path is None:
-        install_path = '${LIBDIR}'
-    install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
-
     # we don't need the double libraries if rpath is off
     if (bld.env.RPATH_ON_INSTALL == False and
         bld.env.RPATH_ON_BUILD == False):
         install_target = bundled_name
     else:
         install_target = bundled_name + '.inst'
+        if install:
+            t.install_target = install_target
+
+    if install_path is None:
+        install_path = '${LIBDIR}'
+    install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
 
     if install and install_target != bundled_name:
         # create a separate install library, which may have
@@ -277,7 +279,7 @@ def SAMBA_BINARY(bld, binname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
-    bld(
+    t = bld(
         features       = features + ' symlink_bin',
         source         = [],
         target         = binname,
@@ -302,6 +304,8 @@ def SAMBA_BINARY(bld, binname, source,
         install_target = binname
     else:
         install_target = binname + '.inst'
+        if install:
+            t.install_target = install_target
 
     if install and install_target != binname:
         # we create a separate 'install' binary, which
