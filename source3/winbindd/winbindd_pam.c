@@ -2043,7 +2043,7 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		set_auth_errors(state->response, NT_STATUS_NO_SUCH_USER);
 		DEBUG(5, ("winbindd_pam_chauthtok: canonicalize_username %s failed with %s"
 			  "(PAM: %d)\n",
-			  state->request->data.auth.user,
+			  state->request->data.chauthtok.user,
 			  state->response->data.auth.nt_status_string,
 			  state->response->data.auth.pam_error));
 		request_error(state);
