@@ -354,12 +354,18 @@ static void simple_warning(struct torture_context *test,
 	fprintf(stderr, "WARNING: %s\n", comment);
 }
 
+static void simple_progress(struct torture_context *test,
+	int offset, enum torture_progress_whence whence)
+{
+}
+
 const static struct torture_ui_ops std_ui_ops = {
 	.comment = simple_comment,
 	.warning = simple_warning,
 	.suite_start = simple_suite_start,
 	.suite_finish = simple_suite_finish,
-	.test_result = simple_test_result
+	.test_result = simple_test_result,
+	.progress = simple_progress,
 };
 
 

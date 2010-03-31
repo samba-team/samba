@@ -245,6 +245,23 @@ struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 	return tcase;
 }
 
+int torture_suite_children_count(const struct torture_suite *suite)
+{
+	int ret = 0;
+	struct torture_tcase *tcase;
+	struct torture_test *test;
+	struct torture_suite *tsuite;
+	for (tcase = suite->testcases; tcase; tcase = tcase->next) {
+		for (test = tcase->tests; test; test = test->next) {
+			ret++;
+		}
+	}
+	for (tsuite = suite->children; tsuite; tsuite = tsuite->next) {
+		ret ++;
+	}
+	return ret;
+}
+
 /**
  * Run a torture test suite.
  */
@@ -259,6 +276,8 @@ bool torture_run_suite(struct torture_context *context,
 	if (context->results->ui_ops->suite_start)
 		context->results->ui_ops->suite_start(context, suite);
 
+	context->results->ui_ops->progress(context, 
+		torture_suite_children_count(suite), TORTURE_PROGRESS_SET); 
 	old_testname = context->active_testname;
 	if (old_testname != NULL)
 		context->active_testname = talloc_asprintf(context, "%s-%s", 
@@ -271,7 +290,9 @@ bool torture_run_suite(struct torture_context *context,
 	}
 
 	for (tsuite = suite->children; tsuite; tsuite = tsuite->next) {
+		context->results->ui_ops->progress(context, 0, TORTURE_PROGRESS_PUSH);
 		ret &= torture_run_suite(context, tsuite);
+		context->results->ui_ops->progress(context, 0, TORTURE_PROGRESS_POP);
 	}
 
 	talloc_free(context->active_testname);

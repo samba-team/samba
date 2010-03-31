@@ -274,7 +274,7 @@ sub run_testsuite($$$$$)
 	my $exitcode = $ret >> 8;
 
 	Subunit::report_time(time());
-	Subuit::progress_pop();
+	Subunit::progress_pop();
 	if ($exitcode == 0) {
 		Subunit::end_testsuite($name, "success");
 	} else {
