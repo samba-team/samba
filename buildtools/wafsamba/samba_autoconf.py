@@ -561,8 +561,6 @@ def CONFIG_PATH(conf, name, default):
             conf.env[name] = default
         else:
             conf.env[name] = conf.env['PREFIX'] + default
-    conf.define(name, conf.env[name], quote=True)
-
 
 @conf
 def ADD_CFLAGS(conf, flags, testflags=False):
