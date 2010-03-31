@@ -1,17 +1,20 @@
-# This file is distributed under the same license as the package.
+# This file is distributed under the same license as the pam_winbind package.
 #
 # Copyright (C) 2009 Lars Mueller <lars@samba.org>
+# Copyright (C) 2010 Christian Perrier <bubulle@debian.org>
 msgid ""
 msgstr ""
 "Project-Id-Version: pam_winbind\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2010-03-06 01:55+0800\n"
-"PO-Revision-Date: 2009-02-04 15:43\n"
-"Last-Translator: Novell Language <language@novell.com>\n"
-"Language-Team: Novell Language <language@novell.com>\n"
+"PO-Revision-Date: 2010-01-15 19:18+0100\n"
+"Last-Translator: Christian Perrier <bubulle@debian.org>\n"
+"Language-Team: French <debian-l10n-french@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 1.0\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: ../../../nsswitch/pam_winbind.c:583 ../../libsmb/nterr.c:558
 msgid "Success"
@@ -35,7 +38,7 @@ msgstr "Mot de passe trop court"
 
 #: ../../../nsswitch/pam_winbind.c:593
 msgid "The password of this user is too recent to change"
-msgstr "Le mot de passe de cet usager est trop récent pour être modifié."
+msgstr "Le mot de passe de cet utilisateur est trop récent pour être modifié."
 
 #: ../../../nsswitch/pam_winbind.c:595
 msgid "Password is already in password history"
@@ -51,11 +54,11 @@ msgstr "Vous devez changer votre mot de passe maintenant."
 
 #: ../../../nsswitch/pam_winbind.c:601
 msgid "You are not allowed to logon from this workstation"
-msgstr "Vous n'êtes pas autorisé à vous connecter depuis cet ordinateur."
+msgstr "Vous n'avez pas l'autorisation de vous connecter depuis cet ordinateur."
 
 #: ../../../nsswitch/pam_winbind.c:603
 msgid "You are not allowed to logon at this time"
-msgstr "Vous n'êtes pas autorisé à vous connecter à cette heure."
+msgstr "Vous n'avez pas l'autorisation de vous connecter à cette heure."
 
 #: ../../../nsswitch/pam_winbind.c:605
 msgid "Your account has expired. Please contact your System administrator"
@@ -71,7 +74,7 @@ msgstr "Votre compte a été verrouillé. Contactez votre administrateur systèm
 
 #: ../../../nsswitch/pam_winbind.c:614 ../../../nsswitch/pam_winbind.c:616 ../../../nsswitch/pam_winbind.c:618
 msgid "Invalid Trust Account"
-msgstr "Compte approuvé non valide"
+msgstr "Compte d'approbation non valable"
 
 #: ../../../nsswitch/pam_winbind.c:620
 msgid "Access is denied"
@@ -107,7 +110,7 @@ msgstr ""
 
 #: ../../../nsswitch/pam_winbind.c:1387
 msgid "Grace login. Please change your password as soon you're online again"
-msgstr "Délai de grâce. Veuillez changer votre mot de passe dès que vous serez à nouveau connecté."
+msgstr "Délai de grâce. Veuillez changer votre mot de passe à votre prochaine connexion."
 
 #: ../../../nsswitch/pam_winbind.c:1397
 msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
@@ -131,15 +134,15 @@ msgstr "doit contenir au moins %d caractères ; "
 #: ../../../nsswitch/pam_winbind.c:1506
 #, c-format
 msgid "cannot repeat any of your previous %d passwords; "
-msgstr "ne peut répéter un de vos %d mots de passe ; "
+msgstr "ne peut être identique à un de vos %d précédents mots de passe ; "
 
 #: ../../../nsswitch/pam_winbind.c:1516
 msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
-msgstr "doit contenir des majuscules, des chiffres ou de la ponctuation ; et ne doit pas contenir votre nom ou le nom de votre compte ; "
+msgstr "doit contenir des majuscules, des chiffres ou des signes de ponctuation et ne doit pas contenir votre nom ou votre identifiant ; "
 
 #: ../../../nsswitch/pam_winbind.c:1526
 msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
-msgstr "Saisissez un autre mot de passe qui satisfasse les différents critères."
+msgstr "Veuillez choisir un autre mot de passe qui satisfasse les différents critères."
 
 #: ../../../nsswitch/pam_winbind.c:1553
 #, c-format
@@ -172,11 +175,11 @@ msgstr "mot de passe NT actuel : "
 
 #: ../../../nsswitch/pam_winbind.c:3156
 msgid "Enter new NT password: "
-msgstr "Saisissez le nouveau mot de passe : "
+msgstr "Nouveau mot de passe NT : "
 
 #: ../../../nsswitch/pam_winbind.c:3157
 msgid "Retype new NT password: "
-msgstr "Ressaisissez le nouveau mot de passe NT : "
+msgstr "Confirmation du nouveau mot de passe NT : "
 
 #.
 #. * here is the string to inform the user that the new passwords they
