@@ -204,4 +204,18 @@ WERROR winreg_printer_enumforms1(struct pipes_struct *p,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo);
 
+/**
+ * @brief This function removes a form name from the list of supported forms.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  form_name The name of the form to delete.
+ *
+ * @return              WERR_OK on success.
+ *                      WERR_INVALID_PARAM if the form is a builtin form.
+ *                      A corresponding DOS error is something went wrong.
+ */
+WERROR winreg_printer_deleteform1(struct pipes_struct *p,
+				  const char *form_name);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
