@@ -14,6 +14,6 @@ done
 
 echo "Updating testtools..."
 bzr export "$WORKDIR/testtools" lp:testtools 
-rsync -avz --delete "$WORKDIR/testtools/testtools/" "$TARGETDIR/testtools/"
+rsync -avz --delete "$WORKDIR/testtools/" "$TARGETDIR/testtools/"
 
 rm -rf "$WORKDIR"
