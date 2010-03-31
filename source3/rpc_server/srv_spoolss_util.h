@@ -170,4 +170,20 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 				 const char *printer,
 				 const char *key);
 
+/**
+ * @brief This function enumerates the forms supported by the specified printer.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[out] pnum_info A pointer to store the FormInfo count.
+ *
+ * @param[out] pinfo     A pointer to store an array with FormInfo.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_printer_enumforms1(struct pipes_struct *p,
+				 uint32_t *pnum_info,
+				 union spoolss_FormInfo **pinfo);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
