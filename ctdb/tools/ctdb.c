@@ -1559,6 +1559,8 @@ static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 		DEBUG(DEBUG_ERR, ("Unable to register server_id from node %u\n", options.pnn));
 		return ret;
 	}
+	DEBUG(DEBUG_ERR,("Srvid registered. Sleeping for 999 seconds\n"));
+	sleep(999);
 	return -1;
 }
 

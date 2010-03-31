@@ -27,6 +27,15 @@ init
 	This event is only invoked once, when ctdb is starting up.
 	This event is used to do some cleanup work from earlier runs
 	and prepare the basic setup.
+	At this stage 'ctdb' commands won't work.
+
+	Example: 00.ctdb cleans up $CTDB_BASE/state
+
+setup
+	This event does not take any additional arguments.
+	This event is only invoked once, when ctdb is starting up.
+	This event is used to do some cleanup work from earlier runs
+	and prepare the basic setup.
 
 	Example: 00.ctdb cleans up $CTDB_BASE/state
 

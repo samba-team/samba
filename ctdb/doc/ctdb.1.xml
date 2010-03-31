@@ -5,8 +5,8 @@
 <refmeta>
 	<refentrytitle>ctdb</refentrytitle>
 	<manvolnum>1</manvolnum>
-	<refmiscinfo class="source"> </refmiscinfo>
-	<refmiscinfo class="manual"> </refmiscinfo>
+	<refmiscinfo class="source">ctdb</refmiscinfo>
+	<refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
 </refmeta>
 
 
@@ -49,7 +49,7 @@
         <listitem>
           <para>
             This specifies the physical node number on which to execute the 
-	    command. Default is to run the command on the deamon running on 
+	    command. Default is to run the command on the daemon running on 
 	    the local host.
 	  </para>
 	  <para>
@@ -168,6 +168,12 @@
       RECMASTER or NATGW.
       This node does not perticipate in the CTDB cluster but can still be
       communicated with. I.e. ctdb commands can be sent to it.
+        </para>
+        <para>
+	PARTIALLYONLINE - A node that is partially online participates
+	in a cluster like a node that is ok. Some interfaces to serve
+	public ip addresses are down, but at least one interface is up.
+	See also "ctdb ifaces".
         </para>
       </refsect3>
 
@@ -323,6 +329,50 @@ response from 3 time=0.000114 sec  (2 clients)
       </screen>
     </refsect2>
 
+    <refsect2><title>ifaces</title>
+      <para>
+	This command will display the list of network interfaces, which could
+	host public addresses, along with their status.
+      </para>
+      <para>
+	Example: ctdb ifaces
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+Interfaces on node 0
+name:eth5 link:up references:2
+name:eth4 link:down references:0
+name:eth3 link:up references:1
+name:eth2 link:up references:1
+      </screen>
+      <para>
+	Example: ctdb ifaces -Y
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+:Name:LinkStatus:References:
+:eth5:1:2
+:eth4:0:0
+:eth3:1:1
+:eth2:1:1
+      </screen>
+    </refsect2>
+
+    <refsect2><title>setifacelink &lt;iface&gt; &lt;status&gt;</title>
+      <para>
+	This command will set the status of a network interface.
+	The status needs to be "up" or "down". This is typically
+	used in the 10.interfaces script in the "monitor" event.
+      </para>
+      <para>
+	Example: ctdb setifacelink eth0 up
+      </para>
+    </refsect2>
+
     <refsect2><title>ip</title>
       <para>
         This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip -n all".
@@ -334,11 +384,52 @@ response from 3 time=0.000114 sec  (2 clients)
 	Example output:
       </para>
       <screen format="linespecific">
-Number of addresses:4
-12.1.1.1         0
-12.1.1.2         1
-12.1.1.3         2
-12.1.1.4         3
+Public IPs on node 0
+172.31.91.82 node[1] active[] available[eth2,eth3] configured[eth2,eth3]
+172.31.91.83 node[0] active[eth3] available[eth2,eth3] configured[eth2,eth3]
+172.31.91.84 node[1] active[] available[eth2,eth3] configured[eth2,eth3]
+172.31.91.85 node[0] active[eth2] available[eth2,eth3] configured[eth2,eth3]
+172.31.92.82 node[1] active[] available[eth5] configured[eth4,eth5]
+172.31.92.83 node[0] active[eth5] available[eth5] configured[eth4,eth5]
+172.31.92.84 node[1] active[] available[eth5] configured[eth4,eth5]
+172.31.92.85 node[0] active[eth5] available[eth5] configured[eth4,eth5]
+      </screen>
+      <para>
+	Example: ctdb ip -Y
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+:Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:
+:172.31.91.82:1::eth2,eth3:eth2,eth3:
+:172.31.91.83:0:eth3:eth2,eth3:eth2,eth3:
+:172.31.91.84:1::eth2,eth3:eth2,eth3:
+:172.31.91.85:0:eth2:eth2,eth3:eth2,eth3:
+:172.31.92.82:1::eth5:eth4,eth5:
+:172.31.92.83:0:eth5:eth5:eth4,eth5:
+:172.31.92.84:1::eth5:eth4,eth5:
+:172.31.92.85:0:eth5:eth5:eth4,eth5:
+      </screen>
+    </refsect2>
+
+    <refsect2><title>ipinfo &lt;ip&gt;</title>
+      <para>
+        This command will display details about the specified public addresses.
+      </para>
+      <para>
+	Example: ctdb ipinfo 172.31.92.85
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+Public IP[172.31.92.85] info on node 0
+IP:172.31.92.85
+CurrentNode:0
+NumInterfaces:2
+Interface[1]: Name:eth4 Link:down References:0
+Interface[2]: Name:eth5 Link:up References:2 (active)
       </screen>
     </refsect2>
 
@@ -1013,7 +1104,8 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
       <screen format="linespecific">
 Number of databases:10
 dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
-dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0 dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
+dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
+dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
 dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0 
 dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0 
 dbid:0x122224da name:test.tdb path:/var/ctdb/test.tdb.0 
@@ -1099,7 +1191,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
 
     <refsect2><title>setmonmode &lt;0|1&gt;</title>
       <para>
-        This command can be used to explicitely disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
+        This command can be used to explicitly disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
       </para>
     </refsect2>
 
@@ -1155,7 +1247,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
         Administratively ban a node for bantime seconds. A bantime of 0 means that the node should be permanently banned. 
       </para>
       <para>
-        A banned node does not participate in the cluster and does not host any records for the clustered TDB. Its ip address has been taken over by an other node and no services are hosted.
+        A banned node does not participate in the cluster and does not host any records for the clustered TDB. Its ip address has been taken over by another node and no services are hosted.
       </para>
       <para>
         Nodes are automatically banned if they are the cause of too many

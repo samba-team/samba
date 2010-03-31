@@ -61,10 +61,19 @@ service() {
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
 nice_service() { 
-  # do nothing, when no service was specified
-  [ -z "$1" ] && return
+  _service_name="$1"
+  _op="$2"
 
-    nice service "$@"
+  # do nothing, when no service was specified
+  [ -z "$_service_name" ] && return
+
+  if [ -x /sbin/service ]; then
+      nice /sbin/service "$_service_name" "$_op"
+  elif [ -x /etc/init.d/$_service_name ]; then
+      nice /etc/init.d/$_service_name "$_op"
+  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
+      nice /etc/rc.d/init.d/$_service_name "$_op"
+  fi
 }
 
 ######################################################
@@ -421,25 +430,15 @@ startstop_nfslock() {
 }
 
 # better use delete_ip_from_iface() together with add_ip_to_iface
+# remove_ip should be removed in future
 remove_ip() {
-	# the ip tool will delete all secondary IPs if this is the primary.
-	# To work around this _very_ annoying behaviour we have to keep a
-	# record of the secondaries and re-add them afterwards. yuck
-	secondaries=""
-	if ip addr list dev $2 primary | grep -q "inet $1 " ; then
-	    secondaries=`ip addr list dev $2 secondary | grep " inet " | awk '{print $2}'`
-	fi
-	ip addr del $1 dev $2 >/dev/null 2>/dev/null || failed=1
-	[ -z "$secondaries" ] || {
-	    for i in $secondaries; do
-		if ip addr list dev $2 | grep -q "inet $i" ; then
-		    echo "kept secondary $i on dev $2"
-		else 
-		    echo "re-adding secondary address $i to dev $2"
-		    ip addr add $i dev $2 || failed=1		
-		fi
-	    done
-	}
+	local _ip_maskbits=$1
+	local _iface=$2
+	local _ip=`echo "$_ip_maskbits" | cut -d '/' -f1`
+	local _maskbits=`echo "$_ip_maskbits" | cut -d '/' -f2`
+
+	delete_ip_from_iface "$_iface" "$_ip" "$_maskbits"
+	return $?
 }
 
 add_ip_to_iface()
@@ -447,13 +446,21 @@ add_ip_to_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
-	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _lockfile="$_state_dir/$_iface.flock"
+	local _readd_base="$_state_dir/$_iface.readd.d"
+
+	mkdir -p $_state_dir || {
+		ret=$?
+		echo "Failed to mkdir -p $_state_dir - $ret"
+		return $ret
+	}
 
 	test -f $_lockfile || {
 		touch $_lockfile
 	}
 
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh add "$_iface" "$_ip" "$_maskbits"
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh add "$_iface" "$_ip" "$_maskbits" "$_readd_base"
 	return $?
 }
 
@@ -462,13 +469,45 @@ delete_ip_from_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
-	local _lockfile="$CTDB_BASE/state/interface_modify.$_iface.flock"
+	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _lockfile="$_state_dir/$_iface.flock"
+	local _readd_base="$_state_dir/$_iface.readd.d"
+
+	mkdir -p $_state_dir || {
+		ret=$?
+		echo "Failed to mkdir -p $_state_dir - $ret"
+		return $ret
+	}
 
 	test -f $_lockfile || {
 		touch $_lockfile
 	}
 
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh delete "$_iface" "$_ip" "$_maskbits"
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh delete "$_iface" "$_ip" "$_maskbits" "$_readd_base"
+	return $?
+}
+
+setup_iface_ip_readd_script()
+{
+	local _iface=$1
+	local _ip=$2
+	local _maskbits=$3
+	local _readd_script=$4
+	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _lockfile="$_state_dir/$_iface.flock"
+	local _readd_base="$_state_dir/$_iface.readd.d"
+
+	mkdir -p $_state_dir || {
+		ret=$?
+		echo "Failed to mkdir -p $_state_dir - $ret"
+		return $ret
+	}
+
+	test -f $_lockfile || {
+		touch $_lockfile
+	}
+
+	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh readd_script "$_iface" "$_ip" "$_maskbits" "$_readd_base" "$_readd_script"
 	return $?
 }
 

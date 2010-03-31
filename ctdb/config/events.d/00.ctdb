@@ -16,8 +16,14 @@ case "$1" in
      init)
         # make sure we have a blank state directory for the scripts to work with
 	/bin/rm -rf $CTDB_BASE/state
-	/bin/mkdir -p $CTDB_BASE/state
+	/bin/mkdir -p $CTDB_BASE/state || {
+	    ret=$?
+	    echo "/bin/mkdir -p $CTDB_BASE/state - failed - $ret"
+	    exit $ret
+	}
+	;;
 
+     setup)
 	# set any tunables from the config file
 	set | grep ^CTDB_SET_ | cut -d_ -f3- | 
 	while read v; do
@@ -30,11 +36,13 @@ case "$1" in
 
     monitor)
 	# We should never enter swap, so SwapTotal == SwapFree.
-	if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
-	    echo We are swapping:
-	    cat /proc/meminfo
-	    ps auxfww
-	fi
+	[ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] && {
+	    if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
+		echo We are swapping:
+		cat /proc/meminfo
+		ps auxfww
+	    fi
+	}
 
 	# monitor that we are not running out of memory
 	[ -z "$CTDB_MONITOR_FREE_MEMORY" ] || {

@@ -967,7 +967,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	state = talloc(ctdb, struct recovery_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c    = talloc_steal(state, c);
+	state->c    = c;
 
 	ctdb_disable_monitoring(ctdb);
 
@@ -986,6 +986,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	}
 
 	/* tell the control that we will be reply asynchronously */
+	state->c    = talloc_steal(state, c);
 	*async_reply = true;
 	return 0;
 }

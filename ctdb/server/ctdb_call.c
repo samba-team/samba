@@ -151,7 +151,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (ctdb->methods == NULL) {
-		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply cant update dmaster sicne transport is down");
+		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply cant update dmaster since transport is down");
 		return;
 	}
 
@@ -246,7 +246,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_ltdb_header header;
 
-	DEBUG(DEBUG_INFO,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
+	DEBUG(DEBUG_DEBUG,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
 
 	ZERO_STRUCT(header);
 	header.rsn = rsn + 1;
@@ -332,7 +332,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		ctdb_fatal(ctdb, "ctdb_req_dmaster to non-lmaster");
 	}
 
-	DEBUG(DEBUG_INFO,("pnn %u dmaster request on %08x for %u from %u\n", 
+	DEBUG(DEBUG_DEBUG,("pnn %u dmaster request on %08x for %u from %u\n", 
 		 ctdb->pnn, ctdb_hash(&key), c->dmaster, c->hdr.srcnode));
 
 	/* its a protocol error if the sending node is not the current dmaster */
@@ -446,7 +446,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			      " of key %s while transaction is active\n",
 			      (char *)call->key.dptr));
 		} else {
-			DEBUG(DEBUG_INFO,("pnn %u starting migration of %08x to %u\n",
+			DEBUG(DEBUG_DEBUG,("pnn %u starting migration of %08x to %u\n",
 				 ctdb->pnn, ctdb_hash(&(call->key)), c->hdr.srcnode));
 			ctdb_call_send_dmaster(ctdb_db, c, &header, &(call->key), &data);
 			talloc_free(data.dptr);

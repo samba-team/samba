@@ -20,6 +20,10 @@ case $cmd in
 	echo "ctdb init event"
 	exit 0;
 	;;
+     setup)
+	echo "ctdb setup event"
+	exit 0;
+	;;
      startup)
 	echo "ctdb startup event"
 	IFACES=`ctdb ifaces -Y | grep -v '^:Name:LinkStatus:References:'`

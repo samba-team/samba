@@ -59,6 +59,17 @@ static void sigterm(int sig)
 	_exit(1);
 }
 
+/*
+  ctdbd sends us a SIGABRT when we should abort the current script.
+  we abort any active monitor script any time a different event is generated.
+ */
+static void sigabrt(int sig)
+{
+	/* all the child processes will be running in the same process group */
+	kill(-getpgrp(), SIGKILL);
+	_exit(1);
+}
+
 struct ctdb_event_script_state {
 	struct ctdb_context *ctdb;
 	pid_t child;
@@ -67,6 +78,7 @@ struct ctdb_event_script_state {
 	int fd[2];
 	void *private_data;
 	bool from_user;
+	bool aborted;
 	enum ctdb_eventscript_call call;
 	const char *options;
 	struct timeval timeout;
@@ -145,7 +157,7 @@ static bool check_executable(const char *dir, const char *name)
 	}
 
 	if (!(st.st_mode & S_IXUSR)) {
-		DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", full));
+		DEBUG(DEBUG_DEBUG,("Event script %s is not executable. Ignoring this event script\n", full));
 		errno = ENOEXEC;
 		talloc_free(full);
 		return false;
@@ -279,6 +291,7 @@ static int child_setup(struct ctdb_context *ctdb)
 	}
 
 	signal(SIGTERM, sigterm);
+	signal(SIGABRT, sigabrt);
 	return 0;
 }
 
@@ -365,7 +378,7 @@ static int child_run_script(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, cmdstr);
 	child_state.script_running = cmdstr;
 
-	DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
+	DEBUG(DEBUG_DEBUG,("Executing event script %s\n",cmdstr));
 
 	if (current->status) {
 		ret = current->status;
@@ -516,7 +529,21 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	DEBUG(DEBUG_ERR,("Event script timed out : %s %s %s count : %u  pid : %d\n",
 			 current->name, ctdb_eventscript_call_names[state->call], state->options, ctdb->event_script_timeouts, state->child));
 
-	state->scripts->scripts[state->current].status = -ETIME;
+	/* ignore timeouts for these events */
+	switch (state->call) {
+	case CTDB_EVENT_START_RECOVERY:
+	case CTDB_EVENT_RECOVERED:
+	case CTDB_EVENT_TAKE_IP:
+	case CTDB_EVENT_RELEASE_IP:
+	case CTDB_EVENT_STOPPED:
+	case CTDB_EVENT_MONITOR:
+	case CTDB_EVENT_STATUS:
+		state->scripts->scripts[state->current].status = 0;
+		DEBUG(DEBUG_ERR,("Ignoring hung script for %s call %d\n", state->options, state->call));
+		break;
+        default:
+		state->scripts->scripts[state->current].status = -ETIME;
+	}
 
 	if (kill(state->child, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
@@ -534,10 +561,17 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	int status;
 
 	if (state->child) {
-		DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
+		if (state->aborted != True) {
+			DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 
-		if (kill(state->child, SIGTERM) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
+			if (kill(state->child, SIGTERM) != 0) {
+				DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
+			}
+		} else {
+			DEBUG(DEBUG_INFO,(__location__ " Sending SIGABRT to script child pid:%d\n", state->child));
+			if (kill(state->child, SIGABRT) != 0) {
+				DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
+			}
 		}
 	}
 
@@ -590,6 +624,7 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	switch (call) {
 	/* These all take no arguments. */
 	case CTDB_EVENT_INIT:
+	case CTDB_EVENT_SETUP:
 	case CTDB_EVENT_STARTUP:
 	case CTDB_EVENT_START_RECOVERY:
 	case CTDB_EVENT_RECOVERED:
@@ -633,6 +668,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->callback = callback;
 	state->private_data = private_data;
 	state->from_user = from_user;
+	state->aborted = False;
 	state->call = call;
 	state->options = talloc_vasprintf(state, fmt, ap);
 	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
@@ -654,6 +690,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		   while in recovery */
 		const enum ctdb_eventscript_call allowed_calls[] = {
 			CTDB_EVENT_INIT,
+			CTDB_EVENT_SETUP,
 			CTDB_EVENT_START_RECOVERY,
 			CTDB_EVENT_SHUTDOWN,
 			CTDB_EVENT_RELEASE_IP,
@@ -674,6 +711,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	/* Kill off any running monitor events to run this event. */
 	if (ctdb->current_monitor) {
 		/* Discard script status so we don't save to last_status */
+		ctdb->current_monitor->aborted = True;
 		talloc_free(ctdb->current_monitor->scripts);
 		ctdb->current_monitor->scripts = NULL;
 		talloc_free(ctdb->current_monitor);
