@@ -2014,6 +2014,10 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	struct winbindd_domain *contact_domain;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
+	/* Ensure null termination */
+	state->request->data.chauthtok.user[
+		sizeof(state->request->data.chauthtok.user)-1]='\0';
+
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request->data.chauthtok.user));
 
