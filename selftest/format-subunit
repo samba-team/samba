@@ -8,11 +8,12 @@ import optparse
 import os
 import signal
 import sys
-import subunithelper
-import subunit
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
+
+import subunithelper
+import subunit
 
 class PlainFormatter(object):
 
