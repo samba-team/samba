@@ -7650,16 +7650,12 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 			struct spoolss_AddForm *r)
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
-	nt_forms_struct tmpForm;
 	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
-	int count=0;
-	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	int i;
 
 	DEBUG(5,("_spoolss_AddForm\n"));
 
@@ -7707,30 +7703,10 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 		goto done;
 	}
 
-	/* can't add if builtin */
-
-	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
-		status = WERR_FILE_EXISTS;
+	status = winreg_printer_addform1(p->mem_ctx, p->server_info, form);
+	if (!W_ERROR_IS_OK(status)) {
 		goto done;
 	}
-
-	count = get_ntforms(&list);
-
-	for (i=0; i < count; i++) {
-		if (strequal(form->form_name, list[i].name)) {
-			status = WERR_FILE_EXISTS;
-			goto done;
-		}
-	}
-
-	if(!add_a_form(&list, form, &count)) {
-		status =  WERR_NOMEM;
-		goto done;
-	}
-
-	become_root();
-	write_ntforms(&list, count);
-	unbecome_root();
 
 	/*
 	 * ChangeID must always be set if this is a printer
@@ -7742,7 +7718,6 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 done:
 	if ( printer )
 		free_a_printer(&printer, 2);
-	SAFE_FREE(list);
 
 	return status;
 }
