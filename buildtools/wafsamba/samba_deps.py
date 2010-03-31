@@ -440,18 +440,16 @@ def extended_objects(bld, t, chain):
     if ret is not None: return ret
 
     ret = set()
-    ret = ret.union(t.direct_objects)
-    ret = ret.union(t.indirect_objects)
+    ret = ret.union(t.final_objects)
 
-    for lib in t.direct_libs:
+    for lib in t.final_libs:
         if lib in chain:
             continue
         t2 = bld.name_to_obj(lib, bld.env)
         chain.add(lib)
         r2 = extended_objects(bld, t2, chain)
         chain.remove(lib)
-        ret = ret.union(t2.direct_objects)
-        ret = ret.union(t2.indirect_objects)
+        ret = ret.union(t2.final_objects)
         ret = ret.union(r2)
 
     t.extended_objects = ret
@@ -576,6 +574,39 @@ def break_dependency_loops(bld, tgt_list):
                     objs = objs.union(diff)
             setattr(t, 'includes_objects', objs)
 
+
+def reduce_objects(bld, tgt_list):
+    '''reduce objects by looking for indirect object dependencies'''
+    rely_on = {}
+
+    for t in tgt_list:
+        t.extended_objects = None
+
+    for type in ['BINARY', 'PYTHON', 'LIBRARY']:
+        for t in tgt_list:
+            if t.samba_type != type: continue
+            # if we will indirectly link to a target then we don't need it
+            new = t.final_objects.copy()
+            for l in t.final_libs:
+                t2 = bld.name_to_obj(l, bld.env)
+                t2_obj = extended_objects(bld, t2, set())
+                dup = new.intersection(t2_obj)
+                if dup:
+                    debug('deps: removing dups from %s of type %s: %s also in %s %s',
+                          t.sname, t.samba_type, dup, t2.samba_type, l)
+                    new = new.difference(dup)
+                    changed = True
+                    if not l in rely_on:
+                        rely_on[l] = set()
+                    rely_on[l] = rely_on[l].union(dup)
+            t.final_objects = new
+
+    # add back in any objects that were relied upon by the reduction rules
+    for r in rely_on:
+        t = bld.name_to_obj(r, bld.env)
+        t.final_objects = t.final_objects.union(rely_on[r])
+
+
 def calculate_final_deps(bld, tgt_list, loops):
     '''calculate the final library and object dependencies'''
     for t in tgt_list:
@@ -603,31 +634,6 @@ def calculate_final_deps(bld, tgt_list, loops):
                     dependency_loop(loops, t, t2.sname)
                     t2.final_libs.remove(t.sname)
 
-    rely_on = {}
-
-    for type in ['BINARY', 'PYTHON', 'LIBRARY']:
-        for t in tgt_list:
-            if t.samba_type != type: continue
-            # if we will indirectly link to a target then we don't need it
-            new = t.final_objects.copy()
-            for l in t.final_libs:
-                t2 = bld.name_to_obj(l, bld.env)
-                t2_obj = extended_objects(bld, t2, set())
-                dup = new.intersection(t2_obj)
-                if dup:
-                    debug('deps: removing dups from %s of type %s: %s also in %s %s',
-                          t.sname, t.samba_type, dup, t2.samba_type, l)
-                    new = new.difference(dup)
-                    changed = True
-                    if not l in rely_on:
-                        rely_on[l] = set()
-                    rely_on[l] = rely_on[l].union(dup)
-            t.final_objects = new
-
-    # add back in any objects that were relied upon by the reduction rules
-    for r in rely_on:
-        t = bld.name_to_obj(r, bld.env)
-        t.final_objects = t.final_objects.union(rely_on[r])
 
     for loop in loops:
         debug('deps: Found dependency loops for target %s : %s', loop, loops[loop])
@@ -646,6 +652,9 @@ def calculate_final_deps(bld, tgt_list, loops):
                     if diff:
                         debug('deps: Expanded target %s by loop %s libraries %s', t.sname, loop, diff)
                         t.final_libs = t.final_libs.union(diff)
+
+    # remove objects that are also available in linked libs
+    reduce_objects(bld, tgt_list)
 
     # add in any syslib dependencies
     for t in tgt_list:
