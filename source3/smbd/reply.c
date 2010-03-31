@@ -5815,6 +5815,23 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
 
+		if (lp_map_archive(SNUM(conn)) ||
+		    lp_store_dos_attributes(SNUM(conn))) {
+			/* We must set the archive bit on the newly
+			   renamed file. */
+			if (SMB_VFS_STAT(conn,newname,&sbuf1) == 0) {
+				uint32_t old_dosmode = dos_mode(conn,
+							newname,
+							&sbuf1);
+				file_set_dosmode(conn,
+					newname,
+					old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
+					&sbuf1,
+					NULL,
+					true);
+			}
+		}
+
 		notify_rename(conn, fsp->is_directory, fsp->fsp_name, newname);
 
 		rename_open_files(conn, lck, newname);
