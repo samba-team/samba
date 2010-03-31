@@ -81,10 +81,32 @@ static void subunit_warning(struct torture_context *test,
 	fprintf(stderr, "WARNING!: %s\n", comment);
 }
 
+static void subunit_progress(struct torture_context *tctx, int offset, enum torture_progress_whence whence)
+{
+	switch (whence) {
+	case TORTURE_PROGRESS_SET:
+		printf("progress: %d\n", offset);
+		break;
+	case TORTURE_PROGRESS_CUR:
+		printf("progress: %+-d\n", offset);
+		break;
+	case TORTURE_PROGRESS_POP:
+		printf("progress: pop\n");
+		break;
+	case TORTURE_PROGRESS_PUSH:
+		printf("progress: push\n");
+		break;
+	default:
+		fprintf(stderr, "Invalid call to progress()\n");
+		break;
+	}
+}
+
 const struct torture_ui_ops torture_subunit_ui_ops = {
 	.comment = subunit_comment,
 	.warning = subunit_warning,
 	.test_start = subunit_test_start,
 	.test_result = subunit_test_result,
-	.suite_start = subunit_suite_start
+	.suite_start = subunit_suite_start,
+	.progress = subunit_progress,
 };

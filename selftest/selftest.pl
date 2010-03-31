@@ -229,6 +229,7 @@ sub run_testsuite($$$$$)
 	my $pcap_file = setup_pcap($name);
 
 	Subunit::start_testsuite($name);
+	Subunit::progress_push();
 	Subunit::report_time(time());
 
 	open(RESULTS, "$cmd 2>&1|");
@@ -249,6 +250,7 @@ sub run_testsuite($$$$$)
 
 	unless (close(RESULTS)) {
 		if ($!) {
+			Subunit::progress_pop();
 			Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
 			return 0;
 		} else {
@@ -257,6 +259,7 @@ sub run_testsuite($$$$$)
 	} 
 
 	if ($ret & 127) {
+		Subunit::progress_pop();
 		Subunit::end_testsuite($name, "error", sprintf("Testsuite died with signal %d, %s coredump", ($ret & 127), ($ret & 128) ? "with": "without"));
 		return 0;
 	}
@@ -271,6 +274,7 @@ sub run_testsuite($$$$$)
 	my $exitcode = $ret >> 8;
 
 	Subunit::report_time(time());
+	Subunit::progress_pop();
 	if ($exitcode == 0) {
 		Subunit::end_testsuite($name, "success");
 	} else {
@@ -684,7 +688,7 @@ foreach my $fn (@testlists) {
 	}
 }
 
-Subunit::testsuite_count($#available+1);
+Subunit::progress($#available+1);
 Subunit::report_time(time());
 
 foreach (@available) {

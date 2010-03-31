@@ -13,7 +13,7 @@ ST_DONE_TEST = @test -f $(selftest_prefix)/st_done || { echo "SELFTEST FAILED"; 
 
 SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/selftest/slow
 SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick --include=$(srcdir)/selftest/quick
-FILTER_XFAIL = $(PERL) $(selftestdir)/filter-subunit.pl --expected-failures=$(srcdir)/selftest/knownfail
+FILTER_XFAIL = $(PYTHON) $(selftestdir)/filter-subunit --expected-failures=$(srcdir)/selftest/knownfail
 SUBUNIT_FORMATTER ?= $(PYTHON) $(selftestdir)/format-subunit --prefix=${selftest_prefix} --immediate
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(SUBUNIT_FORMATTER)
 

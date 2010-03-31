@@ -1,0 +1,191 @@
+testtools NEWS
+++++++++++++++
+
+NEXT
+~~~~
+
+Improvements
+------------
+
+* New matcher "Annotate" that adds a simple string message to another matcher,
+  much like the option 'message' parameter to standard library assertFoo
+  methods.
+
+* New matchers "Not" and "MatchesAll". "Not" will invert another matcher, and
+  "MatchesAll" that needs a successful match for all of its arguments.
+
+* On Python 2.4, where types.FunctionType cannot be deepcopied, testtools will
+  now monkeypatch copy._deepcopy_dispatch using the same trivial patch that
+  added such support to Python 2.5. The monkey patch is triggered by the
+  absence of FunctionType from the dispatch dict rather than a version check.
+  Bug #498030.
+
+* On windows the test 'test_now_datetime_now' should now work reliably.
+
+* TestCase.getUniqueInteger and TestCase.getUniqueString now have docstrings.
+
+* TestCase.getUniqueString now takes an optional prefix parameter, so you can
+  now use it in circumstances that forbid strings with '.'s, and such like.
+
+* testtools.testcase.clone_test_with_new_id now uses copy.copy, rather than
+  copy.deepcopy. Tests that need a deeper copy should use the copy protocol to
+  control how they are copied. Bug #498869.
+
+* The backtrace test result output tests should now pass on windows and other
+  systems where os.sep is not '/'.
+
+
+0.9.2
+~~~~~
+
+Python 3 support, more matchers and better consistency with Python 2.7 --
+you'd think that would be enough for a point release. Well, we here on the
+testtools project think that you deserve more.
+
+We've added a hook so that user code can be called just-in-time whenever there
+is an exception, and we've also factored out the "run" logic of test cases so
+that new outcomes can be added without fiddling with the actual flow of logic.
+
+It might sound like small potatoes, but it's changes like these that will
+bring about the end of test frameworks.
+
+
+Improvements
+------------
+
+* A failure in setUp and tearDown now report as failures not as errors.
+
+* Cleanups now run after tearDown to be consistent with Python 2.7's cleanup
+  feature.
+
+* ExtendedToOriginalDecorator now passes unrecognised attributes through
+  to the decorated result object, permitting other extensions to the
+  TestCase -> TestResult protocol to work.
+
+* It is now possible to trigger code just-in-time after an exception causes
+  a test outcome such as failure or skip. See the testtools MANUAL or
+  ``pydoc testtools.TestCase.addOnException``. (bug #469092)
+
+* New matcher Equals which performs a simple equality test.
+
+* New matcher MatchesAny which looks for a match of any of its arguments.
+
+* TestCase no longer breaks if a TestSkipped exception is raised with no
+  parameters.
+
+* TestCase.run now clones test cases before they are run and runs the clone.
+  This reduces memory footprint in large test runs - state accumulated on
+  test objects during their setup and execution gets freed when test case
+  has finished running unless the TestResult object keeps a reference.
+  NOTE: As test cloning uses deepcopy, this can potentially interfere if
+  a test suite has shared state (such as the testscenarios or testresources
+  projects use).  Use the __deepcopy__ hook to control the copying of such
+  objects so that the shared references stay shared.
+
+* Testtools now accepts contributions without copyright assignment under some
+  circumstances. See HACKING for details.
+
+* Testtools now provides a convenient way to run a test suite using the
+  testtools result object: python -m testtools.run testspec [testspec...].
+
+* Testtools now works on Python 3, thanks to Benjamin Peterson.
+
+* Test execution now uses a separate class, testtools.RunTest to run single
+  tests. This can be customised and extended in a more consistent fashion than
+  the previous run method idiom. See pydoc for more information.
+
+* The test doubles that testtools itself uses are now available as part of
+  the testtools API in testtols.testresult.doubles.
+
+* TracebackContent now sets utf8 as the charset encoding, rather than not
+  setting one and encoding with the default encoder.
+
+* With python2.7 testtools.TestSkipped will be the unittest.case.SkipTest
+  exception class making skips compatible with code that manually raises the
+  standard library exception. (bug #490109)
+
+Changes
+-------
+
+* TestCase.getUniqueInteger is now implemented using itertools.count. Thanks
+  to Benjamin Peterson for the patch. (bug #490111)
+
+
+0.9.1
+~~~~~
+
+The new matcher API introduced in 0.9.0 had a small flaw where the matchee
+would be evaluated twice to get a description of the mismatch. This could lead
+to bugs if the act of matching caused side effects to occur in the matchee.
+Since having such side effects isn't desirable, we have changed the API now
+before it has become widespread.
+
+Changes
+-------
+
+* Matcher API changed to avoid evaluating matchee twice. Please consult
+  the API documentation.
+
+* TestCase.getUniqueString now uses the test id, not the test method name,
+  which works nicer with parameterised tests.
+
+Improvements
+------------
+
+* Python2.4 is now supported again.
+
+
+0.9.0
+~~~~~
+
+This release of testtools is perhaps the most interesting and exciting one
+it's ever had. We've continued in bringing together the best practices of unit
+testing from across a raft of different Python projects, but we've also
+extended our mission to incorporating unit testing concepts from other
+languages and from our own research, led by Robert Collins.
+
+We now support skipping and expected failures. We'll make sure that you
+up-call setUp and tearDown, avoiding unexpected testing weirdnesses. We're
+now compatible with Python 2.5, 2.6 and 2.7 unittest library.
+
+All in all, if you are serious about unit testing and want to get the best
+thinking from the whole Python community, you should get this release.
+
+Improvements
+------------
+
+* A new TestResult API has been added for attaching details to test outcomes.
+  This API is currently experimental, but is being prepared with the intent
+  of becoming an upstream Python API. For more details see pydoc
+  testtools.TestResult and the TestCase addDetail / getDetails methods.
+
+* assertThat has been added to TestCase. This new assertion supports
+  a hamcrest-inspired matching protocol. See pydoc testtools.Matcher for
+  details about writing matchers, and testtools.matchers for the included
+  matchers. See http://code.google.com/p/hamcrest/.
+
+* Compatible with Python 2.6 and Python 2.7
+
+* Failing to upcall in setUp or tearDown will now cause a test failure.
+  While the base methods do nothing, failing to upcall is usually a problem
+  in deeper hierarchies, and checking that the root method is called is a
+  simple way to catch this common bug.
+
+* New TestResult decorator ExtendedToOriginalDecorator which handles
+  downgrading extended API calls like addSkip to older result objects that
+  do not support them. This is used internally to make testtools simpler but
+  can also be used to simplify other code built on or for use with testtools.
+
+* New TextTestResult supporting the extended APIs that testtools provides.
+
+* Nose will no longer find 'runTest' tests in classes derived from
+   testtools.testcase.TestCase (bug #312257).
+
+* Supports the Python 2.7/3.1 addUnexpectedSuccess and addExpectedFailure
+  TestResult methods, with a support function 'knownFailure' to let tests
+  trigger these outcomes.
+
+* When using the skip feature with TestResult objects that do not support it
+  a test success will now be reported. Previously an error was reported but
+  production experience has shown that this is too disruptive for projects that
+  are using skips: they cannot get a clean run on down-level result objects.

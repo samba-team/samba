@@ -82,12 +82,13 @@ cp setup/provision.smb.conf.member $SETUPDIR || exit 1
 cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
 
 echo "Installing external python libraries"
-mkdir -p $PYTHONDIR/samba_external || exit 1
+mkdir -p $DESTDIR$PYTHONDIR || exit 1
 for p in $($PYTHON scripting/python/samba_external/missing.py);
 do
-  echo "Installing missing python library $p"
-  mkdir -p $PYTHONDIR/samba_external/$p
-  cp -r ../lib/$p/* $PYTHONDIR/samba_external/$p/ || exit 1
+  package=`basename $p`
+  echo "Installing missing python package $package"
+  mkdir -p $DESTDIR$PYTHONDIR/$package
+  cp -r ../lib/$p/* $DESTDIR$PYTHONDIR/$package/ || exit 1
 done
 
 echo "Installing stuff in $PRIVATEDIR"

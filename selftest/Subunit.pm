@@ -95,8 +95,6 @@ sub parse_results($$$)
 			} 
 		} elsif (/^testsuite: (.*)\n/) {
 			$msg_ops->start_testsuite($1);
-		} elsif (/^testsuite-count: (\d+)\n/) {
-			$msg_ops->testsuite_count($1);
 		} else {
 			$msg_ops->output_msg($_);
 		}
@@ -176,6 +174,27 @@ sub report_time($)
 	printf "time: %04d-%02d-%02d %02d:%02d:%02d\n", $year+1900, $mon+1, $mday, $hour, $min, $sec;
 }
 
+sub progress_pop()
+{
+	print "progress: pop\n";
+}
+
+sub progress_push()
+{
+	print "progress: push\n";
+}
+
+sub progress($;$)
+{
+	my ($count, $whence) = @_;
+
+	unless(defined($whence)) {
+		$whence = "";
+	}
+
+	print "progress: $whence$count\n";
+}
+
 # The following are Samba extensions:
 
 sub start_testsuite($)
@@ -206,12 +225,6 @@ sub end_testsuite($$;$)
 	} else {
 		print "testsuite-$result: $name\n";
 	}
-}
-
-sub testsuite_count($)
-{
-	my ($count) = @_;
-	print "testsuite-count: $count\n";
 }
 
 1;

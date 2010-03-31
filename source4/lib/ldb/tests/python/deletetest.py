@@ -8,6 +8,7 @@ import os
 
 sys.path.append("bin/python")
 sys.path.append("../lib/subunit/python")
+sys.path.append("../lib/testtools")
 
 import samba.getopt as options
 

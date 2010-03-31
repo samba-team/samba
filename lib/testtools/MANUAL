@@ -1,0 +1,213 @@
+======
+Manual
+======
+
+Introduction
+------------
+
+This document provides overview of the features provided by testtools.  Refer
+to the API docs (i.e. docstrings) for full details on a particular feature.
+
+Extensions to TestCase
+----------------------
+
+Controlling test execution
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Testtools supports two ways to control how tests are executed. The simplest
+is to add a new exception to self.exception_handlers::
+
+    >>> self.exception_handlers.insert(-1, (ExceptionClass, handler)).
+
+Having done this, if any of setUp, tearDown, or the test method raise
+ExceptionClass, handler will be called with the test case, test result and the
+raised exception.
+
+Secondly, by overriding __init__ to pass in runTest=RunTestFactory the whole
+execution of the test can be altered. The default is testtools.runtest.RunTest
+and calls  case._run_setup, case._run_test_method and finally
+case._run_teardown. Other methods to control what RunTest is used may be
+added in future.
+
+
+TestCase.addCleanup
+~~~~~~~~~~~~~~~~~~~
+
+addCleanup is a robust way to arrange for a cleanup function to be called
+before tearDown.  This is a powerful and simple alternative to putting cleanup
+logic in a try/finally block or tearDown method.  e.g.::
+
+    def test_foo(self):
+        foo.lock()
+        self.addCleanup(foo.unlock)
+        ...
+
+
+TestCase.addOnException
+~~~~~~~~~~~~~~~~~~~~~~~
+
+addOnException adds an exception handler that will be called from the test
+framework when it detects an exception from your test code. The handler is
+given the exc_info for the exception, and can use this opportunity to attach
+more data (via the addDetails API) and potentially other uses.
+
+
+TestCase.skip
+~~~~~~~~~~~~~
+
+``skip`` is a simple way to have a test stop running and be reported as a
+skipped test, rather than a success/error/failure. This is an alternative to
+convoluted logic during test loading, permitting later and more localized
+decisions about the appropriateness of running a test. Many reasons exist to
+skip a test - for instance when a dependency is missing, or if the test is
+expensive and should not be run while on laptop battery power, or if the test
+is testing an incomplete feature (this is sometimes called a TODO). Using this
+feature when running your test suite with a TestResult object that is missing
+the ``addSkip`` method will result in the ``addError`` method being invoked
+instead.
+
+
+New assertion methods
+~~~~~~~~~~~~~~~~~~~~~
+
+testtools adds several assertion methods:
+
+ * assertIn
+ * assertNotIn
+ * assertIs
+ * assertIsNot
+ * assertIsInstance
+ * assertThat
+
+
+Improved assertRaises
+~~~~~~~~~~~~~~~~~~~~~
+
+TestCase.assertRaises returns the caught exception.  This is useful for
+asserting more things about the exception than just the type::
+
+        error = self.assertRaises(UnauthorisedError, thing.frobnicate)
+        self.assertEqual('bob', error.username)
+        self.assertEqual('User bob cannot frobnicate', str(error))
+
+
+TestCase.assertThat
+~~~~~~~~~~~~~~~~~~~
+
+assertThat is a clean way to write complex assertions without tying them to
+the TestCase inheritance hierarchy (and thus making them easier to reuse).
+
+assertThat takes an object to be matched, and a matcher, and fails if the
+matcher does not match the matchee.
+
+See pydoc testtools.Matcher for the protocol that matchers need to implement.
+
+testtools includes some matchers in testtools.matchers.
+python -c 'import testtools.matchers; print testtools.matchers.__all__' will
+list those matchers.
+
+An example using the DocTestMatches matcher which uses doctests example
+matching logic::
+
+    def test_foo(self):
+        self.assertThat([1,2,3,4], DocTestMatches('[1, 2, 3, 4]'))
+
+
+Creation methods
+~~~~~~~~~~~~~~~~
+
+testtools.TestCase implements creation methods called ``getUniqueString`` and
+``getUniqueInteger``.  See pages 419-423 of *xUnit Test Patterns* by Meszaros
+for a detailed discussion of creation methods.
+
+
+Test renaming
+~~~~~~~~~~~~~
+
+``testtools.clone_test_with_new_id`` is a function to copy a test case
+instance to one with a new name.  This is helpful for implementing test
+parameterization.
+
+
+Extensions to TestResult
+------------------------
+
+TestResult.addSkip
+~~~~~~~~~~~~~~~~~~
+
+This method is called on result objects when a test skips. The
+``testtools.TestResult`` class records skips in its ``skip_reasons`` instance
+dict. The can be reported on in much the same way as succesful tests.
+
+
+TestResult.time
+~~~~~~~~~~~~~~~
+
+This method controls the time used by a TestResult, permitting accurate
+timing of test results gathered on different machines or in different threads.
+See pydoc testtools.TestResult.time for more details.
+
+
+ThreadsafeForwardingResult
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A TestResult which forwards activity to another test result, but synchronises
+on a semaphore to ensure that all the activity for a single test arrives in a
+batch. This allows simple TestResults which do not expect concurrent test
+reporting to be fed the activity from multiple test threads, or processes.
+
+Note that when you provide multiple errors for a single test, the target sees
+each error as a distinct complete test.
+
+
+TextTestResult
+~~~~~~~~~~~~~~
+
+A TestResult that provides a text UI very similar to the Python standard
+library UI. Key differences are that its supports the extended outcomes and
+details API, and is completely encapsulated into the result object, permitting
+it to be used without a 'TestRunner' object. Not all the Python 2.7 outcomes
+are displayed (yet). It is also a 'quiet' result with no dots or verbose mode.
+These limitations will be corrected soon.
+
+
+Test Doubles
+~~~~~~~~~~~~
+
+In testtools.testresult.doubles there are three test doubles that testtools
+uses for its own testing: Python26TestResult, Python27TestResult,
+ExtendedTestResult. These TestResult objects implement a single variation of
+the TestResult API each, and log activity to a list self._events. These are
+made available for the convenience of people writing their own extensions.
+
+
+startTestRun and stopTestRun
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Python 2.7 added hooks 'startTestRun' and 'stopTestRun' which are called
+before and after the entire test run. 'stopTestRun' is particularly useful for
+test results that wish to produce summary output.
+
+testtools.TestResult provides empty startTestRun and stopTestRun methods, and
+the default testtools runner will call these methods appropriately.
+
+
+Extensions to TestSuite
+-----------------------
+
+ConcurrentTestSuite
+~~~~~~~~~~~~~~~~~~~
+
+A TestSuite for parallel testing. This is used in conjuction with a helper that
+runs a single suite in some parallel fashion (for instance, forking, handing
+off to a subprocess, to a compute cloud, or simple threads).
+ConcurrentTestSuite uses the helper to get a number of separate runnable
+objects with a run(result), runs them all in threads using the
+ThreadsafeForwardingResult to coalesce their activity.
+
+
+Running tests
+-------------
+
+Testtools provides a convenient way to run a test suite using the testtools
+result object: python -m testtools.run testspec [testspec...].

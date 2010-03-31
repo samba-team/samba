@@ -6,9 +6,14 @@
 
 import optparse
 import os
+import signal
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
+
 import subunithelper
+import subunit
 
 class PlainFormatter(object):
 
@@ -25,10 +30,19 @@ class PlainFormatter(object):
         self.summaryfile = summaryfile
         self.index = 0
         self.name = None
+        self._progress_level = 0
         self.totalsuites = totaltests
 
-    def testsuite_count(self, count):
-        self.totalsuites = count
+    def progress(self, offset, whence):
+        if whence == subunit.PROGRESS_POP:
+            self._progress_level -= 1
+        elif whence == subunit.PROGRESS_PUSH:
+            self._progress_level += 1
+        elif whence == subunit.PROGRESS_SET:
+            if self._progress_level == 0:
+                self.totalsuites = offset
+        elif whence == subunit.PROGRESS_CUR:
+            raise NotImplementedError
 
     def report_time(self, time):
         if self.start_time is None:
@@ -71,7 +85,7 @@ class PlainFormatter(object):
 
     def end_testsuite(self, name, result, reason):
         out = ""
-        unexpected = 0
+        unexpected = False
 
         if not name in self.test_output:
             print "no output for name[%s]" % name
@@ -79,11 +93,13 @@ class PlainFormatter(object):
         if result in ("success", "xfail"):
             self.suites_ok+=1
         else:
-            self.output_msg("ERROR: Testsuite[%s]\nREASON: %s\n" % (name, reason or ''))
+            self.output_msg("ERROR: Testsuite[%s]\n" % name)
+            if reason is not None:
+                self.output_msg("REASON: %s\n" % (reason,))
             self.suitesfailed.append(name)
             if self.immediate and not self.verbose:
                 out += self.test_output[name]
-            unexpected = 1
+            unexpected = True
 
         if not self.immediate:
             if not unexpected:
@@ -96,7 +112,7 @@ class PlainFormatter(object):
     def start_test(self, testname):
         pass
 
-    def end_test(self, testname, result, unexpected, reason):
+    def end_test(self, testname, result, unexpected, reason=None):
         if not unexpected:
             self.test_output[self.name] = ""
             if not self.immediate:
@@ -107,11 +123,9 @@ class PlainFormatter(object):
                     'success': '.'}.get(result, "?(%s)" % result))
             return
 
-        if reason is None:
-            reason = ''
-        reason = reason.strip()
-
-        self.test_output[self.name] += "UNEXPECTED(%s): %s\nREASON: %s\n" % (result, testname, reason)
+        self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
+        if reason is not None:
+            self.test_output[self.name] += "REASON: %s\n" % (reason.strip(),)
 
         if self.immediate and not self.verbose:
             print self.test_output[self.name]
@@ -187,6 +201,10 @@ statistics = {
     'TESTS_ERROR': 0,
     'TESTS_SKIP': 0,
 }
+
+def handle_sigint(sig, stack):
+	sys.exit(0)
+signal.signal(signal.SIGINT, handle_sigint)
 
 msg_ops = PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose,
     opts.immediate, statistics)

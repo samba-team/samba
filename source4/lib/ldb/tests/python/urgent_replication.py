@@ -2,16 +2,13 @@
 # -*- coding: utf-8 -*-
 # This is a port of the original in testprogs/ejs/ldap.js
 
-import getopt
 import optparse
 import sys
-import time
-import random
-import base64
 import os
 
 sys.path.append("bin/python")
 sys.path.append("../lib/subunit/python")
+sys.path.append("../lib/testtools")
 
 import samba.getopt as options
 
@@ -25,9 +22,6 @@ from samba import glue
 
 from subunit.run import SubunitTestRunner
 import unittest
-
-from samba.ndr import ndr_pack, ndr_unpack
-from samba.dcerpc import security
 
 parser = optparse.OptionParser("urgent_replication [options] <host>")
 sambaopts = options.SambaOptions(parser)

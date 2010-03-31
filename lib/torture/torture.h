@@ -34,6 +34,13 @@ enum torture_result {
 	TORTURE_SKIP=3
 };
 
+enum torture_progress_whence {
+	TORTURE_PROGRESS_SET,
+	TORTURE_PROGRESS_CUR,
+	TORTURE_PROGRESS_POP,
+	TORTURE_PROGRESS_PUSH,
+};
+
 /* 
  * These callbacks should be implemented by any backend that wishes 
  * to listen to reports from the torture tests.
@@ -52,6 +59,7 @@ struct torture_ui_ops
 						struct torture_test *);
 	void (*test_result) (struct torture_context *, 
 						 enum torture_result, const char *reason);
+	void (*progress) (struct torture_context *, int offset, enum torture_progress_whence whence);
 };
 
 void torture_ui_test_start(struct torture_context *context,
@@ -465,6 +473,7 @@ struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 bool torture_suite_init_tcase(struct torture_suite *suite, 
 			      struct torture_tcase *tcase, 
 			      const char *name);
+int torture_suite_children_count(const struct torture_suite *suite);
 
 struct torture_context *torture_context_init(struct tevent_context *event_ctx, struct torture_results *results);
 
