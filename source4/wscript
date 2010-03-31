@@ -73,6 +73,9 @@ def configure(conf):
     conf.sub_config('lib/smbreadline')
     conf.sub_config('../pidl')
 
+    # we don't want PYTHONDIR in config.h, as otherwise changing
+    # --prefix causes a complete rebuild
+    del(conf.env.defines['PYTHONDIR'])
     conf.SAMBA_CONFIG_H('include/config.h')
 
 
