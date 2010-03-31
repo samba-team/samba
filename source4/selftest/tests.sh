@@ -85,7 +85,7 @@ smb4torture="$samba4bindir/smbtorture${EXEEXT}"
 if which tap2subunit 2>/dev/null; then
 	TAP2SUBUNIT=tap2subunit
 else
-	TAP2SUBUNIT="PYTHONPATH=$samba4srcdir/../lib/subunit/python $PYTHON $samba4srcdir/../lib/subunit/filters/tap2subunit"
+	TAP2SUBUNIT="PYTHONPATH=$samba4srcdir/../lib/subunit/python:$samba4srcdir/../lib/testtools $PYTHON $samba4srcdir/../lib/subunit/filters/tap2subunit"
 fi
 $smb4torture -V
 
@@ -466,15 +466,15 @@ plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samd
 plantest "subunit.python" none $SUBUNITRUN subunit
 plantest "rpcecho.python" dc:local $SUBUNITRUN samba.tests.dcerpc.rpcecho
 plantest "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
-plantest "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantest "urgent_replication.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
-plantest "ldap_schema.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap_schema.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "urgent_replication.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
+plantest "ldap_schema.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap_schema.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "ldap.possibleInferiors.python" dc $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py $CONFIGURATION ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantest "ldap.secdesc.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/sec_descriptor.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantest "ldap.acl.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/acl.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "ldap.secdesc.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/sec_descriptor.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "ldap.acl.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/acl.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "xattr.python" none $SUBUNITRUN samba.tests.xattr
 plantest "ntacls.python" none $SUBUNITRUN samba.tests.ntacls
-plantest "deletetest.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python" $PYTHON $samba4srcdir/lib/ldb/tests/python/deletetest.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "deletetest.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/deletetest.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 rm -rf $PREFIX/upgrade
 plantest "blackbox.upgrade" none $PYTHON $samba4srcdir/setup/upgrade_from_s3 $CONFIGURATION --targetdir=$PREFIX/upgrade $samba4srcdir/../testdata/samba3 ../testdata/samba3/smb.conf

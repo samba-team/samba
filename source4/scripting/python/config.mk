@@ -23,9 +23,9 @@ python_glue_OBJ_FILES = $(pyscriptsrcdir)/pyglue.o
 
 $(python_glue_OBJ_FILES): CFLAGS+=-I$(ldbsrcdir)
 
-_PY_FILES = $(shell find $(pyscriptsrcdir)/samba ../lib/subunit/python -type f -name "*.py")
+_PY_FILES = $(shell find $(pyscriptsrcdir)/samba -type f -name "*.py")
 
-$(eval $(foreach pyfile, $(_PY_FILES),$(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(subst ../lib/subunit/python,,$(pyfile))),$(pyfile))))
+$(eval $(foreach pyfile, $(_PY_FILES),$(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(pyfile)),$(pyfile))))
 
 PYDOCTOR = pydoctor
 PYDOCTOR_OPTIONS = --project-name Samba --project-url http://www.samba.org/ \

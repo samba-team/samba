@@ -1,11 +1,10 @@
 #!/usr/bin/python
 
 # work out what python external libraries we need to install
-
 external_libs = {
-    "dns.resolver": "dnspython", 
-    "subunit": "subunit",
-    "testtools": "testtools"}
+    "dns.resolver": "dnspython/dns", 
+    "subunit": "subunit/python/subunit",
+    "testtools": "testtools/testtools"}
 
 list = []
 
