@@ -19,6 +19,7 @@ from samba_python import *
 from samba_deps import *
 from samba_bundled import *
 import samba_conftests
+import nothreads
 
 LIB_PATH="shared"
 
