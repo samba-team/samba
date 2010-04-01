@@ -23,6 +23,7 @@ Changes since 3.5.1
 o   Michael Adam <obnox@samba.org>
     * BUG 7231: Fix automatic building of vfs_tsmsm if gpfs and dmapi are
       present.
+    * BUG 7232: Fix race conditions in CTDB persistent transactions.
     * BUG 7313: Make 'net conf addshare' atomic.
     * BUG 7314: Eliminate race condition in creating/scanning sorted subkeys in
       the registry backend.
@@ -70,6 +71,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 7212: Fix returning of group members with 'getent group'.
     * BUG 7216: Fix the build of net_afs.c with --fake-kaserver=yes.
     * BUG 7229: Fix a NULL pointer dereference in smbd.
+    * BUG 7232: Fix race conditions in CTDB persistent transactions.
     * BUG 7254: Fix an uninitialized variable read in smbd.
     * BUG 7278: Fix a memleak in Winbind.
 
@@ -91,6 +93,11 @@ o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
 
 o   Simo Sorce <idra@samba.org>
     * BUG 7204: Fix DN parsing name was always null.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * BUG 7312: Many disconnecting clients render clustered Samba unusuable
+      for some time.
 
 
 o   Bo Yang <boyang@samba.org>
