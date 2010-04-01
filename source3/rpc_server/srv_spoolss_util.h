@@ -218,4 +218,24 @@ WERROR winreg_printer_enumforms1(struct pipes_struct *p,
 WERROR winreg_printer_deleteform1(struct pipes_struct *p,
 				  const char *form_name);
 
+/**
+ * @brief This function sets the form information for the specified printer.
+ *
+ * If one provides both the name in the API call and inside the FormInfo
+ * structure, then the form gets renamed.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  form_name The name of the form to set or rename.
+ *
+ * @param[in]  form     The FormInfo structure to save.
+ *
+ * @return              WERR_OK on success.
+ *                      WERR_INVALID_PARAM if the form is a builtin form.
+ *                      A corresponding DOS error is something went wrong.
+ */
+WERROR winreg_printer_setform1(struct pipes_struct *p,
+			       const char *form_name,
+			       struct spoolss_AddFormInfo1 *form);
+
 #endif /* _SRV_SPOOLSS_UITL_H */

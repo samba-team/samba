@@ -1535,3 +1535,103 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
+WERROR winreg_printer_setform1(struct pipes_struct *p,
+			       const char *form_name,
+			       struct spoolss_AddFormInfo1 *form)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
+	uint32_t i;
+	WERROR result;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	for (i = 0; i < num_builtin; i++) {
+		if (strequal(builtin_forms1[i].form_name, form->form_name)) {
+			result = WERR_INVALID_PARAM;
+			goto done;
+		}
+	}
+
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					p->server_info,
+					&winreg_pipe,
+					TOP_LEVEL_CONTROL_FORMS_KEY,
+					"",
+					true,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_setform1: Could not open key %s: %s\n",
+			  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
+		goto done;
+	}
+
+	/* If form_name != form->form_name then we renamed the form */
+	if (strequal(form_name, form->form_name)) {
+		result = winreg_printer_deleteform1(p, form_name);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("winreg_printer_setform1: Could not open key %s: %s\n",
+				  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
+			goto done;
+		}
+	}
+
+	wvalue.name = form->form_name;
+
+	blob = data_blob_talloc(tmp_ctx, NULL, 32);
+	SIVAL(blob.data,  0, form->size.width);
+	SIVAL(blob.data,  4, form->size.height);
+	SIVAL(blob.data,  8, form->area.left);
+	SIVAL(blob.data, 12, form->area.top);
+	SIVAL(blob.data, 16, form->area.right);
+	SIVAL(blob.data, 20, form->area.bottom);
+	SIVAL(blob.data, 24, 42);
+	SIVAL(blob.data, 28, form->flags);
+
+	status = rpccli_winreg_SetValue(winreg_pipe,
+					tmp_ctx,
+					&key_hnd,
+					wvalue,
+					REG_BINARY,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_setform1: Could not set value %s: %s\n",
+			  wvalue.name, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
