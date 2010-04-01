@@ -89,6 +89,7 @@ do
   package=`basename $p`
   echo "Installing missing python package $package"
   mkdir -p $DESTDIR$PYTHONDIR/samba/external/$package
+  touch $DESTDIR$PYTHONDIR/samba/external/__init__.py
   cp -r ../lib/$p/* $DESTDIR$PYTHONDIR/samba/external/$package/ || exit 1
 done
 
