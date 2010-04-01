@@ -743,8 +743,8 @@ static void winbind_client_response_written(struct tevent_req *req)
 		return;
 	}
 
-	DEBUG(10,("winbind_client_response_written[%d:%s]: deliverd response to client\n",
-		  (int)state->pid, state->cmd_name));
+	DEBUG(10,("winbind_client_response_written[%d:%s]: delivered response "
+		  "to client\n", (int)state->pid, state->cmd_name));
 
 	TALLOC_FREE(state->mem_ctx);
 	state->response = NULL;
