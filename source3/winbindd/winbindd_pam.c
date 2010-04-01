@@ -1896,63 +1896,6 @@ done:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-/* Change a user password */
-
-void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
-{
-	fstring domain, user;
-	char *mapped_user;
-	struct winbindd_domain *contact_domain;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-
-	/* Ensure null termination */
-	state->request->data.chauthtok.user[
-		sizeof(state->request->data.chauthtok.user)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
-		state->request->data.chauthtok.user));
-
-	/* Setup crap */
-
-	nt_status = normalize_name_unmap(state->mem_ctx,
-					 state->request->data.chauthtok.user,
-					 &mapped_user);
-
-	/* Update the chauthtok name if we did any mapping */
-
-	if (NT_STATUS_IS_OK(nt_status) ||
-	    NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
-	{
-		fstrcpy(state->request->data.chauthtok.user, mapped_user);
-	}
-
-	/* Must pass in state->...chauthtok.user because
-	   canonicalize_username() assumes an fstring().  Since
-	   we have already copied it (if necessary), this is ok. */
-
-	if (!canonicalize_username(state->request->data.chauthtok.user, domain, user)) {
-		set_auth_errors(state->response, NT_STATUS_NO_SUCH_USER);
-		DEBUG(5, ("winbindd_pam_chauthtok: canonicalize_username %s failed with %s"
-			  "(PAM: %d)\n",
-			  state->request->data.chauthtok.user,
-			  state->response->data.auth.nt_status_string,
-			  state->response->data.auth.pam_error));
-		request_error(state);
-		return;
-	}
-
-	contact_domain = find_domain_from_name(domain);
-	if (!contact_domain) {
-		set_auth_errors(state->response, NT_STATUS_NO_SUCH_USER);
-		DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n",
-			  state->request->data.chauthtok.user, domain, user, domain));
-		request_error(state);
-		return;
-	}
-
-	sendto_domain(state, contact_domain);
-}
-
 enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
 						 struct winbindd_cli_state *state)
 {
