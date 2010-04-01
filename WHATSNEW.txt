@@ -85,6 +85,8 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 7225: Make Winbind logs more verbose for troubleshooting.
     * BUG 7251: Fix smbd segfault in "waiting for connections" message.
     * BUG 7295: Fix Winbind reconnection to it's own domain.
+    * BUG 7316: Winbind possibly segfaults when trying a trusted domain without
+      inbound trust.
 
 
 o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
