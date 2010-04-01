@@ -1215,6 +1215,9 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 					    logfilename))
 		return false;
 
+	/* Stop zombies in children */
+	CatchChild();
+
 	/* Don't handle the same messages as our parent. */
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_SMB_CONF_UPDATED, NULL);
@@ -1337,9 +1340,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 	/* Child */
 
 	DEBUG(10, ("Child process %d\n", (int)sys_getpid()));
-
-	/* Stop zombies in children */
-	CatchChild();
 
 	state.sock = fdpair[0];
 	close(fdpair[1]);
