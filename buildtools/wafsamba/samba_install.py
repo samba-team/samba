@@ -1,0 +1,158 @@
+###########################
+# this handles the magic we need to do for installing
+# with all the configure options that affect rpath and shared
+# library use
+
+import Options
+from TaskGen import feature, before, after
+from samba_utils import *
+
+@feature('install_bin')
+@after('apply_core')
+@before('apply_link')
+def install_binary(self):
+    '''install a binary, taking account of the different rpath varients'''
+    bld = self.bld
+
+    # get the ldflags we will use for install and build
+    install_ldflags = install_rpath(bld)
+    build_ldflags   = build_rpath(bld)
+
+    if not Options.is_install or not self.samba_install:
+        # just need to set rpath if we are not installing
+        self.env.append_value('LINKFLAGS', build_ldflags)
+        return
+
+    # work out the install path, expanding variables
+    install_path = self.samba_inst_path or '${BINDIR}'
+    install_path = bld.EXPAND_VARIABLES(install_path)
+
+    orig_target = self.target
+
+    if install_ldflags != build_ldflags:
+        # we will be creating a new target name, and using that for the
+        # install link. That stops us from overwriting the existing build
+        # target, which has different ldflags
+        self.target += '.inst'
+
+    # setup the right rpath link flags for the install
+    self.env.append_value('LINKFLAGS', install_ldflags)
+
+    # tell waf to install the right binary
+    bld.install_as(os.path.join(install_path, orig_target),
+                   os.path.join(self.path.abspath(bld.env), self.target),
+                   chmod=0755)
+
+
+
+@feature('install_lib')
+@after('apply_core')
+@before('apply_link')
+def install_library(self):
+    '''install a library, taking account of the different rpath varients'''
+    if getattr(self, 'done_install_library', False):
+        return
+
+    bld = self.bld
+
+    install_ldflags = install_rpath(bld)
+    build_ldflags   = build_rpath(bld)
+
+    if not Options.is_install or not self.samba_install:
+        # just need to set the build rpath if we are not installing
+        self.env.append_value('LINKFLAGS', build_ldflags)
+        return
+
+    # setup the install path, expanding variables
+    install_path = self.samba_inst_path or '${LIBDIR}'
+    install_path = bld.EXPAND_VARIABLES(install_path)
+
+    if install_ldflags != build_ldflags:
+        # we will be creating a new target name, and using that for the
+        # install link. That stops us from overwriting the existing build
+        # target, which has different ldflags
+        self.done_install_library = True
+        t = self.clone('default')
+        t.target += '.inst'
+        self.env.append_value('LINKFLAGS', build_ldflags)
+    else:
+        t = self
+
+    t.env.append_value('LINKFLAGS', install_ldflags)
+
+    if self.samba_realname:
+        install_name = self.samba_realname
+        install_link = None
+        inst_name    = t.target + '.so'
+    elif self.vnum:
+        vnum_base    = self.vnum.split('.')[0]
+        install_name = 'lib%s.so.%s' % (self.target, self.vnum)
+        install_link = 'lib%s.so.%s' % (self.target, vnum_base)
+        inst_name    = 'lib%s.so' % t.target
+    else:
+        install_name = 'lib%s.so' % self.target
+        install_link = None
+        inst_name    = 'lib%s.so' % t.target
+
+    # tell waf to install the library
+    bld.install_as(os.path.join(install_path, install_name),
+                   os.path.join(self.path.abspath(bld.env), inst_name))
+    if install_link:
+        # and the symlink if needed
+        bld.symlink_as(os.path.join(install_path, install_link),
+                       install_name)
+
+
+
+##############################
+# handle the creation of links for libraries and binaries in the build tree
+# note that we use a relative symlink path to allow the whole tree
+# to me moved/copied elsewhere without breaking the links
+t = Task.simple_task_type('symlink_lib', 'rm -f ${LINK_TARGET} && ln -s ${LINK_SOURCE} ${LINK_TARGET}',
+                          shell=True, color='PINK', ext_in='.bin')
+t.quiet = True
+
+@feature('symlink_lib')
+@after('apply_link')
+def symlink_lib(self):
+    '''symlink a shared lib'''
+    if Options.is_install:
+        return
+
+    tsk = self.create_task('symlink_lib', self.link_task.outputs[0])
+
+    # calculat the link target and put it in the environment
+    soext=""
+    vnum = getattr(self, 'vnum', None)
+    if vnum is not None:
+        soext = '.' + vnum.split('.')[0]
+
+    link_target = getattr(self, 'link_name', '')
+    if link_target == '':
+        link_target = '%s/lib%s.so%s' % (LIB_PATH, self.target, soext)
+
+
+    link_source = os_path_relpath(self.link_task.outputs[0].abspath(self.env),
+                                  os.path.join(self.env.BUILD_DIRECTORY, link_target))
+
+    tsk.env.LINK_TARGET = link_target
+    tsk.env.LINK_SOURCE = link_source[3:]
+    debug('task_gen: LINK for %s is %s -> %s',
+          self.name, tsk.env.LINK_SOURCE, tsk.env.LINK_TARGET)
+
+
+t = Task.simple_task_type('symlink_bin', 'rm -f ${BIN_TARGET} && ln -s ${SRC} ${BIN_TARGET}',
+                          shell=True, color='PINK', ext_in='.bin')
+t.quiet = True
+
+@feature('symlink_bin')
+@after('apply_link')
+def symlink_bin(self):
+    '''symlink a binary'''
+    if Options.is_install:
+        return
+    tsk = self.create_task('symlink_bin', self.link_task.outputs[0])
+
+    tsk.env.BIN_TARGET = self.target
+    debug('task_gen: BIN_TARGET for %s is %s', self.name, tsk.env.BIN_TARGET)
+
