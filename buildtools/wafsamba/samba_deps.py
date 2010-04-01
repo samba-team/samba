@@ -311,7 +311,7 @@ def add_samba_attributes(bld, tgt_list):
         t.samba_includes_extended = TO_LIST(t.samba_includes)[:]
         t.ccflags = getattr(t, 'samba_cflags', '')
         install_target = getattr(t, 'install_target', None)
-        if install_target:
+        if Options.is_install and install_target:
             t2 = bld.name_to_obj(install_target, bld.env)
             t2.sname = install_target
             t2.samba_type = t.samba_type
@@ -663,6 +663,7 @@ def calculate_final_deps(bld, tgt_list, loops):
 
     # remove objects that are also available in linked libs
     reduce_objects(bld, tgt_list)
+    reduce_objects(bld, tgt_list)
 
     # add in any syslib dependencies
     for t in tgt_list:
@@ -784,11 +785,12 @@ def load_samba_deps(bld, tgt_list):
             return False
 
     tgt_list_extended = tgt_list[:]
-    for t in tgt_list:
-        install_target = getattr(t, 'install_target', None)
-        if install_target:
-            t2 = bld.name_to_obj(install_target, bld.env)
-            tgt_list_extended.append(t2)
+    if Options.is_install:
+        for t in tgt_list:
+            install_target = getattr(t, 'install_target', None)
+            if install_target:
+                t2 = bld.name_to_obj(install_target, bld.env)
+                tgt_list_extended.append(t2)
 
     # put outputs in place
     for t in tgt_list_extended:
@@ -815,6 +817,9 @@ def add_install_deps(bld, tgt_list):
     This ensures that all the install targets have identical dependencies
     to the build targets.
     '''
+    if not Options.is_install:
+        return
+
     for t in tgt_list[:]:
         install_target = getattr(t, 'install_target', None)
         if install_target:

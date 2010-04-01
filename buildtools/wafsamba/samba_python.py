@@ -27,17 +27,18 @@ def SAMBA_PYTHON(bld, name,
 
     if realname is None:
         # a SAMBA_PYTHON target without a realname is just a
-        # subsystem with needs_python=True
-        return bld.SAMBA_SUBSYSTEM(name,
-                                   source=source,
-                                   deps=deps,
-                                   public_deps=public_deps,
-                                   cflags=cflags,
-                                   includes=includes,
-                                   init_function_sentinal=init_function_sentinal,
-                                   local_include=local_include,
-                                   needs_python=True,
-                                   enabled=enabled)
+        # library with needs_python=True
+        bld.SAMBA_LIBRARY(name,
+                          source=source,
+                          deps=deps,
+                          public_deps=public_deps,
+                          includes=includes,
+                          cflags=cflags,
+                          local_include=local_include,
+                          vars=vars,
+                          needs_python=True,
+                          enabled=enabled)
+        return
 
     link_name = 'python/%s' % realname
 

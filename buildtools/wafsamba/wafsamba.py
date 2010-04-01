@@ -137,14 +137,16 @@ def SAMBA_LIBRARY(bld, libname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
-    if needs_python:
+    if target_type == 'PYTHON':
         bundled_name = libname
     else:
         bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
 
     features = 'cc cshlib'
-    if needs_python:
+    if target_type == 'PYTHON':
         features += ' pyext'
+    elif needs_python:
+        features += ' pyembed'
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
@@ -178,10 +180,9 @@ def SAMBA_LIBRARY(bld, libname, source,
         install_path = '${LIBDIR}'
     install_path = SUBST_VARS_RECURSIVE(install_path, bld.env)
 
-    if install and install_target != bundled_name:
+    if Options.is_install and install and install_target != bundled_name:
         # create a separate install library, which may have
         # different rpath settings
-        SET_TARGET_TYPE(bld, install_target, target_type)
         t = bld(
             features        = features,
             source          = [],
@@ -197,7 +198,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             ldflags         = install_rpath(bld)
             )
 
-    if install:
+    if Options.is_install and install:
         if realname:
             install_name = realname
             install_link = None
@@ -310,10 +311,9 @@ def SAMBA_BINARY(bld, binname, source,
         if install:
             t.install_target = install_target
 
-    if install and install_target != binname:
+    if Options.is_install and install and install_target != binname:
         # we create a separate 'install' binary, which
         # will have different rpath settings
-        SET_TARGET_TYPE(bld, install_target, 'BINARY')
         t = bld(
             features       = features,
             source         = [],
@@ -329,7 +329,7 @@ def SAMBA_BINARY(bld, binname, source,
             ldflags        = install_rpath(bld)
             )
 
-    if install:
+    if Options.is_install and install:
         bld.install_as(os.path.join(install_path, binname),
                        install_target,
                        chmod=0755)
