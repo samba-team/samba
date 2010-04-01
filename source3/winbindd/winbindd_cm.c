@@ -1614,7 +1614,13 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 	NTSTATUS result;
 
 	/* Internal connections never use the network. */
-	if (domain->internal || !winbindd_can_contact_domain(domain)) {
+	if (domain->internal) {
+		domain->initialized = True;
+		return NT_STATUS_OK;
+	}
+
+	if (!winbindd_can_contact_domain(domain)) {
+		invalidate_cm_connection(&domain->conn);
 		domain->initialized = True;
 		return NT_STATUS_OK;
 	}
@@ -1645,6 +1651,23 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 	}
 
 	return init_dc_connection_network(domain);
+}
+
+static NTSTATUS init_dc_connection_rpc(struct winbindd_domain *domain)
+{
+	NTSTATUS status;
+
+	status = init_dc_connection(domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!domain->internal && domain->conn.cli == NULL) {
+		/* happens for trusted domains without inbound trust */
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /******************************************************************************
@@ -1993,7 +2016,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	char *machine_account = NULL;
 	char *domain_name = NULL;
 
-	result = init_dc_connection(domain);
+	result = init_dc_connection_rpc(domain);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -2176,7 +2199,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
 
-	status = init_dc_connection(domain);
+	status = init_dc_connection_rpc(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2222,7 +2245,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct dcinfo *p_dcinfo;
 
-	result = init_dc_connection(domain);
+	result = init_dc_connection_rpc(domain);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -2354,7 +2377,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	*cli = NULL;
 
-	result = init_dc_connection(domain);
+	result = init_dc_connection_rpc(domain);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
