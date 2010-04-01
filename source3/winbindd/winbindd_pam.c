@@ -2234,7 +2234,7 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 	state->request->data.logoff.krb5ccname
 		[sizeof(state->request->data.logoff.krb5ccname)-1]='\0';
 
-	if (request_uid == (gid_t)-1) {
+	if (request_uid == (uid_t)-1) {
 		goto failed;
 	}
 
