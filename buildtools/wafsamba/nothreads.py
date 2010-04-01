@@ -213,8 +213,7 @@ class Parallel(object):
 		assert (self.count == 0 or self.stop)
 
 
-# enable nothreads if -j1 is used from the makefile
-if os.environ.get('JOBS') == '1':
-	import Runner
-	Runner.process = process
-	Runner.Parallel = Parallel
+# enable nothreads
+import Runner
+Runner.process = process
+Runner.Parallel = Parallel

@@ -19,7 +19,10 @@ from samba_python import *
 from samba_deps import *
 from samba_bundled import *
 import samba_conftests
-import nothreads
+
+# some systems have broken threading in python
+if os.environ.get('WAF_NOTHREADS') == '1':
+    import nothreads
 
 LIB_PATH="shared"
 
