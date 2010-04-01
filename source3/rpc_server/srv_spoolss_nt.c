@@ -6574,27 +6574,6 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
-/****************************************************************************
-****************************************************************************/
-
-static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
-			       struct spoolss_FormInfo1 *r,
-			       const nt_forms_struct *form)
-{
-	r->form_name	= talloc_strdup(mem_ctx, form->name);
-	W_ERROR_HAVE_NO_MEMORY(r->form_name);
-
-	r->flags	= form->flag;
-	r->size.width	= form->width;
-	r->size.height	= form->length;
-	r->area.left	= form->left;
-	r->area.top	= form->top;
-	r->area.right	= form->right;
-	r->area.bottom	= form->bottom;
-
-	return WERR_OK;
-}
-
 /****************************************************************
  _spoolss_EnumForms
 ****************************************************************/
@@ -6649,44 +6628,6 @@ WERROR _spoolss_EnumForms(pipes_struct *p,
 }
 
 /****************************************************************
-****************************************************************/
-
-static WERROR find_form_byname(const char *name,
-			       nt_forms_struct *form)
-{
-	nt_forms_struct *list = NULL;
-	int num_forms = 0, i = 0;
-
-	if (get_a_builtin_ntform_by_string(name, form)) {
-		return WERR_OK;
-	}
-
-	num_forms = get_ntforms(&list);
-	DEBUGADD(5,("Number of forms [%d]\n", num_forms));
-
-	if (num_forms == 0) {
-		return WERR_BADFID;
-	}
-
-	/* Check if the requested name is in the list of form structures */
-	for (i = 0; i < num_forms; i++) {
-
-		DEBUG(4,("checking form %s (want %s)\n", list[i].name, name));
-
-		if (strequal(name, list[i].name)) {
-			DEBUGADD(6,("Found form %s number [%d]\n", name, i));
-			*form = list[i];
-			SAFE_FREE(list);
-			return WERR_OK;
-		}
-	}
-
-	SAFE_FREE(list);
-
-	return WERR_BADFID;
-}
-
-/****************************************************************
  _spoolss_GetForm
 ****************************************************************/
 
@@ -6694,7 +6635,6 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 			struct spoolss_GetForm *r)
 {
 	WERROR result;
-	nt_forms_struct form;
 
 	/* that's an [in out] buffer */
 
@@ -6706,19 +6646,13 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 	DEBUGADD(5,("Offered buffer size [%d]\n", r->in.offered));
 	DEBUGADD(5,("Info level [%d]\n",          r->in.level));
 
-	result = find_form_byname(r->in.form_name, &form);
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(r->out.info);
-		return result;
-	}
-
 	switch (r->in.level) {
 	case 1:
-		result = fill_form_info_1(p->mem_ctx,
-					  &r->out.info->info1,
-					  &form);
+		result = winreg_printer_getform1(p->mem_ctx,
+						 p->server_info,
+						 r->in.form_name,
+						 &r->out.info->info1);
 		break;
-
 	default:
 		result = WERR_UNKNOWN_LEVEL;
 		break;
