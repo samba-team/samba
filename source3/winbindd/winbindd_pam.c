@@ -2224,15 +2224,15 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 	uid_t caller_uid = (uid_t)-1;
 	uid_t request_uid = state->request->data.logoff.uid;
 
-	DEBUG(3, ("[%5lu]: pam logoff %s\n", (unsigned long)state->pid,
-		state->request->data.logoff.user));
-
 	/* Ensure null termination */
 	state->request->data.logoff.user
 		[sizeof(state->request->data.logoff.user)-1]='\0';
 
 	state->request->data.logoff.krb5ccname
 		[sizeof(state->request->data.logoff.krb5ccname)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: pam logoff %s\n", (unsigned long)state->pid,
+		state->request->data.logoff.user));
 
 	if (request_uid == (uid_t)-1) {
 		goto failed;
