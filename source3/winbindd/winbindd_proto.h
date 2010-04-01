@@ -388,7 +388,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state) ;
 enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
 						 struct winbindd_cli_state *state);
-void winbindd_pam_logoff(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state) ;
 void winbindd_pam_chng_pswd_auth_crap(struct winbindd_cli_state *state);
@@ -871,5 +870,12 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 	struct winbindd_request *request);
 NTSTATUS winbindd_pam_chauthtok_recv(struct tevent_req *req,
 				     struct winbindd_response *response);
+
+struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct winbindd_cli_state *cli,
+					    struct winbindd_request *request);
+NTSTATUS winbindd_pam_logoff_recv(struct tevent_req *req,
+				  struct winbindd_response *response);
 
 #endif /*  _WINBINDD_PROTO_H_  */
