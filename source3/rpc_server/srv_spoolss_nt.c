@@ -7796,14 +7796,12 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 			struct spoolss_SetForm *r)
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
-	nt_forms_struct tmpForm;
+	const char *form_name = r->in.form_name;
 	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
-	int count=0;
-	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	DEBUG(5,("_spoolss_SetForm\n"));
@@ -7841,17 +7839,13 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 		goto done;
 	}
 
-	/* can't set if builtin */
-	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
-		status = WERR_INVALID_PARAM;
+	status = winreg_printer_setform1(p->mem_ctx,
+					 p->server_info,
+					 form_name,
+					 form);
+	if (!W_ERROR_IS_OK(status)) {
 		goto done;
 	}
-
-	count = get_ntforms(&list);
-	update_a_form(&list, form, count);
-	become_root();
-	write_ntforms(&list, count);
-	unbecome_root();
 
 	/*
 	 * ChangeID must always be set if this is a printer
@@ -7864,7 +7858,6 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 done:
 	if ( printer )
 		free_a_printer(&printer, 2);
-	SAFE_FREE(list);
 
 	return status;
 }
