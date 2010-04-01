@@ -2852,9 +2852,6 @@ void smbd_process(void)
 	if (!init_oplocks(smbd_messaging_context()))
 		exit_server("Failed to init oplocks");
 
-	/* Setup aio signal handler. */
-	initialize_async_io_handler();
-
 	/* register our message handlers */
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);

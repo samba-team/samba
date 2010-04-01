@@ -6047,7 +6047,6 @@ struct regval_ctr *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *toke
 
 /* The following definitions come from smbd/aio.c  */
 
-void initialize_async_io_handler(void);
 bool schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,

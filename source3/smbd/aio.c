@@ -36,6 +36,42 @@
 #endif
 
 /****************************************************************************
+ Initialize the signal handler for aio read/write.
+*****************************************************************************/
+
+static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
+				    struct tevent_signal *se,
+				    int signum, int count,
+				    void *_info, void *private_data)
+{
+	siginfo_t *info = (siginfo_t *)_info;
+	unsigned int mid = (unsigned int)info->si_value.sival_int;
+
+	smbd_aio_complete_mid(mid);
+}
+
+
+static void initialize_async_io_handler(void)
+{
+	if (aio_signal_event) {
+		return;
+	}
+
+	aio_signal_event = tevent_add_signal(smbd_event_context(),
+					     smbd_event_context(),
+					     RT_SIGNAL_AIO, SA_SIGINFO,
+					     smbd_aio_signal_handler,
+					     NULL);
+	if (!aio_signal_event) {
+		exit_server("Failed to setup RT_SIGNAL_AIO handler");
+	}
+
+	/* tevent supports 100 signal with SA_SIGINFO */
+	aio_pending_size = 100;
+}
+
+
+/****************************************************************************
  The buffer we keep around whilst an aio request is in process.
 *****************************************************************************/
 
@@ -154,6 +190,9 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	bufsize = smb_size + 12 * 2 + smb_maxcnt;
 
+	/* Ensure aio is initialized. */
+	initialize_async_io_handler();
+
 	if ((aio_ex = create_aio_extra(fsp, bufsize)) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
 		return False;
@@ -246,6 +285,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 			  (unsigned int)req->mid ));
 		return False;
 	}
+
+	/* Ensure aio is initialized. */
+	initialize_async_io_handler();
 
 	bufsize = smb_size + 6*2;
 
@@ -535,17 +577,6 @@ void smbd_aio_complete_mid(unsigned int mid)
 	TALLOC_FREE(aio_ex);
 }
 
-static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
-				    struct tevent_signal *se,
-				    int signum, int count,
-				    void *_info, void *private_data)
-{
-	siginfo_t *info = (siginfo_t *)_info;
-	unsigned int mid = (unsigned int)info->si_value.sival_int;
-
-	smbd_aio_complete_mid(mid);
-}
-
 /****************************************************************************
  We're doing write behind and the client closed the file. Wait up to 30
  seconds (my arbitrary choice) for the aio to complete. Return 0 if all writes
@@ -675,30 +706,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 	}
 }
 
-/****************************************************************************
- Initialize the signal handler for aio read/write.
-*****************************************************************************/
-
-void initialize_async_io_handler(void)
-{
-	aio_signal_event = tevent_add_signal(smbd_event_context(),
-					     smbd_event_context(),
-					     RT_SIGNAL_AIO, SA_SIGINFO,
-					     smbd_aio_signal_handler,
-					     NULL);
-	if (!aio_signal_event) {
-		exit_server("Failed to setup RT_SIGNAL_AIO handler");
-	}
-
-	/* tevent supports 100 signal with SA_SIGINFO */
-	aio_pending_size = 100;
-}
-
 #else
-void initialize_async_io_handler(void)
-{
-}
-
 bool schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
