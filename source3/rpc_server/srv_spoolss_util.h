@@ -238,4 +238,20 @@ WERROR winreg_printer_setform1(struct pipes_struct *p,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form);
 
+/**
+ * @brief This function retrieves information about a specified form.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  form_name The name of the form to query.
+ *
+ * @param[out] form     A pointer to a form structure to fill out.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_printer_getform1(struct pipes_struct *p,
+			       const char *form_name,
+			       struct spoolss_FormInfo1 *form);
+
 #endif /* _SRV_SPOOLSS_UITL_H */

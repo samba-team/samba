@@ -1635,3 +1635,134 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
+WERROR winreg_printer_getform1(struct pipes_struct *p,
+			       const char *form_name,
+			       struct spoolss_FormInfo1 *r)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct winreg_String wvalue;
+	enum winreg_Type type_in;
+	uint8_t *data_in;
+	uint32_t data_in_size = 0;
+	uint32_t value_len = 0;
+	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
+	uint32_t i;
+	WERROR result;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	/* check builtin forms first */
+	for (i = 0; i < num_builtin; i++) {
+		if (strequal(builtin_forms1[i].form_name, form_name)) {
+			*r = builtin_forms1[i];
+			return WERR_OK;
+		}
+	}
+
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					p->server_info,
+					&winreg_pipe,
+					TOP_LEVEL_CONTROL_FORMS_KEY,
+					"",
+					true,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_getform1: Could not open key %s: %s\n",
+			  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
+		goto done;
+	}
+
+	wvalue.name = form_name;
+
+	/*
+	 * call QueryValue once with data == NULL to get the
+	 * needed memory size to be allocated, then allocate
+	 * data buffer and call again.
+	 */
+	status = rpccli_winreg_QueryValue(winreg_pipe,
+					  tmp_ctx,
+					  &key_hnd,
+					  &wvalue,
+					  &type_in,
+					  NULL,
+					  &data_in_size,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_getform1: Could not query value %s: %s\n",
+			  wvalue.name, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	data_in = (uint8_t *) TALLOC(tmp_ctx, data_in_size);
+	if (data_in == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	value_len = 0;
+
+	status = rpccli_winreg_QueryValue(winreg_pipe,
+					  tmp_ctx,
+					  &key_hnd,
+					  &wvalue,
+					  &type_in,
+					  data_in,
+					  &data_in_size,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_getform1: Could not query value %s: %s\n",
+			  wvalue.name, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	r->form_name = talloc_strdup(p->mem_ctx, form_name);
+	if (r->form_name == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	r->size.width  = IVAL(data_in,  0);
+	r->size.height = IVAL(data_in,  4);
+	r->area.left   = IVAL(data_in,  8);
+	r->area.top    = IVAL(data_in, 12);
+	r->area.right  = IVAL(data_in, 16);
+	r->area.bottom = IVAL(data_in, 20);
+	/* skip index    IVAL(data_in, 24)));*/
+	r->flags       = IVAL(data_in, 28);
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
