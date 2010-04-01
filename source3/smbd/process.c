@@ -40,11 +40,17 @@ extern bool global_machine_password_needs_changing;
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
 
-bool smbd_lock_socket(struct smbd_server_connection *sconn)
+static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 {
 	bool ok;
 
 	if (smbd_server_conn->smb1.echo_handler.socket_lock_fd == -1) {
+		return true;
+	}
+
+	smbd_server_conn->smb1.echo_handler.ref_count++;
+
+	if (smbd_server_conn->smb1.echo_handler.ref_count > 1) {
 		return true;
 	}
 
@@ -61,11 +67,24 @@ bool smbd_lock_socket(struct smbd_server_connection *sconn)
 	return true;
 }
 
-bool smbd_unlock_socket(struct smbd_server_connection *sconn)
+void smbd_lock_socket(struct smbd_server_connection *sconn)
+{
+	if (!smbd_lock_socket_internal(sconn)) {
+		exit_server_cleanly("failed to lock socket");
+	}
+}
+
+static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 {
 	bool ok;
 
 	if (smbd_server_conn->smb1.echo_handler.socket_lock_fd == -1) {
+		return true;
+	}
+
+	smbd_server_conn->smb1.echo_handler.ref_count--;
+
+	if (smbd_server_conn->smb1.echo_handler.ref_count > 0) {
 		return true;
 	}
 
@@ -78,6 +97,13 @@ bool smbd_unlock_socket(struct smbd_server_connection *sconn)
 	DEBUG(10,("pid[%d] unlocked socket\n", (int)sys_getpid()));
 
 	return true;
+}
+
+void smbd_unlock_socket(struct smbd_server_connection *sconn)
+{
+	if (!smbd_unlock_socket_internal(sconn)) {
+		exit_server_cleanly("failed to unlock socket");
+	}
 }
 
 /* Accessor function for smb_read_error for smbd functions. */
@@ -95,12 +121,8 @@ bool srv_send_smb(int fd, char *buffer,
 	size_t nwritten=0;
 	ssize_t ret;
 	char *buf_out = buffer;
-	bool ok;
 
-	ok = smbd_lock_socket(smbd_server_conn);
-	if (!ok) {
-		exit_server_cleanly("failed to lock socket");
-	}
+	smbd_lock_socket(smbd_server_conn);
 
 	if (do_signing) {
 		/* Sign the outgoing packet if required. */
@@ -132,11 +154,7 @@ bool srv_send_smb(int fd, char *buffer,
 out:
 	SMB_PERFCOUNT_END(pcd);
 
-	ok = smbd_unlock_socket(smbd_server_conn);
-	if (!ok) {
-		exit_server_cleanly("failed to unlock socket");
-	}
-
+	smbd_unlock_socket(smbd_server_conn);
 	return true;
 }
 
@@ -2174,22 +2192,14 @@ static void smbd_server_connection_read_handler(
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	bool ok;
-
 	bool from_client = (smbd_server_fd() == fd)?true:false;
 
 	if (from_client) {
-		ok = smbd_lock_socket(conn);
-		if (!ok) {
-			exit_server_cleanly("failed to lock socket");
-		}
+		smbd_lock_socket(conn);
 
 		if (!fd_is_readable(smbd_server_fd())) {
 			DEBUG(10,("the echo listener was faster\n"));
-			ok = smbd_unlock_socket(conn);
-			if (!ok) {
-				exit_server_cleanly("failed to unlock");
-			}
+			smbd_unlock_socket(conn);
 			return;
 		}
 
@@ -2201,10 +2211,7 @@ static void smbd_server_connection_read_handler(
 					    &encrypted,
 					    &inbuf_len, &seqnum,
 					    false /* trusted channel */);
-		ok = smbd_unlock_socket(conn);
-		if (!ok) {
-			exit_server_cleanly("failed to unlock");
-		}
+		smbd_unlock_socket(conn);
 	} else {
 		/* TODO: make this completely nonblocking */
 		status = receive_smb_talloc(mem_ctx, fd,
@@ -2321,20 +2328,11 @@ static int client_get_tcp_info(struct sockaddr_storage *server,
  */
 static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
-	bool ok;
 	bool ret;
 
-	ok = smbd_lock_socket(smbd_server_conn);
-	if (!ok) {
-		exit_server_cleanly("failed to lock socket");
-	}
-
+	smbd_lock_socket(smbd_server_conn);
 	ret = send_keepalive(smbd_server_fd());
-
-	ok = smbd_unlock_socket(smbd_server_conn);
-	if (!ok) {
-		exit_server_cleanly("failed to unlock socket");
-	}
+	smbd_unlock_socket(smbd_server_conn);
 
 	if (!ret) {
 		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
@@ -2574,7 +2572,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 	bool ok;
 	bool encrypted = false;
 
-	ok = smbd_lock_socket(sconn);
+	ok = smbd_lock_socket_internal(sconn);
 	if (!ok) {
 		DEBUG(0, ("%s: failed to lock socket\n",
 			__location__));
@@ -2584,7 +2582,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 	if (!fd_is_readable(smbd_server_fd())) {
 		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
 			  (int)sys_getpid()));
-		ok = smbd_unlock_socket(sconn);
+		ok = smbd_unlock_socket_internal(sconn);
 		if (!ok) {
 			DEBUG(1, ("%s: failed to unlock socket in\n",
 				__location__));
@@ -2618,7 +2616,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 		exit(1);
 	}
 
-	ok = smbd_unlock_socket(sconn);
+	ok = smbd_unlock_socket_internal(sconn);
 	if (!ok) {
 		DEBUG(1, ("%s: failed to unlock socket in\n",
 			__location__));

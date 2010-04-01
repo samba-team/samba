@@ -2895,22 +2895,15 @@ static void sendfile_short_send(files_struct *fsp,
 
 static void reply_readbraw_error(void)
 {
-	bool ok;
 	char header[4];
 
 	SIVAL(header,0,0);
 
-	ok = smbd_lock_socket(smbd_server_conn);
-	if (!ok) {
-		exit_server_cleanly("failed to lock socket");
-	}
+	smbd_lock_socket(smbd_server_conn);
 	if (write_data(smbd_server_fd(),header,4) != 4) {
 		fail_readraw();
 	}
-	ok = smbd_unlock_socket(smbd_server_conn);
-	if (!ok) {
-		exit_server_cleanly("failed to unlock socket");
-	}
+	smbd_unlock_socket(smbd_server_conn);
 }
 
 /****************************************************************************
@@ -3462,10 +3455,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		goto nosendfile_read;
 	}
 
-	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
-		goto nosendfile_read;
-	}
-
 #if defined(WITH_SENDFILE)
 	/*
 	 * We can only use sendfile on a non-chained packet
@@ -3714,7 +3703,9 @@ void reply_read_and_X(struct smb_request *req)
 		goto out;
 	}
 
+	smbd_lock_socket(smbd_server_conn);
 	send_file_readX(conn, req, fsp,	startpos, smb_maxcnt);
+	smbd_unlock_socket(smbd_server_conn);
 
  out:
 	END_PROFILE(SMBreadX);

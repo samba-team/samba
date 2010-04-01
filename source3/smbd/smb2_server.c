@@ -1566,7 +1566,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req, creds_requested);
+	status = smbd_smb2_request_setup_out(req, 5);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;

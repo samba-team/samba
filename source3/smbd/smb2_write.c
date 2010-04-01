@@ -266,6 +266,15 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 			      in_offset,
 			      in_data.length);
 
+
+        DEBUG(10,("smbd_smb2_write: file %s handle [0x%016llX] offset=%llu "
+		"len=%llu returned %lld\n",
+		fsp_str_dbg(fsp),
+		(unsigned long long)in_file_id_volatile,
+		(unsigned long long)in_offset,
+		(unsigned long long)in_data.length,
+		(long long)nwritten));
+
 	if (((nwritten == 0) && (in_data.length != 0)) || (nwritten < 0)) {
 		DEBUG(5,("smbd_smb2_write: write_file[%s] disk full\n",
 			 fsp_str_dbg(fsp)));

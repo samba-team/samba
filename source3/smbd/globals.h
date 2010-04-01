@@ -153,8 +153,8 @@ struct smbd_smb2_tcon;
 
 DATA_BLOB negprot_spnego(void);
 
-bool smbd_lock_socket(struct smbd_server_connection *sconn);
-bool smbd_unlock_socket(struct smbd_server_connection *sconn);
+void smbd_lock_socket(struct smbd_server_connection *sconn);
+void smbd_unlock_socket(struct smbd_server_connection *sconn);
 
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
 			       struct iovec *vector,
@@ -452,6 +452,12 @@ struct smbd_server_connection {
 			 * fde for the trusted_fd
 			 */
 			struct fd_event *trusted_fde;
+
+			/*
+			 * Reference count for the fcntl lock to
+			 * allow recursive locks.
+			 */
+			int ref_count;
 		} echo_handler;
 
 		uint64_t num_requests;

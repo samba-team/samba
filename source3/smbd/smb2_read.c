@@ -275,6 +275,14 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
+	DEBUG(10,("smbd_smb2_read: file %s handle [0x%016llX] offset=%llu "
+		"len=%llu returned %lld\n",
+		fsp_str_dbg(fsp),
+		(unsigned long long)in_file_id_volatile,
+		(unsigned long long)in_offset,
+		(unsigned long long)in_length,
+		(long long)nread));
+
 	if (nread < 0) {
 		DEBUG(5,("smbd_smb2_read: read_file[%s] nread[%lld]\n",
 			 fsp_str_dbg(fsp), (long long)nread));
