@@ -396,8 +396,6 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 {
 	uint8 ret;
 	pid_t child_pid;
-	struct sigaction act;
-	struct sigaction oldact;
 
 	DEBUG(10, ("winbindd_msg_validate_cache: got validate-cache "
 		   "message.\n"));
