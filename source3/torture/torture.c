@@ -3790,6 +3790,7 @@ static bool run_rename(int dummy)
 	const char *fname1 = "\\test1.txt";
 	bool correct = True;
 	uint16_t fnum1;
+	uint16_t attr;
 	NTSTATUS status;
 
 	printf("starting rename test\n");
@@ -3944,11 +3945,28 @@ static bool run_rename(int dummy)
           } */
 
         /*--*/
-
-
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close - 5 failed (%s)\n", cli_errstr(cli1));
 		return False;
+	}
+
+	/* Check that the renamed file has FILE_ATTRIBUTE_ARCHIVE. */
+	if (!NT_STATUS_IS_OK(cli_getatr(cli1, fname1, &attr, NULL, NULL))) {
+		printf("getatr on file %s failed - %s ! \n",
+			fname1,
+			cli_errstr(cli1));
+		correct = False;
+	} else {
+		if (attr != FILE_ATTRIBUTE_ARCHIVE) {
+			printf("Renamed file %s has wrong attr 0x%x "
+				"(should be 0x%x)\n",
+				fname1,
+				attr,
+				(unsigned int)FILE_ATTRIBUTE_ARCHIVE);
+			correct = False;
+		} else {
+			printf("Renamed file %s has archive bit set\n", fname1);
+		}
 	}
 
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
