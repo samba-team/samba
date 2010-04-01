@@ -179,9 +179,6 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	pid_t parent_pid = sys_getpid();
 	char *lfile = NULL;
 
-	/* Stop zombies */
-	CatchChild();
-
 	if (domain->dc_probe_pid != (pid_t)-1) {
 		/*
 		 * We might already have a DC probe
