@@ -38,7 +38,7 @@ from samba import glue
 from samba.auth import system_session
 from samba.samdb import SamDB
 
-samba.ensure_external_module("dns.resolver", "dnspython")
+samba.ensure_external_module("dns", "dnspython")
 import dns.resolver as resolver
 
 default_ttl = 900

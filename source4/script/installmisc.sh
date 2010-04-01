@@ -83,12 +83,13 @@ cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
 
 echo "Installing external python libraries"
 mkdir -p $DESTDIR$PYTHONDIR || exit 1
-for p in $($PYTHON scripting/python/samba_external/missing.py);
+MISSING="$($PYTHON scripting/python/samba_external/missing.py)"
+for p in $MISSING
 do
   package=`basename $p`
   echo "Installing missing python package $package"
-  mkdir -p $DESTDIR$PYTHONDIR/$package
-  cp -r ../lib/$p/* $DESTDIR$PYTHONDIR/$package/ || exit 1
+  mkdir -p $DESTDIR$PYTHONDIR/samba/external/$package
+  cp -r ../lib/$p/* $DESTDIR$PYTHONDIR/samba/external/$package/ || exit 1
 done
 
 echo "Installing stuff in $PRIVATEDIR"

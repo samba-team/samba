@@ -402,10 +402,15 @@ def ensure_external_module(modulename, location):
     try:
         __import__(modulename)
     except ImportError:
-        sys.path.insert(0, 
-            os.path.join(os.path.dirname(__file__),
-                         "../../../../lib", location))
-        __import__(modulename)
+        import sys
+        if _in_source_tree():
+            sys.path.insert(0, 
+                os.path.join(os.path.dirname(__file__),
+                             "../../../../lib", location))
+            __import__(modulename)
+        else:
+            sys.modules[modulename] = __import__(
+                "samba.external.%s" % modulename, fromlist=["samba.external"])
 
 version = glue.version
 
