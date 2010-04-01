@@ -1,20 +1,101 @@
                    =============================
                    Release Notes for Samba 3.5.2
-			    , 2010
+			   April 7, 2010
                    =============================
 
 
-This is the third stable release of Samba 3.5.
+This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.2 include:
 
-o 
+  o Fix smbd segfaults in _netr_SamLogon for clients sending null domain
+    (bug #7237).
+  o Fix smbd segfaults in "waiting for connections" message (bug #7251).
+  o Fix an uninitialized variable read in smbd (bug #7254).
+  o Fix a memleak in Winbind (bug #7278).
+  o Fix Winbind reconnection to it's own domain (bug #7295).
+
 
 Changes since 3.5.1
 -------------------
 
 
-o  
+o   Michael Adam <obnox@samba.org>
+    * BUG 7231: Fix automatic building of vfs_tsmsm if gpfs and dmapi are
+      present.
+    * BUG 7313: Make 'net conf addshare' atomic.
+    * BUG 7314: Eliminate race condition in creating/scanning sorted subkeys in
+      the registry backend.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7075: Fix bug in vfs_scannedonly rmdir implementation.
+    * BUG 7159: Fix handling of bad server data returns in client rpc_transport.
+    * BUG 7234: Symlink delete fails but incorrectly reports success to client.
+    * BUG 7255: Fix "printer admin" functionality.
+    * BUG 7283: Fix smbd segfault if using vfs_acl_tdb.
+    * BUG 7297: Fix smbd crashes with CUPS printers and no [printers] share defined.
+    * BUG 7310: Fix DOS attribute inconsistency with MS Office.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 7290: Fix core dump in 'ntlm_auth' with "gss-spnego" helper.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6727: Fix several printing issues.
+    * BUG 7237: Fix smbd segfaults in _netr_SamLogon for clients sending
+      null domain.
+    * BUG 7256: Fix value-needed calculation in_spoolss_EnumPrinterData().
+    * BUG 7258: Fix _winreg_QueryValue crash bugs and implement Windows
+      behavior.
+
+
+o   Holger Hetterich <hhetter@novell.com>
+    * BUG 7203: Fix 'net share' command.
+
+
+o   Michael Karcher <samba@mkarcher.dialup.fu-berlin.de>
+    * BUG 7269: Fix job management commands for CUPS queues.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * BUG 6853: Fix race condition in mount.cifs that allows user to replace
+      mountpoint with a symlink.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5198: Fix parsing of the gecos field.
+    * BUG 7202: Fix access by multi-threaded applications.
+    * BUG 7212: Fix returning of group members with 'getent group'.
+    * BUG 7216: Fix the build of net_afs.c with --fake-kaserver=yes.
+    * BUG 7229: Fix a NULL pointer dereference in smbd.
+    * BUG 7254: Fix an uninitialized variable read in smbd.
+    * BUG 7278: Fix a memleak in Winbind.
+
+
+o   Roel van Meer <rolek@alt001.com>
+    * BUG 6814: Fix valgrind warning.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7170: Never mark external domains as internal in Winbind.
+    * BUG 7225: Make Winbind logs more verbose for troubleshooting.
+    * BUG 7251: Fix smbd segfault in "waiting for connections" message.
+    * BUG 7295: Fix Winbind reconnection to it's own domain.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 1206: Fix segfault if hide files or veto files has no ".AppleDouble".
+
+
+o   Simo Sorce <idra@samba.org>
+    * BUG 7204: Fix DN parsing name was always null.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 7206: Signals are processed twice in child.
+
 
 
 ######################################################################
