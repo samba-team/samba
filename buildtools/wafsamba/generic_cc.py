@@ -10,6 +10,7 @@ from Configure import conftest
 from compiler_cc import c_compiler
 
 c_compiler['default'] = ['gcc', 'generic_cc']
+c_compiler['hpux'] = ['gcc', 'generic_cc']
 
 @conftest
 def find_generic_cc(conf):
