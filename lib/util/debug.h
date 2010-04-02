@@ -141,4 +141,7 @@ _PUBLIC_ void dbgtext(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 struct _XFILE;
 extern struct _XFILE *dbf;
 
+/* setup talloc logging */
+void debug_setup_talloc_log(void);
+
 #endif

@@ -182,12 +182,24 @@ _PUBLIC_ void reopen_logs(void)
 	}
 }
 
+/* setup for logging of talloc warnings */
+static void talloc_log_fn(const char *msg)
+{
+	DEBUG(0,("%s", msg));
+}
+
+void debug_setup_talloc_log(void)
+{
+	talloc_set_log_fn(talloc_log_fn);
+}
+
 /**
   control the name of the logfile and whether logging will be to stdout, stderr
   or a file
 */
 _PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 {
+	debug_setup_talloc_log();
 	if (state.logtype < new_logtype) {
 		state.logtype = new_logtype;
 	}
