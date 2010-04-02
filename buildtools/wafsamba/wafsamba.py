@@ -51,8 +51,6 @@ def SAMBA_BUILD_ENV(conf):
         os.unlink(blib_src)
     elif os.path.exists(blib_src):
         shutil.rmtree(blib_src)
-    os.symlink(blib_bld, blib_src)
-
 
 
 def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):

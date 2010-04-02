@@ -39,10 +39,15 @@ def build(bld):
     # use perl to build the manpages
     bld.env.pidl_srcdir = os.path.join(bld.srcnode.abspath(), 'pidl')
 
-    bld.SAMBA_GENERATOR('pidl_manpages',
-                        source=pidl_src,
-                        target=pidl_manpages,
-                        rule='cd ${pidl_srcdir} && ${PERL} Makefile.PL && make manifypods && rm -f Makefile Makefile.old')
+    blib_bld = os.path.join(bld.srcnode.abspath(bld.env), 'pidl/blib')
+
+    link_command = 'rm -rf blib && ln -s %s' % blib_bld
+
+    t = bld.SAMBA_GENERATOR('pidl_manpages',
+                            source=pidl_src,
+                            target=pidl_manpages,
+                            rule='cd ${pidl_srcdir} && ${LINK_COMMAND} && ${PERL} Makefile.PL && make manifypods && rm -f Makefile Makefile.old && rm -f blib')
+    t.env.LINK_COMMAND = link_command
 
     # we want to prefer the git version of the parsers if we can. Only if the
     # source has changed do we want to re-run yapp
@@ -51,10 +56,11 @@ def build(bld):
         bld.IS_NEWER('expr.yp', 'lib/Parse/Pidl/Expr.pm')))
 
     if need_yapp_build:
-        bld.SAMBA_GENERATOR('pidl_parser',
-                            source='idl.yp expr.yp',
-                            target='lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm Makefile.PL',
-                            rule='cd ${pidl_srcdir} && ${PERL} Makefile.PL && make lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm && rm -f Makefile Makefile.old')
+        t = bld.SAMBA_GENERATOR('pidl_parser',
+                                source='idl.yp expr.yp',
+                                target='lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm Makefile.PL',
+                                rule='cd ${pidl_srcdir} && ${LINK_COMMAND} && ${PERL} Makefile.PL && make lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm && rm -f Makefile Makefile.old && rm -f blib')
+        t.env.LINK_COMMAND = link_command
 
     for m in pidl_manpages:
         dname=os.path.dirname(m)[5:]
