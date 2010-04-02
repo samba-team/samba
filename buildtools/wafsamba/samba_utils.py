@@ -256,7 +256,8 @@ def ENFORCE_GROUP_ORDERING(bld):
                 for t in g.tasks_gen:
                     if id(t) == my_id:
                         stop = id(g)
-                        debug('group: Forcing up to group %s', group_name(g))
+                        debug('group: Forcing up to group %s for target %s',
+                              group_name(g), self.name or self.target)
                         break
                 if stop != None:
                     break
