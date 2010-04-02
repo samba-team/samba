@@ -1776,6 +1776,9 @@ enum {
 	OPT_CCACHE_SAVE,
 	OPT_SID_TO_FULLNAME,
 	OPT_NTLMV2,
+	OPT_LOGOFF,
+	OPT_LOGOFF_USER,
+	OPT_LOGOFF_UID,
 	OPT_LANMAN
 };
 
@@ -1793,6 +1796,8 @@ int main(int argc, char **argv, char **envp)
 	bool verbose = false;
 	bool use_ntlmv2 = false;
 	bool use_lanman = false;
+	char *logoff_user = getenv("USER");
+	int logoff_uid = geteuid();
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1842,6 +1847,12 @@ int main(int argc, char **argv, char **envp)
 		{ "sid-aliases", 0, POPT_ARG_STRING, &string_arg, OPT_SIDALIASES, "Get sid aliases", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
+		{ "logoff", 0, POPT_ARG_NONE, NULL, OPT_LOGOFF,
+		  "log off user", "uid" },
+		{ "logoff-user", 0, POPT_ARG_STRING, &logoff_user,
+		  OPT_LOGOFF_USER, "username to log off" },
+		{ "logoff-uid", 0, POPT_ARG_INT, &logoff_uid,
+		  OPT_LOGOFF_UID, "uid to log off" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "ccache-save", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_CCACHE_SAVE, "Store user and password for ccache "
@@ -2191,6 +2202,16 @@ int main(int argc, char **argv, char **envp)
 					goto done;
 				break;
 			}
+		case OPT_LOGOFF:
+		{
+			wbcErr wbc_status;
+
+			wbc_status = wbcLogoffUser(logoff_user, logoff_uid,
+						   "");
+			d_printf("Logoff %s (%d): %s\n", logoff_user,
+				 logoff_uid, wbcErrorString(wbc_status));
+			break;
+		}
 		case 'K': {
 				uint32_t flags = WBFLAG_PAM_KRB5 |
 						 WBFLAG_PAM_CACHED_LOGIN |
@@ -2277,6 +2298,8 @@ int main(int argc, char **argv, char **envp)
 		case OPT_VERBOSE:
 		case OPT_NTLMV2:
 		case OPT_LANMAN:
+		case OPT_LOGOFF_USER:
+		case OPT_LOGOFF_UID:
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");
