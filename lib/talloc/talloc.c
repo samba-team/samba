@@ -1974,7 +1974,7 @@ void talloc_show_parents(const void *context, FILE *file)
 /*
   return 1 if ptr is a parent of context
 */
-int talloc_is_parent(const void *context, const void *ptr)
+static int _talloc_is_parent(const void *context, const void *ptr, int depth)
 {
 	struct talloc_chunk *tc;
 
@@ -1983,12 +1983,21 @@ int talloc_is_parent(const void *context, const void *ptr)
 	}
 
 	tc = talloc_chunk_from_ptr(context);
-	while (tc) {
+	while (tc && depth > 0) {
 		if (TC_PTR_FROM_CHUNK(tc) == ptr) return 1;
 		while (tc && tc->prev) tc = tc->prev;
 		if (tc) {
 			tc = tc->parent;
+			depth--;
 		}
 	}
 	return 0;
+}
+
+/*
+  return 1 if ptr is a parent of context
+*/
+int talloc_is_parent(const void *context, const void *ptr)
+{
+	return _talloc_is_parent(context, ptr, 10000);
 }
