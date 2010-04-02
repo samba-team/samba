@@ -17,7 +17,3 @@ bld.SAMBA_SCRIPT('python_testtools',
                  pattern='testtools/**/*.py',
                  installdir='python')
 
-bld.INSTALL_WILDCARD('${PYTHONDIR}', 'subunit/**/*.py', flat=False)
-bld.INSTALL_WILDCARD('${PYTHONDIR}', 'testtools/**/*.py', flat=False)
-bld.INSTALL_WILDCARD('${PYTHONDIR}', 'iso8601/**/*.py', flat=False)
-

@@ -17,5 +17,5 @@ for module, package in external_libs.iteritems():
         list.append(package)
 
 for e in list:
-    bld.INSTALL_WILDCARD('${PYTHONDIR}', e + '/**/*', flat=False,
+    bld.INSTALL_WILDCARD('${PYTHONDIR}/samba/external', e + '/**/*', flat=False,
                          exclude='*.pyc', trim_path=os.path.dirname(e))
