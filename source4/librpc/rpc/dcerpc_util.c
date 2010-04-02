@@ -422,6 +422,7 @@ static void continue_ntlmssp_connection(struct composite_context *ctx)
 	struct pipe_auth_state *s;
 	struct composite_context *auth_req;
 	struct dcerpc_pipe *p2;
+	void *pp;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct pipe_auth_state);
@@ -430,8 +431,31 @@ static void continue_ntlmssp_connection(struct composite_context *ctx)
 	c->status = dcerpc_secondary_connection_recv(ctx, &p2);
 	if (!composite_is_ok(c)) return;
 
+
+	/* this is a rather strange situation. When
+	   we come into the routine, s is a child of s->pipe, and
+	   when we created p2 above, it also became a child of
+	   s->pipe.
+
+	   Now we want p2 to be a parent of s->pipe, and we want s to
+	   be a parent of both of them! If we don't do this very
+	   carefully we end up creating a talloc loop
+	*/
+
+	/* we need the new contexts to hang off the same context
+	   that s->pipe is on, but the only way to get that is
+	   via talloc_parent() */
+	pp = talloc_parent(s->pipe);
+
+	/* promote s to be at the top */
+	talloc_steal(pp, s);
+
+	/* and put p2 under s */
 	talloc_steal(s, p2);
+
+	/* now put s->pipe under p2 */
 	talloc_steal(p2, s->pipe);
+
 	s->pipe = p2;
 
 	/* initiate a authenticated bind */
