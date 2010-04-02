@@ -582,6 +582,8 @@ def reduce_objects(bld, tgt_list):
     for t in tgt_list:
         t.extended_objects = None
 
+    changed = False
+
     for type in ['BINARY', 'PYTHON', 'LIBRARY']:
         for t in tgt_list:
             if t.samba_type != type: continue
@@ -601,10 +603,15 @@ def reduce_objects(bld, tgt_list):
                     rely_on[l] = rely_on[l].union(dup)
             t.final_objects = new
 
+    if not changed:
+        return False
+
     # add back in any objects that were relied upon by the reduction rules
     for r in rely_on:
         t = bld.name_to_obj(r, bld.env)
         t.final_objects = t.final_objects.union(rely_on[r])
+
+    return True
 
 
 def calculate_final_deps(bld, tgt_list, loops):
@@ -655,8 +662,13 @@ def calculate_final_deps(bld, tgt_list, loops):
                         t.final_libs = t.final_libs.union(diff)
 
     # remove objects that are also available in linked libs
-    reduce_objects(bld, tgt_list)
-    reduce_objects(bld, tgt_list)
+    count = 0
+    while reduce_objects(bld, tgt_list):
+        count += 1
+        if count > 100:
+            print("WARNING: Unable to remove all inter-target object duplicates")
+            break
+    debug('deps: Object reduction took %u iterations', count)
 
     # add in any syslib dependencies
     for t in tgt_list:
