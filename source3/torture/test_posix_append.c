@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   async getpwsid
+   reproducer for bug 6898
    Copyright (C) Volker Lendecke 2009
 
    This program is free software; you can redistribute it and/or modify
