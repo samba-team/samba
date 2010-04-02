@@ -1591,4 +1591,8 @@ void talloc_set_log_stderr(void);
 #define talloc_append_string(c, s, a) (s?talloc_strdup_append(s,a):talloc_strdup(c, a))
 #endif
 
+#ifndef TALLOC_MAX_DEPTH
+#define TALLOC_MAX_DEPTH 10000
+#endif
+
 #endif

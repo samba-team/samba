@@ -1999,5 +1999,5 @@ static int _talloc_is_parent(const void *context, const void *ptr, int depth)
 */
 int talloc_is_parent(const void *context, const void *ptr)
 {
-	return _talloc_is_parent(context, ptr, 10000);
+	return _talloc_is_parent(context, ptr, TALLOC_MAX_DEPTH);
 }
