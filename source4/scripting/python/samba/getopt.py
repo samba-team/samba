@@ -22,6 +22,7 @@
 import optparse
 from credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from hostconfig import Hostconfig
+import glue
 
 __docformat__ = "restructuredText"
 
@@ -32,7 +33,11 @@ class SambaOptions(optparse.OptionGroup):
         self.add_option("-s", "--configfile", action="callback",
                         type=str, metavar="FILE", help="Configuration file",
                         callback=self._load_configfile)
+        self.add_option("-d", "--debuglevel", action="callback",
+                        type=int, metavar="DEBUGLEVEL", help="debug level",
+                        callback=self._set_debuglevel)
         self._configfile = None
+        self._debuglevel = None
 
     def get_loadparm_path(self):
         """Return the path to the smb.conf file specified on the command line.  """
@@ -40,6 +45,9 @@ class SambaOptions(optparse.OptionGroup):
 
     def _load_configfile(self, option, opt_str, arg, parser):
         self._configfile = arg
+
+    def _set_debuglevel(self, option, opt_str, arg, parser):
+        self._debuglevel = arg
 
     def get_loadparm(self):
         """Return a loadparm object with data specified on the command line.  """
@@ -51,6 +59,8 @@ class SambaOptions(optparse.OptionGroup):
             lp.load(os.getenv("SMB_CONF_PATH"))
         else:
             lp.load_default()
+        if self._debuglevel:
+            glue.set_debug_level(self._debuglevel)
         return lp
 
     def get_hostconfig(self):
