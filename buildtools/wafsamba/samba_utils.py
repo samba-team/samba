@@ -410,5 +410,6 @@ Build.BuildContext.IS_NEWER = IS_NEWER
 
 def TOUCH_FILE(file):
     '''touch a file'''
+    mkdir_p(os.path.dirname(file))
     f = open(file, 'w')
     f.close()
