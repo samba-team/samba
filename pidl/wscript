@@ -11,7 +11,7 @@ def configure(conf):
     if conf.CHECK_PERL_MANPAGE():
         conf.env.PERLMAN1EXT = conf.CHECK_PERL_MANPAGE(section='1')
         conf.env.PERLMAN3EXT = conf.CHECK_PERL_MANPAGE(section='3')
-        conf.DEFINE('HAVE_PERL_MAKEMAKER', 1)
+        #conf.DEFINE('HAVE_PERL_MAKEMAKER', 1)
 
     # yapp is used for building the parser
     conf.find_program('yapp', var='YAPP')
