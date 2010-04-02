@@ -700,6 +700,8 @@ void initglue(void)
 {
 	PyObject *m;
 
+	debug_setup_talloc_log();
+
 	m = Py_InitModule3("glue", py_misc_methods, 
 			   "Python bindings for miscellaneous Samba functions.");
 	if (m == NULL)
