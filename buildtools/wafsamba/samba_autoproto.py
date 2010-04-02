@@ -8,6 +8,7 @@ def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
     bld.SET_BUILD_GROUP(group)
     if options is None:
         options='-q -P comment -o'
+    SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
     t = bld(rule='${PERL} ../heimdal/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
@@ -27,6 +28,7 @@ Build.BuildContext.HEIMDAL_AUTOPROTO_PRIVATE = HEIMDAL_AUTOPROTO_PRIVATE
 def SAMBA_AUTOPROTO(bld, header, source):
     '''rule for samba prototype generation'''
     bld.SET_BUILD_GROUP('prototypes')
+    SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
     bld(
         source = source,
         target = header,

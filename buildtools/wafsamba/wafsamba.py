@@ -681,6 +681,16 @@ Task.TaskBase.classes['cc_link'].display = link_display
 def samba_display(self):
     if Options.options.progress_bar != 0:
         return Task.Task.old_display(self)
+
+    targets    = LOCAL_CACHE(self, 'TARGET_TYPE')
+    if self.name in targets:
+        target_type = targets[self.name]
+        type_map = { 'GENERATOR' : 'Generating',
+                     'PROTOTYPE' : 'Generating'
+                     }
+        if target_type in type_map:
+            return progress_display(self, type_map[target_type], self.name)
+
     fname = self.inputs[0].bldpath(self.env)
     if fname[0:3] == '../':
         fname = fname[3:]
