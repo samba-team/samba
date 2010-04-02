@@ -407,3 +407,8 @@ def IS_NEWER(bld, file1, file2):
     return t1 > t2
 Build.BuildContext.IS_NEWER = IS_NEWER
 
+
+def TOUCH_FILE(file):
+    '''touch a file'''
+    f = open(file, 'w')
+    f.close()

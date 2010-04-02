@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os
+import os, Options
+from samba_utils import TOUCH_FILE, EXPAND_VARIABLES
 
 # work out what python external libraries we need to install
 external_libs = {
@@ -19,3 +20,7 @@ for module, package in external_libs.iteritems():
 for e in list:
     bld.INSTALL_WILDCARD('${PYTHONDIR}/samba/external', e + '/**/*', flat=False,
                          exclude='*.pyc', trim_path=os.path.dirname(e))
+
+if Options.is_install:
+    # we need a blank __init__.py in samba/external
+    TOUCH_FILE(bld.EXPAND_VARIABLES('${PYTHONDIR}/samba/external/__init__.py'))
