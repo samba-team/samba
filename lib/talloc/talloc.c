@@ -754,6 +754,14 @@ void *_talloc_steal_loc(const void *new_ctx, const void *ptr, const char *locati
 				   h->location);
 		}
 	}
+
+#if 0
+	/* this test is probably too expensive to have on in the
+	   normal build, but it useful for debugging */
+	if (talloc_is_parent(new_ctx, ptr)) {
+		talloc_log("WARNING: stealing into talloc child at %s\n", location);
+	}
+#endif
 	
 	return _talloc_steal_internal(new_ctx, ptr);
 }
