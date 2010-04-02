@@ -346,7 +346,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 
 		status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
 	} else {
-		status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
+		status = dcerpc_pipe_connect(event_ctx, &ret->pipe, binding_string,
 		             table, credentials, event_ctx, lp_ctx);
 	}
 	if (NT_STATUS_IS_ERR(status)) {
