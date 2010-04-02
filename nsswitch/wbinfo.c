@@ -2274,11 +2274,8 @@ int main(int argc, char **argv, char **envp)
 
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
-			break;
 		case OPT_VERBOSE:
-			break;
 		case OPT_NTLMV2:
-			break;
 		case OPT_LANMAN:
 			break;
 		default:
