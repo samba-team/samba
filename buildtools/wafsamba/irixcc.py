@@ -1,5 +1,5 @@
 
-# compiler definition for tru64/OSF1 cc compiler
+# compiler definition for irix/MIPSpro cc compiler
 # based on suncc.py from waf
 
 import os, optparse
@@ -9,29 +9,29 @@ from Configure import conftest
 
 from compiler_cc import c_compiler
 
-c_compiler['osf1V'] = ['gcc', 'tru64cc']
+c_compiler['irix'] = ['gcc', 'irixcc']
 
 @conftest
-def find_tru64cc(conf):
+def find_irixcc(conf):
 	v = conf.env
 	cc = None
 	if v['CC']: cc = v['CC']
 	elif 'CC' in conf.environ: cc = conf.environ['CC']
 	if not cc: cc = conf.find_program('cc', var='CC')
-	if not cc: conf.fatal('tru64cc was not found')
+	if not cc: conf.fatal('irixcc was not found')
 	cc = conf.cmd_to_list(cc)
 
 	try:
-		if not Utils.cmd_output(cc + ['-V']):
-			conf.fatal('tru64cc %r was not found' % cc)
+		if Utils.cmd_output(cc + ['-version']) != '':
+			conf.fatal('irixcc %r was not found' % cc)
 	except ValueError:
-		conf.fatal('tru64cc -V could not be executed')
+		conf.fatal('irixcc -v could not be executed')
 
 	v['CC']  = cc
-	v['CC_NAME'] = 'tru64'
+	v['CC_NAME'] = 'irix'
 
 @conftest
-def tru64cc_common_flags(conf):
+def irixcc_common_flags(conf):
 	v = conf.env
 
 	v['CC_SRC_F']            = ''
@@ -66,10 +66,10 @@ def tru64cc_common_flags(conf):
 #	v['staticlib_PATTERN']   = 'lib%s.a'
 
 detect = '''
-find_tru64cc
+find_irixcc
 find_cpp
 find_ar
-tru64cc_common_flags
+irixcc_common_flags
 cc_load_tools
 cc_add_flags
 link_add_flags
