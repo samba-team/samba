@@ -20,6 +20,7 @@ from samba_deps import *
 from samba_bundled import *
 import samba_install
 import samba_conftests
+import tru64cc
 
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':
