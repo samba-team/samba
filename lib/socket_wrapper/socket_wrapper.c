@@ -2002,6 +2002,7 @@ _PUBLIC_ int swrap_ioctl(int s, int r, void *p)
 
 	ret = real_ioctl(s, r, p);
 
+#ifdef FIONREAD
 	switch (r) {
 	case FIONREAD:
 		value = *((int *)p);
@@ -2012,6 +2013,7 @@ _PUBLIC_ int swrap_ioctl(int s, int r, void *p)
 		}
 		break;
 	}
+#endif
 
 	return ret;
 }
