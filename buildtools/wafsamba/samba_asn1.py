@@ -1,6 +1,5 @@
 # samba ASN1 rules
 
-from TaskGen import before
 import Build, os
 from samba_utils import *
 from samba_autoconf import *

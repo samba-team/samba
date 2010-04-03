@@ -1,5 +1,5 @@
 # waf build tool for building .et files with compile_et
-import Build, os
+import Build
 from samba_utils import *
 
 def SAMBA_ERRTABLE(bld, name, source):

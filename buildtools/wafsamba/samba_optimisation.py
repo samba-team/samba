@@ -6,9 +6,8 @@
 
 # overall this makes some build tasks quite a bit faster
 
-from TaskGen import feature, before, after
+from TaskGen import feature, after
 import preproc
-import os
 
 kak = {}
 @feature('cc', 'cxx')
