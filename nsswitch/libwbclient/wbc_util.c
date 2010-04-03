@@ -43,6 +43,14 @@ wbcErr wbcPing(void)
 	return wbcRequestResponse(WINBINDD_PING, &request, &response);
 }
 
+static void wbcInterfaceDetailsDestructor(void *ptr)
+{
+	struct wbcInterfaceDetails *i = (struct wbcInterfaceDetails *)ptr;
+	free(i->winbind_version);
+	free(i->netbios_name);
+	free(i->netbios_domain);
+	free(i->dns_domain);
+}
 
 /**
  * @brief Query useful information about the winbind service
@@ -65,7 +73,9 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	info = talloc(NULL, struct wbcInterfaceDetails);
+	info = (struct wbcInterfaceDetails *)wbcAllocateMemory(
+		sizeof(struct wbcInterfaceDetails), 1,
+		wbcInterfaceDetailsDestructor);
 	BAIL_ON_PTR_ERROR(info, wbc_status);
 
 	/* first the interface version */
@@ -77,8 +87,7 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 	wbc_status = wbcRequestResponse(WINBINDD_INFO, NULL, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	info->winbind_version = talloc_strdup(info,
-					      response.data.info.samba_version);
+	info->winbind_version = strdup(response.data.info.samba_version);
 	BAIL_ON_PTR_ERROR(info->winbind_version, wbc_status);
 	info->winbind_separator = response.data.info.winbind_separator;
 
@@ -86,16 +95,14 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 	wbc_status = wbcRequestResponse(WINBINDD_NETBIOS_NAME, NULL, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	info->netbios_name = talloc_strdup(info,
-					   response.data.netbios_name);
+	info->netbios_name = strdup(response.data.netbios_name);
 	BAIL_ON_PTR_ERROR(info->netbios_name, wbc_status);
 
 	/* then the local workgroup name */
 	wbc_status = wbcRequestResponse(WINBINDD_DOMAIN_NAME, NULL, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	info->netbios_domain = talloc_strdup(info,
-					response.data.domain_name);
+	info->netbios_domain = strdup(response.data.domain_name);
 	BAIL_ON_PTR_ERROR(info->netbios_domain, wbc_status);
 
 	wbc_status = wbcDomainInfo(info->netbios_domain, &domain);
@@ -108,8 +115,7 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 	}
 
 	if (domain) {
-		info->dns_domain = talloc_strdup(info,
-						 domain->dns_name);
+		info->dns_domain = strdup(domain->dns_name);
 		wbcFreeMemory(domain);
 		BAIL_ON_PTR_ERROR(info->dns_domain, wbc_status);
 	} else {
@@ -122,7 +128,7 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 	wbc_status = WBC_ERR_SUCCESS;
 
 done:
-	talloc_free(info);
+	wbcFreeMemory(info);
 	return wbc_status;
 }
 
