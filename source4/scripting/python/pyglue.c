@@ -513,7 +513,7 @@ static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
 
 	guid = samdb_ntds_invocation_id(ldb);
 	if (guid == NULL) {
-		PyErr_SetStringError("Failed to find NTDS invocation ID");
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find NTDS invocation ID");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -546,7 +546,7 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 
 	guid = samdb_ntds_objectGUID(ldb);
 	if (guid == NULL) {
-		PyErr_SetStringError("Failed to find NTDS GUID");
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find NTDS GUID");
 		talloc_free(mem_ctx);
 		return NULL;
 	}

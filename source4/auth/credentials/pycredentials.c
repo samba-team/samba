@@ -272,7 +272,7 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 		return PyCredentialCacheContainer_from_ccache_container(ccc);
 	}
 
-	PyErr_SetStringError(error_string);
+	PyErr_SetString(PyExc_RuntimeError, error_string);
 
 	talloc_free(event_ctx);
 	return NULL;

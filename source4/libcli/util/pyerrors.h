@@ -26,9 +26,6 @@
 
 #define PyErr_FromString(str) Py_BuildValue("(s)", discard_const_p(char, str))
 
-#define PyErr_SetStringError(str) \
-        PyErr_SetObject(PyExc_RuntimeError, PyErr_FromString(str))
-
 #define PyErr_SetWERROR(err) \
 	PyErr_SetObject(PyExc_RuntimeError, PyErr_FromWERROR(err))
 
