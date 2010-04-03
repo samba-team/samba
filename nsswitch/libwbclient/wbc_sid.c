@@ -553,10 +553,8 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
 	/* Build the sid list */
 	for (i=0; i<num_sids; i++) {
-		if (sid_string) {
-			wbcFreeMemory(sid_string);
-			sid_string = NULL;
-		}
+		wbcFreeMemory(sid_string);
+		sid_string = NULL;
 		wbc_status = wbcSidToString(&sids[i], &sid_string);
 		BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -616,17 +614,10 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (sid_string) {
-		wbcFreeMemory(sid_string);
-	}
-	if (extra_data) {
-		talloc_free(extra_data);
-	}
+	wbcFreeMemory(sid_string);
+	talloc_free(extra_data);
 	winbindd_free_response(&response);
-	if (rids) {
-		talloc_free(rids);
-	}
-
+	talloc_free(rids);
 	return wbc_status;
 }
 

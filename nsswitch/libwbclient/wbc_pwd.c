@@ -224,10 +224,7 @@ wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
 	BAIL_ON_PTR_ERROR(*pwd, wbc_status);
 
  done:
-	if (sid_string) {
-		wbcFreeMemory(sid_string);
-	}
-
+	wbcFreeMemory(sid_string);
 	return wbc_status;
 }
 
