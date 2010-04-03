@@ -47,6 +47,19 @@ done:
 	return wbc_status;
 }
 
+static bool sid_attr_compose(struct wbcSidWithAttr *s,
+			     const struct wbcDomainSid *d,
+			     uint32_t rid, uint32_t attr)
+{
+	if (d->num_auths >= WBC_MAXSUBAUTHS) {
+		return false;
+	}
+	s->sid = *d;
+	s->sid.sub_auths[s->sid.num_auths++] = rid;
+	s->attributes = attr;
+	return true;
+}
+
 static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 				   const struct winbindd_response *resp,
 				   struct wbcAuthUserInfo **_i)
@@ -112,25 +125,18 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 				    &domain_sid);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-#define _SID_COMPOSE(s, d, r, a) { \
-	(s).sid = d; \
-	if ((s).sid.num_auths < WBC_MAXSUBAUTHS) { \
-		(s).sid.sub_auths[(s).sid.num_auths++] = r; \
-	} else { \
-		wbc_status = WBC_ERR_INVALID_SID; \
-		BAIL_ON_WBC_ERROR(wbc_status); \
-	} \
-	(s).attributes = a; \
-} while (0)
-
 	sn = 0;
-	_SID_COMPOSE(i->sids[sn], domain_sid,
-		     resp->data.auth.info3.user_rid,
-		     0);
+	if (!sid_attr_compose(&i->sids[sn], &domain_sid,
+			      resp->data.auth.info3.user_rid, 0)) {
+		wbc_status = WBC_ERR_INVALID_SID;
+		goto done;
+	}
 	sn++;
-	_SID_COMPOSE(i->sids[sn], domain_sid,
-		     resp->data.auth.info3.group_rid,
-		     0);
+	if (!sid_attr_compose(&i->sids[sn], &domain_sid,
+			      resp->data.auth.info3.group_rid, 0)) {
+		wbc_status = WBC_ERR_INVALID_SID;
+		goto done;
+	}
 	sn++;
 
 	p = (char *)resp->extra_data.data;
@@ -158,8 +164,11 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
-		_SID_COMPOSE(i->sids[sn], domain_sid,
-			     rid, attrs);
+		if (!sid_attr_compose(&i->sids[sn], &domain_sid,
+				      rid, attrs)) {
+			wbc_status = WBC_ERR_INVALID_SID;
+			goto done;
+		}
 		sn++;
 	}
 
