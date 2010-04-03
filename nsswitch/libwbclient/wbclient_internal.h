@@ -35,4 +35,6 @@ wbcErr wbcRequestResponsePriv(int cmd,
 void *wbcAllocateMemory(size_t nelem, size_t elsize,
 			void (*destructor)(void *ptr));
 
+char *wbcStrDup(const char *str);
+
 #endif      /* _WBCLIENT_INTERNAL_H */

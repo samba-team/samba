@@ -205,6 +205,20 @@ void wbcFreeMemory(void *p)
 	return;
 }
 
+char *wbcStrDup(const char *str)
+{
+	char *result;
+	size_t len;
+
+	len = strlen(str);
+	result = (char *)wbcAllocateMemory(len+1, sizeof(char), NULL);
+	if (result == NULL) {
+		return NULL;
+	}
+	memcpy(result, str, len+1);
+	return result;
+}
+
 wbcErr wbcLibraryDetails(struct wbcLibraryDetails **_details)
 {
 	struct wbcLibraryDetails *info;
