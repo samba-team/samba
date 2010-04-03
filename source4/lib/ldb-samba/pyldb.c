@@ -24,6 +24,7 @@
 #include <ldb.h>
 #include "lib/ldb/pyldb.h"
 #include "param/pyparam.h"
+#include "auth/credentials/pycredentials.h"
 
 static PyObject *pyldb_module;
 staticforward PyTypeObject PySambaLdb;
@@ -50,10 +51,35 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
+{
+	PyObject *py_creds;
+	struct cli_credentials *creds;
+	struct ldb_context *ldb;
+
+	if (!PyArg_ParseTuple(args, "O", &py_creds))
+		return NULL;
+
+	creds = cli_credentials_from_py_object(py_creds);
+	if (creds == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
+		return NULL;
+	}
+
+	ldb = PyLdb_AsLdbContext(self);
+
+	ldb_set_opaque(ldb, "credentials", creds);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_samba_ldb_methods[] = {
 	{ "set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS, 
 		"ldb_set_loadparm(ldb, session_info)\n"
 		"Set loadparm context to use when connecting." },
+	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
+		"ldb_set_credentials(ldb, credentials)\n"
+		"Set credentials to use when connecting." },
 	{ NULL },
 };
 

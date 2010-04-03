@@ -138,27 +138,6 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
-{
-	PyObject *py_creds, *py_ldb;
-	struct cli_credentials *creds;
-	struct ldb_context *ldb;
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_creds))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	
-	creds = cli_credentials_from_py_object(py_creds);
-	if (creds == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
-		return NULL;
-	}
-
-	ldb_set_opaque(ldb, "credentials", creds);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -518,9 +497,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "ldb_set_session_info", (PyCFunction)py_ldb_set_session_info, METH_VARARGS,
 		"ldb_set_session_info(ldb, session_info)\n"
 		"Set session info to use when connecting." },
-	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
-		"ldb_set_credentials(ldb, credentials)\n"
-		"Set credentials to use when connecting." },
 	{ "samdb_set_domain_sid", (PyCFunction)py_samdb_set_domain_sid, METH_VARARGS,
 		"samdb_set_domain_sid(samdb, sid)\n"
 		"Set SID of domain to use." },
