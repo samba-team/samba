@@ -42,6 +42,7 @@ else:
 
 
 import ldb
+import dsdb
 import glue
 
 class Ldb(ldb.Ldb):
@@ -310,7 +311,7 @@ class Ldb(ldb.Ldb):
 
     def server_site_name(self):
         "Get the server site name"
-        return glue.samdb_server_site_name(self)
+        return dsdb.samdb_server_site_name(self)
 
     def set_opaque_integer(self, name, value):
         """Set an integer as an opaque (a flag or other value) value on the database

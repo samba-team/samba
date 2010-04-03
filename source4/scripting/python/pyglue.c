@@ -557,33 +557,6 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 }
 
 
-static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb, *result;
-	struct ldb_context *ldb;
-	const char *site;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	site = samdb_server_site_name(ldb, mem_ctx);
-	if (site == NULL) {
-		PyErr_SetStringError("Failed to find server site");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	result = PyString_FromString(site);
-	talloc_free(mem_ctx);
-	return result;
-}
-
-
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -689,8 +662,6 @@ static PyMethodDef py_misc_methods[] = {
 		"get the NTDS invocation ID GUID as a string"},
 	{ "samdb_ntds_objectGUID", (PyCFunction)py_samdb_ntds_objectGUID, METH_VARARGS,
 		"get the NTDS objectGUID as a string"},
-	{ "samdb_server_site_name", (PyCFunction)py_samdb_server_site_name, METH_VARARGS,
-		"get the server site name as a string"},
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
 	{ NULL }

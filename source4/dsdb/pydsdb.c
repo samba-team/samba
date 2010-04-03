@@ -20,8 +20,46 @@
 #include <Python.h>
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/ldb/pyldb.h"
+
+/* FIXME: These should be in a header file somewhere, once we finish moving
+ * away from SWIG .. */
+#define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
+/*	if (!PyLdb_Check(py_ldb)) { \
+		PyErr_SetString(py_ldb_get_exception(), "Ldb connection object required"); \
+		return NULL; \
+	} */\
+	ldb = PyLdb_AsLdbContext(py_ldb);
+
+static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb, *result;
+	struct ldb_context *ldb;
+	const char *site;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	site = samdb_server_site_name(ldb, mem_ctx);
+	if (site == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find server site");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	result = PyString_FromString(site);
+	talloc_free(mem_ctx);
+	return result;
+}
 
 static PyMethodDef py_dsdb_methods[] = {
+	{ "server_site_name", (PyCFunction)py_samdb_server_site_name, METH_VARARGS,
+		"get the server site name as a string"},
 	{ NULL }
 };
 
