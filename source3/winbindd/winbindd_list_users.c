@@ -161,6 +161,7 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 	}
 
 	len = 0;
+	response->data.num_entries = 0;
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_users_domstate *d = &state->domains[i];
 
@@ -171,6 +172,7 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 					     True);
 			len += strlen(name)+1;
 		}
+		response->data.num_entries += d->users.num_userinfos;
 	}
 
 	result = talloc_array(response, char, len+1);

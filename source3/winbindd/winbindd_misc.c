@@ -130,6 +130,8 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 			is_online ? "Online" : "Offline" );
 	}
 
+	state->response->data.num_entries = num_domains;
+
 	extra_data_len = strlen(extra_data);
 	if (extra_data_len > 0) {
 
