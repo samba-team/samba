@@ -260,7 +260,7 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name)
 
 	/* Display response */
 
-	name_str = talloc_strdup(NULL, response.data.winsresp);
+	name_str = wbcStrDup(response.data.winsresp);
 	BAIL_ON_PTR_ERROR(name_str, wbc_status);
 
 	*name = name_str;
