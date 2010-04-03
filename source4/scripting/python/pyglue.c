@@ -277,63 +277,6 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_dsdb_set_opaque_integer(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	int value;
-	int *old_val, *new_val;
-	char *py_opaque_name, *opaque_name_talloc;
-	struct ldb_context *ldb;
-	TALLOC_CTX *tmp_ctx;
-
-	if (!PyArg_ParseTuple(args, "Osi", &py_ldb, &py_opaque_name, &value))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	/* see if we have a cached copy */
-	old_val = (int *)ldb_get_opaque(ldb, 
-					py_opaque_name);
-
-	if (old_val) {
-		*old_val = value;
-		Py_RETURN_NONE;
-	} 
-
-	tmp_ctx = talloc_new(ldb);
-	if (tmp_ctx == NULL) {
-		goto failed;
-	}
-	
-	new_val = talloc(tmp_ctx, int);
-	if (!new_val) {
-		goto failed;
-	}
-	
-	opaque_name_talloc = talloc_strdup(tmp_ctx, py_opaque_name);
-	if (!opaque_name_talloc) {
-		goto failed;
-	}
-	
-	*new_val = value;
-
-	/* cache the domain_sid in the ldb */
-	if (ldb_set_opaque(ldb, opaque_name_talloc, new_val) != LDB_SUCCESS) {
-		goto failed;
-	}
-
-	talloc_steal(ldb, new_val);
-	talloc_steal(ldb, opaque_name_talloc);
-	talloc_free(tmp_ctx);
-
-	Py_RETURN_NONE;
-
-failed:
-	talloc_free(tmp_ctx);
-	PyErr_SetString(PyExc_RuntimeError, "Failed to set opaque integer into the ldb!\n");
-	return NULL;
-}
-
 static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -486,10 +429,7 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 
 
 	return result;
-
 }
-
-
 
 static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
 {
@@ -641,8 +581,6 @@ static PyMethodDef py_misc_methods[] = {
 		"ldb_set_utf8_casefold(ldb)\n"
 		"Set the right Samba casefolding function for UTF8 charset." },
 	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
-		NULL },
-	{ "dsdb_set_opaque_integer", (PyCFunction)py_dsdb_set_opaque_integer, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema, METH_VARARGS,
 		NULL },

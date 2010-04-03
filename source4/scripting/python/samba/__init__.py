@@ -321,7 +321,7 @@ class Ldb(ldb.Ldb):
         :param name: The name for the opaque value
         :param value: The integer value
         """
-        glue.dsdb_set_opaque_integer(self, name, value)
+        dsdb.dsdb_set_opaque_integer(self, name, value)
 
 
 def substitute_var(text, values):
