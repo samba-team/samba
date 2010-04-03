@@ -73,6 +73,69 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+/* XXX: This function really should be in libldb's pyldb.c */
+static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
+{
+	int value;
+	int *old_val, *new_val;
+	char *py_opaque_name, *opaque_name_talloc;
+	struct ldb_context *ldb;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!PyArg_ParseTuple(args, "si", &py_opaque_name, &value))
+		return NULL;
+
+	ldb = PyLdb_AsLdbContext(self);
+
+	/* see if we have a cached copy */
+	old_val = (int *)ldb_get_opaque(ldb, py_opaque_name);
+	/* XXX: We shouldn't just blindly assume that the value that is 
+	 * already present has the size of an int and is not shared 
+	 * with other code that may rely on it not changing. 
+	 * JRV 20100403 */
+
+	if (old_val) {
+		*old_val = value;
+		Py_RETURN_NONE;
+	} 
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	
+	new_val = talloc(tmp_ctx, int);
+	if (new_val == NULL) {
+		talloc_free(tmp_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+	
+	opaque_name_talloc = talloc_strdup(tmp_ctx, py_opaque_name);
+	if (opaque_name_talloc == NULL) {
+		talloc_free(tmp_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+	
+	*new_val = value;
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, opaque_name_talloc, new_val) != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		PyErr_SetString(PyExc_RuntimeError,
+					"Failed to set opaque integer into the ldb");
+		return NULL;
+	}
+
+	talloc_steal(ldb, new_val);
+	talloc_steal(ldb, opaque_name_talloc);
+	talloc_free(tmp_ctx);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_samba_ldb_methods[] = {
 	{ "set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS, 
 		"ldb_set_loadparm(ldb, session_info)\n"
@@ -80,6 +143,8 @@ static PyMethodDef py_samba_ldb_methods[] = {
 	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
 		"ldb_set_credentials(ldb, credentials)\n"
 		"Set credentials to use when connecting." },
+	{ "set_opaque_integer", (PyCFunction)py_ldb_set_opaque_integer,
+		METH_VARARGS, NULL },
 	{ NULL },
 };
 

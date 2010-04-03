@@ -57,70 +57,6 @@ static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
 	return result;
 }
 
-/* XXX: This function really should be in pyldb.c */
-static PyObject *py_dsdb_set_opaque_integer(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	int value;
-	int *old_val, *new_val;
-	char *py_opaque_name, *opaque_name_talloc;
-	struct ldb_context *ldb;
-	TALLOC_CTX *tmp_ctx;
-
-	if (!PyArg_ParseTuple(args, "Osi", &py_ldb, &py_opaque_name, &value))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	/* see if we have a cached copy */
-	old_val = (int *)ldb_get_opaque(ldb, py_opaque_name);
-	/* XXX: We shouldn't just blindly assume that the value that is 
-	 * already present has the size of an int and is not shared 
-	 * with other code that may rely on it not changing. 
-	 * JRV 20100403 */
-
-	if (old_val) {
-		*old_val = value;
-		Py_RETURN_NONE;
-	} 
-
-	tmp_ctx = talloc_new(ldb);
-	if (tmp_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	
-	new_val = talloc(tmp_ctx, int);
-	if (new_val == NULL) {
-		talloc_free(tmp_ctx);
-		PyErr_NoMemory();
-		return NULL;
-	}
-	
-	opaque_name_talloc = talloc_strdup(tmp_ctx, py_opaque_name);
-	if (opaque_name_talloc == NULL) {
-		talloc_free(tmp_ctx);
-		PyErr_NoMemory();
-		return NULL;
-	}
-	
-	*new_val = value;
-
-	/* cache the domain_sid in the ldb */
-	if (ldb_set_opaque(ldb, opaque_name_talloc, new_val) != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		PyErr_SetString(PyExc_RuntimeError,
-					"Failed to set opaque integer into the ldb");
-		return NULL;
-	}
-
-	talloc_steal(ldb, new_val);
-	talloc_steal(ldb, opaque_name_talloc);
-	talloc_free(tmp_ctx);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self,
 													PyObject *args)
 {
@@ -150,8 +86,6 @@ static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self,
 static PyMethodDef py_dsdb_methods[] = {
 	{ "samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
-	{ "dsdb_set_opaque_integer", (PyCFunction)py_dsdb_set_opaque_integer,
-		METH_VARARGS, NULL },
 	{ "dsdb_convert_schema_to_openldap",
 		(PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS, 
 		"dsdb_convert_schema_to_openldap(ldb, target_str, mapping) -> str\n"
