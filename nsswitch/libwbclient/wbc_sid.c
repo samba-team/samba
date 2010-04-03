@@ -628,11 +628,15 @@ wbcErr wbcListUsers(const char *domain_name,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
+	users = wbcAllocateStringArray(response.data.num_entries);
+	if (users == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
 	/* Look through extra data */
 
 	next = (const char *)response.extra_data.data;
 	while (next) {
-		const char **tmp;
 		const char *current = next;
 		char *k = strchr(next, ',');
 		if (k) {
@@ -642,19 +646,20 @@ wbcErr wbcListUsers(const char *domain_name,
 			next = NULL;
 		}
 
-		tmp = talloc_realloc(NULL, users,
-				     const char *,
-				     num_users+1);
-		BAIL_ON_PTR_ERROR(tmp, wbc_status);
-		users = tmp;
-
-		users[num_users] = talloc_strdup(users, current);
+		users[num_users] = strdup(current);
 		BAIL_ON_PTR_ERROR(users[num_users], wbc_status);
-
-		num_users++;
+		num_users += 1;
+		if (num_users > response.data.num_entries) {
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
+			goto done;
+		}
+	}
+	if (num_users != response.data.num_entries) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		goto done;
 	}
 
-	*_num_users = num_users;
+	*_num_users = response.data.num_entries;
 	*_users = users;
 	users = NULL;
 	wbc_status = WBC_ERR_SUCCESS;
@@ -662,7 +667,7 @@ wbcErr wbcListUsers(const char *domain_name,
  done:
 	winbindd_free_response(&response);
 	if (users) {
-		talloc_free(users);
+		wbcFreeMemory(users);
 	}
 	return wbc_status;
 }
