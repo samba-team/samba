@@ -13,15 +13,15 @@ sys.path.append("bin/python")
 import samba.getopt as options
 
 # Some error messages that are being tested
-from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
-from ldb import ERR_NO_SUCH_OBJECT
+from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT
 
 # For running the test unit
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
+from samba import Ldb
 from samba.auth import system_session
-from samba import Ldb, DS_DOMAIN_FUNCTION_2008
+from samba.dsdb import DS_DOMAIN_FUNCTION_2008
 from samba.dcerpc.security import (
     SECINFO_OWNER, SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL)
 from subunit.run import SubunitTestRunner

@@ -27,7 +27,8 @@ import string
 import re
 import shutil
 
-from samba import Ldb, DS_DOMAIN_FUNCTION_2000
+from samba import Ldb
+from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
 from samba.provision import ProvisionNames, provision_paths_from_lp, FILL_FULL, provision

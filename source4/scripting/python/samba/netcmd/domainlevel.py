@@ -34,7 +34,7 @@ from samba.netcmd import (
     Option,
     )
 from samba.samdb import SamDB
-from samba import (
+from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2003_MIXED,

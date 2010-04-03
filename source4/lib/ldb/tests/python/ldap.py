@@ -24,10 +24,9 @@ from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb
-from samba import UF_NORMAL_ACCOUNT
-from samba import UF_WORKSTATION_TRUST_ACCOUNT
-from samba import UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE
-from samba import ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST
+from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, 
+    UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
+    ATYPE_WORKSTATION_TRUST)
 
 from subunit.run import SubunitTestRunner
 import unittest
