@@ -273,20 +273,12 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name)
 /**
  */
 
-static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
-					 struct wbcDomainInfo *info,
+static wbcErr process_domain_info_string(struct wbcDomainInfo *info,
 					 char *info_string)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *r = NULL;
 	char *s = NULL;
-
-	if (!info || !info_string) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
-	ZERO_STRUCTP(info);
 
 	r = info_string;
 
@@ -298,7 +290,7 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	*s = '\0';
 	s++;
 
-	info->short_name = talloc_strdup(ctx, r);
+	info->short_name = strdup(r);
 	BAIL_ON_PTR_ERROR(info->short_name, wbc_status);
 
 
@@ -311,7 +303,7 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	*s = '\0';
 	s++;
 
-	info->dns_name = talloc_strdup(ctx, r);
+	info->dns_name = strdup(r);
 	BAIL_ON_PTR_ERROR(info->dns_name, wbc_status);
 
 	/* SID */
@@ -404,15 +396,24 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	return wbc_status;
 }
 
+static void wbcDomainInfoListDestructor(void *ptr)
+{
+	struct wbcDomainInfo *i = (struct wbcDomainInfo *)ptr;
+
+	while (i->short_name != NULL) {
+		free(i->short_name);
+		free(i->dns_name);
+		i += 1;
+	}
+}
+
 /* Enumerate the domain trusts known by Winbind */
 wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 {
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *p = NULL;
-	char *q = NULL;
 	char *extra_data = NULL;
-	int count = 0;
 	struct wbcDomainInfo *d_list = NULL;
 	int i = 0;
 
@@ -440,18 +441,9 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	/* Count number of domains */
-
-	count = 0;
-	while (p) {
-		count++;
-
-		if ((q = strchr(p, '\n')) != NULL)
-			q++;
-		p = q;
-	}
-
-	d_list = talloc_array(NULL, struct wbcDomainInfo, count);
+	d_list = (struct wbcDomainInfo *)wbcAllocateMemory(
+		sizeof(struct wbcDomainInfo), response.data.num_entries + 1,
+		wbcDomainInfoListDestructor);
 	BAIL_ON_PTR_ERROR(d_list, wbc_status);
 
 	extra_data = strdup((char*)response.extra_data.data);
@@ -461,7 +453,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 
 	/* Outer loop processes the list of domain information */
 
-	for (i=0; i<count && p; i++) {
+	for (i=0; i<response.data.num_entries && p; i++) {
 		char *next = strchr(p, '\n');
 
 		if (next) {
@@ -469,7 +461,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 			next++;
 		}
 
-		wbc_status = process_domain_info_string(d_list, &d_list[i], p);
+		wbc_status = process_domain_info_string(&d_list[i], p);
 		BAIL_ON_WBC_ERROR(wbc_status);
 
 		p = next;
@@ -481,7 +473,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 
  done:
 	winbindd_free_response(&response);
-	talloc_free(d_list);
+	wbcFreeMemory(d_list);
 	free(extra_data);
 	return wbc_status;
 }
