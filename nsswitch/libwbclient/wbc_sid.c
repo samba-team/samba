@@ -310,36 +310,34 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
 	ridbuf_size = (sizeof(char)*11) * num_rids + 1;
 
-	ridlist = talloc_zero_array(NULL, char, ridbuf_size);
+	ridlist = (char *)malloc(ridbuf_size);
 	BAIL_ON_PTR_ERROR(ridlist, wbc_status);
 
 	len = 0;
-	for (i=0; i<num_rids && (len-1)>0; i++) {
-		char ridstr[12];
-
-		len = strlen(ridlist);
-		p = ridlist + len;
-
-		snprintf( ridstr, sizeof(ridstr)-1, "%u\n", rids[i]);
-		strncat(p, ridstr, ridbuf_size-len-1);
+	for (i=0; i<num_rids; i++) {
+		len += snprintf(ridlist + len, ridbuf_size - len, "%u\n",
+				rids[i]);
 	}
+	ridlist[len] = '\0';
+	len += 1;
 
 	request.extra_data.data = ridlist;
-	request.extra_len = strlen(ridlist)+1;
+	request.extra_len = len;
 
 	wbc_status = wbcRequestResponse(WINBINDD_LOOKUPRIDS,
 					&request,
 					&response);
-	talloc_free(ridlist);
+	free(ridlist);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	domain_name = talloc_strdup(NULL, response.data.domain_name);
+	domain_name = wbcStrDup(response.data.domain_name);
 	BAIL_ON_PTR_ERROR(domain_name, wbc_status);
 
-	names = talloc_array(NULL, const char*, num_rids);
+	names = wbcAllocateStringArray(num_rids);
 	BAIL_ON_PTR_ERROR(names, wbc_status);
 
-	types = talloc_array(NULL, enum wbcSidType, num_rids);
+	types = (enum wbcSidType *)wbcAllocateMemory(
+		num_rids, sizeof(enum wbcSidType), NULL);
 	BAIL_ON_PTR_ERROR(types, wbc_status);
 
 	p = (char *)response.extra_data.data;
@@ -368,7 +366,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
 		*q = '\0';
 
-		names[i] = talloc_strdup(names, p);
+		names[i] = strdup(p);
 		BAIL_ON_PTR_ERROR(names[i], wbc_status);
 
 		p = q+1;
@@ -390,12 +388,9 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		*ptypes = types;
 	}
 	else {
-		if (domain_name)
-			talloc_free(domain_name);
-		if (names)
-			talloc_free(names);
-		if (types)
-			talloc_free(types);
+		wbcFreeMemory(domain_name);
+		wbcFreeMemory(names);
+		wbcFreeMemory(types);
 	}
 
 	return wbc_status;
