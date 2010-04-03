@@ -3,9 +3,12 @@
 srcdir = '..'
 blddir = 'bin'
 
+APPNAME='samba'
+VERSION='4.0.0-alpha13'
+
 import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options
+import wafsamba, Options, samba_dist
 
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
@@ -36,6 +39,7 @@ def configure(conf):
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.DEFINE('_SAMBA_BUILD_', 4, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+    conf.DIST_DIRS('.')
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
@@ -120,3 +124,9 @@ def wafdocs(ctx):
         cmd += ' --add-module %s' % f
     print "Running: %s" % cmd
     os.system(cmd)
+
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()
+

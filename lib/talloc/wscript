@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+APPNAME = 'talloc'
 VERSION = '2.0.2'
 
 srcdir = '../..'
@@ -9,7 +10,7 @@ LIBREPLACE_DIR= srcdir + '/lib/replace'
 
 import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba
+import wafsamba, samba_dist
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
@@ -17,6 +18,7 @@ def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
 
 def configure(conf):
+    conf.DIST_DIRS('lib/talloc:. buildtools:buildtools')
     conf.sub_config(LIBREPLACE_DIR)
 
     if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
@@ -49,4 +51,9 @@ def build(bld):
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         bld.env.TALLOC_VERSION = VERSION
         bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
+
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()
 
