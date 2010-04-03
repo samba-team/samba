@@ -60,8 +60,23 @@ static bool sid_attr_compose(struct wbcSidWithAttr *s,
 	return true;
 }
 
-static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
-				   const struct winbindd_response *resp,
+static void wbcAuthUserInfoDestructor(void *ptr)
+{
+	struct wbcAuthUserInfo *i = (struct wbcAuthUserInfo *)ptr;
+	free(i->account_name);
+	free(i->user_principal);
+	free(i->full_name);
+	free(i->domain_name);
+	free(i->dns_domain_name);
+	free(i->logon_server);
+	free(i->logon_script);
+	free(i->profile_path);
+	free(i->home_directory);
+	free(i->home_drive);
+	free(i->sids);
+}
+
+static wbcErr wbc_create_auth_info(const struct winbindd_response *resp,
 				   struct wbcAuthUserInfo **_i)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
@@ -71,17 +86,19 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 	uint32_t sn = 0;
 	uint32_t j;
 
-	i = talloc(mem_ctx, struct wbcAuthUserInfo);
+	i = (struct wbcAuthUserInfo *)wbcAllocateMemory(
+		sizeof(struct wbcAuthUserInfo), 1,
+		wbcAuthUserInfoDestructor);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
 	i->user_flags	= resp->data.auth.info3.user_flgs;
 
-	i->account_name	= talloc_strdup(i, resp->data.auth.info3.user_name);
+	i->account_name	= strdup(resp->data.auth.info3.user_name);
 	BAIL_ON_PTR_ERROR(i->account_name, wbc_status);
 	i->user_principal= NULL;
-	i->full_name	= talloc_strdup(i, resp->data.auth.info3.full_name);
+	i->full_name	= strdup(resp->data.auth.info3.full_name);
 	BAIL_ON_PTR_ERROR(i->full_name, wbc_status);
-	i->domain_name	= talloc_strdup(i, resp->data.auth.info3.logon_dom);
+	i->domain_name	= strdup(resp->data.auth.info3.logon_dom);
 	BAIL_ON_PTR_ERROR(i->domain_name, wbc_status);
 	i->dns_domain_name= NULL;
 
@@ -103,22 +120,23 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 	i->pass_can_change_time	= resp->data.auth.info3.pass_can_change_time;
 	i->pass_must_change_time= resp->data.auth.info3.pass_must_change_time;
 
-	i->logon_server	= talloc_strdup(i, resp->data.auth.info3.logon_srv);
+	i->logon_server	= strdup(resp->data.auth.info3.logon_srv);
 	BAIL_ON_PTR_ERROR(i->logon_server, wbc_status);
-	i->logon_script	= talloc_strdup(i, resp->data.auth.info3.logon_script);
+	i->logon_script	= strdup(resp->data.auth.info3.logon_script);
 	BAIL_ON_PTR_ERROR(i->logon_script, wbc_status);
-	i->profile_path	= talloc_strdup(i, resp->data.auth.info3.profile_path);
+	i->profile_path	= strdup(resp->data.auth.info3.profile_path);
 	BAIL_ON_PTR_ERROR(i->profile_path, wbc_status);
-	i->home_directory= talloc_strdup(i, resp->data.auth.info3.home_dir);
+	i->home_directory= strdup(resp->data.auth.info3.home_dir);
 	BAIL_ON_PTR_ERROR(i->home_directory, wbc_status);
-	i->home_drive	= talloc_strdup(i, resp->data.auth.info3.dir_drive);
+	i->home_drive	= strdup(resp->data.auth.info3.dir_drive);
 	BAIL_ON_PTR_ERROR(i->home_drive, wbc_status);
 
 	i->num_sids	= 2;
 	i->num_sids 	+= resp->data.auth.info3.num_groups;
 	i->num_sids	+= resp->data.auth.info3.num_other_sids;
 
-	i->sids	= talloc_array(i, struct wbcSidWithAttr, i->num_sids);
+	i->sids	= (struct wbcSidWithAttr *)calloc(
+		sizeof(struct wbcSidWithAttr), i->num_sids);
 	BAIL_ON_PTR_ERROR(i->sids, wbc_status);
 
 	wbc_status = wbcStringToSid(resp->data.auth.info3.dom_sid,
@@ -212,7 +230,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 	*_i = i;
 	i = NULL;
 done:
-	talloc_free(i);
+	wbcFreeMemory(i);
 	return wbc_status;
 }
 
@@ -274,7 +292,7 @@ static wbcErr wbc_create_logon_info(struct winbindd_response *resp,
 	i = talloc_zero(NULL, struct wbcLogonUserInfo);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
-	wbc_status = wbc_create_auth_info(i, resp, &i->info);
+	wbc_status = wbc_create_auth_info(resp, &i->info);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	if (resp->data.auth.krb5ccname &&
@@ -490,9 +508,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	if (info) {
-		wbc_status = wbc_create_auth_info(NULL,
-						  &response,
-						  info);
+		wbc_status = wbc_create_auth_info(&response, info);
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
