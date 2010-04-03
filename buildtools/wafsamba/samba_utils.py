@@ -408,8 +408,13 @@ def IS_NEWER(bld, file1, file2):
 Build.BuildContext.IS_NEWER = IS_NEWER
 
 
-def TOUCH_FILE(file):
+def TOUCH_FILE(file, install_dir=False):
     '''touch a file'''
+    if install_dir:
+        if file[0] == '/':
+            file = Options.options.destdir + file
+        else:
+            file = Options.options.destdir + '/' + file
     mkdir_p(os.path.dirname(file))
     f = open(file, 'w')
     f.close()

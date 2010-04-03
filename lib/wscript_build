@@ -23,4 +23,5 @@ for e in list:
 
 if Options.is_install:
     # we need a blank __init__.py in samba/external
-    TOUCH_FILE(bld.EXPAND_VARIABLES('${PYTHONDIR}/samba/external/__init__.py'))
+    TOUCH_FILE(bld.EXPAND_VARIABLES('${PYTHONDIR}/samba/external/__init__.py'),
+               install_dir=True)
