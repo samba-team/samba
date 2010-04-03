@@ -247,7 +247,8 @@ static wbcErr wbc_create_password_policy_info(const struct winbindd_response *re
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcUserPasswordPolicyInfo *i;
 
-	i = talloc(NULL, struct wbcUserPasswordPolicyInfo);
+	i = (struct wbcUserPasswordPolicyInfo *)wbcAllocateMemory(
+		sizeof(struct wbcUserPasswordPolicyInfo), 1, NULL);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
 	i->min_passwordage	= resp->data.auth.policy.min_passwordage;
@@ -260,7 +261,7 @@ static wbcErr wbc_create_password_policy_info(const struct winbindd_response *re
 	i = NULL;
 
 done:
-	talloc_free(i);
+	wbcFreeMemory(i);
 	return wbc_status;
 }
 
