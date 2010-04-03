@@ -36,5 +36,6 @@ void *wbcAllocateMemory(size_t nelem, size_t elsize,
 			void (*destructor)(void *ptr));
 
 char *wbcStrDup(const char *str);
+const char **wbcAllocateStringArray(int num_strings);
 
 #endif      /* _WBCLIENT_INTERNAL_H */

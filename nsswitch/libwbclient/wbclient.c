@@ -219,6 +219,22 @@ char *wbcStrDup(const char *str)
 	return result;
 }
 
+static void wbcStringArrayDestructor(void *ptr)
+{
+	char **p = (char **)ptr;
+	while (*p != NULL) {
+		free(*p);
+		p += 1;
+	}
+}
+
+const char **wbcAllocateStringArray(int num_strings)
+{
+	return (const char **)wbcAllocateMemory(
+		num_strings + 1, sizeof(const char *),
+		wbcStringArrayDestructor);
+}
+
 wbcErr wbcLibraryDetails(struct wbcLibraryDetails **_details)
 {
 	struct wbcLibraryDetails *info;
