@@ -1,4 +1,4 @@
-#
+
 # Unix SMB/CIFS implementation.
 # backend code for provisioning a Samba4 server
 
@@ -40,7 +40,8 @@ import shutil
 import ldb
 
 from samba.auth import system_session, admin_session
-from samba import glue, version, Ldb, substitute_var, valid_netbios_name
+import samba
+from samba import version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted, read_and_sub_file, setup_file
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008
 from samba.dcerpc import security
@@ -1120,16 +1121,16 @@ def provision(setup_dir, message, session_info,
     policyguid_dc = policyguid_dc.upper()
 
     if adminpass is None:
-        adminpass = glue.generate_random_password(12, 32)
+        adminpass = samba.generate_random_password(12, 32)
     if krbtgtpass is None:
-        krbtgtpass = glue.generate_random_password(128, 255)
+        krbtgtpass = samba.generate_random_password(128, 255)
     if machinepass is None:
-        machinepass  = glue.generate_random_password(128, 255)
+        machinepass  = samba.generate_random_password(128, 255)
     if dnspass is None:
-        dnspass = glue.generate_random_password(128, 255)
+        dnspass = samba.generate_random_password(128, 255)
     if ldapadminpass is None:
         #Make a new, random password between Samba and it's LDAP server
-        ldapadminpass=glue.generate_random_password(128, 255)
+        ldapadminpass=samba.generate_random_password(128, 255)
 
     if backend_type is None:
         backend_type = "ldb"
@@ -1184,7 +1185,7 @@ def provision(setup_dir, message, session_info,
     paths.bind_gid = bind_gid
 
     if hostip is None:
-        hostips = glue.interface_ips(lp, False)
+        hostips = samba.interface_ips(lp, False)
         if len(hostips) == 0:
             message("No external IPv4 address has been found: I use the loopback.")
             hostip = '127.0.0.1'
@@ -1449,7 +1450,7 @@ def provision_become_dc(setup_dir=None,
         """print a message if quiet is not set."""
         print text
 
-    glue.set_debug_level(debuglevel)
+    samba.set_debug_level(debuglevel)
 
     return provision(setup_dir, message, system_session(), None,
               smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,

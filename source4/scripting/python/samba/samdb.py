@@ -44,7 +44,7 @@ class SamDB(samba.Ldb):
 
         self.lp = lp
         if url is None:
-                url = lp.get("sam database")
+            url = lp.get("sam database")
 
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
                 session_info=session_info, credentials=credentials, flags=flags,
@@ -214,7 +214,7 @@ userPassword:: %s
                 accountExpires = 0
             else:
                 userAccountControl = userAccountControl & ~0x10000
-                accountExpires = glue.unix2nttime(expiry_seconds + int(time.time()))
+                accountExpires = samba.unix2nttime(expiry_seconds + int(time.time()))
 
             setexp = """
 dn: %s
@@ -230,4 +230,3 @@ accountExpires: %u
             self.transaction_cancel()
             raise
         self.transaction_commit()
-

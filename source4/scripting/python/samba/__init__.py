@@ -45,6 +45,8 @@ import ldb
 import dsdb
 import glue
 
+
+
 class Ldb(ldb.Ldb):
     """Simple Samba-specific LDB subclass that takes care
     of setting up the modules dir, credentials pointers, etc.
@@ -414,3 +416,7 @@ def ensure_external_module(modulename, location):
                 "samba.external.%s" % modulename, fromlist=["samba.external"])
 
 version = glue.version
+interface_ips = glue.interface_ips
+set_debug_level = glue.set_debug_level
+unix2nttime = glue.unix2nttime
+generate_random_password = glue.generate_random_password

@@ -13,10 +13,8 @@ sys.path.append("../lib/testtools")
 import samba.getopt as options
 
 from samba.auth import system_session
-from ldb import SCOPE_BASE, LdbError
-from ldb import ERR_NO_SUCH_OBJECT
-from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_REPLACE
+from ldb import (SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, Message,
+    MessageElement, Dn, FLAG_MOD_REPLACE)
 from samba import Ldb
 from samba import glue
 
