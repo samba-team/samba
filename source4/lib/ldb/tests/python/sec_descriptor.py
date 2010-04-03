@@ -1,31 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import getopt
 import optparse
 import sys
 import os
 import base64
 import re
 import random
-import time
 
 sys.path.append("bin/python")
 
 import samba.getopt as options
 
 # Some error messages that are being tested
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
-from ldb import ERR_NO_SUCH_OBJECT, ERR_INVALID_DN_SYNTAX, ERR_UNWILLING_TO_PERFORM
-from ldb import ERR_INSUFFICIENT_ACCESS_RIGHTS
+from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
+from ldb import ERR_NO_SUCH_OBJECT
 
 # For running the test unit
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
-from samba import Ldb, DS_DOMAIN_FUNCTION_2008, SECINFO_OWNER, \
-    SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL
+from samba import Ldb, DS_DOMAIN_FUNCTION_2008
+from samba.dcerpc.security import (
+    SECINFO_OWNER, SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL)
 from subunit.run import SubunitTestRunner
 import unittest
 
