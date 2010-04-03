@@ -541,69 +541,76 @@ done:
 	return wbc_status;
 }
 
-static wbcErr wbc_create_domain_controller_info_ex(TALLOC_CTX *mem_ctx,
-						   const struct winbindd_response *resp,
+static void wbcDomainControllerInfoExDestructor(void *ptr)
+{
+	struct wbcDomainControllerInfoEx *i =
+		(struct wbcDomainControllerInfoEx *)ptr;
+	free((char *)(i->dc_unc));
+	free((char *)(i->dc_address));
+	free((char *)(i->domain_guid));
+	free((char *)(i->domain_name));
+	free((char *)(i->forest_name));
+	free((char *)(i->dc_site_name));
+	free((char *)(i->client_site_name));
+}
+
+static wbcErr wbc_create_domain_controller_info_ex(const struct winbindd_response *resp,
 						   struct wbcDomainControllerInfoEx **_i)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcDomainControllerInfoEx *i;
 	struct wbcGuid guid;
 
-	i = talloc(mem_ctx, struct wbcDomainControllerInfoEx);
+	i = (struct wbcDomainControllerInfoEx *)wbcAllocateMemory(
+		sizeof(struct wbcDomainControllerInfoEx), 1,
+		wbcDomainControllerInfoExDestructor);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
-	i->dc_unc = talloc_strdup(i, resp->data.dsgetdcname.dc_unc);
+	i->dc_unc = strdup(resp->data.dsgetdcname.dc_unc);
 	BAIL_ON_PTR_ERROR(i->dc_unc, wbc_status);
 
-	i->dc_address = talloc_strdup(i, resp->data.dsgetdcname.dc_address);
+	i->dc_address = strdup(resp->data.dsgetdcname.dc_address);
 	BAIL_ON_PTR_ERROR(i->dc_address, wbc_status);
 
 	i->dc_address_type = resp->data.dsgetdcname.dc_address_type;
 
 	wbc_status = wbcStringToGuid(resp->data.dsgetdcname.domain_guid, &guid);
 	if (WBC_ERROR_IS_OK(wbc_status)) {
-		i->domain_guid = talloc(i, struct wbcGuid);
+		i->domain_guid = (struct wbcGuid *)malloc(
+			sizeof(struct wbcGuid));
 		BAIL_ON_PTR_ERROR(i->domain_guid, wbc_status);
 
 		*i->domain_guid = guid;
-	} else {
-		i->domain_guid = NULL;
 	}
 
-	i->domain_name = talloc_strdup(i, resp->data.dsgetdcname.domain_name);
+	i->domain_name = strdup(resp->data.dsgetdcname.domain_name);
 	BAIL_ON_PTR_ERROR(i->domain_name, wbc_status);
 
 	if (resp->data.dsgetdcname.forest_name[0] != '\0') {
-		i->forest_name = talloc_strdup(i,
-			resp->data.dsgetdcname.forest_name);
+		i->forest_name = strdup(resp->data.dsgetdcname.forest_name);
 		BAIL_ON_PTR_ERROR(i->forest_name, wbc_status);
-	} else {
-		i->forest_name = NULL;
 	}
 
 	i->dc_flags = resp->data.dsgetdcname.dc_flags;
 
 	if (resp->data.dsgetdcname.dc_site_name[0] != '\0') {
-		i->dc_site_name = talloc_strdup(i,
-			resp->data.dsgetdcname.dc_site_name);
+		i->dc_site_name = strdup(resp->data.dsgetdcname.dc_site_name);
 		BAIL_ON_PTR_ERROR(i->dc_site_name, wbc_status);
-	} else {
-		i->dc_site_name = NULL;
 	}
 
 	if (resp->data.dsgetdcname.client_site_name[0] != '\0') {
-		i->client_site_name = talloc_strdup(i,
+		i->client_site_name = strdup(
 			resp->data.dsgetdcname.client_site_name);
 		BAIL_ON_PTR_ERROR(i->client_site_name, wbc_status);
-	} else {
-		i->client_site_name = NULL;
 	}
 
 	*_i = i;
 	i = NULL;
 
 done:
-	talloc_free(i);
+	if (i != NULL) {
+		wbcFreeMemory(i);
+	}
 	return wbc_status;
 }
 
@@ -658,8 +665,7 @@ wbcErr wbcLookupDomainControllerEx(const char *domain,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	if (dc_info) {
-		wbc_status = wbc_create_domain_controller_info_ex(NULL,
-								  &response,
+		wbc_status = wbc_create_domain_controller_info_ex(&response,
 								  dc_info);
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
