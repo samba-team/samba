@@ -18,21 +18,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.credentials import DONT_USE_KERBEROS
 import samba.getopt as options
 from samba.dcerpc import security
-from samba import Ldb
 from samba.samdb import SamDB
 from samba.ndr import ndr_unpack, ndr_pack
-from samba import GUID_DRS_ALLOCATE_RIDS, GUID_DRS_CHANGE_DOMAIN_MASTER, \
-    GUID_DRS_CHANGE_INFR_MASTER, GUID_DRS_CHANGE_PDC, GUID_DRS_CHANGE_RID_MASTER, \
-    GUID_DRS_CHANGE_SCHEMA_MASTER, GUID_DRS_GET_CHANGES, GUID_DRS_GET_ALL_CHANGES, \
-    GUID_DRS_GET_FILTERED_ATTRIBUTES, GUID_DRS_MANAGE_TOPOLOGY, \
-    GUID_DRS_MONITOR_TOPOLOGY, GUID_DRS_REPL_SYNCRONIZE, GUID_DRS_RO_REPL_SECRET_SYNC
+from samba.dcerpc.security import (
+    GUID_DRS_ALLOCATE_RIDS, GUID_DRS_CHANGE_DOMAIN_MASTER,
+    GUID_DRS_CHANGE_INFR_MASTER, GUID_DRS_CHANGE_PDC,
+    GUID_DRS_CHANGE_RID_MASTER, GUID_DRS_CHANGE_SCHEMA_MASTER,
+    GUID_DRS_GET_CHANGES, GUID_DRS_GET_ALL_CHANGES,
+    GUID_DRS_GET_FILTERED_ATTRIBUTES, GUID_DRS_MANAGE_TOPOLOGY,
+    GUID_DRS_MONITOR_TOPOLOGY, GUID_DRS_REPL_SYNCRONIZE,
+    GUID_DRS_RO_REPL_SECRET_SYNC)
+
 
 import ldb
-from ldb import SCOPE_BASE, SCOPE_SUBTREE
-import os
+from ldb import SCOPE_BASE
 import re
 
 from samba.auth import system_session
