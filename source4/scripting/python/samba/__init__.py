@@ -294,7 +294,7 @@ class Ldb(ldb.Ldb):
         glue.dsdb_write_prefixes_from_schema_to_ldb(self)
 
     def convert_schema_to_openldap(self, target, mapping):
-        return glue.dsdb_convert_schema_to_openldap(self, target, mapping)
+        return dsdb.dsdb_convert_schema_to_openldap(self, target, mapping)
 
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.

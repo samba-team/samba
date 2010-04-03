@@ -311,29 +311,6 @@ static PyObject *py_dsdb_set_schema_from_ldif(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self, PyObject *args)
-{
-	char *target_str, *mapping;
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-	PyObject *ret;
-	char *retstr;
-
-	if (!PyArg_ParseTuple(args, "Oss", &py_ldb, &target_str, &mapping))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	retstr = dsdb_convert_schema_to_openldap(ldb, target_str, mapping);
-	if (!retstr) {
-		PyErr_SetString(PyExc_RuntimeError, "dsdb_convert_schema_to_openldap failed");
-		return NULL;
-	} 
-	ret = PyString_FromString(retstr);
-	talloc_free(retstr);
-	return ret;
-}
-
 static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -589,8 +566,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
-		NULL },
-	{ "dsdb_convert_schema_to_openldap", (PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS,
 		NULL },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
 		"set debug level" },
