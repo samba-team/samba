@@ -662,35 +662,68 @@ done:
 	return wbc_status;
 }
 
+static void wbcNamedBlobDestructor(void *ptr)
+{
+	struct wbcNamedBlob *b = (struct wbcNamedBlob *)ptr;
+
+	while (b->name != NULL) {
+		free((char *)(b->name));
+		free(b->blob.data);
+		b += 1;
+	}
+}
+
 /* Initialize a named blob and add to list of blobs */
 wbcErr wbcAddNamedBlob(size_t *num_blobs,
-		       struct wbcNamedBlob **blobs,
+		       struct wbcNamedBlob **pblobs,
 		       const char *name,
 		       uint32_t flags,
 		       uint8_t *data,
 		       size_t length)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	struct wbcNamedBlob blob;
+	struct wbcNamedBlob *blobs, *blob;
 
-	*blobs = talloc_realloc(NULL, *blobs, struct wbcNamedBlob,
-				*(num_blobs)+1);
-	BAIL_ON_PTR_ERROR(*blobs, wbc_status);
+	if (name == NULL) {
+		return WBC_ERR_INVALID_PARAM;
+	}
 
-	blob.name		= talloc_strdup(*blobs, name);
-	BAIL_ON_PTR_ERROR(blob.name, wbc_status);
-	blob.flags		= flags;
-	blob.blob.length	= length;
-	blob.blob.data		= (uint8_t *)talloc_memdup(*blobs, data, length);
-	BAIL_ON_PTR_ERROR(blob.blob.data, wbc_status);
+	/*
+	 * Overallocate the b->name==NULL terminator for
+	 * wbcNamedBlobDestructor
+	 */
+	blobs = (struct wbcNamedBlob *)wbcAllocateMemory(
+		sizeof(struct wbcNamedBlob), *num_blobs + 2,
+		wbcNamedBlobDestructor);
 
-	(*(blobs))[*num_blobs] = blob;
-	*(num_blobs) += 1;
+	if (*pblobs != NULL) {
+		struct wbcNamedBlob *old = *pblobs;
+		memcpy(blobs, old, sizeof(struct wbcNamedBlob) * (*num_blobs));
+		if (*num_blobs != 0) {
+			/* end indicator for wbcNamedBlobDestructor */
+			old[0].name = NULL;
+		}
+		wbcFreeMemory(old);
+	}
+	*pblobs = blobs;
+
+	blob = &blobs[*num_blobs];
+
+	blob->name = strdup(name);
+	BAIL_ON_PTR_ERROR(blob->name, wbc_status);
+	blob->flags = flags;
+
+	blob->blob.length = length;
+	blob->blob.data	= (uint8_t *)malloc(length);
+	BAIL_ON_PTR_ERROR(blob->blob.data, wbc_status);
+	memcpy(blob->blob.data, data, length);
+
+	*num_blobs += 1;
+	*pblobs = blobs;
+	blobs = NULL;
 
 	wbc_status = WBC_ERR_SUCCESS;
 done:
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		wbcFreeMemory(*blobs);
-	}
+	wbcFreeMemory(blobs);
 	return wbc_status;
 }
