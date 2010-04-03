@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Volker Lendecke 2010
 
 
    This library is free software; you can redistribute it and/or
@@ -205,13 +206,10 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *sid_string = NULL;
-	char *domain = NULL;
-	char *name = NULL;
-	enum wbcSidType name_type = WBC_SID_NAME_USE_NONE;
+	char *domain, *name;
 
 	if (!sid) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		return WBC_ERR_INVALID_PARAM;
 	}
 
 	/* Initialize request */
@@ -222,64 +220,50 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	/* dst is already null terminated from the memset above */
 
 	wbc_status = wbcSidToString(sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return wbc_status;
+	}
 
 	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
 	wbcFreeMemory(sid_string);
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_LOOKUPSID,
-					   &request,
-					   &response);
-	BAIL_ON_WBC_ERROR(wbc_status);
+	wbc_status = wbcRequestResponse(WINBINDD_LOOKUPSID, &request,
+					&response);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return wbc_status;
+	}
 
 	/* Copy out result */
 
-	domain = talloc_strdup(NULL, response.data.name.dom_name);
-	BAIL_ON_PTR_ERROR(domain, wbc_status);
+	wbc_status = WBC_ERR_NO_MEMORY;
+	domain = NULL;
+	name = NULL;
 
-	name = talloc_strdup(NULL, response.data.name.name);
-	BAIL_ON_PTR_ERROR(name, wbc_status);
-
-	name_type = (enum wbcSidType)response.data.name.type;
-
+	domain = wbcStrDup(response.data.name.dom_name);
+	if (domain == NULL) {
+		goto done;
+	}
+	name = wbcStrDup(response.data.name.name);
+	if (name == NULL) {
+		goto done;
+	}
+	if (pdomain != NULL) {
+		*pdomain = domain;
+		domain = NULL;
+	}
+	if (pname != NULL) {
+		*pname = name;
+		name = NULL;
+	}
+	if (pname_type != NULL) {
+		*pname_type = (enum wbcSidType)response.data.name.type;
+	}
 	wbc_status = WBC_ERR_SUCCESS;
-
- done:
-	if (WBC_ERROR_IS_OK(wbc_status)) {
-		if (pdomain != NULL) {
-			*pdomain = domain;
-		} else {
-			TALLOC_FREE(domain);
-		}
-		if (pname != NULL) {
-			*pname = name;
-		} else {
-			TALLOC_FREE(name);
-		}
-		if (pname_type != NULL) {
-			*pname_type = name_type;
-		}
-	}
-	else {
-#if 0
-		/*
-		 * Found by Coverity: In this particular routine we can't end
-		 * up here with a non-NULL name. Further up there are just two
-		 * exit paths that lead here, neither of which leave an
-		 * allocated name. If you add more paths up there, re-activate
-		 * this.
-		 */
-		if (name != NULL) {
-			talloc_free(name);
-		}
-#endif
-		if (domain != NULL) {
-			talloc_free(domain);
-		}
-	}
-
+done:
+	wbcFreeMemory(name);
+	wbcFreeMemory(domain);
 	return wbc_status;
 }
 
