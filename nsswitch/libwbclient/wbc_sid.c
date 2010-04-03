@@ -30,41 +30,41 @@
 wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 		      char **sid_string)
 {
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	uint32_t id_auth;
-	int i;
-	char *tmp = NULL;
+	int i, ofs, maxlen;
+	char *result;
 
 	if (!sid) {
-		wbc_status = WBC_ERR_INVALID_SID;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		return WBC_ERR_INVALID_SID;
 	}
+
+	maxlen = sid->num_auths * 11 + 25;
+
+	result = (char *)wbcAllocateMemory(maxlen, 1, NULL);
+	if (result == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
+	/*
+	 * BIG NOTE: this function only does SIDS where the identauth is not
+	 * >= ^32 in a range of 2^48.
+	 */
 
 	id_auth = sid->id_auth[5] +
 		(sid->id_auth[4] << 8) +
 		(sid->id_auth[3] << 16) +
 		(sid->id_auth[2] << 24);
 
-	tmp = talloc_asprintf(NULL, "S-%d-%d", sid->sid_rev_num, id_auth);
-	BAIL_ON_PTR_ERROR(tmp, wbc_status);
+	ofs = snprintf(result, maxlen, "S-%u-%lu",
+		       (unsigned int)sid->sid_rev_num, (unsigned long)id_auth);
 
-	for (i=0; i<sid->num_auths; i++) {
-		char *tmp2;
-		tmp2 = talloc_asprintf_append(tmp, "-%u", sid->sub_auths[i]);
-		BAIL_ON_PTR_ERROR(tmp2, wbc_status);
-
-		tmp = tmp2;
+	for (i = 0; i < sid->num_auths; i++) {
+		ofs += snprintf(result + ofs, maxlen - ofs, "-%lu",
+				(unsigned long)sid->sub_auths[i]);
 	}
 
-	*sid_string = tmp;
-	tmp = NULL;
-
-	wbc_status = WBC_ERR_SUCCESS;
-
-done:
-	talloc_free(tmp);
-
-	return wbc_status;
+	*sid_string = result;
+	return WBC_ERR_SUCCESS;
 }
 
 /* Convert a character string to a binary SID */
