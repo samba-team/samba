@@ -766,7 +766,7 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 
 		wbcFreeMemory(name);
 
-		name = talloc_strdup(NULL, pwd->pw_gecos);
+		name = wbcStrDup(pwd->pw_gecos);
 		BAIL_ON_PTR_ERROR(name, wbc_status);
 		wbcFreeMemory(pwd);
 	}
