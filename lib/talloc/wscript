@@ -23,6 +23,8 @@ def configure(conf):
                                  implied_deps='replace'):
         conf.define('USING_SYSTEM_TALLOC', 1)
 
+    conf.env.standalone_talloc = conf.IN_LAUNCH_DIR()
+
     conf.SAMBA_CONFIG_H()
 
 
@@ -42,3 +44,9 @@ def build(bld):
                          'testsuite_main.c testsuite.c',
                          deps='talloc',
                          install=False)
+
+    if bld.env.standalone_talloc:
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+        bld.env.TALLOC_VERSION = VERSION
+        bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
+
