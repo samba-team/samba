@@ -627,6 +627,7 @@ def subst_at_vars(task):
     # split on the vars
     a = re.split('(@\w+@)', s)
     out = []
+    back_sub = [ ('PREFIX', '${prefix}'), ('EXEC_PREFIX', '${exec_prefix}')]
     for v in a:
         if re.match('@\w+@', v):
             vname = v[1:-1]
@@ -635,7 +636,12 @@ def subst_at_vars(task):
             if not vname in task.env:
                 print "Unknown substitution %s in %s" % (v, task.name)
                 raise
-            v = task.env[vname]
+            v = SUBST_VARS_RECURSIVE(task.env[vname], task.env)
+            # now we back substitute the allowed pc vars
+            for (b, m) in back_sub:
+                s = task.env[b]
+                if s == v[0:len(s)]:
+                    v = m + v[len(s):]
         out.append(v)
     contents = ''.join(out)
     f = open(tgt, 'w')
