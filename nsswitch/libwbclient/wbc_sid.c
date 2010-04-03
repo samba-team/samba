@@ -444,8 +444,9 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	sids = talloc_array(NULL, struct wbcDomainSid,
-			    response.data.num_entries);
+	sids = (struct wbcDomainSid *)wbcAllocateMemory(
+		response.data.num_entries, sizeof(struct wbcDomainSid),
+		NULL);
 	BAIL_ON_PTR_ERROR(sids, wbc_status);
 
 	s = (const char *)response.extra_data.data;
@@ -467,7 +468,7 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
  done:
 	winbindd_free_response(&response);
 	if (sids) {
-		talloc_free(sids);
+		wbcFreeMemory(sids);
 	}
 
 	return wbc_status;
