@@ -599,7 +599,8 @@ wbcErr wbcGetGroups(const char *account,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	groups = talloc_array(NULL, gid_t, response.data.num_entries);
+	groups = (gid_t *)wbcAllocateMemory(
+		sizeof(gid_t), response.data.num_entries, NULL);
 	BAIL_ON_PTR_ERROR(groups, wbc_status);
 
 	for (i = 0; i < response.data.num_entries; i++) {
@@ -614,9 +615,6 @@ wbcErr wbcGetGroups(const char *account,
 
  done:
 	winbindd_free_response(&response);
-	if (groups) {
-		talloc_free(groups);
-	}
-
+	wbcFreeMemory(groups);
 	return wbc_status;
 }
