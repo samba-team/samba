@@ -699,11 +699,15 @@ wbcErr wbcListGroups(const char *domain_name,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
+	groups = wbcAllocateStringArray(response.data.num_entries);
+	if (groups == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
 	/* Look through extra data */
 
 	next = (const char *)response.extra_data.data;
 	while (next) {
-		const char **tmp;
 		const char *current = next;
 		char *k = strchr(next, ',');
 		if (k) {
@@ -713,28 +717,27 @@ wbcErr wbcListGroups(const char *domain_name,
 			next = NULL;
 		}
 
-		tmp = talloc_realloc(NULL, groups,
-				     const char *,
-				     num_groups+1);
-		BAIL_ON_PTR_ERROR(tmp, wbc_status);
-		groups = tmp;
-
-		groups[num_groups] = talloc_strdup(groups, current);
+		groups[num_groups] = strdup(current);
 		BAIL_ON_PTR_ERROR(groups[num_groups], wbc_status);
-
-		num_groups++;
+		num_groups += 1;
+		if (num_groups > response.data.num_entries) {
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
+			goto done;
+		}
+	}
+	if (num_groups != response.data.num_entries) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		goto done;
 	}
 
-	*_num_groups = num_groups;
+	*_num_groups = response.data.num_entries;
 	*_groups = groups;
 	groups = NULL;
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
 	winbindd_free_response(&response);
-	if (groups) {
-		talloc_free(groups);
-	}
+	wbcFreeMemory(groups);
 	return wbc_status;
 }
 
