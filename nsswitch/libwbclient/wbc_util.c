@@ -132,6 +132,12 @@ done:
 	return wbc_status;
 }
 
+static void wbcDomainInfoDestructor(void *ptr)
+{
+	struct wbcDomainInfo *i = (struct wbcDomainInfo *)ptr;
+	free(i->short_name);
+	free(i->dns_name);
+}
 
 /** @brief Lookup the current status of a trusted domain, sync wrapper
  *
@@ -166,15 +172,14 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	info = talloc(NULL, struct wbcDomainInfo);
+	info = (struct wbcDomainInfo *)wbcAllocateMemory(
+		sizeof(struct wbcDomainInfo), 1, wbcDomainInfoDestructor);
 	BAIL_ON_PTR_ERROR(info, wbc_status);
 
-	info->short_name = talloc_strdup(info,
-					 response.data.domain_info.name);
+	info->short_name = strdup(response.data.domain_info.name);
 	BAIL_ON_PTR_ERROR(info->short_name, wbc_status);
 
-	info->dns_name = talloc_strdup(info,
-				       response.data.domain_info.alt_name);
+	info->dns_name = strdup(response.data.domain_info.alt_name);
 	BAIL_ON_PTR_ERROR(info->dns_name, wbc_status);
 
 	wbc_status = wbcStringToSid(response.data.domain_info.sid,
@@ -189,14 +194,12 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 		info->domain_flags |= WBC_DOMINFO_DOMAIN_PRIMARY;
 
 	*dinfo = info;
+	info = NULL;
 
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		talloc_free(info);
-	}
-
+	wbcFreeMemory(info);
 	return wbc_status;
 }
 
