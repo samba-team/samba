@@ -234,28 +234,37 @@ done:
 	return wbc_status;
 }
 
+static void wbcAuthErrorInfoDestructor(void *ptr)
+{
+	struct wbcAuthErrorInfo *e = (struct wbcAuthErrorInfo *)ptr;
+	free(e->nt_string);
+	free(e->display_string);
+}
+
 static wbcErr wbc_create_error_info(const struct winbindd_response *resp,
 				    struct wbcAuthErrorInfo **_e)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcAuthErrorInfo *e;
 
-	e = talloc(NULL, struct wbcAuthErrorInfo);
+	e = (struct wbcAuthErrorInfo *)wbcAllocateMemory(
+		sizeof(struct wbcAuthErrorInfo), 1,
+		wbcAuthErrorInfoDestructor);
 	BAIL_ON_PTR_ERROR(e, wbc_status);
 
 	e->nt_status = resp->data.auth.nt_status;
 	e->pam_error = resp->data.auth.pam_error;
-	e->nt_string = talloc_strdup(e, resp->data.auth.nt_status_string);
+	e->nt_string = strdup(resp->data.auth.nt_status_string);
 	BAIL_ON_PTR_ERROR(e->nt_string, wbc_status);
 
-	e->display_string = talloc_strdup(e, resp->data.auth.error_string);
+	e->display_string = strdup(resp->data.auth.error_string);
 	BAIL_ON_PTR_ERROR(e->display_string, wbc_status);
 
 	*_e = e;
 	e = NULL;
 
 done:
-	talloc_free(e);
+	wbcFreeMemory(e);
 	return wbc_status;
 }
 
