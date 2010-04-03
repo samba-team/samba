@@ -159,27 +159,6 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
-{
-	PyObject *py_lp_ctx, *py_ldb;
-	struct loadparm_context *lp_ctx;
-	struct ldb_context *ldb;
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_lp_ctx))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	lp_ctx = lp_from_py_object(py_lp_ctx);
-	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
-		return NULL;
-	}
-
-    	ldb_set_opaque(ldb, "loadparm", lp_ctx);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -542,9 +521,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
 		"ldb_set_credentials(ldb, credentials)\n"
 		"Set credentials to use when connecting." },
-	{ "ldb_set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS,
-		"ldb_set_loadparm(ldb, session_info)\n"
-		"Set loadparm context to use when connecting." },
 	{ "samdb_set_domain_sid", (PyCFunction)py_samdb_set_domain_sid, METH_VARARGS,
 		"samdb_set_domain_sid(samdb, sid)\n"
 		"Set SID of domain to use." },

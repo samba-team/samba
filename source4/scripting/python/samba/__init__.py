@@ -44,10 +44,9 @@ else:
 import ldb
 import dsdb
 import glue
+from samba._ldb import Ldb
 
-
-
-class Ldb(ldb.Ldb):
+class Ldb(Ldb):
     """Simple Samba-specific LDB subclass that takes care
     of setting up the modules dir, credentials pointers, etc.
 
@@ -116,9 +115,6 @@ class Ldb(ldb.Ldb):
 
     def set_credentials(self, credentials):
         glue.ldb_set_credentials(self, credentials)
-
-    def set_loadparm(self, lp_ctx):
-        glue.ldb_set_loadparm(self, lp_ctx)
 
     def set_create_perms(self, perms=0600):
         # we usually want Samba databases to be private. If we later find we

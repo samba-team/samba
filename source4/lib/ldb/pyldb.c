@@ -410,7 +410,7 @@ static void py_ldb_dn_dealloc(PyLdbDnObject *self)
 }
 
 PyTypeObject PyLdbDn = {
-	.tp_name = "Dn",
+	.tp_name = "ldb.Dn",
 	.tp_methods = py_ldb_dn_methods,
 	.tp_str = (reprfunc)py_ldb_dn_get_linearized,
 	.tp_repr = (reprfunc)py_ldb_dn_repr,
@@ -1380,7 +1380,7 @@ static void py_ldb_dealloc(PyLdbObject *self)
 }
 
 PyTypeObject PyLdb = {
-	.tp_name = "Ldb",
+	.tp_name = "ldb.Ldb",
 	.tp_methods = py_ldb_methods,
 	.tp_repr = (reprfunc)py_ldb_repr,
 	.tp_new = py_ldb_new,
@@ -1574,7 +1574,7 @@ static void py_ldb_module_dealloc(PyLdbModuleObject *self)
 }
 
 PyTypeObject PyLdbModule = {
-	.tp_name = "LdbModule",
+	.tp_name = "ldb.LdbModule",
 	.tp_methods = py_ldb_module_methods,
 	.tp_repr = (reprfunc)py_ldb_module_repr,
 	.tp_str = (reprfunc)py_ldb_module_str,
@@ -1851,7 +1851,7 @@ static void py_ldb_msg_element_dealloc(PyLdbMessageElementObject *self)
 }
 
 PyTypeObject PyLdbMessageElement = {
-	.tp_name = "MessageElement",
+	.tp_name = "ldb.MessageElement",
 	.tp_basicsize = sizeof(PyLdbMessageElementObject),
 	.tp_dealloc = (destructor)py_ldb_msg_element_dealloc,
 	.tp_repr = (reprfunc)py_ldb_msg_element_repr,
@@ -2105,7 +2105,7 @@ static void py_ldb_msg_dealloc(PyLdbMessageObject *self)
 }
 
 PyTypeObject PyLdbMessage = {
-	.tp_name = "Message",
+	.tp_name = "ldb.Message",
 	.tp_methods = py_ldb_msg_methods,
 	.tp_getset = py_ldb_msg_getset,
 	.tp_as_mapping = &py_ldb_msg_mapping,
@@ -2139,7 +2139,7 @@ static void py_ldb_tree_dealloc(PyLdbTreeObject *self)
 }
 
 PyTypeObject PyLdbTree = {
-	.tp_name = "Tree",
+	.tp_name = "ldb.Tree",
 	.tp_basicsize = sizeof(PyLdbTreeObject),
 	.tp_dealloc = (destructor)py_ldb_tree_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
