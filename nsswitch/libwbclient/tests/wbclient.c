@@ -149,6 +149,7 @@ static bool test_wbc_sidtostring(struct torture_context *tctx)
 		"wbcSidToString failed");
 	torture_assert_str_equal(tctx, sid_string, sid_string2,
 		"sid strings differ");
+	wbcFreeMemory(sid_string2);
 
 	return true;
 }
@@ -165,6 +166,7 @@ static bool test_wbc_guidtostring(struct torture_context *tctx)
 		"wbcGuidToString failed");
 	torture_assert_str_equal(tctx, guid_string, guid_string2,
 		"guid strings differ");
+	wbcFreeMemory(guid_string2);
 
 	return true;
 }
@@ -185,6 +187,7 @@ static bool test_wbc_domain_info(struct torture_context *tctx)
 		"wbcDomainInfo failed");
 	torture_assert(tctx, info,
 		"wbcDomainInfo returned NULL pointer");
+	wbcFreeMemory(info);
 
 	return true;
 }
@@ -228,7 +231,9 @@ static bool test_wbc_users(struct torture_context *tctx)
 			"wbcLookupSid returned no name");
 		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
 			"wbcLookupUserSids failed");
+		wbcFreeMemory(sids);
 	}
+	wbcFreeMemory(users);
 
 	return true;
 }
@@ -295,7 +300,9 @@ static bool test_wbc_users_async(struct torture_context *tctx)
 			"wbcLookupSid returned no name");
 		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
 			"wbcLookupUserSids failed");
+		wbcFreeMemory(sids);
 	}
+	wbcFreeMemory(users);
 
 	return true;
 }
@@ -372,6 +379,7 @@ static bool test_wbc_trusts(struct torture_context *tctx)
 			"wbcLookupSid returned no name");
 		*/
 	}
+	wbcFreeMemory(domains);
 
 	return true;
 }
@@ -390,6 +398,7 @@ static bool test_wbc_lookupdc(struct torture_context *tctx)
 
 	torture_assert_wbc_ok(tctx, wbcLookupDomainController(domain_name, 0, &dc_info),
 		"wbcLookupDomainController failed");
+	wbcFreeMemory(dc_info);
 
 	return true;
 }
@@ -408,6 +417,7 @@ static bool test_wbc_lookupdcex(struct torture_context *tctx)
 
 	torture_assert_wbc_ok(tctx, wbcLookupDomainControllerEx(domain_name, NULL, NULL, 0, &dc_info),
 		"wbcLookupDomainControllerEx failed");
+	wbcFreeMemory(dc_info);
 
 	return true;
 }
