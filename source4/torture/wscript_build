@@ -27,10 +27,10 @@ bld.SAMBA_MODULE('TORTURE_RAW',
 	internal_module=True
 	)
 
-bld.BUILD_SUBDIR('smb2')
-bld.BUILD_SUBDIR('winbind')
-bld.BUILD_SUBDIR('libnetapi')
-bld.BUILD_SUBDIR('libsmbclient')
+bld.RECURSE('smb2')
+bld.RECURSE('winbind')
+bld.RECURSE('libnetapi')
+bld.RECURSE('libsmbclient')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c',
@@ -48,7 +48,7 @@ bld.SAMBA_MODULE('torture_rpc',
 	internal_module=True
 	)
 
-bld.BUILD_SUBDIR('drs')
+bld.RECURSE('drs')
 
 bld.SAMBA_MODULE('TORTURE_RAP',
 	source='rap/rap.c rap/rpc.c',
@@ -68,7 +68,7 @@ bld.SAMBA_MODULE('TORTURE_AUTH',
 	internal_module=True
 	)
 
-bld.BUILD_SUBDIR('local')
+bld.RECURSE('local')
 
 bld.SAMBA_MODULE('TORTURE_NBENCH',
 	source='nbench/nbio.c nbench/nbench.c',

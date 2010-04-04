@@ -442,18 +442,6 @@ Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
 
 
-def BUILD_SUBDIR(bld, dir):
-    '''add a new set of build rules from a subdirectory'''
-    path = os.path.normpath(bld.curdir + '/' + dir)
-    cache = LOCAL_CACHE(bld, 'SUBDIR_LIST')
-    if path in cache: return
-    cache[path] = True
-    debug("build: Processing subdirectory %s" % dir)
-    bld.add_subdirs(dir)
-Build.BuildContext.BUILD_SUBDIR = BUILD_SUBDIR
-
-
-
 @runonce
 def SETUP_BUILD_GROUPS(bld):
     '''setup build groups used to ensure that the different build

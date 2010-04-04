@@ -587,9 +587,9 @@ bld.SAMBA_GENERATOR('build_options',
 
 bld.SETUP_BUILD_GROUPS()
 
-bld.BUILD_SUBDIR('../lib/replace')
+bld.RECURSE('../lib/replace')
 print "SBINDIR=%s" % bld.env.SBINDIR
-bld.BUILD_SUBDIR('build')
+bld.RECURSE('build')
 
 bld.SAMBA_MKVERSION('include/version.h')
 
@@ -598,11 +598,11 @@ bld.SAMBA_BINARY('smbd/smbd',
                  deps='tdb DYNCONFIG',
                  vars=locals())
 
-bld.BUILD_SUBDIR('../lib/socket_wrapper')
-bld.BUILD_SUBDIR('../lib/talloc')
-bld.BUILD_SUBDIR('../lib/tdb')
-bld.BUILD_SUBDIR('../lib/nss_wrapper')
-bld.BUILD_SUBDIR('../lib/uid_wrapper')
+bld.RECURSE('../lib/socket_wrapper')
+bld.RECURSE('../lib/talloc')
+bld.RECURSE('../lib/tdb')
+bld.RECURSE('../lib/nss_wrapper')
+bld.RECURSE('../lib/uid_wrapper')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

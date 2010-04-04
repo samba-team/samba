@@ -24,10 +24,10 @@ LIBREPLACE_DIR= '../replace'
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('tdb', noextenion='tdb')
-    opt.recurse(LIBREPLACE_DIR)
+    opt.RECURSE(LIBREPLACE_DIR)
 
 def configure(conf):
-    conf.sub_config(LIBREPLACE_DIR)
+    conf.RECURSE(LIBREPLACE_DIR)
 
     if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
                                  implied_deps='replace'):
@@ -36,7 +36,7 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.BUILD_SUBDIR(LIBREPLACE_DIR)
+    bld.RECURSE(LIBREPLACE_DIR)
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''check.c error.c tdb.c traverse.c

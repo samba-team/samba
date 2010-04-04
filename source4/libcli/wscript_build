@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-bld.BUILD_SUBDIR('ldap')
-bld.BUILD_SUBDIR('security')
-bld.BUILD_SUBDIR('wbclient')
+bld.RECURSE('ldap')
+bld.RECURSE('security')
+bld.RECURSE('wbclient')
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA-ERRORS',
 	source='../../libcli/util/doserr.c util/errormap.c util/nterr.c',
@@ -96,4 +96,4 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RAW',
 	deps='LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE LIBSECURITY LIBNDR'
 	)
 
-bld.BUILD_SUBDIR('smb2')
+bld.RECURSE('smb2')

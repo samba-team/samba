@@ -23,5 +23,5 @@ bld.SAMBA_SUBSYSTEM('SMB_SERVER',
 	public_deps='share LIBPACKET SMB_PROTOCOL SMB2_PROTOCOL'
 	)
 
-bld.BUILD_SUBDIR('smb')
-bld.BUILD_SUBDIR('smb2')
+bld.RECURSE('smb')
+bld.RECURSE('smb2')

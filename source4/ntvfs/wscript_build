@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-bld.BUILD_SUBDIR('posix')
-bld.BUILD_SUBDIR('common')
-bld.BUILD_SUBDIR('unixuid')
-bld.BUILD_SUBDIR('sysdep')
+bld.RECURSE('posix')
+bld.RECURSE('common')
+bld.RECURSE('unixuid')
+bld.RECURSE('sysdep')
 
 bld.SAMBA_MODULE('ntvfs_cifs',
 	source='cifs/vfs_cifs.c',

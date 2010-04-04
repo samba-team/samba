@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.BUILD_SUBDIR('samdb/ldb_modules')
+bld.RECURSE('samdb/ldb_modules')
 
 bld.SAMBA_SUBSYSTEM('SAMDB',
 	source='samdb/samdb.c samdb/samdb_privilege.c samdb/cracknames.c repl/replicated_objects.c',

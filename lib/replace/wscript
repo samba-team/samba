@@ -8,12 +8,10 @@ blddir = 'bin'
 import sys, os, Utils
 
 # find the buildtools directory
-buildtools = 'buildtools'
-while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
-    buildtools = '../' + buildtools
-srcdir = os.path.dirname(buildtools) or '.'
-
-sys.path.insert(0, buildtools + "/wafsamba")
+srcdir = '.'
+while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
+    srcdir = '../' + srcdir
+sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist
 import Options, os, preproc
@@ -23,11 +21,11 @@ samba_dist.DIST_DIRS('lib/replace buildtools:buildtools')
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.BUNDLED_EXTENSION_DEFAULT('')
-    opt.recurse('../../buildtools/wafsamba')
+    opt.RECURSE('buildtools/wafsamba')
 
 @wafsamba.runonce
 def configure(conf):
-    conf.sub_config('../../buildtools/wafsamba')
+    conf.RECURSE('buildtools/wafsamba')
 
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
@@ -290,12 +288,12 @@ def configure(conf):
                     define='REPLACE_GETPASS',
                     cflags='-DNO_CONFIG_H')
 
-    conf.sub_config('system')
+    conf.RECURSE('system')
     conf.SAMBA_CONFIG_H()
 
 
 def build(bld):
-    bld.BUILD_SUBDIR('../../buildtools/wafsamba')
+    bld.RECURSE('buildtools/wafsamba')
 
     REPLACE_SOURCE = 'replace.c snprintf.c'
 

@@ -418,3 +418,35 @@ def TOUCH_FILE(file, install_dir=False):
     mkdir_p(os.path.dirname(file))
     f = open(file, 'w')
     f.close()
+
+
+
+@conf
+def RECURSE(ctx, directory):
+    '''recurse into a directory, relative to the curdir or top level'''
+    try:
+        visited_dirs = ctx.visited_dirs
+    except:
+        visited_dirs = ctx.visited_dirs = set()
+    d = os.path.join(ctx.curdir, directory)
+    if os.path.exists(d):
+        abspath = os.path.abspath(d)
+    else:
+        abspath = os.path.abspath(os.path.join(Utils.g_module.srcdir, directory))
+    ctxclass = ctx.__class__.__name__
+    key = ctxclass + ':' + abspath
+    if key in visited_dirs:
+        # already done it
+        return
+    visited_dirs.add(key)
+    relpath = os_path_relpath(abspath, ctx.curdir)
+    if ctxclass == 'Handler':
+        return ctx.sub_options(relpath)
+    if ctxclass == 'ConfigurationContext':
+        return ctx.sub_config(relpath)
+    if ctxclass == 'BuildContext':
+        return ctx.add_subdirs(relpath)
+    print 'Unknown RECURSE context class', ctxclass
+    raise
+Options.Handler.RECURSE = RECURSE
+Build.BuildContext.RECURSE = RECURSE

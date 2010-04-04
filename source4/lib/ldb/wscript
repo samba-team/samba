@@ -26,13 +26,13 @@ LIBPOPT_DIR= '../../../lib/popt'
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('ldb', noextenion='ldb')
-    opt.recurse(LIBTDB_DIR)
-    opt.recurse(LIBTEVENT_DIR)
+    opt.RECURSE(LIBTDB_DIR)
+    opt.RECURSE(LIBTEVENT_DIR)
 
 def configure(conf):
-    conf.sub_config(LIBTDB_DIR)
-    conf.sub_config(LIBTEVENT_DIR)
-    conf.sub_config(LIBPOPT_DIR)
+    conf.RECURSE(LIBTDB_DIR)
+    conf.RECURSE(LIBTEVENT_DIR)
+    conf.RECURSE(LIBPOPT_DIR)
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
@@ -53,9 +53,9 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.BUILD_SUBDIR(LIBTDB_DIR)
-    bld.BUILD_SUBDIR(LIBTEVENT_DIR)
-    bld.BUILD_SUBDIR(LIBPOPT_DIR)
+    bld.RECURSE(LIBTDB_DIR)
+    bld.RECURSE(LIBTEVENT_DIR)
+    bld.RECURSE(LIBPOPT_DIR)
 
     # in Samba4 we build some extra modules, and add extra
     # capabilities to the ldb cmdline tools

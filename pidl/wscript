@@ -20,7 +20,7 @@ def configure(conf):
 def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
 
-    bld.BUILD_SUBDIR('lib')
+    bld.RECURSE('lib')
 
     if not bld.CONFIG_SET('HAVE_PERL_MAKEMAKER'):
         return

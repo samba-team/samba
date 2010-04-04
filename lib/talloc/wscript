@@ -29,10 +29,10 @@ samba_dist.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('talloc', noextenion='talloc')
-    opt.recurse(LIBREPLACE_DIR)
+    opt.RECURSE(LIBREPLACE_DIR)
 
 def configure(conf):
-    conf.sub_config(LIBREPLACE_DIR)
+    conf.RECURSE(LIBREPLACE_DIR)
 
     if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
                                  implied_deps='replace'):
@@ -45,7 +45,7 @@ def configure(conf):
 
 
 def build(bld):
-    bld.BUILD_SUBDIR(LIBREPLACE_DIR)
+    bld.RECURSE(LIBREPLACE_DIR)
 
     if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
         bld.SAMBA_LIBRARY('talloc',

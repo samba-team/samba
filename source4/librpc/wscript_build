@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-bld.BUILD_SUBDIR('../../librpc/idl')
-bld.BUILD_SUBDIR('idl')
+bld.RECURSE('../../librpc/idl')
+bld.RECURSE('idl')
 
 bld.SAMBA_LIBRARY('LIBNDR',
 	source='ndr/ndr_string.c ../../librpc/ndr/ndr_basic.c ../../librpc/ndr/uuid.c ../../librpc/ndr/ndr.c ../../librpc/ndr/ndr_misc.c ../../librpc/gen_ndr/ndr_misc.c',
