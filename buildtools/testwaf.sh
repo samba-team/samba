@@ -18,6 +18,7 @@ for d in $tests; do
     pushd $d || exit 1
     rm -rf bin
     type waf
+    waf dist || exit 1
     waf configure -C --enable-developer --prefix=$PREFIX || exit 1
     time waf build || exit 1
     time waf build || exit 1

@@ -15,7 +15,9 @@ for d in buildtools.split():
         break
 
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba
+import wafsamba, samba_dist
+
+samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools')
 
 LIBREPLACE_DIR= srcdir + '/lib/replace'
 LIBTALLOC_DIR=  srcdir + '/lib/talloc'
@@ -27,7 +29,6 @@ def set_options(opt):
     opt.recurse(LIBTALLOC_DIR)
 
 def configure(conf):
-    conf.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools')
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBTALLOC_DIR)
 

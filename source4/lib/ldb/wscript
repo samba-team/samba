@@ -14,7 +14,10 @@ for d in buildtools.split():
         break
 
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba
+import wafsamba, samba_dist
+
+samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
+                        lib/tdb:lib/tdb lib/tevent:lib/tevent buildtools:buildtools''')
 
 
 LIBTDB_DIR= srcdir + '/lib/tdb'
@@ -28,8 +31,6 @@ def set_options(opt):
     opt.recurse(LIBTEVENT_DIR)
 
 def configure(conf):
-    conf.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                      lib/tdb:lib/tdb lib/tevent:lib/tevent buildtools:buildtools''')
     conf.sub_config(LIBTDB_DIR)
     conf.sub_config(LIBTEVENT_DIR)
     conf.sub_config(LIBPOPT_DIR)

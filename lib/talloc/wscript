@@ -20,13 +20,16 @@ import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, samba_dist
 
+# setup what directories to put in a tarball
+samba_dist.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools')
+
+
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('talloc', noextenion='talloc')
     opt.recurse(LIBREPLACE_DIR)
 
 def configure(conf):
-    conf.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools')
     conf.sub_config(LIBREPLACE_DIR)
 
     if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,

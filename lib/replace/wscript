@@ -1,12 +1,24 @@
 #!/usr/bin/env python
 
-srcdir = '../..'
+APPNAME = 'libreplace'
+VERSION = '1.2.1'
+
 blddir = 'bin'
 
-import sys
+import sys, os
+
+# find the buildtools directory
+buildtools = 'buildtools ../../buildtools'
+for d in buildtools.split():
+    if os.path.exists(d):
+        srcdir = os.path.dirname(d) or '.'
+        break
+
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba
+import wafsamba, samba_dist
 import Options, os, preproc
+
+samba_dist.DIST_DIRS('lib/replace buildtools:buildtools')
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')

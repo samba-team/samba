@@ -4,6 +4,8 @@
 import Utils, os, sys, tarfile, stat, Scripting
 from samba_utils import *
 
+dist_dirs = None
+
 def add_tarfile(tar, fname, abspath):
     '''add a file to the tarball'''
     tinfo = tar.gettarinfo(name=abspath, arcname=fname)
@@ -17,19 +19,13 @@ def add_tarfile(tar, fname, abspath):
 
 
 def dist():
-
     appname = Utils.g_module.APPNAME
     version = Utils.g_module.VERSION
 
-    env = LOAD_ENVIRONMENT()
     srcdir = os.path.normpath(os.path.join(os.path.dirname(Utils.g_module.root_path), Utils.g_module.srcdir))
 
-    if not env.DIST_DIRS:
-        print('You must use conf.DIST_DIRS() to set which directories to package')
-        sys.exit(1)
-
-    if not env.GIT:
-        print('You need git installed to run waf dist')
+    if not dist_dirs:
+        print('You must use samba_dist.DIST_DIRS() to set which directories to package')
         sys.exit(1)
 
     dist_base = '%s-%s' % (appname, version)
@@ -37,14 +33,14 @@ def dist():
 
     tar = tarfile.open(dist_name, 'w:gz')
 
-    for dir in env.DIST_DIRS.split():
+    for dir in dist_dirs.split():
         if dir.find(':') != -1:
             destdir=dir.split(':')[1]
             dir=dir.split(':')[0]
         else:
             destdir = '.'
         absdir = os.path.join(srcdir, dir)
-        git_cmd = [ env.GIT, 'ls-files', '--full-name', absdir ]
+        git_cmd = [ 'git', 'ls-files', '--full-name', absdir ]
         try:
             files = Utils.cmd_output(git_cmd).split()
         except:
@@ -65,9 +61,10 @@ def dist():
 
 
 @conf
-def DIST_DIRS(conf, dirs):
+def DIST_DIRS(dirs):
     '''set the directories to package, relative to top srcdir'''
-    if not conf.env.DIST_DIRS:
-        conf.env.DIST_DIRS = dirs
+    global dist_dirs
+    if not dist_dirs:
+        dist_dirs = dirs
 
 Scripting.dist = dist
