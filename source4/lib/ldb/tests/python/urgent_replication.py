@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# This is a port of the original in testprogs/ejs/ldap.js
 
 import optparse
 import sys
@@ -60,19 +59,19 @@ class UrgentReplicationTests(unittest.TestCase):
         print "baseDN: %s\n" % self.base_dn
 
     def test_nonurgent_object(self):
-        '''Test if the urgent replication is not activated
-           when handling a non urgent object'''
+        """Test if the urgent replication is not activated
+           when handling a non urgent object"""
         self.ldb.add({
             "dn": "cn=nonurgenttest,cn=users," + self.base_dn,
             "objectclass":"user",
             "samaccountname":"nonurgenttest",
             "description":"nonurgenttest description"});
 
-        ''' urgent replication should not be enabled when creating '''
+        # urgent replication should not be enabled when creating 
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should not be enabled when modifying '''
+        # urgent replication should not be enabled when modifying
         m = Message()
         m.dn = Dn(ldb, "cn=nonurgenttest,cn=users," + self.base_dn)
         m["description"] = MessageElement("new description", FLAG_MOD_REPLACE,
@@ -81,7 +80,7 @@ class UrgentReplicationTests(unittest.TestCase):
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should not be enabled when deleting '''
+        # urgent replication should not be enabled when deleting
         self.delete_force(self.ldb, "cn=nonurgenttest,cn=users," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
@@ -105,11 +104,11 @@ options: 1
 instanceType: 4
 systemFlags: 33554432""", ["relax:0"]);
 
-        ''' urgent replication should be enabled when creation '''
+        # urgent replication should be enabled when creation
         res = glue.dsdb_load_partition_usn(self.ldb, "cn=Configuration," + self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should NOT be enabled when modifying '''
+        # urgent replication should NOT be enabled when modifying
         m = Message()
         m.dn = Dn(ldb, "cn=NTDS Settings test,cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration," + self.base_dn)
         m["options"] = MessageElement("0", FLAG_MOD_REPLACE,
@@ -118,7 +117,7 @@ systemFlags: 33554432""", ["relax:0"]);
         res = glue.dsdb_load_partition_usn(self.ldb, "cn=Configuration," + self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should be enabled when deleting '''
+        # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=NTDS Settings test,cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, "cn=Configuration," + self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
@@ -139,11 +138,11 @@ systemFlags: 33554432""", ["relax:0"]);
                       "name": "test crossRef",
                       "systemFlags": "1"});
 
-        ''' urgent replication should be enabled when creating '''
+        # urgent replication should be enabled when creating
         res = glue.dsdb_load_partition_usn(self.ldb, "cn=Configuration," + self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should NOT be enabled when modifying '''
+        # urgent replication should NOT be enabled when modifying
         m = Message()
         m.dn = Dn(ldb, "cn=test crossRef,CN=Partitions,CN=Configuration," + self.base_dn)
         m["systemFlags"] = MessageElement("0", FLAG_MOD_REPLACE,
@@ -153,7 +152,7 @@ systemFlags: 33554432""", ["relax:0"]);
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
 
-        ''' urgent replication should be enabled when deleting '''
+        # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=test crossRef,CN=Partitions,CN=Configuration," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, "cn=Configuration," + self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
@@ -183,14 +182,14 @@ lDAPDisplayName: test attributeSchema
 name: test attributeSchema
 systemFlags: 0""", ["relax:0"]);
 
-            ''' urgent replication should be enabled when creating '''
+            # urgent replication should be enabled when creating
             res = glue.dsdb_load_partition_usn(self.ldb, "cn=Schema,cn=Configuration," + self.base_dn)
             self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
         except LdbError:
             print "Not testing urgent replication when creating attributeSchema object ...\n"
 
-        ''' urgent replication should be enabled when modifying '''
+        # urgent replication should be enabled when modifying 
         m = Message()
         m.dn = Dn(ldb, "CN=test attributeSchema,CN=Schema,CN=Configuration," + self.base_dn)
         m["lDAPDisplayName"] = MessageElement("updated test attributeSchema", FLAG_MOD_REPLACE,
@@ -226,14 +225,14 @@ defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCD
 systemFlags: 16
 defaultHidingValue: TRUE""", ["relax:0"]);
 
-            ''' urgent replication should be enabled when creating '''
+            # urgent replication should be enabled when creating
             res = glue.dsdb_load_partition_usn(self.ldb, "cn=Schema,cn=Configuration," + self.base_dn)
             self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
         except LdbError:
             print "Not testing urgent replication when creating classSchema object ...\n"
 
-        ''' urgent replication should be enabled when modifying '''
+        # urgent replication should be enabled when modifying 
         m = Message()
         m.dn = Dn(ldb, "CN=test classSchema,CN=Schema,CN=Configuration," + self.base_dn)
         m["lDAPDisplayName"] = MessageElement("updated test classSchema", FLAG_MOD_REPLACE,
@@ -244,7 +243,6 @@ defaultHidingValue: TRUE""", ["relax:0"]);
 
 
     def test_secret_object(self):
-
         '''Test if the urgent replication is activated
            when handling a secret object'''
 
@@ -256,11 +254,11 @@ defaultHidingValue: TRUE""", ["relax:0"]);
             "currentValue":"xxxxxxx"});
 
 
-        ''' urgent replication should be enabled when creationg '''
+        # urgent replication should be enabled when creating
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should be enabled when modifying '''
+        # urgent replication should be enabled when modifying
         m = Message()
         m.dn = Dn(ldb, "cn=test secret,cn=System," + self.base_dn)
         m["currentValue"] = MessageElement("yyyyyyyy", FLAG_MOD_REPLACE,
@@ -269,7 +267,7 @@ defaultHidingValue: TRUE""", ["relax:0"]);
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should NOT be enabled when deleting '''
+        # urgent replication should NOT be enabled when deleting 
         self.delete_force(self.ldb, "cn=test secret,cn=System," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
@@ -289,11 +287,11 @@ systemFlags: -1946157056
 isCriticalSystemObject: TRUE
 rIDAvailablePool: 133001-1073741823""", ["relax:0"])
 
-        ''' urgent replication should be enabled when creating '''
+        # urgent replication should be enabled when creating
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should be enabled when modifying '''
+        # urgent replication should be enabled when modifying
         m = Message()
         m.dn = Dn(ldb, "CN=RID Manager test,CN=System," + self.base_dn)
         m["systemFlags"] = MessageElement("0", FLAG_MOD_REPLACE,
@@ -302,7 +300,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should NOT be enabled when deleting '''
+        # urgent replication should NOT be enabled when deleting 
         self.delete_force(self.ldb, "CN=RID Manager test,CN=System," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
@@ -321,11 +319,11 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
             "pwdLastSet":"0",
             "description":"urgent attributes test description"});
 
-        ''' urgent replication should NOT be enabled when creating '''
+        # urgent replication should NOT be enabled when creating
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should be enabled when modifying userAccountControl '''
+        # urgent replication should be enabled when modifying userAccountControl 
         m = Message()
         m.dn = Dn(ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement("0", FLAG_MOD_REPLACE,
@@ -334,7 +332,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should be enabled when modifying lockoutTime '''
+        # urgent replication should be enabled when modifying lockoutTime
         m = Message()
         m.dn = Dn(ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
         m["lockoutTime"] = MessageElement("1", FLAG_MOD_REPLACE,
@@ -343,7 +341,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should be enabled when modifying pwdLastSet '''
+        # urgent replication should be enabled when modifying pwdLastSet
         m = Message()
         m.dn = Dn(ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
         m["pwdLastSet"] = MessageElement("1", FLAG_MOD_REPLACE,
@@ -352,7 +350,8 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should NOT be enabled when modifying a not-urgent attribute '''
+        # urgent replication should NOT be enabled when modifying a not-urgent
+        # attribute
         m = Message()
         m.dn = Dn(ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
         m["description"] = MessageElement("updated urgent attributes test description",
@@ -361,7 +360,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
 
-        ''' urgent replication should NOT be enabled when deleting '''
+        # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
         res = glue.dsdb_load_partition_usn(self.ldb, self.base_dn)
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"]);
