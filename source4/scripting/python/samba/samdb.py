@@ -23,6 +23,7 @@
 
 """Convenience functions for using the SAM."""
 
+import dsdb
 import samba
 import glue
 import ldb
@@ -38,10 +39,6 @@ class SamDB(samba.Ldb):
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=0, options=None):
-        """Opens the SAM Database
-        For parameter meanings see the super class (samba.Ldb)
-        """
-
         self.lp = lp
         if url is None:
             url = lp.get("sam database")
@@ -107,7 +104,8 @@ pwdLastSet: 0
 """ % (user_dn)
         self.modify_ldif(mod)
 
-    def newuser(self, username, unixname, password, force_password_change_at_next_login_req=False):
+    def newuser(self, username, unixname, password,
+                force_password_change_at_next_login_req=False):
         """Adds a new user
 
         Note: This call adds also the ID mapping for winbind; therefore it works
@@ -154,7 +152,7 @@ pwdLastSet: 0
             raise
         self.transaction_commit()
 
-    def setpassword(self, filter, password, force_password_change_at_next_login_req=False):
+    def setpassword(self, filter, password, force_change_at_next_login=False):
         """Sets the password for a user
         
         Note: This call uses the "userPassword" attribute to set the password.
@@ -163,7 +161,7 @@ pwdLastSet: 0
 
         :param filter: LDAP filter to find the user (eg samccountname=name)
         :param password: Password for the user
-        :param force_password_change_at_next_login_req: Force password change
+        :param force_change_at_next_login: Force password change
         """
         self.transaction_start()
         try:
@@ -181,7 +179,7 @@ userPassword:: %s
 
             self.modify_ldif(setpw)
 
-            if force_password_change_at_next_login_req:
+            if force_change_at_next_login:
                 self.force_password_change_at_next_login(
                   "(dn=" + str(user_dn) + ")")
 
@@ -230,3 +228,39 @@ accountExpires: %u
             self.transaction_cancel()
             raise
         self.transaction_commit()
+
+    def set_domain_sid(self, sid):
+        """Change the domain SID used by this LDB.
+
+        :param sid: The new domain sid to use.
+        """
+        dsdb.samdb_set_domain_sid(self, sid)
+
+    def get_domain_sid(self):
+        """Read the domain SID used by this LDB.
+
+        """
+        dsdb.samdb_get_domain_sid(self)
+
+    def set_invocation_id(self, invocation_id):
+        """Set the invocation id for this SamDB handle.
+
+        :param invocation_id: GUID of the invocation id.
+        """
+        dsdb.dsdb_set_ntds_invocation_id(self, invocation_id)
+
+    def get_invocation_id(self):
+        "Get the invocation_id id"
+        return dsdb.samdb_ntds_invocation_id(self)
+
+    invocation_id = property(get_invocation_id, set_invocation_id)
+
+    domain_sid = property(get_domain_sid, set_domain_sid)
+
+    def get_ntds_GUID(self):
+        "Get the NTDS objectGUID"
+        return dsdb.samdb_ntds_objectGUID(self)
+
+    def server_site_name(self):
+        "Get the server site name"
+        return dsdb.samdb_server_site_name(self)

@@ -39,7 +39,6 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE, \
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,\
                 MessageElement, Message, Dn
 from samba import param
-from samba import glue
 from samba.misc import messageEltFlagToString
 from samba.provision import find_setup_dir, get_domain_descriptor, get_config_descriptor, secretsdb_self_join,set_gpo_acl,getpolicypath,create_gpo_struct
 from samba.provisionexceptions import ProvisioningError
@@ -845,7 +844,7 @@ def update_machine_account_password(paths, creds, session, names):
         assert(len(res) == 1)
 
         msg = Message(res[0].dn)
-        machinepass = glue.generate_random_password(128, 255)
+        machinepass = samba.generate_random_password(128, 255)
         msg["userPassword"] = MessageElement(machinepass, FLAG_MOD_REPLACE, "userPassword")
         sam_ldb.modify(msg)
 

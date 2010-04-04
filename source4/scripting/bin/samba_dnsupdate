@@ -34,7 +34,6 @@ import samba
 import optparse
 from samba import getopt as options
 from ldb import SCOPE_BASE
-from samba import glue
 from samba.auth import system_session
 from samba.samdb import SamDB
 
@@ -69,7 +68,7 @@ if opts.all_interfaces:
 else:
     all_interfaces = False
 
-IPs = glue.interface_ips(lp, all_interfaces)
+IPs = samba.interface_ips(lp, all_interfaces)
 nsupdate_cmd = lp.get('nsupdate command')
 
 if len(IPs) == 0:
@@ -200,7 +199,8 @@ def get_subst_vars():
     global lp
     vars = {}
 
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), lp=lp)
+    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+			      lp=lp)
 
     vars['DNSDOMAIN'] = lp.get('realm').lower()
     vars['HOSTNAME']  = lp.get('netbios name').lower() + "." + vars['DNSDOMAIN']

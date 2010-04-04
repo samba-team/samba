@@ -117,72 +117,6 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
-{ 
-	PyObject *py_ldb, *py_sid;
-	struct ldb_context *ldb;
-	struct dom_sid *sid;
-	bool ret;
-
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_sid))
-		return NULL;
-	
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
-
-	ret = samdb_set_domain_sid(ldb, sid);
-	if (!ret) {
-		PyErr_SetString(PyExc_RuntimeError, "set_domain_sid failed");
-		return NULL;
-	} 
-	Py_RETURN_NONE;
-}
-
-static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
-{ 
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-	const struct dom_sid *sid;
-	PyObject *ret;
-	char *retstr;
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb))
-		return NULL;
-	
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	sid = samdb_domain_sid(ldb);
-	if (!sid) {
-		PyErr_SetString(PyExc_RuntimeError, "samdb_domain_sid failed");
-		return NULL;
-	} 
-	retstr = dom_sid_string(NULL, sid);
-	ret = PyString_FromString(retstr);
-	talloc_free(retstr);
-	return ret;
-}
-
-static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb, *py_guid;
-	bool ret;
-	struct GUID guid;
-	struct ldb_context *ldb;
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_guid))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	GUID_from_string(PyString_AsString(py_guid), &guid);
-
-	ret = samdb_set_ntds_invocation_id(ldb, &guid);
-	if (!ret) {
-		PyErr_SetString(PyExc_RuntimeError, "set_ntds_invocation_id failed");
-		return NULL;
-	}
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -314,72 +248,6 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 	return result;
 }
 
-static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb, *result;
-	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
-	const struct GUID *guid;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	guid = samdb_ntds_invocation_id(ldb);
-	if (guid == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to find NTDS invocation ID");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	result = PyString_FromString(GUID_string(mem_ctx, guid));
-	talloc_free(mem_ctx);
-	return result;
-}
-
-
-static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb, *result;
-	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
-	const struct GUID *guid;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	guid = samdb_ntds_objectGUID(ldb);
-	if (guid == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to find NTDS GUID");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	result = PyString_FromString(GUID_string(mem_ctx, guid));
-	talloc_free(mem_ctx);
-	return result;
-}
-
-
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -442,14 +310,6 @@ static PyMethodDef py_misc_methods[] = {
 		"Generate random password with a length >= min and <= max." },
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
-	{ "samdb_set_domain_sid", (PyCFunction)py_samdb_set_domain_sid, METH_VARARGS,
-		"samdb_set_domain_sid(samdb, sid)\n"
-		"Set SID of domain to use." },
-	{ "samdb_get_domain_sid", (PyCFunction)py_samdb_get_domain_sid, METH_VARARGS,
-		"samdb_get_domain_sid(samdb)\n"
-		"Get SID of domain in use." },
-	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
-		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
@@ -462,10 +322,6 @@ static PyMethodDef py_misc_methods[] = {
 		"set debug level" },
 	{ "dsdb_load_partition_usn", (PyCFunction)py_dsdb_load_partition_usn, METH_VARARGS,
 		"get uSNHighest and uSNUrgent from the partition @REPLCHANGED"},
-	{ "samdb_ntds_invocation_id", (PyCFunction)py_samdb_ntds_invocation_id, METH_VARARGS,
-		"get the NTDS invocation ID GUID as a string"},
-	{ "samdb_ntds_objectGUID", (PyCFunction)py_samdb_ntds_objectGUID, METH_VARARGS,
-		"get the NTDS objectGUID as a string"},
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
 	{ NULL }

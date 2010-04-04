@@ -894,8 +894,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
         samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
 
-        samdb.set_domain_sid(str(domainsid))
-        samdb.set_invocation_id(invocationid)
+        samdb.domain_sid = str(domainsid)
+        samdb.invocation_id = invocationid
 
         message("Adding DomainDN: %s" % names.domaindn)
 
@@ -947,11 +947,12 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
         message("Reopening sam.ldb with new schema")
         samdb.transaction_commit()
-        samdb = Ldb(session_info=admin_session_info,
-                    credentials=provision_backend.credentials, lp=lp)
+        samdb = SamDB(session_info=admin_session_info,
+                    credentials=provision_backend.credentials, lp=lp,
+                    global_schema=False)
         samdb.connect(path)
         samdb.transaction_start()
-        samdb.set_invocation_id(invocationid)
+        samdb.invocation_id = invocationid
 
         message("Setting up sam.ldb configuration data")
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
