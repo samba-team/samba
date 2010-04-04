@@ -110,9 +110,6 @@ class Ldb(_Ldb):
         if url is not None:
             self.connect(url, flags, options)
 
-    def set_session_info(self, session_info):
-        glue.ldb_set_session_info(self, session_info)
-
     def set_create_perms(self, perms=0600):
         # we usually want Samba databases to be private. If we later find we
         # need one public, we will have to change this here

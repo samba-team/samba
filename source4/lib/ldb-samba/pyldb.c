@@ -27,6 +27,7 @@
 #include "auth/credentials/pycredentials.h"
 #include "ldb_wrap.h"
 #include "lib/ldb-samba/ldif_handlers.h"
+#include "auth/pyauth.h"
 
 static PyObject *pyldb_module;
 static PyObject *py_ldb_error;
@@ -164,6 +165,40 @@ static PyObject *py_ldb_set_utf8_casefold(PyObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
+{
+	PyObject *py_session_info;
+	struct auth_session_info *info;
+	struct ldb_context *ldb;
+	PyObject *mod_samba_auth;
+	PyObject *PyAuthSession_Type;
+	bool ret;
+
+	mod_samba_auth = PyImport_ImportModule("samba.auth");
+	if (mod_samba_auth == NULL)
+		return NULL;
+
+	PyAuthSession_Type = PyObject_GetAttrString(mod_samba_auth, "AuthSession");
+	if (PyAuthSession_Type == NULL)
+		return NULL;
+
+	ret = PyArg_ParseTuple(args, "O!", PyAuthSession_Type, &py_session_info);
+
+	Py_DECREF(PyAuthSession_Type);
+	Py_DECREF(mod_samba_auth);
+
+	if (!ret)
+		return NULL;
+
+	ldb = PyLdb_AsLdbContext(self);
+
+	info = PyAuthSession_AsSession(py_session_info);
+
+	ldb_set_opaque(ldb, "sessionInfo", info);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_ldb_register_samba_handlers(PyObject *self)
 {
 	struct ldb_context *ldb;
@@ -196,6 +231,9 @@ static PyMethodDef py_samba_ldb_methods[] = {
 		METH_NOARGS,
 		"register_samba_handlers()\n"
 		"Register Samba-specific LDB modules and schemas." },
+	{ "set_session_info", (PyCFunction)py_ldb_set_session_info, METH_VARARGS,
+		"set_session_info(session_info)\n"
+		"Set session info to use when connecting." },
 	{ NULL },
 };
 

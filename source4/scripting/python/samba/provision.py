@@ -857,14 +857,14 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, message=message, lp=lp,
-                           provision_backend=provision_backend, session_info=session_info,
-                           names=names, 
-                           serverrole=serverrole, schema=schema)
+        provision_backend=provision_backend, session_info=session_info,
+        names=names, serverrole=serverrole, schema=schema)
 
     if (schema == None):
         schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
 
-    # Load the database, but importantly, use Ldb not SamDB as we don't want to load the global schema
+    # Load the database, but importantly, use Ldb not SamDB as we don't want to
+    # load the global schema
     samdb = Ldb(session_info=session_info, 
                 credentials=provision_backend.credentials, lp=lp)
 

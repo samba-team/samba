@@ -107,7 +107,8 @@ void initauth(void)
 	if (PyType_Ready(&PyAuthSession) < 0)
 		return;
 
-	m = Py_InitModule3("auth", py_auth_methods, "Authentication and authorization support.");
+	m = Py_InitModule3("auth", py_auth_methods,
+					   "Authentication and authorization support.");
 	if (m == NULL)
 		return;
 
