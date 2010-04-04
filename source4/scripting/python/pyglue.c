@@ -184,22 +184,6 @@ static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 	return ret;
 }
 
-static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-	int ret;
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	ret = ldb_register_samba_handlers(ldb);
-
-	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *py_guid;
@@ -488,9 +472,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "samdb_get_domain_sid", (PyCFunction)py_samdb_get_domain_sid, METH_VARARGS,
 		"samdb_get_domain_sid(samdb)\n"
 		"Get SID of domain in use." },
-	{ "ldb_register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers, METH_VARARGS,
-		"ldb_register_samba_handlers(ldb)\n"
-		"Register Samba-specific LDB modules and schemas." },
 	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema, METH_VARARGS,

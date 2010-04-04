@@ -29,7 +29,20 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 
 static PyObject *pyldb_module;
+static PyObject *py_ldb_error;
 staticforward PyTypeObject PySambaLdb;
+
+static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
+{
+	if (ret == LDB_ERR_PYTHON_EXCEPTION)
+		return; /* Python exception should already be set, just keep that */
+
+	PyErr_SetObject(error, 
+			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
+			ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
+}
+
+
 
 static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 {
@@ -82,6 +95,7 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	int *old_val, *new_val;
 	char *py_opaque_name, *opaque_name_talloc;
 	struct ldb_context *ldb;
+	int ret;
 	TALLOC_CTX *tmp_ctx;
 
 	if (!PyArg_ParseTuple(args, "si", &py_opaque_name, &value))
@@ -124,10 +138,11 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	*new_val = value;
 
 	/* cache the domain_sid in the ldb */
-	if (ldb_set_opaque(ldb, opaque_name_talloc, new_val) != LDB_SUCCESS) {
+	ret = ldb_set_opaque(ldb, opaque_name_talloc, new_val);
+	
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		PyErr_SetString(PyExc_RuntimeError,
-					"Failed to set opaque integer into the ldb");
+		PyErr_SetLdbError(py_ldb_error, ret, ldb);
 		return NULL;
 	}
 
@@ -138,7 +153,7 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
+static PyObject *py_ldb_set_utf8_casefold(PyObject *self)
 {
 	struct ldb_context *ldb;
 
@@ -149,19 +164,38 @@ static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_ldb_register_samba_handlers(PyObject *self)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	/* XXX: Perhaps call this from PySambaLdb's init function ? */
+
+	ldb = PyLdb_AsLdbContext(self);
+	ret = ldb_register_samba_handlers(ldb);
+
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_error, ret, ldb);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_samba_ldb_methods[] = {
 	{ "set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS, 
-		"ldb_set_loadparm(ldb, session_info)\n"
+		"ldb_set_loadparm(session_info)\n"
 		"Set loadparm context to use when connecting." },
 	{ "set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
-		"ldb_set_credentials(ldb, credentials)\n"
+		"ldb_set_credentials(credentials)\n"
 		"Set credentials to use when connecting." },
 	{ "set_opaque_integer", (PyCFunction)py_ldb_set_opaque_integer,
 		METH_VARARGS, NULL },
 	{ "set_utf8_casefold", (PyCFunction)py_ldb_set_utf8_casefold, 
 		METH_NOARGS,
-		"ldb_set_utf8_casefold(ldb)\n"
+		"ldb_set_utf8_casefold()\n"
 		"Set the right Samba casefolding function for UTF8 charset." },
+	{ "register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers,
+		METH_NOARGS,
+		"register_samba_handlers()\n"
+		"Register Samba-specific LDB modules and schemas." },
 	{ NULL },
 };
 
@@ -184,6 +218,8 @@ void init_ldb(void)
 	PySambaLdb.tp_base = (PyTypeObject *)PyObject_GetAttrString(pyldb_module, "Ldb");
 	if (PySambaLdb.tp_base == NULL)
 		return;
+
+	py_ldb_error = PyObject_GetAttrString(pyldb_module, "LdbError");
 
 	if (PyType_Ready(&PySambaLdb) < 0)
 		return;

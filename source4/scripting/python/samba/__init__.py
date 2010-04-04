@@ -90,7 +90,7 @@ class Ldb(_Ldb):
         # This must be done before we load the schema, as these handlers for
         # objectSid and objectGUID etc must take precedence over the 'binary
         # attribute' declaration in the schema
-        glue.ldb_register_samba_handlers(self)
+        self.register_samba_handlers()
 
         # TODO set debug
         def msg(l,text):
