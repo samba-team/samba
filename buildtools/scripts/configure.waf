@@ -1,0 +1,11 @@
+#!/bin/sh
+
+
+WAF=BUILDTOOLS/bin/waf
+
+# using JOBS=1 gives maximum compatibility with
+# systems like AIX which have broken threading in python
+JOBS=1
+export JOBS
+
+$WAF configure $*

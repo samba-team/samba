@@ -1,16 +1,11 @@
 # simple makefile wrapper to run waf
 
-# don't enable WAFCACHE by default yet, as it doesn't
-# have any way to limit its size. This could cause
-# problems in the build farm
-# WAF=WAFCACHE=$(HOME)/.wafcache ../buildtools/waf
-
 # default to using only 1 cpu, to be friendly to build
 # farm machines. I wonder how we get at the -jN option
 # from make to pass it to waf?
 JOBS=1
 
-WAF=JOBS=$(JOBS) ../buildtools/bin/waf
+WAF=JOBS=$(JOBS) BUILDTOOLS/bin/waf
 
 all:
 	$(WAF) build
