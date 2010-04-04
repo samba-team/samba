@@ -468,7 +468,8 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		if (params->password.response.nt_length > sizeof(request.data.auth_crap.nt_resp)) {
 			request.flags |= WBFLAG_BIG_NTLMV2_BLOB;
 			request.extra_len = params->password.response.nt_length;
-			request.extra_data.data = talloc_zero_array(NULL, char, request.extra_len);
+			request.extra_data.data = (char *)malloc(
+				request.extra_len);
 			if (request.extra_data.data == NULL) {
 				wbc_status = WBC_ERR_NO_MEMORY;
 				BAIL_ON_WBC_ERROR(wbc_status);
@@ -520,7 +521,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 done:
 	winbindd_free_response(&response);
 
-	talloc_free(request.extra_data.data);
+	free(request.extra_data.data);
 
 	return wbc_status;
 }
