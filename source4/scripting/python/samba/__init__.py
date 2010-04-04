@@ -44,9 +44,9 @@ else:
 import ldb
 import dsdb
 import glue
-from samba._ldb import Ldb
+from samba._ldb import Ldb as _Ldb
 
-class Ldb(Ldb):
+class Ldb(_Ldb):
     """Simple Samba-specific LDB subclass that takes care
     of setting up the modules dir, credentials pointers, etc.
 
@@ -97,7 +97,7 @@ class Ldb(Ldb):
             print text
         #self.set_debug(msg)
 
-        glue.ldb_set_utf8_casefold(self)
+        self.set_utf8_casefold()
 
         # Allow admins to force non-sync ldb for all databases
         if lp is not None:
@@ -307,14 +307,6 @@ class Ldb(Ldb):
     def server_site_name(self):
         "Get the server site name"
         return dsdb.samdb_server_site_name(self)
-
-    def set_opaque_integer(self, name, value):
-        """Set an integer as an opaque (a flag or other value) value on the database
-
-        :param name: The name for the opaque value
-        :param value: The integer value
-        """
-        dsdb.dsdb_set_opaque_integer(self, name, value)
 
 
 def substitute_var(text, values):

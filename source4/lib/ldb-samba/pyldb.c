@@ -25,6 +25,8 @@
 #include "lib/ldb/pyldb.h"
 #include "param/pyparam.h"
 #include "auth/credentials/pycredentials.h"
+#include "ldb_wrap.h"
+#include "lib/ldb-samba/ldif_handlers.h"
 
 static PyObject *pyldb_module;
 staticforward PyTypeObject PySambaLdb;
@@ -136,15 +138,30 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
+{
+	struct ldb_context *ldb;
+
+	ldb = PyLdb_AsLdbContext(self);
+
+	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_samba_ldb_methods[] = {
 	{ "set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS, 
 		"ldb_set_loadparm(ldb, session_info)\n"
 		"Set loadparm context to use when connecting." },
-	{ "ldb_set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
+	{ "set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
 		"ldb_set_credentials(ldb, credentials)\n"
 		"Set credentials to use when connecting." },
 	{ "set_opaque_integer", (PyCFunction)py_ldb_set_opaque_integer,
 		METH_VARARGS, NULL },
+	{ "set_utf8_casefold", (PyCFunction)py_ldb_set_utf8_casefold, 
+		METH_NOARGS,
+		"ldb_set_utf8_casefold(ldb)\n"
+		"Set the right Samba casefolding function for UTF8 charset." },
 	{ NULL },
 };
 

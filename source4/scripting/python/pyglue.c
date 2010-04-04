@@ -138,21 +138,6 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_set_utf8_casefold(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 { 
 	PyObject *py_ldb, *py_sid;
@@ -506,9 +491,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "ldb_register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers, METH_VARARGS,
 		"ldb_register_samba_handlers(ldb)\n"
 		"Register Samba-specific LDB modules and schemas." },
-	{ "ldb_set_utf8_casefold", (PyCFunction)py_ldb_set_utf8_casefold, METH_VARARGS,
-		"ldb_set_utf8_casefold(ldb)\n"
-		"Set the right Samba casefolding function for UTF8 charset." },
 	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema, METH_VARARGS,
