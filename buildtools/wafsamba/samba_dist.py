@@ -18,9 +18,13 @@ def add_tarfile(tar, fname, abspath):
     fh.close()
 
 
-def dist():
-    appname = Utils.g_module.APPNAME
-    version = Utils.g_module.VERSION
+def dist(appname='',version=''):
+    if not isinstance(appname, str):
+        # this copes with a mismatch in the calling arguments for dist()
+        appname = Utils.g_module.APPNAME
+        version = Utils.g_module.VERSION
+    if not version:
+        version = Utils.g_module.VERSION
 
     srcdir = os.path.normpath(os.path.join(os.path.dirname(Utils.g_module.root_path), Utils.g_module.srcdir))
 
@@ -58,6 +62,7 @@ def dist():
     tar.close()
 
     print('Created %s' % dist_name)
+    return dist_name
 
 
 @conf

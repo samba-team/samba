@@ -353,3 +353,7 @@ def build(bld):
                         source='hdr_replace.h',
                         target='stdbool.h',
                         enabled = not bld.CONFIG_SET('HAVE_STDBOOL_H'))
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()

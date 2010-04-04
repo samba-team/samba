@@ -58,3 +58,7 @@ def test(ctx):
     '''test tevent'''
     print("The tevent testsuite is part of smbtorture in samba4")
 
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()

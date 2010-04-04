@@ -66,3 +66,7 @@ def test(ctx):
     import Utils
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
     os.system(cmd)
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()

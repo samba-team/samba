@@ -15,8 +15,9 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist
 
-samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                        lib/tdb:lib/tdb lib/tevent:lib/tevent buildtools:buildtools''')
+samba_dist.DIST_DIRS('''source4/lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
+                        lib/tdb:lib/tdb lib/tevent:lib/tevent lib/popt:lib/popt
+                        buildtools:buildtools''')
 
 
 def set_options(opt):
@@ -180,3 +181,7 @@ def test(ctx):
     import Utils
     cmd = 'tests/test-tdb.sh'
     os.system(cmd)
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()
