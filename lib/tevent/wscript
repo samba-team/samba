@@ -8,29 +8,24 @@ blddir = 'bin'
 import sys, os
 
 # find the buildtools directory
-buildtools = 'buildtools'
-while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
-    buildtools = '../' + buildtools
-srcdir = os.path.dirname(buildtools) or '.'
-
-sys.path.insert(0, buildtools + "/wafsamba")
+srcdir = '.'
+while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
+    srcdir = '../' + srcdir
+sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist
 
 samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools')
 
-LIBREPLACE_DIR= '../replace'
-LIBTALLOC_DIR=  '../talloc'
-
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('tevent', noextenion='tevent')
-    opt.RECURSE(LIBREPLACE_DIR)
-    opt.RECURSE(LIBTALLOC_DIR)
+    opt.RECURSE('lib/replace')
+    opt.RECURSE('lib/talloc')
 
 def configure(conf):
-    conf.RECURSE(LIBREPLACE_DIR)
-    conf.RECURSE(LIBTALLOC_DIR)
+    conf.RECURSE('lib/replace')
+    conf.RECURSE('lib/talloc')
 
     if conf.CHECK_BUNDLED_SYSTEM('tevent', minversion=VERSION,
                                  onlyif='talloc', implied_deps='replace talloc'):
@@ -42,8 +37,8 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.RECURSE(LIBREPLACE_DIR)
-    bld.RECURSE(LIBTALLOC_DIR)
+    bld.RECURSE('lib/replace')
+    bld.RECURSE('lib/talloc')
 
     SRC = '''tevent.c tevent_debug.c tevent_fd.c tevent_immediate.c
              tevent_queue.c tevent_req.c tevent_select.c

@@ -8,26 +8,22 @@ blddir = 'bin'
 import sys, os
 
 # find the buildtools directory
-buildtools = 'buildtools'
-while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
-    buildtools = '../' + buildtools
-srcdir = os.path.dirname(buildtools) or '.'
+srcdir = '.'
+while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
+    srcdir = '../' + srcdir
+sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-sys.path.insert(0, buildtools + "/wafsamba")
 import wafsamba, samba_dist
 
 samba_dist.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools')
 
-
-LIBREPLACE_DIR= '../replace'
-
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('tdb', noextenion='tdb')
-    opt.RECURSE(LIBREPLACE_DIR)
+    opt.RECURSE('lib/replace')
 
 def configure(conf):
-    conf.RECURSE(LIBREPLACE_DIR)
+    conf.RECURSE('lib/replace')
 
     if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
                                  implied_deps='replace'):
@@ -36,7 +32,7 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.RECURSE(LIBREPLACE_DIR)
+    bld.RECURSE('lib/replace')
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''check.c error.c tdb.c traverse.c

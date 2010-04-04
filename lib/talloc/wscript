@@ -8,15 +8,10 @@ blddir = 'bin'
 import os, sys
 
 # find the buildtools directory
-buildtools = 'buildtools'
-while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
-    buildtools = '../' + buildtools
-srcdir = os.path.dirname(buildtools) or '.'
-
-sys.path.insert(0, buildtools + "/wafsamba")
-
-
-LIBREPLACE_DIR= '../replace'
+srcdir = '.'
+while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
+    srcdir = '../' + srcdir
+sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
@@ -29,10 +24,10 @@ samba_dist.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('talloc', noextenion='talloc')
-    opt.RECURSE(LIBREPLACE_DIR)
+    opt.RECURSE('lib/replace')
 
 def configure(conf):
-    conf.RECURSE(LIBREPLACE_DIR)
+    conf.RECURSE('lib/replace')
 
     if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
                                  implied_deps='replace'):
@@ -45,7 +40,7 @@ def configure(conf):
 
 
 def build(bld):
-    bld.RECURSE(LIBREPLACE_DIR)
+    bld.RECURSE('lib/replace')
 
     if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
         bld.SAMBA_LIBRARY('talloc',

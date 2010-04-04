@@ -6,33 +6,30 @@ VERSION = '0.9.10'
 blddir = 'bin'
 
 import sys, os
-# find the buildtools directory
-buildtools = 'buildtools'
-while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
-    buildtools = '../' + buildtools
-srcdir = os.path.dirname(buildtools) or '.'
 
-sys.path.insert(0, buildtools + "/wafsamba")
+# find the buildtools directory
+srcdir = '.'
+while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
+    srcdir = '../' + srcdir
+sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+
 import wafsamba, samba_dist
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tevent:lib/tevent buildtools:buildtools''')
 
 
-LIBTDB_DIR= '../../../lib/tdb'
-LIBTEVENT_DIR= '../../../lib/tevent'
-LIBPOPT_DIR= '../../../lib/popt'
-
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('ldb', noextenion='ldb')
-    opt.RECURSE(LIBTDB_DIR)
-    opt.RECURSE(LIBTEVENT_DIR)
+    opt.RECURSE('lib/tdb')
+    opt.RECURSE('lib/tevent')
 
 def configure(conf):
-    conf.RECURSE(LIBTDB_DIR)
-    conf.RECURSE(LIBTEVENT_DIR)
-    conf.RECURSE(LIBPOPT_DIR)
+    conf.RECURSE('lib/tdb')
+    conf.RECURSE('lib/tevent')
+    conf.RECURSE('lib/popt')
+
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
@@ -53,9 +50,9 @@ def configure(conf):
     conf.SAMBA_CONFIG_H()
 
 def build(bld):
-    bld.RECURSE(LIBTDB_DIR)
-    bld.RECURSE(LIBTEVENT_DIR)
-    bld.RECURSE(LIBPOPT_DIR)
+    bld.RECURSE('lib/tdb')
+    bld.RECURSE('lib/tevent')
+    bld.RECURSE('lib/popt')
 
     # in Samba4 we build some extra modules, and add extra
     # capabilities to the ldb cmdline tools
