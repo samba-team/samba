@@ -283,13 +283,22 @@ done:
 	return wbc_status;
 }
 
+static void wbcLogonUserInfoDestructor(void *ptr)
+{
+	struct wbcLogonUserInfo *i = (struct wbcLogonUserInfo *)ptr;
+	wbcFreeMemory(i->info);
+	wbcFreeMemory(i->blobs);
+}
+
 static wbcErr wbc_create_logon_info(struct winbindd_response *resp,
 				    struct wbcLogonUserInfo **_i)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcLogonUserInfo *i;
 
-	i = talloc_zero(NULL, struct wbcLogonUserInfo);
+	i = (struct wbcLogonUserInfo *)wbcAllocateMemory(
+		sizeof(struct wbcLogonUserInfo), 1,
+		wbcLogonUserInfoDestructor);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
 	wbc_status = wbc_create_auth_info(resp, &i->info);
@@ -320,11 +329,7 @@ static wbcErr wbc_create_logon_info(struct winbindd_response *resp,
 	*_i = i;
 	i = NULL;
 done:
-	if (!WBC_ERROR_IS_OK(wbc_status) && i) {
-		wbcFreeMemory(i->blobs);
-	}
-
-	talloc_free(i);
+	wbcFreeMemory(i);
 	return wbc_status;
 }
 
