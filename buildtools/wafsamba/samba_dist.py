@@ -45,7 +45,11 @@ def dist():
             destdir = '.'
         absdir = os.path.join(srcdir, dir)
         git_cmd = [ env.GIT, 'ls-files', '--full-name', absdir ]
-        files = Utils.cmd_output(git_cmd).split()
+        try:
+            files = Utils.cmd_output(git_cmd).split()
+        except:
+            print('git command failed: %s' % ' '.join(git_cmd))
+            sys.exit(1)
         for f in files:
             abspath = os.path.join(srcdir, f)
             if dir != '.':
