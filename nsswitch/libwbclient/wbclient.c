@@ -195,7 +195,6 @@ void wbcFreeMemory(void *p)
 	}
 	wbcMem = wbcMemToPrefix(p);
 	if (wbcMem->magic != WBC_MAGIC) {
-		talloc_free(p);
 		return;
 	}
 	if (wbcMem->destructor != NULL) {
