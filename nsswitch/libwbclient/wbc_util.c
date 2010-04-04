@@ -24,6 +24,7 @@
 
 #include "replace.h"
 #include "libwbclient.h"
+#include "../winbind_client.h"
 
 /** @brief Ping winbindd to see if the daemon is running
  *
@@ -469,6 +470,8 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	*num_domains = i;
 
  done:
+	winbindd_free_response(&response);
+
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		if (d_list)
 			talloc_free(d_list);
