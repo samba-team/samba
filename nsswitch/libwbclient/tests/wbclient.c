@@ -529,6 +529,45 @@ static bool test_wbc_get_sidaliases(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_authenticate_user(struct torture_context *tctx)
+{
+	struct wbcAuthUserParams params;
+	struct wbcAuthUserInfo *info = NULL;
+	struct wbcAuthErrorInfo *error = NULL;
+	wbcErr ret;
+
+	ret = wbcAuthenticateUser(getenv("USERNAME"), getenv("PASSWORD"));
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcAuthenticateUser failed");
+
+	ZERO_STRUCT(params);
+	params.account_name		= getenv("USERNAME");
+	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
+	params.password.plaintext	= getenv("PASSWORD");
+
+	ret = wbcAuthenticateUserEx(&params, &info, &error);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcAuthenticateUserEx failed");
+	wbcFreeMemory(info);
+	info = NULL;
+
+	wbcFreeMemory(error);
+	error = NULL;
+
+	params.password.plaintext       = "wrong";
+	ret = wbcAuthenticateUserEx(&params, &info, &error);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_AUTH_ERROR,
+				 "wbcAuthenticateUserEx succeeded where it "
+				 "should have failed");
+	wbcFreeMemory(info);
+	info = NULL;
+
+	wbcFreeMemory(error);
+	error = NULL;
+
+	return true;
+}
+
 struct torture_suite *torture_wbclient(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
@@ -554,6 +593,8 @@ struct torture_suite *torture_wbclient(void)
 				      test_wbc_lookup_rids);
 	torture_suite_add_simple_test(suite, "wbcGetSidAliases",
 				      test_wbc_get_sidaliases);
+	torture_suite_add_simple_test(suite, "wbcAuthenticateUser",
+				      test_wbc_authenticate_user);
 
 	return suite;
 }
