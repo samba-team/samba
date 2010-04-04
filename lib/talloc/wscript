@@ -5,16 +5,18 @@ VERSION = '2.0.2'
 
 blddir = 'bin'
 
+import os, sys
+
 # find the buildtools directory
-import os
-buildtools = 'buildtools ../../buildtools'
-for d in buildtools.split():
-    if os.path.exists(d):
-        srcdir = os.path.dirname(d) or '.'
-        break
+buildtools = 'buildtools'
+while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
+    buildtools = '../' + buildtools
+srcdir = os.path.dirname(buildtools) or '.'
+
+sys.path.insert(0, buildtools + "/wafsamba")
 
 
-LIBREPLACE_DIR= srcdir + '/lib/replace'
+LIBREPLACE_DIR= '../replace'
 
 import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")

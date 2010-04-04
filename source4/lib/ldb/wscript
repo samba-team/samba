@@ -7,22 +7,21 @@ blddir = 'bin'
 
 import sys, os
 # find the buildtools directory
-buildtools = 'buildtools ../../../buildtools'
-for d in buildtools.split():
-    if os.path.exists(d):
-        srcdir = os.path.dirname(d) or '.'
-        break
+buildtools = 'buildtools'
+while not os.path.exists(buildtools) and len(buildtools.split('/')) < 5:
+    buildtools = '../' + buildtools
+srcdir = os.path.dirname(buildtools) or '.'
 
-sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+sys.path.insert(0, buildtools + "/wafsamba")
 import wafsamba, samba_dist
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tevent:lib/tevent buildtools:buildtools''')
 
 
-LIBTDB_DIR= srcdir + '/lib/tdb'
-LIBTEVENT_DIR= srcdir + '/lib/tevent'
-LIBPOPT_DIR= srcdir + '/lib/popt'
+LIBTDB_DIR= '../../../lib/tdb'
+LIBTEVENT_DIR= '../../../lib/tevent'
+LIBPOPT_DIR= '../../../lib/popt'
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
