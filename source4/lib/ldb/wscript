@@ -3,10 +3,16 @@
 APPNAME = 'ldb'
 VERSION = '0.9.10'
 
-srcdir = '../../..'
 blddir = 'bin'
 
-import sys
+import sys, os
+# find the buildtools directory
+buildtools = 'buildtools ../../buildtools'
+for d in buildtools.split():
+    if os.path.exists(d):
+        srcdir = os.path.dirname(d) or '.'
+        break
+
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba
 

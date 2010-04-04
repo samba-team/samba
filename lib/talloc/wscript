@@ -3,8 +3,16 @@
 APPNAME = 'talloc'
 VERSION = '2.0.2'
 
-srcdir = '../..'
 blddir = 'bin'
+
+# find the buildtools directory
+import os
+buildtools = 'buildtools ../../buildtools'
+for d in buildtools.split():
+    if os.path.exists(d):
+        srcdir = os.path.dirname(d) or '.'
+        break
+
 
 LIBREPLACE_DIR= srcdir + '/lib/replace'
 
