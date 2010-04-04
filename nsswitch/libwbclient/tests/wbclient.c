@@ -463,6 +463,33 @@ static bool test_wbc_resolve_winsbyip(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_lookup_rids(struct torture_context *tctx)
+{
+	struct wbcDomainSid builtin;
+	uint32_t rids[2] = { 544, 545 };
+	const char *domain_name, **names;
+	enum wbcSidType *types;
+	wbcErr ret;
+
+	wbcStringToSid("S-1-5-32", &builtin);
+
+	ret = wbcLookupRids(&builtin, 2, rids, &domain_name, &names,
+			    &types);
+	torture_assert_wbc_ok(tctx, ret, "wbcLookupRids failed");
+
+	torture_assert_str_equal(
+		tctx, names[0], "Administrators",
+		"S-1-5-32-544 not mapped to 'Administrators'");
+	torture_assert_str_equal(
+		tctx, names[1], "Users", "S-1-5-32-545 not mapped to 'Users'");
+
+	wbcFreeMemory((char *)domain_name);
+	wbcFreeMemory(names);
+	wbcFreeMemory(types);
+
+	return true;
+}
+
 struct torture_suite *torture_wbclient(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
@@ -484,6 +511,8 @@ struct torture_suite *torture_wbclient(void)
 	torture_suite_add_simple_test(suite, "wbcLookupDomainControllerEx", test_wbc_lookupdcex);
 	torture_suite_add_simple_test(suite, "wbcResolveWinsByName", test_wbc_resolve_winsbyname);
 	torture_suite_add_simple_test(suite, "wbcResolveWinsByIP", test_wbc_resolve_winsbyip);
+	torture_suite_add_simple_test(suite, "wbcLookupRids",
+				      test_wbc_lookup_rids);
 
 	return suite;
 }
