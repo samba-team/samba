@@ -7,7 +7,7 @@ blddir = 'bin'
 
 import sys, os
 # find the buildtools directory
-buildtools = 'buildtools ../../buildtools'
+buildtools = 'buildtools ../../../buildtools'
 for d in buildtools.split():
     if os.path.exists(d):
         srcdir = os.path.dirname(d) or '.'
