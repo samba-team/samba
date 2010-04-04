@@ -18,7 +18,7 @@ def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
 
 def configure(conf):
-    conf.DIST_DIRS('lib/talloc:. buildtools:buildtools')
+    conf.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools')
     conf.sub_config(LIBREPLACE_DIR)
 
     if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,

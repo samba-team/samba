@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+APPNAME = 'tevent'
 VERSION = '0.9.8'
 
 srcdir = '../..'
@@ -19,6 +20,7 @@ def set_options(opt):
     opt.recurse(LIBTALLOC_DIR)
 
 def configure(conf):
+    conf.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools')
     conf.sub_config(LIBREPLACE_DIR)
     conf.sub_config(LIBTALLOC_DIR)
 

@@ -23,6 +23,7 @@ import samba_conftests
 import tru64cc
 import irixcc
 import generic_cc
+import samba_dist
 
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':

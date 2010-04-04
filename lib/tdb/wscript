@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-VERSION='1.2.1'
+APPNAME = 'tdb'
+VERSION = '1.2.1'
 
 srcdir = '../..'
 blddir = 'bin'
@@ -18,6 +19,7 @@ def set_options(opt):
     opt.recurse(LIBREPLACE_DIR)
 
 def configure(conf):
+    conf.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools')
     conf.sub_config(LIBREPLACE_DIR)
 
     if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,

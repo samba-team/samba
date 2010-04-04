@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+APPNAME = 'ldb'
 VERSION = '0.9.10'
 
 srcdir = '../../..'
@@ -21,6 +22,8 @@ def set_options(opt):
     opt.recurse(LIBTEVENT_DIR)
 
 def configure(conf):
+    conf.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
+                      lib/tdb:lib/tdb lib/tevent:lib/tevent buildtools:buildtools''')
     conf.sub_config(LIBTDB_DIR)
     conf.sub_config(LIBTEVENT_DIR)
     conf.sub_config(LIBPOPT_DIR)

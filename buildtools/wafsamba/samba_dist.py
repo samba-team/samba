@@ -1,7 +1,7 @@
 # customised version of 'waf dist' for Samba tools
 # uses git ls-files to get file lists
 
-import Utils, os, sys, tarfile, stat
+import Utils, os, sys, tarfile, stat, Scripting
 from samba_utils import *
 
 def add_tarfile(tar, fname, abspath):
@@ -16,10 +16,10 @@ def add_tarfile(tar, fname, abspath):
     fh.close()
 
 
-def dist(appname='', version=''):
+def dist():
 
-    if not appname: appname = Utils.g_module.APPNAME
-    if not version: version = Utils.g_module.VERSION
+    appname = Utils.g_module.APPNAME
+    version = Utils.g_module.VERSION
 
     env = LOAD_ENVIRONMENT()
     srcdir = os.path.normpath(os.path.join(os.path.dirname(Utils.g_module.root_path), Utils.g_module.srcdir))
@@ -65,3 +65,5 @@ def DIST_DIRS(conf, dirs):
     '''set the directories to package, relative to top srcdir'''
     if not conf.env.DIST_DIRS:
         conf.env.DIST_DIRS = dirs
+
+Scripting.dist = dist
