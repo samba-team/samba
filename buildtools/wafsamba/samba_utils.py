@@ -396,7 +396,8 @@ def LOAD_ENVIRONMENT():
        from new commands'''
     import Environment
     env = Environment.Environment()
-    env.load('bin/c4che/default.cache.py')
+    env.load('.lock-wscript')
+    env.load(env.blddir + '/c4che/default.cache.py')
     return env
 
 
