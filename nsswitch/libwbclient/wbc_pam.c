@@ -1223,6 +1223,7 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 		goto fail;
 	}
 
+	TALLOC_FREE(request.extra_data.data);
 	winbindd_free_response(&response);
 	*info = result;
 	return WBC_ERR_SUCCESS;
