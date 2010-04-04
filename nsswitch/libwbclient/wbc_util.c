@@ -467,18 +467,13 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	}
 
 	*domains = d_list;
+	d_list = NULL;
 	*num_domains = i;
 
  done:
 	winbindd_free_response(&response);
-
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		if (d_list)
-			talloc_free(d_list);
-		if (extra_data)
-			free(extra_data);
-	}
-
+	talloc_free(d_list);
+	free(extra_data);
 	return wbc_status;
 }
 
