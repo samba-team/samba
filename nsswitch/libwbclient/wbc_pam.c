@@ -1130,6 +1130,13 @@ done:
 	return wbc_status;
 }
 
+static void wbcCredentialCacheInfoDestructor(void *ptr)
+{
+	struct wbcCredentialCacheInfo *i =
+		(struct wbcCredentialCacheInfo *)ptr;
+	wbcFreeMemory(i->blobs);
+}
+
 /* Authenticate a user with cached credentials */
 wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
                           struct wbcCredentialCacheInfo **info,
@@ -1203,8 +1210,7 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 	}
 
 	if (request.extra_len != 0) {
-		request.extra_data.data = talloc_array(
-			NULL, char, request.extra_len);
+		request.extra_data.data = (char *)malloc(request.extra_len);
 		if (request.extra_data.data == NULL) {
 			status = WBC_ERR_NO_MEMORY;
 			goto fail;
@@ -1227,17 +1233,15 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 		goto fail;
 	}
 
-	result = talloc(NULL, struct wbcCredentialCacheInfo);
+	result = (struct wbcCredentialCacheInfo *)wbcAllocateMemory(
+		sizeof(struct wbcCredentialCacheInfo), 1,
+		wbcCredentialCacheInfoDestructor);
 	if (result == NULL) {
 		status = WBC_ERR_NO_MEMORY;
 		goto fail;
 	}
 	result->num_blobs = 0;
-	result->blobs = talloc(result, struct wbcNamedBlob);
-	if (result->blobs == NULL) {
-		status = WBC_ERR_NO_MEMORY;
-		goto fail;
-	}
+	result->blobs = NULL;
 	status = wbcAddNamedBlob(&result->num_blobs, &result->blobs,
 				 "auth_blob", 0,
 				 (uint8_t *)response.extra_data.data,
@@ -1257,9 +1261,9 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 	result = NULL;
 	status = WBC_ERR_SUCCESS;
 fail:
-	TALLOC_FREE(request.extra_data.data);
+	free(request.extra_data.data);
 	winbindd_free_response(&response);
-	talloc_free(result);
+	wbcFreeMemory(result);
 	return status;
 }
 
