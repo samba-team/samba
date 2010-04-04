@@ -174,3 +174,9 @@ def build(bld):
                          deps='ldb',
                          realname='ldb.so')
 
+
+def test(ctx):
+    '''run ldb testsuite'''
+    import Utils
+    cmd = 'tests/test-tdb.sh'
+    os.system(cmd)

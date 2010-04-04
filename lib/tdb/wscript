@@ -70,3 +70,9 @@ def build(bld):
                      enabled=s4_build,
                      realname='tdb.so')
 
+
+def test(ctx):
+    '''run tdb testsuite'''
+    import Utils
+    cmd = os.path.join(Utils.g_module.blddir, 'tdbtorture')
+    os.system(cmd)

@@ -61,7 +61,8 @@ def build(bld):
         bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
 
 
-def dist():
-    '''makes a tarball for distribution'''
-    samba_dist.dist()
-
+def test(ctx):
+    '''run talloc testsuite'''
+    import Utils
+    cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
+    os.system(cmd)

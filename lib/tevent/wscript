@@ -53,3 +53,8 @@ def build(bld):
                           deps='replace talloc',
                           enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
                           vnum=VERSION)
+
+def test(ctx):
+    '''test tevent'''
+    print("The tevent testsuite is part of smbtorture in samba4")
+
