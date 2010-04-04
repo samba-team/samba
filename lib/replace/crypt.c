@@ -46,11 +46,11 @@
 
 
 #ifndef long32
-#define long32 int32
+#define long32 int32_t
 #endif
 
 #ifndef long64
-#define long64 int64
+#define long64 int64_t
 #endif
 
 #ifndef ufc_long
