@@ -174,31 +174,6 @@ if (0) {
 }''', 'HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS',
         msg="Checking if the compiler will optimize out functions")
 
-    # Look for CUPS
-    conf.find_program('cups-config', var='CUPS_CONFIG')
-    if conf.env.CUPS_CONFIG:
-        conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs", package="", uselib_store="CUPS")
-        conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='CUPS')
-
-    # Check for LDAP
-    conf.CHECK_HEADERS('ldap.h lber.h')
-    conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
-
-    # Check for kerberos
-    conf.find_program('krb5-config', var='KRB5_CONFIG')
-    if conf.env.KRB5_CONFIG:
-        conf.check_cfg(path="krb5-config", args="--cflags --libs",
-                       package="gssapi", uselib_store="KRB5")
-        conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='KRB5')
-        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h', lib='KRB5')
-
-        # Check for KRB5_DEPRECATED handling
-        conf.CHECK_CODE('''#define KRB5_DEPRECATED 1
-#include <krb5.h>''',
-                        'HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER', addmain=False,
-                        link=False,
-                        msg="for KRB5_DEPRECATED define taking an identifier")
-
     conf.CHECK_FUNCS('''
 _acl __acl add_proplist_entry atexit attr_getf attr_list attr_listf
 attropen attr_remove attr_removef attr_set attr_setf backtrace_symbols
@@ -296,6 +271,31 @@ yp_get_default_domain
     #TODO: Actually check for these
     conf.DEFINE('WITH_WINBIND', '1')
     conf.DEFINE('WITH_ADS', '1')
+
+    # Look for CUPS
+    conf.find_program('cups-config', var='CUPS_CONFIG')
+    if conf.env.CUPS_CONFIG:
+        conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs", package="", uselib_store="CUPS")
+        conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='CUPS')
+
+    # Check for LDAP
+    conf.CHECK_HEADERS('ldap.h lber.h')
+    conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
+
+    # Check for kerberos
+    conf.find_program('krb5-config', var='KRB5_CONFIG')
+    if conf.env.KRB5_CONFIG:
+        conf.check_cfg(path="krb5-config", args="--cflags --libs",
+                       package="gssapi", uselib_store="KRB5")
+        conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='KRB5')
+        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h', lib='KRB5')
+
+        # Check for KRB5_DEPRECATED handling
+        conf.CHECK_CODE('''#define KRB5_DEPRECATED 1
+#include <krb5.h>''',
+                        'HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER', addmain=False,
+                        link=False,
+                        msg="for KRB5_DEPRECATED define taking an identifier")
 
     conf.SAMBA_CONFIG_H('include/config.h')
 #define static_init_idmap {  idmap_tdb_init();  idmap_passdb_init();  idmap_nss_init();}
