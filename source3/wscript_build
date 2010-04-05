@@ -121,6 +121,26 @@ CRYPTO_SRC = '''../lib/crypto/crc32.c ../lib/crypto/md5.c
 			 ../lib/crypto/sha256.c ../lib/crypto/hmacsha256.c
 			 ../lib/crypto/aes.c ../lib/crypto/rijndael-alg-fst.c'''
 
+LIBTEVENT_SRC0 = ''
+
+CHARSET_STATIC = ''
+
+PTHREADPOOL_SRC = ''
+
+AUTH_STATIC = ''
+
+SMBLDAP = ''
+
+SMBLDAPUTIL = ''
+
+LIBREPLACE_SRCS = ''
+
+SOCKET_WRAPPER_SRCS = ''
+
+NSS_WRAPPER_SRCS = ''
+
+ZLIB_SRCS = ''
+
 LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC} ${CRYPTO_SRC}
 	  lib/messages.c librpc/gen_ndr/ndr_messaging.c lib/messages_local.c
 	  lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
@@ -393,7 +413,8 @@ RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c
 
 RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
-RPC_SERVER_SRC = '''${RPC_STATIC} ${RPC_PIPE_SRC}'''
+#TODO: RPC_SERVER_SRC used to include RPC_STATIC modules
+RPC_SERVER_SRC = '''${RPC_PIPE_SRC}'''
 
 RPC_PARSE_SRC = '''${RPC_PARSE_SRC2}'''
 
@@ -407,6 +428,9 @@ PRIVILEGES_BASIC_SRC = '''lib/privileges_basic.c'''
 PRIVILEGES_SRC = '''lib/privileges.c'''
 
 PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
+
+#FIXME: Hack around the missing AC_MODULE
+PDB_STATIC = 'passdb/pdb_tdb.c'
 
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
 		passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
@@ -506,6 +530,41 @@ AUTH_SRC = '''auth/auth.c ${AUTH_STATIC} auth/auth_util.c auth/token_util.c
 	   auth/auth_compat.c auth/auth_ntlmssp.c
 	   ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
 
+LDB_COMMON_SRC = '''lib/ldb/common/ldb.c lib/ldb/common/ldb_ldif.c lib/ldb/common/ldb_parse.c
+                    lib/ldb/common/ldb_msg.c lib/ldb/common/ldb_utf8.c lib/ldb/common/ldb_debug.c
+                    lib/ldb/common/ldb_modules.c lib/ldb/common/ldb_dn.c lib/ldb/common/ldb_match.c
+                    lib/ldb/common/ldb_attributes.c lib/ldb/common/attrib_handlers.c
+                    lib/ldb/common/ldb_controls.c lib/ldb/common/qsort.c'''
+
+LDB_TDB_SRC = '''lib/ldb/ldb_tdb/ldb_tdb.c lib/ldb/ldb_tdb/ldb_pack.c lib/ldb/ldb_tdb/ldb_search.c
+                 lib/ldb/ldb_tdb/ldb_index.c lib/ldb/ldb_tdb/ldb_cache.c lib/ldb/ldb_tdb/ldb_tdb_wrap.c'''
+
+LDB_MODULES_SRC = '''lib/ldb/modules/operational.c lib/ldb/modules/rdn_name.c
+                     lib/ldb/modules/objectclass.c lib/ldb/modules/paged_results.c
+                     lib/ldb/modules/sort.c lib/ldb/modules/asq.c'''
+
+# Todo, check for this during configuration
+LDB_LDAP_SRC = ''
+
+LDB_SRC = '${LDB_COMMON_SRC} ${LDB_TDB_SRC} ${LDB_LDAP_SRC} ${LDB_MODULES_SRC}'
+
+LDB_CMDLINE_SRC = '''${PARAM_SRC} ${POPT_LIB_SRC} ${LIB_SRC} ${LIB_DUMMY_SRC} ${LIBSMB_ERR_SRC0}
+                     ${LIBSMB_ERR_SRC1} ${RPC_PARSE_SRC1} ${SECRETS_SRC} ${LDB_SRC}
+                     lib/ldb/tools/cmdline.c'''
+
+LDBEDIT_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbedit.c'
+LDBSEARCH_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbsearch.c'
+LDBADD_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbadd.c'
+LDBDEL_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbdel.c'
+LDBMODIFY_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbmodify.c'
+LDBRENAME_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbrename.c'
+
+LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
+
+LIBSMBCONF_SRC = '''../lib/smbconf/smbconf.c ../lib/smbconf/smbconf_util.c
+                    ../lib/smbconf/smbconf_txt.c lib/smbconf/smbconf_reg.c
+                    lib/smbconf/smbconf_init.c'''
+
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
 
 SMBD_SRC_MAIN = '''smbd/server.c'''
@@ -551,8 +610,8 @@ SMBD_SRC_SRV = '''smbd/files.c smbd/chgpasswd.c smbd/connection.c
 	       smbd/smb2_getinfo.c
 	       smbd/smb2_setinfo.c
 	       smbd/smb2_break.c
-	       ../libcli/smb/smb2_create_blob.c
-	       ${MANGLE_SRC} ${VFS_STATIC}'''
+               ../libcli/smb/smb2_create_blob.c
+               ${MANGLE_SRC} ${VFS_DEFAULT_SRC}'''
 
 SMBD_SRC_BASE = '''${PARAM_WITHOUT_REG_SRC} ${SMBD_SRC_SRV} ${LIBSMB_SRC}
 		${RPC_SERVER_SRC} ${RPC_PARSE_SRC}

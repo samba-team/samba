@@ -279,6 +279,8 @@ yp_get_default_domain
                 static_list[p].append(m)
 
     for p in prefixes:
+        conf.env['%s_STATIC' % p.upper()] = ''
+        conf.env['%s_SHARED' % p.upper()] = ''
         if p in static_list:
             conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init(); '.join(static_list[p]))
         else:
