@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os, Options
-from samba_utils import TOUCH_FILE, EXPAND_VARIABLES
 
 # work out what python external libraries we need to install
 external_libs = {
