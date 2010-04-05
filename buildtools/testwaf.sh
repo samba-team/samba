@@ -23,6 +23,7 @@ for d in $tests; do
     time waf build || exit 1
     time waf build || exit 1
     waf install || exit 1
+    waf distcheck || exit 1
     case $d in
 	"source4/lib/ldb")
 	    ldd bin/ldbadd || exit 1
