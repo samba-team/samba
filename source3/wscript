@@ -281,6 +281,37 @@ yp_get_default_domain
     # Check for LDAP
     conf.CHECK_HEADERS('ldap.h lber.h')
     conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
+    conf.CHECK_FUNCS_IN('ber_scanf ber_sockbuf_add_io', 'lber')
+    conf.CHECK_VARIABLE('LDAP_OPT_SOCKBUF', headers='ldap.h')
+    # if ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF are available, we can add
+    # SASL wrapping hooks
+    if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
+            conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
+        conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
+
+    # if we LBER_OPT_LOG_PRINT_FN we can intercept ldap logging and print it out
+    # for the samba logs
+    conf.CHECK_VARIABLE('LBER_OPT_LOG_PRINT_FN',
+                        define='HAVE_LBER_LOG_PRINT_FN', headers='lber.h')
+
+    conf.CHECK_FUNCS_IN('ldap_init ldap_initialize ldap_set_rebind_proc', 'ldap')
+    conf.CHECK_FUNCS_IN('ldap_add_result_entry', 'ldap')
+
+    # Check if ldap_set_rebind_proc() takes three arguments
+    if conf.CHECK_CODE('ldap_set_rebind_proc(0, 0, 0)',
+                       'LDAP_SET_REBIND_PROC_ARGS',
+                       msg="Checking whether ldap_set_rebind_proc takes 3 arguments",
+                       headers='ldap.h lber.h', link=False):
+        conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '3')
+    else:
+        conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '2')
+
+    # last but not least, if ldap_init() exists, we want to use ldap
+    if conf.CONFIG_SET('HAVE_LDAP_INIT'):
+        conf.DEFINE('HAVE_LDAP', '1')
+        conf.env['SMBLDAP'] = 'lib/smbldap.c'
+        conf.env['SMBLDAPUTIL'] = 'lib/smbldap_util.c'
+        #TODO: We also need to add -DLDAP_DEPRECATED to the build flags.
 
     # Check for kerberos
     conf.find_program('krb5-config', var='KRB5_CONFIG')
