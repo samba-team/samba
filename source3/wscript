@@ -286,5 +286,9 @@ yp_get_default_domain
         else:
             conf.DEFINE('static_init_%s' % p, '{}')
 
+    #TODO: Actually check for these
+    conf.DEFINE('WITH_WINBIND', '1')
+    conf.DEFINE('WITH_ADS', '1')
+
     conf.SAMBA_CONFIG_H('include/config.h')
 #define static_init_idmap {  idmap_tdb_init();  idmap_passdb_init();  idmap_nss_init();}
