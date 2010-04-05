@@ -124,7 +124,7 @@ static void winbindd_list_groups_done(struct tevent_req *subreq)
 	if (i < state->num_domains) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
 
-		DEBUG(10, ("Domain %s returned %d users\n", d->domain->name,
+		DEBUG(10, ("Domain %s returned %d groups\n", d->domain->name,
 			   d->groups.num_principals));
 
 		d->subreq = NULL;
