@@ -506,13 +506,10 @@ class OpenLDAPBackend(LDAPBackend):
         if not os.path.isdir(self.olcdir):
             os.makedirs(self.olcdir, 0770)
 
-            retcode = subprocess.call([self.slapd_path, "-Ttest", "-f", self.slapdconf, "-F", self.olcdir], close_fds=True, shell=False)
+            retcode = subprocess.call([self.slapd_path, "-Ttest", "-n", "0", "-f", self.slapdconf, "-F", self.olcdir], close_fds=True, shell=False)
 
-#            We can't do this, as OpenLDAP is strange.  It gives an error
-#            output to the above, but does the conversion sucessfully...
-#
-#            if retcode != 0:
-#                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
+            if retcode != 0:
+                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
             if not os.path.exists(os.path.join(self.olcdir, "cn=config.ldif")):
                 raise ProvisioningError("conversion from slapd.conf to cn=config failed")
