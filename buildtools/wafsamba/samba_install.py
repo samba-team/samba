@@ -106,20 +106,17 @@ def install_library(self):
 
 ##############################
 # handle the creation of links for libraries and binaries in the build tree
-# note that we use a relative symlink path to allow the whole tree
-# to me moved/copied elsewhere without breaking the links
-t = Task.simple_task_type('symlink_lib', 'rm -f ${LINK_TARGET} && ln -s ${LINK_SOURCE} ${LINK_TARGET}',
-                          shell=True, color='PINK', ext_in='.bin')
-t.quiet = True
 
 @feature('symlink_lib')
 @after('apply_link')
 def symlink_lib(self):
     '''symlink a shared lib'''
-    if Options.is_install:
+
+    if self.target.endswith('.inst'):
         return
 
-    tsk = self.create_task('symlink_lib', self.link_task.outputs[0])
+    blddir = Utils.g_module.blddir
+    libpath = self.link_task.outputs[0].abspath(self.env)
 
     # calculat the link target and put it in the environment
     soext=""
@@ -131,28 +128,29 @@ def symlink_lib(self):
     if link_target == '':
         link_target = '%s/lib%s.so%s' % (LIB_PATH, self.target, soext)
 
+    link_target = os.path.join(blddir, link_target)
 
-    link_source = os_path_relpath(self.link_task.outputs[0].abspath(self.env),
-                                  os.path.join(self.env.BUILD_DIRECTORY, link_target))
+    libpath = os_path_relpath(libpath, os.path.dirname(link_target))
 
-    tsk.env.LINK_TARGET = link_target
-    tsk.env.LINK_SOURCE = link_source[3:]
-    debug('task_gen: LINK for %s is %s -> %s',
-          self.name, tsk.env.LINK_SOURCE, tsk.env.LINK_TARGET)
+    if os.path.lexists(link_target):
+        os.unlink(link_target)
+    os.symlink(libpath, link_target)
 
-
-t = Task.simple_task_type('symlink_bin', 'rm -f ${BIN_TARGET} && ln -s ${SRC} ${BIN_TARGET}',
-                          shell=True, color='PINK', ext_in='.bin')
-t.quiet = True
 
 @feature('symlink_bin')
 @after('apply_link')
 def symlink_bin(self):
-    '''symlink a binary'''
-    if Options.is_install:
+    '''symlink a binary into the build directory'''
+
+    if self.target.endswith('.inst'):
         return
-    tsk = self.create_task('symlink_bin', self.link_task.outputs[0])
 
-    tsk.env.BIN_TARGET = self.target
-    debug('task_gen: BIN_TARGET for %s is %s', self.name, tsk.env.BIN_TARGET)
+    blddir = Utils.g_module.blddir
+    binpath = self.link_task.outputs[0].abspath(self.env)
+    bldpath = os.path.join(blddir, self.target)
 
+    binpath = os_path_relpath(binpath, os.path.dirname(bldpath))
+
+    if os.path.lexists(bldpath):
+        os.unlink(bldpath)
+    os.symlink(binpath, bldpath)
