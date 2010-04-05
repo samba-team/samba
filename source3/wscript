@@ -321,12 +321,45 @@ yp_get_default_domain
         conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='KRB5')
         conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h', lib='KRB5')
 
+        if conf.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
+            conf.env['WINBIND_KRB5_LOCATOR'] = 'bin/winbind_krb5_locator.so'
+
         # Check for KRB5_DEPRECATED handling
         conf.CHECK_CODE('''#define KRB5_DEPRECATED 1
 #include <krb5.h>''',
                         'HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER', addmain=False,
                         link=False,
-                        msg="for KRB5_DEPRECATED define taking an identifier")
+                        msg="Checking for KRB5_DEPRECATED define taking an identifier")
+
+        conf.CHECK_FUNCS_IN('_et_list', 'com_err')
+        conf.CHECK_FUNCS_IN('krb5_encrypt_data', 'k5crypto')
+        conf.CHECK_FUNCS_IN('crypto', 'des_set_key')
+        conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
+        conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
+        conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5')
+        conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
+        conf.CHECK_FUNCS('''
+krb5_set_real_time krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
+krb5_set_default_tgs_ktypes krb5_principal2salt krb5_use_enctype
+krb5_string_to_key krb5_get_pw_salt krb5_string_to_key_salt krb5_auth_con_setkey
+krb5_auth_con_setuseruserkey krb5_locate_kdc krb5_get_permitted_enctypes
+krb5_get_default_in_tkt_etypes krb5_free_data_contents
+krb5_principal_get_comp_string krb5_free_unparsed_name
+krb5_free_keytab_entry_contents krb5_kt_free_entry krb5_krbhst_init
+krb5_krbhst_get_addrinfo krb5_c_enctype_compare krb5_enctypes_compatible_keys
+krb5_crypto_init krb5_crypto_destroy krb5_decode_ap_req free_AP_REQ
+krb5_verify_checksum krb5_c_verify_checksum krb5_principal_compare_any_realm
+krb5_parse_name_norealm krb5_princ_size krb5_get_init_creds_opt_set_pac_request
+krb5_get_renewed_creds krb5_get_kdc_cred krb5_free_error_contents
+initialize_krb5_error_table krb5_get_init_creds_opt_alloc
+krb5_get_init_creds_opt_free krb5_get_init_creds_opt_get_error
+krb5_enctype_to_string krb5_fwd_tgt_creds krb5_auth_con_set_req_cksumtype
+krb5_get_creds_opt_alloc krb5_get_creds_opt_set_impersonate krb5_get_creds
+krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
+                         lib='KRB5')
+        conf.CHECK_DECLS('''krb5_get_credentials_for_user
+                            krb5_auth_con_set_req_cksumtype''',
+                            headers='krb5.h', always=True)
 
     conf.SAMBA_CONFIG_H('include/config.h')
 #define static_init_idmap {  idmap_tdb_init();  idmap_passdb_init();  idmap_nss_init();}
