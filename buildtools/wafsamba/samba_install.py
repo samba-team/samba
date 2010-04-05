@@ -147,7 +147,7 @@ def symlink_bin(self):
 
     blddir = Utils.g_module.blddir
     binpath = self.link_task.outputs[0].abspath(self.env)
-    bldpath = os.path.join(blddir, self.target)
+    bldpath = os.path.join(blddir, os.path.basename(self.target))
 
     binpath = os_path_relpath(binpath, os.path.dirname(bldpath))
 
