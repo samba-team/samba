@@ -229,6 +229,8 @@ static bool test_wbc_users(struct torture_context *tctx)
 			"wbcLookupSid expected WBC_SID_NAME_USER");
 		torture_assert(tctx, name,
 			"wbcLookupSid returned no name");
+		wbcFreeMemory(domain);
+		wbcFreeMemory(name);
 		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
 			"wbcLookupUserSids failed");
 		wbcFreeMemory(sids);
@@ -298,6 +300,8 @@ static bool test_wbc_users_async(struct torture_context *tctx)
 			"wbcLookupSid expected WBC_SID_NAME_USER");
 		torture_assert(tctx, name,
 			"wbcLookupSid returned no name");
+		wbcFreeMemory(domain);
+		wbcFreeMemory(name);
 		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
 			"wbcLookupUserSids failed");
 		wbcFreeMemory(sids);
@@ -340,6 +344,7 @@ static bool test_wbc_groups(struct torture_context *tctx)
 		torture_assert(tctx, name,
 			"wbcLookupSid returned no name");
 	}
+	wbcFreeMemory(groups);
 
 	return true;
 }
@@ -452,6 +457,8 @@ static bool test_wbc_resolve_winsbyip(struct torture_context *tctx)
 	ret = wbcResolveWinsByIP(ip, &name);
 
 	torture_assert_wbc_ok(tctx, ret, "wbcResolveWinsByIP failed");
+
+	wbcFreeMemory(name);
 
 	return true;
 }
