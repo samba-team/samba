@@ -214,14 +214,25 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 		ndr_err = ndr_pull_struct_blob(&blob, notify->array, NULL, notify->array,
 					       (ndr_pull_flags_fn_t)ndr_pull_notify_array);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			status = ndr_map_error2ntstatus(ndr_err);
+			/* 1. log that we got a corrupt notify_array
+			 * 2. clear the variable the garbage was stored into to not trip
+			 *  over it next time this method is entered with the same seqnum
+			 * 3. delete it from the database */
+			DEBUG(2, ("notify_array is corrupt, discarding it\n"));
+
+			ZERO_STRUCTP(notify->array);
+			if (rec != NULL) {
+				rec->delete_rec(rec);
+			}
+
+		} else {
+			if (DEBUGLEVEL >= 10) {
+				DEBUG(10, ("notify_load:\n"));
+				NDR_PRINT_DEBUG(notify_array, notify->array);
+			}
 		}
 	}
 
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10, ("notify_load:\n"));
-		NDR_PRINT_DEBUG(notify_array, notify->array);
-	}
 
 	if (!rec) {
 		talloc_free(dbuf.dptr);
