@@ -204,7 +204,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False,
 
 
 @conf
-def CHECK_DECLS(conf, vars, reverse=False, headers=None):
+def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
     '''check a list of variable declarations, using the HAVE_DECL_xxx form
        of define
 
@@ -219,7 +219,8 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None):
         if not CHECK_VARIABLE(conf, v,
                               define=define,
                               headers=headers,
-                              msg='Checking for declaration of %s' % v):
+                              msg='Checking for declaration of %s' % v,
+                              always=always):
             ret = False
     return ret
 
