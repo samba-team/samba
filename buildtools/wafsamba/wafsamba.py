@@ -411,7 +411,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 
 
-def SAMBA_GENERATOR(bld, name, rule, source, target,
+def SAMBA_GENERATOR(bld, name, rule, source='', target='',
                     group='generators', enabled=True,
                     public_headers=None,
                     header_path=None,

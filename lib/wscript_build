@@ -21,7 +21,8 @@ for e in list:
     bld.INSTALL_WILDCARD('${PYTHONDIR}/samba/external', e + '/**/*', flat=False,
                          exclude='*.pyc', trim_path=os.path.dirname(e))
 
-if Options.is_install:
-    # we need a blank __init__.py in samba/external
-    TOUCH_FILE(bld.EXPAND_VARIABLES('${PYTHONDIR}/samba/external/__init__.py'),
-               install_dir=True)
+bld.SAMBA_GENERATOR('external_init_py',
+                    rule='touch ${TGT}',
+                    target='empty_file')
+
+bld.INSTALL_FILES('${PYTHONDIR}/samba/external', 'empty_file', destname='__init__.py')
