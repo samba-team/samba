@@ -131,3 +131,10 @@ def dist():
     '''makes a tarball for distribution'''
     samba_dist.dist()
 
+def distcheck():
+    '''test that distribution tarball builds and installs'''
+    import Scripting
+    d = Scripting.distcheck
+    d(subdir='source4')
+
+
