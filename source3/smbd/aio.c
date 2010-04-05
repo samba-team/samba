@@ -81,6 +81,7 @@ struct aio_extra {
 	files_struct *fsp;
 	struct smb_request *req;
 	char *outbuf;
+	struct lock_struct lock;
 	int (*handle_completion)(struct aio_extra *ex, int errcode);
 };
 
@@ -145,7 +146,7 @@ static struct aio_extra *find_aio_ex(uint16 mid)
  Set up an aio request from a SMBreadX call.
 *****************************************************************************/
 
-bool schedule_aio_read_and_X(connection_struct *conn,
+NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
@@ -159,7 +160,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
 		DEBUG(10, ("AIO on streams not yet supported\n"));
-		return false;
+		return NT_STATUS_RETRY;
 	}
 
 	if ((!min_aio_read_size || (smb_maxcnt < min_aio_read_size))
@@ -169,20 +170,20 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 			  "for minimum aio_read of %u\n",
 			  (unsigned int)smb_maxcnt,
 			  (unsigned int)min_aio_read_size ));
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
         if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	if (outstanding_aio_calls >= aio_pending_size) {
 		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio "
 			  "activities outstanding.\n",
 			  outstanding_aio_calls ));
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	/* The following is safe from integer wrap as we've already checked
@@ -195,13 +196,23 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	if ((aio_ex = create_aio_extra(fsp, bufsize)) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 	aio_ex->handle_completion = handle_aio_read_complete;
 
 	construct_reply_common_req(req, aio_ex->outbuf);
 	srv_set_message(aio_ex->outbuf, 12, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
+
+	init_strict_lock_struct(fsp, (uint32)req->smbpid,
+		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
+		&aio_ex->lock);
+
+	/* Take the lock until the AIO completes. */
+	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
 
 	a = &aio_ex->acb;
 
@@ -219,8 +230,9 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	if (ret == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	outstanding_aio_calls++;
@@ -231,14 +243,14 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)smb_maxcnt,
 		  (unsigned int)aio_ex->req->mid ));
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Set up an aio request from a SMBwriteX call.
 *****************************************************************************/
 
-bool schedule_aio_write_and_X(connection_struct *conn,
+NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
@@ -254,7 +266,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
 		DEBUG(10, ("AIO on streams not yet supported\n"));
-		return false;
+		return NT_STATUS_RETRY;
 	}
 
 	if ((!min_aio_write_size || (numtowrite < min_aio_write_size))
@@ -264,13 +276,13 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 			  "small for minimum aio_write of %u\n",
 			  (unsigned int)numtowrite,
 			  (unsigned int)min_aio_write_size ));
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
         if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	if (outstanding_aio_calls >= aio_pending_size) {
@@ -283,7 +295,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 			  fsp_str_dbg(fsp), (double)startpos,
 			  (unsigned int)numtowrite,
 			  (unsigned int)req->mid ));
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	/* Ensure aio is initialized. */
@@ -293,13 +305,23 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 	if (!(aio_ex = create_aio_extra(fsp, bufsize))) {
 		DEBUG(0,("schedule_aio_write_and_X: malloc fail.\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 	aio_ex->handle_completion = handle_aio_write_complete;
 
 	construct_reply_common_req(req, aio_ex->outbuf);
 	srv_set_message(aio_ex->outbuf, 6, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
+
+	init_strict_lock_struct(fsp, (uint32)req->smbpid,
+		(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
+		&aio_ex->lock);
+
+	/* Take the lock until the AIO completes. */
+	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
 
 	a = &aio_ex->acb;
 
@@ -317,8 +339,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	if (ret == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
-		return False;
+		return NT_STATUS_RETRY;
 	}
 
 	outstanding_aio_calls++;
@@ -352,9 +375,8 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)numtowrite,
 		  (unsigned int)aio_ex->req->mid, outstanding_aio_calls ));
 
-	return True;
+	return NT_STATUS_OK;
 }
-
 
 /****************************************************************************
  Complete the read and return the data or error back to the client.
@@ -511,6 +533,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 
 static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 {
+	files_struct *fsp = NULL;
 	int err;
 
 	if(!aio_ex) {
@@ -518,14 +541,21 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 		return false;
 	}
 
+	fsp = aio_ex->fsp;
+
 	/* Ensure the operation has really completed. */
-	err = SMB_VFS_AIO_ERROR(aio_ex->fsp, &aio_ex->acb);
+	err = SMB_VFS_AIO_ERROR(fsp, &aio_ex->acb);
 	if (err == EINPROGRESS) {
 		DEBUG(10,( "handle_aio_completed: operation mid %u still in "
 			   "process for file %s\n",
 			   aio_ex->req->mid, fsp_str_dbg(aio_ex->fsp)));
 		return False;
-	} else if (err == ECANCELED) {
+	}
+
+	/* Unlock now we're done. */
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
+	if (err == ECANCELED) {
 		/* If error is ECANCELED then don't return anything to the
 		 * client. */
 	        DEBUG(10,( "handle_aio_completed: operation mid %u"
@@ -696,6 +726,9 @@ void cancel_aio_by_fsp(files_struct *fsp)
 
 	for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
 		if (aio_ex->fsp == fsp) {
+			/* Unlock now we're done. */
+			SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
 			/* Don't delete the aio_extra record as we may have
 			   completed and don't yet know it. Just do the
 			   aio_cancel call and return. */
@@ -707,21 +740,21 @@ void cancel_aio_by_fsp(files_struct *fsp)
 }
 
 #else
-bool schedule_aio_read_and_X(connection_struct *conn,
+NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
 {
-	return False;
+	return NT_STATUS_RETRY;
 }
 
-bool schedule_aio_write_and_X(connection_struct *conn,
+NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
 {
-	return False;
+	return NT_STATUS_RETRY;
 }
 
 void cancel_aio_by_fsp(files_struct *fsp)

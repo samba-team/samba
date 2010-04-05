@@ -3698,9 +3698,23 @@ void reply_read_and_X(struct smb_request *req)
 
 	}
 
-	if (!big_readX &&
-	    schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
-		goto out;
+	if (!big_readX) {
+		NTSTATUS status = schedule_aio_read_and_X(conn,
+					req,
+					fsp,
+					startpos,
+					smb_maxcnt);
+		if (NT_STATUS_IS_OK(status)) {
+			/* Read scheduled - we're done. */
+			goto out;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			/* Real error - report to client. */
+			END_PROFILE(SMBreadX);
+			reply_nterror(req, status);
+			return;
+		}
+		/* NT_STATUS_RETRY - fall back to sync read. */
 	}
 
 	smbd_lock_socket(smbd_server_conn);
@@ -4320,6 +4334,7 @@ void reply_write_and_X(struct smb_request *req)
 	unsigned int smblen;
 	char *data;
 	NTSTATUS status;
+	int saved_errno = 0;
 
 	START_PROFILE(SMBwriteX);
 
@@ -4414,16 +4429,6 @@ void reply_write_and_X(struct smb_request *req)
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	init_strict_lock_struct(fsp, (uint32)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-	    &lock);
-
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-		END_PROFILE(SMBwriteX);
-		return;
-	}
-
 	/* X/Open SMB protocol says that, unlike SMBwrite
 	if the length is zero then NO truncation is
 	done, just a write of zero. To truncate a file,
@@ -4432,24 +4437,49 @@ void reply_write_and_X(struct smb_request *req)
 	if(numtowrite == 0) {
 		nwritten = 0;
 	} else {
+		if (req->unread_bytes == 0) {
+			status = schedule_aio_write_and_X(conn,
+						req,
+						fsp,
+						data,
+						startpos,
+						numtowrite);
 
-		if ((req->unread_bytes == 0) &&
-		    schedule_aio_write_and_X(conn, req, fsp, data, startpos,
-					     numtowrite)) {
-			goto strict_unlock;
+			if (NT_STATUS_IS_OK(status)) {
+				/* write scheduled - we're done. */
+				goto out;
+			}
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+				/* Real error - report to client. */
+				reply_nterror(req, status);
+				goto out;
+			}
+			/* NT_STATUS_RETRY - fall through to sync write. */
+		}
+
+		init_strict_lock_struct(fsp, (uint32)req->smbpid,
+		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
+		    &lock);
+
+		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			goto out;
 		}
 
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
+		saved_errno = errno;
+
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 	}
 
 	if(nwritten < 0) {
-		reply_nterror(req, map_nt_error_from_unix(errno));
-		goto strict_unlock;
+		reply_nterror(req, map_nt_error_from_unix(saved_errno));
+		goto out;
 	}
 
 	if((nwritten == 0) && (numtowrite != 0)) {
 		reply_nterror(req, NT_STATUS_DISK_FULL);
-		goto strict_unlock;
+		goto out;
 	}
 
 	reply_outbuf(req, 6, 0);
@@ -4469,18 +4499,14 @@ void reply_write_and_X(struct smb_request *req)
 		DEBUG(5,("reply_write_and_X: sync_file for %s returned %s\n",
 			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
-		goto strict_unlock;
+		goto out;
 	}
-
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
 	END_PROFILE(SMBwriteX);
 	chain_reply(req);
 	return;
 
-strict_unlock:
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-
+out:
 	END_PROFILE(SMBwriteX);
 	return;
 }

@@ -6047,11 +6047,11 @@ struct regval_ctr *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *toke
 
 /* The following definitions come from smbd/aio.c  */
 
-bool schedule_aio_read_and_X(connection_struct *conn,
+NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt);
-bool schedule_aio_write_and_X(connection_struct *conn,
+NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
