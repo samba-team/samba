@@ -1083,11 +1083,12 @@ static int smb_full_audit_lstat(vfs_handle_struct *handle,
 static uint64_t smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
 		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
 {
-	int result;
+	uint64_t result;
 
 	result = SMB_VFS_NEXT_GET_ALLOC_SIZE(handle, fsp, sbuf);
 
-	do_log(SMB_VFS_OP_GET_ALLOC_SIZE, (result >= 0), handle, "%d", result);
+	do_log(SMB_VFS_OP_GET_ALLOC_SIZE, (result != (uint64_t)-1), handle,
+			"%llu", result);
 
 	return result;
 }
