@@ -8,3 +8,7 @@ bld.SAMBA_SUBSYSTEM('LDBSAMBA',
 	deps='LIBSECURITY SAMDB_SCHEMA LIBNDR NDR_DRSBLOBS'
 	)
 
+
+bld.SAMBA_PYTHON('pyldbsamba', 'pyldb.c',
+				 deps='LDBSAMBA pyparam_util',
+				 realname='samba/_ldb.so')
