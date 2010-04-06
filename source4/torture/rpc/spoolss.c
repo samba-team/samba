@@ -4382,6 +4382,39 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_OpenPrinter_badname_list(struct torture_context *tctx,
+					  struct dcerpc_binding_handle *b,
+					  const char *server_name)
+{
+	const char *badnames[] = {
+		"__INVALID_PRINTER__",
+		"\\\\__INVALID_HOST__",
+		"",
+		"\\\\\\",
+		"\\\\\\__INVALID_PRINTER__"
+	};
+	const char *badname;
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(badnames); i++) {
+		torture_assert(tctx,
+			test_OpenPrinter_badname(tctx, b, badnames[i]),
+			"");
+	}
+
+	badname = talloc_asprintf(tctx, "\\\\%s\\", server_name);
+	torture_assert(tctx,
+		test_OpenPrinter_badname(tctx, b, badname),
+		"");
+
+	badname = talloc_asprintf(tctx, "\\\\%s\\__INVALID_PRINTER__", server_name);
+	torture_assert(tctx,
+		test_OpenPrinter_badname(tctx, b, badname),
+		"");
+
+	return true;
+}
+
 static bool test_OpenPrinter(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
 			     const char *name,
@@ -5607,15 +5640,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPrintProcessors(torture, b, ctx, environment);
 	ret &= test_EnumPrintProcDataTypes(torture, b);
 	ret &= test_EnumPrinters(torture, b, ctx);
-	ret &= test_OpenPrinter_badname(torture, b, "__INVALID_PRINTER__");
-	ret &= test_OpenPrinter_badname(torture, b, "\\\\__INVALID_HOST__");
-	ret &= test_OpenPrinter_badname(torture, b, "");
-	ret &= test_OpenPrinter_badname(torture, b, "\\\\\\");
-	ret &= test_OpenPrinter_badname(torture, b, "\\\\\\__INVALID_PRINTER__");
-	ret &= test_OpenPrinter_badname(torture, b, talloc_asprintf(torture, "\\\\%s\\", dcerpc_server_name(p)));
-	ret &= test_OpenPrinter_badname(torture, b,
-					talloc_asprintf(torture, "\\\\%s\\__INVALID_PRINTER__", dcerpc_server_name(p)));
-
+	ret &= test_OpenPrinter_badname_list(torture, b, dcerpc_server_name(p));
 
 	ret &= test_AddPort(torture, p);
 	ret &= test_EnumPorts_old(torture, p);
