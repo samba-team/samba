@@ -44,6 +44,7 @@ my %supported_properties = (
 	"nopush"		=> ["FUNCTION", "TYPEDEF"],
 	"nopull"		=> ["FUNCTION", "TYPEDEF"],
 	"noprint"		=> ["FUNCTION", "TYPEDEF"],
+        "nopython"              => ["FUNCTION", "TYPEDEF"],
 
 	# union
 	"switch_is"		=> ["ELEMENT"],
