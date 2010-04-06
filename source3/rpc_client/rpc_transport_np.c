@@ -31,6 +31,12 @@ struct rpc_transport_np_state {
 static int rpc_transport_np_state_destructor(struct rpc_transport_np_state *s)
 {
 	bool ret;
+
+	if (s->cli->fd == -1) {
+		DEBUG(10, ("socket was closed, no need to send close request.\n"));
+		return 0;
+	}
+
 	ret = cli_close(s->cli, s->fnum);
 	if (!ret) {
 		DEBUG(1, ("rpc_transport_np_state_destructor: cli_close "
