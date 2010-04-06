@@ -150,15 +150,12 @@ static const struct auth_operations name_to_ntstatus_auth_ops = {
  *
  * @return NT_STATUS_UNSUCCESSFUL
  **/
-static NTSTATUS fixed_challenge_get_challenge(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *_blob)
+static NTSTATUS fixed_challenge_get_challenge(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8])
 {
-	DATA_BLOB blob;
 	const char *challenge = "I am a teapot";
 
-	blob = data_blob_talloc(mem_ctx, challenge, 8);
-	NT_STATUS_HAVE_NO_MEMORY(blob.data);
+	memcpy(chal, challenge, 8);
 
-	*_blob = blob;
 	return NT_STATUS_OK;
 }
 
