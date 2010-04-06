@@ -89,7 +89,7 @@ static void rpc_sock_read_done(struct tevent_req *subreq)
 	state->received = async_recv_recv(subreq, &err);
 
 	if (state->received == -1) {
-		if (err == EPIPE) {
+		if (state->transp->fd != -1) {
 			close(state->transp->fd);
 			state->transp->fd = -1;
 		}
@@ -168,7 +168,7 @@ static void rpc_sock_write_done(struct tevent_req *subreq)
 	state->sent = async_send_recv(subreq, &err);
 
 	if (state->sent == -1) {
-		if (err == EPIPE) {
+		if (state->transp->fd != -1) {
 			close(state->transp->fd);
 			state->transp->fd = -1;
 		}
