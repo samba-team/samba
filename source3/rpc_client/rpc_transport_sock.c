@@ -53,6 +53,25 @@ static bool rpc_sock_is_connected(void *priv)
 	return true;
 }
 
+static unsigned int rpc_sock_set_timeout(void *priv, unsigned int timeout)
+{
+	struct rpc_transport_sock_state *sock_transp = talloc_get_type_abort(
+		priv, struct rpc_transport_sock_state);
+	int orig_timeout;
+	bool ok;
+
+	ok = rpc_sock_is_connected(sock_transp);
+	if (!ok) {
+		return 0;
+	}
+
+	orig_timeout = sock_transp->timeout;
+
+	sock_transp->timeout = timeout;
+
+	return orig_timeout;
+}
+
 struct rpc_sock_read_state {
 	struct rpc_transport_sock_state *transp;
 	ssize_t received;
@@ -247,6 +266,7 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 	result->read_send = rpc_sock_read_send;
 	result->read_recv = rpc_sock_read_recv;
 	result->is_connected = rpc_sock_is_connected;
+	result->set_timeout = rpc_sock_set_timeout;
 
 	*presult = result;
 	return NT_STATUS_OK;

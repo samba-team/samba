@@ -2953,12 +2953,15 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *rpc_cli,
 				unsigned int timeout)
 {
-	struct cli_state *cli = rpc_pipe_np_smb_conn(rpc_cli);
-
-	if (cli == NULL) {
+	if (rpc_cli->transport == NULL) {
 		return 0;
 	}
-	return cli_set_timeout(cli, timeout);
+
+	if (rpc_cli->transport->set_timeout == NULL) {
+		return 0;
+	}
+
+	return rpc_cli->transport->set_timeout(rpc_cli->transport->priv, timeout);
 }
 
 bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
