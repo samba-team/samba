@@ -1054,6 +1054,44 @@ static int samldb_check_rdn(struct ldb_module *module, struct ldb_dn *dn)
 	return LDB_SUCCESS;
 }
 
+static int samldb_schema_info_update(struct samldb_ctx *ac)
+{
+	WERROR werr;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(ac->req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return LDB_SUCCESS;
+	}
+
+	/* do not update schemaInfo during provisioning */
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		return LDB_SUCCESS;
+	}
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema = dsdb_get_schema(ldb, NULL);
+	if (!schema) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "samldb_schema_info_update: no dsdb_schema loaded");
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	werr = dsdb_module_schema_info_update(ac->module, schema, 0);
+	if (!W_ERROR_IS_OK(werr)) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "samldb_schema_info_update: "
+		              "dsdb_module_schema_info_update failed with %s",
+		              win_errstr(werr));
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
  * samldb_sid_from_dn (async)
  */
@@ -1800,6 +1838,12 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
+		ret = samldb_schema_info_update(ac);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+
 		return samldb_fill_object(ac, "classSchema");
 	}
 
@@ -1807,6 +1851,12 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 				 "objectclass", "attributeSchema") != NULL) {
 
 		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+
+		ret = samldb_schema_info_update(ac);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
