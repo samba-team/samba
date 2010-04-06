@@ -209,7 +209,9 @@ wbcErr wbcLibraryDetails(struct wbcLibraryDetails **_details)
 {
 	struct wbcLibraryDetails *info;
 
-	info = talloc(NULL, struct wbcLibraryDetails);
+	info = (struct wbcLibraryDetails *)wbcAllocateMemory(
+		1, sizeof(struct wbcLibraryDetails), NULL);
+
 	if (info == NULL) {
 		return WBC_ERR_NO_MEMORY;
 	}
