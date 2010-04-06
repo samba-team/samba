@@ -38,7 +38,10 @@
 #define TORTURE_WELLKNOWN_PRINTER_EX	"torture_wkn_printer_ex"
 #define TORTURE_PRINTER_EX		"torture_printer_ex"
 
-#define TOP_LEVEL_PRINTER_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
+#define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
+#define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
+#define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
+#define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 
 struct test_spoolss_context {
 	/* print server handle */
@@ -2211,11 +2214,12 @@ static bool test_ClosePrinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetForm(struct torture_context *tctx,
-			 struct dcerpc_binding_handle *b,
-			 struct policy_handle *handle,
-			 const char *form_name,
-			 uint32_t level)
+static bool test_GetForm_args(struct torture_context *tctx,
+			      struct dcerpc_binding_handle *b,
+			      struct policy_handle *handle,
+			      const char *form_name,
+			      uint32_t level,
+			      union spoolss_FormInfo *info_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetForm r;
@@ -2228,7 +2232,7 @@ static bool test_GetForm(struct torture_context *tctx,
 	r.in.offered = 0;
 	r.out.needed = &needed;
 
-	torture_comment(tctx, "Testing GetForm level %d\n", r.in.level);
+	torture_comment(tctx, "Testing GetForm(%s) level %d\n", form_name, r.in.level);
 
 	status = dcerpc_spoolss_GetForm_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetForm failed");
@@ -2250,70 +2254,136 @@ static bool test_GetForm(struct torture_context *tctx,
 
 	CHECK_NEEDED_SIZE_LEVEL(spoolss_FormInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
+	if (info_p) {
+		*info_p = *r.out.info;
+	}
+
 	return true;
+}
+
+static bool test_GetForm(struct torture_context *tctx,
+			 struct dcerpc_binding_handle *b,
+			 struct policy_handle *handle,
+			 const char *form_name,
+			 uint32_t level)
+{
+	return test_GetForm_args(tctx, b, handle, form_name, level, NULL);
 }
 
 static bool test_EnumForms(struct torture_context *tctx,
 			   struct dcerpc_binding_handle *b,
-			   struct policy_handle *handle, bool print_server)
+			   struct policy_handle *handle,
+			   bool print_server,
+			   uint32_t level,
+			   uint32_t *count_p,
+			   union spoolss_FormInfo **info_p)
 {
-	NTSTATUS status;
 	struct spoolss_EnumForms r;
-	bool ret = true;
 	uint32_t needed;
 	uint32_t count;
-	uint32_t levels[] = { 1, 2 };
-	int i;
+	union spoolss_FormInfo *info;
 
-	for (i=0; i<ARRAY_SIZE(levels); i++) {
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+	r.out.count = &count;
+	r.out.info = &info;
 
-		union spoolss_FormInfo *info;
+	torture_comment(tctx, "Testing EnumForms level %d\n", r.in.level);
 
-		r.in.handle = handle;
-		r.in.level = levels[i];
-		r.in.buffer = NULL;
-		r.in.offered = 0;
-		r.out.needed = &needed;
-		r.out.count = &count;
-		r.out.info = &info;
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_EnumForms_r(b, tctx, &r),
+		"EnumForms failed");
 
-		torture_comment(tctx, "Testing EnumForms level %d\n", levels[i]);
+	if ((r.in.level == 2) && (W_ERROR_EQUAL(r.out.result, WERR_UNKNOWN_LEVEL))) {
+		torture_skip(tctx, "EnumForms level 2 not supported");
+	}
 
-		status = dcerpc_spoolss_EnumForms_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
+	if (print_server && W_ERROR_EQUAL(r.out.result, WERR_BADFID)) {
+		torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
+	}
 
-		if ((r.in.level == 2) && (W_ERROR_EQUAL(r.out.result, WERR_UNKNOWN_LEVEL))) {
-			break;
-		}
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
 
-		if (print_server && W_ERROR_EQUAL(r.out.result, WERR_BADFID))
-			torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_EnumForms_r(b, tctx, &r),
+			"EnumForms failed");
 
-		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			int j;
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
-			r.in.buffer = &blob;
-			r.in.offered = needed;
+		torture_assert(tctx, info, "No forms returned");
+	}
 
-			status = dcerpc_spoolss_EnumForms_r(b, tctx, &r);
+	torture_assert_werr_ok(tctx, r.out.result, "EnumForms failed");
 
-			torture_assert(tctx, info, "No forms returned");
+	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumForms, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
-			for (j = 0; j < count; j++) {
-				if (!print_server)
-					ret &= test_GetForm(tctx, b, handle, info[j].info1.form_name, levels[i]);
-			}
-		}
-
-		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
-
-		torture_assert_werr_ok(tctx, r.out.result, "EnumForms failed");
-
-		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumForms, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+	if (info_p) {
+		*info_p = info;
+	}
+	if (count_p) {
+		*count_p = count;
 	}
 
 	return true;
+}
+
+static bool test_EnumForms_all(struct torture_context *tctx,
+			       struct dcerpc_binding_handle *b,
+			       struct policy_handle *handle,
+			       bool print_server)
+{
+	uint32_t levels[] = { 1, 2 };
+	int i, j;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		uint32_t count = 0;
+		union spoolss_FormInfo *info = NULL;
+
+		torture_assert(tctx,
+			test_EnumForms(tctx, b, handle, print_server, levels[i], &count, &info),
+			"failed to enum forms");
+
+		for (j = 0; j < count; j++) {
+			if (!print_server) {
+				torture_assert(tctx,
+					test_GetForm(tctx, b, handle, info[j].info1.form_name, levels[i]),
+					"failed to get form");
+			}
+		}
+	}
+
+	return true;
+}
+
+static bool test_EnumForms_find_one(struct torture_context *tctx,
+				    struct dcerpc_binding_handle *b,
+				    struct policy_handle *handle,
+				    bool print_server,
+				    const char *form_name)
+{
+	union spoolss_FormInfo *info;
+	uint32_t count;
+	bool found = false;
+	int i;
+
+	torture_assert(tctx,
+		test_EnumForms(tctx, b, handle, print_server, 1, &count, &info),
+		"failed to enumerate forms");
+
+	for (i=0; i<count; i++) {
+		if (strequal(form_name, info[i].info1.form_name)) {
+			found = true;
+			break;
+		}
+	}
+
+	return found;
 }
 
 static bool test_DeleteForm(struct torture_context *tctx,
@@ -2321,124 +2391,199 @@ static bool test_DeleteForm(struct torture_context *tctx,
 			    struct policy_handle *handle,
 			    const char *form_name)
 {
-	NTSTATUS status;
 	struct spoolss_DeleteForm r;
 
 	r.in.handle = handle;
 	r.in.form_name = form_name;
 
-	status = dcerpc_spoolss_DeleteForm_r(b, tctx, &r);
+	torture_comment(tctx, "Testing DeleteForm(%s)\n", form_name);
 
-	torture_assert_ntstatus_ok(tctx, status, "DeleteForm failed");
-
-	torture_assert_werr_ok(tctx, r.out.result, "DeleteForm failed");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeleteForm_r(b, tctx, &r),
+		"DeleteForm failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"DeleteForm failed");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeleteForm_r(b, tctx, &r),
+		"2nd DeleteForm failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_FORM_NAME,
+		"2nd DeleteForm failed");
 
 	return true;
 }
 
 static bool test_AddForm(struct torture_context *tctx,
 			 struct dcerpc_binding_handle *b,
-			 struct policy_handle *handle, bool print_server)
+			 struct policy_handle *handle,
+			 uint32_t level,
+			 union spoolss_AddFormInfo *info)
 {
 	struct spoolss_AddForm r;
-	struct spoolss_AddFormInfo1 addform;
-	const char *form_name = "testform3";
-	NTSTATUS status;
-	bool ret = true;
+
+	if (level != 1) {
+		torture_skip(tctx, "only level 1 supported");
+	}
 
 	r.in.handle	= handle;
-	r.in.level	= 1;
-	r.in.info.info1 = &addform;
-	addform.flags		= SPOOLSS_FORM_USER;
-	addform.form_name	= form_name;
-	addform.size.width	= 50;
-	addform.size.height	= 25;
-	addform.area.left	= 5;
-	addform.area.top	= 10;
-	addform.area.right	= 45;
-	addform.area.bottom	= 15;
+	r.in.level	= level;
+	r.in.info	= *info;
 
-	status = dcerpc_spoolss_AddForm_r(b, tctx, &r);
+	torture_comment(tctx, "Testing AddForm(%s) level %d\n",
+		r.in.info.info1->form_name, r.in.level);
 
-	torture_assert_ntstatus_ok(tctx, status, "AddForm failed");
-
-	torture_assert_werr_ok(tctx, r.out.result, "AddForm failed");
-
-	if (!print_server) ret &= test_GetForm(tctx, b, handle, form_name, 1);
-
-	{
-		struct spoolss_SetForm sf;
-		struct spoolss_AddFormInfo1 setform;
-
-		sf.in.handle	= handle;
-		sf.in.form_name = form_name;
-		sf.in.level	= 1;
-		sf.in.info.info1= &setform;
-		setform.flags		= addform.flags;
-		setform.form_name	= addform.form_name;
-		setform.size		= addform.size;
-		setform.area		= addform.area;
-
-		setform.size.width	= 1234;
-
-		status = dcerpc_spoolss_SetForm_r(b, tctx, &sf);
-
-		torture_assert_ntstatus_ok(tctx, status, "SetForm failed");
-
-		torture_assert_werr_ok(tctx, sf.out.result, "SetForm failed");
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
+		"AddForm failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_FILE_EXISTS)) {
+		test_DeleteForm(tctx, b, handle, r.in.info.info1->form_name);
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
+			"AddForm failed");
 	}
 
-	if (!print_server) ret &= test_GetForm(tctx, b, handle, form_name, 1);
+	torture_assert_werr_ok(tctx, r.out.result,
+		"AddForm failed");
 
-	{
-		struct spoolss_EnumForms e;
-		union spoolss_FormInfo *info;
-		uint32_t needed;
-		uint32_t count;
-		bool found = false;
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
+		"2nd AddForm failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_FILE_EXISTS,
+		"2nd AddForm gave unexpected result");
 
-		e.in.handle = handle;
-		e.in.level = 1;
-		e.in.buffer = NULL;
-		e.in.offered = 0;
-		e.out.needed = &needed;
-		e.out.count = &count;
-		e.out.info = &info;
+	return true;
+}
 
-		torture_comment(tctx, "Testing EnumForms level 1\n");
+static bool test_SetForm(struct torture_context *tctx,
+			 struct dcerpc_binding_handle *b,
+			 struct policy_handle *handle,
+			 const char *form_name,
+			 uint32_t level,
+			 union spoolss_AddFormInfo *info)
+{
+	struct spoolss_SetForm r;
 
-		status = dcerpc_spoolss_EnumForms_r(b, tctx, &e);
-		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
+	r.in.handle	= handle;
+	r.in.form_name	= form_name;
+	r.in.level	= level;
+	r.in.info	= *info;
 
-		if (print_server && W_ERROR_EQUAL(e.out.result, WERR_BADFID))
-			torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
+	torture_comment(tctx, "Testing SetForm(%s) level %d\n",
+		form_name, r.in.level);
 
-		if (W_ERROR_EQUAL(e.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			int j;
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
-			e.in.buffer = &blob;
-			e.in.offered = needed;
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetForm_r(b, tctx, &r),
+		"SetForm failed");
 
-			status = dcerpc_spoolss_EnumForms_r(b, tctx, &e);
+	torture_assert_werr_ok(tctx, r.out.result,
+		"SetForm failed");
 
-			torture_assert(tctx, info, "No forms returned");
+	return true;
+}
 
-			for (j = 0; j < count; j++) {
-				if (strequal(form_name, info[j].info1.form_name)) {
-					found = true;
-					break;
-				}
-			}
+static bool test_GetForm_winreg(struct torture_context *tctx,
+			        struct dcerpc_binding_handle *b,
+				struct policy_handle *handle,
+				const char *key_name,
+				const char *form_name,
+				enum winreg_Type *w_type,
+				uint32_t *w_size,
+				uint32_t *w_length,
+				uint8_t **w_data);
+
+static bool test_Forms(struct torture_context *tctx,
+		       struct dcerpc_binding_handle *b,
+		       struct policy_handle *handle,
+		       bool print_server,
+		       const char *printer_name,
+		       struct dcerpc_binding_handle *winreg_handle,
+		       struct policy_handle *hive_handle)
+{
+	union spoolss_FormInfo info;
+	const char *form_name = "testform3";
+
+	union spoolss_AddFormInfo add_info;
+	struct spoolss_AddFormInfo1 info1;
+
+	enum winreg_Type w_type;
+	uint32_t w_size;
+	uint32_t w_length;
+	uint8_t *w_data;
+
+	info1.flags		= SPOOLSS_FORM_USER;
+	info1.form_name		= form_name;
+	info1.size.width	= 50;
+	info1.size.height	= 25;
+	info1.area.left		= 5;
+	info1.area.top		= 10;
+	info1.area.right	= 45;
+	info1.area.bottom	= 15;
+
+	add_info.info1 = &info1;
+
+	torture_assert(tctx,
+		test_AddForm(tctx, b, handle, 1, &add_info),
+		"failed to add form");
+
+	if (winreg_handle && hive_handle) {
+
+		torture_assert(tctx,
+			test_GetForm_winreg(tctx, winreg_handle, hive_handle, TOP_LEVEL_CONTROL_FORMS_KEY, form_name, &w_type, &w_size, &w_length, &w_data),
+			"failed to get form via winreg");
+
+		torture_assert_int_equal(tctx, w_type, REG_BINARY, "unexpected type");
+		torture_assert_int_equal(tctx, w_size, 0x20, "unexpected size");
+		torture_assert_int_equal(tctx, w_length, 0x20, "unexpected length");
+		torture_assert_mem_equal(tctx, &w_data[0], &add_info.info1->size.width, 4, "width mismatch");
+		torture_assert_mem_equal(tctx, &w_data[4], &add_info.info1->size.height, 4, "height mismatch");
+		torture_assert_mem_equal(tctx, &w_data[8], &add_info.info1->area.left, 4, "left mismatch");
+		torture_assert_mem_equal(tctx, &w_data[12], &add_info.info1->area.top, 4, "top mismatch");
+		torture_assert_mem_equal(tctx, &w_data[16], &add_info.info1->area.right, 4, "right mismatch");
+		torture_assert_mem_equal(tctx, &w_data[20], &add_info.info1->area.bottom, 4, "bottom mismatch");
+		/* skip index here */
+		torture_assert_mem_equal(tctx, &w_data[28], &add_info.info1->flags, 4, "flags mismatch");
+	}
+
+	if (!print_server) {
+		torture_assert(tctx,
+			test_GetForm_args(tctx, b, handle, form_name, 1, &info),
+			"failed to get added form");
+
+		torture_assert_int_equal(tctx, info.info1.size.width, add_info.info1->size.width, "width mismatch");
+		torture_assert_int_equal(tctx, info.info1.size.height, add_info.info1->size.height, "height mismatch");
+		torture_assert_int_equal(tctx, info.info1.area.left, add_info.info1->area.left, "left mismatch");
+		torture_assert_int_equal(tctx, info.info1.area.top, add_info.info1->area.top, "top mismatch");
+		torture_assert_int_equal(tctx, info.info1.area.right, add_info.info1->area.right, "right mismatch");
+		torture_assert_int_equal(tctx, info.info1.area.bottom, add_info.info1->area.bottom, "bottom mismatch");
+		torture_assert_int_equal(tctx, info.info1.flags, add_info.info1->flags, "flags mismatch");
+
+		if (winreg_handle && hive_handle) {
+			torture_assert_mem_equal(tctx, &w_data[0], &info.info1.size.width, 4, "width mismatch");
+			torture_assert_mem_equal(tctx, &w_data[4], &info.info1.size.height, 4, "height mismatch");
+			torture_assert_mem_equal(tctx, &w_data[8], &info.info1.area.left, 4, "left mismatch");
+			torture_assert_mem_equal(tctx, &w_data[12], &info.info1.area.top, 4, "top mismatch");
+			torture_assert_mem_equal(tctx, &w_data[16], &info.info1.area.right, 4, "right mismatch");
+			torture_assert_mem_equal(tctx, &w_data[20], &info.info1.area.bottom, 4, "bottom mismatch");
+			/* skip index here */
+			torture_assert_mem_equal(tctx, &w_data[28], &info.info1.flags, 4, "flags mismatch");
 		}
-		torture_assert(tctx, found, "Newly added form not found in enum call");
+
+		add_info.info1->size.width = 1234;
+
+		torture_assert(tctx,
+			test_SetForm(tctx, b, handle, form_name, 1, &add_info),
+			"failed to set form");
+		torture_assert(tctx,
+			test_GetForm_args(tctx, b, handle, form_name, 1, &info),
+			"failed to get setted form");
+
+		torture_assert_int_equal(tctx, info.info1.size.width, add_info.info1->size.width, "width mismatch");
 	}
 
-	if (!test_DeleteForm(tctx, b, handle, form_name)) {
-		ret = false;
-	}
+	torture_assert(tctx,
+		test_EnumForms_find_one(tctx, b, handle, print_server, form_name),
+		"Newly added form not found in enum call");
 
-	return ret;
+	torture_assert(tctx,
+		test_DeleteForm(tctx, b, handle, form_name),
+		"failed to delete form");
+
+	return true;
 }
 
 static bool test_EnumPorts_old(struct torture_context *tctx,
@@ -3576,13 +3721,37 @@ static bool test_winreg_query_printerdata(struct torture_context *tctx,
 	struct policy_handle key_handle;
 
 	printer_key = talloc_asprintf(tctx, "%s\\%s\\%s",
-		TOP_LEVEL_PRINTER_KEY, printer_name, key_name);
+		TOP_LEVEL_PRINT_PRINTERS_KEY, printer_name, key_name);
 
 	torture_assert(tctx,
 		test_winreg_OpenKey(tctx, b, handle, printer_key, &key_handle), "");
 
 	torture_assert(tctx,
 		test_winreg_QueryValue(tctx, b, &key_handle, value_name, w_type, w_size, w_length, w_data), "");
+
+	torture_assert(tctx,
+		test_winreg_CloseKey(tctx, b, &key_handle), "");
+
+	return true;
+}
+
+static bool test_GetForm_winreg(struct torture_context *tctx,
+			        struct dcerpc_binding_handle *b,
+				struct policy_handle *handle,
+				const char *key_name,
+				const char *form_name,
+				enum winreg_Type *w_type,
+				uint32_t *w_size,
+				uint32_t *w_length,
+				uint8_t **w_data)
+{
+	struct policy_handle key_handle;
+
+	torture_assert(tctx,
+		test_winreg_OpenKey(tctx, b, handle, key_name, &key_handle), "");
+
+	torture_assert(tctx,
+		test_winreg_QueryValue(tctx, b, &key_handle, form_name, w_type, w_size, w_length, w_data), "");
 
 	torture_assert(tctx,
 		test_winreg_CloseKey(tctx, b, &key_handle), "");
@@ -3929,6 +4098,33 @@ static bool test_PrinterData_winreg(struct torture_context *tctx,
 
 	ret &= test_SetPrinterData_matrix(tctx, b, handle, printer_name, b2, &hive_handle);
 	ret &= test_SetPrinterDataEx_matrix(tctx, p, handle, printer_name, b2, &hive_handle);
+
+	test_winreg_CloseKey(tctx, b2, &hive_handle);
+
+	talloc_free(p2);
+
+	return ret;
+}
+
+static bool test_Forms_winreg(struct torture_context *tctx,
+			      struct dcerpc_binding_handle *b,
+			      struct policy_handle *handle,
+			      bool print_server,
+			      const char *printer_name)
+{
+	struct dcerpc_pipe *p2;
+	bool ret = true;
+	struct policy_handle hive_handle;
+	struct dcerpc_binding_handle *b2;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+		"could not open winreg pipe");
+	b2 = p2->binding_handle;
+
+	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
+
+	ret = test_Forms(tctx, b, handle, print_server, printer_name, b2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
@@ -4395,11 +4591,15 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_EnumForms(tctx, b, &handle, false)) {
+	if (!test_EnumForms_all(tctx, b, &handle, false)) {
 		ret = false;
 	}
 
-	if (!test_AddForm(tctx, b, &handle, false)) {
+	if (!test_Forms(tctx, b, &handle, false, name, NULL, NULL)) {
+		ret = false;
+	}
+
+	if (!test_Forms_winreg(tctx, b, &handle, false, name)) {
 		ret = false;
 	}
 
@@ -5398,8 +5598,9 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 
 	ret &= test_OpenPrinter_server(torture, p, &ctx->server_handle);
 	ret &= test_GetPrinterData_list(torture, p, &ctx->server_handle, &environment);
-	ret &= test_EnumForms(torture, b, &ctx->server_handle, true);
-	ret &= test_AddForm(torture, b, &ctx->server_handle, true);
+	ret &= test_EnumForms_all(torture, b, &ctx->server_handle, true);
+	ret &= test_Forms(torture, b, &ctx->server_handle, true, NULL, NULL, NULL);
+	ret &= test_Forms_winreg(torture, b, &ctx->server_handle, true, NULL);
 	ret &= test_EnumPorts(torture, b, ctx);
 	ret &= test_GetPrinterDriverDirectory(torture, p, ctx, environment);
 	ret &= test_GetPrintProcessorDirectory(torture, p, ctx, environment);
