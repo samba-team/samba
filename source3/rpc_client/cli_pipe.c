@@ -2961,6 +2961,19 @@ unsigned int rpccli_set_timeout(struct rpc_pipe_client *rpc_cli,
 	return cli_set_timeout(cli, timeout);
 }
 
+bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
+{
+	if (rpc_cli == NULL) {
+		return false;
+	}
+
+	if (rpc_cli->transport == NULL) {
+		return false;
+	}
+
+	return rpc_cli->transport->is_connected(rpc_cli->transport->priv);
+}
+
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 {
 	struct cli_state *cli;

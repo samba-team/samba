@@ -27,13 +27,30 @@ struct rpc_transport_sock_state {
 	int timeout;
 };
 
-static int rpc_transport_sock_state_destructor(struct rpc_transport_sock_state *s)
+static void rpc_sock_disconnect(struct rpc_transport_sock_state *s)
 {
 	if (s->fd != -1) {
 		close(s->fd);
 		s->fd = -1;
 	}
+}
+
+static int rpc_transport_sock_state_destructor(struct rpc_transport_sock_state *s)
+{
+	rpc_sock_disconnect(s);
 	return 0;
+}
+
+static bool rpc_sock_is_connected(void *priv)
+{
+	struct rpc_transport_sock_state *sock_transp = talloc_get_type_abort(
+		priv, struct rpc_transport_sock_state);
+
+	if (sock_transp->fd == -1) {
+		return false;
+	}
+
+	return true;
 }
 
 struct rpc_sock_read_state {
@@ -59,7 +76,7 @@ static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 			     struct rpc_sock_read_state)) {
 		return NULL;
 	}
-	if (sock_transp->fd == -1) {
+	if (!rpc_sock_is_connected(sock_transp)) {
 		if (!async_post_ntstatus(result, ev, NT_STATUS_CONNECTION_INVALID)) {
 			goto fail;
 		}
@@ -97,11 +114,8 @@ static void rpc_sock_read_done(struct tevent_req *subreq)
 	state->received = async_recv_recv(subreq, &err);
 
 	if (state->received == -1) {
-		if (state->transp->fd != -1) {
-			close(state->transp->fd);
-			state->transp->fd = -1;
-		}
 		TALLOC_FREE(subreq);
+		rpc_sock_disconnect(state->transp);
 		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
@@ -145,7 +159,7 @@ static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 			     struct rpc_sock_write_state)) {
 		return NULL;
 	}
-	if (sock_transp->fd == -1) {
+	if (!rpc_sock_is_connected(sock_transp)) {
 		if (!async_post_ntstatus(result, ev, NT_STATUS_CONNECTION_INVALID)) {
 			goto fail;
 		}
@@ -183,11 +197,8 @@ static void rpc_sock_write_done(struct tevent_req *subreq)
 	state->sent = async_send_recv(subreq, &err);
 
 	if (state->sent == -1) {
-		if (state->transp->fd != -1) {
-			close(state->transp->fd);
-			state->transp->fd = -1;
-		}
 		TALLOC_FREE(subreq);
+		rpc_sock_disconnect(state->transp);
 		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
@@ -235,6 +246,7 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 	result->write_recv = rpc_sock_write_recv;
 	result->read_send = rpc_sock_read_send;
 	result->read_recv = rpc_sock_read_recv;
+	result->is_connected = rpc_sock_is_connected;
 
 	*presult = result;
 	return NT_STATUS_OK;

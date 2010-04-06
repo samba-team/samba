@@ -429,8 +429,53 @@ NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static void rpc_smbd_disconnect(struct rpc_transport_smbd_state *transp)
+{
+	if (transp == NULL) {
+		return;
+	}
+
+	if (transp->conn == NULL) {
+		return;
+	}
+
+	if (transp->conn->cli == NULL) {
+		return;
+	}
+
+	if (transp->conn->cli->fd != -1) {
+		close(transp->conn->cli->fd);
+		transp->conn->cli->fd = -1;
+	}
+
+	transp->conn = NULL;
+}
+
+static bool rpc_smbd_is_connected(void *priv)
+{
+	struct rpc_transport_smbd_state *transp = talloc_get_type_abort(
+		priv, struct rpc_transport_smbd_state);
+	bool ok;
+
+	if (transp->conn == NULL) {
+		return false;
+	}
+
+	if (transp->sub_transp == NULL) {
+		return false;
+	}
+
+	ok = transp->sub_transp->is_connected(transp->sub_transp->priv);
+	if (!ok) {
+		rpc_smbd_disconnect(transp);
+		return false;
+	}
+
+	return true;
+}
+
 struct rpc_smbd_write_state {
-	struct rpc_cli_transport *sub_transp;
+	struct rpc_transport_smbd_state *transp;
 	ssize_t written;
 };
 
@@ -445,12 +490,23 @@ static struct async_req *rpc_smbd_write_send(TALLOC_CTX *mem_ctx,
 		priv, struct rpc_transport_smbd_state);
 	struct async_req *result, *subreq;
 	struct rpc_smbd_write_state *state;
+	bool ok;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct rpc_smbd_write_state)) {
 		return NULL;
 	}
-	state->sub_transp = transp->sub_transp;
+
+	ok = rpc_smbd_is_connected(transp);
+	if (!ok) {
+		ok = async_post_ntstatus(result, ev, NT_STATUS_CONNECTION_INVALID);
+		if (!ok) {
+			goto fail;
+		}
+		return result;
+	}
+
+	state->transp = transp;
 
 	subreq = transp->sub_transp->write_send(state, ev, data, size,
 						transp->sub_transp->priv);
@@ -480,9 +536,10 @@ static void rpc_smbd_write_done(struct async_req *subreq)
 		req->private_data, struct rpc_smbd_write_state);
 	NTSTATUS status;
 
-	status = state->sub_transp->write_recv(subreq, &state->written);
+	status = state->transp->sub_transp->write_recv(subreq, &state->written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		rpc_smbd_disconnect(state->transp);
 		async_req_nterror(req, status);
 		return;
 	}
@@ -503,7 +560,7 @@ static NTSTATUS rpc_smbd_write_recv(struct async_req *req, ssize_t *pwritten)
 }
 
 struct rpc_smbd_read_state {
-	struct rpc_cli_transport *sub_transp;
+	struct rpc_transport_smbd_state *transp;
 	ssize_t received;
 };
 
@@ -518,12 +575,23 @@ static struct async_req *rpc_smbd_read_send(TALLOC_CTX *mem_ctx,
 		priv, struct rpc_transport_smbd_state);
 	struct async_req *result, *subreq;
 	struct rpc_smbd_read_state *state;
+	bool ok;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct rpc_smbd_read_state)) {
 		return NULL;
 	}
-	state->sub_transp = transp->sub_transp;
+
+	ok = rpc_smbd_is_connected(transp);
+	if (!ok) {
+		ok = async_post_ntstatus(result, ev, NT_STATUS_CONNECTION_INVALID);
+		if (!ok) {
+			goto fail;
+		}
+		return result;
+	}
+
+	state->transp = transp;
 
 	subreq = transp->sub_transp->read_send(state, ev, data, size,
 						transp->sub_transp->priv);
@@ -553,9 +621,10 @@ static void rpc_smbd_read_done(struct async_req *subreq)
 		req->private_data, struct rpc_smbd_read_state);
 	NTSTATUS status;
 
-	status = state->sub_transp->read_recv(subreq, &state->received);
+	status = state->transp->sub_transp->read_recv(subreq, &state->received);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		rpc_smbd_disconnect(state->transp);
 		async_req_nterror(req, status);
 		return;
 	}
@@ -663,6 +732,7 @@ NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
 	state->transport->read_recv = rpc_smbd_read_recv;
 	state->transport->trans_send = NULL;
 	state->transport->trans_recv = NULL;
+	state->transport->is_connected = rpc_smbd_is_connected;
 
 	*presult = talloc_move(mem_ctx, &state->transport);
 	return NT_STATUS_OK;
