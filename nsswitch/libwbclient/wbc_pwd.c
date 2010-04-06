@@ -92,35 +92,59 @@ fail:
  *
  **/
 
+static void wbcGroupDestructor(void *ptr)
+{
+	struct group *gr = (struct group *)ptr;
+	int i;
+
+	free(gr->gr_name);
+	free(gr->gr_passwd);
+
+	for (i=0; gr->gr_mem[i] != NULL; i++) {
+		free(gr->gr_mem[i]);
+	}
+	free(gr->gr_mem);
+}
+
 static struct group *copy_group_entry(struct winbindd_gr *g,
 				      char *mem_buf)
 {
-	struct group *grp = NULL;
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct group *gr = NULL;
 	int i;
 	char *mem_p, *mem_q;
 
-	grp = talloc(NULL, struct group);
-	BAIL_ON_PTR_ERROR(grp, wbc_status);
+	gr = (struct group *)wbcAllocateMemory(
+		1, sizeof(struct group), wbcGroupDestructor);
+	if (gr == NULL) {
+		return NULL;
+	}
 
-	grp->gr_name = talloc_strdup(grp, g->gr_name);
-	BAIL_ON_PTR_ERROR(grp->gr_name, wbc_status);
+	gr->gr_name = strdup(g->gr_name);
+	if (gr->gr_name == NULL) {
+		goto fail;
+	}
+	gr->gr_passwd = strdup(g->gr_passwd);
+	if (gr->gr_passwd == NULL) {
+		goto fail;
+	}
+	gr->gr_gid = g->gr_gid;
 
-	grp->gr_passwd = talloc_strdup(grp, g->gr_passwd);
-	BAIL_ON_PTR_ERROR(grp->gr_passwd, wbc_status);
-
-	grp->gr_gid = g->gr_gid;
-
-	grp->gr_mem = talloc_array(grp, char*, g->num_gr_mem+1);
+	gr->gr_mem = (char **)calloc(g->num_gr_mem+1, sizeof(char *));
+	if (gr->gr_mem == NULL) {
+		goto fail;
+	}
 
 	mem_p = mem_q = mem_buf;
 	for (i=0; i<g->num_gr_mem && mem_p; i++) {
-		if ((mem_q = strchr(mem_p, ',')) != NULL) {
+		mem_q = strchr(mem_p, ',');
+		if (mem_q != NULL) {
 			*mem_q = '\0';
 		}
 
-		grp->gr_mem[i] = talloc_strdup(grp, mem_p);
-		BAIL_ON_PTR_ERROR(grp->gr_mem[i], wbc_status);
+		gr->gr_mem[i] = strdup(mem_p);
+		if (gr->gr_mem[i] == NULL) {
+			goto fail;
+		}
 
 		if (mem_q == NULL) {
 			i += 1;
@@ -128,17 +152,13 @@ static struct group *copy_group_entry(struct winbindd_gr *g,
 		}
 		mem_p = mem_q + 1;
 	}
-	grp->gr_mem[i] = NULL;
+	gr->gr_mem[i] = NULL;
 
-	wbc_status = WBC_ERR_SUCCESS;
+	return gr;
 
-done:
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		talloc_free(grp);
-		grp = NULL;
-	}
-
-	return grp;
+fail:
+	wbcFreeMemory(gr);
+	return NULL;
 }
 
 /* Fill in a struct passwd* for a domain user based on username */
