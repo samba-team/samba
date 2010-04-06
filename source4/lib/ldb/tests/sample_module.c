@@ -26,9 +26,6 @@
 int sample_add(struct ldb_module *mod, struct ldb_request *req)
 {
 	struct ldb_control *control;
-	struct ldb_control *controls;
-	ldb_msg_add_fmt(req->op.add.message, "touchedBy", "sample");
-
 
 	/* check if there's a relax control */
 	control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
@@ -43,7 +40,6 @@ int sample_add(struct ldb_module *mod, struct ldb_request *req)
 int sample_modify(struct ldb_module *mod, struct ldb_request *req)
 {
 	struct ldb_control *control;
-	struct ldb_control *controls;
 
 	/* check if there's a relax control */
 	control = ldb_request_get_control(req, LDB_CONTROL_RELAX_OID);
