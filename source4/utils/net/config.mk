@@ -33,6 +33,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
+		LIBGPO \
 		net_drs
 # End BINARY net
 #################################
@@ -41,7 +42,8 @@ net_OBJ_FILES = $(addprefix $(utilssrcdir)/net/,  \
 		net.o \
 		net_password.o \
 		net_join.o \
-		net_vampire.o)
+		net_vampire.o \
+		net_gpo.o)
 
 
 $(eval $(call proto_header_template,$(utilssrcdir)/net/net_proto.h,$(net_OBJ_FILES:.o=.c)))

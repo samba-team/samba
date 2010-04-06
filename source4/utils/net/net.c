@@ -201,6 +201,7 @@ static const struct net_functable net_functable[] = {
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"drs", "Implements functionality offered by repadmin.exe utility in Windows\n", net_drs, net_drs_usage},
+	{"gpo", "Administer group policies\n", net_gpo, net_gpo_usage},
 	{NULL, NULL, NULL, NULL}
 };
 
