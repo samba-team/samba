@@ -81,9 +81,9 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	}
 
 	/* check the max write size */
-	if (in_data_length > 0x00010000) {
+	if (in_data_length > lp_smb2_max_write()) {
 		DEBUG(0,("here:%s: 0x%08X: 0x%08X\n",
-			__location__, in_data_length, 0x00010000));
+			__location__, in_data_length, lp_smb2_max_write()));
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 

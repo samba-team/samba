@@ -362,6 +362,9 @@ struct global {
 	char *szSMBPerfcountModule;
 	bool bMapUntrustedToDomain;
 	bool bAsyncSMBEchoHandler;
+	int ismb2_max_read;
+	int ismb2_max_write;
+	int ismb2_max_trans;
 };
 
 static struct global Globals;
@@ -2586,6 +2589,33 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
+	},
+	{
+		.label		= "smb2 max read",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ismb2_max_read,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "smb2 max write",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ismb2_max_write,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "smb2 max trans",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ismb2_max_trans,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 
 	{N_("Printing Options"), P_SEP, P_SEPARATOR},
@@ -5250,6 +5280,10 @@ static void init_globals(bool first_time_only)
 	Globals.iminreceivefile = 0;
 
 	Globals.bMapUntrustedToDomain = false;
+
+	Globals.ismb2_max_read = 64*1024;
+	Globals.ismb2_max_write = 64*1024;
+	Globals.ismb2_max_trans = 64*1024;
 }
 
 /*******************************************************************
@@ -5612,6 +5646,9 @@ FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, &Globals.szSocketOptions)
 FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend)
+FN_GLOBAL_INTEGER(lp_smb2_max_read, &Globals.ismb2_max_read)
+FN_GLOBAL_INTEGER(lp_smb2_max_write, &Globals.ismb2_max_write)
+FN_GLOBAL_INTEGER(lp_smb2_max_trans, &Globals.ismb2_max_trans)
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)

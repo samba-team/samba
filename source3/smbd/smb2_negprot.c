@@ -164,9 +164,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	       negprot_spnego_blob.data, 16);	/* server guid */
 	SIVAL(outbody.data, 0x18,
 	      capabilities);			/* capabilities */
-	SIVAL(outbody.data, 0x1C, 0x00010000);	/* max transact size */
-	SIVAL(outbody.data, 0x20, 0x00010000);	/* max read size */
-	SIVAL(outbody.data, 0x24, 0x00010000);	/* max write size */
+	SIVAL(outbody.data, 0x1C, lp_smb2_max_trans());	/* max transact size */
+	SIVAL(outbody.data, 0x20, lp_smb2_max_read());	/* max read size */
+	SIVAL(outbody.data, 0x24, lp_smb2_max_write());	/* max write size */
 	SBVAL(outbody.data, 0x28, 0);		/* system time */
 	SBVAL(outbody.data, 0x30, 0);		/* server start time */
 	SSVAL(outbody.data, 0x38,
