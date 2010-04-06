@@ -214,6 +214,7 @@ static NTSTATUS rpc_np_read_recv(struct async_req *req, ssize_t *preceived)
 
 struct rpc_np_trans_state {
 	uint16_t setup[2];
+	uint32_t max_rdata_len;
 	uint8_t *rdata;
 	uint32_t rdata_len;
 };
@@ -235,6 +236,8 @@ static struct async_req *rpc_np_trans_send(TALLOC_CTX *mem_ctx,
 			     struct rpc_np_trans_state)) {
 		return NULL;
 	}
+
+	state->max_rdata_len = max_rdata_len;
 
 	SSVAL(state->setup+0, 0, TRANSACT_DCERPCCMD);
 	SSVAL(state->setup+1, 0, np_transport->fnum);
@@ -266,10 +269,24 @@ static void rpc_np_trans_done(struct async_req *subreq)
 	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL,
 				&state->rdata, &state->rdata_len);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+		status = NT_STATUS_OK;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		async_req_nterror(req, status);
 		return;
 	}
+
+	if (state->rdata_len > state->max_rdata_len) {
+		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (state->rdata_len == 0) {
+		async_req_nterror(req, NT_STATUS_PIPE_BROKEN);
+		return;
+	}
+
 	async_req_done(req);
 }
 
