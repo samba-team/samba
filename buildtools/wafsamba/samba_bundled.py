@@ -15,14 +15,25 @@ def BUNDLED_NAME(bld, name, bundled_extension):
     return name
 
 
+def target_in_list(target, lst, default):
+    for l in lst:
+        if target == l:
+            return True
+        if '!' + target == l:
+            return False
+        if l == 'ALL':
+            return True
+        if l == 'NONE':
+            return False
+    return default
+
+
 def BUILTIN_LIBRARY(bld, name):
     '''return True if a library should be builtin
        instead of being built as a shared lib'''
     if bld.env.DISABLE_SHARED:
         return True
-    if name in bld.env.BUILTIN_LIBRARIES:
-        return True
-    return False
+    return target_in_list(name, bld.env.BUILTIN_LIBRARIES, False)
 
 
 def BUILTIN_DEFAULT(opt, builtins):
