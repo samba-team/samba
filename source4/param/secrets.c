@@ -166,14 +166,14 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 
 	if (ldb_ret != LDB_SUCCESS) {
 		*errstring = talloc_asprintf(mem_ctx, "Failed to find record for %s in %s: %s: %s", 
-					     domain, ldb_get_opaque(ldb, "ldb_url"), 
+					     domain, (char *) ldb_get_opaque(ldb, "ldb_url"),
 					     ldb_strerror(ldb_ret), ldb_errstring(ldb));
 		return NULL;
 	}
 	v = ldb_msg_find_ldb_val(msg, "objectSid");
 	if (v == NULL) {
 		*errstring = talloc_asprintf(mem_ctx, "Failed to find a SID on record for %s in %s", 
-					     domain, ldb_get_opaque(ldb, "ldb_url"));
+					     domain, (char *) ldb_get_opaque(ldb, "ldb_url"));
 		return NULL;
 	}
 	result = talloc(mem_ctx, struct dom_sid);
@@ -186,7 +186,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		*errstring = talloc_asprintf(mem_ctx, "Failed to parse SID on record for %s in %s", 
-					     domain, ldb_get_opaque(ldb, "ldb_url"));
+					     domain, (char *) ldb_get_opaque(ldb, "ldb_url"));
 		talloc_free(result);
 		talloc_free(ldb);
 		return NULL;
