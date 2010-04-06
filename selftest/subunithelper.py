@@ -190,6 +190,7 @@ class SubunitOps(object):
 
 
 def read_test_regexes(name):
+    ret = {}
     f = open(name, 'r')
     try:
         for l in f:
@@ -198,15 +199,16 @@ def read_test_regexes(name):
                 continue
             if "#" in l:
                 (regex, reason) = l.split("#", 1)
-                yield (regex.strip(), reason.strip())
+                ret[regex.strip()] = reason.strip()
             else:
-                yield l, None
+                ret[l] = None
     finally:
         f.close()
+    return ret
 
 
 def find_in_list(regexes, fullname):
-    for regex, reason in regexes:
+    for regex, reason in regexes.iteritems():
         if re.match(regex, fullname):
             if reason is None:
                 return ""

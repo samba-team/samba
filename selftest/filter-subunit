@@ -26,9 +26,9 @@ parser.add_option("--prefix", type="string",
 opts, args = parser.parse_args()
 
 if opts.expected_failures:
-	expected_failures = list(subunithelper.read_test_regexes(opts.expected_failures))
+	expected_failures = subunithelper.read_test_regexes(opts.expected_failures)
 else:
-	expected_failures = []
+	expected_failures = {}
 
 statistics = {
 	'TESTS_UNEXPECTED_OK': 0,
