@@ -40,39 +40,52 @@
  *
  **/
 
+static void wbcPasswdDestructor(void *ptr)
+{
+	struct passwd *pw = (struct passwd *)ptr;
+	free(pw->pw_name);
+	free(pw->pw_passwd);
+	free(pw->pw_gecos);
+	free(pw->pw_shell);
+	free(pw->pw_dir);
+}
+
 static struct passwd *copy_passwd_entry(struct winbindd_pw *p)
 {
-	struct passwd *pwd = NULL;
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct passwd *pw = NULL;
 
-	pwd = talloc(NULL, struct passwd);
-	BAIL_ON_PTR_ERROR(pwd, wbc_status);
-
-	pwd->pw_name = talloc_strdup(pwd,p->pw_name);
-	BAIL_ON_PTR_ERROR(pwd->pw_name, wbc_status);
-
-	pwd->pw_passwd = talloc_strdup(pwd, p->pw_passwd);
-	BAIL_ON_PTR_ERROR(pwd->pw_passwd, wbc_status);
-
-	pwd->pw_gecos = talloc_strdup(pwd, p->pw_gecos);
-	BAIL_ON_PTR_ERROR(pwd->pw_gecos, wbc_status);
-
-	pwd->pw_shell = talloc_strdup(pwd, p->pw_shell);
-	BAIL_ON_PTR_ERROR(pwd->pw_shell, wbc_status);
-
-	pwd->pw_dir = talloc_strdup(pwd, p->pw_dir);
-	BAIL_ON_PTR_ERROR(pwd->pw_dir, wbc_status);
-
-	pwd->pw_uid = p->pw_uid;
-	pwd->pw_gid = p->pw_gid;
-
-done:
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		talloc_free(pwd);
-		pwd = NULL;
+	pw = (struct passwd *)wbcAllocateMemory(1, sizeof(struct passwd),
+						wbcPasswdDestructor);
+	if (pw == NULL) {
+		return NULL;
 	}
+	pw->pw_name = strdup(p->pw_name);
+	if (pw->pw_name == NULL) {
+		goto fail;
+	}
+	pw->pw_passwd = strdup(p->pw_passwd);
+	if (pw->pw_passwd == NULL) {
+		goto fail;
+	}
+	pw->pw_gecos = strdup(p->pw_gecos);
+	if (pw->pw_gecos == NULL) {
+		goto fail;
+	}
+	pw->pw_shell = strdup(p->pw_shell);
+	if (pw->pw_shell == NULL) {
+		goto fail;
+	}
+	pw->pw_dir = strdup(p->pw_dir);
+	if (pw->pw_dir == NULL) {
+		goto fail;
+	}
+	pw->pw_uid = p->pw_uid;
+	pw->pw_gid = p->pw_gid;
+	return pw;
 
-	return pwd;
+fail:
+	wbcFreeMemory(pw);
+	return NULL;
 }
 
 /**
