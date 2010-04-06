@@ -249,6 +249,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
 	}
 
 	for (idx=1; idx < count; idx += 3) {
+		uint16_t creds_requested = 0;
 		const uint8_t *inhdr = NULL;
 		uint32_t flags;
 
@@ -267,7 +268,12 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		*p_creds_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
+		creds_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
+		if (*p_creds_requested + creds_requested < creds_requested) {
+			*p_creds_requested = 65535;
+		} else {
+			*p_creds_requested += creds_requested;
+		}
 
 		flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 		if (idx == 1) {
