@@ -24,6 +24,7 @@
 
 struct rpc_transport_sock_state {
 	int fd;
+	int timeout;
 };
 
 static int rpc_transport_sock_state_destructor(struct rpc_transport_sock_state *s)
@@ -52,6 +53,7 @@ static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result;
 	struct tevent_req *subreq;
 	struct rpc_sock_read_state *state;
+	struct timeval endtime;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct rpc_sock_read_state)) {
@@ -64,10 +66,16 @@ static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 	state->transp = sock_transp;
+	endtime = timeval_current_ofs(0, sock_transp->timeout * 1000);
 	subreq = async_recv_send(state, ev, sock_transp->fd, data, size, 0);
 	if (subreq == NULL) {
 		goto fail;
 	}
+
+	if (!tevent_req_set_endtime(subreq, ev, endtime)) {
+		goto fail;
+	}
+
 	tevent_req_set_callback(subreq, rpc_sock_read_done, result);
 	return result;
  fail:
@@ -131,6 +139,7 @@ static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result;
 	struct tevent_req *subreq;
 	struct rpc_sock_write_state *state;
+	struct timeval endtime;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct rpc_sock_write_state)) {
@@ -143,10 +152,16 @@ static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 	state->transp = sock_transp;
+	endtime = timeval_current_ofs(0, sock_transp->timeout * 1000);
 	subreq = async_send_send(state, ev, sock_transp->fd, data, size, 0);
 	if (subreq == NULL) {
 		goto fail;
 	}
+
+	if (!tevent_req_set_endtime(subreq, ev, endtime)) {
+		goto fail;
+	}
+
 	tevent_req_set_callback(subreq, rpc_sock_write_done, result);
 	return result;
  fail:
@@ -211,6 +226,7 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 	result->priv = state;
 
 	state->fd = fd;
+	state->timeout = 10000; /* 10 seconds. */
 	talloc_set_destructor(state, rpc_transport_sock_state_destructor);
 
 	result->trans_send = NULL;
