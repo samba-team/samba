@@ -2705,7 +2705,6 @@ static bool test_GetAliasMembership(struct dcerpc_binding_handle *b,
 	struct samr_GetAliasMembership r;
 	struct lsa_SidArray sids;
 	struct samr_Ids rids;
-	NTSTATUS status;
 
 	torture_comment(tctx, "Testing GetAliasMembership\n");
 

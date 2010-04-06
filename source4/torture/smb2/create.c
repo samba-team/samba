@@ -475,7 +475,7 @@ static bool test_create_acl_ext(struct torture_context *tctx, struct smb2_tree *
 	struct smb2_create io;
 	NTSTATUS status;
 	struct security_ace ace;
-	struct security_descriptor *sd, *sd2;
+	struct security_descriptor *sd;
 	struct dom_sid *test_sid;
 	union smb_fileinfo q = {};
 	uint32_t attrib =

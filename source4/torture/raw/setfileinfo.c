@@ -981,7 +981,6 @@ torture_raw_sfileinfo_archive(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 	union smb_fileinfo finfo;
 	uint16_t fnum=0;
-	uint32_t access_mask = 0;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
