@@ -159,6 +159,9 @@ static void rpc_np_read_done(struct async_req *subreq)
 	NTSTATUS status;
 	uint8_t *rcvbuf;
 
+	/* We must free subreq in this function as there is
+	   a timer event attached to it. */
+
 	status = cli_read_andx_recv(subreq, &state->received, &rcvbuf);
 	/*
 	 * We can't TALLOC_FREE(subreq) as usual here, as rcvbuf still is a
@@ -180,6 +183,7 @@ static void rpc_np_read_done(struct async_req *subreq)
 	}
 
 	memcpy(state->data, rcvbuf, state->received);
+	TALLOC_FREE(subreq);
 	async_req_done(req);
 }
 
