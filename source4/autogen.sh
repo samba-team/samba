@@ -80,5 +80,8 @@ $AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
+# remove a 'makefile' that may have been left by the waf build
+rm -f makefile
+
 echo "Now run ./configure (or ./configure.developer) and then make."
 exit 0
