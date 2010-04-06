@@ -2385,7 +2385,7 @@ static bool test_AddForm(struct torture_context *tctx,
 
 		torture_assert_ntstatus_ok(tctx, status, "SetForm failed");
 
-		torture_assert_werr_ok(tctx, r.out.result, "SetForm failed");
+		torture_assert_werr_ok(tctx, sf.out.result, "SetForm failed");
 	}
 
 	if (!print_server) ret &= test_GetForm(tctx, b, handle, form_name, 1);
