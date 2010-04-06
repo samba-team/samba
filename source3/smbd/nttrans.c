@@ -2215,6 +2215,58 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return;
 	}
+	case FSCTL_QUERY_ALLOCATED_RANGES:
+	{
+		NTSTATUS status;
+		uint64_t offset, length;
+
+		if (!fsp_belongs_conn(conn, req, fsp)) {
+			return;
+		}
+
+		if (data_count != 16) {
+			DEBUG(0,("FSCTL_QUERY_ALLOCATED_RANGES: data_count(%u) != 16 is invalid!\n",
+				data_count));
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+
+		if (max_data_count < 16) {
+			DEBUG(0,("FSCTL_QUERY_ALLOCATED_RANGES: max_data_count(%u) < 16 is invalid!\n",
+				max_data_count));
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+
+		offset = BVAL(pdata,0);
+		length = BVAL(pdata,8);
+
+		if (offset + length < offset) {
+			/* No 64-bit integer wrap. */
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
+
+		if (offset > fsp->fsp_name->st.st_ex_size ||
+				fsp->fsp_name->st.st_ex_size == 0 ||
+				length == 0) {
+			send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		} else {
+			uint64_t end = offset + length;
+			end = MIN(end, fsp->fsp_name->st.st_ex_size);
+			SBVAL(pdata,0,0);
+			SBVAL(pdata,8,end);
+			send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
+				pdata, 16);
+		}
+		return;
+	}
 	default:
 		if (!logged_ioctl_message) {
 			logged_ioctl_message = true; /* Only print this once... */
