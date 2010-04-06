@@ -2003,7 +2003,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	conn = &domain->conn;
 
-	if (conn->samr_pipe != NULL) {
+	if (rpccli_is_connected(conn->samr_pipe)) {
 		goto done;
 	}
 
@@ -2187,7 +2187,8 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	if (conn->lsa_pipe_tcp &&
 	    conn->lsa_pipe_tcp->transport->transport == NCACN_IP_TCP &&
-	    conn->lsa_pipe_tcp->auth->auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	    conn->lsa_pipe_tcp->auth->auth_level == PIPE_AUTH_LEVEL_PRIVACY &&
+	    rpccli_is_connected(conn->lsa_pipe_tcp)) {
 		goto done;
 	}
 
@@ -2229,7 +2230,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	conn = &domain->conn;
 
-	if (conn->lsa_pipe != NULL) {
+	if (rpccli_is_connected(conn->lsa_pipe)) {
 		goto done;
 	}
 
@@ -2360,7 +2361,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	conn = &domain->conn;
 
-	if (conn->netlogon_pipe != NULL) {
+	if (rpccli_is_connected(conn->netlogon_pipe)) {
 		*cli = conn->netlogon_pipe;
 		return NT_STATUS_OK;
 	}
