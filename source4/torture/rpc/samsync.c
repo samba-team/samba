@@ -778,7 +778,7 @@ static bool samsync_handle_alias(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_QueryAliasInfo_r(samsync_state->b_samr, mem_ctx, &q),
 		"QueryAliasInfo failed");
-	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &alias_handle)) {
+	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &alias_handle)) {
 		return false;
 	}
 
@@ -831,7 +831,7 @@ static bool samsync_handle_group(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_QueryGroupInfo_r(samsync_state->b_samr, mem_ctx, &q),
 		"QueryGroupInfo failed");
-	if (!test_samr_handle_Close(samsync_state->b_samr, mem_ctx, &group_handle)) {
+	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &group_handle)) {
 		return false;
 	}
 
