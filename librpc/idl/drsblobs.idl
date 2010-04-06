@@ -396,7 +396,7 @@ interface drsblobs {
 		[switch_is(version)] package_PrimaryKerberosCtr ctr;
 	} package_PrimaryKerberosBlob;
 
-	void decode_PrimaryKerberos(
+	[nopython] void decode_PrimaryKerberos(
 		[in] package_PrimaryKerberosBlob blob
 		);
 
@@ -486,7 +486,7 @@ interface drsblobs {
 		[relative] AuthenticationInformationArray *previous;
 	} trustAuthInOutBlob;
 
-	void decode_trustAuthInOut(
+	[nopython] void decode_trustAuthInOut(
 		[in] trustAuthInOutBlob blob
 		);
 
@@ -503,7 +503,7 @@ interface drsblobs {
 		[value(ndr_size_trustCurrentPasswords(&incoming, ndr->iconv_convenience, ndr->flags))] uint32 incoming_size;
 	} trustDomainPasswords;
 
-	void decode_trustDomainPasswords(
+	[nopython] void decode_trustDomainPasswords(
 		[in] trustDomainPasswords blob
 		);
 
@@ -584,7 +584,7 @@ interface drsblobs {
 		[unique] ExtendedErrorInfo *info;
 	} ExtendedErrorInfoPtr;
 
-	void decode_ExtendedErrorInfo (
+	[nopython] void decode_ExtendedErrorInfo (
 		[in,subcontext(0xFFFFFC01)] ExtendedErrorInfoPtr ptr
 		);
 
@@ -641,7 +641,7 @@ interface drsblobs {
 		ForestTrustInfoRecordArmor records[count];
 	} ForestTrustInfo;
 
-	void decode_ForestTrustInfo(
+	[nopython] void decode_ForestTrustInfo(
 		[in] ForestTrustInfo blob
 		);
 }
