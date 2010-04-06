@@ -23,9 +23,7 @@ bld.SAMBA_PYTHON('python_uuid',
 
 bld.SAMBA_PYTHON('python_glue',
                  source='pyglue.c',
-                 # _PY_FILES='$(shell find samba ../lib/subunit/python -type f -name "*.py")',
                  deps='LIBNDR ldb SAMDB CREDENTIALS pyldb python_dcerpc_misc python_dcerpc_security pyauth pyldb_util pyparam_util',
-                 # EPYDOC_OPTIONS='--no-private --url http://www.samba.org/ --no-sourcecode',
                  realname='samba/glue.so'
 	)
 
