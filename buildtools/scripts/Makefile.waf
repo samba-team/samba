@@ -17,10 +17,10 @@ uninstall:
 	$(WAF) uninstall
 
 test:
-	$(WAF) test
+	$(WAF) test $(if $(TESTS),--tests="$(TESTS)")
 
 quicktest:
-	$(WAF) test --quick
+	$(WAF) test --quick $(if $(TESTS),--tests="$(TESTS)")
 
 clean:
 	$(WAF) clean
