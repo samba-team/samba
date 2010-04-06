@@ -311,7 +311,6 @@ static bool test_EnumPorts(struct torture_context *tctx,
 
 static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 					    struct dcerpc_pipe *p,
-					    struct test_spoolss_context *ctx,
 					    const char *environment)
 {
 	NTSTATUS status;
@@ -331,10 +330,10 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 			.server	= ""
 		},{
 			.level	= 1,
-			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
+			.server	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p))
 		},{
 			.level	= 1024,
-			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
+			.server	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p))
 		}
 	};
 	int i;
@@ -353,18 +352,18 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetPrintProcessorDirectory level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_GetPrintProcessorDirectory_r(b, ctx, &r);
+		status = dcerpc_spoolss_GetPrintProcessorDirectory_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status,
 			"dcerpc_spoolss_GetPrintProcessorDirectory failed");
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"GetPrintProcessorDirectory unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
+		blob = data_blob_talloc(tctx, NULL, needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
-		status = dcerpc_spoolss_GetPrintProcessorDirectory_r(b, ctx, &r);
+		status = dcerpc_spoolss_GetPrintProcessorDirectory_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrintProcessorDirectory failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrintProcessorDirectory failed");
@@ -378,7 +377,6 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 
 static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 					   struct dcerpc_pipe *p,
-					   struct test_spoolss_context *ctx,
 					   const char *environment)
 {
 	NTSTATUS status;
@@ -398,10 +396,10 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 			.server	= ""
 		},{
 			.level	= 1,
-			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
+			.server	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p))
 		},{
 			.level	= 1024,
-			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
+			.server	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p))
 		}
 	};
 	int i;
@@ -420,18 +418,18 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetPrinterDriverDirectory level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_GetPrinterDriverDirectory_r(b, ctx, &r);
+		status = dcerpc_spoolss_GetPrinterDriverDirectory_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status,
 			"dcerpc_spoolss_GetPrinterDriverDirectory failed");
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"GetPrinterDriverDirectory unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
+		blob = data_blob_talloc(tctx, NULL, needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
-		status = dcerpc_spoolss_GetPrinterDriverDirectory_r(b, ctx, &r);
+		status = dcerpc_spoolss_GetPrinterDriverDirectory_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrinterDriverDirectory failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrinterDriverDirectory failed");
@@ -748,8 +746,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 }
 
 static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
-					struct dcerpc_binding_handle *b,
-					struct test_spoolss_context *ctx)
+					struct dcerpc_binding_handle *b)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrintProcDataTypes r;
@@ -774,7 +771,7 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing EnumPrintProcDataTypes level %u\n", r.in.level);
 
-		status = dcerpc_spoolss_EnumPrintProcDataTypes_r(b, ctx, &r);
+		status = dcerpc_spoolss_EnumPrintProcDataTypes_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcDataType failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
@@ -783,12 +780,12 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPrintProcDataTypes unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
+		blob = data_blob_talloc(tctx, NULL, needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
-		status = dcerpc_spoolss_EnumPrintProcDataTypes_r(b, ctx, &r);
+		status = dcerpc_spoolss_EnumPrintProcDataTypes_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcDataTypes failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcDataTypes failed");
@@ -5602,13 +5599,13 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_Forms(torture, b, &ctx->server_handle, true, NULL, NULL, NULL);
 	ret &= test_Forms_winreg(torture, b, &ctx->server_handle, true, NULL);
 	ret &= test_EnumPorts(torture, b, ctx);
-	ret &= test_GetPrinterDriverDirectory(torture, p, ctx, environment);
-	ret &= test_GetPrintProcessorDirectory(torture, p, ctx, environment);
+	ret &= test_GetPrinterDriverDirectory(torture, p, environment);
+	ret &= test_GetPrintProcessorDirectory(torture, p, environment);
 	ret &= test_EnumPrinterDrivers(torture, p, ctx, environment);
 	ret &= test_EnumPrinterDrivers(torture, p, ctx, SPOOLSS_ARCHITECTURE_ALL);
 	ret &= test_EnumMonitors(torture, b, ctx);
 	ret &= test_EnumPrintProcessors(torture, b, ctx, environment);
-	ret &= test_EnumPrintProcDataTypes(torture, b, ctx);
+	ret &= test_EnumPrintProcDataTypes(torture, b);
 	ret &= test_EnumPrinters(torture, b, ctx);
 	ret &= test_OpenPrinter_badname(torture, b, "__INVALID_PRINTER__");
 	ret &= test_OpenPrinter_badname(torture, b, "\\\\__INVALID_HOST__");
