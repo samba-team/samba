@@ -483,6 +483,107 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/**
+ * @internal
+ *
+ * @brief A function to delete a key and its subkeys recurively.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  pipe_handle The pipe handle for the rpc connection.
+ *
+ * @param[in]  hive_handle A opened hive handle to the key.
+ *
+ * @param[in]  access_mask The access mask to access the key.
+ *
+ * @param[in]  key      The key to delete
+ *
+ * @return              WERR_OK on success, the corresponding DOS error
+ *                      code if something gone wrong.
+ */
+static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
+					    struct rpc_pipe_client *pipe_handle,
+					    struct policy_handle *hive_handle,
+					    uint32_t access_mask,
+					    const char *key)
+{
+	const char **subkeys = NULL;
+	uint32_t num_subkeys = 0;
+	struct policy_handle key_hnd;
+	struct winreg_String wkey;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+	uint32_t i;
+
+	ZERO_STRUCT(key_hnd);
+	wkey.name = key;
+
+	DEBUG(2, ("winreg_printer_delete_subkeys: delete key %s\n", key));
+	/* open the key */
+	status = rpccli_winreg_OpenKey(pipe_handle,
+				       mem_ctx,
+				       hive_handle,
+				       wkey,
+				       0,
+				       access_mask,
+				       &key_hnd,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_delete_subkeys: Could not open key %s: %s\n",
+			  wkey.name, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+		return ntstatus_to_werror(status);
+	}
+
+	result = winreg_printer_enumkeys(mem_ctx,
+					 pipe_handle,
+					 &key_hnd,
+					 &num_subkeys,
+					 &subkeys);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		/* create key + subkey */
+		char *subkey = talloc_asprintf(mem_ctx, "%s\\%s", key, subkeys[i]);
+		if (subkey == NULL) {
+			goto done;
+		}
+
+		DEBUG(2, ("winreg_printer_delete_subkeys: delete subkey %s\n", subkey));
+		result = winreg_printer_delete_subkeys(mem_ctx,
+						       pipe_handle,
+						       hive_handle,
+						       access_mask,
+						       subkey);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		rpccli_winreg_CloseKey(pipe_handle, mem_ctx, &key_hnd, NULL);
+	}
+
+	wkey.name = key;
+
+	status = rpccli_winreg_DeleteKey(pipe_handle,
+					 mem_ctx,
+					 hive_handle,
+					 wkey,
+					 &result);
+
+done:
+	if (is_valid_policy_hnd(&key_hnd)) {
+		rpccli_winreg_CloseKey(pipe_handle, mem_ctx, &key_hnd, NULL);
+	}
+
+	return result;
+}
+
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
@@ -875,6 +976,82 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 	}
 
 	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/* Delete a key with subkeys of a given printer. */
+WERROR winreg_delete_printer_key(struct pipes_struct *p,
+				 const char *printer,
+				 const char *key)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	char *keyname;
+	WERROR result;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	result = winreg_printer_openkey(tmp_ctx,
+					p->server_info,
+					&winreg_pipe,
+					printer,
+					key,
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		/* key doesn't exist */
+		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+			result = WERR_OK;
+			goto done;
+		}
+
+		DEBUG(0, ("winreg_delete_printer_key: Could not open key %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+	}
+
+	keyname = talloc_asprintf(tmp_ctx,
+				  "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers\\%s\\%s",
+				  printer,
+				  key);
+	if (keyname == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	result = winreg_printer_delete_subkeys(tmp_ctx,
+					       winreg_pipe,
+					       &hive_hnd,
+					       access_mask,
+					       keyname);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_delete_printer_key: Could not delete key %s: %s\n",
+			  key, win_errstr(result)));
+		goto done;
+	}
+
 done:
 	if (winreg_pipe != NULL) {
 		if (is_valid_policy_hnd(&key_hnd)) {

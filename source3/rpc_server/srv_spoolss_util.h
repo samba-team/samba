@@ -152,4 +152,22 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 			       uint32_t *pnum_subkeys,
 			       const char ***psubkeys);
 
+/**
+ * @internal
+ *
+ * @brief Delete a key with subkeys of a given printer.
+ *
+ * @param[in]  p        The pipes structure to be able to open a new pipe.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  key      The key of the printer to delete.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_delete_printer_key(struct pipes_struct *p,
+				 const char *printer,
+				 const char *key);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
