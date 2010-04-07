@@ -19,7 +19,7 @@ def add_tarfile(tar, fname, abspath):
 
 
 def dist(appname='',version=''):
-    if not isinstance(appname, str):
+    if not appname:
         # this copes with a mismatch in the calling arguments for dist()
         appname = Utils.g_module.APPNAME
         version = Utils.g_module.VERSION
