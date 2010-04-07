@@ -266,19 +266,21 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 	const char *kwnames[] = { "lp_ctx", "session_info", NULL };
 	struct registry_context *reg_ctx;
 	WERROR result;
-    struct loadparm_context *lp_ctx;
+	struct loadparm_context *lp_ctx;
 	PyObject *py_lp_ctx, *py_session_info, *py_credentials;
 	struct auth_session_info *session_info;
-    struct cli_credentials *credentials;
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOO", discard_const_p(char *, kwnames),
-					 &py_lp_ctx, &py_session_info, &py_credentials))
+	struct cli_credentials *credentials;
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOO",
+					 discard_const_p(char *, kwnames),
+					 &py_lp_ctx, &py_session_info,
+					 &py_credentials))
 		return NULL;
 
-    lp_ctx = lp_from_py_object(py_lp_ctx);
-    if (lp_ctx == NULL) {
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		return NULL;
-    }
+	}
 
 	credentials = cli_credentials_from_py_object(py_credentials);
 	if (credentials == NULL) {
@@ -334,23 +336,22 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	PyObject *py_session_info = Py_None, *py_credentials = Py_None, *py_lp_ctx = Py_None;
 	WERROR result;
 	char *location;
-    struct loadparm_context *lp_ctx;
-    struct cli_credentials *credentials;
+	struct loadparm_context *lp_ctx;
+	struct cli_credentials *credentials;
 	struct hive_key *key;
 	struct auth_session_info *session_info;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO", 
-									 discard_const_p(char *, kwnames), 
-									 &location, 
-									 &py_session_info, &py_credentials,
-									 &py_lp_ctx))
+					 discard_const_p(char *, kwnames),
+					 &location, &py_session_info,
+					 &py_credentials, &py_lp_ctx))
 		return NULL;
 
-    lp_ctx = lp_from_py_object(py_lp_ctx);
-    if (lp_ctx == NULL) {
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		return NULL;
-    }
+	}
 
 	credentials = cli_credentials_from_py_object(py_credentials);
 	if (credentials == NULL) {
@@ -361,7 +362,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	session_info = NULL; /* FIXME */
 
 	result = reg_open_ldb_file(NULL, location, session_info, credentials,
-							   tevent_context_init(NULL), lp_ctx, &key);
+				   tevent_context_init(NULL), lp_ctx, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	return py_talloc_steal(&PyHiveKey, key);
