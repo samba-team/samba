@@ -918,7 +918,7 @@ bool delete_a_form(nt_forms_struct **list, const char *del_name, int *count, WER
 
 	if (n == *count) {
 		DEBUG(10,("delete_a_form, [%s] not found\n", del_name));
-		*ret = WERR_INVALID_PARAM;
+		*ret = WERR_INVALID_FORM_NAME;
 		return False;
 	}
 
