@@ -2217,6 +2217,12 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	}
 	case FSCTL_QUERY_ALLOCATED_RANGES:
 	{
+		/* FIXME: This is just a dummy reply, telling that all of the
+		 * file is allocated. MKS cp needs that.
+		 * Adding the real allocated ranges via FIEMAP on Linux
+		 * and SEEK_DATA/SEEK_HOLE on Solaris is needed to make
+		 * this FSCTL correct for sparse files.
+		 */
 		NTSTATUS status;
 		uint64_t offset, length;
 
