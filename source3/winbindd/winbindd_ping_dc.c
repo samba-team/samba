@@ -61,7 +61,7 @@ struct tevent_req *winbindd_ping_dc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = dcerpc_wbint_PingDc_send(state, ev, domain->child.binding_handle);
+	subreq = dcerpc_wbint_PingDc_send(state, ev, dom_child_handle(domain));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

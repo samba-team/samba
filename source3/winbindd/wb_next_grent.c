@@ -70,7 +70,7 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 		subreq = dcerpc_wbint_QueryGroupList_send(
-			state, state->ev, state->gstate->domain->child.binding_handle,
+			state, state->ev, dom_child_handle(state->gstate->domain),
 			&state->next_groups);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -134,7 +134,7 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 			return;
 		}
 		subreq = dcerpc_wbint_QueryGroupList_send(
-			state, state->ev, state->gstate->domain->child.binding_handle,
+			state, state->ev, dom_child_handle(state->gstate->domain),
 			&state->next_groups);
 		if (tevent_req_nomem(subreq, req)) {
 			return;

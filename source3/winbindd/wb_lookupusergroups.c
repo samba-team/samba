@@ -46,7 +46,7 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 	sid_copy(&state->sid, sid);
 
 	subreq = dcerpc_wbint_LookupUserGroups_send(
-		state, ev, domain->child.binding_handle, &state->sid, &state->sids);
+		state, ev, dom_child_handle(domain), &state->sid, &state->sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

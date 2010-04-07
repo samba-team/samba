@@ -91,7 +91,7 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 		struct winbindd_list_users_domstate *d = &state->domains[i];
 
 		d->subreq = dcerpc_wbint_QueryUserList_send(
-			state->domains, ev, d->domain->child.binding_handle,
+			state->domains, ev, dom_child_handle(d->domain),
 			&d->users);
 		if (tevent_req_nomem(d->subreq, req)) {
 			TALLOC_FREE(state->domains);

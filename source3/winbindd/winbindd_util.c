@@ -162,6 +162,16 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 	ZERO_STRUCTP(domain);
 
+	domain->children = SMB_MALLOC_ARRAY(
+		struct winbindd_child, lp_winbind_max_domain_connections());
+	if (domain->children == NULL) {
+		SAFE_FREE(domain);
+		return NULL;
+	}
+	memset(domain->children, 0,
+	       sizeof(struct winbindd_child)
+	       * lp_winbind_max_domain_connections());
+
 	fstrcpy(domain->name, domain_name);
 	if (alternative_name) {
 		fstrcpy(domain->alt_name, alternative_name);

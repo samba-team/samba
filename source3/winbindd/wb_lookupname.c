@@ -70,7 +70,8 @@ struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = dcerpc_wbint_LookupName_send(
-		state, ev, domain->child.binding_handle, state->dom_name, state->name,
+		state, ev, dom_child_handle(domain),
+		state->dom_name, state->name,
 		flags, &state->type, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -111,7 +112,8 @@ static void wb_lookupname_done(struct tevent_req *subreq)
 	}
 
 	subreq = dcerpc_wbint_LookupName_send(
-		state, state->ev, root_domain->child.binding_handle, state->dom_name,
+		state, state->ev, dom_child_handle(root_domain),
+		state->dom_name,
 		state->name, state->flags, &state->type, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

@@ -47,7 +47,7 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 	state->sids.sids = CONST_DISCARD(struct dom_sid *, sids);
 
 	subreq = dcerpc_wbint_LookupUserAliases_send(
-		state, ev, domain->child.binding_handle, &state->sids, &state->rids);
+		state, ev, dom_child_handle(domain), &state->sids, &state->rids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

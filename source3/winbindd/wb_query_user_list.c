@@ -41,7 +41,7 @@ struct tevent_req *wb_query_user_list_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = dcerpc_wbint_QueryUserList_send(state, ev,
-						 domain->child.binding_handle,
+						 dom_child_handle(domain),
 						 &state->users);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
