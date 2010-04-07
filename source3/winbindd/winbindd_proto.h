@@ -253,8 +253,7 @@ NTSTATUS winbindd_update_creds_by_name(struct winbindd_domain *domain,
 
 /* The following definitions come from winbindd/winbindd_domain.c  */
 
-void setup_domain_child(struct winbindd_domain *domain,
-			struct winbindd_child *child);
+void setup_domain_child(struct winbindd_domain *domain);
 
 /* The following definitions come from winbindd/winbindd_dual.c  */
 
