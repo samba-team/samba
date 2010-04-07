@@ -173,17 +173,23 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	union srvsvc_NetSrvInfo info;
 	WERROR result;
 	NTSTATUS status;
+	const char *server_unc = cli->srv_name_slash;
 
-	if (argc > 2) {
-		printf("Usage: %s [infolevel]\n", argv[0]);
+	if (argc > 3) {
+		printf("Usage: %s [infolevel] [server_unc]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	if (argc == 2)
+	if (argc >= 2) {
 		info_level = atoi(argv[1]);
+	}
+
+	if (argc >= 3) {
+		server_unc = argv[2];
+	}
 
 	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
-					     cli->srv_name_slash,
+					     server_unc,
 					     info_level,
 					     &info,
 					     &result);
