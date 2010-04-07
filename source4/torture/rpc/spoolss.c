@@ -2842,7 +2842,7 @@ static bool test_SetJob(struct torture_context *tctx,
 
 	switch (command) {
 	case SPOOLSS_JOB_CONTROL_PAUSE:
-		torture_comment(tctx, "Testing SetJob(%d) SPOOLSS_JOB_CONTROL_PAUSE\n", job_id);
+		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_PAUSE\n", job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_RESUME:
 		torture_comment(tctx, "Testing SetJob(%d), SPOOLSS_JOB_CONTROL_RESUME\n", job_id);
