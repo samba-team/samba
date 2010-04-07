@@ -38,7 +38,7 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
-                 credentials=None, flags=0, options=None):
+                 credentials=None, flags=0, options=None, global_schema=False):
         self.lp = lp
         if url is None:
             url = lp.get("sam database")
@@ -47,7 +47,8 @@ class SamDB(samba.Ldb):
                 session_info=session_info, credentials=credentials, flags=flags,
                 options=options)
 
-        glue.dsdb_set_global_schema(self)
+        if global_schema:
+            glue.dsdb_set_global_schema(self)
 
     def connect(self, url=None, flags=0, options=None):
         super(SamDB, self).connect(url=self.lp.private_path(url), flags=flags,

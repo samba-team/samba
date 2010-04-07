@@ -266,13 +266,13 @@ class Ldb(_Ldb):
 
         :param sid: The new domain sid to use.
         """
-        glue.samdb_set_domain_sid(self, sid)
+        dsdb.samdb_set_domain_sid(self, sid)
 
     def domain_sid(self):
         """Read the domain SID used by this LDB.
 
         """
-        glue.samdb_get_domain_sid(self)
+        dsdb.samdb_get_domain_sid(self)
 
     def set_schema_from_ldif(self, pf, df):
         glue.dsdb_set_schema_from_ldif(self, pf, df)
@@ -291,15 +291,15 @@ class Ldb(_Ldb):
 
         :param invocation_id: GUID of the invocation id.
         """
-        glue.dsdb_set_ntds_invocation_id(self, invocation_id)
+        dsdb.dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def get_invocation_id(self):
         "Get the invocation_id id"
-        return glue.samdb_ntds_invocation_id(self)
+        return dsdb.samdb_ntds_invocation_id(self)
 
     def get_ntds_GUID(self):
         "Get the NTDS objectGUID"
-        return glue.samdb_ntds_objectGUID(self)
+        return dsdb.samdb_ntds_objectGUID(self)
 
     def server_site_name(self):
         "Get the server site name"

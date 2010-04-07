@@ -74,4 +74,4 @@ class cmd_setpassword(Command):
                       credentials=creds, lp=lp)
 
         samdb.setpassword(filter, password,
-            force_password_change_at_next_login_req=must_change_at_next_login)
+            force_change_at_next_login=must_change_at_next_login)
