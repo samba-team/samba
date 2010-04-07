@@ -653,6 +653,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
 		NT_STATUS_HAVE_NO_MEMORY(sam6);
 		sam6->base = sam3->base;
+		sam = &sam6->base;
 		sam6->sidcount = sam3->sidcount;
 		sam6->sids = sam3->sids;
 
