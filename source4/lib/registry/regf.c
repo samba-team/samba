@@ -550,10 +550,11 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 		*data_type = vk->data_type;
 
 	if (vk->data_length & 0x80000000) {
-		vk->data_length &=~0x80000000;
-		data->data = (uint8_t *)talloc_memdup(ctx, (uint8_t *)&vk->data_offset, vk->data_length);
+		/* this is data of type "REG_DWORD" or "REG_DWORD_BIG_ENDIAN" */
+		data->data = talloc_size(ctx, sizeof(uint32_t));
 		W_ERROR_HAVE_NO_MEMORY(data->data);
-		data->length = vk->data_length;
+		SIVAL(data->data, 0, vk->data_offset);
+		data->length = sizeof(uint32_t);
 	} else {
 		*data = hbin_get(regf, vk->data_offset);
 	}
@@ -1821,7 +1822,8 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	/* Set the type and data */
 	vk.data_length = data.length;
 	vk.data_type = type;
-	if (type == REG_DWORD) {
+	if ((data.length == sizeof(uint32_t)) &&
+	    ((type == REG_DWORD) || (type == REG_DWORD_BIG_ENDIAN))) {
 		vk.data_length |= 0x80000000;
 		vk.data_offset = IVAL(data.data, 0);
 	} else {
