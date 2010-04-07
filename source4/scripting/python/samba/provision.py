@@ -50,6 +50,7 @@ from samba.idmap import IDmapDB
 from samba.ntacls import setntacl, dsacl2fsacl
 from samba.ndr import ndr_pack,ndr_unpack
 from samba.schema import Schema
+from samba.samdb import SamDB
 from ms_display_specifiers import read_ms_ldif
 from samba.provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
 from provisionexceptions import ProvisioningError, InvalidNetbiosName
@@ -894,8 +895,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
         samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
 
-        samdb.domain_sid = str(domainsid)
-        samdb.invocation_id = invocationid
+        samdb.set_domain_sid(str(domainsid))
+        samdb.set_invocation_id(invocationid)
 
         message("Adding DomainDN: %s" % names.domaindn)
 
@@ -946,12 +947,18 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                        {"SCHEMADN": names.schemadn})
 
         message("Reopening sam.ldb with new schema")
+    except:
+        samdb.transaction_cancel()
+        raise
+    else:
         samdb.transaction_commit()
-        samdb = SamDB(session_info=admin_session_info,
-                    credentials=provision_backend.credentials, lp=lp,
-                    global_schema=False)
-        samdb.connect(path)
-        samdb.transaction_start()
+
+    samdb = SamDB(session_info=admin_session_info,
+                credentials=provision_backend.credentials, lp=lp,
+                global_schema=False)
+    samdb.connect(path)
+    samdb.transaction_start()
+    try:
         samdb.invocation_id = invocationid
 
         message("Setting up sam.ldb configuration data")
@@ -1030,9 +1037,9 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     except:
         samdb.transaction_cancel()
         raise
-
-    samdb.transaction_commit()
-    return samdb
+    else:
+        samdb.transaction_commit()
+        return samdb
 
 
 FILL_FULL = "FULL"
