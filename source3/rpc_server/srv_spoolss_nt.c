@@ -7883,6 +7883,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	int i;
 
 	DEBUG(5,("_spoolss_AddForm\n"));
 
@@ -7893,7 +7894,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	}
 
 
-	/* forms can be added on printer of on the print server handle */
+	/* forms can be added on printer or on the print server handle */
 
 	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
@@ -7919,6 +7920,16 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 		goto done;
 	}
 
+	switch (form->flags) {
+	case SPOOLSS_FORM_USER:
+	case SPOOLSS_FORM_BUILTIN:
+	case SPOOLSS_FORM_PRINTER:
+		break;
+	default:
+		status = WERR_INVALID_PARAM;
+		goto done;
+	}
+
 	/* can't add if builtin */
 
 	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
@@ -7927,6 +7938,13 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	}
 
 	count = get_ntforms(&list);
+
+	for (i=0; i < count; i++) {
+		if (strequal(form->form_name, list[i].name)) {
+			status = WERR_FILE_EXISTS;
+			goto done;
+		}
+	}
 
 	if(!add_a_form(&list, form, &count)) {
 		status =  WERR_NOMEM;
