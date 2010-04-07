@@ -22,6 +22,9 @@ test:
 quicktest:
 	$(WAF) test --quick $(if $(TESTS),--tests="$(TESTS)")
 
+dist:
+	$(WAF) dist
+
 clean:
 	$(WAF) clean
 
