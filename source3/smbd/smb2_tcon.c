@@ -220,14 +220,26 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
+	const uint8_t *outhdr;
 	int i = req->current_idx;
 	uint32_t in_tid;
 	void *p;
 	struct smbd_smb2_tcon *tcon;
+	bool chained_fixup = false;
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 
 	in_tid = IVAL(inhdr, SMB2_HDR_TID);
+
+	if (i > 2 && in_tid == (0xFFFFFFFF)) {
+		/*
+		 * Chained request - fill in tid from
+		 * the previous request out.vector[].iov_base.
+		 */
+                outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
+                in_tid = IVAL(outhdr, SMB2_HDR_TID);
+                chained_fixup = true;
+        }
 
 	/* lookup an existing session */
 	p = idr_find(req->session->tcons.idtree, in_tid);
@@ -246,6 +258,13 @@ NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 	}
 
 	req->tcon = tcon;
+
+	if (chained_fixup) {
+		/* Fix up our own outhdr. */
+		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+		SIVAL(outhdr, SMB2_HDR_TID, in_tid);
+	}
+
 	return NT_STATUS_OK;
 }
 

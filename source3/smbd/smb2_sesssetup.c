@@ -338,14 +338,28 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
+	const uint8_t *outhdr;
 	int i = req->current_idx;
 	uint64_t in_session_id;
 	void *p;
 	struct smbd_smb2_session *session;
+	bool chained_fixup = false;
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
+
+	if (i > 2 && in_session_id == (0xFFFFFFFFFFFFFFFFLL)) {
+		/*
+		 * Chained request - fill in session_id from
+		 * the previous request out.vector[].iov_base.
+		 * We can't modify the inhdr here as we have
+		 * yet to check signing.
+		 */
+		outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
+		in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
+		chained_fixup = true;
+	}
 
 	/* lookup an existing session */
 	p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
@@ -363,6 +377,12 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 			      pdb_get_domain(session->server_info->sam_account));
 
 	req->session = session;
+
+	if (chained_fixup) {
+		/* Fix up our own outhdr. */
+		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+		SBVAL(outhdr, SMB2_HDR_SESSION_ID, in_session_id);
+	}
 	return NT_STATUS_OK;
 }
 
