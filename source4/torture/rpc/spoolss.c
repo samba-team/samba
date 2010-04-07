@@ -2386,7 +2386,8 @@ static bool test_EnumForms_find_one(struct torture_context *tctx,
 static bool test_DeleteForm(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b,
 			    struct policy_handle *handle,
-			    const char *form_name)
+			    const char *form_name,
+			    WERROR expected_result)
 {
 	struct spoolss_DeleteForm r;
 
@@ -2398,13 +2399,15 @@ static bool test_DeleteForm(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_spoolss_DeleteForm_r(b, tctx, &r),
 		"DeleteForm failed");
-	torture_assert_werr_ok(tctx, r.out.result,
-		"DeleteForm failed");
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_DeleteForm_r(b, tctx, &r),
-		"2nd DeleteForm failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_FORM_NAME,
-		"2nd DeleteForm failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"DeleteForm gave unexpected result");
+	if (W_ERROR_IS_OK(r.out.result)) {
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_DeleteForm_r(b, tctx, &r),
+			"2nd DeleteForm failed");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_FORM_NAME,
+			"2nd DeleteForm failed");
+	}
 
 	return true;
 }
@@ -2413,7 +2416,8 @@ static bool test_AddForm(struct torture_context *tctx,
 			 struct dcerpc_binding_handle *b,
 			 struct policy_handle *handle,
 			 uint32_t level,
-			 union spoolss_AddFormInfo *info)
+			 union spoolss_AddFormInfo *info,
+			 WERROR expected_result)
 {
 	struct spoolss_AddForm r;
 
@@ -2425,19 +2429,14 @@ static bool test_AddForm(struct torture_context *tctx,
 	r.in.level	= level;
 	r.in.info	= *info;
 
-	torture_comment(tctx, "Testing AddForm(%s) level %d\n",
-		r.in.info.info1->form_name, r.in.level);
+	torture_comment(tctx, "Testing AddForm(%s) level %d, type %d\n",
+		r.in.info.info1->form_name, r.in.level,
+		r.in.info.info1->flags);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
 		"AddForm failed");
-	if (W_ERROR_EQUAL(r.out.result, WERR_FILE_EXISTS)) {
-		test_DeleteForm(tctx, b, handle, r.in.info.info1->form_name);
-		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
-			"AddForm failed");
-	}
-
-	torture_assert_werr_ok(tctx, r.out.result,
-		"AddForm failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"AddForm gave unexpected result");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
 		"2nd AddForm failed");
@@ -2483,41 +2482,33 @@ static bool test_GetForm_winreg(struct torture_context *tctx,
 				uint32_t *w_length,
 				uint8_t **w_data);
 
-static bool test_Forms(struct torture_context *tctx,
-		       struct dcerpc_binding_handle *b,
-		       struct policy_handle *handle,
-		       bool print_server,
-		       const char *printer_name,
-		       struct dcerpc_binding_handle *winreg_handle,
-		       struct policy_handle *hive_handle)
+static bool test_Forms_args(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b,
+			    struct policy_handle *handle,
+			    bool print_server,
+			    const char *printer_name,
+			    struct dcerpc_binding_handle *winreg_handle,
+			    struct policy_handle *hive_handle,
+			    const char *form_name,
+			    struct spoolss_AddFormInfo1 *info1,
+			    WERROR expected_add_result,
+			    WERROR expected_delete_result)
 {
 	union spoolss_FormInfo info;
-	const char *form_name = "testform3";
-
 	union spoolss_AddFormInfo add_info;
-	struct spoolss_AddFormInfo1 info1;
 
 	enum winreg_Type w_type;
 	uint32_t w_size;
 	uint32_t w_length;
 	uint8_t *w_data;
 
-	info1.flags		= SPOOLSS_FORM_USER;
-	info1.form_name		= form_name;
-	info1.size.width	= 50;
-	info1.size.height	= 25;
-	info1.area.left		= 5;
-	info1.area.top		= 10;
-	info1.area.right	= 45;
-	info1.area.bottom	= 15;
-
-	add_info.info1 = &info1;
+	add_info.info1 = info1;
 
 	torture_assert(tctx,
-		test_AddForm(tctx, b, handle, 1, &add_info),
+		test_AddForm(tctx, b, handle, 1, &add_info, expected_add_result),
 		"failed to add form");
 
-	if (winreg_handle && hive_handle) {
+	if (winreg_handle && hive_handle && W_ERROR_IS_OK(expected_add_result)) {
 
 		torture_assert(tctx,
 			test_GetForm_winreg(tctx, winreg_handle, hive_handle, TOP_LEVEL_CONTROL_FORMS_KEY, form_name, &w_type, &w_size, &w_length, &w_data),
@@ -2536,7 +2527,7 @@ static bool test_Forms(struct torture_context *tctx,
 		torture_assert_mem_equal(tctx, &w_data[28], &add_info.info1->flags, 4, "flags mismatch");
 	}
 
-	if (!print_server) {
+	if (!print_server && W_ERROR_IS_OK(expected_add_result)) {
 		torture_assert(tctx,
 			test_GetForm_args(tctx, b, handle, form_name, 1, &info),
 			"failed to get added form");
@@ -2577,8 +2568,102 @@ static bool test_Forms(struct torture_context *tctx,
 		"Newly added form not found in enum call");
 
 	torture_assert(tctx,
-		test_DeleteForm(tctx, b, handle, form_name),
+		test_DeleteForm(tctx, b, handle, form_name, expected_delete_result),
 		"failed to delete form");
+
+	return true;
+}
+
+static bool test_Forms(struct torture_context *tctx,
+		       struct dcerpc_binding_handle *b,
+		       struct policy_handle *handle,
+		       bool print_server,
+		       const char *printer_name,
+		       struct dcerpc_binding_handle *winreg_handle,
+		       struct policy_handle *hive_handle)
+{
+
+	struct spoolss_FormSize size;
+	struct spoolss_FormArea area;
+	int i;
+
+	size.width	= 50;
+	size.height	= 25;
+	area.left	= 5;
+	area.top	= 10;
+	area.right	= 45;
+	area.bottom	= 15;
+
+	struct {
+		struct spoolss_AddFormInfo1 info1;
+		WERROR expected_add_result;
+		WERROR expected_delete_result;
+	} forms[] = {
+		{
+			.info1.flags		= SPOOLSS_FORM_USER,
+			.info1.form_name	= "testform_user",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_OK,
+			.expected_delete_result	= WERR_OK
+		},
+/*
+		weird, we can add a builtin form but we can never remove it
+		again - gd
+
+		{
+			.info1.flags		= SPOOLSS_FORM_BUILTIN,
+			.info1.form_name	= "testform_builtin",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_OK,
+			.expected_delete_result	= WERR_INVALID_PARAM,
+		},
+*/
+		{
+			.info1.flags		= SPOOLSS_FORM_PRINTER,
+			.info1.form_name	= "testform_printer",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_OK,
+			.expected_delete_result	= WERR_OK
+		},
+		{
+			.info1.flags		= SPOOLSS_FORM_USER,
+			.info1.form_name	= "Letter",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_FILE_EXISTS,
+			.expected_delete_result	= WERR_INVALID_PARAM
+		},
+		{
+			.info1.flags		= SPOOLSS_FORM_BUILTIN,
+			.info1.form_name	= "Letter",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_FILE_EXISTS,
+			.expected_delete_result	= WERR_INVALID_PARAM
+		},
+		{
+			.info1.flags		= SPOOLSS_FORM_PRINTER,
+			.info1.form_name	= "Letter",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_FILE_EXISTS,
+			.expected_delete_result	= WERR_INVALID_PARAM
+		}
+	};
+
+	for (i=0; i < ARRAY_SIZE(forms); i++) {
+		torture_assert(tctx,
+			test_Forms_args(tctx, b, handle, print_server, printer_name,
+					winreg_handle, hive_handle,
+					forms[i].info1.form_name,
+					&forms[i].info1,
+					forms[i].expected_add_result,
+					forms[i].expected_delete_result),
+			talloc_asprintf(tctx, "failed to test form '%s'", forms[i].info1.form_name));
+	}
 
 	return true;
 }
