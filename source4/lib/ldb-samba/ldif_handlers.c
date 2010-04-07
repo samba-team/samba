@@ -1068,6 +1068,7 @@ static const struct {
 } samba_attributes[] = {
 	{ "objectSid",			LDB_SYNTAX_SAMBA_SID },
 	{ "securityIdentifier", 	LDB_SYNTAX_SAMBA_SID },
+	{ "tokenGroups", 	        LDB_SYNTAX_SAMBA_SID },
 	{ "ntSecurityDescriptor",	LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR },
 	{ "objectGUID",			LDB_SYNTAX_SAMBA_GUID },
 	{ "invocationId",		LDB_SYNTAX_SAMBA_GUID },
