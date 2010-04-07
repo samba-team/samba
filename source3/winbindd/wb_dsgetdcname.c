@@ -64,7 +64,7 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		child = locator_child();
 	} else {
 		struct winbindd_domain *domain = find_our_domain();
-		child = &domain->child;
+		child = choose_domain_child(domain);
 	}
 
 	if (domain_guid != NULL) {

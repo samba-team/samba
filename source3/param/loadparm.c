@@ -216,6 +216,7 @@ struct global {
 	bool bWinbindNormalizeNames;
 	bool bWinbindRpcOnly;
 	bool bCreateKrb5Conf;
+	int winbindMaxDomainConnections;
 	char *szIdmapBackend;
 	bool bIdmapReadOnly;
 	char *szAddShareCommand;
@@ -4773,6 +4774,15 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "winbind max domain connections",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.winbindMaxDomainConnections,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -5279,6 +5289,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bResetOnZeroVC = False;
 	Globals.bLogWriteableFilesOnExit = False;
 	Globals.bCreateKrb5Conf = true;
+	Globals.winbindMaxDomainConnections = 1;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
@@ -5651,6 +5662,19 @@ FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 FN_GLOBAL_BOOL(lp_winbind_normalize_names, &Globals.bWinbindNormalizeNames)
 FN_GLOBAL_BOOL(lp_winbind_rpc_only, &Globals.bWinbindRpcOnly)
 FN_GLOBAL_BOOL(lp_create_krb5_conf, &Globals.bCreateKrb5Conf)
+static FN_GLOBAL_INTEGER(lp_winbind_max_domain_connections_int,
+		  &Globals.winbindMaxDomainConnections)
+
+int lp_winbind_max_domain_connections(void)
+{
+	if (lp_winbind_offline_logon() &&
+	    lp_winbind_max_domain_connections_int() > 1) {
+		DEBUG(1, ("offline logons active, restricting max domain "
+			  "connections to 1\n"));
+		return 1;
+	}
+	return MAX(1, lp_winbind_max_domain_connections_int());
+}
 
 FN_GLOBAL_CONST_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_BOOL(lp_idmap_read_only, &Globals.bIdmapReadOnly)

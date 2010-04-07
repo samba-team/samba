@@ -205,7 +205,7 @@ struct winbindd_domain {
 
 	/* The child pid we're talking to */
 
-	struct winbindd_child child;
+	struct winbindd_child *children;
 
 	/* Callback we use to try put us back online. */
 

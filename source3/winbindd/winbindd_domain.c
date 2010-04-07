@@ -69,6 +69,12 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 
 void setup_domain_child(struct winbindd_domain *domain)
 {
-	setup_child(domain, &domain->child, domain_dispatch_table,
-		    "log.wb", domain->name);
+	int i;
+
+        for (i=0; i<lp_winbind_max_domain_connections(); i++) {
+                setup_child(domain, &domain->children[i],
+			    domain_dispatch_table,
+                            "log.wb", domain->name);
+		domain->children[i].domain = domain;
+	}
 }

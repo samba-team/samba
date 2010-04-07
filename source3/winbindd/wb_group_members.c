@@ -73,7 +73,7 @@ static struct tevent_req *wb_lookupgroupmem_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = dcerpc_wbint_LookupGroupMembers_send(
-		state, ev, domain->child.binding_handle, &state->sid, type,
+		state, ev, dom_child_handle(domain), &state->sid, type,
 		&state->members);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

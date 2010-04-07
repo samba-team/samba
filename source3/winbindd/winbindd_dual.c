@@ -193,9 +193,47 @@ int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+static bool winbindd_child_busy(struct winbindd_child *child)
+{
+	return tevent_queue_length(child->queue) > 0;
+}
+
+static struct winbindd_child *find_idle_child(struct winbindd_domain *domain)
+{
+	int i;
+
+	for (i=0; i<lp_winbind_max_domain_connections(); i++) {
+		if (!winbindd_child_busy(&domain->children[i])) {
+			return &domain->children[i];
+		}
+	}
+
+	return NULL;
+}
+
+struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
+{
+	struct winbindd_child *result;
+
+	result = find_idle_child(domain);
+	if (result != NULL) {
+		return result;
+	}
+	return &domain->children[rand() % lp_winbind_max_domain_connections()];
+}
+
+struct dcerpc_binding_handle *dom_child_handle(struct winbindd_domain *domain)
+{
+	struct winbindd_child *child;
+
+	child = choose_domain_child(domain);
+	return child->binding_handle;
+}
+
 struct wb_domain_request_state {
 	struct tevent_context *ev;
 	struct winbindd_domain *domain;
+	struct winbindd_child *child;
 	struct winbindd_request *request;
 	struct winbindd_request *init_req;
 	struct winbindd_response *response;
@@ -219,8 +257,10 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	state->child = choose_domain_child(domain);
+
 	if (domain->initialized) {
-		subreq = wb_child_request_send(state, ev, &domain->child,
+		subreq = wb_child_request_send(state, ev, state->child,
 					       request);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -245,7 +285,7 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 		state->init_req->data.init_conn.is_primary = domain->primary;
 		fstrcpy(state->init_req->data.init_conn.dcname, "");
 
-		subreq = wb_child_request_send(state, ev, &domain->child,
+		subreq = wb_child_request_send(state, ev, state->child,
 					       state->init_req);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -266,7 +306,7 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 	state->init_req->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(state->init_req->domain_name, domain->name);
 
-	subreq = wb_child_request_send(state, ev, &domain->child, request);
+	subreq = wb_child_request_send(state, ev, state->child, request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -297,7 +337,7 @@ static void wb_domain_request_gotdc(struct tevent_req *subreq)
 
 	TALLOC_FREE(response);
 
-	subreq = wb_child_request_send(state, state->ev, &state->domain->child,
+	subreq = wb_child_request_send(state, state->ev, state->child,
 				       state->init_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -337,7 +377,7 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 
 	TALLOC_FREE(response);
 
-	subreq = wb_child_request_send(state, state->ev, &state->domain->child,
+	subreq = wb_child_request_send(state, state->ev, state->child,
 				       state->request);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

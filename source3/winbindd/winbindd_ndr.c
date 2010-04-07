@@ -120,6 +120,7 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 			       const char *name,
 			       const struct winbindd_domain *r)
 {
+	int i;
 	if (!r) {
 		return;
 	}
@@ -150,7 +151,9 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 	ndr_print_uint32(ndr, "sequence_number", r->sequence_number);
 	ndr_print_NTSTATUS(ndr, "last_status", r->last_status);
 	ndr_print_winbindd_cm_conn(ndr, "conn", &r->conn);
-	ndr_print_winbindd_child(ndr, "child", &r->child);
+	for (i=0; i<lp_winbind_max_domain_connections(); i++) {
+		ndr_print_winbindd_child(ndr, "children", &r->children[i]);
+	}
 	ndr_print_uint32(ndr, "check_online_timeout", r->check_online_timeout);
 	ndr_print_ptr(ndr, "check_online_event", r->check_online_event);
 	ndr->depth--;

@@ -3230,6 +3230,7 @@ bool lp_winbind_offline_logon(void);
 bool lp_winbind_normalize_names(void);
 bool lp_winbind_rpc_only(void);
 bool lp_create_krb5_conf(void);
+int lp_winbind_max_domain_connections(void);
 const char *lp_idmap_backend(void);
 bool lp_idmap_read_only(void);
 int lp_idmap_cache_time(void);
