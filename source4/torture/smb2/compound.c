@@ -46,6 +46,8 @@ static bool test_compound_related1(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[2];
+	uint32_t saved_tid = tree->tid;
+	uint64_t saved_uid = tree->session->uid;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 2);
 
@@ -82,12 +84,19 @@ static bool test_compound_related1(struct torture_context *tctx,
 
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
+
+	tree->tid = 0xFFFFFFFF;
+	tree->session->uid = UINT64_MAX;
+
 	req[1] = smb2_close_send(tree, &cl);
 
 	status = smb2_create_recv(req[0], tree, &cr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_close_recv(req[1], &cl);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	tree->tid = saved_tid;
+	tree->session->uid = saved_uid;
 
 	smb2_util_unlink(tree, fname);
 done:
@@ -104,6 +113,8 @@ static bool test_compound_related2(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[5];
+	uint32_t saved_tid = tree->tid;
+	uint64_t saved_uid = tree->session->uid;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -140,6 +151,9 @@ static bool test_compound_related2(struct torture_context *tctx,
 
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
+	tree->tid = 0xFFFFFFFF;
+	tree->session->uid = UINT64_MAX;
+
 	req[1] = smb2_close_send(tree, &cl);
 	req[2] = smb2_close_send(tree, &cl);
 	req[3] = smb2_close_send(tree, &cl);
@@ -155,6 +169,9 @@ static bool test_compound_related2(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 	status = smb2_close_recv(req[4], &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	tree->tid = saved_tid;
+	tree->session->uid = saved_uid;
 
 	smb2_util_unlink(tree, fname);
 done:
@@ -296,6 +313,8 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[5];
+	uint32_t saved_tid = tree->tid;
+	uint64_t saved_uid = tree->session->uid;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -332,6 +351,9 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
+	tree->tid = 0xFFFFFFFF;
+	tree->session->uid = UINT64_MAX;
+
 	req[1] = smb2_close_send(tree, &cl);
 	/* strange that this is not generating invalid parameter */
 	smb2_transport_compound_set_related(tree->session->transport, false);
@@ -350,6 +372,9 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	status = smb2_close_recv(req[4], &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	tree->tid = saved_tid;
+	tree->session->uid = saved_uid;
 
 	smb2_util_unlink(tree, fname);
 done:
