@@ -13,4 +13,9 @@ echo "Updating testtools..."
 bzr export "$WORKDIR/testtools" lp:testtools 
 rsync -avz --delete "$WORKDIR/testtools/" "$TARGETDIR/testtools/"
 
+echo "Updating dnspython..."
+git clone git://www.dnspython.org/dnspython.git "$WORKDIR/dnspython"
+rm -rf "$WORKDIR/dnspython/.git"
+rsync -avz --delete "$WORKDIR/dnspython/" "$TARGETDIR/dnspython/"
+
 rm -rf "$WORKDIR"
