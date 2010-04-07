@@ -73,11 +73,16 @@ http://wiki.samba.org/index.php/Samba4_DRS_TODO_List
 
 Beside this the release includes:
 
+* a new build system based on WAF
+Andrew Tridgell (tridge) invested much time to bring this up. He achieved a
+marvellous work which brings us faster building, easier management and smaller
+binaries.
+
 * enhancements in Samba4 winbind to provide a fairly good implementation of the
 most important functions needed by "libnss_winbind" and "pam_winbind"
-The use of this two components allows a user/group mapping for Windows accounts
-on UNIX and UNIX-like systems. Therefore also these accounts can be used to
-connect to services as "ssh", "login", "Xsession" and so on.
+This two components allow a user/group mapping for Windows accounts on UNIX and
+UNIX-like systems. Therefore also these accounts can be used to connect to
+services as "ssh", "login", "Xsession" and so on.
 More informations available at http://wiki.samba.org/index.php/Samba4/Winbind
 and for winbind in general, "libnss_winbind" and "pam_winbind" in the Samba 3.X
 documentation.
@@ -87,8 +92,10 @@ These can now also be set on the command line directly on the server. See
 "net acl" for further informations.
 
 * dynamic DNS updates
-A new DNS upgrade mechanism has been introduced which works with newer bind9
-releases.
+Up-to-date DNS entries are essential for Active Directory deployments. As for
+the moment Samba4 isn't yet capable to interoperate with Microsofts AD DNS
+server (regarding RPCs, ADs zone entries...) a kind of update script has been
+developed. It also permits the update of the "grant" and "resource" lists.
 
 * registry improvements
 The registry code was reworked, improved and retested. This was achieved by the
@@ -97,10 +104,11 @@ new torture tests written by gd and some additional testing against Windows
 Also some real bugs were fixed.
 
 * new Kerberos HEIMDAL release
-Abartlet imported a new release with various bugfixes
+Andrew Bartlett (abartlet) imported a new release with various bugfixes
 
 * DCE/RPC code unification work
-Metze started his work to unify these codebases between s3 and s4
+Stefan Metzmacher (metze) started his work to unify these codebases between s3
+and s4
 
 * And much more
 We always try to fix bugs and keep improving the (source) quality of our
@@ -139,9 +147,6 @@ KNOWN ISSUES
   from Samba3 to Samba4. It's not included yet in the binary distributions
   since it's completely experimental!
 
-- ACL are not set by default on shares created by the provision.
-  Work is underway on this subject and it should be fixed soon.
-
 RUNNING Samba4
 ==============
 
@@ -153,8 +158,8 @@ DEVELOPMENT and FEEDBACK
 
 We need your help! Projects as Samba 4 live from the community feedback. If you
 provide expressive bug reports, some documentation snippets on the wiki or some
-real patches - all is appreciated if it meets our quality criterias. Here you
-can find the links:
+real code patches - all is appreciated if it meets our quality criterias. Here
+you can find further references:
 
 Bugs can be filed at https://bugzilla.samba.org/ but please be aware
 that many features are simply not expected to work at this stage.  
