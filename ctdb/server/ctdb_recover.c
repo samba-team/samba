@@ -819,7 +819,7 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	}
 
 	if (keep) {
-		DEBUG(DEBUG_ERR, ("Recovery lock taken successfully\n"));
+		DEBUG(DEBUG_NOTICE, ("Recovery lock taken successfully\n"));
 	}
 
 	DEBUG(DEBUG_NOTICE,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));

@@ -1342,7 +1342,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			return -1;
 		}
 		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
-		DEBUG(DEBUG_ERR,("Recovery lock taken successfully by recovery daemon\n"));
+		DEBUG(DEBUG_NOTICE,("Recovery lock taken successfully by recovery daemon\n"));
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", rec->last_culprit_node));
