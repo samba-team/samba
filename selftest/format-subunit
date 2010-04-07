@@ -15,6 +15,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
 import subunithelper
 import subunit
 
+def format_time(t):
+    minutes, seconds = divmod(t, 60)
+    hours, minutes = divmod(minutes, 60)
+    ret = ""
+    if hours:
+        ret += "%dh" % hours
+    if minutes:
+        ret += "%dm" % minutes
+    ret += "%ds" % seconds
+    return ret
+
+
 class PlainFormatter(object):
 
     def __init__(self, summaryfile, verbose, immediate, statistics,
@@ -62,7 +74,7 @@ class PlainFormatter(object):
         out = "[%d" % self.index
         if self.totalsuites is not None:
             out += "/%d" % self.totalsuites
-        out += " in %ds" % duration
+        out += " in " + format_time(duration)
         if self.suitesfailed:
             out += ", %d errors" % (len(self.suitesfailed),)
         out += "] %s" % name 
