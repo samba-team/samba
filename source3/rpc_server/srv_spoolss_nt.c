@@ -7915,7 +7915,8 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
-		return WERR_ACCESS_DENIED;
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't add if builtin */
@@ -8079,7 +8080,8 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
-		return WERR_ACCESS_DENIED;
+		status = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/* can't set if builtin */
