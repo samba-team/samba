@@ -1827,9 +1827,12 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 			element_str = talloc_asprintf_append(element_str, ",%s", PyObject_REPR(o));
 	}
 
-	ret = PyString_FromFormat("MessageElement([%s])", element_str);
-
-	talloc_free(element_str);
+	if (element_str != NULL) {
+		ret = PyString_FromFormat("MessageElement([%s])", element_str);
+		talloc_free(element_str);
+	} else {
+		ret = PyString_FromString("MessageElement([])");
+	}
 
 	return ret;
 }
