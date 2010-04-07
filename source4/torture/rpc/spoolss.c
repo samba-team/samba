@@ -2440,8 +2440,13 @@ static bool test_AddForm(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
 		"2nd AddForm failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_FILE_EXISTS,
-		"2nd AddForm gave unexpected result");
+	if (W_ERROR_EQUAL(expected_result, WERR_INVALID_PARAM)) {
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+			"2nd AddForm gave unexpected result");
+	} else {
+		torture_assert_werr_equal(tctx, r.out.result, WERR_FILE_EXISTS,
+			"2nd AddForm gave unexpected result");
+	}
 
 	return true;
 }
@@ -2563,9 +2568,11 @@ static bool test_Forms_args(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, info.info1.size.width, add_info.info1->size.width, "width mismatch");
 	}
 
-	torture_assert(tctx,
-		test_EnumForms_find_one(tctx, b, handle, print_server, form_name),
-		"Newly added form not found in enum call");
+	if (!W_ERROR_EQUAL(expected_add_result, WERR_INVALID_PARAM)) {
+		torture_assert(tctx,
+			test_EnumForms_find_one(tctx, b, handle, print_server, form_name),
+			"Newly added form not found in enum call");
+	}
 
 	torture_assert(tctx,
 		test_DeleteForm(tctx, b, handle, form_name, expected_delete_result),
@@ -2651,7 +2658,16 @@ static bool test_Forms(struct torture_context *tctx,
 			.info1.area		= area,
 			.expected_add_result	= WERR_FILE_EXISTS,
 			.expected_delete_result	= WERR_INVALID_PARAM
+		},
+		{
+			.info1.flags		= 12345,
+			.info1.form_name	= "invalid_flags",
+			.info1.size		= size,
+			.info1.area		= area,
+			.expected_add_result	= WERR_INVALID_PARAM,
+			.expected_delete_result	= WERR_INVALID_FORM_NAME
 		}
+
 	};
 
 	for (i=0; i < ARRAY_SIZE(forms); i++) {
