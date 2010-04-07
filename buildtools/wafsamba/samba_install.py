@@ -7,6 +7,8 @@ import Options
 from TaskGen import feature, before, after
 from samba_utils import *
 
+O755 = 493
+
 @feature('install_bin')
 @after('apply_core')
 @before('apply_link')
@@ -41,7 +43,7 @@ def install_binary(self):
     # tell waf to install the right binary
     bld.install_as(os.path.join(install_path, orig_target),
                    os.path.join(self.path.abspath(bld.env), self.target),
-                   chmod=0755)
+                   chmod=O755)
 
 
 

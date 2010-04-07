@@ -89,7 +89,7 @@ def etags(ctx):
     import Utils
     source_root = os.path.dirname(Utils.g_module.root_path)
     cmd = 'etags $(find %s/.. -name "*.[ch]")' % source_root
-    print "Running: %s" % cmd
+    print("Running: %s" % cmd)
     os.system(cmd)
 
 def ctags(ctx):
@@ -97,7 +97,7 @@ def ctags(ctx):
     import Utils
     source_root = os.path.dirname(Utils.g_module.root_path)
     cmd = 'ctags $(find %s/.. -name "*.[ch]" | grep -v "*_proto\.h")' % source_root
-    print "Running: %s" % cmd
+    print("Running: %s" % cmd)
     os.system(cmd)
 
 # putting this here enabled build in the list
@@ -110,7 +110,7 @@ def build(bld):
 def pydoctor(ctx):
     '''build python apidocs'''
     cmd='LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba'
-    print "Running: %s" % cmd
+    print("Running: %s" % cmd)
     os.system(cmd)
 
 def wafdocs(ctx):
@@ -120,10 +120,10 @@ def wafdocs(ctx):
     list = recursive_dirlist('../buildtools/wafsamba', '.', pattern='*.py')
 
     cmd='LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext'
-    print list
+    print(list)
     for f in list:
         cmd += ' --add-module %s' % f
-    print "Running: %s" % cmd
+    print("Running: %s" % cmd)
     os.system(cmd)
 
 

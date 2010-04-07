@@ -25,6 +25,8 @@ import irixcc
 import generic_cc
 import samba_dist
 
+O644 = 420
+
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':
     import nothreads
@@ -523,7 +525,7 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
 
 
-def install_file(bld, destdir, file, chmod=0644, flat=False,
+def install_file(bld, destdir, file, chmod=O644, flat=False,
                  python_fixup=False, destname=None, base_name=None):
     '''install a file'''
     destdir = bld.EXPAND_VARIABLES(destdir)
@@ -545,7 +547,7 @@ def install_file(bld, destdir, file, chmod=0644, flat=False,
     bld.install_as(dest, file, chmod=chmod)
 
 
-def INSTALL_FILES(bld, destdir, files, chmod=0644, flat=False,
+def INSTALL_FILES(bld, destdir, files, chmod=O644, flat=False,
                   python_fixup=False, destname=None, base_name=None):
     '''install a set of files'''
     for f in TO_LIST(files):
@@ -555,7 +557,7 @@ def INSTALL_FILES(bld, destdir, files, chmod=0644, flat=False,
 Build.BuildContext.INSTALL_FILES = INSTALL_FILES
 
 
-def INSTALL_WILDCARD(bld, destdir, pattern, chmod=0644, flat=False,
+def INSTALL_WILDCARD(bld, destdir, pattern, chmod=O644, flat=False,
                      python_fixup=False, exclude=None, trim_path=None):
     '''install a set of files matching a wildcard pattern'''
     files=TO_LIST(bld.path.ant_glob(pattern))
@@ -623,7 +625,7 @@ def subst_at_vars(task):
             if not vname in task.env and vname.upper() in task.env:
                 vname = vname.upper()
             if not vname in task.env:
-                print "Unknown substitution %s in %s" % (v, task.name)
+                print("Unknown substitution %s in %s" % (v, task.name))
                 raise
             v = SUBST_VARS_RECURSIVE(task.env[vname], task.env)
             # now we back substitute the allowed pc vars

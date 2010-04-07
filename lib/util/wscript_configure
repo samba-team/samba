@@ -68,7 +68,7 @@ for (define, msg, code, headers) in statfs_types:
         break
 
 if not found_statfs:
-    print "FATAL: Failed to find a statfs method"
+    print("FATAL: Failed to find a statfs method")
     raise
 
 

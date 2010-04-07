@@ -220,7 +220,7 @@ def subst_vars_error(string, env):
         if re.match('\$\{\w+\}', v):
             vname = v[2:-1]
             if not vname in env:
-                print "Failed to find variable %s in %s" % (vname, string)
+                print("Failed to find variable %s in %s" % (vname, string))
                 sys.exit(1)
             v = env[vname]
         out.append(v)
@@ -356,7 +356,7 @@ def RUN_COMMAND(cmd,
         return os.WEXITSTATUS(status)
     if os.WIFSIGNALED(status):
         return - os.WTERMSIG(status)
-    print "Unknown exit reason %d for command: %s" (status, cmd)
+    print("Unknown exit reason %d for command: %s" (status, cmd))
     return -1
 
 
@@ -434,7 +434,7 @@ def RECURSE(ctx, directory):
         return ctx.sub_config(relpath)
     if ctxclass == 'BuildContext':
         return ctx.add_subdirs(relpath)
-    print 'Unknown RECURSE context class', ctxclass
+    print('Unknown RECURSE context class', ctxclass)
     raise
 Options.Handler.RECURSE = RECURSE
 Build.BuildContext.RECURSE = RECURSE

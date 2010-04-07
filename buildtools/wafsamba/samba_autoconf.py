@@ -545,7 +545,7 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
 
     if Options.options.pedantic:
-	conf.ADD_CFLAGS('-W', testflags=True)
+        conf.ADD_CFLAGS('-W', testflags=True)
 
     if path is None:
         conf.write_config_header('config.h', top=True)

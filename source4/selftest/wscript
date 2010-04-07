@@ -49,7 +49,7 @@ def cmd_testonly(opt):
     if (not CONFIG_SET(opt, 'NSS_WRAPPER') or
         not CONFIG_SET(opt, 'UID_WRAPPER') or
         not CONFIG_SET(opt, 'SOCKET_WRAPPER')):
-        print "ERROR: You must use --enable-selftest to enable selftest"
+        print("ERROR: You must use --enable-selftest to enable selftest")
         sys.exit(1)
 
     env.TESTS  = Options.options.TESTS
@@ -73,12 +73,12 @@ def cmd_testonly(opt):
         env.FILTER_OPTIONS = '${FILTER_XFAIL} | ${FORMAT_TEST_OUTPUT}'
 
     if Options.options.VALGRIND:
-	os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
+        os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
         if Options.options.VALGRINDLOG is not None:
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
     if Options.options.VALGRIND_SERVER:
-	os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run A=B '
+        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run A=B '
 
     env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
@@ -95,7 +95,7 @@ def cmd_testonly(opt):
     cmd = '(${PERL} ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
     cmd = EXPAND_VARIABLES(opt, cmd)
 
-    print "test: running %s" % cmd
+    print("test: running %s" % cmd)
     ret = RUN_COMMAND(cmd, env=env)
     if ret != 0:
         print("ERROR: test failed with exit code %d" % ret)

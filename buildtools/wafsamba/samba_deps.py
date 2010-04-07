@@ -96,10 +96,9 @@ def build_dependencies(self):
 
     if getattr(self, 'uselib', None):
         up_list = []
-	for l in self.uselib:
-	    up_list.append(l.upper())
-	self.uselib = up_list
-
+        for l in self.uselib:
+           up_list.append(l.upper())
+        self.uselib = up_list
 
 def build_includes(self):
     '''This builds the right set of includes for a target.
@@ -280,7 +279,7 @@ def check_orpaned_targets(bld, tgt_list):
         type = target_dict[t.sname]
         if not type in ['BINARY', 'LIBRARY', 'MODULE', 'ET', 'PYTHON']:
             if re.search('^PIDL_', t.sname) is None:
-                print "Target %s of type %s is unused by any other target" % (t.sname, type)
+                print("Target %s of type %s is unused by any other target" % (t.sname, type))
 
 
 def show_final_deps(bld, tgt_list):
@@ -329,7 +328,7 @@ def build_direct_deps(bld, tgt_list):
             d = EXPAND_ALIAS(bld, d)
             if d == t.sname: continue
             if not d in targets:
-                print "Unknown dependency %s in %s" % (d, t.sname)
+                print("Unknown dependency %s in %s" % (d, t.sname))
                 raise
             if targets[d] in [ 'EMPTY', 'DISABLED' ]:
                 continue
@@ -344,7 +343,7 @@ def build_direct_deps(bld, tgt_list):
                 continue
             t2 = bld.name_to_obj(d, bld.env)
             if t2 is None:
-                print "no task %s type %s" % (d, targets[d])
+                print("no task %s type %s" % (d, targets[d]))
             if t2.samba_type in [ 'LIBRARY', 'MODULE' ]:
                 t.direct_libs.add(d)
             elif t2.samba_type in [ 'SUBSYSTEM', 'ASN1', 'PYTHON' ]:
@@ -823,7 +822,7 @@ def check_project_rules(bld):
             continue
         t = bld.name_to_obj(tgt, bld.env)
         if t is None:
-            print "Target %s of type %s has no task generator" % (tgt, type)
+            print("Target %s of type %s has no task generator" % (tgt, type))
             raise
         tgt_list.append(t)
 
@@ -832,7 +831,7 @@ def check_project_rules(bld):
     if load_samba_deps(bld, tgt_list):
         return
 
-    print "Checking project rules ..."
+    print("Checking project rules ...")
 
     debug('deps: project rules checking started')
 
@@ -851,7 +850,7 @@ def check_project_rules(bld):
     #check_orpaned_targets(bld, tgt_list)
 
     if not check_duplicate_sources(bld, tgt_list):
-        print "Duplicate sources present - aborting"
+        print("Duplicate sources present - aborting")
         sys.exit(1)
 
     show_final_deps(bld, tgt_list)
@@ -861,7 +860,7 @@ def check_project_rules(bld):
 
     save_samba_deps(bld, tgt_list)
 
-    print "Project rules pass"
+    print("Project rules pass")
 
 
 def CHECK_PROJECT_RULES(bld):

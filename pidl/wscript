@@ -16,9 +16,9 @@ def configure(conf):
     # yapp is used for building the parser
     conf.find_program('yapp', var='YAPP')
 
-
+O755 = 493
 def build(bld):
-    bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
+    bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=O755)
 
     bld.RECURSE('lib')
 

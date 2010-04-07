@@ -10,7 +10,7 @@ external_libs = {
 
 list = []
 
-for module, package in external_libs.iteritems():
+for module, package in external_libs.items():
     try:
         __import__(module)
     except ImportError:

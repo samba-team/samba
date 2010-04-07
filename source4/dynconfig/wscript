@@ -62,7 +62,7 @@ def get_varname(v):
     if v.startswith('with-'):
         v = v[5:]
     v = v.upper()
-    v = string.replace(v, '-', '_')
+    v = v.replace('-', '_')
     return v
 
 
@@ -101,7 +101,7 @@ def configure(conf):
 
     if (not Options.options.ENABLE_FHS and
         (conf.env.PREFIX == '/usr' or conf.env.PREFIX == '/usr/local')):
-        print "ERROR: Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)"
+        print("ERROR: Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)")
         sys.exit(1)
 
 
