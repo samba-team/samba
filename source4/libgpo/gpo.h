@@ -22,9 +22,13 @@
 #define __GPO_H__
 
 
-/* GPO_OPTIONS */
-#define GPO_FLAG_DISABLE        0x00000001
-#define GPO_FLAG_FORCE          0x00000002
+#define GPLINK_OPT_DISABLE		(1 << 0)
+#define GPLINK_OPT_ENFORCE		(1 << 1)
+
+
+#define GPO_FLAG_USER_DISABLE		(1 << 0)
+#define GPO_FLAG_MACHINE_DISABLE	(1 << 1)
+
 
 struct gp_context {
 	struct ldb_context *ldb_ctx;
@@ -43,6 +47,19 @@ struct gp_object {
 	struct security_descriptor *security_descriptor;
 };
 
+struct gp_hierarchy_object {
+	enum {
+		GPO_INHERIT = 0,
+		GPO_BLOCK_INHERITANCE = 1,
+	} inheritance;
+	struct gp_link **gplinks;
+};
+
+struct gp_link {
+	uint32_t options;
+	const char *dn;
+};
+
 NTSTATUS gp_fetch_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 NTSTATUS gp_apply_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 NTSTATUS gp_check_refresh_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
@@ -53,4 +70,10 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
 				struct gp_context **gp_ctx);
 NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret);
+NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *name, struct gp_object **ret);
+NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp_link ***ret);
+
+NTSTATUS gp_get_gplink_options(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
+NTSTATUS gp_get_gpo_flags(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
+
 #endif
