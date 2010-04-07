@@ -278,6 +278,9 @@ def provision_paths_from_lp(lp, dnsdomain):
     """
     paths = ProvisionPaths()
     paths.private_dir = lp.get("private dir")
+
+    # This is stored without path prefix for the "privateKeytab" attribute in
+    # "secrets_dns.ldif".
     paths.dns_keytab = "dns.keytab"
 
     paths.shareconf = os.path.join(paths.private_dir, "share.ldb")
