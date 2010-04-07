@@ -241,6 +241,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
 	int idx;
 	bool compound_related = false;
 
+	*p_creds_requested = 0;
 	count = req->in.vector_count;
 
 	if (count < 4) {
