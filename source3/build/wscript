@@ -14,6 +14,9 @@ def set_options(opt):
                        help=(help + ' [%s]' % default),
                        action="store", dest=varname, default=default)
 
+
+cflags_vars = [ 'CONFIGFILE' ]
+
 def configure(conf):
     # get all the basic GNU options from the gnu_dirs tool
     conf.check_tool('gnu_dirs')
@@ -31,6 +34,8 @@ def configure(conf):
         conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
         conf.ASSERT(v.find('${') == -1, "Unsubstituted variable in %s : %s : %s" % (f, dyn_cflags[f], v))
         conf.env[f] = v
+        if f in cflags_vars:
+            conf.DEFINE(f, v, quote=True)
 
 def build(bld):
     cflags = dynconfig_cflags(bld)

@@ -215,8 +215,7 @@ LIBADS_SERVER_SRC = '''libads/kerberos_verify.c libads/authdata.c
 		    ../librpc/ndr/ndr_krb5pac.c
 		    ../librpc/gen_ndr/ndr_krb5pac.c'''
 
-SECRETS_SRC = '''passdb/secrets.c passdb/machine_sid.c
-	      librpc/gen_ndr/ndr_secrets.c'''
+SECRETS_SRC = '''librpc/gen_ndr/ndr_secrets.c'''
 
 LIBNBT_SRC = '''../libcli/nbt/nbtname.c
 	     ../libcli/netlogon.c
@@ -432,12 +431,25 @@ PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 #FIXME: Hack around the missing AC_MODULE
 PDB_STATIC = 'passdb/pdb_tdb.c'
 
+PASSDB_MODULES_SRC = '''passdb/pdb_nds.c passdb/pdb_wbc_sam.c passdb/pdb_ads.c
+passdb/pdb_smbpasswd.c passdb/secrets.c passdb/machine_sid.c
+passdb/pdb_ldap.c'''
+
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
 		passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
 		passdb/util_unixsids.c passdb/lookup_sid.c
 		passdb/login_cache.c ${PDB_STATIC}
-		lib/account_pol.c ${PRIVILEGES_SRC}
+		lib/account_pol.c ${PRIVILEGES_SRC} ${PASSDB_MODULES_SRC}
 		lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
+
+
+
+EXTRA_SRC = '''lib/smbldap.c lib/tldap.c lib/tldap_util.c
+lib/util_tsock.c lib/smbldap_util.c'''
+
+AUTH_SRC1 = '''${AUTH_BUILTIN_SRC} ${AUTH_DOMAIN_SRC} ${AUTH_SAM_SRC}
+${AUTH_SERVER_SRC} ${AUTH_UNIX_SRC} ${AUTH_WINBIND_SRC}
+${AUTH_WBC_SRC} ${AUTH_SCRIPT_SRC} ${AUTH_NETLOGOND_SRC}'''
 
 DEVEL_HELP_WEIRD_SRC = '''modules/weird.c'''
 CP850_SRC = '''modules/CP850.c'''
@@ -526,7 +538,7 @@ AUTH_WBC_SRC = 'auth/auth_wbc.c'
 AUTH_SCRIPT_SRC = 'auth/auth_script.c'
 AUTH_NETLOGOND_SRC = 'auth/auth_netlogond.c'
 
-AUTH_SRC = '''auth/auth.c ${AUTH_STATIC} auth/auth_util.c auth/token_util.c
+AUTH_SRC = '''${AUTH_SRC1} auth/auth.c ${AUTH_STATIC} auth/auth_util.c auth/token_util.c
 	   auth/auth_compat.c auth/auth_ntlmssp.c
 	   ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
 
@@ -613,16 +625,24 @@ SMBD_SRC_SRV = '''smbd/files.c smbd/chgpasswd.c smbd/connection.c
                ../libcli/smb/smb2_create_blob.c
                ${MANGLE_SRC} ${VFS_DEFAULT_SRC}'''
 
-SMBD_SRC_BASE = '''${PARAM_WITHOUT_REG_SRC} ${SMBD_SRC_SRV} ${LIBSMB_SRC}
-		${RPC_SERVER_SRC} ${RPC_PARSE_SRC}
-		${LOCKING_SRC} ${PASSDB_SRC} ${PRINTING_SRC} ${PROFILE_SRC}
-		${LIB_SRC} ${PRINTBACKEND_SRC} ${OPLOCK_SRC}
-		${NOTIFY_SRC} ${FNAME_UTIL_SRC} ${GROUPDB_SRC} ${AUTH_SRC}
-		${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC} ${AVAHI_SRC}
-		${LIBADS_SRC} ${KRBCLIENT_SRC} ${LIBADS_SERVER_SRC}
-		${REG_FULL_SRC} ${POPT_LIB_SRC} ${BUILDOPT_SRC}
-		${SMBLDAP_SRC} ${LDB_SRC} ${LIBNET_SRC}
-		${LIBSMBCONF_SRC}
+SMBD_SRC_BASE = '''${PARAM_WITHOUT_REG_SRC} ${SMBD_SRC_SRV}
+		${LIBSMB_SRC} ${RPC_SERVER_SRC} ${RPC_PARSE_SRC}
+		${LOCKING_SRC} ${PASSDB_SRC} ${PRINTING_SRC}
+		${PROFILE_SRC} ${LIB_SRC} ${PRINTBACKEND_SRC}
+		${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
+		${GROUPDB_SRC} ${LIBMSRPC_SRC}
+		${LIBMSRPC_GEN_SRC} ${AVAHI_SRC} ${LIBADS_SRC}
+		${KRBCLIENT_SRC} ${LIBADS_SERVER_SRC} ${REG_FULL_SRC}
+		${POPT_LIB_SRC} ${BUILDOPT_SRC} ${SMBLDAP_SRC}
+		${LDB_SRC} ${LIBNET_SRC} ${LIBSMBCONF_SRC}
+		${WBCOMMON_SRC} ${RPC_LSA_SRC}
+		${RPC_NETLOG_SRC} ${RPC_SAMR_SRC}
+		${RPC_INITSHUTDOWN_SRC} ${RPC_REG_SRC}
+		${RPC_DSSETUP_SRC} ${RPC_SVC_SRC} ${RPC_WKS_SRC}
+		${RPC_SVCCTL_SRC} ${RPC_NTSVCS_SRC} ${RPC_DFS_SRC}
+		${RPC_SPOOLSS_SRC} ${RPC_EVENTLOG_SRC}
+		${RPC_ECHO_SRC}
+		${EXTRA_SRC} ${AUTH_SRC}
 		${PRIVILEGES_BASIC_SRC}'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
@@ -644,6 +664,15 @@ bld.SAMBA_GENERATOR('build_options',
                     target='smbd/build_options.c',
                     rule='${AWK} -f ${SRC[1].abspath(env)} > ${TGT} < ${SRC[0].abspath(env)}')
 
+t = bld.SAMBA_GENERATOR('build_env.h',
+                        source='script/build_env.sh',
+                        target='include/build_env.h',
+                        rule='${SRC} ${SRCDIR} ${BUILDDIR} ${CC} > ${TGT}')
+# todo: work out what is really wanted here
+t.env.SRCDIR = bld.path.abspath()
+t.env.BUILDDIR = bld.path.abspath()
+
+
 bld.SETUP_BUILD_GROUPS()
 
 bld.RECURSE('../lib/replace')
@@ -654,14 +683,17 @@ bld.SAMBA_MKVERSION('include/version.h')
 
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
-                 deps='tdb DYNCONFIG',
+                 deps='tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5 NSS_WRAPPER LIBWBCLIENT crypt nsl',
+                 includes='lib',
                  vars=locals())
 
 bld.RECURSE('../lib/socket_wrapper')
 bld.RECURSE('../lib/talloc')
 bld.RECURSE('../lib/tdb')
 bld.RECURSE('../lib/nss_wrapper')
-bld.RECURSE('../lib/uid_wrapper')
+bld.RECURSE('../lib/tevent')
+bld.RECURSE('../lib/popt')
+bld.RECURSE('../nsswitch/libwbclient')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

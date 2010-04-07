@@ -7,6 +7,7 @@ bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBWBCLIENT_ASYNC',
 	source='wbc_async.c wbc_idmap_async.c wbc_pam_async.c wbc_sid_async.c wbc_util_async.c wb_reqtrans.c',
-	public_deps='LIBASYNC_REQ tevent talloc UTIL_TEVENT LIBWBCLIENT'
+	public_deps='LIBASYNC_REQ tevent talloc UTIL_TEVENT LIBWBCLIENT',
+        enabled=False, # we don't have LIBASYNC_REQ yet
 	)
 
