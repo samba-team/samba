@@ -267,3 +267,6 @@ accountExpires: %u
     def server_site_name(self):
         "Get the server site name"
         return dsdb.samdb_server_site_name(self)
+
+    def load_partition_usn(self, base_dn):
+        return dsdb.dsdb_load_partition_usn(self, base_dn)

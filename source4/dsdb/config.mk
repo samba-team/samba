@@ -109,6 +109,6 @@ DNS_UPDATE_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/dns/, \
 
 [PYTHON::python_dsdb]
 LIBRARY_REALNAME = samba/dsdb.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = SAMDB
+PRIVATE_DEPENDENCIES = SAMDB pyldb
 
 python_dsdb_OBJ_FILES = $(dsdbsrcdir)/pydsdb.o

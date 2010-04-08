@@ -51,6 +51,6 @@ bld.SAMBA_MODULE('DNS_UPDATE_SRV',
 
 bld.SAMBA_PYTHON('python_dsdb',
                  source='pydsdb.c',
-                 deps='SAMDB',
+                 deps='SAMDB pyldb',
                  realname='samba/dsdb.so'
                  )
