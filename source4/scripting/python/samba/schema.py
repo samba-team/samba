@@ -6,9 +6,6 @@
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008-2009
 # Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
-# Based on the original in EJS:
-# Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -54,6 +51,7 @@ def get_schema_descriptor(domain_sid):
 
    
 class Schema(object):
+
     def __init__(self, setup_path, domain_sid, schemadn=None,
                  serverdn=None, files=None, prefixmap=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
@@ -68,26 +66,26 @@ class Schema(object):
 
         self.schemadn = schemadn
         self.ldb = Ldb()
-        self.schema_data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
-                                          setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
+        self.schema_data = read_ms_schema(
+            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
+            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
 
         if files is not None:
             for file in files:
                 self.schema_data += open(file, 'r').read()
 
-        self.schema_data = substitute_var(self.schema_data, {"SCHEMADN": schemadn})
+        self.schema_data = substitute_var(self.schema_data,
+            {"SCHEMADN": schemadn})
         check_all_substituted(self.schema_data)
 
-        self.schema_dn_modify = read_and_sub_file(setup_path("provision_schema_basedn_modify.ldif"),
-                                                  {"SCHEMADN": schemadn,
-                                                   "SERVERDN": serverdn,
-                                                   })
+        self.schema_dn_modify = read_and_sub_file(
+            setup_path("provision_schema_basedn_modify.ldif"),
+            {"SCHEMADN": schemadn, "SERVERDN": serverdn})
 
         descr = b64encode(get_schema_descriptor(domain_sid))
-        self.schema_dn_add = read_and_sub_file(setup_path("provision_schema_basedn.ldif"),
-                                               {"SCHEMADN": schemadn,
-                                                "DESCRIPTOR": descr
-                                                })
+        self.schema_dn_add = read_and_sub_file(
+            setup_path("provision_schema_basedn.ldif"),
+            {"SCHEMADN": schemadn, "DESCRIPTOR": descr})
 
         self.prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
 
@@ -97,8 +95,6 @@ class Schema(object):
 
         self.prefixmap_data = b64encode(self.prefixmap_data)
 
-        
-
         # We don't actually add this ldif, just parse it
         prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % self.prefixmap_data
         self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
@@ -106,19 +102,23 @@ class Schema(object):
     def write_to_tmp_ldb(self, schemadb_path):
         self.ldb.connect(schemadb_path)
         self.ldb.transaction_start()
-    
-        self.ldb.add_ldif("""dn: @ATTRIBUTES
+        try:
+            self.ldb.add_ldif("""dn: @ATTRIBUTES
 linkID: INTEGER
 
 dn: @INDEXLIST
 @IDXATTR: linkID
 @IDXATTR: attributeSyntax
 """)
-        # These bits of LDIF are supplied when the Schema object is created
-        self.ldb.add_ldif(self.schema_dn_add)
-        self.ldb.modify_ldif(self.schema_dn_modify)
-        self.ldb.add_ldif(self.schema_data)
-        self.ldb.transaction_commit()
+            # These bits of LDIF are supplied when the Schema object is created
+            self.ldb.add_ldif(self.schema_dn_add)
+            self.ldb.modify_ldif(self.schema_dn_modify)
+            self.ldb.add_ldif(self.schema_data)
+        except:
+            self.ldb.transaction_cancel()
+            raise
+        else:
+            self.ldb.transaction_commit()
 
     # Return a hash with the forward attribute as a key and the back as the value 
     def linked_attributes(self):
@@ -143,18 +143,22 @@ def get_linked_attributes(schemadn,schemaldb):
             
     return attributes
 
+
 def get_dnsyntax_attributes(schemadn,schemaldb):
-    attrs = ["linkID", "lDAPDisplayName"]
-    res = schemaldb.search(expression="(&(!(linkID=*))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))", base=schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
+    res = schemaldb.search(
+        expression="(&(!(linkID=*))(objectclass=attributeSchema)(attributeSyntax=2.5.5.1))",
+        base=schemadn, scope=SCOPE_ONELEVEL,
+        attrs=["linkID", "lDAPDisplayName"])
     attributes = []
     for i in range (0, len(res)):
         attributes.append(str(res[i]["lDAPDisplayName"]))
-        
     return attributes
 
-def ldb_with_schema(setup_dir=None, schemadn="cn=schema,cn=configuration,dc=example,dc=com", 
-                    serverdn="cn=server,cn=servers,cn=default-first-site-name,cn=sites,cn=cn=configuration,dc=example,dc=com",
-                    domainsid=None):
+
+def ldb_with_schema(setup_dir=None,
+        schemadn="cn=schema,cn=configuration,dc=example,dc=com", 
+        serverdn="cn=server,cn=servers,cn=default-first-site-name,cn=sites,cn=cn=configuration,dc=example,dc=com",
+        domainsid=None):
     """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
     
     :param setup_dir: Setup path
