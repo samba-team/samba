@@ -264,8 +264,7 @@ static bool test_EnumPorts(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPorts unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(ctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -358,8 +357,7 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"GetPrintProcessorDirectory unexpected return code");
 
-		blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -424,8 +422,7 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"GetPrinterDriverDirectory unexpected return code");
 
-		blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -481,8 +478,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 			continue;
 		}
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			blob = data_blob_talloc(ctx, NULL, needed);
-			data_blob_clear(&blob);
+			blob = data_blob_talloc_zero(ctx, needed);
 			r.in.buffer = &blob;
 			r.in.offered = needed;
 
@@ -625,8 +621,7 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumMonitors failed");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(ctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -704,8 +699,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPrintProcessors unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(ctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -780,8 +774,7 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPrintProcDataTypes unexpected return code");
 
-		blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -834,8 +827,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPrinters unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, needed);
-		data_blob_clear(&blob);
+		blob = data_blob_talloc_zero(ctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -953,8 +945,7 @@ bool test_GetPrinter_level(struct torture_context *tctx,
 		"GetPrinter failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -1315,8 +1306,7 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 			break; \
 		}\
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {\
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed); \
-			data_blob_clear(&blob); \
+			DATA_BLOB blob = data_blob_talloc_zero(tctx, needed); \
 			r.in.buffer = &blob; \
 			r.in.offered = needed; \
 		}\
@@ -2235,8 +2225,7 @@ static bool test_GetForm_args(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "GetForm failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 		status = dcerpc_spoolss_GetForm_r(b, tctx, &r);
@@ -2303,8 +2292,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -2710,8 +2698,7 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "EnumPorts failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -2790,8 +2777,7 @@ static bool test_GetJob_args(struct torture_context *tctx,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -2938,8 +2924,7 @@ static bool test_EnumJobs_args(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 
@@ -4815,8 +4800,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed");
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
+			DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 			r.in.buffer = &blob;
 			r.in.offered = needed;
 			status = dcerpc_spoolss_EnumPrinters_r(b, tctx, &r);
@@ -4879,8 +4863,7 @@ static bool test_GetPrinterDriver(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver_r(b, tctx, &r),
 		"failed to call GetPrinterDriver");
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver_r(b, tctx, &r),
@@ -4928,8 +4911,7 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2_r(b, tctx, &r),
 			"failed to call GetPrinterDriver2");
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
+			DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 			r.in.buffer = &blob;
 			r.in.offered = needed;
 			torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2_r(b, tctx, &r),
@@ -4987,8 +4969,7 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDrivers failed");
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-			data_blob_clear(&blob);
+			DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 			r.in.buffer = &blob;
 			r.in.offered = needed;
 			status = dcerpc_spoolss_EnumPrinterDrivers_r(b, tctx, &r);
@@ -5055,8 +5036,7 @@ static bool test_EnumPrinters_findname(struct torture_context *tctx,
 		"failed to enum printers");
 
 	if (W_ERROR_EQUAL(e.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
 		e.in.buffer = &blob;
 		e.in.offered = needed;
 
