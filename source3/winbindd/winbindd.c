@@ -402,6 +402,9 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 		_exit(0);
 	}
 
+	/* install default SIGCHLD handler: validation code uses fork/waitpid */
+	CatchSignal(SIGCHLD, SIG_DFL);
+
 	ret = (uint8)winbindd_validate_cache_nobackup();
 	DEBUG(10, ("winbindd_msg_validata_cache: got return value %d\n", ret));
 	messaging_send_buf(msg_ctx, server_id, MSG_WINBIND_VALIDATE_CACHE, &ret,
