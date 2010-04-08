@@ -729,6 +729,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 	state->current = 0;
+	state->child = 0;
 
 	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
 		ctdb->current_monitor = state;
