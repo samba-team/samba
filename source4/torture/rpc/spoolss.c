@@ -42,6 +42,7 @@
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
 #define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
+#define TOP_LEVEL_CONTROL_PRINTERS_KEY TOP_LEVEL_CONTROL_KEY "\\Printers"
 
 struct test_spoolss_context {
 	/* print server handle */
@@ -3842,6 +3843,159 @@ static bool test_GetForm_winreg(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetPrinterInfo_winreg(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
+				       struct policy_handle *handle,
+				       const char *printer_name,
+				       struct dcerpc_binding_handle *winreg_handle,
+				       struct policy_handle *hive_handle)
+{
+	union spoolss_PrinterInfo info;
+	const char *keys[] = {
+		TOP_LEVEL_CONTROL_PRINTERS_KEY,
+		TOP_LEVEL_PRINT_PRINTERS_KEY
+	};
+	int i;
+
+	torture_comment(tctx, "Testing Printer Info and winreg consistency\n");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, handle, 2, &info),
+		"failed to get printer info level 2");
+
+#define test_sz(key, wname, iname) \
+do {\
+	DATA_BLOB blob;\
+	const char *str;\
+	enum winreg_Type w_type;\
+	uint32_t w_size;\
+	uint32_t w_length;\
+	uint8_t *w_data;\
+	torture_assert(tctx,\
+		test_winreg_QueryValue(tctx, winreg_handle, &key_handle, wname,\
+				       &w_type, &w_size, &w_length, &w_data),\
+		"failed to query winreg");\
+	torture_assert_int_equal(tctx, w_type, REG_SZ, "unexpected type");\
+	blob = data_blob(w_data, w_size);\
+	str = reg_val_data_string(tctx, lp_iconv_convenience(tctx->lp_ctx), REG_SZ, blob);\
+	if (w_size == 2 && iname == NULL) {\
+		/*torture_comment(tctx, "%s: \"\", %s: (null)\n", #wname, #iname);\ */\
+	} else {\
+		torture_assert_str_equal(tctx, str, iname,\
+			talloc_asprintf(tctx, "%s - %s mismatch", #wname, #iname));\
+	}\
+} while(0);
+
+#define test_dword(key, wname, iname) \
+do {\
+	uint32_t value;\
+	enum winreg_Type w_type;\
+	uint32_t w_size;\
+	uint32_t w_length;\
+	uint8_t *w_data;\
+	torture_assert(tctx,\
+		test_winreg_QueryValue(tctx, winreg_handle, &key_handle, wname,\
+				       &w_type, &w_size, &w_length, &w_data),\
+		"failed to query winreg");\
+	torture_assert_int_equal(tctx, w_type, REG_DWORD, "unexpected type");\
+	torture_assert_int_equal(tctx, w_size, 4, "unexpected size");\
+	torture_assert_int_equal(tctx, w_length, 4, "unexpected length");\
+	value = IVAL(w_data, 0);\
+	torture_assert_int_equal(tctx, value, iname,\
+		talloc_asprintf(tctx, "%s - %s mismatch", #wname, #iname));\
+} while(0);
+
+#define test_dm(key, wname, iname) \
+do {\
+	DATA_BLOB blob;\
+	struct spoolss_DeviceMode dm;\
+	enum ndr_err_code ndr_err;\
+	enum winreg_Type w_type;\
+	uint32_t w_size;\
+	uint32_t w_length;\
+	uint8_t *w_data;\
+	torture_assert(tctx,\
+		test_winreg_QueryValue(tctx, winreg_handle, &key_handle, wname,\
+				       &w_type, &w_size, &w_length, &w_data),\
+		"failed to query winreg");\
+	torture_assert_int_equal(tctx, w_type, REG_BINARY, "unexpected type");\
+	blob = data_blob(w_data, w_size);\
+	ndr_err = ndr_pull_struct_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx), &dm,\
+		(ndr_pull_flags_fn_t)ndr_pull_spoolss_DeviceMode);\
+	torture_assert_ndr_success(tctx, ndr_err, "failed to unmarshall dm");\
+	torture_assert(tctx, test_devicemode_equal(tctx, &dm, iname),\
+		"dm unequal");\
+} while(0);
+
+#define test_sd(key, wname, iname) \
+do {\
+	DATA_BLOB blob;\
+	struct security_descriptor sd;\
+	enum ndr_err_code ndr_err;\
+	enum winreg_Type w_type;\
+	uint32_t w_size;\
+	uint32_t w_length;\
+	uint8_t *w_data;\
+	torture_assert(tctx,\
+		test_winreg_QueryValue(tctx, winreg_handle, &key_handle, wname,\
+				       &w_type, &w_size, &w_length, &w_data),\
+		"failed to query winreg");\
+	torture_assert_int_equal(tctx, w_type, REG_BINARY, "unexpected type");\
+	blob = data_blob(w_data, w_size);\
+	ndr_err = ndr_pull_struct_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx), &sd,\
+		(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);\
+	torture_assert_ndr_success(tctx, ndr_err, "failed to unmarshall sd");\
+	torture_assert(tctx, test_security_descriptor_equal(tctx, &sd, iname),\
+		"sd unequal");\
+} while(0);
+
+	for (i=0; i < ARRAY_SIZE(keys); i++) {
+
+		const char *printer_key;
+		struct policy_handle key_handle;
+
+		printer_key = talloc_asprintf(tctx, "%s\\%s",
+			keys[i], printer_name);
+
+		torture_assert(tctx,
+			test_winreg_OpenKey(tctx, winreg_handle, hive_handle, printer_key, &key_handle), "");
+
+		test_sz(keys[i], "Name", info.info2.printername);
+		test_sz(keys[i], "Share Name", info.info2.sharename);
+		test_sz(keys[i], "Port", info.info2.portname);
+		test_sz(keys[i], "Printer Driver", info.info2.drivername);
+		test_sz(keys[i], "Description", info.info2.comment);
+		test_sz(keys[i], "Location", info.info2.location);
+		test_sz(keys[i], "Separator File", info.info2.sepfile);
+		test_sz(keys[i], "Print Processor", info.info2.printprocessor);
+		test_sz(keys[i], "Datatype", info.info2.datatype);
+		test_sz(keys[i], "Parameters", info.info2.parameters);
+		/* winreg: 0, spoolss not */
+/*		test_dword(keys[i], "Attributes", info.info2.attributes); */
+		test_dword(keys[i], "Priority", info.info2.priority);
+		test_dword(keys[i], "Default Priority", info.info2.defaultpriority);
+		/* winreg: 60, spoolss: 0 */
+/*		test_dword(keys[i], "StartTime", info.info2.starttime); */
+/*		test_dword(keys[i], "UntilTime", info.info2.untiltime); */
+		/* winreg != spoolss */
+/*		test_dword(keys[i], "Status", info.info2.status); */
+		test_dm(keys[i], "Default DevMode", info.info2.devmode);
+		test_sd(keys[i], "Security", info.info2.secdesc);
+
+		torture_assert(tctx,
+			test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
+	}
+
+#undef test_sz
+#undef test_dword
+#undef test_dm
+#undef test_sd
+
+	torture_comment(tctx, "Printer Info and winreg consistency test succeeded\n\n");
+
+	return true;
+}
+
 static bool test_SetPrinterData(struct torture_context *tctx,
 				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
@@ -4208,6 +4362,33 @@ static bool test_Forms_winreg(struct torture_context *tctx,
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
 
 	ret = test_Forms(tctx, b, handle, print_server, printer_name, b2, &hive_handle);
+
+	test_winreg_CloseKey(tctx, b2, &hive_handle);
+
+	talloc_free(p2);
+
+	return ret;
+}
+
+static bool test_PrinterInfo_winreg(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *handle,
+				    const char *printer_name)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p2;
+	bool ret = true;
+	struct policy_handle hive_handle;
+	struct dcerpc_binding_handle *b2;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+		"could not open winreg pipe");
+	b2 = p2->binding_handle;
+
+	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
+
+	ret = test_GetPrinterInfo_winreg(tctx, b, handle, printer_name, b2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
@@ -5533,6 +5714,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterInfo_DevMode(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_PrinterInfo_winreg(tctx, p, handle, name)) {
 		ret = false;
 	}
 
