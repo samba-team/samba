@@ -1,0 +1,115 @@
+#!/usr/bin/python
+#
+# Vampire
+#
+# Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import samba.getopt as options
+
+from samba.net import Net
+
+from samba.netcmd import (
+    Command,
+    Option,
+    SuperCommand,
+    )
+
+class cmd_vampire(Command):
+    """Join and synchronise a remote AD domain to the local server."""
+    synopsis = "%prog vampire [options] <domain>"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    takes_options = [
+        Option("--target-dir", help="Target directory.", type=str),
+        ]
+
+    takes_args = ["domain"]
+
+    def run(self, domain, target_dir=None, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp)
+        (domain_name, domain_sid) = net.vampire(domain=domain, target_dir=target_dir)
+        self.outf.write("Vampired domain %s (%s)\n" % (domain_name, domain_sid))
+
+
+class cmd_samdump_keytab(Command):
+    """Dumps kerberos keys of a domain into a keytab."""
+
+    synopsis = "%prog samdump keytab [options] <keytab>"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    takes_args = ["keytab"]
+
+    def run(self, keytab, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp)
+        net.samdump_keytab(keytab)
+
+
+class cmd_samsync_ldb(Command):
+    """Synchronise into the local ldb the SAM of a domain."""
+
+    synopsis = "%prog samsync"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp)
+        net.samdump()
+
+
+class cmd_samsync(SuperCommand):
+
+    commands = {
+        "ldb": cmd_samsync_ldb()
+        }
+
+
+class cmd_samdump(Command):
+    """Dump the sam database."""
+
+    synopsis = "%prog samdump"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp)
+        net.samdump()

@@ -251,6 +251,61 @@ static PyObject *py_net_user_delete(py_net_Object *self, PyObject *args, PyObjec
 static const char py_net_delete_user_doc[] = "delete_user(username)\n"
 "Delete a user.";
 
+static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
+{
+	PyObject *mod_security, *dom_sid_Type;
+
+	mod_security = PyImport_ImportModule("samba.dcerpc.security");
+	if (mod_security == NULL)
+		return NULL;
+
+	dom_sid_Type = PyObject_GetAttrString(mod_security, "dom_sid");
+	if (dom_sid_Type == NULL)
+		return NULL;
+
+	return py_talloc_reference((PyTypeObject *)dom_sid_Type, sid);
+}
+
+static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "domain", "target_dir", NULL };
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+    PyObject *ret;
+	struct libnet_Vampire r;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", discard_const_p(char *, kwnames), 
+									 &r.in.domain_name, &r.in.targetdir))
+		return NULL;
+
+	r.in.netbios_name  = lp_netbios_name(self->libnet_ctx->lp_ctx);
+	r.out.error_string = NULL;
+
+    mem_ctx = talloc_new(NULL);
+    if (mem_ctx == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+	status = libnet_Vampire(self->libnet_ctx, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+        PyErr_SetString(PyExc_RuntimeError, 
+            r.out.error_string ? r.out.error_string : nt_errstr(status));
+        talloc_free(mem_ctx);
+		return NULL;
+	}
+
+    ret = Py_BuildValue("(sO)", r.out.domain_name, py_dom_sid_FromSid(r.out.domain_sid));
+
+    talloc_free(mem_ctx);
+
+    return ret;
+}
+
+static const char py_net_vampire_doc[] = "vampire(domain, target_dir=None)\n"
+"Vampire a domain.";
+
 static PyMethodDef net_obj_methods[] = {
 	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
@@ -258,6 +313,7 @@ static PyMethodDef net_obj_methods[] = {
 	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
 	{"create_user", (PyCFunction)py_net_user_create, METH_VARARGS|METH_KEYWORDS, py_net_create_user_doc},
 	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},
+    {"vampire", (PyCFunction)py_net_vampire, METH_VARARGS|METH_KEYWORDS, py_net_vampire_doc},
 	{ NULL }
 };
 

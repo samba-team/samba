@@ -153,3 +153,5 @@ from samba.netcmd.time import cmd_time
 commands["time"] = cmd_time()
 from samba.netcmd.user import cmd_user
 commands["user"] = cmd_user()
+from samba.netcmd.vampire import cmd_vampire
+commands["vampire"] = cmd_vampire()
