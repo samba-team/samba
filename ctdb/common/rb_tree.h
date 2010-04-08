@@ -21,17 +21,17 @@
 
 #define TRBT_RED		0x00
 #define TRBT_BLACK		0x01
-typedef struct _trbt_node_t {
-	struct _trbt_tree_t *tree;
-	struct _trbt_node_t *parent;
-	struct _trbt_node_t *left;
-	struct _trbt_node_t *right;
+typedef struct trbt_node {
+	struct trbt_tree *tree;
+	struct trbt_node *parent;
+	struct trbt_node *left;
+	struct trbt_node *right;
 	uint32_t rb_color;
 	uint32_t key32;
 	void *data;
 } trbt_node_t;
 
-typedef struct _trbt_tree_t {
+typedef struct trbt_tree {
 	trbt_node_t *root;
 /* automatically free the tree when the last node has been deleted */
 #define TRBT_AUTOFREE		0x00000001
