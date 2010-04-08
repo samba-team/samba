@@ -395,6 +395,13 @@ struct winreg_QueryValue {
 
 struct winreg_ReplaceKey {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *subkey;/* [ref] */
+		struct winreg_String *new_file;/* [ref] */
+		struct winreg_String *old_file;/* [ref] */
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 
@@ -460,6 +467,11 @@ struct winreg_SetValue {
 
 
 struct winreg_UnLoadKey {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *subkey;/* [ref] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -573,6 +585,13 @@ struct winreg_InitiateSystemShutdownEx {
 
 
 struct winreg_SaveKeyEx {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *filename;/* [ref] */
+		struct KeySecurityAttribute *sec_attrib;/* [unique] */
+		uint32_t flags;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

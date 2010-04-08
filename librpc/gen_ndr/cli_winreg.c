@@ -2932,7 +2932,11 @@ static void rpccli_winreg_ReplaceKey_done(struct tevent_req *subreq);
 
 struct tevent_req *rpccli_winreg_ReplaceKey_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 struct rpc_pipe_client *cli)
+						 struct rpc_pipe_client *cli,
+						 struct policy_handle *_handle /* [in] [ref] */,
+						 struct winreg_String *_subkey /* [in] [ref] */,
+						 struct winreg_String *_new_file /* [in] [ref] */,
+						 struct winreg_String *_old_file /* [in] [ref] */)
 {
 	struct tevent_req *req;
 	struct rpccli_winreg_ReplaceKey_state *state;
@@ -2947,6 +2951,10 @@ struct tevent_req *rpccli_winreg_ReplaceKey_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.subkey = _subkey;
+	state->orig.in.new_file = _new_file;
+	state->orig.in.old_file = _old_file;
 
 	/* Out parameters */
 
@@ -3025,12 +3033,20 @@ NTSTATUS rpccli_winreg_ReplaceKey_recv(struct tevent_req *req,
 
 NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
+				  struct policy_handle *handle /* [in] [ref] */,
+				  struct winreg_String *subkey /* [in] [ref] */,
+				  struct winreg_String *new_file /* [in] [ref] */,
+				  struct winreg_String *old_file /* [in] [ref] */,
 				  WERROR *werror)
 {
 	struct winreg_ReplaceKey r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.subkey = subkey;
+	r.in.new_file = new_file;
+	r.in.old_file = old_file;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
@@ -3663,7 +3679,9 @@ static void rpccli_winreg_UnLoadKey_done(struct tevent_req *subreq);
 
 struct tevent_req *rpccli_winreg_UnLoadKey_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
-						struct rpc_pipe_client *cli)
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_handle /* [in] [ref] */,
+						struct winreg_String *_subkey /* [in] [ref] */)
 {
 	struct tevent_req *req;
 	struct rpccli_winreg_UnLoadKey_state *state;
@@ -3678,6 +3696,8 @@ struct tevent_req *rpccli_winreg_UnLoadKey_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.subkey = _subkey;
 
 	/* Out parameters */
 
@@ -3756,12 +3776,16 @@ NTSTATUS rpccli_winreg_UnLoadKey_recv(struct tevent_req *req,
 
 NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 struct winreg_String *subkey /* [in] [ref] */,
 				 WERROR *werror)
 {
 	struct winreg_UnLoadKey r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.subkey = subkey;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
@@ -4883,7 +4907,11 @@ static void rpccli_winreg_SaveKeyEx_done(struct tevent_req *subreq);
 
 struct tevent_req *rpccli_winreg_SaveKeyEx_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
-						struct rpc_pipe_client *cli)
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_handle /* [in] [ref] */,
+						struct winreg_String *_filename /* [in] [ref] */,
+						struct KeySecurityAttribute *_sec_attrib /* [in] [unique] */,
+						uint32_t _flags /* [in]  */)
 {
 	struct tevent_req *req;
 	struct rpccli_winreg_SaveKeyEx_state *state;
@@ -4898,6 +4926,10 @@ struct tevent_req *rpccli_winreg_SaveKeyEx_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.filename = _filename;
+	state->orig.in.sec_attrib = _sec_attrib;
+	state->orig.in.flags = _flags;
 
 	/* Out parameters */
 
@@ -4976,12 +5008,20 @@ NTSTATUS rpccli_winreg_SaveKeyEx_recv(struct tevent_req *req,
 
 NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 struct winreg_String *filename /* [in] [ref] */,
+				 struct KeySecurityAttribute *sec_attrib /* [in] [unique] */,
+				 uint32_t flags /* [in]  */,
 				 WERROR *werror)
 {
 	struct winreg_SaveKeyEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.filename = filename;
+	r.in.sec_attrib = sec_attrib;
+	r.in.flags = flags;
 
 	status = cli->dispatch(cli,
 				mem_ctx,

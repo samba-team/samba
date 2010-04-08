@@ -315,12 +315,20 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 				  WERROR *werror);
 struct tevent_req *rpccli_winreg_ReplaceKey_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 struct rpc_pipe_client *cli);
+						 struct rpc_pipe_client *cli,
+						 struct policy_handle *_handle /* [in] [ref] */,
+						 struct winreg_String *_subkey /* [in] [ref] */,
+						 struct winreg_String *_new_file /* [in] [ref] */,
+						 struct winreg_String *_old_file /* [in] [ref] */);
 NTSTATUS rpccli_winreg_ReplaceKey_recv(struct tevent_req *req,
 				       TALLOC_CTX *mem_ctx,
 				       WERROR *result);
 NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
+				  struct policy_handle *handle /* [in] [ref] */,
+				  struct winreg_String *subkey /* [in] [ref] */,
+				  struct winreg_String *new_file /* [in] [ref] */,
+				  struct winreg_String *old_file /* [in] [ref] */,
 				  WERROR *werror);
 struct tevent_req *rpccli_winreg_RestoreKey_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -388,12 +396,16 @@ NTSTATUS rpccli_winreg_SetValue(struct rpc_pipe_client *cli,
 				WERROR *werror);
 struct tevent_req *rpccli_winreg_UnLoadKey_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
-						struct rpc_pipe_client *cli);
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_handle /* [in] [ref] */,
+						struct winreg_String *_subkey /* [in] [ref] */);
 NTSTATUS rpccli_winreg_UnLoadKey_recv(struct tevent_req *req,
 				      TALLOC_CTX *mem_ctx,
 				      WERROR *result);
 NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 struct winreg_String *subkey /* [in] [ref] */,
 				 WERROR *werror);
 struct tevent_req *rpccli_winreg_InitiateSystemShutdown_send(TALLOC_CTX *mem_ctx,
 							     struct tevent_context *ev,
@@ -510,12 +522,20 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdownEx(struct rpc_pipe_client *cli,
 						WERROR *werror);
 struct tevent_req *rpccli_winreg_SaveKeyEx_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
-						struct rpc_pipe_client *cli);
+						struct rpc_pipe_client *cli,
+						struct policy_handle *_handle /* [in] [ref] */,
+						struct winreg_String *_filename /* [in] [ref] */,
+						struct KeySecurityAttribute *_sec_attrib /* [in] [unique] */,
+						uint32_t _flags /* [in]  */);
 NTSTATUS rpccli_winreg_SaveKeyEx_recv(struct tevent_req *req,
 				      TALLOC_CTX *mem_ctx,
 				      WERROR *result);
 NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 struct winreg_String *filename /* [in] [ref] */,
+				 struct KeySecurityAttribute *sec_attrib /* [in] [unique] */,
+				 uint32_t flags /* [in]  */,
 				 WERROR *werror);
 struct tevent_req *rpccli_winreg_OpenHKPT_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
