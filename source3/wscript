@@ -149,8 +149,9 @@ main() {
                                 headers='sys/stat.h')
 
     # Check for POSIX capability support
+    conf.CHECK_FUNCS_IN('cap_get_proc', 'cap', headers='sys/capability.h')
+
     if "HAVE_SYS_CAPABILITY_H" in conf.env:
-        conf.CHECK_FUNCS_IN('cap_get_proc', 'cap')
         conf.CHECK_CODE('''
         cap_t cap;
         cap_value_t vals[1];
