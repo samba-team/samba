@@ -723,6 +723,15 @@ static WERROR dcesrv_winreg_QueryMultipleValues2(struct dcesrv_call_state *dce_c
 	return WERR_NOT_SUPPORTED;
 }
 
+/*
+  winreg_DeleteKeyEx
+*/
+static WERROR dcesrv_winreg_DeleteKeyEx(struct dcesrv_call_state *dce_call,
+					TALLOC_CTX *mem_ctx,
+					struct winreg_DeleteKeyEx *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_winreg_s.c"
