@@ -52,9 +52,9 @@ struct registry_hook {
 
 struct registry_hook reg_hooks[] = {
 #ifndef REG_TDB_ONLY 
-  { KEY_PRINTING,    		&printing_ops },
-  { KEY_PRINTING_2K, 		&printing_ops },
-  { KEY_PRINTING_PORTS, 	&printing_ops },
+  { KEY_PRINTING "\\Printers",	&printing_ops },
+  { KEY_PRINTING_2K, 		&regdb_ops },
+  { KEY_PRINTING_PORTS, 	&regdb_ops },
   { KEY_SHARES,      		&shares_reg_ops },
   { KEY_SMBCONF,      		&smbconf_reg_ops },
   { KEY_NETLOGON_PARAMS,	&netlogon_params_reg_ops },
