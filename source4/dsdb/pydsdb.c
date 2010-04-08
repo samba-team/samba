@@ -33,6 +33,25 @@
 	} */\
 	ldb = PyLdb_AsLdbContext(py_ldb);
 
+static PyObject *py_ldb_get_exception(void)
+{
+	PyObject *mod = PyImport_ImportModule("ldb");
+	if (mod == NULL)
+		return NULL;
+
+	return PyObject_GetAttrString(mod, "LdbError");
+}
+
+static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
+{
+	if (ret == LDB_ERR_PYTHON_EXCEPTION)
+		return; /* Python exception should already be set, just keep that */
+
+	PyErr_SetObject(error, 
+			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
+			ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
+}
+
 static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *result;
@@ -216,6 +235,21 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	int ret;
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	ret = dsdb_set_global_schema(ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+
+	Py_RETURN_NONE;
+}
 
 static PyMethodDef py_dsdb_methods[] = {
 	{ "samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
@@ -234,10 +268,13 @@ static PyMethodDef py_dsdb_methods[] = {
 		"Get SID of domain in use." },
 	{ "samdb_ntds_invocation_id", (PyCFunction)py_samdb_ntds_invocation_id,
 		METH_VARARGS, "get the NTDS invocation ID GUID as a string"},
-	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
+	{ "dsdb_set_ntds_invocation_id",
+		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
-	{ "samdb_ntds_objectGUID", (PyCFunction)py_samdb_ntds_objectGUID, METH_VARARGS,
-		"get the NTDS objectGUID as a string"},
+	{ "samdb_ntds_objectGUID", (PyCFunction)py_samdb_ntds_objectGUID,
+		METH_VARARGS, "get the NTDS objectGUID as a string"},
+	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema,
+		METH_VARARGS, NULL },
 	{ NULL }
 };
 
@@ -251,44 +288,76 @@ void initdsdb(void)
 		return;
 
 	/* "userAccountControl" flags */
-	PyModule_AddObject(m, "UF_NORMAL_ACCOUNT", PyInt_FromLong(UF_NORMAL_ACCOUNT));
-	PyModule_AddObject(m, "UF_TEMP_DUPLICATE_ACCOUNT", PyInt_FromLong(UF_TEMP_DUPLICATE_ACCOUNT));
-	PyModule_AddObject(m, "UF_SERVER_TRUST_ACCOUNT", PyInt_FromLong(UF_SERVER_TRUST_ACCOUNT));
-	PyModule_AddObject(m, "UF_WORKSTATION_TRUST_ACCOUNT", PyInt_FromLong(UF_WORKSTATION_TRUST_ACCOUNT));
-	PyModule_AddObject(m, "UF_INTERDOMAIN_TRUST_ACCOUNT", PyInt_FromLong(UF_INTERDOMAIN_TRUST_ACCOUNT));
-	PyModule_AddObject(m, "UF_PASSWD_NOTREQD", PyInt_FromLong(UF_PASSWD_NOTREQD));
-	PyModule_AddObject(m, "UF_ACCOUNTDISABLE", PyInt_FromLong(UF_ACCOUNTDISABLE));
+	PyModule_AddObject(m, "UF_NORMAL_ACCOUNT",
+					   PyInt_FromLong(UF_NORMAL_ACCOUNT));
+	PyModule_AddObject(m, "UF_TEMP_DUPLICATE_ACCOUNT",
+					   PyInt_FromLong(UF_TEMP_DUPLICATE_ACCOUNT));
+	PyModule_AddObject(m, "UF_SERVER_TRUST_ACCOUNT",
+					   PyInt_FromLong(UF_SERVER_TRUST_ACCOUNT));
+	PyModule_AddObject(m, "UF_WORKSTATION_TRUST_ACCOUNT",
+					   PyInt_FromLong(UF_WORKSTATION_TRUST_ACCOUNT));
+	PyModule_AddObject(m, "UF_INTERDOMAIN_TRUST_ACCOUNT",
+					   PyInt_FromLong(UF_INTERDOMAIN_TRUST_ACCOUNT));
+	PyModule_AddObject(m, "UF_PASSWD_NOTREQD",
+					   PyInt_FromLong(UF_PASSWD_NOTREQD));
+	PyModule_AddObject(m, "UF_ACCOUNTDISABLE",
+					   PyInt_FromLong(UF_ACCOUNTDISABLE));
 
 	/* "groupType" flags */
-	PyModule_AddObject(m, "GTYPE_SECURITY_BUILTIN_LOCAL_GROUP", PyInt_FromLong(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP));
-	PyModule_AddObject(m, "GTYPE_SECURITY_GLOBAL_GROUP", PyInt_FromLong(GTYPE_SECURITY_GLOBAL_GROUP));
-	PyModule_AddObject(m, "GTYPE_SECURITY_DOMAIN_LOCAL_GROUP", PyInt_FromLong(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
-	PyModule_AddObject(m, "GTYPE_SECURITY_UNIVERSAL_GROUP", PyInt_FromLong(GTYPE_SECURITY_UNIVERSAL_GROUP));
-	PyModule_AddObject(m, "GTYPE_DISTRIBUTION_GLOBAL_GROUP", PyInt_FromLong(GTYPE_DISTRIBUTION_GLOBAL_GROUP));
-	PyModule_AddObject(m, "GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP", PyInt_FromLong(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP));
-	PyModule_AddObject(m, "GTYPE_DISTRIBUTION_UNIVERSAL_GROUP", PyInt_FromLong(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_SECURITY_BUILTIN_LOCAL_GROUP",
+					   PyInt_FromLong(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_SECURITY_GLOBAL_GROUP",
+					   PyInt_FromLong(GTYPE_SECURITY_GLOBAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_SECURITY_DOMAIN_LOCAL_GROUP",
+					   PyInt_FromLong(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_SECURITY_UNIVERSAL_GROUP",
+					   PyInt_FromLong(GTYPE_SECURITY_UNIVERSAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_DISTRIBUTION_GLOBAL_GROUP",
+					   PyInt_FromLong(GTYPE_DISTRIBUTION_GLOBAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP",
+					   PyInt_FromLong(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP));
+	PyModule_AddObject(m, "GTYPE_DISTRIBUTION_UNIVERSAL_GROUP",
+					   PyInt_FromLong(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP));
 
 	/* "sAMAccountType" flags */
-	PyModule_AddObject(m, "ATYPE_NORMAL_ACCOUNT", PyInt_FromLong(ATYPE_NORMAL_ACCOUNT));
-	PyModule_AddObject(m, "ATYPE_WORKSTATION_TRUST", PyInt_FromLong(ATYPE_WORKSTATION_TRUST));
-	PyModule_AddObject(m, "ATYPE_INTERDOMAIN_TRUST", PyInt_FromLong(ATYPE_INTERDOMAIN_TRUST));
-	PyModule_AddObject(m, "ATYPE_SECURITY_GLOBAL_GROUP", PyInt_FromLong(ATYPE_SECURITY_GLOBAL_GROUP));
-	PyModule_AddObject(m, "ATYPE_SECURITY_LOCAL_GROUP", PyInt_FromLong(ATYPE_SECURITY_LOCAL_GROUP));
-	PyModule_AddObject(m, "ATYPE_SECURITY_UNIVERSAL_GROUP", PyInt_FromLong(ATYPE_SECURITY_UNIVERSAL_GROUP));
-	PyModule_AddObject(m, "ATYPE_DISTRIBUTION_GLOBAL_GROUP", PyInt_FromLong(ATYPE_DISTRIBUTION_GLOBAL_GROUP));
-	PyModule_AddObject(m, "ATYPE_DISTRIBUTION_LOCAL_GROUP", PyInt_FromLong(ATYPE_DISTRIBUTION_LOCAL_GROUP));
-	PyModule_AddObject(m, "ATYPE_DISTRIBUTION_UNIVERSAL_GROUP", PyInt_FromLong(ATYPE_DISTRIBUTION_UNIVERSAL_GROUP));
+	PyModule_AddObject(m, "ATYPE_NORMAL_ACCOUNT",
+					   PyInt_FromLong(ATYPE_NORMAL_ACCOUNT));
+	PyModule_AddObject(m, "ATYPE_WORKSTATION_TRUST",
+					   PyInt_FromLong(ATYPE_WORKSTATION_TRUST));
+	PyModule_AddObject(m, "ATYPE_INTERDOMAIN_TRUST",
+					   PyInt_FromLong(ATYPE_INTERDOMAIN_TRUST));
+	PyModule_AddObject(m, "ATYPE_SECURITY_GLOBAL_GROUP",
+					   PyInt_FromLong(ATYPE_SECURITY_GLOBAL_GROUP));
+	PyModule_AddObject(m, "ATYPE_SECURITY_LOCAL_GROUP",
+					   PyInt_FromLong(ATYPE_SECURITY_LOCAL_GROUP));
+	PyModule_AddObject(m, "ATYPE_SECURITY_UNIVERSAL_GROUP",
+					   PyInt_FromLong(ATYPE_SECURITY_UNIVERSAL_GROUP));
+	PyModule_AddObject(m, "ATYPE_DISTRIBUTION_GLOBAL_GROUP",
+					   PyInt_FromLong(ATYPE_DISTRIBUTION_GLOBAL_GROUP));
+	PyModule_AddObject(m, "ATYPE_DISTRIBUTION_LOCAL_GROUP",
+					   PyInt_FromLong(ATYPE_DISTRIBUTION_LOCAL_GROUP));
+	PyModule_AddObject(m, "ATYPE_DISTRIBUTION_UNIVERSAL_GROUP",
+					   PyInt_FromLong(ATYPE_DISTRIBUTION_UNIVERSAL_GROUP));
 
 	/* "domainFunctionality", "forestFunctionality" flags in the rootDSE */
-	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2000", PyInt_FromLong(DS_DOMAIN_FUNCTION_2000));
-	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2003_MIXED", PyInt_FromLong(DS_DOMAIN_FUNCTION_2003_MIXED));
-	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2003", PyInt_FromLong(DS_DOMAIN_FUNCTION_2003));
-	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008", PyInt_FromLong(DS_DOMAIN_FUNCTION_2008));
-	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008_R2", PyInt_FromLong(DS_DOMAIN_FUNCTION_2008_R2));
+	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2000",
+					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2000));
+	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2003_MIXED",
+					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2003_MIXED));
+	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2003",
+					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2003));
+	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008",
+					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008));
+	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008_R2",
+					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008_R2));
 
 	/* "domainControllerFunctionality" flags in the rootDSE */
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2000", PyInt_FromLong(DS_DC_FUNCTION_2000));
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2003", PyInt_FromLong(DS_DC_FUNCTION_2003));
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2008", PyInt_FromLong(DS_DC_FUNCTION_2008));
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2008_R2", PyInt_FromLong(DS_DC_FUNCTION_2008_R2));
+	PyModule_AddObject(m, "DS_DC_FUNCTION_2000",
+					   PyInt_FromLong(DS_DC_FUNCTION_2000));
+	PyModule_AddObject(m, "DS_DC_FUNCTION_2003",
+					   PyInt_FromLong(DS_DC_FUNCTION_2003));
+	PyModule_AddObject(m, "DS_DC_FUNCTION_2008",
+					   PyInt_FromLong(DS_DC_FUNCTION_2008));
+	PyModule_AddObject(m, "DS_DC_FUNCTION_2008_R2",
+					   PyInt_FromLong(DS_DC_FUNCTION_2008_R2));
 }

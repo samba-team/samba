@@ -48,7 +48,7 @@ class SamDB(samba.Ldb):
                 options=options)
 
         if global_schema:
-            glue.dsdb_set_global_schema(self)
+            dsdb.dsdb_set_global_schema(self)
 
     def connect(self, url=None, flags=0, options=None):
         super(SamDB, self).connect(url=self.lp.private_path(url), flags=flags,
