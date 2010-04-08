@@ -25,7 +25,6 @@
 
 import dsdb
 import samba
-import glue
 import ldb
 from samba.idmap import IDmapDB
 import pwd
@@ -38,7 +37,7 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
-                 credentials=None, flags=0, options=None, global_schema=False):
+                 credentials=None, flags=0, options=None, global_schema=True):
         self.lp = lp
         if url is None:
             url = lp.get("sam database")
