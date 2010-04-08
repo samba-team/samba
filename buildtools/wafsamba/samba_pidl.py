@@ -69,7 +69,7 @@ def SAMBA_PIDL(bld, pname, source,
     # prime the list of nodes we are dependent on with the cached pidl sources
     t.allnodes = pidl_src_nodes
 
-    t.env.PIDL = "../pidl/pidl"
+    t.env.PIDL = os.path.join(bld.srcnode.abspath(), 'pidl/pidl')
     t.env.OPTIONS = TO_LIST(options)
 
     # this rather convoluted set of path calculations is to cope with the possibility
@@ -77,15 +77,14 @@ def SAMBA_PIDL(bld, pname, source,
     # gen_ndr directory we end up generating identical output in gen_ndr for the old
     # build system and the new one. That makes keeping things in sync much easier.
     # eventually we should drop the gen_ndr files in git, but in the meanwhile this works
-    outdir = bld.bldnode.name + '/' + bld.path.find_dir(output_dir).bldpath(t.env)
+    outdir = bld.path.find_dir(output_dir).abspath(t.env)
 
-    if not os.path.lexists(outdir):
+    if symlink and not os.path.lexists(outdir):
         link_source = os.path.normpath(os.path.join(bld.curdir,output_dir))
-        link_source = os_path_relpath(link_source, os.path.dirname(outdir))
         os.symlink(link_source, outdir)
 
     real_outputdir = os.path.realpath(outdir)
-    t.env.OUTPUTDIR = os_path_relpath(real_outputdir, bld.bldnode.name + '/..')
+    t.env.OUTPUTDIR = os_path_relpath(real_outputdir, os.path.dirname(bld.env.BUILD_DIRECTORY))
 
     if table_header_idx is not None:
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')
@@ -134,5 +133,6 @@ def SAMBA_PIDL_TABLES(bld, name, target):
             source   = '../../librpc/tables.pl',
             target   = target,
             name     = name)
+    t.env.LIBRPC = os.path.join(bld.srcnode.abspath(), 'librpc')
 Build.BuildContext.SAMBA_PIDL_TABLES = SAMBA_PIDL_TABLES
 

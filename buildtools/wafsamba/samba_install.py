@@ -117,7 +117,7 @@ def symlink_lib(self):
     if self.target.endswith('.inst'):
         return
 
-    blddir = Utils.g_module.blddir
+    blddir = os.path.dirname(self.bld.srcnode.abspath(self.bld.env))
     libpath = self.link_task.outputs[0].abspath(self.env)
 
     # calculat the link target and put it in the environment
@@ -132,8 +132,6 @@ def symlink_lib(self):
 
     link_target = os.path.join(blddir, link_target)
 
-    libpath = os_path_relpath(libpath, os.path.dirname(link_target))
-
     if os.path.lexists(link_target):
         os.unlink(link_target)
     os.symlink(libpath, link_target)
@@ -147,11 +145,9 @@ def symlink_bin(self):
     if self.target.endswith('.inst'):
         return
 
-    blddir = Utils.g_module.blddir
+    blddir = os.path.dirname(self.bld.srcnode.abspath(self.bld.env))
     binpath = self.link_task.outputs[0].abspath(self.env)
-    bldpath = os.path.join(blddir, os.path.basename(self.target))
-
-    binpath = os_path_relpath(binpath, os.path.dirname(bldpath))
+    bldpath = os.path.join(self.bld.env.BUILD_DIRECTORY, self.target)
 
     if os.path.lexists(bldpath):
         os.unlink(bldpath)

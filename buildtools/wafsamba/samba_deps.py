@@ -240,7 +240,7 @@ def check_duplicate_sources(bld, tgt_list):
 
     for t in tgt_list:
         obj_sources = getattr(t, 'source', '')
-        tpath = os_path_relpath(t.path.abspath(bld.env), t.env['BUILD_DIRECTORY'] + '/default')
+        tpath = os_path_relpath(t.path.abspath(bld.env), t.env.BUILD_DIRECTORY + '/default')
         obj_sources = bld.SUBDIR(tpath, obj_sources)
         t.samba_source_set = set(TO_LIST(obj_sources))
 

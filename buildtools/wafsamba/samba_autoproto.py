@@ -9,12 +9,13 @@ def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
     if options is None:
         options='-q -P comment -o'
     SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
-    t = bld(rule='${PERL} ../heimdal/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
+    t = bld(rule='${PERL} ${HEIMDAL}/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
             on_results=True,
             ext_out='.c',
             before='cc')
+    t.env.HEIMDAL = os.path.join(bld.srcnode.abspath(), 'source4/heimdal')
     t.env.OPTIONS = options
 Build.BuildContext.HEIMDAL_AUTOPROTO = HEIMDAL_AUTOPROTO
 
@@ -29,13 +30,14 @@ def SAMBA_AUTOPROTO(bld, header, source):
     '''rule for samba prototype generation'''
     bld.SET_BUILD_GROUP('prototypes')
     SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
-    bld(
+    t = bld(
         source = source,
         target = header,
         on_results=True,
         ext_out='.c',
         before ='cc',
-        rule = '../script/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
+        rule = '${SCRIPT}/mkproto.pl --srcdir=.. --builddir=. --public=/dev/null --private=${TGT} ${SRC}'
         )
+    t.env.SCRIPT = os.path.join(bld.srcnode.abspath(), 'source4/script')
 Build.BuildContext.SAMBA_AUTOPROTO = SAMBA_AUTOPROTO
 
