@@ -54,13 +54,13 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(py_lp_ctx);
+	ldb = PyLdb_AsLdbContext(self);
+
+	lp_ctx = lp_from_py_object(ldb, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
 		return NULL;
 	}
-
-	ldb = PyLdb_AsLdbContext(self);
 
 	ldb_set_opaque(ldb, "loadparm", lp_ctx);
 

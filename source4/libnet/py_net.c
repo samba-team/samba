@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Samba utility functions
-   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2010
    Copyright (C) Kamen Mazdrashki <kamen.mazdrashki@postpath.com> 2009
 
    This program is free software; you can redistribute it and/or modify
@@ -215,6 +215,10 @@ PyTypeObject py_net_Type = {
 void initnet(void)
 {
 	PyObject *m;
+
+	if (PyType_Ready(&py_net_Type) < 0)
+		return;
+
 	m = Py_InitModule3("net", NULL, NULL);
 	if (m == NULL)
 		return;

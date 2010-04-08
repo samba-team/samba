@@ -20,7 +20,7 @@
 
 import samba.getopt as options
 
-from samba import net
+from samba.net import Net
 
 from samba.netcmd import (
     Command,
@@ -45,7 +45,7 @@ class cmd_export_keytab(Command):
     def run(self, keytab, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        # FIXME: Obtain net context
+        net = Net(creds, lp)
         net.export_keytab(keytab=keytab, creds=creds)
 
 
