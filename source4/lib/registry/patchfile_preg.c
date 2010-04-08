@@ -186,7 +186,7 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 	}
 
 	strncpy(preg_header.hdr, "PReg", 4);
-	SIVAL(&preg_header, 4, 1);
+	SIVAL(&preg_header.version, 0, 1);
 	write(data->fd, (uint8_t *)&preg_header,8);
 
 	data->ctx = ctx;
