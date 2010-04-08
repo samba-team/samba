@@ -42,8 +42,7 @@ static WERROR preg_read_utf16(int fd, char *c)
 static WERROR preg_write_utf16(int fd, const char *string)
 {
 	codepoint_t v;
-	uint16_t i;
-	size_t size;
+	size_t i, size;
 
 	for (i = 0; i < strlen(string); i+=size) {
 		v = next_codepoint(&string[i], &size);
