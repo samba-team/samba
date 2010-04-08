@@ -105,7 +105,7 @@ class cmd_ds_acl_set(Command):
         return ndr_unpack(security.descriptor, desc)
 
     def get_domain_sid(self, samdb):
-        res = samdb.search(base=SamDB.domain_dn(samdb),
+        res = samdb.search(base=samdb.domain_dn(),
                 expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 

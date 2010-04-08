@@ -97,7 +97,10 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
 
     # That's a bit simplistic but it's ok as long as we have only 3
     # partitions
-    current = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=["defaultNamingContext", "schemaNamingContext","configurationNamingContext","rootDomainNamingContext"])
+    current = samdb.search(expression="(objectClass=*)", 
+        base="", scope=SCOPE_BASE,
+        attrs=["defaultNamingContext", "schemaNamingContext",
+               "configurationNamingContext","rootDomainNamingContext"])
 
     names.configdn = current[0]["configurationNamingContext"]
     configdn = str(names.configdn)
@@ -108,12 +111,13 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     names.domaindn=current[0]["defaultNamingContext"]
     names.rootdn=current[0]["rootDomainNamingContext"]
     # default site name
-    res3= samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=["cn"])
+    res3 = samdb.search(expression="(objectClass=*)", 
+        base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
     # dns hostname and server dn
-    res4= samdb.search(expression="(CN=%s)"%names.netbiosname,base="OU=Domain Controllers,"+basedn, \
-                        scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
+    res4 = samdb.search(expression="(CN=%s)" % names.netbiosname,
+        base="OU=Domain Controllers,"+basedn, scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
     names.hostname = str(res4[0]["dNSHostName"]).replace("."+names.dnsdomain,"")
 
     server_res = samdb.search(expression="serverReference=%s"%res4[0].dn, attrs=[], base=configdn)
@@ -164,32 +168,27 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
     :param session: Session object
     :param smbconf: Path to the smb.conf file
     :param provdir: Directory where the provision will be stored
-    :param messagefunc: A function for displaying the message of the provision"""
+    :param messagefunc: A function for displaying the message of the provision
+    """
     if os.path.isdir(provdir):
         shutil.rmtree(provdir)
     os.chdir(os.path.join(setup_dir,".."))
     os.mkdir(provdir)
     messagefunc("Provision stored in %s"%provdir)
-    provision(setup_dir, messagefunc,
-        session, creds, smbconf=smbconf, targetdir=provdir,
-        samdb_fill=FILL_FULL, realm=names.realm, domain=names.domain,
-        domainguid=names.domainguid, domainsid=str(names.domainsid),ntdsguid=names.ntdsguid,
-        policyguid=names.policyid,policyguid_dc=names.policyid_dc,hostname=names.netbiosname,
-        hostip=None, hostip6=None,
-        invocationid=names.invocation, adminpass=names.adminpass,
-        krbtgtpass=None, machinepass=None,
-        dnspass=None, root=None, nobody=None,
-        wheel=None, users=None,
-        serverrole="domain controller",
-        ldap_backend_extra_port=None,
-        backend_type=None,
-        ldapadminpass=None,
-        ol_mmr_urls=None,
-        slapd_path=None,
-        setup_ds_path=None,
-        nosync=None,
-        dom_for_fun_level=names.domainlevel,
-        ldap_dryrun_mode=None,useeadb=True)
+    provision(setup_dir, messagefunc, session, creds, smbconf=smbconf,
+            targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
+            domain=names.domain, domainguid=names.domainguid,
+            domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,
+            policyguid=names.policyid, policyguid_dc=names.policyid_dc,
+            hostname=names.netbiosname, hostip=None, hostip6=None,
+            invocationid=names.invocation, adminpass=names.adminpass,
+            krbtgtpass=None, machinepass=None, dnspass=None, root=None,
+            nobody=None, wheel=None, users=None,
+            serverrole="domain controller", ldap_backend_extra_port=None,
+            backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
+            slapd_path=None, setup_ds_path=None, nosync=None,
+            dom_for_fun_level=names.domainlevel,
+            ldap_dryrun_mode=None, useeadb=True)
 
 
 def dn_sort(x,y):

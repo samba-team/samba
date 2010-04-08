@@ -76,20 +76,20 @@ class cmd_domainlevel(Command):
         samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
 
-        domain_dn = SamDB.domain_dn(samdb)
+        domain_dn = samdb.domain_dn()
 
         res_forest = samdb.search("CN=Partitions,CN=Configuration," + domain_dn,
           scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
-        assert(len(res_forest) == 1)
+        assert len(res_forest) == 1
 
         res_domain = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
           attrs=["msDS-Behavior-Version", "nTMixedDomain"])
-        assert(len(res_domain) == 1)
+        assert len(res_domain) == 1
 
         res_dc_s = samdb.search("CN=Sites,CN=Configuration," + domain_dn,
           scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
           attrs=["msDS-Behavior-Version"])
-        assert(len(res_dc_s) >= 1)
+        assert len(res_dc_s) >= 1
 
         try:
             level_forest = int(res_forest[0]["msDS-Behavior-Version"][0])

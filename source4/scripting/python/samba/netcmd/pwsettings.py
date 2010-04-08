@@ -72,7 +72,7 @@ class cmd_pwsettings(Command):
         samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
 
-        domain_dn = SamDB.domain_dn(samdb)
+        domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
           attrs=["pwdProperties", "pwdHistoryLength", "minPwdLength",
                  "minPwdAge", "maxPwdAge"])

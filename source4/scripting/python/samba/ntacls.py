@@ -26,17 +26,19 @@ from samba.ndr import ndr_pack, ndr_unpack
 class XattrBackendError(Exception):
     """A generic xattr backend error."""
 
-def checkset_backend(lp,backend,eadbfile):
+
+def checkset_backend(lp, backend, eadbfile):
     if backend is not None:
         if backend == "native":
             lp.set("posix:eadb","")
         elif backend == "tdb":
             if eadbfile != None:
-                lp.set("posix:eadb",eadbfile)
+                lp.set("posix:eadb", eadbfile)
             else:
-                os.path.abspath(os.path.join(lp.get("private dir"),"eadb.tdb"))
+                os.path.abspath(os.path.join(lp.get("private dir"), "eadb.tdb"))
         else:
-            raise XattrBackendError("Unvalid xattr backend choice %s"%backend)
+            raise XattrBackendError("Invalid xattr backend choice %s"%backend)
+
 
 def getntacl(lp, file, backend=None, eadbfile=None):
     checkset_backend(lp, backend, eadbfile)
@@ -59,9 +61,9 @@ def getntacl(lp, file, backend=None, eadbfile=None):
 
 def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
     checkset_backend(lp, backend, eadbfile)
-    ntacl=xattr.NTACL()
+    ntacl = xattr.NTACL()
     ntacl.version = 1
-    sid=security.dom_sid(domsid)
+    sid = security.dom_sid(domsid)
     sd = security.descriptor.from_sddl(sddl, sid)
     ntacl.info = sd
     eadbname = lp.get("posix:eadb")
@@ -130,6 +132,7 @@ def ldapmask2filemask(ldm):
 
     return filemask
 
+
 def dsacl2fsacl(dssddl, domsid):
     """
     
@@ -148,8 +151,8 @@ def dsacl2fsacl(dssddl, domsid):
     aces = ref.dacl.aces
     for i in range(0, len(aces)):
         ace = aces[i]
-        if not ace.type &  security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT and str(ace.trustee) != security.SID_BUILTIN_PREW2K:
-        #    if fdescr.type & security.SEC_DESC_DACL_AUTO_INHERITED:
+        if not ace.type & security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT and str(ace.trustee) != security.SID_BUILTIN_PREW2K:
+       #    if fdescr.type & security.SEC_DESC_DACL_AUTO_INHERITED:
             ace.flags = ace.flags | security.SEC_ACE_FLAG_OBJECT_INHERIT | security.SEC_ACE_FLAG_CONTAINER_INHERIT
             if str(ace.trustee) == security.SID_CREATOR_OWNER:
                 # For Creator/Owner the IO flag is set as this ACE has only a sense for child objects

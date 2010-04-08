@@ -65,10 +65,10 @@ all=all of the above"""),
                 "1", ldb.FLAG_MOD_REPLACE,
                 "becomeRidMaster")
         elif role == "pdc":
-            domain_dn = SamDB.domain_dn(samdb)
+            domain_dn = samdb.domain_dn()
             res = samdb.search(domain_dn,
                                scope=ldb.SCOPE_BASE, attrs=["objectSid"])
-            assert(len(res) == 1)
+            assert len(res) == 1
             sid = res[0]["objectSid"][0]
             m["becomePdc"]= ldb.MessageElement(
                 sid, ldb.FLAG_MOD_REPLACE,
@@ -93,9 +93,9 @@ all=all of the above"""),
     def seize_role(self, role, samdb, force):
         res = samdb.search("",
                            scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        assert(len(res) == 1)
+        assert len(res) == 1
         serviceName = res[0]["dsServiceName"][0]
-        domain_dn = SamDB.domain_dn(samdb)
+        domain_dn = samdb.domain_dn()
         m = ldb.Message()
         if role == "rid":
             m.dn = ldb.Dn(samdb, self.rid_dn)
@@ -138,7 +138,7 @@ all=all of the above"""),
         samdb = SamDB(url=host, session_info=system_session(),
             credentials=creds, lp=lp)
 
-        domain_dn = SamDB.domain_dn(samdb)
+        domain_dn = samdb.domain_dn()
         self.infrastructure_dn = "CN=Infrastructure," + domain_dn
         self.naming_dn = "CN=Partitions,CN=Configuration," + domain_dn
         self.schema_dn = "CN=Schema,CN=Configuration," + domain_dn
@@ -146,27 +146,27 @@ all=all of the above"""),
 
         res = samdb.search(self.infrastructure_dn,
                            scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert(len(res) == 1)
+        assert len(res) == 1
         self.infrastructureMaster = res[0]["fSMORoleOwner"][0]
 
         res = samdb.search(domain_dn,
                            scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert(len(res) == 1)
+        assert len(res) == 1
         self.pdcEmulator = res[0]["fSMORoleOwner"][0]
 
         res = samdb.search(self.naming_dn,
                            scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert(len(res) == 1)
+        assert len(res) == 1
         self.namingMaster = res[0]["fSMORoleOwner"][0]
 
         res = samdb.search(self.schema_dn,
                            scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert(len(res) == 1)
+        assert len(res) == 1
         self.schemaMaster = res[0]["fSMORoleOwner"][0]
 
         res = samdb.search(self.rid_dn,
                            scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert(len(res) == 1)
+        assert len(res) == 1
         self.ridMaster = res[0]["fSMORoleOwner"][0]
 
         if subcommand == "show":
