@@ -150,6 +150,7 @@ my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
 my $opt_no_lazy_setup = undef;
+my $opt_load_list = undef;
 my @testlists = ();
 
 my $srcdir = ".";
@@ -223,9 +224,9 @@ sub expand_environment_strings($)
 	return $s;
 }
 
-sub run_testsuite($$$$$)
+sub run_testsuite($$$$$$)
 {
-	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
+	my ($envname, $name, $cmd, $i, $totalsuites, $tests_to_run) = @_;
 	my $pcap_file = setup_pcap($name);
 
 	Subunit::start_testsuite($name);
@@ -357,7 +358,8 @@ my $result = GetOptions (
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'image=s' => \$opt_image,
-		'testlist=s' => \@testlists
+		'testlist=s' => \@testlists,
+		'load-list=s' => \$opt_load_list,
 	    );
 
 exit(1) if (not $result);
@@ -688,16 +690,45 @@ foreach my $fn (@testlists) {
 	}
 }
 
+my $restricted = undef;
+
+if ($opt_load_list) {
+	$restricted = [];
+	open(LOAD_LIST, "<$opt_load_list") or die("Unable to open $opt_load_list");
+	while (<LOAD_LIST>) { 
+		chomp; 
+		push (@$restricted, $_);
+	}
+	close(LOAD_LIST);
+}
+
 Subunit::progress($#available+1);
 Subunit::report_time(time());
 
-foreach (@available) {
-	my $name = $$_[0];
+my $individual_tests = undef;
+$individual_tests = {};
+
+foreach my $testsuite (@available) {
+	my $name = $$testsuite[0];
 	my $skipreason = skip($name);
 	if (defined($skipreason)) {
 		Subunit::skip_testsuite($name, $skipreason);
+	} elsif (defined($restricted)) {
+		# Find the testsuite for this test
+		my $match = 0;
+		foreach my $r (@$restricted) {
+			if ($r eq $name) {
+				$individual_tests->{$name} = [];
+				$match = 1;
+			} 
+			if ($r =~ /^$name\.(.*)$/) {
+				push(@{$individual_tests->{$name}}, $1);
+				$match = 1;
+			}
+		}
+		push(@todo, $testsuite) if ($match);
 	} else {
-		push(@todo, $_); 
+		push(@todo, $testsuite); 
 	}
 }
 
@@ -903,7 +934,8 @@ $envvarstr
 			next;
 		}
 
-		run_testsuite($envname, $name, $cmd, $i, $suitestotal);
+		run_testsuite($envname, $name, $cmd, $i, $suitestotal,
+				      ($individual_tests and $individual_tests->{$name}));
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
