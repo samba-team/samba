@@ -736,7 +736,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	if (!info_val) {
 		struct dsdb_schema_info *schema_info;
 
-		status = dsdb_schema_info_create(ldb, mem_ctx, &schema_info);
+		status = dsdb_schema_info_create(ldb, false, mem_ctx, &schema_info);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx,
 			                                "schema_fsmo_init: dsdb_schema_info_create() failed - %s",

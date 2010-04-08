@@ -348,7 +348,7 @@ static bool test_dsdb_schema_info_create(struct torture_context *tctx,
 	WERROR werr;
 	struct dsdb_schema_info *schema_info = NULL;
 
-	werr = dsdb_schema_info_create(priv->ldb, priv, &schema_info);
+	werr = dsdb_schema_info_create(priv->ldb, true, priv, &schema_info);
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_info_create() failed");
 
 	torture_assert(tctx, schema_info, "schema_info is NULL after dsdb_schema_info_create()");

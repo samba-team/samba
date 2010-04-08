@@ -623,7 +623,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 
 	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
 	if (!info_val) {
-		status = dsdb_schema_info_create(ldb, mem_ctx, &schema_info);
+		status = dsdb_schema_info_create(ldb, false, mem_ctx, &schema_info);
 		W_ERROR_NOT_OK_GOTO(status, failed);
 		status = dsdb_blob_from_schema_info(schema_info, mem_ctx, &info_val_default);
 		W_ERROR_NOT_OK_GOTO(status, failed);
