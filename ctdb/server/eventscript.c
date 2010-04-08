@@ -27,11 +27,6 @@
 #include "lib/events/events.h"
 #include "../common/rb_tree.h"
 
-static struct {
-	struct timeval start;
-	const char *script_running;
-} child_state;
-
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 
 /*
@@ -39,21 +34,6 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static void sigterm(int sig)
 {
-	char tbuf[100], buf[200];
-	time_t t;
-
-	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds pid :%d\n", 
-		 child_state.script_running, timeval_elapsed(&child_state.start), getpid()));
-
-	t = time(NULL);
-
-	strftime(tbuf, sizeof(tbuf)-1, "%Y%m%d%H%M%S", 	localtime(&t));
-	sprintf(buf, "{ pstree -p; cat /proc/locks; ls -li /var/ctdb/ /var/ctdb/persistent; }"
-		" >/tmp/ctdb.event.%s.%d", tbuf, getpid());
-	system(buf);
-
-	DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
-
 	/* all the child processes will be running in the same process group */
 	kill(-getpgrp(), SIGKILL);
 	_exit(1);
@@ -368,7 +348,6 @@ static int child_run_script(struct ctdb_context *ctdb,
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
-	child_state.start = timeval_current();
 	ret = child_setup(ctdb);
 	if (ret != 0)
 		goto out;
@@ -376,7 +355,6 @@ static int child_run_script(struct ctdb_context *ctdb,
 	cmdstr = child_command_string(ctdb, tmp_ctx, from_user,
 				      current->name, call, options);
 	CTDB_NO_MEMORY(ctdb, cmdstr);
-	child_state.script_running = cmdstr;
 
 	DEBUG(DEBUG_DEBUG,("Executing event script %s\n",cmdstr));
 
@@ -518,6 +496,42 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	}
 }
 
+static void debug_timeout(struct ctdb_event_script_state *state)
+{
+	struct ctdb_script_wire *current = get_current_script(state);
+	char *cmd;
+	pid_t pid;
+	time_t t;
+	char tbuf[100], buf[200];
+
+	cmd = child_command_string(state->ctdb, state,
+				   state->from_user, current->name,
+				   state->call, state->options);
+	CTDB_NO_MEMORY_VOID(state->ctdb, cmd);
+
+	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds pid :%d\n",
+			 cmd, timeval_elapsed(&current->start), state->child));
+	talloc_free(cmd);
+
+	t = time(NULL);
+	strftime(tbuf, sizeof(tbuf)-1, "%Y%m%d%H%M%S", 	localtime(&t));
+	sprintf(buf, "{ pstree -p; cat /proc/locks; ls -li /var/ctdb/ /var/ctdb/persistent; }"
+			" >/tmp/ctdb.event.%s.%d", tbuf, getpid());
+
+	pid = fork();
+	if (pid == 0) {
+		ctdb_reduce_priority(state->ctdb);
+		system(buf);
+		exit(0);
+	}
+	if (pid == -1) {
+		DEBUG(DEBUG_ERR,("Fork for debug script failed : %s\n",
+				 strerror(errno)));
+	} else {
+		DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
+	}
+}
+
 /* called when child times out */
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, 
 				      struct timeval t, void *p)
@@ -543,6 +557,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		break;
         default:
 		state->scripts->scripts[state->current].status = -ETIME;
+		debug_timeout(state);
 	}
 
 	if (kill(state->child, 0) != 0) {
