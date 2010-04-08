@@ -414,8 +414,8 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 	regval_ctr_addvalue_sz(values, "Share Name", info2->sharename);
 	regval_ctr_addvalue_sz(values, "Printer Driver", info2->drivername);
 	regval_ctr_addvalue_sz(values, "Separator File", info2->sepfile);
-	regval_ctr_addvalue_sz(values, "Print Processor", "WinPrint");
-	regval_ctr_addvalue_sz(values, "Datatype", "RAW");
+	regval_ctr_addvalue_sz(values, "Print Processor", info2->printprocessor);
+	regval_ctr_addvalue_sz(values, "Datatype", info2->datatype);
 
 	/* stream the device mode */
 
