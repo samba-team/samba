@@ -582,6 +582,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
 	struct ldb_val info_val_default;
+	struct dsdb_schema_info *schema_info;
 
 
 	mem_ctx = talloc_new(ldb);
@@ -622,15 +623,16 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 
 	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
 	if (!info_val) {
-		info_val_default = strhex_to_data_blob(mem_ctx, "FF0000000000000000000000000000000000000000");
-		if (!info_val_default.data) {
-			goto nomem;
-		}
+		status = dsdb_schema_info_create(ldb, mem_ctx, &schema_info);
+		W_ERROR_NOT_OK_GOTO(status, failed);
+		status = dsdb_blob_from_schema_info(schema_info, mem_ctx, &info_val_default);
+		W_ERROR_NOT_OK_GOTO(status, failed);
 		info_val = &info_val_default;
 	}
 
 	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
 	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("ERROR: dsdb_load_oid_mappings_ldb() failed with %s\n", win_errstr(status)));
 		goto failed;
 	}
 
