@@ -1822,8 +1822,11 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	/* Set the type and data */
 	vk.data_length = data.length;
 	vk.data_type = type;
-	if ((data.length == sizeof(uint32_t)) &&
-	    ((type == REG_DWORD) || (type == REG_DWORD_BIG_ENDIAN))) {
+	if ((type == REG_DWORD) || (type == REG_DWORD_BIG_ENDIAN)) {
+		if (vk.data_length != sizeof(uint32_t)) {
+			DEBUG(0, ("DWORD or DWORD_BIG_ENDIAN value with size other than 4 byte!\n"));
+			return WERR_NOT_SUPPORTED;
+		}
 		vk.data_length |= 0x80000000;
 		vk.data_offset = IVAL(data.data, 0);
 	} else {
