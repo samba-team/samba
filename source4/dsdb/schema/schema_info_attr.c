@@ -172,6 +172,46 @@ WERROR dsdb_module_schema_info_blob_read(struct ldb_module *ldb_module,
 }
 
 /**
+ * Pepares ldb_msg to be used for updating schemaInfo value in DB
+ */
+static WERROR _dsdb_schema_info_write_prepare(struct ldb_context *ldb,
+					      DATA_BLOB *schema_info_blob,
+					      TALLOC_CTX *mem_ctx,
+					      struct ldb_message **_msg)
+{
+	int ldb_err;
+	struct ldb_message *msg;
+	struct ldb_dn *schema_dn;
+	struct ldb_message_element *return_el;
+
+	schema_dn = samdb_schema_dn(ldb);
+	if (!schema_dn) {
+		DEBUG(0,("_dsdb_schema_info_write_prepare: no schema dn present\n"));
+		return WERR_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* prepare ldb_msg to update schemaInfo */
+	msg = ldb_msg_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+
+	msg->dn = schema_dn;
+	ldb_err = ldb_msg_add_value(msg, "schemaInfo", schema_info_blob, &return_el);
+	if (ldb_err != 0) {
+		DEBUG(0,("_dsdb_schema_info_write_prepare: ldb_msg_add_value failed - %s\n",
+			 ldb_strerror(ldb_err)));
+		talloc_free(msg);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	/* mark schemaInfo element for replacement */
+	return_el->flags = LDB_FLAG_MOD_REPLACE;
+
+	*_msg = msg;
+
+	return WERR_OK;
+}
+
+/**
  * Writes schema_info structure into schemaInfo
  * attribute on SCHEMA partition
  *
@@ -182,37 +222,22 @@ WERROR dsdb_module_schema_info_blob_write(struct ldb_module *ldb_module,
 					  DATA_BLOB *schema_info_blob)
 {
 	int ldb_err;
+	WERROR werr;
 	struct ldb_message *msg;
-	struct ldb_dn *schema_dn;
-	struct ldb_message_element *return_el;
 	TALLOC_CTX *temp_ctx;
-
-	schema_dn = samdb_schema_dn(ldb_module_get_ctx(ldb_module));
-	if (!schema_dn) {
-		DEBUG(0,("dsdb_module_schema_info_blob_write: no schema dn present\n"));
-		return WERR_INTERNAL_DB_CORRUPTION;
-	}
 
 	temp_ctx = talloc_new(ldb_module);
 	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
 
 	/* write serialized schemaInfo into LDB */
-	msg = ldb_msg_new(temp_ctx);
-	if (!msg) {
+	werr = _dsdb_schema_info_write_prepare(ldb_module_get_ctx(ldb_module),
+	                                       schema_info_blob,
+	                                       temp_ctx, &msg);
+	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(temp_ctx);
-		return WERR_NOMEM;
+		return werr;
 	}
 
-	msg->dn = schema_dn;
-	ldb_err = ldb_msg_add_value(msg, "schemaInfo", schema_info_blob, &return_el);
-	if (ldb_err != 0) {
-		talloc_free(temp_ctx);
-		DEBUG(0,("dsdb_module_schema_info_blob_write: ldb_msg_add_value failed\n"));
-		return WERR_NOMEM;
-	}
-
-	/* mark schemaInfo element for replacement */
-	return_el->flags = LDB_FLAG_MOD_REPLACE;
 
 	ldb_err = dsdb_module_modify(ldb_module, msg, dsdb_flags | DSDB_MODIFY_PERMISSIVE);
 
