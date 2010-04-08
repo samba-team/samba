@@ -407,6 +407,12 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DRSUAPI',
 	)
 
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DRSBLOBS',
+	source='../../librpc/gen_ndr/ndr_drsblobs_c.c',
+	public_deps='dcerpc NDR_DRSBLOBS'
+	)
+
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_POLICYAGENT',
 	source='../../librpc/gen_ndr/ndr_policyagent_c.c',
 	public_deps='dcerpc NDR_POLICYAGENT'
@@ -727,6 +733,13 @@ bld.SAMBA_PYTHON('python_drsuapi',
 	source='../../librpc/gen_ndr/py_drsuapi.c',
 	deps='RPC_NDR_DRSUAPI PYTALLOC pyparam_util pycredentials python_dcerpc',
 	realname='samba/dcerpc/drsuapi.so'
+	)
+
+
+bld.SAMBA_PYTHON('python_drsblobs',
+	source='../../librpc/gen_ndr/py_drsblobs.c',
+	deps='RPC_NDR_DRSBLOBS PYTALLOC pyparam_util pycredentials python_dcerpc',
+	realname='samba/dcerpc/drsblobs.so'
 	)
 
 
