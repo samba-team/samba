@@ -33,3 +33,4 @@ rpc.join
 rpc.handles
 rpc.echo
 smb.signing
+drs.unit
