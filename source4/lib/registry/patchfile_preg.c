@@ -120,7 +120,7 @@ static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
 	blob.data = (uint8_t *)talloc(data->ctx, uint32_t);
 	W_ERROR_HAVE_NO_MEMORY(blob.data);
 	SIVAL(blob.data, 0, 0);
-	blob.length = 4;
+	blob.length = sizeof(uint32_t);
 
 	werr = reg_preg_diff_set_value(data, key_name, val, REG_DWORD, blob);
 
@@ -139,7 +139,7 @@ static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 	blob.data = (uint8_t *)talloc(data->ctx, uint32_t);
 	W_ERROR_HAVE_NO_MEMORY(blob.data);
 	SIVAL(blob.data, 0, 0);
-	blob.length = 4;
+	blob.length = sizeof(uint32_t);
 
 	werr = reg_preg_diff_set_value(data, key_name, "**DelVals.", REG_DWORD, blob);
 
