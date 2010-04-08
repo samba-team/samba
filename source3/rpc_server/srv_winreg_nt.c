@@ -985,3 +985,15 @@ WERROR _winreg_QueryMultipleValues2(pipes_struct *p, struct winreg_QueryMultiple
 	return WERR_NOT_SUPPORTED;
 }
 
+/*******************************************************************
+ _winreg_DeleteKeyEx
+ ********************************************************************/
+
+WERROR _winreg_DeleteKeyEx(pipes_struct *p, struct winreg_DeleteKeyEx *r)
+{
+	/* fill in your code here if you think this call should
+	   do anything */
+
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
+}
