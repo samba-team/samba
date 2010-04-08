@@ -291,12 +291,15 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 			ret = WERR_GENERAL_FAILURE;
 			goto cleanup;
 		}
+
 		/* Get data length */
 		if (read(fd, &length, 4) < 4) {
 			DEBUG(0, ("Error while reading PReg\n"));
 			ret = WERR_GENERAL_FAILURE;
 			goto cleanup;
 		}
+		length = IVAL(&length, 0);
+
 		/* Read past delimiter */
 		buf_ptr = buf;
 		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
@@ -305,6 +308,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 			ret = WERR_GENERAL_FAILURE;
 			goto cleanup;
 		}
+
 		/* Get the data */
 		buf_ptr = buf;
 		if (length < buf_size &&
