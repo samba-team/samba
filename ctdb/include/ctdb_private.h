@@ -442,7 +442,7 @@ struct ctdb_context {
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_checkpublicip;
-	struct _trbt_tree_t *server_ids;	
+	struct trbt_tree *server_ids;	
 	const char *event_script_dir;
 	const char *notification_script;
 	const char *default_public_interface;
@@ -469,6 +469,9 @@ struct ctdb_context {
 
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
+
+	/* used in the recovery daemon to remember the ip allocation */
+	struct trbt_tree *ip_tree;
 };
 
 struct ctdb_db_context {
@@ -1633,4 +1636,8 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 
 void ctdb_fault_setup(void);
+
+int verify_remote_ip_allocation(struct ctdb_context *ctdb, 
+				struct ctdb_all_public_ips *ips);
+
 #endif

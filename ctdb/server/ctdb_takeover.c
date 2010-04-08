@@ -1159,14 +1159,17 @@ void getips_count_callback(void *param, void *data)
 }
 
 struct ctdb_public_ip_list *
-create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
+create_merged_ip_list(struct ctdb_context *ctdb)
 {
 	int i, j;
 	struct ctdb_public_ip_list *ip_list;
 	struct ctdb_all_public_ips *public_ips;
-	trbt_tree_t *ip_tree;
 
-	ip_tree = trbt_create(tmp_ctx, 0);
+	if (ctdb->ip_tree != NULL) {
+		talloc_free(ctdb->ip_tree);
+		ctdb->ip_tree = NULL;
+	}
+	ctdb->ip_tree = trbt_create(ctdb, 0);
 
 	for (i=0;i<ctdb->num_nodes;i++) {
 		public_ips = ctdb->nodes[i]->known_public_ips;
@@ -1183,13 +1186,13 @@ create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 		for (j=0;j<public_ips->num;j++) {
 			struct ctdb_public_ip_list *tmp_ip; 
 
-			tmp_ip = talloc_zero(tmp_ctx, struct ctdb_public_ip_list);
+			tmp_ip = talloc_zero(ctdb->ip_tree, struct ctdb_public_ip_list);
 			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
 			tmp_ip->pnn  = public_ips->ips[j].pnn;
 			tmp_ip->addr = public_ips->ips[j].addr;
 			tmp_ip->next = NULL;
 
-			trbt_insertarray32_callback(ip_tree,
+			trbt_insertarray32_callback(ctdb->ip_tree,
 				IP_KEYLEN, ip_key(&public_ips->ips[j].addr),
 				add_ip_callback,
 				tmp_ip);
@@ -1197,7 +1200,7 @@ create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 	}
 
 	ip_list = NULL;
-	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
+	trbt_traversearray32(ctdb->ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
 
 	return ip_list;
 }
@@ -1247,8 +1250,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	   a full list of all public addresses that exist in the cluster.
 	   Walk over all node structures and create a merged list of
 	   all public addresses that exist in the cluster.
+
+	   keep the tree of ips around as ctdb->ip_tree
 	*/
-	all_ips = create_merged_ip_list(ctdb, tmp_ctx);
+	all_ips = create_merged_ip_list(ctdb);
 
 	/* If we want deterministic ip allocations, i.e. that the ip addresses
 	   will always be allocated the same way for a specific set of
@@ -2806,3 +2811,41 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	return -1;
 }
 
+/* This function is called from the recovery daemon to verify that a remote
+   node has the expected ip allocation.
+   This is verified against ctdb->ip_tree
+*/
+int verify_remote_ip_allocation(struct ctdb_context *ctdb, struct ctdb_all_public_ips *ips)
+{
+	struct ctdb_public_ip_list *tmp_ip; 
+	int i;
+
+	if (ctdb->ip_tree == NULL) {
+		/* dont know the expected allocation yet, assume remote node
+		   is correct. */
+		return 0;
+	}
+
+	if (ips == NULL) {
+		return 0;
+	}
+
+	for (i=0; i<ips->num; i++) {
+		tmp_ip = trbt_lookuparray32(ctdb->ip_tree, IP_KEYLEN, ip_key(&ips->ips[i].addr));
+		if (tmp_ip == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Could not find host for address %s, reassign ips\n", ctdb_addr_to_str(&ips->ips[i].addr)));
+			return -1;
+		}
+
+		if (tmp_ip->pnn == -1 || ips->ips[i].pnn == -1) {
+			continue;
+		}
+
+		if (tmp_ip->pnn != ips->ips[i].pnn) {
+			DEBUG(DEBUG_ERR,("Inconsistent ip allocation. Trigger reallocation.\n"));
+			return -1;
+		}
+	}
+
+	return 0;
+}
