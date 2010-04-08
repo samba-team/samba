@@ -1,5 +1,6 @@
 #!/bin/sh
 
+PREVPATH=`dirname $0`
 
 WAF=BUILDTOOLS/bin/waf
 
@@ -8,4 +9,6 @@ WAF=BUILDTOOLS/bin/waf
 JOBS=1
 export JOBS
 
+cd BUILDPATH
 $WAF configure $*
+cd $PREVPATH
