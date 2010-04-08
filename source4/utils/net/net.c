@@ -197,7 +197,6 @@ int net_run_usage(struct net_context *ctx,
 /* main function table */
 static const struct net_functable net_functable[] = {
 	{"password", "change password\n", net_password, net_password_usage},
-	{"time", "get remote server's time\n", net_time, net_time_usage},
 	{"join", "join a domain\n", net_join, net_join_usage},
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
 	{"vampire", "join and syncronise an AD domain onto the local server\n", net_vampire, net_vampire_usage},
