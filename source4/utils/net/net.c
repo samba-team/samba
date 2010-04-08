@@ -200,7 +200,6 @@ static const struct net_functable net_functable[] = {
 	{"join", "join a domain\n", net_join, net_join_usage},
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
-	{"machinepw", "Get a machine password out of our SAM\n", net_machinepw, net_machinepw_usage},
 	{"drs", "Implements functionality offered by repadmin.exe utility in Windows\n", net_drs, net_drs_usage},
 	{NULL, NULL, NULL, NULL}
 };
