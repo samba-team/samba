@@ -428,4 +428,13 @@ import "lsa.idl", "security.idl", "misc.idl";
 	/* Function: 0x22 */
 	[todo] WERROR winreg_QueryMultipleValues2(
 	);
+
+	/******************/
+	/* Function: 0x23 */
+	WERROR winreg_DeleteKeyEx(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *key,
+		[in] winreg_AccessMask access_mask,
+		[in] uint32 reserved
+	);
 }
