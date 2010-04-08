@@ -75,7 +75,7 @@ SAMBA_VERSION_IS_GIT_SNAPSHOT=yes
 #                                                      #
 # <MAJOR>.<MINOR>.<RELEASE>[...]-<VENDOR_SUFFIX>       #
 #                                                      #
-# Note the '-' is automaticaly added                   #
+# Note the '-' is automatically added                  #
 #                                                      #
 # e.g. SAMBA_VERSION_VENDOR_SUFFIX="VendorVersion"     #
 #  ->  "CVS 3.0.0rc2-VendorVersion"                    #
