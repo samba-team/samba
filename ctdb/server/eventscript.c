@@ -522,6 +522,8 @@ static void debug_timeout(struct ctdb_event_script_state *state)
 	if (pid == 0) {
 		ctdb_reduce_priority(state->ctdb);
 		system(buf);
+		/* Now we can kill the child */
+		kill(state->child, SIGTERM);
 		exit(0);
 	}
 	if (pid == -1) {
@@ -529,6 +531,8 @@ static void debug_timeout(struct ctdb_event_script_state *state)
 				 strerror(errno)));
 	} else {
 		DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
+		/* Don't kill child until timeout done. */
+		state->child = 0;
 	}
 }
 
@@ -558,11 +562,6 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
         default:
 		state->scripts->scripts[state->current].status = -ETIME;
 		debug_timeout(state);
-	}
-
-	if (kill(state->child, 0) != 0) {
-		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
-		state->child = 0;
 	}
 
 	talloc_free(state);
