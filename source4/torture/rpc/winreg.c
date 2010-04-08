@@ -2205,6 +2205,9 @@ static bool test_symlink_keys(struct torture_context *tctx,
 {
 	struct policy_handle new_handle;
 	enum winreg_CreateAction action_taken;
+	DATA_BLOB blob;
+	/* symlink destination needs to be a kernel mode registry path */
+	const char *dest = "\\Registry\\MACHINE\\SOFTWARE\\foo";
 
 	/* disable until we know how to *not* screw up a windows registry */
 	torture_skip(tctx, "symlink test disabled");
@@ -2224,6 +2227,17 @@ static bool test_symlink_keys(struct torture_context *tctx,
 		"failed to create REG_KEYTYPE_SYMLINK type key");
 
 	torture_assert_int_equal(tctx, action_taken, REG_CREATED_NEW_KEY, "unexpected action");
+
+	torture_assert(tctx,
+		convert_string_talloc(tctx, CH_UNIX, CH_UTF16,
+				      dest, strlen(dest), /* not NULL terminated */
+				      &blob.data, &blob.length,
+				      false),
+		"failed to convert");
+
+	torture_assert(tctx,
+		test_SetValue(b, tctx, &new_handle, "SymbolicLinkValue", REG_LINK, blob.data, blob.length),
+		"failed to create SymbolicLinkValue value");
 
 	torture_assert(tctx,
 		test_CloseKey(b, tctx, &new_handle),
