@@ -37,6 +37,7 @@
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 
 						 const char *expr,
+						 char **restricted,
 						 struct torture_suite *suite,
 						 bool *matched)
 {
@@ -53,7 +54,7 @@ static bool run_matching(struct torture_context *torture,
 				continue;
 			}
 
-			ret &= run_matching(torture, o->name, expr, o, matched);
+			ret &= run_matching(torture, o->name, expr, restricted, o, matched);
 		}
 	} else {
 		char *name;
@@ -72,7 +73,7 @@ static bool run_matching(struct torture_context *torture,
 				continue;
 			}
 			
-			ret &= run_matching(torture, name, expr, c, matched);
+			ret &= run_matching(torture, name, expr, restricted, c, matched);
 
 			free(name);
 		}
@@ -98,7 +99,8 @@ static bool run_matching(struct torture_context *torture,
 /****************************************************************************
 run a specified test or "ALL"
 ****************************************************************************/
-static bool run_test(struct torture_context *torture, const char *name)
+static bool run_test(struct torture_context *torture, const char *name,
+					 char **restricted)
 {
 	bool ret = true;
 	bool matched = false;
@@ -111,7 +113,7 @@ static bool run_test(struct torture_context *torture, const char *name)
 		return ret;
 	}
 
-	ret = run_matching(torture, NULL, name, NULL, &matched);
+	ret = run_matching(torture, NULL, name, restricted, NULL, &matched);
 
 	if (!matched) {
 		printf("Unknown torture operation '%s'\n", name);
@@ -408,7 +410,7 @@ static void run_shell(struct torture_context *tctx)
 			if (argc < 2) {
 				fprintf(stderr, "Usage: run TEST-NAME [OPTIONS...]\n");
 			} else {
-				run_test(tctx, argv[1]);
+				run_test(tctx, argv[1], NULL);
 			}
 		}
 		free(cline);
@@ -437,9 +439,11 @@ int main(int argc,char *argv[])
 	const char *extra_module = NULL;
 	static int list_tests = 0;
 	int num_extra_users = 0;
+	char **restricted = NULL;
+	int num_restricted = -1;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,
-	      OPT_EXTRA_USER,};
+	      OPT_EXTRA_USER,OPT_LOAD_LIST,};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -469,6 +473,8 @@ int main(int argc,char *argv[])
 		 "set maximum time for smbtorture to live", "seconds"},
 		{"extra-user",   0, POPT_ARG_STRING, NULL, OPT_EXTRA_USER,
 		 "extra user credentials", NULL},
+		{"load-list", 0, POPT_ARG_STRING, NULL, OPT_LOAD_LIST,
+	     "load a test id list from a text file", NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -519,6 +525,14 @@ int main(int argc,char *argv[])
 				const char *value = poptGetOptArg(pc);
 				lp_set_cmdline(cmdline_lp_ctx, option, value);
 				talloc_free(option);
+			}
+			break;
+		case OPT_LOAD_LIST:
+			restricted = file_lines_load(optarg, &num_restricted, 0,
+										 talloc_autofree_context());
+			if (restricted == NULL) {
+				printf("Unable to read load list file '%s'\n", optarg);
+				exit(1);
 			}
 			break;
 		default:
@@ -586,15 +600,15 @@ int main(int argc,char *argv[])
 	if (extra_module != NULL) {
 	    init_module_fn fn = load_module(talloc_autofree_context(), poptGetOptArg(pc));
 
-	    if (fn == NULL) 
-		d_printf("Unable to load module from %s\n", poptGetOptArg(pc));
-	    else {
-		status = fn();
-		if (NT_STATUS_IS_ERR(status)) {
-		    d_printf("Error initializing module %s: %s\n", 
-			     poptGetOptArg(pc), nt_errstr(status));
+		if (fn == NULL) 
+			d_printf("Unable to load module from %s\n", poptGetOptArg(pc));
+		else {
+			status = fn();
+			if (NT_STATUS_IS_ERR(status)) {
+				d_printf("Error initializing module %s: %s\n", 
+					poptGetOptArg(pc), nt_errstr(status));
+			}
 		}
-	    }
 	} else { 
 		torture_init();
 	}
@@ -663,12 +677,12 @@ int main(int argc,char *argv[])
 	gensec_init(cmdline_lp_ctx);
 
 	if (argc_new == 0) {
-		printf("You must specify a test to run, or 'ALL'\n");
+		printf("You must specify a testsuite to run, or 'ALL'\n");
 	} else if (shell) {
 		run_shell(torture);
 	} else {
 		for (i=2;i<argc_new;i++) {
-			if (!run_test(torture, argv_new[i])) {
+			if (!run_test(torture, argv_new[i], restricted)) {
 				correct = false;
 			}
 		}
