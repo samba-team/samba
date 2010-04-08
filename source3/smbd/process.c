@@ -623,8 +623,14 @@ void remove_deferred_open_smb_message(uint16 mid)
 
 void schedule_deferred_open_smb_message(uint16 mid)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct pending_message_list *pml;
 	int i = 0;
+
+	if (sconn->allow_smb2) {
+		schedule_deferred_open_smb2_message(mid);
+		return;
+	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);

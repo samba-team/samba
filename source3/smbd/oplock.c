@@ -214,7 +214,7 @@ bool should_notify_deferred_opens()
  Set up an oplock break message.
 ****************************************************************************/
 
-static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
+static char *new_break_smb1_message(TALLOC_CTX *mem_ctx,
 				   files_struct *fsp, uint8 cmd)
 {
 	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
@@ -354,9 +354,30 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 }
 
+static void send_smb1_break_message(files_struct *fsp, uint8_t level)
+{
+	char *break_msg = new_break_smb1_message(talloc_tos(),
+					fsp,
+					level);
+	if (break_msg == NULL) {
+		exit_server("Could not talloc break_msg\n");
+	}
+
+	show_msg(break_msg);
+	if (!srv_send_smb(smbd_server_fd(),
+			break_msg, false, 0,
+			IS_CONN_ENCRYPTED(fsp->conn),
+			NULL)) {
+		exit_server_cleanly("send_smb1_break_message: "
+			"srv_send_smb failed.");
+	}
+
+	TALLOC_FREE(break_msg);
+}
+
 void break_level2_to_none_async(files_struct *fsp)
 {
-	char *break_msg;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (fsp->oplock_type == NO_OPLOCK) {
 		/* We already got a "break to none" message and we've handled
@@ -382,24 +403,14 @@ void break_level2_to_none_async(files_struct *fsp)
 		  fsp_str_dbg(fsp)));
 
 	/* Now send a break to none message to our client. */
-	break_msg = new_break_smb_message(NULL, fsp, OPLOCKLEVEL_NONE);
-	if (break_msg == NULL) {
-		exit_server("Could not talloc break_msg\n");
+	if (sconn->allow_smb2) {
+		send_smb2_break_message(fsp, OPLOCKLEVEL_NONE);
+	} else {
+		send_smb1_break_message(fsp, OPLOCKLEVEL_NONE);
 	}
-
-	show_msg(break_msg);
-	if (!srv_send_smb(smbd_server_fd(),
-			break_msg, false, 0,
-			IS_CONN_ENCRYPTED(fsp->conn),
-			NULL)) {
-		exit_server_cleanly("oplock_break: srv_send_smb failed.");
-	}
-
-	TALLOC_FREE(break_msg);
 
 	/* Async level2 request, don't send a reply, just remove the oplock. */
 	remove_oplock(fsp);
-
 }
 
 /*******************************************************************
@@ -459,9 +470,9 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 					 struct server_id src,
 					 DATA_BLOB *data)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct share_mode_entry msg;
 	files_struct *fsp;
-	char *break_msg;
 	bool break_to_level2 = False;
 
 	if (data->data == NULL) {
@@ -525,26 +536,19 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		break_to_level2 = True;
 	}
 
-	break_msg = new_break_smb_message(NULL, fsp, break_to_level2 ?
-					  OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
-	if (break_msg == NULL) {
-		exit_server("Could not talloc break_msg\n");
-	}
-
-	/* Need to wait before sending a break message if we sent ourselves this message. */
+	/* Need to wait before sending a break
+	   message if we sent ourselves this message. */
 	if (procid_is_me(&src)) {
 		wait_before_sending_break();
 	}
 
-	show_msg(break_msg);
-	if (!srv_send_smb(smbd_server_fd(),
-			break_msg, false, 0,
-			IS_CONN_ENCRYPTED(fsp->conn),
-			NULL)) {
-		exit_server_cleanly("oplock_break: srv_send_smb failed.");
+	if (sconn->allow_smb2) {
+		send_smb2_break_message(fsp, break_to_level2 ?
+			OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
+	} else {
+		send_smb1_break_message(fsp, break_to_level2 ?
+			OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 	}
-
-	TALLOC_FREE(break_msg);
 
 	fsp->sent_oplock_break = break_to_level2 ? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
 
@@ -566,10 +570,10 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 					struct server_id src,
 					DATA_BLOB *data)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct file_id id;
 	unsigned long file_id;
 	files_struct *fsp;
-	char *break_msg;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -604,20 +608,11 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	break_msg = new_break_smb_message(NULL, fsp, OPLOCKLEVEL_NONE);
-	if (break_msg == NULL) {
-		exit_server("Could not talloc break_msg\n");
+	if (sconn->allow_smb2) {
+		send_smb2_break_message(fsp, OPLOCKLEVEL_NONE);
+	} else {
+		send_smb1_break_message(fsp, OPLOCKLEVEL_NONE);
 	}
-
-	show_msg(break_msg);
-	if (!srv_send_smb(smbd_server_fd(),
-			break_msg, false, 0,
-			IS_CONN_ENCRYPTED(fsp->conn),
-			NULL)) {
-		exit_server_cleanly("oplock_break: srv_send_smb failed.");
-	}
-
-	TALLOC_FREE(break_msg);
 
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
 

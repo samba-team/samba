@@ -320,6 +320,9 @@ NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_setinfo(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req);
 
+void send_smb2_break_message(files_struct *fsp, uint8_t level);
+void schedule_deferred_open_smb2_message(uint16 mid);
+
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
 
