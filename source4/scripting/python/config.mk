@@ -15,13 +15,13 @@ PRIVATE_DEPENDENCIES = LIBNDR
 
 python_uuid_OBJ_FILES = $(pyscriptsrcdir)/uuidmodule.o
 
-[PYTHON::python_glue]
-LIBRARY_REALNAME = samba/glue.$(SHLIBEXT)
+[PYTHON::python__glue]
+LIBRARY_REALNAME = samba/_glue.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS pyldb python_dcerpc_misc python_dcerpc_security pyauth pyldb_util pyparam_util
 
-python_glue_OBJ_FILES = $(pyscriptsrcdir)/pyglue.o
+python__glue_OBJ_FILES = $(pyscriptsrcdir)/pyglue.o
 
-$(python_glue_OBJ_FILES): CFLAGS+=-I$(ldbsrcdir)
+$(python__glue_OBJ_FILES): CFLAGS+=-I$(ldbsrcdir)
 
 _PY_FILES = $(shell find $(pyscriptsrcdir)/samba -type f -name "*.py")
 

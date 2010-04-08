@@ -22,7 +22,7 @@
 import optparse
 from credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from hostconfig import Hostconfig
-import glue
+import samba
 
 __docformat__ = "restructuredText"
 
@@ -60,7 +60,7 @@ class SambaOptions(optparse.OptionGroup):
         else:
             lp.load_default()
         if self._debuglevel:
-            glue.set_debug_level(self._debuglevel)
+            samba.set_debug_level(self._debuglevel)
         return lp
 
     def get_hostconfig(self):

@@ -43,7 +43,7 @@ else:
 
 import ldb
 import dsdb
-import glue
+import _glue
 from samba._ldb import Ldb as _Ldb
 
 class Ldb(_Ldb):
@@ -275,13 +275,13 @@ class Ldb(_Ldb):
         dsdb.samdb_get_domain_sid(self)
 
     def set_schema_from_ldif(self, pf, df):
-        glue.dsdb_set_schema_from_ldif(self, pf, df)
+        _glue.dsdb_set_schema_from_ldif(self, pf, df)
 
     def set_schema_from_ldb(self, ldb):
-        glue.dsdb_set_schema_from_ldb(self, ldb)
+        _glue.dsdb_set_schema_from_ldb(self, ldb)
 
     def write_prefixes_from_schema(self):
-        glue.dsdb_write_prefixes_from_schema_to_ldb(self)
+        _glue.dsdb_write_prefixes_from_schema_to_ldb(self)
 
     def convert_schema_to_openldap(self, target, mapping):
         return dsdb.dsdb_convert_schema_to_openldap(self, target, mapping)
@@ -397,8 +397,8 @@ def ensure_external_module(modulename, location):
             sys.modules[modulename] = __import__(
                 "samba.external.%s" % modulename, fromlist=["samba.external"])
 
-version = glue.version
-interface_ips = glue.interface_ips
-set_debug_level = glue.set_debug_level
-unix2nttime = glue.unix2nttime
-generate_random_password = glue.generate_random_password
+version = _glue.version
+interface_ips = _glue.interface_ips
+set_debug_level = _glue.set_debug_level
+unix2nttime = _glue.unix2nttime
+generate_random_password = _glue.generate_random_password

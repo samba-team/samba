@@ -309,13 +309,13 @@ static PyMethodDef py_misc_methods[] = {
 	{ NULL }
 };
 
-void initglue(void)
+void init_glue(void)
 {
 	PyObject *m;
 
 	debug_setup_talloc_log();
 
-	m = Py_InitModule3("glue", py_misc_methods, 
+	m = Py_InitModule3("_glue", py_misc_methods, 
 			   "Python bindings for miscellaneous Samba functions.");
 	if (m == NULL)
 		return;
