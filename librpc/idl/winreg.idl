@@ -269,7 +269,11 @@ import "lsa.idl", "security.idl", "misc.idl";
 
 	/******************/
 	/* Function: 0x12 */
-	[todo] WERROR winreg_ReplaceKey(
+	WERROR winreg_ReplaceKey(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *subkey,
+		[in,ref] winreg_String *new_file,
+		[in,ref] winreg_String *old_file
 	);
 
 	/******************/
@@ -315,7 +319,9 @@ import "lsa.idl", "security.idl", "misc.idl";
 
 	/******************/
 	/* Function: 0x17 */
-	[todo] WERROR winreg_UnLoadKey(
+	WERROR winreg_UnLoadKey(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *subkey
 	);
 
 	/******************/
@@ -395,7 +401,11 @@ import "lsa.idl", "security.idl", "misc.idl";
 
 	/******************/
 	/* Function: 0x1f */
-	[todo] WERROR winreg_SaveKeyEx(
+	WERROR winreg_SaveKeyEx(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *filename,
+		[in,unique] KeySecurityAttribute *sec_attrib,
+		[in] uint32 flags
 	);
 
 	/******************/
