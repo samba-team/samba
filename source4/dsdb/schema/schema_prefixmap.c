@@ -393,22 +393,23 @@ static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_
 	num_mappings = ctr->num_mappings;
 
 	if (have_schema_info) {
+		DATA_BLOB blob;
+		struct dsdb_schema_info *schi = NULL;
+
 		if (ctr->num_mappings < 2) {
 			return WERR_INVALID_PARAMETER;
 		}
 
 		/* check last entry for being special */
 		mapping = &ctr->mappings[ctr->num_mappings - 1];
-		if (!mapping->oid.binary_oid) {
-			return WERR_INVALID_PARAMETER;
-		}
 		if (mapping->id_prefix != 0) {
 			return WERR_INVALID_PARAMETER;
 		}
-		if (mapping->oid.length != 21) {
-			return WERR_INVALID_PARAMETER;
-		}
-		if (*mapping->oid.binary_oid != 0xFF) {
+
+		/* parse schemaInfo blob to verify it is valid */
+		blob = data_blob_const(mapping->oid.binary_oid, mapping->oid.length);
+		if (!W_ERROR_IS_OK(dsdb_schema_info_from_blob(&blob, talloc_autofree_context(), &schi))) {
+			talloc_free(schi);
 			return WERR_INVALID_PARAMETER;
 		}
 
