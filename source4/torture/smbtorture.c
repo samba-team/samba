@@ -371,52 +371,6 @@ const static struct torture_ui_ops std_ui_ops = {
 };
 
 
-static void run_shell(struct torture_context *tctx)
-{
-	char *cline;
-	int argc;
-	const char **argv;
-	int ret;
-
-	while (1) {
-		cline = smb_readline("torture> ", NULL, NULL);
-
-		if (cline == NULL)
-			return;
-	
-		ret = poptParseArgvString(cline, &argc, &argv);
-		if (ret != 0) {
-			fprintf(stderr, "Error parsing line\n");
-			continue;
-		}
-
-		if (!strcmp(argv[0], "quit")) {
-			return;
-		} else if (!strcmp(argv[0], "set")) {
-			if (argc < 3) {
-				fprintf(stderr, "Usage: set <variable> <value>\n");
-			} else {
-				char *name = talloc_asprintf(NULL, "torture:%s", argv[1]);
-				lp_set_cmdline(tctx->lp_ctx, name, argv[2]);
-				talloc_free(name);
-			}
-		} else if (!strcmp(argv[0], "help")) {
-			fprintf(stderr, "Available commands:\n"
-							" help - This help command\n"
-							" run - Run test\n"
-							" set - Change variables\n"
-							"\n");
-		} else if (!strcmp(argv[0], "run")) {
-			if (argc < 2) {
-				fprintf(stderr, "Usage: run TEST-NAME [OPTIONS...]\n");
-			} else {
-				run_test(tctx, argv[1], NULL);
-			}
-		}
-		free(cline);
-	}
-}
-
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -433,7 +387,6 @@ int main(int argc,char *argv[])
 	poptContext pc;
 	static const char *target = "other";
 	NTSTATUS status;
-	int shell = false;
 	static const char *ui_ops_name = "subunit";
 	const char *basedir = NULL;
 	const char *extra_module = NULL;
@@ -463,7 +416,6 @@ int main(int argc,char *argv[])
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
 		 "run dangerous tests (eg. wiping out password database)", NULL},
 		{"load-module",  0,  POPT_ARG_STRING, &extra_module,     0, "load tests from DSO file",    "SOFILE"},
-		{"shell", 		0, POPT_ARG_NONE, &shell, true, "Run shell", NULL},
 		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba3|samba4|other", NULL},
 		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
 		 "run async tests", NULL},
@@ -634,7 +586,7 @@ int main(int argc,char *argv[])
 		}
 	}
 
-	if (!(argc_new >= 3 || (shell && argc_new >= 2))) {
+	if (!(argc_new >= 3)) {
 		usage(pc);
 		exit(1);
 	}
@@ -678,8 +630,6 @@ int main(int argc,char *argv[])
 
 	if (argc_new == 0) {
 		printf("You must specify a testsuite to run, or 'ALL'\n");
-	} else if (shell) {
-		run_shell(torture);
 	} else {
 		for (i=2;i<argc_new;i++) {
 			if (!run_test(torture, argv_new[i], restricted)) {
