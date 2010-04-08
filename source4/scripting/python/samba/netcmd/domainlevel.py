@@ -73,12 +73,7 @@ class cmd_domainlevel(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        if H is not None:
-            url = H
-        else:
-            url = lp.get("sam database")
-
-        samdb = SamDB(url=url, session_info=system_session(),
+        samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
 
         domain_dn = SamDB.domain_dn(samdb)

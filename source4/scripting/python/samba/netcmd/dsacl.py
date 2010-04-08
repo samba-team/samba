@@ -132,15 +132,11 @@ class cmd_ds_acl_set(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        if car == None or action == None or objectdn == None or trusteedn == None:
+        if (car is None or action is None or objectdn is None or 
+            trusteedn is None):
             return self.usage()
 
-        if host is not None:
-            url = host
-        else:
-            url = lp.get("sam database")
-
-        samdb = SamDB(url=url, session_info=system_session(),
+        samdb = SamDB(url=host, session_info=system_session(),
             credentials=creds, lp=lp)
         cars = {'change-rid' : GUID_DRS_CHANGE_RID_MASTER,
                 'change-pdc' : GUID_DRS_CHANGE_PDC,

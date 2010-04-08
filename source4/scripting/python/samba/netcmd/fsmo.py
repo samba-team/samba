@@ -135,12 +135,7 @@ all=all of the above"""),
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        if host is not None:
-            url = host
-        else:
-            url = lp.get("sam database")
-
-        samdb = SamDB(url=url, session_info=system_session(),
+        samdb = SamDB(url=host, session_info=system_session(),
             credentials=creds, lp=lp)
 
         domain_dn = SamDB.domain_dn(samdb)

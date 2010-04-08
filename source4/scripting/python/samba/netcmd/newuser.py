@@ -59,12 +59,7 @@ class cmd_newuser(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        if H is not None:
-            url = H
-        else:
-            url = lp.get("sam database")
-
-        samdb = SamDB(url=url, session_info=system_session(), credentials=creds,
+        samdb = SamDB(url=H, session_info=system_session(), credentials=creds,
             lp=lp)
         samdb.newuser(username, unixname, password,
             force_password_change_at_next_login_req=must_change_at_next_login)
