@@ -160,9 +160,46 @@ def identic_rename(ldbobj,dn):
 
     :param lbdobj: An Ldb Object
     :param dn: DN of the object to manipulate """
-    (before,sep,after)=str(dn).partition('=')
-    ldbobj.rename(dn,Dn(ldbobj,"%s=foo%s"%(before,after)))
-    ldbobj.rename(Dn(ldbobj,"%s=foo%s"%(before,after)),dn)
+
+    (before, sep, after)=str(dn).partition('=')
+    ldbobj.rename(dn, Dn(ldbobj, "%s=foo%s" % (before, after)))
+    ldbobj.rename(Dn(ldbobj, "%s=foo%s" % (before, after)), dn)
+
+def check_for_DNS(refprivate, private):
+    """Check if the provision has already the requirement for dynamic dns
+
+    :param refprivate: The path to the private directory of the reference
+                       provision
+    :param private: The path to the private directory of the upgraded
+                    provision"""
+
+    spnfile = "%s/spn_update_list" % private
+    namedfile = lp.get("dnsupdate:path")
+
+    if not namedfile:
+       namedfile = "%s/named.conf.update" % private
+
+    if not os.path.exists(spnfile):
+        shutil.copy("%s/spn_update_list" % refprivate, "%s" % spnfile)
+
+    destdir = "%s/new_dns" % private
+    dnsdir = "%s/dns" % private
+
+    if not os.path.exists(namedfile):
+        if not os.path.exists(destdir):
+            os.mkdir(destdir)
+        if not os.path.exists(dnsdir):
+            os.mkdir(dnsdir)
+        shutil.copy("%s/named.conf" % refprivate, "%s/named.conf" % destdir)
+        shutil.copy("%s/named.txt" % refprivate, "%s/named.txt" % destdir)
+        message(SIMPLE, "It seems that you provision didn't integrate new rules "
+                "for dynamic dns update of domain related entries")
+        message(SIMPLE, "A copy of the new bind configuration files and "
+                "template as been put in %s, you should read them and configure dynamic "
+                " dns update" % destdir)
+
+
+#    dnsupdate:path
 
 
 def populate_backlink(samdb, schemadn):
@@ -1115,6 +1152,7 @@ if __name__ == '__main__':
         check_updated_sd(new_ldbs.sam,ldbs.sam, names)
 
     updateOEMInfo(ldbs.sam,names)
+    check_for_DNS(newpaths.private_dir, paths.private_dir)
     updateProvisionUSN(ldbs.sam,names)
     ldbs.groupedCommit()
     new_ldbs.groupedCommit()
