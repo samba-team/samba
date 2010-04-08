@@ -41,29 +41,37 @@ def checkset_backend(lp,backend,eadbfile):
 def getntacl(lp, file, backend=None, eadbfile=None):
     checkset_backend(lp, backend, eadbfile)
     eadbname = lp.get("posix:eadb")
-    if eadbname != None and eadbname != "" :
+    if eadbname is not None and eadbname != "":
         try:
-            attribute = samba.xattr_tdb.wrap_getxattr(eadbname,file,xattr.XATTR_NTACL_NAME)
+            attribute = samba.xattr_tdb.wrap_getxattr(eadbname, file, 
+                xattr.XATTR_NTACL_NAME)
         except:
+            # FIXME: Don't catch all exceptions, just those related to opening 
+            # xattrdb
             print "Fail to open %s" % eadbname
-            attribute = samba.xattr_native.wrap_getxattr(file,xattr.XATTR_NTACL_NAME)
+            attribute = samba.xattr_native.wrap_getxattr(file,
+                xattr.XATTR_NTACL_NAME)
     else:
-        attribute = samba.xattr_native.wrap_getxattr(file,xattr.XATTR_NTACL_NAME)
+        attribute = samba.xattr_native.wrap_getxattr(file,
+            xattr.XATTR_NTACL_NAME)
     ntacl = ndr_unpack(xattr.NTACL,attribute)
     return ntacl
 
 def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
-    checkset_backend(lp,backend,eadbfile)
+    checkset_backend(lp, backend, eadbfile)
     ntacl=xattr.NTACL()
     ntacl.version = 1
     sid=security.dom_sid(domsid)
     sd = security.descriptor.from_sddl(sddl, sid)
     ntacl.info = sd
     eadbname = lp.get("posix:eadb")
-    if eadbname != None  and eadbname != "":
+    if eadbname is not None and eadbname != "":
         try:
-            samba.xattr_tdb.wrap_setxattr(eadbname,file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+            samba.xattr_tdb.wrap_setxattr(eadbname,
+                file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
         except:
+            # FIXME: Don't catch all exceptions, just those related to opening 
+            # xattrdb
             print "Fail to open %s"%eadbname
             samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
     else:

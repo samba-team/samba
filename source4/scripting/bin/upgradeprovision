@@ -668,6 +668,7 @@ def check_diff_name(newpaths, paths, creds, session, basedn, names, ischema):
                         try:
                             dump_denied_change(dn,att,messageEltFlagToString(msgElt.flags()),current[0][att],reference[0][att])
                         except:
+                            # FIXME: Should catch an explicit exception here
                             dump_denied_change(dn,att,messageEltFlagToString(msgElt.flags()),current[0][att],None)
                     delta.remove(att)
         delta.dn = dn

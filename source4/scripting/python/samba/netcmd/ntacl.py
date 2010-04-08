@@ -63,7 +63,8 @@ class cmd_acl_set(Command):
         creds = credopts.get_credentials(lp)
         creds.set_kerberos_state(DONT_USE_KERBEROS)
         try:
-            ldb = Ldb(path, session_info=system_session(), credentials=creds,lp=lp)
+            ldb = Ldb(path, session_info=system_session(), credentials=creds,
+                      lp=lp)
         except:
             # XXX: Should catch a particular exception type
             raise CommandError("Unable to read domain SID from configuration files")

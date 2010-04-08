@@ -269,7 +269,8 @@ def setup_ldb(ldb, ldif_path, subst_vars):
     except:
         ldb.transaction_cancel()
         raise
-    ldb.transaction_commit()
+    else:
+        ldb.transaction_commit()
 
 
 def provision_paths_from_lp(lp, dnsdomain):
@@ -550,12 +551,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
 
         message("Setting up sam.ldb rootDSE")
         setup_samdb_rootdse(samdb, setup_path, names)
-
     except:
         samdb.transaction_cancel()
         raise
-
-    samdb.transaction_commit()
+    else:
+        samdb.transaction_commit()
 
         
 def secretsdb_self_join(secretsdb, domain, 

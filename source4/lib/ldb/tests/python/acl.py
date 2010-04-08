@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # This is unit with tests for LDAP access checks
 
-import getopt
 import optparse
 import sys
 import os
@@ -13,9 +12,8 @@ sys.path.append("bin/python")
 
 import samba.getopt as options
 
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
-from ldb import ERR_NO_SUCH_OBJECT, ERR_INVALID_DN_SYNTAX, ERR_UNWILLING_TO_PERFORM
-from ldb import ERR_INSUFFICIENT_ACCESS_RIGHTS
+from ldb import (
+    SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security

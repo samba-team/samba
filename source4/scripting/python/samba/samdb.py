@@ -150,7 +150,8 @@ pwdLastSet: 0
         except:
             self.transaction_cancel()
             raise
-        self.transaction_commit()
+        else:
+            self.transaction_commit()
 
     def setpassword(self, filter, password, force_change_at_next_login=False):
         """Sets the password for a user
@@ -188,7 +189,8 @@ userPassword:: %s
         except:
             self.transaction_cancel()
             raise
-        self.transaction_commit()
+        else:
+            self.transaction_commit()
 
     def setexpiry(self, filter, expiry_seconds, no_expiry_req=False):
         """Sets the account expiry for a user
@@ -227,7 +229,8 @@ accountExpires: %u
         except:
             self.transaction_cancel()
             raise
-        self.transaction_commit()
+        else:
+            self.transaction_commit()
 
     def set_domain_sid(self, sid):
         """Change the domain SID used by this LDB.

@@ -86,12 +86,7 @@ def get_credentials(lp):
         return
     creds = Credentials()
     creds.guess(lp)
-    try:
-        creds.set_machine_account(lp)
-    except:
-        print "Failed to set machine account"
-        raise
-
+    creds.set_machine_account(lp)
     (tmp_fd, ccachename) = tempfile.mkstemp()
     creds.get_named_ccache(lp, ccachename)
 
@@ -200,7 +195,7 @@ def get_subst_vars():
     vars = {}
 
     samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
-			      lp=lp)
+                  lp=lp)
 
     vars['DNSDOMAIN'] = lp.get('realm').lower()
     vars['HOSTNAME']  = lp.get('netbios name').lower() + "." + vars['DNSDOMAIN']
