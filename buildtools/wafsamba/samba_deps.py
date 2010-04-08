@@ -18,7 +18,7 @@ def TARGET_ALIAS(bld, target, alias):
     cache = LOCAL_CACHE(bld, 'TARGET_ALIAS')
     if alias in cache:
         print("Target alias %s already set to %s : newalias %s" % (alias, cache[alias], target))
-        raise
+        sys.exit(1)
     cache[alias] = target
 Build.BuildContext.TARGET_ALIAS = TARGET_ALIAS
 
@@ -329,7 +329,7 @@ def build_direct_deps(bld, tgt_list):
             if d == t.sname: continue
             if not d in targets:
                 print("Unknown dependency %s in %s" % (d, t.sname))
-                raise
+                sys.exit(1)
             if targets[d] in [ 'EMPTY', 'DISABLED' ]:
                 continue
             if targets[d] == 'SYSLIB':
@@ -823,7 +823,7 @@ def check_project_rules(bld):
         t = bld.name_to_obj(tgt, bld.env)
         if t is None:
             print("Target %s of type %s has no task generator" % (tgt, type))
-            raise
+            sys.exit(1)
         tgt_list.append(t)
 
     add_samba_attributes(bld, tgt_list)
