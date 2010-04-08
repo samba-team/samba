@@ -2,7 +2,7 @@
 # Unix SMB/CIFS implementation.
 # backend code for provisioning a Samba4 server
 
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2010
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008-2009
 # Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
@@ -53,7 +53,6 @@ from samba.schema import Schema
 from samba.samdb import SamDB
 from ms_display_specifiers import read_ms_ldif
 from samba.provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
-from provisionexceptions import ProvisioningError, InvalidNetbiosName
 
 __docformat__ = "restructuredText"
 
@@ -150,9 +149,8 @@ def get_domain_descriptor(domain_sid):
 
 DEFAULTSITE = "Default-First-Site-Name"
 
-# Exception classes
-
 class ProvisionPaths(object):
+
     def __init__(self):
         self.shareconf = None
         self.hklm = None
@@ -172,6 +170,7 @@ class ProvisionPaths(object):
 
 
 class ProvisionNames(object):
+
     def __init__(self):
         self.rootdn = None
         self.domaindn = None
@@ -188,11 +187,13 @@ class ProvisionNames(object):
     
 
 class ProvisionResult(object):
+
     def __init__(self):
         self.paths = None
         self.domaindn = None
         self.lp = None
         self.samdb = None
+
 
 def check_install(lp, session_info, credentials):
     """Check whether the current install seems ok.
@@ -203,9 +204,9 @@ def check_install(lp, session_info, credentials):
     """
     if lp.get("realm") == "":
         raise Exception("Realm empty")
-    ldb = Ldb(lp.get("sam database"), session_info=session_info, 
+    samdb = Ldb(lp.get("sam database"), session_info=session_info, 
             credentials=credentials, lp=lp)
-    if len(ldb.search("(cn=Administrator)")) != 1:
+    if len(samdb.search("(cn=Administrator)")) != 1:
         raise ProvisioningError("No administrator account found")
 
 
@@ -825,12 +826,14 @@ def create_gpo_struct(policy_path):
     os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
     os.makedirs(os.path.join(policy_path, "USER"), 0755)
 
+
 def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid)
     create_gpo_struct(policy_path)
 
     policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid_dc)
     create_gpo_struct(policy_path)
+
 
 def setup_samdb(path, setup_path, session_info, provision_backend, lp, 
                 names, message, 
@@ -851,7 +854,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     if dom_for_fun_level is None:
         dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
     if dom_for_fun_level < DS_DOMAIN_FUNCTION_2003:
-        message("You want to run SAMBA 4 on a domain and forest function level lower than Windows 2003 (Native). This is not recommended")
+        message("You want to run SAMBA 4 on a domain and forest function level"
+                " lower than Windows 2003 (Native). This is not recommended")
 
     if dom_for_fun_level > domainControllerFunctionality:
         raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008). This won't work!")
@@ -864,7 +868,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         provision_backend=provision_backend, session_info=session_info,
         names=names, serverrole=serverrole, schema=schema)
 
-    if (schema == None):
+    if schema is None:
         schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
 
     # Load the database, but importantly, use Ldb not SamDB as we don't want to
@@ -1033,7 +1037,6 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             names.ntdsguid = samdb.searchone(basedn=ntds_dn,
                 attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
             assert isinstance(names.ntdsguid, str)
-
     except:
         samdb.transaction_cancel()
         raise
@@ -1066,9 +1069,11 @@ def set_gpo_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
                         attrs=["cn","nTSecurityDescriptor"],
                         expression="", scope=ldb.SCOPE_ONELEVEL)
     for policy in res:
-        acl = ndr_unpack(security.descriptor,str(policy["nTSecurityDescriptor"])).as_sddl()
+        acl = ndr_unpack(security.descriptor, 
+                         str(policy["nTSecurityDescriptor"])).as_sddl()
         policy_path = getpolicypath(sysvol,dnsdomain,str(policy["cn"]))
-        set_dir_acl(policy_path,dsacl2fsacl(acl,str(domainsid)),lp,str(domainsid))
+        set_dir_acl(policy_path, dsacl2fsacl(acl, str(domainsid)), lp, 
+                    str(domainsid))
 
 def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     lp):
@@ -1177,8 +1182,8 @@ def provision(setup_dir, message, session_info,
         data = open(smbconf, 'r').read()
         data = data.lstrip()
         if data is None or data == "":
-            make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                         targetdir, sid_generator, useeadb)
+            make_smbconf(smbconf, setup_path, hostname, domain, realm,
+                         serverrole, targetdir, sid_generator, useeadb)
     else: 
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
                      targetdir, sid_generator, useeadb)
@@ -1229,7 +1234,8 @@ def provision(setup_dir, message, session_info,
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
  
-    schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
+    schema = Schema(setup_path, domainsid, schemadn=names.schemadn,
+                    serverdn=names.serverdn)
     
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type,
@@ -1275,7 +1281,7 @@ def provision(setup_dir, message, session_info,
                                          ol_mmr_urls=ol_mmr_urls, 
                                          nosync=nosync)
     else:
-        raise ProvisioningError("Unknown LDAP backend type selected")
+        raise ValueError("Unknown LDAP backend type selected")
 
     provision_backend.init()
     provision_backend.start()
@@ -1290,8 +1296,8 @@ def provision(setup_dir, message, session_info,
      
     message("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
-                                  session_info=session_info, 
-                                  backend_credentials=provision_backend.secrets_credentials, lp=lp)
+        session_info=session_info,
+        backend_credentials=provision_backend.secrets_credentials, lp=lp)
 
     message("Setting up the registry")
     setup_registry(paths.hklm, setup_path, session_info, 
@@ -1322,15 +1328,15 @@ def provision(setup_dir, message, session_info,
         if paths.netlogon is None:
             message("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
             message("Please either remove %s or see the template at %s" % 
-                    ( paths.smbconf, setup_path("provision.smb.conf.dc")))
-            assert(paths.netlogon is not None)
+                    (paths.smbconf, setup_path("provision.smb.conf.dc")))
+            assert paths.netlogon is not None
 
         if paths.sysvol is None:
-            message("Existing smb.conf does not have a [sysvol] share, but you are configuring a DC.")
+            message("Existing smb.conf does not have a [sysvol] share, but you"
+                    " are configuring a DC.")
             message("Please either remove %s or see the template at %s" % 
                     (paths.smbconf, setup_path("provision.smb.conf.dc")))
-            assert(paths.sysvol is not None)            
-            
+            assert paths.sysvol is not None
 
         if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
@@ -1342,8 +1348,9 @@ def provision(setup_dir, message, session_info,
 
         if serverrole == "domain controller":
             # Set up group policies (domain policy and domain controller policy)
-            setup_gpo(paths.sysvol,names.dnsdomain,policyguid,policyguid_dc)
-            setsysvolacl(samdb,paths.netlogon,paths.sysvol,wheel_gid,domainsid,names.dnsdomain,names.domaindn,lp)
+            setup_gpo(paths.sysvol, names.dnsdomain, policyguid, policyguid_dc)
+            setsysvolacl(samdb, paths.netlogon, paths.sysvol, wheel_gid, 
+                         domainsid, names.dnsdomain, names.domaindn, lp)
 
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
@@ -1368,11 +1375,10 @@ def provision(setup_dir, message, session_info,
 
             # Only make a zone file on the first DC, it should be replicated
             # with DNS replication
-            create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain=names.dnsdomain,
-                             hostip=hostip,
-                             hostip6=hostip6, hostname=names.hostname,
-                             realm=names.realm,
-                             domainguid=domainguid, ntdsguid=names.ntdsguid)
+            create_zone_file(lp, message, paths, targetdir, setup_path,
+                dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
+                hostname=names.hostname, realm=names.realm, 
+                domainguid=domainguid, ntdsguid=names.ntdsguid)
 
             create_named_conf(paths, setup_path, realm=names.realm,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
@@ -1381,12 +1387,14 @@ def provision(setup_dir, message, session_info,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir,
                               keytab_name=paths.dns_keytab)
             message("See %s for an example configuration include file for BIND" % paths.namedconf)
-            message("and %s for further documentation required for secure DNS updates" % paths.namedtxt)
+            message("and %s for further documentation required for secure DNS "
+                    "updates" % paths.namedtxt)
 
             create_krb5_conf(paths.krb5conf, setup_path,
                              dnsdomain=names.dnsdomain, hostname=names.hostname,
                              realm=names.realm)
-            message("A Kerberos configuration suitable for Samba 4 has been generated at %s" % paths.krb5conf)
+            message("A Kerberos configuration suitable for Samba 4 has been "
+                    "generated at %s" % paths.krb5conf)
 
     if serverrole == "domain controller":
         create_dns_update_list(lp, message, paths, setup_path)
@@ -1407,7 +1415,8 @@ def provision(setup_dir, message, session_info,
             os.chmod(dns_keytab_path, 0640)
             os.chown(dns_keytab_path, -1, paths.bind_gid)
         except OSError:
-            message("Failed to chown %s to bind gid %u" % (dns_keytab_path, paths.bind_gid))
+            message("Failed to chown %s to bind gid %u" % (dns_keytab_path,
+                paths.bind_gid))
 
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
@@ -1441,7 +1450,6 @@ def provision(setup_dir, message, session_info,
     result.lp = lp
     result.samdb = samdb
     return result
-
 
 
 def provision_become_dc(setup_dir=None,
@@ -1622,7 +1630,6 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
     :param hostname: Local hostname
     :param realm: Realm name
     """
-
     setup_file(setup_path("krb5.conf"), path, {
             "DNSDOMAIN": dnsdomain,
             "HOSTNAME": hostname,
@@ -1630,3 +1637,17 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
         })
 
 
+class ProvisioningError(Exception):
+    """A generic provision error."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "ProvisioningError: " + self.value
+
+
+class InvalidNetbiosName(Exception):
+    """A specified name was not a valid NetBIOS name."""
+    def __init__(self, name):
+        super(InvalidNetbiosName, self).__init__("The name '%r' is not a valid NetBIOS name" % name)

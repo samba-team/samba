@@ -40,8 +40,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE, \
                 MessageElement, Message, Dn
 from samba import param
 from samba.misc import messageEltFlagToString
-from samba.provision import find_setup_dir, get_domain_descriptor, get_config_descriptor, secretsdb_self_join,set_gpo_acl,getpolicypath,create_gpo_struct
-from samba.provisionexceptions import ProvisioningError
+from samba.provision import find_setup_dir, get_domain_descriptor, get_config_descriptor, secretsdb_self_join,set_gpo_acl,getpolicypath,create_gpo_struct, ProvisioningError
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
@@ -321,16 +320,22 @@ def handle_special_case(att, delta, new, old, ischema):
 def update_secrets(newpaths, paths, creds, session):
     """Update secrets.ldb
 
-    :param newpaths: a list of paths for different provision objects from the reference provision
-    :param paths: a list of paths for different provision objects from the upgraded provision
+    :param newpaths: a list of paths for different provision objects from the
+        reference provision
+    :param paths: a list of paths for different provision objects from the
+        upgraded provision
     :param creds: credential for the authentification
     :param session: session for connexion"""
 
     message(SIMPLE,"update secrets.ldb")
-    newsecrets_ldb = Ldb(newpaths.secrets, session_info=session, credentials=creds,lp=lp)
-    secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp, options=["modules:samba_secrets"])
-    reference = newsecrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
-    current = secrets_ldb.search(expression="dn=@MODULES",base="", scope=SCOPE_SUBTREE)
+    newsecrets_ldb = Ldb(newpaths.secrets, session_info=session,
+        credentials=creds,lp=lp)
+    secrets_ldb = Ldb(paths.secrets, session_info=session,
+        credentials=creds,lp=lp, options=["modules:samba_secrets"])
+    reference = newsecrets_ldb.search(expression="dn=@MODULES",base="",
+        scope=SCOPE_SUBTREE)
+    current = secrets_ldb.search(expression="dn=@MODULES",base="",
+        scope=SCOPE_SUBTREE)
     delta = secrets_ldb.msg_diff(current[0],reference[0])
     delta.dn = current[0].dn
     secrets_ldb.modify(delta)
@@ -449,7 +454,8 @@ def handle_special_add(sam_ldb,dn,names):
             message(CHANGE,"Existing object %s must be replaced by %s, removing old object"%(dntoremove,str(dn)))
             sam_ldb.delete(res[0]["dn"])
 
-def check_dn_nottobecreated(hash,index,listdn):
+
+def check_dn_nottobecreated(hash, index, listdn):
     """Check if one of the DN present in the list has a creation order greater than the current.
 
     Hash is indexed by dn to be created, with each key is associated the creation order
@@ -780,22 +786,22 @@ def update_basesamdb(newpaths, paths, names):
     shutil.copy(newpaths.samdb,paths.samdb)
 
     message(SIMPLE,"Update partitions filename if needed")
-    schemaldb=os.path.join(paths.private_dir,"schema.ldb")
-    configldb=os.path.join(paths.private_dir,"configuration.ldb")
-    usersldb=os.path.join(paths.private_dir,"users.ldb")
-    samldbdir=os.path.join(paths.private_dir,"sam.ldb.d")
+    schemaldb = os.path.join(paths.private_dir, "schema.ldb")
+    configldb = os.path.join(paths.private_dir, "configuration.ldb")
+    usersldb = os.path.join(paths.private_dir, "users.ldb")
+    samldbdir = os.path.join(paths.private_dir, "sam.ldb.d")
 
     if not os.path.isdir(samldbdir):
         os.mkdir(samldbdir)
         os.chmod(samldbdir,0700)
     if os.path.isfile(schemaldb):
-        shutil.copy(schemaldb, os.path.join(samldbdir, "%s.ldb"%str(names.schemadn).upper()))
+        shutil.copy(schemaldb, os.path.join(samldbdir, "%s.ldb" % str(names.schemadn).upper()))
         os.remove(schemaldb)
     if os.path.isfile(usersldb):
-        shutil.copy(usersldb, os.path.join(samldbdir, "%s.ldb"%str(names.rootdn).upper()))
+        shutil.copy(usersldb, os.path.join(samldbdir, "%s.ldb" % str(names.rootdn).upper()))
         os.remove(usersldb)
     if os.path.isfile(configldb):
-        shutil.copy(configldb, os.path.join(samldbdir, "%s.ldb"%str(names.configdn).upper()))
+        shutil.copy(configldb, os.path.join(samldbdir, "%s.ldb" % str(names.configdn).upper()))
         os.remove(configldb)
 
 
@@ -834,7 +840,8 @@ def update_machine_account_password(paths, creds, session, names):
     :param session: Session for connexion
     :param names: List of key provision parameters"""
 
-    secrets_ldb = Ldb(paths.secrets, session_info=session, credentials=creds,lp=lp)
+    secrets_ldb = Ldb(paths.secrets, session_info=session,
+        credentials=creds,lp=lp)
     secrets_ldb.transaction_start()
     secrets_msg = secrets_ldb.search(expression=("samAccountName=%s$" % names.netbiosname), attrs=["secureChannelType"])
     sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
@@ -884,6 +891,7 @@ def update_gpo(paths,creds,session,names):
     samdb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
     set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
         names.domaindn, samdb, lp)
+
 
 def updateOEMInfo(paths, creds, session,names):
     sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp,

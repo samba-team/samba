@@ -26,6 +26,7 @@
 """Functions for setting up a Samba configuration (LDB and LDAP backends)."""
 
 from base64 import b64encode
+import errno
 import ldb
 import os
 import sys
@@ -40,11 +41,21 @@ from ldb import SCOPE_BASE, SCOPE_ONELEVEL, LdbError, timestring
 from samba import Ldb, read_and_sub_file, setup_file
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.schema import Schema
-from samba.provisionexceptions import ProvisioningError
+
+
+class SlapdAlreadyRunning(Exception):
+
+    def __init__(self, uri):
+        self.ldapi_uri = uri
+        super(SlapdAlreadyRunning, self).__init__("Another slapd Instance "
+            "seems already running on this host, listening to %s." %
+            self.ldapi_uri)
+
 
 class ProvisionBackend(object):
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
-                 names=None, message=None):
+
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+            credentials=None, names=None, message=None):
         """Provision a backend for samba4"""
         self.paths = paths
         self.setup_path = setup_path
@@ -72,15 +83,6 @@ class ProvisionBackend(object):
 
 
 class LDBBackend(ProvisionBackend):
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
-                 names=None, message=None):
-
-        super(LDBBackend, self).__init__(
-                backend_type=backend_type,
-                paths=paths, setup_path=setup_path,
-                lp=lp, credentials=credentials,
-                names=names,
-                message=message)
 
     def init(self):
         self.credentials = None
@@ -91,49 +93,40 @@ class LDBBackend(ProvisionBackend):
 
 
 class ExistingBackend(ProvisionBackend):
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None, 
-                 names=None, message=None,
-                 ldapi_uri=None):
 
-        super(ExistingBackend, self).__init__(
-                backend_type=backend_type,
-                paths=paths, setup_path=setup_path,
-                lp=lp, credentials=credentials,
-                names=names,
-                message=message)
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+            credentials=None, names=None, message=None, ldapi_uri=None):
+
+        super(ExistingBackend, self).__init__(backend_type=backend_type,
+                paths=paths, setup_path=setup_path, lp=lp,
+                credentials=credentials, names=names, message=message)
 
         self.ldapi_uri = ldapi_uri
 
     def init(self):
-        #Check to see that this 'existing' LDAP backend in fact exists
+        # Check to see that this 'existing' LDAP backend in fact exists
         ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
         ldapi_db.search(base="", scope=SCOPE_BASE,
-                                            expression="(objectClass=OpenLDAProotDSE)")
+            expression="(objectClass=OpenLDAProotDSE)")
 
-        # If we have got here, then we must have a valid connection to the LDAP server, with valid credentials supplied
-        # This caused them to be set into the long-term database later in the script.
+        # If we have got here, then we must have a valid connection to the LDAP
+        # server, with valid credentials supplied This caused them to be set
+        # into the long-term database later in the script.
         self.secrets_credentials = self.credentials
 
-        self.ldap_backend_type = "openldap" #For now, assume existing backends at least emulate OpenLDAP
+        self.ldap_backend_type = "openldap" # For now, assume existing backends at least emulate OpenLDAP
 
 
 class LDAPBackend(ProvisionBackend):
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None,
-                 names=None, message=None,
-                 domainsid=None,
-                 schema=None,
-                 hostname=None,
-                 ldapadminpass=None,
-                 slapd_path=None,
-                 ldap_backend_extra_port=None,
-                 ldap_dryrun_mode=False):
 
-        super(LDAPBackend, self).__init__(
-                backend_type=backend_type,
-                paths=paths, setup_path=setup_path,
-                lp=lp, credentials=credentials,
-                names=names,
-                message=message)
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+            credentials=None, names=None, message=None, domainsid=None,
+            schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=False):
+
+        super(LDAPBackend, self).__init__(backend_type=backend_type,
+                paths=paths, setup_path=setup_path, lp=lp,
+                credentials=credentials, names=names, message=message)
 
         self.domainsid = domainsid
         self.schema = schema
@@ -156,23 +149,26 @@ class LDAPBackend(ProvisionBackend):
             os.mkdir(self.ldapdir)
 
     def init(self):
-        # we will shortly start slapd with ldapi for final provisioning. first check with ldapsearch -> rootDSE via self.ldapi_uri
-        # if another instance of slapd is already running 
+        from samba.provision import ProvisioningError
+        # we will shortly start slapd with ldapi for final provisioning. first
+        # check with ldapsearch -> rootDSE via self.ldapi_uri if another
+        # instance of slapd is already running 
         try:
             ldapi_db = Ldb(self.ldapi_uri)
             ldapi_db.search(base="", scope=SCOPE_BASE,
                 expression="(objectClass=OpenLDAProotDSE)")
             try:
                 f = open(self.slapd_pid, "r")
+            except IOError, err:
+                if err != errno.ENOENT:
+                    raise
+            else:
                 p = f.read()
                 f.close()
                 self.message("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
-            except:
-                pass
-            
-            raise ProvisioningError("Warning: Another slapd Instance seems already running on this host, listening to " + self.ldapi_uri + ". Please shut it down before you continue. ")
-        
+            raise SlapdAlreadyRunning(self.ldapi_uri)
         except LdbError:
+            # XXX: We should never be catching all Ldb errors
             pass
 
         # Try to print helpful messages when the user has not specified the path to slapd
@@ -216,13 +212,15 @@ class LDAPBackend(ProvisionBackend):
         pass
 
     def start(self):
+        from samba.provision import ProvisioningError
         self.slapd_command_escaped = "\'" + "\' \'".join(self.slapd_command) + "\'"
-        open(self.ldapdir + "/ldap_backend_startup.sh", 'w').write("#!/bin/sh\n" + self.slapd_command_escaped + "\n")
+        open(os.path.join(self.ldapdir, "ldap_backend_startup.sh"), 'w').write("#!/bin/sh\n" + self.slapd_command_escaped + "\n")
 
         # Now start the slapd, so we can provision onto it.  We keep the
         # subprocess context around, to kill this off at the successful
         # end of the script
-        self.slapd = subprocess.Popen(self.slapd_provision_command, close_fds=True, shell=False)
+        self.slapd = subprocess.Popen(self.slapd_provision_command,
+            close_fds=True, shell=False)
     
         while self.slapd.poll() is None:
             # Wait until the socket appears
@@ -253,29 +251,18 @@ class LDAPBackend(ProvisionBackend):
 
 
 class OpenLDAPBackend(LDAPBackend):
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None,
-                 names=None, message=None,
-                 domainsid=None,
-                 schema=None,
-                 hostname=None,
-                 ldapadminpass=None,
-                 slapd_path=None,
-                 ldap_backend_extra_port=None,
-                 ldap_dryrun_mode=False,
-                 ol_mmr_urls=None,
-                 nosync=False):
 
-        super(OpenLDAPBackend, self).__init__(
-                backend_type=backend_type,
-                paths=paths, setup_path=setup_path,
-                lp=lp, credentials=credentials,
-                names=names,
-                message=message,
-                domainsid=domainsid,
-                schema=schema,
-                hostname=hostname,
-                ldapadminpass=ldapadminpass,
-                slapd_path=slapd_path,
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+            credentials=None, names=None, message=None, domainsid=None,
+            schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=False,
+            ol_mmr_urls=None, nosync=False):
+
+        super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
+                paths=paths, setup_path=setup_path, lp=lp,
+                credentials=credentials, names=names, message=message,
+                domainsid=domainsid, schema=schema, hostname=hostname,
+                ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
                 ldap_dryrun_mode=ldap_dryrun_mode)
 
@@ -290,11 +277,8 @@ class OpenLDAPBackend(LDAPBackend):
         self.olcdir             = os.path.join(self.ldapdir, "slapd.d")
         self.olcseedldif        = os.path.join(self.ldapdir, "olc_seed.ldif")
 
-        self.schema = Schema(
-                self.setup_path,
-                self.domainsid,
-                schemadn=self.names.schemadn,
-                serverdn=self.names.serverdn,
+        self.schema = Schema(self.setup_path, self.domainsid,
+                schemadn=self.names.schemadn, serverdn=self.names.serverdn,
                 files=[setup_path("schema_samba4.ldif")])
 
     def setup_db_config(self, dbdir):
@@ -307,10 +291,11 @@ class OpenLDAPBackend(LDAPBackend):
             if not os.path.isdir(os.path.join(dbdir, "tmp")):
                 os.makedirs(os.path.join(dbdir, "tmp"), 0700)
 
-        setup_file(self.setup_path("DB_CONFIG"), os.path.join(dbdir, "DB_CONFIG"),
-                   {"LDAPDBDIR": dbdir})
+        setup_file(self.setup_path("DB_CONFIG"),
+            os.path.join(dbdir, "DB_CONFIG"), {"LDAPDBDIR": dbdir})
 
     def provision(self):
+        from samba.provision import ProvisioningError
         # Wipe the directories so we can start
         shutil.rmtree(os.path.join(self.ldapdir, "db"), True)
 
@@ -350,7 +335,6 @@ class OpenLDAPBackend(LDAPBackend):
         mmr_syncrepl_schema_config = "" 
         mmr_syncrepl_config_config = "" 
         mmr_syncrepl_user_config = "" 
-       
     
         if self.ol_mmr_urls is not None:
             # For now, make these equal
@@ -485,7 +469,8 @@ class OpenLDAPBackend(LDAPBackend):
             if self.ol_mmr_urls is None:
                 server_port_string = "ldap://0.0.0.0:%d" % self.ldap_backend_extra_port
             else:
-                server_port_string = "ldap://" + self.names.hostname + "." + self.names.dnsdomain +":%d" % self.ldap_backend_extra_port
+                server_port_string = "ldap://%s.%s:%d" (self.names.hostname,
+                    self.names.dnsdomain, self.ldap_backend_extra_port)
         else:
             server_port_string = ""
 
@@ -537,29 +522,18 @@ class OpenLDAPBackend(LDAPBackend):
 
 
 class FDSBackend(LDAPBackend):
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None, credentials=None,
-                 names=None, message=None,
-                 domainsid=None,
-                 schema=None,
-                 hostname=None,
-                 ldapadminpass=None,
-                 slapd_path=None,
-                 ldap_backend_extra_port=None,
-                 ldap_dryrun_mode=False,
-                 root=None,
-                 setup_ds_path=None):
 
-        super(FDSBackend, self).__init__(
-                backend_type=backend_type,
-                paths=paths, setup_path=setup_path,
-                lp=lp, credentials=credentials,
-                names=names,
-                message=message,
-                domainsid=domainsid,
-                schema=schema,
-                hostname=hostname,
-                ldapadminpass=ldapadminpass,
-                slapd_path=slapd_path,
+    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+            credentials=None, names=None, message=None, domainsid=None,
+            schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
+            setup_ds_path=None):
+
+        super(FDSBackend, self).__init__(backend_type=backend_type,
+                paths=paths, setup_path=setup_path, lp=lp,
+                credentials=credentials, names=names, message=message,
+                domainsid=domainsid, schema=schema, hostname=hostname,
+                ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
                 ldap_dryrun_mode=ldap_dryrun_mode)
 
@@ -600,6 +574,7 @@ class FDSBackend(LDAPBackend):
                 prefixmap=["1000:1.3.6.1.4.1.7165.2.1", "1001:1.3.6.1.4.1.7165.2.2"])
 
     def provision(self):
+        from samba.provision import ProvisioningError
         if self.ldap_backend_extra_port is not None:
             serverport = "ServerPort=%d" % self.ldap_backend_extra_port
         else:
@@ -616,7 +591,8 @@ class FDSBackend(LDAPBackend):
                     "LDAPMANAGERPASS": self.ldapadminpass, 
                     "SERVERPORT": serverport})
 
-        setup_file(self.setup_path("fedorads-partitions.ldif"), self.partitions_ldif, 
+        setup_file(self.setup_path("fedorads-partitions.ldif"),
+            self.partitions_ldif, 
                    {"CONFIGDN": self.names.configdn,
                     "SCHEMADN": self.names.schemadn,
                     "SAMBADN": self.sambadn,

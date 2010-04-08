@@ -31,8 +31,8 @@ from samba import Ldb
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
-from samba.provision import ProvisionNames, provision_paths_from_lp, FILL_FULL, provision
-from samba.provisionexceptions import ProvisioningError
+from samba.provision import (ProvisionNames, provision_paths_from_lp,
+    FILL_FULL, provision, ProvisioningError)
 from samba.dcerpc import misc, security
 from samba.ndr import ndr_unpack
 
@@ -61,7 +61,8 @@ def get_paths(param, targetdir=None, smbconf=None):
     return paths
 
 
-def find_provision_key_parameters(param, credentials, session_info, paths, smbconf):
+def find_provision_key_parameters(param, credentials, session_info, paths,
+        smbconf):
     """Get key provision parameters (realm, domain, ...) from a given provision
 
     :param param: Param object
@@ -82,10 +83,10 @@ def find_provision_key_parameters(param, credentials, session_info, paths, smbco
     names.dnsdomain = names.realm
     names.realm = string.upper(names.realm)
     # netbiosname
-    secrets_ldb = Ldb(paths.secrets, session_info=session_info, credentials=credentials,lp=lp, options=["modules:samba_secrets"])
+    secrets_ldb = Ldb(paths.secrets, session_info=session_info,
+        credentials=credentials,lp=lp, options=["modules:samba_secrets"])
     # Get the netbiosname first (could be obtained from smb.conf in theory)
-    attrs = ["sAMAccountName"]
-    res = secrets_ldb.search(expression="(flatname=%s)"%names.domain,base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=attrs)
+    res = secrets_ldb.search(expression="(flatname=%s)"%names.domain,base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
     names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
     names.smbconf = smbconf
@@ -96,8 +97,7 @@ def find_provision_key_parameters(param, credentials, session_info, paths, smbco
 
     # That's a bit simplistic but it's ok as long as we have only 3
     # partitions
-    attrs2 = ["defaultNamingContext", "schemaNamingContext","configurationNamingContext","rootDomainNamingContext"]
-    current = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=attrs2)
+    current = samdb.search(expression="(objectClass=*)",base="", scope=SCOPE_BASE, attrs=["defaultNamingContext", "schemaNamingContext","configurationNamingContext","rootDomainNamingContext"])
 
     names.configdn = current[0]["configurationNamingContext"]
     configdn = str(names.configdn)
@@ -108,27 +108,28 @@ def find_provision_key_parameters(param, credentials, session_info, paths, smbco
     names.domaindn=current[0]["defaultNamingContext"]
     names.rootdn=current[0]["rootDomainNamingContext"]
     # default site name
-    attrs3 = ["cn"]
-    res3= samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=attrs3)
+    res3= samdb.search(expression="(objectClass=*)",base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
     # dns hostname and server dn
-    attrs4 = ["dNSHostName"]
     res4= samdb.search(expression="(CN=%s)"%names.netbiosname,base="OU=Domain Controllers,"+basedn, \
-                        scope=SCOPE_ONELEVEL, attrs=attrs4)
+                        scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
     names.hostname = str(res4[0]["dNSHostName"]).replace("."+names.dnsdomain,"")
 
     server_res = samdb.search(expression="serverReference=%s"%res4[0].dn, attrs=[], base=configdn)
     names.serverdn = server_res[0].dn
 
     # invocation id/objectguid
-    res5 = samdb.search(expression="(objectClass=*)",base="CN=NTDS Settings,%s" % str(names.serverdn), scope=SCOPE_BASE, attrs=["invocationID","objectGUID"])
-    names.invocation = str(ndr_unpack( misc.GUID,res5[0]["invocationId"][0]))
-    names.ntdsguid = str(ndr_unpack( misc.GUID,res5[0]["objectGUID"][0]))
+    res5 = samdb.search(expression="(objectClass=*)",
+            base="CN=NTDS Settings,%s" % str(names.serverdn), scope=SCOPE_BASE,
+            attrs=["invocationID", "objectGUID"])
+    names.invocation = str(ndr_unpack(misc.GUID, res5[0]["invocationId"][0]))
+    names.ntdsguid = str(ndr_unpack(misc.GUID, res5[0]["objectGUID"][0]))
 
     # domain guid/sid
-    attrs6 = ["objectGUID", "objectSid","msDS-Behavior-Version" ]
-    res6 = samdb.search(expression="(objectClass=*)",base=basedn, scope=SCOPE_BASE, attrs=attrs6)
+    res6 = samdb.search(expression="(objectClass=*)",base=basedn,
+            scope=SCOPE_BASE, attrs=["objectGUID",
+                "objectSid","msDS-Behavior-Version" ])
     names.domainguid = str(ndr_unpack( misc.GUID,res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack( security.dom_sid,res6[0]["objectSid"][0])
     if res6[0].get("msDS-Behavior-Version") == None or int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
@@ -137,14 +138,12 @@ def find_provision_key_parameters(param, credentials, session_info, paths, smbco
         names.domainlevel = int(res6[0]["msDS-Behavior-Version"][0])
 
     # policy guid
-    attrs7 = ["cn","displayName"]
     res7 = samdb.search(expression="(displayName=Default Domain Policy)",base="CN=Policies,CN=System,"+basedn, \
-                            scope=SCOPE_ONELEVEL, attrs=attrs7)
+                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
     names.policyid = str(res7[0]["cn"]).replace("{","").replace("}","")
     # dc policy guid
-    attrs8 = ["cn","displayName"]
     res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",base="CN=Policies,CN=System,"+basedn, \
-                            scope=SCOPE_ONELEVEL, attrs=attrs8)
+                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
     if len(res8) == 1:
         names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
     else:
@@ -194,9 +193,12 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
 
 
 def dn_sort(x,y):
-    """Sorts two DNs in the lexicographical order it and put higher level DN before.
+    """Sorts two DNs in the lexicographical order it and put higher level DN
+    before.
 
-    So given the dns cn=bar,cn=foo and cn=foo the later will be return as smaller
+    So given the dns cn=bar,cn=foo and cn=foo the later will be return as
+    smaller
+
     :param x: First object to compare
     :param y: Second object to compare
     """

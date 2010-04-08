@@ -34,13 +34,12 @@ import samba.ntacls
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session
 import samba.getopt as options
-from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, find_setup_dir
+from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, find_setup_dir, ProvisioningError
 from samba.dsdb import (
 	DS_DOMAIN_FUNCTION_2003,
 	DS_DOMAIN_FUNCTION_2008,
 	DS_DOMAIN_FUNCTION_2008_R2,
 	)
-from samba.provisionexceptions import ProvisioningError
 
 # how do we make this case insensitive??
 
@@ -118,7 +117,7 @@ parser.add_option("--slapd-path", type="string", metavar="SLAPD-PATH",
 parser.add_option("--setup-ds-path", type="string", metavar="SETUP_DS-PATH", 
 		help="Path to setup-ds.pl script for Fedora DS LDAP backend [e.g.:'/usr/sbin/setup-ds.pl']. Required for Setup with Fedora DS backend.") 
 parser.add_option("--nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true")
-parser.add_option("--use-xattrs", type="choice", choices=["yes","no","auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities")
+parser.add_option("--use-xattrs", type="choice", choices=["yes","no","auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto")
 parser.add_option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not run any binaries and exit early.  Used only for the test environment.  DO NOT USE", action="store_true")
 
 opts = parser.parse_args()[0]
@@ -210,16 +209,14 @@ if opts.blank:
 elif opts.partitions_only:
     samdb_fill = FILL_DRS
 
-if not opts.use_xattrs:
-	opts.use_xattrs="auto"
-
 eadb = True
 if opts.use_xattrs == "yes":
 	eadb = False
 elif opts.use_xattrs == "auto":
-	file=tempfile.NamedTemporaryFile()
+	file = tempfile.NamedTemporaryFile()
 	try:
-		samba.ntacls.setntacl(lp,file.name,"O:S-1-5-32G:S-1-5-32","S-1-5-32","native")
+		samba.ntacls.setntacl(lp, file.name, 
+			"O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
 		eadb = False
 	except:
 		if lp.get("posix:eadb") == None:

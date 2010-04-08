@@ -114,7 +114,7 @@ class cmd_domainlevel(Command):
             raise CommandError("Could not retrieve the actual domain, forest level and/or lowest DC function level!")
 
         if subcommand == "show":
-            self.message("Domain and forest function level for domain '" + domain_dn + "'")
+            self.message("Domain and forest function level for domain '%s'" % domain_dn)
             if level_forest < DS_DOMAIN_FUNCTION_2003:
                 self.message("\nATTENTION: You run SAMBA 4 on a forest function level lower than Windows 2003 (Native). This isn't supported! Please raise!")
             if level_domain < DS_DOMAIN_FUNCTION_2003:

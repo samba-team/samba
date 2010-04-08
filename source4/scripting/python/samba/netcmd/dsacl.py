@@ -57,7 +57,8 @@ class cmd_ds_acl_set(Command):
         }
 
     takes_options = [
-        Option("--host", help="LDB URL for database or target server", type=str),
+        Option("--host", help="LDB URL for database or target server",
+            type=str),
         Option("--car", type="choice", choices=["change-rid",
                                                 "change-pdc",
                                                 "change-infrastructure",
@@ -74,12 +75,15 @@ class cmd_ds_acl_set(Command):
                help=car_help),
         Option("--action", type="choice", choices=["allow", "deny"],
                 help="""Deny or allow access"""),
-        Option("--objectdn", help="DN of the object whose SD to modify", type="string"),
-        Option("--trusteedn", help="DN of the entity that gets access", type="string"),
+        Option("--objectdn", help="DN of the object whose SD to modify",
+            type="string"),
+        Option("--trusteedn", help="DN of the entity that gets access",
+            type="string"),
         ]
 
     def find_trustee_sid(self, samdb, trusteedn):
-        res = samdb.search(base=trusteedn, expression="(objectClass=*)", scope=SCOPE_BASE)
+        res = samdb.search(base=trusteedn, expression="(objectClass=*)",
+            scope=SCOPE_BASE)
         assert(len(res) == 1)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
@@ -93,18 +97,20 @@ class cmd_ds_acl_set(Command):
         samdb.modify(m)
 
     def read_descriptor(self, samdb, object_dn):
-        res = samdb.search(base=object_dn, scope=SCOPE_BASE, attrs=["nTSecurityDescriptor"])
+        res = samdb.search(base=object_dn, scope=SCOPE_BASE,
+                attrs=["nTSecurityDescriptor"])
         # we should theoretically always have an SD
         assert(len(res) == 1)
         desc = res[0]["nTSecurityDescriptor"][0]
         return ndr_unpack(security.descriptor, desc)
 
     def get_domain_sid(self, samdb):
-        res = samdb.search(base=SamDB.domain_dn(samdb), expression="(objectClass=*)", scope=SCOPE_BASE)
+        res = samdb.search(base=SamDB.domain_dn(samdb),
+                expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
-    #add new ace explicitly
     def add_ace(self, samdb, object_dn, new_ace):
+        """Add new ace explicitly."""
         desc = self.read_descriptor(samdb, object_dn)
         desc_sddl = desc.as_sddl(self.get_domain_sid(samdb))
         #TODO add bindings for descriptor manipulation and get rid of this
@@ -163,6 +169,7 @@ class cmd_ds_acl_set(Command):
         self.print_new_acl(samdb, objectdn)
         self.add_ace(samdb, objectdn, new_ace)
         self.print_new_acl(samdb, objectdn)
+
 
 class cmd_ds_acl(SuperCommand):
     """DS ACLs manipulation"""
