@@ -634,4 +634,19 @@ struct winreg_QueryMultipleValues2 {
 
 };
 
+
+struct winreg_DeleteKeyEx {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *key;/* [ref] */
+		uint32_t access_mask;
+		uint32_t reserved;
+	} in;
+
+	struct {
+		WERROR result;
+	} out;
+
+};
+
 #endif /* _HEADER_winreg */

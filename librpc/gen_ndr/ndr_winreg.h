@@ -81,7 +81,9 @@ extern const struct ndr_interface_table ndr_table_winreg;
 
 #define NDR_WINREG_QUERYMULTIPLEVALUES2 (0x22)
 
-#define NDR_WINREG_CALL_COUNT (35)
+#define NDR_WINREG_DELETEKEYEX (0x23)
+
+#define NDR_WINREG_CALL_COUNT (36)
 void ndr_print_winreg_AccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_winreg_String(struct ndr_push *ndr, int ndr_flags, const struct winreg_String *r);
 enum ndr_err_code ndr_pull_winreg_String(struct ndr_pull *ndr, int ndr_flags, struct winreg_String *r);
@@ -160,4 +162,5 @@ void ndr_print_winreg_SaveKeyEx(struct ndr_print *ndr, const char *name, int fla
 void ndr_print_winreg_OpenHKPT(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKPT *r);
 void ndr_print_winreg_OpenHKPN(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKPN *r);
 void ndr_print_winreg_QueryMultipleValues2(struct ndr_print *ndr, const char *name, int flags, const struct winreg_QueryMultipleValues2 *r);
+void ndr_print_winreg_DeleteKeyEx(struct ndr_print *ndr, const char *name, int flags, const struct winreg_DeleteKeyEx *r);
 #endif /* _HEADER_NDR_winreg */

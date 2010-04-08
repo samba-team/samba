@@ -4407,6 +4407,85 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues2(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_winreg_DeleteKeyEx(struct ndr_push *ndr, int flags, const struct winreg_DeleteKeyEx *r)
+{
+	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		if (r->in.key == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.key));
+		NDR_CHECK(ndr_push_winreg_AccessMask(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.reserved));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_winreg_DeleteKeyEx(struct ndr_pull *ndr, int flags, struct winreg_DeleteKeyEx *r)
+{
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_key_0;
+	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.key);
+		}
+		_mem_save_key_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.key, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.key));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_key_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_winreg_AccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.reserved));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_winreg_DeleteKeyEx(struct ndr_print *ndr, const char *name, int flags, const struct winreg_DeleteKeyEx *r)
+{
+	ndr_print_struct(ndr, name, "winreg_DeleteKeyEx");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "winreg_DeleteKeyEx");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "key", r->in.key);
+		ndr->depth++;
+		ndr_print_winreg_String(ndr, "key", r->in.key);
+		ndr->depth--;
+		ndr_print_winreg_AccessMask(ndr, "access_mask", r->in.access_mask);
+		ndr_print_uint32(ndr, "reserved", r->in.reserved);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "winreg_DeleteKeyEx");
+		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 static const struct ndr_interface_call winreg_calls[] = {
 	{
 		"winreg_OpenHKCR",
@@ -4688,6 +4767,14 @@ static const struct ndr_interface_call winreg_calls[] = {
 		(ndr_print_function_t) ndr_print_winreg_QueryMultipleValues2,
 		false,
 	},
+	{
+		"winreg_DeleteKeyEx",
+		sizeof(struct winreg_DeleteKeyEx),
+		(ndr_push_flags_fn_t) ndr_push_winreg_DeleteKeyEx,
+		(ndr_pull_flags_fn_t) ndr_pull_winreg_DeleteKeyEx,
+		(ndr_print_function_t) ndr_print_winreg_DeleteKeyEx,
+		false,
+	},
 	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
@@ -4719,7 +4806,7 @@ const struct ndr_interface_table ndr_table_winreg = {
 		NDR_WINREG_VERSION
 	},
 	.helpstring	= NDR_WINREG_HELPSTRING,
-	.num_calls	= 35,
+	.num_calls	= 36,
 	.calls		= winreg_calls,
 	.endpoints	= &winreg_endpoints,
 	.authservices	= &winreg_authservices

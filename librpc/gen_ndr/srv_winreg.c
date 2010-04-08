@@ -2719,6 +2719,79 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 	return true;
 }
 
+static bool api_winreg_DeleteKeyEx(pipes_struct *p)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct winreg_DeleteKeyEx *r;
+
+	call = &ndr_table_winreg.calls[NDR_WINREG_DELETEKEYEX];
+
+	r = talloc(talloc_tos(), struct winreg_DeleteKeyEx);
+	if (r == NULL) {
+		return false;
+	}
+
+	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull = ndr_pull_init_blob(&blob, r, NULL);
+	if (pull == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(winreg_DeleteKeyEx, r);
+	}
+
+	r->out.result = _winreg_DeleteKeyEx(p, r);
+
+	if (p->rng_fault_state) {
+		talloc_free(r);
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(winreg_DeleteKeyEx, r);
+	}
+
+	push = ndr_push_init_ctx(r, NULL);
+	if (push == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(r);
+		return false;
+	}
+
+	blob = ndr_push_blob(push);
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
+		talloc_free(r);
+		return false;
+	}
+
+	talloc_free(r);
+
+	return true;
+}
+
 
 /* Tables */
 static struct api_struct api_winreg_cmds[] = 
@@ -2758,6 +2831,7 @@ static struct api_struct api_winreg_cmds[] =
 	{"WINREG_OPENHKPT", NDR_WINREG_OPENHKPT, api_winreg_OpenHKPT},
 	{"WINREG_OPENHKPN", NDR_WINREG_OPENHKPN, api_winreg_OpenHKPN},
 	{"WINREG_QUERYMULTIPLEVALUES2", NDR_WINREG_QUERYMULTIPLEVALUES2, api_winreg_QueryMultipleValues2},
+	{"WINREG_DELETEKEYEX", NDR_WINREG_DELETEKEYEX, api_winreg_DeleteKeyEx},
 };
 
 void winreg_get_pipe_fns(struct api_struct **fns, int *n_fns)
@@ -3119,6 +3193,12 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_WINREG_QUERYMULTIPLEVALUES2: {
 			struct winreg_QueryMultipleValues2 *r = (struct winreg_QueryMultipleValues2 *)_r;
 			r->out.result = _winreg_QueryMultipleValues2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_DELETEKEYEX: {
+			struct winreg_DeleteKeyEx *r = (struct winreg_DeleteKeyEx *)_r;
+			r->out.result = _winreg_DeleteKeyEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

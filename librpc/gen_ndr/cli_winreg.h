@@ -576,4 +576,21 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2_recv(struct tevent_req *req,
 NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    WERROR *werror);
+struct tevent_req *rpccli_winreg_DeleteKeyEx_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  struct policy_handle *_handle /* [in] [ref] */,
+						  struct winreg_String *_key /* [in] [ref] */,
+						  uint32_t _access_mask /* [in]  */,
+						  uint32_t _reserved /* [in]  */);
+NTSTATUS rpccli_winreg_DeleteKeyEx_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result);
+NTSTATUS rpccli_winreg_DeleteKeyEx(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   struct policy_handle *handle /* [in] [ref] */,
+				   struct winreg_String *key /* [in] [ref] */,
+				   uint32_t access_mask /* [in]  */,
+				   uint32_t reserved /* [in]  */,
+				   WERROR *werror);
 #endif /* __CLI_WINREG__ */

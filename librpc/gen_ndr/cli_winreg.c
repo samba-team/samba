@@ -5490,3 +5490,153 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
+struct rpccli_winreg_DeleteKeyEx_state {
+	struct winreg_DeleteKeyEx orig;
+	struct winreg_DeleteKeyEx tmp;
+	TALLOC_CTX *out_mem_ctx;
+	NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+};
+
+static void rpccli_winreg_DeleteKeyEx_done(struct tevent_req *subreq);
+
+struct tevent_req *rpccli_winreg_DeleteKeyEx_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct rpc_pipe_client *cli,
+						  struct policy_handle *_handle /* [in] [ref] */,
+						  struct winreg_String *_key /* [in] [ref] */,
+						  uint32_t _access_mask /* [in]  */,
+						  uint32_t _reserved /* [in]  */)
+{
+	struct tevent_req *req;
+	struct rpccli_winreg_DeleteKeyEx_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_winreg_DeleteKeyEx_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->out_mem_ctx = NULL;
+	state->dispatch_recv = cli->dispatch_recv;
+
+	/* In parameters */
+	state->orig.in.handle = _handle;
+	state->orig.in.key = _key;
+	state->orig.in.access_mask = _access_mask;
+	state->orig.in.reserved = _reserved;
+
+	/* Out parameters */
+
+	/* Result */
+	ZERO_STRUCT(state->orig.out.result);
+
+	/* make a temporary copy, that we pass to the dispatch function */
+	state->tmp = state->orig;
+
+	subreq = cli->dispatch_send(state, ev, cli,
+				    &ndr_table_winreg,
+				    NDR_WINREG_DELETEKEYEX,
+				    &state->tmp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_winreg_DeleteKeyEx_done, req);
+	return req;
+}
+
+static void rpccli_winreg_DeleteKeyEx_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpccli_winreg_DeleteKeyEx_state *state = tevent_req_data(
+		req, struct rpccli_winreg_DeleteKeyEx_state);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	if (state->out_mem_ctx) {
+		mem_ctx = state->out_mem_ctx;
+	} else {
+		mem_ctx = state;
+	}
+
+	status = state->dispatch_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/* Copy out parameters */
+
+	/* Copy result */
+	state->orig.out.result = state->tmp.out.result;
+
+	/* Reset temporary structure */
+	ZERO_STRUCT(state->tmp);
+
+	tevent_req_done(req);
+}
+
+NTSTATUS rpccli_winreg_DeleteKeyEx_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					WERROR *result)
+{
+	struct rpccli_winreg_DeleteKeyEx_state *state = tevent_req_data(
+		req, struct rpccli_winreg_DeleteKeyEx_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/* Steal possbile out parameters to the callers context */
+	talloc_steal(mem_ctx, state->out_mem_ctx);
+
+	/* Return result */
+	*result = state->orig.out.result;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_winreg_DeleteKeyEx(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   struct policy_handle *handle /* [in] [ref] */,
+				   struct winreg_String *key /* [in] [ref] */,
+				   uint32_t access_mask /* [in]  */,
+				   uint32_t reserved /* [in]  */,
+				   WERROR *werror)
+{
+	struct winreg_DeleteKeyEx r;
+	NTSTATUS status;
+
+	/* In parameters */
+	r.in.handle = handle;
+	r.in.key = key;
+	r.in.access_mask = access_mask;
+	r.in.reserved = reserved;
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_winreg,
+				NDR_WINREG_DELETEKEYEX,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+
+	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
+}
