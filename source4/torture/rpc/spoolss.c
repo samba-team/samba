@@ -3843,6 +3843,26 @@ static bool test_GetForm_winreg(struct torture_context *tctx,
 	return true;
 }
 
+static const char *strip_unc(const char *unc)
+{
+	char *name;
+
+	if (!unc) {
+		return NULL;
+	}
+
+	if (unc[0] == '\\' && unc[1] == '\\') {
+		unc +=2;
+	}
+
+	name = strchr(unc, '\\');
+	if (name) {
+		return name+1;
+	}
+
+	return unc;
+}
+
 static bool test_GetPrinterInfo_winreg(struct torture_context *tctx,
 				       struct dcerpc_binding_handle *b,
 				       struct policy_handle *handle,
@@ -3856,12 +3876,16 @@ static bool test_GetPrinterInfo_winreg(struct torture_context *tctx,
 		TOP_LEVEL_PRINT_PRINTERS_KEY
 	};
 	int i;
+	const char *printername, *sharename;
 
 	torture_comment(tctx, "Testing Printer Info and winreg consistency\n");
 
 	torture_assert(tctx,
 		test_GetPrinter_level(tctx, b, handle, 2, &info),
 		"failed to get printer info level 2");
+
+	printername = strip_unc(info.info2.printername);
+	sharename = strip_unc(info.info2.sharename);
 
 #define test_sz(key, wname, iname) \
 do {\
@@ -3960,8 +3984,8 @@ do {\
 		torture_assert(tctx,
 			test_winreg_OpenKey(tctx, winreg_handle, hive_handle, printer_key, &key_handle), "");
 
-		test_sz(keys[i], "Name", info.info2.printername);
-		test_sz(keys[i], "Share Name", info.info2.sharename);
+		test_sz(keys[i], "Name", printername);
+		test_sz(keys[i], "Share Name", sharename);
 		test_sz(keys[i], "Port", info.info2.portname);
 		test_sz(keys[i], "Printer Driver", info.info2.drivername);
 		test_sz(keys[i], "Description", info.info2.comment);
