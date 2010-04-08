@@ -2579,11 +2579,10 @@ void initldb(void)
 	PyModule_AddObject(m, "ERR_AFFECTS_MULTIPLE_DSAS", PyInt_FromLong(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
 	PyModule_AddObject(m, "ERR_OTHER", PyInt_FromLong(LDB_ERR_OTHER));
 
-        PyModule_AddObject(m, "FLG_RDONLY", PyInt_FromLong(LDB_FLG_RDONLY));
-        PyModule_AddObject(m, "FLG_NOSYNC", PyInt_FromLong(LDB_FLG_NOSYNC));
-        PyModule_AddObject(m, "FLG_RECONNECT", PyInt_FromLong(LDB_FLG_RECONNECT));
-        PyModule_AddObject(m, "FLG_NOMMAP", PyInt_FromLong(LDB_FLG_NOMMAP));
-
+	PyModule_AddObject(m, "FLG_RDONLY", PyInt_FromLong(LDB_FLG_RDONLY));
+	PyModule_AddObject(m, "FLG_NOSYNC", PyInt_FromLong(LDB_FLG_NOSYNC));
+	PyModule_AddObject(m, "FLG_RECONNECT", PyInt_FromLong(LDB_FLG_RECONNECT));
+	PyModule_AddObject(m, "FLG_NOMMAP", PyInt_FromLong(LDB_FLG_NOMMAP));
 
 	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
 

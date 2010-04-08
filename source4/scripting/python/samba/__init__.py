@@ -103,7 +103,7 @@ class Ldb(_Ldb):
         if lp is not None:
             nosync_p = lp.get("nosync", "ldb")
             if nosync_p is not None and nosync_p == True:
-                flags |= FLG_NOSYNC
+                flags |= ldb.FLG_NOSYNC
 
         self.set_create_perms()
 

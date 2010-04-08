@@ -493,12 +493,12 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     :param nobody_uid: uid of the UNIX nobody user.
     :param users_gid: gid of the UNIX users group.
     :param wheel_gid: gid of the UNIX wheel group."""
-
     idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
     idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
     
     idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
+
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            provision_backend, names, schema,
