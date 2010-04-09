@@ -79,7 +79,8 @@ class Command(object):
         kwargs = dict(opts.__dict__)
         for option_group in parser.option_groups:
             for option in option_group.option_list:
-                del kwargs[option.dest]
+                if option.dest is not None:
+                    del kwargs[option.dest]
         kwargs.update(optiongroups)
         min_args = 0
         max_args = 0
