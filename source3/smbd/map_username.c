@@ -163,7 +163,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 		if ('!' == *unixname) {
 			return_if_mapped = True;
 			unixname++;
-			while (*unixname && isspace((int)*unixname))
+			while (isspace((int)*unixname))
 				unixname++;
 		}
 
