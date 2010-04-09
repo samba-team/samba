@@ -45,6 +45,12 @@ def set_options(opt):
     opt.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    opt.add_option('--picky-developer',
+                   help=("Treat all warnings as errors (enable -Werror)"),
+                   action="store_true", dest='picky_developer', default=False)
+    opt.add_option('--fatal-errors',
+                   help=("Stop compilation on first error (enable -Wfatal-errors)"),
+                   action="store_true", dest='fatal_errors', default=False)
     opt.add_option('--enable-gccdeps',
                    help=("Enable use gcc -MD dependency module"),
                    action="store_true", dest='enable_gccdeps', default=False)

@@ -541,8 +541,14 @@ def SAMBA_CONFIG_H(conf, path=None):
 
     if Options.options.developer:
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
-        conf.ADD_CFLAGS('-Wall -g -Wfatal-errors -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k',
+        conf.ADD_CFLAGS('-Wall -g -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k',
                         testflags=True)
+
+    if Options.options.picky_developer:
+        conf.ADD_CFLAGS('-Werror', testflags=True)
+
+    if Options.options.fatal_errors:
+        conf.ADD_CFLAGS('-Wfatal-errors', testflags=True)
 
     if Options.options.pedantic:
         conf.ADD_CFLAGS('-W', testflags=True)
