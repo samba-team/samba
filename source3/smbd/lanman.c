@@ -547,6 +547,19 @@ static int printj_status(int v)
 	return 0;
 }
 
+static int printj_spoolss_status(int v)
+{
+	if (v == JOB_STATUS_QUEUED)
+		return RAP_JOB_STATUS_QUEUED;
+	if (v & JOB_STATUS_PAUSED)
+		return RAP_JOB_STATUS_PAUSED;
+	if (v & JOB_STATUS_SPOOLING)
+		return RAP_JOB_STATUS_SPOOLING;
+	if (v & JOB_STATUS_PRINTING)
+		return RAP_JOB_STATUS_PRINTING;
+	return 0;
+}
+
 /* turn a print queue status into a on the wire status 
 */
 static int printq_status(int v)
@@ -598,6 +611,80 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 			PACKS(desc,"z","");	/* pszParms */
 			PACKS(desc,"z","");	/* pszStatus */
 			PACKS(desc,"z",SERVICE(snum)); /* pszQueue */
+			PACKS(desc,"z","lpd");	/* pszQProcName */
+			PACKS(desc,"z","");	/* pszQProcParms */
+			PACKS(desc,"z","NULL"); /* pszDriverName */
+			PackDriverData(desc);	/* pDriverData */
+			PACKS(desc,"z","");	/* pszPrinterName */
+		} else if (uLevel == 4) {   /* OS2 */
+			PACKS(desc,"z","");       /* pszSpoolFileName  */
+			PACKS(desc,"z","");       /* pszPortName       */
+			PACKS(desc,"z","");       /* pszStatus         */
+			PACKI(desc,"D",0);        /* ulPagesSpooled    */
+			PACKI(desc,"D",0);        /* ulPagesSent       */
+			PACKI(desc,"D",0);        /* ulPagesPrinted    */
+			PACKI(desc,"D",0);        /* ulTimePrinted     */
+			PACKI(desc,"D",0);        /* ulExtendJobStatus */
+			PACKI(desc,"D",0);        /* ulStartPage       */
+			PACKI(desc,"D",0);        /* ulEndPage         */
+		}
+	}
+}
+
+static time_t spoolss_Time_to_time_t(const struct spoolss_Time *r)
+{
+	struct tm unixtime;
+
+	unixtime.tm_year	= r->year - 1900;
+	unixtime.tm_mon		= r->month - 1;
+	unixtime.tm_wday	= r->day_of_week;
+	unixtime.tm_mday	= r->day;
+	unixtime.tm_hour	= r->hour;
+	unixtime.tm_min		= r->minute;
+	unixtime.tm_sec		= r->second;
+
+	return mktime(&unixtime);
+}
+
+static void fill_spoolss_printjob_info(int uLevel,
+				       struct pack_desc *desc,
+				       struct spoolss_JobInfo2 *info2,
+				       int n)
+{
+	time_t t = spoolss_Time_to_time_t(&info2->submitted);
+
+	/* the client expects localtime */
+	t -= get_time_zone(t);
+
+	PACKI(desc,"W",pjobid_to_rap(info2->printer_name, info2->job_id)); /* uJobId */
+	if (uLevel == 1) {
+		PACKS(desc,"B21", info2->user_name); /* szUserName */
+		PACKS(desc,"B","");		/* pad */
+		PACKS(desc,"B16","");	/* szNotifyName */
+		PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
+		PACKS(desc,"z","");		/* pszParms */
+		PACKI(desc,"W",n+1);		/* uPosition */
+		PACKI(desc,"W", printj_spoolss_status(info2->status)); /* fsStatus */
+		PACKS(desc,"z","");		/* pszStatus */
+		PACKI(desc,"D", t); /* ulSubmitted */
+		PACKI(desc,"D", info2->size); /* ulSize */
+		PACKS(desc,"z", info2->document_name); /* pszComment */
+	}
+	if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
+		PACKI(desc,"W", info2->priority);		/* uPriority */
+		PACKS(desc,"z", info2->user_name); /* pszUserName */
+		PACKI(desc,"W",n+1);		/* uPosition */
+		PACKI(desc,"W", printj_spoolss_status(info2->status)); /* fsStatus */
+		PACKI(desc,"D",t); /* ulSubmitted */
+		PACKI(desc,"D", info2->size); /* ulSize */
+		PACKS(desc,"z","Samba");	/* pszComment */
+		PACKS(desc,"z", info2->document_name); /* pszDocument */
+		if (uLevel == 3) {
+			PACKS(desc,"z","");	/* pszNotifyName */
+			PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
+			PACKS(desc,"z","");	/* pszParms */
+			PACKS(desc,"z","");	/* pszStatus */
+			PACKS(desc,"z", info2->printer_name); /* pszQueue */
 			PACKS(desc,"z","lpd");	/* pszQProcName */
 			PACKS(desc,"z","");	/* pszQProcParms */
 			PACKS(desc,"z","NULL"); /* pszDriverName */
@@ -4284,12 +4371,17 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	char *p = skip_string(param,tpscnt,str2);
 	char *name = p;
 	int uLevel;
-	int count;
 	int i, succnt=0;
-	int snum;
 	struct pack_desc desc;
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	uint32_t count;
+	union spoolss_JobInfo *info;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -4319,12 +4411,49 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	snum = find_service(name);
-	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
-		return False;
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_RDosPrintJobDel: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
 
-	count = print_queue_status(snum,&queue,&status);
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    name,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	werr = rpccli_spoolss_enumjobs(cli, mem_ctx,
+				       &handle,
+				       0, /* firstjob */
+				       0xff, /* numjobs */
+				       2, /* level */
+				       0, /* offered */
+				       &count,
+				       &info);
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
 	if (mdrcnt > 0) {
 		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
@@ -4337,11 +4466,15 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	if (init_package(&desc,count,0)) {
 		succnt = 0;
 		for (i = 0; i < count; i++) {
-			fill_printjob_info(conn,snum,uLevel,&desc,&queue[i],i);
+			fill_spoolss_printjob_info(uLevel, &desc, &info[i].info2, i);
 			if (desc.errcode == NERR_Success) {
 				succnt = i+1;
 			}
 		}
+	}
+ out:
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
 	*rdata_len = desc.usedlen;
@@ -4355,8 +4488,6 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
 	SSVAL(*rparam,6,count);
-
-	SAFE_FREE(queue);
 
 	DEBUG(4,("WPrintJobEnumerate: errorcode %d\n",desc.errcode));
 
