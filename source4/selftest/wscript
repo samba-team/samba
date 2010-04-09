@@ -45,6 +45,9 @@ def set_options(opt):
     gr.add_option('--valgrind-server',
                   help=("use valgrind on the server in the tests (opens an xterm)"),
                   action="store_true", dest='VALGRIND_SERVER', default=False)
+    gr.add_option('--gdbtest',
+                  help=("run the testsuite within a gdb xterm window"),
+                  action="store_true", dest='GDBTEST', default=False)
 
 
 def cmd_testonly(opt):
@@ -87,7 +90,10 @@ def cmd_testonly(opt):
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
     if Options.options.VALGRIND_SERVER:
-        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run A=B '
+        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/valgrind_run DUMMY=X'
+
+    if Options.options.GDBTEST:
+        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/gdb_run DUMMY=X'
 
     env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
