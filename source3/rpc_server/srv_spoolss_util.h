@@ -239,6 +239,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
  *
  * @return              WERR_OK on success.
  *                      WERR_INVALID_PARAM if the form is a builtin form.
+ *                      WERR_INVALID_FORM_NAME if the form or key doesn't exist.
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
