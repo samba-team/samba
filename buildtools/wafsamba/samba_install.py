@@ -133,6 +133,9 @@ def symlink_lib(self):
     link_target = os.path.join(blddir, link_target)
 
     if os.path.lexists(link_target):
+        old_link = os.readlink(link_target)
+        if libpath == old_link:
+            return
         os.unlink(link_target)
     os.symlink(libpath, link_target)
 
@@ -150,5 +153,8 @@ def symlink_bin(self):
     bldpath = os.path.join(self.bld.env.BUILD_DIRECTORY, self.target)
 
     if os.path.lexists(bldpath):
+        old_link = os.readlink(bldpath)
+        if binpath == old_link:
+            return
         os.unlink(bldpath)
     os.symlink(binpath, bldpath)
