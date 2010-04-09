@@ -1738,6 +1738,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_pathnames,
 				const char *name_in,
+				bool allow_wcards,
 				char **pp_name_out,
 				bool *ppath_contains_wcard)
 {
@@ -1748,7 +1749,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 		status = dfs_redirect(ctx,
 					conn,
 					name_in,
-					True,
+					allow_wcards,
 					pp_name_out,
 					&path_contains_wcard);
 
