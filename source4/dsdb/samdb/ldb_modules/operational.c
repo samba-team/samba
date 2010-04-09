@@ -497,6 +497,11 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	unsigned int i, a;
 	int ret;
 
+	/* There are no operational attributes on special DNs */
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
 	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc(req, struct operational_context);
