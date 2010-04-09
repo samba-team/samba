@@ -1601,7 +1601,6 @@ static bool test_QueryMultipleValues(struct dcerpc_binding_handle *b,
 				     const char *valuename)
 {
 	struct winreg_QueryMultipleValues r;
-	NTSTATUS status;
 	uint32_t bufsize=0;
 
 	ZERO_STRUCT(r);
@@ -1621,10 +1620,9 @@ static bool test_QueryMultipleValues(struct dcerpc_binding_handle *b,
 		r.in.buffer = r.out.buffer = talloc_zero_array(tctx, uint8_t,
 							       *r.in.buffer_size);
 
-		status = dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r);
-
-		if(NT_STATUS_IS_ERR(status))
-			torture_fail(tctx, "QueryMultipleValues failed");
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r),
+			"QueryMultipleValues failed");
 
 		talloc_free(r.in.buffer);
 		bufsize += 0x20;
