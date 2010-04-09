@@ -112,8 +112,9 @@ import "lsa.idl", "security.idl", "misc.idl";
 		boolean8  inherit;
 	} winreg_SecBuf;
 
+	const int REG_OPTION_NON_VOLATILE = 0x00000000;
+
 	typedef [bitmap32bit] bitmap {
-		REG_OPTION_NON_VOLATILE		= 0x00000000,
 		REG_OPTION_VOLATILE		= 0x00000001,
 		REG_OPTION_CREATE_LINK		= 0x00000002,
 		REG_OPTION_BACKUP_RESTORE	= 0x00000004,
