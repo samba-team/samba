@@ -68,6 +68,14 @@ static bool set_last_from_to(const char *from, const char *to)
 	return true;
 }
 
+static char *skip_space(char *s)
+{
+	while (isspace((int)(*s))) {
+		s += 1;
+	}
+	return s;
+}
+
 bool map_username(struct smbd_server_connection *sconn, fstring user)
 {
 	XFILE *f;
@@ -157,14 +165,11 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 
 		*dosname++ = 0;
 
-		while (isspace((int)*unixname))
-			unixname++;
+		unixname = skip_space(unixname);
 
 		if ('!' == *unixname) {
 			return_if_mapped = True;
-			unixname++;
-			while (isspace((int)*unixname))
-				unixname++;
+			unixname = skip_space(unixname+1);
 		}
 
 		if (!*unixname || strchr_m("#;",*unixname))
