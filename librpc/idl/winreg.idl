@@ -113,10 +113,12 @@ import "lsa.idl", "security.idl", "misc.idl";
 	} winreg_SecBuf;
 
 	typedef [bitmap32bit] bitmap {
-		REG_KEYTYPE_NON_VOLATILE	= 0x00000000,
-		REG_KEYTYPE_VOLATILE		= 0x00000001,
-		REG_KEYTYPE_SYMLINK		= 0x00000002
-	} winreg_KeyType;
+		REG_OPTION_NON_VOLATILE		= 0x00000000,
+		REG_OPTION_VOLATILE		= 0x00000001,
+		REG_OPTION_CREATE_LINK		= 0x00000002,
+		REG_OPTION_BACKUP_RESTORE	= 0x00000004,
+		REG_OPTION_OPEN_LINK		= 0x00000008
+	} winreg_KeyOptions;
 
 	typedef [v1_enum] enum {
 		REG_ACTION_NONE         = 0, /* used by caller */
@@ -128,7 +130,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		[in,ref] policy_handle *handle,
 		[in] winreg_String name,
 		[in] winreg_String keyclass,
-		[in] winreg_KeyType options,
+		[in] winreg_KeyOptions options,
 		[in] winreg_AccessMask access_mask,
 		[in,unique] winreg_SecBuf *secdesc,
 		[out,ref] policy_handle *new_handle,
@@ -236,7 +238,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 	[public] WERROR winreg_OpenKey(
 		[in,ref] policy_handle *parent_handle,
 		[in] winreg_String keyname,
-		[in] winreg_KeyType options,
+		[in] winreg_KeyOptions options,
 		[in] winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
