@@ -1,0 +1,18 @@
+<samba:parameter name="username map cache time"
+                 context="G"
+                 advanced="1" developer="0"
+				 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This option controls if and how long the result of the
+      <smbconfoption name="username map"/> and
+      <smbconfoption name="username map script"/> across smbds in gencache.
+      If set to non-zero, it denotes the number of seconds the output of
+      both mappings will be cached.</para>
+    <para>This option is mainly useful for heavy-weight
+      <smbconfoption name="username map script"/> scripts.</para>
+</description>
+
+<value type="default">0</value>
+<value type="example">60</value>
+</samba:parameter>

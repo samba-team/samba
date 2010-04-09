@@ -76,6 +76,48 @@ static char *skip_space(char *s)
 	return s;
 }
 
+static bool fetch_map_from_gencache(fstring user)
+{
+	char *key, *value;
+	bool found;
+
+	if (lp_username_map_cache_time() == 0) {
+		return false;
+	}
+
+	key = talloc_asprintf_strupper_m(talloc_tos(), "USERNAME_MAP/%s",
+					 user);
+	if (key == NULL) {
+		return false;
+	}
+	found = gencache_get(key, &value, NULL);
+	TALLOC_FREE(key);
+	if (!found) {
+		return false;
+	}
+	fstrcpy(user, value);
+	SAFE_FREE(value);
+	return true;
+}
+
+static void store_map_in_gencache(const char *from, const char *to)
+{
+	char *key;
+	int cache_time = lp_username_map_cache_time();
+
+	if (cache_time == 0) {
+		return;
+	}
+
+	key = talloc_asprintf_strupper_m(talloc_tos(), "USERNAME_MAP/%s",
+					 from);
+        if (key == NULL) {
+                return;
+        }
+	gencache_set(key, to, cache_time + time(NULL));
+	TALLOC_FREE(key);
+}
+
 bool map_username(struct smbd_server_connection *sconn, fstring user)
 {
 	XFILE *f;
@@ -94,6 +136,10 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 	if (strequal(user,get_last_from())) {
 		DEBUG(3,("Mapped user %s to %s\n",user,get_last_to()));
 		fstrcpy(user,get_last_to());
+		return true;
+	}
+
+	if (fetch_map_from_gencache(user)) {
 		return true;
 	}
 
@@ -134,6 +180,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 		if (numlines && qlines) {
 			DEBUG(3,("Mapped user %s to %s\n", user, qlines[0] ));
 			set_last_from_to(user, qlines[0]);
+			store_map_in_gencache(user, qlines[0]);
 			fstrcpy( user, qlines[0] );
 		}
 
@@ -197,6 +244,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 			mapped_user = True;
 
 			set_last_from_to(user, unixname);
+			store_map_in_gencache(user, unixname);
 			fstrcpy( user, unixname );
 
 			if ( return_if_mapped ) {
@@ -217,6 +265,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 	 */
 
 	set_last_from_to(user, user);
+	store_map_in_gencache(user, user);
 
 	return mapped_user;
 }

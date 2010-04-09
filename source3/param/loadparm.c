@@ -181,6 +181,7 @@ struct global {
 	char *szShutdownScript;
 	char *szAbortShutdownScript;
 	char *szUsernameMapScript;
+	int iUsernameMapCacheTime;
 	char *szCheckPasswordScript;
 	char *szWINSHook;
 	char *szUtmpDir;
@@ -3291,6 +3292,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "username map cache time",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.iUsernameMapCacheTime,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "logon script",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -5494,6 +5504,7 @@ FN_GLOBAL_STRING(lp_addmachine_script, &Globals.szAddMachineScript)
 FN_GLOBAL_STRING(lp_shutdown_script, &Globals.szShutdownScript)
 FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
 FN_GLOBAL_STRING(lp_username_map_script, &Globals.szUsernameMapScript)
+FN_GLOBAL_INTEGER(lp_username_map_cache_time, &Globals.iUsernameMapCacheTime)
 
 FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 

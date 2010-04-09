@@ -3998,6 +3998,7 @@ char *lp_addmachine_script(void);
 char *lp_shutdown_script(void);
 char *lp_abort_shutdown_script(void);
 char *lp_username_map_script(void);
+int lp_username_map_cache_time(void);
 char *lp_check_password_script(void);
 char *lp_wins_hook(void);
 const char *lp_template_homedir(void);
