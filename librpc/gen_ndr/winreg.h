@@ -42,20 +42,10 @@ struct winreg_SecBuf {
 	uint8_t inherit;
 };
 
-enum winreg_KeyType
-#ifndef USE_UINT_ENUMS
- {
-	REG_KEYTYPE_NON_VOLATILE=(int)(0x00000000),
-	REG_KEYTYPE_VOLATILE=(int)(0x00000001),
-	REG_KEYTYPE_SYMLINK=(int)(0x00000002)
-}
-#else
- { __donnot_use_enum_winreg_KeyType=0x7FFFFFFF}
+/* bitmap winreg_KeyType */
 #define REG_KEYTYPE_NON_VOLATILE ( 0x00000000 )
 #define REG_KEYTYPE_VOLATILE ( 0x00000001 )
 #define REG_KEYTYPE_SYMLINK ( 0x00000002 )
-#endif
-;
 
 enum winreg_CreateAction
 #ifndef USE_UINT_ENUMS
@@ -192,7 +182,7 @@ struct winreg_CreateKey {
 		struct policy_handle *handle;/* [ref] */
 		struct winreg_String name;
 		struct winreg_String keyclass;
-		enum winreg_KeyType options;
+		uint32_t options;
 		uint32_t access_mask;
 		struct winreg_SecBuf *secdesc;/* [unique] */
 		enum winreg_CreateAction *action_taken;/* [unique] */
@@ -338,7 +328,7 @@ struct winreg_OpenKey {
 	struct {
 		struct policy_handle *parent_handle;/* [ref] */
 		struct winreg_String keyname;
-		enum winreg_KeyType options;
+		uint32_t options;
 		uint32_t access_mask;
 	} in;
 

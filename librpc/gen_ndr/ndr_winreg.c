@@ -217,30 +217,28 @@ _PUBLIC_ void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_KeyType(struct ndr_push *ndr, int ndr_flags, enum winreg_KeyType r)
+static enum ndr_err_code ndr_push_winreg_KeyType(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
-	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_KeyType(struct ndr_pull *ndr, int ndr_flags, enum winreg_KeyType *r)
+static enum ndr_err_code ndr_pull_winreg_KeyType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_winreg_KeyType(struct ndr_print *ndr, const char *name, enum winreg_KeyType r)
+_PUBLIC_ void ndr_print_winreg_KeyType(struct ndr_print *ndr, const char *name, uint32_t r)
 {
-	const char *val = NULL;
-
-	switch (r) {
-		case REG_KEYTYPE_NON_VOLATILE: val = "REG_KEYTYPE_NON_VOLATILE"; break;
-		case REG_KEYTYPE_VOLATILE: val = "REG_KEYTYPE_VOLATILE"; break;
-		case REG_KEYTYPE_SYMLINK: val = "REG_KEYTYPE_SYMLINK"; break;
-	}
-	ndr_print_enum(ndr, name, "ENUM", val, r);
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_KEYTYPE_NON_VOLATILE", REG_KEYTYPE_NON_VOLATILE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_KEYTYPE_VOLATILE", REG_KEYTYPE_VOLATILE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_KEYTYPE_SYMLINK", REG_KEYTYPE_SYMLINK, r);
+	ndr->depth--;
 }
 
 static enum ndr_err_code ndr_push_winreg_CreateAction(struct ndr_push *ndr, int ndr_flags, enum winreg_CreateAction r)
