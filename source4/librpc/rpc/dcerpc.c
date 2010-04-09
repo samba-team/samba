@@ -611,6 +611,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 	if ((pkt->ptype != DCERPC_PKT_BIND_ACK) ||
 	    (pkt->u.bind_ack.num_results == 0) ||
 	    (pkt->u.bind_ack.ctx_list[0].result != 0)) {
+		req->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
 		return;
 	}
@@ -1584,9 +1585,17 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 		return;
 	}
 
+	if (pkt->ptype == DCERPC_PKT_FAULT) {
+		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt->u.fault.status)));
+		recv_pipe->last_fault_code = pkt->u.fault.status;
+		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
 	if (pkt->ptype != DCERPC_PKT_ALTER_RESP ||
 	    pkt->u.alter_resp.num_results == 0 ||
 	    pkt->u.alter_resp.ctx_list[0].result != 0) {
+		recv_pipe->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
 		return;
 	}
