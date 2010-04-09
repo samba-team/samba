@@ -102,7 +102,7 @@ WERROR _PNP_GetDeviceList(pipes_struct *p,
 
 	multi_sz[0] = devicepath;
 
-	if (!push_reg_multi_sz(multi_sz, &blob, multi_sz)) {
+	if (!push_reg_multi_sz(multi_sz, NULL, &blob, multi_sz)) {
 		return WERR_NOMEM;
 	}
 

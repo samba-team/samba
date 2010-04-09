@@ -700,7 +700,7 @@ static void display_reg_value(struct regval_blob value)
 		break;
 	case REG_SZ:
 		blob = data_blob_const(value.data_p, value.size);
-		pull_reg_sz(talloc_tos(), &blob, &text);
+		pull_reg_sz(talloc_tos(), NULL, &blob, &text);
 		printf("%s: REG_SZ: %s\n", value.valuename, text ? text : "");
 		break;
 	case REG_BINARY: {
@@ -726,7 +726,7 @@ static void display_reg_value(struct regval_blob value)
 		const char **values;
 		blob = data_blob_const(value.data_p, value.size);
 
-		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
+		if (!pull_reg_multi_sz(NULL, NULL, &blob, &values)) {
 			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}

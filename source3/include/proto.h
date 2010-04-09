@@ -1268,10 +1268,14 @@ struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 /* The following definitions come from lib/util_reg.c  */
 
 const char *reg_type_lookup(enum winreg_Type type);
-bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s);
-bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a);
-bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s);
-bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char ***a);
+bool push_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		 DATA_BLOB *blob, const char *s);
+bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		       DATA_BLOB *blob, const char **a);
+bool pull_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		 const DATA_BLOB *blob, const char **s);
+bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		       const DATA_BLOB *blob, const char ***a);
 
 /* The following definitions come from lib/util_reg_api.c  */
 

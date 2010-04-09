@@ -116,7 +116,7 @@ bool eventlog_init_keys(void)
 					     sizeof(uint32));
 
 			regval_ctr_addvalue_sz(values, "PrimaryModule", *elogs);
-			push_reg_sz(talloc_tos(), &data, *elogs);
+			push_reg_sz(talloc_tos(), NULL, &data, *elogs);
 
 			regval_ctr_addvalue(values, "Sources", REG_MULTI_SZ,
 					     (char *)data.data,
@@ -128,7 +128,7 @@ bool eventlog_init_keys(void)
 			if (!evtfilepath) {
 				TALLOC_FREE(values);
 			}
-			push_reg_sz(talloc_tos(), &data, evtfilepath);
+			push_reg_sz(talloc_tos(), NULL, &data, evtfilepath);
 			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, (char *)data.data,
 					     data.length);
 			regdb_store_values(evtlogpath, values);
@@ -161,7 +161,7 @@ bool eventlog_init_keys(void)
 					     REG_DWORD,
 					     ( char * ) &uiCategoryCount,
 					     sizeof( uint32 ) );
-			push_reg_sz(talloc_tos(), &data,
+			push_reg_sz(talloc_tos(), NULL, &data,
 				      "%SystemRoot%\\system32\\eventlog.dll");
 
 			regval_ctr_addvalue( values, "CategoryMessageFile",
@@ -258,7 +258,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	dump_data( 1, rval->data_p, rval->size );
 
 	blob = data_blob_const(rval->data_p, rval->size);
-	if (!pull_reg_multi_sz(talloc_tos(), &blob, &wrklist)) {
+	if (!pull_reg_multi_sz(talloc_tos(), NULL, &blob, &wrklist)) {
 		return false;
 	}
 
@@ -298,7 +298,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		memcpy( wp, wrklist, sizeof( char * ) * numsources );
 		*( wp + numsources ) = ( char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
-		if (!push_reg_multi_sz(ctx, &blob, wp)) {
+		if (!push_reg_multi_sz(ctx, NULL, &blob, wp)) {
 			return false;
 		}
 		dump_data( 1, blob.data, blob.length);

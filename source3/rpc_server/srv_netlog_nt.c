@@ -417,7 +417,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 		}
 	}
 
-	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
+	if (!push_reg_multi_sz(trusted_domains, NULL, &blob, trusted_domains)) {
 		TALLOC_FREE(trusted_domains);
 		return WERR_NOMEM;
 	}

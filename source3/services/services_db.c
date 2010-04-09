@@ -646,7 +646,7 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 		goto fail;
 
 	blob = data_blob_const(regval_data_p(val), regval_size(val));
-	pull_reg_sz(ctx, &blob, &display_name);
+	pull_reg_sz(ctx, NULL, &blob, &display_name);
 
 	TALLOC_FREE( key );
 
@@ -700,7 +700,7 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 	}
 
 	blob = data_blob_const(regval_data_p(val), regval_size(val));
-	pull_reg_sz(ctx, &blob, &description);
+	pull_reg_sz(ctx, NULL, &blob, &description);
 
 	TALLOC_FREE(key);
 

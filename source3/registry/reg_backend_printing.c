@@ -578,7 +578,7 @@ static int find_valuename_index( const char *valuename )
 static void pull_reg_sz_fstring(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, fstring s)
 {
 	const char *str;
-	pull_reg_sz(mem_ctx, blob, &str);
+	pull_reg_sz(mem_ctx, NULL, blob, &str);
 	fstrcpy(s, str);
 }
 
@@ -927,7 +927,7 @@ static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 				break;
 			}
 
-			push_reg_sz(talloc_tos(), &data, filename);
+			push_reg_sz(talloc_tos(), NULL, &data, filename);
 			memcpy( buffer+buffer_size, (char*)data.data, data.length);
 
 			buffer_size += (length + 1)*sizeof(uint16);

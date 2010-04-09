@@ -84,7 +84,7 @@ static void display_reg_value(const char *subkey, struct regval_blob value)
 
 	case REG_SZ:
 		blob = data_blob_const(value.data_p, value.size);
-		pull_reg_sz(talloc_tos(), &blob, &text);
+		pull_reg_sz(talloc_tos(), NULL, &blob, &text);
 		if (!text) {
 			break;
 		}
@@ -103,7 +103,7 @@ static void display_reg_value(const char *subkey, struct regval_blob value)
 		const char **values;
 		blob = data_blob_const(value.data_p, value.size);
 
-		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
+		if (!pull_reg_multi_sz(NULL, NULL, &blob, &values)) {
 			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}
@@ -2422,7 +2422,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 					if (strequal(info[j].value_name, SPOOL_REG_PORTNAME)) {
 
 						/* although windows uses a multi-sz, we use a sz */
-						push_reg_sz(mem_ctx, &blob, SAMBA_PRINTER_PORT_NAME);
+						push_reg_sz(mem_ctx, NULL, &blob, SAMBA_PRINTER_PORT_NAME);
 						fstrcpy(value.valuename, SPOOL_REG_PORTNAME);
 					}
 
@@ -2432,7 +2432,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 							nt_status = NT_STATUS_NO_MEMORY;
 							goto done;
 						}
-						push_reg_sz(mem_ctx, &blob, unc_name);
+						push_reg_sz(mem_ctx, NULL, &blob, unc_name);
 						fstrcpy(value.valuename, SPOOL_REG_UNCNAME);
 					}
 
@@ -2446,20 +2446,20 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 							nt_status = NT_STATUS_NO_MEMORY;
 							goto done;
 						}
-						push_reg_sz(mem_ctx, &blob, url);
+						push_reg_sz(mem_ctx, NULL, &blob, url);
 						fstrcpy(value.valuename, SPOOL_REG_URL);
 #endif
 					}
 
 					if (strequal(info[j].value_name, SPOOL_REG_SERVERNAME)) {
 
-						push_reg_sz(mem_ctx, &blob, longname);
+						push_reg_sz(mem_ctx, NULL, &blob, longname);
 						fstrcpy(value.valuename, SPOOL_REG_SERVERNAME);
 					}
 
 					if (strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME)) {
 
-						push_reg_sz(mem_ctx, &blob, global_myname());
+						push_reg_sz(mem_ctx, NULL, &blob, global_myname());
 						fstrcpy(value.valuename, SPOOL_REG_SHORTSERVERNAME);
 					}
 

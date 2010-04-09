@@ -497,7 +497,7 @@ int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char 
 {
 	DATA_BLOB blob;
 
-	if (!push_reg_sz(ctr, &blob, data)) {
+	if (!push_reg_sz(ctr, NULL, &blob, data)) {
 		return -1;
 	}
 
@@ -514,7 +514,7 @@ int regval_ctr_addvalue_multi_sz(struct regval_ctr *ctr, const char *name, const
 {
 	DATA_BLOB blob;
 
-	if (!push_reg_multi_sz(ctr, &blob, data)) {
+	if (!push_reg_multi_sz(ctr, NULL, &blob, data)) {
 		return -1;
 	}
 
@@ -607,7 +607,7 @@ const char *regval_sz(struct regval_blob *val)
 	const char *data = NULL;
 	DATA_BLOB blob = data_blob_const(regval_data_p(val), regval_size(val));
 
-	pull_reg_sz(talloc_tos(), &blob, &data);
+	pull_reg_sz(talloc_tos(), NULL, &blob, &data);
 
 	return data;
 }

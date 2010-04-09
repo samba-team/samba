@@ -3356,7 +3356,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 		case REG_SZ:
 			blob = data_blob_const(regval_data_p(guid_val),
 					       regval_size(guid_val));
-			pull_reg_sz(talloc_tos(), &blob, (const char **)&guid_str);
+			pull_reg_sz(talloc_tos(), NULL, &blob, (const char **)&guid_str);
 			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
 			talloc_free(guid_str);
 			break;
