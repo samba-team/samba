@@ -112,7 +112,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		boolean8  inherit;
 	} winreg_SecBuf;
 
-	typedef [v1_enum] enum {
+	typedef [bitmap32bit] bitmap {
 		REG_KEYTYPE_NON_VOLATILE	= 0x00000000,
 		REG_KEYTYPE_VOLATILE		= 0x00000001,
 		REG_KEYTYPE_SYMLINK		= 0x00000002
