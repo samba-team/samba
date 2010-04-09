@@ -29,6 +29,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
+#include "auth/auth.h"
 
 struct private_data {
 	unsigned int num_controls;
@@ -378,6 +379,23 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		if (ldb_msg_add_fmt(msg, "isGlobalCatalogReady",
 				    "%s", samdb_is_gc(ldb)?"TRUE":"FALSE") != 0) {
 			goto failed;
+		}
+	}
+
+	if (do_attribute(attrs, "tokenGroups")) {
+		unsigned int i;
+		/* Obtain the user's session_info */
+		struct auth_session_info *session_info
+			= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		if (session_info && session_info->security_token) {
+			/* The list of groups this user is in */
+			for (i = 0; i < session_info->security_token->num_sids; i++) {
+				if (samdb_msg_add_dom_sid(ldb, msg, msg,
+							  "tokenGroups",
+							  session_info->security_token->sids[i]) != 0) {
+					goto failed;
+				}
+			}
 		}
 	}
 
