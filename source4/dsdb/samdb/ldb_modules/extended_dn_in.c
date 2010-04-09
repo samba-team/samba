@@ -156,7 +156,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 
 		if (!ac->basedn) {
 			const char *str = talloc_asprintf(req, "Base-DN '%s' not found",
-							  ldb_dn_get_linearized(ac->req->op.search.base));
+							  ldb_dn_get_extended_linearized(req, ac->req->op.search.base, 1));
 			ldb_set_errstring(ldb_module_get_ctx(ac->module), str);
 			return ldb_module_done(ac->req, NULL, NULL,
 					       LDB_ERR_NO_SUCH_OBJECT);
