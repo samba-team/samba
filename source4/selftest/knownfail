@@ -81,3 +81,6 @@ samba4.smb2.create.*.ACLDIR
 samba4.smb2.acls.*.GENERIC
 samba4.smb2.acls.*.INHERITFLAGS
 samba4.smb2.acls.*.OWNER
+samba4.smb2.compound.*.RELATED1
+samba4.smb2.compound.*.RELATED2
+samba4.smb2.compound.*.INVALID2
