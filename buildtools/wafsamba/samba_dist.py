@@ -1,14 +1,18 @@
 # customised version of 'waf dist' for Samba tools
 # uses git ls-files to get file lists
 
-import Utils, os, sys, tarfile, stat, Scripting
+import Utils, os, sys, tarfile, stat, Scripting, Logs
 from samba_utils import *
 
 dist_dirs = None
 
 def add_tarfile(tar, fname, abspath):
     '''add a file to the tarball'''
-    tinfo = tar.gettarinfo(name=abspath, arcname=fname)
+    try:
+        tinfo = tar.gettarinfo(name=abspath, arcname=fname)
+    except OSError:
+        Logs.error('Unable to find file %s - missing from git checkout?' % abspath)
+        sys.exit(1)
     tinfo.uid   = 0
     tinfo.gid   = 0
     tinfo.uname = 'root'
