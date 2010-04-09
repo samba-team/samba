@@ -3692,17 +3692,18 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	}
 }
 
-static bool test_winreg_OpenKey(struct torture_context *tctx,
-				struct dcerpc_binding_handle *b,
-				struct policy_handle *hive_handle,
-				const char *keyname,
-				struct policy_handle *key_handle)
+static bool test_winreg_OpenKey_opts(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
+				     struct policy_handle *hive_handle,
+				     const char *keyname,
+				     uint32_t options,
+				     struct policy_handle *key_handle)
 {
 	struct winreg_OpenKey r;
 
 	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
-	r.in.options = REG_OPTION_NON_VOLATILE;
+	r.in.options = options;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = key_handle;
 
@@ -3712,6 +3713,16 @@ static bool test_winreg_OpenKey(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result, "OpenKey failed");
 
 	return true;
+}
+
+static bool test_winreg_OpenKey(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
+				struct policy_handle *hive_handle,
+				const char *keyname,
+				struct policy_handle *key_handle)
+{
+	return test_winreg_OpenKey_opts(tctx, b, hive_handle, keyname,
+					REG_OPTION_NON_VOLATILE, key_handle);
 }
 
 static bool test_winreg_CloseKey(struct torture_context *tctx,
@@ -3839,6 +3850,46 @@ static bool test_GetForm_winreg(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		test_winreg_CloseKey(tctx, b, &key_handle), "");
+
+	return true;
+}
+
+static bool test_winreg_symbolic_link(struct torture_context *tctx,
+				      struct dcerpc_binding_handle *b,
+				      struct policy_handle *handle,
+				      const char *symlink_keyname,
+				      const char *symlink_destination)
+{
+	/* check if the first key is a symlink to the second key */
+
+	enum winreg_Type w_type;
+	uint32_t w_size;
+	uint32_t w_length;
+	uint8_t *w_data;
+	struct policy_handle key_handle;
+	DATA_BLOB blob;
+	const char *str;
+
+	torture_assert(tctx,
+		test_winreg_OpenKey_opts(tctx, b, handle, symlink_keyname, REG_OPTION_OPEN_LINK, &key_handle),
+			"failed to open key link");
+
+	torture_assert(tctx,
+		test_winreg_QueryValue(tctx, b, &key_handle,
+				       "SymbolicLinkValue",
+				       &w_type, &w_size, &w_length, &w_data),
+		"failed to query for 'SymbolicLinkValue' attribute");
+
+	torture_assert_int_equal(tctx, w_type, REG_LINK, "unexpected type");
+
+	blob = data_blob(w_data, w_size);
+	str = reg_val_data_string(tctx, lp_iconv_convenience(tctx->lp_ctx), REG_SZ, blob);
+
+	torture_assert_str_equal(tctx, str, symlink_destination, "unexpected symlink target string");
+
+	torture_assert(tctx,
+		test_winreg_CloseKey(tctx, b, &key_handle),
+		"failed to close key link");
 
 	return true;
 }
@@ -3972,6 +4023,15 @@ do {\
 	torture_assert(tctx, test_security_descriptor_equal(tctx, &sd, iname),\
 		"sd unequal");\
 } while(0);
+
+
+	if (!test_winreg_symbolic_link(tctx, winreg_handle, hive_handle,
+				       TOP_LEVEL_CONTROL_PRINTERS_KEY,
+				       "\\Registry\\Machine\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"))
+	{
+		torture_warning(tctx, "failed to check for winreg symlink");
+	}
+
 
 	for (i=0; i < ARRAY_SIZE(keys); i++) {
 
