@@ -372,8 +372,8 @@ void torture_result(struct torture_context *test,
 	do { int __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
-			__location__": "#got" was %d, expected %d: %s", \
-			__got, __expected, cmt); \
+			__location__": "#got" was %d (0x%X), expected %d (0x%X): %s", \
+			__got, __got, __expected, __expected, cmt); \
 		return false; \
 	} \
 	} while(0)
@@ -382,8 +382,8 @@ void torture_result(struct torture_context *test,
 	do { int __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
-			__location__": "#got" was %d, expected %d: %s", \
-			__got, __expected, cmt); \
+			__location__": "#got" was %d (0x%X), expected %d (0x%X): %s", \
+			__got, __got, __expected, __expected, cmt); \
 		ret = false; \
 		goto label; \
 	} \
@@ -393,8 +393,10 @@ void torture_result(struct torture_context *test,
 	do { uint64_t __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
-			__location__": "#got" was %llu, expected %llu: %s", \
-			(unsigned long long)__got, (unsigned long long)__expected, cmt); \
+			__location__": "#got" was %llu (0x%llX), expected %llu (0x%llX): %s", \
+			(unsigned long long)__got, (unsigned long long)__got, \
+			(unsigned long long)__expected, (unsigned long long)__expected, \
+			cmt); \
 		return false; \
 	} \
 	} while(0)
