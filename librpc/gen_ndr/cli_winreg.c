@@ -5640,3 +5640,4 @@ NTSTATUS rpccli_winreg_DeleteKeyEx(struct rpc_pipe_client *cli,
 
 	return werror_to_ntstatus(r.out.result);
 }
+
