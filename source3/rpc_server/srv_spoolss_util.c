@@ -441,6 +441,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 
 		val.type = type;
 		val.data_length = data_size;
+		val.data = NULL;
 		if (val.data_length) {
 			val.data = talloc(enum_values, DATA_BLOB);
 			if (val.data == NULL) {
@@ -1549,7 +1550,7 @@ WERROR winreg_printer_setform1(struct pipes_struct *p,
 	uint32_t i;
 	WERROR result;
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	for (i = 0; i < num_builtin; i++) {
 		if (strequal(builtin_forms1[i].form_name, form->form_name)) {
