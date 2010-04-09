@@ -128,6 +128,7 @@ static int construct_primary_group_token(struct ldb_module *module,
 static int construct_token_groups(struct ldb_module *module,
 				  struct ldb_message *msg)
 {
+#if 0
 	struct ldb_context *ldb;
 	const struct dom_sid *sid;
 
@@ -206,7 +207,7 @@ static int construct_token_groups(struct ldb_module *module,
 
 		talloc_free(sids);
 	}
-
+#endif
 	return LDB_SUCCESS;
 }
 
