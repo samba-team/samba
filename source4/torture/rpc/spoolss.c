@@ -2784,11 +2784,12 @@ static bool test_GetJob_args(struct torture_context *tctx,
 
 		status = dcerpc_spoolss_GetJob_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
-		torture_assert_werr_ok(tctx, r.out.result, "GetJob failed");
-		torture_assert(tctx, r.out.info, "No job info returned");
-
-		CHECK_NEEDED_SIZE_LEVEL(spoolss_JobInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "GetJob failed");
+	torture_assert(tctx, r.out.info, "No job info returned");
+
+	CHECK_NEEDED_SIZE_LEVEL(spoolss_JobInfo, r.out.info, r.in.level, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 
 	if (info_p) {
 		*info_p = *r.out.info;
