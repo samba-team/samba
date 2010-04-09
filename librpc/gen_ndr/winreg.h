@@ -42,10 +42,12 @@ struct winreg_SecBuf {
 	uint8_t inherit;
 };
 
-/* bitmap winreg_KeyType */
-#define REG_KEYTYPE_NON_VOLATILE ( 0x00000000 )
-#define REG_KEYTYPE_VOLATILE ( 0x00000001 )
-#define REG_KEYTYPE_SYMLINK ( 0x00000002 )
+/* bitmap winreg_KeyOptions */
+#define REG_OPTION_NON_VOLATILE ( 0x00000000 )
+#define REG_OPTION_VOLATILE ( 0x00000001 )
+#define REG_OPTION_CREATE_LINK ( 0x00000002 )
+#define REG_OPTION_BACKUP_RESTORE ( 0x00000004 )
+#define REG_OPTION_OPEN_LINK ( 0x00000008 )
 
 enum winreg_CreateAction
 #ifndef USE_UINT_ENUMS

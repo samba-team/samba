@@ -90,7 +90,7 @@ enum ndr_err_code ndr_pull_winreg_String(struct ndr_pull *ndr, int ndr_flags, st
 void ndr_print_winreg_String(struct ndr_print *ndr, const char *name, const struct winreg_String *r);
 void ndr_print_KeySecurityData(struct ndr_print *ndr, const char *name, const struct KeySecurityData *r);
 void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, const struct winreg_SecBuf *r);
-void ndr_print_winreg_KeyType(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_winreg_KeyOptions(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_winreg_CreateAction(struct ndr_print *ndr, const char *name, enum winreg_CreateAction r);
 void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name, const struct winreg_StringBuf *r);
 void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *name, const struct winreg_ValNameBuf *r);

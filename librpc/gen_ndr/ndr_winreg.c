@@ -217,13 +217,13 @@ _PUBLIC_ void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_winreg_KeyType(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+static enum ndr_err_code ndr_push_winreg_KeyOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_winreg_KeyType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+static enum ndr_err_code ndr_pull_winreg_KeyOptions(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
@@ -231,13 +231,15 @@ static enum ndr_err_code ndr_pull_winreg_KeyType(struct ndr_pull *ndr, int ndr_f
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_winreg_KeyType(struct ndr_print *ndr, const char *name, uint32_t r)
+_PUBLIC_ void ndr_print_winreg_KeyOptions(struct ndr_print *ndr, const char *name, uint32_t r)
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_KEYTYPE_NON_VOLATILE", REG_KEYTYPE_NON_VOLATILE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_KEYTYPE_VOLATILE", REG_KEYTYPE_VOLATILE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_KEYTYPE_SYMLINK", REG_KEYTYPE_SYMLINK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_OPTION_NON_VOLATILE", REG_OPTION_NON_VOLATILE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_OPTION_VOLATILE", REG_OPTION_VOLATILE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_OPTION_CREATE_LINK", REG_OPTION_CREATE_LINK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_OPTION_BACKUP_RESTORE", REG_OPTION_BACKUP_RESTORE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "REG_OPTION_OPEN_LINK", REG_OPTION_OPEN_LINK, r);
 	ndr->depth--;
 }
 
@@ -1065,7 +1067,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_CreateKey(struct ndr_push *ndr, int f
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
 		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.keyclass));
-		NDR_CHECK(ndr_push_winreg_KeyType(ndr, NDR_SCALARS, r->in.options));
+		NDR_CHECK(ndr_push_winreg_KeyOptions(ndr, NDR_SCALARS, r->in.options));
 		NDR_CHECK(ndr_push_winreg_AccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.secdesc));
 		if (r->in.secdesc) {
@@ -1110,7 +1112,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
 		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.keyclass));
-		NDR_CHECK(ndr_pull_winreg_KeyType(ndr, NDR_SCALARS, &r->in.options));
+		NDR_CHECK(ndr_pull_winreg_KeyOptions(ndr, NDR_SCALARS, &r->in.options));
 		NDR_CHECK(ndr_pull_winreg_AccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
 		if (_ptr_secdesc) {
@@ -1180,7 +1182,7 @@ _PUBLIC_ void ndr_print_winreg_CreateKey(struct ndr_print *ndr, const char *name
 		ndr->depth--;
 		ndr_print_winreg_String(ndr, "name", &r->in.name);
 		ndr_print_winreg_String(ndr, "keyclass", &r->in.keyclass);
-		ndr_print_winreg_KeyType(ndr, "options", r->in.options);
+		ndr_print_winreg_KeyOptions(ndr, "options", r->in.options);
 		ndr_print_winreg_AccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr_print_ptr(ndr, "secdesc", r->in.secdesc);
 		ndr->depth++;
@@ -2177,7 +2179,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_OpenKey(struct ndr_push *ndr, int fla
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.parent_handle));
 		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.keyname));
-		NDR_CHECK(ndr_push_winreg_KeyType(ndr, NDR_SCALARS, r->in.options));
+		NDR_CHECK(ndr_push_winreg_KeyOptions(ndr, NDR_SCALARS, r->in.options));
 		NDR_CHECK(ndr_push_winreg_AccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
@@ -2205,7 +2207,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_OpenKey(struct ndr_pull *ndr, int fla
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.parent_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_parent_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.keyname));
-		NDR_CHECK(ndr_pull_winreg_KeyType(ndr, NDR_SCALARS, &r->in.options));
+		NDR_CHECK(ndr_pull_winreg_KeyOptions(ndr, NDR_SCALARS, &r->in.options));
 		NDR_CHECK(ndr_pull_winreg_AccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
@@ -2238,7 +2240,7 @@ _PUBLIC_ void ndr_print_winreg_OpenKey(struct ndr_print *ndr, const char *name, 
 		ndr_print_policy_handle(ndr, "parent_handle", r->in.parent_handle);
 		ndr->depth--;
 		ndr_print_winreg_String(ndr, "keyname", &r->in.keyname);
-		ndr_print_winreg_KeyType(ndr, "options", r->in.options);
+		ndr_print_winreg_KeyOptions(ndr, "options", r->in.options);
 		ndr_print_winreg_AccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
