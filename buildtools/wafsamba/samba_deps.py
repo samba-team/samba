@@ -1,6 +1,6 @@
 # Samba automatic dependency handling and project rules
 
-import Build, os, re, Environment
+import Build, os, re, Environment, Logs
 from samba_utils import *
 from samba_autoconf import *
 from samba_bundled import BUILTIN_LIBRARY
@@ -17,7 +17,7 @@ def TARGET_ALIAS(bld, target, alias):
     '''define an alias for a target name'''
     cache = LOCAL_CACHE(bld, 'TARGET_ALIAS')
     if alias in cache:
-        print("Target alias %s already set to %s : newalias %s" % (alias, cache[alias], target))
+        Logs.error("Target alias %s already set to %s : newalias %s" % (alias, cache[alias], target))
         sys.exit(1)
     cache[alias] = target
 Build.BuildContext.TARGET_ALIAS = TARGET_ALIAS
@@ -258,7 +258,7 @@ def check_duplicate_sources(bld, tgt_list):
                 if s['dep'] == s2['dep']: continue
                 common = s['src'].intersection(s2['src'])
                 if common.difference(seen):
-                    print("Target %s has duplicate source files in %s and %s : %s" % (t.sname,
+                    Logs.error("Target %s has duplicate source files in %s and %s : %s" % (t.sname,
                                                                                       s['dep'], s2['dep'],
                                                                                       common))
                     seen = seen.union(common)
@@ -279,7 +279,7 @@ def check_orpaned_targets(bld, tgt_list):
         type = target_dict[t.sname]
         if not type in ['BINARY', 'LIBRARY', 'MODULE', 'ET', 'PYTHON']:
             if re.search('^PIDL_', t.sname) is None:
-                print("Target %s of type %s is unused by any other target" % (t.sname, type))
+                Logs.warn("Target %s of type %s is unused by any other target" % (t.sname, type))
 
 
 def show_final_deps(bld, tgt_list):
@@ -328,7 +328,7 @@ def build_direct_deps(bld, tgt_list):
             d = EXPAND_ALIAS(bld, d)
             if d == t.sname: continue
             if not d in targets:
-                print("Unknown dependency %s in %s" % (d, t.sname))
+                Logs.error("Unknown dependency %s in %s" % (d, t.sname))
                 sys.exit(1)
             if targets[d] in [ 'EMPTY', 'DISABLED' ]:
                 continue
@@ -343,7 +343,8 @@ def build_direct_deps(bld, tgt_list):
                 continue
             t2 = bld.name_to_obj(d, bld.env)
             if t2 is None:
-                print("no task %s type %s" % (d, targets[d]))
+                Logs.error("no task %s of type %s in %s" % (d, targets[d], t.sname))
+                sys.exit(1)
             if t2.samba_type in [ 'LIBRARY', 'MODULE' ]:
                 t.direct_libs.add(d)
             elif t2.samba_type in [ 'SUBSYSTEM', 'ASN1', 'PYTHON' ]:
@@ -665,7 +666,7 @@ def calculate_final_deps(bld, tgt_list, loops):
     while reduce_objects(bld, tgt_list):
         count += 1
         if count > 100:
-            print("WARNING: Unable to remove all inter-target object duplicates")
+            Logs.warn("WARNING: Unable to remove all inter-target object duplicates")
             break
     debug('deps: Object reduction took %u iterations', count)
 
@@ -822,7 +823,7 @@ def check_project_rules(bld):
             continue
         t = bld.name_to_obj(tgt, bld.env)
         if t is None:
-            print("Target %s of type %s has no task generator" % (tgt, type))
+            Logs.error("Target %s of type %s has no task generator" % (tgt, type))
             sys.exit(1)
         tgt_list.append(t)
 
@@ -831,7 +832,7 @@ def check_project_rules(bld):
     if load_samba_deps(bld, tgt_list):
         return
 
-    print("Checking project rules ...")
+    Logs.info("Checking project rules ...")
 
     debug('deps: project rules checking started')
 
@@ -850,7 +851,7 @@ def check_project_rules(bld):
     #check_orpaned_targets(bld, tgt_list)
 
     if not check_duplicate_sources(bld, tgt_list):
-        print("Duplicate sources present - aborting")
+        Logs.error("Duplicate sources present - aborting")
         sys.exit(1)
 
     show_final_deps(bld, tgt_list)
@@ -860,7 +861,7 @@ def check_project_rules(bld):
 
     save_samba_deps(bld, tgt_list)
 
-    print("Project rules pass")
+    Logs.info("Project rules pass")
 
 
 def CHECK_PROJECT_RULES(bld):

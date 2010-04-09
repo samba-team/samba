@@ -1,6 +1,6 @@
 # a waf tool to add autoconf-like macros to the configure section
 
-import Build, os, Options, preproc
+import Build, os, Options, preproc, Logs
 import string
 from Configure import conf
 from samba_utils import *
@@ -456,7 +456,7 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
 
         if not conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags):
             if mandatory:
-                print("Mandatory library '%s' not found for functions '%s'" % (lib, list))
+                Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, list))
                 sys.exit(1)
             if empty_decl:
                 # if it isn't a mandatory library, then remove it from dependency lists
@@ -511,7 +511,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
     for lib in liblist[:]:
         if not GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
             if mandatory:
-                print("Mandatory library '%s' not found for functions '%s'" % (lib, list))
+                Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, list))
                 sys.exit(1)
             # if it isn't a mandatory library, then remove it from dependency lists
             liblist.remove(lib)

@@ -1,6 +1,7 @@
 # functions to support bundled libraries
 
 from Configure import conf
+import Logs
 from samba_utils import *
 
 def BUNDLED_NAME(bld, name, bundled_extension):
@@ -78,7 +79,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
             f = 'FOUND_SYSTEM_%s' % syslib
             if not f in conf.env:
                 if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
-                    print('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
+                    Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
                     sys.exit(1)
                 conf.env[found] = False
                 return False
@@ -103,6 +104,6 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
             return True
     conf.env[found] = False
     if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
-        print('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
+        Logs.error('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
         sys.exit(1)
     return False

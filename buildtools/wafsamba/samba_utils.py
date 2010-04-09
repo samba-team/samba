@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, sys, Options, Utils, Task, re, fnmatch
+import Build, os, sys, Options, Utils, Task, re, fnmatch, Logs
 from TaskGen import feature, before
 from Configure import conf
 from Logs import debug
@@ -102,7 +102,7 @@ def LOCAL_CACHE_SET(ctx, cachename, key, value):
 def ASSERT(ctx, expression, msg):
     '''a build assert call'''
     if not expression:
-        sys.stderr.write("ERROR: %s\n" % msg)
+        Logs.error("ERROR: %s\n" % msg)
         raise AssertionError
 Build.BuildContext.ASSERT = ASSERT
 
@@ -220,7 +220,7 @@ def subst_vars_error(string, env):
         if re.match('\$\{\w+\}', v):
             vname = v[2:-1]
             if not vname in env:
-                print("Failed to find variable %s in %s" % (vname, string))
+                Logs.error("Failed to find variable %s in %s" % (vname, string))
                 sys.exit(1)
             v = env[vname]
         out.append(v)
@@ -338,7 +338,7 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
     # make sure there is nothing left. Also check for the common
     # typo of $( instead of ${
     if ret.find('${') != -1 or ret.find('$(') != -1:
-        print('Failed to substitute all variables in varstr=%s' % ret)
+        Logs.error('Failed to substitute all variables in varstr=%s' % ret)
         sys.exit(1)
     return ret
 Build.BuildContext.EXPAND_VARIABLES = EXPAND_VARIABLES
@@ -356,7 +356,7 @@ def RUN_COMMAND(cmd,
         return os.WEXITSTATUS(status)
     if os.WIFSIGNALED(status):
         return - os.WTERMSIG(status)
-    print("Unknown exit reason %d for command: %s" (status, cmd))
+    Logs.error("Unknown exit reason %d for command: %s" (status, cmd))
     return -1
 
 
@@ -434,7 +434,7 @@ def RECURSE(ctx, directory):
         return ctx.sub_config(relpath)
     if ctxclass == 'BuildContext':
         return ctx.add_subdirs(relpath)
-    print('Unknown RECURSE context class', ctxclass)
+    Logs.error('Unknown RECURSE context class', ctxclass)
     raise
 Options.Handler.RECURSE = RECURSE
 Build.BuildContext.RECURSE = RECURSE

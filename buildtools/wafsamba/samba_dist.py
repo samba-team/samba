@@ -33,7 +33,7 @@ def dist(appname='',version=''):
     srcdir = os.path.normpath(os.path.join(os.path.dirname(Utils.g_module.root_path), Utils.g_module.srcdir))
 
     if not dist_dirs:
-        print('You must use samba_dist.DIST_DIRS() to set which directories to package')
+        Logs.error('You must use samba_dist.DIST_DIRS() to set which directories to package')
         sys.exit(1)
 
     dist_base = '%s-%s' % (appname, version)
@@ -52,7 +52,7 @@ def dist(appname='',version=''):
         try:
             files = Utils.cmd_output(git_cmd).split()
         except:
-            print('git command failed: %s' % ' '.join(git_cmd))
+            Logs.error('git command failed: %s' % ' '.join(git_cmd))
             sys.exit(1)
         for f in files:
             abspath = os.path.join(srcdir, f)
@@ -65,7 +65,7 @@ def dist(appname='',version=''):
 
     tar.close()
 
-    print('Created %s' % dist_name)
+    Logs.info('Created %s' % dist_name)
     return dist_name
 
 

@@ -625,8 +625,8 @@ def subst_at_vars(task):
             if not vname in task.env and vname.upper() in task.env:
                 vname = vname.upper()
             if not vname in task.env:
-                print("Unknown substitution %s in %s" % (v, task.name))
-                raise
+                Logs.error("Unknown substitution %s in %s" % (v, task.name))
+                sys.exit(1)
             v = SUBST_VARS_RECURSIVE(task.env[vname], task.env)
             # now we back substitute the allowed pc vars
             for (b, m) in back_sub:
