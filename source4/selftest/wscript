@@ -63,8 +63,8 @@ def cmd_testonly(opt):
 
     env.TESTS  = Options.options.TESTS
 
-    env.SUBUNIT_FORMATTER = '${PYTHON} ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
-    env.FILTER_XFAIL = '${PYTHON} ../selftest/filter-subunit --expected-failures=./selftest/knownfail'
+    env.SUBUNIT_FORMATTER = '${PYTHON} -u ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
+    env.FILTER_XFAIL = '${PYTHON} -u ../selftest/filter-subunit --expected-failures=./selftest/knownfail'
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
 
     env.OPTIONS = ''
