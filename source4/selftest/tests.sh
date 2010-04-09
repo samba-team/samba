@@ -126,7 +126,9 @@ if grep ENABLE_GNUTLS.1 $CONFIG_H > /dev/null; then
 	plantestsuite "ldb.ldaps with options $options" dc $bbdir/test_ldb.sh ldaps \$SERVER_IP $options
     done
 fi
-plantestsuite "ldb.ldapi with options $options" dc $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
+for options in "" "-U\$USERNAME%\$PASSWORD"; do
+    plantestsuite "ldb.ldapi with options $options" dc $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
+done
 for t in `$smb4torture --list | grep "^LDAP-"`
 do
 	plansmbtorturetestsuite "$t" dc "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_
