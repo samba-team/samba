@@ -128,7 +128,7 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 		/* we support only non volatile keys */
-		if (r->in.options != REG_KEYTYPE_NON_VOLATILE) {
+		if (r->in.options != REG_OPTION_NON_VOLATILE) {
 			return WERR_NOT_SUPPORTED;
 		}
 
