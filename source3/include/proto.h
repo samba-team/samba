@@ -6485,6 +6485,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_pathnames,
 				const char *name_in,
+				bool allow_wcards,
 				char **pp_name_out,
 				bool *ppath_contains_wcard);
 NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
