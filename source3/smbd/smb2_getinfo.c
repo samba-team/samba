@@ -246,7 +246,6 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		struct ea_list *ea_list = NULL;
 		int lock_data_count = 0;
 		char *lock_data = NULL;
-		bool ms_dfs_link = false;
 		NTSTATUS status;
 
 		ZERO_STRUCT(write_time_ts);
@@ -328,7 +327,6 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					       fsp->fsp_name,
 					       delete_pending,
 					       write_time_ts,
-					       ms_dfs_link,
 					       ea_list,
 					       lock_data_count,
 					       lock_data,

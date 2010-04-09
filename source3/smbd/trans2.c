@@ -4154,7 +4154,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       struct smb_filename *smb_fname,
 			       bool delete_pending,
 			       struct timespec write_time_ts,
-			       bool ms_dfs_link,
 			       struct ea_list *ea_list,
 			       int lock_data_count,
 			       char *lock_data,
@@ -4189,12 +4188,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		 smb_fname_str_dbg(smb_fname), fsp ? fsp->fnum : -1,
 		 info_level, max_data_bytes));
 
-	if (ms_dfs_link) {
-		mode = dos_mode_msdfs(conn, smb_fname);
-	} else {
-		mode = dos_mode(conn, smb_fname);
-	}
-
+	mode = dos_mode(conn, smb_fname);
 	nlink = psbuf->st_ex_nlink;
 
 	if (nlink && (mode&aDIR)) {
@@ -4976,7 +4970,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	int lock_data_count = 0;
 	char *lock_data = NULL;
-	bool ms_dfs_link = false;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (!params) {
@@ -5188,14 +5181,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-		} else if (!VALID_STAT(smb_fname->st) &&
-			   SMB_VFS_STAT(conn, smb_fname) &&
-			   (info_level != SMB_INFO_IS_NAME_VALID)) {
-			ms_dfs_link = check_msdfs_link(conn,
-						       smb_fname->base_name,
-						       &smb_fname->st);
-
-			if (!ms_dfs_link) {
+		} else {
+			if (SMB_VFS_STAT(conn, smb_fname) != 0) {
 				DEBUG(3,("call_trans2qfilepathinfo: "
 					 "SMB_VFS_STAT of %s failed (%s)\n",
 					 smb_fname_str_dbg(smb_fname),
@@ -5319,7 +5306,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	status = smbd_do_qfilepathinfo(conn, req, info_level,
 				       fsp, smb_fname,
 				       delete_pending, write_time_ts,
-				       ms_dfs_link, ea_list,
+				       ea_list,
 				       lock_data_count, lock_data,
 				       req->flags2, max_data_bytes,
 				       ppdata, &data_size);
