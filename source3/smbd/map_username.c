@@ -117,7 +117,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines,0, NULL);
+		qlines = fd_lines_load(fd, &numlines, 0, talloc_tos());
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 
