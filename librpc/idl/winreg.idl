@@ -428,7 +428,13 @@ import "lsa.idl", "security.idl", "misc.idl";
 
 	/******************/
 	/* Function: 0x22 */
-	[todo] WERROR winreg_QueryMultipleValues2(
+	WERROR winreg_QueryMultipleValues2(
+		[in,ref] policy_handle *key_handle,
+		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values,
+		[in] uint32 num_values,
+		[in,out,unique,size_is(offered),length_is(offered)] uint8 *buffer,
+		[in] uint32 offered,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
