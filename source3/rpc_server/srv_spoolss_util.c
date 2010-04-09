@@ -1522,6 +1522,11 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 					   wvalue,
 					   &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		/* If the value doesn't exist, return WERR_INVALID_FORM_NAME */
+		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+			result = WERR_INVALID_FORM_NAME;
+			goto done;
+		}
 		DEBUG(0, ("winreg_printer_delteform1: Could not delete value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
 		if (!W_ERROR_IS_OK(result)) {
