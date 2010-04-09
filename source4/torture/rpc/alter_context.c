@@ -38,12 +38,24 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	torture_assert_ntstatus_ok(torture, status, "connecting");
 
+	torture_comment(torture, "Testing change of primary context\n");
+	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
+
 	if (!test_lsa_OpenPolicy2(p->binding_handle, torture, &handle)) {
 		ret = false;
 	}
 
+	torture_comment(torture, "Testing change of primary context\n");
+	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
+
 	torture_comment(torture, "Opening secondary DSSETUP context\n");
 	status = dcerpc_secondary_context(p, &p2, &ndr_table_dssetup);
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
+
+	torture_comment(torture, "Testing change of primary context\n");
+	status = dcerpc_alter_context(p2, torture, &p2->syntax, &p2->transfer_syntax);
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	tmptbl = ndr_table_dssetup;
@@ -64,7 +76,25 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	transfer_syntax = p->transfer_syntax;
 
 	torture_comment(torture, "Testing change of primary context\n");
+	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
+	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
+
+	ret &= test_lsa_OpenPolicy2(p->binding_handle, torture, &handle);
+
+	if (handle) {
+		ret &= test_lsa_Close(p->binding_handle, torture, handle);
+	}
+
+	torture_comment(torture, "Testing change of primary context\n");
 	status = dcerpc_alter_context(p, torture, &p2->syntax, &p2->transfer_syntax);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		torture_assert_int_equal(torture, p->last_fault_code, DCERPC_NCA_S_PROTO_ERROR,
+					 "dcerpc_alter_context should generate a proto error");
+
+		ret &= test_lsa_OpenPolicy2_ex(p->binding_handle, torture, &handle,
+					       NT_STATUS_PIPE_DISCONNECTED);
+		return ret;
+	}
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	torture_comment(torture, "testing DSSETUP pipe operations - should fault\n");
