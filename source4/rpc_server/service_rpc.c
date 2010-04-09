@@ -342,7 +342,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	if (!srv_conn->session_info) {
 		status = auth_anonymous_session_info(srv_conn,
-						     srv_conn->event.ctx,
 						     lp_ctx,
 						     &srv_conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {

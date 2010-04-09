@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Authentication utility functions
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Andrew Bartlett 2001-2010
    Copyright (C) Jeremy Allison 2000-2001
    Copyright (C) Rafal Szczesniak 2002
    Copyright (C) Stefan Metzmacher 2005
@@ -114,9 +114,9 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
-static NTSTATUS generate_session_info(TALLOC_CTX *mem_ctx, 
-				    struct auth_serversupplied_info *server_info, 
-				    struct auth_session_info **_session_info) 
+static NTSTATUS generate_simple_session_info(TALLOC_CTX *mem_ctx, 
+				      struct auth_serversupplied_info *server_info, 
+				      struct auth_session_info **_session_info) 
 {
 	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
@@ -197,7 +197,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = generate_session_info(parent_ctx, server_info, &session_info);
+	nt_status = generate_simple_session_info(parent_ctx, server_info, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -509,3 +509,112 @@ _PUBLIC_ struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx, struct loa
 	}
 	return session_info;
 }
+
+_PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
+					      struct loadparm_context *lp_ctx,
+					      struct auth_session_info **_session_info) 
+{
+	NTSTATUS nt_status;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_session_info *session_info = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	
+	nt_status = auth_anonymous_server_info(mem_ctx,
+					       lp_netbios_name(lp_ctx),
+					       &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
+
+	/* references the server_info into the session_info */
+	nt_status = generate_simple_session_info(parent_ctx, server_info, &session_info);
+	talloc_free(mem_ctx);
+
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	session_info->credentials = cli_credentials_init(session_info);
+	if (!session_info->credentials) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_conf(session_info->credentials, lp_ctx);
+	cli_credentials_set_anonymous(session_info->credentials);
+	
+	*_session_info = session_info;
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, 
+				    const char *netbios_name,
+				    struct auth_serversupplied_info **_server_info) 
+{
+	struct auth_serversupplied_info *server_info;
+	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(server_info);
+
+	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
+
+	/* is this correct? */
+	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_BUILTIN_GUESTS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+
+	server_info->n_domain_groups = 0;
+	server_info->domain_groups = NULL;
+
+	/* annoying, but the Anonymous really does have a session key... */
+	server_info->user_session_key = data_blob_talloc(server_info, NULL, 16);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->user_session_key.data);
+
+	server_info->lm_session_key = data_blob_talloc(server_info, NULL, 16);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->lm_session_key.data);
+
+	/*  and it is all zeros! */
+	data_blob_clear(&server_info->user_session_key);
+	data_blob_clear(&server_info->lm_session_key);
+
+	server_info->account_name = talloc_strdup(server_info, "ANONYMOUS LOGON");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+
+	server_info->domain_name = talloc_strdup(server_info, "NT AUTHORITY");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+
+	server_info->full_name = talloc_strdup(server_info, "Anonymous Logon");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->full_name);
+
+	server_info->logon_script = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
+
+	server_info->profile_path = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
+
+	server_info->home_directory = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
+
+	server_info->home_drive = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+
+	server_info->logon_server = talloc_strdup(server_info, netbios_name);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
+
+	server_info->last_logon = 0;
+	server_info->last_logoff = 0;
+	server_info->acct_expiry = 0;
+	server_info->last_password_change = 0;
+	server_info->allow_password_change = 0;
+	server_info->force_password_change = 0;
+
+	server_info->logon_count = 0;
+	server_info->bad_password_count = 0;
+
+	server_info->acct_flags = ACB_NORMAL;
+
+	server_info->authenticated = false;
+
+	*_server_info = server_info;
+
+	return NT_STATUS_OK;
+}
+

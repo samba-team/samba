@@ -442,7 +442,7 @@ static void ldapsrv_accept_nonpriv(struct stream_connection *c)
 	NTSTATUS status;
 
 	status = auth_anonymous_session_info(
-		c, c->event.ctx, ldapsrv_service->task->lp_ctx, &session_info);
+		c, ldapsrv_service->task->lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		stream_terminate_connection(c, "failed to setup anonymous "
 					    "session info");
