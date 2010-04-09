@@ -4271,15 +4271,18 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
-	int count;
-	int i;
-	int snum;
 	fstring sharename;
 	uint32 jobid;
 	struct pack_desc desc;
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
 	char *tmpdata=NULL;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	union spoolss_JobInfo info;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -4304,16 +4307,45 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	snum = lp_servicenumber( sharename);
-	if (snum < 0 || !VALID_SNUM(snum)) {
-		return(False);
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_WPrintJobGetInfo: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
 
-	count = print_queue_status(snum,&queue,&status);
-	for (i = 0; i < count; i++) {
-		if (queue[i].job == jobid) {
-			break;
-		}
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    sharename,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	werr = rpccli_spoolss_getjob(cli, mem_ctx,
+				     &handle,
+				     jobid,
+				     2, /* level */
+				     0, /* offered */
+				     &info);
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
 	}
 
 	if (mdrcnt > 0) {
@@ -4333,13 +4365,15 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	if (init_package(&desc,1,0)) {
-		if (i < count) {
-			fill_printjob_info(conn,snum,uLevel,&desc,&queue[i],i);
-			*rdata_len = desc.usedlen;
-		} else {
-			desc.errcode = NERR_JobNotFound;
-			*rdata_len = 0;
-		}
+		fill_spoolss_printjob_info(uLevel, &desc, &info.info2, info.info2.position);
+		*rdata_len = desc.usedlen;
+	} else {
+		desc.errcode = NERR_JobNotFound;
+		*rdata_len = 0;
+	}
+ out:
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
 	*rparam_len = 6;
@@ -4351,7 +4385,6 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
 
-	SAFE_FREE(queue);
 	SAFE_FREE(tmpdata);
 
 	DEBUG(4,("WPrintJobGetInfo: errorcode %d\n",desc.errcode));
