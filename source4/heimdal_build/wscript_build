@@ -201,6 +201,14 @@ HEIMDAL_ROKEN_H_SOURCE = '''
 	replace.c
 '''
 
+if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
+	HEIMDAL_ROKEN_H_SOURCE += '''
+		../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c
+	'''
+
+if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
+	HEIMDAL_ROKEN_H_SOURCE += '../heimdal/lib/roken/closefrom.c'
+
 HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_H_SOURCE + '''
 	../heimdal/lib/roken/resolve.c
 '''
@@ -208,7 +216,7 @@ HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_H_SOURCE + '''
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN',
 	HEIMDAL_ROKEN_SOURCE,
 	includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
-	deps='HEIMDAL_ROKEN_PROGNAME HEIMDAL_ROKEN_CLOSEFROM resolv LIBREPLACE_NETWORK UID_WRAPPER util'
+	deps='resolv LIBREPLACE_NETWORK UID_WRAPPER util'
 	)
 
 
@@ -386,48 +394,11 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
 	deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
 	)
 
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME',
-	'../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c',
-        includes='../heimdal/lib/roken',
-	deps='replace',
-        enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM',
-	'../heimdal/lib/roken/closefrom.c',
-        includes='../heimdal/lib/roken',
-	deps='replace',
-        enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_PROGNAME_H',
-	'../heimdal/lib/roken/getprogname.c ../heimdal/lib/roken/setprogname.c',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
-        includes='../heimdal/lib/roken',
-	deps='replace',
-        group='compiler_libraries',
-        enabled=not bld.CONFIG_SET('HAVE_GETPROGNAME')
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_CLOSEFROM_H',
-	'../heimdal/lib/roken/closefrom.c',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
-        includes='../heimdal/lib/roken',
-	deps='replace',
-        group='compiler_libraries',
-        enabled=not bld.CONFIG_SET('HAVE_CLOSEFROM')
-	)
-
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_H',
 	HEIMDAL_ROKEN_H_SOURCE,
 	includes='../heimdal/lib/roken',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1',
-        group='compiler_libraries',
-	deps='HEIMDAL_ROKEN_PROGNAME_H HEIMDAL_ROKEN_CLOSEFROM_H'
+	cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+	group='compiler_libraries'
 	)
 
 
