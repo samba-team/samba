@@ -3871,6 +3871,10 @@ static bool test_winreg_symbolic_link(struct torture_context *tctx,
 	DATA_BLOB blob;
 	const char *str;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skip winreg symlink test against samba");
+	}
+
 	torture_assert(tctx,
 		test_winreg_OpenKey_opts(tctx, b, handle, symlink_keyname, REG_OPTION_OPEN_LINK, &key_handle),
 			"failed to open key link");
