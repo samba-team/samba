@@ -83,13 +83,15 @@ static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
 }
 
 
-bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
-			  struct torture_context *tctx,
-			  struct policy_handle **handle)
+bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
+			     struct torture_context *tctx,
+			     struct policy_handle **handle,
+			     NTSTATUS expected_status)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
 	struct lsa_OpenPolicy2 r;
+	NTSTATUS status;
 
 	torture_comment(tctx, "\nTesting OpenPolicy2\n");
 
@@ -115,8 +117,12 @@ bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = *handle;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenPolicy2_r(b, tctx, &r),
+	status = dcerpc_lsa_OpenPolicy2_r(b, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status, expected_status,
 				   "OpenPolicy2 failed");
+	if (!NT_STATUS_IS_OK(expected_status)) {
+		return true;
+	}
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
@@ -134,6 +140,13 @@ bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
 	return true;
 }
 
+
+bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
+			  struct torture_context *tctx,
+			  struct policy_handle **handle)
+{
+	return test_lsa_OpenPolicy2_ex(b, tctx, handle, NT_STATUS_OK);
+}
 
 static const char *sid_type_lookup(enum lsa_SidType r)
 {
