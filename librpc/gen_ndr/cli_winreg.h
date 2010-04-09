@@ -569,12 +569,24 @@ NTSTATUS rpccli_winreg_OpenHKPN(struct rpc_pipe_client *cli,
 				WERROR *werror);
 struct tevent_req *rpccli_winreg_QueryMultipleValues2_send(TALLOC_CTX *mem_ctx,
 							   struct tevent_context *ev,
-							   struct rpc_pipe_client *cli);
+							   struct rpc_pipe_client *cli,
+							   struct policy_handle *_key_handle /* [in] [ref] */,
+							   struct QueryMultipleValue *_values /* [in,out] [ref,length_is(num_values),size_is(num_values)] */,
+							   uint32_t _num_values /* [in]  */,
+							   uint8_t *_buffer /* [in,out] [unique,length_is(offered),size_is(offered)] */,
+							   uint32_t _offered /* [in]  */,
+							   uint32_t *_needed /* [out] [ref] */);
 NTSTATUS rpccli_winreg_QueryMultipleValues2_recv(struct tevent_req *req,
 						 TALLOC_CTX *mem_ctx,
 						 WERROR *result);
 NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
+					    struct policy_handle *key_handle /* [in] [ref] */,
+					    struct QueryMultipleValue *values /* [in,out] [ref,length_is(num_values),size_is(num_values)] */,
+					    uint32_t num_values /* [in]  */,
+					    uint8_t *buffer /* [in,out] [unique,length_is(offered),size_is(offered)] */,
+					    uint32_t offered /* [in]  */,
+					    uint32_t *needed /* [out] [ref] */,
 					    WERROR *werror);
 struct tevent_req *rpccli_winreg_DeleteKeyEx_send(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,

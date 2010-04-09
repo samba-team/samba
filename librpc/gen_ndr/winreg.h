@@ -14,6 +14,7 @@
 #define REG_KEY_EXECUTE	( REG_KEY_READ )
 #define REG_KEY_WRITE	( (STANDARD_RIGHTS_WRITE_ACCESS|KEY_SET_VALUE|KEY_CREATE_SUB_KEY) )
 #define REG_KEY_ALL	( (STANDARD_RIGHTS_REQUIRED_ACCESS|REG_KEY_READ|REG_KEY_WRITE|KEY_CREATE_LINK) )
+#define REG_OPTION_NON_VOLATILE	( 0x00000000 )
 /* bitmap winreg_AccessMask */
 #define KEY_QUERY_VALUE ( 0x00001 )
 #define KEY_SET_VALUE ( 0x00002 )
@@ -43,7 +44,6 @@ struct winreg_SecBuf {
 };
 
 /* bitmap winreg_KeyOptions */
-#define REG_OPTION_NON_VOLATILE ( 0x00000000 )
 #define REG_OPTION_VOLATILE ( 0x00000001 )
 #define REG_OPTION_CREATE_LINK ( 0x00000002 )
 #define REG_OPTION_BACKUP_RESTORE ( 0x00000004 )
@@ -621,6 +621,17 @@ struct winreg_OpenHKPN {
 
 struct winreg_QueryMultipleValues2 {
 	struct {
+		struct policy_handle *key_handle;/* [ref] */
+		uint32_t num_values;
+		uint32_t offered;
+		struct QueryMultipleValue *values;/* [ref,length_is(num_values),size_is(num_values)] */
+		uint8_t *buffer;/* [unique,length_is(offered),size_is(offered)] */
+	} in;
+
+	struct {
+		uint32_t *needed;/* [ref] */
+		struct QueryMultipleValue *values;/* [ref,length_is(num_values),size_is(num_values)] */
+		uint8_t *buffer;/* [unique,length_is(offered),size_is(offered)] */
 		WERROR result;
 	} out;
 

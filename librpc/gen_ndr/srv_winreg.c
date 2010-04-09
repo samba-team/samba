@@ -2684,6 +2684,15 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues2, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.values = r->in.values;
+	r->out.buffer = r->in.buffer;
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _winreg_QueryMultipleValues2(p, r);
 
 	if (p->rng_fault_state) {
@@ -3192,6 +3201,14 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 		case NDR_WINREG_QUERYMULTIPLEVALUES2: {
 			struct winreg_QueryMultipleValues2 *r = (struct winreg_QueryMultipleValues2 *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.values = r->in.values;
+			r->out.buffer = r->in.buffer;
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _winreg_QueryMultipleValues2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

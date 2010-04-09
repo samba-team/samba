@@ -5366,7 +5366,13 @@ static void rpccli_winreg_QueryMultipleValues2_done(struct tevent_req *subreq);
 
 struct tevent_req *rpccli_winreg_QueryMultipleValues2_send(TALLOC_CTX *mem_ctx,
 							   struct tevent_context *ev,
-							   struct rpc_pipe_client *cli)
+							   struct rpc_pipe_client *cli,
+							   struct policy_handle *_key_handle /* [in] [ref] */,
+							   struct QueryMultipleValue *_values /* [in,out] [ref,length_is(num_values),size_is(num_values)] */,
+							   uint32_t _num_values /* [in]  */,
+							   uint8_t *_buffer /* [in,out] [unique,length_is(offered),size_is(offered)] */,
+							   uint32_t _offered /* [in]  */,
+							   uint32_t *_needed /* [out] [ref] */)
 {
 	struct tevent_req *req;
 	struct rpccli_winreg_QueryMultipleValues2_state *state;
@@ -5381,11 +5387,25 @@ struct tevent_req *rpccli_winreg_QueryMultipleValues2_send(TALLOC_CTX *mem_ctx,
 	state->dispatch_recv = cli->dispatch_recv;
 
 	/* In parameters */
+	state->orig.in.key_handle = _key_handle;
+	state->orig.in.values = _values;
+	state->orig.in.num_values = _num_values;
+	state->orig.in.buffer = _buffer;
+	state->orig.in.offered = _offered;
 
 	/* Out parameters */
+	state->orig.out.values = _values;
+	state->orig.out.buffer = _buffer;
+	state->orig.out.needed = _needed;
 
 	/* Result */
 	ZERO_STRUCT(state->orig.out.result);
+
+	state->out_mem_ctx = talloc_named_const(state, 0,
+			     "rpccli_winreg_QueryMultipleValues2_out_memory");
+	if (tevent_req_nomem(state->out_mem_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	/* make a temporary copy, that we pass to the dispatch function */
 	state->tmp = state->orig;
@@ -5424,6 +5444,11 @@ static void rpccli_winreg_QueryMultipleValues2_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
+	memcpy(state->orig.out.values, state->tmp.out.values, (state->tmp.in.num_values) * sizeof(*state->orig.out.values));
+	if (state->orig.out.buffer && state->tmp.out.buffer) {
+		memcpy(state->orig.out.buffer, state->tmp.out.buffer, (state->tmp.in.offered) * sizeof(*state->orig.out.buffer));
+	}
+	*state->orig.out.needed = *state->tmp.out.needed;
 
 	/* Copy result */
 	state->orig.out.result = state->tmp.out.result;
@@ -5459,12 +5484,23 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2_recv(struct tevent_req *req,
 
 NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
+					    struct policy_handle *key_handle /* [in] [ref] */,
+					    struct QueryMultipleValue *values /* [in,out] [ref,length_is(num_values),size_is(num_values)] */,
+					    uint32_t num_values /* [in]  */,
+					    uint8_t *buffer /* [in,out] [unique,length_is(offered),size_is(offered)] */,
+					    uint32_t offered /* [in]  */,
+					    uint32_t *needed /* [out] [ref] */,
 					    WERROR *werror)
 {
 	struct winreg_QueryMultipleValues2 r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.key_handle = key_handle;
+	r.in.values = values;
+	r.in.num_values = num_values;
+	r.in.buffer = buffer;
+	r.in.offered = offered;
 
 	status = cli->dispatch(cli,
 				mem_ctx,
@@ -5481,6 +5517,11 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	memcpy(values, r.out.values, (r.in.num_values) * sizeof(*values));
+	if (buffer && r.out.buffer) {
+		memcpy(buffer, r.out.buffer, (r.in.offered) * sizeof(*buffer));
+	}
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
