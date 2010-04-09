@@ -321,6 +321,17 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req);
 
 void send_smb2_break_message(files_struct *fsp, uint8_t level);
 void schedule_deferred_open_smb2_message(uint16 mid);
+bool smb2_push_blocking_lock_request( struct byte_range_lock *br_lck,
+				struct smb_request *req,
+				files_struct *fsp,
+				int lock_timeout,
+				int lock_num,
+				uint32_t lock_pid,
+				enum brl_type lock_type,
+				enum brl_flavour lock_flav,
+				uint64_t offset,
+				uint64_t count,
+				uint32_t blocking_pid);
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
@@ -338,6 +349,11 @@ struct smbd_smb2_request {
 
 	int current_idx;
 	bool do_signing;
+	/*
+	 * mid used for compatibility with SMB1 code.
+	 * Server allocated, never seen by client.
+	 */
+	uint16_t compat_mid;
 
 	struct files_struct *compat_chain_fsp;
 
@@ -535,6 +551,7 @@ struct smbd_server_connection {
 			struct smbd_smb2_session *list;
 		} sessions;
 		struct smbd_smb2_request *requests;
+		uint16_t next_compat_mid;
 	} smb2;
 };
 

@@ -381,3 +381,23 @@ static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req)
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
+
+/*
+ * Dummy (for now) function to cope with SMB2 blocking lock
+ * requests.
+ */
+
+bool smb2_push_blocking_lock_request( struct byte_range_lock *br_lck,
+				struct smb_request *req,
+				files_struct *fsp,
+				int lock_timeout,
+				int lock_num,
+				uint32_t lock_pid,
+				enum brl_type lock_type,
+				enum brl_flavour lock_flav,
+				uint64_t offset,
+				uint64_t count,
+				uint32_t blocking_pid)
+{
+	return false;
+}

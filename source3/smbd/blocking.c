@@ -158,6 +158,20 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	struct blocking_lock_record *blr;
 	NTSTATUS status;
 
+	if (req->smb2req) {
+		return smb2_push_blocking_lock_request(br_lck,
+				req,
+				fsp,
+				lock_timeout,
+				lock_num,
+				lock_pid,
+				lock_type,
+				lock_flav,
+				offset,
+				count,
+				blocking_pid);
+	}
+
 	if(req_is_in_chain(req)) {
 		DEBUG(0,("push_blocking_lock_request: cannot queue a chained request (currently).\n"));
 		return False;

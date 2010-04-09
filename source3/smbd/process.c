@@ -467,6 +467,7 @@ static bool init_smb_request(struct smb_request *req, const uint8 *inbuf,
 	req->chain_fsp = NULL;
 	req->chain_outbuf = NULL;
 	req->done = false;
+	req->smb2req = NULL;
 	smb_init_perfcount_data(&req->pcd);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */

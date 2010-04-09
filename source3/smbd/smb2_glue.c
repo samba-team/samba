@@ -22,6 +22,18 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 
+static uint16_t allocate_next_mid(void)
+{
+	struct smbd_server_connection *sconn = smbd_server_conn;
+
+	sconn->smb2.next_compat_mid++;
+	/* Avoid mid == 0 and mid == 0xffff. */
+	if (sconn->smb2.next_compat_mid == 0xFFFF) {
+		sconn->smb2.next_compat_mid += 2;
+	}
+	return sconn->smb2.next_compat_mid;
+}
+
 struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 {
 	struct smb_request *smbreq;
@@ -46,7 +58,9 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	if (IVAL(inhdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_DFS) {
 		smbreq->flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
+	req->compat_mid = smbreq->mid = allocate_next_mid();
 	smbreq->chain_fsp = req->compat_chain_fsp;
+	smbreq->smb2req = req;
 
 	return smbreq;
 }

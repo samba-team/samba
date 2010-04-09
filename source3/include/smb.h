@@ -623,6 +623,7 @@ struct current_user {
 	NT_USER_TOKEN *nt_user_token;
 };
 
+struct smbd_smb2_request;
 
 struct smb_request {
 	uint8_t cmd;
@@ -670,6 +671,11 @@ struct smb_request {
 	void *async_priv;
 
 	bool done;
+
+	/*
+	 * Back pointer to smb2 request.
+	 */
+	struct smbd_smb2_request *smb2req;
 };
 
 /* Defines for the sent_oplock_break field above. */
