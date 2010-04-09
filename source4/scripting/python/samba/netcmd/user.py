@@ -27,9 +27,9 @@ from samba.netcmd import (
     SuperCommand,
     )
 
-class cmd_user_create(Command):
+class cmd_user_add(Command):
     """Create a new user."""
-    synopsis = "%prog user create <name>"
+    synopsis = "%prog user add <name>"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -69,6 +69,6 @@ class cmd_user(SuperCommand):
     """User management."""
 
     subcommands = {}
-    subcommands["create"] = cmd_user_create()
+    subcommands["add"] = cmd_user_add()
     subcommands["delete"] = cmd_user_delete()
 
