@@ -71,6 +71,14 @@ class VersionOptions(optparse.OptionGroup):
     """Command line option for printing Samba version."""
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Version Options")
+        self.add_option("--version", action="callback",
+                callback=self._display_version, 
+                help="Display version number")
+
+    def _display_version(self, option, opt_str, arg, parser):
+        import samba, sys
+        print samba.version
+        sys.exit(0)
 
 
 class CredentialsOptions(optparse.OptionGroup):
