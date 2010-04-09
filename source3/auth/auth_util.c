@@ -1543,7 +1543,7 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 	save_username[0] = '\0';
 
 	/* don't call map_username() here since it has to be done higher 
-	   up the stack so we don't call it mutliple times */
+	   up the stack so we don't call it multiple times */
 
 	fstrcpy( username, domuser );
 
