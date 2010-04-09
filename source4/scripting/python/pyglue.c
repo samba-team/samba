@@ -159,6 +159,30 @@ static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObj
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_schema_info_reset(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	WERROR result;
+	struct dsdb_schema *schema;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on ldb!\n");
+		return NULL;
+	}
+
+	result = dsdb_schema_info_reset(ldb, schema);
+	PyErr_WERROR_IS_ERR_RAISE(result);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -253,6 +277,8 @@ static PyMethodDef py_misc_methods[] = {
 		NULL },
 	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
+	{ "dsdb_schema_info_reset", (PyCFunction)py_dsdb_schema_info_reset, METH_VARARGS,
+		"Reset schemaInfo value to default for a new Forest" },
 	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
 		NULL },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
