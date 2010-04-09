@@ -720,6 +720,110 @@ done:
 	return result;
 }
 
+static WERROR winreg_printer_write_sz(TALLOC_CTX *mem_ctx,
+				      struct rpc_pipe_client *pipe_handle,
+				      struct policy_handle *key_handle,
+				      const char *value,
+				      const char *data)
+{
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	wvalue.name = value;
+	if (data == NULL) {
+		blob = data_blob_string_const("");
+	} else {
+		if (!push_reg_sz(mem_ctx, NULL, &blob, data)) {
+			DEBUG(0, ("winreg_printer_write_sz: Could not marshall string %s for %s\n",
+				data, wvalue.name));
+			return WERR_NOMEM;
+		}
+	}
+	status = rpccli_winreg_SetValue(pipe_handle,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_SZ,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_write_sz: Could not set value %s: %s\n",
+			wvalue.name, win_errstr(result)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
+static WERROR winreg_printer_write_dword(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_handle,
+					 struct policy_handle *key_handle,
+					 const char *value,
+					 uint32_t data)
+{
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	wvalue.name = value;
+	blob = data_blob_talloc(mem_ctx, NULL, 4);
+	SIVAL(blob.data, 0, data);
+
+	status = rpccli_winreg_SetValue(pipe_handle,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_DWORD,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_write_dword: Could not set value %s: %s\n",
+			wvalue.name, win_errstr(result)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
+static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
+					  struct rpc_pipe_client *pipe_handle,
+					  struct policy_handle *key_handle,
+					  const char *value,
+					  DATA_BLOB blob)
+{
+	struct winreg_String wvalue;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	wvalue.name = value;
+	status = rpccli_winreg_SetValue(pipe_handle,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_BINARY,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_write_binary: Could not set value %s: %s\n",
+			wvalue.name, win_errstr(result)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
