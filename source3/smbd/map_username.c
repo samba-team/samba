@@ -108,6 +108,8 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 		ret = smbrun(command, &fd);
 		DEBUGADD(10,("returned [%d]\n", ret));
 
+		TALLOC_FREE(command);
+
 		if ( ret != 0 ) {
 			if (fd != -1)
 				close(fd);
