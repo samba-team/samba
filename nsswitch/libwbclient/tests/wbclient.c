@@ -173,18 +173,16 @@ static bool test_wbc_guidtostring(struct torture_context *tctx)
 
 static bool test_wbc_domain_info(struct torture_context *tctx)
 {
-	const char *domain_name = NULL;
 	struct wbcDomainInfo *info;
 	struct wbcInterfaceDetails *details;
 
 	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
 		"wbcInterfaceDetails failed");
-
-	domain_name = talloc_strdup(tctx, details->netbios_domain);
+	torture_assert_wbc_ok(
+		tctx, wbcDomainInfo(details->netbios_domain, &info),
+		"wbcDomainInfo failed");
 	wbcFreeMemory(details);
 
-	torture_assert_wbc_ok(tctx, wbcDomainInfo(domain_name, &info),
-		"wbcDomainInfo failed");
 	torture_assert(tctx, info,
 		"wbcDomainInfo returned NULL pointer");
 	wbcFreeMemory(info);
