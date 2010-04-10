@@ -231,6 +231,12 @@ static bool test_wbc_users(struct torture_context *tctx)
 		wbcFreeMemory(name);
 		torture_assert_wbc_ok(tctx, wbcLookupUserSids(&sid, true, &num_sids, &sids),
 			"wbcLookupUserSids failed");
+		torture_assert_wbc_ok(
+			tctx, wbcGetDisplayName(&sid, &domain, &name,
+						&name_type),
+			"wbcGetDisplayName failed");
+		wbcFreeMemory(domain);
+		wbcFreeMemory(name);
 		wbcFreeMemory(sids);
 	}
 	wbcFreeMemory(users);
