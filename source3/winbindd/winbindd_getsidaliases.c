@@ -68,13 +68,19 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 	num_sids = 0;
 	sids = NULL;
 
-	if ((request->extra_data.data != NULL)
-	    && !parse_sidlist(state, request->extra_data.data,
-			      &sids, &num_sids)) {
-		DEBUG(1, ("Could not parse SID list: %s\n",
-			  request->extra_data.data));
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
+	if (request->extra_data.data != NULL) {
+		if (request->extra_data.data[request->extra_len-1] != '\0') {
+			DEBUG(1, ("Got non-NULL terminated sidlist\n"));
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		if (!parse_sidlist(state, request->extra_data.data,
+				   &sids, &num_sids)) {
+			DEBUG(1, ("Could not parse SID list: %s\n",
+				  request->extra_data.data));
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	subreq = wb_lookupuseraliases_send(state, ev, domain, num_sids, sids);
