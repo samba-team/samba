@@ -25,8 +25,8 @@
 extern const struct generic_mapping file_generic_mapping;
 
 struct deferred_open_record {
-	bool delayed_for_oplocks;
-	struct file_id id;
+        bool delayed_for_oplocks;
+        struct file_id id;
 };
 
 static NTSTATUS create_file_unixpath(connection_struct *conn,
@@ -1082,9 +1082,9 @@ static void defer_open(struct share_mode_lock *lck,
 		  (unsigned int)request_time.tv_usec,
 		  (unsigned int)req->mid));
 
-	if (!push_deferred_smb_message(req, request_time, timeout,
+	if (!push_deferred_open_message_smb(req, request_time, timeout,
 				       (char *)state, sizeof(*state))) {
-		exit_server("push_deferred_smb_message failed");
+		exit_server("push_deferred_open_message_smb failed");
 	}
 	add_deferred_open(lck, req->mid, request_time, state->id);
 }
@@ -1477,7 +1477,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	mode_t unx_mode = (mode_t)0;
 	int info;
 	uint32 existing_dos_attributes = 0;
-	struct pending_message_list *pml = NULL;
 	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
 	uint32 open_access_mask = access_mask;
@@ -1543,29 +1542,30 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Only non-internal opens can be deferred at all
 	 */
 
-	if ((req != NULL)
-	    && ((pml = get_open_deferred_message(req->mid)) != NULL)) {
-		struct deferred_open_record *state =
-			(struct deferred_open_record *)pml->private_data.data;
+	if (req) {
+		void *ptr;
+		if (get_deferred_open_message_state(req->mid,
+				&request_time,
+				&ptr)) {
 
-		/* Remember the absolute time of the original
-		   request with this mid. We'll use it later to
-		   see if this has timed out. */
+			struct deferred_open_record *state = (struct deferred_open_record *)ptr;
+			/* Remember the absolute time of the original
+			   request with this mid. We'll use it later to
+			   see if this has timed out. */
 
-		request_time = pml->request_time;
+			/* Remove the deferred open entry under lock. */
+			lck = get_share_mode_lock(talloc_tos(), state->id,
+					NULL, NULL, NULL);
+			if (lck == NULL) {
+				DEBUG(0, ("could not get share mode lock\n"));
+			} else {
+				del_deferred_open_entry(lck, req->mid);
+				TALLOC_FREE(lck);
+			}
 
-		/* Remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(talloc_tos(), state->id, NULL, NULL,
-					  NULL);
-		if (lck == NULL) {
-			DEBUG(0, ("could not get share mode lock\n"));
-		} else {
-			del_deferred_open_entry(lck, req->mid);
-			TALLOC_FREE(lck);
+			/* Ensure we don't reprocess this message. */
+			remove_deferred_open_message_smb(req->mid);
 		}
-
-		/* Ensure we don't reprocess this message. */
-		remove_deferred_open_smb_message(req->mid);
 	}
 
 	status = check_name(conn, smb_fname->base_name);

@@ -173,7 +173,7 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
  			 * the head of the queue and changing the wait time to
  			 * zero.
  			 */
- 			schedule_deferred_open_smb_message(e->op_mid);
+ 			schedule_deferred_open_message_smb(e->op_mid);
  		} else {
 			char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 

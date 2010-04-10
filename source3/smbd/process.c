@@ -39,6 +39,7 @@ extern bool global_machine_password_needs_changing;
 
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
+static struct pending_message_list *get_deferred_open_message_smb(uint16_t mid);
 
 static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 {
@@ -528,9 +529,9 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 		    msg->seqnum, msg->encrypted, &msg->pcd);
 
 	/* If it's still there and was processed, remove it. */
-	msg = get_open_deferred_message(mid);
+	msg = get_deferred_open_message_smb(mid);
 	if (msg && msg->processed) {
-		remove_deferred_open_smb_message(mid);
+		remove_deferred_open_message_smb(mid);
 	}
 }
 
@@ -600,13 +601,18 @@ static bool push_queued_message(struct smb_request *req,
  Function to delete a sharing violation open message by mid.
 ****************************************************************************/
 
-void remove_deferred_open_smb_message(uint16 mid)
+void remove_deferred_open_message_smb(uint16_t mid)
 {
 	struct pending_message_list *pml;
 
+	if (smbd_server_conn->allow_smb2) {
+		remove_deferred_open_message_smb2(mid);
+		return;
+	}
+
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
-			DEBUG(10,("remove_deferred_open_smb_message: "
+			DEBUG(10,("remove_deferred_open_message_smb: "
 				  "deleting mid %u len %u\n",
 				  (unsigned int)mid,
 				  (unsigned int)pml->buf.length ));
@@ -622,21 +628,20 @@ void remove_deferred_open_smb_message(uint16 mid)
  schedule it for immediate processing.
 ****************************************************************************/
 
-void schedule_deferred_open_smb_message(uint16 mid)
+void schedule_deferred_open_message_smb(uint16_t mid)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct pending_message_list *pml;
 	int i = 0;
 
-	if (sconn->allow_smb2) {
-		schedule_deferred_open_smb2_message(mid);
+	if (smbd_server_conn->allow_smb2) {
+		schedule_deferred_open_message_smb2(mid);
 		return;
 	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
 
-		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
+		DEBUG(10,("schedule_deferred_open_message_smb: [%d] msg_mid = %u\n", i++,
 			(unsigned int)msg_mid ));
 
 		if (mid == msg_mid) {
@@ -645,13 +650,13 @@ void schedule_deferred_open_smb_message(uint16 mid)
 			if (pml->processed) {
 				/* A processed message should not be
 				 * rescheduled. */
-				DEBUG(0,("schedule_deferred_open_smb_message: LOGIC ERROR "
+				DEBUG(0,("schedule_deferred_open_message_smb: LOGIC ERROR "
 					"message mid %u was already processed\n",
 					msg_mid ));
 				continue;
 			}
 
-			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
+			DEBUG(10,("schedule_deferred_open_message_smb: scheduling mid %u\n",
 				mid ));
 
 			te = event_add_timed(smbd_event_context(),
@@ -660,7 +665,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
 					     smbd_deferred_open_timer,
 					     pml);
 			if (!te) {
-				DEBUG(10,("schedule_deferred_open_smb_message: "
+				DEBUG(10,("schedule_deferred_open_message_smb: "
 					  "event_add_timed() failed, skipping mid %u\n",
 					  mid ));
 			}
@@ -672,7 +677,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		}
 	}
 
-	DEBUG(10,("schedule_deferred_open_smb_message: failed to find message mid %u\n",
+	DEBUG(10,("schedule_deferred_open_message_smb: failed to find message mid %u\n",
 		mid ));
 }
 
@@ -680,9 +685,13 @@ void schedule_deferred_open_smb_message(uint16 mid)
  Return true if this mid is on the deferred queue and was not yet processed.
 ****************************************************************************/
 
-bool open_was_deferred(uint16 mid)
+bool open_was_deferred(uint16_t mid)
 {
 	struct pending_message_list *pml;
+
+	if (smbd_server_conn->allow_smb2) {
+		return open_was_deferred_smb2(mid);
+	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid && !pml->processed) {
@@ -696,7 +705,7 @@ bool open_was_deferred(uint16 mid)
  Return the message queued by this mid.
 ****************************************************************************/
 
-struct pending_message_list *get_open_deferred_message(uint16 mid)
+static struct pending_message_list *get_deferred_open_message_smb(uint16_t mid)
 {
 	struct pending_message_list *pml;
 
@@ -709,28 +718,65 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
 }
 
 /****************************************************************************
+ Get the state data queued by this mid.
+****************************************************************************/
+
+bool get_deferred_open_message_state(uint16_t mid,
+				struct timeval *p_request_time,
+				void **pp_state)
+{
+	struct pending_message_list *pml;
+
+	if (smbd_server_conn->allow_smb2) {
+		return get_deferred_open_message_state_smb2(mid,
+					p_request_time,
+					pp_state);
+	}
+
+	pml = get_deferred_open_message_smb(mid);
+	if (!pml) {
+		return false;
+	}
+	if (p_request_time) {
+		*p_request_time = pml->request_time;
+	}
+	if (pp_state) {
+		*pp_state = (void *)pml->private_data.data;
+	}
+	return true;
+}
+
+/****************************************************************************
  Function to push a deferred open smb message onto a linked list of local smb
  messages ready for processing.
 ****************************************************************************/
 
-bool push_deferred_smb_message(struct smb_request *req,
+bool push_deferred_open_message_smb(struct smb_request *req,
 			       struct timeval request_time,
 			       struct timeval timeout,
 			       char *private_data, size_t priv_len)
 {
 	struct timeval end_time;
 
+	if (req->smb2req) {
+		return push_deferred_open_message_smb2(req,
+						request_time,
+						timeout,
+						private_data,
+						priv_len);
+	}
+
 	if (req->unread_bytes) {
-		DEBUG(0,("push_deferred_smb_message: logic error ! "
+		DEBUG(0,("push_deferred_open_message_smb: logic error ! "
 			"unread_bytes = %u\n",
 			(unsigned int)req->unread_bytes ));
-		smb_panic("push_deferred_smb_message: "
+		smb_panic("push_deferred_open_message_smb: "
 			"logic error unread_bytes != 0" );
 	}
 
 	end_time = timeval_sum(&request_time, &timeout);
 
-	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u "
+	DEBUG(10,("push_deferred_open_message_smb: pushing message len %u mid %u "
 		  "timeout time [%u.%06u]\n",
 		  (unsigned int) smb_len(req->inbuf)+4, (unsigned int)req->mid,
 		  (unsigned int)end_time.tv_sec,

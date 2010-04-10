@@ -159,7 +159,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	NTSTATUS status;
 
 	if (req->smb2req) {
-		return smb2_push_blocking_lock_request(br_lck,
+		return push_blocking_lock_request_smb2(br_lck,
 				req,
 				fsp,
 				lock_timeout,

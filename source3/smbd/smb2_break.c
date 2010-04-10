@@ -209,11 +209,6 @@ static NTSTATUS smbd_smb2_oplock_break_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-void send_smb2_break_message(files_struct *fsp, uint8_t level)
+void send_break_message_smb2(files_struct *fsp, uint8_t level)
 {
-}
-
-void schedule_deferred_open_smb2_message(uint16 mid)
-{
-	/* FIXME - mid needs to be uint64_t. */
 }

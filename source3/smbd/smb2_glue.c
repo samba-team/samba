@@ -64,3 +64,35 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 
 	return smbreq;
 }
+
+/* Dummy functions for the SMB1 -> SMB2 deferred open message
+ * hooks. */
+
+void remove_deferred_open_message_smb2(uint16_t mid)
+{
+}
+
+void schedule_deferred_open_message_smb2(uint16_t mid)
+{
+}
+
+bool open_was_deferred_smb2(uint16_t mid)
+{
+	return false;
+}
+
+bool get_deferred_open_message_state_smb2(uint16_t mid,
+			struct timeval *p_request_time,
+			void **pp_state)
+{
+	return false;
+}
+
+bool push_deferred_open_message_smb2(struct smb_request *req,
+				struct timeval request_time,
+				struct timeval timeout,
+				char *private_data,
+				size_t priv_len)
+{
+	return false;
+}

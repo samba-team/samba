@@ -387,7 +387,7 @@ static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req)
  * requests.
  */
 
-bool smb2_push_blocking_lock_request( struct byte_range_lock *br_lck,
+bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				struct smb_request *req,
 				files_struct *fsp,
 				int lock_timeout,

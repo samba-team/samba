@@ -1978,4 +1978,7 @@ struct child_pid {
 	pid_t pid;
 };
 
+/* Used to keep track of deferred opens. */
+struct deferred_open_record;
+
 #endif /* _SMB_H */

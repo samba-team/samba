@@ -6783,11 +6783,13 @@ int srv_set_message(char *buf,
                         int num_words,
                         int num_bytes,
                         bool zero);
-void remove_deferred_open_smb_message(uint16 mid);
-void schedule_deferred_open_smb_message(uint16 mid);
-bool open_was_deferred(uint16 mid);
-struct pending_message_list *get_open_deferred_message(uint16 mid);
-bool push_deferred_smb_message(struct smb_request *req,
+void remove_deferred_open_message_smb(uint16_t mid);
+void schedule_deferred_open_message_smb(uint16_t mid);
+bool open_was_deferred(uint16_t mid);
+bool get_deferred_open_message_state(uint16_t mid,
+				struct timeval *p_request_time,
+				void **pp_state);
+bool push_deferred_open_message_smb(struct smb_request *req,
 			       struct timeval request_time,
 			       struct timeval timeout,
 			       char *private_data, size_t priv_len);

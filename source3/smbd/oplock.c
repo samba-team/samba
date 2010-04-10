@@ -214,7 +214,7 @@ bool should_notify_deferred_opens()
  Set up an oplock break message.
 ****************************************************************************/
 
-static char *new_break_smb1_message(TALLOC_CTX *mem_ctx,
+static char *new_break_message_smb1(TALLOC_CTX *mem_ctx,
 				   files_struct *fsp, uint8 cmd)
 {
 	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
@@ -354,9 +354,9 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 }
 
-static void send_smb1_break_message(files_struct *fsp, uint8_t level)
+static void send_break_message_smb1(files_struct *fsp, uint8_t level)
 {
-	char *break_msg = new_break_smb1_message(talloc_tos(),
+	char *break_msg = new_break_message_smb1(talloc_tos(),
 					fsp,
 					level);
 	if (break_msg == NULL) {
@@ -368,7 +368,7 @@ static void send_smb1_break_message(files_struct *fsp, uint8_t level)
 			break_msg, false, 0,
 			IS_CONN_ENCRYPTED(fsp->conn),
 			NULL)) {
-		exit_server_cleanly("send_smb1_break_message: "
+		exit_server_cleanly("send_break_message_smb1: "
 			"srv_send_smb failed.");
 	}
 
@@ -404,9 +404,9 @@ void break_level2_to_none_async(files_struct *fsp)
 
 	/* Now send a break to none message to our client. */
 	if (sconn->allow_smb2) {
-		send_smb2_break_message(fsp, OPLOCKLEVEL_NONE);
+		send_break_message_smb2(fsp, OPLOCKLEVEL_NONE);
 	} else {
-		send_smb1_break_message(fsp, OPLOCKLEVEL_NONE);
+		send_break_message_smb1(fsp, OPLOCKLEVEL_NONE);
 	}
 
 	/* Async level2 request, don't send a reply, just remove the oplock. */
@@ -543,10 +543,10 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	if (sconn->allow_smb2) {
-		send_smb2_break_message(fsp, break_to_level2 ?
+		send_break_message_smb2(fsp, break_to_level2 ?
 			OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 	} else {
-		send_smb1_break_message(fsp, break_to_level2 ?
+		send_break_message_smb1(fsp, break_to_level2 ?
 			OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 	}
 
@@ -609,9 +609,9 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	}
 
 	if (sconn->allow_smb2) {
-		send_smb2_break_message(fsp, OPLOCKLEVEL_NONE);
+		send_break_message_smb2(fsp, OPLOCKLEVEL_NONE);
 	} else {
-		send_smb1_break_message(fsp, OPLOCKLEVEL_NONE);
+		send_break_message_smb1(fsp, OPLOCKLEVEL_NONE);
 	}
 
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
@@ -680,7 +680,7 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id, (unsigned int)msg.op_mid));
 
-	schedule_deferred_open_smb_message(msg.op_mid);
+	schedule_deferred_open_message_smb(msg.op_mid);
 }
 
 static void process_open_retry_message(struct messaging_context *msg_ctx,
@@ -708,7 +708,7 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   (unsigned int)msg.op_mid));
 
-	schedule_deferred_open_smb_message(msg.op_mid);
+	schedule_deferred_open_message_smb(msg.op_mid);
 }
 
 /****************************************************************************

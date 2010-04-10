@@ -440,7 +440,6 @@ static void semlock_available_handler(uint64_t id)
 static void semlock_async_failure_handler(uint64_t id)
 {
 	struct onefs_callback_record *cb;
-	struct pending_message_list *pml;
 	struct deferred_open_record *state;
 
 	DEBUG(1, ("semlock_async_failure_handler called: %llu\n", id));
@@ -465,13 +464,12 @@ static void semlock_async_failure_handler(uint64_t id)
 	}
 
 	/* Find the actual deferred open record. */
-	if (!(pml = get_open_deferred_message(cb->data.mid))) {
+	if (!get_open_deferred_message_state(cb->data.mid, NULL, &state)) {
 		DEBUG(0, ("Could not find deferred request for "
 			  "mid %d\n", cb->data.mid));
 		destroy_onefs_callback_record(id);
 		return;
 	}
-	state = (struct deferred_open_record *)pml->private_data.data;
 
 	/* Update to failed so the client can be notified on retried open. */
 	state->failed = true;
