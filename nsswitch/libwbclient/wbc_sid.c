@@ -532,8 +532,6 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
 	/* Build the sid list */
 	for (i=0; i<num_sids; i++) {
-		wbcFreeMemory(sid_string);
-		sid_string = NULL;
 		wbc_status = wbcSidToString(&sids[i], &sid_string);
 		BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -541,8 +539,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
 		if (buflen < extra_data_len + sid_len + 2) {
 			buflen *= 2;
-			extra_data = talloc_realloc(NULL, extra_data,
-			    char, buflen);
+			extra_data = (char *)realloc(extra_data, buflen);
 			if (!extra_data) {
 				wbc_status = WBC_ERR_NO_MEMORY;
 				BAIL_ON_WBC_ERROR(wbc_status);
@@ -554,6 +551,8 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 		extra_data_len += sid_len;
 		extra_data[extra_data_len++] = '\n';
 		extra_data[extra_data_len] = '\0';
+		wbcFreeMemory(sid_string);
+		sid_string = NULL;
 	}
 	extra_data_len += 1;
 
@@ -571,8 +570,8 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 		goto done;
 	}
 
-	rids = talloc_array(NULL, uint32_t,
-			    response.data.num_entries);
+	rids = (uint32_t *)wbcAllocateMemory(response.data.num_entries,
+					     sizeof(uint32_t), NULL);
 	BAIL_ON_PTR_ERROR(sids, wbc_status);
 
 	s = (const char *)response.extra_data.data;
@@ -595,9 +594,9 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
  done:
 	wbcFreeMemory(sid_string);
-	talloc_free(extra_data);
+	free(extra_data);
 	winbindd_free_response(&response);
-	talloc_free(rids);
+	wbcFreeMemory(rids);
 	return wbc_status;
 }
 
