@@ -68,18 +68,36 @@ def parse_results(msg_ops, statistics, fh):
             else:
                 reason = None
             if result in ("success", "successful"):
-                open_tests.pop() #FIXME: Check that popped value == $testname 
-                statistics['TESTS_EXPECTED_OK']+=1
-                msg_ops.end_test(testname, "success", False, reason)
+                try:
+                    open_tests.remove(testname)
+                except KeyError:
+                    statistics['TESTS_ERROR']+=1
+                    msg_ops.end_test(testname, "error", True, 
+                            "Test was never started")
+                else:
+                    statistics['TESTS_EXPECTED_OK']+=1
+                    msg_ops.end_test(testname, "success", False, reason)
             elif result in ("xfail", "knownfail"):
-                open_tests.pop() #FIXME: Check that popped value == $testname
-                statistics['TESTS_EXPECTED_FAIL']+=1
-                msg_ops.end_test(testname, "xfail", False, reason)
-                expected_fail+=1
+                try:
+                    open_tests.remove(testname)
+                except KeyError:
+                    statistics['TESTS_ERROR']+=1
+                    msg_ops.end_test(testname, "error", True, 
+                            "Test was never started")
+                else:
+                    statistics['TESTS_EXPECTED_FAIL']+=1
+                    msg_ops.end_test(testname, "xfail", False, reason)
+                    expected_fail+=1
             elif result in ("failure", "fail"):
-                open_tests.pop() #FIXME: Check that popped value == $testname
-                statistics['TESTS_UNEXPECTED_FAIL']+=1
-                msg_ops.end_test(testname, "failure", True, reason)
+                try:
+                    open_tests.remove(testname)
+                except KeyError:
+                    statistics['TESTS_ERROR']+=1
+                    msg_ops.end_test(testname, "error", True, 
+                            "Test was never started")
+                else:
+                    statistics['TESTS_UNEXPECTED_FAIL']+=1
+                    msg_ops.end_test(testname, "failure", True, reason)
             elif result == "skip":
                 statistics['TESTS_SKIP']+=1
                 # Allow tests to be skipped without prior announcement of test
@@ -89,7 +107,10 @@ def parse_results(msg_ops, statistics, fh):
                 msg_ops.end_test(testname, "skip", False, reason)
             elif result == "error":
                 statistics['TESTS_ERROR']+=1
-                open_tests.pop() #FIXME: Check that popped value == $testname
+                try:
+                    open_tests.remove(testname)
+                except KeyError:
+                    pass
                 msg_ops.end_test(testname, "error", True, reason)
             elif result == "skip-testsuite":
                 msg_ops.skip_testsuite(testname)
