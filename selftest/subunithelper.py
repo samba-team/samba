@@ -32,7 +32,7 @@ def parse_results(msg_ops, statistics, fh):
         l = fh.readline()
         if l == "":
             break
-        if l.startswith("test: "):
+        if l.startswith("test: ") or l.startswith("testing: "):
             msg_ops.control_msg(l)
             name = l.split(":", 1)[1].strip()
             msg_ops.start_test(name)
