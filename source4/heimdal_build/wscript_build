@@ -417,7 +417,7 @@ bld.SAMBA_BINARY('asn1_compile',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
         group='build_compilers',
-	deps='HEIMDAL_ROKEN_H replace',
+	deps='HEIMDAL_ROKEN_H LIBREPLACE_H',
         install=False
 	)
 
@@ -428,7 +428,7 @@ bld.SAMBA_BINARY('compile_et',
 	includes='../heimdal/lib/com_err',
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-	deps='HEIMDAL_ROKEN_H replace',
+	deps='HEIMDAL_ROKEN_H LIBREPLACE_H',
         install=False
 	)
 
