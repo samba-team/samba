@@ -32,19 +32,25 @@ def parse_results(msg_ops, statistics, fh):
         l = fh.readline()
         if l == "":
             break
-        if l.startswith("test: ") or l.startswith("testing: "):
+        parts = l.split(None, 1)
+        if not len(parts) == 2 or not l.startswith(parts[0]):
+            continue
+        command = parts[0].rstrip(":")
+        arg = parts[1]
+        if command in ("test", "testing"):
             msg_ops.control_msg(l)
-            name = l.split(":", 1)[1].strip()
-            msg_ops.start_test(name)
-            open_tests.append(name)
-        elif l.startswith("time: "):
+            msg_ops.start_test(arg.rstrip())
+            open_tests.append(arg.rstrip())
+        elif command == "time":
+            msg_ops.control_msg(l)
             grp = re.match(
-                "^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n", l)
+                "(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n", arg)
             msg_ops.report_time(time.mktime((int(grp.group(1)), int(grp.group(2)), int(grp.group(3)), int(grp.group(4)), int(grp.group(5)), int(grp.group(6)), 0, 0, 0)))
-        elif re.match("^(" + "|".join(VALID_RESULTS) + "): (.*?)( \[)?([ \t]*)( multipart)?\n", l):
+        elif command in VALID_RESULTS:
             msg_ops.control_msg(l)
-            grp = re.match("^(" + "|".join(VALID_RESULTS) + "): (.*?)( \[)?([ \t]*)( multipart)?\n", l)
-            (result, testname, hasreason) = (grp.group(1), grp.group(2), grp.group(3))
+            result = command
+            grp = re.match("(.*?)( \[)?([ \t]*)( multipart)?\n", arg)
+            (testname, hasreason) = (grp.group(1), grp.group(2))
             if hasreason:
                 reason = ""
                 # reason may be specified in next lines
@@ -122,10 +128,10 @@ def parse_results(msg_ops, statistics, fh):
                 msg_ops.end_testsuite(testname, "xfail", reason)
             elif result == "testsuite-error":
                 msg_ops.end_testsuite(testname, "error", reason)
-        elif l.startswith("testsuite: "):
-            msg_ops.start_testsuite(l.split(":", 1)[1].strip())
-        elif l.startswith("progress: "):
-            arg = l.split(":", 1)[1].strip()
+        elif command == "testsuite":
+            msg_ops.start_testsuite(arg.strip())
+        elif command == "progress":
+            arg = arg.strip()
             if arg == "pop":
                 msg_ops.progress(None, subunit.PROGRESS_POP)
             elif arg == "push":

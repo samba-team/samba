@@ -53,7 +53,7 @@ static NET_API_STATUS test_netuserenum(struct torture_context *tctx,
 	struct USER_INFO_20 *info20 = NULL;
 	struct USER_INFO_23 *info23 = NULL;
 
-	torture_comment(tctx, "testing NetUserEnum level %d\n", level);
+	torture_comment(tctx, "Testing NetUserEnum level %d\n", level);
 
 	do {
 		status = NetUserEnum(hostname,
@@ -192,7 +192,7 @@ NET_API_STATUS test_netuseradd(struct torture_context *tctx,
 
 	ZERO_STRUCT(u1);
 
-	torture_comment(tctx, "testing NetUserAdd\n");
+	torture_comment(tctx, "Testing NetUserAdd\n");
 
 	u1.usri1_name = username;
 	u1.usri1_password = "W297!832jD8J";
@@ -220,7 +220,7 @@ static NET_API_STATUS test_netusermodals(struct torture_context *tctx,
 
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
 
-		torture_comment(tctx, "testing NetUserModalsGet level %d\n", levels[i]);
+		torture_comment(tctx, "Testing NetUserModalsGet level %d\n", levels[i]);
 
 		status = NetUserModalsGet(hostname, levels[i], &buffer);
 		if (status) {
@@ -235,7 +235,7 @@ static NET_API_STATUS test_netusermodals(struct torture_context *tctx,
 		return status;
 	}
 
-	torture_comment(tctx, "testing NetUserModalsSet\n");
+	torture_comment(tctx, "Testing NetUserModalsSet\n");
 
 	status = NetUserModalsSet(hostname, 0, (uint8_t *)u0, &parm_err);
 	if (status) {
@@ -274,7 +274,7 @@ static NET_API_STATUS test_netusergetgroups(struct torture_context *tctx,
 	struct GROUP_USERS_INFO_0 *i0;
 	struct GROUP_USERS_INFO_1 *i1;
 
-	torture_comment(tctx, "testing NetUserGetGroups level %d\n", level);
+	torture_comment(tctx, "Testing NetUserGetGroups level %d\n", level);
 
 	do {
 		status = NetUserGetGroups(hostname,
@@ -389,7 +389,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
 
-		torture_comment(tctx, "testing NetUserGetInfo level %d\n", levels[i]);
+		torture_comment(tctx, "Testing NetUserGetInfo level %d\n", levels[i]);
 
 		status = NetUserGetInfo(hostname, TORTURE_TEST_USER, levels[i], &buffer);
 		if (status && status != 124) {
@@ -411,7 +411,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	/* modify description */
 
-	torture_comment(tctx, "testing NetUserSetInfo level %d\n", 1007);
+	torture_comment(tctx, "Testing NetUserSetInfo level %d\n", 1007);
 
 	u1007.usri1007_comment = "NetApi modified user";
 
@@ -431,7 +431,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 		}
 	}
 
-	torture_comment(tctx, "testing NetUserSetInfo level 0\n");
+	torture_comment(tctx, "Testing NetUserSetInfo level 0\n");
 
 	u0.usri0_name = TORTURE_TEST_USER2;
 
@@ -443,7 +443,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	/* delete */
 
-	torture_comment(tctx, "testing NetUserDel\n");
+	torture_comment(tctx, "Testing NetUserDel\n");
 
 	status = NetUserDel(hostname, TORTURE_TEST_USER2);
 	if (status) {

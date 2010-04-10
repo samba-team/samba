@@ -429,7 +429,7 @@ bool torture_ioctl_test(struct torture_context *tctx,
 	torture_comment(tctx, "ioctl job info: %s\n", smbcli_errstr(cli->tree));
 
 	for (device=0;device<0x100;device++) {
-		torture_comment(tctx, "testing device=0x%x\n", device);
+		torture_comment(tctx, "Testing device=0x%x\n", device);
 		for (function=0;function<0x100;function++) {
 			parms.ioctl.in.request = (device << 16) | function;
 			status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);

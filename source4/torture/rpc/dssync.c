@@ -806,7 +806,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 	}
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
-		printf("testing DsGetNCChanges level %d\n",
+		printf("Testing DsGetNCChanges level %d\n",
 			array[i].level);
 
 		r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;

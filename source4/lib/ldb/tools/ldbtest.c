@@ -241,7 +241,7 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn,
 			exit(1);
 		}
 
-		printf("testing uid %d/%d - %d  \r", i, uid, res->count);
+		printf("Testing uid %d/%d - %d  \r", i, uid, res->count);
 		fflush(stdout);
 
 		talloc_free(res);

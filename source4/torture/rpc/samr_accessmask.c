@@ -84,10 +84,10 @@ static bool test_samr_accessmask_Connect5(struct torture_context *tctx,
 	uint32_t mask;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	printf("testing which bits in accessmask allows us to connect\n");
+	printf("Testing which bits in accessmask allows us to connect\n");
 	mask = 1;
 	for (i=0;i<33;i++) {
-		printf("testing Connect5 with access mask 0x%08x", mask);
+		printf("Testing Connect5 with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, b, mask, &h);
 		mask <<= 1;
 
@@ -159,10 +159,10 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 	uint32_t num_entries = 0;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	printf("testing which bits in Connect5 accessmask allows us to EnumDomains\n");
+	printf("Testing which bits in Connect5 accessmask allows us to EnumDomains\n");
 	mask = 1;
 	for (i=0;i<33;i++) {
-		printf("testing Connect5/EnumDomains with access mask 0x%08x", mask);
+		printf("Testing Connect5/EnumDomains with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, b, mask, &ch);
 		mask <<= 1;
 
@@ -260,7 +260,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	struct dcerpc_binding_handle *test_b;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
 
-	printf("testing ACLs to allow/prevent users to connect to SAMR");
+	printf("Testing ACLs to allow/prevent users to connect to SAMR");
 
 	/* connect to SAMR */
 	status = torture_samr_Connect5(tctx, b, SEC_FLAG_MAXIMUM_ALLOWED, &ch);
@@ -378,7 +378,7 @@ static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
 	struct dcerpc_binding_handle *test_b;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
 
-	printf("testing if ACLs are enforced for non domain admin users when connecting to SAMR");
+	printf("Testing if ACLs are enforced for non domain admin users when connecting to SAMR");
 
 
 	status = dcerpc_pipe_connect(tctx,
@@ -425,10 +425,10 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 	uint32_t mask;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	printf("testing which bits in Connect5 accessmask allows us to LookupDomain\n");
+	printf("Testing which bits in Connect5 accessmask allows us to LookupDomain\n");
 	mask = 1;
 	for (i=0;i<33;i++) {
-		printf("testing Connect5/LookupDomain with access mask 0x%08x", mask);
+		printf("Testing Connect5/LookupDomain with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, b, mask, &ch);
 		mask <<= 1;
 
@@ -538,10 +538,10 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 
 
-	printf("testing which bits in Connect5 accessmask allows us to OpenDomain\n");
+	printf("Testing which bits in Connect5 accessmask allows us to OpenDomain\n");
 	mask = 1;
 	for (i=0;i<33;i++) {
-		printf("testing Connect5/OpenDomain with access mask 0x%08x", mask);
+		printf("Testing Connect5/OpenDomain with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, b, mask, &ch);
 		mask <<= 1;
 
@@ -700,7 +700,7 @@ static bool test_LookupRids(struct torture_context *tctx,
 	struct lsa_Strings names;
 	struct samr_Ids types;
 
-	torture_comment(tctx, "testing LookupRids %d\n", rid);
+	torture_comment(tctx, "Testing LookupRids %d\n", rid);
 
 	r.in.domain_handle = domain_handle;
 	r.in.num_rids = 1;
@@ -725,7 +725,7 @@ static bool test_user(struct torture_context *tctx,
 {
 	struct policy_handle user_handle;
 
-	torture_comment(tctx, "testing user %s (%d)\n", u->account_name.string, u->rid);
+	torture_comment(tctx, "Testing user %s (%d)\n", u->account_name.string, u->rid);
 
 	torture_assert(tctx, test_LookupRids(tctx, b, domain_handle, u->rid),
 		"failed to call lookuprids");
@@ -756,7 +756,7 @@ static bool test_user(struct torture_context *tctx,
 
 			r.in.level = levels[i];
 
-			torture_comment(tctx, "testing QueryUserInfo rid: %d level: %d\n",
+			torture_comment(tctx, "Testing QueryUserInfo rid: %d level: %d\n",
 				u->rid, r.in.level);
 
 			torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo_r(b, tctx, &r),
@@ -793,7 +793,7 @@ static bool test_samr_group(struct torture_context *tctx,
 {
 	struct policy_handle group_handle;
 
-	torture_comment(tctx, "testing group %s (%d)\n", g->name.string, g->idx);
+	torture_comment(tctx, "Testing group %s (%d)\n", g->name.string, g->idx);
 
 	torture_assert(tctx, test_LookupRids(tctx, b, domain_handle, g->idx),
 		"failed to call lookuprids");
@@ -836,7 +836,7 @@ static bool test_samr_alias(struct torture_context *tctx,
 			    struct policy_handle *domain_handle,
 			    struct samr_SamEntry *a)
 {
-	torture_comment(tctx, "testing alias %s (%d)\n", a->name.string, a->idx);
+	torture_comment(tctx, "Testing alias %s (%d)\n", a->name.string, a->idx);
 
 	torture_assert(tctx, test_LookupRids(tctx, b, domain_handle, a->idx),
 		"failed to call lookuprids");

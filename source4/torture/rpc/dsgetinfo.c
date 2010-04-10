@@ -302,7 +302,7 @@ static bool test_getinfo(struct torture_context *tctx,
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		const char *object_dn;
 
-		torture_comment(tctx, "testing DsReplicaGetInfo level %d infotype %d\n",
+		torture_comment(tctx, "Testing DsReplicaGetInfo level %d infotype %d\n",
 				array[i].level, array[i].infotype);
 
 		if (array[i].obj_dn) {

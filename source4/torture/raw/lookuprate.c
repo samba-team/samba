@@ -244,7 +244,7 @@ bool torture_bench_lookup(struct torture_context *torture)
 	remove_working_directory(cli->tree, BASEDIR);
 
 	for (i = 0; i < ARRAY_SIZE(records); ++i) {
-		printf("testing lookup rate with %u directory entries\n",
+		printf("Testing lookup rate with %u directory entries\n",
 				records[i].dirent_count);
 
 		status = fill_directory(cli->tree, BASEDIR,

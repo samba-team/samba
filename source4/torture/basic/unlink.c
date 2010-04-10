@@ -60,7 +60,7 @@ bool torture_unlinktest(struct torture_context *tctx, struct smbcli_state *cli)
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
-	torture_comment(tctx, "testing unlink after ntcreatex with DELETE access\n");
+	torture_comment(tctx, "Testing unlink after ntcreatex with DELETE access\n");
 
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;

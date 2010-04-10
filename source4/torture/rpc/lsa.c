@@ -2962,7 +2962,7 @@ static bool testcase_TrustedDomains(struct torture_context *tctx,
 		talloc_get_type_abort(data, struct lsa_trustdom_state);
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	torture_comment(tctx, "testing %d domains\n", state->num_trusts);
+	torture_comment(tctx, "Testing %d domains\n", state->num_trusts);
 
 	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;

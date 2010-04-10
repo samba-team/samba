@@ -432,7 +432,7 @@ static bool test_one_file(struct torture_context *tctx,
 
 	/* call all the File Information Classes */
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		torture_comment(tctx, "testing %s %d\n", levels[i].name,
+		torture_comment(tctx, "Testing %s %d\n", levels[i].name,
 				levels[i].level);
 
 		levels[i].status = torture_single_file_search(tree, mem_ctx,

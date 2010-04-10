@@ -397,7 +397,7 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 			expected_mask_anon |= SEC_STD_DELETE;
 		}
 
-		torture_comment(tctx, "testing generic bits 0x%08x\n",
+		torture_comment(tctx, "Testing generic bits 0x%08x\n",
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_dacl_create(tctx,
 						0, owner_sid, NULL,
@@ -438,7 +438,7 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 			continue;
 		}
 
-		torture_comment(tctx, "testing generic bits 0x%08x (anonymous)\n",
+		torture_comment(tctx, "Testing generic bits 0x%08x (anonymous)\n",
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_dacl_create(tctx,
 						0, SID_NT_ANONYMOUS, NULL,
@@ -554,7 +554,7 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 			expected_mask_anon |= SEC_STD_DELETE;
 		}
 
-		torture_comment(tctx, "testing generic bits 0x%08x\n",
+		torture_comment(tctx, "Testing generic bits 0x%08x\n",
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_dacl_create(tctx,
 						0, owner_sid, NULL,
@@ -595,7 +595,7 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 			continue;
 		}
 
-		torture_comment(tctx, "testing generic bits 0x%08x (anonymous)\n",
+		torture_comment(tctx, "Testing generic bits 0x%08x (anonymous)\n",
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_dacl_create(tctx,
 						0, SID_NT_ANONYMOUS, NULL,
@@ -1125,7 +1125,7 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 		}
 	}
 
-	torture_comment(tctx, "testing access checks on inherited create with %s\n", fname1);
+	torture_comment(tctx, "Testing access checks on inherited create with %s\n", fname1);
 	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					owner_sid,

@@ -1358,7 +1358,7 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(logon);
 
-	d_printf("testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
+	d_printf("Testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
 	
 	samlogon_state.comment = comment;
 	samlogon_state.account_name = account_name;

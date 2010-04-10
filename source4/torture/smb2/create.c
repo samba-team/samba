@@ -393,7 +393,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing alloc size\n");
+	torture_comment(tctx, "Testing alloc size\n");
 	io.in.alloc_size = 4096;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -402,7 +402,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing durable open\n");
+	torture_comment(tctx, "Testing durable open\n");
 	io.in.durable_open = true;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -410,7 +410,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing query maximal access\n");
+	torture_comment(tctx, "Testing query maximal access\n");
 	io.in.query_maximal_access = true;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -419,13 +419,13 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing timewarp\n");
+	torture_comment(tctx, "Testing timewarp\n");
 	io.in.timewarp = 10000;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	io.in.timewarp = 0;
 
-	torture_comment(tctx, "testing query_on_disk\n");
+	torture_comment(tctx, "Testing query_on_disk\n");
 	io.in.query_on_disk_id = true;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -433,7 +433,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing unknown tag\n");
+	torture_comment(tctx, "Testing unknown tag\n");
 	status = smb2_create_blob_add(tctx, &io.in.blobs,
 				      "FooO", data_blob(NULL, 0));
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -444,7 +444,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing bad tag length\n");
+	torture_comment(tctx, "Testing bad tag length\n");
 	status = smb2_create_blob_add(tctx, &io.in.blobs,
 				      "xxx", data_blob(NULL, 0));
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1083,7 +1083,7 @@ static bool test_smb2_leading_slash(struct torture_context *tctx,
 static bool test_create_acl_file(struct torture_context *tctx,
     struct smb2_tree *tree)
 {
-	torture_comment(tctx, "testing nttrans create with sec_desc on files\n");
+	torture_comment(tctx, "Testing nttrans create with sec_desc on files\n");
 
 	return test_create_acl_ext(tctx, tree, false);
 }
@@ -1091,7 +1091,7 @@ static bool test_create_acl_file(struct torture_context *tctx,
 static bool test_create_acl_dir(struct torture_context *tctx,
     struct smb2_tree *tree)
 {
-	torture_comment(tctx, "testing nttrans create with sec_desc on directories\n");
+	torture_comment(tctx, "Testing nttrans create with sec_desc on directories\n");
 
 	return test_create_acl_ext(tctx, tree, true);
 }

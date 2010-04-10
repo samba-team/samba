@@ -1693,7 +1693,7 @@ static bool test_LogonControl(struct torture_context *tctx,
 		secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
 	}
 
-	torture_comment(tctx, "testing LogonControl with secure channel type: %d\n",
+	torture_comment(tctx, "Testing LogonControl with secure channel type: %d\n",
 		secure_channel_type);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));

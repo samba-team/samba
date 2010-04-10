@@ -130,7 +130,7 @@ static bool test_Shutdown(struct dcerpc_binding_handle *b,
 
 	r.in.connect_handle = handle;
 
-	torture_comment(tctx, "testing samr_Shutdown\n");
+	torture_comment(tctx, "Testing samr_Shutdown\n");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_Shutdown_r(b, tctx, &r),
 		"Shutdown failed");
@@ -159,7 +159,7 @@ static bool test_SetDsrmPassword(struct dcerpc_binding_handle *b,
 	r.in.unknown = 0;
 	r.in.hash = &hash;
 
-	torture_comment(tctx, "testing samr_SetDsrmPassword\n");
+	torture_comment(tctx, "Testing samr_SetDsrmPassword\n");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetDsrmPassword_r(b, tctx, &r),
 		"SetDsrmPassword failed");
@@ -1411,7 +1411,7 @@ static bool test_GetGroupsForUser(struct dcerpc_binding_handle *b,
 	struct samr_GetGroupsForUser r;
 	struct samr_RidWithAttributeArray *rids = NULL;
 
-	torture_comment(tctx, "testing GetGroupsForUser\n");
+	torture_comment(tctx, "Testing GetGroupsForUser\n");
 
 	r.in.user_handle = user_handle;
 	r.out.rids = &rids;
@@ -2633,7 +2633,7 @@ static bool test_AddMemberToAlias(struct dcerpc_binding_handle *b,
 
 	sid = dom_sid_add_rid(tctx, domain_sid, 512);
 
-	torture_comment(tctx, "testing AddAliasMember\n");
+	torture_comment(tctx, "Testing AddAliasMember\n");
 	r.in.alias_handle = alias_handle;
 	r.in.sid = sid;
 
@@ -2659,7 +2659,7 @@ static bool test_AddMultipleMembersToAlias(struct dcerpc_binding_handle *b,
 	struct samr_RemoveMultipleMembersFromAlias r;
 	struct lsa_SidArray sids;
 
-	torture_comment(tctx, "testing AddMultipleMembersToAlias\n");
+	torture_comment(tctx, "Testing AddMultipleMembersToAlias\n");
 	a.in.alias_handle = alias_handle;
 	a.in.sids = &sids;
 
@@ -2675,7 +2675,7 @@ static bool test_AddMultipleMembersToAlias(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, a.out.result, "AddMultipleMembersToAlias");
 
 
-	torture_comment(tctx, "testing RemoveMultipleMembersFromAlias\n");
+	torture_comment(tctx, "Testing RemoveMultipleMembersFromAlias\n");
 	r.in.alias_handle = alias_handle;
 	r.in.sids = &sids;
 
@@ -2982,7 +2982,7 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 	cli_credentials_set_password(test_credentials,
 				     password, CRED_SPECIFIED);
 
-	torture_comment(tctx, "testing samlogon (%s) as %s password: %s\n",
+	torture_comment(tctx, "Testing samlogon (%s) as %s password: %s\n",
 		interactive ? "interactive" : "network", acct_name, password);
 
 	if (!test_SamLogon(tctx, p, test_credentials,
@@ -4995,7 +4995,7 @@ static bool test_DeleteAlias_byname(struct dcerpc_binding_handle *b,
 	struct policy_handle alias_handle;
 	uint32_t rid;
 
-	torture_comment(tctx, "testing DeleteAlias_byname\n");
+	torture_comment(tctx, "Testing DeleteAlias_byname\n");
 
 	status = test_LookupName(b, tctx, domain_handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5168,7 +5168,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p,
 		r.in.level = 1;
 		r.out.info = &info;
 
-		torture_comment(tctx, "testing samr_QueryDomainInfo level 1\n");
+		torture_comment(tctx, "Testing samr_QueryDomainInfo level 1\n");
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryDomainInfo_r(b, tctx, &r),
 			"QueryDomainInfo failed");
 		if (!NT_STATUS_IS_OK(r.out.result)) {
@@ -5189,7 +5189,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p,
 		min_pwd_age_old = s.in.info->info1.min_password_age;
 		s.in.info->info1.min_password_age = 0;
 
-		torture_comment(tctx, "testing samr_SetDomainInfo level 1\n");
+		torture_comment(tctx, "Testing samr_SetDomainInfo level 1\n");
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetDomainInfo_r(b, tctx, &s),
 			"SetDomainInfo failed");
 		if (!NT_STATUS_IS_OK(s.out.result)) {
@@ -5206,7 +5206,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p,
 		s.in.info->info1.password_properties = pwd_prop_old;
 		s.in.info->info1.min_password_age = min_pwd_age_old;
 
-		torture_comment(tctx, "testing samr_SetDomainInfo level 1\n");
+		torture_comment(tctx, "Testing samr_SetDomainInfo level 1\n");
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetDomainInfo_r(b, tctx, &s),
 			"SetDomainInfo failed");
 		if (!NT_STATUS_IS_OK(s.out.result)) {
@@ -7788,7 +7788,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 	uint32_t level_out = 0;
 	bool ret = true, got_handle = false;
 
-	torture_comment(tctx, "testing samr_Connect\n");
+	torture_comment(tctx, "Testing samr_Connect\n");
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -7804,7 +7804,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 		*handle = h;
 	}
 
-	torture_comment(tctx, "testing samr_Connect2\n");
+	torture_comment(tctx, "Testing samr_Connect2\n");
 
 	r2.in.system_name = NULL;
 	r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -7823,7 +7823,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 		*handle = h;
 	}
 
-	torture_comment(tctx, "testing samr_Connect3\n");
+	torture_comment(tctx, "Testing samr_Connect3\n");
 
 	r3.in.system_name = NULL;
 	r3.in.unknown = 0;
@@ -7843,7 +7843,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 		*handle = h;
 	}
 
-	torture_comment(tctx, "testing samr_Connect4\n");
+	torture_comment(tctx, "Testing samr_Connect4\n");
 
 	r4.in.system_name = "";
 	r4.in.client_version = 0;
@@ -7863,7 +7863,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 		*handle = h;
 	}
 
-	torture_comment(tctx, "testing samr_Connect5\n");
+	torture_comment(tctx, "Testing samr_Connect5\n");
 
 	info.info1.client_version = 0;
 	info.info1.unknown2 = 0;
@@ -7904,7 +7904,7 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p,
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	torture_comment(tctx, "testing samr_ValidatePassword\n");
+	torture_comment(tctx, "Testing samr_ValidatePassword\n");
 
 	ZERO_STRUCT(r);
 	r.in.level = NetValidatePasswordReset;

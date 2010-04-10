@@ -49,7 +49,7 @@ static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetWkstaGetInfo level %u\n",
+		torture_comment(tctx, "Testing NetWkstaGetInfo level %u\n",
 				r.in.level);
 		status = dcerpc_wkssvc_NetWkstaGetInfo_r(b, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status,
@@ -89,7 +89,7 @@ static bool test_NetWkstaTransportEnum(struct torture_context *tctx,
 	r.out.info = &info;
 	r.out.resume_handle = &resume_handle;
 
-	torture_comment(tctx, "testing NetWkstaTransportEnum level 0\n");
+	torture_comment(tctx, "Testing NetWkstaTransportEnum level 0\n");
 
 	status = dcerpc_wkssvc_NetWkstaTransportEnum_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -123,7 +123,7 @@ static bool test_NetrWkstaTransportAdd(struct torture_context *tctx,
 	r.in.info0 = &info0;
 	r.in.parm_err = r.out.parm_err = &parm_err;
 
-	torture_comment(tctx, "testing NetrWkstaTransportAdd level 0\n");
+	torture_comment(tctx, "Testing NetrWkstaTransportAdd level 0\n");
 
 	status = dcerpc_wkssvc_NetrWkstaTransportAdd_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -146,7 +146,7 @@ static bool test_NetrWkstaTransportDel(struct torture_context *tctx,
 	r.in.transport_name = SMBTORTURE_TRANSPORT_NAME;
 	r.in.unknown3 = 0;
 
-	torture_comment(tctx, "testing NetrWkstaTransportDel\n");
+	torture_comment(tctx, "Testing NetrWkstaTransportDel\n");
 
 	status = dcerpc_wkssvc_NetrWkstaTransportDel_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -198,7 +198,7 @@ static bool test_NetWkstaEnumUsers(struct torture_context *tctx,
 
 		r.out.entries_read = &entries_read;
 
-		torture_comment(tctx, "testing NetWkstaEnumUsers level %u\n",
+		torture_comment(tctx, "Testing NetWkstaEnumUsers level %u\n",
 				levels[i]);
 
 		status = dcerpc_wkssvc_NetWkstaEnumUsers_r(b, tctx, &r);
@@ -244,7 +244,7 @@ static bool test_NetrWkstaUserGetInfo(struct torture_context *tctx,
 		r.in.level = tests[i].level;
 		r.out.info = &info;
 
-		torture_comment(tctx, "testing NetrWkstaUserGetInfo level %u\n",
+		torture_comment(tctx, "Testing NetrWkstaUserGetInfo level %u\n",
 				r.in.level);
 
 		status = dcerpc_wkssvc_NetrWkstaUserGetInfo_r(b, tctx, &r);
@@ -302,7 +302,7 @@ static bool test_NetrUseEnum(struct torture_context *tctx,
 
 		r.out.entries_read = &entries_read;
 
-		torture_comment(tctx, "testing NetrUseEnum level %u\n",
+		torture_comment(tctx, "Testing NetrUseEnum level %u\n",
 				levels[i]);
 
 		status = dcerpc_wkssvc_NetrUseEnum_r(b, tctx, &r);
@@ -340,7 +340,7 @@ static bool test_NetrUseAdd(struct torture_context *tctx,
 	r.in.ctr = ctr;
 	r.in.parm_err = r.out.parm_err = &parm_err;
 
-	torture_comment(tctx, "testing NetrUseAdd level %u\n",
+	torture_comment(tctx, "Testing NetrUseAdd level %u\n",
 			r.in.level);
 
 	status = dcerpc_wkssvc_NetrUseAdd_r(b, tctx, &r);
@@ -363,7 +363,7 @@ static bool test_NetrUseAdd(struct torture_context *tctx,
 	r.in.ctr = ctr;
 	r.in.parm_err = r.out.parm_err = &parm_err;
 
-	torture_comment(tctx, "testing NetrUseAdd level %u\n",
+	torture_comment(tctx, "Testing NetrUseAdd level %u\n",
 			r.in.level);
 
 	status = dcerpc_wkssvc_NetrUseAdd_r(b, tctx, &r);
@@ -386,7 +386,7 @@ static bool test_NetrUseDel(struct torture_context *tctx,
 	r.in.use_name = SMBTORTURE_USE_NAME;
 	r.in.force_cond = 0;
 
-	torture_comment(tctx, "testing NetrUseDel\n");
+	torture_comment(tctx, "Testing NetrUseDel\n");
 
 	status = dcerpc_wkssvc_NetrUseDel_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -497,7 +497,7 @@ static bool test_NetrLogonDomainNameAdd(struct torture_context *tctx,
 
 	r.in.domain_name = lp_workgroup(tctx->lp_ctx);
 
-	torture_comment(tctx, "testing NetrLogonDomainNameAdd\n");
+	torture_comment(tctx, "Testing NetrLogonDomainNameAdd\n");
 
 	status = dcerpc_wkssvc_NetrLogonDomainNameAdd_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -516,7 +516,7 @@ static bool test_NetrLogonDomainNameDel(struct torture_context *tctx,
 
 	r.in.domain_name = lp_workgroup(tctx->lp_ctx);
 
-	torture_comment(tctx, "testing NetrLogonDomainNameDel\n");
+	torture_comment(tctx, "Testing NetrLogonDomainNameDel\n");
 
 	status = dcerpc_wkssvc_NetrLogonDomainNameDel_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -545,7 +545,7 @@ static bool test_NetrEnumerateComputerNames_level(struct torture_context *tctx,
 	r.in.Reserved = 0;
 	r.out.ctr = &ctr;
 
-	torture_comment(tctx, "testing NetrEnumerateComputerNames level %u\n",
+	torture_comment(tctx, "Testing NetrEnumerateComputerNames level %u\n",
 			r.in.name_type);
 
 	status = dcerpc_wkssvc_NetrEnumerateComputerNames_r(b, tctx, &r);
@@ -615,7 +615,7 @@ static bool test_NetrValidateName(struct torture_context *tctx,
 		r.in.Password = NULL;
 		r.in.name_type = levels[i];
 
-		torture_comment(tctx, "testing NetrValidateName level %u\n",
+		torture_comment(tctx, "Testing NetrValidateName level %u\n",
 				r.in.name_type);
 
 		status = dcerpc_wkssvc_NetrValidateName_r(b, tctx, &r);
@@ -646,7 +646,7 @@ static bool test_NetrValidateName2(struct torture_context *tctx,
 		r.in.EncryptedPassword = NULL;
 		r.in.name_type = levels[i];
 
-		torture_comment(tctx, "testing NetrValidateName2 level %u\n",
+		torture_comment(tctx, "Testing NetrValidateName2 level %u\n",
 				r.in.name_type);
 
 		status = dcerpc_wkssvc_NetrValidateName2_r(b, tctx, &r);
@@ -676,7 +676,7 @@ static bool test_NetrAddAlternateComputerName(struct torture_context *tctx,
 	r.in.EncryptedPassword = NULL;
 	r.in.Reserved = 0;
 
-	torture_comment(tctx, "testing NetrAddAlternateComputerName\n");
+	torture_comment(tctx, "Testing NetrAddAlternateComputerName\n");
 
 	status = dcerpc_wkssvc_NetrAddAlternateComputerName_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -718,7 +718,7 @@ static bool test_NetrRemoveAlternateComputerName(struct torture_context *tctx,
 	r.in.EncryptedPassword = NULL;
 	r.in.Reserved = 0;
 
-	torture_comment(tctx, "testing NetrRemoveAlternateComputerName\n");
+	torture_comment(tctx, "Testing NetrRemoveAlternateComputerName\n");
 
 	status = dcerpc_wkssvc_NetrRemoveAlternateComputerName_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -783,7 +783,7 @@ static bool test_NetrSetPrimaryComputername(struct torture_context *tctx,
 	const char **names_o = NULL, **names = NULL;
 	int num_names_o = 0, num_names = 0;
 
-	torture_comment(tctx, "testing NetrSetPrimaryComputername\n");
+	torture_comment(tctx, "Testing NetrSetPrimaryComputername\n");
 
 	if (!test_NetrAddAlternateComputerName(tctx, p)) {
 		return false;
@@ -851,7 +851,7 @@ static bool test_NetrRenameMachineInDomain(struct torture_context *tctx,
 	r.in.password = NULL;
 	r.in.RenameOptions = 0;
 
-	torture_comment(tctx, "testing NetrRenameMachineInDomain\n");
+	torture_comment(tctx, "Testing NetrRenameMachineInDomain\n");
 
 	status = dcerpc_wkssvc_NetrRenameMachineInDomain_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -889,7 +889,7 @@ static bool test_NetrRenameMachineInDomain2(struct torture_context *tctx,
 	const char **names_o = NULL, **names = NULL;
 	int num_names_o = 0, num_names = 0;
 
-	torture_comment(tctx, "testing NetrRenameMachineInDomain2\n");
+	torture_comment(tctx, "Testing NetrRenameMachineInDomain2\n");
 
 	if (!test_NetrEnumerateComputerNames_level(tctx, p,
 						   NetPrimaryComputerName,
@@ -967,7 +967,7 @@ static bool test_NetrWorkstationStatisticsGet(struct torture_context *tctx,
 	r.in.server_name = dcerpc_server_name(p);
 	r.out.info = &info;
 
-	torture_comment(tctx, "testing NetrWorkstationStatisticsGet\n");
+	torture_comment(tctx, "Testing NetrWorkstationStatisticsGet\n");
 
 	status = dcerpc_wkssvc_NetrWorkstationStatisticsGet_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -999,7 +999,7 @@ static bool test_NetrMessageBufferSend(struct torture_context *tctx,
 	r.in.message_buffer = (uint8_t *)msg;
 	r.in.message_size = size;
 
-	torture_comment(tctx, "testing NetrMessageBufferSend\n");
+	torture_comment(tctx, "Testing NetrMessageBufferSend\n");
 
 	status = dcerpc_wkssvc_NetrMessageBufferSend_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -1022,7 +1022,7 @@ static bool test_NetrGetJoinInformation(struct torture_context *tctx,
 	r.in.name_buffer = r.out.name_buffer = &name_buffer;
 	r.out.name_type = &join_status;
 
-	torture_comment(tctx, "testing NetrGetJoinInformation\n");
+	torture_comment(tctx, "Testing NetrGetJoinInformation\n");
 
 	status = dcerpc_wkssvc_NetrGetJoinInformation_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -1081,7 +1081,7 @@ static bool test_NetrGetJoinableOus(struct torture_context *tctx,
 	r.in.num_ous = r.out.num_ous = &num_ous;
 	r.out.ous = &ous;
 
-	torture_comment(tctx, "testing NetrGetJoinableOus\n");
+	torture_comment(tctx, "Testing NetrGetJoinableOus\n");
 
 	status = dcerpc_wkssvc_NetrGetJoinableOus_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "NetrGetJoinableOus failed");
@@ -1108,7 +1108,7 @@ static bool test_NetrGetJoinableOus2(struct torture_context *tctx,
 	r.in.num_ous = r.out.num_ous = &num_ous;
 	r.out.ous = &ous;
 
-	torture_comment(tctx, "testing NetrGetJoinableOus2\n");
+	torture_comment(tctx, "Testing NetrGetJoinableOus2\n");
 
 	status = dcerpc_wkssvc_NetrGetJoinableOus2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "NetrGetJoinableOus2 failed");
@@ -1138,7 +1138,7 @@ static bool test_NetrUnjoinDomain(struct torture_context *tctx,
 	r.in.password = NULL;
 	r.in.unjoin_flags = 0;
 
-	torture_comment(tctx, "testing NetrUnjoinDomain\n");
+	torture_comment(tctx, "Testing NetrUnjoinDomain\n");
 
 	status = dcerpc_wkssvc_NetrUnjoinDomain_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -1169,7 +1169,7 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 	r.in.password = NULL;
 	r.in.join_flags = 0;
 
-	torture_comment(tctx, "testing NetrJoinDomain\n");
+	torture_comment(tctx, "Testing NetrJoinDomain\n");
 
 	status = dcerpc_wkssvc_NetrJoinDomain_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -1252,7 +1252,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	r.in.join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 			  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 
-	torture_comment(tctx, "testing NetrJoinDomain2 (assuming non-DC)\n");
+	torture_comment(tctx, "Testing NetrJoinDomain2 (assuming non-DC)\n");
 
 	status = dcerpc_wkssvc_NetrJoinDomain2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -1331,7 +1331,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	r.in.encrypted_password = pwd_buf;
 	r.in.unjoin_flags = 0;
 
-	torture_comment(tctx, "testing NetrUnjoinDomain2 (assuming non-DC)\n");
+	torture_comment(tctx, "Testing NetrUnjoinDomain2 (assuming non-DC)\n");
 
 	status = dcerpc_wkssvc_NetrUnjoinDomain2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,

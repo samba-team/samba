@@ -1970,7 +1970,7 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
 
-		torture_comment(tctx, "testing NetShareGetInfo level %u on share '%s'\n",
+		torture_comment(tctx, "Testing NetShareGetInfo level %u on share '%s'\n",
 		       r.in.level, r.in.share_name);
 
 		status = dcerpc_srvsvc_NetShareGetInfo_r(b, tctx, &r);
@@ -2066,7 +2066,7 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 			break;
 		}
 
-		torture_comment(tctx, "testing NetShareEnum level %u\n", info_ctr.level);
+		torture_comment(tctx, "Testing NetShareEnum level %u\n", info_ctr.level);
 
 		status = dcerpc_srvsvc_NetShareEnum_r(b, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {

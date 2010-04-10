@@ -65,7 +65,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX,
 				      "dcerpc_alter_context with wrong version should fail");
 
-	torture_comment(torture, "testing DSSETUP pipe operations\n");
+	torture_comment(torture, "Testing DSSETUP pipe operations\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
 
 	if (handle) {
@@ -97,7 +97,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	}
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
-	torture_comment(torture, "testing DSSETUP pipe operations - should fault\n");
+	torture_comment(torture, "Testing DSSETUP pipe operations - should fault\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation_ext(torture, p, NT_STATUS_NET_WRITE_FAULT);
 
 	ret &= test_lsa_OpenPolicy2(p->binding_handle, torture, &handle);
@@ -106,7 +106,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 		ret &= test_lsa_Close(p->binding_handle, torture, handle);
 	}
 
-	torture_comment(torture, "testing DSSETUP pipe operations\n");
+	torture_comment(torture, "Testing DSSETUP pipe operations\n");
 
 	ret &= test_DsRoleGetPrimaryDomainInformation(torture, p2);
 

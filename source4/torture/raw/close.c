@@ -67,7 +67,7 @@ bool torture_raw_close(struct torture_context *torture,
 	status = smb_raw_close(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 	
-	printf("testing close.in.write_time\n");
+	printf("Testing close.in.write_time\n");
 
 	/* the file should have the write time set */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
@@ -83,7 +83,7 @@ bool torture_raw_close(struct torture_context *torture,
 		ret = false;
 	}
 
-	printf("testing other times\n");
+	printf("Testing other times\n");
 
 	/* none of the other times should be set to that time */
 	if (nt_time_equal(&finfo.all_info.out.write_time, 
@@ -133,7 +133,7 @@ bool torture_raw_close(struct torture_context *torture,
 		ret = false;
 	}
 
-	printf("testing splclose\n");
+	printf("Testing splclose\n");
 
 	/* check splclose on a file */
 	REOPEN;
@@ -142,7 +142,7 @@ bool torture_raw_close(struct torture_context *torture,
 	status = smb_raw_close(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
-	printf("testing flush\n");
+	printf("Testing flush\n");
 	smbcli_close(cli->tree, fnum);
 
 	io_flush.flush.level		= RAW_FLUSH_FLUSH;

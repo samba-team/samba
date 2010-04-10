@@ -56,7 +56,7 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing mkdir collision\n");
+	printf("Testing mkdir collision\n");
 
 	/* 2nd create */
 	status = smb_raw_mkdir(cli->tree, &md);
@@ -70,14 +70,14 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 	status = smb_raw_rmdir(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	printf("testing mkdir collision with file\n");
+	printf("Testing mkdir collision with file\n");
 
 	/* name collision with a file */
 	smbcli_close(cli->tree, create_complex_file(cli, tctx, path));
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 
-	printf("testing rmdir with file\n");
+	printf("Testing rmdir with file\n");
 
 	/* delete a file with rmdir */
 	status = smb_raw_rmdir(cli->tree, &rd);
@@ -85,14 +85,14 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 
 	smbcli_unlink(cli->tree, path);
 
-	printf("testing invalid dir\n");
+	printf("Testing invalid dir\n");
 
 	/* create an invalid dir */
 	md.mkdir.in.path = "..\\..\\..";
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 	
-	printf("testing t2mkdir\n");
+	printf("Testing t2mkdir\n");
 
 	/* try a t2mkdir - need to work out why this fails! */
 	md.t2mkdir.level = RAW_MKDIR_T2MKDIR;
@@ -104,13 +104,13 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 	status = smb_raw_rmdir(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("testing t2mkdir bad path\n");
+	printf("Testing t2mkdir bad path\n");
 	md.t2mkdir.in.path = talloc_asprintf(tctx, "%s\\bad_path\\bad_path",
 					     BASEDIR);
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 
-	printf("testing t2mkdir with EAs\n");
+	printf("Testing t2mkdir with EAs\n");
 
 	/* with EAs */
 	md.t2mkdir.level = RAW_MKDIR_T2MKDIR;

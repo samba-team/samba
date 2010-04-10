@@ -147,7 +147,7 @@ bool torture_listshares(struct torture_context *torture)
 
 	for (i = 0; i < ARRAY_SIZE(levels); i++) {
 		share.in.level = levels[i];
-		torture_comment(torture, "testing libnet_ListShare level %u\n", share.in.level);
+		torture_comment(torture, "Testing libnet_ListShare level %u\n", share.in.level);
 
 		status = libnet_ListShares(libnetctx, mem_ctx, &share);
 		if (!NT_STATUS_IS_OK(status)) {

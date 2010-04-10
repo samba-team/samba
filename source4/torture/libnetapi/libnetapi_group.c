@@ -51,7 +51,7 @@ static NET_API_STATUS test_netgroupenum(struct torture_context *tctx,
 	struct GROUP_INFO_2 *info2 = NULL;
 	struct GROUP_INFO_3 *info3 = NULL;
 
-	torture_comment(tctx, "testing NetGroupEnum level %d\n", level);
+	torture_comment(tctx, "Testing NetGroupEnum level %d\n", level);
 
 	do {
 		status = NetGroupEnum(hostname,
@@ -151,7 +151,7 @@ static NET_API_STATUS test_netgroupgetusers(struct torture_context *tctx,
 	struct GROUP_USERS_INFO_0 *info0 = NULL;
 	struct GROUP_USERS_INFO_1 *info1 = NULL;
 
-	torture_comment(tctx, "testing NetGroupGetUsers level %d\n", level);
+	torture_comment(tctx, "Testing NetGroupGetUsers level %d\n", level);
 
 	do {
 		status = NetGroupGetUsers(hostname,
@@ -230,7 +230,7 @@ static NET_API_STATUS test_netgroupsetusers(struct torture_context *tctx,
 	struct GROUP_USERS_INFO_0 *g0 = NULL;
 	struct GROUP_USERS_INFO_1 *g1 = NULL;
 
-	torture_comment(tctx, "testing NetGroupSetUsers level %d\n", level);
+	torture_comment(tctx, "Testing NetGroupSetUsers level %d\n", level);
 
 	switch (level) {
 		case 0:
@@ -313,7 +313,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 
 	g0.grpi0_name = groupname;
 
-	torture_comment(tctx, "testing NetGroupAdd\n");
+	torture_comment(tctx, "Testing NetGroupAdd\n");
 
 	status = NetGroupAdd(hostname, 0, (uint8_t *)&g0, &parm_err);
 	if (status) {
@@ -345,7 +345,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
 
-		torture_comment(tctx, "testing NetGroupGetInfo level %d\n", levels[i]);
+		torture_comment(tctx, "Testing NetGroupGetInfo level %d\n", levels[i]);
 
 		status = NetGroupGetInfo(hostname, groupname, levels[i], &buffer);
 		if (status && status != 124) {
@@ -358,7 +358,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 
 	g0.grpi0_name = groupname2;
 
-	torture_comment(tctx, "testing NetGroupSetInfo level 0\n");
+	torture_comment(tctx, "Testing NetGroupSetInfo level 0\n");
 
 	status = NetGroupSetInfo(hostname, groupname, 0, (uint8_t *)&g0, &parm_err);
 	switch (status) {
@@ -412,7 +412,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 		}
 	}
 
-	torture_comment(tctx, "testing NetGroupAddUser\n");
+	torture_comment(tctx, "Testing NetGroupAddUser\n");
 
 	status = NetGroupAddUser(hostname, groupname2, username);
 	if (status) {
@@ -431,7 +431,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 		}
 	}
 
-	torture_comment(tctx, "testing NetGroupDelUser\n");
+	torture_comment(tctx, "Testing NetGroupDelUser\n");
 
 	status = NetGroupDelUser(hostname, groupname2, username);
 	if (status) {
@@ -487,7 +487,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 
 	/* delete */
 
-	torture_comment(tctx, "testing NetGroupDel\n");
+	torture_comment(tctx, "Testing NetGroupDel\n");
 
 	status = NetGroupDel(hostname, groupname2);
 	if (status) {

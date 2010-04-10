@@ -271,14 +271,14 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	notify.smb2.in.file.handle = h1;
 	notify.smb2.in.recursive = true;
 
-	torture_comment(torture, "testing notify cancel\n");
+	torture_comment(torture, "Testing notify cancel\n");
 
 	req = smb2_notify_send(tree1, &(notify.smb2));
 	smb2_cancel(req);
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
 	CHECK_STATUS(status, NT_STATUS_CANCELLED);
 
-	torture_comment(torture, "testing notify mkdir\n");
+	torture_comment(torture, "Testing notify mkdir\n");
 
 	req = smb2_notify_send(tree1, &(notify.smb2));
 	smb2_util_mkdir(tree2, fname);
@@ -290,7 +290,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	CHECK_VAL(notify.smb2.out.changes[0].action, NOTIFY_ACTION_ADDED);
 	CHECK_WIRE_STR(notify.smb2.out.changes[0].name, "subdir-name");
 
-	torture_comment(torture, "testing notify rmdir\n");
+	torture_comment(torture, "Testing notify rmdir\n");
 
 	req = smb2_notify_send(tree1, &(notify.smb2));
 	smb2_util_rmdir(tree2, fname);
@@ -302,7 +302,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	CHECK_WIRE_STR(notify.smb2.out.changes[0].name, "subdir-name");
 
 	torture_comment(torture,
-		"testing notify mkdir - rmdir - mkdir - rmdir\n");
+		"Testing notify mkdir - rmdir - mkdir - rmdir\n");
 
 	smb2_util_mkdir(tree2, fname);
 	smb2_util_rmdir(tree2, fname);
@@ -324,7 +324,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 
 	count = torture_numops;
 	torture_comment(torture,
-		"testing buffered notify on create of %d files\n", count);
+		"Testing buffered notify on create of %d files\n", count);
 	for (i=0;i<count;i++) {
 		struct smb2_handle h12;
 		char *fname2 = talloc_asprintf(torture, BASEDIR "\\test%d.txt",
@@ -374,7 +374,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	   this unlink is only seen by the 1st notify and
 	   the 3rd notify (later) */
 	torture_comment(torture,
-		"testing notify on unlink for the first file\n");
+		"Testing notify on unlink for the first file\n");
 	status = smb2_util_unlink(tree2, BASEDIR "\\test0.txt");
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -441,7 +441,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	}
 
 	torture_comment(torture,
-	"testing if a close() on the dir handle triggers the notify reply\n");
+	"Testing if a close() on the dir handle triggers the notify reply\n");
 
 	notify.smb2.in.file.handle = h1;
 	req = smb2_notify_send(tree1, &(notify.smb2));
@@ -946,14 +946,14 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	} while (0); \
 	} while (0);
 
-	torture_comment(torture, "testing mkdir\n");
-	NOTIFY_MASK_TEST("testing mkdir",;,
+	torture_comment(torture, "Testing mkdir\n");
+	NOTIFY_MASK_TEST("Testing mkdir",;,
 			 smb2_util_mkdir(tree2, BASEDIR "\\tname1");,
 			 smb2_util_rmdir(tree2, BASEDIR "\\tname1");,
 			 NOTIFY_ACTION_ADDED,
 			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
 
-	torture_comment(torture, "testing create file\n");
+	torture_comment(torture, "Testing create file\n");
 	ZERO_STRUCT(io1.smb2);
 	io1.generic.level = RAW_OPEN_SMB2;
 	io1.smb2.in.create_flags = 0;
@@ -967,15 +967,15 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	io1.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
 	io1.smb2.in.fname = BASEDIR "\\tname1";
 
-	NOTIFY_MASK_TEST("testing create file",;,
+	NOTIFY_MASK_TEST("Testing create file",;,
 			 smb2_util_close(tree2, custom_smb2_create(tree2,
 						torture, &(io1.smb2)));,
 			 smb2_util_unlink(tree2, BASEDIR "\\tname1");,
 			 NOTIFY_ACTION_ADDED,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
 
-	torture_comment(torture, "testing unlink\n");
-	NOTIFY_MASK_TEST("testing unlink",
+	torture_comment(torture, "Testing unlink\n");
+	NOTIFY_MASK_TEST("Testing unlink",
 			 smb2_util_close(tree2, custom_smb2_create(tree2,
 						torture, &(io1.smb2)));,
 			 smb2_util_unlink(tree2, BASEDIR "\\tname1");,
@@ -983,22 +983,22 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			 NOTIFY_ACTION_REMOVED,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
 
-	torture_comment(torture, "testing rmdir\n");
-	NOTIFY_MASK_TEST("testing rmdir",
+	torture_comment(torture, "Testing rmdir\n");
+	NOTIFY_MASK_TEST("Testing rmdir",
 			 smb2_util_mkdir(tree2, BASEDIR "\\tname1");,
 			 smb2_util_rmdir(tree2, BASEDIR "\\tname1");,
 			 ;,
 			 NOTIFY_ACTION_REMOVED,
 			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
 
-	torture_comment(torture, "testing rename file\n");
+	torture_comment(torture, "Testing rename file\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sinfo.rename_information.in.file.handle = h1;
 	sinfo.rename_information.in.overwrite = true;
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = BASEDIR "\\tname2";
-	NOTIFY_MASK_TEST("testing rename file",
+	NOTIFY_MASK_TEST("Testing rename file",
 			 smb2_util_close(tree2, custom_smb2_create(tree2,
 						torture, &(io1.smb2)));,
 			 smb2_setinfo_file(tree2, &sinfo);,
@@ -1006,22 +1006,22 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			 NOTIFY_ACTION_OLD_NAME,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 2);
 
-	torture_comment(torture, "testing rename dir\n");
+	torture_comment(torture, "Testing rename dir\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sinfo.rename_information.in.file.handle = h1;
 	sinfo.rename_information.in.overwrite = true;
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = BASEDIR "\\tname2";
-	NOTIFY_MASK_TEST("testing rename dir",
+	NOTIFY_MASK_TEST("Testing rename dir",
 		smb2_util_mkdir(tree2, BASEDIR "\\tname1");,
 		smb2_setinfo_file(tree2, &sinfo);,
 		smb2_util_rmdir(tree2, BASEDIR "\\tname2");,
 		NOTIFY_ACTION_OLD_NAME,
 		FILE_NOTIFY_CHANGE_DIR_NAME, 2);
 
-	torture_comment(torture, "testing set path attribute\n");
-	NOTIFY_MASK_TEST("testing set path attribute",
+	torture_comment(torture, "Testing set path attribute\n");
+	NOTIFY_MASK_TEST("Testing set path attribute",
 		smb2_util_close(tree2, custom_smb2_create(tree2,
 				       torture, &(io.smb2)));,
 		smb2_util_setatr(tree2, BASEDIR "\\tname1",
@@ -1030,12 +1030,12 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
-	torture_comment(torture, "testing set path write time\n");
+	torture_comment(torture, "Testing set path write time\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 	sinfo.generic.in.file.handle = h1;
 	sinfo.basic_info.in.write_time = 1000;
-	NOTIFY_MASK_TEST("testing set path write time",
+	NOTIFY_MASK_TEST("Testing set path write time",
 		smb2_util_close(tree2, custom_smb2_create(tree2,
 				       torture, &(io1.smb2)));,
 		smb2_setinfo_file(tree2, &sinfo);,
@@ -1053,8 +1053,8 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	        sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 		sinfo.generic.in.file.handle = h1;
 	        sinfo.basic_info.in.create_time = 0;
-		torture_comment(torture, "testing set file create time\n");
-		NOTIFY_MASK_TEST("testing set file create time",
+		torture_comment(torture, "Testing set file create time\n");
+		NOTIFY_MASK_TEST("Testing set file create time",
 			smb2_create_complex_file(tree2,
 			BASEDIR "\\tname1", &h2);,
 			smb2_setinfo_file(tree2, &sinfo);,
@@ -1068,8 +1068,8 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 	sinfo.generic.in.file.handle = h1;
 	sinfo.basic_info.in.access_time = 0;
-	torture_comment(torture, "testing set file access time\n");
-	NOTIFY_MASK_TEST("testing set file access time",
+	torture_comment(torture, "Testing set file access time\n");
+	NOTIFY_MASK_TEST("Testing set file access time",
 		smb2_create_complex_file(tree2, BASEDIR "\\tname1", &h2);,
 		smb2_setinfo_file(tree2, &sinfo);,
 		(smb2_util_close(tree2, h2),
@@ -1081,8 +1081,8 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 	sinfo.generic.in.file.handle = h1;
 	sinfo.basic_info.in.change_time = 0;
-	torture_comment(torture, "testing set file change time\n");
-	NOTIFY_MASK_TEST("testing set file change time",
+	torture_comment(torture, "Testing set file change time\n");
+	NOTIFY_MASK_TEST("Testing set file change time",
 		smb2_create_complex_file(tree2, BASEDIR "\\tname1", &h2);,
 		smb2_setinfo_file(tree2, &sinfo);,
 		(smb2_util_close(tree2, h2),
@@ -1091,8 +1091,8 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 		0, 1);
 
 
-	torture_comment(torture, "testing write\n");
-	NOTIFY_MASK_TEST("testing write",
+	torture_comment(torture, "Testing write\n");
+	NOTIFY_MASK_TEST("Testing write",
 		smb2_create_complex_file(tree2, BASEDIR "\\tname1", &h2);,
 		smb2_util_write(tree2, h2, &c, 10000, 1);,
 		(smb2_util_close(tree2, h2),
@@ -1154,7 +1154,7 @@ static bool torture_smb2_notify_file(struct torture_context *torture,
 	notify.smb2.in.recursive = false;
 
 	torture_comment(torture,
-	"testing if notifies on file handles are invalid (should be)\n");
+	"Testing if notifies on file handles are invalid (should be)\n");
 
 	req = smb2_notify_send(tree, &(notify.smb2));
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
@@ -1677,7 +1677,7 @@ static bool torture_smb2_notify_overflow(struct torture_context *torture,
 
 	/* open a lot of files, filling up the server side notify buffer */
 	torture_comment(torture,
-		"testing overflowed buffer notify on create of %d files\n",
+		"Testing overflowed buffer notify on create of %d files\n",
 		count);
 
 	for (i=0;i<count;i++) {
@@ -1878,7 +1878,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	notify.smb2.in.file.handle = h1;
 	notify.smb2.in.recursive = true;
 
-	torture_comment(torture, "testing notify mkdir\n");
+	torture_comment(torture, "Testing notify mkdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
 	smb2_cancel(req);
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
@@ -1896,7 +1896,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	CHECK_VAL(notify.smb2.out.changes[0].action, NOTIFY_ACTION_ADDED);
 	CHECK_WIRE_STR(notify.smb2.out.changes[0].name, "subdir-name");
 
-	torture_comment(torture, "testing notify rmdir\n");
+	torture_comment(torture, "Testing notify rmdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
 	status = smb2_util_rmdir(tree, fname);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1912,7 +1912,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	torture_comment(torture, "TESTING WITH SECONDARY TCON\n");
 	tree1 = secondary_tcon(tree, torture);
 
-	torture_comment(torture, "testing notify mkdir\n");
+	torture_comment(torture, "Testing notify mkdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
 	smb2_util_mkdir(tree1, fname);
 
@@ -1923,7 +1923,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	CHECK_VAL(notify.smb2.out.changes[0].action, NOTIFY_ACTION_ADDED);
 	CHECK_WIRE_STR(notify.smb2.out.changes[0].name, "subdir-name");
 
-	torture_comment(torture, "testing notify rmdir\n");
+	torture_comment(torture, "Testing notify rmdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
 	smb2_util_rmdir(tree, fname);
 
@@ -1940,7 +1940,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	talloc_free(tree1);
 
-	torture_comment(torture, "testing notify mkdir\n");
+	torture_comment(torture, "Testing notify mkdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
 	smb2_util_mkdir(tree, fname);
 
@@ -1951,7 +1951,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	CHECK_VAL(notify.smb2.out.changes[0].action, NOTIFY_ACTION_ADDED);
 	CHECK_WIRE_STR(notify.smb2.out.changes[0].name, "subdir-name");
 
-	torture_comment(torture, "testing notify rmdir\n");
+	torture_comment(torture, "Testing notify rmdir\n");
 	req = smb2_notify_send(tree, &(notify.smb2));
 	smb2_util_rmdir(tree, fname);
 

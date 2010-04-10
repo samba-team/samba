@@ -541,7 +541,7 @@ static bool test_async(struct torture_context *tctx,
 
 	t = time(NULL);
 
-	torture_comment(tctx, "testing cancel by CANCEL_LOCK\n");
+	torture_comment(tctx, "Testing cancel by CANCEL_LOCK\n");
 
 	/* setup a timed lock */
 	io.lockx.in.timeout = 10000;
@@ -584,7 +584,7 @@ static bool test_async(struct torture_context *tctx,
 	 * accept the request but only cancel the first lock.  Samba3
 	 * now does what Windows does (JRA).
 	 */
-	torture_comment(tctx, "testing multiple cancel\n");
+	torture_comment(tctx, "Testing multiple cancel\n");
 
 	/* acquire second lock */
 	io.lockx.in.timeout = 0;
@@ -654,7 +654,7 @@ static bool test_async(struct torture_context *tctx,
 
 	/* If a lock request contained multiple ranges and we are cancelling
 	 * one while it's still pending, what happens? */
-	torture_comment(tctx, "testing cancel 1/2 lock request\n");
+	torture_comment(tctx, "Testing cancel 1/2 lock request\n");
 
 	/* Send request with two ranges */
 	io.lockx.in.timeout = -1;
@@ -695,7 +695,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing cancel 2/2 lock request\n");
+	torture_comment(tctx, "Testing cancel 2/2 lock request\n");
 
 	/* Lock second range so it contends */
 	io.lockx.in.timeout = 0;
@@ -745,7 +745,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_comment(tctx, "testing cancel by unlock\n");
+	torture_comment(tctx, "Testing cancel by unlock\n");
 	io.lockx.in.ulock_cnt = 0;
 	io.lockx.in.lock_cnt = 1;
 	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
@@ -772,7 +772,7 @@ static bool test_async(struct torture_context *tctx,
 		       "lock cancel by unlock was not immediate (%s) - took %d secs\n",
 		       __location__, (int)(time(NULL)-t)));
 
-	torture_comment(tctx, "testing cancel by close\n");
+	torture_comment(tctx, "Testing cancel by close\n");
 	io.lockx.in.ulock_cnt = 0;
 	io.lockx.in.lock_cnt = 1;
 	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
@@ -822,7 +822,7 @@ static bool test_async(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	tree->tid = tcon.tconx.out.tid;
 
-	torture_comment(tctx, "testing cancel by exit\n");
+	torture_comment(tctx, "Testing cancel by exit\n");
 	if (TARGET_SUPPORTS_SMBEXIT(tctx)) {
 		fname = BASEDIR "\\test_exit.txt";
 		fnum = smbcli_open(tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -875,7 +875,7 @@ static bool test_async(struct torture_context *tctx,
 				"  skipping test, SMBExit not supported\n");
 	}
 
-	torture_comment(tctx, "testing cancel by ulogoff\n");
+	torture_comment(tctx, "Testing cancel by ulogoff\n");
 	fname = BASEDIR "\\test_ulogoff.txt";
 	fnum = smbcli_open(tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,
@@ -930,7 +930,7 @@ static bool test_async(struct torture_context *tctx,
 	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel by ulogoff was not immediate (%s)\n", __location__));
 
-	torture_comment(tctx, "testing cancel by tdis\n");
+	torture_comment(tctx, "Testing cancel by tdis\n");
 	tree->session = cli->session;
 
 	fname = BASEDIR "\\test_tdis.txt";
@@ -1004,7 +1004,7 @@ static bool test_errorcode(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing LOCK_NOT_GRANTED vs. FILE_LOCK_CONFLICT\n");
 
-	torture_comment(tctx, "testing with timeout = 0\n");
+	torture_comment(tctx, "Testing with timeout = 0\n");
 	fname = BASEDIR "\\test0.txt";
 	t = 0;
 
@@ -1307,14 +1307,14 @@ next_run:
 	if (t == 0) {
 		smb_raw_exit(cli->session);
 		t = 1;
-		torture_comment(tctx, "testing with timeout > 0 (=%d)\n",
+		torture_comment(tctx, "Testing with timeout > 0 (=%d)\n",
 				t);
 		fname = BASEDIR "\\test1.txt";
 		goto next_run;
 	}
 
 	t = 4000;
-	torture_comment(tctx, "testing special cases with timeout > 0 (=%d)\n",
+	torture_comment(tctx, "Testing special cases with timeout > 0 (=%d)\n",
 			t);
 
 	/*
@@ -1323,7 +1323,7 @@ next_run:
 	 * to the client (after the timeout went by)
 	 */
 	smb_raw_exit(cli->session);
-	torture_comment(tctx, "testing a conflict while a lock is pending\n");
+	torture_comment(tctx, "Testing a conflict while a lock is pending\n");
 	fname = BASEDIR "\\test2.txt";
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,

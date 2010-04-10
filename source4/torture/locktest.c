@@ -385,7 +385,7 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 		   int n)
 {
 	int i;
-	printf("testing %u ...\n", n);
+	printf("Testing %u ...\n", n);
 	for (i=0; i<n; i++) {
 		if (i && i % 100 == 0) {
 			printf("%u\n", i);

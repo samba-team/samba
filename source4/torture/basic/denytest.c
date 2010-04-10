@@ -1429,7 +1429,7 @@ bool torture_denytest1(struct torture_context *tctx,
 		smbcli_close(cli1->tree, fnum1);
 	}
 
-	torture_comment(tctx, "testing %d entries\n", (int)ARRAY_SIZE(denytable1));
+	torture_comment(tctx, "Testing %d entries\n", (int)ARRAY_SIZE(denytable1));
 
 	GetTimeOfDay(&tv_start);
 
@@ -1797,7 +1797,7 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 	io1.ntcreatex.in.fname = fname;
 	io2 = io1;
 
-	torture_comment(tctx, "testing %d entries on %s\n", torture_numops, fname);
+	torture_comment(tctx, "Testing %d entries on %s\n", torture_numops, fname);
 
 	for (i=0;i<torture_numops;i++) {
 		NTSTATUS status1, status2, status2_p;

@@ -76,7 +76,7 @@ bool test_DsBind(struct dcerpc_pipe *p,
 	r.in.bind_info = &bind_info_ctr;
 	r.out.bind_handle = &priv->bind_handle;
 
-	torture_comment(tctx, "testing DsBind\n");
+	torture_comment(tctx, "Testing DsBind\n");
 
 	status = dcerpc_drsuapi_DsBind_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsBind");
@@ -137,7 +137,7 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 			r.out.level_out = &level_out;
 			
 			torture_comment(tctx,
-				   "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+				   "Testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 			       r.in.req->req1.level, r.in.req->req1.domain_name);
 		
 			status = dcerpc_drsuapi_DsGetDomainControllerInfo_r(p->binding_handle, tctx, &r);
@@ -191,7 +191,7 @@ static bool test_DsGetDomainControllerInfo(struct torture_context *tctx,
 	r.in.req->req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
 	r.in.req->req1.level = -1;
 	
-	torture_comment(tctx, "testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+	torture_comment(tctx, "Testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
 			r.in.req->req1.level, r.in.req->req1.domain_name);
 	
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo_r(p->binding_handle, tctx, &r);
@@ -236,7 +236,7 @@ static bool test_DsWriteAccountSpn(struct torture_context *tctx,
 	r.in.level			= 1;
 	r.in.req			= &req;
 
-	torture_comment(tctx, "testing DsWriteAccountSpn\n");
+	torture_comment(tctx, "Testing DsWriteAccountSpn\n");
 
 	r.in.req->req1.operation	= DRSUAPI_DS_SPN_OPERATION_ADD;
 	r.in.req->req1.unknown1	= 0;
@@ -350,7 +350,7 @@ static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		const char *object_dn;
 
-		torture_comment(tctx, "testing DsReplicaGetInfo level %d infotype %d\n",
+		torture_comment(tctx, "Testing DsReplicaGetInfo level %d infotype %d\n",
 				array[i].level, array[i].infotype);
 
 		object_dn = (array[i].obj_dn ? array[i].obj_dn : priv->domain_obj_dn);
@@ -425,7 +425,7 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 	r.in.bind_handle	= &priv->bind_handle;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
-		torture_comment(tctx, "testing DsReplicaSync level %d\n",
+		torture_comment(tctx, "Testing DsReplicaSync level %d\n",
 				array[i].level);
 
 		r.in.level = array[i].level;
@@ -552,7 +552,7 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
 		torture_comment(tctx,
-				"testing DsGetNCChanges level %d\n",
+				"Testing DsGetNCChanges level %d\n",
 				array[i].level);
 
 		r.in.bind_handle	= &priv->bind_handle;
@@ -685,7 +685,7 @@ bool test_DsUnbind(struct dcerpc_pipe *p,
 	r.in.bind_handle = &priv->bind_handle;
 	r.out.bind_handle = &priv->bind_handle;
 
-	torture_comment(tctx, "testing DsUnbind\n");
+	torture_comment(tctx, "Testing DsUnbind\n");
 
 	status = dcerpc_drsuapi_DsUnbind_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsUnbind");

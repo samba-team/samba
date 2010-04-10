@@ -333,7 +333,7 @@ int main(int argc, char * const *argv)
 		if ((pids[i]=fork()) == 0) {
 			close(pfds[0]);
 			if (i == 0) {
-				printf("testing with %d processes, %d loops, %d hash_size, seed=%d%s\n",
+				printf("Testing with %d processes, %d loops, %d hash_size, seed=%d%s\n",
 				       num_procs, num_loops, hash_size, seed, always_transaction ? " (all within transactions)" : "");
 			}
 			exit(run_child(i, seed, num_loops, 0));

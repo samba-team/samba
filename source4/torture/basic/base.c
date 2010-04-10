@@ -930,7 +930,7 @@ error_test3:
 	smbcli_unlink(cli1->tree, fname);
 
 
-	torture_comment(tctx, "testing ctemp\n");
+	torture_comment(tctx, "Testing ctemp\n");
 	fnum1 = smbcli_ctemp(cli1->tree, "\\", &tmp_path);
 	if (fnum1 == -1) {
 		torture_comment(tctx, "ctemp failed (%s)\n", smbcli_errstr(cli1->tree));

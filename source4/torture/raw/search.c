@@ -256,7 +256,7 @@ static bool test_one_file(struct torture_context *tctx,
 		NTSTATUS expected_status;
 		uint32_t cap = cli->transport->negotiate.capabilities;
 
-		torture_comment(tctx, "testing %s\n", levels[i].name);
+		torture_comment(tctx, "Testing %s\n", levels[i].name);
 
 		levels[i].status = torture_single_search(cli, tctx, fname, 
 							 levels[i].level,

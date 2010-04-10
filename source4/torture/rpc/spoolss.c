@@ -4664,7 +4664,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 		return true;
 	}
 
-	torture_comment(tctx, "testing close on secondary pipe\n");
+	torture_comment(tctx, "Testing close on secondary pipe\n");
 
 	status = dcerpc_parse_binding(tctx, p->conn->binding_string, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to parse dcerpc binding");

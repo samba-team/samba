@@ -279,7 +279,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	
 	names[0].str = dom_sid;
 
-	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
@@ -304,7 +304,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 
 	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_GUID;
 
-	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
@@ -330,7 +330,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 
 	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 
-	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
@@ -378,7 +378,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = nt4_domain;
 
-	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
@@ -404,7 +404,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc);
 
-	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
@@ -430,7 +430,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = priv->domain_guid_str;
 
-	torture_comment(tctx, "testing DsCrackNames with name '%s' desired format:%d\n",
+	torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req->req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);

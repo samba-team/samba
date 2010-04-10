@@ -65,7 +65,7 @@ static bool test_loadfile(struct smbcli_state *cli, struct torture_context *tctx
 	io1.in.data  = data;
 	io1.in.size  = len;
 
-	printf("testing savefile\n");
+	printf("Testing savefile\n");
 
 	status = smb_composite_savefile(cli->tree, &io1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -75,7 +75,7 @@ static bool test_loadfile(struct smbcli_state *cli, struct torture_context *tctx
 
 	io2.in.fname = fname;
 
-	printf("testing parallel loadfile with %d ops\n", num_ops);
+	printf("Testing parallel loadfile with %d ops\n", num_ops);
 
 	c = talloc_array(tctx, struct composite_context *, num_ops);
 
@@ -145,7 +145,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	io1.in.data  = data;
 	io1.in.size  = len;
 
-	printf("testing savefile\n");
+	printf("Testing savefile\n");
 
 	status = smb_composite_savefile(cli->tree, &io1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -168,7 +168,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	lp_smbcli_options(tctx->lp_ctx, &io2.in.options);
 	lp_smbcli_session_options(tctx->lp_ctx, &io2.in.session_options);
 
-	printf("testing parallel fetchfile with %d ops\n", torture_numops);
+	printf("Testing parallel fetchfile with %d ops\n", torture_numops);
 
 	event_ctx = cli->transport->socket->event.ctx;
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
@@ -284,7 +284,7 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 
 	/* set parameters for appendacl async call */
 
-	printf("testing parallel appendacl with %d ops\n", num_ops);
+	printf("Testing parallel appendacl with %d ops\n", num_ops);
 
 	c = talloc_array(tctx, struct composite_context *, num_ops);
 	io = talloc_array(tctx, struct  smb_composite_appendacl *, num_ops);
@@ -358,7 +358,8 @@ static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
 	io1.in.iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
 	io1.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 
-	printf("testing parallel queryfsinfo [Object ID] with %d ops\n", torture_numops);
+	printf("Testing parallel queryfsinfo [Object ID] with %d ops\n",
+		   torture_numops);
 
 	event_ctx = tctx->ev;
 	c = talloc_array(tctx, struct composite_context *, torture_numops);

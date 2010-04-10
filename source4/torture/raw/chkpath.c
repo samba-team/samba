@@ -176,14 +176,14 @@ static bool test_chkpath(struct smbcli_state *cli, struct torture_context *tctx)
 	/* Note that the two following paths are identical but
 	  give different NT status returns for chkpth and findfirst. */
 
-	printf("testing findfirst on %s\n", "\\.\\\\\\\\\\\\.");
+	printf("Testing findfirst on %s\n", "\\.\\\\\\\\\\\\.");
 	status = single_search(cli, tctx, "\\.\\\\\\\\\\\\.");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID,NT_STATUS_DOS(ERRDOS,ERRinvalidname));
 
 	ret &= test_path(cli, "\\.\\\\\\\\\\\\.", NT_STATUS_OBJECT_PATH_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
 	/* We expect this open to fail with the same error code as the chkpath below. */
-	printf("testing Open on %s\n", "\\.\\\\\\\\\\\\.");
+	printf("Testing Open on %s\n", "\\.\\\\\\\\\\\\.");
 	/* findfirst seems to fail with a different error. */
 	fnum1 = smbcli_nt_create_full(cli->tree, "\\.\\\\\\\\\\\\.",
 				      0, SEC_RIGHTS_FILE_ALL,
@@ -224,7 +224,7 @@ static bool test_chkpath(struct smbcli_state *cli, struct torture_context *tctx)
 	ret &= test_path(cli, BASEDIR "\\nt\\V S\\VB98\\vb6.exe", NT_STATUS_NOT_A_DIRECTORY,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
 	/* We expect this open to fail with the same error code as the chkpath below. */
-	printf("testing Open on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
+	printf("Testing Open on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
 	/* findfirst seems to fail with a different error. */
 	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR".\\.\\.\\.\\foo\\..\\.\\",
 				      0, SEC_RIGHTS_FILE_ALL,
@@ -237,13 +237,13 @@ static bool test_chkpath(struct smbcli_state *cli, struct torture_context *tctx)
 	status = smbcli_nt_error(cli->tree);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
-	printf("testing findfirst on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
+	printf("Testing findfirst on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
 	status = single_search(cli, tctx, BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
 	/* We expect this open to fail with the same error code as the chkpath below. */
 	/* findfirst seems to fail with a different error. */
-	printf("testing Open on %s\n", BASEDIR "\\nt\\V S\\VB98\\vb6.exe\\3");
+	printf("Testing Open on %s\n", BASEDIR "\\nt\\V S\\VB98\\vb6.exe\\3");
 	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR "\\nt\\V S\\VB98\\vb6.exe\\3",
 				      0, SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,

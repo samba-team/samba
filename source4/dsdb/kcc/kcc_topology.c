@@ -3464,7 +3464,7 @@ NTSTATUS kcctpl_test(struct ldb_context *ldb)
 	struct GUID_list keep;
 	bool all_connected;
 
-	DEBUG(0, ("testing kcctpl_create_intersite_connections\n"));
+	DEBUG(0, ("Testing kcctpl_create_intersite_connections\n"));
 	status = kcctpl_create_intersite_connections(ldb, tmp_ctx, &keep,
 						     &all_connected);
 	DEBUG(4, ("%s\n", nt_errstr(status)));
