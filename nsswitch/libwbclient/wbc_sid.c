@@ -521,10 +521,10 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	wbcFreeMemory(sid_string);
 	sid_string = NULL;
 
-	/* Lets assume each sid is around 54 characters
-	 * S-1-5-AAAAAAAAAAA-BBBBBBBBBBB-CCCCCCCCCCC-DDDDDDDDDDD\n */
-	buflen = 54 * num_sids;
-	extra_data = talloc_array(NULL, char, buflen);
+	/* Lets assume each sid is around 57 characters
+	 * S-1-5-21-AAAAAAAAAAA-BBBBBBBBBBB-CCCCCCCCCCC-DDDDDDDDDDD\n */
+	buflen = 57 * num_sids;
+	extra_data = (char *)malloc(buflen);
 	if (!extra_data) {
 		wbc_status = WBC_ERR_NO_MEMORY;
 		BAIL_ON_WBC_ERROR(wbc_status);
