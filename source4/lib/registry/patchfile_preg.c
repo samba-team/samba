@@ -33,7 +33,7 @@ static WERROR preg_read_utf16(int fd, char *c)
 {
 	uint16_t v;
 
-	if (read(fd, &v, 2) < 2) {
+	if (read(fd, &v, sizeof(uint16_t)) < sizeof(uint16_t)) {
 		return WERR_GENERAL_FAILURE;
 	}
 	push_codepoint(c, v);
@@ -46,7 +46,7 @@ static WERROR preg_write_utf16(int fd, const char *string)
 
 	for (i = 0; i < strlen(string); i+=size) {
 		v = next_codepoint(&string[i], &size);
-		if (write(fd, &v, 2) < 2) {
+		if (write(fd, &v, sizeof(uint16_t)) < sizeof(uint16_t)) {
 			return WERR_GENERAL_FAILURE;
 		}
 	}
@@ -190,7 +190,7 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 
 	strncpy(preg_header.hdr, "PReg", 4);
 	SIVAL(&preg_header.version, 0, 1);
-	write(data->fd, (uint8_t *)&preg_header,8);
+	write(data->fd, (uint8_t *)&preg_header, sizeof(preg_header));
 
 	data->ctx = ctx;
 
@@ -230,7 +230,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 	buf_ptr = buf;
 
 	/* Read first 8 bytes (the header) */
-	if (read(fd, &preg_header, 8) != 8) {
+	if (read(fd, &preg_header, sizeof(preg_header)) != sizeof(preg_header)) {
 		DEBUG(0, ("Could not read PReg file: %s\n",
 				strerror(errno)));
 		ret = WERR_GENERAL_FAILURE;
@@ -279,7 +279,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		value_name = talloc_strdup(mem_ctx, buf);
 
 		/* Get the type */
-		if (read(fd, &value_type, 4) < 4) {
+		if (read(fd, &value_type, sizeof(uint32_t)) < sizeof(uint32_t)) {
 			DEBUG(0, ("Error while reading PReg\n"));
 			ret = WERR_GENERAL_FAILURE;
 			goto cleanup;
@@ -296,7 +296,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		}
 
 		/* Get data length */
-		if (read(fd, &length, 4) < 4) {
+		if (read(fd, &length, sizeof(uint32_t)) < sizeof(uint32_t)) {
 			DEBUG(0, ("Error while reading PReg\n"));
 			ret = WERR_GENERAL_FAILURE;
 			goto cleanup;
