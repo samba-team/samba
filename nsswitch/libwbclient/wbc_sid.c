@@ -511,7 +511,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
 	if (!dom_sid) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		goto done;
 	}
 
 	wbc_status = wbcSidToString(dom_sid, &sid_string);
@@ -527,7 +527,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	extra_data = (char *)malloc(buflen);
 	if (!extra_data) {
 		wbc_status = WBC_ERR_NO_MEMORY;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		goto done;
 	}
 
 	/* Build the sid list */
@@ -568,7 +568,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	if (response.data.num_entries &&
 	    !response.extra_data.data) {
 		wbc_status = WBC_ERR_INVALID_RESPONSE;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		goto done;
 	}
 
 	rids = talloc_array(NULL, uint32_t,
