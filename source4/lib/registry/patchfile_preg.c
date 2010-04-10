@@ -89,16 +89,19 @@ static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 	DATA_BLOB blob;
 	WERROR werr;
 
-	parent_name = talloc_strndup(data->ctx, key_name, strrchr(key_name, '\\')-key_name);
+	parent_name = talloc_strndup(data->ctx, key_name,
+				     strrchr(key_name, '\\')-key_name);
 	W_ERROR_HAVE_NO_MEMORY(parent_name);
-	blob.data = (uint8_t *)talloc_strndup(data->ctx, key_name+(strrchr(key_name, '\\')-key_name)+1,
-			strlen(key_name)-(strrchr(key_name, '\\')-key_name));
+	blob.data = (uint8_t*)talloc_strndup(data->ctx,
+					     key_name+(strrchr(key_name, '\\')-key_name)+1,
+					     strlen(key_name)-(strrchr(key_name, '\\')-key_name));
 	W_ERROR_HAVE_NO_MEMORY(blob.data);
 	blob.length = strlen((char *)blob.data)+1;
 	
 
 	/* FIXME: These values should be accumulated to be written at done(). */
-	werr = reg_preg_diff_set_value(data, parent_name, "**DeleteKeys", REG_SZ, blob);
+	werr = reg_preg_diff_set_value(data, parent_name, "**DeleteKeys",
+				       REG_SZ, blob);
 
 	talloc_free(parent_name);
 	talloc_free(blob.data);
@@ -140,7 +143,8 @@ static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 	SIVAL(blob.data, 0, 0);
 	blob.length = sizeof(uint32_t);
 
-	werr = reg_preg_diff_set_value(data, key_name, "**DelVals.", REG_DWORD, blob);
+	werr = reg_preg_diff_set_value(data, key_name, "**DelVals.", REG_DWORD,
+				       blob);
 
 	talloc_free(blob.data);
 
