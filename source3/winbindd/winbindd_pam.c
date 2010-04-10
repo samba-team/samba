@@ -1203,7 +1203,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	int attempts = 0;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
-	struct winbindd_domain *contact_domain;
 	fstring name_domain, name_user;
 	bool retry;
 	NTSTATUS result;
@@ -1274,26 +1273,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 					   sizeof(local_nt_response));
 	}
 
-	/* what domain should we contact? */
-
-	if ( IS_DC ) {
-		if (!(contact_domain = find_domain_from_name(name_domain))) {
-			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
-				  state->request->data.auth.user, name_domain, name_user, name_domain));
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-
-	} else {
-		if (is_myname(name_domain)) {
-			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
-			result =  NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-
-		contact_domain = find_our_domain();
-	}
-
 	/* check authentication loop */
 
 	do {
@@ -1302,7 +1281,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		ZERO_STRUCTP(my_info3);
 		retry = false;
 
-		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
+		result = cm_connect_netlogon(domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -1330,14 +1309,14 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		 *  -- abartlet 21 April 2008
 		 */
 
-		logon_fn = contact_domain->can_do_samlogon_ex
+		logon_fn = domain->can_do_samlogon_ex
 			? rpccli_netlogon_sam_network_logon_ex
 			: rpccli_netlogon_sam_network_logon;
 
 		result = logon_fn(netlogon_pipe,
 				  state->mem_ctx,
 				  0,
-				  contact_domain->dcname, /* server name */
+				  domain->dcname,	  /* server name */
 				  name_user,              /* user name */
 				  name_domain,            /* target domain */
 				  global_myname(),        /* workstation */
@@ -1348,10 +1327,10 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		attempts += 1;
 
 		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && contact_domain->can_do_samlogon_ex) {
+		    && domain->can_do_samlogon_ex) {
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = false;
+			domain->can_do_samlogon_ex = false;
 			retry = true;
 			continue;
 		}
@@ -1376,7 +1355,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
 				name_domain));
-			invalidate_cm_connection(&contact_domain->conn);
+			invalidate_cm_connection(&domain->conn);
 			retry = true;
 		}
 
@@ -1395,7 +1374,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		NTSTATUS status_tmp;
 		uint32 acct_flags;
 
-		status_tmp = cm_connect_sam(contact_domain, state->mem_ctx,
+		status_tmp = cm_connect_sam(domain, state->mem_ctx,
 					    &samr_pipe, &samr_domain_handle);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
@@ -1806,7 +1785,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
-	struct winbindd_domain *contact_domain;
 	int attempts = 0;
 	bool retry;
 
@@ -1871,31 +1849,13 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 					   state->request->data.auth_crap.nt_resp_len);
 	}
 
-	/* what domain should we contact? */
-
-	if ( IS_DC ) {
-		if (!(contact_domain = find_domain_from_name(name_domain))) {
-			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
-				  state->request->data.auth_crap.user, name_domain, name_user, name_domain));
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-	} else {
-		if (is_myname(name_domain)) {
-			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
-			result =  NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-		contact_domain = find_our_domain();
-	}
-
 	do {
 		netlogon_fn_t logon_fn;
 
 		retry = false;
 
 		netlogon_pipe = NULL;
-		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
+		result = cm_connect_netlogon(domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
@@ -1903,14 +1863,14 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		logon_fn = contact_domain->can_do_samlogon_ex
+		logon_fn = domain->can_do_samlogon_ex
 			? rpccli_netlogon_sam_network_logon_ex
 			: rpccli_netlogon_sam_network_logon;
 
 		result = logon_fn(netlogon_pipe,
 				  state->mem_ctx,
 				  state->request->data.auth_crap.logon_parameters,
-				  contact_domain->dcname,
+				  domain->dcname,
 				  name_user,
 				  name_domain,
 				  /* Bug #3248 - found by Stefan Burkei. */
@@ -1921,10 +1881,10 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				  &info3);
 
 		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && contact_domain->can_do_samlogon_ex) {
+		    && domain->can_do_samlogon_ex) {
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = false;
+			domain->can_do_samlogon_ex = false;
 			retry = true;
 			continue;
 		}
@@ -1950,7 +1910,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
 				name_domain));
-			invalidate_cm_connection(&contact_domain->conn);
+			invalidate_cm_connection(&domain->conn);
 			retry = true;
 		}
 
