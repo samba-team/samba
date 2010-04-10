@@ -488,6 +488,41 @@ static bool test_wbc_lookup_rids(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_get_sidaliases(struct torture_context *tctx)
+{
+	struct wbcDomainSid builtin;
+	struct wbcDomainInfo *info;
+	struct wbcInterfaceDetails *details;
+	struct wbcDomainSid sids[2];
+	uint32_t *rids;
+	uint32_t num_rids;
+	wbcErr ret;
+
+	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
+		"wbcInterfaceDetails failed");
+	torture_assert_wbc_ok(
+		tctx, wbcDomainInfo(details->netbios_domain, &info),
+		"wbcDomainInfo failed");
+	wbcFreeMemory(details);
+
+	sids[0] = info->sid;
+	sids[0].sub_auths[sids[0].num_auths++] = 500;
+	sids[1] = info->sid;
+	sids[1].sub_auths[sids[1].num_auths++] = 512;
+	wbcFreeMemory(info);
+
+	torture_assert_wbc_ok(
+		tctx, wbcStringToSid("S-1-5-32", &builtin),
+		"wbcStringToSid failed");
+
+	ret = wbcGetSidAliases(&builtin, sids, 2, &rids, &num_rids);
+	torture_assert_wbc_ok(tctx, ret, "wbcGetSidAliases failed");
+
+	wbcFreeMemory(rids);
+
+	return true;
+}
+
 struct torture_suite *torture_wbclient(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
@@ -511,6 +546,8 @@ struct torture_suite *torture_wbclient(void)
 	torture_suite_add_simple_test(suite, "wbcResolveWinsByIP", test_wbc_resolve_winsbyip);
 	torture_suite_add_simple_test(suite, "wbcLookupRids",
 				      test_wbc_lookup_rids);
+	torture_suite_add_simple_test(suite, "wbcGetSidAliases",
+				      test_wbc_get_sidaliases);
 
 	return suite;
 }
