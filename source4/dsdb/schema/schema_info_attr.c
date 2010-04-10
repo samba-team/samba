@@ -239,7 +239,7 @@ WERROR dsdb_module_schema_info_blob_write(struct ldb_module *ldb_module,
 	}
 
 
-	ldb_err = dsdb_module_modify(ldb_module, msg, dsdb_flags | DSDB_MODIFY_PERMISSIVE);
+	ldb_err = dsdb_module_modify(ldb_module, msg, dsdb_flags);
 
 	talloc_free(temp_ctx);
 
@@ -384,7 +384,7 @@ WERROR dsdb_schema_info_reset(struct ldb_context *ldb, struct dsdb_schema *schem
 	werr = _dsdb_schema_info_write_prepare(ldb, &blob, temp_ctx, &msg);
 	W_ERROR_NOT_OK_GOTO(werr, DONE);
 
-	ldb_err = dsdb_modify(ldb, msg, DSDB_MODIFY_PERMISSIVE);
+	ldb_err = dsdb_modify(ldb, msg, 0);
 	if (ldb_err != 0) {
 		DEBUG(0,("dsdb_module_schema_info_blob_write: dsdb_replace failed: %s (%s)\n",
 			 ldb_strerror(ldb_err),
