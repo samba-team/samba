@@ -277,6 +277,9 @@ class Ldb(_Ldb):
     def set_schema_from_ldif(self, pf, df):
         _glue.dsdb_set_schema_from_ldif(self, pf, df)
 
+    def get_oid_from_attid(self, attid):
+        return dsdb.dsdb_get_oid_from_attid(self, attid)
+
     def set_schema_from_ldb(self, ldb):
         _glue.dsdb_set_schema_from_ldb(self, ldb)
 
