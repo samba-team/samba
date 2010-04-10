@@ -87,9 +87,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 
 	torture_comment(torture, "Testing change of primary context\n");
 	status = dcerpc_alter_context(p, torture, &p2->syntax, &p2->transfer_syntax);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-		torture_assert_int_equal(torture, p->last_fault_code, DCERPC_NCA_S_PROTO_ERROR,
-					 "dcerpc_alter_context should generate a proto error");
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
 
 		ret &= test_lsa_OpenPolicy2_ex(p->binding_handle, torture, &handle,
 					       NT_STATUS_PIPE_DISCONNECTED);
