@@ -576,6 +576,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 		extra_data[extra_data_len++] = '\n';
 		extra_data[extra_data_len] = '\0';
 	}
+	extra_data_len += 1;
 
 	request.extra_data.data = extra_data;
 	request.extra_len = extra_data_len;
