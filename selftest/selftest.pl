@@ -125,6 +125,7 @@ use strict;
 
 use FindBin qw($RealBin $Script);
 use File::Spec;
+use File::Temp qw(tempfile);
 use Getopt::Long;
 use POSIX;
 use Cwd qw(abs_path);
@@ -224,9 +225,9 @@ sub expand_environment_strings($)
 	return $s;
 }
 
-sub run_testsuite($$$$$$)
+sub run_testsuite($$$$$)
 {
-	my ($envname, $name, $cmd, $i, $totalsuites, $tests_to_run) = @_;
+	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
 	my $pcap_file = setup_pcap($name);
 
 	Subunit::start_testsuite($name);
@@ -639,7 +640,8 @@ sub read_testlist($)
 	open(IN, $filename) or die("Unable to open $filename: $!");
 
 	while (<IN>) {
-		if ($_ eq "-- TEST --\n") {
+		if (/-- TEST(-LOADLIST)? --\n/) {
+			my $supports_loadlist = ($1 eq "-LOADLIST");
 			my $name = <IN>;
 			$name =~ s/\n//g;
 			my $env = <IN>;
@@ -648,7 +650,7 @@ sub read_testlist($)
 			$cmdline =~ s/\n//g;
 			if (should_run_test($name) == 1) {
 				$required_envs{$env} = 1;
-				push (@ret, [$name, $env, $cmdline]);
+				push (@ret, [$name, $env, $cmdline, $supports_loadlist]);
 			}
 		} else {
 			print;
@@ -934,8 +936,16 @@ $envvarstr
 			next;
 		}
 
+		if ($$_[3] and $individual_tests and $individual_tests->{$name}) {
+			my ($fh, $listid_file) = tempfile(UNLINK => 0);
+			foreach (@{$individual_tests->{$name}}) {
+				print $fh "$_\n";
+			}
+			$cmd .= " --load-list=$listid_file";
+		}
+
 		run_testsuite($envname, $name, $cmd, $i, $suitestotal,
-				      ($individual_tests and $individual_tests->{$name}));
+				      );
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");

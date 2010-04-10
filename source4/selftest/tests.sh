@@ -43,6 +43,21 @@ plantestsuite() {
 	echo $cmdline
 }
 
+plantestsuite_loadlist() {
+	name=$1
+	env=$2
+	shift 2
+	cmdline="$*"
+	echo "-- TEST-LOADLIST --"
+	if [ "$env" = "none" ]; then
+		echo "samba4.$name"
+	else
+		echo "samba4.$name ($env)"
+	fi
+	echo $env
+	echo $cmdline
+}
+
 skiptestsuite() {
 	name=$1
 	reason=$2
