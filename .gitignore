@@ -14,7 +14,7 @@ config.h.in
 config.log
 config.status
 configure
-makefile
+Makefile
 *.d
 *_err.c
 *_err.h

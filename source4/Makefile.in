@@ -308,3 +308,7 @@ include $(srcdir)/selftest/config.mk
 
 showflags::
 	@echo '  pwd        = '`/bin/pwd`
+
+Makefile: Makefile.in
+	@echo "Makefile.in is newer than Makefile, please rerun ./config.status"
+	@false

@@ -200,7 +200,7 @@ $SMB_INFO_LIBRARIES
 CEOF
 
 SMB_BUILD_RUN(data.mk)
-AC_OUTPUT
+AC_OUTPUT(Makefile)
 
 cmp include/config_tmp.h include/config.h >/dev/null 2>&1
 CMP_RET=$?

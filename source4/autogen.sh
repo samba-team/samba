@@ -69,6 +69,7 @@ echo "$0: running script/mkversion.sh"
 
 rm -rf autom4te*.cache
 rm -f configure include/config_tmp.h*
+rm -f makefile Makefile
 
 IPATHS="-I. -I../lib/replace"
 
@@ -79,9 +80,6 @@ echo "$0: running $AUTOCONF $IPATHS"
 $AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
-
-# remove a 'makefile' that may have been left by the waf build
-rm -f makefile
 
 echo "Now run ./configure (or ./configure.developer) and then make."
 exit 0
