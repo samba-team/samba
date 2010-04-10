@@ -83,6 +83,15 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		size_t i;
+		for (i=0; i<num_sids; i++) {
+			fstring sidstr;
+			sid_to_fstring(sidstr, &sids[i]);
+			DEBUGADD(10, ("%s\n", sidstr));
+		}
+	}
+
 	subreq = wb_lookupuseraliases_send(state, ev, domain, num_sids, sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
