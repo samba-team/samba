@@ -304,6 +304,13 @@ bool torture_run_suite(struct torture_context *context,
 	return ret;
 }
 
+bool torture_run_suite_restricted(struct torture_context *context, 
+		       struct torture_suite *suite, char **restricted)
+{
+	/* FIXME */
+	return false;
+}
+
 void torture_ui_test_start(struct torture_context *context, 
 			   struct torture_tcase *tcase, 
 			   struct torture_test *test)

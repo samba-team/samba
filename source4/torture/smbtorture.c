@@ -42,52 +42,34 @@ static bool run_matching(struct torture_context *torture,
 						 bool *matched)
 {
 	bool ret = true;
+	struct torture_suite *o;
+	struct torture_tcase *t;
 
-	if (suite == NULL) {
-		struct torture_suite *o;
-
-		for (o = (torture_root == NULL?NULL:torture_root->children); o; o = o->next) {
-			if (gen_fnmatch(expr, o->name) == 0) {
-				*matched = true;
-				reload_charcnv(torture->lp_ctx);
+	for (o = suite->children; o; o = o->next) {
+		char *name = NULL;
+		if (prefix == NULL)
+			name = talloc_strdup(torture, o->name);
+		else
+			name = talloc_asprintf(torture, "%s-%s", prefix, o->name);
+		if (gen_fnmatch(expr, name) == 0) {
+			*matched = true;
+			reload_charcnv(torture->lp_ctx);
+			torture->active_testname = name;
+			if (restricted != NULL)
+				ret &= torture_run_suite_restricted(torture, o, restricted);
+			else
 				ret &= torture_run_suite(torture, o);
-				continue;
-			}
-
-			ret &= run_matching(torture, o->name, expr, restricted, o, matched);
 		}
-	} else {
-		char *name;
-		struct torture_suite *c;
-		struct torture_tcase *t;
+		ret &= run_matching(torture, name, expr, restricted, o, matched);
+	}
 
-		for (c = suite->children; c; c = c->next) {
-			asprintf(&name, "%s-%s", prefix, c->name);
-
-			if (gen_fnmatch(expr, name) == 0) {
-				*matched = true;
-				reload_charcnv(torture->lp_ctx);
-				torture->active_testname = talloc_strdup(torture, prefix);
-				ret &= torture_run_suite(torture, c);
-				free(name);
-				continue;
-			}
-			
-			ret &= run_matching(torture, name, expr, restricted, c, matched);
-
-			free(name);
-		}
-
-		for (t = suite->testcases; t; t = t->next) {
-			asprintf(&name, "%s-%s", prefix, t->name);
-			if (gen_fnmatch(expr, name) == 0) {
-				*matched = true;
-				reload_charcnv(torture->lp_ctx);
-				torture->active_testname = talloc_strdup(torture, prefix);
-				ret &= torture_run_tcase(torture, t);
-				talloc_free(torture->active_testname);
-			}
-			free(name);
+	for (t = suite->testcases; t; t = t->next) {
+		char *name = talloc_asprintf(torture, "%s-%s", prefix, t->name);
+		if (gen_fnmatch(expr, name) == 0) {
+			*matched = true;
+			reload_charcnv(torture->lp_ctx);
+			torture->active_testname = name;
+			ret &= torture_run_tcase(torture, t);
 		}
 	}
 
@@ -107,13 +89,17 @@ static bool run_test(struct torture_context *torture, const char *name,
 	struct torture_suite *o;
 
 	if (strequal(name, "ALL")) {
+		if (restricted != NULL) {
+			printf("--load-list and ALL are incompatible\n");
+			return false;
+		}
 		for (o = torture_root->children; o; o = o->next) {
 			ret &= torture_run_suite(torture, o);
 		}
 		return ret;
 	}
 
-	ret = run_matching(torture, NULL, name, restricted, NULL, &matched);
+	ret = run_matching(torture, NULL, name, restricted, torture_root, &matched);
 
 	if (!matched) {
 		printf("Unknown torture operation '%s'\n", name);

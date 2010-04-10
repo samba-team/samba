@@ -218,6 +218,11 @@ bool torture_suite_add_suite(struct torture_suite *suite,
 bool torture_run_suite(struct torture_context *context,
 					   struct torture_suite *suite);
 
+/* Run the specified testsuite recursively, but only the specified 
+ * tests */
+bool torture_run_suite_restricted(struct torture_context *context, 
+		       struct torture_suite *suite, char **restricted);
+
 /* Run the specified testcase */
 bool torture_run_tcase(struct torture_context *context,
 					   struct torture_tcase *tcase);
