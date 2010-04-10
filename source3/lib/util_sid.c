@@ -162,7 +162,7 @@ NT_USER_TOKEN *get_system_token(void)
 
 const char *get_global_sam_name(void) 
 {
-	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
+	if (IS_DC) {
 		return lp_workgroup();
 	}
 	return global_myname();
