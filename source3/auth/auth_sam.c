@@ -31,10 +31,10 @@
  the lanman and NT responses.
 ****************************************************************************/
 
-static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
-				TALLOC_CTX *mem_ctx,
+static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 				const char *username,
 				uint32_t acct_ctrl,
+				const DATA_BLOB *challenge,
 				const uint8_t *lm_pw,
 				const uint8_t *nt_pw,
 				const struct auth_usersupplied_info *user_info,
@@ -93,7 +93,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		return ntlm_password_check(mem_ctx, lp_lanman_auth(),
 					   lp_ntlm_auth(),
 					   user_info->logon_parameters,
-					   &auth_context->challenge, 
+					   challenge,
 					   &user_info->lm_resp, &user_info->nt_resp, 
 					   username, 
 					   user_info->smb_name,
@@ -336,8 +336,10 @@ static bool need_to_increment_bad_pw_count(
 			continue;
 		}
 
-		status = sam_password_ok(auth_context, mem_ctx,
-					 username, acct_ctrl, NULL, nt_pw,
+		status = sam_password_ok(mem_ctx,
+					 username, acct_ctrl,
+					 &auth_context->challenge,
+					 NULL, nt_pw,
 					 user_info, &user_sess_key, &lm_sess_key);
 		if (NT_STATUS_IS_OK(status)) {
 			result = false;
@@ -411,8 +413,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
-	nt_status = sam_password_ok(auth_context, mem_ctx,
-				    username, pdb_get_acct_ctrl(sampass), lm_pw, nt_pw,
+	nt_status = sam_password_ok(mem_ctx,
+				    username, pdb_get_acct_ctrl(sampass),
+				    &auth_context->challenge, lm_pw, nt_pw,
 				    user_info, &user_sess_key, &lm_sess_key);
 
 	/* Notify passdb backend of login success/failure. If not 
