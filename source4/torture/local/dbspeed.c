@@ -223,13 +223,13 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 		i = random() % torture_entries;
 		dn = ldb_dn_new_fmt(tmp_ctx, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", i);
 		if (ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL) != LDB_SUCCESS || res->count != 1) {
-			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d!\n", i);
 			goto failed;
 		}
 		talloc_free(res);
 		talloc_free(dn);
 		if (ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "(UID=%u)", i) != LDB_SUCCESS || res->count != 1) {
-			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d!\n", i);
 			goto failed;
 		}
 		talloc_free(res);
