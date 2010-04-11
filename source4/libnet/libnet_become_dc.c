@@ -2304,11 +2304,13 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			status = err_data->v1.status;
 
 			DEBUG(0,("DsAddEntry (R3) failed: "
-				 "Errors: dir_err = %d, status = %s;",
+				 "Errors: dir_err = %d, status = %s;\n",
 				 err_data->v1.dir_err,
 				 win_errstr(err_data->v1.status)));
 
 			if (!err_data->v1.info) {
+				DEBUG(0, ("DsAddEntry (R3): no error info returned!\n",
+					  err_data->v1.info));
 				composite_error(c, werror_to_ntstatus(status));
 				return;
 			}
@@ -2318,13 +2320,13 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			case DRSUAPI_DIRERR_ATTRIBUTE:
 				/* Dump attribute errors */
 				attr_err = &err_data->v1.info->attr_err;
-				DEBUGADD(0,(" Attribute Error: object = %s, count = %d;",
+				DEBUGADD(0,(" Attribute Error: object = %s, count = %d;\n",
 					    attr_err->id->dn,
 					    attr_err->count));
 				attr_err_li = &attr_err->first;
 				for (; attr_err_li; attr_err_li = attr_err_li->next) {
 					struct drsuapi_DsAddEntry_AttrErr_V1 *err = &attr_err_li->err_data;
-					DEBUGADD(0,(" Error: err = %s, problem = 0x%08X, attid = 0x%08X;",
+					DEBUGADD(0,(" Error: err = %s, problem = 0x%08X, attid = 0x%08X;\n",
 						    win_errstr(err->extended_err),
 						    err->problem,
 						    err->attid));
@@ -2334,7 +2336,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			case DRSUAPI_DIRERR_NAME:
 				/* Dump Name resolution error */
 				name_err = &err_data->v1.info->name_err;
-				DEBUGADD(0,(" Name Error: err = %s, problem = 0x%08X, id_matched = %s;",
+				DEBUGADD(0,(" Name Error: err = %s, problem = 0x%08X, id_matched = %s;\n",
 					    win_errstr(name_err->extended_err),
 					    name_err->problem,
 					    name_err->id_matched->dn));
@@ -2342,7 +2344,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 			case DRSUAPI_DIRERR_REFERRAL:
 				/* Dump Referral errors */
 				ref_err = &err_data->v1.info->referral_err;
-				DEBUGADD(0,(" Referral Error: extended_err = %s",
+				DEBUGADD(0,(" Referral Error: extended_err = %s\n",
 					    win_errstr(name_err->extended_err)));
 				ref_li = &ref_err->refer;
 				for (; ref_li; ref_li = ref_li->next) {
@@ -2361,36 +2363,36 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 							DEBUGADD(0,(", "));
 						}
 					}
-					DEBUGADD(0,(");"));
+					DEBUGADD(0,(");\n"));
 				}
 				break;
 			case DRSUAPI_DIRERR_SECURITY:
 				/* Dump Security error. */
-				DEBUGADD(0,(" Security Error: extended_err = %s, problem = 0x%08X",
+				DEBUGADD(0,(" Security Error: extended_err = %s, problem = 0x%08X\n",
 					    win_errstr(err_data->v1.info->security_err.extended_err),
 					    err_data->v1.info->security_err.problem));
 				break;
 			case DRSUAPI_DIRERR_SERVICE:
 				/* Dump Service error. */
-				DEBUGADD(0,(" Service Error: extended_err = %s, problem = 0x%08X",
+				DEBUGADD(0,(" Service Error: extended_err = %s, problem = 0x%08X\n",
 					    win_errstr(err_data->v1.info->service_err.extended_err),
 					    err_data->v1.info->service_err.problem));
 				break;
 			case DRSUAPI_DIRERR_UPDATE:
 				/* Dump Update error. */
-				DEBUGADD(0,(" Update Error: extended_err = %s, problem = 0x%08X",
+				DEBUGADD(0,(" Update Error: extended_err = %s, problem = 0x%08X\n",
 					    win_errstr(err_data->v1.info->update_err.extended_err),
 					    err_data->v1.info->update_err.problem));
 				break;
 			case DRSUAPI_DIRERR_SYSTEM:
 				/* System error. */
-				DEBUGADD(0,(" System Error: extended_err = %s, problem = 0x%08X",
+				DEBUGADD(0,(" System Error: extended_err = %s, problem = 0x%08X\n",
 					    win_errstr(err_data->v1.info->system_err.extended_err),
 					    err_data->v1.info->system_err.problem));
 				break;
 			case DRSUAPI_DIRERR_OK: /* mute compiler warnings */
 			default:
-				DEBUGADD(0,(" Unknown DIRERR error class returned!"));
+				DEBUGADD(0,(" Unknown DIRERR error class returned!\n"));
 				break;
 			}
 
@@ -2400,7 +2402,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 
 		if (1 != r->out.ctr->ctr3.count) {
 			DEBUG(0,("DsAddEntry - Ctr3: something very wrong had happened - "
-				 "method succeeded but objects returned are %d (expected 1). ",
+				 "method succeeded but objects returned are %d (expected 1).\n",
 				 r->out.ctr->ctr3.count));
 			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		}
@@ -2409,7 +2411,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 
 	} else if (*r->out.level_out == 2) {
 		if (DRSUAPI_DIRERR_OK != r->out.ctr->ctr2.dir_err) {
-			DEBUG(0,("DsAddEntry failed with: dir_err = %d, extended_err = %s",
+			DEBUG(0,("DsAddEntry failed with: dir_err = %d, extended_err = %s\n",
 				 r->out.ctr->ctr2.dir_err,
 				 win_errstr(r->out.ctr->ctr2.extended_err)));
 			composite_error(c, werror_to_ntstatus(r->out.ctr->ctr2.extended_err));
@@ -2419,7 +2421,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 		if (1 != r->out.ctr->ctr2.count) {
 			DEBUG(0,("DsAddEntry: something very wrong had happened - "
 				 "method succeeded but objects returned are %d (expected 1). "
-				 "Errors: dir_err = %d, extended_err = %s",
+				 "Errors: dir_err = %d, extended_err = %s\n",
 				 r->out.ctr->ctr2.count,
 				 r->out.ctr->ctr2.dir_err,
 				 win_errstr(r->out.ctr->ctr2.extended_err)));
