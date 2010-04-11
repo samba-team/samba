@@ -266,8 +266,9 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	flatname         = lp_sam_name(lp_ctx);
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(server_site);
-	/* FIXME: Hardcoded site name */
-	client_site      = "Default-First-Site-Name";
+	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
+						  src_address, NULL);
+	NT_STATUS_HAVE_NO_MEMORY(client_site);
 	load_interfaces(mem_ctx, lp_interfaces(lp_ctx), &ifaces);
 	pdc_ip           = iface_best_ip(ifaces, src_address);
 
