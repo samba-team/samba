@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett              2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,11 +31,11 @@ static bool update_smbpassword_file(const char *user, const char *password)
 {
 	struct samu 	*sampass;
 	bool            ret;
-	
+
 	if ( !(sampass = samu_new( NULL )) ) {
 		return False;
 	}
-	
+
 	become_root();
 	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
@@ -94,7 +94,6 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	become_root();
 	pass = Get_Pwnam_alloc(talloc_tos(), user_info->internal_username);
 
-	
 	/** @todo This call assumes a ASCII password, no charset transformation is 
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
@@ -104,7 +103,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 				lp_update_encrypted() ? 
 				update_smbpassword_file : NULL,
 				True);
-	
+
 	unbecome_root();
 
 	if (NT_STATUS_IS_OK(nt_status)) {

@@ -3,17 +3,17 @@
    Generic authentication types
    Copyright (C) Andrew Bartlett         2001-2002
    Copyright (C) Jelmer Vernooij              2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -84,7 +84,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	fstring user;
 	long error_num;
 	fstrcpy(user, user_info->smb_name);
-	
+
 	if (strnequal("NT_STATUS", user, strlen("NT_STATUS"))) {
 		strupper_m(user);
 		return nt_status_string_to_code(user);
@@ -92,11 +92,11 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 
 	strlower_m(user);
 	error_num = strtoul(user, NULL, 16);
-	
+
 	DEBUG(5,("check_name_to_ntstatus_security: Error for user %s was %lx\n", user, error_num));
 
 	nt_status = NT_STATUS(error_num);
-	
+
 	return nt_status;
 }
 

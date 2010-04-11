@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -228,7 +228,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 					   TALLOC_CTX *mem_ctx)
 {
 	struct cli_state *cli = server_cryptkey(mem_ctx);
-	
+
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
 
@@ -236,7 +236,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			/* We can't work with unencrypted password servers
 			   unless 'encrypt passwords = no' */
 			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
-			
+
 			/* However, it is still a perfectly fine connection
 			   to pass that unencrypted password over */
 			*my_private_data =
@@ -282,7 +282,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	bool locally_made_cli = False;
 
 	cli = state->cli;
-	
+
 	if (cli) {
 	} else {
 		cli = server_cryptkey(mem_ctx);
@@ -293,7 +293,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		DEBUG(1,("password server is not connected (cli not initialised)\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}  
-	
+
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (user_info->encrypted) {
 			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli->desthost));

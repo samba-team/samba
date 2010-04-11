@@ -3,17 +3,17 @@
    Authenticate against a remote domain
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Andrew Bartlett 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -138,7 +138,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	if (mutex == NULL) {
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
-	
+
 	/* Attempt connection */
 	*retry = True;
 	result = cli_full_connection(cli, global_myname(), dc_name, dc_ss, 0, 
@@ -275,7 +275,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	 */
 
 	/* rety loop for robustness */
-	
+
 	for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++) {
 		nt_status = connect_to_domain_password_server(&cli,
 							domain,
@@ -316,7 +316,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	/* Let go as soon as possible so we avoid any potential deadlocks
 	   with winbind lookup up users or groups. */
-	   
+
 	TALLOC_FREE(mutex);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -409,7 +409,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 			user_info->domain));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
-	
+
 	nt_status = domain_client_validate(mem_ctx,
 					user_info,
 					domain,
@@ -417,7 +417,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					server_info,
 					dc_name,
 					&dc_ss);
-		
+
 	return nt_status;
 }
 
@@ -469,7 +469,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	   This return makes "map to guest = bad user" work again.
 	   The logic is that if we know nothing about the domain, that
 	   user is not known to us and does not exist */
-	
+
 	if ( !is_trusted_domain( user_info->domain ) )
 		return NT_STATUS_NOT_IMPLEMENTED;
 
@@ -503,13 +503,13 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 
 	/* use get_dc_name() for consistency even through we know that it will be 
 	   a netbios name */
-	   
+
 	if ( !get_dc_name(user_info->domain, NULL, dc_name, &dc_ss) ) {
 		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
-	
+
 	nt_status = domain_client_validate(mem_ctx,
 					user_info,
 					user_info->domain,
