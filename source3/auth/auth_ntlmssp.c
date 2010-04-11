@@ -64,7 +64,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 
 	SMB_ASSERT(challenge->length == 8);
 
-	auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
+	auth_context->challenge = data_blob_talloc(auth_context,
 						   challenge->data, challenge->length);
 
 	auth_context->challenge_set_by = "NTLMSSP callback (NTLM2)";

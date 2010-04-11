@@ -106,7 +106,7 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 		}
 
 		challenge = auth_method->get_chal(auth_context, &auth_method->private_data,
-					auth_context->mem_ctx);
+						  auth_context);
 		if (!challenge.length) {
 			DEBUG(3, ("auth_get_challenge: getting challenge from authentication method %s FAILED.\n", 
 				  auth_method->name));
@@ -122,7 +122,7 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 		uchar tmp[8];
 
 		generate_random_buffer(tmp, sizeof(tmp));
-		auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
+		auth_context->challenge = data_blob_talloc(auth_context,
 							   tmp, sizeof(tmp));
 
 		challenge_set_by = "random";
@@ -331,7 +331,7 @@ static void free_auth_context(struct auth_context **auth_context)
 			TALLOC_FREE(auth_method->private_data);
 		}
 
-		talloc_destroy((*auth_context)->mem_ctx);
+		talloc_destroy(*auth_context);
 		*auth_context = NULL;
 	}
 }
@@ -342,19 +342,13 @@ static void free_auth_context(struct auth_context **auth_context)
 
 static NTSTATUS make_auth_context(struct auth_context **auth_context) 
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("authentication context");
-
-	*auth_context = TALLOC_P(mem_ctx, struct auth_context);
+	*auth_context = TALLOC_ZERO_P(talloc_autofree_context(),
+				      struct auth_context);
 	if (!*auth_context) {
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(*auth_context);
 
-	(*auth_context)->mem_ctx = mem_ctx;
 	(*auth_context)->check_ntlm_password = check_ntlm_password;
 	(*auth_context)->get_ntlm_challenge = get_ntlm_challenge;
 	(*auth_context)->free = free_auth_context;
@@ -538,7 +532,7 @@ NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[
 		return nt_status;
 	}
 
-	(*auth_context)->challenge = data_blob_talloc((*auth_context)->mem_ctx, chal, 8);
+	(*auth_context)->challenge = data_blob_talloc(*auth_context, chal, 8);
 	(*auth_context)->challenge_set_by = "fixed";
 	return nt_status;
 }

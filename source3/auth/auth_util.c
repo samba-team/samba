@@ -2144,7 +2144,7 @@ bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 			  "is NULL!\n");
 	}
 
-	*auth_method = TALLOC_P(auth_context->mem_ctx, auth_methods);
+	*auth_method = TALLOC_P(auth_context, auth_methods);
 	if (!*auth_method) {
 		DEBUG(0,("make_auth_method: malloc failed!\n"));
 		return False;
