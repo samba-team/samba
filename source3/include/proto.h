@@ -61,6 +61,10 @@ NTSTATUS auth_ntlmssp_update(AUTH_NTLMSSP_STATE *auth_ntlmssp_state,
 
 /* The following definitions come from auth/auth_sam.c  */
 
+NTSTATUS check_sam_security(const DATA_BLOB *challenge,
+			    TALLOC_CTX *mem_ctx,
+			    const struct auth_usersupplied_info *user_info,
+			    struct auth_serversupplied_info **server_info);
 NTSTATUS auth_sam_init(void);
 
 /* The following definitions come from auth/auth_server.c  */

@@ -358,11 +358,10 @@ SMB hash supplied in the user_info structure
 return an NT_STATUS constant.
 ****************************************************************************/
 
-static NTSTATUS check_sam_security(const struct auth_context *auth_context,
-				   void *my_private_data, 
-				   TALLOC_CTX *mem_ctx,
-				   const struct auth_usersupplied_info *user_info,
-				   struct auth_serversupplied_info **server_info)
+NTSTATUS check_sam_security(const DATA_BLOB *challenge,
+			    TALLOC_CTX *mem_ctx,
+			    const struct auth_usersupplied_info *user_info,
+			    struct auth_serversupplied_info **server_info)
 {
 	struct samu *sampass=NULL;
 	bool ret;
@@ -374,10 +373,6 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	const char *username;
 	const uint8_t *nt_pw;
 	const uint8_t *lm_pw;
-
-	if (!user_info || !auth_context) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* the returned struct gets kept on the server_info, by means
 	   of a steal further down */
@@ -415,7 +410,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	nt_status = sam_password_ok(mem_ctx,
 				    username, pdb_get_acct_ctrl(sampass),
-				    &auth_context->challenge, lm_pw, nt_pw,
+				    challenge, lm_pw, nt_pw,
 				    user_info, &user_sess_key, &lm_sess_key);
 
 	/* Notify passdb backend of login success/failure. If not 
@@ -432,8 +427,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		{
 			increment_bad_pw_count =
 				need_to_increment_bad_pw_count(
-					&auth_context->challenge, sampass,
-					user_info);
+					challenge, sampass, user_info);
 		}
 
 		if (increment_bad_pw_count) {
@@ -517,6 +511,19 @@ done:
 	return nt_status;
 }
 
+static NTSTATUS auth_sam_ignoredomain_auth(const struct auth_context *auth_context,
+					   void *my_private_data,
+					   TALLOC_CTX *mem_ctx,
+					   const struct auth_usersupplied_info *user_info,
+					   struct auth_serversupplied_info **server_info)
+{
+	if (!user_info || !auth_context) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return check_sam_security(&auth_context->challenge, mem_ctx,
+				  user_info, server_info);
+}
+
 /* module initialisation */
 static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
@@ -526,7 +533,7 @@ static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, co
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	result->auth = check_sam_security;
+	result->auth = auth_sam_ignoredomain_auth;
 	result->name = "sam_ignoredomain";
 
         *auth_method = result;
@@ -538,11 +545,11 @@ static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, co
 Check SAM security (above) but with a few extra checks.
 ****************************************************************************/
 
-static NTSTATUS check_samstrict_security(const struct auth_context *auth_context,
-					 void *my_private_data, 
-					 TALLOC_CTX *mem_ctx,
-					 const struct auth_usersupplied_info *user_info,
-					 struct auth_serversupplied_info **server_info)
+static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
+				    void *my_private_data,
+				    TALLOC_CTX *mem_ctx,
+				    const struct auth_usersupplied_info *user_info,
+				    struct auth_serversupplied_info **server_info)
 {
 	bool is_local_name, is_my_domain;
 
@@ -575,7 +582,8 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 			break;
 	}
 
-	return check_sam_security(auth_context, my_private_data, mem_ctx, user_info, server_info);
+	return check_sam_security(&auth_context->challenge, mem_ctx,
+				  user_info, server_info);
 }
 
 /* module initialisation */
@@ -587,7 +595,7 @@ static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *par
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	result->auth = check_samstrict_security;
+	result->auth = auth_samstrict_auth;
 	result->name = "sam";
 
         *auth_method = result;
