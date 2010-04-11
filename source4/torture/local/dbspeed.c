@@ -142,10 +142,12 @@ static bool ldb_add_record(struct ldb_context *ldb, unsigned rid)
 
 	msg->dn = ldb_dn_new_fmt(msg, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", rid);
 	if (msg->dn == NULL) {
+		talloc_free(msg);
 		return false;
 	}
 
 	if (ldb_msg_add_fmt(msg, "UID", "%u", rid) != 0) {
+		talloc_free(msg);
 		return false;
 	}
 
@@ -236,14 +238,13 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	torture_comment(torture, "ldb/tdb speed ratio is %.2f%%\n", (100*ldb_speed/tdb_speed));
 	
-
-	unlink("./test.ldb");
 	talloc_free(tmp_ctx);
+	unlink("./test.ldb");
 	return true;
 
 failed:
-	unlink("./test.ldb");
 	talloc_free(tmp_ctx);
+	unlink("./test.ldb");
 	return false;
 }
 
