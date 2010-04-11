@@ -181,15 +181,21 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 	ldb = ldb_wrap_connect(tmp_ctx, torture->ev, torture->lp_ctx, "tdb://test.ldb", 
 				NULL, NULL, LDB_FLG_NOSYNC);
 	if (!ldb) {
-		unlink("./test.ldb");
-		talloc_free(tmp_ctx);
-		torture_fail(torture, "Failed to open test.ldb");
+		torture_result(torture, TORTURE_FAIL, "Failed to open test.ldb");
+		goto failed;
 	}
 
 	/* add an index */
 	ldif = ldb_ldif_read_string(ldb, &init_ldif);
-	if (ldif == NULL) goto failed;
-	if (ldb_add(ldb, ldif->msg) != LDB_SUCCESS) goto failed;
+	if (ldif == NULL) {
+		torture_result(torture, TORTURE_FAIL, "Didn't get LDIF data!\n");
+		goto failed;
+	}
+	if (ldb_add(ldb, ldif->msg) != LDB_SUCCESS) {
+		torture_result(torture, TORTURE_FAIL, "Couldn't apply LDIF data!\n");
+		talloc_free(ldif);
+		goto failed;
+	}
 	talloc_free(ldif);
 
 	torture_comment(torture, "Adding %d SID records\n", torture_entries);
@@ -217,20 +223,21 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 		i = random() % torture_entries;
 		dn = ldb_dn_new_fmt(tmp_ctx, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", i);
 		if (ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL) != LDB_SUCCESS || res->count != 1) {
-			torture_fail(torture, talloc_asprintf(torture, "Failed to find SID %d", i));
+			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d", i);
+			goto failed;
 		}
 		talloc_free(res);
 		talloc_free(dn);
 		if (ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "(UID=%u)", i) != LDB_SUCCESS || res->count != 1) {
-			torture_fail(torture, talloc_asprintf(torture, "Failed to find UID %d", i));
+			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d", i);
+			goto failed;
 		}
 		talloc_free(res);
 	}
 
 	if (talloc_total_blocks(torture) > 100) {
-		unlink("./test.ldb");
-		talloc_free(tmp_ctx);
-		torture_fail(torture, "memory leak in ldb search");
+		torture_result(torture, TORTURE_FAIL, "memory leak in ldb search\n");
+		goto failed;
 	}
 
 	ldb_speed = count/timeval_elapsed(&tv);
