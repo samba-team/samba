@@ -826,7 +826,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    struct nt_user_token **token)
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_USER;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	DOM_SID user_sid;
 	enum lsa_SidType type;
 	gid_t *gids;
@@ -835,12 +835,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	size_t num_group_sids;
 	size_t num_gids;
 	size_t i;
-
-	tmp_ctx = talloc_new(NULL);
-	if (tmp_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	if (!lookup_name_smbconf(tmp_ctx, username, LOOKUP_NAME_ALL,
 			 NULL, NULL, &user_sid, &type)) {
