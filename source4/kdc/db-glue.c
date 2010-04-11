@@ -208,8 +208,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	struct package_PrimaryKerberosBlob _pkb;
 	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
 	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
-	uint32_t i;
-	uint32_t allocated_keys = 0;
+	uint16_t i;
+	uint16_t allocated_keys = 0;
 
 	entry_ex->entry.keys.val = NULL;
 	entry_ex->entry.keys.len = 0;
@@ -498,7 +498,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	unsigned int userAccountControl;
-	int i;
+	unsigned int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
 	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
@@ -760,7 +760,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct samba_kdc_entry *p;
 
 	enum ndr_err_code ndr_err;
-	int i, ret, trust_direction_flags;
+	int ret, trust_direction_flags;
+	unsigned int i;
 
 	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
@@ -1281,8 +1282,8 @@ done:
 }
 
 struct samba_kdc_seq {
-	int index;
-	int count;
+	unsigned int index;
+	unsigned int count;
 	struct ldb_message **msgs;
 	struct ldb_dn *realm_dn;
 };
