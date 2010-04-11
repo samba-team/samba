@@ -1099,15 +1099,9 @@ bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 
 bool user_in_group(const char *username, const char *groupname)
 {
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	DOM_SID group_sid;
 	bool ret;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return False;
-	}
 
 	ret = lookup_name(mem_ctx, groupname, LOOKUP_NAME_ALL,
 			  NULL, NULL, &group_sid, NULL);
