@@ -106,7 +106,8 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 static char *get_netbios_name(TALLOC_CTX *mem_ctx, HostAddresses *addrs)
 {
 	char *nb_name = NULL;
-	int len, i;
+	size_t len;
+	unsigned int i;
 
 	for (i = 0; addrs && i < addrs->len; i++) {
 		if (addrs->val[i].addr_type != KRB5_ADDRESS_NETBIOS) {
