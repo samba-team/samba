@@ -154,6 +154,20 @@ void free_user_info(struct auth_usersupplied_info **user_info);
 bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) ;
 bool is_trusted_domain(const char* dom_name);
 
+/* The following definitions come from auth/user_info.c  */
+
+NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
+			const char *smb_name,
+			const char *internal_username,
+			const char *client_domain,
+			const char *domain,
+			const char *wksta_name,
+			DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
+			DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
+			DATA_BLOB *plaintext,
+			bool encrypted);
+void free_user_info(struct auth_usersupplied_info **user_info);
+
 /* The following definitions come from auth/auth_winbind.c  */
 
 NTSTATUS auth_winbind_init(void);

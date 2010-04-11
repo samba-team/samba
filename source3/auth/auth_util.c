@@ -104,87 +104,6 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
 }
 
 /****************************************************************************
- Create an auth_usersupplied_data structure
-****************************************************************************/
-
-static NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
-                               const char *smb_name,
-                               const char *internal_username,
-                               const char *client_domain,
-                               const char *domain,
-                               const char *wksta_name,
-                               DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
-                               DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
-                               DATA_BLOB *plaintext,
-                               bool encrypted)
-{
-
-	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
-
-	*user_info = SMB_MALLOC_P(struct auth_usersupplied_info);
-	if (*user_info == NULL) {
-		DEBUG(0,("malloc failed for user_info (size %lu)\n", (unsigned long)sizeof(*user_info)));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ZERO_STRUCTP(*user_info);
-
-	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
-
-	(*user_info)->smb_name = SMB_STRDUP(smb_name);
-	if ((*user_info)->smb_name == NULL) { 
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*user_info)->internal_username = SMB_STRDUP(internal_username);
-	if ((*user_info)->internal_username == NULL) { 
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*user_info)->domain = SMB_STRDUP(domain);
-	if ((*user_info)->domain == NULL) { 
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*user_info)->client_domain = SMB_STRDUP(client_domain);
-	if ((*user_info)->client_domain == NULL) { 
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*user_info)->wksta_name = SMB_STRDUP(wksta_name);
-	if ((*user_info)->wksta_name == NULL) { 
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
-
-	if (lm_pwd)
-		(*user_info)->lm_resp = data_blob(lm_pwd->data, lm_pwd->length);
-	if (nt_pwd)
-		(*user_info)->nt_resp = data_blob(nt_pwd->data, nt_pwd->length);
-	if (lm_interactive_pwd)
-		(*user_info)->lm_interactive_pwd = data_blob(lm_interactive_pwd->data, lm_interactive_pwd->length);
-	if (nt_interactive_pwd)
-		(*user_info)->nt_interactive_pwd = data_blob(nt_interactive_pwd->data, nt_interactive_pwd->length);
-
-	if (plaintext)
-		(*user_info)->plaintext_password = data_blob(plaintext->data, plaintext->length);
-
-	(*user_info)->encrypted = encrypted;
-
-	(*user_info)->logon_parameters = 0;
-
-	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
@@ -1605,33 +1524,6 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	*server_info = result;
 
 	return NT_STATUS_OK;
-}
-
-/***************************************************************************
- Free a user_info struct
-***************************************************************************/
-
-void free_user_info(struct auth_usersupplied_info **user_info)
-{
-	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
-	if (*user_info != NULL) {
-		if ((*user_info)->smb_name) {
-			DEBUG(10,("structure was created for %s\n",
-				  (*user_info)->smb_name));
-		}
-		SAFE_FREE((*user_info)->smb_name);
-		SAFE_FREE((*user_info)->internal_username);
-		SAFE_FREE((*user_info)->client_domain);
-		SAFE_FREE((*user_info)->domain);
-		SAFE_FREE((*user_info)->wksta_name);
-		data_blob_free(&(*user_info)->lm_resp);
-		data_blob_free(&(*user_info)->nt_resp);
-		data_blob_clear_free(&(*user_info)->lm_interactive_pwd);
-		data_blob_clear_free(&(*user_info)->nt_interactive_pwd);
-		data_blob_clear_free(&(*user_info)->plaintext_password);
-		ZERO_STRUCT(**user_info);
-	}
-	SAFE_FREE(*user_info);
 }
 
 /**
