@@ -30,6 +30,10 @@ def set_options(opt):
                    help=("command separated list of libraries to build directly into binaries [%s]" % builtin_defauilt),
                    action="store", dest='BUILTIN_LIBRARIES', default=builtin_defauilt)
 
+    opt.add_option('--minimum-library-version',
+                   help=("list of minimum system library versions (LIBNAME1:version,LIBNAME2:version)"),
+                   action="store", dest='MINIMUM_LIBRARY_VERSION', default='')
+
     opt.add_option('--with-modulesdir',
                    help=("modules directory [PREFIX/modules]"),
                    action="store", dest='MODULESDIR', default='${PREFIX}/modules')

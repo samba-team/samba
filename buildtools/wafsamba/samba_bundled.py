@@ -54,6 +54,22 @@ def BUNDLED_EXTENSION_DEFAULT(opt, extension, noextenion=''):
 Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
 
 
+def minimum_library_version(conf, libname, default):
+    '''allow override of mininum system library version'''
+
+    minlist = Options.options.MINIMUM_LIBRARY_VERSION
+    if not minlist:
+        return default
+
+    for m in minlist.split(','):
+        a = m.split(':')
+        if len(a) != 2:
+            Logs.error("Bad syntax for --minimum-library-version of %s" % m)
+            sys.exit(1)
+        if a[0] == libname:
+            return a[1]
+    return default
+
 
 @runonce
 @conf
@@ -84,6 +100,8 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                 conf.env[found] = False
                 return False
 
+    minversion = minimum_library_version(conf, libname, minversion)
+
     # try pkgconfig first
     if conf.check_cfg(package=libname,
                       args='"%s >= %s" --cflags --libs' % (libname, minversion),
@@ -107,3 +125,4 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         Logs.error('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
         sys.exit(1)
     return False
+
