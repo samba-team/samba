@@ -29,6 +29,8 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('winbind')
     opt.SAMBA3_ADD_OPTION('ads')
+    opt.SAMBA3_ADD_OPTION('krb5')
+    opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
 
 
@@ -278,7 +280,9 @@ yp_get_default_domain
     if Options.options.with_winbind:
         conf.DEFINE('WITH_WINBIND', '1')
 
-    conf.DEFINE('WITH_ADS', '1')
+    #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
+    if Options.options.with_ads:
+        conf.DEFINE('WITH_ADS', '1')
 
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
@@ -320,7 +324,7 @@ yp_get_default_domain
         conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '2')
 
     # last but not least, if ldap_init() exists, we want to use ldap
-    if conf.CONFIG_SET('HAVE_LDAP_INIT'):
+    if conf.CONFIG_SET('HAVE_LDAP_INIT') and Options.options.with_ldap:
         conf.DEFINE('HAVE_LDAP', '1')
         conf.DEFINE('LDAP_DEPRECATED', '1')
         conf.env['SMBLDAP'] = 'lib/smbldap.c'
@@ -328,7 +332,7 @@ yp_get_default_domain
 
     # Check for kerberos
     conf.find_program('krb5-config', var='KRB5_CONFIG')
-    if conf.env.KRB5_CONFIG:
+    if conf.env.KRB5_CONFIG and Options.options.with_krb5:
         conf.check_cfg(path="krb5-config", args="--cflags --libs",
                        package="gssapi", uselib_store="krb5")
         conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
@@ -373,6 +377,10 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
         conf.CHECK_DECLS('''krb5_get_credentials_for_user
                             krb5_auth_con_set_req_cksumtype''',
                             headers='krb5.h', always=True)
+    else:
+        conf.SET_TARGET_TYPE('krb5', 'EMPTY')
+        conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
+        conf.SET_TARGET_TYPE('gssapi_krb5', 'EMPTY')
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
