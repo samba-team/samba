@@ -36,6 +36,7 @@ static bool tdb_add_record(struct tdb_wrap *tdbw, const char *fmt1,
 {
 	TDB_DATA key, data;
 	int ret;
+
 	key.dptr = (uint8_t *)talloc_asprintf(tdbw, fmt1, i);
 	key.dsize = strlen((char *)key.dptr)+1;
 	data.dptr = (uint8_t *)talloc_asprintf(tdbw, fmt2, i+10000);
@@ -66,9 +67,8 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 	tdbw = tdb_wrap_open(tmp_ctx, "test.tdb", 
 			     10000, 0, O_RDWR|O_CREAT|O_TRUNC, 0600);
 	if (!tdbw) {
-		unlink("test.tdb");
-		talloc_free(tmp_ctx);
-		torture_fail(torture, "Failed to open test.tdb");
+		torture_result(torture, TORTURE_FAIL, "Failed to open test.tdb");
+		goto failed;
 	}
 
 	torture_comment(torture, "Adding %d SID records\n", torture_entries);
@@ -77,13 +77,13 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 		if (!tdb_add_record(tdbw, 
 				    "S-1-5-21-53173311-3623041448-2049097239-%u",
 				    "UID %u", i)) {
-			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d!", i);
 			goto failed;
 		}
 		if (!tdb_add_record(tdbw, 
 				    "UID %u",
 				    "S-1-5-21-53173311-3623041448-2049097239-%u", i)) {
-			torture_result(torture, TORTURE_FAIL, "Failed to add UID %d\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add UID %d!", i);
 			goto failed;
 		}
 	}
@@ -100,7 +100,7 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 		data = tdb_fetch(tdbw->tdb, key);
 		talloc_free(key.dptr);
 		if (data.dptr == NULL) {
-			torture_result(torture, TORTURE_FAIL, "Failed to fetch SID %d\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d!", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -109,7 +109,7 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 		data = tdb_fetch(tdbw->tdb, key);
 		talloc_free(key.dptr);
 		if (data.dptr == NULL) {
-			torture_result(torture, TORTURE_FAIL, "Failed to fetch UID %d\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d!", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -118,14 +118,13 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 	tdb_speed = count/timeval_elapsed(&tv);
 	torture_comment(torture, "tdb speed %.2f ops/sec\n", tdb_speed);
 	
-
-	unlink("test.tdb");
 	talloc_free(tmp_ctx);
+	unlink("test.tdb");
 	return true;
 
 failed:
-	unlink("test.tdb");
 	talloc_free(tmp_ctx);
+	unlink("test.tdb");
 	return false;
 }
 
