@@ -299,12 +299,16 @@ static NTSTATUS auth_init_netlogond(struct auth_context *auth_context,
 				    const char *param,
 				    auth_methods **auth_method)
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	result->name = "netlogond";
+	result->auth = check_netlogond_security;
 
-	(*auth_method)->name = "netlogond";
-	(*auth_method)->auth = check_netlogond_security;
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 

@@ -134,13 +134,16 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 /* module initialisation */
 static NTSTATUS auth_init_wbc(struct auth_context *auth_context, const char *param, auth_methods **auth_method)
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	result->name = "wbc";
+	result->auth = check_wbc_security;
 
-	(*auth_method)->name = "wbc";
-	(*auth_method)->auth = check_wbc_security;
-
+	*auth_method = result;
 	return NT_STATUS_OK;
 }
 

@@ -52,11 +52,16 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method))
-		return NT_STATUS_NO_MEMORY;
+	struct auth_methods *result;
 
-	(*auth_method)->auth = check_guest_security;
-	(*auth_method)->name = "guest";
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->auth = check_guest_security;
+	result->name = "guest";
+
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 
@@ -104,11 +109,16 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 
 static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method))
-		return NT_STATUS_NO_MEMORY;
+	struct auth_methods *result;
 
-	(*auth_method)->auth = check_name_to_ntstatus_security;
-	(*auth_method)->name = "name_to_ntstatus";
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->auth = check_name_to_ntstatus_security;
+	result->name = "name_to_ntstatus";
+
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 
@@ -153,12 +163,17 @@ static DATA_BLOB auth_get_fixed_challenge(const struct auth_context *auth_contex
 
 static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method))
-		return NT_STATUS_NO_MEMORY;
+	struct auth_methods *result;
 
-	(*auth_method)->auth = check_fixed_challenge_security;
-	(*auth_method)->get_chal = auth_get_fixed_challenge;
-	(*auth_method)->name = "fixed_challenge";
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->auth = check_fixed_challenge_security;
+	result->get_chal = auth_get_fixed_challenge;
+	result->name = "fixed_challenge";
+
+	*auth_method = result;
 	return NT_STATUS_OK;
 }
 #endif /* DEVELOPER */

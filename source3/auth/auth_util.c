@@ -2128,32 +2128,6 @@ void free_user_info(struct auth_usersupplied_info **user_info)
 	SAFE_FREE(*user_info);
 }
 
-/***************************************************************************
- Make an auth_methods struct
-***************************************************************************/
-
-bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) 
-{
-	if (!auth_context) {
-		smb_panic("no auth_context supplied to "
-			  "make_auth_methods()!\n");
-	}
-
-	if (!auth_method) {
-		smb_panic("make_auth_methods: pointer to auth_method pointer "
-			  "is NULL!\n");
-	}
-
-	*auth_method = TALLOC_P(auth_context, auth_methods);
-	if (!*auth_method) {
-		DEBUG(0,("make_auth_method: malloc failed!\n"));
-		return False;
-	}
-	ZERO_STRUCTP(*auth_method);
-
-	return True;
-}
-
 /**
  * Verify whether or not given domain is trusted.
  *

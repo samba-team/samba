@@ -517,12 +517,16 @@ done:
 /* module initialisation */
 static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	result->auth = check_sam_security;
+	result->name = "sam_ignoredomain";
 
-	(*auth_method)->auth = check_sam_security;	
-	(*auth_method)->name = "sam_ignoredomain";
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 
@@ -574,12 +578,16 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 /* module initialisation */
 static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	result->auth = check_samstrict_security;
+	result->name = "sam";
 
-	(*auth_method)->auth = check_samstrict_security;
-	(*auth_method)->name = "sam";
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 

@@ -121,12 +121,14 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 /* module initialisation */
 static NTSTATUS auth_init_script(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	(*auth_method)->name = "script";
-	(*auth_method)->auth = script_check_user_credentials;
+	result->name = "script";
+	result->auth = script_check_user_credentials;
 
 	if (param && *param) {
 		/* we load the 'fallback' module - if script isn't here, call this
@@ -135,8 +137,10 @@ static NTSTATUS auth_init_script(struct auth_context *auth_context, const char *
 		if (!load_auth_module(auth_context, param, &priv)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		(*auth_method)->private_data = (void *)priv;
+		result->private_data = (void *)priv;
 	}
+
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 

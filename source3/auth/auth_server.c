@@ -454,12 +454,17 @@ use this machine as the password server.\n"));
 
 static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	(*auth_method)->name = "smbserver";
-	(*auth_method)->auth = check_smbserver_security;
-	(*auth_method)->get_chal = auth_get_challenge_server;
+	result->name = "smbserver";
+	result->auth = check_smbserver_security;
+	result->get_chal = auth_get_challenge_server;
+
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 
