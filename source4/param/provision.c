@@ -123,7 +123,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		settings->ntds_dn_str,
 		settings->invocation_id == NULL?"None":GUID_string(mem_ctx, settings->invocation_id)));
 
-	DEBUG(0,("Pathes under targetdir[%s]\n",
+	DEBUG(0,("Paths under targetdir[%s]\n",
 		 settings->targetdir));
 	parameters = PyDict_New();
 
