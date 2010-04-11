@@ -279,17 +279,17 @@ coclass WbemClassObject
     {
         WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE = 0x1,
         WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS = 0x2,
-//        WBEM_FLAVOR_MASK_PROPAGATION = 0x0F,
+/*        WBEM_FLAVOR_MASK_PROPAGATION = 0x0F, */
 
         WBEM_FLAVOR_NOT_OVERRIDABLE = 0x10,
-//        WBEM_FLAVOR_MASK_PERMISSIONS = 0x10,
+/*        WBEM_FLAVOR_MASK_PERMISSIONS = 0x10, */
 
         WBEM_FLAVOR_ORIGIN_PROPAGATED = 0x20,
         WBEM_FLAVOR_ORIGIN_SYSTEM = 0x40,
-//        WBEM_FLAVOR_MASK_ORIGIN = 0x60,
+/*        WBEM_FLAVOR_MASK_ORIGIN = 0x60, */
 
         WBEM_FLAVOR_AMENDED = 0x80
-//        WBEM_FLAVOR_MASK_AMENDED = 0x80
+/*        WBEM_FLAVOR_MASK_AMENDED = 0x80 */
 
     } WBEM_FLAVOR_TYPE;
 
@@ -299,7 +299,7 @@ coclass WbemClassObject
 		WCF_INSTANCE = 2,
 		WCF_CLASS = 4,
 		WCF_CLASS_PART_INTERNAL = 8
-	//	WCF_CLASS_PART_SHARED = 0x104
+	/*	WCF_CLASS_PART_SHARED = 0x104 */
     } WCO_FLAGS;
 
     typedef [public,nopull,nopush] struct
@@ -420,7 +420,7 @@ coclass WbemClassObject
 
 
     WERROR CreateInstanceEnum(
-        [in] BSTR strFilter,          // allow more things than a class name
+        [in] BSTR strFilter,          /* allow more things than a class name */
         [in] long lFlags,
         [in,unique]  IWbemContext* pCtx,
         [out] IEnumWbemClassObject** ppEnum
@@ -525,36 +525,36 @@ coclass WbemClassObject
     WERROR Clone([out] IWbemContext** ppNewCopy);
 
     WERROR GetNames(
-//        [in] long lFlags,
-//        [out] SAFEARRAY (BSTR)* pNames
+/*        [in] long lFlags, */
+/*        [out] SAFEARRAY (BSTR)* pNames */
         );
 
     WERROR BeginEnumeration([in] long lFlags);
 
     WERROR Next(
-//        [in]  long lFlags,
-//        [out] BSTR* pstrName,
-//        [out] VARIANT* pValue
+/*        [in]  long lFlags, */
+/*        [out] BSTR* pstrName, */
+/*        [out] VARIANT* pValue */
         );
 
     WERROR EndEnumeration();
 
 
     WERROR SetValue(
-//        [in, string] LPCWSTR wszName,
-//        [in] long lFlags
-//        [in] VARIANT* pValue
+/*        [in, string] LPCWSTR wszName, */
+/*        [in] long lFlags */
+/*        [in] VARIANT* pValue */
         );
 
     WERROR GetValue(
-//        [in, string] LPCWSTR wszName,
-//        [in] long lFlags,
-//        [out] VARIANT* pValue
+/*        [in, string] LPCWSTR wszName, */
+/*        [in] long lFlags, */
+/*        [out] VARIANT* pValue */
         );
 
     WERROR DeleteValue(
-//        [in, string] LPCWSTR wszName,
-//        [in] long lFlags
+/*        [in, string] LPCWSTR wszName, */
+/*        [in] long lFlags */
         );
 
     WERROR DeleteAll();
@@ -613,7 +613,7 @@ coclass WbemClassObject
 	} WTYPES;
 
 	typedef [relative_base] struct {
-		//	[relative] WBEMDATA4 *data; /* 0x9 */
+		/*	[relative] WBEMDATA4 *data; */ /* 0x9 */
 		uint32 data_size;
 		uint8 wtype;
 	} WBEMDATA4;
@@ -669,7 +669,7 @@ coclass WbemClassObject
 
 [
 	object,
-	//	restricted,
+	/*	restricted, */
 	uuid(44aca675-e8fc-11d0-a07c-00c04fb68820)
 ] interface IWbemCallResult : IUnknown
 {
