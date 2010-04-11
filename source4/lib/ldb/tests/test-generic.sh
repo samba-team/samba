@@ -44,7 +44,7 @@ $VALGRIND ldbadd$EXEEXT $LDBDIR/tests/test-wrong_attributes.ldif && {
     exit 1
 }
 
-echo "testing indexed search"
+echo "Testing indexed search"
 $VALGRIND ldbsearch$EXEEXT '(uid=uham)'  || exit 1
 $VALGRIND ldbsearch$EXEEXT '(&(objectclass=person)(objectclass=person)(objectclass=top))' || exit 1
 $VALGRIND ldbsearch$EXEEXT '(&(uid=uham)(uid=uham))'  || exit 1

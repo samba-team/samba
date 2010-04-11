@@ -182,7 +182,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	}} while (0)
 
 	
-	printf("test setattr\n");
+	printf("Test setattr\n");
 	sfinfo.setattr.in.attrib = FILE_ATTRIBUTE_READONLY;
 	sfinfo.setattr.in.write_time = basetime;
 	CHECK_CALL_PATH(SETATTR, NT_STATUS_OK);
@@ -203,7 +203,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_NORMAL);
 	CHECK_TIME (ALL_INFO, all_info, write_time, basetime);
 
-	printf("test setattre\n");
+	printf("Test setattre\n");
 	sfinfo.setattre.in.create_time = basetime + 20;
 	sfinfo.setattre.in.access_time = basetime + 30;
 	sfinfo.setattre.in.write_time  = basetime + 40;
@@ -220,7 +220,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_TIME(ALL_INFO, all_info, access_time, basetime + 30);
 	CHECK_TIME(ALL_INFO, all_info, write_time,  basetime + 40);
 
-	printf("test standard level\n");
+	printf("Test standard level\n");
 	sfinfo.standard.in.create_time = basetime + 100;
 	sfinfo.standard.in.access_time = basetime + 200;
 	sfinfo.standard.in.write_time  = basetime + 300;
@@ -229,7 +229,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_TIME(ALL_INFO, all_info, access_time, basetime + 200);
 	CHECK_TIME(ALL_INFO, all_info, write_time,  basetime + 300);
 
-	printf("test basic_info level\n");
+	printf("Test basic_info level\n");
 	basetime += 86400;
 	unix_to_nt_time(&sfinfo.basic_info.in.create_time, basetime + 100);
 	unix_to_nt_time(&sfinfo.basic_info.in.access_time, basetime + 200);
@@ -256,7 +256,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_TIME(ALL_INFO, all_info, change_time, basetime + 400);
 	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_READONLY);
 
-	printf("test basic_information level\n");
+	printf("Test basic_information level\n");
 	basetime += 86400;
 	unix_to_nt_time(&sfinfo.basic_info.in.create_time, basetime + 100);
 	unix_to_nt_time(&sfinfo.basic_info.in.access_time, basetime + 200);
@@ -301,7 +301,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	*/
 	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_NORMAL);
 
-	printf("test disposition_info level\n");
+	printf("Test disposition_info level\n");
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	CHECK_CALL_FNUM(DISPOSITION_INFO, NT_STATUS_OK);
 	CHECK_VALUE(ALL_INFO, all_info, delete_pending, 1);
@@ -312,7 +312,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_VALUE(ALL_INFO, all_info, delete_pending, 0);
 	CHECK_VALUE(ALL_INFO, all_info, nlink, 1);
 
-	printf("test disposition_information level\n");
+	printf("Test disposition_information level\n");
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	CHECK_CALL_FNUM(DISPOSITION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(ALL_INFO, all_info, delete_pending, 1);
@@ -334,7 +334,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_VALUE(ALL_INFO, all_info, delete_pending, 0);
 	CHECK_VALUE(ALL_INFO, all_info, nlink, 1);
 
-	printf("test allocation_info level\n");
+	printf("Test allocation_info level\n");
 	sfinfo.allocation_info.in.alloc_size = 0;
 	CHECK_CALL_FNUM(ALLOCATION_INFO, NT_STATUS_OK);
 	CHECK_VALUE(ALL_INFO, all_info, size, 0);
@@ -366,7 +366,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_VALUE(ALL_INFO, all_info, alloc_size, 0);
 	CHECK_VALUE(ALL_INFO, all_info, size, 0);
 
-	printf("test end_of_file_info level\n");
+	printf("Test end_of_file_info level\n");
 	sfinfo.end_of_file_info.in.size = 37;
 	CHECK_CALL_FNUM(END_OF_FILE_INFO, NT_STATUS_OK);
 	CHECK_VALUE(ALL_INFO, all_info, size, 37);
@@ -389,7 +389,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_CALL_PATH(END_OF_FILE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(ALL_INFO, all_info, size, 7);
 
-	printf("test position_information level\n");
+	printf("Test position_information level\n");
 	sfinfo.position_information.in.position = 123456;
 	CHECK_CALL_FNUM(POSITION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(POSITION_INFORMATION, position_information, position, 123456);
@@ -397,7 +397,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_CALL_PATH(POSITION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(POSITION_INFORMATION, position_information, position, 0);
 
-	printf("test mode_information level\n");
+	printf("Test mode_information level\n");
 	sfinfo.mode_information.in.mode = 2;
 	CHECK_CALL_FNUM(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 2);
@@ -417,11 +417,11 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
 
 #if 0
-	printf("test unix_basic level\n");
+	printf("Test unix_basic level\n");
 	CHECK_CALL_FNUM(UNIX_BASIC, NT_STATUS_OK);
 	CHECK_CALL_PATH(UNIX_BASIC, NT_STATUS_OK);
 
-	printf("test unix_link level\n");
+	printf("Test unix_link level\n");
 	CHECK_CALL_FNUM(UNIX_LINK, NT_STATUS_OK);
 	CHECK_CALL_PATH(UNIX_LINK, NT_STATUS_OK);
 #endif
