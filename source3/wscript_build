@@ -655,6 +655,23 @@ PRINTBACKEND_SRC = 'printing/printing.c printing/nt_printing.c ${PRINTBASE_SRC}'
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
+NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
+            nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
+            nmbd/nmbd_browsesync.c nmbd/nmbd_elections.c
+            nmbd/nmbd_incomingdgrams.c nmbd/nmbd_incomingrequests.c
+            nmbd/nmbd_lmhosts.c nmbd/nmbd_logonnames.c nmbd/nmbd_mynames.c
+            nmbd/nmbd_namelistdb.c nmbd/nmbd_namequery.c
+            nmbd/nmbd_nameregister.c nmbd/nmbd_namerelease.c
+            nmbd/nmbd_nodestatus.c nmbd/nmbd_packets.c
+            nmbd/nmbd_processlogon.c nmbd/nmbd_responserecordsdb.c
+            nmbd/nmbd_sendannounce.c nmbd/nmbd_serverlistdb.c
+            nmbd/nmbd_subnetdb.c nmbd/nmbd_winsproxy.c nmbd/nmbd_winsserver.c
+            nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c'''
+
+NMBD_SRC = '''${NMBD_SRC1} ${PARAM_SRC} ${LIBSMB_SRC} ${LDB_SRC} ${KRBCLIENT_SRC}
+           ${PROFILE_SRC} ${LIB_NONSMBD_SRC} ${POPT_LIB_SRC} ${GROUPDB_SRC}
+	   ${LIBNDR_GEN_SRC0} ${WBCOMMON_SRC} ${PASSDB_SRC} ${TLDAP_SRC}'''
+
 LIBS='ICONV'
 
 bld.env.AWK = 'gawk'
@@ -696,6 +713,13 @@ bld.SAMBA_BINARY('smbd/smbd',
                  deps='''tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5
                  NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv z''',
                  includes='lib',
+                 vars=locals())
+
+bld.SAMBA_BINARY('nmbd/nmbd',
+                 source=NMBD_SRC,
+                 deps='''talloc tdb tevent z cap resolv LIBWBCLIENT popt dl
+                 NSS_WRAPPER DYNCONFIG''',
+                 includes='lib ../lib/tdb/include',
                  vars=locals())
 
 bld.RECURSE('../lib/socket_wrapper')
