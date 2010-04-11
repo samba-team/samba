@@ -184,8 +184,7 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 				 SECRETS_SCHANNEL_STATE, name_upper);
 	TALLOC_FREE(name_upper);
 	if (!keystr) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	value = tdb_fetch_bystring(tdb_sc->tdb, keystr);
