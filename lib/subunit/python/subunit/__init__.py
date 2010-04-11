@@ -913,7 +913,7 @@ def TAP2SubUnit(tap, subunit):
                     subunit.write("]\n")
                 continue
         # not a plan line, or have seen one before
-        match = re.match("(ok|not ok)(?:\s+(\d+)?)?(?:\s+([^#]*[^#\s]+)\s*)?(?:\s+#\s+(TODO|SKIP)(?:\s+(.*))?)?\n", line)
+        match = re.match("(ok|not ok)(?:\s+(\d+)?)?(?:\s+([^#]*[^#\s]+)\s*)?(?:\s+#\s+(TODO|SKIP|skip|todo)(?:\s+(.*))?)?\n", line)
         if match:
             # new test, emit current one.
             _emit_test()
@@ -927,9 +927,9 @@ def TAP2SubUnit(tap, subunit):
             else:
                 description = ' ' + description
             if directive is not None:
-                if directive == 'TODO':
+                if directive.upper() == 'TODO':
                     result = 'xfail'
-                elif directive == 'SKIP':
+                elif directive.upper() == 'SKIP':
                     result = 'skip'
                 if directive_comment is not None:
                     log.append(directive_comment)

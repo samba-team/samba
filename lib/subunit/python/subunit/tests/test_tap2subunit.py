@@ -18,9 +18,7 @@
 
 import unittest
 from StringIO import StringIO
-import os
 import subunit
-import sys
 
 
 class TestTAP2SubUnit(unittest.TestCase):
@@ -122,6 +120,19 @@ class TestTAP2SubUnit(unittest.TestCase):
         self.assertEqual([
             "test test 1",
             "skip test 1",
+            ],
+            self.subunit.getvalue().splitlines())
+
+    def test_ok_skip_number_comment_lowercase(self):
+        self.tap.write("ok 1 # skip no samba environment available, skipping compilation\n")
+        self.tap.seek(0)
+        result = subunit.TAP2SubUnit(self.tap, self.subunit)
+        self.assertEqual(0, result)
+        self.assertEqual([
+            "test test 1",
+            "skip test 1 [", 
+            "no samba environment available, skipping compilation",
+            "]"
             ],
             self.subunit.getvalue().splitlines())
 
