@@ -1100,6 +1100,7 @@ bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("could not create token for %s\n", username));
+		TALLOC_FREE(mem_ctx);
 		return False;
 	}
 
