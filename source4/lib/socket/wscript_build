@@ -4,14 +4,14 @@
 bld.SAMBA_SUBSYSTEM('LIBNETIF',
 	source='interface.c netif.c',
 	autoproto='netif_proto.h',
-	deps='LIBSAMBA-UTIL LIBREPLACE_NETWORK'
+	deps='LIBSAMBA-UTIL'
 	)
 
 
 bld.SAMBA_MODULE('socket_ip',
 	source='socket_ip.c',
 	subsystem='samba_socket',
-	deps='LIBSAMBA-ERRORS LIBREPLACE_NETWORK',
+	deps='LIBSAMBA-ERRORS',
 	internal_module=True
 	)
 
@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('socket_ip',
 bld.SAMBA_MODULE('socket_unix',
 	source='socket_unix.c',
 	subsystem='samba_socket',
-	deps='LIBREPLACE_NETWORK talloc',
+	deps='talloc',
 	internal_module=True
 	)
 

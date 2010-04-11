@@ -217,7 +217,7 @@ HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_H_SOURCE + '''
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN',
 	HEIMDAL_ROKEN_SOURCE,
 	includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
-	deps='resolv LIBREPLACE_NETWORK UID_WRAPPER util'
+	deps='resolv UID_WRAPPER util'
 	)
 
 

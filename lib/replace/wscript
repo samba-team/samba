@@ -311,10 +311,16 @@ def build(bld):
 
     if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
 
-    if not bld.CONFIG_SET('HAVE_GETIFADDRS'):    REPLACE_SOURCE += ' getifaddrs.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
+
     if not bld.CONFIG_SET('HAVE_SOCKETPAIR'):    REPLACE_SOURCE += ' socketpair.c'
     if not bld.CONFIG_SET('HAVE_CONNECT'):       REPLACE_SOURCE += ' socket.c'
+    if not bld.CONFIG_SET('HAVE_GETIFADDRS'):    REPLACE_SOURCE += ' getifaddrs.c'
+    if not bld.CONFIG_SET('HAVE_GETADDRINFO'):   REPLACE_SOURCE += ' getaddrinfo.c'
+    if not bld.CONFIG_SET('HAVE_INET_NTOA'):     REPLACE_SOURCE += ' inet_ntoa.c'
+    if not bld.CONFIG_SET('HAVE_INET_ATON'):     REPLACE_SOURCE += ' inet_aton.c'
+    if not bld.CONFIG_SET('HAVE_INET_NTOP'):     REPLACE_SOURCE += ' inet_ntop.c'
+    if not bld.CONFIG_SET('HAVE_INET_PTON'):     REPLACE_SOURCE += ' inet_pton.c'
 
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
@@ -329,19 +335,6 @@ def build(bld):
                      TEST_SOURCES,
                      deps='replace',
                      install=False)
-
-    NET_SOURCES = []
-    if not bld.CONFIG_SET('HAVE_INET_NTOA'):  NET_SOURCES.append('inet_ntoa.c')
-    if not bld.CONFIG_SET('HAVE_INET_ATON'):  NET_SOURCES.append('inet_aton.c')
-    if not bld.CONFIG_SET('HAVE_INET_NTOP'):  NET_SOURCES.append('inet_ntop.c')
-    if not bld.CONFIG_SET('HAVE_INET_PTON'):  NET_SOURCES.append('inet_pton.c')
-    if not bld.CONFIG_SET('HAVE_SOCKETPAIR'): NET_SOURCES.append('socketpair.c')
-    if not bld.CONFIG_SET('HAVE_GETADDRINFO'):NET_SOURCES.append('getaddrinfo.c')
-
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_NETWORK', NET_SOURCES,
-                        group='base_libraries',
-                        deps='replace')
-
 
     CRYPT_SOURCES = []
     if not 'HAVE_CRYPT' in bld.env: CRYPT_SOURCES.append('crypt.c')

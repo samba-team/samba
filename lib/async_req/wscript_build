@@ -3,6 +3,6 @@
 
 bld.SAMBA_SUBSYSTEM('LIBASYNC_REQ',
 	source='async_sock.c',
-	public_deps='LIBREPLACE_NETWORK talloc tevent'
+	public_deps='talloc tevent'
 	)
 
