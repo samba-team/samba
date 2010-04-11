@@ -308,6 +308,8 @@ def build(bld):
 
     REPLACE_SOURCE = REPLACE_H_SOURCE
 
+    if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
+
     if not bld.CONFIG_SET('HAVE_GETIFADDRS'):    REPLACE_SOURCE += ' getifaddrs.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
     if not bld.CONFIG_SET('HAVE_SOCKETPAIR'):    REPLACE_SOURCE += ' socketpair.c'
@@ -316,7 +318,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
-                      deps='LIBREPLACE_GETPASS nsl socket')
+                      deps='nsl socket')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''
@@ -346,10 +348,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_EXT',
                         CRYPT_SOURCES,
                         group='base_libraries')
-
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_GETPASS', 'getpass.c',
-                        group='base_libraries',
-                        enabled=bld.CONFIG_SET('REPLACE_GETPASS'))
 
     # build replacements for stdint.h and stdbool.h if needed
     bld.SAMBA_GENERATOR('replace_stdint_h',
