@@ -1079,14 +1079,7 @@ bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 	char *found_username;
 	struct nt_user_token *token;
 	bool result;
-
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return False;
-	}
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	status = create_token_from_username(mem_ctx, username, False,
 					    &uid, &gid, &found_username,
