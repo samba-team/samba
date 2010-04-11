@@ -1218,7 +1218,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 	/* do password magic */
 
-	generate_random_buffer(chal, 8);
+	generate_random_buffer(chal, sizeof(chal));
 
 	if (lp_client_ntlmv2_auth()) {
 		DATA_BLOB server_chal;
