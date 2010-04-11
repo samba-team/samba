@@ -188,11 +188,11 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 	/* add an index */
 	ldif = ldb_ldif_read_string(ldb, &init_ldif);
 	if (ldif == NULL) {
-		torture_result(torture, TORTURE_FAIL, "Didn't get LDIF data!\n");
+		torture_result(torture, TORTURE_FAIL, "Didn't get LDIF data!");
 		goto failed;
 	}
 	if (ldb_add(ldb, ldif->msg) != LDB_SUCCESS) {
-		torture_result(torture, TORTURE_FAIL, "Couldn't apply LDIF data!\n");
+		torture_result(torture, TORTURE_FAIL, "Couldn't apply LDIF data!");
 		talloc_free(ldif);
 		goto failed;
 	}
@@ -202,13 +202,13 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	for (i=0;i<torture_entries;i++) {
 		if (!ldb_add_record(ldb, i)) {
-			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d", i);
 			goto failed;
 		}
 	}
 
 	if (talloc_total_blocks(tmp_ctx) > 100) {
-		torture_result(torture, TORTURE_FAIL, "memory leak in ldb add\n");
+		torture_result(torture, TORTURE_FAIL, "memory leak in ldb add");
 		goto failed;
 	}
 
@@ -223,20 +223,20 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 		i = random() % torture_entries;
 		dn = ldb_dn_new_fmt(tmp_ctx, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", i);
 		if (ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL) != LDB_SUCCESS || res->count != 1) {
-			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d!\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d!", i);
 			goto failed;
 		}
 		talloc_free(res);
 		talloc_free(dn);
 		if (ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "(UID=%u)", i) != LDB_SUCCESS || res->count != 1) {
-			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d!\n", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d!", i);
 			goto failed;
 		}
 		talloc_free(res);
 	}
 
 	if (talloc_total_blocks(tmp_ctx) > 100) {
-		torture_result(torture, TORTURE_FAIL, "memory leak in ldb search\n");
+		torture_result(torture, TORTURE_FAIL, "memory leak in ldb search");
 		goto failed;
 	}
 
