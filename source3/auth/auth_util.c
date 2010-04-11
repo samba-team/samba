@@ -493,14 +493,6 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }
 
-static char *sanitize_username(TALLOC_CTX *mem_ctx, const char *username)
-{
-	fstring tmp;
-
-	alpha_strcpy(tmp, username, ". _-$", sizeof(tmp));
-	return talloc_strdup(mem_ctx, tmp);
-}
-
 /***************************************************************************
  Is the incoming username our own machine account ?
  If so, the connection is almost certainly from winbindd.
