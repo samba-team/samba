@@ -207,7 +207,7 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 		}
 	}
 
-	if (talloc_total_blocks(torture) > 100) {
+	if (talloc_total_blocks(tmp_ctx) > 100) {
 		torture_result(torture, TORTURE_FAIL, "memory leak in ldb add\n");
 		goto failed;
 	}
@@ -235,7 +235,7 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 		talloc_free(res);
 	}
 
-	if (talloc_total_blocks(torture) > 100) {
+	if (talloc_total_blocks(tmp_ctx) > 100) {
 		torture_result(torture, TORTURE_FAIL, "memory leak in ldb search\n");
 		goto failed;
 	}
