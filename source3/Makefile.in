@@ -764,6 +764,7 @@ AUTH_SCRIPT_OBJ = auth/auth_script.o
 AUTH_NETLOGOND_OBJ = auth/auth_netlogond.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
+	   auth/server_info.o \
 	   auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 

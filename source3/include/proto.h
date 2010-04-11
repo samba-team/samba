@@ -158,6 +158,10 @@ bool is_trusted_domain(const char* dom_name);
 
 NTSTATUS auth_winbind_init(void);
 
+/* The following definitions come from auth/server_info.c  */
+
+struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx);
+
 /* The following definitions come from auth/auth_wbc.c  */
 
 NTSTATUS auth_wbc_init(void);

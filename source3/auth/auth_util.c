@@ -493,38 +493,6 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }
 
-static int server_info_dtor(struct auth_serversupplied_info *server_info)
-{
-	TALLOC_FREE(server_info->sam_account);
-	ZERO_STRUCTP(server_info);
-	return 0;
-}
-
-/***************************************************************************
- Make a server_info struct. Free with TALLOC_FREE().
-***************************************************************************/
-
-static struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
-{
-	struct auth_serversupplied_info *result;
-
-	result = TALLOC_ZERO_P(mem_ctx, struct auth_serversupplied_info);
-	if (result == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	talloc_set_destructor(result, server_info_dtor);
-
-	/* Initialise the uid and gid values to something non-zero
-	   which may save us from giving away root access if there
-	   is a bug in allocating these fields. */
-
-	result->utok.uid = -1;
-	result->utok.gid = -1;
-	return result;
-}
-
 static char *sanitize_username(TALLOC_CTX *mem_ctx, const char *username)
 {
 	fstring tmp;
