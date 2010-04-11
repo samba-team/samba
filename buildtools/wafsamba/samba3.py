@@ -4,14 +4,15 @@
 import Options
 from optparse import SUPPRESS_HELP
 
-def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True):
+def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
+                      with_name="with", without_name="without"):
     if help == ():
         help = ("Build with %s support" % option)
     if dest is None:
         dest = "with_%s" % option
 
-    with_val = "--with-%s" % option
-    without_val = "--without-%s" % option
+    with_val = "--%s-%s" % (with_name, option)
+    without_val = "--%s-%s" % (without_name, option)
 
     opt.add_option(with_val, help=help, action="store_true", dest=dest,
                    default=default)

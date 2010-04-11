@@ -29,7 +29,7 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('winbind')
     opt.SAMBA3_ADD_OPTION('ads')
-    opt.SAMBA3_ADD_OPTION('cups')
+    opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
 
 
 def configure(conf):
