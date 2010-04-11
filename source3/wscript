@@ -19,6 +19,7 @@ def set_options(opt):
     opt.RECURSE('../lib/nss_wrapper')
     opt.RECURSE('../lib/socket_wrapper')
     opt.RECURSE('../lib/tevent')
+    opt.RECURSE('../lib/tdb')
 
     opt.add_option('--with-static-modules',
                    help=("Comma-separated list of names of modules to statically link in"),
@@ -61,6 +62,7 @@ def configure(conf):
     conf.RECURSE('../lib/popt')
     conf.RECURSE('../lib/nss_wrapper')
     conf.RECURSE('../lib/socket_wrapper')
+    conf.RECURSE('../lib/zlib')
 
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h')
 
@@ -84,7 +86,9 @@ def configure(conf):
     conf.CHECK_FUNCS('shmget')
     conf.CHECK_FUNCS_IN('shm_open', 'rt', checklibc=True)
     conf.CHECK_FUNCS('gettext dgettext bindtextdomain textdomain')
+    #FIXME: for some reason this one still fails
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
+    conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
 
     # Check for inotify support
     conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h')
@@ -218,7 +222,6 @@ sizeof_proplist_entry _stat __stat stat64 _stat64 __stat64 statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctlbyname
 __sys_llseek syslog _telldir __telldir telldir64 textdomain timegm
 updwtmp updwtmpx utimensat vsyslog _write __write __xstat
-yp_get_default_domain
 ''')
 
     conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
@@ -296,39 +299,43 @@ yp_get_default_domain
         conf.SET_TARGET_TYPE('cups', 'EMPTY')
 
     # Check for LDAP
-    conf.CHECK_HEADERS('ldap.h lber.h')
-    conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
-    conf.CHECK_FUNCS_IN('ber_scanf ber_sockbuf_add_io', 'lber')
-    conf.CHECK_VARIABLE('LDAP_OPT_SOCKBUF', headers='ldap.h')
-    # if ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF are available, we can add
-    # SASL wrapping hooks
-    if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
-            conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
-        conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
+    if Options.options.with_ldap:
+        conf.CHECK_HEADERS('ldap.h lber.h')
+        conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
+        conf.CHECK_FUNCS_IN('ber_scanf ber_sockbuf_add_io', 'lber')
+        conf.CHECK_VARIABLE('LDAP_OPT_SOCKBUF', headers='ldap.h')
+        # if ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF are available, we can add
+        # SASL wrapping hooks
+        if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
+                conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
+            conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
 
-    # if we LBER_OPT_LOG_PRINT_FN we can intercept ldap logging and print it out
-    # for the samba logs
-    conf.CHECK_VARIABLE('LBER_OPT_LOG_PRINT_FN',
-                        define='HAVE_LBER_LOG_PRINT_FN', headers='lber.h')
+        # if we LBER_OPT_LOG_PRINT_FN we can intercept ldap logging and print it out
+        # for the samba logs
+        conf.CHECK_VARIABLE('LBER_OPT_LOG_PRINT_FN',
+                            define='HAVE_LBER_LOG_PRINT_FN', headers='lber.h')
 
-    conf.CHECK_FUNCS_IN('ldap_init ldap_initialize ldap_set_rebind_proc', 'ldap')
-    conf.CHECK_FUNCS_IN('ldap_add_result_entry', 'ldap')
+        conf.CHECK_FUNCS_IN('ldap_init ldap_initialize ldap_set_rebind_proc', 'ldap')
+        conf.CHECK_FUNCS_IN('ldap_add_result_entry', 'ldap')
 
-    # Check if ldap_set_rebind_proc() takes three arguments
-    if conf.CHECK_CODE('ldap_set_rebind_proc(0, 0, 0)',
-                       'LDAP_SET_REBIND_PROC_ARGS',
-                       msg="Checking whether ldap_set_rebind_proc takes 3 arguments",
-                       headers='ldap.h lber.h', link=False):
-        conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '3')
+        # Check if ldap_set_rebind_proc() takes three arguments
+        if conf.CHECK_CODE('ldap_set_rebind_proc(0, 0, 0)',
+                           'LDAP_SET_REBIND_PROC_ARGS',
+                           msg="Checking whether ldap_set_rebind_proc takes 3 arguments",
+                           headers='ldap.h lber.h', link=False):
+            conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '3')
+        else:
+            conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '2')
+
+        # last but not least, if ldap_init() exists, we want to use ldap
+        if conf.CONFIG_SET('HAVE_LDAP_INIT'):
+            conf.DEFINE('HAVE_LDAP', '1')
+            conf.DEFINE('LDAP_DEPRECATED', '1')
+            conf.env['SMBLDAP'] = 'lib/smbldap.c'
+            conf.env['SMBLDAPUTIL'] = 'lib/smbldap_util.c'
     else:
-        conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '2')
-
-    # last but not least, if ldap_init() exists, we want to use ldap
-    if conf.CONFIG_SET('HAVE_LDAP_INIT') and Options.options.with_ldap:
-        conf.DEFINE('HAVE_LDAP', '1')
-        conf.DEFINE('LDAP_DEPRECATED', '1')
-        conf.env['SMBLDAP'] = 'lib/smbldap.c'
-        conf.env['SMBLDAPUTIL'] = 'lib/smbldap_util.c'
+        conf.SET_TARGET_TYPE('ldap', 'EMPTY')
+        conf.SET_TARGET_TYPE('lber', 'EMPTY')
 
     # Check for kerberos
     conf.find_program('krb5-config', var='KRB5_CONFIG')

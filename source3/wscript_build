@@ -431,9 +431,9 @@ PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 #FIXME: Hack around the missing AC_MODULE
 PDB_STATIC = 'passdb/pdb_tdb.c'
 
-PASSDB_MODULES_SRC = '''passdb/pdb_nds.c passdb/pdb_wbc_sam.c passdb/pdb_ads.c
-passdb/pdb_smbpasswd.c passdb/secrets.c passdb/machine_sid.c
-passdb/pdb_ldap.c'''
+PASSDB_MODULES_SRC = '''passdb/pdb_wbc_sam.c passdb/pdb_ads.c
+passdb/pdb_smbpasswd.c passdb/secrets.c passdb/machine_sid.c'''
+#passdb/pdb_ldap.c passdb/pdb_nds.c'''
 
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
 		passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
@@ -444,8 +444,8 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
 
 
 
-EXTRA_SRC = '''lib/smbldap.c lib/tldap.c lib/tldap_util.c
-lib/util_tsock.c lib/smbldap_util.c'''
+EXTRA_SRC = '''lib/tldap.c lib/tldap_util.c
+lib/util_tsock.c''' #lib/smbdlap.c lib/smbldap_util.c'''
 
 AUTH_SRC1 = '''${AUTH_BUILTIN_SRC} ${AUTH_DOMAIN_SRC} ${AUTH_SAM_SRC}
 ${AUTH_SERVER_SRC} ${AUTH_UNIX_SRC} ${AUTH_WINBIND_SRC}
@@ -681,10 +681,20 @@ bld.RECURSE('build')
 
 bld.SAMBA_MKVERSION('include/version.h')
 
+bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
+                    source='''../nsswitch/libwbclient/wbc_guid.c
+                              ../nsswitch/libwbclient/wbc_idmap.c
+                              ../nsswitch/libwbclient/wbclient.c
+                              ../nsswitch/libwbclient/wbc_pam.c
+                              ../nsswitch/libwbclient/wbc_pwd.c
+                              ../nsswitch/libwbclient/wbc_sid.c
+                              ../nsswitch/libwbclient/wbc_util.c''',
+                    public_deps='talloc')
+
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap''',
+                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv z''',
                  includes='lib',
                  vars=locals())
 
@@ -694,7 +704,7 @@ bld.RECURSE('../lib/tdb')
 bld.RECURSE('../lib/nss_wrapper')
 bld.RECURSE('../lib/tevent')
 bld.RECURSE('../lib/popt')
-bld.RECURSE('../nsswitch/libwbclient')
+bld.RECURSE('../lib/zlib')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
