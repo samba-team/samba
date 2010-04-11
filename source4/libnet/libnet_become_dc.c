@@ -2315,8 +2315,6 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 
 			/* dump more detailed error */
 			switch (err_data->v1.dir_err) {
-			case DRSUAPI_DIRERR_OK: /* mute compiler warnings */
-				break;
 			case DRSUAPI_DIRERR_ATTRIBUTE:
 				/* Dump attribute errors */
 				attr_err = &err_data->v1.info->attr_err;
@@ -2390,6 +2388,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 					    win_errstr(err_data->v1.info->system_err.extended_err),
 					    err_data->v1.info->system_err.problem));
 				break;
+			case DRSUAPI_DIRERR_OK: /* mute compiler warnings */
 			default:
 				DEBUGADD(0,(" Unknown DIRERR error class returned!"));
 				break;
