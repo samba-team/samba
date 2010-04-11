@@ -150,7 +150,7 @@ def symlink_bin(self):
 
     blddir = os.path.dirname(self.bld.srcnode.abspath(self.bld.env))
     binpath = self.link_task.outputs[0].abspath(self.env)
-    bldpath = os.path.join(self.bld.env.BUILD_DIRECTORY, self.target)
+    bldpath = os.path.join(self.bld.env.BUILD_DIRECTORY, self.link_task.outputs[0].name)
 
     if os.path.lexists(bldpath):
         old_link = os.readlink(bldpath)
