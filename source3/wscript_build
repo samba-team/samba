@@ -441,6 +441,7 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
 		passdb/login_cache.c ${PDB_STATIC}
 		lib/account_pol.c ${PRIVILEGES_SRC} ${PASSDB_MODULES_SRC}
 		lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
+#FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
 
 
 
@@ -672,6 +673,10 @@ NMBD_SRC = '''${NMBD_SRC1} ${PARAM_SRC} ${LIBSMB_SRC} ${LDB_SRC} ${KRBCLIENT_SRC
            ${PROFILE_SRC} ${LIB_NONSMBD_SRC} ${POPT_LIB_SRC} ${GROUPDB_SRC}
 	   ${LIBNDR_GEN_SRC0} ${WBCOMMON_SRC} ${PASSDB_SRC} ${TLDAP_SRC}'''
 
+WBINFO_SRC = '''../nsswitch/wbinfo.c ${LIBSAMBA_SRC} ${PARAM_SRC} ${LIB_NONSMBD_SRC}
+		${POPT_LIB_SRC} ${AFS_SETTOKEN_SRC} ${PASSDB_SRC} ${TLDAP_SRC}
+		${WBCOMMON_SRC} ${GROUPDB_SRC}'''
+
 LIBS='ICONV'
 
 bld.env.AWK = 'gawk'
@@ -708,6 +713,12 @@ bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
                               ../nsswitch/libwbclient/wbc_util.c''',
                     public_deps='talloc')
 
+bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
+                    source='../lib/util/asn1.c',
+                    deps='talloc',
+                    includes='../lib/tdb/include',
+                    local_include=False)
+
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5
@@ -722,6 +733,13 @@ bld.SAMBA_BINARY('nmbd/nmbd',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
+bld.SAMBA_BINARY('../nsswitch/wbinfo',
+                 source=WBINFO_SRC,
+                 deps='''talloc LIBWBCLIENT popt DYNCONFIG tevent tdb cap
+                 NSS_WRAPPER ASN1_UTIL LIBTSOCKET''',
+                 includes='lib ../lib/tdb/include',
+                 vars=locals())
+
 bld.RECURSE('../lib/socket_wrapper')
 bld.RECURSE('../lib/talloc')
 bld.RECURSE('../lib/tdb')
@@ -729,6 +747,7 @@ bld.RECURSE('../lib/nss_wrapper')
 bld.RECURSE('../lib/tevent')
 bld.RECURSE('../lib/popt')
 bld.RECURSE('../lib/zlib')
+bld.RECURSE('../lib/tsocket')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
