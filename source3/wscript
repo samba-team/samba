@@ -391,3 +391,10 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
+def ctags(ctx):
+    "build 'tags' file using ctags"
+    import Utils
+    source_root = os.path.dirname(Utils.g_module.root_path)
+    cmd = 'ctags $(find %s/.. -name "*.[ch]" | grep -v "*_proto\.h")' % source_root
+    print("Running: %s" % cmd)
+    os.system(cmd)
