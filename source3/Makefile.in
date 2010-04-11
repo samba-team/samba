@@ -1238,6 +1238,10 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_remove_mapping.o \
 		winbindd/winbindd_set_hwm.o \
 		auth/token_util.o \
+		auth/check_samsec.o \
+		auth/server_info.o \
+		auth/server_info_sam.o \
+		auth/user_info.o \
 		../nsswitch/libwbclient/wb_reqtrans.o
 
 WINBINDD_OBJ = \

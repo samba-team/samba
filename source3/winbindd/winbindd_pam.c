@@ -348,11 +348,8 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 		return domain;
 	}
 
-	if (is_myname(domain_name)) {
-		DEBUG(3, ("Authentication for domain %s (local domain "
-			  "to this server) not supported at this "
-			  "stage\n", domain_name));
-		return NULL;
+	if (strequal(domain_name, get_global_sam_name())) {
+		return find_domain_from_name_noinit(domain_name);
 	}
 
 	/* we can auth against trusted domains */
@@ -1179,6 +1176,53 @@ done:
 	return result;
 }
 
+static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
+					  const char *domain, const char *user,
+					  const DATA_BLOB *challenge,
+					  const DATA_BLOB *lm_resp,
+					  const DATA_BLOB *nt_resp,
+					  struct netr_SamInfo3 **pinfo3)
+{
+	struct auth_usersupplied_info *user_info = NULL;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct netr_SamInfo3 *info3;
+	NTSTATUS status;
+
+	status = make_user_info(&user_info, user, user, domain, domain,
+				global_myname(), lm_resp, nt_resp, NULL, NULL,
+				NULL, True);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	status = check_sam_security(challenge, talloc_tos(), user_info,
+				    &server_info);
+	free_user_info(&user_info);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("check_ntlm_password failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+
+	info3 = TALLOC_ZERO_P(mem_ctx, struct netr_SamInfo3);
+	if (info3 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("serverinfo_to_SamInfo3 failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+
+	DEBUG(10, ("Authenticated user %s\\%s successfully\n", domain, user));
+	*pinfo3 = info3;
+	return NT_STATUS_OK;
+}
+
 typedef	NTSTATUS (*netlogon_fn_t)(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32 logon_parameters,
@@ -1271,6 +1315,15 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		nt_resp = data_blob_talloc(state->mem_ctx,
 					   local_nt_response,
 					   sizeof(local_nt_response));
+	}
+
+	if (strequal(name_domain, get_global_sam_name())) {
+		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
+
+		result = winbindd_dual_auth_passdb(
+			state->mem_ctx, name_domain, name_user,
+			&chal_blob, &lm_resp, &nt_resp, info3);
+		goto done;
 	}
 
 	/* check authentication loop */
@@ -1849,6 +1902,17 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 					   state->request->data.auth_crap.nt_resp_len);
 	}
 
+	if (strequal(name_domain, get_global_sam_name())) {
+		DATA_BLOB chal_blob = data_blob_const(
+			state->request->data.auth_crap.chal,
+			sizeof(state->request->data.auth_crap.chal));
+
+		result = winbindd_dual_auth_passdb(
+			state->mem_ctx, name_domain, name_user,
+			&chal_blob, &lm_resp, &nt_resp, &info3);
+		goto process_result;
+	}
+
 	do {
 		netlogon_fn_t logon_fn;
 
@@ -1915,6 +1979,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		}
 
 	} while ( (attempts < 2) && retry );
+
+process_result:
 
 	if (NT_STATUS_IS_OK(result)) {
 
