@@ -288,7 +288,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
  * failed.
  */
 static bool need_to_increment_bad_pw_count(
-	const struct auth_context *auth_context,
+	const DATA_BLOB *challenge,
 	struct samu* sampass,
 	const struct auth_usersupplied_info *user_info)
 {
@@ -338,7 +338,7 @@ static bool need_to_increment_bad_pw_count(
 
 		status = sam_password_ok(mem_ctx,
 					 username, acct_ctrl,
-					 &auth_context->challenge,
+					 challenge,
 					 NULL, nt_pw,
 					 user_info, &user_sess_key, &lm_sess_key);
 		if (NT_STATUS_IS_OK(status)) {
@@ -431,9 +431,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		    NT_STATUS_IS_OK(update_login_attempts_status)) 
 		{
 			increment_bad_pw_count =
-				need_to_increment_bad_pw_count(auth_context,
-							       sampass,
-							       user_info);
+				need_to_increment_bad_pw_count(
+					&auth_context->challenge, sampass,
+					user_info);
 		}
 
 		if (increment_bad_pw_count) {
