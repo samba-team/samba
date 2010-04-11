@@ -147,7 +147,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 
 	torture_smb2_all_info(tree, handle);
 	
-	torture_comment(tctx, "test basic_information level\n");
+	torture_comment(tctx, "Test basic_information level\n");
 	basetime += 86400;
 	unix_to_nt_time(&sfinfo.basic_info.in.create_time, basetime + 100);
 	unix_to_nt_time(&sfinfo.basic_info.in.access_time, basetime + 200);
@@ -193,7 +193,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, attrib, FILE_ATTRIBUTE_NORMAL);
 
-	torture_comment(tctx, "test disposition_information level\n");
+	torture_comment(tctx, "Test disposition_information level\n");
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	CHECK_CALL(DISPOSITION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, delete_pending, 1);
@@ -204,7 +204,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, delete_pending, 0);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, nlink, 1);
 
-	torture_comment(tctx, "test allocation_information level\n");
+	torture_comment(tctx, "Test allocation_information level\n");
 	sfinfo.allocation_info.in.alloc_size = 0;
 	CHECK_CALL(ALLOCATION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, size, 0);
@@ -215,7 +215,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, alloc_size, 4096);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, size, 0);
 
-	torture_comment(tctx, "test end_of_file_info level\n");
+	torture_comment(tctx, "Test end_of_file_info level\n");
 	sfinfo.end_of_file_info.in.size = 37;
 	CHECK_CALL(END_OF_FILE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, size, 37);
@@ -224,13 +224,13 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	CHECK_CALL(END_OF_FILE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, size, 7);
 
-	torture_comment(tctx, "test position_information level\n");
+	torture_comment(tctx, "Test position_information level\n");
 	sfinfo.position_information.in.position = 123456;
 	CHECK_CALL(POSITION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(POSITION_INFORMATION, position_information, position, 123456);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, position, 123456);
 
-	torture_comment(tctx, "test mode_information level\n");
+	torture_comment(tctx, "Test mode_information level\n");
 	sfinfo.mode_information.in.mode = 2;
 	CHECK_CALL(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 2);
@@ -243,7 +243,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	CHECK_CALL(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
 
-	torture_comment(tctx, "test sec_desc level\n");
+	torture_comment(tctx, "Test sec_desc level\n");
 	ZERO_STRUCT(finfo2);
 	finfo2.query_secdesc.in.secinfo_flags =
 		SECINFO_OWNER |
