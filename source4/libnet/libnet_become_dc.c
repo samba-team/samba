@@ -2285,11 +2285,12 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 	}
 
 	if (*r->out.level_out == 3) {
+		WERROR status;
 		union drsuapi_DsAddEntry_ErrData *err_data = r->out.ctr->ctr3.err_data;
 
 		/* check for errors */
-		if (err_data) {
-			WERROR status;
+		status = err_data ? err_data->v1.status : WERR_OK;
+		if (!W_ERROR_IS_OK(status)) {
 			struct drsuapi_DsAddEntryErrorInfo_Attr_V1 *attr_err;
 			struct drsuapi_DsAddEntry_AttrErrListItem_V1 *attr_err_li;
 			struct drsuapi_DsAddEntryErrorInfo_Name_V1 *name_err;
@@ -2300,8 +2301,6 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
-
-			status = err_data->v1.status;
 
 			DEBUG(0,("DsAddEntry (R3) failed: "
 				 "Errors: dir_err = %d, status = %s;\n",
