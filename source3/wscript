@@ -4,10 +4,12 @@ srcdir = '..'
 blddir = 'bin'
 
 import sys, os
+from optparse import SUPPRESS_HELP
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 import build.charset
 from samba_utils import *
+from samba3 import *
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
@@ -24,6 +26,10 @@ def set_options(opt):
     opt.add_option('--with-shared-modules',
                    help=("Comma-separated list of names of modules to build shared"),
                    action="store", dest='shared_modules', default='')
+
+    opt.SAMBA3_ADD_OPTION('winbind')
+    opt.SAMBA3_ADD_OPTION('ads')
+    opt.SAMBA3_ADD_OPTION('cups')
 
 
 def configure(conf):
@@ -269,13 +275,14 @@ yp_get_default_domain
         else:
             conf.DEFINE('static_init_%s' % p, '{}')
 
-    #TODO: Actually check for these
-    conf.DEFINE('WITH_WINBIND', '1')
+    if Options.options.with_winbind:
+        conf.DEFINE('WITH_WINBIND', '1')
+
     conf.DEFINE('WITH_ADS', '1')
 
     # Look for CUPS
     conf.find_program('cups-config', var='CUPS_CONFIG')
-    if conf.env.CUPS_CONFIG:
+    if conf.env.CUPS_CONFIG and Options.options.with_cups:
         conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs",
                        package="", uselib_store="cups")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='cups')
