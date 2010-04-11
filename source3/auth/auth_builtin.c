@@ -149,7 +149,7 @@ static DATA_BLOB auth_get_fixed_challenge(const struct auth_context *auth_contex
 }
 
 
-/** Module initailisation function */
+/** Module initialisation function */
 
 static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
