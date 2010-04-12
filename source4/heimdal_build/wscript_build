@@ -397,9 +397,11 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_H',
 	HEIMDAL_ROKEN_H_SOURCE,
+	use_hostcc=True,
 	includes='../heimdal/lib/roken',
 	cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-	group='compiler_libraries'
+	group='compiler_libraries',
+	deps='LIBREPLACE_HOSTCC'
 	)
 
 
@@ -418,7 +420,7 @@ bld.SAMBA_BINARY('asn1_compile',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
         group='build_compilers',
-	deps='HEIMDAL_ROKEN_H LIBREPLACE_H',
+	deps='HEIMDAL_ROKEN_H LIBREPLACE_HOSTCC',
         install=False
 	)
 
@@ -429,7 +431,7 @@ bld.SAMBA_BINARY('compile_et',
 	includes='../heimdal/lib/com_err',
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-	deps='HEIMDAL_ROKEN_H LIBREPLACE_H',
+	deps='HEIMDAL_ROKEN_H LIBREPLACE_HOSTCC',
         install=False
 	)
 

@@ -307,9 +307,9 @@ def build(bld):
     if bld.CONFIG_SET('REPLACE_STRPTIME'):       REPLACE_HOSTCC_SOURCE += ' strptime.c'
     if not bld.CONFIG_SET('HAVE_TIMEGM'):        REPLACE_HOSTCC_SOURCE += ' timegm.c'
 
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_H',
+    bld.SAMBA_SUBSYSTEM('LIBREPLACE_HOSTCC',
         REPLACE_HOSTCC_SOURCE,
-
+        use_hostcc=True,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         group='compiler_libraries'
     )
