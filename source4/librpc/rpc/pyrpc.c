@@ -207,14 +207,10 @@ static PyMemberDef dcerpc_interface_members[] = {
 
 static void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
 {
-	if (p != NULL && NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-		const char *errstr = dcerpc_errstr(NULL, p->last_fault_code);
-		PyErr_SetObject(PyExc_RuntimeError, 
-			Py_BuildValue("(i,s)", p->last_fault_code,
-				      errstr));
-	} else {
-		PyErr_SetNTSTATUS(status);
+	if (p && NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		status = dcerpc_fault_to_nt_status(p->last_fault_code);
 	}
+	PyErr_SetNTSTATUS(status);
 }
 
 static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwargs)
