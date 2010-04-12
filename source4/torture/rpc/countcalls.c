@@ -59,13 +59,7 @@ bool count_calls(struct torture_context *tctx,
 
 	for (i=0;i<500;i++) {
 		status = dcerpc_request(p, NULL, i, p, &stub_in, &stub_out);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT) &&
-		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
-			i--;
-			break;
-		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT) &&
-		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			i--;
 			break;
 		}
