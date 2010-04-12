@@ -1,12 +1,12 @@
                    =============================
                    Release Notes for Samba 3.4.8
-			    , 2010
+			   May 11, 2010
                    =============================
 
 
 This is the latest stable release of Samba 3.4.
 
-Major enhancements in Samba 3.4.6 include:
+Major enhancements in Samba 3.4.8 include:
 
 o 
 
@@ -15,7 +15,9 @@ Changes since 3.4.7
 -------------------
 
 
-o 
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7254: Fix an uninitialized variable read in smbd found by Laurent
+      Gaffié from Stratsec.
 
 
 ######################################################################
