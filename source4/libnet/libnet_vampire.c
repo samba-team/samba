@@ -760,8 +760,8 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	r->out.domain_name = talloc_steal(r, join->out.domain_name);
-	r->out.domain_sid = dom_sid_dup(r, join->out.domain_sid);
+	r->out.domain_name = talloc_steal(mem_ctx, join->out.domain_name);
+	r->out.domain_sid = dom_sid_dup(mem_ctx, join->out.domain_sid);
 	
 	/* commit the transaction now we know the secrets were written
 	 * out properly
