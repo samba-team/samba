@@ -165,7 +165,7 @@ bld.SAMBA_ERRTABLE('HEIMDAL_HX509_ERR_ET',
 bld.SAMBA_ERRTABLE('HEIMDAL_WIND_ERR_ET',
 	'../heimdal/lib/wind/wind_err.et')
 
-HEIMDAL_ROKEN_H_SOURCE = '''
+HEIMDAL_ROKEN_HOSTCC_SOURCE = '''
 	../heimdal/lib/roken/base64.c
 	../heimdal/lib/roken/ct.c
 	../heimdal/lib/roken/hex.c
@@ -200,15 +200,17 @@ HEIMDAL_ROKEN_H_SOURCE = '''
 '''
 
 if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
-	HEIMDAL_ROKEN_H_SOURCE += '''
+	HEIMDAL_ROKEN_HOSTCC_SOURCE += '''
 		../heimdal/lib/roken/getprogname.c
 		../heimdal/lib/roken/setprogname.c
 	'''
 
 if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
-	HEIMDAL_ROKEN_H_SOURCE += '../heimdal/lib/roken/closefrom.c'
+	HEIMDAL_ROKEN_HOSTCC_SOURCE += '''
+		../heimdal/lib/roken/closefrom.c
+	'''
 
-HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_H_SOURCE + '''
+HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_HOSTCC_SOURCE + '''
 	../heimdal/lib/roken/resolve.c
 	../heimdal/lib/roken/socket.c
 	../heimdal/lib/roken/roken_gethostby.c
@@ -395,8 +397,8 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
 	deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
 	)
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_H',
-	HEIMDAL_ROKEN_H_SOURCE,
+bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_HOSTCC',
+	HEIMDAL_ROKEN_HOSTCC_SOURCE,
 	use_hostcc=True,
 	includes='../heimdal/lib/roken',
 	cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
@@ -420,7 +422,7 @@ bld.SAMBA_BINARY('asn1_compile',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
         group='build_compilers',
-	deps='HEIMDAL_ROKEN_H LIBREPLACE_HOSTCC',
+	deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
         install=False
 	)
 
@@ -431,7 +433,7 @@ bld.SAMBA_BINARY('compile_et',
 	includes='../heimdal/lib/com_err',
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-	deps='HEIMDAL_ROKEN_H LIBREPLACE_HOSTCC',
+	deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
         install=False
 	)
 
