@@ -281,8 +281,8 @@ def configure(conf):
         # if we have both, then we prefer getpassphrase
         conf.DEFINE('REPLACE_GETPASS_BY_GETPASSPHRASE', 1)
         conf.DEFINE('REPLACE_GETPASS', 1)
-
-    conf.CHECK_CODE('''#include "getpass.c"
+    else:
+        conf.CHECK_CODE('''#include "getpass.c"
                        int main(void) { return 0; }''',
                     addmain=False,
                     define='REPLACE_GETPASS',
