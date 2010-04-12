@@ -1485,7 +1485,7 @@ static enum ndr_err_code ndr_push_netr_SamInfo6(struct ndr_push *ndr, int ndr_fl
 		NDR_CHECK(ndr_push_netr_SamBaseInfo(ndr, NDR_SCALARS, &r->base));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sidcount));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sids));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->forest));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->dns_domainname));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->principle));
 		for (cntr_unknown4_0 = 0; cntr_unknown4_0 < 20; cntr_unknown4_0++) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown4[cntr_unknown4_0]));
@@ -1503,7 +1503,7 @@ static enum ndr_err_code ndr_push_netr_SamInfo6(struct ndr_push *ndr, int ndr_fl
 				NDR_CHECK(ndr_push_netr_SidAttr(ndr, NDR_BUFFERS, &r->sids[cntr_sids_1]));
 			}
 		}
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->forest));
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->dns_domainname));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->principle));
 	}
 	return NDR_ERR_SUCCESS;
@@ -1526,7 +1526,7 @@ static enum ndr_err_code ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_fl
 		} else {
 			r->sids = NULL;
 		}
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->forest));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->dns_domainname));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->principle));
 		for (cntr_unknown4_0 = 0; cntr_unknown4_0 < 20; cntr_unknown4_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4[cntr_unknown4_0]));
@@ -1551,7 +1551,7 @@ static enum ndr_err_code ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_fl
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_1, 0);
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, 0);
 		}
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->forest));
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->dns_domainname));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->principle));
 		if (r->sids) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->sids, r->sidcount));
@@ -1583,7 +1583,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 		ndr->depth--;
 	}
 	ndr->depth--;
-	ndr_print_lsa_String(ndr, "forest", &r->forest);
+	ndr_print_lsa_String(ndr, "dns_domainname", &r->dns_domainname);
 	ndr_print_lsa_String(ndr, "principle", &r->principle);
 	ndr->print(ndr, "%s: ARRAY(%d)", "unknown4", (int)20);
 	ndr->depth++;

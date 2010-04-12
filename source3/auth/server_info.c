@@ -326,14 +326,14 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 	sam6->sidcount		= 0;
 	sam6->sids		= NULL;
 
-	sam6->forest.string	= talloc_strdup(sam6, dominfo->dns_forest);
-	if (sam6->forest.string == NULL) {
+	sam6->dns_domainname.string = talloc_strdup(sam6, dominfo->dns_domain);
+	if (sam6->dns_domainname.string == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	sam6->principle.string	= talloc_asprintf(sam6, "%s@%s",
 						  pdb_get_username(server_info->sam_account),
-						  dominfo->dns_domain);
+						  sam6->dns_domainname.string);
 	if (sam6->principle.string == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

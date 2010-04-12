@@ -203,7 +203,7 @@ struct netr_SamInfo6 {
 	struct netr_SamBaseInfo base;
 	uint32_t sidcount;
 	struct netr_SidAttr *sids;/* [unique,size_is(sidcount)] */
-	struct lsa_String forest;
+	struct lsa_String dns_domainname;
 	struct lsa_String principle;
 	uint32_t unknown4[20];
 };
