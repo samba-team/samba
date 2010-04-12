@@ -125,6 +125,7 @@ bool map_username(struct smbd_server_connection *sconn, fstring user)
 
 		if (numlines && qlines) {
 			DEBUG(3,("Mapped user %s to %s\n", user, qlines[0] ));
+			set_last_from_to(user, qlines[0]);
 			fstrcpy( user, qlines[0] );
 		}
 
