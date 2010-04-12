@@ -858,6 +858,81 @@ static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
+					 struct rpc_pipe_client *pipe_handle,
+					 struct policy_handle *key_handle,
+					 const char *value,
+					 uint32_t *data)
+{
+	struct winreg_String wvalue;
+	enum winreg_Type type;
+	WERROR result = WERR_OK;
+	uint32_t value_len = 0;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	wvalue.name = value;
+	status = rpccli_winreg_QueryValue(pipe_handle,
+					  mem_ctx,
+					  key_handle,
+					  &wvalue,
+					  &type,
+					  NULL,
+					  (uint32_t *) &blob.length,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+			  wvalue.name, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (type != REG_DWORD) {
+		result = WERR_INVALID_DATATYPE;
+		goto done;
+	}
+
+	if (blob.length != 4) {
+		result = WERR_INVALID_DATA;
+		goto done;
+	}
+
+	blob.data = (uint8_t *) TALLOC(mem_ctx, blob.length);
+	if (blob.data == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	value_len = 0;
+
+	status = rpccli_winreg_QueryValue(pipe_handle,
+					  mem_ctx,
+					  key_handle,
+					  &wvalue,
+					  &type,
+					  blob.data,
+					  (uint32_t *) &blob.length,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+			  wvalue.name, nt_errstr(status)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+		goto done;
+	}
+
+	if (data) {
+		*data = IVAL(blob.data, 0);
+	}
+done:
+	return result;
+}
+
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
