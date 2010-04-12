@@ -726,7 +726,7 @@ python_drsuapi_OBJ_FILES = ../librpc/gen_ndr/py_drsuapi.o
 LIBRARY_REALNAME = samba/dcerpc/drsblobs.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = RPC_NDR_DRSBLOBS PYTALLOC pyparam_util pycredentials python_dcerpc
 
-python_drsblobs_OBJ_FILES  = ../librpc/gen_ndr/py_drsblobs.o
+python_drsblobs_OBJ_FILES = ../librpc/gen_ndr/py_drsblobs.o ../librpc/gen_ndr/ndr_drsblobs.o
 
 [PYTHON::python_dcerpc_security]
 LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
