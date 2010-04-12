@@ -198,6 +198,7 @@ def SAMBA_BINARY(bld, binname, source,
                  cflags='',
                  autoproto=None,
                  use_hostcc=False,
+                 use_global_deps=True,
                  compiler=None,
                  group='binaries',
                  manpages=None,
@@ -233,7 +234,8 @@ def SAMBA_BINARY(bld, binname, source,
                         subsystem_name = subsystem_name,
                         needs_python   = needs_python,
                         local_include  = local_include,
-                        use_hostcc     = use_hostcc)
+                        use_hostcc     = use_hostcc,
+                        use_global_deps= use_global_deps)
 
     bld.SET_BUILD_GROUP(group)
 
@@ -359,6 +361,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     subsystem_name=None,
                     enabled=True,
                     use_hostcc=False,
+                    use_global_deps=True,
                     vars=None,
                     needs_python=False):
     '''define a Samba subsystem'''
@@ -396,7 +399,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         local_include  = local_include,
         local_include_first  = local_include_first,
         samba_subsystem= subsystem_name,
-        samba_use_hostcc = use_hostcc
+        samba_use_hostcc = use_hostcc,
+        samba_use_global_deps = use_global_deps
         )
 
     if cflags_end is not None:

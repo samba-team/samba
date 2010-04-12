@@ -323,7 +323,8 @@ def build_direct_deps(bld, tgt_list):
         t.direct_libs = set()
         t.direct_syslibs = set()
         deps = t.samba_deps_extended
-        deps.extend(global_deps)
+        if getattr(t, 'samba_use_global_deps', False):
+            deps.extend(global_deps)
         for d in deps:
             d = EXPAND_ALIAS(bld, d)
             if d == t.sname: continue
