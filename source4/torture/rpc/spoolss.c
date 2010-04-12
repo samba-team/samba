@@ -2578,17 +2578,17 @@ static bool test_Forms(struct torture_context *tctx,
 		       struct dcerpc_binding_handle *winreg_handle,
 		       struct policy_handle *hive_handle)
 {
-
-	struct spoolss_FormSize size;
-	struct spoolss_FormArea area;
+	const struct spoolss_FormSize size = {
+		.width	= 50,
+		.height	= 25
+	};
+	const struct spoolss_FormArea area = {
+		.left	= 5,
+		.top	= 10,
+		.right	= 45,
+		.bottom	= 15
+	};
 	int i;
-
-	size.width	= 50;
-	size.height	= 25;
-	area.left	= 5;
-	area.top	= 10;
-	area.right	= 45;
-	area.bottom	= 15;
 
 	struct {
 		struct spoolss_AddFormInfo1 info1;
