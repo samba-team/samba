@@ -54,6 +54,8 @@ class Command(object):
 
     synopsis = property(_get_synopsis)
 
+    outf = sys.stdout
+
     takes_args = []
     takes_options = []
     takes_optiongroups = {}
