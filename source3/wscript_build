@@ -540,7 +540,8 @@ AUTH_SCRIPT_SRC = 'auth/auth_script.c'
 AUTH_NETLOGOND_SRC = 'auth/auth_netlogond.c'
 
 AUTH_SRC = '''${AUTH_SRC1} auth/auth.c ${AUTH_STATIC} auth/auth_util.c auth/token_util.c
-	   auth/auth_compat.c auth/auth_ntlmssp.c
+	   auth/auth_compat.c auth/auth_ntlmssp.c auth/user_info.c auth/check_samsec.c
+           auth/server_info.c auth/server_info_sam.c
 	   ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
 
 LDB_COMMON_SRC = '''lib/ldb/common/ldb.c lib/ldb/common/ldb_ldif.c lib/ldb/common/ldb_parse.c
