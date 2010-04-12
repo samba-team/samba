@@ -3,6 +3,6 @@
 
 bld.SAMBA_SUBSYSTEM('NSS_WRAPPER',
                     source='nss_wrapper.c',
-                    deps='dl replace'
+                    deps='replace'
                     )
 
