@@ -317,7 +317,7 @@ def build(bld):
     REPLACE_SOURCE = REPLACE_HOSTCC_SOURCE
 
     if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
-
+    if not bld.CONFIG_SET('HAVE_CRYPT'):         REPLACE_SOURCE += ' crypt.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
 
     if not bld.CONFIG_SET('HAVE_SOCKETPAIR'):    REPLACE_SOURCE += ' socketpair.c'
@@ -332,7 +332,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
-                      deps='dl nsl socket')
+                      deps='crypt dl nsl socket')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''
@@ -342,13 +342,6 @@ def build(bld):
                      TEST_SOURCES,
                      deps='replace',
                      install=False)
-
-    CRYPT_SOURCES = []
-    if not 'HAVE_CRYPT' in bld.env: CRYPT_SOURCES.append('crypt.c')
-
-    bld.SAMBA_SUBSYSTEM('LIBREPLACE_EXT',
-                        CRYPT_SOURCES,
-                        group='base_libraries')
 
     # build replacements for stdint.h and stdbool.h if needed
     bld.SAMBA_GENERATOR('replace_stdint_h',

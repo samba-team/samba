@@ -42,7 +42,7 @@ bld.SAMBA_MODULE('auth_unix',
 	source='auth_unix.c',
 	subsystem='auth',
 	init_function='auth_unix_init',
-	deps='crypt pam PAM_ERRORS NSS_WRAPPER UID_WRAPPER LIBTSOCKET'
+	deps='pam PAM_ERRORS NSS_WRAPPER UID_WRAPPER LIBTSOCKET'
 	)
 
 

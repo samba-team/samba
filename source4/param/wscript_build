@@ -4,7 +4,7 @@ bld.SAMBA_LIBRARY('LIBSAMBA-HOSTCONFIG',
 	source='loadparm.c generic.c util.c',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
-	deps='DYNCONFIG LIBREPLACE_EXT CHARSET',
+	deps='DYNCONFIG CHARSET',
 	public_deps='LIBSAMBA-UTIL',
 	public_headers='param.h'
 	)
