@@ -60,7 +60,7 @@ NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx,
 	sam->groups.rids = NULL;
 
 	if (server_info->n_domain_groups > 0) {
-		int i;
+		size_t i;
 		sam->groups.rids = talloc_array(sam, struct samr_RidWithAttribute,
 						server_info->n_domain_groups);
 
@@ -112,7 +112,7 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 	struct netr_SamBaseInfo *sam;
 	struct netr_SamInfo3 *sam3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	NTSTATUS status;
-	int i;
+	size_t i;
 	NT_STATUS_HAVE_NO_MEMORY(sam3);
 
 	status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
@@ -158,7 +158,7 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 {
 	struct auth_serversupplied_info *server_info;
 	struct netr_SamBaseInfo *base = NULL;
-	int i;
+	uint32_t i;
 
 	switch (validation_level) {
 	case 2:
