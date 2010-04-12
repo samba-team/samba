@@ -32,9 +32,11 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 			const char *client_domain,
 			const char *domain,
 			const char *wksta_name,
-			DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
-			DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
-			DATA_BLOB *plaintext,
+			const DATA_BLOB *lm_pwd,
+			const DATA_BLOB *nt_pwd,
+			const DATA_BLOB *lm_interactive_pwd,
+			const DATA_BLOB *nt_interactive_pwd,
+			const DATA_BLOB *plaintext,
 			bool encrypted)
 {
 
