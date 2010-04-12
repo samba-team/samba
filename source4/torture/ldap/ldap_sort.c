@@ -30,9 +30,9 @@
 #include "torture/smbtorture.h"
 #include "torture/local/proto.h"
 #include <ctype.h>
+
 bool torture_ldap_sort(struct torture_context *torture)
 {
-
 	struct ldb_context *ldb;
 
 	bool ret = false;
@@ -74,7 +74,7 @@ bool torture_ldap_sort(struct torture_context *torture)
 	control[0]->reverse = 0;
 	control[1] = NULL;
 
-	dn = ldb_get_root_basedn(ldb);
+	dn = ldb_get_default_basedn(ldb);
 	ldb_dn_add_child_fmt(dn, "cn=users");
 	ret = ldb_build_search_req(&req, ldb, ctx,
 				   dn,
