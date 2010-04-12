@@ -3473,3 +3473,22 @@ int dsdb_search_one(struct ldb_context *ldb,
 
 	return LDB_SUCCESS;
 }
+
+/* returns back the forest DNS name */
+const char *samdb_forest_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
+{
+	const char *forest_name = ldb_dn_canonical_string(mem_ctx,
+							  ldb_get_root_basedn(ldb));
+	char *p;
+
+	if (forest_name == NULL) {
+		return NULL;
+	}
+
+	p = strchr(forest_name, '/');
+	if (p) {
+		*p = '\0';
+	}
+
+	return forest_name;
+}
