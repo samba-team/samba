@@ -271,40 +271,41 @@ static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *k
 	const char *kwnames[] = { "domain", "target_dir", NULL };
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
-    PyObject *ret;
+	PyObject *ret;
 	struct libnet_Vampire r;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", discard_const_p(char *, kwnames), 
-									 &r.in.domain_name, &r.in.targetdir))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", discard_const_p(char *, kwnames),
+	                                 &r.in.domain_name, &r.in.targetdir)) {
 		return NULL;
+	}
 
 	r.in.netbios_name  = lp_netbios_name(self->libnet_ctx->lp_ctx);
 	r.out.error_string = NULL;
 
-    mem_ctx = talloc_new(NULL);
-    if (mem_ctx == NULL) {
-        PyErr_NoMemory();
-        return NULL;
-    }
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	status = libnet_Vampire(self->libnet_ctx, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-        PyErr_SetString(PyExc_RuntimeError, 
-            r.out.error_string ? r.out.error_string : nt_errstr(status));
-        talloc_free(mem_ctx);
+		PyErr_SetString(PyExc_RuntimeError,
+		                r.out.error_string ? r.out.error_string : nt_errstr(status));
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-    ret = Py_BuildValue("(sO)", r.out.domain_name, py_dom_sid_FromSid(r.out.domain_sid));
+	ret = Py_BuildValue("(sO)", r.out.domain_name, py_dom_sid_FromSid(r.out.domain_sid));
 
-    talloc_free(mem_ctx);
+	talloc_free(mem_ctx);
 
-    return ret;
+	return ret;
 }
 
 static const char py_net_vampire_doc[] = "vampire(domain, target_dir=None)\n"
-"Vampire a domain.";
+					 "Vampire a domain.";
 
 static PyMethodDef net_obj_methods[] = {
 	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
@@ -313,7 +314,7 @@ static PyMethodDef net_obj_methods[] = {
 	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
 	{"create_user", (PyCFunction)py_net_user_create, METH_VARARGS|METH_KEYWORDS, py_net_create_user_doc},
 	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},
-    {"vampire", (PyCFunction)py_net_vampire, METH_VARARGS|METH_KEYWORDS, py_net_vampire_doc},
+	{"vampire", (PyCFunction)py_net_vampire, METH_VARARGS|METH_KEYWORDS, py_net_vampire_doc},
 	{ NULL }
 };
 
