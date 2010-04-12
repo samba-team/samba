@@ -32,6 +32,8 @@
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "cldap_server/cldap_server.h"
+#include "lib/socket/socket.h"
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -1470,13 +1472,13 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct netr_DsRGetDCNameEx2 *r)
 {
-	const char * const attrs[] = { "objectGUID", NULL };
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res;
-	struct ldb_dn *domain_dn;
-	int ret;
 	struct netr_DsRGetDCNameInfo *info;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct socket_address *addr;
+	char *guid_str;
+	struct netlogon_samlogon_response response;
+	NTSTATUS status;
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -1486,63 +1488,46 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 		return WERR_DS_UNAVAILABLE;
 	}
 
-	/* Windows 7 sends the domain name in the form the user typed, so we
-	 * have to cope  with both the short and long form here */
-	if (r->in.domain_name != NULL &&
-	    !lp_is_my_domain_or_realm(lp_ctx, r->in.domain_name)) {
+	addr = dce_call->conn->transport.get_peer_addr(dce_call->conn, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(addr);
+
+	/* "server_unc" is ignored by w2k3 */
+
+	/* Proof server site parameter "site_name" if it was specified */
+	if ((r->in.site_name != NULL) && (strcasecmp(r->in.site_name,
+	    samdb_server_site_name(sam_ctx, mem_ctx)) != 0)) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
 
-	domain_dn = ldb_get_default_basedn(sam_ctx);
-	if (domain_dn == NULL) {
-		return WERR_DS_UNAVAILABLE;
-	}
+	/* TODO: the flags are ignored for now */
 
-	ret = gendb_search_dn(sam_ctx, mem_ctx,
-			      domain_dn, &res, attrs);
-	if (ret != 1) {
-		return WERR_GENERAL_FAILURE;
+	guid_str = r->in.domain_guid != NULL ?
+		 GUID_string(mem_ctx, r->in.domain_guid) : NULL;
+
+	status = fill_netlogon_samlogon_response(sam_ctx, mem_ctx,
+						 r->in.domain_name,
+						 r->in.domain_name,
+						 NULL, guid_str,
+						 r->in.client_account,
+						 r->in.mask, addr->addr,
+						 NETLOGON_NT_VERSION_5EX_WITH_IP,
+						 lp_ctx, &response);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
 	}
 
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
-
-	/* TODO: - return real IP address
-	 *       - check all r->in.* parameters
-	 *       (server_unc is ignored by w2k3!)
-	 */
-	info->dc_unc = talloc_asprintf(mem_ctx, "\\\\%s.%s",
-				       lp_netbios_name(lp_ctx),
-				       lp_dnsdomain(lp_ctx));
-	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
-
-	info->dc_address = talloc_strdup(mem_ctx, "\\\\0.0.0.0");
+	info->dc_unc           = response.data.nt5_ex.pdc_dns_name;
+	info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
+					   response.data.nt5_ex.sockaddr.pdc_ip);
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
-
-	info->dc_address_type = DS_ADDRESS_TYPE_INET;
-	info->domain_guid = samdb_result_guid(res[0], "objectGUID");
-	info->domain_name = lp_dnsdomain(lp_ctx);
-	info->forest_name = samdb_forest_name(sam_ctx, mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(info->forest_name);
-	info->dc_flags	= DS_DNS_FOREST_ROOT |
-			  DS_DNS_DOMAIN |
-			  DS_DNS_CONTROLLER |
-			  DS_SERVER_WRITABLE |
-			  DS_SERVER_CLOSEST |
-			  DS_SERVER_TIMESERV |
-			  DS_SERVER_KDC |
-			  DS_SERVER_DS |
-			  DS_SERVER_LDAP |
-			  DS_SERVER_GC |
-			  DS_SERVER_PDC;
-
-	info->dc_site_name = samdb_server_site_name(sam_ctx, mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(info->dc_site_name);
-
-	/* FIXME: Hardcoded site name */
-	info->client_site_name = talloc_strdup(mem_ctx,
-					       "Default-First-Site-Name");
-	W_ERROR_HAVE_NO_MEMORY(info->client_site_name);
+	info->domain_guid      = response.data.nt5_ex.domain_uuid;
+	info->domain_name      = response.data.nt5_ex.dns_domain;
+	info->forest_name      = response.data.nt5_ex.forest;
+	info->dc_flags         = response.data.nt5_ex.server_type;
+	info->dc_site_name     = response.data.nt5_ex.server_site;
+	info->client_site_name = response.data.nt5_ex.client_site;
 
 	*r->out.info = info;
 
