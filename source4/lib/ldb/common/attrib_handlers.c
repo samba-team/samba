@@ -269,7 +269,8 @@ utf8str:
 		 * options but to do a binary compare */
 		talloc_free(b1);
 		talloc_free(b2);
-		if (memcmp(s1, s2, MIN(n1, n2)) == 0) {
+		ret = memcmp(s1, s2, MIN(n1, n2));
+		if (ret == 0) {
 			if (n1 == n2) return 0;
 			if (n1 > n2) {
 				return (int)toupper(s1[n2]);
@@ -277,6 +278,7 @@ utf8str:
 				return -(int)toupper(s2[n1]);
 			}
 		}
+		return ret;
 	}
 
 	u1 = b1;
