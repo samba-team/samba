@@ -176,6 +176,13 @@ def configure(conf):
                            msg='Checking for working strptime'):
         conf.DEFINE('REPLACE_STRPTIME', 1)
 
+    if conf.CONFIG_SET('HAVE_KRB5_H'):
+        # Check for KRB5_DEPRECATED handling
+        conf.CHECK_CODE('''#define KRB5_DEPRECATED 1
+#include <krb5.h>''',
+                        'HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER', addmain=False,
+                        link=False,
+                        msg="Checking for KRB5_DEPRECATED define taking an identifier")
 
     conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
 
