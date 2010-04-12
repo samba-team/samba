@@ -1170,11 +1170,11 @@ def provision(setup_dir, message, session_info,
         bind_gid = None
 
     if targetdir is not None:
-        if (not os.path.exists(os.path.join(targetdir, "etc"))):
-            os.makedirs(os.path.join(targetdir, "etc"))
         smbconf = os.path.join(targetdir, "etc", "smb.conf")
     elif smbconf is None:
         smbconf = param.default_path()
+    if not os.path.exists(os.path.dirname(smbconf)):
+        os.makedirs(os.path.dirname(smbconf))
 
     # only install a new smb.conf if there isn't one there already
     if os.path.exists(smbconf):
