@@ -15,7 +15,7 @@ LIB_PATH="shared"
 def SET_TARGET_TYPE(ctx, target, value):
     '''set the target type of a target'''
     cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
-    if target in cache:
+    if target in cache and cache[target] != 'EMPTY':
         ASSERT(ctx, cache[target] == value,
                "Target '%s' re-defined as %s - was %s" % (target, value, cache[target]))
         debug("task_gen: Skipping duplicate target %s (curdir=%s)" % (target, ctx.curdir))

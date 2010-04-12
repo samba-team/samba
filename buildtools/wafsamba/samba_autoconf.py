@@ -449,7 +449,7 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
     liblist  = TO_LIST(libs)
     ret = True
     for lib in liblist[:]:
-        if GET_TARGET_TYPE(conf, lib):
+        if GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
             continue
 
         (ccflags, ldflags) = library_flags(conf, lib)
