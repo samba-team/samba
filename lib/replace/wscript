@@ -295,18 +295,19 @@ def configure(conf):
 def build(bld):
     bld.RECURSE('buildtools/wafsamba')
 
-    REPLACE_H_SOURCE = 'replace.c snprintf.c'
+    REPLACE_HOSTCC_SOURCE = 'replace.c snprintf.c'
 
-    if bld.CONFIG_SET('REPLACE_STRPTIME'):       REPLACE_H_SOURCE += ' strptime.c'
-    if not bld.CONFIG_SET('HAVE_TIMEGM'):        REPLACE_H_SOURCE += ' timegm.c'
+    if bld.CONFIG_SET('REPLACE_STRPTIME'):       REPLACE_HOSTCC_SOURCE += ' strptime.c'
+    if not bld.CONFIG_SET('HAVE_TIMEGM'):        REPLACE_HOSTCC_SOURCE += ' timegm.c'
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_H',
-        REPLACE_H_SOURCE,
+        REPLACE_HOSTCC_SOURCE,
+
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         group='compiler_libraries'
     )
 
-    REPLACE_SOURCE = REPLACE_H_SOURCE
+    REPLACE_SOURCE = REPLACE_HOSTCC_SOURCE
 
     if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
 
