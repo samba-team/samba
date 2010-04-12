@@ -131,7 +131,7 @@ static void try_expand(struct torture_context *tctx, const struct ndr_interface_
 
 		status = dcerpc_request(p, NULL, opnum, tctx, &stub_in, &stub_out);
 
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		if (NT_STATUS_IS_OK(status)) {
 			print_depth(depth);
 			printf("expand by %d gives %s\n", n, nt_errstr(status));
 			if (n >= 4) {
@@ -142,10 +142,10 @@ static void try_expand(struct torture_context *tctx, const struct ndr_interface_
 		} else {
 #if 0
 			print_depth(depth);
-			printf("expand by %d gives fault %s\n", n, dcerpc_errstr(tctx, p->last_fault_code));
+			printf("expand by %d gives fault %s\n", n, nt_errstr(status));
 #endif
 		}
-		if (p->last_fault_code == 5) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			reopen(tctx, &p, iface);
 		}
 	}
@@ -172,11 +172,11 @@ static void test_ptr_scan(struct torture_context *tctx, const struct ndr_interfa
 		SIVAL(stub_in.data, ofs, 1);
 		status = dcerpc_request(p, NULL, opnum, tctx, &stub_in, &stub_out);
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			print_depth(depth);
 			printf("possible ptr at ofs %d - fault %s\n", 
-			       ofs-min_ofs, dcerpc_errstr(tctx, p->last_fault_code));
-			if (p->last_fault_code == 5) {
+			       ofs-min_ofs, nt_errstr(status));
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 				reopen(tctx, &p, iface);
 			}
 			if (depth == 0) {
@@ -236,9 +236,9 @@ static void test_scan_call(struct torture_context *tctx, const struct ndr_interf
 			return;
 		}
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			printf("opnum %d  size %d fault %s\n", opnum, i, dcerpc_errstr(tctx, p->last_fault_code));
-			if (p->last_fault_code == 5) {
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("opnum %d  size %d fault %s\n", opnum, i, nt_errstr(status));
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 				reopen(tctx, &p, iface);
 			}
 			continue;
