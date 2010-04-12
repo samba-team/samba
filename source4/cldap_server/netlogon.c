@@ -233,7 +233,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 #if 0
 	/* w2k8-r2 as a sole DC does not claim this */
-	if (ldb_dn_compare(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx)) == 0) {
+	if (ldb_dn_compare(samdb_root_dn(sam_ctx), samdb_base_dn(sam_ctx)) == 0) {
 		server_type |= DS_DNS_FOREST_ROOT;
 	}
 #endif

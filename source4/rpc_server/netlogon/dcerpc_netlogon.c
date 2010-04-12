@@ -1124,7 +1124,7 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 	} else {
 		char *p;
 		/* TODO: we need a common function for pulling the forest */
-		info->dns_forestname.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
+		info->dns_forestname.string = ldb_dn_canonical_string(info, samdb_root_dn(sam_ctx));
 		if (!info->dns_forestname.string) {
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
