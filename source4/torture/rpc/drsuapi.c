@@ -378,7 +378,7 @@ static bool test_DsReplicaGetInfo(struct torture_context *tctx,
 
 		status = dcerpc_drsuapi_DsReplicaGetInfo_r(p->binding_handle, tctx, &r);
 		torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsReplicaGetInfo");
-		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == DCERPC_FAULT_INVALID_TAG) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
 			torture_comment(tctx,
 					"DsReplicaGetInfo level %d and/or infotype %d not supported by server\n",
 					array[i].level, array[i].infotype);
