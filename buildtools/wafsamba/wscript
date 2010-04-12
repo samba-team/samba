@@ -68,6 +68,17 @@ def set_options(opt):
 		   help=("Enable even more compiler warnings"),
 		   action='store_true', dest='pedantic', default=False)
 
+    opt.add_option('--cross-compile',
+		   help=("configure for cross-compilation"),
+		   action='store_true', dest='CROSS_COMPILE', default=False)
+    opt.add_option('--cross-execute',
+		   help=("command prefix to use for cross-execution in configure"),
+		   action='store', dest='CROSS_EXECUTE', default='')
+    opt.add_option('--hostcc',
+		   help=("set host compiler when cross compiling"),
+		   action='store', dest='HOSTCC', default=False)
+
+
 @wafsamba.runonce
 def configure(conf):
     conf.env.hlist = []
@@ -104,6 +115,10 @@ def configure(conf):
 
     conf.env.BUNDLED_EXTENSION = Options.options.BUNDLED_EXTENSION
     conf.env.BUNDLED_EXTENSION_EXCEPTION = Options.options.BUNDLED_EXTENSION_EXCEPTION.split(',')
+
+    conf.env.CROSS_COMPILE = Options.options.CROSS_COMPILE
+    conf.env.CROSS_EXECUTE = Options.options.CROSS_EXECUTE
+    conf.env.HOSTCC        = Options.options.HOSTCC
 
     # see if we can compile and run a simple C program
     conf.CHECK_CODE('printf("hello world\\n")',

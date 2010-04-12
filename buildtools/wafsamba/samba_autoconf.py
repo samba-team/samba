@@ -4,6 +4,7 @@ import Build, os, Options, preproc, Logs
 import string
 from Configure import conf
 from samba_utils import *
+import samba_cross
 
 missing_headers = set()
 
@@ -367,6 +368,8 @@ def CHECK_CODE(conf, code, define,
     cflags = TO_LIST(cflags)
     cflags.extend(ccflags)
 
+    exec_args = conf.SAMBA_CROSS_ARGS()
+
     ret = conf.check(fragment=fragment,
                      execute=execute,
                      define_name = define,
@@ -378,6 +381,7 @@ def CHECK_CODE(conf, code, define,
                      type=type,
                      msg=msg,
                      quote=quote,
+                     exec_args=exec_args,
                      define_ret=define_ret)
     if not ret and CONFIG_SET(conf, define):
         # sometimes conf.check() returns false, but it
