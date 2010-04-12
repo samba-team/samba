@@ -641,7 +641,7 @@ sub read_testlist($)
 
 	while (<IN>) {
 		if (/-- TEST(-LOADLIST)? --\n/) {
-			my $supports_loadlist = ($1 eq "-LOADLIST");
+			my $supports_loadlist = (defined($1) and $1 eq "-LOADLIST");
 			my $name = <IN>;
 			$name =~ s/\n//g;
 			my $env = <IN>;
