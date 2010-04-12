@@ -7918,8 +7918,7 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p,
 		req.req3.password.string = passwords[i];
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_ValidatePassword_r(b, tctx, &r),
 			"ValidatePassword failed");
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT) &&
-		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			torture_skip(tctx, "ValidatePassword not supported by server\n");
 		}
 		torture_assert_ntstatus_ok(tctx, r.out.result, "samr_ValidatePassword");
