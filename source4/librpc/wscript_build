@@ -749,6 +749,12 @@ bld.SAMBA_PYTHON('python_dcerpc_security',
 	realname='samba/dcerpc/security.so'
 	)
 
+bld.SAMBA_PYTHON('python_dcerpc_drsblobs',
+	source='../../librpc/gen_ndr/py_drsblobs.c ../../librpc/gen_ndr/ndr_drsblobs_c.c',
+	deps='PYTALLOC python_dcerpc_misc python_dcerpc NDR_SECURITY',
+	realname='samba/dcerpc/drsblobs.so'
+	)
+
 
 bld.SAMBA_PYTHON('python_dcerpc_xattr',
 	source='../../librpc/gen_ndr/py_xattr.c',
