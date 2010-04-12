@@ -1,6 +1,0 @@
-<h3>A esp include file</h3>
-<%
-	function testfn(test) {
-		 return "the argument was " + test;
-	}
-%>

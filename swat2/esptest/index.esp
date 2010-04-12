@@ -1,7 +1,0 @@
-<% page_header("columns", "ESP Tests", "esptest"); %>
-
-<h1>ESP Test functions</h1>
-
-Please select a menu item from the selection on the left
-
-<% page_footer(); %>
