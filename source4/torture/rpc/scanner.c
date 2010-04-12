@@ -60,19 +60,17 @@ static bool test_num_calls(struct torture_context *tctx,
 
 	for (i=0;i<200;i++) {
 		status = dcerpc_request(p, NULL, i, mem_ctx, &stub_in, &stub_out);
-		if (!NT_STATUS_IS_OK(status) &&
-		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			break;
 		}
 
-		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == 5) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			printf("\tpipe disconnected at %d\n", i);
 			goto done;
 		}
 
-		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == 0x80010111) {
-			printf("\terr 0x80010111 at %d\n", i);
-			goto done;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+			printf("\tprotocol error at %d\n", i);
 		}
 	}
 
