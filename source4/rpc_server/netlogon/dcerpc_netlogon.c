@@ -1122,18 +1122,10 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
 		info->dns_forestname.string = NULL;
 	} else {
-		char *p;
-		/* TODO: we need a common function for pulling the forest */
-		info->dns_forestname.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
-		if (!info->dns_forestname.string) {
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
-		p = strchr(info->dns_forestname.string, '/');
-		if (p) {
-			*p = '\0';
-		}
+		info->dns_forestname.string = samdb_forest_name(sam_ctx, mem_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(info->dns_forestname.string);
 		info->dns_forestname.string = talloc_asprintf(mem_ctx, "%s.", info->dns_forestname.string);
-
+		NT_STATUS_HAVE_NO_MEMORY(info->dns_forestname.string);
 	}
 
 	if (is_local) {
@@ -1530,7 +1522,8 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	info->dc_address_type = DS_ADDRESS_TYPE_INET;
 	info->domain_guid = samdb_result_guid(res[0], "objectGUID");
 	info->domain_name = lp_dnsdomain(lp_ctx);
-	info->forest_name = lp_dnsdomain(lp_ctx);
+	info->forest_name = samdb_forest_name(sam_ctx, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(info->forest_name);
 	info->dc_flags	= DS_DNS_FOREST_ROOT |
 			  DS_DNS_DOMAIN |
 			  DS_DNS_CONTROLLER |
@@ -1925,7 +1918,9 @@ static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 	e->flags = 0;
 	e->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
 	e->time = 0; /* so far always 0 in trces. */
-	e->forest_trust_data.top_level_name.string = lp_dnsdomain(lp_ctx);
+	e->forest_trust_data.top_level_name.string = samdb_forest_name(sam_ctx,
+								       mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(e->forest_trust_data.top_level_name.string);
 
 	info->entries[0] = e;
 

@@ -62,6 +62,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	const char *pdc_name;
 	struct GUID domain_uuid;
 	const char *dns_domain;
+	const char *forest_domain;
 	const char *pdc_dns_name;
 	const char *flatname;
 	const char *server_site;
@@ -241,6 +242,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
 	dns_domain       = lp_dnsdomain(lp_ctx);
+	forest_domain    = samdb_forest_name(sam_ctx, mem_ctx);
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, 
 							   lp_netbios_name(lp_ctx)), 
@@ -268,7 +270,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 		netlogon->data.nt5_ex.server_type  = server_type;
 		netlogon->data.nt5_ex.domain_uuid  = domain_uuid;
-		netlogon->data.nt5_ex.forest       = dns_domain;
+		netlogon->data.nt5_ex.forest       = forest_domain;
 		netlogon->data.nt5_ex.dns_domain   = dns_domain;
 		netlogon->data.nt5_ex.pdc_dns_name = pdc_dns_name;
 		netlogon->data.nt5_ex.domain       = flatname;
@@ -301,7 +303,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		netlogon->data.nt5.user_name    = user;
 		netlogon->data.nt5.domain_name  = flatname;
 		netlogon->data.nt5.domain_uuid  = domain_uuid;
-		netlogon->data.nt5.forest       = dns_domain;
+		netlogon->data.nt5.forest       = forest_domain;
 		netlogon->data.nt5.dns_domain   = dns_domain;
 		netlogon->data.nt5.pdc_dns_name = pdc_dns_name;
 		netlogon->data.nt5.pdc_ip       = pdc_ip;
