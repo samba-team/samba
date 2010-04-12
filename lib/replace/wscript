@@ -35,7 +35,7 @@ def configure(conf):
 
     conf.CHECK_HEADERS('crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
-    conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h langinfo.h')
+    conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
     conf.CHECK_HEADERS('libaio.h locale.h ndir.h pwd.h')
     conf.CHECK_HEADERS('shadow.h sys/acl.h')
     conf.CHECK_HEADERS('sys/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
