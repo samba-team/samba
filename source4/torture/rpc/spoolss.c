@@ -3251,8 +3251,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_GetPrinterDataEx_r(b, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_NET_WRITE_FAULT) &&
-		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			torture_skip(tctx, "GetPrinterDataEx not supported by server\n");
 		}
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinterDataEx failed");
@@ -4693,11 +4692,8 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	cp.out.handle = handle;
 
 	status = dcerpc_spoolss_ClosePrinter_r(p2->binding_handle, tctx, &cp);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NET_WRITE_FAULT,
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_RPC_SS_CONTEXT_MISMATCH,
 			"ERROR: Allowed close on secondary connection");
-
-	torture_assert_int_equal(tctx, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH,
-				 "Unexpected fault code");
 
 	talloc_free(p2);
 
