@@ -634,8 +634,10 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	ldb = ldb_module_get_ctx(module);
 	/* Creating an NC. There is probably something we should do here,
 	 * but we will establish that later */
+	/* FIXME: this has to be made dynamic at some point */
 	if ((ldb_dn_compare(req->op.add.message->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(req->op.add.message->dn, (ldb_get_config_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(req->op.add.message->dn, (ldb_get_default_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(req->op.add.message->dn, (ldb_get_root_basedn(ldb))) == 0)) {
 		return ldb_next_request(module, req);
 	}
@@ -847,8 +849,10 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 
 	/* Nope, we don't have delete object. Lets check if we have delete child on the parent */
 	/* No parent, so check fails */
+	/* FIXME: this has to be made dynamic at some point */
 	if ((ldb_dn_compare(req->op.del.dn, (ldb_get_schema_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(req->op.del.dn, (ldb_get_config_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(req->op.del.dn, (ldb_get_default_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(req->op.del.dn, (ldb_get_root_basedn(ldb))) == 0)) {
 		DEBUG(10,("acl:deleting an NC\n"));
 		return ldb_module_done(req, NULL, NULL, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS);
@@ -975,8 +979,10 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* What exactly to do in this case? It would fail anyway.. */
+	/* FIXME: this has to be made dynamic at some point */
 	if ((ldb_dn_compare(req->op.rename.newdn, (ldb_get_schema_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(req->op.rename.newdn, (ldb_get_config_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(req->op.rename.newdn, (ldb_get_default_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(req->op.rename.newdn, (ldb_get_root_basedn(ldb))) == 0)) {
 		DEBUG(10,("acl:moving as an NC\n"));
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;

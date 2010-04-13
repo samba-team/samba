@@ -64,6 +64,7 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_dn *root_base_dn = ldb_get_root_basedn(ldb);
+	struct ldb_dn *default_base_dn = ldb_get_default_basedn(ldb);
 	struct ldb_dn *schema_base_dn = ldb_get_schema_basedn(ldb);
 	struct ldb_dn *config_base_dn = ldb_get_config_basedn(ldb);
 	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
@@ -71,6 +72,9 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 	struct dom_sid *ea_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ENTERPRISE_ADMINS);
 	struct dom_sid *sa_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_SCHEMA_ADMINS);
 	struct dom_sid *dag_sid;
+
+	/* FIXME: this has to be fixed regarding the forest DN (root DN) and
+	 * the domain DN (default DN) - they aren't always the same. */
 
 	if (ldb_dn_compare_base(schema_base_dn, dn) == 0){
 		if (security_token_has_sid(token, sa_sid))
@@ -697,8 +701,10 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		ac->sd_val = talloc_memdup(ac, &sd_element->values[0], sizeof(struct ldb_val));
 	}
 	/* NC's have no parent */
+	/* FIXME: this has to be made dynamic at some point */
 	if ((ldb_dn_compare(msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(msg->dn, (ldb_get_default_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(msg->dn, (ldb_get_root_basedn(ldb))) == 0)) {
 		ac->parentsd_val = NULL;
 	} else if (ac->search_res != NULL) {
