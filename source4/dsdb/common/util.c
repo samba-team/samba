@@ -1545,12 +1545,14 @@ int samdb_rid_set_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn
 
 const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
-	const struct ldb_val *val = ldb_dn_get_rdn_val(samdb_server_site_dn(ldb, mem_ctx));
+	const struct ldb_val *val = ldb_dn_get_rdn_val(samdb_server_site_dn(ldb,
+									    mem_ctx));
 
-	if (val != NULL)
-		return (const char *) val->data;
-	else
+	if (val == NULL) {
 		return NULL;
+	}
+
+	return (const char *) val->data;
 }
 
 /*
