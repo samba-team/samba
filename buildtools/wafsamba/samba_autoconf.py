@@ -188,9 +188,11 @@ def CHECK_VARIABLE(conf, v, define=None, always=False,
         msg="Checking for variable %s" % v
 
     return CHECK_CODE(conf,
+                      # we need to make sure the compiler doesn't
+                      # optimize it out...
                       '''
                       #ifndef %s
-                      void *_x; _x=(void *)&%s;
+                      void *_x; _x=(void *)&%s; return (int)_x;
                       #endif
                       return 0
                       ''' % (v, v),
@@ -264,7 +266,9 @@ def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
         if not ret:
             ret = CHECK_CODE(conf,
                              # it might be a macro
-                             'void *__x = (void *)%s' % f,
+                             # we need to make sure the compiler doesn't
+                             # optimize it out...
+                             'void *__x = (void *)%s; return (int)__x' % f,
                              execute=False,
                              link=True,
                              addmain=True,
