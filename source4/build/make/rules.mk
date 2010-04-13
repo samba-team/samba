@@ -53,7 +53,7 @@ clean:: clean_pch
 	@-rm -f bin/.*_*
 	@echo Removing generated files
 	@-rm -f bin/*_init_module.c
-	@-rm -rf librpc/gen_* 
+	@-rm -f librpc/gen_ndr/*.*
 
 distclean:: clean
 	-rm -f include/config.h include/config_tmp.h include/build.h
