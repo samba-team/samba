@@ -1113,7 +1113,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 	}
 	site = res->msgs[0];
 
-	schemas_dn = samdb_schema_dn(ldb);
+	schemas_dn = ldb_get_schema_basedn(ldb);
 	if (!schemas_dn) {
 		DEBUG(1, (__location__ ": failed to find our own Schemas DN\n"));
 

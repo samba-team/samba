@@ -288,7 +288,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		const char *dn_str;
 
 		if (schema && schema->fsmo.we_are_master) {
-			dn_str = ldb_dn_get_linearized(samdb_schema_dn(ldb));
+			dn_str = ldb_dn_get_linearized(ldb_get_schema_basedn(ldb));
 			if (dn_str && dn_str[0]) {
 				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
 					goto failed;
@@ -310,7 +310,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		pdc_fsmo = talloc_get_type(ldb_get_opaque(ldb, "dsdb_pdc_fsmo"),
 					   struct dsdb_pdc_fsmo);
 		if (pdc_fsmo && pdc_fsmo->we_are_master) {
-			dn_str = ldb_dn_get_linearized(samdb_base_dn(ldb));
+			dn_str = ldb_dn_get_linearized(ldb_get_default_basedn(ldb));
 			if (dn_str && dn_str[0]) {
 				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
 					goto failed;
@@ -937,7 +937,7 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 	int ret;
 	struct ldb_dn *schema_dn;
 
-	schema_dn = samdb_schema_dn(ldb);
+	schema_dn = ldb_get_schema_basedn(ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(ldb);
 		ldb_debug(ldb, LDB_DEBUG_WARNING,

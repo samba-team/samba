@@ -50,7 +50,7 @@ static WERROR drepl_create_rid_manager_source_dsa(struct dreplsrv_service *servi
 		return WERR_NOMEM;
 	}
 
-	sdsa->partition->dn = samdb_base_dn(ldb);
+	sdsa->partition->dn = ldb_get_default_basedn(ldb);
 	sdsa->partition->nc.dn = ldb_dn_alloc_linearized(sdsa->partition, rid_manager_dn);
 	ret = dsdb_find_guid_by_dn(ldb, rid_manager_dn, &sdsa->partition->nc.guid);
 	if (ret != LDB_SUCCESS) {

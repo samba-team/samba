@@ -50,7 +50,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	pdc_dn = samdb_base_dn(ldb);
+	pdc_dn = ldb_get_default_basedn(ldb);
 	if (!pdc_dn) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  "pdc_fsmo_init: no domain dn present: (skip loading of domain details)\n");

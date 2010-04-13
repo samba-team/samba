@@ -137,7 +137,7 @@ WERROR dsdb_module_schema_info_blob_read(struct ldb_module *ldb_module,
 		NULL
 	};
 
-	schema_dn = samdb_schema_dn(ldb_module_get_ctx(ldb_module));
+	schema_dn = ldb_get_schema_basedn(ldb_module_get_ctx(ldb_module));
 	if (!schema_dn) {
 		DEBUG(0,("dsdb_module_schema_info_blob_read: no schema dn present!\n"));
 		return WERR_INTERNAL_DB_CORRUPTION;
@@ -184,7 +184,7 @@ static WERROR _dsdb_schema_info_write_prepare(struct ldb_context *ldb,
 	struct ldb_dn *schema_dn;
 	struct ldb_message_element *return_el;
 
-	schema_dn = samdb_schema_dn(ldb);
+	schema_dn = ldb_get_schema_basedn(ldb);
 	if (!schema_dn) {
 		DEBUG(0,("_dsdb_schema_info_write_prepare: no schema dn present\n"));
 		return WERR_INTERNAL_DB_CORRUPTION;

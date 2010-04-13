@@ -1061,7 +1061,7 @@ struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 {
 	struct ldb_dn *new_dn;
 
-	new_dn = ldb_dn_copy(mem_ctx, samdb_config_dn(sam_ctx));
+	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(sam_ctx));
 	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Partitions")) {
 		talloc_free(new_dn);
 		return NULL;
@@ -1073,7 +1073,7 @@ struct ldb_dn *samdb_infrastructure_dn(struct ldb_context *sam_ctx, TALLOC_CTX *
 {
        struct ldb_dn *new_dn;
 
-       new_dn = ldb_dn_copy(mem_ctx, samdb_base_dn(sam_ctx));
+       new_dn = ldb_dn_copy(mem_ctx, ldb_get_default_basedn(sam_ctx));
        if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Infrastructure")) {
                talloc_free(new_dn);
                return NULL;
@@ -1085,7 +1085,7 @@ struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_dn *new_dn;
 
-	new_dn = ldb_dn_copy(mem_ctx, samdb_config_dn(sam_ctx));
+	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(sam_ctx));
 	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Sites")) {
 		talloc_free(new_dn);
 		return NULL;
@@ -1541,7 +1541,8 @@ int samdb_server_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, stru
  */
 int samdb_rid_manager_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
 {
-	return samdb_reference_dn(ldb, mem_ctx, samdb_base_dn(ldb), "rIDManagerReference", dn);
+	return samdb_reference_dn(ldb, mem_ctx, ldb_get_default_basedn(ldb),
+				  "rIDManagerReference", dn);
 }
 
 /*
@@ -2117,7 +2118,8 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = dsdb_wellknown_dn(sam_ctx, sidstr, samdb_base_dn(sam_ctx),
+	ret = dsdb_wellknown_dn(sam_ctx, sidstr,
+				ldb_get_default_basedn(sam_ctx),
 				DS_GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER,
 				&basedn);
 	if (ret != LDB_SUCCESS) {
@@ -3014,7 +3016,7 @@ int dsdb_get_deleted_objects_dn(struct ldb_context *ldb,
 int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
 {
 	struct ldb_dn *dn;
-	dn = samdb_config_dn(ldb);
+	dn = ldb_get_config_basedn(ldb);
 	if (!dn) {
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}

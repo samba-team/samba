@@ -56,14 +56,14 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = samdb_base_dn(state->sam_ldb);
+	state->domain_dn = ldb_get_default_basedn(state->sam_ldb);
 	if (!state->domain_dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
 
 	/* work out the forest root_dn - useful for so many calls its worth
 	   fetching here */
-	state->forest_dn = samdb_root_dn(state->sam_ldb);
+	state->forest_dn = ldb_get_root_basedn(state->sam_ldb);
 	if (!state->forest_dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}

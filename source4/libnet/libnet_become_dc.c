@@ -1057,7 +1057,8 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 		NULL
 	};
 
-	ret = dsdb_wellknown_dn(s->ldap1.ldb, s, samdb_base_dn(s->ldap1.ldb),
+	ret = dsdb_wellknown_dn(s->ldap1.ldb, s,
+				ldb_get_default_basedn(s->ldap1.ldb),
 				DS_GUID_INFRASTRUCTURE_CONTAINER,
 				&basedn);
 	if (ret != LDB_SUCCESS) {
@@ -3060,7 +3061,8 @@ static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
 	struct ldb_dn *old_dn;
 	struct ldb_dn *new_dn;
 
-	ret = dsdb_wellknown_dn(s->ldap2.ldb, s, samdb_base_dn(s->ldap2.ldb),
+	ret = dsdb_wellknown_dn(s->ldap2.ldb, s,
+				ldb_get_default_basedn(s->ldap2.ldb),
 				DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
 				&new_dn);
 	if (ret != LDB_SUCCESS) {

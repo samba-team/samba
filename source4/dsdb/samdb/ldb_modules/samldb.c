@@ -257,7 +257,8 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 	}
 
 	ret = ldb_build_search_req(&req, ldb, ac,
-				   samdb_base_dn(ldb), LDB_SCOPE_SUBTREE,
+				   ldb_get_default_basedn(ldb),
+				   LDB_SCOPE_SUBTREE,
 				   filter, NULL,
 				   NULL,
 				   ac, samldb_check_samAccountName_callback,

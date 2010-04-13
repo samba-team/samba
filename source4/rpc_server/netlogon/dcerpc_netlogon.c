@@ -1124,7 +1124,7 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 	} else {
 		char *p;
 		/* TODO: we need a common function for pulling the forest */
-		info->dns_forestname.string = ldb_dn_canonical_string(info, samdb_root_dn(sam_ctx));
+		info->dns_forestname.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
 		if (!info->dns_forestname.string) {
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
@@ -1236,7 +1236,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		 * Check that the DNS hostname when it should be updated
 		 * will be used only by maximum one host.
 		 */
-		ret = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
+		ret = gendb_search(sam_ctx, mem_ctx,
+				   ldb_get_default_basedn(sam_ctx),
 				   &res0, attrs3, "(dNSHostName=%s)",
 				   r->in.query->workstation_info->dns_hostname);
 		if (ret < 0) {
@@ -1349,7 +1350,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		   primary domain is also a "trusted" domain, so we need to
 		   put the primary domain into the lists of returned trusts as
 		   well. */
-		ret = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
+		ret = gendb_search_dn(sam_ctx, mem_ctx, ldb_get_default_basedn(sam_ctx),
 			&res2, attrs);
 		if (ret != 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;

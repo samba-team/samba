@@ -163,7 +163,7 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 
 	ret = ldb_search(ntp_signd_conn->ntp_signd->samdb, mem_ctx,
 				 &res,
-				 samdb_base_dn(ntp_signd_conn->ntp_signd->samdb),
+				 ldb_get_default_basedn(ntp_signd_conn->ntp_signd->samdb),
 				 LDB_SCOPE_SUBTREE,
 				 attrs,
 				 "(&(objectSid=%s)(objectClass=user))",

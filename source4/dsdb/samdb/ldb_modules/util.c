@@ -528,7 +528,7 @@ int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, str
 int dsdb_module_rid_manager_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
 {
 	return dsdb_module_reference_dn(module, mem_ctx,
-					samdb_base_dn(ldb_module_get_ctx(module)),
+					ldb_get_default_basedn(ldb_module_get_ctx(module)),
 					"rIDManagerReference", dn);
 }
 

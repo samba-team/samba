@@ -695,7 +695,7 @@ static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsu
 	/* add prefixMap attribute so tested layer could work properly */
 	{
 		struct ldb_message *msg = ldb_msg_new(mem_ctx);
-		msg->dn = samdb_schema_dn(priv->ldb_ctx);
+		msg->dn = ldb_get_schema_basedn(priv->ldb_ctx);
 		ldb_err = ldb_msg_add_string(msg, "prefixMap", "prefixMap");
 		torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE,
 					      "ldb_msg_add_empty() failed");

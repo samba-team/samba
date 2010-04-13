@@ -383,7 +383,7 @@ static bool _drsut_ldb_schema_info_reset(struct torture_context *tctx,
 	msg = ldb_msg_new(mem_ctx);
 	torture_assert_goto(tctx, msg, bret, DONE, "Not enough memory!");
 
-	msg->dn = samdb_schema_dn(ldb);
+	msg->dn = ldb_get_schema_basedn(ldb);
 	ldb_err = ldb_msg_add_value(msg, "schemaInfo", &blob, NULL);
 	torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE,
 				      "ldb_msg_add_value() failed");

@@ -266,7 +266,7 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	TALLOC_CTX *temp_ctx;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
 
-	schema_dn = samdb_schema_dn(ldb);
+	schema_dn = ldb_get_schema_basedn(ldb);
 	if (!schema_dn) {
 		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: no schema dn present\n"));
 		return WERR_FOOBAR;
@@ -334,7 +334,7 @@ WERROR dsdb_read_prefixes_from_ldb(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		NULL
 	};
 
-	schema_dn = samdb_schema_dn(ldb);
+	schema_dn = ldb_get_schema_basedn(ldb);
 	if (!schema_dn) {
 		DEBUG(0,("dsdb_read_prefixes_from_ldb: no schema dn present\n"));
 		return WERR_FOOBAR;

@@ -281,7 +281,7 @@ static int schema_load_init(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	schema_dn = samdb_schema_dn(ldb);
+	schema_dn = ldb_get_schema_basedn(ldb);
 	if (!schema_dn) {
 		ldb_reset_err_string(ldb);
 		ldb_debug(ldb, LDB_DEBUG_WARNING,

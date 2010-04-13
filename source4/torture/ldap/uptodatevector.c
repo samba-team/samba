@@ -162,9 +162,9 @@ bool torture_ldap_uptodatevector(struct torture_context *torture)
 			       0);
 	if (!ldb) goto failed;
 
-	ret &= test_check_uptodatevector(torture, ldb, samdb_base_dn(ldb));
-	ret &= test_check_uptodatevector(torture, ldb, samdb_config_dn(ldb));
-	ret &= test_check_uptodatevector(torture, ldb, samdb_schema_dn(ldb));
+	ret &= test_check_uptodatevector(torture, ldb, ldb_get_default_basedn(ldb));
+	ret &= test_check_uptodatevector(torture, ldb, ldb_get_config_basedn(ldb));
+	ret &= test_check_uptodatevector(torture, ldb, ldb_get_schema_basedn(ldb));
 
 	return ret;
 failed:

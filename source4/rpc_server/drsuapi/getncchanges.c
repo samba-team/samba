@@ -625,7 +625,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 
 	talloc_free(ext_res);
 
-	base_dn = samdb_base_dn(ldb);
+	base_dn = ldb_get_default_basedn(ldb);
 
 	DEBUG(2,("Allocated RID pool for server %s\n",
 		 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
@@ -752,7 +752,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 		werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 		W_ERROR_NOT_OK_RETURN(werr);
-		search_dn = samdb_base_dn(b_state->sam_ctx);
+		search_dn = ldb_get_default_basedn(b_state->sam_ctx);
 		break;
 
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
