@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "../lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"

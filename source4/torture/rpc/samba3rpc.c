@@ -33,7 +33,7 @@
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "librpc/gen_ndr/ndr_wkssvc_c.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "libcli/libcli.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/auth/libcli_auth.h"

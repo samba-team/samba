@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_ntsvcs_c.h"
 
 static bool test_PNP_GetVersion(struct torture_context *tctx,

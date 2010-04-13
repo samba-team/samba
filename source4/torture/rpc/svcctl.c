@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_svcctl_c.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 
 #define TORTURE_DEFAULT_SERVICE "Spooler"

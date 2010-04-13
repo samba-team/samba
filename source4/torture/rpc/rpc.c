@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "torture/smbtorture.h"
 #include "librpc/ndr/ndr_table.h"
 #include "../lib/util/dlinklist.h"

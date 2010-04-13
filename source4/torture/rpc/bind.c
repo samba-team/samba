@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 /*
   This test is 'bogus' in that it doesn't actually perform to the

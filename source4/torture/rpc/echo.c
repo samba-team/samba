@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_echo_c.h"
 

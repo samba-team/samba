@@ -24,7 +24,7 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/service_rpc.h"
 #include "smbd/process_model.h"

@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 bool torture_rpc_alter_context(struct torture_context *torture)
 {

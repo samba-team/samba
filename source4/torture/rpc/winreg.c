@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 #include "lib/registry/registry.h"
 

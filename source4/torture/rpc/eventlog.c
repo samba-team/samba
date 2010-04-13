@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
 #include "librpc/gen_ndr/ndr_eventlog_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 
 #define TEST_BACKUP_NAME "samrtorturetest"

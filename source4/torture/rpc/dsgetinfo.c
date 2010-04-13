@@ -30,7 +30,7 @@
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb_wrap.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "torture/drs/proto.h"
 
 

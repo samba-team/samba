@@ -1,7 +1,7 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"

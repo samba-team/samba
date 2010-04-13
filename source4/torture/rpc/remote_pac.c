@@ -23,7 +23,7 @@
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "param/param.h"

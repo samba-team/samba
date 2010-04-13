@@ -25,7 +25,7 @@
 #include "../lib/util/dlinklist.h"
 #include "../lib/crypto/crypto.h"
 #include "system/time.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/samsync/samsync.h"

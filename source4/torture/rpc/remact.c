@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 #define CLSID_IMAGEDOC "02B01C80-E03D-101A-B294-00DD010F2BF9"
 #define DCERPC_IUNKNOWN_UUID "00000000-0000-0000-c000-000000000046"

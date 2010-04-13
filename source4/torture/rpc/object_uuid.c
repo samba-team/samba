@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 /*
   this tests the send object uuids in the dcerpc request

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 
 

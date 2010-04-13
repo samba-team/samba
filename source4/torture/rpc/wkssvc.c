@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_wkssvc_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 #include "../lib/crypto/crypto.h"

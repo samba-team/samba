@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_dfs_c.h"
 #include "libnet/libnet.h"
 #include "torture/util.h"

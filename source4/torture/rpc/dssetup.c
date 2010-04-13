@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dssetup_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 
 bool test_DsRoleGetPrimaryDomainInformation_ext(struct torture_context *tctx, 

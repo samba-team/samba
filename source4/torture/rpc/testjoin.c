@@ -32,7 +32,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
 #include "libcli/auth/libcli_auth.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
 

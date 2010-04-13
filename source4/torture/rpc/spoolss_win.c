@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "ntvfs/ntvfs.h"

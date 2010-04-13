@@ -27,7 +27,7 @@
 #include "lib/events/events.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 #include "../lib/crypto/crypto.h"
 #define TEST_MACHINENAME "lsatestmach"

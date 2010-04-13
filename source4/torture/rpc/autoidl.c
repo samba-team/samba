@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "librpc/ndr/ndr_table.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 
 #if 1

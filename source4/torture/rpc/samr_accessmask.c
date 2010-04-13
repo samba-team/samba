@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 #include "libcli/security/security.h"
 

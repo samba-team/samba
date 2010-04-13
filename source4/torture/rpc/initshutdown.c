@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_initshutdown_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 static void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s)
 {

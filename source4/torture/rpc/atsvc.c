@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_atsvc_c.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 
 static bool test_JobGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx, uint32_t job_id)
 {

@@ -22,7 +22,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "libcli/libcli.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 
 

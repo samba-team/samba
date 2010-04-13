@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 
 #include "libcli/auth/libcli_auth.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 

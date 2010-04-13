@@ -25,7 +25,7 @@
 #include "lib/stream/packet.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/util/tstream.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"

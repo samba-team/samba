@@ -24,7 +24,7 @@
 #include "libcli/rap/rap.h"
 #include "torture/rap/proto.h"
 #include "param/param.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 
 static bool test_rpc_netservergetinfo(struct torture_context *tctx,

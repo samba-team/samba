@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "torture/rpc/rpc.h"
+#include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "libcli/security/security.h"
 
