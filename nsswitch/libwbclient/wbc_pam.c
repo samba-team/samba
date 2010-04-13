@@ -462,9 +462,11 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		request.flags |= params->flags;
 	}
 
-	wbc_status = wbcRequestResponse(cmd,
-					&request,
-					&response);
+	if (cmd == WINBINDD_PAM_AUTH_CRAP) {
+		wbc_status = wbcRequestResponsePriv(cmd, &request, &response);
+	} else {
+		wbc_status = wbcRequestResponse(cmd, &request, &response);
+	}
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
 			wbc_status = wbc_create_error_info(&response,
@@ -510,9 +512,8 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_CHECK_MACHACC,
-					&request,
-					&response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_CHECK_MACHACC,
+					    &request, &response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
 			wbc_status = wbc_create_error_info(&response,
@@ -547,9 +548,8 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_CHANGE_MACHACC,
-					&request,
-					&response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_CHANGE_MACHACC,
+					&request, &response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
 			wbc_status = wbc_create_error_info(&response,

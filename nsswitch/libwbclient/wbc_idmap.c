@@ -224,8 +224,8 @@ wbcErr wbcAllocateUid(uid_t *puid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_ALLOCATE_UID,
-					   &request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_ALLOCATE_UID,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	/* Copy out result */
@@ -254,8 +254,8 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_ALLOCATE_GID,
-					   &request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_ALLOCATE_GID,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	/* Copy out result */
@@ -300,8 +300,8 @@ wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 		sizeof(request.data.dual_idmapset.sid)-1);
 	wbcFreeMemory(sid_string);
 
-	wbc_status = wbcRequestResponse(WINBINDD_SET_MAPPING,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_SET_MAPPING,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
@@ -337,8 +337,8 @@ wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 		sizeof(request.data.dual_idmapset.sid)-1);
 	wbcFreeMemory(sid_string);
 
-	wbc_status = wbcRequestResponse(WINBINDD_SET_MAPPING,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_SET_MAPPING,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
@@ -374,8 +374,8 @@ wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 		sizeof(request.data.dual_idmapset.sid)-1);
 	wbcFreeMemory(sid_string);
 
-	wbc_status = wbcRequestResponse(WINBINDD_REMOVE_MAPPING,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_REMOVE_MAPPING,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
@@ -411,8 +411,8 @@ wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 		sizeof(request.data.dual_idmapset.sid)-1);
 	wbcFreeMemory(sid_string);
 
-	wbc_status = wbcRequestResponse(WINBINDD_REMOVE_MAPPING,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_REMOVE_MAPPING,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
@@ -436,8 +436,8 @@ wbcErr wbcSetUidHwm(uid_t uid_hwm)
 	request.data.dual_idmapset.id = uid_hwm;
 	request.data.dual_idmapset.type = _ID_TYPE_UID;
 
-	wbc_status = wbcRequestResponse(WINBINDD_SET_HWM,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_SET_HWM,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
@@ -461,8 +461,8 @@ wbcErr wbcSetGidHwm(gid_t gid_hwm)
 	request.data.dual_idmapset.id = gid_hwm;
 	request.data.dual_idmapset.type = _ID_TYPE_GID;
 
-	wbc_status = wbcRequestResponse(WINBINDD_SET_HWM,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(WINBINDD_SET_HWM,
+					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
