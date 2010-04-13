@@ -143,9 +143,6 @@ int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 	status = dcerpc_drsuapi_DsExecuteKCC_r(drs_conn->drs_handle, drs_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(drs_ctx, drs_conn->drs_pipe->last_fault_code);
-		}
 		d_printf("dcerpc_drsuapi_DsExecuteKCC failed - %s.\n", errstr);
 		goto failed;
 	} else if (!W_ERROR_IS_OK(req.out.result)) {

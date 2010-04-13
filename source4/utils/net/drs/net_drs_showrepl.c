@@ -216,9 +216,6 @@ static bool net_drs_exec_DsReplicaGetInfo(struct net_drs_context *drs_ctx,
 	status = dcerpc_drsuapi_DsReplicaGetInfo_r(drs_conn->drs_handle, drs_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(drs_ctx, drs_conn->drs_pipe->last_fault_code);
-		}
 		d_printf("DsReplicaGetInfo failed - %s.\n", errstr);
 		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
