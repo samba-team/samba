@@ -3,6 +3,7 @@
 APPNAME = 'talloc'
 VERSION = '2.0.2'
 
+
 blddir = 'bin'
 
 import os, sys
@@ -15,7 +16,7 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import sys
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, samba_dist
+import wafsamba, samba_dist, Options
 
 # setup what directories to put in a tarball
 samba_dist.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools')
@@ -25,6 +26,9 @@ def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('talloc', noextenion='talloc')
     opt.RECURSE('lib/replace')
+    opt.add_option('--enable-talloc-compat1',
+                   help=("Build talloc 1.x.x compat library [False]"),
+                   action="store_true", dest='TALLOC_COMPAT1', default=False)
 
 def configure(conf):
     conf.RECURSE('lib/replace')
@@ -35,6 +39,11 @@ def configure(conf):
 
     conf.env.standalone_talloc = conf.IN_LAUNCH_DIR()
 
+    conf.env.TALLOC_COMPAT1 = Options.options.TALLOC_COMPAT1
+
+    if conf.env.standalone_talloc:
+        conf.find_program('xsltproc', var='XSLTPROC')
+
     conf.SAMBA_CONFIG_H()
 
 
@@ -43,9 +52,17 @@ def build(bld):
     bld.RECURSE('lib/replace')
 
     if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
+
         bld.SAMBA_LIBRARY('talloc',
                           'talloc.c',
                           deps='replace',
+                          vnum=VERSION)
+
+        # should we also install the symlink to libtalloc1.so here?
+        bld.SAMBA_LIBRARY('talloc-compat1',
+                          'talloc.c compat/talloc_compat1.c',
+                          deps='replace',
+                          enabled = bld.env.TALLOC_COMPAT1,
                           vnum=VERSION)
 
     if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
@@ -59,6 +76,22 @@ def build(bld):
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         bld.env.TALLOC_VERSION = VERSION
         bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'talloc.h')
+
+        if bld.env.XSLTPROC:
+            bld.env.TALLOC_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+            bld.env.TALLOC_WEB_XSL = 'http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl'
+            bld.SAMBA_GENERATOR('talloc.3',
+                                source='talloc.3.xml',
+                                target='talloc.3',
+                                rule='${XSLTPROC} -o ${TGT} ${TALLOC_MAN_XSL} ${SRC}'
+                                )
+            bld.SAMBA_GENERATOR('talloc.3.html',
+                                source='talloc.3.xml',
+                                target='talloc.3.html',
+                                rule='${XSLTPROC} -o ${TGT} ${TALLOC_WEB_XSL} ${SRC}'
+                                )
+            bld.INSTALL_FILES('${MANDIR}/man3', 'talloc.3')
 
 
 def test(ctx):
