@@ -294,72 +294,94 @@ static bool sids_contains_sid(const struct dom_sid **sids,
  * "false".
  * The "only_childs" flag is particularly useful if you have a user SID and
  * want to include all his groups (referenced with "memberOf") without his SID
- * itself.
+ * itself, or considering if that SID matches the filter
  *
  * At the beginning "res_sids" should reference to a NULL pointer.
  */
-_PUBLIC_ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
-	const struct dom_sid *sid, const bool only_childs,
-	TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
-	unsigned int *num_res_sids)
+NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
+				      struct ldb_val *dn_val, const bool only_childs, const char *filter,
+				      TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
+				      unsigned int *num_res_sids)
 {
 	const char * const attrs[] = { "memberOf", NULL };
 	unsigned int i;
 	int ret;
 	bool already_there;
-	struct ldb_dn *tmp_dn;
-	struct dom_sid *tmp_sid;
+	struct ldb_dn *dn;
+	struct dom_sid *sid;
 	TALLOC_CTX *tmp_ctx;
-	struct ldb_message **res;
+	struct ldb_result *res;
 	NTSTATUS status;
+	const struct ldb_val *v;
+	const struct ldb_message_element *el;
+	enum ndr_err_code ndr_err;
 
 	if (*res_sids == NULL) {
 		*num_res_sids = 0;
 	}
 
-	if (sid == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
-		*num_res_sids, sid);
-	if (already_there) {
-		return NT_STATUS_OK;
-	}
-
-	if (!only_childs) {
-		tmp_sid = dom_sid_dup(res_sids_ctx, sid);
-		NT_STATUS_HAVE_NO_MEMORY(tmp_sid);
-		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
-			struct dom_sid *, *num_res_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(*res_sids);
-		(*res_sids)[*num_res_sids] = tmp_sid;
-		++(*num_res_sids);
-	}
-
 	tmp_ctx = talloc_new(res_sids_ctx);
 
-	ret = gendb_search(sam_ctx, tmp_ctx, NULL, &res, attrs,
-		"objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
-	if (ret != 1) {
+	sid = talloc(tmp_ctx, struct dom_sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid, tmp_ctx);
+
+	dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, dn_val);
+	if (dn == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	v = ldb_dn_get_extended_component(dn, "SID");
+
+	ndr_err = ndr_pull_struct_blob(v, sid, NULL, sid,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	if (res[0]->num_elements == 0) {
-		talloc_free(res);
+	/* This is an O(n^2) linear search */
+	already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
+					  *num_res_sids, sid);
+	if (already_there) {
+		return NT_STATUS_OK;
+	}
+
+	if (only_childs) {
+		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
+	} else {
+		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "%s", filter);
+	}
+
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
-	for (i = 0; i < res[0]->elements[0].num_values; i++) {
-		tmp_dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx,
-			&res[0]->elements[0].values[i]);
-		tmp_sid = samdb_search_dom_sid(sam_ctx, tmp_ctx, tmp_dn,
-			"objectSid", NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
-		status = authsam_expand_nested_groups(sam_ctx, tmp_sid,
-			false, res_sids_ctx, res_sids, num_res_sids);
+	/* We may get back 0 results, if the SID didn't match the filter - such as it wasn't a domain group, for example */
+	if (res->count != 1) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	/* We only apply this test once we know the SID matches the filter */
+	if (!only_childs) {
+		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
+			struct dom_sid *, *num_res_sids + 1);
+		NT_STATUS_HAVE_NO_MEMORY(*res_sids);
+		(*res_sids)[*num_res_sids] = talloc_steal(*res_sids, sid);
+		++(*num_res_sids);
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "memberOf");
+
+	for (i = 0; el && i < el->num_values; i++) {
+		status = authsam_expand_nested_groups(sam_ctx, &el->values[i],
+						      false, filter, res_sids_ctx, res_sids, num_res_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(res);
 			talloc_free(tmp_ctx);
@@ -385,29 +407,64 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct auth_serversupplied_info *server_info;
-	const char *str;
-	struct dom_sid *tmp_sid;
+	const char *str, *filter;
 	/* SIDs for the account and his primary group */
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
+	const char *primary_group_string;
+	const char *primary_group_dn;
+	DATA_BLOB primary_group_blob;
 	/* SID structures for the expanded group memberships */
-	struct dom_sid **groupSIDs = NULL, **groupSIDs_2 = NULL;
-	unsigned int num_groupSIDs = 0, num_groupSIDs_2 = 0, i;
-	uint32_t userAccountControl;
+	struct dom_sid **groupSIDs = NULL;
+	unsigned int num_groupSIDs = 0, i;
+	struct dom_sid *domain_sid;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_message_element *el;
 
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
+	tmp_ctx = talloc_new(server_info);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info, server_info);
+
 	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, server_info);
 
+	status = dom_sid_split_rid(tmp_ctx, account_sid, &domain_sid, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(server_info);
+		return status;
+	}
+
 	primary_group_sid = dom_sid_add_rid(server_info,
-		samdb_domain_sid(sam_ctx),
-		samdb_result_uint(msg, "primaryGroupID", ~0));
+					    domain_sid,
+					    samdb_result_uint(msg, "primaryGroupID", ~0));
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, server_info);
 
-	/* Expands the primary group */
-	status = authsam_expand_nested_groups(sam_ctx, primary_group_sid, false,
+	/* Filter out builtin groups from this token.  We will search
+	 * for builtin groups later, and not include them in the PAC
+	 * on SamLogon validation info */
+	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))", GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(filter, server_info);
+
+	primary_group_string = dom_sid_string(tmp_ctx, primary_group_sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_string, server_info);
+
+	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_dn, server_info);
+
+	primary_group_blob = data_blob_string_const(primary_group_dn);
+
+	/* Expands the primary group - this function takes in
+	 * memberOf-like values, so we fake one up with the
+	 * <SID=S-...> format of DN and then let it expand
+	 * them, as long as they meet the filter - so only
+	 * domain groups, not builtin groups
+	 *
+	 * The primary group is still treated specially, so we set the
+	 * 'only childs' flag to true
+	 */
+	status = authsam_expand_nested_groups(sam_ctx, &primary_group_blob, true, filter,
 					      server_info, &groupSIDs, &num_groupSIDs);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(server_info);
@@ -415,42 +472,22 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Expands the additional groups */
-	status = authsam_expand_nested_groups(sam_ctx, account_sid, true,
-		server_info, &groupSIDs_2, &num_groupSIDs_2);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(server_info);
-		return status;
-	}
-
-	/* Merge the two expanded structures (groupSIDs, groupSIDs_2) */
-	for (i = 0; i < num_groupSIDs_2; i++)
-		if (!sids_contains_sid((const struct dom_sid **) groupSIDs,
-				num_groupSIDs, groupSIDs_2[i])) {
-			tmp_sid = dom_sid_dup(server_info, groupSIDs_2[i]);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(tmp_sid, server_info);
-			groupSIDs = talloc_realloc(server_info, groupSIDs,
-				struct dom_sid *, num_groupSIDs + 1);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs,
-				server_info);
-			groupSIDs[num_groupSIDs] = tmp_sid;
-			++num_groupSIDs;
+	el = ldb_msg_find_element(msg, "memberOf");
+	for (i = 0; el && i < el->num_values; i++) {
+		/* This function takes in memberOf values and expands
+		 * them, as long as they meet the filter - so only
+		 * domain groups, not builtin groups */
+		status = authsam_expand_nested_groups(sam_ctx, &el->values[i], false, filter,
+						      server_info, &groupSIDs, &num_groupSIDs);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(server_info);
+			return status;
 		}
-	talloc_free(groupSIDs_2);
+	}
 
 	server_info->account_sid = account_sid;
 	server_info->primary_group_sid = primary_group_sid;
 	
-	/* DCs also get SID_NT_ENTERPRISE_DCS */
-	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
-	if (userAccountControl & UF_SERVER_TRUST_ACCOUNT) {
-		groupSIDs = talloc_realloc(server_info, groupSIDs, struct dom_sid *,
-					   num_groupSIDs+1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, server_info);
-		groupSIDs[num_groupSIDs] = dom_sid_parse_talloc(groupSIDs, SID_NT_ENTERPRISE_DCS);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs[num_groupSIDs], server_info);
-		num_groupSIDs++;
-	}
-
 	server_info->domain_groups = groupSIDs;
 	server_info->n_domain_groups = num_groupSIDs;
 
@@ -523,6 +560,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 
 	server_info->authenticated = true;
 
+	talloc_free(tmp_ctx);
 	*_server_info = server_info;
 
 	return NT_STATUS_OK;

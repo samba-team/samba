@@ -147,6 +147,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 			       unsigned int n_groupSIDs,
 			       struct dom_sid **groupSIDs, 
 			       bool is_authenticated,
+			       bool is_dc,
 			       struct security_token **token)
 {
 	struct security_token *ptoken;
@@ -156,7 +157,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
-	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 5);
+	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 6);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
 	ptoken->user_sid = talloc_reference(ptoken, user_sid);
@@ -178,7 +179,13 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken->num_sids = 4;
 
 	if (is_authenticated) {
-		ptoken->sids[4] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
+		ptoken->sids[ptoken->num_sids] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
+		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[4]);
+		ptoken->num_sids++;
+	}
+
+	if (is_dc) {
+		ptoken->sids[ptoken->num_sids] = dom_sid_parse_talloc(ptoken->sids, SID_NT_ENTERPRISE_DCS);
 		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[4]);
 		ptoken->num_sids++;
 	}
