@@ -209,9 +209,6 @@ static bool _test_DsBind(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsBind_r(b->drs_handle, ctx, &b->req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(ctx, b->drs_pipe->last_fault_code);
-		}
 		printf("dcerpc_drsuapi_DsBind failed - %s\n", errstr);
 		ret = false;
 	} else if (!W_ERROR_IS_OK(b->req.out.result)) {
@@ -349,9 +346,6 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	status = dcerpc_drsuapi_DsCrackNames_r(ctx->admin.drsuapi.drs_handle, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(ctx, ctx->admin.drsuapi.drs_pipe->last_fault_code);
-		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
 		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {

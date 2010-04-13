@@ -90,9 +90,6 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 		status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-			}
 			err_msg = talloc_asprintf(mem_ctx,
 					"testing DsCrackNames (matrix prep) with name '%s' from format: %d desired format:%d failed - %s",
 					names[0].str, r.in.req->req1.format_offered, r.in.req->req1.format_desired, errstr);
@@ -175,9 +172,6 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 			status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				const char *errstr = nt_errstr(status);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-				}
 				err_msg = talloc_asprintf(mem_ctx,
 						"testing DsCrackNames (matrix) with name '%s' from format: %d desired format:%d failed - %s",
 						names[0].str, r.in.req->req1.format_offered, r.in.req->req1.format_desired, errstr);
@@ -285,9 +279,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
 		err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 		torture_fail(tctx, err_msg);
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -310,9 +301,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
 		err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 		torture_fail(tctx, err_msg);
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -336,9 +324,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
 		err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 		torture_fail(tctx, err_msg);
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -384,9 +369,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
 		err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 		torture_fail(tctx, err_msg);
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -410,9 +392,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
 		err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 		torture_fail(tctx, err_msg);
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -436,9 +415,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
 		err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 		torture_fail(tctx, err_msg);
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -956,9 +932,6 @@ bool test_DsCrackNames(struct torture_context *tctx,
 			status = dcerpc_drsuapi_DsCrackNames_r(p->binding_handle, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				const char *errstr = nt_errstr(status);
-				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-				}
 				err_msg = talloc_asprintf(mem_ctx, "dcerpc_drsuapi_DsCrackNames failed - %s", errstr);
 				torture_fail(tctx, err_msg);
 			} else if (!W_ERROR_IS_OK(r.out.result)) {

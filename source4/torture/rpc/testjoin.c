@@ -176,9 +176,6 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	status = dcerpc_samr_Connect_r(b, join, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(join, join->p->last_fault_code);
-		}
 		printf("samr_Connect failed - %s\n", errstr);
 		return NULL;
 	}

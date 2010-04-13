@@ -56,9 +56,6 @@ struct DsPrivate {
 		NTSTATUS __nt = _ntstat; \
 		if (!NT_STATUS_IS_OK(__nt)) { \
 			const char *errstr = nt_errstr(__nt); \
-			if (NT_STATUS_EQUAL(__nt, NT_STATUS_NET_WRITE_FAULT)) { \
-				errstr = dcerpc_errstr(_tctx, _p->last_fault_code); \
-			} \
 			torture_fail(tctx, talloc_asprintf(_tctx, "%s failed - %s", _msg, errstr)); \
 		} \
 		torture_assert_werr_equal(_tctx, (_pr)->out.result, _werr_expected, _msg); \
