@@ -1019,21 +1019,6 @@ struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ct
 	return sd;
 }
 
-struct ldb_dn *samdb_base_dn(struct ldb_context *sam_ctx) 
-{
-	return ldb_get_default_basedn(sam_ctx);
-}
-
-struct ldb_dn *samdb_config_dn(struct ldb_context *sam_ctx) 
-{
-	return ldb_get_config_basedn(sam_ctx);
-}
-
-struct ldb_dn *samdb_schema_dn(struct ldb_context *sam_ctx) 
-{
-	return ldb_get_schema_basedn(sam_ctx);
-}
-
 struct ldb_dn *samdb_aggregate_schema_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx) 
 {
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(sam_ctx);
@@ -1050,11 +1035,6 @@ struct ldb_dn *samdb_aggregate_schema_dn(struct ldb_context *sam_ctx, TALLOC_CTX
 		return NULL;
 	}
 	return aggregate_dn;
-}
-
-struct ldb_dn *samdb_root_dn(struct ldb_context *sam_ctx) 
-{
-	return ldb_get_root_basedn(sam_ctx);
 }
 
 struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
