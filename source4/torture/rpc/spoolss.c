@@ -2596,10 +2596,12 @@ static bool test_Forms(struct torture_context *tctx,
 		WERROR expected_delete_result;
 	} forms[] = {
 		{
-			.info1.flags		= SPOOLSS_FORM_USER,
-			.info1.form_name	= "testform_user",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= SPOOLSS_FORM_USER,
+				.form_name	= "testform_user",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_OK,
 			.expected_delete_result	= WERR_OK
 		},
@@ -2608,51 +2610,63 @@ static bool test_Forms(struct torture_context *tctx,
 		again - gd
 
 		{
-			.info1.flags		= SPOOLSS_FORM_BUILTIN,
-			.info1.form_name	= "testform_builtin",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= SPOOLSS_FORM_BUILTIN,
+				.form_name	= "testform_builtin",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_OK,
 			.expected_delete_result	= WERR_INVALID_PARAM,
 		},
 */
 		{
-			.info1.flags		= SPOOLSS_FORM_PRINTER,
-			.info1.form_name	= "testform_printer",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= SPOOLSS_FORM_PRINTER,
+				.form_name	= "testform_printer",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_OK,
 			.expected_delete_result	= WERR_OK
 		},
 		{
-			.info1.flags		= SPOOLSS_FORM_USER,
-			.info1.form_name	= "Letter",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= SPOOLSS_FORM_USER,
+				.form_name	= "Letter",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_FILE_EXISTS,
 			.expected_delete_result	= WERR_INVALID_PARAM
 		},
 		{
-			.info1.flags		= SPOOLSS_FORM_BUILTIN,
-			.info1.form_name	= "Letter",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= SPOOLSS_FORM_BUILTIN,
+				.form_name	= "Letter",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_FILE_EXISTS,
 			.expected_delete_result	= WERR_INVALID_PARAM
 		},
 		{
-			.info1.flags		= SPOOLSS_FORM_PRINTER,
-			.info1.form_name	= "Letter",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= SPOOLSS_FORM_PRINTER,
+				.form_name	= "Letter",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_FILE_EXISTS,
 			.expected_delete_result	= WERR_INVALID_PARAM
 		},
 		{
-			.info1.flags		= 12345,
-			.info1.form_name	= "invalid_flags",
-			.info1.size		= size,
-			.info1.area		= area,
+			.info1 = {
+				.flags		= 12345,
+				.form_name	= "invalid_flags",
+				.size		= size,
+				.area		= area,
+			},
 			.expected_add_result	= WERR_INVALID_PARAM,
 			.expected_delete_result	= WERR_INVALID_FORM_NAME
 		}
