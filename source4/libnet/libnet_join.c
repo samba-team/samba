@@ -135,21 +135,12 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	status = dcerpc_drsuapi_DsBind_r(drsuapi_pipe->binding_handle, tmp_ctx, &r_drsuapi_bind);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			r->out.error_string
-				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsBind failed - %s", 
-						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
-			talloc_free(tmp_ctx);
-			return status;
-		} else {
-			r->out.error_string
-				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsBind failed - %s", 
-						  nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-		}
+		r->out.error_string
+			= talloc_asprintf(r,
+					  "dcerpc_drsuapi_DsBind failed - %s",
+					  nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
 	} else if (!W_ERROR_IS_OK(r_drsuapi_bind.out.result)) {
 		r->out.error_string
 				= talloc_asprintf(r,
@@ -193,23 +184,13 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	status = dcerpc_drsuapi_DsCrackNames_r(drsuapi_pipe->binding_handle, tmp_ctx, &r_crack_names);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			r->out.error_string
-				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
-						  names[0].str,
-						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
-			talloc_free(tmp_ctx);
-			return status;
-		} else {
-			r->out.error_string
-				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
-						  names[0].str,
-						  nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-		}
+		r->out.error_string
+			= talloc_asprintf(r,
+					  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s",
+					  names[0].str,
+					  nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
 	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
 		r->out.error_string
 				= talloc_asprintf(r,
@@ -354,23 +335,13 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	status = dcerpc_drsuapi_DsCrackNames_r(drsuapi_pipe->binding_handle, tmp_ctx, &r_crack_names);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			r->out.error_string
-				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
-						  r->in.domain_name, 
-						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
-			talloc_free(tmp_ctx);
-			return status;
-		} else {
-			r->out.error_string
-				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
-						  r->in.domain_name, 
-						  nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-		}
+		r->out.error_string
+			= talloc_asprintf(r,
+					  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s",
+					  r->in.domain_name,
+					  nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
 	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
 		r->out.error_string
 			= talloc_asprintf(r,
