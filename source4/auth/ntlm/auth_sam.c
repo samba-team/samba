@@ -144,7 +144,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
 
-	uint16_t acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
+	uint16_t acct_flags = samdb_result_acct_flags(auth_context->sam_ctx, mem_ctx, msg, domain_dn);
 	
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
@@ -168,7 +168,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 					user_info, user_sess_key, lm_sess_key);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	nt_status = authsam_account_ok(mem_ctx, sam_ctx, 
+	nt_status = authsam_account_ok(mem_ctx, auth_context->sam_ctx,
 				       user_info->logon_parameters,
 				       domain_dn,
 				       msg,
@@ -189,10 +189,14 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	NTSTATUS nt_status;
 	const char *account_name = user_info->mapped.account_name;
 	struct ldb_message *msg;
-	struct ldb_context *sam_ctx;
 	struct ldb_dn *domain_dn;
 	DATA_BLOB user_sess_key, lm_sess_key;
 	TALLOC_CTX *tmp_ctx;
+
+	if (ctx->auth_ctx->sam_ctx == NULL) {
+		DEBUG(0, ("No SAM available, cannot log in users\n"));
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
 
 	if (!account_name || !*account_name) {
 		/* 'not for me' */
@@ -204,32 +208,26 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, ctx->auth_ctx->event_ctx, ctx->auth_ctx->lp_ctx, system_session(ctx->auth_ctx->lp_ctx));
-	if (sam_ctx == NULL) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-
-	domain_dn = ldb_get_default_basedn(sam_ctx);
+	domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
 	if (domain_dn == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	nt_status = authsam_search_account(tmp_ctx, sam_ctx, account_name, domain_dn, &msg);
+	nt_status = authsam_search_account(tmp_ctx, ctx->auth_ctx->sam_ctx, account_name, domain_dn, &msg);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
-	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, sam_ctx, domain_dn, msg, user_info,
+	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, ctx->auth_ctx->sam_ctx, domain_dn, msg, user_info,
 					 &user_sess_key, &lm_sess_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx), 
+	nt_status = authsam_make_server_info(tmp_ctx, ctx->auth_ctx->sam_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx),
  					     lp_sam_name(ctx->auth_ctx->lp_ctx),
 					     domain_dn,
 					     msg,

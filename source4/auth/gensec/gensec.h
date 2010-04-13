@@ -179,6 +179,7 @@ struct gensec_critical_sizes {
 struct gensec_security;
 struct socket_context;
 struct auth_context;
+struct auth_serversupplied_info;
 
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 			    TALLOC_CTX *mem_ctx, 

@@ -29,6 +29,8 @@
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/auth.h"
+#include "auth/system_session_proto.h"
 #include "param/param.h"
 #include "lib/util/tsort.h"
 
@@ -595,6 +597,8 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 
 	return status;
 }
+
+
 
 /**
   Start the GENSEC system, in server mode, returning a context pointer.
@@ -1292,7 +1296,6 @@ _PUBLIC_ const struct tsocket_address *gensec_get_remote_address(struct gensec_s
 	return gensec_security->remote_addr;
 }
 
-
 /** 
  * Set the target principal (assuming it it known, say from the SPNEGO reply)
  *  - ensures it is talloc()ed 
@@ -1315,6 +1318,22 @@ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
 	}
 
 	return NULL;
+}
+
+NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
+				      struct gensec_security *gensec_security,
+				      struct auth_serversupplied_info *server_info,
+				      struct auth_session_info **session_info)
+{
+	NTSTATUS nt_status;
+	if (gensec_security->auth_context) {
+		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
+										 server_info, session_info);
+	} else {
+		nt_status = auth_generate_simple_session_info(mem_ctx,
+							      server_info, session_info);
+	}
+	return nt_status;
 }
 
 /*

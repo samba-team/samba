@@ -25,6 +25,8 @@
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "param/param.h"
+#include "dsdb/samdb/samdb.h"
+
 
 /***************************************************************************
  Set a fixed challenge
@@ -435,6 +437,8 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->msg_ctx			= msg;
 	ctx->lp_ctx			= lp_ctx;
 
+	ctx->sam_ctx = samdb_connect(ctx, ctx->event_ctx, ctx->lp_ctx, system_session(ctx->lp_ctx));
+
 	for (i=0; methods[i] ; i++) {
 		struct auth_method_context *method;
 
@@ -461,6 +465,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->set_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
 	ctx->get_server_info_principal = auth_get_server_info_principal;
+	ctx->generate_session_info = auth_generate_session_info;
 
 	*auth_ctx = ctx;
 

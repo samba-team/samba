@@ -28,6 +28,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_proto.h"
 #include "auth/auth.h"
 #include "param/param.h"
 
@@ -722,11 +723,10 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
-	nt_status = auth_generate_session_info(ntlmssp_state,
-					       gensec_security->event_ctx,
-					       gensec_security->settings->lp_ctx,
-					       gensec_ntlmssp->server_info,
-					       session_info);
+	nt_status = gensec_generate_session_info(ntlmssp_state,
+						 gensec_security,
+						 gensec_ntlmssp->server_info,
+						 session_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	(*session_info)->session_key = data_blob_talloc(*session_info, 

@@ -114,9 +114,9 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS generate_simple_session_info(TALLOC_CTX *mem_ctx, 
-				      struct auth_serversupplied_info *server_info, 
-				      struct auth_session_info **_session_info) 
+NTSTATUS auth_generate_simple_session_info(TALLOC_CTX *mem_ctx,
+					   struct auth_serversupplied_info *server_info,
+					   struct auth_session_info **_session_info)
 {
 	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
@@ -197,7 +197,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = generate_simple_session_info(parent_ctx, server_info, &session_info);
+	nt_status = auth_generate_simple_session_info(parent_ctx, server_info, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -528,7 +528,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = generate_simple_session_info(parent_ctx, server_info, &session_info);
+	nt_status = auth_generate_simple_session_info(parent_ctx, server_info, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);

@@ -23,6 +23,7 @@
 #include <tevent.h>
 #include "smbd/service.h"
 #include "param/param.h"
+#include "auth/auth.h"
 #include "auth/session.h"
 #include "auth/auth_sam_reply.h"
 #include "lib/socket/socket.h"
@@ -162,6 +163,7 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 	struct auth_serversupplied_info *server_info;
 	struct named_pipe_auth_req pipe_request;
 	struct named_pipe_auth_rep pipe_reply;
+	struct auth_context *auth_context;
 	NTSTATUS status;
 
 	call = talloc(pipe_conn, struct named_pipe_call);
@@ -252,12 +254,23 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 			goto reply;
 		}
 
+		pipe_reply.status = auth_context_create(conn,
+							conn->event.ctx, conn->msg_ctx,
+							conn->lp_ctx,
+							&auth_context);
+		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
+			DEBUG(2, ("auth_context_create returned "
+				  "%s\n", nt_errstr(pipe_reply.status)));
+			goto reply;
+		}
+
+
 		/* setup the session_info on the connection */
-		pipe_reply.status = auth_generate_session_info(conn,
-							       conn->event.ctx,
-							       conn->lp_ctx,
-							       server_info,
-							       &conn->session_info);
+		pipe_reply.status = auth_context->generate_session_info(conn,
+									auth_context,
+									server_info,
+									&conn->session_info);
+		talloc_free(auth_context);
 		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
 			DEBUG(2, ("auth_generate_session_info failed: %s\n",
 				  nt_errstr(pipe_reply.status)));
@@ -292,11 +305,21 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 		}
 
 		/* setup the session_info on the connection */
-		pipe_reply.status = auth_generate_session_info(conn,
-							conn->event.ctx,
+		pipe_reply.status = auth_context_create(conn,
+							conn->event.ctx, conn->msg_ctx,
 							conn->lp_ctx,
-							server_info,
-							&conn->session_info);
+							&auth_context);
+		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
+			DEBUG(2, ("auth_context_create returned "
+				  "%s\n", nt_errstr(pipe_reply.status)));
+			goto reply;
+		}
+
+		pipe_reply.status = auth_context->generate_session_info(conn,
+									auth_context,
+									server_info,
+									&conn->session_info);
+		talloc_free(auth_context);
 		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
 			DEBUG(2, ("auth_generate_session_info failed: %s\n",
 				  nt_errstr(pipe_reply.status)));
@@ -335,11 +358,22 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 		}
 
 		/* setup the session_info on the connection */
-		pipe_reply.status = auth_generate_session_info(conn,
-							       conn->event.ctx,
-							       conn->lp_ctx,
-							       server_info,
-							       &conn->session_info);
+		pipe_reply.status = auth_context_create(conn,
+							conn->event.ctx, conn->msg_ctx,
+							conn->lp_ctx,
+							&auth_context);
+		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
+			DEBUG(2, ("auth_context_create returned "
+				  "%s\n", nt_errstr(pipe_reply.status)));
+			goto reply;
+		}
+
+		/* setup the session_info on the connection */
+		pipe_reply.status = auth_context->generate_session_info(conn,
+									auth_context,
+									server_info,
+									&conn->session_info);
+		talloc_free(auth_context);
 		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
 			DEBUG(2, ("auth_generate_session_info failed: %s\n",
 				  nt_errstr(pipe_reply.status)));

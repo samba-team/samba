@@ -1320,8 +1320,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, 
-					       gensec_security->settings->lp_ctx, server_info, &session_info);
+	nt_status = gensec_generate_session_info(mem_ctx, gensec_security,
+						 server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;

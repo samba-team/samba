@@ -126,6 +126,7 @@ struct auth_serversupplied_info
 struct auth_method_context;
 struct auth_check_password_request;
 struct auth_context;
+struct auth_session_info;
 
 struct auth_operations {
 	const char *name;
@@ -185,6 +186,9 @@ struct auth_context {
 	/* loadparm context */
 	struct loadparm_context *lp_ctx;
 
+	/* SAM database for this local machine - to fill in local groups, or to authenticate local NTLM users */
+	struct ldb_context *sam_ctx;
+
 	NTSTATUS (*check_password)(struct auth_context *auth_ctx,
 				   TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info,
@@ -201,6 +205,10 @@ struct auth_context {
 					      const char *principal,
 					      struct auth_serversupplied_info **server_info);
 
+	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
+					  struct auth_context *auth_context,
+					  struct auth_serversupplied_info *server_info,
+					  struct auth_session_info **session_info);
 };
 
 /* this structure is used by backends to determine the size of some critical types */

@@ -283,6 +283,7 @@ static bool sids_contains_sid(const struct dom_sid **sids,
 	return false;
 }
 
+
 /*
  * This function generates the transitive closure of a given SID "sid" (it
  * basically expands nested groups of a SID).

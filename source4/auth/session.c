@@ -42,11 +42,10 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 	return session_info;
 }
 
-_PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
-				    struct tevent_context *event_ctx, 
-				    struct loadparm_context *lp_ctx,
-				    struct auth_serversupplied_info *server_info, 
-				    struct auth_session_info **_session_info) 
+_PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
+					     struct auth_context *auth_context,
+					     struct auth_serversupplied_info *server_info,
+					     struct auth_session_info **_session_info)
 {
 	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
@@ -61,8 +60,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	session_info->session_key = server_info->user_session_key;
 
 	nt_status = security_token_create(session_info,
-					  event_ctx,
-					  lp_ctx,
+					  auth_context->event_ctx,
+					  auth_context->lp_ctx,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,
 					  server_info->n_domain_groups,

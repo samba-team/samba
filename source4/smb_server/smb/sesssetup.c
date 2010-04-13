@@ -32,6 +32,11 @@
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 
+struct sesssetup_context {
+	struct auth_context *auth_context;
+	struct smbsrv_request *req;
+};
+
 /*
   setup the OS, Lanman and domain portions of a session setup reply
 */
@@ -58,8 +63,9 @@ static void smbsrv_sesssetup_backend_send(struct smbsrv_request *req,
 
 static void sesssetup_old_send(struct tevent_req *subreq)
 {
-	struct smbsrv_request *req =
-		tevent_req_callback_data(subreq, struct smbsrv_request);
+	struct sesssetup_context *state = tevent_req_callback_data(subreq, struct sesssetup_context);
+	struct smbsrv_request *req = state->req;
+
 	union smb_sesssetup *sess = talloc_get_type(req->io_ptr, union smb_sesssetup);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
@@ -71,8 +77,9 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
-	status = auth_generate_session_info(req, req->smb_conn->connection->event.ctx, req->smb_conn->lp_ctx, 
-					    server_info, &session_info);
+	status = req->smb_conn->negotiate.auth_context->generate_session_info(req,
+									      req->smb_conn->negotiate.auth_context,
+									      server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* allocate a new session */
@@ -106,6 +113,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	struct tsocket_address *remote_address;
 	const char *remote_machine = NULL;
 	struct tevent_req *subreq;
+	struct sesssetup_context *state;
 
 	sess->old.out.vuid = 0;
 	sess->old.out.action = 0;
@@ -147,12 +155,32 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->password.response.lanman.data = talloc_steal(user_info, sess->old.in.password.data);
 	user_info->password.response.nt = data_blob(NULL, 0);
 
-	subreq = auth_check_password_send(req,
+	state = talloc(req, struct sesssetup_context);
+	if (!state) goto nomem;
+
+	if (req->smb_conn->negotiate.auth_context) {
+		state->auth_context = req->smb_conn->negotiate.auth_context;
+	} else {
+		/* TODO: should we use just "anonymous" here? */
+		NTSTATUS status = auth_context_create(state,
+						      req->smb_conn->connection->event.ctx,
+						      req->smb_conn->connection->msg_ctx,
+						      req->smb_conn->lp_ctx,
+						      &state->auth_context);
+		if (!NT_STATUS_IS_OK(status)) {
+			smbsrv_sesssetup_backend_send(req, sess, status);
+			return;
+		}
+	}
+
+	state->req = req;
+
+	subreq = auth_check_password_send(state,
 					  req->smb_conn->connection->event.ctx,
 					  req->smb_conn->negotiate.auth_context,
 					  user_info);
 	if (!subreq) goto nomem;
-	tevent_req_set_callback(subreq, sesssetup_old_send, req);
+	tevent_req_set_callback(subreq, sesssetup_old_send, state);
 	return;
 
 nomem:
@@ -161,12 +189,13 @@ nomem:
 
 static void sesssetup_nt1_send(struct tevent_req *subreq)
 {
-	struct smbsrv_request *req =
-		tevent_req_callback_data(subreq, struct smbsrv_request);
+	struct sesssetup_context *state = tevent_req_callback_data(subreq, struct sesssetup_context);
+	struct smbsrv_request *req = state->req;
 	union smb_sesssetup *sess = talloc_get_type(req->io_ptr, union smb_sesssetup);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
+
 	NTSTATUS status;
 
 	status = auth_check_password_recv(subreq, req, &server_info);
@@ -174,9 +203,10 @@ static void sesssetup_nt1_send(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
-	status = auth_generate_session_info(req, req->smb_conn->connection->event.ctx, 
-					    req->smb_conn->lp_ctx, 
-					    server_info, &session_info);
+	status = state->auth_context->generate_session_info(req,
+							    state->auth_context,
+							    server_info,
+							    &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* allocate a new session */
@@ -214,11 +244,11 @@ failed:
 static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	NTSTATUS status;
-	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct tsocket_address *remote_address;
 	const char *remote_machine = NULL;
 	struct tevent_req *subreq;
+	struct sesssetup_context *state;
 
 	sess->nt1.out.vuid = 0;
 	sess->nt1.out.action = 0;
@@ -233,6 +263,11 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		req->smb_conn->negotiate.client_caps = sess->nt1.in.capabilities;
 	}
 
+	state = talloc(req, struct sesssetup_context);
+	if (!state) goto nomem;
+
+	state->req = req;
+
 	if (req->smb_conn->negotiate.oid) {
 		if (sess->nt1.in.user && *sess->nt1.in.user) {
 			/* We can't accept a normal login, because we
@@ -242,14 +277,22 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		}
 
 		/* TODO: should we use just "anonymous" here? */
-		status = auth_context_create(req, 
+		status = auth_context_create(state,
 					     req->smb_conn->connection->event.ctx,
 					     req->smb_conn->connection->msg_ctx,
 					     req->smb_conn->lp_ctx,
-					     &auth_context);
+					     &state->auth_context);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
+	} else if (req->smb_conn->negotiate.auth_context) {
+		state->auth_context = req->smb_conn->negotiate.auth_context;
 	} else {
-		auth_context = req->smb_conn->negotiate.auth_context;
+		/* TODO: should we use just "anonymous" here? */
+		status = auth_context_create(state,
+					     req->smb_conn->connection->event.ctx,
+					     req->smb_conn->connection->msg_ctx,
+					     req->smb_conn->lp_ctx,
+					     &state->auth_context);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
 	if (req->smb_conn->negotiate.calling_name) {
@@ -281,12 +324,12 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->password.response.nt = sess->nt1.in.password2;
 	user_info->password.response.nt.data = talloc_steal(user_info, sess->nt1.in.password2.data);
 
-	subreq = auth_check_password_send(req,
+	subreq = auth_check_password_send(state,
 					  req->smb_conn->connection->event.ctx,
-					  auth_context,
+					  state->auth_context,
 					  user_info);
 	if (!subreq) goto nomem;
-	tevent_req_set_callback(subreq, sesssetup_nt1_send, req);
+	tevent_req_set_callback(subreq, sesssetup_nt1_send, state);
 
 	return;
 
