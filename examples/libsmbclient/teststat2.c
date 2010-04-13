@@ -8,7 +8,7 @@
 /*
  * This test is intended to ensure that the timestamps returned by
  * libsmbclient are the same as timestamps returned by the local system.  To
- * test this, we assume a working Samba environment, and and access the same
+ * test this, we assume a working Samba environment, and access the same
  * file via SMB and locally (or NFS).
  *
  */
