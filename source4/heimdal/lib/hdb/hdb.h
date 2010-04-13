@@ -206,7 +206,7 @@ typedef struct HDB{
      * Change password.
      *
      * Will update keys for the entry when given password.  The new
-     * keys must be written into the entry and and will then later be
+     * keys must be written into the entry and will then later be
      * ->hdb_store() into the database. The backend will still perform
      * all other operations, increasing the kvno, and update
      * modification timestamp.
