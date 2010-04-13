@@ -1456,16 +1456,6 @@ static WERROR dcesrv_netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call,
 
 
 /*
-  netr_DsRAddressToSitenamesW
-*/
-static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DsRAddressToSitenamesW *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/*
   netr_DsRGetDCNameEx2
 */
 static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
@@ -1616,12 +1606,23 @@ static WERROR dcesrv_netr_NetrEnumerateTrustedDomainsEx(struct dcesrv_call_state
 static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 						   struct netr_DsRAddressToSitenamesExW *r)
 {
+	struct ldb_context *sam_ctx;
 	struct netr_DsRAddressToSitenamesExWCtr *ctr;
-	int i;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	uint16_t sin_family;
+	struct sockaddr_in *addr;
+	struct sockaddr_in6 *addr6;
+	char addr_str[INET6_ADDRSTRLEN];
+	char *subnet_name;
+	const char *res;
+	uint32_t i;
 
-	/* we should map the provided IPs to site names, once we have
-	 * sites support
-	 */
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return WERR_DS_UNAVAILABLE;
+	}
+
 	ctr = talloc(mem_ctx, struct netr_DsRAddressToSitenamesExWCtr);
 	W_ERROR_HAVE_NO_MEMORY(ctr);
 
@@ -1634,12 +1635,88 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 	W_ERROR_HAVE_NO_MEMORY(ctr->subnetname);
 
 	for (i=0; i<ctr->count; i++) {
-		/* FIXME: Hardcoded site name */
-		ctr->sitename[i].string   = "Default-First-Site-Name";
+		ctr->sitename[i].string = NULL;
 		ctr->subnetname[i].string = NULL;
+
+		if (r->in.addresses[i].size < sizeof(sin_family)) {
+			continue;
+		}
+		sin_family = SVAL(r->in.addresses[i].buffer, 0);
+
+		switch (sin_family) {
+		case AF_INET:
+			if (r->in.addresses[i].size < sizeof(struct sockaddr_in)) {
+				continue;
+			}
+			addr = (struct sockaddr_in *) r->in.addresses[i].buffer;
+			res = inet_ntop(AF_INET, &addr->sin_addr,
+					addr_str, sizeof(addr_str));
+			break;
+		case AF_INET6:
+			if (r->in.addresses[i].size < sizeof(struct sockaddr_in6)) {
+				continue;
+			}
+			addr6 = (struct sockaddr_in6 *) r->in.addresses[i].buffer;
+			res = inet_ntop(AF_INET6, &addr6->sin6_addr,
+					addr_str, sizeof(addr_str));
+			break;
+		default:
+			continue;
+		break;
+		}
+
+		if (res == NULL) {
+			continue;
+		}
+
+		ctr->sitename[i].string   = samdb_client_site_name(sam_ctx,
+								   mem_ctx,
+								   addr_str,
+								   &subnet_name);
+		W_ERROR_HAVE_NO_MEMORY(ctr->sitename[i].string);
+		ctr->subnetname[i].string = subnet_name;
 	}
 
 	return WERR_OK;
+}
+
+
+/*
+  netr_DsRAddressToSitenamesW
+*/
+static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DsRAddressToSitenamesW *r)
+{
+	struct netr_DsRAddressToSitenamesExW r2;
+	struct netr_DsRAddressToSitenamesWCtr *ctr;
+	uint32_t i;
+	WERROR werr;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.server_name = r->in.server_name;
+	r2.in.count = r->in.count;
+	r2.in.addresses = r->in.addresses;
+
+	r2.out.ctr = talloc(mem_ctx, struct netr_DsRAddressToSitenamesExWCtr *);
+	W_ERROR_HAVE_NO_MEMORY(r2.out.ctr);
+
+	werr = dcesrv_netr_DsRAddressToSitenamesExW(dce_call, mem_ctx, &r2);
+
+	ctr = talloc(mem_ctx, struct netr_DsRAddressToSitenamesWCtr);
+	W_ERROR_HAVE_NO_MEMORY(ctr);
+
+	*r->out.ctr = ctr;
+
+	ctr->count = r->in.count;
+	ctr->sitename = talloc_array(ctr, struct lsa_String, ctr->count);
+	W_ERROR_HAVE_NO_MEMORY(ctr->sitename);
+
+	for (i=0; i<ctr->count; i++) {
+		ctr->sitename[i].string   = (*r2.out.ctr)->sitename[i].string;
+	}
+
+	return werr;
 }
 
 
