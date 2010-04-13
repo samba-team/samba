@@ -465,8 +465,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 	/* Check we have a valid parent */
 	if (ac->search_res == NULL) {
-		if (ldb_dn_compare(ldb_get_root_basedn(ldb),
-								msg->dn) == 0) {
+		if (ldb_dn_compare(ldb_get_root_basedn(ldb), msg->dn) == 0) {
 			/* Allow the tree to be started */
 			
 			/* but don't keep any error string, it's meaningless */
