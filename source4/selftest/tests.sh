@@ -473,6 +473,7 @@ plantestsuite "samba.python" none $SUBUNITRUN samba.tests
 plantestsuite "provision.python" none $SUBUNITRUN samba.tests.provision
 plantestsuite "samba3.python" none $SUBUNITRUN samba.tests.samba3
 plantestsuite "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
+plantestsuite "dsdb.python" dc:local $SUBUNITRUN samba.tests.dsdb
 plantestsuite "netcmd.python" none $SUBUNITRUN samba.tests.netcmd
 plantestsuite "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
 plantestsuite "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
