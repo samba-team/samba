@@ -253,7 +253,7 @@ struct spoolss_PrinterInfo0 {
 	uint32_t global_counter;
 	uint32_t total_pages;
 	uint32_t version;
-	uint32_t free_build;
+	enum spoolss_Build free_build;
 	uint32_t spooling;
 	uint32_t max_spooling;
 	uint32_t session_counter;
