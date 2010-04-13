@@ -1256,13 +1256,15 @@ int smbc_creat(const char *furl, mode_t mode);
  *
  * @param bufsize   Size of buf in bytes
  *
- * @return          Number of bytes read, < 0 on error with errno set:
+ * @return          Number of bytes read;
+ *                  0 upon EOF;
+ *                  < 0 on error, with errno set:
  *                  - EISDIR fd refers to a directory
  *                  - EBADF  fd  is  not  a valid file descriptor or 
- *                  is not open for reading.
+ *                    is not open for reading.
  *                  - EINVAL fd is attached to an object which is 
- *                  unsuitable for reading, or no buffer passed or
- *		    smbc_init not called.
+ *                    unsuitable for reading, or no buffer passed or
+ *		      smbc_init not called.
  *
  * @see             smbc_open(), smbc_write()
  *
@@ -1607,7 +1609,8 @@ int smbc_stat(const char *url, struct stat *st);
  * @param st        pointer to a buffer that will be filled with 
  *                  standard Unix struct stat information.
  * 
- * @return          EBADF  filedes is bad.
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
  *                  - EBADF fd is not a valid file descriptor
  *                  - EINVAL Problems occurred in the underlying routines
@@ -1628,7 +1631,8 @@ int smbc_fstat(int fd, struct stat *st);
  * @param st        pointer to a buffer that will be filled with 
  *                  standard Unix struct statvfs information.
  * 
- * @return          EBADF  filedes is bad.
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
  *                  - EBADF fd is not a valid file descriptor
  *                  - EINVAL Problems occurred in the underlying routines
@@ -1651,7 +1655,8 @@ smbc_statvfs(char *url,
  * @param st        pointer to a buffer that will be filled with 
  *                  standard Unix struct statvfs information.
  * 
- * @return          EBADF  filedes is bad.
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
  *                  - EBADF fd is not a valid file descriptor
  *                  - EINVAL Problems occurred in the underlying routines
@@ -1673,7 +1678,8 @@ smbc_fstatvfs(int fd,
  *
  * @param size      size to truncate the file to
  * 
- * @return          EBADF  filedes is bad.
+ * @return          0 on success, < 0 on error with errno set:
+ *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
  *                  - EBADF fd is not a valid file descriptor
  *                  - EINVAL Problems occurred in the underlying routines
