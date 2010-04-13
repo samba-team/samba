@@ -568,6 +568,100 @@ static bool test_wbc_authenticate_user(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_logon_user(struct torture_context *tctx)
+{
+	struct wbcLogonUserParams params;
+	struct wbcLogonUserInfo *info = NULL;
+	struct wbcAuthErrorInfo *error = NULL;
+	struct wbcUserPasswordPolicyInfo *policy = NULL;
+	struct wbcInterfaceDetails *iface;
+	struct wbcDomainSid sid;
+	enum wbcSidType sidtype;
+	char *sidstr;
+	wbcErr ret;
+
+	ZERO_STRUCT(params);
+
+	ret = wbcLogonUser(&params, &info, &error, &policy);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_INVALID_PARAM,
+				 "wbcLogonUser succeeded where it should "
+				 "have failed");
+
+	params.username = getenv("USERNAME");
+	params.password = getenv("PASSWORD");
+
+	ret = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
+			      "foo", 0, discard_const_p(uint8_t, "bar"), 4);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcAddNamedBlob failed");
+
+	ret = wbcLogonUser(&params, &info, &error, &policy);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcLogonUser failed");
+	wbcFreeMemory(info); info = NULL;
+	wbcFreeMemory(error); error = NULL;
+	wbcFreeMemory(policy); policy = NULL;
+
+	params.password = "wrong";
+
+	ret = wbcLogonUser(&params, &info, &error, &policy);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_AUTH_ERROR,
+				 "wbcLogonUser should have failed with "
+				 "WBC_ERR_AUTH_ERROR");
+	wbcFreeMemory(info); info = NULL;
+	wbcFreeMemory(error); error = NULL;
+	wbcFreeMemory(policy); policy = NULL;
+
+	ret = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
+			      "membership_of", 0,
+			      discard_const_p(uint8_t, "S-1-2-3-4"),
+			      strlen("S-1-2-3-4")+1);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcAddNamedBlob failed");
+	params.password = getenv("PASSWORD");
+	ret = wbcLogonUser(&params, &info, &error, &policy);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_AUTH_ERROR,
+				 "wbcLogonUser should have failed with "
+				 "WBC_ERR_AUTH_ERROR");
+	wbcFreeMemory(info); info = NULL;
+	wbcFreeMemory(error); error = NULL;
+	wbcFreeMemory(policy); policy = NULL;
+	wbcFreeMemory(params.blobs);
+	params.blobs = NULL; params.num_blobs = 0;
+
+	ret = wbcInterfaceDetails(&iface);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcInterfaceDetails failed");
+
+	ret = wbcLookupName(iface->netbios_domain, getenv("USERNAME"), &sid,
+			    &sidtype);
+	wbcFreeMemory(iface);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcLookupName failed");
+
+	ret = wbcSidToString(&sid, &sidstr);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcSidToString failed");
+
+	ret = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
+			      "membership_of", 0,
+			      (uint8_t *)sidstr, strlen(sidstr)+1);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcAddNamedBlob failed");
+	wbcFreeMemory(sidstr);
+	params.password = getenv("PASSWORD");
+	ret = wbcLogonUser(&params, &info, &error, &policy);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcLogonUser failed");
+	wbcFreeMemory(info); info = NULL;
+	wbcFreeMemory(error); error = NULL;
+	wbcFreeMemory(policy); policy = NULL;
+	wbcFreeMemory(params.blobs);
+	params.blobs = NULL; params.num_blobs = 0;
+
+	return true;
+}
+
 struct torture_suite *torture_wbclient(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
@@ -595,6 +689,8 @@ struct torture_suite *torture_wbclient(void)
 				      test_wbc_get_sidaliases);
 	torture_suite_add_simple_test(suite, "wbcAuthenticateUser",
 				      test_wbc_authenticate_user);
+	torture_suite_add_simple_test(suite, "wbcLogonUser",
+				      test_wbc_logon_user);
 
 	return suite;
 }
