@@ -26,6 +26,8 @@
 #include "param/pyparam.h"
 #include "auth/credentials/pycredentials.h"
 
+static void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status);
+
 static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface,
 					const struct PyNdrRpcMethodDef *md,
 					PyObject *args, PyObject *kwargs)
@@ -203,7 +205,7 @@ static PyMemberDef dcerpc_interface_members[] = {
 	{ NULL }
 };
 
-void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
+static void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
 {
 	if (p != NULL && NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		const char *errstr = dcerpc_errstr(NULL, p->last_fault_code);

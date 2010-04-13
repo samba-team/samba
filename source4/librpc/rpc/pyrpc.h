@@ -53,8 +53,6 @@ PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
 #define PyErr_SetNdrError(err) \
 		PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNdrError(err))
 
-void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status);
-
 typedef NTSTATUS (*py_dcerpc_call_fn) (struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
 typedef bool (*py_data_pack_fn) (PyObject *args, PyObject *kwargs, void *r);
 typedef PyObject *(*py_data_unpack_fn) (void *r);
