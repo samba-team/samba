@@ -30,11 +30,13 @@ def set_options(opt):
 def configure(conf):
     conf.RECURSE('lib/replace')
 
-    if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
-                                 implied_deps='replace'):
-        conf.define('USING_SYSTEM_TDB', 1)
-
     conf.env.standalone_tdb = conf.IN_LAUNCH_DIR()
+
+    if not conf.env.standalone_tdb:
+        if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
+                                     implied_deps='replace'):
+            conf.define('USING_SYSTEM_TDB', 1)
+
     conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
     if conf.env.standalone_tdb:
@@ -93,7 +95,6 @@ def build(bld):
 
     if bld.env.standalone_tdb:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-        bld.env.TALLOC_VERSION = VERSION
         bld.PKG_CONFIG_FILES('tdb.pc', vnum=VERSION)
         bld.INSTALL_FILES('${INCLUDEDIR}', 'include/tdb.h', flat=True)
 

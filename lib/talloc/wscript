@@ -33,11 +33,12 @@ def set_options(opt):
 def configure(conf):
     conf.RECURSE('lib/replace')
 
-    if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
-                                 implied_deps='replace'):
-        conf.define('USING_SYSTEM_TALLOC', 1)
-
     conf.env.standalone_talloc = conf.IN_LAUNCH_DIR()
+
+    if not conf.env.standalone_talloc:
+        if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
+                                     implied_deps='replace'):
+            conf.define('USING_SYSTEM_TALLOC', 1)
 
     conf.env.TALLOC_COMPAT1 = Options.options.TALLOC_COMPAT1
 
