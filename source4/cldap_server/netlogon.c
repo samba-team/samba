@@ -73,36 +73,42 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	bool user_known;
 	NTSTATUS status;
 
-	/* the domain has an optional trailing . */
+	/* the domain parameter could have an optional trailing "." */
 	if (domain && domain[strlen(domain)-1] == '.') {
 		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
 		NT_STATUS_HAVE_NO_MEMORY(domain);
 	}
 
-	if (domain && strcasecmp_m(domain, lp_dnsdomain(lp_ctx)) == 0) {
+	/* Lookup using long or short domainname */
+	if (domain && (strcasecmp_m(domain, lp_dnsdomain(lp_ctx)) == 0)) {
 		domain_dn = ldb_get_default_basedn(sam_ctx);
 	}
-
-	if (netbios_domain && strcasecmp_m(domain, lp_sam_name(lp_ctx))) {
+	if (netbios_domain && (strcasecmp_m(netbios_domain, lp_sam_name(lp_ctx)) == 0)) {
 		domain_dn = ldb_get_default_basedn(sam_ctx);
 	}
-
 	if (domain_dn) {
+		const char *domain_identifier = domain != NULL ? domain
+							: netbios_domain;
 		ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
 				 domain_dn, LDB_SCOPE_BASE, dom_attrs,
 				 "objectClass=domain");
 		if (ret != LDB_SUCCESS) {
-			DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_get_linearized(domain_dn), ldb_errstring(sam_ctx)));
+			DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n",
+				 domain_identifier,
+				 ldb_dn_get_linearized(domain_dn),
+				 ldb_errstring(sam_ctx)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 		if (dom_res->count != 1) {
-			DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_get_linearized(domain_dn)));
+			DEBUG(2,("Error finding domain '%s'/'%s' in sam\n",
+				 domain_identifier,
+				 ldb_dn_get_linearized(domain_dn)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
 
-	if ((dom_res == NULL || dom_res->count == 0) && (domain_guid || domain_sid)) {
-
+	/* Lookup using GUID or SID */
+	if ((dom_res == NULL) && (domain_guid || domain_sid)) {
 		if (domain_guid) {
 			struct GUID binary_guid;
 			struct ldb_val guid_val;
@@ -144,24 +150,28 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 		
 		if (ret != LDB_SUCCESS) {
-			DEBUG(2,("Unable to find referece to GUID '%s' or SID %s in sam: %s\n",
+			DEBUG(2,("Unable to find a correct reference to GUID '%s' or SID '%s' in sam: %s\n",
 				 domain_guid, dom_sid_string(mem_ctx, domain_sid),
 				 ldb_errstring(sam_ctx)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		} else if (dom_res->count == 1) {
 			/* Ok, now just check it is our domain */
-			
-			if (ldb_dn_compare(ldb_get_default_basedn(sam_ctx), dom_res->msgs[0]->dn) != 0) {
+			if (ldb_dn_compare(ldb_get_default_basedn(sam_ctx),
+					   dom_res->msgs[0]->dn) != 0) {
+				DEBUG(2,("The GUID '%s' or SID '%s' doesn't identify our domain\n",
+					 domain_guid,
+					 dom_sid_string(mem_ctx, domain_sid)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-		} else if (dom_res->count > 1) {
+		} else {
+			DEBUG(2,("Unable to find a correct reference to GUID '%s' or SID '%s' in sam\n",
+				 domain_guid, dom_sid_string(mem_ctx, domain_sid)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
 
-
-	if ((dom_res == NULL || dom_res->count == 0)) {
-		DEBUG(2,("Unable to find domain with name %s or GUID {%s}\n", domain, domain_guid));
+	if (dom_res == NULL) {
+		DEBUG(2,("Unable to get domain informations if no parameter of the list [long domainname, short domainname, GUID, SID] was specified!\n"));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
