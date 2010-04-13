@@ -109,9 +109,9 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(0, ("Created token was not system or anonymous token!"));
-	*token = NULL;
-	return NT_STATUS_INTERNAL_ERROR;
+	/* All other 'users' get a empty priv set so far */
+	ptoken->privilege_mask = 0;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS generate_simple_session_info(TALLOC_CTX *mem_ctx, 
