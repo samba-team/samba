@@ -13,7 +13,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = '../' + srcdir
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist
+import wafsamba, samba_dist, Options, Logs
 
 samba_dist.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools')
 
@@ -21,6 +21,11 @@ def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.BUNDLED_EXTENSION_DEFAULT('tdb', noextenion='tdb')
     opt.RECURSE('lib/replace')
+    if opt.IN_LAUNCH_DIR():
+        opt.add_option('--disable-python',
+                       help=("disable the pytdb module"),
+                       action="store_true", dest='disable_python', default=False)
+
 
 def configure(conf):
     conf.RECURSE('lib/replace')
@@ -28,6 +33,21 @@ def configure(conf):
     if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
                                  implied_deps='replace'):
         conf.define('USING_SYSTEM_TDB', 1)
+
+    conf.env.standalone_tdb = conf.IN_LAUNCH_DIR()
+    conf.env.disable_python = getattr(Options.options, 'disable_python', False)
+
+    if conf.env.standalone_tdb:
+        conf.find_program('xsltproc', var='XSLTPROC')
+
+    if not conf.env.disable_python:
+        # also disable if we don't have the python libs installed
+        conf.check_tool('python')
+        conf.check_python_version((2,4,2))
+        conf.check_python_headers()
+        if not conf.env.HAVE_PYTHON_H:
+            Logs.warn('Disabling pytdb as python devel libs not found')
+            conf.env.disable_python = True
 
     conf.SAMBA_CONFIG_H()
 
@@ -48,7 +68,8 @@ def build(bld):
 
     bld.SAMBA_BINARY('tdbtorture',
                      'tools/tdbtorture.c',
-                     'tdb')
+                     'tdb',
+                     install=False)
 
     bld.SAMBA_BINARY('tdbdump',
                      'tools/tdbdump.c',
@@ -67,8 +88,28 @@ def build(bld):
     bld.SAMBA_PYTHON('pytdb',
                      'pytdb.c',
                      deps='tdb',
-                     enabled=s4_build,
+                     enabled=not bld.env.disable_python,
                      realname='tdb.so')
+
+    if bld.env.standalone_tdb:
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+        bld.env.TALLOC_VERSION = VERSION
+        bld.PKG_CONFIG_FILES('tdb.pc', vnum=VERSION)
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'include/tdb.h', flat=True)
+
+        if bld.env.XSLTPROC:
+            manpages = 'manpages/tdbbackup.8 manpages/tdbdump.8 manpages/tdbtool.8'
+
+            bld.env.TDB_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+
+            for m in manpages.split():
+                source = m + '.xml'
+                bld.SAMBA_GENERATOR(m,
+                                    source=source,
+                                    target=m,
+                                    rule='${XSLTPROC} -o ${TGT} ${TDB_MAN_XSL} ${SRC}'
+                                    )
+                bld.INSTALL_FILES('${MANDIR}/man8', m, flat=True)
 
 
 def test(ctx):

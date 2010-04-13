@@ -534,6 +534,7 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
 def IN_LAUNCH_DIR(conf):
     '''return True if this rule is being run from the launch directory'''
     return os.path.realpath(conf.curdir) == os.path.realpath(Options.launch_dir)
+Options.Handler.IN_LAUNCH_DIR = IN_LAUNCH_DIR
 
 
 @conf
