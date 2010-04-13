@@ -1476,6 +1476,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	struct netr_DsRGetDCNameInfo *info;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct socket_address *addr;
+	const char *server_site_name;
 	char *guid_str;
 	struct netlogon_samlogon_response response;
 	NTSTATUS status;
@@ -1494,8 +1495,10 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	/* "server_unc" is ignored by w2k3 */
 
 	/* Proof server site parameter "site_name" if it was specified */
+	server_site_name = samdb_server_site_name(sam_ctx, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(server_site_name);
 	if ((r->in.site_name != NULL) && (strcasecmp(r->in.site_name,
-	    samdb_server_site_name(sam_ctx, mem_ctx)) != 0)) {
+						     server_site_name) != 0)) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
 

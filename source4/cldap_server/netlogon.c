@@ -250,7 +250,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	}
 #endif
 
-	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
+	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s",
+					   lp_netbios_name(lp_ctx));
 	NT_STATUS_HAVE_NO_MEMORY(pdc_name);
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
 	dns_domain       = lp_dnsdomain(lp_ctx);
@@ -263,6 +264,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(pdc_dns_name);
 	flatname         = lp_sam_name(lp_ctx);
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(server_site);
 	/* FIXME: Hardcoded site name */
 	client_site      = "Default-First-Site-Name";
 	load_interfaces(mem_ctx, lp_interfaces(lp_ctx), &ifaces);
