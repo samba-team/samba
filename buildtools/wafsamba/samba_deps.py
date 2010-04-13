@@ -339,8 +339,14 @@ def build_direct_deps(bld, tgt_list):
                     for implied in TO_LIST(syslib_deps[d]):
                         if BUILTIN_LIBRARY(bld, implied):
                             t.direct_objects.add(implied)
-                        else:
+                        elif targets[implied] == 'SYSLIB':
+                            t.direct_syslibs.add(implied)
+                        elif targets[implied] in ['LIBRARY', 'MODULE']:
                             t.direct_libs.add(implied)
+                        else:
+                            Logs.error('Implied dependency %s in %s is of type %s' % (
+                                implied, t.sname, targets[implied]))
+                            sys.exit(1)
                 continue
             t2 = bld.name_to_obj(d, bld.env)
             if t2 is None:
@@ -486,6 +492,11 @@ def includes_objects(bld, t, chain, inc_loops):
             continue
         chain.add(lib)
         t2 = bld.name_to_obj(lib, bld.env)
+        if t2 is None:
+            targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+            Logs.error('Target %s of type %s not found in direct_libs for %s' % (
+                lib, targets[lib], t.sname))
+            sys.exit(1)
         r2 = includes_objects(bld, t2, chain, inc_loops)
         chain.remove(lib)
         ret = ret.union(t2.direct_objects)
