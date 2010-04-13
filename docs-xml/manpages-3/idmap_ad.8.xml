@@ -58,7 +58,7 @@
 	<title>EXAMPLES</title>
 	<para>
 	The following example shows how to retrieve idmappings from our principal and
-	and trusted AD domains. If trusted domains are present id conflicts must be
+	trusted AD domains. If trusted domains are present id conflicts must be
 	resolved beforehand, there is no
 	guarantee on the order conflicting mappings would be resolved at this point.
 
