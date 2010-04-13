@@ -60,8 +60,8 @@ def build(bld):
 
         # should we also install the symlink to libtalloc1.so here?
         bld.SAMBA_LIBRARY('talloc-compat1',
-                          'talloc.c compat/talloc_compat1.c',
-                          deps='replace',
+                          'compat/talloc_compat1.c',
+                          deps='talloc',
                           enabled = bld.env.TALLOC_COMPAT1,
                           vnum=VERSION)
 
