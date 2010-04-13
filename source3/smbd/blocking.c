@@ -608,7 +608,7 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
  Delete entries by mid from the blocking lock pending queue. Always send reply.
 *****************************************************************************/
 
-void remove_pending_lock_requests_by_mid(int mid)
+void remove_pending_lock_requests_by_mid(uint64_t mid)
 {
 	struct blocking_lock_record *blr, *next = NULL;
 
@@ -651,7 +651,7 @@ void remove_pending_lock_requests_by_mid(int mid)
  Is this mid a blocking lock request on the queue ?
 *****************************************************************************/
 
-bool blocking_lock_was_deferred(int mid)
+bool blocking_lock_was_deferred(uint64_t mid)
 {
 	struct blocking_lock_record *blr, *next = NULL;
 

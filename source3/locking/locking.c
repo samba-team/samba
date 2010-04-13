@@ -480,13 +480,14 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 {
 	return talloc_asprintf(ctx, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
-		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, gen_id = %lu, "
+		 "access_mask = 0x%x, mid = 0x%llx, type= 0x%x, gen_id = %lu, "
 		 "uid = %u, flags = %u, file_id %s",
 		 num,
 		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
 		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
-		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
+		 e->access_mask, (unsigned long long)e->op_mid,
+		 e->op_type, e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
 		 file_id_string_tos(&e->id));
 }
@@ -1098,7 +1099,7 @@ bool is_unused_share_mode_entry(const struct share_mode_entry *e)
 
 static void fill_share_mode_entry(struct share_mode_entry *e,
 				  files_struct *fsp,
-				  uid_t uid, uint16 mid, uint16 op_type)
+				  uid_t uid, uint64_t mid, uint16 op_type)
 {
 	ZERO_STRUCTP(e);
 	e->pid = procid_self();
@@ -1117,7 +1118,7 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 
 static void fill_deferred_open_entry(struct share_mode_entry *e,
 				     const struct timeval request_time,
-				     struct file_id id, uint16 mid)
+				     struct file_id id, uint64_t mid)
 {
 	ZERO_STRUCTP(e);
 	e->pid = procid_self();
@@ -1152,14 +1153,14 @@ static void add_share_mode_entry(struct share_mode_lock *lck,
 }
 
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-		    uid_t uid, uint16 mid, uint16 op_type)
+		    uid_t uid, uint64_t mid, uint16 op_type)
 {
 	struct share_mode_entry entry;
 	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
 	add_share_mode_entry(lck, &entry);
 }
 
-void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
+void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
 		       struct timeval request_time,
 		       struct file_id id)
 {
@@ -1238,7 +1239,7 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	return True;
 }
 
-void del_deferred_open_entry(struct share_mode_lock *lck, uint16 mid)
+void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid)
 {
 	struct share_mode_entry entry, *e;
 

@@ -496,7 +496,7 @@ typedef struct {
 struct trans_state {
 	struct trans_state *next, *prev;
 	uint16 vuid;
-	uint16 mid;
+	uint64_t mid;
 
 	uint32 max_param_return;
 	uint32 max_data_return;
@@ -629,7 +629,7 @@ struct smb_request {
 	uint8_t cmd;
 	uint16 flags2;
 	uint16 smbpid;
-	uint16 mid;
+	uint64_t mid; /* For compatibility with SMB2. */
 	uint32_t seqnum;
 	uint16 vuid;
 	uint16 tid;
@@ -751,7 +751,7 @@ struct pending_message_list {
 /* struct returned by get_share_modes */
 struct share_mode_entry {
 	struct server_id pid;
-	uint16 op_mid;
+	uint64_t op_mid;	/* For compatibility with SMB2 opens. */
 	uint16 op_type;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
@@ -770,26 +770,43 @@ struct share_mode_entry {
 
 Offset  Data			length.
 0	struct server_id pid	4
-4	uint16 op_mid		2
-6	uint16 op_type		2
-8	uint32 access_mask	4
-12	uint32 share_access	4
-16	uint32 private_options	4
-20	uint32 time sec		4
-24	uint32 time usec	4
-28	uint64 dev		8 bytes
-36	uint64 inode		8 bytes
-44	uint64 extid		8 bytes
-52	unsigned long file_id	4 bytes
-56	uint32 uid		4 bytes
-60	uint16 flags		2 bytes
-62
+4	uint16 op_mid		8
+12	uint16 op_type		2
+14	uint32 access_mask	4
+18	uint32 share_access	4
+22	uint32 private_options	4
+26	uint32 time sec		4
+30	uint32 time usec	4
+34	uint64 dev		8 bytes
+42	uint64 inode		8 bytes
+50	uint64 extid		8 bytes
+58	unsigned long file_id	4 bytes
+62	uint32 uid		4 bytes
+66	uint16 flags		2 bytes
+68
 
 */
+
+#define OP_BREAK_MSG_PID_OFFSET 0
+#define OP_BREAK_MSG_MID_OFFSET 4
+#define OP_BREAK_MSG_OP_TYPE_OFFSET 12
+#define OP_BREAK_MSG_ACCESS_MASK_OFFSET 14
+#define OP_BREAK_MSG_SHARE_ACCESS_OFFSET 18
+#define OP_BREAK_MSG_PRIV_OFFSET 22
+#define OP_BREAK_MSG_TIME_SEC_OFFSET 26
+#define OP_BREAK_MSG_TIME_USEC_OFFSET 30
+#define OP_BREAK_MSG_DEV_OFFSET 34
+#define OP_BREAK_MSG_INO_OFFSET 42
+#define OP_BREAK_MSG_EXTID_OFFSET 50
+#define OP_BREAK_MSG_FILE_ID_OFFSET 58
+#define OP_BREAK_MSG_UID_OFFSET 62
+#define OP_BREAK_MSG_FLAGS_OFFSET 66
+
 #ifdef CLUSTER_SUPPORT
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 66
+#define OP_BREAK_MSG_VNN_OFFSET 68
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 72
 #else
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 62
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 68
 #endif
 
 struct share_mode_lock {

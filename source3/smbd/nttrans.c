@@ -1280,7 +1280,8 @@ void reply_ntcancel(struct smb_request *req)
 	remove_pending_change_notify_requests_by_mid(req->mid);
 	remove_pending_lock_requests_by_mid(req->mid);
 
-	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", req->mid));
+	DEBUG(3,("reply_ntcancel: cancel called on mid = %llu.\n",
+		(unsigned long long)req->mid));
 
 	END_PROFILE(SMBntcancel);
 	return;

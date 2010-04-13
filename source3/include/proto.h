@@ -3510,12 +3510,12 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool is_deferred_open_entry(const struct share_mode_entry *e);
 bool is_unused_share_mode_entry(const struct share_mode_entry *e);
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-		    uid_t uid, uint16 mid, uint16 op_type);
-void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
+		    uid_t uid, uint64_t mid, uint16 op_type);
+void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
 		       struct timeval request_time,
 		       struct file_id id);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
-void del_deferred_open_entry(struct share_mode_lock *lck, uint16 mid);
+void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
@@ -6090,7 +6090,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      size_t numtowrite);
 int wait_for_aio_completion(files_struct *fsp);
 void cancel_aio_by_fsp(files_struct *fsp);
-void smbd_aio_complete_mid(unsigned int mid);
+void smbd_aio_complete_mid(uint64_t mid);
 
 /* The following definitions come from smbd/blocking.c  */
 
@@ -6107,8 +6107,8 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t count,
 		uint32 blocking_pid);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck);
-void remove_pending_lock_requests_by_mid(int mid);
-bool blocking_lock_was_deferred(int mid);
+void remove_pending_lock_requests_by_mid(uint64_t mid);
+bool blocking_lock_was_deferred(uint64_t mid);
 struct blocking_lock_record *blocking_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
 			uint64_t offset,
@@ -6547,7 +6547,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 				void (*reply_fn)(struct smb_request *req,
 					NTSTATUS error_code,
 					uint8_t *buf, size_t len));
-void remove_pending_change_notify_requests_by_mid(uint16 mid);
+void remove_pending_change_notify_requests_by_mid(uint64_t mid);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 						  NTSTATUS status);
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
@@ -6808,10 +6808,10 @@ int srv_set_message(char *buf,
                         int num_words,
                         int num_bytes,
                         bool zero);
-void remove_deferred_open_message_smb(uint16_t mid);
-void schedule_deferred_open_message_smb(uint16_t mid);
-bool open_was_deferred(uint16_t mid);
-bool get_deferred_open_message_state(uint16_t mid,
+void remove_deferred_open_message_smb(uint64_t mid);
+void schedule_deferred_open_message_smb(uint64_t mid);
+bool open_was_deferred(uint64_t mid);
+bool get_deferred_open_message_state(uint64_t mid,
 				struct timeval *p_request_time,
 				void **pp_state);
 bool push_deferred_open_message_smb(struct smb_request *req,
@@ -6825,7 +6825,7 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 				  bool (*handler)(const struct timeval *now,
 						  void *private_data),
 				  void *private_data);
-NTSTATUS allow_new_trans(struct trans_state *list, int mid);
+NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid);
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);

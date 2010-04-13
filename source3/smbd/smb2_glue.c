@@ -22,18 +22,6 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 
-static uint16_t allocate_next_mid(void)
-{
-	struct smbd_server_connection *sconn = smbd_server_conn;
-
-	sconn->smb2.next_compat_mid++;
-	/* Avoid mid == 0 and mid == 0xffff. */
-	if (sconn->smb2.next_compat_mid == 0xFFFF) {
-		sconn->smb2.next_compat_mid += 2;
-	}
-	return sconn->smb2.next_compat_mid;
-}
-
 struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 {
 	struct smb_request *smbreq;
@@ -58,7 +46,7 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	if (IVAL(inhdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_DFS) {
 		smbreq->flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
-	req->compat_mid = smbreq->mid = allocate_next_mid();
+	smbreq->mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	smbreq->chain_fsp = req->compat_chain_fsp;
 	smbreq->smb2req = req;
 
@@ -68,20 +56,20 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 /* Dummy functions for the SMB1 -> SMB2 deferred open message
  * hooks. */
 
-void remove_deferred_open_message_smb2(uint16_t mid)
+void remove_deferred_open_message_smb2(uint64_t mid)
 {
 }
 
-void schedule_deferred_open_message_smb2(uint16_t mid)
+void schedule_deferred_open_message_smb2(uint64_t mid)
 {
 }
 
-bool open_was_deferred_smb2(uint16_t mid)
+bool open_was_deferred_smb2(uint64_t mid)
 {
 	return false;
 }
 
-bool get_deferred_open_message_state_smb2(uint16_t mid,
+bool get_deferred_open_message_state_smb2(uint64_t mid,
 			struct timeval *p_request_time,
 			void **pp_state)
 {

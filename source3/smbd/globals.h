@@ -332,10 +332,10 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint64_t offset,
 				uint64_t count,
 				uint32_t blocking_pid);
-void remove_deferred_open_message_smb2(uint16_t mid);
-void schedule_deferred_open_message_smb2(uint16_t mid);
-bool open_was_deferred_smb2(uint16_t mid);
-bool get_deferred_open_message_state_smb2(uint16_t mid,
+void remove_deferred_open_message_smb2(uint64_t mid);
+void schedule_deferred_open_message_smb2(uint64_t mid);
+bool open_was_deferred_smb2(uint64_t mid);
+bool get_deferred_open_message_state_smb2(uint64_t mid,
 			struct timeval *p_request_time,
 			void **pp_state);
 bool push_deferred_open_message_smb2(struct smb_request *req,
@@ -360,11 +360,6 @@ struct smbd_smb2_request {
 
 	int current_idx;
 	bool do_signing;
-	/*
-	 * mid used for compatibility with SMB1 code.
-	 * Server allocated, never seen by client.
-	 */
-	uint16_t compat_mid;
 
 	struct files_struct *compat_chain_fsp;
 
@@ -562,7 +557,6 @@ struct smbd_server_connection {
 			struct smbd_smb2_session *list;
 		} sessions;
 		struct smbd_smb2_request *requests;
-		uint16_t next_compat_mid;
 	} smb2;
 };
 

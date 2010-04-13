@@ -45,7 +45,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name);
 struct notify_mid_map {
 	struct notify_mid_map *prev, *next;
 	struct notify_change_request *req;
-	uint16 mid;
+	uint64_t mid;
 };
 
 static bool notify_change_record_identical(struct notify_change *c1,
@@ -297,7 +297,7 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_mid(uint16 mid)
+void remove_pending_change_notify_requests_by_mid(uint64_t mid)
 {
 	struct notify_mid_map *map;
 	struct smbd_server_connection *sconn = smbd_server_conn;

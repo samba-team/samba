@@ -890,7 +890,7 @@ static bool is_delete_request(files_struct *fsp) {
 
 static NTSTATUS send_break_message(files_struct *fsp,
 					struct share_mode_entry *exclusive,
-					uint16 mid,
+					uint64_t mid,
 					int oplock_request)
 {
 	NTSTATUS status;
@@ -907,7 +907,8 @@ static NTSTATUS send_break_message(files_struct *fsp,
 	   don't want this set in the share mode struct pointed to by lck. */
 
 	if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
-		SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
+		SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET,
+			exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
 	}
 
 	status = messaging_send_buf(smbd_messaging_context(), exclusive->pid,
@@ -934,7 +935,7 @@ static NTSTATUS send_break_message(files_struct *fsp,
 
 static bool delay_for_oplocks(struct share_mode_lock *lck,
 			      files_struct *fsp,
-			      uint16 mid,
+			      uint64_t mid,
 			      int pass_number,
 			      int oplock_request)
 {
@@ -1069,7 +1070,8 @@ static void defer_open(struct share_mode_lock *lck,
 
 		if (procid_is_me(&e->pid) && (e->op_mid == req->mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
-				  "request: mid=%d, exiting\n", req->mid));
+				"request: mid=%llu, exiting\n",
+				(unsigned long long)req->mid));
 			exit_server("attempt to defer a deferred request");
 		}
 	}
@@ -1077,10 +1079,10 @@ static void defer_open(struct share_mode_lock *lck,
 	/* End paranoia check */
 
 	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
-		  "open entry for mid %u\n",
+		  "open entry for mid %llu\n",
 		  (unsigned int)request_time.tv_sec,
 		  (unsigned int)request_time.tv_usec,
-		  (unsigned int)req->mid));
+		  (unsigned long long)req->mid));
 
 	if (!push_deferred_open_message_smb(req, request_time, timeout,
 				       (char *)state, sizeof(*state))) {

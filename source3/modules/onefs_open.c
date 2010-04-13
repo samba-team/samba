@@ -358,7 +358,8 @@ static void defer_open(struct share_mode_lock *lck,
 
 		if (procid_is_me(&e->pid) && (e->op_mid == req->mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
-				  "request: mid=%d, exiting\n", req->mid));
+				"request: mid=%llu, exiting\n",
+				(unsigned long long)req->mid));
 			exit_server("attempt to defer a deferred request");
 		}
 	}
@@ -366,10 +367,10 @@ static void defer_open(struct share_mode_lock *lck,
 	/* End paranoia check */
 
 	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
-		  "open entry for mid %u\n",
+		  "open entry for mid %llu\n",
 		  (unsigned int)request_time.tv_sec,
 		  (unsigned int)request_time.tv_usec,
-		  (unsigned int)req->mid));
+		  (unsigned long long)req->mid));
 
 	if (!push_deferred_open_message_smb(req, request_time, timeout,
 				       (char *)state, sizeof(*state))) {

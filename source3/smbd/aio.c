@@ -45,7 +45,9 @@ static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
 				    void *_info, void *private_data)
 {
 	siginfo_t *info = (siginfo_t *)_info;
-	unsigned int mid = (unsigned int)info->si_value.sival_int;
+	/* This won't work for SMB2.
+	 * We need a mapping table from sival_int -> uint64_t mid. */
+	uint64_t mid = (uint64_t)info->si_value.sival_int;
 
 	smbd_aio_complete_mid(mid);
 }
@@ -126,7 +128,7 @@ static struct aio_extra *create_aio_extra(files_struct *fsp, size_t buflen)
  Given the mid find the extended aio struct containing it.
 *****************************************************************************/
 
-static struct aio_extra *find_aio_ex(uint16 mid)
+static struct aio_extra *find_aio_ex(uint64_t mid)
 {
 	struct aio_extra *p;
 
@@ -546,9 +548,10 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 	/* Ensure the operation has really completed. */
 	err = SMB_VFS_AIO_ERROR(fsp, &aio_ex->acb);
 	if (err == EINPROGRESS) {
-		DEBUG(10,( "handle_aio_completed: operation mid %u still in "
-			   "process for file %s\n",
-			   aio_ex->req->mid, fsp_str_dbg(aio_ex->fsp)));
+		DEBUG(10,( "handle_aio_completed: operation mid %llu still in "
+			"process for file %s\n",
+			(unsigned long long)aio_ex->req->mid,
+			fsp_str_dbg(aio_ex->fsp)));
 		return False;
 	}
 
@@ -558,8 +561,9 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 	if (err == ECANCELED) {
 		/* If error is ECANCELED then don't return anything to the
 		 * client. */
-	        DEBUG(10,( "handle_aio_completed: operation mid %u"
-                           " canceled\n", aio_ex->req->mid));
+	        DEBUG(10,( "handle_aio_completed: operation mid %llu"
+			" canceled\n",
+			(unsigned long long)aio_ex->req->mid));
 		return True;
         }
 
@@ -575,7 +579,7 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
  Handle any aio completion inline.
 *****************************************************************************/
 
-void smbd_aio_complete_mid(unsigned int mid)
+void smbd_aio_complete_mid(uint64_t mid)
 {
 	files_struct *fsp = NULL;
 	struct aio_extra *aio_ex = find_aio_ex(mid);
@@ -583,11 +587,13 @@ void smbd_aio_complete_mid(unsigned int mid)
 
 	outstanding_aio_calls--;
 
-	DEBUG(10,("smbd_aio_complete_mid: mid[%u]\n", mid));
+	DEBUG(10,("smbd_aio_complete_mid: mid[%llu]\n",
+		(unsigned long long)mid));
 
 	if (!aio_ex) {
 		DEBUG(3,("smbd_aio_complete_mid: Can't find record to "
-			 "match mid %u.\n", mid));
+			"match mid %llu.\n",
+			(unsigned long long)mid));
 		return;
 	}
 
@@ -596,7 +602,8 @@ void smbd_aio_complete_mid(unsigned int mid)
 		/* file was closed whilst I/O was outstanding. Just
 		 * ignore. */
 		DEBUG( 3,( "smbd_aio_complete_mid: file closed whilst "
-			   "aio outstanding (mid[%u]).\n", mid));
+			"aio outstanding (mid[%llu]).\n",
+			(unsigned long long)mid));
 		return;
 	}
 
@@ -685,14 +692,15 @@ int wait_for_aio_completion(files_struct *fsp)
 		/* One or more events might have completed - process them if
 		 * so. */
 		for( i = 0; i < aio_completion_count; i++) {
-			uint16 mid = aiocb_list[i]->aio_sigevent.sigev_value.sival_int;
+			/* FIXME. Won't work for SMB2. */
+			uint64_t mid = (uint64_t)aiocb_list[i]->aio_sigevent.sigev_value.sival_int;
 
 			aio_ex = find_aio_ex(mid);
 
 			if (!aio_ex) {
-				DEBUG(0, ("wait_for_aio_completion: mid %u "
+				DEBUG(0, ("wait_for_aio_completion: mid %llu "
 					  "doesn't match an aio record\n",
-					  (unsigned int)mid ));
+					  (unsigned long long)mid ));
 				continue;
 			}
 
@@ -766,6 +774,6 @@ int wait_for_aio_completion(files_struct *fsp)
 	return ENOSYS;
 }
 
-void smbd_aio_complete_mid(unsigned int mid);
+void smbd_aio_complete_mid(uint64_t mid);
 
 #endif

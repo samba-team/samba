@@ -383,7 +383,7 @@ static void handle_aio_completion(struct event_context *event_ctx,
 				  void *p)
 {
 	struct aio_child *child = (struct aio_child *)p;
-	uint16 mid;
+	uint64_t mid;
 
 	DEBUG(10, ("handle_aio_completion called with flags=%d\n", flags));
 
@@ -411,7 +411,8 @@ static void handle_aio_completion(struct event_context *event_ctx,
 		       child->retval.size);
 	}
 
-	mid = child->aiocb->aio_sigevent.sigev_value.sival_int;
+	/* FIXME - this won't work for SMB2. */
+	mid = (uint64_t)child->aiocb->aio_sigevent.sigev_value.sival_int;
 
 	DEBUG(10, ("mid %d finished\n", (int)mid));
 

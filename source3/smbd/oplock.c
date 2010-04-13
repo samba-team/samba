@@ -676,9 +676,9 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock break response from pid %s: %s/%lu mid %u\n",
+	DEBUG(10, ("Got oplock break response from pid %s: %s/%lu mid %llu\n",
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
-		   msg.share_file_id, (unsigned int)msg.op_mid));
+		   msg.share_file_id, (unsigned long long)msg.op_mid));
 
 	schedule_deferred_open_message_smb(msg.op_mid);
 }
@@ -704,9 +704,9 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got open retry msg from pid %s: %s mid %u\n",
+	DEBUG(10, ("Got open retry msg from pid %s: %s mid %llu\n",
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
-		   (unsigned int)msg.op_mid));
+		   (unsigned long long)msg.op_mid));
 
 	schedule_deferred_open_message_smb(msg.op_mid);
 }
@@ -839,20 +839,20 @@ void contend_level2_oplocks_end(files_struct *fsp,
 
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 {
-	SIVAL(msg,0,(uint32)e->pid.pid);
-	SSVAL(msg,4,e->op_mid);
-	SSVAL(msg,6,e->op_type);
-	SIVAL(msg,8,e->access_mask);
-	SIVAL(msg,12,e->share_access);
-	SIVAL(msg,16,e->private_options);
-	SIVAL(msg,20,(uint32)e->time.tv_sec);
-	SIVAL(msg,24,(uint32)e->time.tv_usec);
-	push_file_id_24(msg+28, &e->id);
-	SIVAL(msg,52,e->share_file_id);
-	SIVAL(msg,56,e->uid);
-	SSVAL(msg,60,e->flags);
+	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32)e->pid.pid);
+	SBVAL(msg,OP_BREAK_MSG_MID_OFFSET,e->op_mid);
+	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET,e->op_type);
+	SIVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET,e->access_mask);
+	SIVAL(msg,OP_BREAK_MSG_SHARE_ACCESS_OFFSET,e->share_access);
+	SIVAL(msg,OP_BREAK_MSG_PRIV_OFFSET,e->private_options);
+	SIVAL(msg,OP_BREAK_MSG_TIME_SEC_OFFSET,(uint32_t)e->time.tv_sec);
+	SIVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET,(uint32_t)e->time.tv_usec);
+	push_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, &e->id);
+	SIVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET,e->share_file_id);
+	SIVAL(msg,OP_BREAK_MSG_UID_OFFSET,e->uid);
+	SSVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET,e->flags);
 #ifdef CLUSTER_SUPPORT
-	SIVAL(msg,62,e->pid.vnn);
+	SIVAL(msg,OP_BREAK_MSG_VNN_OFFSET,e->pid.vnn);
 #endif
 }
 
@@ -862,20 +862,20 @@ void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 {
-	e->pid.pid = (pid_t)IVAL(msg,0);
-	e->op_mid = SVAL(msg,4);
-	e->op_type = SVAL(msg,6);
-	e->access_mask = IVAL(msg,8);
-	e->share_access = IVAL(msg,12);
-	e->private_options = IVAL(msg,16);
-	e->time.tv_sec = (time_t)IVAL(msg,20);
-	e->time.tv_usec = (int)IVAL(msg,24);
-	pull_file_id_24(msg+28, &e->id);
-	e->share_file_id = (unsigned long)IVAL(msg,52);
-	e->uid = (uint32)IVAL(msg,56);
-	e->flags = (uint16)SVAL(msg,60);
+	e->pid.pid = (pid_t)IVAL(msg,OP_BREAK_MSG_PID_OFFSET);
+	e->op_mid = BVAL(msg,OP_BREAK_MSG_MID_OFFSET);
+	e->op_type = SVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET);
+	e->access_mask = IVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET);
+	e->share_access = IVAL(msg,OP_BREAK_MSG_SHARE_ACCESS_OFFSET);
+	e->private_options = IVAL(msg,OP_BREAK_MSG_PRIV_OFFSET);
+	e->time.tv_sec = (time_t)IVAL(msg,OP_BREAK_MSG_TIME_SEC_OFFSET);
+	e->time.tv_usec = (int)IVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET);
+	pull_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, &e->id);
+	e->share_file_id = (unsigned long)IVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET);
+	e->uid = (uint32)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
+	e->flags = (uint16)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
 #ifdef CLUSTER_SUPPORT
-	e->pid.vnn = IVAL(msg,62);
+	e->pid.vnn = IVAL(msg,OP_BREAK_MSG_VNN_OFFSET);
 #endif
 }
 

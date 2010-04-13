@@ -39,7 +39,7 @@ extern bool global_machine_password_needs_changing;
 
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
-static struct pending_message_list *get_deferred_open_message_smb(uint16_t mid);
+static struct pending_message_list *get_deferred_open_message_smb(uint64_t mid);
 
 static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 {
@@ -454,7 +454,7 @@ static bool init_smb_request(struct smb_request *req, const uint8 *inbuf,
 	req->cmd    = CVAL(inbuf, smb_com);
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);
-	req->mid    = SVAL(inbuf, smb_mid);
+	req->mid    = (uint64_t)SVAL(inbuf, smb_mid);
 	req->seqnum = seqnum;
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
@@ -505,7 +505,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	struct pending_message_list *msg = talloc_get_type(private_data,
 					   struct pending_message_list);
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	uint16_t mid = SVAL(msg->buf.data,smb_mid);
+	uint64_t mid = (uint64_t)SVAL(msg->buf.data,smb_mid);
 	uint8_t *inbuf;
 
 	inbuf = (uint8_t *)talloc_memdup(mem_ctx, msg->buf.data,
@@ -517,8 +517,8 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 
 	/* We leave this message on the queue so the open code can
 	   know this is a retry. */
-	DEBUG(5,("smbd_deferred_open_timer: trigger mid %u.\n",
-		(unsigned int)mid ));
+	DEBUG(5,("smbd_deferred_open_timer: trigger mid %llu.\n",
+		(unsigned long long)mid ));
 
 	/* Mark the message as processed so this is not
 	 * re-processed in error. */
@@ -601,7 +601,7 @@ static bool push_queued_message(struct smb_request *req,
  Function to delete a sharing violation open message by mid.
 ****************************************************************************/
 
-void remove_deferred_open_message_smb(uint16_t mid)
+void remove_deferred_open_message_smb(uint64_t mid)
 {
 	struct pending_message_list *pml;
 
@@ -611,10 +611,10 @@ void remove_deferred_open_message_smb(uint16_t mid)
 	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
-		if (mid == SVAL(pml->buf.data,smb_mid)) {
+		if (mid == (uint64_t)SVAL(pml->buf.data,smb_mid)) {
 			DEBUG(10,("remove_deferred_open_message_smb: "
-				  "deleting mid %u len %u\n",
-				  (unsigned int)mid,
+				  "deleting mid %llu len %u\n",
+				  (unsigned long long)mid,
 				  (unsigned int)pml->buf.length ));
 			DLIST_REMOVE(deferred_open_queue, pml);
 			TALLOC_FREE(pml);
@@ -628,7 +628,7 @@ void remove_deferred_open_message_smb(uint16_t mid)
  schedule it for immediate processing.
 ****************************************************************************/
 
-void schedule_deferred_open_message_smb(uint16_t mid)
+void schedule_deferred_open_message_smb(uint64_t mid)
 {
 	struct pending_message_list *pml;
 	int i = 0;
@@ -639,10 +639,12 @@ void schedule_deferred_open_message_smb(uint16_t mid)
 	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
-		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
+		uint64_t msg_mid = (uint64_t)SVAL(pml->buf.data,smb_mid);
 
-		DEBUG(10,("schedule_deferred_open_message_smb: [%d] msg_mid = %u\n", i++,
-			(unsigned int)msg_mid ));
+		DEBUG(10,("schedule_deferred_open_message_smb: [%d] "
+			"msg_mid = %llu\n",
+			i++,
+			(unsigned long long)msg_mid ));
 
 		if (mid == msg_mid) {
 			struct timed_event *te;
@@ -651,13 +653,14 @@ void schedule_deferred_open_message_smb(uint16_t mid)
 				/* A processed message should not be
 				 * rescheduled. */
 				DEBUG(0,("schedule_deferred_open_message_smb: LOGIC ERROR "
-					"message mid %u was already processed\n",
-					msg_mid ));
+					"message mid %llu was already processed\n",
+					(unsigned long long)msg_mid ));
 				continue;
 			}
 
-			DEBUG(10,("schedule_deferred_open_message_smb: scheduling mid %u\n",
-				mid ));
+			DEBUG(10,("schedule_deferred_open_message_smb: "
+				"scheduling mid %llu\n",
+				(unsigned long long)mid ));
 
 			te = event_add_timed(smbd_event_context(),
 					     pml,
@@ -666,8 +669,9 @@ void schedule_deferred_open_message_smb(uint16_t mid)
 					     pml);
 			if (!te) {
 				DEBUG(10,("schedule_deferred_open_message_smb: "
-					  "event_add_timed() failed, skipping mid %u\n",
-					  mid ));
+					"event_add_timed() failed, "
+					"skipping mid %llu\n",
+					(unsigned long long)msg_mid ));
 			}
 
 			TALLOC_FREE(pml->te);
@@ -677,15 +681,16 @@ void schedule_deferred_open_message_smb(uint16_t mid)
 		}
 	}
 
-	DEBUG(10,("schedule_deferred_open_message_smb: failed to find message mid %u\n",
-		mid ));
+	DEBUG(10,("schedule_deferred_open_message_smb: failed to "
+		"find message mid %llu\n",
+		(unsigned long long)mid ));
 }
 
 /****************************************************************************
  Return true if this mid is on the deferred queue and was not yet processed.
 ****************************************************************************/
 
-bool open_was_deferred(uint16_t mid)
+bool open_was_deferred(uint64_t mid)
 {
 	struct pending_message_list *pml;
 
@@ -694,7 +699,7 @@ bool open_was_deferred(uint16_t mid)
 	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
-		if (SVAL(pml->buf.data,smb_mid) == mid && !pml->processed) {
+		if (((uint64_t)SVAL(pml->buf.data,smb_mid)) == mid && !pml->processed) {
 			return True;
 		}
 	}
@@ -705,12 +710,12 @@ bool open_was_deferred(uint16_t mid)
  Return the message queued by this mid.
 ****************************************************************************/
 
-static struct pending_message_list *get_deferred_open_message_smb(uint16_t mid)
+static struct pending_message_list *get_deferred_open_message_smb(uint64_t mid)
 {
 	struct pending_message_list *pml;
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
-		if (SVAL(pml->buf.data,smb_mid) == mid) {
+		if (((uint64_t)SVAL(pml->buf.data,smb_mid)) == mid) {
 			return pml;
 		}
 	}
@@ -721,7 +726,7 @@ static struct pending_message_list *get_deferred_open_message_smb(uint16_t mid)
  Get the state data queued by this mid.
 ****************************************************************************/
 
-bool get_deferred_open_message_state(uint16_t mid,
+bool get_deferred_open_message_state(uint64_t mid,
 				struct timeval *p_request_time,
 				void **pp_state)
 {
@@ -776,11 +781,12 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 
 	end_time = timeval_sum(&request_time, &timeout);
 
-	DEBUG(10,("push_deferred_open_message_smb: pushing message len %u mid %u "
-		  "timeout time [%u.%06u]\n",
-		  (unsigned int) smb_len(req->inbuf)+4, (unsigned int)req->mid,
-		  (unsigned int)end_time.tv_sec,
-		  (unsigned int)end_time.tv_usec));
+	DEBUG(10,("push_deferred_open_message_smb: pushing message "
+		"len %u mid %llu timeout time [%u.%06u]\n",
+		(unsigned int) smb_len(req->inbuf)+4,
+		(unsigned long long)req->mid,
+		(unsigned int)end_time.tv_sec,
+		(unsigned int)end_time.tv_usec));
 
 	return push_queued_message(req, request_time, end_time,
 				   private_data, priv_len);
@@ -986,7 +992,7 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
  * prevent a DoS.
  */
 
-NTSTATUS allow_new_trans(struct trans_state *list, int mid)
+NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid)
 {
 	int count = 0;
 	for (; list != NULL; list = list->next) {
@@ -1467,7 +1473,8 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		if (!change_to_user(conn,session_tag)) {
 			DEBUG(0, ("Error: Could not change to user. Removing "
-			    "deferred open, mid=%d.\n", req->mid));
+				"deferred open, mid=%llu.\n",
+				(unsigned long long)req->mid));
 			reply_force_doserror(req, ERRSRV, ERRbaduid);
 			return conn;
 		}
