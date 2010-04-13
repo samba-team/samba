@@ -60,7 +60,7 @@ static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface,
 	}
 
 	status = md->call(iface->binding_handle, mem_ctx, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetDCERPCStatus(iface->pipe, status);
 		talloc_free(mem_ctx);
 		return NULL;
@@ -248,7 +248,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	status = dcerpc_request(iface->pipe, object?&object_guid:NULL,
 				opnum, mem_ctx, &data_in, &data_out);
 
-	if (NT_STATUS_IS_ERR(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetDCERPCStatus(iface->pipe, status);
 		talloc_free(mem_ctx);
 		return NULL;
@@ -288,7 +288,7 @@ static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject
 	status = dcerpc_alter_context(iface->pipe, iface->pipe, &abstract_syntax, 
 				      &transfer_syntax);
 
-	if (NT_STATUS_IS_ERR(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetDCERPCStatus(iface->pipe, status);
 		return NULL;
 	}
@@ -449,7 +449,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 			     table, credentials, event_ctx, lp_ctx);
 	}
 
-	if (NT_STATUS_IS_ERR(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetDCERPCStatus(ret->pipe, status);
 		talloc_free(mem_ctx);
 		return NULL;
