@@ -27,9 +27,12 @@ def configure(conf):
     conf.RECURSE('lib/replace')
     conf.RECURSE('lib/talloc')
 
-    if conf.CHECK_BUNDLED_SYSTEM('tevent', minversion=VERSION,
-                                 onlyif='talloc', implied_deps='replace talloc'):
-        conf.define('USING_SYSTEM_TEVENT', 1)
+    conf.env.standalone_tevent = conf.IN_LAUNCH_DIR()
+
+    if not conf.env.standalone_tevent:
+        if conf.CHECK_BUNDLED_SYSTEM('tevent', minversion=VERSION,
+                                     onlyif='talloc', implied_deps='replace talloc'):
+            conf.define('USING_SYSTEM_TEVENT', 1)
 
     if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
         conf.DEFINE('HAVE_EPOLL', 1)
@@ -53,6 +56,11 @@ def build(bld):
                           deps='replace talloc',
                           enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
                           vnum=VERSION)
+
+    if bld.env.standalone_tevent:
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+        bld.PKG_CONFIG_FILES('tevent.pc', vnum=VERSION)
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'tevent.h')
 
 def test(ctx):
     '''test tevent'''
