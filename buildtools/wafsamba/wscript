@@ -5,6 +5,7 @@
 import sys, wafsamba
 import Options, os, preproc
 from samba_utils import *
+from optparse import SUPPRESS_HELP
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
@@ -78,6 +79,21 @@ def set_options(opt):
 		   help=("set host compiler when cross compiling"),
 		   action='store', dest='HOSTCC', default=False)
 
+    # we use SUPPRESS_HELP for these, as they are ignored, and are there only
+    # to allow existing RPM spec files to work
+    opt.add_option('--build',
+		   help=SUPPRESS_HELP,
+		   action='store', dest='AUTOCONF_BUILD', default='')
+    opt.add_option('--host',
+		   help=SUPPRESS_HELP,
+		   action='store', dest='AUTOCONF_HOST', default='')
+    opt.add_option('--program-prefix',
+		   help=SUPPRESS_HELP,
+		   action='store', dest='AUTOCONF_PROGRAM_PREFIX', default='')
+    opt.add_option('--disable-dependency-tracking',
+		   help=SUPPRESS_HELP,
+		   action='store_true', dest='AUTOCONF_DISABLE_DEPENDENCY_TRACKING', default=False)
+
 
 @wafsamba.runonce
 def configure(conf):
@@ -119,6 +135,17 @@ def configure(conf):
     conf.env.CROSS_COMPILE = Options.options.CROSS_COMPILE
     conf.env.CROSS_EXECUTE = Options.options.CROSS_EXECUTE
     conf.env.HOSTCC        = Options.options.HOSTCC
+
+    conf.env.AUTOCONF_BUILD = Options.options.AUTOCONF_BUILD
+    conf.env.AUTOCONF_HOST  = Options.options.AUTOCONF_HOST
+    conf.env.AUTOCONF_PROGRAM_PREFIX = Options.options.AUTOCONF_PROGRAM_PREFIX
+
+    if conf.env.AUTOCONF_BUILD != conf.env.AUTOCONF_HOST:
+        Logs.error('ERROR: Mismatch between --build and --host. Please use --cross-compile instead')
+        sys.exit(1)
+    if conf.env.AUTOCONF_PROGRAM_PREFIX:
+        Logs.error('ERROR: --program-prefix not supported')
+        sys.exit(1)
 
     # see if we can compile and run a simple C program
     conf.CHECK_CODE('printf("hello world\\n")',
