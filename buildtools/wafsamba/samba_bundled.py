@@ -92,7 +92,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     # versions
     if onlyif:
         for syslib in TO_LIST(onlyif):
-            f = 'FOUND_SYSTEM_%s' % syslib
+            f = 'FOUND_SYSTEMLIB_%s' % syslib
             if not f in conf.env:
                 if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
                     Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
