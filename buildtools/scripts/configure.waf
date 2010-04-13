@@ -10,5 +10,5 @@ JOBS=1
 export JOBS
 
 cd BUILDPATH
-$WAF configure $*
+$WAF configure "$@"
 cd $PREVPATH
