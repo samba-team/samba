@@ -76,6 +76,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	/* the domain has an optional trailing . */
 	if (domain && domain[strlen(domain)-1] == '.') {
 		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
+		NT_STATUS_HAVE_NO_MEMORY(domain);
 	}
 
 	if (domain && strcasecmp_m(domain, lp_dnsdomain(lp_ctx)) == 0) {
@@ -240,14 +241,16 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 #endif
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
+	NT_STATUS_HAVE_NO_MEMORY(pdc_name);
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
 	dns_domain       = lp_dnsdomain(lp_ctx);
 	forest_domain    = samdb_forest_name(sam_ctx, mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(forest_domain);
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, 
 							   lp_netbios_name(lp_ctx)), 
 					   dns_domain);
-
+	NT_STATUS_HAVE_NO_MEMORY(pdc_dns_name);
 	flatname         = lp_sam_name(lp_ctx);
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
 	/* FIXME: Hardcoded site name */
