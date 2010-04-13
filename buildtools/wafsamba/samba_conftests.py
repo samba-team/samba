@@ -165,7 +165,7 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
         ADD_LD_LIBRARY_PATH(os.path.join(bdir, 'default/libdir'))
 
     # we need to run the program, try to get its result
-    args = []
+    args = conf.SAMBA_CROSS_ARGS()
     proc = Utils.pproc.Popen([lastprog] + args, stdout=Utils.pproc.PIPE, stderr=Utils.pproc.PIPE)
     (out, err) = proc.communicate()
     w = conf.log.write
