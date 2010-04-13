@@ -82,6 +82,8 @@ def install_library(self):
 
     t.env.append_value('LINKFLAGS', install_ldflags)
 
+    dev_link     = None
+
     if self.samba_realname:
         install_name = self.samba_realname
         install_link = None
@@ -91,6 +93,9 @@ def install_library(self):
         install_name = 'lib%s.so.%s' % (self.target, self.vnum)
         install_link = 'lib%s.so.%s' % (self.target, vnum_base)
         inst_name    = 'lib%s.so' % t.target
+        if self.target == self.name:
+            # only generate the dev link for non-bundled libs
+            dev_link     = 'lib%s.so' % self.target
     else:
         install_name = 'lib%s.so' % self.target
         install_link = None
@@ -102,6 +107,9 @@ def install_library(self):
     if install_link:
         # and the symlink if needed
         bld.symlink_as(os.path.join(install_path, install_link),
+                       install_name)
+    if dev_link:
+        bld.symlink_as(os.path.join(install_path, dev_link),
                        install_name)
 
 
