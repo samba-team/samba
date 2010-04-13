@@ -40,6 +40,7 @@
 #include "system/locale.h"
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
+#include "lib/socket/socket.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -1590,6 +1591,95 @@ const char *samdb_server_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 	}
 
 	return (const char *) val->data;
+}
+
+/*
+ * Finds the client site by using the client's IP address.
+ * The "subnet_name" returns the name of the subnet if parameter != NULL
+ */
+const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+				   const char *ip_address, char **subnet_name)
+{
+	const char *attrs[] = { "cn", "siteObject", NULL };
+	struct ldb_dn *sites_container_dn, *subnets_dn, *sites_dn;
+	struct ldb_result *res;
+	const struct ldb_val *val;
+	const char *site_name = NULL, *l_subnet_name = NULL;
+	const char *allow_list[2] = { NULL, NULL };
+	unsigned int i;
+	int cnt, ret;
+
+	sites_container_dn = samdb_sites_dn(ldb, mem_ctx);
+	if (sites_container_dn == NULL) {
+		return NULL;
+	}
+
+	subnets_dn = ldb_dn_copy(mem_ctx, sites_container_dn);
+	if ( ! ldb_dn_add_child_fmt(subnets_dn, "CN=Subnets")) {
+		talloc_free(sites_container_dn);
+		talloc_free(subnets_dn);
+		return NULL;
+	}
+
+	ret = ldb_search(ldb, mem_ctx, &res, subnets_dn, LDB_SCOPE_ONELEVEL,
+			 attrs, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(sites_container_dn);
+		talloc_free(subnets_dn);
+		return NULL;
+	}
+
+	for (i = 0; i < res->count; i++) {
+		l_subnet_name = ldb_msg_find_attr_as_string(res->msgs[i], "cn",
+							    NULL);
+
+		allow_list[0] = l_subnet_name;
+
+		if (allow_access(mem_ctx, NULL, allow_list, "", ip_address)) {
+			sites_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx,
+							   res->msgs[i],
+							   "siteObject");
+			if (sites_dn == NULL) {
+				/* No reference, maybe another subnet matches */
+				continue;
+			}
+
+			/* "val" cannot be NULL here since "sites_dn" != NULL */
+			val = ldb_dn_get_rdn_val(sites_dn);
+			site_name = talloc_strdup(mem_ctx,
+						  (const char *) val->data);
+
+			talloc_free(sites_dn);
+
+			break;
+		}
+	}
+
+	if (site_name == NULL) {
+		/* This is the Windows Server fallback rule: when no subnet
+		 * exists and we have only one site available then use it (it
+		 * is for sure the same as our server site). If more sites do
+		 * exist then we don't know which one to use and set the site
+		 * name to "". */
+		cnt = samdb_search_count(ldb, sites_container_dn,
+					 "(objectClass=site)");
+		if (cnt == 1) {
+			site_name = samdb_server_site_name(ldb, mem_ctx);
+		} else {
+			site_name = talloc_strdup(mem_ctx, "");
+		}
+		l_subnet_name = NULL;
+	}
+
+	if (subnet_name != NULL) {
+		*subnet_name = talloc_strdup(mem_ctx, l_subnet_name);
+	}
+
+	talloc_free(sites_container_dn);
+	talloc_free(subnets_dn);
+	talloc_free(res);
+
+	return site_name;
 }
 
 /*
