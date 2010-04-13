@@ -64,7 +64,7 @@ testit "kinit renew ticket" $samba4kinit --request-pac -R
 test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 testit "domain join with kerberos ccache" $VALGRIND $net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -k yes $@ || failed=`expr $failed + 1`
-testit "check time with kerberos ccache" $VALGRIND $net time $SERVER $CONFIGURATION  -W "$DOMAIN" -k yes $@ || failed=`expr $failed + 1`
+testit "check time with kerberos ccache" $VALGRIND $net $CONFIGURATION -W "$DOMAIN" -k yes $@ time $SERVER || failed=`expr $failed + 1`
 
 testit "add user with kerberos ccache" $VALGRIND $net user add nettestuser $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 USERPASS=testPass@12%
