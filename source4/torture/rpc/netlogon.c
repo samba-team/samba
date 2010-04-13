@@ -2193,6 +2193,13 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	status = dcerpc_netr_DsRGetDCName_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
+
+	r.in.domain_name	= lp_workgroup(tctx->lp_ctx);
+
+	status = dcerpc_netr_DsRGetDCName_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
+	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
+
 	return test_netr_DsRGetSiteName(p, tctx, 
 				       info->dc_unc,
 				       info->dc_site_name);
@@ -2215,6 +2222,12 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
 	r.out.info		= &info;
+
+	status = dcerpc_netr_DsRGetDCNameEx_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
+	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx");
+
+	r.in.domain_name	= lp_workgroup(tctx->lp_ctx);
 
 	status = dcerpc_netr_DsRGetDCNameEx_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
@@ -2250,6 +2263,12 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
 
+	r.in.domain_name	= lp_workgroup(tctx->lp_ctx);
+
+	status = dcerpc_netr_DsRGetDCNameEx2_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
+	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
+
 	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 with client acount\n");
 	r.in.client_account	= TEST_MACHINE_NAME"$";
 	r.in.mask		= ACB_SVRTRUST;
@@ -2259,6 +2278,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	status = dcerpc_netr_DsRGetDCNameEx2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
+
 	return test_netr_DsRGetSiteName(p, tctx, info->dc_unc,
 					info->dc_site_name);
 }
