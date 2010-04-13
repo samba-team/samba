@@ -965,7 +965,6 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 		    struct wbcUserPasswordPolicyInfo **policy)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	int cmd = 0;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	uint32_t i;
@@ -1004,7 +1003,6 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 
 	/* Initialize request */
 
-	cmd = WINBINDD_PAM_AUTH;
 	request.flags = WBFLAG_PAM_INFO3_TEXT |
 			WBFLAG_PAM_USER_SESSION_KEY |
 			WBFLAG_PAM_LMKEY;
@@ -1066,7 +1064,7 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 		}
 	}
 
-	wbc_status = wbcRequestResponse(cmd,
+	wbc_status = wbcRequestResponse(WINBINDD_PAM_AUTH,
 					&request,
 					&response);
 
