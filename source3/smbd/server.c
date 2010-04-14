@@ -1318,6 +1318,11 @@ extern void build_options(bool screen);
                 exit(1);
 #endif
 
+	if (!init_system_info()) {
+		DEBUG(0,("ERROR: failed to setup system user info.\n"));
+		return -1;
+	}
+
 	if (!print_backend_init(smbd_messaging_context()))
 		exit(1);
 

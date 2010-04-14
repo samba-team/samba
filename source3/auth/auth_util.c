@@ -756,6 +756,27 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ Make (and fill) a user_info struct for a system user login.
+ This *must* succeed for smbd to start.
+***************************************************************************/
+
+static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
+					    struct auth_serversupplied_info **server_info)
+{
+	struct passwd *pwd;
+
+	pwd = getpwuid_alloc(mem_ctx, sec_initial_uid());
+	if (pwd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return make_serverinfo_from_username(mem_ctx,
+					     pwd->pw_name,
+					     false,
+					     server_info);
+}
+
 /****************************************************************************
   Fake a auth_serversupplied_info just from a username
 ****************************************************************************/
@@ -885,6 +906,24 @@ NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info)
 {
 	*server_info = copy_serverinfo(mem_ctx, guest_info);
+	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+}
+
+static struct auth_serversupplied_info *system_info = NULL;
+
+bool init_system_info(void)
+{
+	if (system_info != NULL)
+		return True;
+
+	return NT_STATUS_IS_OK(make_new_server_info_system(talloc_autofree_context(), &system_info));
+}
+
+NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
+				struct auth_serversupplied_info **server_info)
+{
+	if (system_info == NULL) return NT_STATUS_UNSUCCESSFUL;
+	*server_info = copy_serverinfo(mem_ctx, system_info);
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
