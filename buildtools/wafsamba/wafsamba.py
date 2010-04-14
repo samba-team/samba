@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs
+import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs, Constants
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
@@ -34,6 +34,16 @@ if os.environ.get('WAF_NOTHREADS') == '1':
 LIB_PATH="shared"
 
 os.putenv('PYTHONUNBUFFERED', '1')
+
+
+if Constants.HEXVERSION < 0x105016:
+    Logs.error('''
+Please use the version of waf that comes with Samba, not
+a system installed version. See http://wiki.samba.org/index.php/Waf
+for details
+''')
+    sys.exit(1)
+
 
 @conf
 def SAMBA_BUILD_ENV(conf):
