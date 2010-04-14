@@ -1,11 +1,6 @@
 # simple makefile wrapper to run waf
 
-# default to using only 1 cpu, to be friendly to build
-# farm machines. I wonder how we get at the -jN option
-# from make to pass it to waf?
-JOBS=1
-
-WAF=JOBS=$(JOBS) BUILDTOOLS/bin/waf
+WAF=WAF_MAKE=1 BUILDTOOLS/bin/waf
 
 all:
 	$(WAF) build

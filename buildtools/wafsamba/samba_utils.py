@@ -438,3 +438,29 @@ def RECURSE(ctx, directory):
     raise
 Options.Handler.RECURSE = RECURSE
 Build.BuildContext.RECURSE = RECURSE
+
+
+def CHECK_MAKEFLAGS(bld):
+    '''check for MAKEFLAGS environment variable in case we are being
+    called from a Makefile try to honor a few make command line flags'''
+    if not 'WAF_MAKE' in os.environ:
+        return
+    makeflags = os.environ.get('MAKEFLAGS')
+    jobs_set = False
+    for opt in makeflags.split():
+        # options can come either as -x or as x
+        if opt[0] != '-':
+            for v in opt:
+                if v == 'j':
+                    jobs_set = True
+                elif v == 'k':
+                    Options.options.keep = True                
+        elif opt == '-j':
+            jobs_set = True
+        elif opt == '-k':
+            Options.options.keep = True                
+    if not jobs_set:
+        # default to one job
+        Options.options.jobs = 1
+            
+Build.BuildContext.CHECK_MAKEFLAGS = CHECK_MAKEFLAGS

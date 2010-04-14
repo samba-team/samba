@@ -226,6 +226,7 @@ def configure(conf):
 
 
 def build(bld):
+    bld.CHECK_MAKEFLAGS()
     bld.SETUP_BUILD_GROUPS()
     bld.ENFORCE_GROUP_ORDERING()
     bld.CHECK_PROJECT_RULES()
