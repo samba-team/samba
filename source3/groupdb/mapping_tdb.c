@@ -968,7 +968,7 @@ static bool mapping_switch(const char *ldb_path)
 	return True;
 
 failed:
-	DEBUG(0,("Failed to swith to tdb group mapping database\n"));
+	DEBUG(0, ("Failed to switch to tdb group mapping database\n"));
 	if (ltdb) tdb_close(ltdb);
 	TALLOC_FREE(frame);
 	return False;
