@@ -291,6 +291,76 @@ EOF
     fi
 }
 
+# Test accessing an msdfs path.
+test_msdfs_link()
+{
+    tmpfile=/tmp/smbclient.in.$$
+    prompt="  msdfs-target  "
+
+    cat > $tmpfile <<EOF
+ls
+cd \\msdfs-src1
+ls msdfs-target
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/msdfs-share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing \\msdfs-src1 link with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt" >/dev/null 2>&1
+
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\msdfs-src1 - grep failed with $ret"
+	false
+    fi
+
+    cat > $tmpfile <<EOF
+ls
+cd \\deeppath\\msdfs-src2
+ls msdfs-target
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/msdfs-share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing \\deeppath\\msdfs-src2 link with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt" >/dev/null 2>&1
+
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing \\deeppath\\msdfs-src2 - grep failed with $ret"
+	false
+	return
+    else
+	true
+	return
+    fi
+}
+
+
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 
@@ -324,6 +394,10 @@ testit "writing into a read-only directory fails" \
 
 testit "Reading a owner-only file fails" \
    test_owner_only_file || \
+   failed=`expr $failed + 1`
+
+testit "Accessing an MS-DFS link" \
+   test_msdfs_link || \
    failed=`expr $failed + 1`
 
 testok $0 $failed

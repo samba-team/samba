@@ -190,6 +190,20 @@ mkdir -p $RO_SHRDIR
 chmod 755 $RO_SHRDIR
 touch $RO_SHRDIR/unreadable_file
 chmod 600 $RO_SHRDIR/unreadable_file
+##
+## Create an MS-DFS root share.
+##
+MSDFS_SHRDIR=`echo $SHRDIR | sed -e 's:/[^/]*$::'`
+MSDFS_SHRDIR=$MSDFS_SHRDIR/msdfsshare
+mkdir -p $MSDFS_SHRDIR
+chmod 777 $MSDFS_SHRDIR
+mkdir -p $MSDFS_SHRDIR/deeppath
+chmod 777 $MSDFS_SHRDIR/deeppath
+## Create something visible in the target.
+touch $RO_SHRDIR/msdfs-target
+chmod 666 $RO_SHRDIR/msdfs-target
+ln -s msdfs:$SERVER_IP\\ro-tmp $MSDFS_SHRDIR/msdfs-src1
+ln -s msdfs:$SERVER_IP\\ro-tmp $MSDFS_SHRDIR/deeppath/msdfs-src2
 
 ##
 ## Create the common config include file with the basic settings
@@ -324,6 +338,10 @@ cat >$SERVERCONFFILE<<EOF
 	path = $SHRDIR
 [ro-tmp]
 	path = $RO_SHRDIR
+	guest ok = yes
+[msdfs-share]
+	path = $MSDFS_SHRDIR
+	msdfs root = yes
 	guest ok = yes
 [hideunread]
 	copy = tmp
