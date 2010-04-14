@@ -40,7 +40,10 @@ if Constants.HEXVERSION < 0x105016:
     Logs.error('''
 Please use the version of waf that comes with Samba, not
 a system installed version. See http://wiki.samba.org/index.php/Waf
-for details
+for details.
+
+Alternatively, please use ./autogen-waf.sh, and then
+run ./configure and make as usual. That will call the right version of waf.
 ''')
     sys.exit(1)
 
