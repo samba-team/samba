@@ -961,7 +961,11 @@ sub ConvertScalarToPython($$$)
 
 	$ctypename = expandAlias($ctypename);
 
-	if ($ctypename =~ /^(char|u?int[0-9]*|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+	if ($ctypename =~ /^(u?int64|hyper|dlong|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+		return "PyLong_FromLongLong($cvar)";
+	}
+
+	if ($ctypename =~ /^(char|u?int[0-9]*|time_t)$/) {
 		return "PyInt_FromLong($cvar)";
 	}
 
