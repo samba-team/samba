@@ -105,7 +105,37 @@ static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 
 	unix_to_nt_time(&nt, t);
 
-	return PyInt_FromLong((uint64_t)nt);
+	return PyLong_FromLongLong((uint64_t)nt);
+}
+
+static PyObject *py_nttime2unix(PyObject *self, PyObject *args)
+{
+	time_t t;
+	NTTIME nt;
+	if (!PyArg_ParseTuple(args, "K", &nt))
+		return NULL;
+
+	t = nt_time_to_unix(nt);
+
+	return PyInt_FromLong((uint64_t)t);
+}
+
+static PyObject *py_nttime2string(PyObject *self, PyObject *args)
+{
+	PyObject *ret;
+	NTTIME nt, nt2;
+	TALLOC_CTX *tmp_ctx;
+	const char *string;
+
+	if (!PyArg_ParseTuple(args, "K", &nt))
+		return NULL;
+	tmp_ctx = talloc_new(NULL);
+
+	string = nt_time_string(tmp_ctx, nt);
+	ret =  PyString_FromString(string);
+
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
@@ -249,6 +279,10 @@ static PyMethodDef py_misc_methods[] = {
 		"Generate random password with a length >= min and <= max." },
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
+	{ "nttime2unix", (PyCFunction)py_nttime2unix, METH_VARARGS,
+		"nttime2unix(nttime) -> timestamp" },
+	{ "nttime2string", (PyCFunction)py_nttime2string, METH_VARARGS,
+		"nttime2string(nttime) -> string" },
 	{ "dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
 		NULL },
 	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
