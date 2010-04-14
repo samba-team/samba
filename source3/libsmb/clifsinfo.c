@@ -255,8 +255,6 @@ fail:
 	TALLOC_FREE(ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_set_error(cli, status);
-	} else {
-		cli->requested_posix_capabilities = caplow;
 	}
 	return status;
 }
