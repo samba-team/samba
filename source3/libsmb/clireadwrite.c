@@ -25,7 +25,7 @@
 static size_t cli_read_max_bufsize(struct cli_state *cli)
 {
 	if (!client_is_signing_on(cli) && !cli_encryption_on(cli)
-	    && (cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
+	    && (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
 		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
 	}
 	if (cli->capabilities & CAP_LARGE_READX) {
@@ -44,7 +44,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli, uint16_t write_mode)
         if (write_mode == 0 &&
 	    !client_is_signing_on(cli) &&
 	    !cli_encryption_on(cli) &&
-	    (cli->posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
+	    (cli->server_posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
 	    (cli->capabilities & CAP_LARGE_FILES)) {
 		/* Only do massive writes if we can do them direct
 		 * with no signing or encrypting - not on a pipe. */

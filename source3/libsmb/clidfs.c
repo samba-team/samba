@@ -320,7 +320,7 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 		DLIST_ADD_END(referring_cli, cli, struct cli_state *);
 	}
 
-	if (referring_cli && referring_cli->posix_capabilities) {
+	if (referring_cli && referring_cli->requested_posix_capabilities) {
 		uint16 major, minor;
 		uint32 caplow, caphigh;
 		NTSTATUS status;
@@ -564,7 +564,7 @@ static char *cli_dfs_make_full_path(TALLOC_CTX *ctx,
 		dir++;
 	}
 
-	if (cli->posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+	if (cli->requested_posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
 		path_sep = '/';
 	}
 	return talloc_asprintf(ctx, "%c%s%c%s%c%s",

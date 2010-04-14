@@ -248,7 +248,10 @@ struct cli_state {
 	int win95;
 	bool is_samba;
 	uint32 capabilities;
-	uint32 posix_capabilities;
+	/* What the server offered. */
+	uint32_t server_posix_capabilities;
+	/* What the client requested. */
+	uint32_t requested_posix_capabilities;
 	bool dfsroot;
 
 #if 0

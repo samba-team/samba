@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 struct cli_unix_extensions_version_state {
+	struct cli_state *cli;
 	uint16_t setup[1];
 	uint8_t param[2];
 	uint16_t major, minor;
@@ -47,6 +48,7 @@ struct tevent_req *cli_unix_extensions_version_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->cli = cli;
 	SSVAL(state->setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(state->param, 0, SMB_QUERY_CIFS_UNIX_INFO);
 
@@ -104,6 +106,7 @@ NTSTATUS cli_unix_extensions_version_recv(struct tevent_req *req,
 	*pminor = state->minor;
 	*pcaplow = state->caplow;
 	*pcaphigh = state->caphigh;
+	state->cli->server_posix_capabilities = *pcaplow;
 	return NT_STATUS_OK;
 }
 
@@ -143,9 +146,6 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 
 	status = cli_unix_extensions_version_recv(req, pmajor, pminor, pcaplow,
 						  pcaphigh);
-	if (NT_STATUS_IS_OK(status)) {
-		cli->posix_capabilities = *pcaplow;
-	}
  fail:
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -159,6 +159,7 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 ****************************************************************************/
 
 struct cli_set_unix_extensions_capabilities_state {
+	struct cli_state *cli;
 	uint16_t setup[1];
 	uint8_t param[4];
 	uint8_t data[12];
@@ -181,6 +182,7 @@ struct tevent_req *cli_set_unix_extensions_capabilities_send(
 		return NULL;
 	}
 
+	state->cli = cli;
 	SSVAL(state->setup+0, 0, TRANSACT2_SETFSINFO);
 
 	SSVAL(state->param, 0, 0);
@@ -207,8 +209,16 @@ struct tevent_req *cli_set_unix_extensions_capabilities_send(
 static void cli_set_unix_extensions_capabilities_done(
 	struct tevent_req *subreq)
 {
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_set_unix_extensions_capabilities_state *state = tevent_req_data(
+		req, struct cli_set_unix_extensions_capabilities_state);
+
 	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		state->cli->requested_posix_capabilities = IVAL(state->data, 4);
+	}
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
@@ -245,6 +255,8 @@ fail:
 	TALLOC_FREE(ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_set_error(cli, status);
+	} else {
+		cli->requested_posix_capabilities = caplow;
 	}
 	return status;
 }

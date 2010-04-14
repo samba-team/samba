@@ -332,7 +332,7 @@ static int cmd_pwd(void)
 
 static void normalize_name(char *newdir)
 {
-	if (!(cli->posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP)) {
+	if (!(cli->requested_posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP)) {
 		string_replace(newdir,'/','\\');
 	}
 }
