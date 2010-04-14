@@ -2437,7 +2437,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	struct winreg_OpenHKLM r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	winreg_open_fn open_fn = userdata;
+	winreg_open_fn open_fn = (winreg_open_fn)userdata;
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -2451,7 +2451,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		ret = false;
 	}
 
-	if (open_fn == (void *)dcerpc_winreg_OpenHKLM_r) {
+	if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKLM_r) {
 		torture_assert(tctx,
 			test_HKLM_wellknown(tctx, b, &handle),
 			"failed to test HKLM wellknown keys");
@@ -2468,7 +2468,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	/* The HKCR hive has a very large fanout */
-	if (open_fn == (void *)dcerpc_winreg_OpenHKCR_r) {
+	if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKCR_r) {
 		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, false)) {
 			ret = false;
 		}
