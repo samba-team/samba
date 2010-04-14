@@ -411,7 +411,7 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 	TALLOC_CTX *tmp_ctx = talloc_new(handle->data);
 	const char *snapdir, *relpath, *baseoffset, *basedir;
 	size_t baselen;
-	char *ret;
+	char *ret, *prefix;
 
 	struct tm timestamp;
 	time_t timestamp_t;
@@ -433,6 +433,13 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 		DEBUG(2,("no basedir found for share at %s\n", handle->conn->connectpath));
 		talloc_free(tmp_ctx);
 		return NULL;
+	}
+
+	prefix = talloc_asprintf(tmp_ctx, "%s/@GMT-", snapdir);
+	if (strncmp(fname, prefix, strlen(prefix)) == 0) {
+		/* this looks like as we have already normalized it, leave it untouched*/
+		talloc_free(tmp_ctx);
+		return talloc_strdup(handle->data, fname);
 	}
 
 	if (strncmp(fname, "@GMT-", 5) != 0) {
