@@ -155,6 +155,40 @@ static const struct spoolss_FormInfo1 builtin_forms1[] = {
  static helper functions
 ********************************************************************/
 
+/****************************************************************************
+ Update the changeid time.
+****************************************************************************/
+/**
+ * @internal
+ *
+ * @brief Update the ChangeID time of a printer.
+ *
+ * This is SO NASTY as some drivers need this to change, others need it
+ * static. This value will change every second, and I must hope that this
+ * is enough..... DON'T CHANGE THIS CODE WITHOUT A TEST MATRIX THE SIZE OF
+ * UTAH ! JRA.
+ *
+ * @return              The ChangeID.
+ */
+static uint32_t winreg_printer_rev_changeid(void)
+{
+	struct timeval tv;
+
+	get_process_uptime(&tv);
+
+#if 1	/* JERRY */
+	/* Return changeid as msec since spooler restart */
+	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#else
+	/*
+	 * This setting seems to work well but is too untested
+	 * to replace the above calculation.  Left in for experiementation
+	 * of the reader            --jerry (Tue Mar 12 09:15:05 CST 2002)
+	 */
+	return tv.tv_sec * 10 + tv.tv_usec / 100000;
+#endif
+}
+
 /**
  * @internal
  *
@@ -1338,6 +1372,70 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
+				      struct auth_serversupplied_info *server_info,
+				      const char *printer)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	char *path;
+	WERROR result;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_update_changeid: Could not open key %s: %s\n",
+			  path, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_write_dword(tmp_ctx,
+					    winreg_pipe,
+					    &key_hnd,
+					    "ChangeID",
+					    winreg_printer_rev_changeid());
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = WERR_OK;
 done:
 	if (winreg_pipe != NULL) {
 		if (is_valid_policy_hnd(&key_hnd)) {

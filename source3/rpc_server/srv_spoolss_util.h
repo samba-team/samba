@@ -189,6 +189,28 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 				 const char *key);
 
 /**
+ * @brief Update the ChangeID of a printer.
+ *
+ * The ChangeID **must** be increasing over the lifetime of client's spoolss
+ * service in order for the client's cache to show updates.
+ *
+ * If a form is updated of a printer, the we need to update the ChangeID of the
+ * pritner.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
+				      struct auth_serversupplied_info *server_info,
+				      const char *printer);
+
+/**
  * @internal
  *
  * @brief This function adds a form to the list of available forms that can be
