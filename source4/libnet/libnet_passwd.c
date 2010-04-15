@@ -491,7 +491,7 @@ static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLO
 		status = libnet_SetPassword(ctx, mem_ctx, r);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)
 		    || NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER_MIX)
-		    || NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		    || NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
 			/* Try another password set mechanism */
 			continue;
 		}
