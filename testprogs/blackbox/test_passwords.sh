@@ -71,8 +71,52 @@ test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`exp
 
 
 USERPASS=$NEWUSERPASS
+WEAKPASS=testpass1
 NEWUSERPASS=testPaSS@03%
 
+# password mismatch check doesn't work yet (kpasswd bug, reported to Love)
+#echo "check that password mismatch gives the right error"
+#cat > ./tmpkpasswdscript <<EOF
+#expect Password
+#password ${USERPASS}\n
+#expect New password
+#send ${WEAKPASS}\n
+#expect New password
+#send ${NEWUSERPASS}\n
+#expect password mismatch
+#EOF
+#
+#testit "change user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+
+
+echo "check that a weak password is rejected"
+cat > ./tmpkpasswdscript <<EOF
+expect Password
+password ${USERPASS}\n
+expect New password
+send ${WEAKPASS}\n
+expect New password
+send ${WEAKPASS}\n
+expect Password does not meet complexity requirements
+EOF
+
+testit "change to weak user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+
+echo "check that a short password is rejected"
+cat > ./tmpkpasswdscript <<EOF
+expect Password
+password ${USERPASS}\n
+expect New password
+send xx1\n
+expect New password
+send xx1\n
+expect Password too short
+EOF
+
+testit "change to short user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+
+
+echo "check that a strong new password is accepted"
 cat > ./tmpkpasswdscript <<EOF
 expect Password
 password ${USERPASS}\n
