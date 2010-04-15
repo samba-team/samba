@@ -7,3 +7,4 @@ export SOCKET_WRAPPER_DIR=./st/w
 export UID_WRAPPER=1
 export NSS_WRAPPER_PASSWD=st/dc/passwd
 export NSS_WRAPPER_GROUP=st/dc/group
+export KRB5_CONFIG=st/dc/etc/krb5.conf
