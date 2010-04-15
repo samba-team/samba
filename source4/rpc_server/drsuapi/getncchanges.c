@@ -104,6 +104,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	const char *rdn;
 	const struct dsdb_attribute *rdn_sa;
 	unsigned int instanceType;
+	int rodc_filtered_flags;
 
 	instanceType = ldb_msg_find_attr_as_uint(msg, "instanceType", 0);
 	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
@@ -198,6 +199,19 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			       md.ctr.ctr1.array[i].originating_usn)) {
 			continue;
 		}
+
+		/* if the recipient is a RODC, then we should not add any
+		* RODC filtered attribute */
+		/* TODO: This is not strictly correct, as it doesn't allow for administrators
+		   to setup some users to transfer passwords to specific RODCs. To support that
+		   we would instead remove this check and rely on extended ACL checking in the dsdb
+		   acl module. */
+		rodc_filtered_flags = SEARCH_FLAG_RODC_ATTRIBUTE | SEARCH_FLAG_CONFIDENTIAL;
+		if ((replica_flags & DRSUAPI_DRS_WRIT_REP) == 0 &&
+		    (sa->searchFlags & rodc_filtered_flags)) {
+			continue;
+		}
+
 
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
 		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
