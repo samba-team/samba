@@ -83,24 +83,8 @@ static bool object_in_list(struct GUID *object_list, struct GUID *object)
 	return true;
 }
 
-
-static bool contains_inheritable_aces(struct security_acl *acl)
-{
-        int i;
-	if (!acl)
-		return false;
-
-	for (i=0; i < acl->num_aces; i++) {
-		struct security_ace *ace = &acl->aces[i];
-		if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ||
-		    (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT))
-			return true;
-	}
-
-	return false;
-}
-
-static struct security_acl *preprocess_creator_acl(TALLOC_CTX *mem, struct security_acl *acl)
+ /* remove any ACEs with inherited flag up  - TODO test this! */
+static struct security_acl *clean_user_acl(TALLOC_CTX *mem, struct security_acl *acl)
 {
 	int i;
 	struct security_acl *new_acl; 
@@ -129,8 +113,9 @@ static struct security_acl *preprocess_creator_acl(TALLOC_CTX *mem, struct secur
 	return new_acl;
 }
 
-/* This is not exactly as described in the docs. The original seemed to return
- * only a list of the inherited or flagless ones... */
+/* sort according to rules,
+ * replace generic flags with the mapping
+ * replace CO and CG with the appropriate owner/group */
 
 static bool postprocess_acl(struct security_acl *acl,
 			    struct dom_sid *owner,
@@ -151,13 +136,12 @@ static bool postprocess_acl(struct security_acl *acl,
 			continue;
 		if (dom_sid_equal(&ace->trustee, co)){
 			ace->trustee = *owner;
-			/* perhaps this should be done somewhere else? */
 			ace->flags &= ~SEC_ACE_FLAG_CONTAINER_INHERIT;
 		}
 		if (dom_sid_equal(&ace->trustee, cg)){
 			ace->trustee = *group;
 			ace->flags &= ~SEC_ACE_FLAG_CONTAINER_INHERIT;
-		}
+			}
 		ace->access_mask = generic_map(ace->access_mask);
 	}
 
@@ -179,6 +163,9 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 	if (!tmp_acl || !inh_acl)
 		return NULL;
 
+	if (!acl) {
+		return NULL;
+	}
 	co = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_OWNER);
 	cg = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_GROUP);
 
@@ -200,7 +187,7 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 			    tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
 			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
-			    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT){
+			    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT) {
 				if (!object_in_list(object_list, &ace->object.object.type.type)){
 					tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 				}
@@ -233,27 +220,30 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 				inh_acl->num_aces++;
 			}
 		}
-	}
+		}
 	new_acl = security_acl_concatenate(mem_ctx, inh_acl, tmp_acl);
+	if (new_acl->num_aces == 0) {
+		return NULL;
+	}
 	if (new_acl)
 		new_acl->revision = acl->revision;
 	talloc_free(tmp_ctx);
 	return new_acl;
 }
 
-/* In the docs this looks == calculate_inherited_from_parent. However,
- * It shouldn't return the inherited, rather filter them out....
- */
 static struct security_acl *calculate_inherited_from_creator(TALLOC_CTX *mem_ctx,
-						struct security_acl *acl,
-						bool is_container,
-						struct GUID *object_list)
+							     struct security_acl *acl,
+							     bool is_container,
+							     struct GUID *object_list)
 {
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_acl *tmp_acl = talloc_zero(tmp_ctx, struct security_acl);
 	struct security_acl *new_acl;
 	struct dom_sid *co, *cg;
+
+	if (!acl)
+		return NULL;
 
 	if (!tmp_acl)
 		return NULL;
@@ -320,8 +310,7 @@ static void cr_descr_log_acl(struct security_acl *acl,
 	}
 }
 
-static bool compute_acl(int acl_type,
-			struct security_descriptor *parent_sd,
+static bool compute_acl(struct security_descriptor *parent_sd,
 			struct security_descriptor *creator_sd,
 			bool is_container,
 			uint32_t inherit_flags,
@@ -330,105 +319,67 @@ static bool compute_acl(int acl_type,
 			struct security_token *token,
 			struct security_descriptor *new_sd) /* INOUT argument */
 {
-	struct security_acl *p_acl = NULL, *c_acl = NULL, **new_acl;
+	struct security_acl *user_dacl, *tmp_dacl, *tmp_sacl, *user_sacl, *inherited_dacl, *inherited_sacl;
 	int level = 10;
-	if (acl_type == SEC_DESC_DACL_PRESENT){
-		if (parent_sd)
-			p_acl = parent_sd->dacl;
-		if (creator_sd)
-			c_acl = creator_sd->dacl;
-		new_acl = &new_sd->dacl;
-	}
-	else{
-		if (parent_sd)
-			p_acl = parent_sd->sacl;
-		if (creator_sd)
-			c_acl = creator_sd->sacl;
-		new_acl = &new_sd->sacl;
+
+	if (!parent_sd || !(inherit_flags & SEC_DACL_AUTO_INHERIT)) {
+		inherited_dacl = NULL;
+	} else if (creator_sd && (creator_sd->type & SEC_DESC_DACL_PROTECTED)) {
+		inherited_dacl = NULL;
+	} else {
+		inherited_dacl = calculate_inherited_from_parent(new_sd,
+								 parent_sd->dacl,
+								 is_container,
+								 object_list);
 	}
 
+
+	if (!parent_sd || !(inherit_flags & SEC_SACL_AUTO_INHERIT)) {
+		inherited_sacl = NULL;
+	} else if (creator_sd && (creator_sd->type & SEC_DESC_SACL_PROTECTED)) {
+		inherited_sacl = NULL;
+	} else {
+		inherited_sacl = calculate_inherited_from_parent(new_sd,
+								 parent_sd->sacl,
+								 is_container,
+								 object_list);
+	}
+
+	if (!creator_sd || (inherit_flags & SEC_DEFAULT_DESCRIPTOR)) {
+		user_dacl = NULL;
+		user_sacl = NULL;
+	} else {
+		tmp_dacl = clean_user_acl(new_sd, creator_sd->dacl);
+		user_dacl = calculate_inherited_from_creator(new_sd,
+							     tmp_dacl,
+							     is_container,
+							     object_list);
+		tmp_sacl = clean_user_acl(new_sd, creator_sd->sacl);
+		user_sacl = calculate_inherited_from_creator(new_sd,
+							     tmp_sacl,
+							     is_container,
+							     object_list);
+	}
 	cr_descr_log_descriptor(parent_sd, __location__"parent_sd", level);
 	cr_descr_log_descriptor(creator_sd,__location__ "creator_sd", level);
 
-	if (contains_inheritable_aces(p_acl)){
-		if (!c_acl || (c_acl && inherit_flags & SEC_DEFAULT_DESCRIPTOR)){
-			*new_acl = calculate_inherited_from_parent(new_sd,
-						       p_acl,
-						       is_container,
-						       object_list);
-			if (*new_acl == NULL)
-				goto final;
-			if (acl_type == SEC_DESC_DACL_PRESENT && new_sd->dacl)
-				new_sd->type |= SEC_DESC_DACL_AUTO_INHERITED;
-
-			if (acl_type == SEC_DESC_SACL_PRESENT && new_sd->sacl)
-				new_sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
-
-			if (!postprocess_acl(*new_acl, new_sd->owner_sid,
-					     new_sd->group_sid, generic_map))
-				return false;
-			else {
-				cr_descr_log_descriptor(new_sd,
-							__location__": Nothing from creator, newsd is", level);
-				goto final;
-			}
-		}
-		if (c_acl && !(inherit_flags & SEC_DEFAULT_DESCRIPTOR)){
-			struct security_acl *pr_acl = NULL, *tmp_acl = NULL, *tpr_acl = NULL;
-			tpr_acl = preprocess_creator_acl(new_sd, c_acl);
-			tmp_acl = calculate_inherited_from_creator(new_sd,
-						      tpr_acl,
-						      is_container,
-						      object_list);
-
-			cr_descr_log_acl(tmp_acl, __location__"Inherited from creator", level);
-			/* Todo some refactoring here! */
-			if (acl_type == SEC_DESC_DACL_PRESENT &&
-			    !(creator_sd->type & SEC_DESC_DACL_PROTECTED) &&
-			    (inherit_flags & SEC_DACL_AUTO_INHERIT)) {
-				pr_acl = calculate_inherited_from_parent(new_sd,
-							     p_acl,
-							     is_container,
-							     object_list);
-				cr_descr_log_acl(pr_acl, __location__"Inherited from parent", level);
-				new_sd->type |= SEC_DESC_DACL_AUTO_INHERITED;
-			}
-			else if (acl_type == SEC_DESC_SACL_PRESENT &&
-			    !(creator_sd->type & SEC_DESC_SACL_PROTECTED) &&
-			    (inherit_flags & SEC_SACL_AUTO_INHERIT)){
-				pr_acl = calculate_inherited_from_parent(new_sd,
-							     p_acl,
-							     is_container,
-							     object_list);
-				cr_descr_log_acl(pr_acl, __location__"Inherited from parent", level);
-				new_sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
-			}
-			*new_acl = security_acl_concatenate(new_sd, tmp_acl, pr_acl);
-		}
-		if (*new_acl == NULL)
-			goto final;
-		if (!postprocess_acl(*new_acl, new_sd->owner_sid,
-				     new_sd->group_sid,generic_map))
-			return false;
-		else
-			goto final;
-	}
-	else{
-		*new_acl = preprocess_creator_acl(new_sd,c_acl);
-		if (*new_acl == NULL)
-			goto final;
-		if (!postprocess_acl(*new_acl, new_sd->owner_sid,
-				     new_sd->group_sid,generic_map))
-			return false;
-		else
-			goto final;
-	}
-final:
-	if (acl_type == SEC_DESC_DACL_PRESENT && new_sd->dacl)
+	new_sd->dacl = security_acl_concatenate(new_sd, user_dacl, inherited_dacl);
+	if (new_sd->dacl) {
 		new_sd->type |= SEC_DESC_DACL_PRESENT;
+		postprocess_acl(new_sd->dacl,new_sd->owner_sid,new_sd->group_sid,generic_map);
+	}
+	if (inherited_dacl) {
+		new_sd->type |= SEC_DESC_DACL_AUTO_INHERITED;
+	}
 
-	if (acl_type == SEC_DESC_SACL_PRESENT && new_sd->sacl)
+	new_sd->sacl = security_acl_concatenate(new_sd, user_sacl, inherited_sacl);
+	if (new_sd->sacl) {
 		new_sd->type |= SEC_DESC_SACL_PRESENT;
+		postprocess_acl(new_sd->sacl,new_sd->owner_sid,new_sd->group_sid,generic_map);
+	}
+	if (inherited_sacl) {
+		new_sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
+	}
 	/* This is a hack to handle the fact that
 	 * apprantly any AI flag provided by the user is preserved */
 	if (creator_sd)
@@ -490,16 +441,9 @@ struct security_descriptor *create_security_descriptor(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!compute_acl(SEC_DESC_DACL_PRESENT, parent_sd, creator_sd,
+	if (!compute_acl(parent_sd, creator_sd,
 			 is_container, inherit_flags, object_list,
 			 generic_map,token,new_sd)){
-		talloc_free(new_sd);
-		return NULL;
-	}
-
-	if (!compute_acl(SEC_DESC_SACL_PRESENT, parent_sd, creator_sd,
-			 is_container, inherit_flags, object_list,
-			 generic_map, token,new_sd)){
 		talloc_free(new_sd);
 		return NULL;
 	}
