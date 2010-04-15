@@ -382,7 +382,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (do_attribute(attrs, "tokenGroups")) {
+	if (do_attribute_explicit(attrs, "tokenGroups")) {
 		unsigned int i;
 		/* Obtain the user's session_info */
 		struct auth_session_info *session_info
