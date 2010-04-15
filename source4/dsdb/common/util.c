@@ -2618,49 +2618,58 @@ int drsuapi_DsReplicaCursor_compare(const struct drsuapi_DsReplicaCursor *c1,
 	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
 }
 
+
+/*
+  see if a computer identified by its invocationId is a RODC
+*/
+int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *invocationId, bool *is_rodc)
+{
+	/* 1) find the DN for this servers NTDSDSA object
+	   2) search for the msDS-isRODC attribute
+	   3) if not present then not a RODC
+	   4) if present and TRUE then is a RODC
+	*/
+	struct ldb_dn *config_dn;
+	const char *attrs[] = { "msDS-isRODC", NULL };
+	int ret;
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx = talloc_new(sam_ctx);
+
+	config_dn = samdb_config_dn(sam_ctx);
+	if (!config_dn) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_search(sam_ctx, tmp_ctx, &res, config_dn, LDB_SCOPE_SUBTREE, attrs,
+			  DSDB_SEARCH_ONE_ONLY, "invocationID=%s", GUID_string(tmp_ctx, invocationId));
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_msg_find_attr_as_bool(res->msgs[0], "msDS-isRODC", 0);
+	*is_rodc = (ret == 1);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
 /*
   see if we are a RODC
 */
-bool samdb_rodc(struct ldb_context *sam_ctx)
+int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 {
-	TALLOC_CTX *tmp_ctx;
-	const char *obj_category;
-	struct ldb_dn *obj_category_dn;
-	const struct ldb_val *obj_category_dn_rdn_val;
-
-	tmp_ctx = talloc_new(sam_ctx);
-	if (tmp_ctx == NULL) {
-		DEBUG(1,("samdb_rodc: Failed to talloc new context.\n"));
-		goto failed;
+	const struct GUID *invocationId;
+	invocationId = samdb_ntds_invocation_id(sam_ctx);
+	if (!invocationId) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	obj_category = samdb_ntds_object_category(tmp_ctx, sam_ctx);
-	if (!obj_category) {
-		DEBUG(1,("samdb_rodc: Failed to get object category.\n"));
-		goto failed;
-	}
-
-	obj_category_dn = ldb_dn_new(tmp_ctx, sam_ctx, obj_category);
-	if (!obj_category_dn) {
-		DEBUG(1,("samdb_rodc: Failed to create object category dn.\n"));
-		goto failed;
-	}
-
-	obj_category_dn_rdn_val = ldb_dn_get_rdn_val(obj_category_dn);
-	if (!obj_category_dn_rdn_val) {
-		DEBUG(1, ("samdb_rodc: Failed to get object category dn rdn value.\n"));
-		goto failed;
-	}
-
-	if (strequal((const char*)obj_category_dn_rdn_val->data, "NTDS-DSA-RO")) {
-		talloc_free(tmp_ctx);
-		return true;
-	}
-
-failed:
-	talloc_free(tmp_ctx);
-	return false;
+	return samdb_is_rodc(sam_ctx, invocationId, am_rodc);
 }
+
+
 
 /*
   return NTDS options flags. See MS-ADTS 7.1.1.2.2.1.2.1.1 

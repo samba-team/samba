@@ -1155,7 +1155,13 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 
 	el = ldb_msg_find_element(transport, "bridgeheadServerListBL");
 
-	rodc = samdb_rodc(ldb);
+	ret = samdb_rodc(ldb, &rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": unable to tell if we are an RODC: %s\n",
+			  ldb_strerror(ret)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	transport_name = samdb_result_string(transport, "name", NULL);
 	if (!transport_name) {
@@ -3155,6 +3161,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 	struct ldb_dn *transports_dn;
 	const char * const attrs[] = { "bridgeheadServerListBL", "name",
 				       "transportAddressAttribute", NULL };
+	int ret;
 
 	connected = true;
 
@@ -3223,14 +3230,19 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	rodc = samdb_rodc(ldb);
+	ret = samdb_rodc(ldb, &rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, (__location__ ": Unable to tell if we are an RODC: %s\n",
+			  ldb_strerror(ret)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	for (i = 0; i < st_edge_list.count; i++) {
 		struct kcctpl_multi_edge *edge;
 		struct GUID other_site_id;
 		struct kcctpl_vertex *other_site_vertex;
 		struct ldb_result *res;
-		int ret;
 		struct ldb_message *transport, *r_bridgehead, *l_bridgehead;
 		uint8_t schedule[84];
 		uint32_t first_available, j, interval;

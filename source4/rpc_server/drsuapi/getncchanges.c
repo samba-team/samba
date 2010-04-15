@@ -684,6 +684,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t options;
 	uint32_t max_objects;
 	struct ldb_dn *search_dn = NULL;
+	bool am_rodc;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -699,7 +700,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.uptodateness_vector = NULL;
 
 	/* a RODC doesn't allow for any replication */
-	if (samdb_rodc(b_state->sam_ctx)) {
+	ret = samdb_rodc(b_state->sam_ctx, &am_rodc);
+	if (ret == LDB_SUCCESS && am_rodc) {
 		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
@@ -731,6 +733,16 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if ((options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) &&
 	    !(req8->replica_flags & DRSUAPI_DRS_SYNC_FORCED)) {
 		return WERR_DS_DRA_SOURCE_DISABLED;
+	}
+
+	if (req8->replica_flags & DRSUAPI_DRS_WRIT_REP)  {
+		bool is_rodc;
+		ret = samdb_is_rodc(b_state->sam_ctx, &req8->source_dsa_invocation_id, &is_rodc);
+		if (ret != LDB_SUCCESS || is_rodc) {
+			DEBUG(0,(__location__ ": Attempt to do writeable replication by RODC %s\n",
+				 GUID_string(mem_ctx, &req8->source_dsa_invocation_id)));
+			return WERR_DS_DRA_INVALID_PARAMETER;
+		}
 	}
 
 

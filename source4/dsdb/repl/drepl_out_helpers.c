@@ -542,6 +542,8 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 	char *ntds_guid_str;
 	char *ntds_dns_name;
 	struct tevent_req *subreq;
+	bool am_rodc;
+	int ret;
 
 	r = talloc(state, struct drsuapi_DsReplicaUpdateRefs);
 	if (tevent_req_nomem(r, req)) {
@@ -566,7 +568,8 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 	r->in.req.req1.dest_dsa_dns_name  = ntds_dns_name;
 	r->in.req.req1.dest_dsa_guid	  = service->ntds_guid;
 	r->in.req.req1.options	          = DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_DEL_REF;
-	if (!samdb_rodc(service->samdb)) {
+	ret = samdb_rodc(service->samdb, &am_rodc);
+	if (ret == LDB_SUCCESS && !am_rodc) {
 		r->in.req.req1.options |= DRSUAPI_DRS_WRIT_REP;
 	}
 

@@ -132,6 +132,8 @@ static void dreplsrv_task_init(struct task_server *task)
 	WERROR status;
 	struct dreplsrv_service *service;
 	uint32_t periodic_startup_interval;
+	bool am_rodc;
+	int ret;
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -194,7 +196,8 @@ static void dreplsrv_task_init(struct task_server *task)
 	}
 
 	/* if we are a RODC then we do not send DSReplicaSync*/
-	if (!samdb_rodc(service->samdb)) {
+	ret = samdb_rodc(service->samdb, &am_rodc);
+	if (ret == LDB_SUCCESS && !am_rodc) {
 		service->notify.interval = lp_parm_int(task->lp_ctx, NULL, "dreplsrv",
 							   "notify_interval", 5); /* in seconds */
 		status = dreplsrv_notify_schedule(service, service->notify.interval);

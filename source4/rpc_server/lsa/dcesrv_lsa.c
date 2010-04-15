@@ -1636,6 +1636,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	bool del_incoming = false;
 	bool in_transaction = false;
 	int ret;
+	bool am_rodc;
 
 	switch (level) {
 	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
@@ -1697,7 +1698,8 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			}
 		}
 
-		if (samdb_rodc(p_state->sam_ldb)) {
+		ret = samdb_rodc(p_state->sam_ldb, &am_rodc);
+		if (ret == LDB_SUCCESS && am_rodc) {
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 
