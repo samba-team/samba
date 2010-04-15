@@ -153,7 +153,9 @@ pwdLastSet: 0
         else:
             self.transaction_commit()
 
-    def setpassword(self, filter, password, force_change_at_next_login=False):
+    def setpassword(self, filter, password,
+                    force_change_at_next_login=False,
+                    username=None):
         """Sets the password for a user
         
         Note: This call uses the "userPassword" attribute to set the password.
@@ -168,6 +170,9 @@ pwdLastSet: 0
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                               expression=filter, attrs=[])
+            if len(res) == 0:
+                print('Unable to find user "%s"' % (username or filter))
+                raise
             assert(len(res) == 1)
             user_dn = res[0].dn
 
