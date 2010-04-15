@@ -4660,16 +4660,12 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 
-uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
-			      struct spoolss_AddDriverInfoCtr *r,
-			      char **driver_name,
-			      uint32_t *version)
+bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
+			      struct spoolss_DriverInfo8 *_info8)
 {
 	struct spoolss_DriverInfo8 info8;
 
 	ZERO_STRUCT(info8);
-
-	DEBUG(10,("adding a printer at level [%d]\n", r->level));
 
 	switch (r->level) {
 	case 3:
@@ -4742,6 +4738,27 @@ uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
 		info8.min_inbox_driver_ver_version = r->info.info8->min_inbox_driver_ver_version;
 		break;
 	default:
+		return false;
+	}
+
+	*_info8 = info8;
+
+	return true;
+}
+
+
+uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
+			      struct spoolss_AddDriverInfoCtr *r,
+			      char **driver_name,
+			      uint32_t *version)
+{
+	struct spoolss_DriverInfo8 info8;
+
+	ZERO_STRUCT(info8);
+
+	DEBUG(10,("adding a printer at level [%d]\n", r->level));
+
+	if (!driver_info_ctr_to_info8(r, &info8)) {
 		return -1;
 	}
 

@@ -4888,6 +4888,8 @@ WERROR get_a_printer_search( Printer_entry *print_hnd,
 			uint32 level,
 			const char *sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
+bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
+			      struct spoolss_DriverInfo8 *_info8);
 uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
 			      struct spoolss_AddDriverInfoCtr *r,
 			      char **driver_name,
