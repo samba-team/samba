@@ -102,7 +102,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 
 	/* 2. try samr_ChangePasswordUser3 */
 	status = dcerpc_samr_ChangePasswordUser3_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &pw3);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(pw3.out.result)) {
 			status = pw3.out.result;
 		}
@@ -137,7 +137,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 
 	/* 3. try samr_ChangePasswordUser2 */
 	status = dcerpc_samr_ChangePasswordUser2_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &pw2);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(pw2.out.result)) {
 			status = pw2.out.result;
 		}
@@ -166,7 +166,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 
 	/* 4. try samr_OemChangePasswordUser2 */
 	status = dcerpc_samr_OemChangePasswordUser2_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &oe2);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(oe2.out.result)) {
 			status = oe2.out.result;
 		}
