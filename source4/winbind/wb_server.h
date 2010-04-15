@@ -25,8 +25,6 @@
 #include "libnet/libnet.h"
 
 #define WINBINDD_SAMBA3_SOCKET "pipe"
-/* the privileged socket is in smbd_tmp_dir() */
-#define WINBINDD_SAMBA3_PRIVILEGED_SOCKET "winbind_pipe"
 
 /* this struct stores global data for the winbind task */
 struct wbsrv_service {
@@ -35,8 +33,6 @@ struct wbsrv_service {
 	const struct dom_sid *primary_sid;
 	struct wbsrv_domain *domains;
 	struct idmap_context *idmap_ctx;
-
-	const char *priv_socket_path;
 };
 
 struct wbsrv_samconn {

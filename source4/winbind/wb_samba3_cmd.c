@@ -215,11 +215,13 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 
 NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
-	const char *path = s3call->wbconn->listen_socket->service->priv_socket_path;
-	s3call->response.result		 = WINBINDD_OK;
-	s3call->response.extra_data.data = discard_const(path);
+	struct loadparm_context *lp_ctx = s3call->wbconn->listen_socket->service->task->lp_ctx;
+	const char *priv_socket_dir = lp_winbindd_privileged_socket_directory(lp_ctx);
 
-	s3call->response.length += strlen(path) + 1;
+	s3call->response.result		 = WINBINDD_OK;
+	s3call->response.extra_data.data = discard_const(priv_socket_dir);
+
+	s3call->response.length += strlen(priv_socket_dir) + 1;
 	return NT_STATUS_OK;
 }
 
