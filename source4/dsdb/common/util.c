@@ -2413,6 +2413,34 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 }
 
 
+int dsdb_validate_client_flags(struct ldb_context *ldb,
+			       const struct repsFromTo1 *client_rf)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+
+	if (client_rf->replica_flags & DRSUAPI_DRS_WRIT_REP) {
+		bool is_rodc;
+		ret = samdb_is_rodc(ldb, &client_rf->source_dsa_invocation_id, &is_rodc);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		if (is_rodc) {
+			DEBUG(0,("Client %s claimed to be WRIT_REP, but is RODC\n",
+				 GUID_string(tmp_ctx, &client_rf->source_dsa_invocation_id)));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
+	/* TODO: we may need to validate more client flags here, if they
+	   are security sensitive */
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
 
 /*
   load a repsFromTo blob list for a given partition GUID
