@@ -7,20 +7,22 @@ from samba_utils import *
 from samba_autoconf import *
 
 def set_options(opt):
+
+    opt.add_option('--enable-selftest',
+                   help=("enable options necessary for selftest (default=no)"),
+                   action="store_true", dest='enable_selftest', default=False)
+    opt.add_option('--with-selftest-prefix',
+                   help=("specify location of selftest directory (default=./st)"),
+                   action="store", dest='SELFTEST_PREFIX', default='./st')
+
     opt.ADD_COMMAND('test', cmd_test)
     opt.ADD_COMMAND('testonly', cmd_testonly)
 
     gr = opt.add_option_group('test options')
 
-    gr.add_option('--enable-selftest',
-                  help=("enable options necessary for selftest"),
-                  action="store_true", dest='enable_selftest', default=False)
     gr.add_option('--load-list', 
                   help=("Load a test id list from a text file"),
                   action="store", dest='LOAD_LIST', default=None)
-    gr.add_option('--with-selftest-prefix',
-                  help=("specify location of selftest directory"),
-                  action="store", dest='SELFTEST_PREFIX', default='./st')
     gr.add_option('--tests',
                   help=("wildcard pattern of tests to run"),
                   action="store", dest='TESTS', default='')
@@ -49,6 +51,8 @@ def set_options(opt):
                   help=("run the testsuite within a gdb xterm window"),
                   action="store_true", dest='GDBTEST', default=False)
 
+def configure(conf):
+    conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
 def cmd_testonly(opt):
     '''run tests without doing a build first'''
@@ -94,8 +98,6 @@ def cmd_testonly(opt):
 
     if Options.options.GDBTEST:
         os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/gdb_run DUMMY=X'
-
-    env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')
