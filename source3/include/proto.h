@@ -4731,7 +4731,6 @@ int write_ntforms(nt_forms_struct **list, int number);
 bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *count);
 bool delete_a_form(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret);
 void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int count);
-int get_ntdrivers(fstring **list, const char *architecture, uint32 version);
 const char *get_short_archi(const char *long_archi);
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 			      struct pipes_struct *rpc_pipe,
@@ -4779,21 +4778,14 @@ WERROR get_a_printer_search( Printer_entry *print_hnd,
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 			      struct spoolss_DriverInfo8 *_info8);
-uint32_t add_a_printer_driver(TALLOC_CTX *mem_ctx,
-			      struct spoolss_AddDriverInfoCtr *r,
-			      char **driver_name,
-			      uint32_t *version);
-WERROR get_a_printer_driver(TALLOC_CTX *mem_ctx,
-			    struct spoolss_DriverInfo8 **driver_p,
-			    const char *drivername, const char *architecture,
-			    uint32_t version);
-uint32_t free_a_printer_driver(struct spoolss_DriverInfo8 *driver);
-bool printer_driver_in_use(const struct spoolss_DriverInfo8 *r);
+bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
+			   struct auth_serversupplied_info *server_info,
+			   const struct spoolss_DriverInfo8 *r);
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 struct spoolss_DriverInfo8 *r);
-WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
-			     const struct spoolss_DriverInfo8 *r,
-			     uint32 version, bool delete_files );
+bool delete_driver_files(struct auth_serversupplied_info *server_info,
+			 const struct spoolss_DriverInfo8 *r);
 WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_buf **secdesc_ctr);
 void map_printer_permissions(struct security_descriptor *sd);

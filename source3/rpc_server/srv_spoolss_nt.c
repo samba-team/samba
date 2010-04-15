@@ -1758,7 +1758,6 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 	struct spoolss_DriverInfo8 *info_win2k = NULL;
 	int				version;
 	WERROR				status;
-	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
@@ -1781,19 +1780,20 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 	if ((version = get_version_id(r->in.architecture)) == -1)
 		return WERR_INVALID_ENVIRONMENT;
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info, r->in.driver,
-						r->in.architecture,
-						version)))
-	{
+	status = winreg_get_driver(p->mem_ctx, p->server_info,
+				   r->in.architecture, r->in.driver,
+				   version, &info);
+	if (!W_ERROR_IS_OK(status)) {
 		/* try for Win2k driver if "Windows NT x86" */
 
 		if ( version == 2 ) {
 			version = 3;
-			if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx,
-								&info,
-								r->in.driver,
-								r->in.architecture,
-								version))) {
+
+			status = winreg_get_driver(p->mem_ctx, p->server_info,
+						   r->in.architecture,
+						   r->in.driver,
+						   version, &info);
+			if (!W_ERROR_IS_OK(status)) {
 				status = WERR_UNKNOWN_PRINTER_DRIVER;
 				goto done;
 			}
@@ -1806,43 +1806,35 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 
 	}
 
-	if (printer_driver_in_use(info)) {
+	if (printer_driver_in_use(p->mem_ctx, p->server_info, info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
 
-	if ( version == 2 )
-	{
-		if (W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx,
-						       &info_win2k,
-						       r->in.driver,
-						       r->in.architecture, 3)))
-		{
+	if (version == 2) {
+		status = winreg_get_driver(p->mem_ctx, p->server_info,
+					   r->in.architecture,
+					   r->in.driver, 3, &info_win2k);
+		if (W_ERROR_IS_OK(status)) {
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status_win2k = delete_printer_driver(
-				p, info_win2k, 3, false);
-			free_a_printer_driver(info_win2k);
+			status = winreg_del_driver(p->mem_ctx,
+						   p->server_info,
+						   info_win2k, 3);
+			talloc_free(info_win2k);
 
 			/* this should not have failed---if it did, report to client */
-			if ( !W_ERROR_IS_OK(status_win2k) )
-			{
-				status = status_win2k;
+			if (!W_ERROR_IS_OK(status)) {
 				goto done;
 			}
 		}
 	}
 
-	status = delete_printer_driver(p, info, version, false);
-
-	/* if at least one of the deletes succeeded return OK */
-
-	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
-		status = WERR_OK;
+	status = winreg_del_driver(p->mem_ctx, p->server_info, info, version);
 
 done:
-	free_a_printer_driver(info);
+	talloc_free(info);
 
 	return status;
 }
@@ -1859,7 +1851,6 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	int				version;
 	bool				delete_files;
 	WERROR				status;
-	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
@@ -1885,11 +1876,12 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	if (r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION)
 		version = r->in.version;
 
-	status = get_a_printer_driver(p->mem_ctx, &info, r->in.driver,
-				      r->in.architecture, version);
+	status = winreg_get_driver(p->mem_ctx, p->server_info,
+				   r->in.architecture, r->in.driver,
+				   version, &info);
+	if (!W_ERROR_IS_OK(status)) {
+		status = WERR_UNKNOWN_PRINTER_DRIVER;
 
-	if ( !W_ERROR_IS_OK(status) )
-	{
 		/*
 		 * if the client asked for a specific version,
 		 * or this is something other than Windows NT x86,
@@ -1902,15 +1894,17 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 		/* try for Win2k driver if "Windows NT x86" */
 
 		version = 3;
-		if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info, r->in.driver,
-							r->in.architecture,
-							version))) {
+		status = winreg_get_driver(info, p->server_info,
+					   r->in.architecture,
+					   r->in.driver,
+					   version, &info);
+		if (!W_ERROR_IS_OK(status)) {
 			status = WERR_UNKNOWN_PRINTER_DRIVER;
 			goto done;
 		}
 	}
 
-	if (printer_driver_in_use(info)) {
+	if (printer_driver_in_use(info, p->server_info, info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
@@ -1931,7 +1925,9 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 
 	/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
 
-	if (delete_files && printer_driver_files_in_use(info, info) & (r->in.delete_flags & DPD_DELETE_ALL_FILES)) {
+	if (delete_files &&
+	    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
+	    printer_driver_files_in_use(info, p->server_info, info)) {
 		/* no idea of the correct error here */
 		status = WERR_ACCESS_DENIED;
 		goto done;
@@ -1941,14 +1937,17 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	/* also check for W32X86/3 if necessary; maybe we already have? */
 
 	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		if (W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &info_win2k,
-						       r->in.driver,
-						       r->in.architecture, 3)))
-		{
+		status = winreg_get_driver(info, p->server_info,
+					   r->in.architecture,
+					   r->in.driver, 3, &info_win2k);
+		if (W_ERROR_IS_OK(status)) {
 
-			if (delete_files && printer_driver_files_in_use(info, info_win2k) & (r->in.delete_flags & DPD_DELETE_ALL_FILES) ) {
+			if (delete_files &&
+			    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
+			    printer_driver_files_in_use(info, p->server_info,
+							info_win2k)) {
 				/* no idea of the correct error here */
-				free_a_printer_driver(info_win2k);
+				talloc_free(info_win2k);
 				status = WERR_ACCESS_DENIED;
 				goto done;
 			}
@@ -1956,24 +1955,43 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status_win2k = delete_printer_driver(
-				p, info_win2k, 3, delete_files);
-			free_a_printer_driver(info_win2k);
+			status = winreg_del_driver(info, p->server_info,
+						   info_win2k, 3);
 
 			/* this should not have failed---if it did, report to client */
 
-			if ( !W_ERROR_IS_OK(status_win2k) )
+			if (!W_ERROR_IS_OK(status)) {
 				goto done;
+			}
+
+			/*
+			 * now delete any associated files if delete_files is
+			 * true. Even if this part failes, we return succes
+			 * because the driver doesn not exist any more
+			 */
+			if (delete_files) {
+				delete_driver_files(p->server_info,
+						    info_win2k);
+			}
 		}
 	}
 
-	status = delete_printer_driver(p, info, version, delete_files);
+	status = winreg_del_driver(info, p->server_info, info, version);
+	if (!W_ERROR_IS_OK(status)) {
+		goto done;
+	}
 
-	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
-		status = WERR_OK;
+	/*
+	 * now delete any associated files if delete_files is
+	 * true. Even if this part failes, we return succes
+	 * because the driver doesn not exist any more
+	 */
+	if (delete_files) {
+		delete_driver_files(p->server_info, info);
+	}
+
 done:
-	free_a_printer_driver(info);
-
+	talloc_free(info);
 	return status;
 }
 
@@ -4785,6 +4803,7 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
+						  struct auth_serversupplied_info *server_info,
 						  uint32_t level,
 						  union spoolss_DriverInfo *r,
 						  int snum,
@@ -4805,8 +4824,9 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	result = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername,
-				      architecture, version);
+	result = winreg_get_driver(mem_ctx, server_info, architecture,
+				   printer->info_2->drivername,
+				   version, &driver);
 
 	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
 		win_errstr(result)));
@@ -4823,8 +4843,9 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
-		result = get_a_printer_driver(mem_ctx, &driver, printer->info_2->drivername,
-					      architecture, version);
+		result = winreg_get_driver(mem_ctx, server_info, architecture,
+					   printer->info_2->drivername,
+					   version, &driver);
 		DEBUG(8,("construct_printer_driver_level: status: %s\n",
 			win_errstr(result)));
 		if (!W_ERROR_IS_OK(result)) {
@@ -4866,7 +4887,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	}
 
 	free_a_printer(&printer, 2);
-	free_a_printer_driver(driver);
+	talloc_free(driver);
 
 	return result;
 }
@@ -4907,9 +4928,9 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = construct_printer_driver_info_level(p->mem_ctx, r->in.level,
-						     r->out.info, snum,
-						     servername,
+	result = construct_printer_driver_info_level(p->mem_ctx, p->server_info,
+						     r->in.level, r->out.info,
+						     snum, servername,
 						     r->in.architecture,
 						     r->in.client_major_version);
 	if (!W_ERROR_IS_OK(result)) {
@@ -6321,6 +6342,7 @@ WERROR _spoolss_SetJob(pipes_struct *p,
 ****************************************************************************/
 
 static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
+						       struct auth_serversupplied_info *server_info,
 						       const char *servername,
 						       const char *architecture,
 						       uint32_t level,
@@ -6328,32 +6350,32 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 						       uint32_t *count_p)
 {
 	int i;
-	int ndrivers;
 	uint32_t version;
-	fstring *list = NULL;
 	struct spoolss_DriverInfo8 *driver;
 	union spoolss_DriverInfo *info = NULL;
 	uint32_t count = 0;
 	WERROR result = WERR_OK;
+	uint32_t num_drivers;
+	const char **drivers;
 
 	*count_p = 0;
 	*info_p = NULL;
 
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		list = NULL;
-		ndrivers = get_ntdrivers(&list, architecture, version);
-		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n",
-			ndrivers, architecture, version));
-
-		if (ndrivers == -1) {
-			result = WERR_NOMEM;
+		result = winreg_get_driver_list(mem_ctx, server_info,
+						architecture, version,
+						&num_drivers, &drivers);
+		if (!W_ERROR_IS_OK(result)) {
 			goto out;
 		}
+		DEBUG(4, ("we have:[%d] drivers in environment"
+			  " [%s] and version [%d]\n",
+			  num_drivers, architecture, version));
 
-		if (ndrivers != 0) {
+		if (num_drivers != 0) {
 			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 						    union spoolss_DriverInfo,
-						    count + ndrivers);
+						    count + num_drivers);
 			if (!info) {
 				DEBUG(0,("enumprinterdrivers_level_by_architecture: "
 					"failed to enlarge driver info buffer!\n"));
@@ -6362,11 +6384,12 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		for (i=0; i<ndrivers; i++) {
-			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
-			ZERO_STRUCT(driver);
-			result = get_a_printer_driver(mem_ctx, &driver, list[i],
-						      architecture, version);
+		for (i = 0; i < num_drivers; i++) {
+			DEBUG(5, ("\tdriver: [%s]\n", drivers[i]));
+
+			result = winreg_get_driver(mem_ctx, server_info,
+						   architecture, drivers[i],
+						   version, &driver);
 			if (!W_ERROR_IS_OK(result)) {
 				goto out;
 			}
@@ -6405,19 +6428,19 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 				break;
 			}
 
-			free_a_printer_driver(driver);
+			TALLOC_FREE(driver);
 
 			if (!W_ERROR_IS_OK(result)) {
 				goto out;
 			}
 		}
 
-		count += ndrivers;
-		SAFE_FREE(list);
+		count += num_drivers;
+		TALLOC_FREE(drivers);
 	}
 
  out:
-	SAFE_FREE(list);
+	TALLOC_FREE(drivers);
 
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(info);
@@ -6435,6 +6458,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
+				       struct auth_serversupplied_info *server_info,
 				       const char *servername,
 				       const char *architecture,
 				       uint32_t level,
@@ -6452,6 +6476,7 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 			uint32_t count = 0;
 
 			result = enumprinterdrivers_level_by_architecture(mem_ctx,
+									  server_info,
 									  servername,
 									  archi_table[a].long_archi,
 									  level,
@@ -6471,6 +6496,7 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 	}
 
 	return enumprinterdrivers_level_by_architecture(mem_ctx,
+							server_info,
 							servername,
 							architecture,
 							level,
@@ -6506,7 +6532,9 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	result = enumprinterdrivers_level(p->mem_ctx, cservername,
+	result = enumprinterdrivers_level(p->mem_ctx,
+					  p->server_info,
+					  cservername,
 					  r->in.environment,
 					  r->in.level,
 					  r->out.info,
@@ -7038,7 +7066,7 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 				   struct spoolss_AddPrinterDriverEx *r)
 {
 	WERROR err = WERR_OK;
-	char *driver_name = NULL;
+	const char *driver_name = NULL;
 	uint32_t version;
 	const char *fn;
 
@@ -7087,8 +7115,9 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 		goto done;
 	}
 
-	if (add_a_printer_driver(p->mem_ctx, r->in.info_ctr, &driver_name, &version)!=0) {
-		err = WERR_ACCESS_DENIED;
+	err = winreg_add_driver(p->mem_ctx, p->server_info,
+                                r->in.info_ctr, &driver_name, &version);
+	if (!W_ERROR_IS_OK(err)) {
 		goto done;
 	}
 
