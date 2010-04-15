@@ -88,7 +88,7 @@ struct operational_data {
   construct a canonical name from a message
 */
 static int construct_canonical_name(struct ldb_module *module,
-	struct ldb_message *msg)
+	struct ldb_message *msg, enum ldb_scope scope)
 {
 	char *canonicalName;
 	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
@@ -102,7 +102,7 @@ static int construct_canonical_name(struct ldb_module *module,
   construct a primary group token for groups from a message
 */
 static int construct_primary_group_token(struct ldb_module *module,
-					 struct ldb_message *msg)
+					 struct ldb_message *msg, enum ldb_scope scope)
 {
 	struct ldb_context *ldb;
 	uint32_t primary_group_token;
@@ -126,88 +126,71 @@ static int construct_primary_group_token(struct ldb_module *module,
   construct the token groups for SAM objects from a message
 */
 static int construct_token_groups(struct ldb_module *module,
-				  struct ldb_message *msg)
+				  struct ldb_message *msg, enum ldb_scope scope)
 {
-#if 0
-	struct ldb_context *ldb;
-	const struct dom_sid *sid;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);;
+	struct auth_context *auth_context;
+	struct auth_serversupplied_info *server_info;
+	struct auth_session_info *session_info;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg);
+	uint32_t i;
+	int ret;
 
-	ldb = ldb_module_get_ctx(module);
+	NTSTATUS status;
 
-	sid = samdb_result_dom_sid(msg, msg, "objectSid");
-	if (sid != NULL) {
-		NTSTATUS status;
-		uint32_t prim_group_rid;
-		struct dom_sid **sids = NULL;
-		unsigned int i, num_sids = 0;
-		int ret;
-
-		prim_group_rid = samdb_result_uint(msg, "primaryGroupID", 0);
-		if (prim_group_rid != 0) {
-			struct dom_sid *prim_group_sid;
-
-			prim_group_sid = dom_sid_add_rid(msg,
-							 samdb_domain_sid(ldb),
-							 prim_group_rid);
-			if (prim_group_sid == NULL) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-
-			/* onlyChilds = false, we want to consider also the
-			 * "primaryGroupID" for membership */
-			status = authsam_expand_nested_groups(ldb,
-							      prim_group_sid,
-							      false, msg,
-							      &sids, &num_sids);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			if (!NT_STATUS_IS_OK(status)) {
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-
-			for (i = 0; i < num_sids; i++) {
-				ret = samdb_msg_add_dom_sid(ldb, msg, msg,
-							    "tokenGroups",
-							    sids[i]);
-				if (ret != LDB_SUCCESS) {
-					talloc_free(sids);
-					return ret;
-				}
-			}
-
-			talloc_free(sids);
-		}
-
-		sids = NULL;
-		num_sids = 0;
-
-		/* onlyChils = true, we don't want to have the SAM object itself
-		 * in the result */
-		status = authsam_expand_nested_groups(ldb, sid, true, msg,
-						      &sids, &num_sids);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		for (i = 0; i < num_sids; i++) {
-			ret = samdb_msg_add_dom_sid(ldb, msg, msg,
-						    "tokenGroups", sids[i]);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(sids);
-				return ret;
-			}
-		}
-
-		talloc_free(sids);
+	if (scope != LDB_SCOPE_BASE) {
+		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, this is not a BASE search");
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-#endif
+
+	status = auth_context_create_from_ldb(tmp_ctx, ldb, &auth_context);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+		talloc_free(tmp_ctx);
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	status = auth_get_server_info_principal(tmp_ctx, auth_context, NULL, msg->dn, &server_info);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+		talloc_free(tmp_ctx);
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	status = auth_generate_session_info(tmp_ctx, auth_context, server_info, &session_info);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+		talloc_free(tmp_ctx);
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = samdb_msg_add_dom_sid(ldb, msg, msg,
+				    "tokenGroups",
+				    session_info->security_token->group_sid);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	for (i = 0; i < session_info->security_token->num_sids; i++) {
+		ret = samdb_msg_add_dom_sid(ldb, msg, msg,
+					    "tokenGroups",
+					    session_info->security_token->sids[i]);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -215,7 +198,7 @@ static int construct_token_groups(struct ldb_module *module,
   construct the parent GUID for an entry from a message
 */
 static int construct_parent_guid(struct ldb_module *module,
-				 struct ldb_message *msg)
+				 struct ldb_message *msg, enum ldb_scope scope)
 {
 	struct ldb_result *res;
 	const struct ldb_val *parent_guid;
@@ -263,7 +246,7 @@ static int construct_parent_guid(struct ldb_module *module,
   construct a subSchemaSubEntry
 */
 static int construct_subschema_subentry(struct ldb_module *module,
-					struct ldb_message *msg)
+					struct ldb_message *msg, enum ldb_scope scope)
 {
 	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
 	char *subSchemaSubEntry;
@@ -514,14 +497,14 @@ static const struct {
 	const char *attr;
 	const char *replace;
 	const char *extra_attr;
-	int (*constructor)(struct ldb_module *, struct ldb_message *);
+	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope);
 } search_sub[] = {
 	{ "createTimestamp", "whenCreated", NULL , NULL },
 	{ "modifyTimestamp", "whenChanged", NULL , NULL },
 	{ "structuralObjectClass", "objectClass", NULL , NULL },
 	{ "canonicalName", "distinguishedName", NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
-	{ "tokenGroups", "objectSid", "primaryGroupID", construct_token_groups },
+	{ "tokenGroups", "objectClass", NULL, construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
 	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc },
@@ -565,6 +548,7 @@ static const struct {
 */
 static int operational_search_post_process(struct ldb_module *module,
 					   struct ldb_message *msg,
+					   enum ldb_scope scope,
 					   const char * const *attrs_from_user,
 					   const char * const *attrs_searched_for,
 					   bool sd_flags_set)
@@ -608,7 +592,7 @@ static int operational_search_post_process(struct ldb_module *module,
 			   constructor or a simple copy */
 			constructed_attributes = true;
 			if (search_sub[i].constructor != NULL) {
-				if (search_sub[i].constructor(module, msg) != LDB_SUCCESS) {
+				if (search_sub[i].constructor(module, msg, scope) != LDB_SUCCESS) {
 					goto failed;
 				}
 			} else if (ldb_msg_copy_attr(msg,
@@ -655,7 +639,7 @@ failed:
 struct operational_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
-
+	enum ldb_scope scope;
 	const char * const *attrs;
 	bool sd_flags_set;
 };
@@ -682,6 +666,7 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 		   attributes that have been asked for */
 		ret = operational_search_post_process(ac->module,
 						      ares->message,
+						      ac->scope,
 						      ac->attrs,
 						      req->op.search.attrs,
 						      ac->sd_flags_set);
@@ -727,6 +712,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 
 	ac->module = module;
 	ac->req = req;
+	ac->scope = req->op.search.scope;
 	ac->attrs = req->op.search.attrs;
 
 	/*  FIXME: We must copy the tree and keep the original

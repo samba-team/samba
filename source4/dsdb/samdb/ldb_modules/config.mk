@@ -400,7 +400,7 @@ ldb_instancetype_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/instancetype.o
 [MODULE::ldb_operational]
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS auth_sam
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS auth_session auth
 INIT_FUNCTION = LDB_MODULE(operational)
 # End MODULE ldb_operational
 ################################################

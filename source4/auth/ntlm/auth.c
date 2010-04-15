@@ -98,13 +98,16 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal
 }
 
 /****************************************************************************
- Try to get a challenge out of the various authentication modules.
- Returns a const char of length 8 bytes.
+Used in the gensec_gssapi and gensec_krb5 server-side code, where the
+PAC isn't available, and for tokenGroups in the DSDB stack.
+
+ Supply either a principal or a DN
 ****************************************************************************/
 _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx, 
-						  struct auth_context *auth_ctx,
-						  const char *principal,
-						  struct auth_serversupplied_info **server_info)
+						 struct auth_context *auth_ctx,
+						 const char *principal,
+						 struct ldb_dn *user_dn,
+						 struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
@@ -114,7 +117,7 @@ _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		nt_status = method->ops->get_server_info_principal(mem_ctx, auth_ctx, principal, server_info);
+		nt_status = method->ops->get_server_info_principal(mem_ctx, auth_ctx, principal, user_dn, server_info);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
 			continue;
 		}
@@ -399,13 +402,14 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 
 /***************************************************************************
  Make a auth_info struct for the auth subsystem
- - Allow the caller to specify the methods to use
+ - Allow the caller to specify the methods to use, including optionally the SAM to use
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
-				     struct tevent_context *ev,
-				     struct messaging_context *msg,
-				     struct loadparm_context *lp_ctx,
-				     struct auth_context **auth_ctx)
+					      struct tevent_context *ev,
+					      struct messaging_context *msg,
+					      struct loadparm_context *lp_ctx,
+					      struct ldb_context *sam_ctx,
+					      struct auth_context **auth_ctx)
 {
 	int i;
 	struct auth_context *ctx;
@@ -437,7 +441,11 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->msg_ctx			= msg;
 	ctx->lp_ctx			= lp_ctx;
 
-	ctx->sam_ctx = samdb_connect(ctx, ctx->event_ctx, ctx->lp_ctx, system_session(ctx->lp_ctx));
+	if (sam_ctx) {
+		ctx->sam_ctx = sam_ctx;
+	} else {
+		ctx->sam_ctx = samdb_connect(ctx, ctx->event_ctx, ctx->lp_ctx, system_session(ctx->lp_ctx));
+	}
 
 	for (i=0; methods[i] ; i++) {
 		struct auth_method_context *method;
@@ -471,15 +479,8 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 
 	return NT_STATUS_OK;
 }
-/***************************************************************************
- Make a auth_info struct for the auth subsystem
- - Uses default auth_methods, depending on server role and smb.conf settings
-***************************************************************************/
-_PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
-			     struct tevent_context *ev,
-			     struct messaging_context *msg,
-			     struct loadparm_context *lp_ctx,
-			     struct auth_context **auth_ctx)
+
+static const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	const char **auth_methods = NULL;
 	switch (lp_server_role(lp_ctx)) {
@@ -493,9 +494,60 @@ _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 		auth_methods = lp_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "domain controller", NULL);
 		break;
 	}
-	return auth_context_create_methods(mem_ctx, auth_methods, ev, msg, lp_ctx, auth_ctx);
+	return auth_methods;
 }
 
+/***************************************************************************
+ Make a auth_info struct for the auth subsystem
+ - Uses default auth_methods, depending on server role and smb.conf settings
+***************************************************************************/
+_PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
+			     struct tevent_context *ev,
+			     struct messaging_context *msg,
+			     struct loadparm_context *lp_ctx,
+			     struct auth_context **auth_ctx)
+{
+	NTSTATUS status;
+	const char **auth_methods;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	auth_methods = auth_methods_from_lp(tmp_ctx, lp_ctx);
+	if (!auth_methods) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	status = auth_context_create_methods(mem_ctx, auth_methods, ev, msg, lp_ctx, NULL, auth_ctx);
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+/* Create an auth context from an open LDB.
+
+   This allows us not to re-open the LDB when we need to do a some authentication logic (such as tokenGroups)
+
+ */
+NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth_context **auth_ctx)
+{
+	NTSTATUS status;
+	const char **auth_methods;
+	struct loadparm_context *lp_ctx = talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
+	struct tevent_context *ev = ldb_get_event_context(ldb);
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	auth_methods = auth_methods_from_lp(tmp_ctx, lp_ctx);
+	if (!auth_methods) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	status = auth_context_create_methods(mem_ctx, auth_methods, ev, NULL, lp_ctx, ldb, auth_ctx);
+	talloc_free(tmp_ctx);
+	return status;
+}
 
 /* the list of currently registered AUTH backends */
 static struct auth_backend {

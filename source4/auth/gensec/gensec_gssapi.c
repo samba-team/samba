@@ -1308,6 +1308,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			nt_status = gensec_security->auth_context->get_server_info_principal(mem_ctx, 
 											     gensec_security->auth_context, 
 											     principal_string,
+											     NULL,
 											     &server_info);
 			
 			if (!NT_STATUS_IS_OK(nt_status)) {

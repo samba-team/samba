@@ -653,7 +653,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 			nt_status = gensec_security->auth_context->get_server_info_principal(mem_ctx, 
 											     gensec_security->auth_context, 
 											     principal_string,
-											     &server_info);
+											     NULL, &server_info);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(mem_ctx);
 				return nt_status;

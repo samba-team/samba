@@ -127,6 +127,7 @@ struct auth_method_context;
 struct auth_check_password_request;
 struct auth_context;
 struct auth_session_info;
+struct ldb_dn;
 
 struct auth_operations {
 	const char *name;
@@ -153,6 +154,7 @@ struct auth_operations {
 	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx,
 					      struct auth_context *auth_context,
 					      const char *principal,
+					      struct ldb_dn *user_dn,
 					      struct auth_serversupplied_info **server_info);
 };
 
@@ -201,9 +203,10 @@ struct auth_context {
 	NTSTATUS (*set_challenge)(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
 	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx,
-					      struct auth_context *auth_context,
-					      const char *principal,
-					      struct auth_serversupplied_info **server_info);
+						 struct auth_context *auth_ctx,
+						 const char *principal,
+						 struct ldb_dn *user_dn,
+						 struct auth_serversupplied_info **server_info);
 
 	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
 					  struct auth_context *auth_context,
@@ -231,7 +234,6 @@ struct auth_critical_sizes {
 
 struct ldb_message;
 struct ldb_context;
-struct ldb_dn;
 struct gensec_security;
 
 NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal[8]);
@@ -265,6 +267,7 @@ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods,
 				     struct tevent_context *ev,
 				     struct messaging_context *msg,
 				     struct loadparm_context *lp_ctx,
+				     struct ldb_context *sam_ctx,
 				     struct auth_context **auth_ctx);
 
 NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
@@ -272,6 +275,7 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct messaging_context *msg,
 			     struct loadparm_context *lp_ctx,
 			     struct auth_context **auth_ctx);
+NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth_context **auth_ctx);
 
 NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
@@ -302,6 +306,7 @@ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t
 NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
 					struct auth_context *auth_ctx,
 					const char *principal,
+					struct ldb_dn *user_dn,
 					struct auth_serversupplied_info **server_info);
 
 NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,

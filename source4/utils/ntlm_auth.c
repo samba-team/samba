@@ -499,6 +499,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 								ev, 
 								msg, 
 								lp_ctx,
+								NULL,
 								&auth_context);
 	
 			if (!NT_STATUS_IS_OK(nt_status)) {

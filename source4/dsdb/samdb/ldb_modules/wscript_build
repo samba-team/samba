@@ -262,7 +262,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	source='operational.c',
 	subsystem='LIBLDB',
 	init_function='LDB_MODULE(operational)',
-	deps='talloc tevent LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS auth_sam'
+	deps='talloc tevent LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS auth'
 	)
 
 
