@@ -7586,7 +7586,6 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	int snum = -1;
 	WERROR status = WERR_OK;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -7597,19 +7596,6 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 		DEBUG(2,("_spoolss_AddForm: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
-	}
-
-
-	/* forms can be added on printer or on the print server handle */
-
-	if ( Printer->printer_type == SPLHND_PRINTER )
-	{
-		if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-	                return WERR_BADFID;
-
-		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-        	if (!W_ERROR_IS_OK(status))
-			goto done;
 	}
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
@@ -7623,8 +7609,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
-		status = WERR_ACCESS_DENIED;
-		goto done;
+		return WERR_ACCESS_DENIED;
 	}
 
 	switch (form->flags) {
@@ -7633,25 +7618,29 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	case SPOOLSS_FORM_PRINTER:
 		break;
 	default:
-		status = WERR_INVALID_PARAM;
-		goto done;
+		return WERR_INVALID_PARAM;
 	}
 
 	status = winreg_printer_addform1(p->mem_ctx, p->server_info, form);
 	if (!W_ERROR_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 
 	/*
 	 * ChangeID must always be set if this is a printer
 	 */
+	if (Printer->printer_type == SPLHND_PRINTER) {
+		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+			return WERR_BADFID;
+		}
 
-	if ( Printer->printer_type == SPLHND_PRINTER )
-		status = mod_a_printer(printer, 2);
-
-done:
-	if ( printer )
-		free_a_printer(&printer, 2);
+		status = winreg_printer_update_changeid(p->mem_ctx,
+							p->server_info,
+							lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return status;
 }
@@ -7667,7 +7656,6 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int snum = -1;
 	WERROR status = WERR_OK;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
@@ -7676,18 +7664,6 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 		DEBUG(2,("_spoolss_DeleteForm: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
-	}
-
-	/* forms can be deleted on printer of on the print server handle */
-
-	if ( Printer->printer_type == SPLHND_PRINTER )
-	{
-		if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-	                return WERR_BADFID;
-
-		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-        	if (!W_ERROR_IS_OK(status))
-			goto done;
 	}
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
@@ -7705,19 +7681,24 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 					    p->server_info,
 					    form_name);
 	if (!W_ERROR_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 
 	/*
 	 * ChangeID must always be set if this is a printer
 	 */
+	if (Printer->printer_type == SPLHND_PRINTER) {
+		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+			return WERR_BADFID;
+		}
 
-	if ( Printer->printer_type == SPLHND_PRINTER )
-		status = mod_a_printer(printer, 2);
-
-done:
-	if ( printer )
-		free_a_printer(&printer, 2);
+		status = winreg_printer_update_changeid(p->mem_ctx,
+							p->server_info,
+							lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return status;
 }
@@ -7733,7 +7714,6 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 	const char *form_name = r->in.form_name;
 	int snum = -1;
 	WERROR status = WERR_OK;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -7744,18 +7724,6 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 		DEBUG(2,("_spoolss_SetForm: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
-	}
-
-	/* forms can be modified on printer of on the print server handle */
-
-	if ( Printer->printer_type == SPLHND_PRINTER )
-	{
-		if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-	                return WERR_BADFID;
-
-		status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-        	if (!W_ERROR_IS_OK(status))
-			goto done;
 	}
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
@@ -7769,8 +7737,7 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
-		status = WERR_ACCESS_DENIED;
-		goto done;
+		return WERR_ACCESS_DENIED;
 	}
 
 	status = winreg_printer_setform1(p->mem_ctx,
@@ -7778,20 +7745,24 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 					 form_name,
 					 form);
 	if (!W_ERROR_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 
 	/*
 	 * ChangeID must always be set if this is a printer
 	 */
+	if (Printer->printer_type == SPLHND_PRINTER) {
+		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+			return WERR_BADFID;
+		}
 
-	if ( Printer->printer_type == SPLHND_PRINTER )
-		status = mod_a_printer(printer, 2);
-
-
-done:
-	if ( printer )
-		free_a_printer(&printer, 2);
+		status = winreg_printer_update_changeid(p->mem_ctx,
+							p->server_info,
+							lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return status;
 }
