@@ -1699,6 +1699,19 @@ class DaclDescriptorTests(DescriptorTests):
         self.assertTrue("(D;ID;WP;;;DA)" in desc_sddl)
         self.assertTrue("(D;CIIOID;WP;;;CO)" in desc_sddl)
 
+    def test_210(self):
+        """ OU with protected flag, provide ACEs with ID flag raised. Should be ignored.
+        """
+        ou_dn = "OU=test_inherit_ou," + self.base_dn
+        group_dn = "CN=test_inherit_group," + ou_dn
+        self.create_clean_ou(ou_dn)
+        # Add some custom  ACE
+        mod = "D:(D;CIIO;WP;;;CO)(A;ID;WP;;;AU)"
+        self.create_domain_group(self.ldb_admin, group_dn, mod)
+        # Make sure created group object does not contain the ID ace
+        desc_sddl = self.get_desc_sddl(group_dn)
+        self.assertFalse("(A;ID;WP;;;AU)" in desc_sddl)
+
     ########################################################################################
 
 
