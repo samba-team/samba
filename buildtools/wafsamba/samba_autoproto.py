@@ -29,8 +29,11 @@ Build.BuildContext.HEIMDAL_AUTOPROTO_PRIVATE = HEIMDAL_AUTOPROTO_PRIVATE
 def SAMBA_AUTOPROTO(bld, header, source):
     '''rule for samba prototype generation'''
     bld.SET_BUILD_GROUP('prototypes')
-    SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
+    relpath = os_path_relpath(bld.curdir, bld.srcnode.abspath())
+    name = os.path.join(relpath, header)
+    SET_TARGET_TYPE(bld, name, 'PROTOTYPE')
     t = bld(
+        name = name,
         source = source,
         target = header,
         on_results=True,

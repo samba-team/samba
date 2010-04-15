@@ -187,12 +187,6 @@ def SAMBA_LIBRARY(bld, libname, source,
     if link_name:
         t.link_name = link_name
 
-    if autoproto is not None:
-        bld.SAMBA_AUTOPROTO(autoproto, source)
-
-    if public_headers is not None:
-        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
-
     if pc_files is not None:
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
@@ -278,10 +272,6 @@ def SAMBA_BINARY(bld, binname, source,
     if subsystem_name is not None:
         bld.TARGET_ALIAS(subsystem_name, binname)
 
-    if autoproto is not None:
-        bld.SAMBA_AUTOPROTO(autoproto, source)
-    if public_headers is not None:
-        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 

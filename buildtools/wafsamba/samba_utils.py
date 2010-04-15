@@ -16,10 +16,10 @@ def SET_TARGET_TYPE(ctx, target, value):
     '''set the target type of a target'''
     cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
     if target in cache and cache[target] != 'EMPTY':
-        ASSERT(ctx, cache[target] == value,
-               "Target '%s' re-defined as %s - was %s" % (target, value, cache[target]))
-        debug("task_gen: Skipping duplicate target %s (curdir=%s)" % (target, ctx.curdir))
-        return False
+        Logs.error("ERROR: Target '%s' in directory %s re-defined as %s - was %s" % (target,
+                                                                                     ctx.curdir,
+                                                                                     value, cache[target]))
+        sys.exit(1)
     LOCAL_CACHE_SET(ctx, 'TARGET_TYPE', target, value)
     debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
     return True
