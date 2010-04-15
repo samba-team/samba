@@ -4258,6 +4258,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	DATA_BLOB ft_blob;
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
+	bool am_rodc;
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -4273,7 +4274,8 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	}
 
-	if (samdb_rodc(p_state->sam_ldb)) {
+	ret = samdb_rodc(p_state->sam_ldb, &am_rodc);
+	if (ret == LDB_SUCCESS && am_rodc) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
