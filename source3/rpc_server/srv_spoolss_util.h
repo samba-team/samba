@@ -211,6 +211,25 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 				      const char *printer);
 
 /**
+ * @brief Get the ChangeID of the given printer.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
+ *
+ * @param[in]  printer  The printer name.
+ *
+ * @param[in]  changeid A pointer to store the changeid.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
+				   struct auth_serversupplied_info *server_info,
+				   const char *printer,
+				   uint32_t *pchangeid);
+
+/**
  * @internal
  *
  * @brief This function adds a form to the list of available forms that can be

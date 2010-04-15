@@ -1450,6 +1450,77 @@ done:
 	return result;
 }
 
+WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
+				   struct auth_serversupplied_info *server_info,
+				   const char *printer,
+				   uint32_t *pchangeid)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	uint32_t changeid = 0;
+	char *path;
+	WERROR result;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_get_changeid: Could not open key %s: %s\n",
+			  path, win_errstr(result)));
+		goto done;
+	}
+
+	DEBUG(0, ("winreg_printer_get_changeid: get changeid from %s\n", path));
+	result = winreg_printer_query_dword(tmp_ctx,
+					    winreg_pipe,
+					    &key_hnd,
+					    "ChangeID",
+					    &changeid);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	if (pchangeid) {
+		*pchangeid = changeid;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
 /*
  * The special behaviour of the spoolss forms is documented at the website:
  *
