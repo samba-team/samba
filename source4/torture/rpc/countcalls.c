@@ -38,7 +38,7 @@ bool count_calls(struct torture_context *tctx,
 	int i;
 	NTSTATUS status = torture_rpc_connection(tctx, &p, iface);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)
-	    || NT_STATUS_EQUAL(NT_STATUS_NET_WRITE_FAULT, status)
+	    || NT_STATUS_IS_RPC(status)
 	    || NT_STATUS_EQUAL(NT_STATUS_PORT_UNREACHABLE, status)
 	    || NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
 		if (all) {
