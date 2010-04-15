@@ -605,6 +605,8 @@ def reduce_objects(bld, tgt_list):
                 t2 = bld.name_to_obj(l, bld.env)
                 t2_obj = extended_objects(bld, t2, set())
                 dup = new.intersection(t2_obj)
+                if t.sname in rely_on:
+                    dup = dup.difference(rely_on[t.sname])
                 if dup:
                     debug('deps: removing dups from %s of type %s: %s also in %s %s',
                           t.sname, t.samba_type, dup, t2.samba_type, l)
@@ -669,8 +671,18 @@ def calculate_final_deps(bld, tgt_list, loops):
                     diff = loops[loop].difference(t.final_libs)
                     if t.sname in diff:
                         diff.remove(t.sname)
+                    if t.sname in diff:
+                        diff.remove(t.sname)
+                    # make sure we don't recreate the loop again!
+                    for d in diff.copy():
+                        t2 = bld.name_to_obj(d, bld.env)
+                        if t2.samba_type == 'LIBRARY':
+                            if t.sname in t2.final_libs:
+                                debug('deps: removing expansion %s from %s', d, t.sname)
+                                diff.remove(d)
                     if diff:
-                        debug('deps: Expanded target %s by loop %s libraries %s', t.sname, loop, diff)
+                        debug('deps: Expanded target %s by loop %s libraries (loop %s) %s', t.sname, loop,
+                              loops[loop], diff)
                         t.final_libs = t.final_libs.union(diff)
 
     # remove objects that are also available in linked libs
@@ -696,6 +708,19 @@ def calculate_final_deps(bld, tgt_list, loops):
             t2 = bld.name_to_obj(d, bld.env)
             syslibs = syslibs.union(t2.direct_syslibs)
         t.final_syslibs = syslibs
+
+
+    # find any unresolved library loops
+    lib_loop_error = False
+    for t in tgt_list:
+        if t.samba_type in ['LIBRARY', 'PYTHON']:
+            for l in t.final_libs.copy():
+                t2 = bld.name_to_obj(l, bld.env)
+                if t.sname in t2.final_libs:
+                    Logs.error('ERROR: Unresolved library loop %s from %s' % (t.sname, t2.sname))
+                    lib_loop_error = True
+    if lib_loop_error:
+        sys.exit(1)
 
     debug('deps: removed duplicate dependencies')
 
