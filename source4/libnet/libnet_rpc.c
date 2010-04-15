@@ -659,7 +659,7 @@ static void continue_lsa_query_info2(struct tevent_req *subreq)
 	   to the next step. After all, it doesn't have to be AD domain
 	   controller we talking to - NT-style PDC also counts */
 
-	if (NT_STATUS_EQUAL(c->status, NT_STATUS_NET_WRITE_FAULT)) {
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 		s->r.out.realm = NULL;
 		s->r.out.guid  = NULL;
 
