@@ -1210,6 +1210,315 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
  Public winreg function for spoolss
 ********************************************************************/
 
+WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
+			     struct auth_serversupplied_info *server_info,
+			     uint32_t info2_mask,
+			     struct spoolss_SetPrinterInfo2 *info2,
+			     struct spoolss_DeviceMode *devmode,
+			     struct security_descriptor *secdesc)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	char *path;
+	WERROR result = WERR_OK;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, info2->sharename);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					true,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_update_printer: Could not open key %s: %s\n",
+			path, win_errstr(result)));
+		goto done;
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_ATTRIBUTES) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "Attributes",
+						    info2->attributes);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+#if 0
+	if (info2_mask & SPOOLSS_PRINTER_INFO_AVERAGEPPM) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "AveragePpm",
+						    info2->attributes);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+#endif
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_COMMENT) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Description",
+						 info2->comment);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_DATATYPE) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Datatype",
+						 info2->datatype);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "Default Priority",
+						    info2->defaultpriority);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_DEVMODE) {
+		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, devmode,
+				(ndr_push_flags_fn_t) ndr_push_spoolss_DeviceMode);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("winreg_update_printer: Failed to marshall device mode\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		result = winreg_printer_write_binary(tmp_ctx,
+						     winreg_pipe,
+						     &key_hnd,
+						     "Default DevMode",
+						     blob);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_LOCATION) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Location",
+						 info2->location);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_PARAMETERS) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Parameters",
+						 info2->parameters);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_PORTNAME) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Port",
+						 info2->portname);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_PRINTERNAME) {
+		/*
+		 * in addprinter: no servername and the printer is the name
+		 * in setprinter: servername is \\server
+		 *                and printer is \\server\\printer
+		 *
+		 * Samba manages only local printers.
+		 * we currently don't support things like i
+		 * path=\\other_server\printer
+		 *
+		 * We only store the printername, not \\server\printername
+		 */
+		const char *p = strrchr(info2->printername, '\\');
+		if (p == NULL) {
+			p = info2->printername;
+		} else {
+			p++;
+		}
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Name",
+						 p);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_PRINTPROCESSOR) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Print Processor",
+						 info2->printprocessor);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_PRIORITY) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "Priority",
+						    info2->priority);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_SECDESC) {
+		/*
+		 * We need a security descriptor, if it isn't specified by
+		 * AddPrinter{Ex} then create a default descriptor.
+		 */
+		if (secdesc == NULL) {
+			secdesc = winreg_printer_create_default_secdesc(tmp_ctx);
+		}
+		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, secdesc,
+				(ndr_push_flags_fn_t) ndr_push_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("winreg_update_printer: Failed to marshall security descriptor\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		result = winreg_printer_write_binary(tmp_ctx,
+						     winreg_pipe,
+						     &key_hnd,
+						     "Security",
+						     blob);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_SEPFILE) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Separator File",
+						 info2->sepfile);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_SHARENAME) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Share Name",
+						 info2->sharename);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_STARTTIME) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "StartTime",
+						    info2->starttime);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_STATUS) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "Status",
+						    info2->status);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2_mask & SPOOLSS_PRINTER_INFO_UNTILTIME) {
+		result = winreg_printer_write_dword(tmp_ctx,
+						    winreg_pipe,
+						    &key_hnd,
+						    "UntilTime",
+						    info2->untiltime);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	result = winreg_printer_write_dword(tmp_ctx,
+					    winreg_pipe,
+					    &key_hnd,
+					    "ChangeID",
+					    winreg_printer_rev_changeid());
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
 /* Set printer data over the winreg pipe. */
 WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,

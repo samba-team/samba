@@ -22,6 +22,82 @@
 #ifndef _SRV_SPOOLSS_UITL_H
 #define _SRV_SPOOLSS_UITL_H
 
+
+enum spoolss_PrinterInfo2Mask {
+	SPOOLSS_PRINTER_INFO_ATTRIBUTES      = (int)(0x00000001),
+	SPOOLSS_PRINTER_INFO_AVERAGEPPM      = (int)(0x00000002),
+	SPOOLSS_PRINTER_INFO_CJOBS           = (int)(0x00000004),
+	SPOOLSS_PRINTER_INFO_COMMENT         = (int)(0x00000008),
+	SPOOLSS_PRINTER_INFO_DATATYPE        = (int)(0x00000010),
+	SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY = (int)(0x00000020),
+	SPOOLSS_PRINTER_INFO_DEVMODE         = (int)(0x00000040),
+	SPOOLSS_PRINTER_INFO_DRIVERNAME      = (int)(0x00000080),
+	SPOOLSS_PRINTER_INFO_LOCATION        = (int)(0x00000100),
+	SPOOLSS_PRINTER_INFO_NAME            = (int)(0x00000200),
+	SPOOLSS_PRINTER_INFO_PARAMETERS      = (int)(0x00000400),
+	SPOOLSS_PRINTER_INFO_PORTNAME        = (int)(0x00000800),
+	SPOOLSS_PRINTER_INFO_PRINTERNAME     = (int)(0x00001000),
+	SPOOLSS_PRINTER_INFO_PRINTPROCESSOR  = (int)(0x00002000),
+	SPOOLSS_PRINTER_INFO_PRIORITY        = (int)(0x00004000),
+	SPOOLSS_PRINTER_INFO_SECDESC         = (int)(0x00008000),
+	SPOOLSS_PRINTER_INFO_SEPFILE         = (int)(0x00010000),
+	SPOOLSS_PRINTER_INFO_SERVERNAME      = (int)(0x00020000),
+	SPOOLSS_PRINTER_INFO_SHARENAME       = (int)(0x00040000),
+	SPOOLSS_PRINTER_INFO_STARTTIME       = (int)(0x00080000),
+	SPOOLSS_PRINTER_INFO_STATUS          = (int)(0x00100000),
+	SPOOLSS_PRINTER_INFO_UNTILTIME       = (int)(0x00200000)
+};
+
+#define SPOOLSS_PRINTER_INFO_ALL SPOOLSS_PRINTER_INFO_ATTRIBUTES      | \
+                                 SPOOLSS_PRINTER_INFO_AVERAGEPPM      | \
+                                 SPOOLSS_PRINTER_INFO_CJOBS           | \
+                                 SPOOLSS_PRINTER_INFO_COMMENT         | \
+                                 SPOOLSS_PRINTER_INFO_DATATYPE        | \
+                                 SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY | \
+                                 SPOOLSS_PRINTER_INFO_DEVMODE         | \
+                                 SPOOLSS_PRINTER_INFO_DRIVERNAME      | \
+                                 SPOOLSS_PRINTER_INFO_LOCATION        | \
+                                 SPOOLSS_PRINTER_INFO_NAME            | \
+                                 SPOOLSS_PRINTER_INFO_PARAMETERS      | \
+                                 SPOOLSS_PRINTER_INFO_PORTNAME        | \
+                                 SPOOLSS_PRINTER_INFO_PRINTERNAME     | \
+                                 SPOOLSS_PRINTER_INFO_PRINTPROCESSOR  | \
+                                 SPOOLSS_PRINTER_INFO_PRIORITY        | \
+                                 SPOOLSS_PRINTER_INFO_SECDESC         | \
+                                 SPOOLSS_PRINTER_INFO_SEPFILE         | \
+                                 SPOOLSS_PRINTER_INFO_SERVERNAME      | \
+                                 SPOOLSS_PRINTER_INFO_SHARENAME       | \
+                                 SPOOLSS_PRINTER_INFO_STARTTIME       | \
+                                 SPOOLSS_PRINTER_INFO_STATUS          | \
+                                 SPOOLSS_PRINTER_INFO_UNTILTIME
+
+/**
+ * @internal
+ *
+ * @brief Update the information of a printer in the registry.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
+ *
+ * @param[in]  info2_mask A bitmask which defines which values should be set.
+ *
+ * @param[in]  info2    A SetPrinterInfo2 structure with the data to set.
+ *
+ * @param[in]  devmode  A device mode structure with the data to set.
+ *
+ * @param[in]  secdesc  A security descriptor structure with the data to set.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
+			     struct auth_serversupplied_info *server_info,
+			     uint32_t info2_mask,
+			     struct spoolss_SetPrinterInfo2 *info2,
+			     struct spoolss_DeviceMode *devmode,
+			     struct security_descriptor *secdesc);
+
 /**
  * @internal
  *
