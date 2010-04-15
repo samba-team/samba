@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Unix SMB/CIFS implementation. Tests for glue helper
+# Unix SMB/CIFS implementation. Tests for dsdb 
 # Copyright (C) Matthieu Patou <mat@matws.net> 2010
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,27 +18,25 @@
 #
 
 import samba.dsdb
-import samba.param
 from samba.credentials import Credentials
 from samba import Ldb
 from samba.auth import system_session
-from testtools.testcase import TestCase, TestSkipped
-import random
+from testtools.testcase import TestCase
 import os
 
-class GlueTests(TestCase):
 
+class DsdbTests(TestCase):
 
     def _baseprovpath(self):
         return os.path.join(os.environ['SELFTEST_PREFIX'], "dc")
 
     def test_get_oid_from_attrid(self):
         lp = samba.param.LoadParm()
-        lp.load(os.path.join(os.path.join(self._baseprovpath(),"etc"),"smb.conf"))
+        lp.load(os.path.join(os.path.join(self._baseprovpath(), "etc"), "smb.conf"))
         creds = Credentials()
         creds.guess(lp)
         session = system_session()
-        test_ldb = Ldb(os.path.join(os.path.join(self._baseprovpath(),"private"),"sam.ldb"), session_info=session, credentials=creds,lp=lp)
-        oid = samba.dsdb.dsdb_get_oid_from_attid(test_ldb,591614)
+        test_ldb = Ldb(os.path.join(self._baseprovpath(), "private", "sam.ldb"),
+            session_info=session, credentials=creds,lp=lp)
+        oid = samba.dsdb.dsdb_get_oid_from_attid(test_ldb, 591614)
         self.assertEquals(oid, "1.2.840.113556.1.4.1790")
-

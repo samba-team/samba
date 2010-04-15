@@ -191,8 +191,12 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	uint32_t attid;
 	struct dsdb_schema *schema;
 	const char *oid;
+	PyObject *ret;
 	TALLOC_CTX *mem_ctx;
 	WERROR status;
+
+	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
+		return NULL;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -200,22 +204,25 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	   return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
-		return NULL;
-
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb \n");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
-        status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attid,
-	                                                mem_ctx, &oid);
+	
+	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attid,
+	                                        mem_ctx, &oid);
 	PyErr_WERROR_IS_ERR_RAISE(status);
 
-	return PyString_FromString(oid);
+	ret = PyString_FromString(oid);
+
+	talloc_free(mem_ctx);
+
+	return ret;
 }
 
 static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
@@ -349,8 +356,8 @@ static PyMethodDef py_dsdb_methods[] = {
 		"Get SID of domain in use." },
 	{ "samdb_ntds_invocation_id", (PyCFunction)py_samdb_ntds_invocation_id,
 		METH_VARARGS, "get the NTDS invocation ID GUID as a string"},
-	{ "dsdb_get_oid_from_attid", (PyCFunction)py_dsdb_get_oid_from_attid, METH_VARARGS,
-		NULL },
+	{ "dsdb_get_oid_from_attid", (PyCFunction)py_dsdb_get_oid_from_attid,
+		METH_VARARGS, NULL },
 	{ "dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
