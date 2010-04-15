@@ -784,7 +784,10 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 static int operational_init(struct ldb_module *ctx)
 {
 	struct operational_data *data;
-	int ret = ldb_next_init(ctx);
+	int ret;
+	auth_init();
+
+	ret = ldb_next_init(ctx);
 
 	if (ret != LDB_SUCCESS) {
 		return ret;

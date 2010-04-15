@@ -645,8 +645,3 @@ _PUBLIC_ NTSTATUS auth_init(void)
 	
 	return NT_STATUS_OK;	
 }
-
-NTSTATUS server_service_auth_init(void)
-{
-	return auth_init();
-}

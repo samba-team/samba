@@ -283,6 +283,7 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     struct auth_serversupplied_info **server_info);
 NTSTATUS auth_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
+NTSTATUS server_service_auth_init(void);
 NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct messaging_context *msg,
