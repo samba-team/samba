@@ -289,7 +289,7 @@ static void winbind_task_init(struct task_server *task)
 	if (!listen_socket) goto nomem;
 	listen_socket->socket_path	= talloc_asprintf(listen_socket, "%s/%s", 
 							  lp_winbindd_socket_directory(task->lp_ctx), 
-							  WINBINDD_SAMBA3_SOCKET);
+							  WINBINDD_SOCKET_NAME);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= false;
@@ -306,7 +306,7 @@ static void winbind_task_init(struct task_server *task)
 	listen_socket->socket_path 
 		= talloc_asprintf(listen_socket, "%s/%s", 
 				  lp_winbindd_privileged_socket_directory(task->lp_ctx),
-				  WINBINDD_SAMBA3_SOCKET);
+				  WINBINDD_SOCKET_NAME);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= true;

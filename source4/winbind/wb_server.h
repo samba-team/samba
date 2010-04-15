@@ -24,8 +24,6 @@
 #include "winbind/idmap.h"
 #include "libnet/libnet.h"
 
-#define WINBINDD_SAMBA3_SOCKET "pipe"
-
 /* this struct stores global data for the winbind task */
 struct wbsrv_service {
 	struct task_server *task;
