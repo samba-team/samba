@@ -21,6 +21,7 @@
 
 import samba.getopt as options
 from samba.netcmd import Command, Option
+import sys, ldb
 
 from getpass import getpass
 from samba.auth import system_session
@@ -61,5 +62,10 @@ class cmd_newuser(Command):
 
         samdb = SamDB(url=H, session_info=system_session(), credentials=creds,
             lp=lp)
-        samdb.newuser(username, unixname, password,
-            force_password_change_at_next_login_req=must_change_at_next_login)
+        try:
+            samdb.newuser(username, unixname, password,
+                          force_password_change_at_next_login_req=must_change_at_next_login)
+        except ldb.LdbError, (num, msg):
+            print('Failed to create user "%s" : %s' % (username, msg))
+            sys.exit(1)
+

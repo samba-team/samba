@@ -22,7 +22,7 @@
 
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option
-
+import sys
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -68,5 +68,11 @@ class cmd_setpassword(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        samdb.setpassword(filter, password,
-            force_change_at_next_login=must_change_at_next_login)
+        try:
+            samdb.setpassword(filter, password,
+                              force_change_at_next_login=must_change_at_next_login,
+                              username=username)
+        except:
+            print('Failed to set password for user "%s"' % username)
+            sys.exit(1)
+
