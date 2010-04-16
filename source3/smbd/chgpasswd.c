@@ -3,17 +3,17 @@
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Andrew Bartlett 2001-2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -651,7 +651,7 @@ bool check_lanman_password(char *user, uchar * pass1,
 		DEBUG(0, ("samu_new() failed!\n"));
 		return False;
 	}
-	
+
 	become_root();
 	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
@@ -661,7 +661,7 @@ bool check_lanman_password(char *user, uchar * pass1,
 		TALLOC_FREE(sampass);
 		return False;
 	}
-	
+
 	acct_ctrl = pdb_get_acct_ctrl     (sampass);
 	lanman_pw = pdb_get_lanman_passwd (sampass);
 
@@ -721,7 +721,7 @@ bool change_lanman_password(struct samu *sampass, uchar *pass2)
 		DEBUG(0,("change_lanman_password: no smb password entry.\n"));
 		return False;
 	}
-	
+
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	pwd = pdb_get_lanman_passwd(sampass);
 
@@ -1242,7 +1242,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	 * Conditional on lp_unix_password_sync() because we don't want
 	 * to touch the unix db unless we have admin permission.
 	 */
-	
+
 	if(lp_unix_password_sync() &&
 		!chgpasswd(username, pass, old_passwd, new_passwd, as_root)) {
 		TALLOC_FREE(pass);
