@@ -6727,19 +6727,20 @@ static enum samr_ValidationStatus samr_ValidatePassword_Reset(TALLOC_CTX *mem_ct
 {
 	NTSTATUS status;
 
-	if (req->password.string) {
-		if (strlen(req->password.string) < dom_pw_info->min_password_length) {
+	if (req->password.string == NULL) {
+		return SAMR_VALIDATION_STATUS_SUCCESS;
+	}
+	if (strlen(req->password.string) < dom_pw_info->min_password_length) {
+		ZERO_STRUCT(rep->info);
+		return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
+	}
+	if (dom_pw_info->password_properties & DOMAIN_PASSWORD_COMPLEX) {
+		status = check_password_complexity(req->account.string,
+						   req->password.string,
+						   NULL);
+		if (!NT_STATUS_IS_OK(status)) {
 			ZERO_STRUCT(rep->info);
-			return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
-		}
-		if (dom_pw_info->password_properties & DOMAIN_PASSWORD_COMPLEX) {
-			status = check_password_complexity(req->account.string,
-							   req->password.string,
-							   NULL);
-			if (!NT_STATUS_IS_OK(status)) {
-				ZERO_STRUCT(rep->info);
-				return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
-			}
+			return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 		}
 	}
 
