@@ -25,6 +25,7 @@
 #include "registry.h"
 #include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "rpc_server/srv_spoolss_util.h"
 
 static TDB_CONTEXT *tdb_forms; /* used for forms files */
 static TDB_CONTEXT *tdb_drivers; /* used for driver files */
@@ -5463,9 +5464,11 @@ void map_job_permissions(struct security_descriptor *sd)
 bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type)
 {
-	struct sec_desc_buf *secdesc = NULL;
+	struct spoolss_security_descriptor *secdesc = NULL;
 	uint32 access_granted;
+	size_t sd_size;
 	NTSTATUS status;
+	WERROR result;
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -5495,34 +5498,42 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 		return False;
 	}
 
-	if (!nt_printing_getsec(mem_ctx, pname, &secdesc)) {
+	result = winreg_get_printer_secdesc(mem_ctx,
+					    server_info,
+					    pname,
+					    &secdesc);
+	if (!W_ERROR_IS_OK(result)) {
 		talloc_destroy(mem_ctx);
 		errno = ENOMEM;
 		return False;
 	}
 
 	if (access_type == JOB_ACCESS_ADMINISTER) {
-		struct sec_desc_buf *parent_secdesc = secdesc;
+		struct spoolss_security_descriptor *parent_secdesc = secdesc;
 
 		/* Create a child security descriptor to check permissions
 		   against.  This is because print jobs are child objects
 		   objects of a printer. */
-
-		status = se_create_child_secdesc_buf(mem_ctx, &secdesc, parent_secdesc->sd, False);
-
+		status = se_create_child_secdesc(mem_ctx,
+						 &secdesc,
+						 &sd_size,
+						 parent_secdesc,
+						 parent_secdesc->owner_sid,
+						 parent_secdesc->group_sid,
+						 false);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(mem_ctx);
 			errno = map_errno_from_nt_status(status);
 			return False;
 		}
 
-		map_job_permissions(secdesc->sd);
+		map_job_permissions(secdesc);
 	} else {
-		map_printer_permissions(secdesc->sd);
+		map_printer_permissions(secdesc);
 	}
 
 	/* Check access */
-	status = se_access_check(secdesc->sd, server_info->ptok, access_type,
+	status = se_access_check(secdesc, server_info->ptok, access_type,
 				 &access_granted);
 
 	DEBUG(4, ("access check was %s\n", NT_STATUS_IS_OK(status) ? "SUCCESS" : "FAILURE"));

@@ -5201,7 +5201,9 @@ WERROR _spoolss_AbortPrinter(pipes_struct *p,
 static WERROR update_printer_sec(struct policy_handle *handle,
 				 pipes_struct *p, struct sec_desc_buf *secdesc_ctr)
 {
-	struct sec_desc_buf *new_secdesc_ctr = NULL, *old_secdesc_ctr = NULL;
+	struct spoolss_security_descriptor *new_secdesc = NULL;
+	struct spoolss_security_descriptor *old_secdesc = NULL;
+	const char *printer;
 	WERROR result;
 	int snum;
 
@@ -5215,11 +5217,12 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
-	if (!secdesc_ctr) {
+	if (secdesc_ctr == NULL) {
 		DEBUG(10,("update_printer_sec: secdesc_ctr is NULL !\n"));
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
+	printer = lp_const_servicename(snum);
 
 	/* Check the user has permissions to change the security
 	   descriptor.  By experimentation with two NT machines, the user
@@ -5234,9 +5237,12 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 	/* NT seems to like setting the security descriptor even though
 	   nothing may have actually changed. */
-
-	if ( !nt_printing_getsec(p->mem_ctx, Printer->sharename, &old_secdesc_ctr)) {
-		DEBUG(2,("update_printer_sec: nt_printing_getsec() failed\n"));
+	result = winreg_get_printer_secdesc(p->mem_ctx,
+					    p->server_info,
+					    printer,
+					    &old_secdesc);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2,("update_printer_sec: winreg_get_printer_secdesc() failed\n"));
 		result = WERR_BADFID;
 		goto done;
 	}
@@ -5245,9 +5251,9 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		struct security_acl *the_acl;
 		int i;
 
-		the_acl = old_secdesc_ctr->sd->dacl;
+		the_acl = secdesc_ctr->sd->dacl;
 		DEBUG(10, ("old_secdesc_ctr for %s has %d aces:\n",
-			   lp_printername(snum), the_acl->num_aces));
+			   printer, the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
 			DEBUG(10, ("%s 0x%08x\n", sid_string_dbg(
@@ -5259,7 +5265,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 		if (the_acl) {
 			DEBUG(10, ("secdesc_ctr for %s has %d aces:\n",
-				   lp_printername(snum), the_acl->num_aces));
+				   printer, the_acl->num_aces));
 
 			for (i = 0; i < the_acl->num_aces; i++) {
 				DEBUG(10, ("%s 0x%08x\n", sid_string_dbg(
@@ -5271,21 +5277,23 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		}
 	}
 
-	new_secdesc_ctr = sec_desc_merge_buf(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
-	if (!new_secdesc_ctr) {
+	new_secdesc = sec_desc_merge(p->mem_ctx, secdesc_ctr->sd, old_secdesc);
+	if (new_secdesc == NULL) {
 		result = WERR_NOMEM;
 		goto done;
 	}
 
-	if (security_descriptor_equal(new_secdesc_ctr->sd, old_secdesc_ctr->sd)) {
+	if (security_descriptor_equal(new_secdesc, old_secdesc)) {
 		result = WERR_OK;
 		goto done;
 	}
 
-	result = nt_printing_setsec(Printer->sharename, new_secdesc_ctr);
+	result = winreg_set_printer_secdesc(p->mem_ctx,
+					    p->server_info,
+					    printer,
+					    new_secdesc);
 
  done:
-
 	return result;
 }
 
@@ -5298,44 +5306,51 @@ static WERROR update_printer_sec(struct policy_handle *handle,
  _spoolss_open_printer_ex().
  ********************************************************************/
 
-static bool check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
+static bool check_printer_ok(TALLOC_CTX *mem_ctx,
+			     struct spoolss_SetPrinterInfo2 *info2,
+			     int snum)
 {
 	fstring printername;
 	const char *p;
 
 	DEBUG(5,("check_printer_ok: servername=%s printername=%s sharename=%s "
 		"portname=%s drivername=%s comment=%s location=%s\n",
-		info->servername, info->printername, info->sharename,
-		info->portname, info->drivername, info->comment, info->location));
+		info2->servername, info2->printername, info2->sharename,
+		info2->portname, info2->drivername, info2->comment,
+		info2->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname());
-	fstrcpy(info->sharename, lp_servicename(snum));
+	info2->servername = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	if (info2->servername == NULL) {
+		return false;
+	}
+	info2->sharename = talloc_strdup(mem_ctx, lp_const_servicename(snum));
+	if (info2->sharename == NULL) {
+		return false;
+	}
 
 	/* check to see if we allow printername != sharename */
-
-	if ( lp_force_printername(snum) ) {
-		slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-			global_myname(), info->sharename );
+	if (lp_force_printername(snum)) {
+		info2->printername = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
+					global_myname(), info2->sharename);
 	} else {
-
 		/* make sure printername is in \\server\printername format */
-
-		fstrcpy( printername, info->printername );
+		fstrcpy(printername, info2->printername);
 		p = printername;
 		if ( printername[0] == '\\' && printername[1] == '\\' ) {
 			if ( (p = strchr_m( &printername[2], '\\' )) != NULL )
 				p++;
 		}
 
-		slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-			 global_myname(), p );
+		info2->printername = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
+					global_myname(), p);
+	}
+	if (info2->printername == NULL) {
+		return false;
 	}
 
-	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
-	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
-
-
+	info2->attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	info2->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 
 	return true;
 }
@@ -5392,7 +5407,8 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *p
 /****************************************************************************
 ****************************************************************************/
 
-bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
+bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
+		      struct spoolss_SetPrinterInfo2 *info2)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
@@ -5417,9 +5433,9 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEV
 
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
-			cmd, printer->info_2->printername, printer->info_2->sharename,
-			printer->info_2->portname, printer->info_2->drivername,
-			printer->info_2->location, printer->info_2->comment, remote_machine);
+			cmd, info2->printername, info2->sharename,
+			info2->portname, info2->drivername,
+			info2->location, info2->comment, remote_machine);
 	if (!command) {
 		return false;
 	}
@@ -5472,7 +5488,7 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEV
 
 	if (numlines) {
 		/* Set the portname to what the script says the portname should be. */
-		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
+		info2->portname = talloc_strdup(ctx, qlines[0]);
 		DEBUGADD(6,("Line[0] = [%s]\n", qlines[0]));
 	}
 
@@ -5490,9 +5506,11 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 			     struct spoolss_SetPrinterInfoCtr *info_ctr,
 			     struct spoolss_DeviceMode *devmode)
 {
-	int snum;
-	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
+	uint32_t printer_mask = SPOOLSS_PRINTER_INFO_ALL;
+	struct spoolss_SetPrinterInfo2 *printer = info_ctr->info.info2;
+	struct spoolss_PrinterInfo2 *old_printer;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	int snum;
 	WERROR result;
 	DATA_BLOB buffer;
 	fstring asc_buffer;
@@ -5511,40 +5529,18 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		goto done;
 	}
 
-	if (!W_ERROR_IS_OK(get_a_printer(Printer, &printer, 2, lp_const_servicename(snum))) ||
-	    (!W_ERROR_IS_OK(get_a_printer(Printer, &old_printer, 2, lp_const_servicename(snum))))) {
+	result = winreg_get_printer(p->mem_ctx,
+				    p->server_info,
+				    NULL,
+				    lp_const_servicename(snum),
+				    &old_printer);
+	if (!W_ERROR_IS_OK(result)) {
 		result = WERR_BADFID;
 		goto done;
 	}
 
-	DEBUGADD(8,("Converting info_2 struct\n"));
-
-	/*
-	 * convert_printer_info converts the incoming
-	 * info from the client and overwrites the info
-	 * just read from the tdb in the pointer 'printer'.
-	 */
-
-	if (!convert_printer_info(info_ctr, printer)) {
-		result =  WERR_NOMEM;
-		goto done;
-	}
-
-	if (devmode) {
-		/* we have a valid devmode
-		   convert it and link it*/
-
-		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
-		result = copy_devicemode(printer->info_2, devmode,
-				         &printer->info_2->devmode);
-		if (!W_ERROR_IS_OK(result)) {
-			return result;
-		}
-	}
-
 	/* Do sanity check on the requested changes for Samba */
-
-	if (!check_printer_ok(printer->info_2, snum)) {
+	if (!check_printer_ok(p->mem_ctx, printer, snum)) {
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -5553,7 +5549,6 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	   it is installed before doing much else   --jerry */
 
 	/* Check calling user has permission to update printer description */
-
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(3, ("update_printer: printer property change denied by handle\n"));
 		result = WERR_ACCESS_DENIED;
@@ -5563,16 +5558,15 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	/* Call addprinter hook */
 	/* Check changes to see if this is really needed */
 
-	if ( *lp_addprinter_cmd()
-		&& (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)
-			|| !strequal(printer->info_2->comment, old_printer->info_2->comment)
-			|| !strequal(printer->info_2->portname, old_printer->info_2->portname)
-			|| !strequal(printer->info_2->location, old_printer->info_2->location)) )
+	if (*lp_addprinter_cmd() &&
+			(!strequal(printer->drivername, old_printer->drivername) ||
+			 !strequal(printer->comment, old_printer->comment) ||
+			 !strequal(printer->portname, old_printer->portname) ||
+			 !strequal(printer->location, old_printer->location)) )
 	{
 		/* add_printer_hook() will call reload_services() */
-
-		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
-				       printer) ) {
+		if (!add_printer_hook(p->mem_ctx, p->server_info->ptok,
+				      printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -5583,12 +5577,11 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	 * lookup previously saved driver initialization info, which is then
 	 * bound to the printer, simulating what happens in the Windows arch.
 	 */
-	if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
-	{
+	if (!strequal(printer->drivername, old_printer->drivername)) {
 		DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
-			printer->info_2->drivername));
+			printer->drivername));
 
-		notify_printer_driver(snum, printer->info_2->drivername);
+		notify_printer_driver(snum, printer->drivername);
 	}
 
 	/*
@@ -5596,48 +5589,46 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	 * all the possible changes.  We also have to update things in the
 	 * DsSpooler key.
 	 */
-
-	if (!strequal(printer->info_2->comment, old_printer->info_2->comment)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->info_2->comment);
+	if (!strequal(printer->comment, old_printer->comment)) {
+		push_reg_sz(talloc_tos(), &buffer, printer->comment);
 		winreg_set_printer_dataex(p->mem_ctx,
 					  p->server_info,
-					  printer->info_2->sharename,
+					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  "description",
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
 
-		notify_printer_comment(snum, printer->info_2->comment);
+		notify_printer_comment(snum, printer->comment);
 	}
 
-	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->info_2->sharename);
+	if (!strequal(printer->sharename, old_printer->sharename)) {
+		push_reg_sz(talloc_tos(), &buffer, printer->sharename);
 		winreg_set_printer_dataex(p->mem_ctx,
 					  p->server_info,
-					  printer->info_2->sharename,
+					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  "shareName",
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
 
-		notify_printer_sharename(snum, printer->info_2->sharename);
+		notify_printer_sharename(snum, printer->sharename);
 	}
 
-	if (!strequal(printer->info_2->printername, old_printer->info_2->printername)) {
-		char *pname;
+	if (!strequal(printer->printername, old_printer->printername)) {
+		const char *pname;
 
-		if ( (pname = strchr_m( printer->info_2->printername+2, '\\' )) != NULL )
+		if ( (pname = strchr_m( printer->printername+2, '\\' )) != NULL )
 			pname++;
 		else
-			pname = printer->info_2->printername;
-
+			pname = printer->printername;
 
 		push_reg_sz(talloc_tos(), &buffer, pname);
 		winreg_set_printer_dataex(p->mem_ctx,
 					  p->server_info,
-					  printer->info_2->sharename,
+					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  "printerName",
 					  REG_SZ,
@@ -5647,32 +5638,32 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		notify_printer_printername( snum, pname );
 	}
 
-	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->info_2->portname);
+	if (!strequal(printer->portname, old_printer->portname)) {
+		push_reg_sz(talloc_tos(), &buffer, printer->portname);
 		winreg_set_printer_dataex(p->mem_ctx,
 					  p->server_info,
-					  printer->info_2->sharename,
+					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  "portName",
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
 
-		notify_printer_port(snum, printer->info_2->portname);
+		notify_printer_port(snum, printer->portname);
 	}
 
-	if (!strequal(printer->info_2->location, old_printer->info_2->location)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->info_2->location);
+	if (!strequal(printer->location, old_printer->location)) {
+		push_reg_sz(talloc_tos(), &buffer, printer->location);
 		winreg_set_printer_dataex(p->mem_ctx,
 					  p->server_info,
-					  printer->info_2->sharename,
+					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  "location",
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
 
-		notify_printer_location(snum, printer->info_2->location);
+		notify_printer_location(snum, printer->location);
 	}
 
 	/* here we need to update some more DsSpooler keys */
@@ -5681,7 +5672,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	push_reg_sz(talloc_tos(), &buffer, global_myname());
 	winreg_set_printer_dataex(p->mem_ctx,
 				  p->server_info,
-				  printer->info_2->sharename,
+				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  "serverName",
 				  REG_SZ,
@@ -5689,7 +5680,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 				  buffer.length);
 	winreg_set_printer_dataex(p->mem_ctx,
 				  p->server_info,
-				  printer->info_2->sharename,
+				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  "shortServerName",
 				  REG_SZ,
@@ -5697,24 +5688,32 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 				  buffer.length);
 
 	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
-                 global_myname(), printer->info_2->sharename );
+                 global_myname(), printer->sharename );
 	push_reg_sz(talloc_tos(), &buffer, asc_buffer);
 	winreg_set_printer_dataex(p->mem_ctx,
 				  p->server_info,
-				  printer->info_2->sharename,
+				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  "uNCName",
 				  REG_SZ,
 				  buffer.data,
 				  buffer.length);
 
-	/* Update printer info */
-	result = mod_a_printer(printer, 2);
+	printer_mask &= ~SPOOLSS_PRINTER_INFO_SECDESC;
+
+	if (devmode == NULL) {
+		printer_mask &= ~SPOOLSS_PRINTER_INFO_DEVMODE;
+	}
+	result = winreg_update_printer(p->mem_ctx,
+				       p->server_info,
+				       printer->sharename,
+				       printer_mask,
+				       printer,
+				       devmode,
+				       NULL);
 
 done:
-	free_a_printer(&printer, 2);
-	free_a_printer(&old_printer, 2);
-
+	talloc_free(old_printer);
 
 	return result;
 }
@@ -5758,56 +5757,32 @@ static WERROR update_printer_devmode(pipes_struct *p, struct policy_handle *hand
 				     struct spoolss_DeviceMode *devmode)
 {
 	int snum;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-	WERROR result;
+	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_DEVMODE;
 
 	DEBUG(8,("update_printer_devmode\n"));
 
-	result = WERR_OK;
-
 	if (!Printer) {
-		result = WERR_BADFID;
-		goto done;
+		return WERR_BADFID;
 	}
 
 	if (!get_printer_snum(p, handle, &snum, NULL)) {
-		result = WERR_BADFID;
-		goto done;
-	}
-
-	if (!W_ERROR_IS_OK(get_a_printer(Printer, &printer, 2, lp_const_servicename(snum)))) {
-		result = WERR_BADFID;
-		goto done;
-	}
-
-	if (devmode) {
-		/* we have a valid devmode, copy it */
-
-		DEBUGADD(8, ("update_printer: Copying the devicemode struct\n"));
-		result = copy_devicemode(printer->info_2, devmode,
-				         &printer->info_2->devmode);
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
+		return WERR_BADFID;
 	}
 
 	/* Check calling user has permission to update printer description */
-
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(3, ("update_printer: printer property change denied by handle\n"));
-		result = WERR_ACCESS_DENIED;
-		goto done;
+		return WERR_ACCESS_DENIED;
 	}
 
-
-	/* Update printer info */
-	result = mod_a_printer(printer, 2);
-
-done:
-	free_a_printer(&printer, 2);
-
-	return result;
+	return winreg_update_printer(p->mem_ctx,
+				     p->server_info,
+				     lp_const_servicename(snum),
+				     info2_mask,
+				     NULL,
+				     devmode,
+				     NULL);
 }
 
 
@@ -6927,72 +6902,51 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 					   const char *server,
 					   struct spoolss_SetPrinterInfoCtr *info_ctr,
 					   struct spoolss_DeviceMode *devmode,
-					   struct security_descriptor *sec_desc,
+					   struct security_descriptor *secdesc,
 					   struct spoolss_UserLevelCtr *user_ctr,
 					   struct policy_handle *handle)
 {
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	fstring	name;
+	struct spoolss_SetPrinterInfo2 *info2 = info_ctr->info.info2;
+	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_ALL;
 	int	snum;
 	WERROR err = WERR_OK;
 
-	if ( !(printer = TALLOC_ZERO_P(NULL, NT_PRINTER_INFO_LEVEL)) ) {
-		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
-		return WERR_NOMEM;
-	}
-
-	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
-	if (!convert_printer_info(info_ctr, printer)) {
-		free_a_printer(&printer, 2);
-		return WERR_NOMEM;
-	}
-
 	/* samba does not have a concept of local, non-shared printers yet, so
 	 * make sure we always setup sharename - gd */
-	if ((printer->info_2->sharename[0] == '\0') && (printer->info_2->printername != '\0')) {
+	if ((info2->sharename == NULL || info2->sharename[0] == '\0') &&
+	    (info2->printername != NULL && info2->printername[0] != '\0')) {
 		DEBUG(5, ("spoolss_addprinterex_level_2: "
 			"no sharename has been set, setting printername %s as sharename\n",
-			printer->info_2->printername));
-		fstrcpy(printer->info_2->sharename, printer->info_2->printername);
+			info2->printername));
+		info2->sharename = info2->printername;
 	}
 
 	/* check to see if the printer already exists */
-
-	if ((snum = print_queue_snum(printer->info_2->sharename)) != -1) {
+	if ((snum = print_queue_snum(info2->sharename)) != -1) {
 		DEBUG(5, ("spoolss_addprinterex_level_2: Attempted to add a printer named [%s] when one already existed!\n",
-			printer->info_2->sharename));
-		free_a_printer(&printer, 2);
+			info2->sharename));
 		return WERR_PRINTER_ALREADY_EXISTS;
 	}
 
 	if (!lp_force_printername(GLOBAL_SECTION_SNUM)) {
-		if ((snum = print_queue_snum(printer->info_2->printername)) != -1) {
+		if ((snum = print_queue_snum(info2->printername)) != -1) {
 			DEBUG(5, ("spoolss_addprinterex_level_2: Attempted to add a printer named [%s] when one already existed!\n",
-				printer->info_2->printername));
-			free_a_printer(&printer, 2);
+				info2->printername));
 			return WERR_PRINTER_ALREADY_EXISTS;
 		}
 	}
 
 	/* validate printer info struct */
-	if (!info_ctr->info.info2->printername ||
-	    strlen(info_ctr->info.info2->printername) == 0) {
-		free_a_printer(&printer,2);
+	if (!info2->printername || strlen(info2->printername) == 0) {
 		return WERR_INVALID_PRINTER_NAME;
 	}
-	if (!info_ctr->info.info2->portname ||
-	    strlen(info_ctr->info.info2->portname) == 0) {
-		free_a_printer(&printer,2);
+	if (!info2->portname || strlen(info2->portname) == 0) {
 		return WERR_UNKNOWN_PORT;
 	}
-	if (!info_ctr->info.info2->drivername ||
-	    strlen(info_ctr->info.info2->drivername) == 0) {
-		free_a_printer(&printer,2);
+	if (!info2->drivername || strlen(info2->drivername) == 0) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
-	if (!info_ctr->info.info2->printprocessor ||
-	    strlen(info_ctr->info.info2->printprocessor) == 0) {
-		free_a_printer(&printer,2);
+	if (!info2->printprocessor || strlen(info2->printprocessor) == 0) {
 		return WERR_UNKNOWN_PRINTPROCESSOR;
 	}
 
@@ -7001,32 +6955,22 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 
 	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
-				       printer) ) {
-			free_a_printer(&printer,2);
+				       info2) ) {
 			return WERR_ACCESS_DENIED;
 		}
 	} else {
 		DEBUG(0,("spoolss_addprinterex_level_2: add printer for printer %s called and no"
 			"smb.conf parameter \"addprinter command\" is defined. This"
 			"parameter must exist for this call to succeed\n",
-			printer->info_2->sharename ));
+			info2->sharename ));
 	}
 
-	/* use our primary netbios name since get_a_printer() will convert
-	   it to what the client expects on a case by case basis */
-
-	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname(),
-             printer->info_2->sharename);
-
-
-	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
-		free_a_printer(&printer,2);
+	if ((snum = print_queue_snum(info2->sharename)) == -1) {
 		return WERR_ACCESS_DENIED;
 	}
 
 	/* you must be a printer admin to add a new printer */
 	if (!print_access_check(p->server_info, snum, PRINTER_ACCESS_ADMINISTER)) {
-		free_a_printer(&printer,2);
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -7034,47 +6978,32 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 	 * Do sanity check on the requested changes for Samba.
 	 */
 
-	if (!check_printer_ok(printer->info_2, snum)) {
-		free_a_printer(&printer,2);
+	if (!check_printer_ok(p->mem_ctx, info2, snum)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	/*
-	 * When a printer is created, the drivername bound to the printer is used
-	 * to lookup previously saved driver initialization info, which is then
-	 * bound to the new printer, simulating what happens in the Windows arch.
-	 */
-
-	if (devmode)
-	{
-		/* A valid devmode was included, convert and link it
-		*/
-		DEBUGADD(10, ("spoolss_addprinterex_level_2: devmode included, converting\n"));
-
-		err = copy_devicemode(printer, devmode,
-				      &printer->info_2->devmode);
-		if (!W_ERROR_IS_OK(err)) {
-			return err;
-		}
+	if (devmode == NULL) {
+		info2_mask = ~SPOOLSS_PRINTER_INFO_DEVMODE;
 	}
 
-	/* write the ASCII on disk */
-	err = mod_a_printer(printer, 2);
+	err = winreg_update_printer(p->mem_ctx,
+				    p->server_info,
+				    info2->sharename,
+				    info2_mask,
+				    info2,
+				    devmode,
+				    secdesc);
 	if (!W_ERROR_IS_OK(err)) {
-		free_a_printer(&printer,2);
 		return err;
 	}
 
-	if (!open_printer_hnd(p, handle, name, PRINTER_ACCESS_ADMINISTER)) {
+	if (!open_printer_hnd(p, handle, info2->printername, PRINTER_ACCESS_ADMINISTER)) {
 		/* Handle open failed - remove addition. */
-		del_a_printer(printer->info_2->sharename);
-		free_a_printer(&printer,2);
 		ZERO_STRUCTP(handle);
 		return WERR_ACCESS_DENIED;
 	}
 
 	update_c_setprinter(false);
-	free_a_printer(&printer,2);
 
 	return WERR_OK;
 }
