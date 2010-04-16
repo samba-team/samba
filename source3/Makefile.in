@@ -1246,6 +1246,8 @@ WINBINDD_OBJ1 = \
 		auth/server_info.o \
 		auth/server_info_sam.o \
 		auth/user_info.o \
+		auth/pampass.o \
+		smbd/chgpasswd.o \
 		../nsswitch/libwbclient/wb_reqtrans.o
 
 WINBINDD_OBJ = \
@@ -2537,7 +2539,7 @@ bin/librpc_echo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_ECHO_OBJ)
 bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(WINBINDD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
-		$(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) \
+		$(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(AUTH_LIBS) \
 		$(PASSDB_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) \
 		$(ZLIB_LIBS)
 

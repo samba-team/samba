@@ -1924,6 +1924,53 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	/* Initialize reject reason */
 	state->response->data.auth.reject_reason = Undefined;
 
+	if (strequal(domain, get_global_sam_name())) {
+		struct samr_CryptPassword new_nt_password;
+		struct samr_CryptPassword new_lm_password;
+		struct samr_Password old_nt_hash_enc;
+		struct samr_Password old_lanman_hash_enc;
+		enum samPwdChangeReason rejectReason;
+
+		uchar old_nt_hash[16];
+		uchar old_lanman_hash[16];
+		uchar new_nt_hash[16];
+		uchar new_lanman_hash[16];
+
+		contact_domain = NULL;
+
+		E_md4hash(oldpass, old_nt_hash);
+		E_md4hash(newpass, new_nt_hash);
+
+		if (lp_client_lanman_auth() &&
+		    E_deshash(newpass, new_lanman_hash) &&
+		    E_deshash(oldpass, old_lanman_hash)) {
+
+			/* E_deshash returns false for 'long' passwords (> 14
+			   DOS chars).  This allows us to match Win2k, which
+			   does not store a LM hash for these passwords (which
+			   would reduce the effective password length to 14) */
+
+			encode_pw_buffer(new_lm_password.data, newpass, STR_UNICODE);
+			arcfour_crypt(new_lm_password.data, old_nt_hash, 516);
+			E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
+		} else {
+			ZERO_STRUCT(new_lm_password);
+			ZERO_STRUCT(old_lanman_hash_enc);
+		}
+
+		encode_pw_buffer(new_nt_password.data, newpass, STR_UNICODE);
+
+		arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
+		E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
+
+		result = pass_oem_change(
+			user,
+			new_lm_password.data, old_lanman_hash_enc.hash,
+			new_nt_password.data, old_nt_hash_enc.hash,
+			&rejectReason);
+		goto done;
+	}
+
 	/* Get sam handle */
 
 	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli,
