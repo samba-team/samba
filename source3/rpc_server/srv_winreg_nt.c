@@ -320,7 +320,9 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	} else {
 		*r->out.data_length = outbuf_size;
 		*r->out.data_size = outbuf_size;
-		memcpy(r->out.data, outbuf, outbuf_size);
+		if (r->out.data) {
+			memcpy(r->out.data, outbuf, outbuf_size);
+		}
 		status = WERR_OK;
 	}
 
