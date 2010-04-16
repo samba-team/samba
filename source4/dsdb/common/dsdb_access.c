@@ -33,6 +33,7 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
 #include "auth/auth.h"
+#include "dsdb/samdb/samdb.h"
 
 void dsdb_acl_debug(struct security_descriptor *sd,
 		      struct security_token *token,
@@ -78,32 +79,6 @@ int dsdb_get_sd_from_ldb_message(TALLOC_CTX *mem_ctx,
 	return LDB_SUCCESS;
 }
 
-int dsdb_get_dom_sid_from_ldb_message(TALLOC_CTX *mem_ctx,
-				 struct ldb_message *acl_res,
-				 struct dom_sid **sid)
-{
-	struct ldb_message_element *sid_element;
-	enum ndr_err_code ndr_err;
-
-	sid_element = ldb_msg_find_element(acl_res, "objectSid");
-	if (!sid_element) {
-		*sid = NULL;
-		return LDB_SUCCESS;
-	}
-	*sid = talloc(mem_ctx, struct dom_sid);
-	if(!*sid) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ndr_err = ndr_pull_struct_blob(&sid_element->values[0], *sid, NULL, *sid,
-				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	return LDB_SUCCESS;
-}
-
 int dsdb_check_access_on_dn_internal(struct ldb_result *acl_res,
 				     TALLOC_CTX *mem_ctx,
 				     struct security_token *token,
@@ -127,11 +102,7 @@ int dsdb_check_access_on_dn_internal(struct ldb_result *acl_res,
 	if (!sd) {
 		return LDB_SUCCESS;
 	}
-	ret = dsdb_get_dom_sid_from_ldb_message(mem_ctx, acl_res->msgs[0], &sid);
-	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
 	if (guid) {
 		if (!insert_in_object_tree(mem_ctx, guid, access, &root, &new_node)) {
 			return LDB_ERR_OPERATIONS_ERROR;

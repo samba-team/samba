@@ -374,11 +374,8 @@ static int acl_allowedAttributes(struct ldb_module *module,
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = dsdb_get_dom_sid_from_ldb_message(mem_ctx, sd_msg, &sid);
 
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+		sid = samdb_result_dom_sid(mem_ctx, sd_msg, "objectSid");
 		for (i=0; attr_list && attr_list[i]; i++) {
 			const struct dsdb_attribute *attr = dsdb_attribute_by_lDAPDisplayName(schema,
 											attr_list[i]);
@@ -495,11 +492,8 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	ret = dsdb_get_dom_sid_from_ldb_message(msg, sd_msg, &sid);
 
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	sid = samdb_result_dom_sid(msg, sd_msg, "objectSid");
 	for (i=0; oc_el && i < oc_el->num_values; i++) {
 		sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
 		if (!sclass) {
@@ -573,11 +567,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = dsdb_get_dom_sid_from_ldb_message(msg, sd_msg, &sid);
-
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+		sid = samdb_result_dom_sid(msg, sd_msg, "objectSid");
 		ret = acl_check_access_on_attribute(module,
 						    msg,
 						    sd,
@@ -729,12 +719,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		DEBUG(10, ("acl_modify: cannot get guid\n"));
 		goto fail;
 	}
-
-	ret = dsdb_get_dom_sid_from_ldb_message(req, acl_res->msgs[0], &sid);
-	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &root, &new_node)) {
 		DEBUG(10, ("acl_modify: cannot add to object tree\n"));
@@ -951,11 +936,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	if (!sd) {
 		return LDB_SUCCESS;
 	}
-	ret = dsdb_get_dom_sid_from_ldb_message(req, acl_res->msgs[0], &sid);
-	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
 	status = sec_access_check_ds(sd, acl_user_token(module),
 				     SEC_ADS_WRITE_PROP,
 				     &access_granted,
