@@ -1115,30 +1115,34 @@ NTSTATUS check_password_complexity(const char *username,
 				   enum samPwdChangeReason *samr_reject_reason)
 {
 	TALLOC_CTX *tosctx = talloc_tos();
+	int check_ret;
+	char *cmd;
 
 	/* Use external script to check password complexity */
-	if (lp_check_password_script() && *(lp_check_password_script())) {
-		int check_ret;
-		char *cmd;
+	if ((lp_check_password_script() == NULL)
+	    || (*(lp_check_password_script()) == '\0')) {
+		return NT_STATUS_OK;
+	}
 
-		cmd = talloc_string_sub(tosctx, lp_check_password_script(), "%u", username);
-		if (!cmd) {
-			return NT_STATUS_PASSWORD_RESTRICTION;
+	cmd = talloc_string_sub(tosctx, lp_check_password_script(), "%u",
+				username);
+	if (!cmd) {
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	check_ret = smbrunsecret(cmd, password);
+	DEBUG(5,("check_password_complexity: check password script (%s) "
+		 "returned [%d]\n", cmd, check_ret));
+	TALLOC_FREE(cmd);
+
+	if (check_ret != 0) {
+		DEBUG(1,("check_password_complexity: "
+			 "check password script said new password is not good "
+			 "enough!\n"));
+		if (samr_reject_reason) {
+			*samr_reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
 		}
-
-		check_ret = smbrunsecret(cmd, password);
-		DEBUG(5,("check_password_complexity: check password script (%s) returned [%d]\n",
-			cmd, check_ret));
-		TALLOC_FREE(cmd);
-
-		if (check_ret != 0) {
-			DEBUG(1,("check_password_complexity: "
-				"check password script said new password is not good enough!\n"));
-			if (samr_reject_reason) {
-				*samr_reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
-			}
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
+		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
 	return NT_STATUS_OK;
