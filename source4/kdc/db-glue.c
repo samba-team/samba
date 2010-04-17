@@ -1319,7 +1319,7 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 	}
 
 	if (ret != 0) {
-		talloc_free(priv);
+		TALLOC_FREE(priv);
 		kdc_db_ctx->seq_ctx = NULL;
 	} else {
 		talloc_free(mem_ctx);
@@ -1341,7 +1341,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	int lret;
 
 	if (priv) {
-		talloc_free(priv);
+		TALLOC_FREE(priv);
 		kdc_db_ctx->seq_ctx = NULL;
 	}
 
@@ -1367,7 +1367,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 	ret = krb5_get_default_realm(context, &realm);
 	if (ret != 0) {
-		talloc_free(priv);
+		TALLOC_FREE(priv);
 		return ret;
 	}
 
@@ -1376,7 +1376,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 			  "(objectClass=user)");
 
 	if (lret != LDB_SUCCESS) {
-		talloc_free(priv);
+		TALLOC_FREE(priv);
 		return HDB_ERR_NOENTRY;
 	}
 
@@ -1389,7 +1389,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	ret = samba_kdc_seq(context, kdc_db_ctx, entry);
 
 	if (ret != 0) {
-    		talloc_free(priv);
+		TALLOC_FREE(priv);
 		kdc_db_ctx->seq_ctx = NULL;
 	} else {
 		talloc_free(mem_ctx);
