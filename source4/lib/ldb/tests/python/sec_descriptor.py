@@ -1712,6 +1712,19 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.get_desc_sddl(group_dn)
         self.assertFalse("(A;ID;WP;;;AU)" in desc_sddl)
 
+    def test_211(self):
+        """ Provide ACE with CO SID, should be expanded and replaced
+        """
+        ou_dn = "OU=test_inherit_ou," + self.base_dn
+        group_dn = "CN=test_inherit_group," + ou_dn
+        # Create inheritable-free OU
+        self.create_clean_ou(ou_dn)
+        # Add some custom 'CI' ACE
+        mod = "D:(D;CI;WP;;;CO)"
+        self.create_domain_group(self.ldb_admin, group_dn, mod)
+        desc_sddl = self.get_desc_sddl(group_dn)
+        self.assertTrue("(D;;WP;;;DA)(D;CIIO;WP;;;CO)" in desc_sddl)
+
     ########################################################################################
 
 
