@@ -81,7 +81,7 @@ else
 fi
 USERID=`PATH=/usr/ucb:$PATH id | cut -d ' ' -f1 | sed -e 's/uid=\([0-9]*\).*/\1/g'`
 GROUPID=`PATH=/usr/ucb:$PATH id | cut -d ' ' -f2 | sed -e 's/gid=\([0-9]*\).*/\1/g'`
-PASSWORD=test
+PASSWORD=testPw
 
 SRCDIR="`dirname $0`/../.."
 BINDIR="`pwd`/bin"
