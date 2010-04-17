@@ -689,6 +689,19 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_getgroups(struct torture_context *tctx)
+{
+	wbcErr ret;
+	uint32_t num_groups;
+	gid_t *groups;
+
+	ret = wbcGetGroups(getenv("USERNAME"), &num_groups, &groups);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcGetGroups failed");
+	wbcFreeMemory(groups);
+	return true;
+}
+
 struct torture_suite *torture_wbclient(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WBCLIENT");
@@ -720,6 +733,8 @@ struct torture_suite *torture_wbclient(void)
 				      test_wbc_logon_user);
 	torture_suite_add_simple_test(suite, "wbcChangeUserPassword",
 				      test_wbc_change_password);
+	torture_suite_add_simple_test(suite, "wbcGetGroups",
+				      test_wbc_getgroups);
 
 	return suite;
 }
