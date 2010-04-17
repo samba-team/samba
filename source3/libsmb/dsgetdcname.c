@@ -497,6 +497,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	dclist = TALLOC_ZERO_ARRAY(mem_ctx, struct ip_service_name, count);
 	if (!dclist) {
+		SAFE_FREE(iplist);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -512,6 +513,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		r->port = iplist[i].port;
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
+			SAFE_FREE(iplist);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -519,6 +521,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	*returned_dclist = dclist;
 	*returned_count = count;
+	SAFE_FREE(iplist);
 
 	return NT_STATUS_OK;
 }
