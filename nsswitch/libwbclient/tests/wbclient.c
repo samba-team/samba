@@ -574,6 +574,27 @@ static bool test_wbc_authenticate_user(struct torture_context *tctx)
 	return test_wbc_authenticate_user_int(tctx, getenv("PASSWORD"));
 }
 
+static bool test_wbc_change_password(struct torture_context *tctx)
+{
+	wbcErr ret;
+
+	ret = wbcChangeUserPassword(getenv("USERNAME"), getenv("PASSWORD"),
+				    "passW0rd");
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcChangeUserPassword failed");
+
+	if (!test_wbc_authenticate_user_int(tctx, "passW0rd")) {
+		return false;
+	}
+
+	ret = wbcChangeUserPassword(getenv("USERNAME"), "passW0rd",
+				    getenv("PASSWORD"));
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcChangeUserPassword failed");
+
+	return test_wbc_authenticate_user_int(tctx, getenv("PASSWORD"));
+}
+
 static bool test_wbc_logon_user(struct torture_context *tctx)
 {
 	struct wbcLogonUserParams params;
@@ -697,6 +718,8 @@ struct torture_suite *torture_wbclient(void)
 				      test_wbc_authenticate_user);
 	torture_suite_add_simple_test(suite, "wbcLogonUser",
 				      test_wbc_logon_user);
+	torture_suite_add_simple_test(suite, "wbcChangeUserPassword",
+				      test_wbc_change_password);
 
 	return suite;
 }
