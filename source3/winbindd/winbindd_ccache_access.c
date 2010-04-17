@@ -314,7 +314,7 @@ void winbindd_ccache_save(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	if (!canonicalize_username(state->request->data.ccache_ntlm_auth.user,
+	if (!canonicalize_username(state->request->data.ccache_save.user,
 				   name_domain, name_user)) {
 		DEBUG(5,("winbindd_ccache_save: cannot parse domain and user "
 			 "from name [%s]\n",
