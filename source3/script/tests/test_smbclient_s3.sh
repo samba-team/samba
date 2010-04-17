@@ -16,6 +16,7 @@ PASSWORD="$4"
 USERID="$5"
 LOCAL_PATH="$6"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
+WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo}"
 shift 6
 ADDARGS="$*"
 
@@ -360,6 +361,34 @@ EOF
     fi
 }
 
+# Test authenticating using the winbind ccache
+test_ccache_access()
+{
+    $WBINFO --ccache-save="${USERNAME}%${PASSWORD}"
+    $SMBCLIENT $CONFIGURATION //$SERVER_IP/tmp -C -U "${USERNAME}%" \
+	-c quit 2>&1
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "smbclient failed to use cached credentials"
+	false
+	return
+    fi
+
+    $WBINFO --ccache-save="${USERNAME}%GarBage"
+    $SMBCLIENT $CONFIGURATION //$SERVER_IP/tmp -C -U "${USERNAME}%" \
+	-c quit 2>&1
+    ret=$?
+
+    if [ $ret == 0 ] ; then
+	echo "smbclient succeeded with wrong cached credentials"
+	false
+	return
+    fi
+
+    $WBINFO --logoff
+}
+
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
@@ -399,5 +428,9 @@ testit "Reading a owner-only file fails" \
 testit "Accessing an MS-DFS link" \
    test_msdfs_link || \
    failed=`expr $failed + 1`
+
+testit "ccache access works for smbclient" \
+    test_ccache_access || \
+    failed=`expr $failed + 1`
 
 testok $0 $failed
