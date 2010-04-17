@@ -529,21 +529,22 @@ static bool test_wbc_get_sidaliases(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_wbc_authenticate_user(struct torture_context *tctx)
+static bool test_wbc_authenticate_user_int(struct torture_context *tctx,
+					   const char *correct_password)
 {
 	struct wbcAuthUserParams params;
 	struct wbcAuthUserInfo *info = NULL;
 	struct wbcAuthErrorInfo *error = NULL;
 	wbcErr ret;
 
-	ret = wbcAuthenticateUser(getenv("USERNAME"), getenv("PASSWORD"));
+	ret = wbcAuthenticateUser(getenv("USERNAME"), correct_password);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcAuthenticateUser failed");
 
 	ZERO_STRUCT(params);
 	params.account_name		= getenv("USERNAME");
 	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
-	params.password.plaintext	= getenv("PASSWORD");
+	params.password.plaintext	= correct_password;
 
 	ret = wbcAuthenticateUserEx(&params, &info, &error);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
@@ -566,6 +567,11 @@ static bool test_wbc_authenticate_user(struct torture_context *tctx)
 	error = NULL;
 
 	return true;
+}
+
+static bool test_wbc_authenticate_user(struct torture_context *tctx)
+{
+	return test_wbc_authenticate_user_int(tctx, getenv("PASSWORD"));
 }
 
 static bool test_wbc_logon_user(struct torture_context *tctx)
