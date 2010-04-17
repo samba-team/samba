@@ -486,6 +486,13 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	return wbc_status;
 }
 
+static void wbcDomainControllerInfoDestructor(void *ptr)
+{
+	struct wbcDomainControllerInfo *i =
+		(struct wbcDomainControllerInfo *)ptr;
+	free(i->dc_name);
+}
+
 /* Enumerate the domain trusts known by Winbind */
 wbcErr wbcLookupDomainController(const char *domain,
 				 uint32_t flags,
@@ -511,7 +518,9 @@ wbcErr wbcLookupDomainController(const char *domain,
 
 	request.flags = flags;
 
-	dc = talloc(NULL, struct wbcDomainControllerInfo);
+	dc = (struct wbcDomainControllerInfo *)wbcAllocateMemory(
+		sizeof(struct wbcDomainControllerInfo), 1,
+		wbcDomainControllerInfoDestructor);
 	BAIL_ON_PTR_ERROR(dc, wbc_status);
 
 	/* Send request */
@@ -521,16 +530,14 @@ wbcErr wbcLookupDomainController(const char *domain,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	dc->dc_name = talloc_strdup(dc, response.data.dsgetdcname.dc_unc);
+	dc->dc_name = strdup(response.data.dsgetdcname.dc_unc);
 	BAIL_ON_PTR_ERROR(dc->dc_name, wbc_status);
 
 	*dc_info = dc;
+	dc = NULL;
 
 done:
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		talloc_free(dc);
-	}
-
+	wbcFreeMemory(dc);
 	return wbc_status;
 }
 
