@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS mplementation.
 
-   DNS udpate service
+   DNS update service
 
    Copyright (C) Andrew Tridgell 2009
 
