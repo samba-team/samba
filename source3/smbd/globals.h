@@ -360,6 +360,8 @@ struct smbd_smb2_request {
 
 	int current_idx;
 	bool do_signing;
+	bool async;
+	bool cancelled;
 
 	struct files_struct *compat_chain_fsp;
 

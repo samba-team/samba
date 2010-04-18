@@ -349,16 +349,23 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
-	if (i > 2 && in_session_id == (0xFFFFFFFFFFFFFFFFLL)) {
-		/*
-		 * Chained request - fill in session_id from
-		 * the previous request out.vector[].iov_base.
-		 * We can't modify the inhdr here as we have
-		 * yet to check signing.
-		 */
-		outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
-		in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
-		chained_fixup = true;
+	if (in_session_id == (0xFFFFFFFFFFFFFFFFLL)) {
+		if (req->async) {
+			/*
+			 * async request - fill in session_id from
+			 * already setup request out.vector[].iov_base.
+			 */
+			outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
+		} else if (i > 2) {
+			/*
+			 * Chained request - fill in session_id from
+			 * the previous request out.vector[].iov_base.
+			 */
+			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
+			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
+			chained_fixup = true;
+		}
 	}
 
 	/* lookup an existing session */
