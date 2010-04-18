@@ -1476,7 +1476,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	return LDB_SUCCESS;
 }
 
-const struct ldb_backend_ops ldb_tdb_backend_ops = {
+_PRIVATE_ const struct ldb_backend_ops ldb_tdb_backend_ops = {
 	.name = "tdb",
 	.connect_fn = ltdb_connect,
 };
