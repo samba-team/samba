@@ -29,12 +29,6 @@
 /** Feel free to add definitions for other compilers here. */
 #endif
 
-#ifdef HAVE_VISIBILITY_ATTR
-#  define _PUBLIC_ __attribute__((visibility("default")))
-#else
-#  define _PUBLIC_
-#endif
-
 #ifndef _DEPRECATED_
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 #define _DEPRECATED_ __attribute__ ((deprecated))

@@ -753,4 +753,22 @@ char *ufc_crypt(const char *key, const char *salt);
 #define fdatasync(fd) fsync(fd)
 #endif
 
+/* these are used to mark symbols as local to a shared lib, or
+ * publicly available via the shared lib API */
+#ifndef _PUBLIC_
+#ifdef HAVE_VISIBILITY_ATTR
+#define _PUBLIC_ __attribute__((visibility("default")))
+#else
+#define _PUBLIC_
+#endif
+#endif
+
+#ifndef _PRIVATE_
+#ifdef HAVE_VISIBILITY_ATTR
+#  define _PRIVATE_ __attribute__((visibility("hidden")))
+#else
+#  define _PRIVATE_
+#endif
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */
