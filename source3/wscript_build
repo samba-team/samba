@@ -900,6 +900,7 @@ bld.SAMBA_BINARY('smbd/smbd',
                  NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB LDB
                  PARAM_WITHOUT_REG LIBS LIBSMB''',
                  includes='lib',
+                 install_path='${SBINDIR}',
                  vars=locals())
 
 bld.SAMBA_BINARY('nmbd/nmbd',
@@ -907,6 +908,7 @@ bld.SAMBA_BINARY('nmbd/nmbd',
                  deps='''talloc tdb tevent ZLIB cap resolv LIBWBCLIENT popt dl
                  NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM ldap LIB_NONSMBD LIBSMB''',
                  includes='lib ../lib/tdb/include',
+                 install_path='${SBINDIR}',
                  vars=locals())
 
 bld.SAMBA_BINARY('winbindd/winbindd',
@@ -915,6 +917,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD''',
                  includes='lib',
                  enabled=(bld.env.WITH_WINBIND == 1),
+                 install_path='${SBINDIR}',
                  vars=locals())
 
 bld.SAMBA_BINARY('wbinfo',
