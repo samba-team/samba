@@ -125,7 +125,7 @@ def SAMBA_PIDL_TABLES(bld, name, target):
     bld.SET_BUILD_GROUP('main')
     t = bld(
             features = 'collect',
-            rule     = '${SRC} --output ${TGT} | sed "s|default/||" > ${TGT}',
+            rule     = '${PERL} ${SRC} --output ${TGT} | sed "s|default/||" > ${TGT}',
             ext_out  = '.c',
             before   = 'cc',
             on_results = True,
