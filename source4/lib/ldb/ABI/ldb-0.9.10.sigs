@@ -1,7 +1,6 @@
 ldb_add: int (struct ldb_context *, const struct ldb_message *)
 ldb_any_comparison: int (struct ldb_context *, void *, ldb_attr_handler_t, const struct ldb_val *, const struct ldb_val *)
 ldb_asprintf_errstring: void (struct ldb_context *, const char *, ...)
-ldb_asq_module_ops: name = 0xXXXX "asq", init_context = 0xXXXX <asq_init>, search = 0xXXXX <asq_search>, add = 0, modify = 0, del = 0, rename = 0, request = 0, extended = 0, start_transaction = 0, prepare_commit = 0, end_transaction = 0, del_transaction = 0, sequence_number = 0, private_data = 0xXXXX
 ldb_attr_casefold: char *(void *, const char *)
 ldb_attr_dn: int (const char *)
 ldb_attr_in_list: int (const char * const *, const char *)
@@ -93,9 +92,6 @@ ldb_handler_copy: int (struct ldb_context *, void *, const struct ldb_val *, str
 ldb_handler_fold: int (struct ldb_context *, void *, const struct ldb_val *, struct ldb_val *)
 ldb_init: struct ldb_context *(TALLOC_CTX *, struct tevent_context *)
 ldb_init_module_chain: int (struct ldb_context *, struct ldb_module *)
-ldb_ldap_backend_ops: name = 0xXXXX "ldap", connect_fn = 0xXXXX <lldb_connect>
-ldb_ldapi_backend_ops: name = 0xXXXX "ldapi", connect_fn = 0xXXXX <lldb_connect>
-ldb_ldaps_backend_ops: name = 0xXXXX "ldaps", connect_fn = 0xXXXX <lldb_connect>
 ldb_ldif_message_string: char *(struct ldb_context *, TALLOC_CTX *, enum ldb_changetype, const struct ldb_message *)
 ldb_ldif_read: struct ldb_ldif *(struct ldb_context *, int (*)(void *), void *)
 ldb_ldif_read_file: struct ldb_ldif *(struct ldb_context *, FILE *)
@@ -162,13 +158,11 @@ ldb_next_remote_request: int (struct ldb_module *, struct ldb_request *)
 ldb_next_request: int (struct ldb_module *, struct ldb_request *)
 ldb_next_start_trans: int (struct ldb_module *)
 ldb_op_default_callback: int (struct ldb_request *, struct ldb_reply *)
-ldb_paged_results_module_ops: name = 0xXXXX "paged_results", init_context = 0xXXXX <paged_request_init>, search = 0xXXXX <paged_search>, add = 0, modify = 0, del = 0, rename = 0, request = 0, extended = 0, start_transaction = 0, prepare_commit = 0, end_transaction = 0, del_transaction = 0, sequence_number = 0, private_data = 0xXXXX
 ldb_parse_control_strings: struct ldb_control **(struct ldb_context *, void *, const char **)
 ldb_parse_tree: struct ldb_parse_tree *(void *, const char *)
 ldb_parse_tree_attr_replace: void (struct ldb_parse_tree *, const char *, const char *)
 ldb_parse_tree_copy_shallow: struct ldb_parse_tree *(TALLOC_CTX *, const struct ldb_parse_tree *)
 ldb_qsort: void (void * const, size_t, size_t, void *, ldb_qsort_cmp_fn_t)
-ldb_rdn_name_module_ops: name = 0xXXXX "rdn_name", init_context = 0, search = 0, add = 0xXXXX <rdn_name_add>, modify = 0xXXXX <rdn_name_modify>, del = 0, rename = 0xXXXX <rdn_name_rename>, request = 0, extended = 0, start_transaction = 0, prepare_commit = 0, end_transaction = 0, del_transaction = 0, sequence_number = 0, private_data = 0xXXXX
 ldb_register_backend: int (const char *, ldb_connect_fn)
 ldb_register_module: int (const struct ldb_module_ops *)
 ldb_rename: int (struct ldb_context *, struct ldb_dn *, struct ldb_dn *)
@@ -181,7 +175,6 @@ ldb_request_get_control: struct ldb_control *(struct ldb_request *, const char *
 ldb_request_get_status: int (struct ldb_request *)
 ldb_request_set_state: void (struct ldb_request *, int)
 ldb_reset_err_string: void (struct ldb_context *)
-ldb_sample_module_ops: name = 0xXXXX "sample", init_context = 0, search = 0, add = 0, modify = 0, del = 0, rename = 0, request = 0, extended = 0, start_transaction = 0, prepare_commit = 0, end_transaction = 0, del_transaction = 0, sequence_number = 0, private_data = 0xXXXX
 ldb_schema_attribute_add: int (struct ldb_context *, const char *, unsigned int, const char *)
 ldb_schema_attribute_add_with_syntax: int (struct ldb_context *, const char *, unsigned int, const struct ldb_schema_syntax *)
 ldb_schema_attribute_by_name: const struct ldb_schema_attribute *(struct ldb_context *, const char *)
@@ -190,9 +183,8 @@ ldb_schema_attribute_set_override_handler: void (struct ldb_context *, ldb_attri
 ldb_search: int (struct ldb_context *, TALLOC_CTX *, struct ldb_result **, struct ldb_dn *, enum ldb_scope, const char * const *, const char *, ...)
 ldb_search_default_callback: int (struct ldb_request *, struct ldb_reply *)
 ldb_sequence_number: int (struct ldb_context *, enum ldb_sequence_type, uint64_t *)
-ldb_server_sort_module_ops: name = 0xXXXX "server_sort", init_context = 0xXXXX <server_sort_init>, search = 0xXXXX <server_sort_search>, add = 0, modify = 0, del = 0, rename = 0, request = 0, extended = 0, start_transaction = 0, prepare_commit = 0, end_transaction = 0, del_transaction = 0, sequence_number = 0, private_data = 0xXXXX
 ldb_set_create_perms: void (struct ldb_context *, unsigned int)
-ldb_set_debug: int (struct ldb_context *, void (*)(void *, enum ldb_debug_level, const char *, struct va_list *), void *)
+ldb_set_debug: int (struct ldb_context *, void (*)(void *, enum ldb_debug_level, const char *, va_list), void *)
 ldb_set_debug_stderr: int (struct ldb_context *)
 ldb_set_default_dns: void (struct ldb_context *)
 ldb_set_errstring: void (struct ldb_context *, const char *)
@@ -206,7 +198,6 @@ ldb_set_utf8_default: void (struct ldb_context *)
 ldb_set_utf8_fns: void (struct ldb_context *, void *, char *(*)(void *, void *, const char *, size_t))
 ldb_setup_wellknown_attributes: int (struct ldb_context *)
 ldb_should_b64_encode: int (struct ldb_context *, const struct ldb_val *)
-ldb_skel_module_ops: name = 0xXXXX "skel", init_context = 0xXXXX <skel_init>, search = 0xXXXX <skel_search>, add = 0xXXXX <skel_add>, modify = 0xXXXX <skel_modify>, del = 0xXXXX <skel_delete>, rename = 0xXXXX <skel_rename>, request = 0xXXXX <skel_request>, extended = 0, start_transaction = 0xXXXX <skel_start_trans>, prepare_commit = 0, end_transaction = 0xXXXX <skel_end_trans>, del_transaction = 0xXXXX <skel_del_trans>, sequence_number = 0, private_data = 0xXXXX
 ldb_standard_syntax_by_name: const struct ldb_schema_syntax *(struct ldb_context *, const char *)
 ldb_strerror: const char *(int)
 ldb_string_to_time: time_t (const char *)

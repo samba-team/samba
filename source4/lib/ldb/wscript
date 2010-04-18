@@ -164,7 +164,7 @@ def build(bld):
                           pc_files='ldb.pc',
                           cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
                           abi_file=abi_file,
-                          abi_match='ldb_*',
+                          abi_match='!ldb_*module_ops !ldb_*backend_ops ldb_*',
                           vnum=VERSION)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',

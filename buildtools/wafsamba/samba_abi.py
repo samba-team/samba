@@ -7,8 +7,7 @@ from TaskGen import feature, before, after
 # please add new type mappings into the list below
 abi_type_maps = {
     '_Bool' : 'bool',
-    '__va_list_tag' : 'va_list',
-    'struct va_list' : 'va_list'
+    'struct __va_list_tag *' : 'va_list'
     }
 
 def normalise_signature(sig):
@@ -19,7 +18,14 @@ def normalise_signature(sig):
     sig = re.sub('0x[0-9a-f]+', '0xXXXX', sig)
 
     for t in abi_type_maps:
-        sig = re.sub('\\b%s\\b' % t, abi_type_maps[t], sig)
+        # we need to cope with non-word characters in mapped types
+        m = t
+        m = m.replace('*', '\*')
+        if m[-1].isalnum() or m[-1] == '_':
+            m += '\\b'
+        if m[0].isalnum() or m[0] == '_':
+            m = '\\b' + m
+        sig = re.sub(m, abi_type_maps[t], sig)
     return sig
 
 def normalise_varargs(sig):
@@ -39,7 +45,9 @@ def parse_sigs(sigs, abi_match):
         if abi_match:
             matched = False
             for p in abi_match:
-                if fnmatch.fnmatch(sa[0], p):
+                if p[0] == '!' and fnmatch.fnmatch(sa[0], p[1:]):
+                    break
+                elif fnmatch.fnmatch(sa[0], p):
                     matched = True
                     break
             if not matched:
