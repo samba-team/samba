@@ -66,6 +66,8 @@ def build(bld):
                           COMMON_SRC,
                           deps='replace rt',
                           includes='include',
+                          abi_file='ABI/tdb-%s.sigs' % VERSION,
+                          abi_match='tdb_*',
                           vnum=VERSION)
 
     bld.SAMBA_BINARY('tdbtorture',
