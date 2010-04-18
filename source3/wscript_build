@@ -887,14 +887,14 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  includes='lib',
                  vars=locals())
 
-bld.SAMBA_BINARY('../nsswitch/wbinfo',
+bld.SAMBA_BINARY('wbinfo',
                  source=WBINFO_SRC,
                  deps='''talloc LIBWBCLIENT popt DYNCONFIG tevent tdb cap
                  NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB''',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
-bld.SAMBA_BINARY('utils/testparm',
+bld.SAMBA_BINARY('testparm',
                  source=TESTPARM_SRC,
                  deps='''talloc tdb tevent popt DYNCONFIG cap NSS_WRAPPER
                  LIBWBCLIENT ASN1_UTIL LIBTSOCKET PASSDB''',
