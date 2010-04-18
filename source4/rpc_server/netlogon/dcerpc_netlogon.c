@@ -1131,7 +1131,7 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_local) {
-		info->domainname.string = lp_sam_name(lp_ctx);
+		info->domainname.string = lp_workgroup(lp_ctx);
 		info->dns_domainname.string = lp_dnsdomain(lp_ctx);
 		info->domain_guid = samdb_result_guid(res, "objectGUID");
 		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
