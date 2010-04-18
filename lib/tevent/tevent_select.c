@@ -241,7 +241,7 @@ static const struct tevent_ops select_event_ops = {
 	.loop_wait		= tevent_common_loop_wait,
 };
 
-bool tevent_select_init(void)
+_PRIVATE_ bool tevent_select_init(void)
 {
 	return tevent_register_backend("select", &select_event_ops);
 }

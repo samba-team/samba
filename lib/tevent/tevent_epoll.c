@@ -437,7 +437,7 @@ static const struct tevent_ops epoll_event_ops = {
 	.loop_wait		= tevent_common_loop_wait,
 };
 
-bool tevent_epoll_init(void)
+_PRIVATE_ bool tevent_epoll_init(void)
 {
 	return tevent_register_backend("epoll", &epoll_event_ops);
 }

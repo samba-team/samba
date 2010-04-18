@@ -562,7 +562,7 @@ static const struct tevent_ops std_event_ops = {
 };
 
 
-bool tevent_standard_init(void)
+_PRIVATE_ bool tevent_standard_init(void)
 {
 	return tevent_register_backend("standard", &std_event_ops);
 }
