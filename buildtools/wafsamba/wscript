@@ -12,70 +12,88 @@ def set_options(opt):
 
     opt.tool_options('gnu_dirs')
 
-    opt.add_option('--bundled-libraries',
+    gr = opt.add_option_group('library handling options')
+
+    gr.add_option('--bundled-libraries',
                    help=("comma separated list of bundled libraries. May include !LIBNAME to disable bundling a library. Can be 'NONE' or 'ALL' [auto]"),
                    action="store", dest='BUNDLED_LIBS', default='')
 
     extension_default = Options.options['BUNDLED_EXTENSION_DEFAULT']
-    opt.add_option('--bundled-library-extension',
+    gr.add_option('--bundled-library-extension',
                    help=("name extension for bundled libraries [%s]" % extension_default),
                    action="store", dest='BUNDLED_EXTENSION', default=extension_default)
 
     extension_exception = Options.options['BUNDLED_EXTENSION_EXCEPTION']
-    opt.add_option('--bundled-extension-exception',
+    gr.add_option('--bundled-extension-exception',
                    help=("comman separated list of libraries to not apply extension to [%s]" % extension_exception),
                    action="store", dest='BUNDLED_EXTENSION_EXCEPTION', default=extension_exception)
 
     builtin_defauilt = Options.options['BUILTIN_LIBRARIES_DEFAULT']
-    opt.add_option('--builtin-libraries',
+    gr.add_option('--builtin-libraries',
                    help=("command separated list of libraries to build directly into binaries [%s]" % builtin_defauilt),
                    action="store", dest='BUILTIN_LIBRARIES', default=builtin_defauilt)
 
-    opt.add_option('--minimum-library-version',
+    gr.add_option('--minimum-library-version',
                    help=("list of minimum system library versions (LIBNAME1:version,LIBNAME2:version)"),
                    action="store", dest='MINIMUM_LIBRARY_VERSION', default='')
+
+    gr.add_option('--disable-shared',
+                   help=("Disable all use of shared libraries"),
+                   action="store_true", dest='disable_shared', default=False)
+    gr.add_option('--disable-rpath',
+                   help=("Disable use of rpath for build binaries"),
+                   action="store_true", dest='disable_rpath_build', default=False)
+    gr.add_option('--disable-rpath-install',
+                   help=("Disable use of rpath for installed binaries"),
+                   action="store_true", dest='disable_rpath_install', default=False)
 
     opt.add_option('--with-modulesdir',
                    help=("modules directory [PREFIX/modules]"),
                    action="store", dest='MODULESDIR', default='${PREFIX}/modules')
-    opt.add_option('--disable-shared',
-                   help=("Disable all use of shared libraries"),
-                   action="store_true", dest='disable_shared', default=False)
-    opt.add_option('--disable-rpath',
-                   help=("Disable use of rpath for build binaries"),
-                   action="store_true", dest='disable_rpath_build', default=False)
-    opt.add_option('--disable-rpath-install',
-                   help=("Disable use of rpath for installed binaries"),
-                   action="store_true", dest='disable_rpath_install', default=False)
-    opt.add_option('--enable-developer',
-                   help=("Turn on developer warnings and debugging"),
-                   action="store_true", dest='developer', default=False)
-    opt.add_option('--picky-developer',
-                   help=("Treat all warnings as errors (enable -Werror)"),
-                   action="store_true", dest='picky_developer', default=False)
-    opt.add_option('--fatal-errors',
-                   help=("Stop compilation on first error (enable -Wfatal-errors)"),
-                   action="store_true", dest='fatal_errors', default=False)
-    opt.add_option('--enable-gccdeps',
-                   help=("Enable use gcc -MD dependency module"),
-                   action="store_true", dest='enable_gccdeps', default=False)
-    opt.add_option('--timestamp-dependencies',
-                   help=("use file timestamps instead of content for build dependencies (BROKEN)"),
-                   action="store_true", dest='timestamp_dependencies', default=False)
-    opt.add_option('-C',
+
+    gr = opt.option_group('developer options')
+
+    gr.add_option('-C',
                    help='enable configure cacheing',
                    action='store_true', dest='enable_configure_cache')
-    opt.add_option('--pedantic',
+    gr.add_option('--enable-developer',
+                   help=("Turn on developer warnings and debugging"),
+                   action="store_true", dest='developer', default=False)
+    gr.add_option('--picky-developer',
+                   help=("Treat all warnings as errors (enable -Werror)"),
+                   action="store_true", dest='picky_developer', default=False)
+    gr.add_option('--fatal-errors',
+                   help=("Stop compilation on first error (enable -Wfatal-errors)"),
+                   action="store_true", dest='fatal_errors', default=False)
+    gr.add_option('--enable-gccdeps',
+                   help=("Enable use of gcc -MD dependency module"),
+                   action="store_true", dest='enable_gccdeps', default=False)
+    gr.add_option('--timestamp-dependencies',
+                   help=("use file timestamps instead of content for build dependencies (BROKEN)"),
+                   action="store_true", dest='timestamp_dependencies', default=False)
+    gr.add_option('--pedantic',
 		   help=("Enable even more compiler warnings"),
 		   action='store_true', dest='pedantic', default=False)
 
-    opt.add_option('--cross-compile',
+    gr.add_option('--abi-check',
+		   help=("Check ABI signatures for libraries"),
+		   action='store_true', dest='ABI_CHECK', default=False)
+    gr.add_option('--abi-check-disable',
+		   help=("Disable ABI checking (used with --enable-developer)"),
+		   action='store_true', dest='ABI_CHECK_DISABLE', default=False)
+    gr.add_option('--abi-update',
+		   help=("Update ABI signature files for libraries"),
+		   action='store_true', dest='ABI_UPDATE', default=False)
+
+    gr = opt.add_option_group('cross compilation options')
+
+    gr.add_option('--cross-compile',
 		   help=("configure for cross-compilation"),
 		   action='store_true', dest='CROSS_COMPILE', default=False)
-    opt.add_option('--cross-execute',
+    gr.add_option('--cross-execute',
 		   help=("command prefix to use for cross-execution in configure"),
 		   action='store', dest='CROSS_EXECUTE', default='')
-    opt.add_option('--hostcc',
+    gr.add_option('--hostcc',
 		   help=("set host compiler when cross compiling"),
 		   action='store', dest='HOSTCC', default=False)
 
@@ -146,6 +164,11 @@ def configure(conf):
     if conf.env.AUTOCONF_PROGRAM_PREFIX:
         Logs.error('ERROR: --program-prefix not supported')
         sys.exit(1)
+
+    # enable ABI checking for developers
+    conf.env.ABI_CHECK = Options.options.ABI_CHECK or Options.options.developer
+    if Options.options.ABI_CHECK_DISABLE:
+        conf.env.ABI_CHECK = False
 
     # see if we can compile and run a simple C program
     conf.CHECK_CODE('printf("hello world\\n")',

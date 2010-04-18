@@ -35,6 +35,7 @@ def BUILTIN_LIBRARY(bld, name):
     if bld.env.DISABLE_SHARED:
         return True
     return target_in_list(name, bld.env.BUILTIN_LIBRARIES, False)
+Build.BuildContext.BUILTIN_LIBRARY = BUILTIN_LIBRARY
 
 
 def BUILTIN_DEFAULT(opt, builtins):

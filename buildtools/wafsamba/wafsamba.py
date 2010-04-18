@@ -20,6 +20,7 @@ from samba_deps import *
 from samba_bundled import *
 import samba_install
 import samba_conftests
+import samba_abi
 import tru64cc
 import irixcc
 import generic_cc
@@ -108,6 +109,9 @@ def SAMBA_LIBRARY(bld, libname, source,
                   target_type='LIBRARY',
                   bundled_extension=True,
                   link_name=None,
+                  abi_file=None,
+                  abi_match=None,
+                  hide_symbols=False,
                   enabled=True):
     '''define a Samba library'''
 
@@ -142,6 +146,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
                         needs_python   = needs_python,
+                        hide_symbols   = hide_symbols,
                         local_include  = local_include)
 
     if libname == obj_target:
@@ -165,6 +170,11 @@ def SAMBA_LIBRARY(bld, libname, source,
         features += ' pyext'
     elif needs_python:
         features += ' pyembed'
+    if abi_file:
+        features += ' abi_check'
+
+    if abi_file:
+        abi_file = os.path.join(bld.curdir, abi_file)
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
@@ -181,7 +191,9 @@ def SAMBA_LIBRARY(bld, libname, source,
         samba_inst_path = install_path,
         name	        = libname,
         samba_realname  = realname,
-        samba_install   = install
+        samba_install   = install,
+        abi_file        = abi_file,
+        abi_match       = abi_match
         )
 
     if link_name:
@@ -366,6 +378,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     use_hostcc=False,
                     use_global_deps=True,
                     vars=None,
+                    hide_symbols=False,
                     needs_python=False):
     '''define a Samba subsystem'''
 
@@ -395,7 +408,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         features       = features,
         source         = source,
         target         = modname,
-        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
+        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags, hide_symbols=hide_symbols),
         depends_on     = depends_on,
         samba_deps     = TO_LIST(deps),
         samba_includes = includes,

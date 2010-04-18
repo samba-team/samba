@@ -464,3 +464,39 @@ def CHECK_MAKEFLAGS(bld):
         Options.options.jobs = 1
             
 Build.BuildContext.CHECK_MAKEFLAGS = CHECK_MAKEFLAGS
+
+option_groups = {}
+
+def option_group(opt, name):
+    '''find or create an option group'''
+    global option_groups
+    if name in option_groups:
+        return option_groups[name]
+    gr = opt.add_option_group(name)
+    option_groups[name] = gr
+    return gr
+Options.Handler.option_group = option_group
+
+
+def save_file(filename, contents, create_dir=False):
+    '''save data to a file'''
+    if create_dir:
+        mkdir_p(os.path.dirname(filename))
+    try:
+        f = open(filename, 'w')
+        f.write(contents)
+        f.close()
+    except:
+        return False
+    return True
+
+
+def load_file(filename):
+    '''return contents of a file'''
+    try:
+        f = open(filename, 'r')
+        r = f.read()
+        f.close()
+    except:
+        return None
+    return r
