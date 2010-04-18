@@ -935,7 +935,10 @@ bld.SAMBA_BINARY('testparm',
                  LIBSMB_ERR''',
                  vars=locals())
 
-########################## INCLLUDES #################################
+swat_files=recursive_dirlist('../swat', '../swat', '*')
+bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
+
+########################## INCLUDES #################################
 
 bld.RECURSE('../lib/socket_wrapper')
 bld.RECURSE('../lib/talloc')
