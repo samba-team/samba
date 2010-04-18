@@ -988,6 +988,10 @@ static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALL
 	return werr;
 }
 
+static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
+					 struct ldb_context *sam_ctx,
+					 struct netr_DomainTrustList *trusts,
+					 uint32_t trust_flags);
 
 /*
   netr_GetAnyDCName
@@ -995,18 +999,62 @@ static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALL
 static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetAnyDCName *r)
 {
-	struct netr_GetDcName r2;
+	struct netr_DomainTrustList *trusts;
+	struct ldb_context *sam_ctx;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	uint32_t i;
 	WERROR werr;
 
-	ZERO_STRUCT(r2);
+	*r->out.dcname = NULL;
 
-	r2.in.logon_server	= r->in.logon_server;
-	r2.in.domainname	= r->in.domainname;
-	r2.out.dcname		= r->out.dcname;
+	if ((r->in.domainname == NULL) || (r->in.domainname[0] == '\0')) {
+		/* if the domainname parameter wasn't set assume our domain */
+		r->in.domainname = lp_workgroup(lp_ctx);
+	}
 
-	werr = dcesrv_netr_GetDcName(dce_call, mem_ctx, &r2);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return WERR_DS_UNAVAILABLE;
+	}
 
-	return werr;
+	if (strcasecmp(r->in.domainname, lp_workgroup(lp_ctx)) == 0) {
+		/* well we asked for a DC of our own domain */
+		if (samdb_is_pdc(sam_ctx)) {
+			/* we are the PDC of the specified domain */
+			return WERR_NO_SUCH_DOMAIN;
+		}
+
+		*r->out.dcname = talloc_asprintf(mem_ctx, "\\%s",
+						lp_netbios_name(lp_ctx));
+		W_ERROR_HAVE_NO_MEMORY(*r->out.dcname);
+
+		return WERR_OK;
+	}
+
+	/* Okay, now we have to consider the trusted domains */
+
+	trusts = talloc_zero(mem_ctx, struct netr_DomainTrustList);
+	W_ERROR_HAVE_NO_MEMORY(trusts);
+
+	trusts->count = 0;
+
+	werr = fill_trusted_domains_array(mem_ctx, sam_ctx, trusts,
+					  NETR_TRUST_FLAG_INBOUND
+					  | NETR_TRUST_FLAG_OUTBOUND);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	for (i = 0; i < trusts->count; i++) {
+		if (strcasecmp(r->in.domainname, trusts->array[i].netbios_name) == 0) {
+			/* FIXME: Here we need to find a DC for the specified
+			 * trusted domain. */
+
+			/* return WERR_OK; */
+			return WERR_NO_SUCH_DOMAIN;
+		}
+	}
+
+	return WERR_NO_SUCH_DOMAIN;
 }
 
 
