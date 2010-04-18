@@ -1532,6 +1532,75 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 	return WBC_ERROR_IS_OK(wbc_status);
 }
 
+/* Authenticate a user with a plaintext password */
+
+static bool wbinfo_pam_logon(char *username)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcLogonUserParams params;
+	struct wbcAuthErrorInfo *error;
+	char *s = NULL;
+	char *p = NULL;
+	TALLOC_CTX *frame = talloc_tos();
+	uint32_t flags;
+	uint32_t uid;
+
+	ZERO_STRUCT(params);
+
+	if ((s = talloc_strdup(frame, username)) == NULL) {
+		return false;
+	}
+
+	if ((p = strchr(s, '%')) != NULL) {
+		*p = 0;
+		p++;
+		params.password = talloc_strdup(frame, p);
+	} else {
+		params.password = wbinfo_prompt_pass(frame, NULL, username);
+	}
+	params.username = s;
+
+	flags = WBFLAG_PAM_CACHED_LOGIN;
+
+	wbc_status = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
+				     "flags", 0,
+				     (uint8_t *)&flags, sizeof(flags));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_printf("wbcAddNamedBlob failed: %s\n",
+			 wbcErrorString(wbc_status));
+		return false;
+	}
+
+	uid = getuid();
+
+	wbc_status = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
+				     "user_uid", 0,
+				     (uint8_t *)&uid, sizeof(uid));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_printf("wbcAddNamedBlob failed: %s\n",
+			 wbcErrorString(wbc_status));
+		return false;
+	}
+
+	wbc_status = wbcLogonUser(&params, NULL, &error, NULL);
+
+	wbcFreeMemory(params.blobs);
+
+	d_printf("plaintext password authentication %s\n",
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr,
+			  "error code was %s (0x%x)\nerror messsage was: %s\n",
+			  error->nt_string,
+			  (int)error->nt_status,
+			  error->display_string);
+		wbcFreeMemory(error);
+		return false;
+	}
+	return true;
+}
+
 /* Save creds with winbind */
 
 static bool wbinfo_ccache_save(char *username)
@@ -1778,6 +1847,7 @@ enum {
 	OPT_CCACHE_SAVE,
 	OPT_SID_TO_FULLNAME,
 	OPT_NTLMV2,
+	OPT_PAM_LOGON,
 	OPT_LOGOFF,
 	OPT_LOGOFF_USER,
 	OPT_LOGOFF_UID,
@@ -1849,6 +1919,8 @@ int main(int argc, char **argv, char **envp)
 		{ "sid-aliases", 0, POPT_ARG_STRING, &string_arg, OPT_SIDALIASES, "Get sid aliases", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
+		{ "pam-logon", 0, POPT_ARG_STRING, string_arg, OPT_PAM_LOGON,
+		  "do a pam logon equivalent", "user%password" },
 		{ "logoff", 0, POPT_ARG_NONE, NULL, OPT_LOGOFF,
 		  "log off user", "uid" },
 		{ "logoff-user", 0, POPT_ARG_STRING, &logoff_user,
@@ -2203,6 +2275,12 @@ int main(int argc, char **argv, char **envp)
 				if (got_error)
 					goto done;
 				break;
+			}
+		case OPT_PAM_LOGON:
+			if (!wbinfo_pam_logon(string_arg)) {
+				d_fprintf(stderr, "pam_logon failed for %s\n",
+					  string_arg);
+				goto done;
 			}
 		case OPT_LOGOFF:
 		{
