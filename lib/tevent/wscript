@@ -55,6 +55,8 @@ def build(bld):
                           SRC,
                           deps='replace talloc',
                           enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
+                          abi_file='ABI/tevent-%s.sigs' % VERSION,
+                          abi_match='tevent_* _tevent_*',
                           vnum=VERSION)
 
     if bld.env.standalone_tevent:
