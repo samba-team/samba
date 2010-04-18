@@ -3,12 +3,22 @@
 import Options, Utils, os, Logs, samba_utils, sys, Task, fnmatch, re
 from TaskGen import feature, before, after
 
+# these type maps cope with platform specific names for common types
+# please add new type mappings into the list below
+abi_type_maps = {
+    '_Bool' : 'bool',
+    '__va_list_tag' : 'va_list'
+    }
+
 def normalise_signature(sig):
     '''normalise a signature from gdb'''
     sig = sig.strip()
     sig = re.sub('^\$[0-9]+\s=\s\{*', '', sig)
     sig = re.sub('\}(\s0x[0-9a-f]+\s<\w+>)?$', '', sig)
     sig = re.sub('0x[0-9a-f]+', '0xXXXX', sig)
+
+    for t in abi_type_maps:
+        sig = re.sub('\\b%s\\b' % t, abi_type_maps[t], sig)
     return sig
 
 def normalise_varargs(sig):
