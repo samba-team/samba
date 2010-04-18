@@ -1136,7 +1136,19 @@ static WERROR dcesrv_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state 
 static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct netr_DsRGetSiteName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ldb_context *sam_ctx;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return WERR_DS_UNAVAILABLE;
+	}
+
+	*r->out.site = samdb_server_site_name(sam_ctx, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(*r->out.site);
+
+	return WERR_OK;
 }
 
 
