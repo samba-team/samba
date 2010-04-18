@@ -16,7 +16,6 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_NBT',
 bld.SAMBA_BINARY('nmblookup',
 	source='tools/nmblookup.c',
 	manpages='man/nmblookup.1',
-	installdir='BINDIR',
 	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBCLI_NBT popt POPT_SAMBA LIBNETIF LIBCLI_RESOLVE'
 	)
 

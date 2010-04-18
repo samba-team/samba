@@ -17,7 +17,6 @@ bld.SAMBA_SUBSYSTEM('PIDFILE',
 bld.SAMBA_BINARY('samba',
 	source='server.c',
 	manpages='samba.8',
-	installdir='SBINDIR',
         subsystem_name='service',
 	deps='''LIBEVENTS process_model service LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL POPT_SAMBA PIDFILE
                 popt gensec registry ntptr ntvfs share CLUSTER DCESRV''',

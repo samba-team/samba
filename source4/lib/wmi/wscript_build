@@ -9,14 +9,12 @@ bld.SAMBA_SUBSYSTEM('WMI',
 
 bld.SAMBA_BINARY('wmic',
 	source='tools/wmic.c',
-	installdir='BINDIR',
 	deps='POPT_SAMBA POPT_CREDENTIALS popt WMI'
 	)
 
 
 bld.SAMBA_BINARY('wmis',
 	source='tools/wmis.c',
-	installdir='BINDIR',
 	deps='POPT_SAMBA POPT_CREDENTIALS popt WMI'
 	)
 

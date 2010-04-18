@@ -3,7 +3,6 @@
 bld.SAMBA_BINARY('ntlm_auth',
 	source='ntlm_auth.c',
 	manpages='man/ntlm_auth.1',
-	installdir='BINDIR',
 	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA POPT_CREDENTIALS gensec LIBCLI_RESOLVE auth ntlm_check MESSAGING LIBEVENTS service',
         needs_python=True
 	)
@@ -11,14 +10,12 @@ bld.SAMBA_BINARY('ntlm_auth',
 
 bld.SAMBA_BINARY('setnttoken',
 	source='setnttoken.c',
-	installdir='BINDIR',
 	deps='talloc'
 	)
 
 
 bld.SAMBA_BINARY('testparm',
 	source='testparm.c',
-	installdir='BINDIR',
 	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt samba_socket POPT_SAMBA LIBCLI_RESOLVE CHARSET'
 	)
 
@@ -26,7 +23,6 @@ bld.SAMBA_BINARY('testparm',
 bld.SAMBA_BINARY('oLschema2ldif',
 	source='oLschema2ldif.c',
 	manpages='man/oLschema2ldif.1',
-	installdir='BINDIR',
 	deps='LIBLDB_CMDLINE SAMDB'
 	)
 

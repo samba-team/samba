@@ -135,7 +135,6 @@ bld.SAMBA_BINARY('smbtorture',
 	source='smbtorture.c torture.c',
 	manpages='man/smbtorture.1',
 	public_headers='smbtorture.h',
-	installdir='BINDIR',
 	deps='torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
         needs_python=True
 	)
@@ -144,7 +143,6 @@ bld.SAMBA_BINARY('smbtorture',
 bld.SAMBA_BINARY('gentest',
 	source='gentest.c',
 	manpages='man/gentest.1',
-	installdir='BINDIR',
 	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB LIBCLI_RAW'
 	)
 
@@ -152,7 +150,6 @@ bld.SAMBA_BINARY('gentest',
 bld.SAMBA_BINARY('masktest',
 	source='masktest.c',
 	manpages='man/masktest.1',
-	installdir='BINDIR',
 	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB'
 	)
 
@@ -165,6 +162,5 @@ bld.SAMBA_BINARY('locktest',
 	# GCOV='1',
 	manpages='man/locktest.1',
 	deps='popt POPT_SAMBA POPT_CREDENTIALS LIBSAMBA-UTIL LIBCLI_SMB LIBSAMBA-HOSTCONFIG',
-	installdir='BINDIR'
 	)
 
