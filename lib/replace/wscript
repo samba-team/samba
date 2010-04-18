@@ -333,6 +333,7 @@ def build(bld):
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
+                      hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       deps='crypt dl nsl socket')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
