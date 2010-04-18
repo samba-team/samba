@@ -658,7 +658,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${LIBADS_SRC} ${KRBCLIENT_SRC} ${POPT_LIB_SRC}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
-                  ${LIBADS_SERVER_SRC} ${LDB_SRC}
+                  ${LIBADS_SERVER_SRC}
                   ${TDB_VALIDATE_SRC}'''
 
 LDB_COMMON_SRC = '''lib/ldb/common/ldb.c lib/ldb/common/ldb_ldif.c lib/ldb/common/ldb_parse.c
@@ -753,7 +753,7 @@ SMBD_SRC_BASE = '''${PARAM_WITHOUT_REG_SRC} ${SMBD_SRC_SRV}
                 ${LIBMSRPC_GEN_SRC} ${AVAHI_SRC} ${LIBADS_SRC}
                 ${KRBCLIENT_SRC} ${LIBADS_SERVER_SRC} ${REG_FULL_SRC}
                 ${POPT_LIB_SRC} ${BUILDOPT_SRC} ${SMBLDAP_SRC}
-                ${LDB_SRC} ${LIBNET_SRC} ${LIBSMBCONF_SRC}
+                ${LIBNET_SRC} ${LIBSMBCONF_SRC}
                 ${RPC_LSA_SRC}
                 ${RPC_NETLOG_SRC} ${RPC_SAMR_SRC}
                 ${RPC_INITSHUTDOWN_SRC} ${RPC_REG_SRC}
@@ -787,7 +787,7 @@ NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
             nmbd/nmbd_subnetdb.c nmbd/nmbd_winsproxy.c nmbd/nmbd_winsserver.c
             nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c'''
 
-NMBD_SRC = '''${NMBD_SRC1} ${PARAM_SRC} ${LIBSMB_SRC} ${LDB_SRC} ${KRBCLIENT_SRC}
+NMBD_SRC = '''${NMBD_SRC1} ${PARAM_SRC} ${LIBSMB_SRC} ${KRBCLIENT_SRC}
            ${PROFILE_SRC} ${LIB_NONSMBD_SRC} ${POPT_LIB_SRC}
            ${LIBNDR_GEN_SRC0}'''
 
@@ -858,26 +858,32 @@ bld.SAMBA_SUBSYSTEM('PASSDB',
                     deps='GROUPDB TLDAP',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('LDB',
+                    source=LDB_SRC,
+                    deps='tdb',
+                    includes='../lib/tdb/include lib',
+                    vars=locals())
+
 ########################## BINARIES #################################
 
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv z PASSDB''',
+                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv z PASSDB LDB''',
                  includes='lib',
                  vars=locals())
 
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent z cap resolv LIBWBCLIENT popt dl
-                 NSS_WRAPPER DYNCONFIG PASSDB''',
+                 NSS_WRAPPER DYNCONFIG PASSDB LDB''',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl popt DYNCONFIG z NSS_WRAPPER
-                 LIBWBCLIENT PASSDB resolv''',
+                 LIBWBCLIENT PASSDB resolv LDB''',
                  includes='lib',
                  vars=locals())
 
