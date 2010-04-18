@@ -29,7 +29,7 @@ def install_binary(self):
     install_path = self.samba_inst_path or '${BINDIR}'
     install_path = bld.EXPAND_VARIABLES(install_path)
 
-    orig_target = self.target
+    orig_target = os.path.basename(self.target)
 
     if install_ldflags != build_ldflags:
         # we will be creating a new target name, and using that for the
