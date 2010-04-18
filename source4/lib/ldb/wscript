@@ -150,6 +150,9 @@ def build(bld):
     ldb_deps = 'tevent LIBLDB'
     if s4_build:
         ldb_deps += ' LDBSAMBA POPT_CREDENTIALS POPT_SAMBA LIBCMDLINE_CREDENTIALS gensec'
+        abi_file='ABI/ldb-samba4-%s.sigs' % VERSION
+    else:
+        abi_file='ABI/ldb-%s.sigs' % VERSION
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
@@ -160,6 +163,8 @@ def build(bld):
                           public_headers='include/ldb.h include/ldb_errors.h',
                           pc_files='ldb.pc',
                           cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
+                          abi_file=abi_file,
+                          abi_match='ldb_*',
                           vnum=VERSION)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
