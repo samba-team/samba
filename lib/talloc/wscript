@@ -57,6 +57,9 @@ def build(bld):
         bld.SAMBA_LIBRARY('talloc',
                           'talloc.c',
                           deps='replace',
+                          abi_file='ABI/talloc-%s.sigs' % VERSION,
+                          abi_match='talloc* _talloc*',
+                          hide_symbols=True,
                           vnum=VERSION)
 
         # should we also install the symlink to libtalloc1.so here?
