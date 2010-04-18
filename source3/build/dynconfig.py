@@ -28,7 +28,7 @@ dyn_cflags = {
     'CONFIGDIR'                      : '${SYSCONFDIR}',
     'CONFIGFILE'                     : '${LIBDIR}/smb.conf',
     'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
-    'SWATDIR'                        : '${DATADIR}/swat',
+    'SWATDIR'                        : '${PREFIX}/swat',
     'PRIVATE_DIR'                    : '${PRIVATEDIR}',
     'MODULESDIR'                     : '${PREFIX}/modules',
     'SETUPDIR'                       : '${DATADIR}/setup',
