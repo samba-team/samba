@@ -449,7 +449,16 @@ def CHECK_MAKEFLAGS(bld):
     jobs_set = False
     for opt in makeflags.split():
         # options can come either as -x or as x
-        if opt[0] != '-':
+        if opt[0:2] == 'V=':
+            Options.options.verbose = Logs.verbose = int(opt[2:])
+            if Logs.verbose > 0:
+		Logs.zones = ['runner']
+            if Logs.verbose > 2:
+                Logs.zones = ['*']
+        elif opt[0].isupper() and opt.find('=') != -1:
+            loc = opt.find('=')
+            setattr(Options.options, opt[0:loc], opt[loc+1:])
+        elif opt[0] != '-':
             for v in opt:
                 if v == 'j':
                     jobs_set = True
