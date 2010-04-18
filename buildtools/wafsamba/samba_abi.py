@@ -7,7 +7,8 @@ from TaskGen import feature, before, after
 # please add new type mappings into the list below
 abi_type_maps = {
     '_Bool' : 'bool',
-    '__va_list_tag' : 'va_list'
+    '__va_list_tag' : 'va_list',
+    'struct va_list' : 'va_list'
     }
 
 def normalise_signature(sig):
