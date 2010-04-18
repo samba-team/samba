@@ -21,6 +21,7 @@
 #include "winbindd.h"
 
 struct winbindd_pam_auth_state {
+	struct winbindd_request *request;
 	struct winbindd_response *response;
 };
 
@@ -43,6 +44,7 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->request = request;
 
 	/* Ensure null termination */
 	request->data.auth.user[sizeof(request->data.auth.user)-1] = '\0';
@@ -121,5 +123,23 @@ NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
 	*response = *state->response;
 	response->result = WINBINDD_PENDING;
 	state->response = talloc_move(response, &state->response);
-	return NT_STATUS(response->data.auth.nt_status);
+
+	status = NT_STATUS(response->data.auth.nt_status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) {
+
+		/* Store in-memory creds for single-signon using ntlm_auth. */
+
+		status = winbindd_add_memory_creds(
+			state->request->data.auth.user,
+			get_uid_from_request(state->request),
+			state->request->data.auth.pass);
+		DEBUG(10, ("winbindd_add_memory_creds returned: %s\n",
+			   nt_errstr(status)));
+	}
+
+	return status;
 }

@@ -21,6 +21,7 @@
 #include "winbindd.h"
 
 struct winbindd_pam_chauthtok_state {
+	struct winbindd_request *request;
 	struct winbindd_response *response;
 };
 
@@ -44,6 +45,7 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 	if (req == NULL) {
 		return NULL;
 	}
+	state->request = request;
 
 	/* Ensure null termination */
 	request->data.chauthtok.user[
@@ -117,5 +119,32 @@ NTSTATUS winbindd_pam_chauthtok_recv(struct tevent_req *req,
 	*response = *state->response;
 	response->result = WINBINDD_PENDING;
 	state->response = talloc_move(response, &state->response);
-	return NT_STATUS(response->data.auth.nt_status);
+
+	status = NT_STATUS(response->data.auth.nt_status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) {
+
+		/* Update the single sign-on memory creds. */
+		status = winbindd_replace_memory_creds(
+			state->request->data.chauthtok.user,
+			state->request->data.chauthtok.newpass);
+
+		DEBUG(10, ("winbindd_replace_memory_creds returned %s\n",
+			   nt_errstr(status)));
+
+		/*
+		 * When we login from gdm or xdm and password expires,
+		 * we change password, but there are no memory
+		 * crendentials So, winbindd_replace_memory_creds()
+		 * returns NT_STATUS_OBJECT_NAME_NOT_FOUND. This is
+		 * not a failure.  --- BoYang
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			status = NT_STATUS_OK;
+		}
+	}
+	return status;
 }

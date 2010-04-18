@@ -21,6 +21,7 @@
 #include "winbindd.h"
 
 struct winbindd_pam_logoff_state {
+	struct winbindd_request *request;
 	struct winbindd_response *response;
 };
 
@@ -43,6 +44,7 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->request = request;
 
 	/* Ensure null termination */
 	/* Ensure null termination */
@@ -135,5 +137,11 @@ NTSTATUS winbindd_pam_logoff_recv(struct tevent_req *req,
 	*response = *state->response;
 	response->result = WINBINDD_PENDING;
 	state->response = talloc_move(response, &state->response);
-	return NT_STATUS(response->data.auth.nt_status);
+
+	status = NT_STATUS(response->data.auth.nt_status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	winbindd_delete_memory_creds(state->request->data.logoff.user);
+	return status;
 }

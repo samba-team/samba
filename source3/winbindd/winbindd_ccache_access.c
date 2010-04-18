@@ -168,6 +168,10 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, name_user;
+	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
+	struct WINBINDD_MEMORY_CREDS *entry;
+	DATA_BLOB initial, challenge, auth;
+	uint32 initial_blob_len, challenge_blob_len, extra_len;
 
 	/* Ensure null termination */
 	state->request->data.ccache_ntlm_auth.user[
@@ -199,26 +203,6 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 		request_error(state);
 		return;
 	}
-
-	sendto_domain(state, domain);
-}
-
-enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *domain,
-						struct winbindd_cli_state *state)
-{
-	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
-	struct WINBINDD_MEMORY_CREDS *entry;
-	DATA_BLOB initial, challenge, auth;
-	fstring name_domain, name_user;
-	uint32 initial_blob_len, challenge_blob_len, extra_len;
-
-	/* Ensure null termination */
-	state->request->data.ccache_ntlm_auth.user[
-		sizeof(state->request->data.ccache_ntlm_auth.user)-1]='\0';
-
-	DEBUG(3, ("winbindd_dual_ccache_ntlm_auth: [%5lu]: perform NTLM auth on "
-		"behalf of user %s (dual)\n", (unsigned long)state->pid,
-		state->request->data.ccache_ntlm_auth.user));
 
 	/* validate blob lengths */
 	initial_blob_len = state->request->data.ccache_ntlm_auth.initial_blob_len;
@@ -294,13 +278,18 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 	data_blob_free(&auth);
 
   process_result:
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+	if (!NT_STATUS_IS_OK(result)) {
+		request_error(state);
+		return;
+	}
+	request_ok(state);
 }
 
 void winbindd_ccache_save(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, name_user;
+	NTSTATUS status;
 
 	/* Ensure null termination */
 	state->request->data.ccache_save.user[
@@ -323,8 +312,16 @@ void winbindd_ccache_save(struct winbindd_cli_state *state)
 		return;
 	}
 
-	domain = find_auth_domain(state->request->flags, name_domain);
+	/*
+	 * The domain is checked here only for compatibility
+	 * reasons. We used to do the winbindd memory ccache for
+	 * ntlm_auth in the domain child. With that code, we had to
+	 * make sure that we do have a domain around to send this
+	 * to. Now we do the memory cache in the parent winbindd,
+	 * where it would not matter if we have a domain or not.
+	 */
 
+	domain = find_auth_domain(state->request->flags, name_domain);
 	if (domain == NULL) {
 		DEBUG(5, ("winbindd_ccache_save: can't get domain [%s]\n",
 			  name_domain));
@@ -337,24 +334,6 @@ void winbindd_ccache_save(struct winbindd_cli_state *state)
 		return;
 	}
 
-	sendto_domain(state, domain);
-}
-
-enum winbindd_result winbindd_dual_ccache_save(
-	struct winbindd_domain *domain, struct winbindd_cli_state *state)
-{
-	NTSTATUS status = NT_STATUS_NOT_SUPPORTED;
-
-	/* Ensure null termination */
-	state->request->data.ccache_save.user[
-		sizeof(state->request->data.ccache_save.user)-1]='\0';
-	state->request->data.ccache_save.pass[
-		sizeof(state->request->data.ccache_save.pass)-1]='\0';
-
-	DEBUG(3, ("winbindd_dual_ccache_save: [%5lu]: save password of user "
-		  "%s\n", (unsigned long)state->pid,
-		  state->request->data.ccache_save.user));
-
 	status = winbindd_add_memory_creds(
 		state->request->data.ccache_save.user,
 		state->request->data.ccache_save.uid,
@@ -363,8 +342,8 @@ enum winbindd_result winbindd_dual_ccache_save(
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("winbindd_add_memory_creds failed %s\n",
 			  nt_errstr(status)));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
-
-	return WINBINDD_OK;
+	request_ok(state);
 }

@@ -380,6 +380,7 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 /* The following definitions come from winbindd/winbindd_pam.c  */
 
 bool check_request_flags(uint32_t flags);
+uid_t get_uid_from_request(struct winbindd_request *request);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
