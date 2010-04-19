@@ -397,8 +397,9 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint1
 		struct iovec *current = &vector[idx];
 
 		if ((idx + 3) < count) {
-			/* we have a next command */
-			next_command_ofs = SMB2_HDR_BODY + 8;
+			/* we have a next command -
+			 * setup for the error case. */
+			next_command_ofs = SMB2_HDR_BODY + 9;
 		}
 
 		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
@@ -1270,53 +1271,6 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 	}
 }
 
-NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
-				    NTSTATUS status,
-				    DATA_BLOB *info,
-				    const char *location)
-{
-	uint8_t *outhdr;
-	uint8_t *outbody;
-	int i = req->current_idx;
-
-	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] |%s| at %s\n",
-		  i, nt_errstr(status), info ? " +info" : "",
-		  location));
-
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
-
-	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(status));
-
-	outbody = outhdr + SMB2_HDR_BODY;
-	SSVAL(outbody, 0, 9);
-
-	req->out.vector[i+1].iov_base = (void *)outbody;
-	req->out.vector[i+1].iov_len = 8;
-
-	if (info) {
-		SIVAL(outbody, 0x04, info->length);
-		req->out.vector[i+2].iov_base	= (void *)info->data;
-		req->out.vector[i+2].iov_len	= info->length;
-	} else {
-		/* Allocated size of req->out.vector[i].iov_base
-		 * *MUST BE* OUTVEC_ALLOC_SIZE. So we have room for
-		 * 1 byte without having to do an alloc.
-		 */
-		req->out.vector[i+2].iov_base = ((uint8_t *)outhdr) +
-			OUTVEC_ALLOC_SIZE - 1;
-		req->out.vector[i+2].iov_len = 1;
-		SCVAL(req->out.vector[i+2].iov_base, 0, 0);
-	}
-
-	/*
-	 * if a request fails, all other remaining
-	 * compounded requests should fail too
-	 */
-	req->next_status = NT_STATUS_INVALID_PARAMETER;
-
-	return smbd_smb2_request_reply(req);
-}
-
 NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 				   NTSTATUS status,
 				   DATA_BLOB body, DATA_BLOB *dyn,
@@ -1408,8 +1362,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 
 			req->out.vector[i+2].iov_base = (void *)new_dyn;
 			req->out.vector[i+2].iov_len = new_size;
-
-			TALLOC_FREE(old_dyn);
 		}
 		next_command_ofs += pad_size;
 	}
@@ -1418,6 +1370,52 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 
 	return smbd_smb2_request_reply(req);
 }
+
+NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
+				    NTSTATUS status,
+				    DATA_BLOB *info,
+				    const char *location)
+{
+	DATA_BLOB body;
+	int i = req->current_idx;
+	uint8_t *outhdr = (uint8_t *)req->out.vector[i].iov_base;
+
+	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] |%s| at %s\n",
+		  i, nt_errstr(status), info ? " +info" : "",
+		  location));
+
+	body.data = outhdr + SMB2_HDR_BODY;
+	body.length = 8;
+	SSVAL(body.data, 0, 9);
+
+	if (info) {
+		SIVAL(body.data, 0x04, info->length);
+	} else {
+		/* Allocated size of req->out.vector[i].iov_base
+		 * *MUST BE* OUTVEC_ALLOC_SIZE. So we have room for
+		 * 1 byte without having to do an alloc.
+		 */
+		info = talloc_zero_array(req->out.vector,
+					DATA_BLOB,
+					1);
+		if (!info) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		info->data = ((uint8_t *)outhdr) +
+			OUTVEC_ALLOC_SIZE - 1;
+		info->length = 1;
+		SCVAL(info->data, 0, 0);
+	}
+
+	/*
+	 * if a request fails, all other remaining
+	 * compounded requests should fail too
+	 */
+	req->next_status = NT_STATUS_INVALID_PARAMETER;
+
+	return smbd_smb2_request_done_ex(req, status, body, info, __location__);
+}
+
 
 struct smbd_smb2_send_oplock_break_state {
 	struct smbd_server_connection *sconn;
