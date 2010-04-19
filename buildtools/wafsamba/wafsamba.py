@@ -600,6 +600,8 @@ Build.BuildContext.INSTALL_WILDCARD = INSTALL_WILDCARD
 
 def INSTALL_DIRS(bld, destdir, dirs):
     '''install a set of directories'''
+    destdir = bld.EXPAND_VARIABLES(destdir)
+    dirs = bld.EXPAND_VARIABLES(dirs)
     for d in TO_LIST(dirs):
         bld.install_dir(os.path.join(destdir, d))
 Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS

@@ -118,4 +118,4 @@ bld.RECURSE('../pidl')
 bld.RECURSE('../lib')
 
 # install some extra empty directories
-bld.INSTALL_DIRS("${PREFIX}", "etc var/lib var/locks var/run")
+bld.INSTALL_DIRS("", "${LOCKDIR} ${SYSCONFDIR} ${LOCKDIR} ${PIDDIR} ${LOCALSTATEDIR}/lib")
