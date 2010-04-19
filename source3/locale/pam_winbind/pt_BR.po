@@ -85,12 +85,12 @@ msgstr "Você precisa alterar sua senha agora"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Sua senha expira hoje"
+msgstr "Sua senha expira hoje.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Sua senha expirará em %d %s."
+msgstr "Sua senha expirará em %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

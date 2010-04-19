@@ -85,12 +85,12 @@ msgstr "您需要立即變更密碼"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "您的密碼今天到期"
+msgstr "您的密碼今天到期\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "您的密碼將在  %d %s 之後過期"
+msgstr "您的密碼將在  %d %s 之後過期\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

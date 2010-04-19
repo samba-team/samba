@@ -90,12 +90,12 @@ msgstr "Du må endre passordet nå"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Passordet utløper i dag"
+msgstr "Passordet utløper i dag.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Passordet vil utløpe om %d %s"
+msgstr "Passordet vil utløpe om %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

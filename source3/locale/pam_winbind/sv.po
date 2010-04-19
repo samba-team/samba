@@ -85,12 +85,12 @@ msgstr "Du måste ändra ditt lösenord nu"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Ditt lösenord upphör att gälla i dag"
+msgstr "Ditt lösenord upphör att gälla i dag.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Ditt lösenord slutar gälla om %d %s"
+msgstr "Ditt lösenord slutar gälla om %d %s/\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

@@ -85,12 +85,12 @@ msgstr "지금 비밀번호를 변경해야 합니다."
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "오늘 비밀번호가 만료됩니다."
+msgstr "오늘 비밀번호가 만료됩니다.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "비밀번호가 %d %s일 후에 만료됩니다."
+msgstr "비밀번호가 %d %s일 후에 만료됩니다.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"
