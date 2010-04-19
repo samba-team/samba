@@ -1283,7 +1283,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 				   const char *location)
 {
 	uint8_t *outhdr;
-	uint8_t *outdyn;
 	int i = req->current_idx;
 	uint32_t next_command_ofs;
 
@@ -1303,8 +1302,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	}
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
-	/* the fallback dynamic buffer */
-	outdyn = outhdr + SMB2_HDR_BODY + 8;
 
 	next_command_ofs = IVAL(outhdr, SMB2_HDR_NEXT_COMMAND);
 	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(status));
