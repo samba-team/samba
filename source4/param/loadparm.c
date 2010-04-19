@@ -2571,6 +2571,12 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 	   for a missing smb.conf */
 	reload_charcnv(lp_ctx);
 
+	if (bRetval == true) {
+		/* set this up so that any child python tasks will
+		   find the right smb.conf */
+		setenv("SMB_CONF_PATH", filename, 1);
+	}
+
 	return bRetval;
 }
 
