@@ -85,12 +85,12 @@ msgstr "يلزم تغيير كلمة السر الآن"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "انتهت صلاحية كلمة السر الخاصة بك اليوم"
+msgstr "انتهت صلاحية كلمة السر الخاصة بك اليوم\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "ستنتهي صلاحية كلمة السر الخاصة بك خلال %d %s"
+msgstr "ستنتهي صلاحية كلمة السر الخاصة بك خلال %d %s\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

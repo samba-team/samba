@@ -88,12 +88,12 @@ msgstr "Salasana täytyy vaihtaa nyt"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Salasanasi vanhenee tänään"
+msgstr "Salasanasi vanhenee tänään.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Salasanasi vanhenee %d %s"
+msgstr "Salasanasi vanhenee %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

@@ -85,12 +85,12 @@ msgstr "Du skal ændre din adgangskode nu"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Din adgangskode udløber i dag"
+msgstr "Din adgangskode udløber i dag.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Din adgangskode udløber om %d %s"
+msgstr "Din adgangskode udløber om %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

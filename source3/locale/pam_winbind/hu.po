@@ -86,12 +86,12 @@ msgstr "Meg kell most változtatnia a jelszavát"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "A jelszava ma jár le"
+msgstr "A jelszava ma jár le.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Jelszava le fog járni %d %s"
+msgstr "Jelszava le fog járni %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"

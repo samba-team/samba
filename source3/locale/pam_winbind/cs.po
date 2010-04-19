@@ -85,12 +85,12 @@ msgstr "Je potřeba změnit Vaše heslo"
 #: ../../../nsswitch/pam_winbind.c:902
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Vaše heslo vyprší dnes."
+msgstr "Vaše heslo vyprší dnes.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Vaše heslo vyprší %d %s"
+msgstr "Vaše heslo vyprší %d %s\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"
