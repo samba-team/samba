@@ -32,6 +32,7 @@ struct cmd_list_groups_state {
 	char *domain_name;
 	uint32_t resume_index;
 	char *result;
+	uint32_t num_groups;
 };
 
 static void cmd_list_groups_recv_domain(struct composite_context *ctx);
@@ -55,6 +56,7 @@ struct composite_context *wb_cmd_list_groups_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 	state->resume_index = 0;
+	state->num_groups = 0;
 	state->result = talloc_strdup(state, "");
 	if (composite_nomem(state->result, state->ctx)) return result;
 
@@ -144,6 +146,7 @@ static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
 		state->result = talloc_asprintf_append_buffer(state->result,
 					"%s,",
 					group_list->out.groups[i].groupname);
+		state->num_groups++;
 	}
 
 	/* If the status is OK, we're finished, there's no more groups.
@@ -176,7 +179,7 @@ static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
 
 NTSTATUS wb_cmd_list_groups_recv(struct composite_context *ctx,
 		TALLOC_CTX *mem_ctx, uint32_t *extra_data_len,
-		char **extra_data)
+		char **extra_data, uint32_t *num_groups)
 {
 	NTSTATUS status = composite_wait(ctx);
 
@@ -188,6 +191,7 @@ NTSTATUS wb_cmd_list_groups_recv(struct composite_context *ctx,
 
 		*extra_data_len = strlen(state->result);
 		*extra_data = talloc_steal(mem_ctx, state->result);
+		*num_groups = state->num_groups;
 	}
 
 	talloc_free(ctx);
