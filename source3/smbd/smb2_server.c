@@ -23,6 +23,8 @@
 #include "../libcli/smb/smb_common.h"
 #include "../lib/tsocket/tsocket.h"
 
+#define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
+
 static const char *smb2_names[] = {
 	"SMB2_NEGPROT",
 	"SMB2_SESSSETUP",
@@ -377,7 +379,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint1
 	int idx;
 
 	count = req->in.vector_count;
-	vector = talloc_array(req, struct iovec, count);
+	vector = talloc_zero_array(req, struct iovec, count);
 	if (vector == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -402,8 +404,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint1
 		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
 		in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 
-		outhdr = talloc_array(vector, uint8_t,
-				      SMB2_HDR_BODY + 8);
+		outhdr = talloc_zero_array(vector, uint8_t,
+				      OUTVEC_ALLOC_SIZE);
 		if (outhdr == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -506,7 +508,7 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	newreq->async = false;
 	newreq->cancelled = false;
 
-	outvec = talloc_array(newreq, struct iovec, count);
+	outvec = talloc_zero_array(newreq, struct iovec, count);
 	if (!outvec) {
 		TALLOC_FREE(newreq);
 		return NULL;
@@ -518,14 +520,41 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	outvec[0].iov_base = newreq->out.nbt_hdr;
 	outvec[0].iov_len = 4;
 	memcpy(newreq->out.nbt_hdr, req->out.nbt_hdr, 4);
-		
-	for (i = 1; i < count; i++) {
-		if (!dup_smb2_vec(outvec,
+
+	for (i = 1; i < count; i += 3) {
+		/* i + 0 and i + 1 are always
+		 * boilerplate. */
+		outvec[i].iov_base = talloc_memdup(outvec,
+						req->out.vector[i].iov_base,
+						OUTVEC_ALLOC_SIZE);
+		if (!outvec[i].iov_base) {
+			break;
+		}
+		outvec[i].iov_len = SMB2_HDR_BODY;
+
+		outvec[i+1].iov_base = ((uint8_t *)outvec[i].iov_base) +
+						SMB2_HDR_BODY;
+		outvec[i+1].iov_len = 8;
+
+		if (req->out.vector[i+2].iov_base ==
+				((uint8_t *)req->out.vector[i].iov_base) +
+					(OUTVEC_ALLOC_SIZE - 1) &&
+				req->out.vector[i+2].iov_len == 1) {
+			/* Common SMB2 error packet case. */
+			outvec[i+2].iov_base = ((uint8_t *)outvec[i].iov_base) +
+				(OUTVEC_ALLOC_SIZE - 1);
+			outvec[i+2].iov_len = 1;
+		} else if (!dup_smb2_vec(outvec,
 				req->out.vector,
 				i)) {
-			TALLOC_FREE(newreq);
-			return NULL;
+			break;
 		}
+	}
+
+	if (i < count) {
+		/* Alloc failed. */
+		TALLOC_FREE(newreq);
+		return NULL;
 	}
 
 	smb2_setup_nbt_length(newreq->out.vector,
@@ -775,7 +804,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	smb2_setup_nbt_length(req->in.vector, 4);
 
 	/* Now recreate the out.vectors. */
-	outvec = talloc_array(req, struct iovec, 4);
+	outvec = talloc_zero_array(req, struct iovec, 4);
 	if (!outvec) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -785,7 +814,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	outvec[1].iov_base = talloc_memdup(outvec,
 				req->out.vector[i].iov_base,
-				SMB2_HDR_BODY + 8);
+				OUTVEC_ALLOC_SIZE);
 	if (!outvec[1].iov_base) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -797,11 +826,20 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	if (req->out.vector[i+2].iov_base &&
 			req->out.vector[i+2].iov_len) {
-		outvec[3].iov_base = talloc_memdup(outvec,
+		if (req->out.vector[i+2].iov_base ==
+				((uint8_t *)req->out.vector[i].iov_base) +
+					(OUTVEC_ALLOC_SIZE - 1) &&
+				req->out.vector[i].iov_len == 1) {
+			/* Common SMB2 error packet case. */
+			outvec[3].iov_base = ((uint8_t *)outvec[1].iov_base) +
+				(OUTVEC_ALLOC_SIZE - 1);
+		} else {
+			outvec[3].iov_base = talloc_memdup(outvec,
 					req->out.vector[i+2].iov_base,
 					req->out.vector[i+2].iov_len);
-		if (!outvec[3].iov_base) {
-			return NT_STATUS_NO_MEMORY;
+			if (!outvec[3].iov_base) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 		outvec[3].iov_len = req->out.vector[i+2].iov_len;
 	} else {
@@ -1260,12 +1298,14 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		req->out.vector[i+2].iov_base	= (void *)info->data;
 		req->out.vector[i+2].iov_len	= info->length;
 	} else {
-		req->out.vector[i+2].iov_base = talloc_array(req, uint8_t, 1);
-		if (!req->out.vector[i+2].iov_base) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		SCVAL(req->out.vector[i+2].iov_base, 0, 0);
+		/* Allocated size of req->out.vector[i].iov_base
+		 * *MUST BE* OUTVEC_ALLOC_SIZE. So we have room for
+		 * 1 byte without having to do an alloc.
+		 */
+		req->out.vector[i+2].iov_base = ((uint8_t *)outhdr) +
+			OUTVEC_ALLOC_SIZE - 1;
 		req->out.vector[i+2].iov_len = 1;
+		SCVAL(req->out.vector[i+2].iov_base, 0, 0);
 	}
 
 	/*
@@ -1356,7 +1396,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 			old_dyn = (uint8_t *)req->out.vector[i+2].iov_base;
 
 			new_size = old_size + pad_size;
-			new_dyn = talloc_array(req->out.vector,
+			new_dyn = talloc_zero_array(req->out.vector,
 					       uint8_t, new_size);
 			if (new_dyn == NULL) {
 				return smbd_smb2_request_error(req,
