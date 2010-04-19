@@ -243,6 +243,19 @@ enum spoolss_MinorVersion
 #define JOB_STATUS_RESTART ( 0x00000800 )
 #define JOB_STATUS_COMPLETE ( 0x00001000 )
 
+enum spoolss_Build
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DEBUGGING_BUILD=(int)(0x00000000),
+	SPOOLSS_RELEASE_BUILD=(int)(0x00000001)
+}
+#else
+ { __donnot_use_enum_spoolss_Build=0x7FFFFFFF}
+#define SPOOLSS_DEBUGGING_BUILD ( 0x00000000 )
+#define SPOOLSS_RELEASE_BUILD ( 0x00000001 )
+#endif
+;
+
 struct spoolss_PrinterInfo0 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * servername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -1464,19 +1477,6 @@ enum spoolss_PrinterControl
 #define SPOOLSS_PRINTER_CONTROL_RESUME ( 2 )
 #define SPOOLSS_PRINTER_CONTROL_PURGE ( 3 )
 #define SPOOLSS_PRINTER_CONTROL_SET_STATUS ( 4 )
-#endif
-;
-
-enum spoolss_Build
-#ifndef USE_UINT_ENUMS
- {
-	SPOOLSS_DEBUGGING_BUILD=(int)(0x00000000),
-	SPOOLSS_RELEASE_BUILD=(int)(0x00000001)
-}
-#else
- { __donnot_use_enum_spoolss_Build=0x7FFFFFFF}
-#define SPOOLSS_DEBUGGING_BUILD ( 0x00000000 )
-#define SPOOLSS_RELEASE_BUILD ( 0x00000001 )
 #endif
 ;
 

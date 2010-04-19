@@ -308,6 +308,31 @@ _PUBLIC_ void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_Build(struct ndr_push *ndr, int ndr_flags, enum spoolss_Build r)
+{
+	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_Build(struct ndr_pull *ndr, int ndr_flags, enum spoolss_Build *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_Build(struct ndr_print *ndr, const char *name, enum spoolss_Build r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SPOOLSS_DEBUGGING_BUILD: val = "SPOOLSS_DEBUGGING_BUILD"; break;
+		case SPOOLSS_RELEASE_BUILD: val = "SPOOLSS_RELEASE_BUILD"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -6806,31 +6831,6 @@ _PUBLIC_ void ndr_print_spoolss_PrinterControl(struct ndr_print *ndr, const char
 		case SPOOLSS_PRINTER_CONTROL_RESUME: val = "SPOOLSS_PRINTER_CONTROL_RESUME"; break;
 		case SPOOLSS_PRINTER_CONTROL_PURGE: val = "SPOOLSS_PRINTER_CONTROL_PURGE"; break;
 		case SPOOLSS_PRINTER_CONTROL_SET_STATUS: val = "SPOOLSS_PRINTER_CONTROL_SET_STATUS"; break;
-	}
-	ndr_print_enum(ndr, name, "ENUM", val, r);
-}
-
-static enum ndr_err_code ndr_push_spoolss_Build(struct ndr_push *ndr, int ndr_flags, enum spoolss_Build r)
-{
-	NDR_CHECK(ndr_push_enum_uint32(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_spoolss_Build(struct ndr_pull *ndr, int ndr_flags, enum spoolss_Build *r)
-{
-	uint32_t v;
-	NDR_CHECK(ndr_pull_enum_uint32(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_spoolss_Build(struct ndr_print *ndr, const char *name, enum spoolss_Build r)
-{
-	const char *val = NULL;
-
-	switch (r) {
-		case SPOOLSS_DEBUGGING_BUILD: val = "SPOOLSS_DEBUGGING_BUILD"; break;
-		case SPOOLSS_RELEASE_BUILD: val = "SPOOLSS_RELEASE_BUILD"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
