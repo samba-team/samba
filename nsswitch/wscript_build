@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('LIBWINBIND-CLIENT',
                     source='wb_common.c',
                     deps='replace',
-                    cflags='-DSOCKET_WRAPPER_DISABLE=1'
+                    cflags='-DSOCKET_WRAPPER_DISABLE=1 -DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR
                     )
 
 
