@@ -672,9 +672,7 @@ wbcErr wbcListUsers(const char *domain_name,
 
  done:
 	winbindd_free_response(&response);
-	if (users) {
-		wbcFreeMemory(users);
-	}
+	wbcFreeMemory(users);
 	return wbc_status;
 }
 
