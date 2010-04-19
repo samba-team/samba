@@ -148,15 +148,12 @@ def check_dns_name(d):
         except IOError:
             return False
         
-        line = dns_file.readline()
-        while line:
-            line = line.rstrip().lstrip()
+        for line in dns_file:
+            line = line.strip()
             if line[0] == "#":
-                line = dns_file.readline()
                 continue
             if line.lower() == str(d).lower():
                 return True
-            line = dns_file.readline()
         return False
 
     try:
@@ -296,5 +293,3 @@ for d in update_list:
 # delete the ccache if we created it
 if ccachename is not None:
     os.unlink(ccachename)
-
-
