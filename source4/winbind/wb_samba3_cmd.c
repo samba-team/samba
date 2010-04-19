@@ -863,6 +863,7 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
 	if (num_domains > 0) {
 		s3call->response.extra_data.data = result;
 		s3call->response.length += strlen(result)+1;
+		s3call->response.data.num_entries = num_domains;
 	}
 
  done:
