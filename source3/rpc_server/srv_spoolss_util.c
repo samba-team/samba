@@ -725,7 +725,8 @@ done:
 ********************************************************************/
 
 /* Set printer data over the winreg pipe. */
-WERROR winreg_set_printer_dataex(struct pipes_struct *p,
+WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 const char *printer,
 				 const char *key,
 				 const char *value,
@@ -742,7 +743,7 @@ WERROR winreg_set_printer_dataex(struct pipes_struct *p,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -759,7 +760,7 @@ WERROR winreg_set_printer_dataex(struct pipes_struct *p,
 	DEBUG(8, ("winreg_set_printer_dataex: Open printer key %s, value %s, access_mask: 0x%05x for [%s]\n",
 			key, value, access_mask, printer));
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					path,
 					key,
@@ -808,7 +809,8 @@ done:
 }
 
 /* Get printer data over a winreg pipe. */
-WERROR winreg_get_printer_dataex(struct pipes_struct *p,
+WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 const char *printer,
 				 const char *key,
 				 const char *value,
@@ -829,7 +831,7 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -844,7 +846,7 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					path,
 					key,
@@ -912,7 +914,7 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
 	*type = type_in;
 	*data_size = data_in_size;
 	if (data_in_size) {
-		*data = talloc_move(p->mem_ctx, &data_in);
+		*data = talloc_move(mem_ctx, &data_in);
 	}
 
 	result = WERR_OK;
@@ -931,7 +933,8 @@ done:
 }
 
 /* Enumerate on the values of a given key and provide the data. */
-WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
+WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  const char *printer,
 				  const char *key,
 				  uint32_t *pnum_values,
@@ -948,7 +951,7 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
 
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -960,7 +963,7 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
 	}
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					path,
 					key,
@@ -987,7 +990,7 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
 
 	*pnum_values = num_values;
 	if (penum_values) {
-		*penum_values = talloc_move(p->mem_ctx, &enum_values);
+		*penum_values = talloc_move(mem_ctx, &enum_values);
 	}
 
 	result = WERR_OK;
@@ -1006,7 +1009,8 @@ done:
 }
 
 /* Delete printer data over a winreg pipe. */
-WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
+WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
+				    struct auth_serversupplied_info *server_info,
 				    const char *printer,
 				    const char *key,
 				    const char *value)
@@ -1021,7 +1025,7 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
 
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1036,7 +1040,7 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					path,
 					key,
@@ -1082,7 +1086,8 @@ done:
 }
 
 /* Enumerate on the subkeys of a given key and provide the data. */
-WERROR winreg_enum_printer_key(struct pipes_struct *p,
+WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       const char *printer,
 			       const char *key,
 			       uint32_t *pnum_subkeys,
@@ -1099,7 +1104,7 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1114,7 +1119,7 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					path,
 					key,
@@ -1141,7 +1146,7 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
 
 	*pnum_subkeys = num_subkeys;
 	if (psubkeys) {
-		*psubkeys = talloc_move(p->mem_ctx, &subkeys);
+		*psubkeys = talloc_move(mem_ctx, &subkeys);
 	}
 
 	result = WERR_OK;
@@ -1160,7 +1165,8 @@ done:
 }
 
 /* Delete a key with subkeys of a given printer. */
-WERROR winreg_delete_printer_key(struct pipes_struct *p,
+WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 const char *printer,
 				 const char *key)
 {
@@ -1172,7 +1178,7 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1184,7 +1190,7 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
 	}
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					path,
 					key,
@@ -1249,7 +1255,8 @@ done:
  * http://unixwiz.net/techtips/winspooler-forms.html
  */
 
-WERROR winreg_printer_addform1(struct pipes_struct *p,
+WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       struct spoolss_AddFormInfo1 *form)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1264,7 +1271,7 @@ WERROR winreg_printer_addform1(struct pipes_struct *p,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1273,7 +1280,7 @@ WERROR winreg_printer_addform1(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
@@ -1287,7 +1294,7 @@ WERROR winreg_printer_addform1(struct pipes_struct *p,
 		goto done;
 	}
 
-	result = winreg_printer_enumforms1(p, &num_info, &info);
+	result = winreg_printer_enumforms1(tmp_ctx, server_info, &num_info, &info);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_addform: Could not enum keys %s: %s\n",
 			  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
@@ -1348,7 +1355,8 @@ done:
 	return result;
 }
 
-WERROR winreg_printer_enumforms1(struct pipes_struct *p,
+WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo)
 {
@@ -1363,7 +1371,7 @@ WERROR winreg_printer_enumforms1(struct pipes_struct *p,
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1372,7 +1380,7 @@ WERROR winreg_printer_enumforms1(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
@@ -1443,7 +1451,7 @@ WERROR winreg_printer_enumforms1(struct pipes_struct *p,
 
 	*pnum_info = num_builtin + num_values;
 	if (pinfo) {
-		*pinfo = talloc_move(p->mem_ctx, &info);
+		*pinfo = talloc_move(mem_ctx, &info);
 	}
 
 done:
@@ -1461,7 +1469,8 @@ done:
 	return result;
 }
 
-WERROR winreg_printer_deleteform1(struct pipes_struct *p,
+WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  const char *form_name)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1480,7 +1489,7 @@ WERROR winreg_printer_deleteform1(struct pipes_struct *p,
 		}
 	}
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1489,7 +1498,7 @@ WERROR winreg_printer_deleteform1(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
@@ -1537,7 +1546,8 @@ done:
 	return result;
 }
 
-WERROR winreg_printer_setform1(struct pipes_struct *p,
+WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form)
 {
@@ -1559,7 +1569,7 @@ WERROR winreg_printer_setform1(struct pipes_struct *p,
 		}
 	}
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1568,7 +1578,7 @@ WERROR winreg_printer_setform1(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
@@ -1584,7 +1594,7 @@ WERROR winreg_printer_setform1(struct pipes_struct *p,
 
 	/* If form_name != form->form_name then we renamed the form */
 	if (strequal(form_name, form->form_name)) {
-		result = winreg_printer_deleteform1(p, form_name);
+		result = winreg_printer_deleteform1(tmp_ctx, server_info, form_name);
 		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(0, ("winreg_printer_setform1: Could not open key %s: %s\n",
 				  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
@@ -1637,7 +1647,8 @@ done:
 	return result;
 }
 
-WERROR winreg_printer_getform1(struct pipes_struct *p,
+WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       const char *form_name,
 			       struct spoolss_FormInfo1 *r)
 {
@@ -1663,7 +1674,7 @@ WERROR winreg_printer_getform1(struct pipes_struct *p,
 		}
 	}
 
-	tmp_ctx = talloc_new(p->mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1672,7 +1683,7 @@ WERROR winreg_printer_getform1(struct pipes_struct *p,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					p->server_info,
+					server_info,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
@@ -1738,7 +1749,7 @@ WERROR winreg_printer_getform1(struct pipes_struct *p,
 		goto done;
 	}
 
-	r->form_name = talloc_strdup(p->mem_ctx, form_name);
+	r->form_name = talloc_strdup(mem_ctx, form_name);
 	if (r->form_name == NULL) {
 		result = WERR_NOMEM;
 		goto done;

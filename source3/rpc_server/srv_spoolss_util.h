@@ -44,7 +44,8 @@
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.
  */
-WERROR winreg_set_printer_dataex(struct pipes_struct *p,
+WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 const char *printer,
 				 const char *key,
 				 const char *value,
@@ -74,7 +75,8 @@ WERROR winreg_set_printer_dataex(struct pipes_struct *p,
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.
  */
-WERROR winreg_get_printer_dataex(struct pipes_struct *p,
+WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 const char *printer,
 				 const char *key,
 				 const char *value,
@@ -100,7 +102,8 @@ WERROR winreg_get_printer_dataex(struct pipes_struct *p,
  * @return                   WERR_OK on success, the corresponding DOS error
  *                           code if something gone wrong.
  */
-WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
+WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  const char *printer,
 				  const char *key,
 				  uint32_t *pnum_values,
@@ -122,7 +125,8 @@ WERROR winreg_enum_printer_dataex(struct pipes_struct *p,
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.
  */
-WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
+WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
+				    struct auth_serversupplied_info *server_info,
 				    const char *printer,
 				    const char *key,
 				    const char *value);
@@ -146,7 +150,8 @@ WERROR winreg_delete_printer_dataex(struct pipes_struct *p,
  * @return              WERR_OK on success, the corresponding DOS error
  *                      code if something gone wrong.
  */
-WERROR winreg_enum_printer_key(struct pipes_struct *p,
+WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       const char *printer,
 			       const char *key,
 			       uint32_t *pnum_subkeys,
@@ -166,7 +171,8 @@ WERROR winreg_enum_printer_key(struct pipes_struct *p,
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.
  */
-WERROR winreg_delete_printer_key(struct pipes_struct *p,
+WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 const char *printer,
 				 const char *key);
 
@@ -185,7 +191,8 @@ WERROR winreg_delete_printer_key(struct pipes_struct *p,
  *                                          builtin form.
  *                      A corresponding DOS error is something went wrong.
  */
-WERROR winreg_printer_addform1(struct pipes_struct *p,
+WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       struct spoolss_AddFormInfo1 *form);
 
 /*
@@ -200,7 +207,8 @@ WERROR winreg_printer_addform1(struct pipes_struct *p,
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.
  */
-WERROR winreg_printer_enumforms1(struct pipes_struct *p,
+WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo);
 
@@ -215,7 +223,8 @@ WERROR winreg_printer_enumforms1(struct pipes_struct *p,
  *                      WERR_INVALID_PARAM if the form is a builtin form.
  *                      A corresponding DOS error is something went wrong.
  */
-WERROR winreg_printer_deleteform1(struct pipes_struct *p,
+WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  const char *form_name);
 
 /**
@@ -234,7 +243,8 @@ WERROR winreg_printer_deleteform1(struct pipes_struct *p,
  *                      WERR_INVALID_PARAM if the form is a builtin form.
  *                      A corresponding DOS error is something went wrong.
  */
-WERROR winreg_printer_setform1(struct pipes_struct *p,
+WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form);
 
@@ -250,7 +260,8 @@ WERROR winreg_printer_setform1(struct pipes_struct *p,
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.
  */
-WERROR winreg_printer_getform1(struct pipes_struct *p,
+WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
 			       const char *form_name,
 			       struct spoolss_FormInfo1 *form);
 
