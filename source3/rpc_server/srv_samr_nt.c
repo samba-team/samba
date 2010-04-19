@@ -6698,7 +6698,7 @@ static enum samr_ValidationStatus samr_ValidatePassword_Change(TALLOC_CTX *mem_c
 	NTSTATUS status;
 
 	if (req->password.string == NULL) {
-		SAMR_VALIDATION_STATUS_SUCCESS;
+		return SAMR_VALIDATION_STATUS_SUCCESS;
 	}
 	if (strlen(req->password.string) < dom_pw_info->min_password_length) {
 		ZERO_STRUCT(rep->info);
