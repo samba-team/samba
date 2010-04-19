@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -x
+
 d=$(dirname $0)
 
 cd $d/..
@@ -15,28 +18,45 @@ echo "testing in dirs $tests"
 
 for d in $tests; do
     echo "`date`: testing $d"
-    pushd $d || exit 1
+    pushd $d
     rm -rf bin
     type waf
-    waf dist || exit 1
-    waf configure -C --enable-developer --prefix=$PREFIX || exit 1
-    time waf build || exit 1
-    time waf build || exit 1
-    waf install || exit 1
-    waf distcheck || exit 1
+    waf dist
+    waf configure -C --enable-developer --prefix=$PREFIX
+    time waf build
+    time waf build
+    waf install
+    waf distcheck
     case $d in
 	"source4/lib/ldb")
-	    ldd bin/ldbadd || exit 1
+	    ldd bin/ldbadd
 	    ;;
 	"lib/replace")
-	    ldd bin/replace_testsuite || exit 1
+	    ldd bin/replace_testsuite
 	    ;;
 	"lib/talloc")
-	    ldd bin/talloc_testsuite || exit 1
+	    ldd bin/talloc_testsuite
 	    ;;
 	"lib/tdb")
-	    ldd bin/tdbtool || exit 1
+	    ldd bin/tdbtool
 	    ;;
     esac
     popd
 done
+
+echo "testing python portability"
+pushd lib/talloc
+#versions="python2.4 python2.5 python2.6 python3.0 python3.1"
+versions="python2.4 python2.5 python2.6"
+for p in $versions; do
+    echo "Testing $p"
+    $p ../../buildtools/bin/waf configure -C --enable-developer --prefix=$PREFIX
+    $p ../../buildtools/bin/waf build install
+done
+popd
+
+echo "testing cross compiling"
+pushd lib/talloc
+CC=arm-linux-gnu-gcc ./configure -C --prefix=$PREFIX  --cross-compile --cross-execute='qemu-arm-static -L /usr/arm-linux-gnu'
+make && make install
+popd
