@@ -116,3 +116,6 @@ bld.RECURSE('setup')
 bld.RECURSE('scripting')
 bld.RECURSE('../pidl')
 bld.RECURSE('../lib')
+
+# install some extra empty directories
+bld.INSTALL_DIRS("${PREFIX}", "etc var/lib var/locks var/run")
