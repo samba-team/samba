@@ -682,6 +682,12 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	message_id = BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
 	async_id = message_id; /* keep it simple for now... */
 
+	/*
+	 * What we send is identical to a smbd_smb2_request_error
+	 * packet with an error status of STATUS_PENDING. Make use
+	 * of this fact sometime when refactoring. JRA.
+	 */
+
 	state = talloc_zero(req->sconn, struct smbd_smb2_request_pending_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -886,8 +892,6 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 			smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
                         (unsigned long long)found_id ));
 		tevent_req_cancel(cur->subreq);
-		TALLOC_FREE(cur->subreq);
-		TALLOC_FREE(cur);
 	}
 
 	return NT_STATUS_OK;
@@ -1246,6 +1250,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(status));
 
 	outbody = outhdr + SMB2_HDR_BODY;
+	SSVAL(outbody, 0, 9);
 
 	req->out.vector[i+1].iov_base = (void *)outbody;
 	req->out.vector[i+1].iov_len = 8;
@@ -1255,8 +1260,12 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		req->out.vector[i+2].iov_base	= (void *)info->data;
 		req->out.vector[i+2].iov_len	= info->length;
 	} else {
-		req->out.vector[i+2].iov_base = NULL;
-		req->out.vector[i+2].iov_len = 0;
+		req->out.vector[i+2].iov_base = talloc_array(req, uint8_t, 1);
+		if (!req->out.vector[i+2].iov_base) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SCVAL(req->out.vector[i+2].iov_base, 0, 0);
+		req->out.vector[i+2].iov_len = 1;
 	}
 
 	/*

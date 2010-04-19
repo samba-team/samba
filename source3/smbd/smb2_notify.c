@@ -113,6 +113,13 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 		DEBUG(10,("smbd_smb2_request_notify_done: cancelled mid %llu\n",
 			(unsigned long long)mid ));
+		error = smbd_smb2_request_error(req, NT_STATUS_CANCELLED);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->sconn,
+				nt_errstr(error));
+			return;
+		}
+		TALLOC_FREE(subreq);
 		return;
 	}
 
