@@ -160,6 +160,10 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 	close(1);
 	close(2);
 
+	/* we want to ensure that all of the network sockets we had
+	   open are closed */
+	tevent_re_initialise(ev);
+
 	/* setup for logging to go to the parents debug log */
 	open("/dev/null", O_RDONLY); /* for stdin */
 	dup2(p1[1], 1);
