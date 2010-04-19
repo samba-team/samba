@@ -1725,6 +1725,39 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.get_desc_sddl(group_dn)
         self.assertTrue("(D;;WP;;;DA)(D;CIIO;WP;;;CO)" in desc_sddl)
 
+    def test_212(self):
+        """ Provide ACE with IO flag, should be ignored
+        """
+        ou_dn = "OU=test_inherit_ou," + self.base_dn
+        group_dn = "CN=test_inherit_group," + ou_dn
+        # Create inheritable-free OU
+        self.create_clean_ou(ou_dn)
+        # Add some custom 'CI' ACE
+        mod = "D:(D;CIIO;WP;;;CO)"
+        self.create_domain_group(self.ldb_admin, group_dn, mod)
+        # Make sure created group object contains only the above inherited ACE(s)
+        # that we've added manually
+        desc_sddl = self.get_desc_sddl(group_dn)
+        print desc_sddl
+        self.assertTrue("(D;CIIO;WP;;;CO)" in desc_sddl)
+        self.assertFalse("(D;;WP;;;DA)" in desc_sddl)
+        self.assertFalse("(D;CIIO;WP;;;CO)(D;CIIO;WP;;;CO)" in desc_sddl)
+
+    def test_213(self):
+        """ Provide ACE with IO flag, should be ignored
+        """
+        ou_dn = "OU=test_inherit_ou," + self.base_dn
+        group_dn = "CN=test_inherit_group," + ou_dn
+        # Create inheritable-free OU
+        self.create_clean_ou(ou_dn)
+        mod = "D:(D;IO;WP;;;DA)"
+        self.create_domain_group(self.ldb_admin, group_dn, mod)
+        # Make sure created group object contains only the above inherited ACE(s)
+        # that we've added manually
+        desc_sddl = self.get_desc_sddl(group_dn)
+        print desc_sddl
+        self.assertFalse("(D;IO;WP;;;DA)" in desc_sddl)
+
     ########################################################################################
 
 
