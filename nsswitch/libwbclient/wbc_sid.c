@@ -638,8 +638,17 @@ wbcErr wbcListUsers(const char *domain_name,
 
 	next = (const char *)response.extra_data.data;
 	while (next) {
-		const char *current = next;
-		char *k = strchr(next, ',');
+		const char *current;
+		char *k;
+
+		if (num_users >= response.data.num_entries) {
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
+			goto done;
+		}
+
+		current = next;
+		k = strchr(next, ',');
+
 		if (k) {
 			k[0] = '\0';
 			next = k+1;
@@ -650,10 +659,6 @@ wbcErr wbcListUsers(const char *domain_name,
 		users[num_users] = strdup(current);
 		BAIL_ON_PTR_ERROR(users[num_users], wbc_status);
 		num_users += 1;
-		if (num_users > response.data.num_entries) {
-			wbc_status = WBC_ERR_INVALID_RESPONSE;
-			goto done;
-		}
 	}
 	if (num_users != response.data.num_entries) {
 		wbc_status = WBC_ERR_INVALID_RESPONSE;
