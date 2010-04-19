@@ -87,8 +87,14 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 	}
 
 	if (session_info) {
+		uint32_t flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
+		if (server_info->authenticated) {
+			flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+		}
 		nt_status = auth_context->generate_session_info(tmp_ctx, auth_context,
-								server_info, session_info);
+								server_info,
+								flags,
+								session_info);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			talloc_steal(mem_ctx, *session_info);

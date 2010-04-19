@@ -45,6 +45,7 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 					     struct auth_context *auth_context,
 					     struct auth_serversupplied_info *server_info,
+					     uint32_t session_info_flags,
 					     struct auth_session_info **_session_info)
 {
 	struct auth_session_info *session_info;
@@ -61,7 +62,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	struct dom_sid **groupSIDs = NULL;
 	const struct dom_sid *dom_sid;
-	bool is_enterprise_dc = false;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -82,7 +82,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		dom_sid = samdb_domain_sid(auth_context->sam_ctx);
 		if (dom_sid) {
 			if (dom_sid_in_domain(dom_sid, server_info->account_sid)) {
-				is_enterprise_dc = true;
+				session_info_flags |= AUTH_SESSION_INFO_ENTERPRISE_DC;
 			} else {
 				DEBUG(2, ("DC %s is not in our domain.  "
 					  "It will not have Enterprise Domain Controllers membership on this server",
@@ -201,8 +201,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 					  server_info->primary_group_sid,
 					  num_groupSIDs,
 					  groupSIDs,
-					  server_info->authenticated,
-					  is_enterprise_dc,
+					  session_info_flags,
 					  &session_info->security_token);
 	NT_STATUS_NOT_OK_RETURN_AND_FREE(nt_status, tmp_ctx);
 

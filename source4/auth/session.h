@@ -50,6 +50,7 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 				    struct auth_context *auth_context,
 				    struct auth_serversupplied_info *server_info, 
+				    uint32_t session_info_flags,
 				    struct auth_session_info **_session_info);
 
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 

@@ -149,6 +149,7 @@ static int construct_token_groups(struct ldb_module *module,
 		ldb_module_oom(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	} else if (!NT_STATUS_IS_OK(status)) {
+		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, could not create authContext");
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -158,30 +159,29 @@ static int construct_token_groups(struct ldb_module *module,
 		talloc_free(tmp_ctx);
 		ldb_module_oom(module);
 		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		/* Not a user, we have no tokenGroups */
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
+		ldb_asprintf_errstring(ldb, "Cannot provide tokenGroups attribute: auth_get_server_info_principal failed: %s", nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	status = auth_generate_session_info(tmp_ctx, auth_context, server_info, &session_info);
+	status = auth_generate_session_info(tmp_ctx, auth_context, server_info, 0, &session_info);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		talloc_free(tmp_ctx);
 		ldb_module_oom(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
+		ldb_asprintf_errstring(ldb, "Cannot provide tokenGroups attribute: auth_generate_session_info failed: %s", nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = samdb_msg_add_dom_sid(ldb, msg, msg,
-				    "tokenGroups",
-				    session_info->security_token->group_sid);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	for (i = 0; i < session_info->security_token->num_sids; i++) {
+	/* We start at 1, as the first SID is the user's SID, not included in the tokenGroups */
+	for (i = 1; i < session_info->security_token->num_sids; i++) {
 		ret = samdb_msg_add_dom_sid(ldb, msg, msg,
 					    "tokenGroups",
 					    session_info->security_token->sids[i]);

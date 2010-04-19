@@ -35,6 +35,7 @@
 #include "libcli/raw/smb.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "libcli/security/dom_sid.h"
 
 struct named_pipe_socket {
 	const char *pipe_name;
@@ -164,6 +165,8 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 	struct named_pipe_auth_req pipe_request;
 	struct named_pipe_auth_rep pipe_reply;
 	struct auth_context *auth_context;
+	uint32_t session_flags = 0;
+	struct dom_sid *anonymous_sid;
 	NTSTATUS status;
 	int ret;
 
@@ -264,11 +267,23 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 			goto reply;
 		}
 
+		anonymous_sid = dom_sid_parse_talloc(auth_context, SID_NT_ANONYMOUS);
+		if (anonymous_sid == NULL) {
+			named_pipe_terminate_connection(pipe_conn, "Failed to parse Anonymous SID ");
+			talloc_free(auth_context);
+			return;
+		}
+
+		session_flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
+		if (!dom_sid_equal(anonymous_sid, server_info->account_sid)) {
+			session_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+		}
 
 		/* setup the session_info on the connection */
 		pipe_reply.status = auth_context->generate_session_info(conn,
 									auth_context,
 									server_info,
+									session_flags,
 									&conn->session_info);
 		talloc_free(auth_context);
 		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
@@ -315,9 +330,22 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 			goto reply;
 		}
 
+		anonymous_sid = dom_sid_parse_talloc(auth_context, SID_NT_ANONYMOUS);
+		if (anonymous_sid == NULL) {
+			named_pipe_terminate_connection(pipe_conn, "Failed to parse Anonymous SID ");
+			talloc_free(auth_context);
+			return;
+		}
+
+		session_flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
+		if (!dom_sid_equal(anonymous_sid, server_info->account_sid)) {
+			session_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+		}
+
 		pipe_reply.status = auth_context->generate_session_info(conn,
 									auth_context,
 									server_info,
+									session_flags,
 									&conn->session_info);
 		talloc_free(auth_context);
 		if (!NT_STATUS_IS_OK(pipe_reply.status)) {
@@ -405,10 +433,23 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 			goto reply;
 		}
 
+		anonymous_sid = dom_sid_parse_talloc(auth_context, SID_NT_ANONYMOUS);
+		if (anonymous_sid == NULL) {
+			named_pipe_terminate_connection(pipe_conn, "Failed to parse Anonymous SID ");
+			talloc_free(auth_context);
+			return;
+		}
+
+		session_flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
+		if (!dom_sid_equal(anonymous_sid, server_info->account_sid)) {
+			session_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+		}
+
 		/* setup the session_info on the connection */
 		pipe_reply.status = auth_context->generate_session_info(conn,
 									auth_context,
 									server_info,
+									session_flags,
 									&conn->session_info);
 		talloc_free(auth_context);
 		if (!NT_STATUS_IS_OK(pipe_reply.status)) {

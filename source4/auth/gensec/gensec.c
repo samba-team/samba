@@ -1327,8 +1327,14 @@ NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	if (gensec_security->auth_context) {
+		uint32_t flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
+		if (server_info->authenticated) {
+			flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+		}
 		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
-										 server_info, session_info);
+										 server_info,
+										 flags,
+										 session_info);
 	} else {
 		nt_status = auth_generate_simple_session_info(mem_ctx,
 							      server_info, session_info);

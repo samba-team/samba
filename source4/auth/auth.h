@@ -48,6 +48,10 @@ struct loadparm_context;
 #define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* don't check unix account status */
 #define USER_INFO_INTERACTIVE_LOGON         0x08 /* don't check unix account status */
 
+#define AUTH_SESSION_INFO_DEFAULT_GROUPS 0x01 /* Add the user to the default world and network groups */
+#define AUTH_SESSION_INFO_AUTHENTICATED  0x02 /* Add the user to the 'authenticated users' group */
+#define AUTH_SESSION_INFO_ENTERPRISE_DC  0x04 /* Add the user to the 'enterprise DC' group */
+
 enum auth_password_state {
 	AUTH_PASSWORD_RESPONSE,
 	AUTH_PASSWORD_HASH,
@@ -211,6 +215,7 @@ struct auth_context {
 	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
 					  struct auth_context *auth_context,
 					  struct auth_serversupplied_info *server_info,
+					  uint32_t session_info_flags,
 					  struct auth_session_info **session_info);
 };
 

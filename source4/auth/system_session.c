@@ -36,12 +36,12 @@
  * @note Specialised version for system sessions that doesn't use the SAM.
  */
 static NTSTATUS create_token(TALLOC_CTX *mem_ctx, 
-			       struct dom_sid *user_sid,
-			       struct dom_sid *group_sid, 
-			       unsigned int n_groupSIDs,
-			       struct dom_sid **groupSIDs, 
-			       bool is_authenticated,
-			       struct security_token **token)
+			     struct dom_sid *user_sid,
+			     struct dom_sid *group_sid,
+			     unsigned int n_groupSIDs,
+			     struct dom_sid **groupSIDs,
+			     bool is_authenticated,
+			     struct security_token **token)
 {
 	struct security_token *ptoken;
 	unsigned int i;
