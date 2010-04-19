@@ -946,18 +946,20 @@ static void list_users_recv(struct composite_context *ctx)
 				struct wbsrv_samba3_call);
 	uint32_t extra_data_len;
 	char *extra_data;
+	uint32_t num_users;
 	NTSTATUS status;
 
 	DEBUG(5, ("list_users_recv called\n"));
 
 	status = wb_cmd_list_users_recv(ctx, s3call, &extra_data_len,
-			&extra_data);
+			&extra_data, &num_users);
 
 	if (NT_STATUS_IS_OK(status)) {
 		s3call->response.extra_data.data = extra_data;
 		s3call->response.length += extra_data_len;
 		if (extra_data) {
 			s3call->response.length += 1;
+			s3call->response.data.num_entries = num_users;
 		}
 	}
 

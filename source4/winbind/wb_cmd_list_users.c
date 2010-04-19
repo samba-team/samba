@@ -32,6 +32,7 @@ struct cmd_list_users_state {
 	char *domain_name;
 	uint32_t resume_index;
 	char *result;
+	uint32_t num_users;
 };
 
 static void cmd_list_users_recv_domain(struct composite_context *ctx);
@@ -55,6 +56,7 @@ struct composite_context *wb_cmd_list_users_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 	state->resume_index = 0;
+	state->num_users = 0;
 	state->result = talloc_strdup(state, "");
 	if (composite_nomem(state->result, state->ctx)) return result;
 
@@ -142,6 +144,7 @@ static void cmd_list_users_recv_user_list(struct composite_context *ctx)
 		DEBUG(5, ("Appending user '%s'\n", user_list->out.users[i].username));
 		state->result = talloc_asprintf_append_buffer(state->result, "%s,",
 					user_list->out.users[i].username);
+		state->num_users++;
 	}
 
 	/* If the status is OK, we're finished, there's no more users.
@@ -174,7 +177,7 @@ static void cmd_list_users_recv_user_list(struct composite_context *ctx)
 
 NTSTATUS wb_cmd_list_users_recv(struct composite_context *ctx,
 		TALLOC_CTX *mem_ctx, uint32_t *extra_data_len,
-		char **extra_data)
+		char **extra_data, uint32_t *num_users)
 {
 	NTSTATUS status = composite_wait(ctx);
 
@@ -186,6 +189,7 @@ NTSTATUS wb_cmd_list_users_recv(struct composite_context *ctx,
 
 		*extra_data_len = strlen(state->result);
 		*extra_data = talloc_steal(mem_ctx, state->result);
+		*num_users = state->num_users;
 	}
 
 	talloc_free(ctx);
