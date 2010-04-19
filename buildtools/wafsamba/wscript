@@ -93,6 +93,9 @@ def set_options(opt):
     gr.add_option('--cross-execute',
 		   help=("command prefix to use for cross-execution in configure"),
 		   action='store', dest='CROSS_EXECUTE', default='')
+    gr.add_option('--cross-answers',
+		   help=("answers to cross-compilation configuration (auto modified)"),
+		   action='store', dest='CROSS_ANSWERS', default='')
     gr.add_option('--hostcc',
 		   help=("set host compiler when cross compiling"),
 		   action='store', dest='HOSTCC', default=False)
@@ -152,6 +155,7 @@ def configure(conf):
 
     conf.env.CROSS_COMPILE = Options.options.CROSS_COMPILE
     conf.env.CROSS_EXECUTE = Options.options.CROSS_EXECUTE
+    conf.env.CROSS_ANSWERS = Options.options.CROSS_ANSWERS
     conf.env.HOSTCC        = Options.options.HOSTCC
 
     conf.env.AUTOCONF_BUILD = Options.options.AUTOCONF_BUILD

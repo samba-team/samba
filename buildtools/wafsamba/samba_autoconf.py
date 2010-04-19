@@ -372,7 +372,7 @@ def CHECK_CODE(conf, code, define,
     cflags = TO_LIST(cflags)
     cflags.extend(ccflags)
 
-    exec_args = conf.SAMBA_CROSS_ARGS()
+    exec_args = conf.SAMBA_CROSS_ARGS(msg=msg)
 
     ret = conf.check(fragment=fragment,
                      execute=execute,
@@ -567,6 +567,7 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.write_config_header('config.h', top=True)
     else:
         conf.write_config_header(path)
+    conf.SAMBA_CROSS_CHECK_COMPLETE()
 
 
 @conf
