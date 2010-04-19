@@ -240,6 +240,11 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
 
+	if (!ctx->auth_ctx->msg_ctx) {
+		DEBUG(0,("winbind_check_password: auth_context_create was called with out messaging context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	s = talloc(mem_ctx, struct winbind_check_password_state);
 	NT_STATUS_HAVE_NO_MEMORY(s);
 

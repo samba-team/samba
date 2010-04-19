@@ -426,11 +426,6 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (!msg) {
-		DEBUG(0,("auth_context_create: called with out messaging context\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	ctx = talloc(mem_ctx, struct auth_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->challenge.set_by		= NULL;
