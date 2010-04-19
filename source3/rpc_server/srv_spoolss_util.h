@@ -27,7 +27,9 @@
  *
  * @brief Set printer data over the winreg pipe.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -58,7 +60,9 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @brief Get printer data over a winreg pipe.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -89,7 +93,9 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @brief Enumerate on the values of a given key and provide the data.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -114,7 +120,9 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @brief Delete printer data over a winreg pipe.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -136,7 +144,9 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @brief Enumerate on the subkeys of a given key and provide the data.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -162,7 +172,9 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
  *
  * @brief Delete a key with subkeys of a given printer.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -182,7 +194,9 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
  * @brief This function adds a form to the list of available forms that can be
  * selected for the specified printer.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  form     The form to add.
  *
@@ -198,7 +212,9 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 /*
  * @brief This function enumerates the forms supported by the specified printer.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[out] pnum_info A pointer to store the FormInfo count.
  *
@@ -215,7 +231,9 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 /**
  * @brief This function removes a form name from the list of supported forms.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  form_name The name of the form to delete.
  *
@@ -233,7 +251,9 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
  * If one provides both the name in the API call and inside the FormInfo
  * structure, then the form gets renamed.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  form_name The name of the form to set or rename.
  *
@@ -251,7 +271,9 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 /**
  * @brief This function retrieves information about a specified form.
  *
- * @param[in]  p        The pipes structure to be able to open a new pipe.
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
  *
  * @param[in]  form_name The name of the form to query.
  *
