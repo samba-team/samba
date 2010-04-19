@@ -452,7 +452,7 @@ def CHECK_MAKEFLAGS(bld):
         if opt[0:2] == 'V=':
             Options.options.verbose = Logs.verbose = int(opt[2:])
             if Logs.verbose > 0:
-		Logs.zones = ['runner']
+                Logs.zones = ['runner']
             if Logs.verbose > 2:
                 Logs.zones = ['*']
         elif opt[0].isupper() and opt.find('=') != -1:
