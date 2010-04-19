@@ -52,7 +52,7 @@ static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwar
 
 	status = libnet_Join(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -93,7 +93,8 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 
 	status = libnet_SetPassword(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.generic.out.error_string);
+		PyErr_SetString(PyExc_RuntimeError,
+				r.generic.out.error_string?r.generic.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -127,7 +128,8 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 
 	status = libnet_export_keytab(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		PyErr_SetString(PyExc_RuntimeError,
+				r.out.error_string?r.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -164,7 +166,8 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 
 	status = libnet_RemoteTOD(self->libnet_ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.generic.out.error_string);
+		PyErr_SetString(PyExc_RuntimeError,
+				r.generic.out.error_string?r.generic.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -204,7 +207,7 @@ static PyObject *py_net_user_create(py_net_Object *self, PyObject *args, PyObjec
 
 	status = libnet_CreateUser(self->libnet_ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -238,7 +241,7 @@ static PyObject *py_net_user_delete(py_net_Object *self, PyObject *args, PyObjec
 
 	status = libnet_DeleteUser(self->libnet_ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string);
+		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
