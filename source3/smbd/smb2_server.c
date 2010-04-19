@@ -558,7 +558,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 
 	/* Step back to the previous reply. */
 	i = nreq->current_idx - 3;
-	outhdr = nreq->out.vector[i].iov_base;
+	outhdr = (uint8_t *)nreq->out.vector[i].iov_base;
 	/* And end the chain. */
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
 
@@ -705,8 +705,8 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	smb2_setup_nbt_length(state->vector, 3);
 
-	hdr = state->vector[1].iov_base;
-	body = state->vector[2].iov_base;
+	hdr = (uint8_t *)state->vector[1].iov_base;
+	body = (uint8_t *)state->vector[2].iov_base;
 
 	SIVAL(hdr, SMB2_HDR_PROTOCOL_ID, SMB2_MAGIC);
 	SSVAL(hdr, SMB2_HDR_LENGTH, SMB2_HDR_BODY);
