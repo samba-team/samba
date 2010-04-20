@@ -2269,7 +2269,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
 
-	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 with client acount\n");
+	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 with client account\n");
 	r.in.client_account	= TEST_MACHINE_NAME"$";
 	r.in.mask		= ACB_SVRTRUST;
 	r.in.flags		= DS_RETURN_FLAT_NAME;
