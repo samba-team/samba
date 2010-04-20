@@ -377,4 +377,24 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 			 uint32_t driver_version,
 			 struct spoolss_DriverInfo8 **_info8);
 
+/**
+ * @brief This function deletes a printer driver information
+ *
+ * @param[in]  mem_ctx	       A talloc memory context.
+ *
+ * @param[in]  server_info     Auth info to open the pipe.
+ *
+ * @param[out] info8    The structure that holds the full driver information.
+ *
+ * @param[in]  version  The driver type version.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+
+WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
+			 struct auth_serversupplied_info *server_info,
+			 struct spoolss_DriverInfo8 *info8,
+			 uint32_t version);
+
 #endif /* _SRV_SPOOLSS_UITL_H */

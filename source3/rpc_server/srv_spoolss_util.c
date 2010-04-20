@@ -2888,3 +2888,88 @@ done:
 	return result;
 }
 
+WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
+			 struct auth_serversupplied_info *server_info,
+			 struct spoolss_DriverInfo8 *info8,
+			 uint32_t version)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	TALLOC_CTX *tmp_ctx;
+	char *key_name;
+	WERROR result;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	/* test that the key exists */
+	result = winreg_printer_opendriver(tmp_ctx,
+					   server_info,
+					   info8->driver_name,
+					   info8->architecture,
+					   version,
+					   access_mask, false,
+					   &winreg_pipe,
+					   &hive_hnd,
+					   &key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		/* key doesn't exist */
+		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+			result = WERR_OK;
+			goto done;
+		}
+
+		DEBUG(5, ("winreg_del_driver: "
+			  "Could not open driver (%s,%s,%u): %s\n",
+			  info8->driver_name, info8->architecture,
+			  version, win_errstr(result)));
+		goto done;
+	}
+
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+	}
+
+	key_name = talloc_asprintf(tmp_ctx,
+				   "%s\\Environments\\%s\\Drivers\\Version-%u",
+				   TOP_LEVEL_CONTROL_KEY,
+				   info8->architecture, version);
+	if (key_name == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	result = winreg_printer_delete_subkeys(tmp_ctx,
+					       winreg_pipe,
+					       &hive_hnd,
+					       access_mask,
+					       key_name);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_del_driver: "
+			  "Could not open driver (%s,%s,%u): %s\n",
+			  info8->driver_name, info8->architecture,
+			  version, win_errstr(result)));
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
