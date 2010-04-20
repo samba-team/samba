@@ -3284,6 +3284,28 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_get_environment(struct torture_context *tctx,
+				 struct dcerpc_binding_handle *b,
+				 struct policy_handle *handle,
+				 const char **architecture)
+{
+	DATA_BLOB blob;
+	enum winreg_Type type;
+	uint8_t *data;
+	uint32_t needed;
+
+	torture_assert(tctx,
+		test_GetPrinterData(tctx, b, handle, "Architecture", &type, &data, &needed),
+		"failed to get Architecture");
+
+	torture_assert_int_equal(tctx, type, REG_SZ, "unexpected type");
+
+	blob = data_blob_const(data, needed);
+	*architecture = reg_val_data_string(tctx, lp_iconv_convenience(tctx->lp_ctx), REG_SZ, blob);
+
+	return true;
+}
+
 static bool test_GetPrinterData_list(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
 				     struct policy_handle *handle,
