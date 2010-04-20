@@ -1132,6 +1132,37 @@ static bool test_pool(void)
 	return true;
 }
 
+
+static bool test_free_ref_null_context(void)
+{
+	void *p1, *p2, *p3;
+	int ret;
+
+	talloc_disable_null_tracking();
+	p1 = talloc_new(NULL);
+	p2 = talloc_new(NULL);
+
+	p3 = talloc_reference(p2, p1);
+	torture_assert("reference", p3 == p1, "failed: reference on null");
+
+	ret = talloc_free(p1);
+	torture_assert("ref free with null parent", ret == 0, "failed: free with null parent");
+	talloc_free(p2);
+
+	talloc_enable_null_tracking_no_autofree();
+	p1 = talloc_new(NULL);
+	p2 = talloc_new(NULL);
+
+	p3 = talloc_reference(p2, p1);
+	torture_assert("reference", p3 == p1, "failed: reference on null");
+
+	ret = talloc_free(p1);
+	torture_assert("ref free with null tracked parent", ret == 0, "failed: free with null parent");
+	talloc_free(p2);
+
+	return true;
+}
+
 static void test_reset(void)
 {
 	talloc_set_log_fn(test_log_stdout);
@@ -1185,6 +1216,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_talloc_free_in_destructor();
 	test_reset();
 	ret &= test_pool();
+	test_reset();
+	ret &= test_free_ref_null_context();
 
 	if (ret) {
 		test_reset();

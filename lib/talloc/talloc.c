@@ -1128,6 +1128,13 @@ _PUBLIC_ int _talloc_free(void *ptr, const char *location)
 	if (unlikely(tc->refs != NULL)) {
 		struct talloc_reference_handle *h;
 
+		if (talloc_parent(ptr) == null_context && tc->refs->next == NULL) {
+			/* in this case we do know which parent should
+			   get this pointer, as there is really only
+			   one parent */
+			return talloc_unlink(null_context, ptr);
+		}
+
 		talloc_log("ERROR: talloc_free with references at %s\n",
 			   location);
 
