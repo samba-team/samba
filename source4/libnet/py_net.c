@@ -29,8 +29,8 @@
 
 typedef struct {
 	PyObject_HEAD
-	struct libnet_context *libnet_ctx;
 	TALLOC_CTX *mem_ctx;
+	struct libnet_context *libnet_ctx;
 	struct tevent_context *ev;
 } py_net_Object;
 

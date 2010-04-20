@@ -303,10 +303,10 @@ PyTypeObject messaging_Type = {
 */
 typedef struct {
 	PyObject_HEAD
+	TALLOC_CTX *mem_ctx;
 	const char *server_name;
 	struct server_id *dest_ids;
 	struct messaging_context *msg_ctx;
-	TALLOC_CTX *mem_ctx;
 } irpc_ClientConnectionObject;
 
 /*
@@ -382,10 +382,10 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 
 typedef struct {
 	PyObject_HEAD
+	TALLOC_CTX *mem_ctx;
 	struct irpc_request **reqs;
 	int count;
 	int current;
-	TALLOC_CTX *mem_ctx;
 	py_data_unpack_fn unpack_fn;
 } irpc_ResultObject;
 

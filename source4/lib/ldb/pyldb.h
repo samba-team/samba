@@ -31,8 +31,8 @@
 
 typedef struct {
 	PyObject_HEAD
-	struct ldb_context *ldb_ctx;
 	TALLOC_CTX *mem_ctx;
+	struct ldb_context *ldb_ctx;
 } PyLdbObject;
 
 #define PyLdb_AsLdbContext(pyobj) ((PyLdbObject *)pyobj)->ldb_ctx
@@ -40,8 +40,8 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD
-	struct ldb_dn *dn;
 	TALLOC_CTX *mem_ctx;
+	struct ldb_dn *dn;
 } PyLdbDnObject;
 
 PyObject *PyLdbDn_FromDn(struct ldb_dn *);
@@ -51,16 +51,16 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ld
 
 typedef struct {
 	PyObject_HEAD
-	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
+	struct ldb_message *msg;
 } PyLdbMessageObject;
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 #define PyLdbMessage_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
 typedef struct {
 	PyObject_HEAD
-	struct ldb_module *mod;
 	TALLOC_CTX *mem_ctx;
+	struct ldb_module *mod;
 } PyLdbModuleObject;
 PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
@@ -68,8 +68,8 @@ PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 
 typedef struct {
 	PyObject_HEAD	
-	struct ldb_message_element *el;
 	TALLOC_CTX *mem_ctx;
+	struct ldb_message_element *el;
 } PyLdbMessageElementObject;
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx, PyObject *obj, int flags, const char *name);
 PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *, TALLOC_CTX *mem_ctx);
@@ -78,8 +78,8 @@ PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *, T
 
 typedef struct {
 	PyObject_HEAD
-	struct ldb_parse_tree *tree;
 	TALLOC_CTX *mem_ctx;
+	struct ldb_parse_tree *tree;
 } PyLdbTreeObject;
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
 #define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
