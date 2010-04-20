@@ -287,7 +287,7 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 		.type = LDB_MAP_RENAME,
 		.u = {
 			.rename = {
-				 .remote_name = "samba4RDN"
+				 .remote_name = "rdnValue"
 			 }
 		}
 	},

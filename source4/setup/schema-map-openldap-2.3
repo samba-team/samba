@@ -15,6 +15,10 @@ uidNumber
 gidNumber
 #The memberOf plugin provides this attribute
 memberOf
+#'name' is the RDN in AD, but 'name' means something else in
+#OpenLDAP.  We use rdnValue for the mapping, but this is provided by
+#the rdnval overlay.
+name
 #These conflict with OpenLDAP builtins
 attributeTypes:samba4AttributeTypes
 2.5.21.5:1.3.6.1.4.1.7165.4.255.7
@@ -24,8 +28,6 @@ objectClasses:samba4ObjectClasses
 2.5.21.6:1.3.6.1.4.1.7165.4.255.5
 subSchema:samba4SubSchema
 2.5.20.1:1.3.6.1.4.1.7165.4.255.4
-#'name' is the RDN in AD, but something else in OpenLDAP
-name:samba4RDN
 #Remap these so that we don't put operational attributes in a schema MAY
 modifyTimeStamp:samba4ModifyTimestamp
 2.5.18.2:1.3.6.1.4.1.7165.4.255.3

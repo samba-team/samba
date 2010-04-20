@@ -185,11 +185,15 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "kludge_acl",
 					     "schema_load",
 					     "instancetype",
-					     "rdn_name",
 					     NULL };
 
 	const char **link_modules;
+	static const char *fedora_ds_modules[] = {
+		"rdn_name", NULL };
+	static const char *openldap_modules[] = {
+		NULL };
 	static const char *tdb_modules_list[] = {
+		"rdn_name",
 		"subtree_delete",
 		"repl_meta_data",
 		"subtree_rename",
@@ -252,11 +256,12 @@ static int samba_dsdb_init(struct ldb_module *module)
 		extended_dn_module = extended_dn_module_ldb;
 		link_modules = tdb_modules_list;
 	} else {
-		link_modules = NULL;
 		if (strcasecmp(backendType, "fedora-ds") == 0) {
+			link_modules = fedora_ds_modules;
 			backend_modules = fedora_ds_backend_modules;
 			extended_dn_module = extended_dn_module_fds;
 		} else if (strcasecmp(backendType, "openldap") == 0) {
+			link_modules = openldap_modules;
 			backend_modules = openldap_backend_modules;
 			extended_dn_module = extended_dn_module_openldap;
 		}
