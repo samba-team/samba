@@ -232,7 +232,8 @@ class LDAPBackend(ProvisionBackend):
                 return
             except LdbError:
                 time.sleep(1)
-        
+
+        self.message("Could not start slapd with: %s" %  "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
         raise ProvisioningError("slapd died before we could make a connection to it")
 
     def shutdown(self):
