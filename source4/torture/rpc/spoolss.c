@@ -43,6 +43,7 @@
 #define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 #define TOP_LEVEL_CONTROL_PRINTERS_KEY TOP_LEVEL_CONTROL_KEY "\\Printers"
+#define TOP_LEVEL_CONTROL_ENVIRONMENTS_KEY TOP_LEVEL_CONTROL_KEY "\\Environments"
 
 struct test_spoolss_context {
 	/* print server handle */
@@ -4110,8 +4111,6 @@ do {\
 			test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
 	}
 
-#undef test_sz
-#undef test_dword
 #undef test_dm
 #undef test_sd
 
@@ -4119,6 +4118,186 @@ do {\
 
 	return true;
 }
+
+static bool test_GetPrinterDriver2_level(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 struct policy_handle *handle,
+					 const char *driver_name,
+					 const char *architecture,
+					 uint32_t level,
+					 uint32_t client_major_version,
+					 uint32_t client_minor_version,
+					 union spoolss_DriverInfo *info_p,
+					 WERROR *result);
+
+static const char *strip_path(const char *path)
+{
+	char *p;
+
+	if (path == NULL) {
+		return NULL;
+	}
+
+	p = strrchr(path, '\\');
+	if (p) {
+		return p+1;
+	}
+
+	return path;
+}
+
+static const char *driver_winreg_date(TALLOC_CTX *mem_ctx, NTTIME nt)
+{
+	time_t t;
+	struct tm *tm;
+	t = nt_time_to_unix(nt);
+	tm = localtime(&t);
+
+	return talloc_asprintf(mem_ctx, "%02d/%02d/%04d",
+		tm->tm_mon + 1, tm->tm_mday, tm->tm_year + 1900);
+}
+
+static const char *driver_winreg_version(TALLOC_CTX *mem_ctx, uint64_t v)
+{
+	return talloc_asprintf(mem_ctx, "%u.%u.%u.%u",
+		(unsigned)((v >> 48) & 0xFFFF),
+		(unsigned)((v >> 32) & 0xFFFF),
+		(unsigned)((v >> 16) & 0xFFFF),
+		(unsigned)(v & 0xFFFF));
+}
+
+static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
+				      struct dcerpc_binding_handle *b,
+				      struct policy_handle *handle,
+				      const char *printer_name,
+				      const char *driver_name,
+				      const char *environment,
+				      struct dcerpc_binding_handle *winreg_handle,
+				      struct policy_handle *hive_handle)
+{
+	WERROR result;
+	union spoolss_DriverInfo info;
+	const char *driver_key;
+	struct policy_handle key_handle;
+
+	const char *driver_path;
+	const char *data_file;
+	const char *config_file;
+	const char *help_file;
+	const char **dependent_files;
+
+	const char *driver_date;
+	const char *inbox_driver_date;
+
+	const char *driver_version;
+	const char *inbox_driver_version;
+
+	torture_comment(tctx, "Testing Driver Info and winreg consistency\n");
+
+	driver_key = talloc_asprintf(tctx, "%s\\%s\\Drivers\\Version-%d\\%s",
+				     TOP_LEVEL_CONTROL_ENVIRONMENTS_KEY,
+				     environment,
+				     3,
+				     driver_name);
+
+	torture_assert(tctx,
+		test_winreg_OpenKey(tctx, winreg_handle, hive_handle, driver_key, &key_handle),
+		"failed to open driver key");
+
+	torture_assert(tctx,
+		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, 3, 0, &info, &result),
+		"failed to get driver info level 8");
+
+	if (W_ERROR_EQUAL(result, WERR_INVALID_LEVEL)) {
+		goto try_level6;
+	}
+
+	driver_path	= strip_path(info.info8.driver_path);
+	data_file	= strip_path(info.info8.data_file);
+	config_file	= strip_path(info.info8.config_file);
+	help_file	= strip_path(info.info8.help_file);
+/*	dependent_files = strip_paths(info.info8.dependent_files); */
+
+	driver_date		= driver_winreg_date(tctx, info.info8.driver_date);
+	inbox_driver_date	= driver_winreg_date(tctx, info.info8.min_inbox_driver_ver_date);
+
+	driver_version		= driver_winreg_version(tctx, info.info8.driver_version);
+	inbox_driver_version	= driver_winreg_version(tctx, info.info8.min_inbox_driver_ver_version);
+
+	test_sz("Configuration File",		config_file);
+	test_sz("Data File",			data_file);
+	test_sz("Datatype",			info.info8.default_datatype);
+	test_sz("Driver",			driver_path);
+	test_sz("DriverDate",			driver_date);
+	test_sz("DriverVersion",		driver_version);
+	test_sz("HardwareID",			info.info8.hardware_id);
+	test_sz("Help File",			help_file);
+	test_sz("InfPath",			info.info8.inf_path);
+	test_sz("Manufacturer",			info.info8.manufacturer_name);
+	test_sz("MinInboxDriverVerDate",	inbox_driver_date);
+	test_sz("MinInboxDriverVerVersion",	inbox_driver_version);
+	test_sz("Monitor",			info.info8.monitor_name);
+	test_sz("OEM URL",			info.info8.manufacturer_url);
+	test_sz("Print Processor",		info.info8.print_processor);
+	test_sz("Provider",			info.info8.provider);
+	test_sz("VendorSetup",			info.info8.vendor_setup);
+#if 0
+	test_multi_sz("ColorProfiles",		info.info8.color_profiles);
+	test_multi_sz("Dependent Files",	dependent_files);
+	test_multi_sz("CoreDependencies",	info.info8.core_driver_dependencies);
+	test_multi_sz("Previous Names",		info.info8.previous_names);
+#endif
+/*	test_dword("Attributes",		?); */
+	test_dword("PrinterDriverAttributes",	info.info8.printer_driver_attributes);
+	test_dword("Version",			info.info8.version);
+/*	test_dword("TempDir",			?); */
+
+ try_level6:
+
+	torture_assert(tctx,
+		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 6, 3, 0, &info, &result),
+		"failed to get driver info level 6");
+
+	driver_path	= strip_path(info.info6.driver_path);
+	data_file	= strip_path(info.info6.data_file);
+	config_file	= strip_path(info.info6.config_file);
+	help_file	= strip_path(info.info6.help_file);
+/*	dependent_files = strip_paths(info.info6.dependent_files); */
+
+	driver_date		= driver_winreg_date(tctx, info.info6.driver_date);
+
+	driver_version		= driver_winreg_version(tctx, info.info6.driver_version);
+
+	test_sz("Configuration File",		config_file);
+	test_sz("Data File",			data_file);
+	test_sz("Datatype",			info.info6.default_datatype);
+	test_sz("Driver",			driver_path);
+	test_sz("DriverDate",			driver_date);
+	test_sz("DriverVersion",		driver_version);
+	test_sz("HardwareID",			info.info6.hardware_id);
+	test_sz("Help File",			help_file);
+	test_sz("Manufacturer",			info.info6.manufacturer_name);
+	test_sz("Monitor",			info.info6.monitor_name);
+	test_sz("OEM URL",			info.info6.manufacturer_url);
+	test_sz("Provider",			info.info6.provider);
+#if 0
+	test_multi_sz("Dependent Files",	dependent_files);
+	test_multi_sz("Previous Names",		info.info6.previous_names);
+#endif
+/*	test_dword("Attributes",		?); */
+	test_dword("Version",			info.info6.version);
+/*	test_dword("TempDir",			?); */
+
+	torture_assert(tctx,
+		test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
+
+	torture_comment(tctx, "Driver Info and winreg consistency test succeeded\n\n");
+
+	return true;
+}
+
+#undef test_sz
+#undef test_dword
 
 static bool test_SetPrinterData(struct torture_context *tctx,
 				struct dcerpc_binding_handle *b,
@@ -4513,6 +4692,35 @@ static bool test_PrinterInfo_winreg(struct torture_context *tctx,
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
 
 	ret = test_GetPrinterInfo_winreg(tctx, b, handle, printer_name, b2, &hive_handle);
+
+	test_winreg_CloseKey(tctx, b2, &hive_handle);
+
+	talloc_free(p2);
+
+	return ret;
+}
+
+static bool test_DriverInfo_winreg(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
+				   const char *printer_name,
+				   const char *driver_name,
+				   const char *environment)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p2;
+	bool ret = true;
+	struct policy_handle hive_handle;
+	struct dcerpc_binding_handle *b2;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+		"could not open winreg pipe");
+	b2 = p2->binding_handle;
+
+	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
+
+	ret = test_GetDriverInfo_winreg(tctx, b, handle, printer_name, driver_name, environment, b2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
@@ -5188,7 +5396,8 @@ static bool test_GetPrinterDriver2_level(struct torture_context *tctx,
 					 uint32_t level,
 					 uint32_t client_major_version,
 					 uint32_t client_minor_version,
-					 union spoolss_DriverInfo *info_p)
+					 union spoolss_DriverInfo *info_p,
+					 WERROR *result_p)
 
 {
 	struct spoolss_GetPrinterDriver2 r;
@@ -5220,6 +5429,10 @@ static bool test_GetPrinterDriver2_level(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			dcerpc_spoolss_GetPrinterDriver2_r(b, tctx, &r),
 			"failed to call GetPrinterDriver2");
+	}
+
+	if (result_p) {
+		*result_p = r.out.result;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_LEVEL)) {
@@ -5260,7 +5473,7 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 
 		torture_assert(tctx,
-			test_GetPrinterDriver2_level(tctx, b, handle, driver_name, architecture, levels[i], 3, 0, NULL),
+			test_GetPrinterDriver2_level(tctx, b, handle, driver_name, architecture, levels[i], 3, 0, NULL, NULL),
 			"");
 	}
 
@@ -5837,7 +6050,9 @@ bool test_printer_keys(struct torture_context *tctx,
 static bool test_one_printer(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
 			     struct policy_handle *handle,
-			     const char *name)
+			     const char *name,
+			     const char *drivername,
+			     const char *environment)
 {
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -5887,6 +6102,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterData_winreg(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_DriverInfo_winreg(tctx, p, handle, name, drivername, environment)) {
 		ret = false;
 	}
 
@@ -5965,10 +6184,22 @@ static bool test_printer(struct torture_context *tctx,
 {
 	bool ret = true;
 	struct policy_handle handle[2];
+	struct policy_handle printserver_handle;
 	bool found = false;
 	const char *drivername = "Microsoft XPS Document Writer";
 	const char *portname = "LPT1:";
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *environment;
+
+	torture_assert(tctx,
+		test_OpenPrinter_server(tctx, p, &printserver_handle),
+		"failed to open printserver");
+	torture_assert(tctx,
+		test_get_environment(tctx, b, &printserver_handle, &environment),
+		"failed to get environment");
+	torture_assert(tctx,
+		test_ClosePrinter(tctx, b, &printserver_handle),
+		"failed to close printserver");
 
 	/* test printer created via AddPrinter */
 
@@ -5980,7 +6211,7 @@ static bool test_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_one_printer(tctx, p, &handle[0], TORTURE_PRINTER)) {
+	if (!test_one_printer(tctx, p, &handle[0], TORTURE_PRINTER, drivername, environment)) {
 		ret = false;
 	}
 
@@ -6005,7 +6236,7 @@ static bool test_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_one_printer(tctx, p, &handle[1], TORTURE_PRINTER_EX)) {
+	if (!test_one_printer(tctx, p, &handle[1], TORTURE_PRINTER_EX, drivername, environment)) {
 		ret = false;
 	}
 
