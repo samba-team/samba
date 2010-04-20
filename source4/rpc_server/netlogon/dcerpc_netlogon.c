@@ -1523,10 +1523,11 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	W_ERROR_HAVE_NO_MEMORY(info);
 	info->dc_unc           = talloc_asprintf(mem_ctx, "\\\\%s",
 						 response.data.nt5_ex.pdc_dns_name);
+	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
 	info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
 					   response.data.nt5_ex.sockaddr.pdc_ip);
-	info->dc_address_type = DS_ADDRESS_TYPE_INET;
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
+	info->dc_address_type  = DS_ADDRESS_TYPE_INET; /* TODO: make this dynamic? for ipv6 */
 	info->domain_guid      = response.data.nt5_ex.domain_uuid;
 	info->domain_name      = response.data.nt5_ex.dns_domain;
 	info->forest_name      = response.data.nt5_ex.forest;
