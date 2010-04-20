@@ -791,7 +791,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 
 	if (!params->account_name) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		goto done;
 	}
 
 	if (error) {
@@ -815,7 +815,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 
 		if (!params->account_name) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		strncpy(request.data.chauthtok.user, params->account_name,
@@ -839,55 +839,55 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 
 		if (!params->account_name || !params->domain_name) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->old_password.response.old_lm_hash_enc_length &&
 		    !params->old_password.response.old_lm_hash_enc_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->old_password.response.old_lm_hash_enc_length == 0 &&
 		    params->old_password.response.old_lm_hash_enc_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->old_password.response.old_nt_hash_enc_length &&
 		    !params->old_password.response.old_nt_hash_enc_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->old_password.response.old_nt_hash_enc_length == 0 &&
 		    params->old_password.response.old_nt_hash_enc_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->new_password.response.lm_length &&
 		    !params->new_password.response.lm_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->new_password.response.lm_length == 0 &&
 		    params->new_password.response.lm_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->new_password.response.nt_length &&
 		    !params->new_password.response.nt_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		if (params->new_password.response.nt_length == 0 &&
 		    params->new_password.response.nt_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
-			BAIL_ON_WBC_ERROR(wbc_status);
+			goto done;
 		}
 
 		strncpy(request.data.chng_pswd_auth_crap.user,
@@ -933,7 +933,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 		break;
 	default:
 		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		goto done;
 		break;
 	}
 
