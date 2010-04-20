@@ -2973,3 +2973,70 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
+WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
+			      struct auth_serversupplied_info *server_info,
+			      const char *architecture,
+			      uint32_t version,
+			      uint32_t *num_drivers,
+			      const char ***drivers)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	TALLOC_CTX *tmp_ctx;
+	WERROR result;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	/* use NULL for the driver name so we open the key that is
+	 * parent of all drivers for this architecture and version */
+	result = winreg_printer_opendriver(tmp_ctx,
+					   server_info,
+					   NULL,
+					   architecture,
+					   version,
+					   access_mask, false,
+					   &winreg_pipe,
+					   &hive_hnd,
+					   &key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(5, ("winreg_get_driver_list: "
+			  "Could not open key (%s,%u): %s\n",
+			  architecture, version, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_enumkeys(tmp_ctx,
+					 winreg_pipe,
+					 &key_hnd,
+					 num_drivers,
+					 drivers);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_get_driver_list: "
+			  "Could not enumerate drivers for (%s,%u): %s\n",
+			  architecture, version, win_errstr(result)));
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
