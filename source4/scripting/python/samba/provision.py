@@ -871,10 +871,9 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     if schema is None:
         schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
 
-    # Load the database, but importantly, use Ldb not SamDB as we don't want to
-    # load the global schema
-    samdb = Ldb(session_info=session_info, 
-                credentials=provision_backend.credentials, lp=lp)
+    # Load the database, but don's load the global schema and don't connect quite yet
+    samdb = SamDB(session_info=session_info, url=None, auto_connect=False,
+                  credentials=provision_backend.credentials, lp=lp, global_schema=False)
 
     message("Pre-loading the Samba 4 and AD schema")
 
@@ -901,6 +900,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
         samdb.set_domain_sid(str(domainsid))
         samdb.set_invocation_id(invocationid)
+        samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
 
         message("Adding DomainDN: %s" % names.domaindn)
 
@@ -1236,7 +1236,7 @@ def provision(setup_dir, message, session_info,
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
  
-    schema = Schema(setup_path, domainsid, schemadn=names.schemadn,
+    schema = Schema(setup_path, domainsid, invocationid=invocationid, schemadn=names.schemadn,
                     serverdn=names.serverdn)
     
     if backend_type == "ldb":

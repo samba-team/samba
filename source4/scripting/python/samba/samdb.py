@@ -37,9 +37,11 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
-                 credentials=None, flags=0, options=None, global_schema=True):
+                 credentials=None, flags=0, options=None, global_schema=True, auto_connect=True):
         self.lp = lp
-        if url is None:
+        if not auto_connect:
+            url = None
+        elif url is None and lp is not None:
             url = lp.get("sam database")
 
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
@@ -50,7 +52,10 @@ class SamDB(samba.Ldb):
             dsdb.dsdb_set_global_schema(self)
 
     def connect(self, url=None, flags=0, options=None):
-        super(SamDB, self).connect(url=self.lp.private_path(url), flags=flags,
+        if self.lp is not None:
+            url = self.lp.private_path(url)
+
+        super(SamDB, self).connect(url=url, flags=flags,
                 options=options)
 
     def domain_dn(self):
@@ -260,6 +265,15 @@ accountExpires: %u
     def get_invocation_id(self):
         "Get the invocation_id id"
         return dsdb.samdb_ntds_invocation_id(self)
+
+    def set_ntds_settings_dn(self, ntds_settings_dn):
+        """Set the NTDS Settings DN, as would be returned on the dsServiceName rootDSE attribute
+
+        This allows the DN to be set before the database fully exists
+
+        :param ntds_settings_dn: The new DN to use
+        """
+        dsdb.samdb_set_ntds_settings_dn(self, ntds_settings_dn)
 
     invocation_id = property(get_invocation_id, set_invocation_id)
 

@@ -26,6 +26,7 @@ from base64 import b64encode
 from ms_schema import read_ms_schema
 from samba.dcerpc import security
 from samba import read_and_sub_file, substitute_var, check_all_substituted
+from samba.samdb import SamDB
 from samba import Ldb
 from samba.ndr import ndr_pack
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
@@ -52,7 +53,7 @@ def get_schema_descriptor(domain_sid):
    
 class Schema(object):
 
-    def __init__(self, setup_path, domain_sid, schemadn=None,
+    def __init__(self, setup_path, domain_sid, invocationid=None, schemadn=None,
                  serverdn=None, files=None, prefixmap=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
@@ -65,7 +66,12 @@ class Schema(object):
         """
 
         self.schemadn = schemadn
-        self.ldb = Ldb()
+        self.ldb = SamDB(global_schema=False)
+        if serverdn is not None:
+            self.ldb.set_ntds_settings_dn("CN=NTDS Settings,%s" % serverdn)
+        if invocationid is not None:
+            self.ldb.set_invocation_id(invocationid)
+
         self.schema_data = read_ms_schema(
             setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
             setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
@@ -100,7 +106,7 @@ class Schema(object):
         self.ldb.set_schema_from_ldif(prefixmap_ldif, self.schema_data)
 
     def write_to_tmp_ldb(self, schemadb_path):
-        self.ldb.connect(schemadb_path)
+        self.ldb.connect(url=schemadb_path)
         self.ldb.transaction_start()
         try:
             self.ldb.add_ldif("""dn: @ATTRIBUTES

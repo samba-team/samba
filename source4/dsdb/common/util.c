@@ -1173,6 +1173,43 @@ failed:
 	return false;
 }
 
+bool samdb_set_ntds_settings_dn(struct ldb_context *ldb, struct ldb_dn *ntds_settings_dn_in)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *ntds_settings_dn_new;
+	struct ldb_dn *ntds_settings_dn_old;
+
+	/* see if we have a cached copy */
+	ntds_settings_dn_old = talloc_get_type(ldb_get_opaque(ldb, 
+							      "cache.ntds_settings_dn"), struct ldb_dn);
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ntds_settings_dn_new = ldb_dn_copy(tmp_ctx, ntds_settings_dn_in);
+	if (!ntds_settings_dn_new) {
+		goto failed;
+	}
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.ntds_settings_dn", ntds_settings_dn_new) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, ntds_settings_dn_new);
+	talloc_free(tmp_ctx);
+	talloc_free(ntds_settings_dn_old);
+
+	return true;
+
+failed:
+	DEBUG(1,("Failed to set our NTDS Settings DN in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return false;
+}
+
 /* Obtain the short name of the flexible single master operator
  * (FSMO), such as the PDC Emulator */
 const char *samdb_result_fsmo_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
@@ -1207,7 +1244,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	struct ldb_dn *settings_dn;
 
 	/* see if we have a cached copy */
-	settings_dn = (struct ldb_dn *)ldb_get_opaque(ldb, "cache.settings_dn");
+	settings_dn = (struct ldb_dn *)ldb_get_opaque(ldb, "cache.ntds_settings_dn");
 	if (settings_dn) {
 		return settings_dn;
 	}

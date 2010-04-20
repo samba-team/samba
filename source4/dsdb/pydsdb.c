@@ -127,6 +127,38 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args)
+{ 
+	PyObject *py_ldb, *py_ntds_settings_dn;
+	struct ldb_context *ldb;
+	struct ldb_dn *ntds_settings_dn;
+	TALLOC_CTX *tmp_ctx;
+	bool ret;
+
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_ntds_settings_dn))
+		return NULL;
+	
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!PyObject_AsDn(tmp_ctx, py_ntds_settings_dn, ldb, &ntds_settings_dn)) {
+		return NULL;
+	}
+
+	ret = samdb_set_ntds_settings_dn(ldb, ntds_settings_dn);
+	talloc_free(tmp_ctx);
+	if (!ret) {
+		PyErr_SetString(PyExc_RuntimeError, "set_ntds_settings_dn failed");
+		return NULL;
+	} 
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 { 
 	PyObject *py_ldb;
@@ -356,6 +388,10 @@ static PyMethodDef py_dsdb_methods[] = {
 		"Get SID of domain in use." },
 	{ "samdb_ntds_invocation_id", (PyCFunction)py_samdb_ntds_invocation_id,
 		METH_VARARGS, "get the NTDS invocation ID GUID as a string"},
+	{ "samdb_set_ntds_settings_dn", (PyCFunction)py_samdb_set_ntds_settings_dn,
+		METH_VARARGS,
+		"samdb_set_ntds_settings_dn(samdb, ntds_settings_dn)\n"
+		"Set NTDS Settings DN for this LDB (allows it to be set before the DB fully exists)." },
 	{ "dsdb_get_oid_from_attid", (PyCFunction)py_dsdb_get_oid_from_attid,
 		METH_VARARGS, NULL },
 	{ "dsdb_set_ntds_invocation_id",

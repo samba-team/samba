@@ -185,11 +185,11 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "kludge_acl",
 					     "schema_load",
 					     "instancetype",
-					     "rdn_name",
 					     NULL };
 
 	const char **link_modules;
 	static const char *tdb_modules_list[] = {
+		"rdn_name",
 		"subtree_delete",
 		"repl_meta_data",
 		"subtree_rename",
