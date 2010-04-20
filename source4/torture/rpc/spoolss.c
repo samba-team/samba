@@ -5847,6 +5847,69 @@ static bool test_one_printer(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_csetprinter(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *handle,
+			     const char *printername,
+			     const char *drivername,
+			     const char *portname)
+{
+	union spoolss_PrinterInfo info;
+	struct policy_handle new_handle, new_handle2;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	torture_comment(tctx, "Testing c_setprinter\n");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, handle, 0, &info),
+		"failed to get level 0 printer info");
+	torture_comment(tctx, "csetprinter on initial printer handle: %d\n",
+		info.info0.c_setprinter);
+
+	/* check if c_setprinter on 1st handle increases after a printer has
+	 * been added */
+
+	torture_assert(tctx,
+		test_AddPrinter(tctx, p, &new_handle, printername, drivername, portname),
+		"failed to add new printer");
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, handle, 0, &info),
+		"failed to get level 0 printer info");
+	torture_comment(tctx, "csetprinter on initial printer handle (after add): %d\n",
+		info.info0.c_setprinter);
+
+	/* check if c_setprinter on new handle increases after a printer has
+	 * been added */
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &new_handle, 0, &info),
+		"failed to get level 0 printer info");
+	torture_comment(tctx, "csetprinter on created handle: %d\n",
+		info.info0.c_setprinter);
+
+	/* open the new printer and check if c_setprinter increases */
+
+	torture_assert(tctx,
+		call_OpenPrinterEx(tctx, p, printername, NULL, &new_handle2),
+		"failed to open created printer");
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &new_handle2, 0, &info),
+		"failed to get level 0 printer info");
+	torture_comment(tctx, "csetprinter on new handle (after openprinter): %d\n",
+		info.info0.c_setprinter);
+
+	/* cleanup */
+
+	torture_assert(tctx,
+		test_ClosePrinter(tctx, b, &new_handle2),
+		"failed to close printer");
+	torture_assert(tctx,
+		test_DeletePrinter(tctx, b, &new_handle),
+		"failed to delete new printer");
+
+	return true;
+}
+
 static bool test_printer(struct torture_context *tctx,
 			 struct dcerpc_pipe *p)
 {
@@ -5861,6 +5924,10 @@ static bool test_printer(struct torture_context *tctx,
 
 	if (!test_AddPrinter(tctx, p, &handle[0], TORTURE_PRINTER, drivername, portname)) {
 		return false;
+	}
+
+	if (!test_csetprinter(tctx, p, &handle[0], TORTURE_PRINTER "2", drivername, portname)) {
+		ret = false;
 	}
 
 	if (!test_one_printer(tctx, p, &handle[0], TORTURE_PRINTER)) {
@@ -5882,6 +5949,10 @@ static bool test_printer(struct torture_context *tctx,
 
 	if (!test_AddPrinterEx(tctx, p, &handle[1], TORTURE_PRINTER_EX, drivername, portname)) {
 		return false;
+	}
+
+	if (!test_csetprinter(tctx, p, &handle[1], TORTURE_PRINTER_EX "2", drivername, portname)) {
+		ret = false;
 	}
 
 	if (!test_one_printer(tctx, p, &handle[1], TORTURE_PRINTER_EX)) {
