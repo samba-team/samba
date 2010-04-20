@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "scripting/python/modules.h"
+#include "dynconfig/dynconfig.h"
 
 extern void init_ldb(void);
 extern void init_security(void);
@@ -86,6 +87,10 @@ bool py_update_path(const char *bindir)
 	}	
 
 	if (!PyList_Check(py_path)) {
+		return false;
+	}
+
+	if (!PySys_PathPrepend(py_path, dyn_PYTHONDIR)) {
 		return false;
 	}
 
