@@ -3956,7 +3956,7 @@ static bool test_GetPrinterInfo_winreg(struct torture_context *tctx,
 	printername = strip_unc(info.info2.printername);
 	sharename = strip_unc(info.info2.sharename);
 
-#define test_sz(key, wname, iname) \
+#define test_sz(wname, iname) \
 do {\
 	DATA_BLOB blob;\
 	const char *str;\
@@ -3979,7 +3979,7 @@ do {\
 	}\
 } while(0);
 
-#define test_dword(key, wname, iname) \
+#define test_dword(wname, iname) \
 do {\
 	uint32_t value;\
 	enum winreg_Type w_type;\
@@ -3998,7 +3998,7 @@ do {\
 		talloc_asprintf(tctx, "%s - %s mismatch", #wname, #iname));\
 } while(0);
 
-#define test_dm(key, wname, iname) \
+#define test_dm(wname, iname) \
 do {\
 	DATA_BLOB blob;\
 	struct spoolss_DeviceMode dm;\
@@ -4020,7 +4020,7 @@ do {\
 		"dm unequal");\
 } while(0);
 
-#define test_sd(key, wname, iname) \
+#define test_sd(wname, iname) \
 do {\
 	DATA_BLOB blob;\
 	struct security_descriptor sd;\
@@ -4062,27 +4062,27 @@ do {\
 		torture_assert(tctx,
 			test_winreg_OpenKey(tctx, winreg_handle, hive_handle, printer_key, &key_handle), "");
 
-		test_sz(keys[i], "Name", printername);
-		test_sz(keys[i], "Share Name", sharename);
-		test_sz(keys[i], "Port", info.info2.portname);
-		test_sz(keys[i], "Printer Driver", info.info2.drivername);
-		test_sz(keys[i], "Description", info.info2.comment);
-		test_sz(keys[i], "Location", info.info2.location);
-		test_sz(keys[i], "Separator File", info.info2.sepfile);
-		test_sz(keys[i], "Print Processor", info.info2.printprocessor);
-		test_sz(keys[i], "Datatype", info.info2.datatype);
-		test_sz(keys[i], "Parameters", info.info2.parameters);
+		test_sz("Name", printername);
+		test_sz("Share Name", sharename);
+		test_sz("Port", info.info2.portname);
+		test_sz("Printer Driver", info.info2.drivername);
+		test_sz("Description", info.info2.comment);
+		test_sz("Location", info.info2.location);
+		test_sz("Separator File", info.info2.sepfile);
+		test_sz("Print Processor", info.info2.printprocessor);
+		test_sz("Datatype", info.info2.datatype);
+		test_sz("Parameters", info.info2.parameters);
 		/* winreg: 0, spoolss not */
-/*		test_dword(keys[i], "Attributes", info.info2.attributes); */
-		test_dword(keys[i], "Priority", info.info2.priority);
-		test_dword(keys[i], "Default Priority", info.info2.defaultpriority);
+/*		test_dword("Attributes", info.info2.attributes); */
+		test_dword("Priority", info.info2.priority);
+		test_dword("Default Priority", info.info2.defaultpriority);
 		/* winreg: 60, spoolss: 0 */
-/*		test_dword(keys[i], "StartTime", info.info2.starttime); */
-/*		test_dword(keys[i], "UntilTime", info.info2.untiltime); */
+/*		test_dword("StartTime", info.info2.starttime); */
+/*		test_dword("UntilTime", info.info2.untiltime); */
 		/* winreg != spoolss */
-/*		test_dword(keys[i], "Status", info.info2.status); */
-		test_dm(keys[i], "Default DevMode", info.info2.devmode);
-		test_sd(keys[i], "Security", info.info2.secdesc);
+/*		test_dword("Status", info.info2.status); */
+		test_dm("Default DevMode", info.info2.devmode);
+		test_sd("Security", info.info2.secdesc);
 
 		torture_assert(tctx,
 			test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
