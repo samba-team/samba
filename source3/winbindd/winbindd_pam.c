@@ -2186,24 +2186,20 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		  (unsigned long)state->pid, domain, user));
 
 	/* Change password */
-	new_nt_password = data_blob_talloc(
-		state->mem_ctx,
+	new_nt_password = data_blob_const(
 		state->request->data.chng_pswd_auth_crap.new_nt_pswd,
 		state->request->data.chng_pswd_auth_crap.new_nt_pswd_len);
 
-	old_nt_hash_enc = data_blob_talloc(
-		state->mem_ctx,
+	old_nt_hash_enc = data_blob_const(
 		state->request->data.chng_pswd_auth_crap.old_nt_hash_enc,
 		state->request->data.chng_pswd_auth_crap.old_nt_hash_enc_len);
 
 	if(state->request->data.chng_pswd_auth_crap.new_lm_pswd_len > 0)	{
-		new_lm_password = data_blob_talloc(
-			state->mem_ctx,
+		new_lm_password = data_blob_const(
 			state->request->data.chng_pswd_auth_crap.new_lm_pswd,
 			state->request->data.chng_pswd_auth_crap.new_lm_pswd_len);
 
-		old_lm_hash_enc = data_blob_talloc(
-			state->mem_ctx,
+		old_lm_hash_enc = data_blob_const(
 			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc,
 			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc_len);
 	} else {
