@@ -34,6 +34,7 @@ dyn_cflags = {
     'WINBINDD_SOCKET_DIR'            : '${WINBINDD_SOCKET_DIR}',
     'NTP_SIGND_SOCKET_DIR'           : '${NTP_SIGND_SOCKET_DIR}',
     'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
+    'PYTHONDIR'                      : '${PYTHONDIR}',
     }
 
 # changes for when FHS is enabled
