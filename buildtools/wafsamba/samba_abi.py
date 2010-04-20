@@ -108,6 +108,9 @@ def abi_check_task(self):
 
 t = Task.task_type_from_func('abi_check', abi_check_task, color='BLUE', ext_in='.bin')
 t.quiet = True
+# allow "waf --abi-check" to force re-checking the ABI
+if '--abi-check' in sys.argv:
+    Task.always_run(t)
 
 @after('apply_link')
 @feature('abi_check')
