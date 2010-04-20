@@ -273,7 +273,7 @@ static int net_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("Usage:\n");
 	d_printf("net <command> [options]\n");
-	d_printf("Type 'net help' for all available commands\n");
+	net_help(ctx, net_functable);
 	return 0;
 }
 
