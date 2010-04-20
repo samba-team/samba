@@ -237,3 +237,22 @@ WriteMakefile(
 
     conf.check_message_2('ok')
     return True
+
+
+@conf
+def CHECK_UNAME(conf, flags=None, msg=None, define=None):
+    '''return uname result'''
+    cmd = ['uname']
+    if flags is not None:
+        cmd.append(flags)
+    if msg is None:
+        msg = 'Checking uname'
+    conf.COMPOUND_START(msg)
+    ret = Utils.cmd_output(cmd)
+    ret = ret.strip()
+    conf.COMPOUND_END(ret)
+    if define:
+        conf.DEFINE(define, ret, quote=True)
+    return ret
+
+
