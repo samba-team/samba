@@ -241,6 +241,20 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 			 * stderr, assume its dead */
 			pid_t pid = waitpid(state->pid, &status, 0);
 			if (pid != state->pid) {
+				if (errno == ECHILD) {
+					/* this happens when the
+					   parent has set SIGCHLD to
+					   SIG_IGN. In that case we
+					   can only get error
+					   information for the child
+					   via its logging. We should
+					   stop using SIG_IGN on
+					   SIGCHLD in the standard
+					   process model.
+					*/
+					tevent_req_done(req);
+					return;
+				}
 				DEBUG(0,("Error in waitpid() for child %s - %s \n",
 					 state->arg0, strerror(errno)));
 				if (errno == 0) {
