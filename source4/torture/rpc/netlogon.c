@@ -1787,16 +1787,37 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
 	const char *dcname = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup(tctx->lp_ctx);
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.out.dcname = &dcname;
 
 	status = dcerpc_netr_GetAnyDCName_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
-	torture_assert_werr_ok(tctx, r.out.result, "GetAnyDCName");
+	if ((!W_ERROR_IS_OK(r.out.result)) &&
+	    (!W_ERROR_EQUAL(r.out.result, WERR_NO_SUCH_DOMAIN))) {
+		return false;
+	}
 
 	if (dcname) {
 	    torture_comment(tctx, "\tDC is at '%s'\n", dcname);
+	}
+
+	r.in.domainname = NULL;
+
+	status = dcerpc_netr_GetAnyDCName_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
+	if ((!W_ERROR_IS_OK(r.out.result)) &&
+	    (!W_ERROR_EQUAL(r.out.result, WERR_NO_SUCH_DOMAIN))) {
+		return false;
+	}
+
+	r.in.domainname = "";
+
+	status = dcerpc_netr_GetAnyDCName_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
+	if ((!W_ERROR_IS_OK(r.out.result)) &&
+	    (!W_ERROR_EQUAL(r.out.result, WERR_NO_SUCH_DOMAIN))) {
+		return false;
 	}
 
 	return true;
