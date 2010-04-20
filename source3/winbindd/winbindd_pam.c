@@ -2127,48 +2127,6 @@ process_result:
 
 /* Change user password with auth crap*/
 
-void winbindd_pam_chng_pswd_auth_crap(struct winbindd_cli_state *state)
-{
-	struct winbindd_domain *domain = NULL;
-	const char *domain_name = NULL;
-
-	/* Ensure null termination */
-	state->request->data.chng_pswd_auth_crap.user[
-		sizeof(state->request->data.chng_pswd_auth_crap.user)-1]=0;
-	state->request->data.chng_pswd_auth_crap.domain[
-		sizeof(state->request->data.chng_pswd_auth_crap.domain)-1]=0;
-
-	DEBUG(3, ("[%5lu]: pam change pswd auth crap domain: %s user: %s\n",
-		  (unsigned long)state->pid,
-		  state->request->data.chng_pswd_auth_crap.domain,
-		  state->request->data.chng_pswd_auth_crap.user));
-
-	if (*state->request->data.chng_pswd_auth_crap.domain != '\0') {
-		domain_name = state->request->data.chng_pswd_auth_crap.domain;
-	} else if (lp_winbind_use_default_domain()) {
-		domain_name = lp_workgroup();
-	}
-
-	if (domain_name != NULL)
-		domain = find_domain_from_name(domain_name);
-
-	if (domain != NULL) {
-		DEBUG(7, ("[%5lu]: pam auth crap changing pswd in domain: "
-			  "%s\n", (unsigned long)state->pid,domain->name));
-		sendto_domain(state, domain);
-		return;
-	}
-
-	set_auth_errors(state->response, NT_STATUS_NO_SUCH_USER);
-	DEBUG(5, ("CRAP change password  for %s\\%s returned %s (PAM: %d)\n",
-		  state->request->data.chng_pswd_auth_crap.domain,
-		  state->request->data.chng_pswd_auth_crap.user,
-		  state->response->data.auth.nt_status_string,
-		  state->response->data.auth.pam_error));
-	request_error(state);
-	return;
-}
-
 enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domain *domainSt, struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
