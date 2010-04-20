@@ -1521,9 +1521,11 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
-	info->dc_unc           = response.data.nt5_ex.pdc_dns_name;
+	info->dc_unc           = talloc_asprintf(mem_ctx, "\\\\%s",
+						 response.data.nt5_ex.pdc_dns_name);
 	info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
 					   response.data.nt5_ex.sockaddr.pdc_ip);
+	info->dc_address_type = DS_ADDRESS_TYPE_INET;
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
 	info->domain_guid      = response.data.nt5_ex.domain_uuid;
 	info->domain_name      = response.data.nt5_ex.dns_domain;
