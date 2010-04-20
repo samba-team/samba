@@ -60,9 +60,9 @@ class cmd_newuser(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        samdb = SamDB(url=H, session_info=system_session(), credentials=creds,
-            lp=lp)
         try:
+            samdb = SamDB(url=H, session_info=system_session(), credentials=creds,
+                          lp=lp)
             samdb.newuser(username, unixname, password,
                           force_password_change_at_next_login_req=must_change_at_next_login)
         except ldb.LdbError, (num, msg):
