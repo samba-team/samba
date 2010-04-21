@@ -1078,6 +1078,134 @@ static WERROR winreg_enumval_to_blob(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
+					struct rpc_pipe_client *pipe_handle,
+					struct policy_handle *key_handle,
+					const char *value,
+					NTTIME data)
+{
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+	const char *str;
+	struct tm *tm;
+	time_t t;
+
+	t = nt_time_to_unix(data);
+	tm = localtime(&t);
+	str = talloc_asprintf(mem_ctx, "%02d/%02d/%04d",
+			      tm->tm_mon + 1, tm->tm_mday, tm->tm_year + 1900);
+	if (!str) {
+		return WERR_NOMEM;
+	}
+
+	wvalue.name = value;
+	if (!push_reg_sz(mem_ctx, NULL, &blob, str)) {
+		return WERR_NOMEM;
+	}
+	status = rpccli_winreg_SetValue(pipe_handle,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_SZ,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_write_date: Could not set value %s: %s\n",
+			wvalue.name, win_errstr(result)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
+static WERROR winreg_printer_date_to_NTTIME(const char *str, NTTIME *data)
+{
+	struct tm tm;
+	time_t t;
+
+	ZERO_STRUCT(tm);
+
+	if (sscanf(str, "%d/%d/%d",
+		   &tm.tm_mon, &tm.tm_mday, &tm.tm_year) != 3) {
+		return WERR_INVALID_PARAMETER;
+	}
+	tm.tm_mon -= 1;
+	tm.tm_year -= 1900;
+	tm.tm_isdst = -1;
+
+	t = mktime(&tm);
+	unix_to_nt_time(data, t);
+
+	return WERR_OK;
+}
+
+static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
+				       struct rpc_pipe_client *pipe_handle,
+				       struct policy_handle *key_handle,
+				       const char *value,
+				       uint64_t data)
+{
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+	char *str;
+
+	/* FIXME: check format is right,
+	 *	this needs to be something like: 6.1.7600.16385 */
+	str = talloc_asprintf(mem_ctx, "%u.%u.%u.%u",
+			      (unsigned)((data >> 48) & 0xFFFF),
+			      (unsigned)((data >> 32) & 0xFFFF),
+			      (unsigned)((data >> 16) & 0xFFFF),
+			      (unsigned)(data & 0xFFFF));
+	if (!str) {
+		return WERR_NOMEM;
+	}
+
+	wvalue.name = value;
+	if (!push_reg_sz(mem_ctx, NULL, &blob, str)) {
+		return WERR_NOMEM;
+	}
+	status = rpccli_winreg_SetValue(pipe_handle,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_SZ,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_write_date: Could not set value %s: %s\n",
+			wvalue.name, win_errstr(result)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
+static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
+{
+	unsigned int v1, v2, v3, v4;
+
+	if (sscanf(str, "%u.%u.%u.%u", &v1, &v2, &v3, &v4) != 4) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	*data = ((uint64_t)(v1 & 0xFFFF) << 48) +
+		((uint64_t)(v2 & 0xFFFF) << 32) +
+		((uint64_t)(v3 & 0xFFFF) << 16) +
+		(uint64_t)(v2 & 0xFFFF);
+
+	return WERR_OK;
+}
+
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
@@ -2276,3 +2404,4 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
