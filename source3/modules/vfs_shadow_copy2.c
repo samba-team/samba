@@ -436,7 +436,7 @@ static char *convert_shadow2_name(vfs_handle_struct *handle, const char *fname, 
 	}
 
 	prefix = talloc_asprintf(tmp_ctx, "%s/@GMT-", snapdir);
-	if (strncmp(fname, prefix, strlen(prefix)) == 0) {
+	if (strncmp(fname, prefix, (talloc_get_size(prefix)-1)) == 0) {
 		/* this looks like as we have already normalized it, leave it untouched*/
 		talloc_free(tmp_ctx);
 		return talloc_strdup(handle->data, fname);
@@ -659,7 +659,7 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 
 	if (shadow_copy2_match_name(fname, &gmt)
 	    && (gmt[GMT_NAME_LEN] == '\0')) {
-		char *copy, *result;
+		char *copy;
 
 		copy = talloc_strdup(talloc_tos(), fname);
 		if (copy == NULL) {
