@@ -35,6 +35,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/util/util_ldb.h"
 #include "lib/ldb_wrap.h"
+#include "lib/replace/system/network.h"
+#include "dsdb/samdb/samdb.h"
 
 #define TEST_MACHINE_NAME "torturetest"
 
@@ -2304,32 +2306,148 @@ static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 					     struct dcerpc_pipe *p)
 {
+	char *url;
+	struct ldb_context *sam_ctx = NULL;
 	NTSTATUS status;
 	struct netr_DsRAddressToSitenamesW r;
-	struct netr_DsRAddress addr;
+	struct netr_DsRAddress addrs[6];
+	struct sockaddr_in *addr;
+	struct sockaddr_in6 *addr6;
 	struct netr_DsRAddressToSitenamesWCtr *ctr;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t i;
+	int ret;
+
+	torture_comment(tctx, "This does only pass with the default site\n");
+
+	/* We won't double-check this when we are over 'local' transports */
+	if (dcerpc_server_name(p)) {
+		/* Set up connection to SAMDB on DC */
+		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
+		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
+					   NULL,
+					   cmdline_credentials,
+					   0);
+
+		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
+        }
+
+	/* First try valid IP addresses */
+
+	addrs[0].size = sizeof(struct sockaddr_in);
+	addrs[0].buffer = talloc_zero_array(tctx, uint8_t, addrs[0].size);
+	addr = (struct sockaddr_in *) addrs[0].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "127.0.0.1", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[1].size = sizeof(struct sockaddr_in);
+	addrs[1].buffer = talloc_zero_array(tctx, uint8_t, addrs[1].size);
+	addr = (struct sockaddr_in *) addrs[1].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "0.0.0.0", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[2].size = sizeof(struct sockaddr_in);
+	addrs[2].buffer = talloc_zero_array(tctx, uint8_t, addrs[2].size);
+	addr = (struct sockaddr_in *) addrs[2].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "255.255.255.255",
+			&((struct sockaddr_in *)addrs[2].buffer)->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[3].size = sizeof(struct sockaddr_in6);
+	addrs[3].buffer = talloc_zero_array(tctx, uint8_t, addrs[3].size);
+	addr6 = (struct sockaddr_in6 *) addrs[3].buffer;
+	addr6->sin6_family = AF_INET6;
+	ret = inet_pton(AF_INET6, "::1", &addr6->sin6_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[4].size = sizeof(struct sockaddr_in6);
+	addrs[4].buffer = talloc_zero_array(tctx, uint8_t, addrs[4].size);
+	addr6 = (struct sockaddr_in6 *) addrs[4].buffer;
+	addr6->sin6_family = AF_INET6;
+	ret = inet_pton(AF_INET6, "::", &addr6->sin6_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[5].size = sizeof(struct sockaddr_in6);
+	addrs[5].buffer = talloc_zero_array(tctx, uint8_t, addrs[5].size);
+	addr6 = (struct sockaddr_in6 *) addrs[5].buffer;
+	addr6->sin6_family = AF_INET6;
+	ret = inet_pton(AF_INET6, "ff02::1", &addr6->sin6_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
 
 	ctr = talloc(tctx, struct netr_DsRAddressToSitenamesWCtr);
 
-	addr.size = 16;
-	addr.buffer = talloc_zero_array(tctx, uint8_t, addr.size);
-
-	addr.buffer[0] = 2; /* AF_INET */
-	addr.buffer[4] = 127;
-	addr.buffer[5] = 0;
-	addr.buffer[6] = 0;
-	addr.buffer[7] = 1;
-
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.count = 1;
-	r.in.addresses = talloc_zero_array(tctx, struct netr_DsRAddress, r.in.count);
-	r.in.addresses[0] = addr;
+	r.in.count = 6;
+	r.in.addresses = addrs;
 	r.out.ctr = &ctr;
 
 	status = dcerpc_netr_DsRAddressToSitenamesW_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "failed");
 	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	if (sam_ctx != NULL) {
+		for (i = 0; i < 3; i++) {
+			torture_assert_casestr_equal(tctx,
+						     ctr->sitename[i].string,
+						     samdb_server_site_name(sam_ctx, tctx),
+						     "didn't return default site");
+		}
+		for (i = 3; i < 6; i++) {
+/* Windows returns "NULL" for the sitename if it isn't IPv6 configured
+			torture_assert_casestr_equal(tctx,
+						     ctr->sitename[i].string,
+						     samdb_server_site_name(sam_ctx, tctx),
+						     "didn't return default site");
+*/
+		}
+	}
+
+	/* Now try invalid ones (too short buffers) */
+
+	addrs[0].size = 0;
+	addrs[1].size = 1;
+	addrs[2].size = 4;
+
+	addrs[3].size = 0;
+	addrs[4].size = 1;
+	addrs[5].size = 4;
+
+	status = dcerpc_netr_DsRAddressToSitenamesW_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	for (i = 0; i < 6; i++) {
+		torture_assert(tctx, ctr->sitename[i].string == NULL,
+			       "sitename should be null");
+	}
+
+	/* Now try invalid ones (wrong address types) */
+
+	addrs[0].size = 10;
+	addrs[0].buffer[0] = AF_UNSPEC;
+	addrs[1].size = 10;
+	addrs[1].buffer[0] = AF_LOCAL;
+	addrs[2].size = 10;
+	addrs[2].buffer[0] = AF_UNIX;
+
+	addrs[3].size = 10;
+	addrs[3].buffer[0] = AF_FILE;
+	addrs[4].size = 10;
+	addrs[4].buffer[0] = AF_AX25;
+	addrs[5].size = 10;
+	addrs[5].buffer[0] = AF_IPX;
+
+	status = dcerpc_netr_DsRAddressToSitenamesW_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	for (i = 0; i < 6; i++) {
+		torture_assert(tctx, ctr->sitename[i].string == NULL,
+			       "sitename should be null");
+	}
 
 	return true;
 }
@@ -2337,32 +2455,154 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 					       struct dcerpc_pipe *p)
 {
+	char *url;
+	struct ldb_context *sam_ctx = NULL;
 	NTSTATUS status;
 	struct netr_DsRAddressToSitenamesExW r;
-	struct netr_DsRAddress addr;
+	struct netr_DsRAddress addrs[6];
+	struct sockaddr_in *addr;
+	struct sockaddr_in6 *addr6;
 	struct netr_DsRAddressToSitenamesExWCtr *ctr;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t i;
+	int ret;
+
+	torture_comment(tctx, "This does pass with the default site\n");
+
+	/* We won't double-check this when we are over 'local' transports */
+	if (dcerpc_server_name(p)) {
+		/* Set up connection to SAMDB on DC */
+		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
+		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
+					   NULL,
+					   cmdline_credentials,
+					   0);
+
+		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
+        }
+
+	/* First try valid IP addresses */
+
+	addrs[0].size = sizeof(struct sockaddr_in);
+	addrs[0].buffer = talloc_zero_array(tctx, uint8_t, addrs[0].size);
+	addr = (struct sockaddr_in *) addrs[0].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "127.0.0.1", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[1].size = sizeof(struct sockaddr_in);
+	addrs[1].buffer = talloc_zero_array(tctx, uint8_t, addrs[1].size);
+	addr = (struct sockaddr_in *) addrs[1].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "0.0.0.0", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[2].size = sizeof(struct sockaddr_in);
+	addrs[2].buffer = talloc_zero_array(tctx, uint8_t, addrs[2].size);
+	addr = (struct sockaddr_in *) addrs[2].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "255.255.255.255",
+			&((struct sockaddr_in *)addrs[2].buffer)->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[3].size = sizeof(struct sockaddr_in6);
+	addrs[3].buffer = talloc_zero_array(tctx, uint8_t, addrs[3].size);
+	addr6 = (struct sockaddr_in6 *) addrs[3].buffer;
+	addr6->sin6_family = AF_INET6;
+	ret = inet_pton(AF_INET6, "::1", &addr6->sin6_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[4].size = sizeof(struct sockaddr_in6);
+	addrs[4].buffer = talloc_zero_array(tctx, uint8_t, addrs[4].size);
+	addr6 = (struct sockaddr_in6 *) addrs[4].buffer;
+	addr6->sin6_family = AF_INET6;
+	ret = inet_pton(AF_INET6, "::", &addr6->sin6_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[5].size = sizeof(struct sockaddr_in6);
+	addrs[5].buffer = talloc_zero_array(tctx, uint8_t, addrs[5].size);
+	addr6 = (struct sockaddr_in6 *) addrs[5].buffer;
+	addr6->sin6_family = AF_INET6;
+	ret = inet_pton(AF_INET6, "ff02::1", &addr6->sin6_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
 
 	ctr = talloc(tctx, struct netr_DsRAddressToSitenamesExWCtr);
 
-	addr.size = 16;
-	addr.buffer = talloc_zero_array(tctx, uint8_t, addr.size);
-
-	addr.buffer[0] = 2; /* AF_INET */
-	addr.buffer[4] = 127;
-	addr.buffer[5] = 0;
-	addr.buffer[6] = 0;
-	addr.buffer[7] = 1;
-
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.count = 1;
-	r.in.addresses = talloc_zero_array(tctx, struct	netr_DsRAddress, r.in.count);
-	r.in.addresses[0] = addr;
+	r.in.count = 6;
+	r.in.addresses = addrs;
 	r.out.ctr = &ctr;
 
 	status = dcerpc_netr_DsRAddressToSitenamesExW_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "failed");
 	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	if (sam_ctx != NULL) {
+		for (i = 0; i < 3; i++) {
+			torture_assert_casestr_equal(tctx,
+						     ctr->sitename[i].string,
+						     samdb_server_site_name(sam_ctx, tctx),
+						     "didn't return default site");
+			torture_assert(tctx, ctr->subnetname[i].string == NULL,
+				       "subnet should be null");
+		}
+		for (i = 3; i < 6; i++) {
+/* Windows returns "NULL" for the sitename if it isn't IPv6 configured
+			torture_assert_casestr_equal(tctx,
+						     ctr->sitename[i].string,
+						     samdb_server_site_name(sam_ctx, tctx),
+						     "didn't return default site");
+*/
+			torture_assert(tctx, ctr->subnetname[i].string == NULL,
+				       "subnet should be null");
+		}
+	}
+
+	/* Now try invalid ones (too short buffers) */
+
+	addrs[0].size = 0;
+	addrs[1].size = 1;
+	addrs[2].size = 4;
+
+	addrs[3].size = 0;
+	addrs[4].size = 1;
+	addrs[5].size = 4;
+
+	status = dcerpc_netr_DsRAddressToSitenamesExW_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	for (i = 0; i < 6; i++) {
+		torture_assert(tctx, ctr->sitename[i].string == NULL,
+			       "sitename should be null");
+		torture_assert(tctx, ctr->subnetname[i].string == NULL,
+			       "subnet should be null");
+	}
+
+	addrs[0].size = 10;
+	addrs[0].buffer[0] = AF_UNSPEC;
+	addrs[1].size = 10;
+	addrs[1].buffer[0] = AF_LOCAL;
+	addrs[2].size = 10;
+	addrs[2].buffer[0] = AF_UNIX;
+
+	addrs[3].size = 10;
+	addrs[3].buffer[0] = AF_FILE;
+	addrs[4].size = 10;
+	addrs[4].buffer[0] = AF_AX25;
+	addrs[5].size = 10;
+	addrs[5].buffer[0] = AF_IPX;
+
+	status = dcerpc_netr_DsRAddressToSitenamesExW_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	for (i = 0; i < 6; i++) {
+		torture_assert(tctx, ctr->sitename[i].string == NULL,
+			       "sitename should be null");
+		torture_assert(tctx, ctr->subnetname[i].string == NULL,
+			       "subnet should be null");
+	}
 
 	return true;
 }
