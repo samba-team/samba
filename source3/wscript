@@ -38,6 +38,8 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('merged-build', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('pam')
+    opt.SAMBA3_ADD_OPTION('quotas')
+    opt.SAMBA3_ADD_OPTION('sys-quotas')
 
 
 def configure(conf):
