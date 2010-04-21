@@ -263,6 +263,11 @@ static void show_build(void)
 	};
 	int i;
 
+	printf("Build environment:\n");
+#ifdef BUILD_SYSTEM
+	printf("   Build host:  %s\n", BUILD_SYSTEM);
+#endif
+
 	printf("Paths:\n");
 	for (i=0; config_options[i].name; i++) {
 		printf("   %s: %s\n", config_options[i].name, config_options[i].value);
