@@ -36,6 +36,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('krb5')
     opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
+    opt.SAMBA3_ADD_OPTION('merged-build', with_name="enable", without_name="disable")
 
 
 def configure(conf):
