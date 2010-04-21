@@ -30,14 +30,10 @@ samba4.rpc.netlogon.*.LogonControl2
 samba4.rpc.netlogon.*.DsrEnumerateDomainTrusts
 samba4.rpc.netlogon.*.NetrEnumerateTrustedDomains
 samba4.rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
-samba4.rpc.netlogon.*.DsrGetDcSiteCoverageW
-samba4.rpc.netlogon.*.DsRAddressToSitenamesW
-samba4.rpc.netlogon.*.DsRAddressToSitenamesExW
 samba4.rpc.netlogon.*.GetPassword
 samba4.rpc.netlogon.*.GetTrustPasswords
 samba4.rpc.netlogon.*.DatabaseRedo
 samba4.rpc.netlogon.*.ServerGetTrustInfo
-samba4.rpc.netlogon.*.GetDomainInfo # Also fails against W2K8 (but in a different way)
 samba4.rpc.samr.passwords.pwdlastset # Not provided by Samba 4 yet
 samba4.rpc.samr.passwords.badpwdcount # Not provided by Samba 4 yet
 samba4.rpc.samr.passwords.lockout
