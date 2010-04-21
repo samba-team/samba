@@ -439,58 +439,135 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_EnumPrinterDrivers_args(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 const char *server_name,
+					 const char *environment,
+					 uint32_t level,
+					 uint32_t *count_p,
+					 union spoolss_DriverInfo **info_p)
+{
+	struct spoolss_EnumPrinterDrivers r;
+	uint32_t needed;
+	uint32_t count;
+	union spoolss_DriverInfo *info;
+
+	r.in.server		= server_name;
+	r.in.environment	= environment;
+	r.in.level		= level;
+	r.in.buffer		= NULL;
+	r.in.offered		= 0;
+	r.out.needed		= &needed;
+	r.out.count		= &count;
+	r.out.info		= &info;
+
+	torture_comment(tctx, "Testing EnumPrinterDrivers(%s) level %u\n",
+		r.in.environment, r.in.level);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_EnumPrinterDrivers_r(b, tctx, &r),
+		"EnumPrinterDrivers failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_EnumPrinterDrivers_r(b, tctx, &r),
+			"EnumPrinterDrivers failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"EnumPrinterDrivers failed");
+
+	if (count_p) {
+		*count_p = count;
+	}
+	if (info_p) {
+		*info_p = info;
+	}
+
+	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinterDrivers, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+
+	return true;
+
+}
+
+static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
+					    struct dcerpc_binding_handle *b,
+					    const char *server_name,
+					    const char *environment,
+					    uint32_t level,
+					    const char *driver_name)
+{
+	uint32_t count;
+	union spoolss_DriverInfo *info;
+	int i;
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_args(tctx, b, server_name, environment, level, &count, &info),
+		"failed to enumerate printer drivers");
+
+	for (i=0; i < count; i++) {
+		const char *driver_name_ret;
+		switch (level) {
+		case 1:
+			driver_name_ret = info->info1.driver_name;
+			break;
+		case 2:
+			driver_name_ret = info->info2.driver_name;
+			break;
+		case 3:
+			driver_name_ret = info->info3.driver_name;
+			break;
+		case 4:
+			driver_name_ret = info->info4.driver_name;
+			break;
+		case 5:
+			driver_name_ret = info->info5.driver_name;
+			break;
+		case 6:
+			driver_name_ret = info->info6.driver_name;
+			break;
+		case 7:
+			driver_name_ret = info->info7.driver_name;
+			break;
+		case 8:
+			driver_name_ret = info->info8.driver_name;
+			break;
+		default:
+			break;
+		}
+		if (strequal(driver_name, driver_name_ret)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    struct test_spoolss_context *ctx,
 				    const char *architecture)
 {
-	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	struct spoolss_EnumPrinterDrivers r;
 	uint16_t levels[] = { 1, 2, 3, 4, 5, 6, 8 };
 	int i, j;
 
+	/* FIXME: gd, come back and fix "" as server, and handle
+	 * priority of returned error codes in torture test and samba 3
+	 * server */
+	const char *server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
-		DATA_BLOB blob;
-		uint32_t needed;
 		uint32_t count;
 		union spoolss_DriverInfo *info;
 
-		/* FIXME: gd, come back and fix "" as server, and handle
-		 * priority of returned error codes in torture test and samba 3
-		 * server */
-
-		r.in.server		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.environment	= architecture;
-		r.in.level		= level;
-		r.in.buffer		= NULL;
-		r.in.offered		= 0;
-		r.out.needed		= &needed;
-		r.out.count		= &count;
-		r.out.info		= &info;
-
-		torture_comment(tctx, "Testing EnumPrinterDrivers level %u (%s)\n", r.in.level, r.in.environment);
-
-		status = dcerpc_spoolss_EnumPrinterDrivers_r(b, ctx, &r);
-		torture_assert_ntstatus_ok(tctx, status,
-					   "dcerpc_spoolss_EnumPrinterDrivers failed");
-		if (W_ERROR_IS_OK(r.out.result)) {
-			/* TODO: do some more checks here */
-			continue;
-		}
-		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			blob = data_blob_talloc_zero(ctx, needed);
-			r.in.buffer = &blob;
-			r.in.offered = needed;
-
-			status = dcerpc_spoolss_EnumPrinterDrivers_r(b, ctx, &r);
-			torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinterDrivers failed");
-		}
-
-		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
-
-		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinterDrivers, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
+		torture_assert(tctx,
+			test_EnumPrinterDrivers_args(tctx, b, server_name, architecture, level, &count, &info),
+			"failed to enumerate drivers");
 
 		ctx->driver_count[level]	= count;
 		ctx->drivers[level]		= info;
@@ -5484,50 +5561,24 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 					struct dcerpc_pipe *p,
 					const char *environment)
 {
-	struct spoolss_EnumPrinterDrivers r;
-	NTSTATUS status;
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6};
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 
-		uint32_t needed;
 		uint32_t count;
 		union spoolss_DriverInfo *info;
 
-		r.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.environment = environment;
-		r.in.level = levels[i];
-		r.in.buffer = NULL;
-		r.in.offered = 0;
-		r.out.needed = &needed;
-		r.out.count = &count;
-		r.out.info = &info;
-
-		torture_comment(tctx, "Testing EnumPrinterDrivers level %u\n", r.in.level);
-
-		status = dcerpc_spoolss_EnumPrinterDrivers_r(b, tctx, &r);
-
-		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDrivers failed");
-
-		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
-			r.in.buffer = &blob;
-			r.in.offered = needed;
-			status = dcerpc_spoolss_EnumPrinterDrivers_r(b, tctx, &r);
-		}
-
-		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDrivers failed");
-
-		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
+		torture_assert(tctx,
+			test_EnumPrinterDrivers_args(tctx, b, server_name, environment, levels[i], &count, &info),
+			"failed to enumerate drivers");
 
 		if (!info) {
 			torture_comment(tctx, "No printer drivers returned\n");
 			break;
 		}
-
-		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinterDrivers, info, r.in.level, count, lp_iconv_convenience(tctx->lp_ctx), needed, 4);
 	}
 
 	return true;
