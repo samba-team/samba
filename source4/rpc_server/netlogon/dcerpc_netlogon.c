@@ -2115,10 +2115,6 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	struct ldb_context *sam_ctx;
 	WERROR werr;
 
-	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
-		return WERR_CALL_NOT_IMPLEMENTED;
-	}
-
 	if (r->in.flags & 0xFFFFFFFE) {
 		return WERR_INVALID_FLAGS;
 	}
@@ -2177,10 +2173,6 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	struct ldb_context *sam_ctx;
 	NTSTATUS status;
 	WERROR werr;
-
-	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
 						     mem_ctx,
