@@ -277,7 +277,7 @@ static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *k
 	PyObject *ret;
 	struct libnet_Vampire r;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", discard_const_p(char *, kwnames),
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z", discard_const_p(char *, kwnames),
 	                                 &r.in.domain_name, &r.in.targetdir)) {
 		return NULL;
 	}
