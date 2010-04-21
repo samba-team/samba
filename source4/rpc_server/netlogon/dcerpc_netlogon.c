@@ -1678,7 +1678,8 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 	const char *trust_attrs[] = { "flatname", "trustPartner",
 				      "securityIdentifier", "trustDirection",
 				      "trustType", "trustAttributes", NULL };
-	int i, n;
+	uint32_t n;
+	int i;
 	int ret;
 
 	if (!(trust_flags & (NETR_TRUST_FLAG_INBOUND |
