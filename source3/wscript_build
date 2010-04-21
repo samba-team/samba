@@ -890,6 +890,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl popt DYNCONFIG z NSS_WRAPPER
                  LIBWBCLIENT PASSDB resolv LDB''',
                  includes='lib',
+                 enabled=(bld.env.WITH_WINBIND == 1),
                  vars=locals())
 
 bld.SAMBA_BINARY('wbinfo',
