@@ -428,6 +428,9 @@ static void rescan_forest_root_trusts( void )
 						dom_list[i].dns_name,
 						&cache_methods,
 						&dom_list[i].sid );
+			if (d != NULL) {
+				setup_domain_child(d, &d->child);
+			}
 		}
 
 		if (d == NULL) {
@@ -497,6 +500,9 @@ static void rescan_forest_trusts( void )
 							dom_list[i].dns_name,
 							&cache_methods,
 							&dom_list[i].sid );
+				if (d != NULL) {
+					setup_domain_child(d, &d->child);
+				}
 			}
 
 			if (d == NULL) {
