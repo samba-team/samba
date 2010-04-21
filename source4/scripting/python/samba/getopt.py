@@ -19,7 +19,7 @@
 
 """Support for parsing Samba-related command-line options."""
 
-import optparse
+import optparse, os
 from credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from hostconfig import Hostconfig
 import samba
@@ -40,6 +40,9 @@ class SambaOptions(optparse.OptionGroup):
         self.add_option("--option", action="callback",
                         type=str, metavar="OPTION", help="set smb.conf option from command line",
                         callback=self._set_option)
+        self.add_option("--realm", action="callback",
+                        type=str, metavar="REALM", help="set the realm name",
+                        callback=self._set_realm)
         self._configfile = None
         self._lp = param.LoadParm()
 
@@ -52,6 +55,9 @@ class SambaOptions(optparse.OptionGroup):
 
     def _set_debuglevel(self, option, opt_str, arg, parser):
         self._lp.set('debug level', str(arg))
+
+    def _set_realm(self, option, opt_str, arg, parser):
+        self._lp.set('realm', arg)
 
     def _set_option(self, option, opt_str, arg, parser):
         if arg.find('=') == -1:
