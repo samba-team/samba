@@ -57,6 +57,6 @@ popd
 
 echo "testing cross compiling"
 pushd lib/talloc
-CC=arm-linux-gnu-gcc ./configure -C --prefix=$PREFIX  --cross-compile --cross-execute='qemu-arm-static -L /usr/arm-linux-gnu'
+CC=arm-linux-gnueabi-gcc ./configure -C --prefix=$PREFIX  --cross-compile --cross-execute='runarm'
 make && make install
 popd
