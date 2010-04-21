@@ -744,6 +744,7 @@ savedeps_version = 3
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags', 'source']
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags']
 savedeps_outenv  = ['INC_PATHS']
+savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES']
 savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_ALIAS', 'TARGET_TYPE', 'INIT_FUNCTIONS', 'SYSLIB_DEPS']
 savedeps_files   = ['buildtools/wafsamba/samba_deps.py']
 
@@ -759,6 +760,7 @@ def save_samba_deps(bld, tgt_list):
     denv.output = {}
     denv.outenv = {}
     denv.caches = {}
+    denv.envvar = {}
     denv.files  = {}
 
     for f in savedeps_files:
@@ -766,6 +768,9 @@ def save_samba_deps(bld, tgt_list):
 
     for c in savedeps_caches:
         denv.caches[c] = LOCAL_CACHE(bld, c)
+
+    for e in savedeps_envvars:
+        denv.envvar[e] = bld.env[e]
 
     for t in tgt_list:
         # save all the input attributes for each target
@@ -822,6 +827,11 @@ def load_samba_deps(bld, tgt_list):
     # check if caches are the same
     for c in savedeps_caches:
         if c not in denv.caches or denv.caches[c] != LOCAL_CACHE(bld, c):
+            return False
+
+    # check if caches are the same
+    for e in savedeps_envvars:
+        if e not in denv.envvar or denv.envvar[e] != bld.env[e]:
             return False
 
     # check inputs are the same
