@@ -46,6 +46,9 @@ def set_options(opt):
     gr.add_option('--disable-rpath-install',
                    help=("Disable use of rpath for installed binaries"),
                    action="store_true", dest='disable_rpath_install', default=False)
+    gr.add_option('--nonshared-binary',
+                   help=("Disable use of shared libs for the listed binaries"),
+                   action="store", dest='NONSHARED_BINARIES', default='')
 
     opt.add_option('--with-modulesdir',
                    help=("modules directory [PREFIX/modules]"),
@@ -149,6 +152,7 @@ def configure(conf):
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
     conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
     conf.env.DISABLE_SHARED = Options.options.disable_shared
+    conf.env.NONSHARED_BINARIES = Options.options.NONSHARED_BINARIES.split(',')
 
     conf.env.BUNDLED_EXTENSION = Options.options.BUNDLED_EXTENSION
     conf.env.BUNDLED_EXTENSION_EXCEPTION = Options.options.BUNDLED_EXTENSION_EXCEPTION.split(',')

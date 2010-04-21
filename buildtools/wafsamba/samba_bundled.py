@@ -127,3 +127,11 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         sys.exit(1)
     return False
 
+def NONSHARED_BINARY(bld, name):
+    '''return True if a binary should be built without non-system shared libs'''
+    if bld.env.DISABLE_SHARED:
+        return True
+    return target_in_list(name, bld.env.NONSHARED_BINARIES, False)
+Build.BuildContext.NONSHARED_BINARY = NONSHARED_BINARY
+
+
