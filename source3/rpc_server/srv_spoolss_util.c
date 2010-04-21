@@ -29,6 +29,13 @@
 #define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 
+#define EMPTY_STRING ""
+
+#define CHECK_ERROR(result) \
+	if (W_ERROR_IS_OK(result)) continue; \
+	if (W_ERROR_EQUAL(result, WERR_NOT_FOUND)) result = WERR_OK; \
+	if (!W_ERROR_IS_OK(result)) break
+
 /*        FLAGS,                NAME,                              with,   height,   left, top, right, bottom */
 static const struct spoolss_FormInfo1 builtin_forms1[] = {
 	{ SPOOLSS_FORM_BUILTIN, "Letter",                         {0x34b5c,0x44368}, {0x0,0x0,0x34b5c,0x44368} },
@@ -1839,6 +1846,258 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 					    winreg_printer_rev_changeid());
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  const char *printer,
+			  struct spoolss_PrinterInfo2 **pinfo2)
+{
+	struct spoolss_PrinterInfo2 *info2;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct spoolss_PrinterEnumValues *enum_values = NULL;
+	struct spoolss_PrinterEnumValues *v;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	uint32_t num_values = 0;
+	uint32_t i;
+	char *path;
+	WERROR result = WERR_OK;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, printer);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_get_printer: Could not open key %s: %s\n",
+			  path, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_enumvalues(tmp_ctx,
+					   winreg_pipe,
+					   &key_hnd,
+					   &num_values,
+					   &enum_values);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_get_printer: Could not enumerate values in %s: %s\n",
+			  path, win_errstr(result)));
+		goto done;
+	}
+
+	info2 = talloc_zero(tmp_ctx, struct spoolss_PrinterInfo2);
+	if (info2 == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	info2->servername = talloc_asprintf(info2, "\\\\%s", global_myname());
+	if (info2->servername == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	info2->printername    = EMPTY_STRING;
+	info2->sharename      = EMPTY_STRING;
+	info2->portname       = EMPTY_STRING;
+	info2->drivername     = EMPTY_STRING;
+	info2->comment        = EMPTY_STRING;
+	info2->location       = EMPTY_STRING;
+	info2->sepfile        = EMPTY_STRING;
+	info2->printprocessor = EMPTY_STRING;
+	info2->datatype       = EMPTY_STRING;
+	info2->parameters     = EMPTY_STRING;
+
+	for (i = 0; i < num_values; i++) {
+		v = &enum_values[i];
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Name",
+					      &info2->printername);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Share Name",
+					      &info2->sharename);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Port",
+					      &info2->portname);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Description",
+					      &info2->comment);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Location",
+					      &info2->location);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Separator File",
+					      &info2->sepfile);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Print Processor",
+					      &info2->printprocessor);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Datatype",
+					      &info2->datatype);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Parameters",
+					      &info2->parameters);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "Attributes",
+						 &info2->attributes);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "Priority",
+						 &info2->priority);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "Default Priority",
+						 &info2->defaultpriority);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "StartTime",
+						 &info2->starttime);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "UntilTime",
+						 &info2->untiltime);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "Status",
+						 &info2->status);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info2,
+						 v,
+						 "StartTime",
+						 &info2->starttime);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_blob(info2,
+						v,
+						"Default DevMode",
+						&blob);
+		if (W_ERROR_IS_OK(result)) {
+			info2->devmode = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
+			if (info2->devmode == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+			ndr_err = ndr_pull_struct_blob(&blob,
+						       info2,
+						       NULL,
+						       info2->devmode,
+						       (ndr_pull_flags_fn_t) ndr_pull_spoolss_DeviceMode);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				DEBUG(0, ("winreg_get_printer: Failed to unmarshall device mode\n"));
+				result = WERR_NOMEM;
+				goto done;
+			}
+		}
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_blob(info2,
+						v,
+						"Security",
+						&blob);
+		if (W_ERROR_IS_OK(result)) {
+			info2->secdesc = talloc_zero(mem_ctx, struct spoolss_security_descriptor);
+			if (info2->secdesc == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+			ndr_err = ndr_pull_struct_blob(&blob,
+						       mem_ctx,
+						       NULL,
+						       info2->secdesc,
+						       (ndr_pull_flags_fn_t) ndr_pull_security_descriptor);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				DEBUG(0, ("winreg_get_printer: Failed to unmarshall security descriptor\n"));
+				result = WERR_NOMEM;
+				goto done;
+			}
+		}
+		CHECK_ERROR(result);
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_get_printer: winreg_enumval_to_TYPE() failed "
+					"for %s: %s\n",
+					v->value_name,
+					win_errstr(result)));
+		goto done;
+	}
+
+	if (pinfo2) {
+		*pinfo2 = talloc_move(mem_ctx, &info2);
 	}
 
 	result = WERR_OK;

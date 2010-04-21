@@ -102,6 +102,26 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			     struct spoolss_DeviceMode *devmode,
 			     struct security_descriptor *secdesc);
 
+
+/**
+ * @brief Get the inforamtion of a printer stored in the registry.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
+ *
+ * @param[in]  printer  The name of the printer to get.
+ *
+ * @param[out] pinfo2   A pointer to store a PRINTER_INFO_2 structure.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  const char *printer,
+			  struct spoolss_PrinterInfo2 **pinfo2);
+
 /**
  * @internal
  *
