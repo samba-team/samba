@@ -933,6 +933,131 @@ done:
 	return result;
 }
 
+static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
+					    struct rpc_pipe_client *pipe_handle,
+					    struct policy_handle *key_handle,
+					    const char *value,
+					    const char **data)
+{
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	wvalue.name = value;
+	if (!push_reg_multi_sz(mem_ctx, NULL, &blob, data)) {
+		return WERR_NOMEM;
+	}
+	status = rpccli_winreg_SetValue(pipe_handle,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_MULTI_SZ,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_printer_write_multi_sz: Could not set value %s: %s\n",
+			wvalue.name, win_errstr(result)));
+		if (!W_ERROR_IS_OK(result)) {
+			result = ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
+static WERROR winreg_printer_opendriver(TALLOC_CTX *mem_ctx,
+					struct auth_serversupplied_info *server_info,
+					const char *drivername,
+					const char *architecture,
+					uint32_t version,
+					uint32_t access_mask,
+					bool create,
+					struct rpc_pipe_client **winreg_pipe,
+					struct policy_handle *hive_hnd,
+					struct policy_handle *key_hnd)
+{
+	WERROR result;
+	char *key_name;
+
+	key_name = talloc_asprintf(mem_ctx, "%s\\Environments\\%s\\Drivers\\Version-%u",
+				   TOP_LEVEL_CONTROL_KEY,
+				   architecture, version);
+	if (!key_name) {
+		return WERR_NOMEM;
+	}
+
+	result = winreg_printer_openkey(mem_ctx,
+					server_info,
+					winreg_pipe,
+					key_name,
+					drivername,
+					create,
+					access_mask,
+					hive_hnd,
+					key_hnd);
+	return result;
+}
+
+static WERROR winreg_enumval_to_dword(TALLOC_CTX *mem_ctx,
+				      struct spoolss_PrinterEnumValues *v,
+				      const char *valuename, uint32_t *dw)
+{
+	/* just return if it is not the one we are looking for */
+	if (strcmp(valuename, v->value_name) != 0) {
+		return WERR_NOT_FOUND;
+	}
+
+	if (v->type != REG_DWORD) {
+		return WERR_INVALID_DATATYPE;
+	}
+
+	*dw = IVAL(v->data->data, 0);
+	return WERR_OK;
+}
+
+static WERROR winreg_enumval_to_sz(TALLOC_CTX *mem_ctx,
+				   struct spoolss_PrinterEnumValues *v,
+				   const char *valuename, const char **_str)
+{
+	/* just return if it is not the one we are looking for */
+	if (strcmp(valuename, v->value_name) != 0) {
+		return WERR_NOT_FOUND;
+	}
+
+	if (v->type != REG_SZ) {
+		return WERR_INVALID_DATATYPE;
+	}
+
+	if (!pull_reg_sz(mem_ctx, NULL, v->data, _str)) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+static WERROR winreg_enumval_to_multi_sz(TALLOC_CTX *mem_ctx,
+					 struct spoolss_PrinterEnumValues *v,
+					 const char *valuename,
+					 const char ***array)
+{
+	/* just return if it is not the one we are looking for */
+	if (strcmp(valuename, v->value_name) != 0) {
+		return WERR_NOT_FOUND;
+	}
+
+	if (v->type != REG_MULTI_SZ) {
+		return WERR_INVALID_DATATYPE;
+	}
+
+	if (!pull_reg_multi_sz(mem_ctx, NULL, v->data, array)) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
