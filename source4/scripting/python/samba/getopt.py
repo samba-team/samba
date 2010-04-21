@@ -29,6 +29,7 @@ __docformat__ = "restructuredText"
 class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
     def __init__(self, parser):
+        import os, param
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
         self.add_option("-s", "--configfile", action="callback",
                         type=str, metavar="FILE", help="Configuration file",
@@ -36,8 +37,11 @@ class SambaOptions(optparse.OptionGroup):
         self.add_option("-d", "--debuglevel", action="callback",
                         type=int, metavar="DEBUGLEVEL", help="debug level",
                         callback=self._set_debuglevel)
+        self.add_option("--option", action="callback",
+                        type=str, metavar="OPTION", help="set smb.conf option from command line",
+                        callback=self._set_option)
         self._configfile = None
-        self._debuglevel = None
+        self._lp = param.LoadParm()
 
     def get_loadparm_path(self):
         """Return the path to the smb.conf file specified on the command line.  """
@@ -47,21 +51,24 @@ class SambaOptions(optparse.OptionGroup):
         self._configfile = arg
 
     def _set_debuglevel(self, option, opt_str, arg, parser):
-        self._debuglevel = arg
+        self._lp.set('debug level', str(arg))
+
+    def _set_option(self, option, opt_str, arg, parser):
+        if arg.find('=') == -1:
+            print("--option takes a 'a=b' argument")
+            sys.exit(1)
+        a = arg.split('=')
+        self._lp.set(a[0], a[1])
 
     def get_loadparm(self):
         """Return a loadparm object with data specified on the command line.  """
-        import os, param
-        lp = param.LoadParm()
         if self._configfile is not None:
-            lp.load(self._configfile)
+            self._lp.load(self._configfile)
         elif os.getenv("SMB_CONF_PATH") is not None:
-            lp.load(os.getenv("SMB_CONF_PATH"))
+            self._lp.load(os.getenv("SMB_CONF_PATH"))
         else:
-            lp.load_default()
-        if self._debuglevel:
-            samba.set_debug_level(self._debuglevel)
-        return lp
+            self._lp.load_default()
+        return self._lp
 
     def get_hostconfig(self):
         return Hostconfig(self.get_loadparm())
