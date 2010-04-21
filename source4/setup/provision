@@ -52,7 +52,6 @@ parser.add_option_group(credopts)
 parser.add_option("--interactive", help="Ask for names", action="store_true")
 parser.add_option("--setupdir", type="string", metavar="DIR", 
 		help="directory with setup files")
-parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
 parser.add_option("--domain", type="string", metavar="DOMAIN",
 				  help="set domain")
 parser.add_option("--domain-guid", type="string", metavar="GUID", 
@@ -165,6 +164,8 @@ if opts.interactive:
 		else:
 			break
 else:
+	if opts.realm in (None, ""):
+		opts.realm = sambaopts._lp.get('realm')
 	if opts.realm is None or opts.domain is None:
 		if opts.realm is None:
 			print >>sys.stderr, "No realm set!"
