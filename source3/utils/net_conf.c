@@ -229,6 +229,10 @@ static WERROR import_process_service(struct net_context *c,
 						     service->param_names[idx],
 						     service->param_values[idx]);
 			if (!W_ERROR_IS_OK(werr)) {
+				d_fprintf(stderr,
+					  _("Error in section [%s], parameter \"%s\": %s\n"),
+					  service->name, service->param_names[idx],
+					  win_errstr(werr));
 				goto done;
 			}
 		}
