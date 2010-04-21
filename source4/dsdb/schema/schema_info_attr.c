@@ -68,17 +68,14 @@ WERROR dsdb_schema_info_from_blob(const DATA_BLOB *blob,
 		return ntstatus_to_werror(nt_status);
 	}
 
-	/* revision must be not less than 1 */
-	if (schema_info_blob.revision < 1) {
-		talloc_free(temp_ctx);
-		return WERR_INVALID_PARAMETER;
-	}
-
 	schema_info = talloc(mem_ctx, struct dsdb_schema_info);
 	if (!schema_info) {
 		talloc_free(temp_ctx);
 		return WERR_NOMEM;
 	}
+
+	/* note that we accept revision numbers of zero now - w2k8r2
+	   sends a revision of zero on initial vampire */
 	schema_info->revision      = schema_info_blob.revision;
 	schema_info->invocation_id = schema_info_blob.invocation_id;
 	*_schema_info = schema_info;
