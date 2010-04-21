@@ -58,7 +58,7 @@ def configure(conf):
     # enable tool to build python extensions
     conf.check_tool('python')
     conf.check_python_version((2,4,2))
-    conf.check_python_headers()
+    conf.check_python_headers(mandatory=True)
 
     conf.RECURSE('dynconfig')
     conf.RECURSE('scripting/python')
