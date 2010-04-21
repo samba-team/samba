@@ -189,6 +189,149 @@ static uint32_t winreg_printer_rev_changeid(void)
 #endif
 }
 
+static struct spoolss_security_descriptor *winreg_printer_create_default_secdesc(TALLOC_CTX *ctx)
+{
+	SEC_ACE ace[5];	/* max number of ace entries */
+	int i = 0;
+	uint32_t sa;
+	SEC_ACL *psa = NULL;
+	SEC_DESC *psd = NULL;
+	DOM_SID adm_sid;
+	size_t sd_size;
+
+	/* Create an ACE where Everyone is allowed to print */
+
+	sa = PRINTER_ACE_PRINT;
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Add the domain admins group if we are a DC */
+
+	if ( IS_DC ) {
+		DOM_SID domadmins_sid;
+
+		sid_compose(&domadmins_sid, get_global_sam_sid(),
+			    DOMAIN_GROUP_RID_ADMINS);
+
+		sa = PRINTER_ACE_FULL_CONTROL;
+		init_sec_ace(&ace[i++], &domadmins_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
+		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
+
+		sa = PRINTER_ACE_FULL_CONTROL;
+		init_sec_ace(&ace[i++], &adm_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+
+	/* add BUILTIN\Administrators as FULL CONTROL */
+
+	sa = PRINTER_ACE_FULL_CONTROL;
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Make the security descriptor owned by the BUILTIN\Administrators */
+
+	/* The ACL revision number in rpc_secdesc.h differs from the one
+	   created by NT when setting ACE entries in printer
+	   descriptors.  NT4 complains about the property being edited by a
+	   NT5 machine. */
+
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
+		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+			&global_sid_Builtin_Administrators,
+			&global_sid_Builtin_Administrators,
+			NULL, psa, &sd_size);
+	}
+
+	if (!psd) {
+		DEBUG(0,("construct_default_printer_sd: Failed to make SEC_DESC.\n"));
+		return NULL;
+	}
+
+	DEBUG(4,("construct_default_printer_sdb: size = %u.\n",
+		 (unsigned int)sd_size));
+
+	return psd;
+}
+
+static struct spoolss_DeviceMode *winreg_printer_create_default_devmode(TALLOC_CTX *mem_ctx,
+		const char *default_devicename)
+{
+	char adevice[MAXDEVICENAME];
+	struct spoolss_DeviceMode *devmode;
+
+	devmode = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
+	if (devmode == NULL) {
+		return NULL;
+	}
+
+	slprintf(adevice, sizeof(adevice), "%s", default_devicename);
+	devmode->devicename = talloc_strdup(mem_ctx, adevice);
+	if (devmode->devicename == NULL) {
+		return NULL;
+	}
+
+	devmode->formname = "Letter";
+
+	devmode->specversion          = DMSPEC_NT4_AND_ABOVE;
+	devmode->driverversion        = 0x0400;
+	devmode->size                 = 0x00DC;
+	devmode->__driverextra_length = 0;
+	devmode->fields               = DEVMODE_FORMNAME |
+					DEVMODE_TTOPTION |
+					DEVMODE_PRINTQUALITY |
+					DEVMODE_DEFAULTSOURCE |
+					DEVMODE_COPIES |
+					DEVMODE_SCALE |
+					DEVMODE_PAPERSIZE |
+					DEVMODE_ORIENTATION;
+	devmode->orientation          = DMORIENT_PORTRAIT;
+	devmode->papersize            = DMPAPER_LETTER;
+	devmode->paperlength          = 0;
+	devmode->paperwidth           = 0;
+	devmode->scale                = 0x64;
+	devmode->copies               = 1;
+	devmode->defaultsource        = DMBIN_FORMSOURCE;
+	devmode->printquality         = DMRES_HIGH;           /* 0x0258 */
+	devmode->color                = DMRES_MONOCHROME;
+	devmode->duplex               = DMDUP_SIMPLEX;
+	devmode->yresolution          = 0;
+	devmode->ttoption             = DMTT_SUBDEV;
+	devmode->collate              = DMCOLLATE_FALSE;
+	devmode->icmmethod            = 0;
+	devmode->icmintent            = 0;
+	devmode->mediatype            = 0;
+	devmode->dithertype           = 0;
+
+	devmode->logpixels            = 0;
+	devmode->bitsperpel           = 0;
+	devmode->pelswidth            = 0;
+	devmode->pelsheight           = 0;
+	devmode->displayflags         = 0;
+	devmode->displayfrequency     = 0;
+	devmode->reserved1            = 0;
+	devmode->reserved2            = 0;
+	devmode->panningwidth         = 0;
+	devmode->panningheight        = 0;
+
+	devmode->driverextra_data.data = NULL;
+	devmode->driverextra_data.length = 0;
+
+	return devmode;
+}
+
 /**
  * @internal
  *
@@ -1209,6 +1352,200 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
 /********************************************************************
  Public winreg function for spoolss
 ********************************************************************/
+
+WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
+			     struct auth_serversupplied_info *server_info,
+			     const char *sharename)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct spoolss_SetPrinterInfo2 *info2;
+	struct spoolss_DeviceMode *devmode;
+	struct security_descriptor *secdesc;
+	struct winreg_String wkey, wkeyclass;
+	const char *path;
+	const char *subkeys[] = { "DsDriver", "DsSpooler", "PrinterDriverData" };
+	uint32_t i, count = ARRAY_SIZE(subkeys);
+	int snum = lp_servicenumber(sharename);
+	uint32_t info2_mask = 0;
+	WERROR result = WERR_OK;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, sharename);
+	if (path == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("winreg_create_printer: Skipping, %s already exists\n", path));
+		goto done;
+	} else if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		DEBUG(2, ("winreg_create_printer: Creating default values in %s\n", path));
+	} else if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_create_printer: Could not open key %s: %s\n",
+			path, win_errstr(result)));
+		goto done;
+	}
+
+	/* Create the main key */
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					true,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_create_printer_keys: Could not create key %s: %s\n",
+			path, win_errstr(result)));
+		goto done;
+	}
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+	}
+
+	/* Create subkeys */
+	for (i = 0; i < count; i++) {
+		NTSTATUS status;
+		enum winreg_CreateAction action = REG_ACTION_NONE;
+
+		ZERO_STRUCT(key_hnd);
+		ZERO_STRUCT(wkey);
+
+		wkey.name = talloc_asprintf(tmp_ctx, "%s\\%s", path, subkeys[i]);
+		if (wkey.name == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		ZERO_STRUCT(wkeyclass);
+		wkeyclass.name = "";
+
+		status = rpccli_winreg_CreateKey(winreg_pipe,
+						 tmp_ctx,
+						 &hive_hnd,
+						 wkey,
+						 wkeyclass,
+						 0,
+						 access_mask,
+						 NULL,
+						 &key_hnd,
+						 &action,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("winreg_create_printer_keys: Could not create key %s: %s\n",
+				wkey.name, win_errstr(result)));
+			if (!W_ERROR_IS_OK(result)) {
+				result = ntstatus_to_werror(status);
+			}
+			goto done;
+		}
+
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+	}
+	info2 = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfo2);
+	if (info2 == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	info2->printername = sharename;
+	info2_mask |= SPOOLSS_PRINTER_INFO_PRINTERNAME;
+
+	info2->sharename = sharename;
+	info2_mask |= SPOOLSS_PRINTER_INFO_SHARENAME;
+
+	info2->portname = SAMBA_PRINTER_PORT_NAME;
+	info2_mask |= SPOOLSS_PRINTER_INFO_PORTNAME;
+
+	info2->printprocessor = "winprint";
+	info2_mask |= SPOOLSS_PRINTER_INFO_PRINTPROCESSOR;
+
+	info2->datatype = "RAW";
+	info2_mask |= SPOOLSS_PRINTER_INFO_DATATYPE;
+
+	info2->comment = "";
+	info2_mask |= SPOOLSS_PRINTER_INFO_COMMENT;
+
+	info2->attributes = PRINTER_ATTRIBUTE_SAMBA;
+	info2_mask |= SPOOLSS_PRINTER_INFO_ATTRIBUTES;
+
+	info2->starttime = 0; /* Minutes since 12:00am GMT */
+	info2_mask |= SPOOLSS_PRINTER_INFO_STARTTIME;
+
+	info2->untiltime = 0; /* Minutes since 12:00am GMT */
+	info2_mask |= SPOOLSS_PRINTER_INFO_UNTILTIME;
+
+	info2->priority = 1;
+	info2_mask |= SPOOLSS_PRINTER_INFO_PRIORITY;
+
+	info2->defaultpriority = 1;
+	info2_mask |= SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY;
+
+	/* info2->setuptime = (uint32_t) time(NULL); */
+
+	if (lp_default_devmode(snum)) {
+		devmode = winreg_printer_create_default_devmode(tmp_ctx,
+								info2->printername);
+		if (devmode == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		info2_mask |= SPOOLSS_PRINTER_INFO_DEVMODE;
+	}
+
+	secdesc = winreg_printer_create_default_secdesc(tmp_ctx);
+	if (secdesc == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	info2_mask |= SPOOLSS_PRINTER_INFO_SECDESC;
+
+	result = winreg_update_printer(tmp_ctx,
+				       server_info,
+				       info2_mask,
+				       info2,
+				       devmode,
+				       secdesc);
+
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return result;
+}
 
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,

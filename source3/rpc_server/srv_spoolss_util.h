@@ -71,6 +71,10 @@ enum spoolss_PrinterInfo2Mask {
                                  SPOOLSS_PRINTER_INFO_STATUS          | \
                                  SPOOLSS_PRINTER_INFO_UNTILTIME
 
+WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
+			     struct auth_serversupplied_info *server_info,
+			     const char *sharename);
+
 /**
  * @internal
  *
