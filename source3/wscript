@@ -40,6 +40,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('pam')
     opt.SAMBA3_ADD_OPTION('quotas')
     opt.SAMBA3_ADD_OPTION('sys-quotas')
+    opt.SAMBA3_ADD_OPTION('sendfile-support')
 
 
 def configure(conf):
