@@ -946,8 +946,6 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         message("Setting up sam.ldb schema")
         samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])
         samdb.modify_ldif(schema.schema_dn_modify)
-        # set schemaInfo to defalt value for a new Forest
-        samdb.set_schema_info()
         samdb.write_prefixes_from_schema()
         samdb.add_ldif(schema.schema_data, controls=["relax:0"])
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 

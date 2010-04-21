@@ -352,55 +352,6 @@ WERROR dsdb_schema_info_create(struct ldb_context *ldb, bool check_invocation_id
 
 
 /**
- *
- * @param ldb
- * @param schema
- * @return
- */
-WERROR dsdb_schema_info_reset(struct ldb_context *ldb, struct dsdb_schema *schema)
-{
-	int ldb_err;
-	WERROR werr;
-	DATA_BLOB blob;
-	struct dsdb_schema_info *schema_info;
-	struct ldb_message *msg;
-	TALLOC_CTX *temp_ctx;
-
-	temp_ctx = talloc_new(ldb);
-	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
-
-	/* create default schemaInfo value */
-	werr = dsdb_schema_info_create(ldb, true, temp_ctx, &schema_info);
-	W_ERROR_NOT_OK_GOTO(werr, DONE);
-
-	/* serialize schemaInfo to be stored in LDB and schema cache */
-	werr = dsdb_blob_from_schema_info(schema_info, temp_ctx, &blob);
-	W_ERROR_NOT_OK_GOTO(werr, DONE);
-
-	/* store initial schemaInfo in DB */
-	werr = _dsdb_schema_info_write_prepare(ldb, &blob, temp_ctx, &msg);
-	W_ERROR_NOT_OK_GOTO(werr, DONE);
-
-	ldb_err = dsdb_modify(ldb, msg, 0);
-	if (ldb_err != 0) {
-		DEBUG(0,("dsdb_module_schema_info_blob_write: dsdb_replace failed: %s (%s)\n",
-			 ldb_strerror(ldb_err),
-			 ldb_errstring(ldb)));
-		werr = WERR_INTERNAL_DB_ERROR;
-		goto DONE;
-	}
-
-	/* update dsdb_schema cache */
-	talloc_free(discard_const(schema->schema_info));
-	schema->schema_info = data_blob_hex_string_upper(schema, &blob);
-
-DONE:
-	talloc_free(temp_ctx);
-	return werr;
-}
-
-
-/**
  * Increments schemaInfo revision and save it to DB
  * setting our invocationID in the process
  * NOTE: this function should be called in a transaction

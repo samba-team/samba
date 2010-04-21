@@ -286,9 +286,6 @@ class Ldb(_Ldb):
     def write_prefixes_from_schema(self):
         _glue.dsdb_write_prefixes_from_schema_to_ldb(self)
 
-    def set_schema_info(self):
-        _glue.dsdb_schema_info_reset(self)
-
     def convert_schema_to_openldap(self, target, mapping):
         return dsdb.dsdb_convert_schema_to_openldap(self, target, mapping)
 
