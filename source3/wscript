@@ -41,6 +41,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('quotas')
     opt.SAMBA3_ADD_OPTION('sys-quotas')
     opt.SAMBA3_ADD_OPTION('sendfile-support')
+    opt.SAMBA3_ADD_OPTION('utmp')
 
 
 def configure(conf):
