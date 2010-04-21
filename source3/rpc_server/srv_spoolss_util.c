@@ -2633,3 +2633,258 @@ done:
 	return result;
 }
 
+WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
+			 struct auth_serversupplied_info *server_info,
+			 const char *architecture,
+			 const char *driver_name,
+			 uint32_t driver_version,
+			 struct spoolss_DriverInfo8 **_info8)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct spoolss_DriverInfo8 i8, *info8;
+	struct spoolss_PrinterEnumValues *enum_values = NULL;
+	struct spoolss_PrinterEnumValues *v;
+	uint32_t num_values = 0;
+	TALLOC_CTX *tmp_ctx;
+	WERROR result;
+	uint32_t i;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+	ZERO_STRUCT(i8);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	if (driver_version == DRIVER_ANY_VERSION) {
+		/* look for Win2k first and then for NT4 */
+		result = winreg_printer_opendriver(tmp_ctx,
+						   server_info,
+						   driver_name,
+						   architecture,
+						   3,
+						   access_mask, false,
+						   &winreg_pipe,
+						   &hive_hnd,
+						   &key_hnd);
+		if (!W_ERROR_IS_OK(result)) {
+			result = winreg_printer_opendriver(tmp_ctx,
+							   server_info,
+							   driver_name,
+							   architecture,
+							   2,
+							   access_mask, false,
+							   &winreg_pipe,
+							   &hive_hnd,
+							   &key_hnd);
+		}
+	} else {
+		/* ok normal case */
+		result = winreg_printer_opendriver(tmp_ctx,
+						   server_info,
+						   driver_name,
+						   architecture,
+						   driver_version,
+						   access_mask, false,
+						   &winreg_pipe,
+						   &hive_hnd,
+						   &key_hnd);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(5, ("winreg_get_driver: "
+			  "Could not open driver key (%s,%s,%d): %s\n",
+			  driver_name, architecture,
+			  driver_version, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_enumvalues(tmp_ctx,
+					   winreg_pipe,
+					   &key_hnd,
+					   &num_values,
+					   &enum_values);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_get_driver: "
+			  "Could not enumerate values for (%s,%s,%d): %s\n",
+			  driver_name, architecture,
+			  driver_version, win_errstr(result)));
+		goto done;
+	}
+
+	info8 = talloc_zero(tmp_ctx, struct spoolss_DriverInfo8);
+	if (!info8) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	result = WERR_OK;
+
+	for (i = 0; i < num_values; i++) {
+		const char *tmp_str;
+
+		v = &enum_values[i];
+
+#define CHECK_ERROR(result) \
+	if (W_ERROR_IS_OK(result)) continue; \
+	if (W_ERROR_EQUAL(result, WERR_NOT_FOUND)) result = WERR_OK; \
+	if (!W_ERROR_IS_OK(result)) break
+
+		result = winreg_enumval_to_dword(info8, v,
+						 "Version",
+						 &info8->version);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Driver",
+					      &info8->driver_path);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Data File",
+					      &info8->data_file);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Configuration File",
+					      &info8->config_file);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Help File",
+					      &info8->help_file);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_multi_sz(info8, v,
+						    "Dependent Files",
+						    &info8->dependent_files);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Monitor",
+					      &info8->monitor_name);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Datatype",
+					      &info8->default_datatype);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_multi_sz(info8, v,
+						    "Previous Names",
+						    &info8->previous_names);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "DriverDate",
+					      &tmp_str);
+		if (W_ERROR_IS_OK(result)) {
+			result = winreg_printer_date_to_NTTIME(tmp_str,
+						&info8->driver_date);
+		}
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "DriverVersion",
+					      &tmp_str);
+		if (W_ERROR_IS_OK(result)) {
+			result = winreg_printer_ver_to_dword(tmp_str,
+						&info8->driver_version);
+		}
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Manufacturer",
+					      &info8->manufacturer_name);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "OEM URL",
+					      &info8->manufacturer_url);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "HardwareID",
+					      &info8->hardware_id);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Provider",
+					      &info8->provider);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "Print Processor",
+					      &info8->print_processor);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "VendorSetup",
+					      &info8->vendor_setup);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_multi_sz(info8, v,
+						    "Color Profiles",
+						    &info8->color_profiles);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "InfPath",
+					      &info8->inf_path);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_dword(info8, v,
+						 "PrinterDriverAttributes",
+						 &info8->printer_driver_attributes);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_multi_sz(info8, v,
+						    "CoreDependencies",
+						    &info8->core_driver_dependencies);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "MinInboxDriverVerDate",
+					      &tmp_str);
+		if (W_ERROR_IS_OK(result)) {
+			result = winreg_printer_date_to_NTTIME(tmp_str,
+					&info8->min_inbox_driver_ver_date);
+		}
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info8, v,
+					      "MinInboxDriverVerVersion",
+					      &tmp_str);
+		if (W_ERROR_IS_OK(result)) {
+			result = winreg_printer_ver_to_dword(tmp_str,
+					&info8->min_inbox_driver_ver_version);
+		}
+		CHECK_ERROR(result);
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
+			  "for %s: %s\n", v->value_name,
+			  win_errstr(result)));
+		goto done;
+	}
+
+	*_info8 = talloc_steal(mem_ctx, info8);
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+

@@ -351,4 +351,30 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 			 const char **driver_name,
 			 uint32_t *driver_version);
 
+/**
+ * @brief This function gets printer driver information
+ *
+ * @param[in]  mem_ctx	       A talloc memory context.
+ *
+ * @param[in]  server_info     Auth info to open the pipe.
+ *
+ * @param[in]  architecture    The architecture type.
+ *
+ * @param[in]  driver_name     The driver name.
+ *
+ * @param[in]  driver_version  The driver version.
+ *
+ * @param[out] _info8   The structure that holds the full driver information.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+
+WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
+			 struct auth_serversupplied_info *server_info,
+			 const char *architecture,
+			 const char *driver_name,
+			 uint32_t driver_version,
+			 struct spoolss_DriverInfo8 **_info8);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
