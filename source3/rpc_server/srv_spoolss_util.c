@@ -2409,3 +2409,227 @@ done:
 	return result;
 }
 
+WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
+			 struct auth_serversupplied_info *server_info,
+			 struct spoolss_AddDriverInfoCtr *r,
+			 const char **driver_name,
+			 uint32_t *driver_version)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	struct spoolss_DriverInfo8 info8;
+	TALLOC_CTX *tmp_ctx;
+	WERROR result;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+	ZERO_STRUCT(info8);
+
+	if (!driver_info_ctr_to_info8(r, &info8)) {
+		result = WERR_INVALID_PARAMETER;
+		goto done;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	result = winreg_printer_opendriver(tmp_ctx,
+					   server_info,
+					   info8.driver_name,
+					   info8.architecture,
+					   info8.version,
+					   access_mask, true,
+					   &winreg_pipe,
+					   &hive_hnd,
+					   &key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_add_driver: "
+			  "Could not open driver key (%s,%s,%d): %s\n",
+			  info8.driver_name, info8.architecture,
+			  info8.version, win_errstr(result)));
+		goto done;
+	}
+
+	/* TODO: "Attributes" ? */
+
+	result = winreg_printer_write_dword(tmp_ctx, winreg_pipe,
+					    &key_hnd, "Version",
+					    info8.version);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Driver",
+					 info8.driver_path);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Data File",
+					 info8.data_file);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Configuration File",
+					 info8.config_file);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Help File",
+					 info8.help_file);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+					       &key_hnd, "Dependent Files",
+					       info8.dependent_files);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Monitor",
+					 info8.monitor_name);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Datatype",
+					 info8.default_datatype);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+					       &key_hnd, "Previous Names",
+					       info8.previous_names);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_date(tmp_ctx, winreg_pipe,
+					   &key_hnd, "DriverDate",
+					   info8.driver_date);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_ver(tmp_ctx, winreg_pipe,
+					  &key_hnd, "DriverVersion",
+					  info8.driver_version);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Manufacturer",
+					 info8.manufacturer_name);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "OEM URL",
+					 info8.manufacturer_url);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "HardwareID",
+					 info8.hardware_id);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Provider",
+					 info8.provider);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "Print Processor",
+					 info8.print_processor);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "VendorSetup",
+					 info8.vendor_setup);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+					       &key_hnd, "Color Profiles",
+					       info8.color_profiles);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+					 &key_hnd, "InfPath",
+					 info8.inf_path);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_dword(tmp_ctx, winreg_pipe, &key_hnd,
+					    "PrinterDriverAttributes",
+					    info8.printer_driver_attributes);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+					       &key_hnd, "CoreDependencies",
+					       info8.core_driver_dependencies);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_date(tmp_ctx, winreg_pipe,
+					   &key_hnd, "MinInboxDriverVerDate",
+					   info8.min_inbox_driver_ver_date);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_ver(tmp_ctx, winreg_pipe, &key_hnd,
+					  "MinInboxDriverVerVersion",
+					  info8.min_inbox_driver_ver_version);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	*driver_name = info8.driver_name;
+	*driver_version = info8.version;
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+

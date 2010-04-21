@@ -329,4 +329,26 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 			       const char *form_name,
 			       struct spoolss_FormInfo1 *form);
 
+/**
+ * @brief This function adds a new spool driver
+ *
+ * @param[in]  mem_ctx	       A talloc memory context.
+ *
+ * @param[in]  server_info     Auth info to open the pipe.
+ *
+ * @param[in]  r	       The structure containing the new driver data.
+ *
+ * @param[out] driver_name     Returns the driver name.
+ *
+ * @param[out] driver_version  Returns the driver version.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
+			 struct auth_serversupplied_info *server_info,
+			 struct spoolss_AddDriverInfoCtr *r,
+			 const char **driver_name,
+			 uint32_t *driver_version);
+
 #endif /* _SRV_SPOOLSS_UITL_H */
