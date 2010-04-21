@@ -79,6 +79,10 @@ static const struct {
 		.werr_expected = WERR_OK,
 		.test_both_ways = true
 	},
+#if 0
+	/* removed until kamen can take a look - revision 0 is sent by
+	 * w2k8r2, and we need to accept it, possibly only when the
+	 * other fields are zero */
 	{ /* revision > 0 */
 		.schema_info_str = "FF00000000FD821C07C7455143A3DB51F75A630A7F",
 		.revision = 0,
@@ -86,6 +90,7 @@ static const struct {
 		.werr_expected = WERR_INVALID_PARAMETER,
 		.test_both_ways = true
 	},
+#endif
 	{ /* len == 21 */
 		.schema_info_str = "FF00000001FD821C07C7455143A3DB51F75A630A7F00",
 		.revision = 1,
