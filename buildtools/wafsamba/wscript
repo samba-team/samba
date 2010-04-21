@@ -130,9 +130,6 @@ def configure(conf):
     conf.check_tool('gnu_dirs')
     conf.check_tool('wafsamba')
 
-    conf.CHECK_UNAME(msg='Checking system type', define='SYSTEM_UNAME')
-    conf.CHECK_UNAME(flags='-a')
-
     conf.CHECK_CC_ENV()
 
     conf.check_tool('compiler_cc')
@@ -177,8 +174,14 @@ def configure(conf):
     if Options.options.ABI_CHECK_DISABLE:
         conf.env.ABI_CHECK = False
 
+    conf.CHECK_COMMAND(['uname', '-a'],
+                       msg='Checking build system',
+                       define='BUILD_SYSTEM',
+                       on_target=False)
+    conf.CHECK_UNAME()
+
     # see if we can compile and run a simple C program
-    conf.CHECK_CODE('printf("hello world\\n")',
+    conf.CHECK_CODE('printf("hello world")',
                     define='HAVE_SIMPLE_C_PROG',
                     mandatory=True,
                     execute=True,

@@ -96,7 +96,7 @@ class cross_Popen(Utils.pproc.Popen):
                 global cross_answers_incomplete
                 cross_answers_incomplete = True
             (retcode, retstring) = ans
-            args = ['/bin/sh', '-c', "echo '%s'; exit %d" % (retstring, retcode)]
+            args = ['/bin/sh', '-c', "echo -n '%s'; exit %d" % (retstring, retcode)]
         real_Popen.__init__(*(obj, args), **kw)
 
 

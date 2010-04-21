@@ -307,7 +307,7 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
         if v_define is None:
             v_define = 'SIZEOF_%s' % v.upper().replace(' ', '_')
         if not CHECK_CODE(conf,
-                          'printf("%%u\\n", (unsigned)sizeof(%s))' % v,
+                          'printf("%%u", (unsigned)sizeof(%s))' % v,
                           define=v_define,
                           execute=True,
                           define_ret=True,
@@ -326,7 +326,8 @@ def CHECK_CODE(conf, code, define,
                add_headers=True, mandatory=False,
                headers=None, msg=None, cflags='', includes='# .',
                local_include=True, lib=None, link=True,
-               define_ret=False, quote=False):
+               define_ret=False, quote=False,
+               on_target=True):
     '''check if some code compiles and/or runs'''
 
     if CONFIG_SET(conf, define):
@@ -372,7 +373,12 @@ def CHECK_CODE(conf, code, define,
     cflags = TO_LIST(cflags)
     cflags.extend(ccflags)
 
-    exec_args = conf.SAMBA_CROSS_ARGS(msg=msg)
+    if on_target:
+        exec_args = conf.SAMBA_CROSS_ARGS(msg=msg)
+    else:
+        exec_args = []
+
+    conf.COMPOUND_START(msg)
 
     ret = conf.check(fragment=fragment,
                      execute=execute,
@@ -394,9 +400,13 @@ def CHECK_CODE(conf, code, define,
     if ret:
         if not define_ret:
             conf.DEFINE(define, 1)
+            conf.COMPOUND_END(True)
+        else:
+            conf.COMPOUND_END(conf.env[define])
         return True
     if always:
         conf.DEFINE(define, 0)
+    conf.COMPOUND_END(False)
     return False
 
 

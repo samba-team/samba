@@ -240,15 +240,19 @@ WriteMakefile(
 
 
 @conf
-def CHECK_UNAME(conf, flags=None, msg=None, define=None):
-    '''return uname result'''
-    cmd = ['uname']
-    if flags is not None:
-        cmd.append(flags)
+def CHECK_COMMAND(conf, cmd, msg=None, define=None, on_target=True):
+    '''run a command and return result'''
     if msg is None:
-        msg = 'Checking uname'
+        msg = 'Checking %s' % ' '.join(cmd)
     conf.COMPOUND_START(msg)
-    ret = Utils.cmd_output(cmd)
+    cmd = cmd[:]
+    if on_target:
+        cmd.extend(conf.SAMBA_CROSS_ARGS(msg=msg))
+    try:
+        ret = Utils.cmd_output(cmd)
+    except:
+        conf.COMPOUND_END(False)
+        return False
     ret = ret.strip()
     conf.COMPOUND_END(ret)
     if define:
@@ -256,3 +260,22 @@ def CHECK_UNAME(conf, flags=None, msg=None, define=None):
     return ret
 
 
+@conf
+def CHECK_UNAME(conf):
+    '''setup SYSTEM_UNAME_* defines'''
+    ret = True
+    for v in "sysname machine release version".split():
+        if not conf.CHECK_CODE('''
+                               struct utsname n;
+                               if (uname(&n) != 0) return -1;
+                               printf("%%s", n.%s);
+                               ''' % v,
+                               define='SYSTEM_UNAME_%s' % v.upper(),
+                               execute=True,
+                               define_ret=True,
+                               quote=True,
+                               headers='sys/utsname.h',
+                               local_include=False,
+                               msg="Checking uname %s type" % v):
+            ret = False
+    return ret
