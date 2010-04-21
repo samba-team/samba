@@ -4826,12 +4826,12 @@ void notify_job_username(const char *sharename, uint32 jobid, char *name);
 void notify_job_name(const char *sharename, uint32 jobid, char *name);
 void notify_job_submitted(const char *sharename, uint32 jobid,
 			  time_t submitted);
-void notify_printer_driver(int snum, char *driver_name);
-void notify_printer_comment(int snum, char *comment);
-void notify_printer_sharename(int snum, char *share_name);
-void notify_printer_printername(int snum, char *printername);
-void notify_printer_port(int snum, char *port_name);
-void notify_printer_location(int snum, char *location);
+void notify_printer_driver(int snum, const char *driver_name);
+void notify_printer_comment(int snum, const char *comment);
+void notify_printer_sharename(int snum, const char *share_name);
+void notify_printer_printername(int snum, const char *printername);
+void notify_printer_port(int snum, const char *port_name);
+void notify_printer_location(int snum, const char *location);
 void notify_printer_byname( const char *printername, uint32 change, const char *value );
 
 /* The following definitions come from printing/nt_printing.c  */

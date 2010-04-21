@@ -469,7 +469,7 @@ void notify_job_submitted(const char *sharename, uint32 jobid,
 		jobid, sizeof(submitted), (char *)&submitted);
 }
 
-void notify_printer_driver(int snum, char *driver_name)
+void notify_printer_driver(int snum, const char *driver_name)
 {
 	const char *sharename = SERVICE(snum);
 
@@ -478,7 +478,7 @@ void notify_printer_driver(int snum, char *driver_name)
 		snum, strlen(driver_name) + 1, driver_name);
 }
 
-void notify_printer_comment(int snum, char *comment)
+void notify_printer_comment(int snum, const char *comment)
 {
 	const char *sharename = SERVICE(snum);
 
@@ -487,7 +487,7 @@ void notify_printer_comment(int snum, char *comment)
 		snum, strlen(comment) + 1, comment);
 }
 
-void notify_printer_sharename(int snum, char *share_name)
+void notify_printer_sharename(int snum, const char *share_name)
 {
 	const char *sharename = SERVICE(snum);
 
@@ -496,7 +496,7 @@ void notify_printer_sharename(int snum, char *share_name)
 		snum, strlen(share_name) + 1, share_name);
 }
 
-void notify_printer_printername(int snum, char *printername)
+void notify_printer_printername(int snum, const char *printername)
 {
 	const char *sharename = SERVICE(snum);
 
@@ -505,7 +505,7 @@ void notify_printer_printername(int snum, char *printername)
 		snum, strlen(printername) + 1, printername);
 }
 
-void notify_printer_port(int snum, char *port_name)
+void notify_printer_port(int snum, const char *port_name)
 {
 	const char *sharename = SERVICE(snum);
 
@@ -514,7 +514,7 @@ void notify_printer_port(int snum, char *port_name)
 		snum, strlen(port_name) + 1, port_name);
 }
 
-void notify_printer_location(int snum, char *location)
+void notify_printer_location(int snum, const char *location)
 {
 	const char *sharename = SERVICE(snum);
 
