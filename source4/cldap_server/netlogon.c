@@ -226,9 +226,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= DS_SERVER_PDC;
-		if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008) {
-			server_type |= DS_SERVER_FULL_SECRET_DOMAIN_6;
-		}
+	}
+
+	if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008) {
+		server_type |= DS_SERVER_FULL_SECRET_DOMAIN_6;
 	}
 
 	if (samdb_is_gc(sam_ctx)) {
