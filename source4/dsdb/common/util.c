@@ -3597,3 +3597,90 @@ const char *samdb_forest_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 
 	return forest_name;
 }
+
+
+/*
+   validate that an invocationID belongs to the specified user sid.
+   The user SID must be a domain controller account (either RODC or
+   RWDC)
+ */
+int dsdb_validate_invocation_id(struct ldb_context *ldb,
+				const struct GUID *invocation_id,
+				const struct dom_sid *sid)
+{
+	/* strategy:
+	    - find DN of record with the invocationID in the
+	      configuration partition
+            - remote "NTDS Settings" component from DN
+	    - do a base search on that DN for serverReference with
+	      extended-dn enabled
+            - extract objectSID from resulting serverReference
+              attribute
+	    - check this sid matches the sid argument
+	*/
+	struct ldb_dn *config_dn;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct ldb_message *msg;
+	const char *attrs1[] = { NULL };
+	const char *attrs2[] = { "serverReference", NULL };
+	int ret;
+	struct ldb_dn *dn, *account_dn;
+	struct dom_sid sid2;
+	NTSTATUS status;
+
+	config_dn = ldb_get_config_basedn(ldb);
+
+	ret = dsdb_search_one(ldb, tmp_ctx, &msg, config_dn, LDB_SCOPE_SUBTREE,
+			      attrs1, 0, "(&(invocationID=%s)(objectClass=nTDSDSA))", GUID_string(tmp_ctx, invocation_id));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1,(__location__ ": Failed to find invocationID %s for sid %s\n",
+			 GUID_string(tmp_ctx, invocation_id), dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	dn = msg->dn;
+
+	if (!ldb_dn_remove_child_components(dn, 1)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_search_one(ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE,
+			      attrs2, DSDB_SEARCH_SHOW_EXTENDED_DN,
+			      "(objectClass=server)");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1,(__location__ ": Failed to find server record for invocationID %s, sid %s\n",
+			 GUID_string(tmp_ctx, invocation_id), dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	account_dn = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, msg, "serverReference");
+	if (account_dn == NULL) {
+		DEBUG(1,(__location__ ": Failed to find account_dn for invocationID %s, sid %s\n",
+			 GUID_string(tmp_ctx, invocation_id), dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	status = dsdb_get_extended_dn_sid(account_dn, &sid2, "SID");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,(__location__ ": Failed to find SID for invocationID %s, sid %s\n",
+			 GUID_string(tmp_ctx, invocation_id), dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (!dom_sid_equal(sid, &sid2)) {
+		/* someone is trying to spoof another account */
+		DEBUG(0,(__location__ ": Bad invocationID invocationID %s for sid %s - expected sid %s\n",
+			 GUID_string(tmp_ctx, invocation_id),
+			 dom_sid_string(tmp_ctx, sid),
+			 dom_sid_string(tmp_ctx, &sid2)));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
