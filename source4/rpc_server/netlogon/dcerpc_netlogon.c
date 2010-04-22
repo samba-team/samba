@@ -1786,7 +1786,29 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DsrGetDcSiteCoverageW *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ldb_context *sam_ctx;
+	struct DcSitesCtr *ctr;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return WERR_DS_UNAVAILABLE;
+	}
+
+	ctr = talloc(mem_ctx, struct DcSitesCtr);
+	W_ERROR_HAVE_NO_MEMORY(ctr);
+
+	*r->out.ctr = ctr;
+
+	/* For now only return our default site */
+	ctr->num_sites = 1;
+	ctr->sites = talloc_array(ctr, struct lsa_String, ctr->num_sites);
+	W_ERROR_HAVE_NO_MEMORY(ctr->sites);
+	ctr->sites[0].string = samdb_server_site_name(sam_ctx, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(ctr->sites[0].string);
+
+	return WERR_OK;
 }
 
 
