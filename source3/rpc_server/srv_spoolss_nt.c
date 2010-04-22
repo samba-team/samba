@@ -55,7 +55,6 @@ extern userdom_struct current_user_info;
 #endif
 
 #define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
-#define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
 
 static Printer_entry *printers_list;
 
@@ -1348,92 +1347,6 @@ void update_monitored_printq_cache( void )
 
 		printer = printer->next;
 	}
-
-	return;
-}
-/********************************************************************
- Send a message to ourself about new driver being installed
- so we can upgrade the information for each printer bound to this
- driver
- ********************************************************************/
-
-static bool srv_spoolss_reset_printerdata(char* drivername)
-{
-	int len = strlen(drivername);
-
-	if (!len)
-		return false;
-
-	DEBUG(10,("srv_spoolss_reset_printerdata: Sending message about resetting printerdata [%s]\n",
-		drivername));
-
-	messaging_send_buf(smbd_messaging_context(), procid_self(),
-			   MSG_PRINTERDATA_INIT_RESET,
-			   (uint8_t *)drivername, len+1);
-
-	return true;
-}
-
-/**********************************************************************
- callback to receive a MSG_PRINTERDATA_INIT_RESET message and interate
- over all printers, resetting printer data as neessary
- **********************************************************************/
-
-void reset_all_printerdata(struct messaging_context *msg,
-			   void *private_data,
-			   uint32_t msg_type,
-			   struct server_id server_id,
-			   DATA_BLOB *data)
-{
-	fstring drivername;
-	int snum;
-	int n_services = lp_numservices();
-	size_t len;
-
-	len = MIN( data->length, sizeof(drivername)-1 );
-	strncpy( drivername, (const char *)data->data, len );
-
-	DEBUG(10,("reset_all_printerdata: Got message for new driver [%s]\n", drivername ));
-
-	/* Iterate the printer list */
-
-	for ( snum=0; snum<n_services; snum++ )
-	{
-		if ( lp_snum_ok(snum) && lp_print_ok(snum) )
-		{
-			WERROR result;
-			NT_PRINTER_INFO_LEVEL *printer = NULL;
-
-			result = get_a_printer( NULL, &printer, 2, lp_const_servicename(snum) );
-			if ( !W_ERROR_IS_OK(result) )
-				continue;
-
-			/*
-			 * if the printer is bound to the driver,
-			 * then reset to the new driver initdata
-			 */
-
-			if ( printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername) )
-			{
-				DEBUG(6,("reset_all_printerdata: Updating printer [%s]\n", printer->info_2->printername));
-
-				if ( !set_driver_init(printer, 2) ) {
-					DEBUG(5,("reset_all_printerdata: Error resetting printer data for printer [%s], driver [%s]!\n",
-						printer->info_2->printername, printer->info_2->drivername));
-				}
-
-				result = mod_a_printer( printer, 2 );
-				if ( !W_ERROR_IS_OK(result) ) {
-					DEBUG(3,("reset_all_printerdata: mod_a_printer() failed!  (%s)\n",
-						get_dos_error_msg(result)));
-				}
-			}
-
-			free_a_printer( &printer, 2 );
-		}
-	}
-
-	/* all done */
 
 	return;
 }
@@ -5786,12 +5699,6 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	 */
 	if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
 	{
-		if (!set_driver_init(printer, 2))
-		{
-			DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
-				printer->info_2->drivername));
-		}
-
 		DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
 			printer->info_2->drivername));
 
@@ -7340,11 +7247,7 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 	 * bound to the new printer, simulating what happens in the Windows arch.
 	 */
 
-	if (!devmode)
-	{
-		set_driver_init(printer, 2);
-	}
-	else
+	if (devmode)
 	{
 		/* A valid devmode was included, convert and link it
 		*/
@@ -7498,68 +7401,6 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 		DEBUG(0,("%s: Failed to send message about upgrading driver [%s]!\n",
 			fn, driver_name));
 	}
-
-	/*
-	 * Based on the version (e.g. driver destination dir: 0=9x,2=Nt/2k,3=2k/Xp),
-	 * decide if the driver init data should be deleted. The rules are:
-	 *  1) never delete init data if it is a 9x driver, they don't use it anyway
-	 *  2) delete init data only if there is no 2k/Xp driver
-	 *  3) always delete init data
-	 * The generalized rule is always use init data from the highest order driver.
-	 * It is necessary to follow the driver install by an initialization step to
-	 * finish off this process.
-	*/
-
-	switch (version) {
-		/*
-		 * 9x printer driver - never delete init data
-		*/
-		case 0:
-			DEBUG(10,("%s: init data not deleted for 9x driver [%s]\n",
-				fn, driver_name));
-			break;
-
-		/*
-		 * Nt or 2k (compatiblity mode) printer driver - only delete init data if
-		 * there is no 2k/Xp driver init data for this driver name.
-		*/
-		case 2:
-		{
-			struct spoolss_DriverInfo8 *driver1;
-
-			if (!W_ERROR_IS_OK(get_a_printer_driver(p->mem_ctx, &driver1, driver_name, "Windows NT x86", 3))) {
-				/*
-				 * No 2k/Xp driver found, delete init data (if any) for the new Nt driver.
-				*/
-				if (!del_driver_init(driver_name))
-					DEBUG(6,("%s: del_driver_init(%s) Nt failed!\n",
-						fn, driver_name));
-			} else {
-				/*
-				 * a 2k/Xp driver was found, don't delete init data because Nt driver will use it.
-				*/
-				free_a_printer_driver(driver1);
-				DEBUG(10,("%s: init data not deleted for Nt driver [%s]\n",
-					fn, driver_name));
-			}
-		}
-		break;
-
-		/*
-		 * 2k or Xp printer driver - always delete init data
-		*/
-		case 3:
-			if (!del_driver_init(driver_name))
-				DEBUG(6,("%s: del_driver_init(%s) 2k/Xp failed!\n",
-					fn, driver_name));
-			break;
-
-		default:
-			DEBUG(0,("%s: invalid level=%d\n", fn,
-				r->in.info_ctr->level));
-			break;
- 	}
-
 
 done:
 	return err;
@@ -8901,20 +8742,6 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 	if (oid_string) {
 		*oid_string = '\0';
 		oid_string++;
-	}
-
-	/*
-	 * When client side code sets a magic printer data key, detect it and save
-	 * the current printer data and the magic key's data (its the DEVMODE) for
-	 * future printer/driver initializations.
-	 */
-	if ((r->in.type == REG_BINARY) && strequal(r->in.value_name, PHANTOM_DEVMODE_KEY)) {
-		/* Set devmode and printer initialization info */
-		result = save_driver_init(printer, 2, r->in.data, r->in.offered);
-
-		srv_spoolss_reset_printerdata(printer->info_2->drivername);
-
-		goto done;
 	}
 
 	/* save the registry data */
