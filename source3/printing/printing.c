@@ -307,8 +307,10 @@ int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 	if ( len == -1 )
 		return -1;
 
-	if ( (used = unpack_devicemode(&pjob->nt_devmode, buf+len, buflen-len)) == -1 )
+        used = unpack_devicemode(NULL, buf+len, buflen-len, &pjob->devmode);
+        if (used == -1) {
 		return -1;
+        }
 
 	len += used;
 
@@ -352,9 +354,7 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 		return NULL;
 	}
 
-	if ( pjob.nt_devmode ) {
-		free_nt_devicemode( &pjob.nt_devmode );
-	}
+	talloc_free(pjob.devmode);
 
 	ZERO_STRUCT( pjob );
 
@@ -556,7 +556,7 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 				pjob->user,
 				pjob->queuename);
 
-		len += pack_devicemode(pjob->nt_devmode, buf+len, buflen-len);
+		len += pack_devicemode(pjob->devmode, buf+len, buflen-len);
 
 		if (buflen != len) {
 			buf = (uint8 *)SMB_REALLOC(buf, len);
@@ -588,7 +588,7 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
 			{
 				pjob_store_notify( sharename, jobid, &old_pjob , pjob );
-				free_nt_devicemode( &old_pjob.nt_devmode );
+				talloc_free(old_pjob.devmode);
 			}
 		}
 		else {
@@ -709,7 +709,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	jobid = IVAL(key.dptr, 0);
 	if ( unpack_pjob( data.dptr, data.dsize, &pjob ) == -1 )
 		return 0;
-	free_nt_devicemode( &pjob.nt_devmode );
+	talloc_free(pjob.devmode);
 
 
 	if (!pjob.smbjob) {
@@ -1850,14 +1850,14 @@ char *print_job_fname(const char* sharename, uint32 jobid)
  has not been spooled.
 ****************************************************************************/
 
-NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid)
+struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid)
 {
 	struct printjob *pjob = print_job_find(sharename, jobid);
 
 	if ( !pjob )
 		return NULL;
 
-	return pjob->nt_devmode;
+	return pjob->devmode;
 }
 
 /****************************************************************************
@@ -2410,7 +2410,7 @@ static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 ***************************************************************************/
 
 uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       const char *jobname, NT_DEVICEMODE *nt_devmode )
+		       const char *jobname, struct spoolss_DeviceMode *devmode )
 {
 	uint32 jobid;
 	char *path;
@@ -2485,7 +2485,7 @@ uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
 	pjob.size = 0;
 	pjob.spooled = False;
 	pjob.smbjob = True;
-	pjob.nt_devmode = nt_devmode;
+	pjob.devmode = devmode;
 
 	fstrcpy(pjob.jobname, jobname);
 

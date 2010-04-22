@@ -36,47 +36,6 @@ typedef struct {
 	NT_PRINTER_KEY	*keys;
 } NT_PRINTER_DATA;
 
-typedef struct ntdevicemode
-{
-	fstring	devicename;
-	fstring	formname;
-
-	uint16	specversion;
-	uint16	driverversion;
-	uint16	size;
-	uint16	driverextra;
-	uint16	orientation;
-	uint16	papersize;
-	uint16	paperlength;
-	uint16	paperwidth;
-	uint16	scale;
-	uint16	copies;
-	uint16	defaultsource;
-	uint16	printquality;
-	uint16	color;
-	uint16	duplex;
-	uint16	yresolution;
-	uint16	ttoption;
-	uint16	collate;
-	uint16	logpixels;
-
-	uint32	fields;
-	uint32	bitsperpel;
-	uint32	pelswidth;
-	uint32	pelsheight;
-	uint32	displayflags;
-	uint32	displayfrequency;
-	uint32	icmmethod;
-	uint32	icmintent;
-	uint32	mediatype;
-	uint32	dithertype;
-	uint32	reserved1;
-	uint32	reserved2;
-	uint32	panningwidth;
-	uint32	panningheight;
-	uint8 	*nt_dev_private;
-} NT_DEVICEMODE;
-
 typedef struct nt_printer_info_level_2
 {
 	uint32 attributes;
@@ -94,7 +53,7 @@ typedef struct nt_printer_info_level_2
 	fstring drivername;
 	char comment[1024];
 	fstring location;
-	NT_DEVICEMODE *devmode;
+	struct spoolss_DeviceMode *devmode;
 	fstring sepfile;
 	fstring printprocessor;
 	fstring datatype;
@@ -230,10 +189,10 @@ typedef struct _Printer{
 		fstring machine;
 		fstring user;
 	} client;
-	
+
 	/* devmode sent in the OpenPrinter() call */
-	NT_DEVICEMODE	*nt_devmode;
-	
+	struct spoolss_DeviceMode *devmode;
+
 	/* cache the printer info */
 	NT_PRINTER_INFO_LEVEL *printer_info;
 	

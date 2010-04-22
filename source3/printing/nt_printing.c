@@ -2289,62 +2289,82 @@ static WERROR get_a_printer_driver_3(TALLOC_CTX *mem_ctx,
 
 /****************************************************************************
 ****************************************************************************/
-int pack_devicemode(NT_DEVICEMODE *nt_devmode, uint8 *buf, int buflen)
+int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen)
 {
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 	int len = 0;
 
-	len += tdb_pack(buf+len, buflen-len, "p", nt_devmode);
-
-	if (!nt_devmode)
-		return len;
-
-	len += tdb_pack(buf+len, buflen-len, "ffwwwwwwwwwwwwwwwwwwddddddddddddddp",
-			nt_devmode->devicename,
-			nt_devmode->formname,
-
-			nt_devmode->specversion,
-			nt_devmode->driverversion,
-			nt_devmode->size,
-			nt_devmode->driverextra,
-			nt_devmode->orientation,
-			nt_devmode->papersize,
-			nt_devmode->paperlength,
-			nt_devmode->paperwidth,
-			nt_devmode->scale,
-			nt_devmode->copies,
-			nt_devmode->defaultsource,
-			nt_devmode->printquality,
-			nt_devmode->color,
-			nt_devmode->duplex,
-			nt_devmode->yresolution,
-			nt_devmode->ttoption,
-			nt_devmode->collate,
-			nt_devmode->logpixels,
-
-			nt_devmode->fields,
-			nt_devmode->bitsperpel,
-			nt_devmode->pelswidth,
-			nt_devmode->pelsheight,
-			nt_devmode->displayflags,
-			nt_devmode->displayfrequency,
-			nt_devmode->icmmethod,
-			nt_devmode->icmintent,
-			nt_devmode->mediatype,
-			nt_devmode->dithertype,
-			nt_devmode->reserved1,
-			nt_devmode->reserved2,
-			nt_devmode->panningwidth,
-			nt_devmode->panningheight,
-			nt_devmode->nt_dev_private);
-
-	if (nt_devmode->nt_dev_private) {
-		len += tdb_pack(buf+len, buflen-len, "B",
-				nt_devmode->driverextra,
-				nt_devmode->nt_dev_private);
+	if (devmode) {
+		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(),
+					       devmode,
+					       (ndr_push_flags_fn_t)
+					       ndr_push_spoolss_DeviceMode);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(10, ("pack_devicemode: "
+				   "error encoding spoolss_DeviceMode\n"));
+			goto done;
+		}
+	} else {
+		ZERO_STRUCT(blob);
 	}
 
-	DEBUG(8,("Packed devicemode [%s]\n", nt_devmode->formname));
+	len = tdb_pack(buf, buflen, "B", blob.length, blob.data);
 
+	if (devmode) {
+		DEBUG(8, ("Packed devicemode [%s]\n", devmode->formname));
+	}
+
+done:
+	return len;
+}
+
+/****************************************************************************
+****************************************************************************/
+int unpack_devicemode(TALLOC_CTX *mem_ctx,
+		      const uint8 *buf, int buflen,
+		      struct spoolss_DeviceMode **devmode)
+{
+	struct spoolss_DeviceMode *dm;
+	enum ndr_err_code ndr_err;
+	char *data = NULL;
+	int data_len = 0;
+	DATA_BLOB blob;
+	int len = 0;
+
+	*devmode = NULL;
+
+	len = tdb_unpack(buf, buflen, "B", &data_len, &data);
+	if (!data) {
+		return len;
+	}
+
+	dm = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
+	if (!dm) {
+		goto done;
+	}
+
+	blob = data_blob_const(data, data_len);
+
+	ndr_err = ndr_pull_struct_blob(&blob, dm, dm,
+			(ndr_pull_flags_fn_t)ndr_pull_spoolss_DeviceMode);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("unpack_devicemode: "
+			   "error parsing spoolss_DeviceMode\n"));
+		goto done;
+	}
+
+	DEBUG(8, ("Unpacked devicemode [%s](%s)\n",
+		  dm->devicename, dm->formname));
+	if (dm->driverextra_data.data) {
+		DEBUG(8, ("with a private section of %d bytes\n",
+			  dm->__driverextra_length));
+	}
+
+	*devmode = dm;
+
+done:
+	SAFE_FREE(data);
 	return len;
 }
 
@@ -2719,187 +2739,6 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 	*secdesc = psd;
 
 	return WERR_OK;
-}
-
-/****************************************************************************
- Malloc and return an NT devicemode.
-****************************************************************************/
-
-NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
-{
-
-	char adevice[MAXDEVICENAME];
-	NT_DEVICEMODE *nt_devmode = SMB_MALLOC_P(NT_DEVICEMODE);
-
-	if (nt_devmode == NULL) {
-		DEBUG(0,("construct_nt_devicemode: malloc fail.\n"));
-		return NULL;
-	}
-
-	ZERO_STRUCTP(nt_devmode);
-
-	slprintf(adevice, sizeof(adevice), "%s", default_devicename);
-	fstrcpy(nt_devmode->devicename, adevice);
-
-	fstrcpy(nt_devmode->formname, "Letter");
-
-	nt_devmode->specversion      = DMSPEC_NT4_AND_ABOVE;
-	nt_devmode->driverversion    = 0x0400;
-	nt_devmode->size             = 0x00DC;
-	nt_devmode->driverextra      = 0x0000;
-	nt_devmode->fields           = DEVMODE_FORMNAME |
-				       DEVMODE_TTOPTION |
-				       DEVMODE_PRINTQUALITY |
-				       DEVMODE_DEFAULTSOURCE |
-				       DEVMODE_COPIES |
-				       DEVMODE_SCALE |
-				       DEVMODE_PAPERSIZE |
-				       DEVMODE_ORIENTATION;
-	nt_devmode->orientation      = DMORIENT_PORTRAIT;
-	nt_devmode->papersize        = DMPAPER_LETTER;
-	nt_devmode->paperlength      = 0;
-	nt_devmode->paperwidth       = 0;
-	nt_devmode->scale            = 0x64;
-	nt_devmode->copies           = 1;
-	nt_devmode->defaultsource    = DMBIN_FORMSOURCE;
-	nt_devmode->printquality     = DMRES_HIGH;           /* 0x0258 */
-	nt_devmode->color            = DMRES_MONOCHROME;
-	nt_devmode->duplex           = DMDUP_SIMPLEX;
-	nt_devmode->yresolution      = 0;
-	nt_devmode->ttoption         = DMTT_SUBDEV;
-	nt_devmode->collate          = DMCOLLATE_FALSE;
-	nt_devmode->icmmethod        = 0;
-	nt_devmode->icmintent        = 0;
-	nt_devmode->mediatype        = 0;
-	nt_devmode->dithertype       = 0;
-
-	/* non utilisés par un driver d'imprimante */
-	nt_devmode->logpixels        = 0;
-	nt_devmode->bitsperpel       = 0;
-	nt_devmode->pelswidth        = 0;
-	nt_devmode->pelsheight       = 0;
-	nt_devmode->displayflags     = 0;
-	nt_devmode->displayfrequency = 0;
-	nt_devmode->reserved1        = 0;
-	nt_devmode->reserved2        = 0;
-	nt_devmode->panningwidth     = 0;
-	nt_devmode->panningheight    = 0;
-
-	nt_devmode->nt_dev_private = NULL;
-	return nt_devmode;
-}
-
-/****************************************************************************
- Clean up and deallocate a (maybe partially) allocated NT_DEVICEMODE.
-****************************************************************************/
-
-void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
-{
-	NT_DEVICEMODE *nt_devmode = *devmode_ptr;
-
-	if(nt_devmode == NULL)
-		return;
-
-	DEBUG(106,("free_nt_devicemode: deleting DEVMODE\n"));
-
-	SAFE_FREE(nt_devmode->nt_dev_private);
-	SAFE_FREE(*devmode_ptr);
-}
-
-/****************************************************************************
- Clean up and deallocate a (maybe partially) allocated NT_PRINTER_INFO_LEVEL_2.
-****************************************************************************/
-
-static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
-{
-	NT_PRINTER_INFO_LEVEL_2 *info = *info_ptr;
-
-	if ( !info )
-		return;
-
-	free_nt_devicemode(&info->devmode);
-
-	TALLOC_FREE( *info_ptr );
-}
-
-
-/****************************************************************************
-****************************************************************************/
-int unpack_devicemode(NT_DEVICEMODE **nt_devmode, const uint8 *buf, int buflen)
-{
-	int len = 0;
-	int extra_len = 0;
-	NT_DEVICEMODE devmode;
-
-	ZERO_STRUCT(devmode);
-
-	len += tdb_unpack(buf+len, buflen-len, "p", nt_devmode);
-
-	if (!*nt_devmode) return len;
-
-	len += tdb_unpack(buf+len, buflen-len, "ffwwwwwwwwwwwwwwwwwwddddddddddddddp",
-			  devmode.devicename,
-			  devmode.formname,
-
-			  &devmode.specversion,
-			  &devmode.driverversion,
-			  &devmode.size,
-			  &devmode.driverextra,
-			  &devmode.orientation,
-			  &devmode.papersize,
-			  &devmode.paperlength,
-			  &devmode.paperwidth,
-			  &devmode.scale,
-			  &devmode.copies,
-			  &devmode.defaultsource,
-			  &devmode.printquality,
-			  &devmode.color,
-			  &devmode.duplex,
-			  &devmode.yresolution,
-			  &devmode.ttoption,
-			  &devmode.collate,
-			  &devmode.logpixels,
-
-			  &devmode.fields,
-			  &devmode.bitsperpel,
-			  &devmode.pelswidth,
-			  &devmode.pelsheight,
-			  &devmode.displayflags,
-			  &devmode.displayfrequency,
-			  &devmode.icmmethod,
-			  &devmode.icmintent,
-			  &devmode.mediatype,
-			  &devmode.dithertype,
-			  &devmode.reserved1,
-			  &devmode.reserved2,
-			  &devmode.panningwidth,
-			  &devmode.panningheight,
-			  &devmode.nt_dev_private);
-
-	if (devmode.nt_dev_private) {
-		/* the len in tdb_unpack is an int value and
-		 * devmode.driverextra is only a short
-		 */
-		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.nt_dev_private);
-		devmode.driverextra=(uint16)extra_len;
-
-		/* check to catch an invalid TDB entry so we don't segfault */
-		if (devmode.driverextra == 0) {
-			devmode.nt_dev_private = NULL;
-		}
-	}
-
-	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
-	if (!*nt_devmode) {
-		SAFE_FREE(devmode.nt_dev_private);
-		return -1;
-	}
-
-	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
-	if (devmode.nt_dev_private)
-		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
-
-	return len;
 }
 
 /****************************************************************************
@@ -4084,6 +3923,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info,
 				bool get_loc_com)
 {
 	int snum = lp_servicenumber(sharename);
+	WERROR result;
 
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
@@ -4144,7 +3984,10 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info,
 	 */
 
 	if (lp_default_devmode(snum)) {
-		if ((info->devmode = construct_nt_devicemode(info->printername)) == NULL) {
+		result = spoolss_create_default_devmode(info,
+							info->printername,
+							&info->devmode);
+		if (!W_ERROR_IS_OK(result)) {
 			goto fail;
 		}
 	} else {
@@ -4165,8 +4008,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info,
 	return WERR_OK;
 
 fail:
-	if (info->devmode)
-		free_nt_devicemode(&info->devmode);
+	TALLOC_FREE(info->devmode);
 
 	return WERR_ACCESS_DENIED;
 }
@@ -4183,8 +4025,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
 	int snum = lp_servicenumber(sharename);
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
-	char adevice[MAXDEVICENAME];
 	char *comment = NULL;
+	WERROR result;
 
 	kbuf = make_printer_tdbkey(talloc_tos(), sharename);
 
@@ -4256,7 +4098,9 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
 	}
 #endif
 
-	len += unpack_devicemode(&info->devmode,dbuf.dptr+len, dbuf.dsize-len);
+	len += unpack_devicemode(info, dbuf.dptr+len,
+					dbuf.dsize-len,
+					&info->devmode);
 
 	/*
 	 * Some client drivers freak out if there is a NULL devmode
@@ -4269,18 +4113,26 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
 	if (lp_default_devmode(snum) && !info->devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
-		info->devmode = construct_nt_devicemode(printername);
+		result = spoolss_create_default_devmode(info, printername,
+							&info->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
 	}
 
-	slprintf( adevice, sizeof(adevice), "%s", info->printername );
 	if (info->devmode) {
-		fstrcpy(info->devmode->devicename, adevice);
+		info->devmode->devicename = talloc_strdup(info->devmode,
+							  info->printername);
+		if (!info->devmode->devicename) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 	}
 
 	if ( !(info->data = TALLOC_ZERO_P( info, NT_PRINTER_DATA )) ) {
 		DEBUG(0,("unpack_values: talloc() failed!\n"));
-		SAFE_FREE(dbuf.dptr);
-		return WERR_NOMEM;
+		result = WERR_NOMEM;
+		goto done;
 	}
 	len += unpack_values( info->data, dbuf.dptr+len, dbuf.dsize-len );
 
@@ -4288,8 +4140,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
 	   passing this as a parameter... fixme... JRA ! */
 
 	if (!nt_printing_getsec(info, sharename, &info->secdesc_buf)) {
-		SAFE_FREE(dbuf.dptr);
-		return WERR_NOMEM;
+		result = WERR_NOMEM;
+		goto done;
 	}
 
 	/* Fix for OS/2 drivers. */
@@ -4298,12 +4150,14 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
 		map_to_os2_driver(info->drivername);
 	}
 
-	SAFE_FREE(dbuf.dptr);
-
 	DEBUG(9,("Unpacked printer [%s] name [%s] running driver [%s]\n",
 		 sharename, info->printername, info->drivername));
 
-	return WERR_OK;
+	result = WERR_OK;
+
+done:
+	SAFE_FREE(dbuf.dptr);
+	return result;
 }
 
 /****************************************************************************
@@ -4548,8 +4402,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 
 	switch (level) {
 		case 2:
-			if ( printer->info_2 )
-				free_nt_printer_info_level_2(&printer->info_2);
+                        TALLOC_FREE(printer->info_2);
 			break;
 
 		default:

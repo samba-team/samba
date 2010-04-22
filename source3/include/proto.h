@@ -4739,11 +4739,11 @@ WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 WERROR move_driver_to_download_area(struct pipes_struct *p,
 				    struct spoolss_AddDriverInfoCtr *r,
 				    WERROR *perr);
-int pack_devicemode(NT_DEVICEMODE *nt_devmode, uint8 *buf, int buflen);
+int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
+int unpack_devicemode(TALLOC_CTX *mem_ctx,
+		      const uint8 *buf, int buflen,
+		      struct spoolss_DeviceMode **devmode);
 uint32 del_a_printer(const char *sharename);
-NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
-void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
-int unpack_devicemode(NT_DEVICEMODE **nt_devmode, const uint8 *buf, int buflen);
 WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 				      const char *devicename,
 				      struct spoolss_DeviceMode **devmode);
@@ -4831,7 +4831,7 @@ bool print_notify_deregister_pid(int snum);
 bool print_job_exists(const char* sharename, uint32 jobid);
 int print_job_fd(const char* sharename, uint32 jobid);
 char *print_job_fname(const char* sharename, uint32 jobid);
-NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid);
+struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid);
 bool print_job_set_name(const char *sharename, uint32 jobid, const char *name);
 bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t jobid, char **name);
 bool print_job_delete(struct auth_serversupplied_info *server_info, int snum,
@@ -4843,7 +4843,7 @@ bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
 int print_queue_length(int snum, print_status_struct *pstatus);
 uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       const char *jobname, NT_DEVICEMODE *nt_devmode );
+		       const char *jobname, struct spoolss_DeviceMode *devmode );
 void print_job_endpage(int snum, uint32 jobid);
 bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
 int print_queue_status(int snum, 
@@ -5144,9 +5144,6 @@ void reset_all_printerdata(struct messaging_context *msg,
 			   uint32_t msg_type,
 			   struct server_id server_id,
 			   DATA_BLOB *data);
-bool convert_devicemode(const char *printername,
-			const struct spoolss_DeviceMode *devmode,
-			NT_DEVICEMODE **pp_nt_devmode);
 WERROR set_printer_dataex(NT_PRINTER_INFO_LEVEL *printer,
 			  const char *key, const char *value,
 			  uint32_t type, uint8_t *data, int real_len);

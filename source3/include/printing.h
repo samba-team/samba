@@ -40,7 +40,7 @@ struct printjob {
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
 	fstring queuename; /* service number of printer for this job */
-	NT_DEVICEMODE *nt_devmode;
+	struct spoolss_DeviceMode *devmode;
 };
 
 /* Information for print interfaces */

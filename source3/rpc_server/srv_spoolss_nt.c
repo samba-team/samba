@@ -220,7 +220,7 @@ static int printer_entry_destructor(Printer_entry *Printer)
 	TALLOC_FREE(Printer->notify.option);
 	Printer->notify.client_connected = false;
 
-	free_nt_devicemode( &Printer->nt_devmode );
+	TALLOC_FREE(Printer->devmode);
 	free_a_printer( &Printer->printer_info, 2 );
 
 	/* Remove from the internal list. */
@@ -1389,81 +1389,39 @@ WERROR _spoolss_OpenPrinter(pipes_struct *p,
 	return werr;
 }
 
-/********************************************************************
- ********************************************************************/
-
-bool convert_devicemode(const char *printername,
-			const struct spoolss_DeviceMode *devmode,
-			NT_DEVICEMODE **pp_nt_devmode)
+static WERROR copy_devicemode(TALLOC_CTX *mem_ctx,
+			      struct spoolss_DeviceMode *orig,
+			      struct spoolss_DeviceMode **dest)
 {
-	NT_DEVICEMODE *nt_devmode = *pp_nt_devmode;
+	struct spoolss_DeviceMode *dm;
 
-	/*
-	 * Ensure nt_devmode is a valid pointer
-	 * as we will be overwriting it.
-	 */
-
-	if (nt_devmode == NULL) {
-		DEBUG(5, ("convert_devicemode: allocating a generic devmode\n"));
-		if ((nt_devmode = construct_nt_devicemode(printername)) == NULL)
-			return false;
+	dm = talloc(mem_ctx, struct spoolss_DeviceMode);
+	if (!dm) {
+		return WERR_NOMEM;
 	}
 
-	fstrcpy(nt_devmode->devicename, devmode->devicename);
-	fstrcpy(nt_devmode->formname, devmode->formname);
+	/* copy all values, then duplicate strings and structs */
+	*dm = *orig;
 
-	nt_devmode->devicename[31] = '\0';
-	nt_devmode->formname[31] = '\0';
-
-	nt_devmode->specversion		= devmode->specversion;
-	nt_devmode->driverversion	= devmode->driverversion;
-	nt_devmode->size		= devmode->size;
-	nt_devmode->fields		= devmode->fields;
-	nt_devmode->orientation		= devmode->orientation;
-	nt_devmode->papersize		= devmode->papersize;
-	nt_devmode->paperlength		= devmode->paperlength;
-	nt_devmode->paperwidth		= devmode->paperwidth;
-	nt_devmode->scale		= devmode->scale;
-	nt_devmode->copies		= devmode->copies;
-	nt_devmode->defaultsource	= devmode->defaultsource;
-	nt_devmode->printquality	= devmode->printquality;
-	nt_devmode->color		= devmode->color;
-	nt_devmode->duplex		= devmode->duplex;
-	nt_devmode->yresolution		= devmode->yresolution;
-	nt_devmode->ttoption		= devmode->ttoption;
-	nt_devmode->collate		= devmode->collate;
-
-	nt_devmode->logpixels		= devmode->logpixels;
-	nt_devmode->bitsperpel		= devmode->bitsperpel;
-	nt_devmode->pelswidth		= devmode->pelswidth;
-	nt_devmode->pelsheight		= devmode->pelsheight;
-	nt_devmode->displayflags	= devmode->displayflags;
-	nt_devmode->displayfrequency	= devmode->displayfrequency;
-	nt_devmode->icmmethod		= devmode->icmmethod;
-	nt_devmode->icmintent		= devmode->icmintent;
-	nt_devmode->mediatype		= devmode->mediatype;
-	nt_devmode->dithertype		= devmode->dithertype;
-	nt_devmode->reserved1		= devmode->reserved1;
-	nt_devmode->reserved2		= devmode->reserved2;
-	nt_devmode->panningwidth	= devmode->panningwidth;
-	nt_devmode->panningheight	= devmode->panningheight;
-
-	/*
-	 * Only change private and driverextra if the incoming devmode
-	 * has a new one. JRA.
-	 */
-
-	if ((devmode->__driverextra_length != 0) && (devmode->driverextra_data.data != NULL)) {
-		SAFE_FREE(nt_devmode->nt_dev_private);
-		nt_devmode->driverextra = devmode->__driverextra_length;
-		if((nt_devmode->nt_dev_private = SMB_MALLOC_ARRAY(uint8_t, nt_devmode->driverextra)) == NULL)
-			return false;
-		memcpy(nt_devmode->nt_dev_private, devmode->driverextra_data.data, nt_devmode->driverextra);
+	dm->devicename = talloc_strdup(dm, orig->devicename);
+	if (!dm->devicename) {
+		return WERR_NOMEM;
+	}
+	dm->formname = talloc_strdup(dm, orig->formname);
+	if (!dm->formname) {
+		return WERR_NOMEM;
+	}
+	if (orig->driverextra_data.data) {
+		dm->driverextra_data.data =
+			(uint8_t *) talloc_memdup(dm, orig->driverextra_data.data,
+					orig->driverextra_data.length);
+		if (!dm->driverextra_data.data) {
+			return WERR_NOMEM;
+		}
 	}
 
-	*pp_nt_devmode = nt_devmode;
-
-	return true;
+	*dest = dm;
+	return WERR_OK;
 }
 
 /****************************************************************
@@ -1674,9 +1632,8 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 
 	 if ((Printer->printer_type != SPLHND_SERVER) &&
 	     r->in.devmode_ctr.devmode) {
-		convert_devicemode(Printer->sharename,
-				   r->in.devmode_ctr.devmode,
-				   &Printer->nt_devmode);
+		copy_devicemode(NULL, r->in.devmode_ctr.devmode,
+				&Printer->devmode);
 	 }
 
 #if 0	/* JERRY -- I'm doubtful this is really effective */
@@ -3545,70 +3502,6 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-/****************************************************************************
- Convert an NT_DEVICEMODE to a spoolss_DeviceMode structure.  Both pointers
- should be valid upon entry
-****************************************************************************/
-
-static WERROR convert_nt_devicemode(TALLOC_CTX *mem_ctx,
-				    struct spoolss_DeviceMode *r,
-				    const NT_DEVICEMODE *ntdevmode)
-{
-	if (!r || !ntdevmode) {
-		return WERR_INVALID_PARAM;
-	}
-
-	r->devicename		= talloc_strdup(mem_ctx, ntdevmode->devicename);
-	W_ERROR_HAVE_NO_MEMORY(r->devicename);
-
-	r->specversion		= ntdevmode->specversion;
-	r->driverversion	= ntdevmode->driverversion;
-	r->size			= ntdevmode->size;
-	r->__driverextra_length	= ntdevmode->driverextra;
-	r->fields		= ntdevmode->fields;
-
-	r->orientation		= ntdevmode->orientation;
-	r->papersize		= ntdevmode->papersize;
-	r->paperlength		= ntdevmode->paperlength;
-	r->paperwidth		= ntdevmode->paperwidth;
-	r->scale		= ntdevmode->scale;
-	r->copies		= ntdevmode->copies;
-	r->defaultsource	= ntdevmode->defaultsource;
-	r->printquality		= ntdevmode->printquality;
-	r->color		= ntdevmode->color;
-	r->duplex		= ntdevmode->duplex;
-	r->yresolution		= ntdevmode->yresolution;
-	r->ttoption		= ntdevmode->ttoption;
-	r->collate		= ntdevmode->collate;
-
-	r->formname		= talloc_strdup(mem_ctx, ntdevmode->formname);
-	W_ERROR_HAVE_NO_MEMORY(r->formname);
-
-	r->logpixels		= ntdevmode->logpixels;
-	r->bitsperpel		= ntdevmode->bitsperpel;
-	r->pelswidth		= ntdevmode->pelswidth;
-	r->pelsheight		= ntdevmode->pelsheight;
-	r->displayflags		= ntdevmode->displayflags;
-	r->displayfrequency	= ntdevmode->displayfrequency;
-	r->icmmethod		= ntdevmode->icmmethod;
-	r->icmintent		= ntdevmode->icmintent;
-	r->mediatype		= ntdevmode->mediatype;
-	r->dithertype		= ntdevmode->dithertype;
-	r->reserved1		= ntdevmode->reserved1;
-	r->reserved2		= ntdevmode->reserved2;
-	r->panningwidth		= ntdevmode->panningwidth;
-	r->panningheight	= ntdevmode->panningheight;
-
-	if (ntdevmode->nt_dev_private != NULL) {
-		r->driverextra_data = data_blob_talloc(mem_ctx,
-			ntdevmode->nt_dev_private,
-			ntdevmode->driverextra);
-		W_ERROR_HAVE_NO_MEMORY(r->driverextra_data.data);
-	}
-
-	return WERR_OK;
-}
-
 
 /****************************************************************************
  Create a spoolss_DeviceMode struct. Returns talloced memory.
@@ -3617,7 +3510,6 @@ static WERROR convert_nt_devicemode(TALLOC_CTX *mem_ctx,
 struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
 					      const char *servicename)
 {
-	WERROR result;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	struct spoolss_DeviceMode *devmode = NULL;
 
@@ -3633,18 +3525,7 @@ struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
-	if (!devmode) {
-		DEBUG(2,("construct_dev_mode: talloc fail.\n"));
-		goto done;
-	}
-
-	DEBUGADD(8,("loading DEVICEMODE\n"));
-
-	result = convert_nt_devicemode(mem_ctx, devmode, printer->info_2->devmode);
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(devmode);
-	}
+        devmode = talloc_steal(mem_ctx, printer->info_2->devmode);
 
 done:
 	free_a_printer(&printer,2);
@@ -5171,7 +5052,7 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 
 	Printer->jobid = print_job_start(p->server_info, snum,
 					 info_1->document_name,
-					 Printer->nt_devmode);
+					 Printer->devmode);
 
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
@@ -5661,10 +5542,10 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		   convert it and link it*/
 
 		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
-		if (!convert_devicemode(printer->info_2->printername, devmode,
-					&printer->info_2->devmode)) {
-			result =  WERR_NOMEM;
-			goto done;
+		result = copy_devicemode(printer->info_2, devmode,
+				         &printer->info_2->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
 		}
 	}
 
@@ -5860,13 +5741,12 @@ static WERROR update_printer_devmode(pipes_struct *p, struct policy_handle *hand
 	}
 
 	if (devmode) {
-		/* we have a valid devmode
-		   convert it and link it*/
+		/* we have a valid devmode, copy it */
 
-		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
-		if (!convert_devicemode(printer->info_2->printername, devmode,
-					&printer->info_2->devmode)) {
-			result =  WERR_NOMEM;
+		DEBUGADD(8, ("update_printer: Copying the devicemode struct\n"));
+		result = copy_devicemode(printer->info_2, devmode,
+				         &printer->info_2->devmode);
+		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
@@ -7265,9 +7145,10 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 		*/
 		DEBUGADD(10, ("spoolss_addprinterex_level_2: devmode included, converting\n"));
 
-		if (!convert_devicemode(printer->info_2->printername, devmode,
-					&printer->info_2->devmode)) {
-			return  WERR_NOMEM;
+		err = copy_devicemode(printer, devmode,
+				      &printer->info_2->devmode);
+		if (!W_ERROR_IS_OK(err)) {
+			return err;
 		}
 	}
 
@@ -8460,8 +8341,6 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	int i = 0;
 	bool found = false;
 	struct spoolss_DeviceMode *devmode;
-	NT_DEVICEMODE *nt_devmode;
-	WERROR result;
 
 	for (i=0; i<count; i++) {
 		if (queue[i].job == (int)jobid) {
@@ -8482,15 +8361,8 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	 *  a failure condition
 	 */
 
-	nt_devmode = print_job_devmode(lp_const_servicename(snum), jobid);
-	if (nt_devmode) {
-		devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
-		W_ERROR_HAVE_NO_MEMORY(devmode);
-		result = convert_nt_devicemode(devmode, devmode, nt_devmode);
-		if (!W_ERROR_IS_OK(result)) {
-			return result;
-		}
-	} else {
+	devmode = print_job_devmode(lp_const_servicename(snum), jobid);
+	if (!devmode) {
 		devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
 		W_ERROR_HAVE_NO_MEMORY(devmode);
 	}
