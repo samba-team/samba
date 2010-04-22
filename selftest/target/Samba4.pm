@@ -806,6 +806,7 @@ sub provision($$$$$$$)
 	if (defined($self->{ldap})) {
                 $ret->{LDAP_URI} = $ctx->{ldap_uri};
 		push (@{$ctx->{provision_options}}, "--ldap-backend-type=" . $self->{ldap});
+		push (@{$ctx->{provision_options}}, "--ldap-backend-nosync");
 		if ($self->{ldap} eq "openldap") {
  		        push (@{$ctx->{provision_options}}, "--slapd-path=" . $ENV{OPENLDAP_SLAPD});
 			($ret->{SLAPD_CONF_D}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx) or die("Unable to create openldap directories");
