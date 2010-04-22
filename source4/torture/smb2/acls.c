@@ -1286,7 +1286,7 @@ static bool test_inheritance_flags(struct torture_context *tctx,
 		uint32_t parent_get_ace_inherit;
 		uint32_t child_get_sd_type;
 		uint32_t child_get_ace_inherit;
-	} tflags[16] = {0}; /* 2^4 */
+	} tflags[16] = {{0}}; /* 2^4 */
 
 	for (i = 0; i < 15; i++) {
 		torture_comment(tctx, "i=%d:", i);
