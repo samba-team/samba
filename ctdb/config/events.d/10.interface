@@ -80,7 +80,7 @@ monitor_interfaces()
 		# we dont know how to test ib links
 		;;
 	    *)
-		[ -z "$IFACE" ] {
+		[ -z "$IFACE" ] || {
 		    [ "$(basename $(readlink /sys/class/net/$IFACE/device/driver))" = virtio_net ] ||
 		    ethtool $IFACE | grep -q 'Link detected: yes' || {
 			# On some systems, this is not successful when a
