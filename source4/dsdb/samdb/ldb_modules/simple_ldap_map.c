@@ -282,6 +282,18 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 			},
 		},
 	},
+	/* securityIdentifier */
+	{
+		.local_name = "securityIdentifier",
+		.type = LDB_MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "securityIdentifier",
+				.convert_local = sid_always_binary,
+				.convert_remote = val_copy,
+			},
+		},
+	},
 	{
 		.local_name = "name",
 		.type = LDB_MAP_RENAME,
@@ -491,6 +503,18 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 				.convert_remote = sid_always_binary,
 			}
 		}
+	},
+	/* securityIdentifier */
+	{
+		.local_name = "securityIdentifier",
+		.type = LDB_MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "securityIdentifier",
+				.convert_local = sid_always_binary,
+				.convert_remote = val_copy,
+			},
+		},
 	},
 	{
 		.local_name = "whenCreated",
