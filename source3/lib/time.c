@@ -506,6 +506,19 @@ void get_process_uptime(struct timeval *ret_time)
 	}
 }
 
+/**
+ * @brief Get the startup time of the server.
+ *
+ * @param[out] ret_time A pointer to a timveal structure to set the startup
+ *                      time.
+ */
+void get_startup_time(struct timeval *ret_time)
+{
+	ret_time->tv_sec = start_time_hires.tv_sec;
+	ret_time->tv_usec = start_time_hires.tv_usec;
+}
+
+
 /****************************************************************************
  Convert a NTTIME structure to a time_t.
  It's originally in "100ns units".

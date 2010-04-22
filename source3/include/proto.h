@@ -1087,6 +1087,7 @@ time_t cli_make_unix_date2(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr);
 void TimeInit(void);
 void get_process_uptime(struct timeval *ret_time);
+void get_startup_time(struct timeval *ret_time);
 time_t nt_time_to_unix_abs(const NTTIME *nt);
 time_t uint64s_nt_time_to_unix_abs(const uint64_t *src);
 void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts);
