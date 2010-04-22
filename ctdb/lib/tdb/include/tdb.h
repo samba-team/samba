@@ -90,85 +90,84 @@ struct tdb_logging_context {
         void *log_private;
 };
 
-struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
+_PUBLIC_ struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
-struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
+_PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 const struct tdb_logging_context *log_ctx,
 			 tdb_hash_func hash_fn);
-void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
+_PUBLIC_ void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
 
-int tdb_reopen(struct tdb_context *tdb);
-int tdb_reopen_all(int parent_longlived);
-void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log_ctx);
-enum TDB_ERROR tdb_error(struct tdb_context *tdb);
-const char *tdb_errorstr(struct tdb_context *tdb);
-TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
-int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
-		     int (*parser)(TDB_DATA key, TDB_DATA data,
-				   void *private_data),
-		     void *private_data);
-int tdb_delete(struct tdb_context *tdb, TDB_DATA key);
-int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
-int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);
-int tdb_close(struct tdb_context *tdb);
-TDB_DATA tdb_firstkey(struct tdb_context *tdb);
-TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA key);
-int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *);
-int tdb_traverse_read(struct tdb_context *tdb, tdb_traverse_func fn, void *);
-int tdb_exists(struct tdb_context *tdb, TDB_DATA key);
-int tdb_lockall(struct tdb_context *tdb);
-int tdb_lockall_nonblock(struct tdb_context *tdb);
-int tdb_unlockall(struct tdb_context *tdb);
-int tdb_lockall_read(struct tdb_context *tdb);
-int tdb_lockall_read_nonblock(struct tdb_context *tdb);
-int tdb_unlockall_read(struct tdb_context *tdb);
-int tdb_lockall_mark(struct tdb_context *tdb);
-int tdb_lockall_unmark(struct tdb_context *tdb);
-const char *tdb_name(struct tdb_context *tdb);
-int tdb_fd(struct tdb_context *tdb);
-tdb_log_func tdb_log_fn(struct tdb_context *tdb);
-void *tdb_get_logging_private(struct tdb_context *tdb);
-int tdb_transaction_start(struct tdb_context *tdb);
-int tdb_transaction_start_nonblock(struct tdb_context *tdb);
-int tdb_transaction_prepare_commit(struct tdb_context *tdb);
-int tdb_transaction_commit(struct tdb_context *tdb);
-int tdb_transaction_cancel(struct tdb_context *tdb);
-int tdb_transaction_recover(struct tdb_context *tdb);
-int tdb_get_seqnum(struct tdb_context *tdb);
-int tdb_hash_size(struct tdb_context *tdb);
-size_t tdb_map_size(struct tdb_context *tdb);
-int tdb_get_flags(struct tdb_context *tdb);
-void tdb_add_flags(struct tdb_context *tdb, unsigned flag);
-void tdb_remove_flags(struct tdb_context *tdb, unsigned flag);
-void tdb_enable_seqnum(struct tdb_context *tdb);
-void tdb_increment_seqnum_nonblock(struct tdb_context *tdb);
-int tdb_check(struct tdb_context *tdb,
+_PUBLIC_ int tdb_reopen(struct tdb_context *tdb);
+_PUBLIC_ int tdb_reopen_all(int parent_longlived);
+_PUBLIC_ void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log_ctx);
+_PUBLIC_ enum TDB_ERROR tdb_error(struct tdb_context *tdb);
+_PUBLIC_ const char *tdb_errorstr(struct tdb_context *tdb);
+_PUBLIC_ TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
+			      int (*parser)(TDB_DATA key, TDB_DATA data,
+					    void *private_data),
+			      void *private_data);
+_PUBLIC_ int tdb_delete(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
+_PUBLIC_ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);
+_PUBLIC_ int tdb_close(struct tdb_context *tdb);
+_PUBLIC_ TDB_DATA tdb_firstkey(struct tdb_context *tdb);
+_PUBLIC_ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *);
+_PUBLIC_ int tdb_traverse_read(struct tdb_context *tdb, tdb_traverse_func fn, void *);
+_PUBLIC_ int tdb_exists(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_lockall(struct tdb_context *tdb);
+_PUBLIC_ int tdb_lockall_nonblock(struct tdb_context *tdb);
+_PUBLIC_ int tdb_unlockall(struct tdb_context *tdb);
+_PUBLIC_ int tdb_lockall_read(struct tdb_context *tdb);
+_PUBLIC_ int tdb_lockall_read_nonblock(struct tdb_context *tdb);
+_PUBLIC_ int tdb_unlockall_read(struct tdb_context *tdb);
+_PUBLIC_ int tdb_lockall_mark(struct tdb_context *tdb);
+_PUBLIC_ int tdb_lockall_unmark(struct tdb_context *tdb);
+_PUBLIC_ const char *tdb_name(struct tdb_context *tdb);
+_PUBLIC_ int tdb_fd(struct tdb_context *tdb);
+_PUBLIC_ tdb_log_func tdb_log_fn(struct tdb_context *tdb);
+_PUBLIC_ void *tdb_get_logging_private(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_start(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_start_nonblock(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_prepare_commit(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_commit(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_cancel(struct tdb_context *tdb);
+_PUBLIC_ int tdb_get_seqnum(struct tdb_context *tdb);
+_PUBLIC_ int tdb_hash_size(struct tdb_context *tdb);
+_PUBLIC_ size_t tdb_map_size(struct tdb_context *tdb);
+_PUBLIC_ int tdb_get_flags(struct tdb_context *tdb);
+_PUBLIC_ void tdb_add_flags(struct tdb_context *tdb, unsigned flag);
+_PUBLIC_ void tdb_remove_flags(struct tdb_context *tdb, unsigned flag);
+_PUBLIC_ void tdb_enable_seqnum(struct tdb_context *tdb);
+_PUBLIC_ void tdb_increment_seqnum_nonblock(struct tdb_context *tdb);
+_PUBLIC_ int tdb_check(struct tdb_context *tdb,
 	      int (*check)(TDB_DATA key, TDB_DATA data, void *private_data),
 	      void *private_data);
 
 /* Low level locking functions: use with care */
-int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);
-int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key);
-int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key);
-int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
-int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
-int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key);
-int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
 
-void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr);
+_PUBLIC_ void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr);
 
 /* wipe and repack */
-int tdb_wipe_all(struct tdb_context *tdb);
-int tdb_repack(struct tdb_context *tdb);
+_PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb);
+_PUBLIC_ int tdb_repack(struct tdb_context *tdb);
 
 /* Debug functions. Not used in production. */
-void tdb_dump_all(struct tdb_context *tdb);
-int tdb_printfreelist(struct tdb_context *tdb);
-int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
-int tdb_freelist_size(struct tdb_context *tdb);
+_PUBLIC_ void tdb_dump_all(struct tdb_context *tdb);
+_PUBLIC_ int tdb_printfreelist(struct tdb_context *tdb);
+_PUBLIC_ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
+_PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb);
 
-extern TDB_DATA tdb_null;
+_PUBLIC_ extern TDB_DATA tdb_null;
 
 #ifdef  __cplusplus
 }
