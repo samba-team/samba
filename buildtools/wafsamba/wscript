@@ -2,10 +2,19 @@
 
 # this is a base set of waf rules that everything else pulls in first
 
-import sys, wafsamba
+import sys, wafsamba, Configure
 import Options, os, preproc
 from samba_utils import *
 from optparse import SUPPRESS_HELP
+
+# this forces configure to be re-run if any of the configure
+# sections of the build scripts change. We have to check
+# for this in sys.argv as options have not yet been parsed when
+# we need to set this. This is off by default until some issues
+# are resolved related to WAFCACHE. It will need a lot of testing
+# before it is enabled by default.
+if '--enable-auto-reconfigure' in sys.argv:
+    Configure.autoconfig = True
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
@@ -59,6 +68,9 @@ def set_options(opt):
     gr.add_option('-C',
                    help='enable configure cacheing',
                    action='store_true', dest='enable_configure_cache')
+    gr.add_option('--enable-auto-reconfigure',
+                   help='enable automatic reconfigure on build',
+                   action='store_true', dest='enable_auto_reconfigure')
     gr.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
