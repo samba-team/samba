@@ -92,7 +92,7 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 		size -= written;
 		written = write(tdb->fd, newdb+written, size);
 		if (written == size) {
-		ret = 0;
+			ret = 0;
 		} else if (written >= 0) {
 			/* a second incomplete write - we give up.
 			 * guessing the errno... */
