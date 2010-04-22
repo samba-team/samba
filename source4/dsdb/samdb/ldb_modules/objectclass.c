@@ -378,27 +378,6 @@ static int fix_check_attributes(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-/*
- * return true if msg carries an attributeSchema that is intended to be RODC
- * filtered but is also a system-critical attribute.
- */
-static bool check_rodc_critical_attribute(struct ldb_message *msg)
-{
-	uint32_t schemaFlagsEx, searchFlags, rodc_filtered_flags;
-
-	schemaFlagsEx = ldb_msg_find_attr_as_uint(msg, "schemaFlagsEx", 0);
-	searchFlags = ldb_msg_find_attr_as_uint(msg, "searchFlags", 0);
-	rodc_filtered_flags = (SEARCH_FLAG_RODC_ATTRIBUTE | SEARCH_FLAG_CONFIDENTIAL);
-
-	if ((schemaFlagsEx & SCHEMA_FLAG_ATTR_IS_CRITICAL) &&
-		((searchFlags & rodc_filtered_flags) == rodc_filtered_flags)) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-
 static int objectclass_do_add(struct oc_context *ac);
 
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
@@ -423,12 +402,6 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_msg_find_element(req->op.add.message, 
 				 "objectClass") == NULL) {
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
-	}
-
-	/* do not allow to mark an attributeSchema as RODC filtered if it
-	 * is system-critical */
-	if (check_rodc_critical_attribute(req->op.add.message)) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	ac = oc_init_context(module, req);
@@ -746,12 +719,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	if (req->op.mod.message->num_elements == 0) {
 		ldb_set_errstring(ldb, "objectclass: modify message must have "
 				       "elements/attributes!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	/* do not allow to mark an attributeSchema as RODC filtered if it
-	 * is system-critical */
-	if (check_rodc_critical_attribute(req->op.mod.message)) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 

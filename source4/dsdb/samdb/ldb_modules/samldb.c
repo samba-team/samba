@@ -826,6 +826,26 @@ static int samldb_add_entry(struct samldb_ctx *ac)
 	return ldb_next_request(ac->module, req);
 }
 
+/*
+ * return true if msg carries an attributeSchema that is intended to be RODC
+ * filtered but is also a system-critical attribute.
+ */
+static bool check_rodc_critical_attribute(struct ldb_message *msg)
+{
+	uint32_t schemaFlagsEx, searchFlags, rodc_filtered_flags;
+
+	schemaFlagsEx = ldb_msg_find_attr_as_uint(msg, "schemaFlagsEx", 0);
+	searchFlags = ldb_msg_find_attr_as_uint(msg, "searchFlags", 0);
+	rodc_filtered_flags = (SEARCH_FLAG_RODC_ATTRIBUTE | SEARCH_FLAG_CONFIDENTIAL);
+
+	if ((schemaFlagsEx & SCHEMA_FLAG_ATTR_IS_CRITICAL) &&
+		((searchFlags & rodc_filtered_flags) == rodc_filtered_flags)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 
 static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 {
@@ -885,6 +905,15 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 						  "rdnAttId", "cn");
 		if (ret != LDB_SUCCESS) return ret;
 
+		/* do not allow to mark an attributeSchema as RODC filtered if it
+		 * is system-critical */
+		if (check_rodc_critical_attribute(ac->msg)) {
+			ldb_asprintf_errstring(ldb, "Refusing schema add of %s - cannot combine critical class with RODC filtering",
+					       ldb_dn_get_linearized(ac->msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
 		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
 			/* the RDN has prefix "CN" */
@@ -930,6 +959,14 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 				ldb_oom(ldb);
 				return ret;
 			}
+		}
+
+		/* do not allow to mark an attributeSchema as RODC filtered if it
+		 * is system-critical */
+		if (check_rodc_critical_attribute(ac->msg)) {
+			ldb_asprintf_errstring(ldb, "Refusing schema add of %s - cannot combine critical attribute with RODC filtering",
+					       ldb_dn_get_linearized(ac->msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
