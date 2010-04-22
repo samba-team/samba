@@ -51,6 +51,7 @@ size_t ndr_size_spoolss_PrinterData(const union spoolss_PrinterData *r, uint32_t
 void ndr_print_spoolss_security_descriptor(struct ndr_print *ndr, const char *name, const struct security_descriptor *r);
 enum ndr_err_code ndr_pull_spoolss_security_descriptor(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor *r);
 enum ndr_err_code ndr_push_spoolss_security_descriptor(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor *r);
+_PUBLIC_ void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, const struct spoolss_Time *r);
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)

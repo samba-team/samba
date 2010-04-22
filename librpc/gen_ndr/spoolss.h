@@ -126,7 +126,7 @@ struct spoolss_Time {
 	uint16_t minute;
 	uint16_t second;
 	uint16_t millisecond;
-}/* [gensize] */;
+}/* [noprint,gensize] */;
 
 struct spoolss_TimeCtr {
 	uint32_t size;/* [value(ndr_size_spoolss_Time(time,ndr->iconv_convenience,ndr->flags))] */
