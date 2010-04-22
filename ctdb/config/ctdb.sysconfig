@@ -112,14 +112,19 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # defaults to tcp
 # CTDB_TRANSPORT="tcp"
 
-# When set, this variable makes ctdb monitor the amount of free memory
-# in the system (the second number in the buffers/cache output from free -m).
-# If the amount of free memory drops below this treshold the node will become
-# unhealthy and ctdb and all managed services will be shutdown.
+# These setting allow monitoring for low/out-out of memory conditions.
+#
+# If set, once available memory drops below CTDB_MONITOR_FREE_MEMORY_WARN
+# ctdb will start logging messages that memory is low, but will not
+# take any further action.
+#
+# If the amount of free memory drops below CTDB_MONITOR_FREE_MEMORY 
+# ctdb will fail all service over to a different node and finally shutdown.
 # Once this occurs, the administrator needs to find the reason for the OOM
 # situation, rectify it and restart ctdb with "service ctdb start"
 # The unit is MByte
-# CTDB_MONITOR_FREE_MEMORY=100
+# CTDB_MONITOR_FREE_MEMORY_WARN=100
+# CTDB_MONITOR_FREE_MEMORY=10
 
 # When set to yes, the CTDB node will start in DISABLED mode and not host
 # any public ip addresses. The administrator needs to explicitely enable

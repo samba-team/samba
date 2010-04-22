@@ -44,6 +44,14 @@ case "$1" in
 	    fi
 	}
 
+	# warn when we get low on memory
+	[ -z "$CTDB_MONITOR_FREE_MEMORY_WARN" ] || {
+		FREE_MEM=`free -m | grep "buffers/cache" | while read A B C D ;do /bin/echo -n $D ; done`
+		[ `expr "$FREE_MEM" "<" "$CTDB_MONITOR_FREE_MEMORY_WARN"` != "0" ] && {
+			echo "Running low on memory. Free:$FREE_MEM while CTDB treshold is $CTDB_MONITOR_FREE_MEMORY_WARN"
+		}
+	}
+
 	# monitor that we are not running out of memory
 	[ -z "$CTDB_MONITOR_FREE_MEMORY" ] || {
 		FREE_MEM=`free -m | grep "buffers/cache" | while read A B C D ;do /bin/echo -n $D ; done`
