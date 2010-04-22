@@ -32,6 +32,11 @@ extern "C" {
 
 #include "signal.h"
 
+/* Samba sets hidden attribute when building libraries: we don't. */
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
+
 /* flags to tdb_store() */
 #define TDB_REPLACE 1		/* Unused */
 #define TDB_INSERT 2 		/* Don't overwrite an existing entry */
