@@ -27,6 +27,7 @@
 
 from base64 import b64encode
 import os
+import re
 import pwd
 import grp
 import logging
@@ -153,6 +154,7 @@ def get_domain_descriptor(domain_sid):
     return ndr_pack(sec)
 
 DEFAULTSITE = "Default-First-Site-Name"
+LAST_PROVISION_USN_ATTRIBUTE = "lastProvisionUSN"
 
 class ProvisionPaths(object):
 
@@ -189,7 +191,94 @@ class ProvisionNames(object):
         self.hostname = None
         self.sitename = None
         self.smbconf = None
+
+def updateProvisionUSN(samdb, low, high, replace = 0):
+    """Update the field provisionUSN in sam.ldb
+    This field is used to track range of USN modified by provision and 
+    upgradeprovision.
+    This value is used afterward by next provision to figure out if 
+    the field have been modified since last provision.
+
+    :param samdb: An LDB object connect to sam.ldb
+    :param low: The lowest USN modified by this upgrade
+    :param high: The highest USN modified by this upgrade
+    :param replace: A boolean indicating if the range should replace any 
+                    existing one or appended (default)"""
+
+    tab = []
+    if not replace:
+        entry = samdb.search(expression="(&(dn=@PROVISION)(%s=*))" % \
+                                LAST_PROVISION_USN_ATTRIBUTE, base="", 
+                                scope=ldb.SCOPE_SUBTREE,
+                                attrs=[LAST_PROVISION_USN_ATTRIBUTE,"dn"])
+        for e in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
+            tab.append(str(e))
+
+    tab.append("%s-%s"%(str(low), str(high)))
+    delta = ldb.Message()
+    delta.dn = ldb.Dn(samdb,"@PROVISION")
+    delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    LAST_PROVISION_USN_ATTRIBUTE)
+    samdb.modify(delta)
+
+def setProvisionUSN(samdb, low, high):
+    """Set the field provisionUSN in sam.ldb
+    This field is used to track range of USN modified by provision and
+    upgradeprovision.
+    This value is used afterward by next provision to figure out if
+    the field have been modified since last provision.
+
+    :param samdb: An LDB object connect to sam.ldb
+    :param low: The lowest USN modified by this upgrade
+    :param high: The highest USN modified by this upgrade"""
+    tab = []
+    tab.append("%s-%s"%(str(low), str(high)))
+    delta = ldb.Message()
+    delta.dn = ldb.Dn(samdb,"@PROVISION")
+    delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
+                                                  ldb.FLAG_MOD_ADD,
+                                                  LAST_PROVISION_USN_ATTRIBUTE)
+    samdb.add(delta)
+
+def get_max_usn(samdb,basedn):
+    """ This function return the biggest USN present in the provision
+
+    :param samdb: A LDB object pointing to the sam.ldb
+    :param basedn: A string containing the base DN of the provision
+                    (ie. DC=foo, DC=bar)
+    :return: The biggest USN in the provision"""
+
+    res = samdb.search(expression="objectClass=*",base=basedn,
+                         scope=ldb.SCOPE_SUBTREE,attrs=["uSNChanged"],
+                         controls=["search_options:1:2",
+                                   "server_sort:1:1:uSNChanged",
+                                   "paged_results:1:1"])
+    return res[0]["uSNChanged"]
     
+def getLastProvisionUSN(sam):
+    """Get the lastest USN modified by a provision or an upgradeprovision
+
+    :param sam: An LDB object pointing to the sam.ldb
+    :return an integer corresponding to the highest USN modified by 
+            (upgrade)provision, 0 is this value is unknown"""
+
+    entry = sam.search(expression="(&(dn=@PROVISION)(%s=*))" % \
+                        LAST_PROVISION_USN_ATTRIBUTE,
+                        base="", scope=ldb.SCOPE_SUBTREE,
+                        attrs=[LAST_PROVISION_USN_ATTRIBUTE])
+    if len(entry):
+        range = []
+        idx = 0
+        p = re.compile(r'-')
+        for r in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
+            tab = p.split(str(r))
+            range.append(tab[0])
+            range.append(tab[1])
+            idx = idx + 1
+        return range
+    else:
+        return None
 
 class ProvisionResult(object):
 
@@ -1397,6 +1486,13 @@ def provision(setup_dir, logger, session_info,
                              realm=names.realm)
             logger.info("A Kerberos configuration suitable for Samba 4 has been "
                     "generated at %s", paths.krb5conf)
+
+        lastProvisionUSNs = getLastProvisionUSN(samdb)
+        maxUSN = get_max_usn(samdb, str(names.rootdn))
+        if lastProvisionUSNs != None:
+            updateProvisionUSN(samdb, 0, maxUSN, 1)
+        else:
+            setProvisionUSN(samdb, 0, maxUSN)
 
     if serverrole == "domain controller":
         create_dns_update_list(lp, logger, paths, setup_path)
