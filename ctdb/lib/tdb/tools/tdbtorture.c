@@ -355,12 +355,12 @@ int main(int argc, char * const *argv)
 
 		pid = waitpid(-1, &status, kill_random ? WNOHANG : 0);
 		if (pid == 0) {
-			struct timespec ts;
+			struct timeval tv;
 
 			/* Sleep for 1/10 second. */
-			ts.tv_sec = 0;
-			ts.tv_nsec = 100000000;
-			nanosleep(&ts, NULL);
+			tv.tv_sec = 0;
+			tv.tv_usec = 100000;
+			select(0, NULL, NULL, NULL, &tv);
 
 			/* Kill someone. */
 			kill(pids[random() % num_procs], SIGUSR1);
