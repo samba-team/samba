@@ -582,7 +582,6 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
 	struct ldb_val info_val_default;
-	struct dsdb_schema_info *schema_info;
 
 
 	mem_ctx = talloc_new(ldb);
@@ -623,9 +622,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 
 	info_val = ldb_msg_find_ldb_val(msg, "schemaInfo");
 	if (!info_val) {
-		status = dsdb_schema_info_create(ldb, false, mem_ctx, &schema_info);
-		W_ERROR_NOT_OK_GOTO(status, failed);
-		status = dsdb_blob_from_schema_info(schema_info, mem_ctx, &info_val_default);
+		status = dsdb_schema_info_blob_new(mem_ctx, &info_val_default);
 		W_ERROR_NOT_OK_GOTO(status, failed);
 		info_val = &info_val_default;
 	}

@@ -734,20 +734,10 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	}
 	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
 	if (!info_val) {
-		struct dsdb_schema_info *schema_info;
-
-		status = dsdb_schema_info_create(ldb, false, mem_ctx, &schema_info);
+		status = dsdb_schema_info_blob_new(mem_ctx, &info_val_default);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx,
-			                                "schema_fsmo_init: dsdb_schema_info_create() failed - %s",
-			                                win_errstr(status));
-			DEBUG(0,(__location__ ": %s\n", *error_string));
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		status = dsdb_blob_from_schema_info(schema_info, mem_ctx, &info_val_default);
-		if (!W_ERROR_IS_OK(status)) {
-			*error_string = talloc_asprintf(mem_ctx,
-			                                "schema_fsmo_init: dsdb_blob_from_schema_info() failed - %s",
+			                                "schema_fsmo_init: dsdb_schema_info_blob_new() failed - %s",
 			                                win_errstr(status));
 			DEBUG(0,(__location__ ": %s\n", *error_string));
 			return LDB_ERR_OPERATIONS_ERROR;

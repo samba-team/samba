@@ -30,6 +30,28 @@
 
 
 /**
+ * Creates and initializes new dsdb_schema_info blob value.
+ * Initial schemaInfo values is with:
+ *   revision = 0
+ *   invocationId = GUID_ZERO
+ */
+WERROR dsdb_schema_info_blob_new(TALLOC_CTX *mem_ctx, DATA_BLOB *_schema_info_blob)
+{
+	DATA_BLOB blob;
+
+	blob = data_blob_talloc_zero(mem_ctx, 21);
+	W_ERROR_HAVE_NO_MEMORY(blob.data);
+
+	/* Set the schemaInfo marker to 0xFF */
+	blob.data[0] = 0xFF;
+
+	*_schema_info_blob = blob;
+
+	return WERR_OK;
+}
+
+
+/**
  * Parse schemaInfo structure from a data_blob
  * (DATA_BLOB or ldb_val).
  * Suitable for parsing blobs that comes from
