@@ -62,18 +62,26 @@ class SchemaInfoTestCase(samba.tests.RpcInterfaceTestCase):
         # get DC invocation_id
         self.invocation_id = GUID(ldb.get_invocation_id())
 
+
     def tearDown(self):
         super(SchemaInfoTestCase, self).tearDown()
 
 
     def _getSchemaInfo(self):
-        schema_info_data = ldb.searchone(attribute="schemaInfo",
-                                         basedn=self.schema_dn,
-                                         expression="(objectClass=*)",
-                                         scope=SCOPE_BASE)
-        self.assertEqual(len(schema_info_data), 21)
-        schema_info = ndr_unpack(schemaInfoBlob, schema_info_data)
-        self.assertEqual(schema_info.marker, 0xFF)
+        try:
+            schema_info_data = ldb.searchone(attribute="schemaInfo",
+                                             basedn=self.schema_dn,
+                                             expression="(objectClass=*)",
+                                             scope=SCOPE_BASE)
+            self.assertEqual(len(schema_info_data), 21)
+            schema_info = ndr_unpack(schemaInfoBlob, schema_info_data)
+            self.assertEqual(schema_info.marker, 0xFF)
+        except KeyError:
+            # create default schemaInfo if
+            # attribute value is not created yet
+            schema_info = schemaInfoBlob()
+            schema_info.revision = 0
+            schema_info.invocation_id = self.invocation_id
         return schema_info
 
     def _checkSchemaInfo(self, schi_before, schi_after):
