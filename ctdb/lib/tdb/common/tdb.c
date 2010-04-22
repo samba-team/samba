@@ -6,11 +6,11 @@
    Copyright (C) Andrew Tridgell              1999-2005
    Copyright (C) Paul `Rusty' Russell		   2000
    Copyright (C) Jeremy Allison			   2000-2003
-   
+
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -36,7 +36,7 @@ TDB_DATA tdb_null;
 void tdb_increment_seqnum_nonblock(struct tdb_context *tdb)
 {
 	tdb_off_t seqnum=0;
-	
+
 	if (!(tdb->flags & TDB_SEQNUM)) {
 		return;
 	}
@@ -80,7 +80,7 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 			struct tdb_record *r)
 {
 	tdb_off_t rec_ptr;
-	
+
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
 		return 0;
@@ -154,7 +154,6 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 			free(data.dptr);
 		}
 	}
-	 
 
 	/* must be long enough key, data and tailer */
 	if (rec.rec_len < key.dsize + dbuf.dsize + sizeof(tdb_off_t)) {
@@ -171,7 +170,7 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 		rec.data_len = dbuf.dsize;
 		return tdb_rec_write(tdb, rec_ptr, &rec);
 	}
- 
+
 	return 0;
 }
 
@@ -264,7 +263,7 @@ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 static int tdb_exists_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 {
 	struct tdb_record rec;
-	
+
 	if (tdb_find_lock_hash(tdb, key, hash, F_RDLCK, &rec) == 0)
 		return 0;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
@@ -322,7 +321,7 @@ static int tdb_count_dead(struct tdb_context *tdb, uint32_t hash)
 	int res = 0;
 	tdb_off_t rec_ptr;
 	struct tdb_record rec;
-	
+
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
 		return 0;
@@ -351,7 +350,7 @@ static int tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
 		return -1;
 	}
-	
+
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
 		goto fail;
@@ -447,7 +446,7 @@ static tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 			       struct tdb_record *r, tdb_len_t length)
 {
 	tdb_off_t rec_ptr;
-	
+
 	/* read in the hash top */
 	if (tdb_ofs_read(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1)
 		return 0;
@@ -662,7 +661,7 @@ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 
 	ret = _tdb_store(tdb, key, dbuf, 0, hash);
 	tdb_trace_2rec_retrec(tdb, "tdb_append", key, new_dbuf, dbuf);
-	
+
 failed:
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	SAFE_FREE(dbuf.dptr);
