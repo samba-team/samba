@@ -271,13 +271,6 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	struct drsuapi_DsGetNCChanges *r;
 	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 	struct tevent_req *subreq;
-	int ret;
-
-	/* check that the client isn't lying about being a RODC */
-	ret = dsdb_validate_client_flags(service->samdb, rf1);
-	if (ret != LDB_SUCCESS) {
-		return;
-	}
 
 	if ((rf1->replica_flags & DRSUAPI_DRS_WRIT_REP) == 0) {
 		return;
