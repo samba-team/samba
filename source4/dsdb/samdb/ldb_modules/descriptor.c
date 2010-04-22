@@ -64,7 +64,6 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_dn *root_base_dn = ldb_get_root_basedn(ldb);
-	struct ldb_dn *default_base_dn = ldb_get_default_basedn(ldb);
 	struct ldb_dn *schema_base_dn = ldb_get_schema_basedn(ldb);
 	struct ldb_dn *config_base_dn = ldb_get_config_basedn(ldb);
 	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
