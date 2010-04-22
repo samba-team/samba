@@ -2309,8 +2309,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				 win_errstr(err_data->v1.status)));
 
 			if (!err_data->v1.info) {
-				DEBUG(0, ("DsAddEntry (R3): no error info returned!\n",
-					  err_data->v1.info));
+				DEBUG(0, ("DsAddEntry (R3): no error info returned!\n"));
 				composite_error(c, werror_to_ntstatus(status));
 				return;
 			}
@@ -2345,7 +2344,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				/* Dump Referral errors */
 				ref_err = &err_data->v1.info->referral_err;
 				DEBUGADD(0,(" Referral Error: extended_err = %s\n",
-					    win_errstr(name_err->extended_err)));
+					    win_errstr(ref_err->extended_err)));
 				ref_li = &ref_err->refer;
 				for (; ref_li; ref_li = ref_li->next) {
 					struct drsuapi_DsaAddressListItem_V1 *addr;
