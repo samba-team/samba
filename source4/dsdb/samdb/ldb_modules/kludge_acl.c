@@ -56,7 +56,7 @@ static enum security_user_level what_is_user(struct ldb_module *module)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-	return security_session_user_level(session_info);
+	return security_session_user_level(session_info, NULL);
 }
 
 static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module) 

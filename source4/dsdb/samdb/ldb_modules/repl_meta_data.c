@@ -2402,7 +2402,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	if (next_deletion_state == OBJECT_REMOVED) {
 		struct auth_session_info *session_info =
 				(struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-		if (security_session_user_level(session_info) != SECURITY_SYSTEM) {
+		if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
 			ldb_asprintf_errstring(ldb, "Refusing to delete deleted object %s",
 					ldb_dn_get_linearized(old_msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;

@@ -65,7 +65,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	W_ERROR_HAVE_NO_MEMORY(b_state);
 
 	/* if this is a DC connecting, give them system level access */
-	werr = drs_security_level_check(dce_call, NULL);
+	werr = drs_security_level_check(dce_call, NULL, SECURITY_DOMAIN_CONTROLLER);
 	if (W_ERROR_IS_OK(werr)) {
 		DEBUG(3,(__location__ ": doing DsBind with system_session\n"));
 		auth_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
@@ -247,7 +247,7 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 {
 	WERROR status;
 
-	status = drs_security_level_check(dce_call, "DsReplicaSync");
+	status = drs_security_level_check(dce_call, "DsReplicaSync", SECURITY_DOMAIN_CONTROLLER);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
@@ -401,7 +401,7 @@ static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call
 
 	*r->out.level_out = 1;
 
-	status = drs_security_level_check(dce_call, "DsRemoveDSServer");
+	status = drs_security_level_check(dce_call, "DsRemoveDSServer", SECURITY_DOMAIN_CONTROLLER);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
@@ -726,7 +726,7 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 				  struct drsuapi_DsExecuteKCC *r)
 {
 	WERROR status;
-	status = drs_security_level_check(dce_call, "DsExecuteKCC");
+	status = drs_security_level_check(dce_call, "DsExecuteKCC", SECURITY_DOMAIN_CONTROLLER);
 
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
@@ -748,7 +748,7 @@ static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call
 
 	if (!lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
 			 "drs", "disable_sec_check", false)) {
-		level = security_session_user_level(dce_call->conn->auth_state.session_info);
+		level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
 		if (level < SECURITY_ADMINISTRATOR) {
 			DEBUG(1,(__location__ ": Administrator access required for DsReplicaGetInfo\n"));
 			security_token_debug(2, dce_call->conn->auth_state.session_info->security_token);

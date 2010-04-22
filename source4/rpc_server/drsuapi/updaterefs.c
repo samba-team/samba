@@ -23,6 +23,8 @@
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "libcli/security/security.h"
+#include "auth/session.h"
 
 struct repsTo {
 	uint32_t count;
@@ -189,11 +191,13 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	struct drsuapi_bind_state *b_state;
 	struct drsuapi_DsReplicaUpdateRefsRequest1 *req;
 	WERROR werr;
+	int ret;
+	enum security_user_level security_level;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
-	werr = drs_security_level_check(dce_call, "DsReplicaUpdateRefs");
+	werr = drs_security_level_check(dce_call, "DsReplicaUpdateRefs", SECURITY_RO_DOMAIN_CONTROLLER);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -205,7 +209,20 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 
 	req = &r->in.req.req1;
 
+	security_level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
+	if (security_level < SECURITY_ADMINISTRATOR) {
+		/* check that they are using an invocationId that they own */
+		ret = dsdb_validate_invocation_id(b_state->sam_ctx,
+						  &req->dest_dsa_guid,
+						  dce_call->conn->auth_state.session_info->security_token->user_sid);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Refusing DsReplicaUpdateRefs for sid %s with GUID %s\n",
+				 dom_sid_string(mem_ctx,
+						dce_call->conn->auth_state.session_info->security_token->user_sid),
+				 GUID_string(mem_ctx, &req->dest_dsa_guid)));
+			return WERR_DS_DRA_ACCESS_DENIED;
+		}
+	}
+
 	return drsuapi_UpdateRefs(b_state, mem_ctx, req);
 }
-
-

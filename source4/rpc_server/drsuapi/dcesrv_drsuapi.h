@@ -61,8 +61,9 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    const char * const *attrs,
 				    const char *filter);
 
+enum security_user_level;
 WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
-				const char* call);
+				const char* call, enum security_user_level minimum_level);
 
 void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
 				      struct drsuapi_DsReplicaMetaData *meta_data);

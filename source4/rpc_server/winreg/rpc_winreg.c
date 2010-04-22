@@ -123,7 +123,7 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 
 	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -186,7 +186,7 @@ static WERROR dcesrv_winreg_DeleteKey(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -213,7 +213,7 @@ static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -351,7 +351,7 @@ static WERROR dcesrv_winreg_FlushKey(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -413,7 +413,7 @@ static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.parent_handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -454,7 +454,7 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -505,7 +505,7 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -613,7 +613,7 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	key = h->data;
 
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:

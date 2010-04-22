@@ -180,7 +180,7 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		struct lsa_secret_state *secret_state = h->data;
 
 		/* Ensure user is permitted to delete this... */
-		switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+		switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 		{
 		case SECURITY_SYSTEM:
 		case SECURITY_ADMINISTRATOR:
@@ -2577,7 +2577,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	struct lsa_EnumAccountRights r2;
 	char *dnstr;
 
-	if (security_session_user_level(dce_call->conn->auth_state.session_info) < 
+	if (security_session_user_level(dce_call->conn->auth_state.session_info, NULL) <
 	    SECURITY_ADMINISTRATOR) {
 		DEBUG(0,("lsa_AddRemoveAccount refused for supplied security token\n"));
 		return NT_STATUS_ACCESS_DENIED;
@@ -2870,7 +2870,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 	ZERO_STRUCTP(r->out.sec_handle);
 	
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -3019,7 +3019,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
@@ -3299,7 +3299,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 	DCESRV_PULL_HANDLE(h, r->in.sec_handle, LSA_HANDLE_SECRET);
 
 	/* Ensure user is permitted to read this... */
-	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info, NULL))
 	{
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:

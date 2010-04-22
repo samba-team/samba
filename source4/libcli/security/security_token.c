@@ -147,7 +147,8 @@ bool security_token_has_enterprise_dcs(const struct security_token *token)
 	return security_token_has_sid_string(token, SID_NT_ENTERPRISE_DCS);
 }
 
-enum security_user_level security_session_user_level(struct auth_session_info *session_info) 
+enum security_user_level security_session_user_level(struct auth_session_info *session_info,
+						     const struct dom_sid *domain_sid)
 {
 	if (!session_info) {
 		return SECURITY_ANONYMOUS;
@@ -163,6 +164,16 @@ enum security_user_level security_session_user_level(struct auth_session_info *s
 
 	if (security_token_has_builtin_administrators(session_info->security_token)) {
 		return SECURITY_ADMINISTRATOR;
+	}
+
+	if (domain_sid &&
+	    dom_sid_in_domain(domain_sid, session_info->security_token->user_sid)) {
+		uint32_t rid;
+		NTSTATUS status = dom_sid_split_rid(NULL, session_info->security_token->user_sid,
+						    NULL, &rid);
+		if (NT_STATUS_IS_OK(status) && rid == DOMAIN_RID_ENTERPRISE_READONLY_DCS) {
+			return SECURITY_RO_DOMAIN_CONTROLLER;
+		}
 	}
 
 	if (security_token_has_enterprise_dcs(session_info->security_token)) {

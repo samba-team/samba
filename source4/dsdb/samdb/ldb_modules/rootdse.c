@@ -884,7 +884,7 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 	int ret;
 	const char *guid_string;
 
-	if (security_session_user_level(session_info) != SECURITY_SYSTEM) {
+	if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
 		ldb_asprintf_errstring(ldb, "rootdse: Insufficient rights for enableoptionalfeature");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
