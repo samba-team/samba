@@ -1614,7 +1614,6 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		struct drsuapi_DsReplicaObjectIdentifier3 id3;
 		enum ndr_err_code ndr_err;
-		const DATA_BLOB *sid_blob;
 		struct ldb_dn *dn;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 		NTSTATUS status;
@@ -1636,17 +1635,11 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 			return ntstatus_to_werror(status);
 		}
 
-		sid_blob = ldb_dn_get_extended_component(dn, "SID");
-		if (sid_blob) {
-			
-			ndr_err = ndr_pull_struct_blob_all(sid_blob, 
-							   tmp_ctx, schema->iconv_convenience, &id3.sid,
-							   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				status = ndr_map_error2ntstatus(ndr_err);
-				talloc_free(tmp_ctx);
-				return ntstatus_to_werror(status);
-			}
+		status = dsdb_get_extended_dn_sid(dn, &id3.sid, "SID");
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			talloc_free(tmp_ctx);
+			return ntstatus_to_werror(status);
 		}
 
 		id3.dn = ldb_dn_get_linearized(dn);

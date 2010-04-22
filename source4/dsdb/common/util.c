@@ -2887,6 +2887,35 @@ NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const cha
 }
 
 /*
+  return a dom_sid from a extended DN structure
+ */
+NTSTATUS dsdb_get_extended_dn_sid(struct ldb_dn *dn, struct dom_sid *sid, const char *component_name)
+{
+	const struct ldb_val *sid_blob;
+	struct TALLOC_CTX *tmp_ctx;
+	enum ndr_err_code ndr_err;
+
+	sid_blob = ldb_dn_get_extended_component(dn, "SID");
+	if (!sid_blob) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	tmp_ctx = talloc_new(NULL);
+
+	ndr_err = ndr_pull_struct_blob_all(sid_blob, tmp_ctx, NULL, sid,
+					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+
+/*
   return RMD_FLAGS directly from a ldb_dn
   returns 0 if not found
  */
