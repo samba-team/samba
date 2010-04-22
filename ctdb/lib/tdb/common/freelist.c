@@ -6,11 +6,11 @@
    Copyright (C) Andrew Tridgell              1999-2005
    Copyright (C) Paul `Rusty' Russell		   2000
    Copyright (C) Jeremy Allison			   2000-2003
-   
+
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -98,7 +98,7 @@ static int update_tailer(struct tdb_context *tdb, tdb_off_t offset,
 }
 
 /* Add an element into the freelist. Merge adjacent records if
-   neccessary. */
+   necessary. */
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
 {
 	/* Allocation and tailer lock */
@@ -143,7 +143,7 @@ left:
 		tdb_off_t left = offset - sizeof(tdb_off_t);
 		struct tdb_record l;
 		tdb_off_t leftsize;
-		
+
 		/* Read in tailer and jump back to header */
 		if (tdb_ofs_read(tdb, left, &leftsize) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left offset read failed at %u\n", left));
@@ -334,7 +334,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 		    bestfit.rec_len < length * multiplier) {
 			break;
 		}
-		
+
 		/* this multiplier means we only extremely rarely
 		   search more than 50 or so records. At 50 records we
 		   accept records up to 11 times larger than what we

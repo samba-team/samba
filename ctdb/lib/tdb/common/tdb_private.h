@@ -4,11 +4,11 @@
    trivial database library - private includes
 
    Copyright (C) Andrew Tridgell              2005
-   
+
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -49,6 +49,7 @@ typedef uint32_t tdb_off_t;
 #define TDB_FREE_MAGIC (~TDB_MAGIC)
 #define TDB_DEAD_MAGIC (0xFEE1DEAD)
 #define TDB_RECOVERY_MAGIC (0xf53bc0e7U)
+#define TDB_RECOVERY_INVALID_MAGIC (0x0)
 #define TDB_ALIGNMENT 4
 #define DEFAULT_HASH_SIZE 131
 #define FREELIST_TOP (sizeof(struct tdb_header))
@@ -101,7 +102,7 @@ void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
 #endif /* !TDB_TRACE */
 
 /* lock offsets */
-#define GLOBAL_LOCK      0
+#define OPEN_LOCK        0
 #define ACTIVE_LOCK      4
 #define TRANSACTION_LOCK 8
 
@@ -150,7 +151,7 @@ struct tdb_header {
 };
 
 struct tdb_lock_type {
-	int list;
+	uint32_t off;
 	uint32_t count;
 	uint32_t ltype;
 };
@@ -162,6 +163,15 @@ struct tdb_traverse_lock {
 	int lock_rw;
 };
 
+enum tdb_lock_flags {
+	/* WAIT == F_SETLKW, NOWAIT == F_SETLK */
+	TDB_LOCK_NOWAIT = 0,
+	TDB_LOCK_WAIT = 1,
+	/* If set, don't log an error on failure. */
+	TDB_LOCK_PROBE = 2,
+	/* If set, don't actually lock at all. */
+	TDB_LOCK_MARK_ONLY = 4,
+};
 
 struct tdb_methods {
 	int (*tdb_read)(struct tdb_context *, tdb_off_t , void *, tdb_len_t , int );
@@ -169,7 +179,6 @@ struct tdb_methods {
 	void (*next_hash_chain)(struct tdb_context *, uint32_t *);
 	int (*tdb_oob)(struct tdb_context *, tdb_off_t , int );
 	int (*tdb_expand_file)(struct tdb_context *, tdb_off_t , tdb_off_t );
-	int (*tdb_brlock)(struct tdb_context *, tdb_off_t , int, int, int, size_t);
 };
 
 struct tdb_context {
@@ -180,7 +189,7 @@ struct tdb_context {
 	int read_only; /* opened read-only */
 	int traverse_read; /* read-only traversal */
 	int traverse_write; /* read-write traversal */
-	struct tdb_lock_type global_lock;
+	struct tdb_lock_type allrecord_lock; /* .offset == upgradable */
 	int num_lockrecs;
 	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
@@ -193,12 +202,10 @@ struct tdb_context {
 	struct tdb_logging_context log;
 	unsigned int (*hash_fn)(TDB_DATA *key);
 	int open_flags; /* flags used in the open - needed by reopen */
-	unsigned int num_locks; /* number of chain locks held */
 	const struct tdb_methods *methods;
 	struct tdb_transaction *transaction;
 	int page_size;
 	int max_dead_records;
-	int transaction_lock_count;
 #ifdef TDB_TRACE
 	int tracefd;
 #endif
@@ -213,11 +220,25 @@ int tdb_munmap(struct tdb_context *tdb);
 void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
+int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
+		  enum tdb_lock_flags flags);
+int tdb_nest_unlock(struct tdb_context *tdb, uint32_t offset, int ltype,
+		    bool mark_lock);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
-int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe, size_t len);
-int tdb_transaction_lock(struct tdb_context *tdb, int ltype);
-int tdb_transaction_unlock(struct tdb_context *tdb);
-int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len);
+int tdb_brlock(struct tdb_context *tdb,
+	       int rw_type, tdb_off_t offset, size_t len,
+	       enum tdb_lock_flags flags);
+int tdb_brunlock(struct tdb_context *tdb,
+		 int rw_type, tdb_off_t offset, size_t len);
+bool tdb_have_extra_locks(struct tdb_context *tdb);
+void tdb_release_transaction_locks(struct tdb_context *tdb);
+int tdb_transaction_lock(struct tdb_context *tdb, int ltype,
+			 enum tdb_lock_flags lockflags);
+int tdb_transaction_unlock(struct tdb_context *tdb, int ltype);
+int tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
+		       enum tdb_lock_flags flags, bool upgradable);
+int tdb_allrecord_unlock(struct tdb_context *tdb, int ltype, bool mark_lock);
+int tdb_allrecord_upgrade(struct tdb_context *tdb);
 int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
@@ -229,7 +250,7 @@ int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off);
-int _tdb_transaction_cancel(struct tdb_context *tdb);
+bool tdb_needs_recovery(struct tdb_context *tdb);
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec);
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec);
 int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct tdb_record *rec);
@@ -246,4 +267,4 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
 int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off,
 		      struct tdb_record *rec);
 
-
+int tdb_transaction_recover(struct tdb_context *tdb);

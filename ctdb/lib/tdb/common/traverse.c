@@ -6,11 +6,11 @@
    Copyright (C) Andrew Tridgell              1999-2005
    Copyright (C) Paul `Rusty' Russell		   2000
    Copyright (C) Jeremy Allison			   2000-2003
-   
+
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -44,7 +44,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 			   common for the use of tdb with ldb, where large
 			   hashes are used. In that case we spend most of our
 			   time in tdb_brlock(), locking empty hash chains.
-			   
+
 			   To avoid this, we do an unlocked pre-check to see
 			   if the hash chain is empty before starting to look
 			   inside it. If it is empty then we can avoid that
@@ -52,7 +52,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 			   the value we get back, as we read it without a
 			   lock, so instead we get the lock and re-fetch the
 			   value below.
-			   
+
 			   Notice that not doing this optimisation on the
 			   first hash chain is critical. We must guarantee
 			   that we have done at least one fcntl lock at the
@@ -62,7 +62,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 			   could possibly miss those with this trick, but we
 			   could miss them anyway without this trick, so the
 			   semantics don't change.
-			   
+
 			   With a non-indexed ldb search this trick gains us a
 			   factor of around 80 in speed on a linux 2.6.x
 			   system (testing using ldbtest).
@@ -220,7 +220,7 @@ int tdb_traverse_read(struct tdb_context *tdb,
 
 	/* we need to get a read lock on the transaction lock here to
 	   cope with the lock ordering semantics of solaris10 */
-	if (tdb_transaction_lock(tdb, F_RDLCK)) {
+	if (tdb_transaction_lock(tdb, F_RDLCK, TDB_LOCK_WAIT)) {
 		return -1;
 	}
 
@@ -229,7 +229,7 @@ int tdb_traverse_read(struct tdb_context *tdb,
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_read--;
 
-	tdb_transaction_unlock(tdb);
+	tdb_transaction_unlock(tdb, F_RDLCK);
 
 	return ret;
 }
@@ -251,7 +251,7 @@ int tdb_traverse(struct tdb_context *tdb,
 		return tdb_traverse_read(tdb, fn, private_data);
 	}
 
-	if (tdb_transaction_lock(tdb, F_WRLCK)) {
+	if (tdb_transaction_lock(tdb, F_WRLCK, TDB_LOCK_WAIT)) {
 		return -1;
 	}
 
@@ -260,7 +260,7 @@ int tdb_traverse(struct tdb_context *tdb,
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_write--;
 
-	tdb_transaction_unlock(tdb);
+	tdb_transaction_unlock(tdb, F_WRLCK);
 
 	return ret;
 }

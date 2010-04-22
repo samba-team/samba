@@ -8,7 +8,7 @@
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -59,7 +59,7 @@
   - allow for nested calls to tdb_transaction_start(), re-using the
     existing transaction record. If the inner transaction is cancelled
     then a subsequent commit will fail
- 
+
   - keep a mirrored copy of the tdb hash chain heads to allow for the
     fast hash heads scan on traverse, updating the mirrored copy in
     the transaction version of tdb_write
@@ -76,7 +76,7 @@
     to reduce this to 3 or even 2 with some more work.
 
   - check for a valid recovery record on open of the tdb, while the
-    global lock is held. Automatically recover from the transaction
+    open lock is held. Automatically recover from the transaction
     recovery area if needed, then continue with the open as
     usual. This allows for smooth crash recovery with no administrator
     intervention.
@@ -135,9 +135,6 @@ struct tdb_transaction {
 	bool prepared;
 	tdb_off_t magic_offset;
 
-	/* set when the GLOBAL_LOCK has been taken */
-	bool global_lock_taken;
-
 	/* old file size before transaction */
 	tdb_len_t old_map_size;
 
@@ -188,7 +185,7 @@ static int transaction_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 			goto fail;
 		}
 	}
-	
+
 	/* now copy it out of this block */
 	memcpy(buf, tdb->transaction->blocks[blk] + (off % tdb->transaction->block_size), len);
 	if (cv) {
@@ -295,7 +292,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 			}			
 		}
 	}
-	
+
 	/* overwrite part of an existing block */
 	if (buf == NULL) {
 		memset(tdb->transaction->blocks[blk] + off, 0, len);
@@ -411,22 +408,12 @@ static int transaction_expand_file(struct tdb_context *tdb, tdb_off_t size,
 	return 0;
 }
 
-/*
-  brlock during a transaction - ignore them
-*/
-static int transaction_brlock(struct tdb_context *tdb, tdb_off_t offset, 
-			      int rw_type, int lck_type, int probe, size_t len)
-{
-	return 0;
-}
-
 static const struct tdb_methods transaction_methods = {
 	transaction_read,
 	transaction_write,
 	transaction_next_hash_chain,
 	transaction_oob,
 	transaction_expand_file,
-	transaction_brlock
 };
 
 
@@ -434,7 +421,8 @@ static const struct tdb_methods transaction_methods = {
   start a tdb transaction. No token is returned, as only a single
   transaction is allowed to be pending per tdb_context
 */
-int tdb_transaction_start(struct tdb_context *tdb)
+static int _tdb_transaction_start(struct tdb_context *tdb,
+				  enum tdb_lock_flags lockflags)
 {
 	/* some sanity checks */
 	if (tdb->read_only || (tdb->flags & TDB_INTERNAL) || tdb->traverse_read) {
@@ -455,7 +443,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		return 0;
 	}
 
-	if (tdb->num_locks != 0 || tdb->global_lock.count) {
+	if (tdb_have_extra_locks(tdb)) {
 		/* the caller must not have any locks when starting a
 		   transaction as otherwise we'll be screwed by lack
 		   of nested locks in posix */
@@ -486,18 +474,20 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	/* get the transaction write lock. This is a blocking lock. As
 	   discussed with Volker, there are a number of ways we could
 	   make this async, which we will probably do in the future */
-	if (tdb_transaction_lock(tdb, F_WRLCK) == -1) {
+	if (tdb_transaction_lock(tdb, F_WRLCK, lockflags) == -1) {
 		SAFE_FREE(tdb->transaction->blocks);
 		SAFE_FREE(tdb->transaction);
+		if ((lockflags & TDB_LOCK_WAIT) == 0) {
+			tdb->ecode = TDB_ERR_NOLOCK;
+		}
 		return -1;
 	}
-	
+
 	/* get a read lock from the freelist to the end of file. This
 	   is upgraded to a write lock during the commit */
-	if (tdb_brlock(tdb, FREELIST_TOP, F_RDLCK, F_SETLKW, 0, 0) == -1) {
+	if (tdb_allrecord_lock(tdb, F_RDLCK, TDB_LOCK_WAIT, true) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_start: failed to get hash locks\n"));
-		tdb->ecode = TDB_ERR_LOCK;
-		goto fail;
+		goto fail_allrecord_lock;
 	}
 
 	/* setup a copy of the hash table heads so the hash scan in
@@ -528,16 +518,26 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	/* Trace at the end, so we get sequence number correct. */
 	tdb_trace(tdb, "tdb_transaction_start");
 	return 0;
-	
+
 fail:
-	tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
-	tdb_transaction_unlock(tdb);
+	tdb_allrecord_unlock(tdb, F_RDLCK, false);
+fail_allrecord_lock:
+	tdb_transaction_unlock(tdb, F_WRLCK);
 	SAFE_FREE(tdb->transaction->blocks);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
 	return -1;
 }
 
+int tdb_transaction_start(struct tdb_context *tdb)
+{
+	return _tdb_transaction_start(tdb, TDB_LOCK_WAIT);
+}
+
+int tdb_transaction_start_nonblock(struct tdb_context *tdb)
+{
+	return _tdb_transaction_start(tdb, TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
+}
 
 /*
   sync to disk
@@ -548,7 +548,7 @@ static int transaction_sync(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t
 		return 0;
 	}
 
-	if (fsync(tdb->fd) != 0) {
+	if (fdatasync(tdb->fd) != 0) {
 		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction: fsync failed\n"));
 		return -1;
@@ -569,7 +569,7 @@ static int transaction_sync(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t
 }
 
 
-int _tdb_transaction_cancel(struct tdb_context *tdb)
+static int _tdb_transaction_cancel(struct tdb_context *tdb)
 {	
 	int i, ret = 0;
 
@@ -596,46 +596,25 @@ int _tdb_transaction_cancel(struct tdb_context *tdb)
 
 	if (tdb->transaction->magic_offset) {
 		const struct tdb_methods *methods = tdb->transaction->io_methods;
-		uint32_t zero = 0;
+		const uint32_t invalid = TDB_RECOVERY_INVALID_MAGIC;
 
 		/* remove the recovery marker */
-		if (methods->tdb_write(tdb, tdb->transaction->magic_offset, &zero, 4) == -1 ||
+		if (methods->tdb_write(tdb, tdb->transaction->magic_offset, &invalid, 4) == -1 ||
 		transaction_sync(tdb, tdb->transaction->magic_offset, 4) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_cancel: failed to remove recovery magic\n"));
 			ret = -1;
 		}
 	}
 
-	if (tdb->transaction->global_lock_taken) {
-		tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
-		tdb->transaction->global_lock_taken = false;
-	}
-
-	/* remove any global lock created during the transaction */
-	if (tdb->global_lock.count != 0) {
-		tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 4*tdb->header.hash_size);
-		tdb->global_lock.count = 0;
-	}
-
-	/* remove any locks created during the transaction */
-	if (tdb->num_locks != 0) {
-		for (i=0;i<tdb->num_lockrecs;i++) {
-			tdb_brlock(tdb,FREELIST_TOP+4*tdb->lockrecs[i].list,
-				   F_UNLCK,F_SETLKW, 0, 1);
-		}
-		tdb->num_locks = 0;
-		tdb->num_lockrecs = 0;
-		SAFE_FREE(tdb->lockrecs);
-	}
+	/* This also removes the OPEN_LOCK, if we have it. */
+	tdb_release_transaction_locks(tdb);
 
 	/* restore the normal io methods */
 	tdb->methods = tdb->transaction->io_methods;
 
-	tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
-	tdb_transaction_unlock(tdb);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
-	
+
 	return ret;
 }
 
@@ -695,10 +674,16 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 
 	rec.rec_len = 0;
 
-	if (recovery_head != 0 && 
-	    methods->tdb_read(tdb, recovery_head, &rec, sizeof(rec), DOCONV()) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to read recovery record\n"));
-		return -1;
+	if (recovery_head != 0) {
+		if (methods->tdb_read(tdb, recovery_head, &rec, sizeof(rec), DOCONV()) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to read recovery record\n"));
+			return -1;
+		}
+		/* ignore invalid recovery regions: can happen in crash */
+		if (rec.magic != TDB_RECOVERY_MAGIC &&
+		    rec.magic != TDB_RECOVERY_INVALID_MAGIC) {
+			recovery_head = 0;
+		}
 	}
 
 	*recovery_size = tdb_recovery_size(tdb);
@@ -793,7 +778,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	rec = (struct tdb_record *)data;
 	memset(rec, 0, sizeof(*rec));
 
-	rec->magic    = 0;
+	rec->magic    = TDB_RECOVERY_INVALID_MAGIC;
 	rec->data_len = recovery_size;
 	rec->rec_len  = recovery_max_size;
 	rec->key_len  = old_map_size;
@@ -815,7 +800,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 		if (i == tdb->transaction->num_blocks-1) {
 			length = tdb->transaction->last_block_size;
 		}
-		
+
 		if (offset >= old_map_size) {
 			continue;
 		}
@@ -928,10 +913,10 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	}
 
 	methods = tdb->transaction->io_methods;
-	
+
 	/* if there are any locks pending then the caller has not
 	   nested their locks properly, so fail the transaction */
-	if (tdb->num_locks || tdb->global_lock.count) {
+	if (tdb_have_extra_locks(tdb)) {
 		tdb->ecode = TDB_ERR_LOCK;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: locks pending on commit\n"));
 		_tdb_transaction_cancel(tdb);
@@ -939,23 +924,19 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 	}
 
 	/* upgrade the main transaction lock region to a write lock */
-	if (tdb_brlock_upgrade(tdb, FREELIST_TOP, 0) == -1) {
+	if (tdb_allrecord_upgrade(tdb) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: failed to upgrade hash locks\n"));
-		tdb->ecode = TDB_ERR_LOCK;
 		_tdb_transaction_cancel(tdb);
 		return -1;
 	}
 
-	/* get the global lock - this prevents new users attaching to the database
+	/* get the open lock - this prevents new users attaching to the database
 	   during the commit */
-	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: failed to get global lock\n"));
-		tdb->ecode = TDB_ERR_LOCK;
+	if (tdb_nest_lock(tdb, OPEN_LOCK, F_WRLCK, TDB_LOCK_WAIT) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: failed to get open lock\n"));
 		_tdb_transaction_cancel(tdb);
 		return -1;
 	}
-
-	tdb->transaction->global_lock_taken = true;
 
 	if (!(tdb->flags & TDB_NOSYNC)) {
 		/* write the recovery data to the end of the file */
@@ -982,7 +963,7 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 		methods->tdb_oob(tdb, tdb->map_size + 1, 1);
 	}
 
-	/* Keep the global lock until the actual commit */
+	/* Keep the open lock until the actual commit */
 
 	return 0;
 }
@@ -1056,7 +1037,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 		if (methods->tdb_write(tdb, offset, tdb->transaction->blocks[i], length) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_commit: write failed during commit\n"));
-			
+
 			/* we've overwritten part of the data and
 			   possibly expanded the file, so we need to
 			   run the crash recovery code */
@@ -1110,7 +1091,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 /*
   recover from an aborted transaction. Must be called with exclusive
-  database write access already established (including the global
+  database write access already established (including the open
   lock to prevent new processes attaching)
 */
 int tdb_transaction_recover(struct tdb_context *tdb)
@@ -1211,16 +1192,6 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 		tdb->ecode = TDB_ERR_IO;
 		return -1;			
 	}
-	
-	/* reduce the file size to the old size */
-	tdb_munmap(tdb);
-	if (ftruncate(tdb->fd, recovery_eof) != 0) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_recover: failed to reduce to recovery size\n"));
-		tdb->ecode = TDB_ERR_IO;
-		return -1;			
-	}
-	tdb->map_size = recovery_eof;
-	tdb_mmap(tdb);
 
 	if (transaction_sync(tdb, 0, recovery_eof) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_recover: failed to sync2 recovery\n"));
@@ -1233,4 +1204,29 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 
 	/* all done */
 	return 0;
+}
+
+/* Any I/O failures we say "needs recovery". */
+bool tdb_needs_recovery(struct tdb_context *tdb)
+{
+	tdb_off_t recovery_head;
+	struct tdb_record rec;
+
+	/* find the recovery area */
+	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, &recovery_head) == -1) {
+		return true;
+	}
+
+	if (recovery_head == 0) {
+		/* we have never allocated a recovery record */
+		return false;
+	}
+
+	/* read the recovery record */
+	if (tdb->methods->tdb_read(tdb, recovery_head, &rec,
+				   sizeof(rec), DOCONV()) == -1) {
+		return true;
+	}
+
+	return (rec.magic == TDB_RECOVERY_MAGIC);
 }

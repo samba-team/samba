@@ -51,8 +51,8 @@
            tdb_transaction_cancel;
            tdb_transaction_commit;
            tdb_transaction_prepare_commit;
-           tdb_transaction_recover;
            tdb_transaction_start;
+           tdb_transaction_start_nonblock;
            tdb_traverse;
            tdb_traverse_read;
            tdb_unlockall;
