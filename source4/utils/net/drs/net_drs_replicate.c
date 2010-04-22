@@ -38,7 +38,6 @@ net_drs_server_dn_from_dc_name(struct net_drs_context *drs_ctx,
 	struct ldb_dn *dn;
 	struct ldb_dn *server_dn = NULL;
 	struct ldb_result *ldb_res;
-	const char *filter;
 	static const char *attrs[] = {
 		"objectGUID",
 		"name",
@@ -63,8 +62,8 @@ net_drs_server_dn_from_dc_name(struct net_drs_context *drs_ctx,
 	                     "(&(objectCategory=server)(|(name=%1$s)(dNSHostName=%1$s)))",
 	                     dc_name);
 	if (ldb_err != LDB_SUCCESS) {
-		d_printf("ldb_seach() failed with err: %d (%s); filter: (%s)",
-		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb), filter);
+		d_printf("ldb_seach() failed with err: %d (%s);",
+		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb));
 		goto failed;
 	}
 	if (ldb_res->count != 1) {
@@ -91,7 +90,6 @@ static bool net_drs_ntds_guid_from_dc_name(struct net_drs_context *drs_ctx,
 	int ldb_err;
 	struct ldb_dn *server_dn;
 	struct ldb_result *ldb_res;
-	const char *filter;
 	static const char *attrs[] = {
 		"objectGUID",
 		"msDS-portLDAP",
@@ -118,8 +116,8 @@ static bool net_drs_ntds_guid_from_dc_name(struct net_drs_context *drs_ctx,
 	                     server_dn, LDB_SCOPE_ONELEVEL, attrs,
 	                     "%s", "(|(objectCategory=nTDSDSA)(objectCategory=nTDSDSARO))");
 	if (ldb_err != LDB_SUCCESS) {
-		d_printf("ldb_seach() failed with err: %d (%s); filter: (%s)",
-		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb), filter);
+		d_printf("ldb_seach() failed with err: %d (%s)",
+		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb));
 		goto failed;
 	}
 	if (ldb_res->count != 1) {
