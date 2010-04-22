@@ -32,6 +32,7 @@
 #include "libcli/security/security.h"
 #include "lib/util/binsearch.h"
 #include "lib/util/tsort.h"
+#include "auth/session.h"
 
 /*
   build a DsReplicaObjectIdentifier from a ldb msg
@@ -699,6 +700,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t max_objects;
 	struct ldb_dn *search_dn = NULL;
 	bool am_rodc;
+	enum security_user_level security_level;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -749,7 +751,24 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-	if (req8->replica_flags & DRSUAPI_DRS_WRIT_REP)  {
+	/* for non-administrator replications, check that they have
+	   given the correct source_dsa_invocation_id */
+	security_level = security_session_user_level(dce_call->conn->auth_state.session_info);
+
+	if (security_level < SECURITY_ADMINISTRATOR) {
+		/* validate their guid */
+		ret = dsdb_validate_invocation_id(b_state->sam_ctx,
+						  &req8->source_dsa_invocation_id,
+						  dce_call->conn->auth_state.session_info->security_token->user_sid);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Attempted replication with invalid invocationId %s\n",
+				 GUID_string(mem_ctx, &req8->source_dsa_invocation_id)));
+			return WERR_DS_DRA_INVALID_PARAMETER;
+		}
+	}
+
+	if (security_level < SECURITY_ADMINISTRATOR &&
+	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP)) {
 		bool is_rodc;
 		ret = samdb_is_rodc(b_state->sam_ctx, &req8->source_dsa_invocation_id, &is_rodc);
 		if (ret != LDB_SUCCESS || is_rodc) {
