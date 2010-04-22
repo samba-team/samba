@@ -751,31 +751,21 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-	/* for non-administrator replications, check that they have
-	   given the correct source_dsa_invocation_id */
-	security_level = security_session_user_level(dce_call->conn->auth_state.session_info);
-
-	if (security_level < SECURITY_ADMINISTRATOR) {
-		/* validate their guid */
-		ret = dsdb_validate_invocation_id(b_state->sam_ctx,
-						  &req8->source_dsa_invocation_id,
-						  dce_call->conn->auth_state.session_info->security_token->user_sid);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Attempted replication with invalid invocationId %s\n",
-				 GUID_string(mem_ctx, &req8->source_dsa_invocation_id)));
-			return WERR_DS_DRA_INVALID_PARAMETER;
-		}
+	werr = drs_security_level_check(dce_call, "DsGetNCChanges", SECURITY_RO_DOMAIN_CONTROLLER);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
-	if (security_level < SECURITY_ADMINISTRATOR &&
+	/* for non-administrator replications, check that they have
+	   given the correct source_dsa_invocation_id */
+	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
+						     samdb_domain_sid(b_state->sam_ctx));
+	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER &&
 	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP)) {
-		bool is_rodc;
-		ret = samdb_is_rodc(b_state->sam_ctx, &req8->source_dsa_invocation_id, &is_rodc);
-		if (ret != LDB_SUCCESS || is_rodc) {
-			DEBUG(0,(__location__ ": Attempt to do writeable replication by RODC %s\n",
-				 GUID_string(mem_ctx, &req8->source_dsa_invocation_id)));
-			return WERR_DS_DRA_INVALID_PARAMETER;
-		}
+		DEBUG(0,(__location__ ": Attempt to do writeable replication by RODC %s\n",
+			 dom_sid_string(mem_ctx,
+					dce_call->conn->auth_state.session_info->security_token->user_sid)));
+		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
 
@@ -783,11 +773,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		/* Ignore the _in_ uptpdateness vector*/
 		req8->uptodateness_vector = NULL;
 	} 
-
-	werr = drs_security_level_check(dce_call, "DsGetNCChanges");
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
 
 	/* we don't yet support extended operations */
 	switch (req8->extended_op) {
