@@ -17,7 +17,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 ] interface spoolss
 {
 	typedef [v1_enum] enum winreg_Type winreg_Type;
-	typedef [gensize] struct {
+	typedef [gensize,noprint] struct {
 		uint16 year;
 		uint16 month;
 		uint16 day_of_week;

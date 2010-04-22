@@ -44,21 +44,6 @@ static enum ndr_err_code ndr_pull_spoolss_Time(struct ndr_pull *ndr, int ndr_fla
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, const struct spoolss_Time *r)
-{
-	ndr_print_struct(ndr, name, "spoolss_Time");
-	ndr->depth++;
-	ndr_print_uint16(ndr, "year", r->year);
-	ndr_print_uint16(ndr, "month", r->month);
-	ndr_print_uint16(ndr, "day_of_week", r->day_of_week);
-	ndr_print_uint16(ndr, "day", r->day);
-	ndr_print_uint16(ndr, "hour", r->hour);
-	ndr_print_uint16(ndr, "minute", r->minute);
-	ndr_print_uint16(ndr, "second", r->second);
-	ndr_print_uint16(ndr, "millisecond", r->millisecond);
-	ndr->depth--;
-}
-
 static size_t ndr_size_spoolss_Time(const struct spoolss_Time *r, struct smb_iconv_convenience *ic, int flags)
 {
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_Time, ic);
