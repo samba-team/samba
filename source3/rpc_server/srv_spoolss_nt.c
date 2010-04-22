@@ -1694,6 +1694,7 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	WERROR result;
+	int snum;
 
 	if (Printer && Printer->document_started) {
 		struct spoolss_EndDocPrinter e;
@@ -1701,6 +1702,13 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
 		e.in.handle = r->in.handle;
 
 		_spoolss_EndDocPrinter(p, &e);
+	}
+
+	if (get_printer_snum(p, r->in.handle, &snum, NULL)) {
+		winreg_delete_printer_key(p->mem_ctx,
+					  p->server_info,
+					  lp_const_servicename(snum),
+					  "");
 	}
 
 	result = delete_printer_handle(p, r->in.handle);
