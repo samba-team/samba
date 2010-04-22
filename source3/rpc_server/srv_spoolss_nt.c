@@ -428,15 +428,19 @@ static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *hand
  XcvDataPort() interface.
 ****************************************************************************/
 
-static bool set_printer_hnd_name(Printer_entry *Printer, const char *handlename)
+static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
+				 Printer_entry *Printer,
+				 const char *handlename)
 {
 	int snum;
 	int n_services=lp_numservices();
-	char *aprinter, *printername;
+	char *aprinter;
+	const char *printername;
 	const char *servername;
 	fstring sname;
 	bool found = false;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	struct spoolss_PrinterInfo2 *info2 = NULL;
 	WERROR result;
 
 	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename,
@@ -449,27 +453,24 @@ static bool set_printer_hnd_name(Printer_entry *Printer, const char *handlename)
 			*aprinter = '\0';
 			aprinter++;
 		}
-	} else {
-		servername = global_myname();
+		if (!is_myname_or_ipaddr(servername)) {
+			return false;
+		}
+
+		fstrcpy(Printer->servername, servername);
 	}
 
-	/* save the servername to fill in replies on this handle */
-
-	if ( !is_myname_or_ipaddr( servername ) )
-		return false;
-
-	fstrcpy( Printer->servername, servername );
-
-	if ( Printer->printer_type == SPLHND_SERVER )
+	if (Printer->printer_type == SPLHND_SERVER) {
 		return true;
+	}
 
-	if ( Printer->printer_type != SPLHND_PRINTER )
+	if (Printer->printer_type != SPLHND_PRINTER) {
 		return false;
+	}
 
-	DEBUGADD(5, ("searching for [%s]\n", aprinter ));
+	DEBUGADD(5, ("searching for [%s]\n", aprinter));
 
 	/* check for the Port Monitor Interface */
-
 	if ( strequal( aprinter, SPL_XCV_MONITOR_TCPMON ) ) {
 		Printer->printer_type = SPLHND_PORTMON_TCP;
 		fstrcpy(sname, SPL_XCV_MONITOR_TCPMON);
@@ -486,64 +487,58 @@ static bool set_printer_hnd_name(Printer_entry *Printer, const char *handlename)
 	   that calls out to map_username() */
 
 	/* do another loop to look for printernames */
-
-	for (snum=0; !found && snum<n_services; snum++) {
+	for (snum = 0; !found && snum < n_services; snum++) {
+		const char *printer = lp_const_servicename(snum);
 
 		/* no point going on if this is not a printer */
-
-		if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+		if (!(lp_snum_ok(snum) && lp_print_ok(snum))) {
 			continue;
+		}
 
-		fstrcpy(sname, lp_servicename(snum));
-		if ( strequal( aprinter, sname ) ) {
+		/* ignore [printers] share */
+		if (strequal(printer, "printers")) {
+			continue;
+		}
+
+		fstrcpy(sname, printer);
+		if (strequal(aprinter, printer)) {
 			found = true;
 			break;
 		}
 
 		/* no point looking up the printer object if
 		   we aren't allowing printername != sharename */
-
-		if ( lp_force_printername(snum) )
+		if (lp_force_printername(snum)) {
 			continue;
+		}
 
-		fstrcpy(sname, lp_servicename(snum));
-
-		printer = NULL;
-
-		/* This call doesn't fill in the location or comment from
-		 * a CUPS server for efficiency with large numbers of printers.
-		 * JRA.
-		 */
-
-		result = get_a_printer_search( NULL, &printer, 2, sname );
+		result = winreg_get_printer(mem_ctx,
+					    server_info,
+					    servername,
+					    sname,
+					    &info2);
 		if ( !W_ERROR_IS_OK(result) ) {
 			DEBUG(0,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
-				sname, win_errstr(result)));
+				 sname, win_errstr(result)));
 			continue;
 		}
 
-		/* printername is always returned as \\server\printername */
-		if ( !(printername = strchr_m(&printer->info_2->printername[2], '\\')) ) {
-			DEBUG(0,("set_printer_hnd_name: info2->printername in wrong format! [%s]\n",
-				printer->info_2->printername));
-			free_a_printer( &printer, 2);
-			continue;
+		printername = strrchr(info2->printername, '\\');
+		if (printername == NULL) {
+			printername = info2->printername;
+		} else {
+			printername++;
 		}
 
-		printername++;
-
-		if ( strequal(printername, aprinter) ) {
-			free_a_printer( &printer, 2);
+		if (strequal(printername, aprinter)) {
 			found = true;
 			break;
 		}
 
 		DEBUGADD(10, ("printername: %s\n", printername));
 
-		free_a_printer( &printer, 2);
+		TALLOC_FREE(info2);
 	}
-
-	free_a_printer( &printer, 2);
 
 	if ( !found ) {
 		DEBUGADD(4,("Printer not found\n"));
@@ -589,7 +584,7 @@ static bool open_printer_hnd(pipes_struct *p, struct policy_handle *hnd,
 		return false;
 	}
 
-	if (!set_printer_hnd_name(new_printer, name)) {
+	if (!set_printer_hnd_name(p->mem_ctx, p->server_info, new_printer, name)) {
 		close_printer_handle(p, hnd);
 		return false;
 	}
@@ -1446,6 +1441,8 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 	DEBUGADD(3,("checking name: %s\n", r->in.printername));
 
 	if (!open_printer_hnd(p, r->out.handle, r->in.printername, 0)) {
+		DEBUG(0,("_spoolss_OpenPrinterEx: Cannot open a printer handle "
+			" for printer %s\n", r->in.printername));
 		ZERO_STRUCTP(r->out.handle);
 		return WERR_INVALID_PARAM;
 	}
@@ -1616,6 +1613,11 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 
 		DEBUG(4,("Setting printer access = %s\n", (r->in.access_mask == PRINTER_ACCESS_ADMINISTER)
 			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
+
+		winreg_create_printer(p->mem_ctx,
+				      p->server_info,
+				      Printer->servername,
+				      lp_const_servicename(snum));
 
 		break;
 
