@@ -578,7 +578,7 @@ static int transaction_sync(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t
 
 
 /* ltype is F_WRLCK after prepare. */
-int _tdb_transaction_cancel(struct tdb_context *tdb, int ltype)
+static int _tdb_transaction_cancel(struct tdb_context *tdb, int ltype)
 {	
 	int i, ret = 0;
 
