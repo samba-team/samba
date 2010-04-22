@@ -719,11 +719,10 @@ bool tdb_have_extra_locks(struct tdb_context *tdb)
 	return extra;
 }
 
-/* The transaction code uses this to remove all locks.  Note that this
-   may include OPEN_LOCK. */
-void tdb_release_extra_locks(struct tdb_context *tdb)
+/* The transaction code uses this to remove all locks. */
+void tdb_release_transaction_locks(struct tdb_context *tdb)
 {
-	unsigned int i, extra = 0;
+	unsigned int i, active = 0;
 
 	if (tdb->allrecord_lock.count != 0) {
 		tdb_brunlock(tdb, tdb->allrecord_lock.ltype, FREELIST_TOP, 0);
@@ -733,16 +732,14 @@ void tdb_release_extra_locks(struct tdb_context *tdb)
 	for (i=0;i<tdb->num_lockrecs;i++) {
 		struct tdb_lock_type *lck = &tdb->lockrecs[i];
 
-		/* Don't release transaction or active locks! */
-		if (tdb->transaction && lck->off == TRANSACTION_LOCK) {
-			tdb->lockrecs[extra++] = *lck;
-		} else if (lck->off == ACTIVE_LOCK) {
-			tdb->lockrecs[extra++] = *lck;
+		/* Don't release the active lock!  Copy it to first entry. */
+		if (lck->off == ACTIVE_LOCK) {
+			tdb->lockrecs[active++] = *lck;
 		} else {
 			tdb_brunlock(tdb, lck->ltype, lck->off, 1);
 		}
 	}
-	tdb->num_lockrecs = extra;
+	tdb->num_lockrecs = active;
 	if (tdb->num_lockrecs == 0) {
 		SAFE_FREE(tdb->lockrecs);
 	}

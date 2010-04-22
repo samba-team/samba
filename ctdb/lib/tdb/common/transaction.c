@@ -615,12 +615,11 @@ static int _tdb_transaction_cancel(struct tdb_context *tdb)
 	}
 
 	/* This also removes the OPEN_LOCK, if we have it. */
-	tdb_release_extra_locks(tdb);
+	tdb_release_transaction_locks(tdb);
 
 	/* restore the normal io methods */
 	tdb->methods = tdb->transaction->io_methods;
 
-	tdb_transaction_unlock(tdb, F_WRLCK);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
 	
