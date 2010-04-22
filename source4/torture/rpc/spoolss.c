@@ -32,6 +32,11 @@
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 #include "lib/registry/registry.h"
+#include "libcli/libcli.h"
+#include "libcli/raw/raw_proto.h"
+#include "libcli/resolve/resolve.h"
+#include "lib/cmdline/popt_common.h"
+#include "system/filesys.h"
 
 #define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
 #define TORTURE_PRINTER			"torture_printer"
@@ -7059,6 +7064,213 @@ static bool fillup_printserver_info(struct torture_context *tctx,
 	return true;
 }
 
+static const char *driver_directory_dir(const char *driver_directory)
+{
+	char *p;
+
+	p = strrchr(driver_directory, '\\');
+	if (p) {
+		return p+1;
+	}
+
+	return NULL;
+}
+
+static const char *driver_directory_share(struct torture_context *tctx,
+					  const char *driver_directory)
+{
+	const char *p;
+	char *tok;
+
+	if (driver_directory[0] == '\\' && driver_directory[1] == '\\') {
+		driver_directory += 2;
+	}
+
+	p = talloc_strdup(tctx, driver_directory);
+
+	torture_assert(tctx,
+		next_token_talloc(tctx, &p, &tok, "\\"),
+		"cannot explode uri");
+	torture_assert(tctx,
+		next_token_talloc(tctx, &p, &tok, "\\"),
+		"cannot explode uri");
+
+	return tok;
+}
+
+static bool upload_printer_driver_file(struct torture_context *tctx,
+				       struct smbcli_state *cli,
+				       struct torture_driver_context *d,
+				       const char *file_name)
+{
+	XFILE *f;
+	int fnum;
+	uint8_t *buf;
+	int maxwrite = 64512;
+	off_t nread = 0;
+	size_t start = 0;
+	const char *remote_dir = driver_directory_dir(d->remote.driver_directory);
+	const char *local_name = talloc_asprintf(tctx, "%s/%s", d->local.driver_directory, file_name);
+	const char *remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, file_name);
+
+	torture_comment(tctx, "Uploading %s to %s\n", local_name, remote_name);
+
+	fnum = smbcli_open(cli->tree, remote_name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+	if (fnum == -1) {
+		torture_fail(tctx, talloc_asprintf(tctx, "failed to open remote file: %s\n", remote_name));
+	}
+
+	f = x_fopen(local_name, O_RDONLY, 0);
+	if (f == NULL) {
+		torture_fail(tctx, talloc_asprintf(tctx, "failed to open local file: %s\n", local_name));
+	}
+
+	buf = talloc_array(tctx, uint8_t, maxwrite);
+	if (!buf) {
+		return false;
+	}
+
+	while (!x_feof(f)) {
+		int n = maxwrite;
+		int ret;
+
+		if ((n = x_fread(buf, 1, n, f)) < 1) {
+			if((n == 0) && x_feof(f))
+				break; /* Empty local file. */
+
+			torture_warning(tctx,
+				"failed to read file: %s\n", strerror(errno));
+			break;
+		}
+
+		ret = smbcli_write(cli->tree, fnum, 0, buf, nread + start, n);
+
+		if (n != ret) {
+			torture_warning(tctx,
+				"failed to write file: %s\n", smbcli_errstr(cli->tree));
+			break;
+		}
+
+		nread += n;
+	}
+
+	x_fclose(f);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_close(cli->tree, fnum),
+		"failed to close file");
+
+	return true;
+}
+
+static bool connect_printer_driver_share(struct torture_context *tctx,
+					 const char *server_name,
+					 const char *share_name,
+					 struct smbcli_state **cli)
+{
+	struct smbcli_options smb_options;
+	struct smbcli_session_options smb_session_options;
+
+	torture_comment(tctx, "Testing to open printer driver share\n");
+
+	lp_smbcli_options(tctx->lp_ctx, &smb_options);
+	lp_smbcli_session_options(tctx->lp_ctx, &smb_session_options);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_full_connection(tctx, cli, server_name,
+					lp_smb_ports(tctx->lp_ctx),
+					share_name, NULL,
+					lp_socket_options(tctx->lp_ctx),
+					cmdline_credentials,
+					lp_resolve_context(tctx->lp_ctx),
+					tctx->ev,
+					&smb_options,
+					&smb_session_options,
+					lp_iconv_convenience(tctx->lp_ctx),
+					lp_gensec_settings(tctx, tctx->lp_ctx)),
+		"failed to open driver share");
+
+	return true;
+}
+
+static bool upload_printer_driver(struct torture_context *tctx,
+				  const char *server_name,
+				  struct torture_driver_context *d)
+{
+	struct smbcli_state *cli;
+	const char *share_name = driver_directory_share(tctx, d->remote.driver_directory);
+
+	torture_assert(tctx,
+		connect_printer_driver_share(tctx, server_name, share_name, &cli),
+		"failed to connect to driver share");
+
+	torture_comment(tctx, "Uploading printer driver files to \\\\%s\\%s\n",
+		server_name, share_name);
+
+	torture_assert(tctx,
+		upload_printer_driver_file(tctx, cli, d, d->info8.driver_path),
+		"failed to upload driver_path");
+	torture_assert(tctx,
+		upload_printer_driver_file(tctx, cli, d, d->info8.data_file),
+		"failed to upload data_file");
+	torture_assert(tctx,
+		upload_printer_driver_file(tctx, cli, d, d->info8.config_file),
+		"failed to upload config_file");
+
+	talloc_free(cli);
+
+	return true;
+}
+
+static bool remove_printer_driver_file(struct torture_context *tctx,
+				       struct smbcli_state *cli,
+				       struct torture_driver_context *d,
+				       const char *file_name)
+{
+	const char *remote_name;
+	const char *remote_dir =  driver_directory_dir(d->remote.driver_directory);
+
+	remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, file_name);
+
+	torture_comment(tctx, "Removing %s\n", remote_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_unlink(cli->tree, remote_name),
+		"failed to unlink");
+
+	return true;
+}
+
+static bool remove_printer_driver(struct torture_context *tctx,
+				  const char *server_name,
+				  struct torture_driver_context *d)
+{
+	struct smbcli_state *cli;
+	const char *share_name = driver_directory_share(tctx, d->remote.driver_directory);
+
+	torture_assert(tctx,
+		connect_printer_driver_share(tctx, server_name, share_name, &cli),
+		"failed to connect to driver share");
+
+	torture_comment(tctx, "Removing printer driver files from \\\\%s\\%s\n",
+		server_name, share_name);
+
+	torture_assert(tctx,
+		remove_printer_driver_file(tctx, cli, d, d->info8.driver_path),
+		"failed to remove driver_path");
+	torture_assert(tctx,
+		remove_printer_driver_file(tctx, cli, d, d->info8.data_file),
+		"failed to remove data_file");
+	torture_assert(tctx,
+		remove_printer_driver_file(tctx, cli, d, d->info8.config_file),
+		"failed to remove config_file");
+
+	talloc_free(cli);
+
+	return true;
+
+}
+
 static bool test_add_driver(struct torture_context *tctx,
 			    struct dcerpc_pipe *p,
 			    void *private_data)
@@ -7075,6 +7287,10 @@ static bool test_add_driver(struct torture_context *tctx,
 	torture_assert(tctx,
 		fillup_printserver_info(tctx, p, d),
 		"failed to fillup printserver info");
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to upload printer driver");
 
 	info8.version		= d->info8.version;
 	info8.driver_name	= TORTURE_DRIVER;
@@ -7105,6 +7321,10 @@ static bool test_add_driver(struct torture_context *tctx,
 		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, 0, 0, 0, false);
 	}
 
+	torture_assert(tctx,
+		remove_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to remove printer driver");
+
 	return ret;
 }
 
@@ -7126,6 +7346,10 @@ static bool test_add_driver_ex(struct torture_context *tctx,
 	torture_assert(tctx,
 		fillup_printserver_info(tctx, p, d),
 		"failed to fillup printserver info");
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to upload printer driver");
 
 	info8.version		= d->info8.version;
 	info8.driver_name	= TORTURE_DRIVER_EX;
@@ -7156,6 +7380,10 @@ static bool test_add_driver_ex(struct torture_context *tctx,
 		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, true);
 	}
 
+	torture_assert(tctx,
+		remove_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to remove printer driver");
+
 	return ret;
 }
 
@@ -7175,6 +7403,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	t->info8.driver_path	= talloc_strdup(t, "pscript5.dll");
 	t->info8.data_file	= talloc_strdup(t, "cups6.ppd");
 	t->info8.config_file	= talloc_strdup(t, "cupsui6.dll");
+
+	t->local.driver_directory = talloc_strdup(t, "/usr/share/cups/drivers/x64");
 
 	torture_rpc_tcase_add_test_ex(tcase, "add_driver", test_add_driver, t);
 	torture_rpc_tcase_add_test_ex(tcase, "add_driver_ex", test_add_driver_ex, t);
