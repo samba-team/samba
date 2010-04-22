@@ -30,6 +30,24 @@
 
 
 /**
+ * Creates and initializes new dsdb_schema_info value.
+ * Initial schemaInfo values is with:
+ *   revision = 0
+ *   invocationId = GUID_ZERO
+ */
+WERROR dsdb_schema_info_new(TALLOC_CTX *mem_ctx, struct dsdb_schema_info **_schema_info)
+{
+	struct dsdb_schema_info *schema_info;
+
+	schema_info = talloc_zero(mem_ctx, struct dsdb_schema_info);
+	W_ERROR_HAVE_NO_MEMORY(schema_info);
+
+	*_schema_info = schema_info;
+
+	return WERR_OK;
+}
+
+/**
  * Creates and initializes new dsdb_schema_info blob value.
  * Initial schemaInfo values is with:
  *   revision = 0
@@ -391,20 +409,25 @@ WERROR dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 	const struct GUID *invocation_id;
 	struct dsdb_schema_info *schema_info;
 
-	TALLOC_CTX *mem_ctx = talloc_new(schema);
-	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
+	TALLOC_CTX *temp_ctx = talloc_new(schema);
+	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
 
 	invocation_id = samdb_ntds_invocation_id(ldb_module_get_ctx(ldb_module));
 	if (!invocation_id) {
 		return WERR_INTERNAL_DB_CORRUPTION;
 	}
 
-	werr = dsdb_module_schema_info_read(ldb_module, dsdb_flags,
-	                                    mem_ctx, &schema_info);
+	/* read serialized schemaInfo from LDB  */
+	werr = dsdb_module_schema_info_read(ldb_module, dsdb_flags, temp_ctx, &schema_info);
+	if (W_ERROR_EQUAL(werr, WERR_DS_NO_ATTRIBUTE_OR_VALUE)) {
+		/* make default value in case
+		 * we have no schemaInfo value yet */
+		werr = dsdb_schema_info_new(temp_ctx, &schema_info);
+	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("dsdb_module_schema_info_update: failed to reload schemaInfo - %s\n",
 			 win_errstr(werr)));
-		talloc_free(mem_ctx);
+		talloc_free(temp_ctx);
 		return werr;
 	}
 
@@ -416,7 +439,7 @@ WERROR dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("dsdb_module_schema_info_update: failed to save schemaInfo - %s\n",
 			 win_errstr(werr)));
-		talloc_free(mem_ctx);
+		talloc_free(temp_ctx);
 		return werr;
 	}
 
@@ -427,6 +450,6 @@ WERROR dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 	schema->schema_info = talloc_steal(schema, schema_info);
 */
 
-	talloc_free(mem_ctx);
+	talloc_free(temp_ctx);
 	return WERR_OK;
 }
