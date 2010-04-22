@@ -23,8 +23,8 @@ dist:
 clean:
 	$(WAF) clean
 
-distclean: clean
-	rm -rf bin
+distclean:
+	$(WAF) distclean
 
 # some compatibility make targets
 everything: all
