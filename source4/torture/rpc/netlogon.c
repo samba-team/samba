@@ -2309,10 +2309,26 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx, 
 					    struct dcerpc_pipe *p)
 {
+	char *url;
+	struct ldb_context *sam_ctx = NULL;
 	NTSTATUS status;
 	struct netr_DsrGetDcSiteCoverageW r;
 	struct DcSitesCtr *ctr = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	torture_comment(tctx, "This does only pass with the default site\n");
+
+	/* We won't double-check this when we are over 'local' transports */
+	if (dcerpc_server_name(p)) {
+		/* Set up connection to SAMDB on DC */
+		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
+		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
+					   NULL,
+					   cmdline_credentials,
+					   0);
+
+		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
+        }
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.out.ctr = &ctr;
@@ -2320,6 +2336,14 @@ static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 	status = dcerpc_netr_DsrGetDcSiteCoverageW_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "failed");
 	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	torture_assert(tctx, ctr->num_sites == 1,
+		       "we should per default only get the default site");
+	if (sam_ctx != NULL) {
+		torture_assert_casestr_equal(tctx, ctr->sites[0].string,
+					     samdb_server_site_name(sam_ctx, tctx),
+					     "didn't return default site");
+	}
 
 	return true;
 }
