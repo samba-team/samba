@@ -79,6 +79,11 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	krb5_data pac_data;
 	krb5_error_code ret;
 
+        /* The user account may be set not to want the PAC */
+	if (!pac_blob) {
+		return 0;
+	}
+
 	ret = krb5_data_copy(&pac_data, pac_blob->data, pac_blob->length);
 	if (ret != 0) {
 		return ret;
