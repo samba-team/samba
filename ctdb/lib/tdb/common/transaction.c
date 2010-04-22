@@ -596,7 +596,7 @@ int _tdb_transaction_cancel(struct tdb_context *tdb)
 
 	if (tdb->transaction->magic_offset) {
 		const struct tdb_methods *methods = tdb->transaction->io_methods;
-		uint32_t invalid = TDB_RECOVERY_INVALID_MAGIC;
+		const uint32_t invalid = TDB_RECOVERY_INVALID_MAGIC;
 
 		/* remove the recovery marker */
 		if (methods->tdb_write(tdb, tdb->transaction->magic_offset, &invalid, 4) == -1 ||
