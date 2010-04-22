@@ -407,7 +407,9 @@ WERROR dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 {
 	WERROR werr;
 	const struct GUID *invocation_id;
+	DATA_BLOB ndr_blob;
 	struct dsdb_schema_info *schema_info;
+	const char *schema_info_str;
 
 	TALLOC_CTX *temp_ctx = talloc_new(schema);
 	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
@@ -444,11 +446,14 @@ WERROR dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 	}
 
 	/* finally, update schema_info in the cache */
-	/* TODO: update schema_info in dsdb_schema cache */
-/*
+	werr = dsdb_blob_from_schema_info(schema_info, temp_ctx, &ndr_blob);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	schema_info_str = hex_encode_talloc(schema, ndr_blob.data, ndr_blob.length);
+	W_ERROR_HAVE_NO_MEMORY(schema_info_str);
+
 	talloc_unlink(schema, discard_const(schema->schema_info));
-	schema->schema_info = talloc_steal(schema, schema_info);
-*/
+	schema->schema_info = schema_info_str;
 
 	talloc_free(temp_ctx);
 	return WERR_OK;
