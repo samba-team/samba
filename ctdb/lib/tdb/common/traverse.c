@@ -220,7 +220,7 @@ int tdb_traverse_read(struct tdb_context *tdb,
 
 	/* we need to get a read lock on the transaction lock here to
 	   cope with the lock ordering semantics of solaris10 */
-	if (tdb_transaction_lock(tdb, F_RDLCK)) {
+	if (tdb_transaction_lock(tdb, F_RDLCK, TDB_LOCK_WAIT)) {
 		return -1;
 	}
 
@@ -251,7 +251,7 @@ int tdb_traverse(struct tdb_context *tdb,
 		return tdb_traverse_read(tdb, fn, private_data);
 	}
 
-	if (tdb_transaction_lock(tdb, F_WRLCK)) {
+	if (tdb_transaction_lock(tdb, F_WRLCK, TDB_LOCK_WAIT)) {
 		return -1;
 	}
 

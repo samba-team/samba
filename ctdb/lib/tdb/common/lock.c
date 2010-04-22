@@ -472,9 +472,10 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 /*
   get the transaction lock
  */
-int tdb_transaction_lock(struct tdb_context *tdb, int ltype)
+int tdb_transaction_lock(struct tdb_context *tdb, int ltype,
+			 enum tdb_lock_flags lockflags)
 {
-	return tdb_nest_lock(tdb, TRANSACTION_LOCK, ltype, TDB_LOCK_WAIT);
+	return tdb_nest_lock(tdb, TRANSACTION_LOCK, ltype, lockflags);
 }
 
 /*
