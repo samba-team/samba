@@ -461,8 +461,6 @@ static const struct tdb_methods io_methods = {
 	tdb_next_hash_chain,
 	tdb_oob,
 	tdb_expand_file,
-	tdb_brlock,
-	tdb_brunlock
 };
 
 /*
