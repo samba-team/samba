@@ -12,10 +12,10 @@ uninstall:
 	$(WAF) uninstall
 
 test:
-	$(WAF) test $(if $(TESTS),--tests="$(TESTS)")
+	$(WAF) test
 
 quicktest:
-	$(WAF) test --quick $(if $(TESTS),--tests="$(TESTS)")
+	$(WAF) test --quick
 
 dist:
 	$(WAF) dist
