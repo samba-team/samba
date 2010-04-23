@@ -140,7 +140,7 @@ PRIVATE_DEPENDENCIES = TORTURE_UTIL LIBCLI_SMB
 # End SUBSYSTEM TORTURE_RAP
 #################################
 
-TORTURE_RAP_OBJ_FILES = $(torturesrcdir)/rap/rap.o $(torturesrcdir)/rap/rpc.o
+TORTURE_RAP_OBJ_FILES = $(torturesrcdir)/rap/rap.o $(torturesrcdir)/rap/rpc.o $(torturesrcdir)/rap/printing.o
 
 $(eval $(call proto_header_template,$(torturesrcdir)/rap/proto.h,$(TORTURE_RAP_OBJ_FILES:.o=.c)))
 
