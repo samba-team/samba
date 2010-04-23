@@ -5894,7 +5894,7 @@ static WERROR fill_job_info1(TALLOC_CTX *mem_ctx,
 			     struct spoolss_JobInfo1 *r,
 			     const print_queue_struct *queue,
 			     int position, int snum,
-			     const NT_PRINTER_INFO_LEVEL *ntprinter)
+			     struct spoolss_PrinterInfo2 *pinfo2)
 {
 	struct tm *t;
 
@@ -5904,7 +5904,7 @@ static WERROR fill_job_info1(TALLOC_CTX *mem_ctx,
 
 	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
-	r->server_name		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	r->server_name		= talloc_strdup(mem_ctx, pinfo2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->server_name);
 	r->user_name		= talloc_strdup(mem_ctx, queue->fs_user);
 	W_ERROR_HAVE_NO_MEMORY(r->user_name);
@@ -5934,7 +5934,7 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 			     struct spoolss_JobInfo2 *r,
 			     const print_queue_struct *queue,
 			     int position, int snum,
-			     const NT_PRINTER_INFO_LEVEL *ntprinter,
+			     struct spoolss_PrinterInfo2 *pinfo2,
 			     struct spoolss_DeviceMode *devmode)
 {
 	struct tm *t;
@@ -5945,7 +5945,7 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 
 	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
-	r->server_name		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	r->server_name		= talloc_strdup(mem_ctx, pinfo2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->server_name);
 	r->user_name		= talloc_strdup(mem_ctx, queue->fs_user);
 	W_ERROR_HAVE_NO_MEMORY(r->user_name);
@@ -5959,7 +5959,7 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(r->print_processor);
 	r->parameters		= talloc_strdup(mem_ctx, "");
 	W_ERROR_HAVE_NO_MEMORY(r->parameters);
-	r->driver_name		= talloc_strdup(mem_ctx, ntprinter->info_2->drivername);
+	r->driver_name		= talloc_strdup(mem_ctx, pinfo2->drivername);
 	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
 
 	r->devmode		= devmode;
@@ -5992,7 +5992,7 @@ static WERROR fill_job_info3(TALLOC_CTX *mem_ctx,
 			     const print_queue_struct *queue,
 			     const print_queue_struct *next_queue,
 			     int position, int snum,
-			     const NT_PRINTER_INFO_LEVEL *ntprinter)
+			     struct spoolss_PrinterInfo2 *pinfo2)
 {
 	r->job_id		= queue->job;
 	r->next_job_id		= 0;
@@ -6011,7 +6011,7 @@ static WERROR fill_job_info3(TALLOC_CTX *mem_ctx,
 static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
 			      const print_queue_struct *queue,
 			      uint32_t num_queues, int snum,
-                              const NT_PRINTER_INFO_LEVEL *ntprinter,
+                              struct spoolss_PrinterInfo2 *pinfo2,
 			      union spoolss_JobInfo **info_p,
 			      uint32_t *count)
 {
@@ -6030,7 +6030,7 @@ static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
 					&queue[i],
 					i,
 					snum,
-					ntprinter);
+					pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
 		}
@@ -6055,7 +6055,7 @@ static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
 static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 			      const print_queue_struct *queue,
 			      uint32_t num_queues, int snum,
-                              const NT_PRINTER_INFO_LEVEL *ntprinter,
+                              struct spoolss_PrinterInfo2 *pinfo2,
 			      union spoolss_JobInfo **info_p,
 			      uint32_t *count)
 {
@@ -6083,7 +6083,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 					&queue[i],
 					i,
 					snum,
-					ntprinter,
+					pinfo2,
 					devmode);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
@@ -6109,7 +6109,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
 			      const print_queue_struct *queue,
 			      uint32_t num_queues, int snum,
-                              const NT_PRINTER_INFO_LEVEL *ntprinter,
+                              struct spoolss_PrinterInfo2 *pinfo2,
 			      union spoolss_JobInfo **info_p,
 			      uint32_t *count)
 {
@@ -6135,7 +6135,7 @@ static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
 					next_queue,
 					i,
 					snum,
-					ntprinter);
+					pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
 		}
@@ -6161,7 +6161,7 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 			 struct spoolss_EnumJobs *r)
 {
 	WERROR result;
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int snum;
 	print_status_struct prt_status;
 	print_queue_struct *queue = NULL;
@@ -6185,7 +6185,8 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
+	result = winreg_get_printer(talloc_tos(), p->server_info, NULL,
+				    lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
@@ -6196,22 +6197,22 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 
 	if (count == 0) {
 		SAFE_FREE(queue);
-		free_a_printer(&ntprinter, 2);
+		TALLOC_FREE(pinfo2);
 		return WERR_OK;
 	}
 
 	switch (r->in.level) {
 	case 1:
 		result = enumjobs_level1(p->mem_ctx, queue, count, snum,
-					 ntprinter, r->out.info, r->out.count);
+					 pinfo2, r->out.info, r->out.count);
 		break;
 	case 2:
 		result = enumjobs_level2(p->mem_ctx, queue, count, snum,
-					 ntprinter, r->out.info, r->out.count);
+					 pinfo2, r->out.info, r->out.count);
 		break;
 	case 3:
 		result = enumjobs_level3(p->mem_ctx, queue, count, snum,
-					 ntprinter, r->out.info, r->out.count);
+					 pinfo2, r->out.info, r->out.count);
 		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
@@ -6219,7 +6220,7 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 	}
 
 	SAFE_FREE(queue);
-	free_a_printer(&ntprinter, 2);
+	TALLOC_FREE(pinfo2);
 
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
@@ -8063,7 +8064,7 @@ WERROR _spoolss_EnumMonitors(pipes_struct *p,
 static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 			     const print_queue_struct *queue,
 			     int count, int snum,
-			     const NT_PRINTER_INFO_LEVEL *ntprinter,
+			     struct spoolss_PrinterInfo2 *pinfo2,
 			     uint32_t jobid,
 			     struct spoolss_JobInfo1 *r)
 {
@@ -8087,7 +8088,7 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 			      &queue[i],
 			      i,
 			      snum,
-			      ntprinter);
+			      pinfo2);
 }
 
 /****************************************************************************
@@ -8096,7 +8097,7 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 			     const print_queue_struct *queue,
 			     int count, int snum,
-			     const NT_PRINTER_INFO_LEVEL *ntprinter,
+			     struct spoolss_PrinterInfo2 *pinfo2,
 			     uint32_t jobid,
 			     struct spoolss_JobInfo2 *r)
 {
@@ -8134,7 +8135,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 			      &queue[i],
 			      i,
 			      snum,
-			      ntprinter,
+			      pinfo2,
 			      devmode);
 }
 
@@ -8146,7 +8147,7 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 		       struct spoolss_GetJob *r)
 {
 	WERROR result = WERR_OK;
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int snum;
 	int count;
 	print_queue_struct 	*queue = NULL;
@@ -8166,7 +8167,8 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
+	result = winreg_get_printer(talloc_tos(), p->server_info, NULL,
+				    lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
@@ -8179,12 +8181,12 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 	switch (r->in.level) {
 	case 1:
 		result = getjob_level_1(p->mem_ctx,
-					queue, count, snum, ntprinter,
+					queue, count, snum, pinfo2,
 					r->in.job_id, &r->out.info->info1);
 		break;
 	case 2:
 		result = getjob_level_2(p->mem_ctx,
-					queue, count, snum, ntprinter,
+					queue, count, snum, pinfo2,
 					r->in.job_id, &r->out.info->info2);
 		break;
 	default:
@@ -8193,7 +8195,7 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 	}
 
 	SAFE_FREE(queue);
-	free_a_printer(&ntprinter, 2);
+	TALLOC_FREE(pinfo2);
 
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(r->out.info);
