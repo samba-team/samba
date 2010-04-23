@@ -579,13 +579,81 @@ NTSTATUS gp_set_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_
 		while (*start != ']' && *start != '\0') {
 			start++;
 		}
-		gplink_str = talloc_asprintf(mem_ctx, "%s;%d%s\n", gplink_str, gplink->options, start);
+		gplink_str = talloc_asprintf(mem_ctx, "%s;%d%s", gplink_str, gplink->options, start);
 
 	} else {
 		/* Prepend the new GPO link to the string. This list is backwards in priority. */
 		gplink_str = talloc_asprintf(mem_ctx, "[LDAP://%s;%d]%s", gplink->dn, gplink->options, gplink_str);
 	}
 
+
+
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = dn;
+
+	rv = ldb_msg_add_string(msg, "gPLink", gplink_str);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add string failed: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_modify(gp_ctx->ldb_ctx, msg);
+	if (rv != 0) {
+		DEBUG(0, ("LDB modify failed: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char *gplink_dn)
+{
+	TALLOC_CTX *mem_ctx;
+	struct ldb_result *result;
+	struct ldb_dn *dn;
+	struct ldb_message *msg;
+	const char *attrs[] = { "gPLink", NULL };
+	const char *gplink_str;
+	int rv;
+	char *p;
+
+	/* Create a forked memory context, as a base for everything here */
+	mem_ctx = talloc_new(gp_ctx);
+
+	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
+
+	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_BASE, attrs, "(objectclass=*)");
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv), ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (result->count != 1) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	gplink_str = ldb_msg_find_attr_as_string(result->msgs[0], "gPLink", "");
+
+	/* If this GPO link already exists, alter the options, else add it */
+	p = strcasestr(gplink_str, talloc_asprintf(mem_ctx, "[LDAP://%s", gplink_dn));
+	if (p == NULL) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	*p = '\0';
+	p++;
+	while (*p != ']' && *p != '\0') {
+		p++;
+	}
+	p++;
+	gplink_str = talloc_asprintf(mem_ctx, "%s%s", gplink_str, p);
 
 
 	msg = ldb_msg_new(mem_ctx);

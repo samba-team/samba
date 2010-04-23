@@ -313,7 +313,43 @@ static int net_gpo_link_set(struct net_context *ctx, int argc, const char **argv
 		DEBUG(0, ("Failed to set GPO link on container: %s\n", get_friendly_nt_error_msg(status)));
 		return 1;
 	}
-	d_printf("Added link to container.\n");
+	d_printf("Set link on container.\nCurrent Group Policy links:\n");
+
+	/* Display current links */
+	net_gpo_link_get(ctx, 1, argv);
+
+	talloc_free(gp_ctx);
+	return 0;
+}
+
+static int net_gpo_link_del_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo linkdel <container> <gpo> [options]\n");
+	d_printf("For a list of available options, please type net gpo linkdel --help\n");
+	return 0;
+}
+
+static int net_gpo_link_del(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	NTSTATUS status;
+
+	if (argc != 2) {
+		return net_gpo_link_del_usage(ctx, argc, argv);
+	}
+
+	status = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+
+	status = gp_del_gplink(gp_ctx, argv[0], argv[1]);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to delete gplink: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+	d_printf("Deleted gplink.\nCurrent Group Policy links:\n\n");
 
 	/* Display current links */
 	net_gpo_link_get(ctx, 1, argv);
@@ -327,7 +363,7 @@ static const struct net_functable net_gpo_functable[] = {
 	{ "getgpo", "List specificied GPO\n", net_gpo_get_gpo, net_gpo_get_gpo_usage },
 	{ "linkget", "List gPLink of container\n", net_gpo_link_get, net_gpo_link_get_usage },
 	{ "linkset", "Link a GPO to a container\n", net_gpo_link_set, net_gpo_link_set_usage },
-/*	{ "linkdelete", "Delete GPO link from a container\n", net_gpo_link_delete, net_gpo_usage }, */
+	{ "linkdel", "Delete GPO link from a container\n", net_gpo_link_del, net_gpo_link_del_usage },
 	{ "list", "List all GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
 /*	{ "apply", "Apply GPO to container\n", net_gpo_apply, net_gpo_usage }, */
 //	{ "refresh", "List all GPO's for machine/user and download them\n", net_gpo_refresh, net_gpo_refresh_usage },
