@@ -759,6 +759,7 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 bool push_deferred_open_message_smb(struct smb_request *req,
 			       struct timeval request_time,
 			       struct timeval timeout,
+			       struct file_id id,
 			       char *private_data, size_t priv_len)
 {
 	struct timeval end_time;
@@ -767,6 +768,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 		return push_deferred_open_message_smb2(req->smb2req,
 						request_time,
 						timeout,
+						id,
 						private_data,
 						priv_len);
 	}

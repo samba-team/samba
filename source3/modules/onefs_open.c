@@ -373,7 +373,7 @@ static void defer_open(struct share_mode_lock *lck,
 		  (unsigned long long)req->mid));
 
 	if (!push_deferred_open_message_smb(req, request_time, timeout,
-				       (char *)state, sizeof(*state))) {
+				       state->id, (char *)state, sizeof(*state))) {
 		exit_server("push_deferred_open_message_smb failed");
 	}
 	add_deferred_open(lck, req->mid, request_time, state->id);
@@ -554,14 +554,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 			   see if this has timed out. */
 
 			/* Remove the deferred open entry under lock. */
-			lck = get_share_mode_lock(talloc_tos(), state->id,
-					NULL, NULL, NULL);
-			if (lck == NULL) {
-				DEBUG(0, ("could not get share mode lock\n"));
-			} else {
-				del_deferred_open_entry(lck, req->mid);
-				TALLOC_FREE(lck);
-			}
+			remove_deferred_open_entry(state->id, req->mid);
 
 			/* Ensure we don't reprocess this message. */
 			remove_deferred_open_message_smb(req->mid);

@@ -6658,6 +6658,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options,
 				 uint32_t *pprivate_flags);
+void remove_deferred_open_entry(struct file_id id, uint64_t mid);
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result);
@@ -6819,9 +6820,11 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 				struct timeval *p_request_time,
 				void **pp_state);
 bool push_deferred_open_message_smb(struct smb_request *req,
-			       struct timeval request_time,
-			       struct timeval timeout,
-			       char *private_data, size_t priv_len);
+				struct timeval request_time,
+				struct timeval timeout,
+				struct file_id id,
+				char *private_data,
+				size_t priv_len);
 struct idle_event *event_add_idle(struct event_context *event_ctx,
 				  TALLOC_CTX *mem_ctx,
 				  struct timeval interval,

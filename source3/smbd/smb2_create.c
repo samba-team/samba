@@ -199,6 +199,12 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	return smbd_smb2_request_pending_queue(smb2req, tsubreq);
 }
 
+static uint64_t get_mid_from_smb2req(struct smbd_smb2_request *smb2req)
+{
+	uint8_t *reqhdr = (uint8_t *)smb2req->out.vector[smb2req->current_idx].iov_base;
+	return BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
+}
+
 static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 {
 	struct smbd_smb2_request *smb2req = tevent_req_callback_data(tsubreq,
@@ -222,6 +228,19 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	uint16_t out_context_buffer_offset = 0;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
+
+	if (smb2req->cancelled) {
+		uint64_t mid = get_mid_from_smb2req(smb2req);
+		DEBUG(10,("smbd_smb2_request_create_done: cancelled mid %llu\n",
+			(unsigned long long)mid ));
+		error = smbd_smb2_request_error(smb2req, NT_STATUS_CANCELLED);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(smb2req->sconn,
+				nt_errstr(error));
+			return;
+		}
+		return;
+	}
 
 	status = smbd_smb2_create_recv(tsubreq,
 				       smb2req,
@@ -318,6 +337,7 @@ struct smbd_smb2_create_state {
 	struct smb_request *smb1req;
 	struct timed_event *te;
 	struct timeval request_time;
+	struct file_id id;
 	DATA_BLOB private_data;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
@@ -818,8 +838,7 @@ static struct smbd_smb2_request *find_open_smb2req(uint64_t mid)
 	struct smbd_smb2_request *smb2req;
 
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
-		uint8_t *reqhdr = (uint8_t *)smb2req->out.vector[smb2req->current_idx].iov_base;
-		uint64_t message_id = BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
+		uint64_t message_id = get_mid_from_smb2req(smb2req);
 		if (message_id == mid) {
 			return smb2req;
 		}
@@ -859,17 +878,11 @@ bool open_was_deferred_smb2(uint64_t mid)
 	return true;
 }
 
-void remove_deferred_open_message_smb2(uint64_t mid)
+static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request *smb2req,
+							uint64_t mid)
 {
 	struct smbd_smb2_create_state *state = NULL;
-	struct smbd_smb2_request *smb2req = find_open_smb2req(mid);
 
-	if (!smb2req) {
-		DEBUG(10,("remove_deferred_open_message_smb2: "
-			"can't find mid %llu\n",
-			(unsigned long long)mid ));
-		return;
-	}
 	if (!smb2req->subreq) {
 		return;
 	}
@@ -882,12 +895,25 @@ void remove_deferred_open_message_smb2(uint64_t mid)
 		return;
 	}
 
-	DEBUG(10,("remove_deferred_open_message_smb2: "
+	DEBUG(10,("remove_deferred_open_message_smb2_internal: "
 		"mid %llu\n",
 		(unsigned long long)mid ));
 
 	/* Ensure we don't have any outstanding timer event. */
 	TALLOC_FREE(state->te);
+}
+
+void remove_deferred_open_message_smb2(uint64_t mid)
+{
+	struct smbd_smb2_request *smb2req = find_open_smb2req(mid);
+
+	if (!smb2req) {
+		DEBUG(10,("remove_deferred_open_message_smb2: "
+			"can't find mid %llu\n",
+			(unsigned long long)mid ));
+		return;
+	}
+	remove_deferred_open_message_smb2_internal(smb2req, mid);
 }
 
 void schedule_deferred_open_message_smb2(uint64_t mid)
@@ -979,9 +1005,36 @@ static void smb2_deferred_open_timer(struct event_context *ev,
 	}
 }
 
+static bool smbd_smb2_create_cancel(struct tevent_req *req)
+{
+	struct smbd_smb2_request *smb2req = NULL;
+	struct smbd_smb2_create_state *state = tevent_req_data(req,
+				struct smbd_smb2_create_state);
+	uint64_t mid;
+
+	if (!state) {
+		return false;
+	}
+
+	if (!state->smb2req) {
+		return false;
+	}
+
+	smb2req = state->smb2req;
+	mid = get_mid_from_smb2req(smb2req);
+
+	remove_deferred_open_entry(state->id, mid);
+	remove_deferred_open_message_smb2_internal(smb2req, mid);
+	smb2req->cancelled = true;
+
+	tevent_req_done(req);
+	return true;
+}
+
 bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
                                 struct timeval request_time,
                                 struct timeval timeout,
+				struct file_id id,
                                 char *private_data,
                                 size_t priv_len)
 {
@@ -1000,6 +1053,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 	if (!state) {
 		return false;
 	}
+	state->id = id;
 	state->request_time = request_time;
 	state->private_data = data_blob_talloc(state, private_data,
 						priv_len);
@@ -1048,5 +1102,9 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
         if (!state->te) {
 		return false;
 	}
+
+	/* allow this request to be canceled */
+	tevent_req_set_cancel_fn(req, smbd_smb2_create_cancel);
+
 	return true;
 }
