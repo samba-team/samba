@@ -555,9 +555,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 
 int dptr_CloseDir(struct dptr_struct *dptr)
 {
-	struct smbd_server_connection *sconn = dptr->conn->sconn;
-	DLIST_REMOVE(sconn->smb1.searches.dirptrs, dptr);
-	TALLOC_FREE(dptr->dir_hnd);
+	dptr_close_internal(dptr);
 	return 0;
 }
 
