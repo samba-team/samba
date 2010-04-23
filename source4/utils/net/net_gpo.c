@@ -23,6 +23,9 @@
 
 #include "includes.h"
 #include "utils/net/net.h"
+#include "lib/ldb/include/ldb.h"
+#include "auth/auth.h"
+#include "param/param.h"
 #include "libgpo/gpo.h"
 
 static int net_gpo_list_all_usage(struct net_context *ctx, int argc, const char **argv)
@@ -78,7 +81,7 @@ static int net_gpo_list_all(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_get_gpo_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo getgpo <name> [options]\n");
+	d_printf("Syntax: net gpo getgpo <dn> [options]\n");
 	d_printf("For a list of available options, please type net gpo getgpo --help\n");
 	return 0;
 }
@@ -131,8 +134,8 @@ static int net_gpo_get_gpo(struct net_context *ctx, int argc, const char **argv)
 
 static int net_gpo_link_get_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo linkget <name> [options]\n");
-	d_printf("For a list of available options, please type net gpo get --help\n");
+	d_printf("Syntax: net gpo linkget <dn> [options]\n");
+	d_printf("For a list of available options, please type net gpo linkget --help\n");
 	return 0;
 }
 
@@ -182,6 +185,93 @@ static int net_gpo_link_get(struct net_context *ctx, int argc, const char **argv
 	return 0;
 }
 
+static int net_gpo_list_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo list <username> [options]\n");
+	d_printf("For a list of available options, please type net gpo list --help\n");
+	return 0;
+}
+
+static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	struct ldb_result *result;
+	struct auth_serversupplied_info *server_info;
+	struct auth_session_info *session_info;
+	DATA_BLOB dummy = { NULL, 0 };
+	const char **gpos;
+	NTSTATUS status;
+	int rv;
+	unsigned int i;
+
+	if (argc != 1) {
+		return net_gpo_list_usage(ctx, argc, argv);
+	}
+	status = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+
+	rv = ldb_search(gp_ctx->ldb_ctx,
+			gp_ctx,
+			&result,
+			ldb_get_default_basedn(gp_ctx->ldb_ctx),
+			LDB_SCOPE_SUBTREE,
+			NULL,
+			"(&(objectClass=user)(sAMAccountName=%s))", argv[0]);
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(gp_ctx);
+		return 1;
+	}
+
+        /* We expect exactly one record */
+	if (result->count != 1) {
+		DEBUG(0, ("Could not find SAM account with name %s\n", argv[0]));
+		talloc_free(gp_ctx);
+		return 1;
+	}
+
+	status = authsam_make_server_info(gp_ctx,
+			gp_ctx->ldb_ctx,
+			lp_netbios_name(gp_ctx->lp_ctx),
+			lp_sam_name(gp_ctx->lp_ctx),
+			ldb_get_default_basedn(gp_ctx->ldb_ctx),
+			result->msgs[0],
+			dummy,
+			dummy,
+			&server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to make server information: %s\n", get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
+		return 1;
+	}
+
+	status = auth_generate_session_info(gp_ctx, gp_ctx->ev_ctx, gp_ctx->lp_ctx, server_info, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to generate session information: %s\n", get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
+		return 1;
+	}
+
+	status = gp_list_gpos(gp_ctx, session_info->security_token, &gpos);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to list gpos for user %s: %s\n", argv[0],
+				get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
+		return 1;
+	}
+
+	d_printf("GPO's for user %s:\n", argv[0]);
+	for (i = 0; gpos[i] != NULL; i++) {
+		d_printf("\t%s\n", gpos[i]);
+	}
+
+	talloc_free(gp_ctx);
+	return 0;
+}
+
 static const struct net_functable net_gpo_functable[] = {
 	{ "listall", "List all GPO's on a DC\n", net_gpo_list_all, net_gpo_list_all_usage },
 	{ "getgpo", "List specificied GPO\n", net_gpo_get_gpo, net_gpo_get_gpo_usage },
@@ -189,7 +279,7 @@ static const struct net_functable net_gpo_functable[] = {
 /*	{ "apply", "Apply GPO to container\n", net_gpo_apply, net_gpo_usage }, */
 //	{ "linkadd", "Link a GPO to a container\n", net_gpo_link_add, net_gpo_usage },
 /*	{ "linkdelete", "Delete GPO link from a container\n", net_gpo_link_delete, net_gpo_usage }, */
-//	{ "list", "List all GPO's for machine/user\n", net_gpo_list, net_gpo_list_usage },
+	{ "list", "List all GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
 //	{ "refresh", "List all GPO's for machine/user and download them\n", net_gpo_refresh, net_gpo_refresh_usage },
 	{ NULL, NULL }
 };

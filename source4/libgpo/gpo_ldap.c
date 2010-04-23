@@ -25,6 +25,10 @@
 #include "../librpc/gen_ndr/nbt.h"
 #include "libcli/libcli.h"
 #include "libnet/libnet.h"
+#include "../librpc/gen_ndr/ndr_security.h"
+#include "../libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
+#include "../lib/talloc/talloc.h"
 #include "gpo.h"
 
 struct gpo_stringmap {
@@ -51,7 +55,9 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 {
 	unsigned int i;
 	struct gp_object *gpo = talloc(mem_ctx, struct gp_object);
-	gpo->dn = ldb_dn_get_linearized(msg->dn);
+	enum ndr_err_code ndr_err;
+
+	gpo->dn = talloc_steal(mem_ctx, ldb_dn_get_linearized(msg->dn));
 
 	DEBUG(9, ("Parsing GPO LDAP data for %s\n", gpo->dn));
 	for (i = 0; i < msg->num_elements; i++) {
@@ -85,6 +91,18 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 			SMB_ASSERT(element->num_values > 0);
 			gpo->file_sys_path = talloc_strdup(gpo, (char *)element->values[0].data);
 			DEBUG(10, ("Found file system path: %s\n", gpo->file_sys_path));
+		}
+		if (strcmp(element->name, "nTSecurityDescriptor") == 0) {
+			gpo->security_descriptor = talloc(mem_ctx, struct security_descriptor);
+			ndr_err = ndr_pull_struct_blob(&element->values[0],
+					mem_ctx,
+					NULL,
+					gpo->security_descriptor,
+					(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return ndr_map_error2ntstatus(ndr_err);
+			}
+			DEBUG(10, ("Found security descriptor.\n"));
 		}
 	}
 
@@ -162,8 +180,9 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 	/* Connect to ldap://DC_NAME with all relevant contexts*/
 	url = talloc_asprintf(mem_ctx, "ldap://%s", io->out.dcs[0].name);
 	ldb_ctx = ldb_wrap_connect(mem_ctx, net_ctx->event_ctx, lp_ctx,
-                         url, NULL, net_ctx->cred, 0);
+			url, NULL, net_ctx->cred, 0);
 	if (ldb_ctx == NULL) {
+		DEBUG(0, ("Can't connect to DC's LDAP with url %s\n", url));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -187,6 +206,7 @@ NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret)
 	struct ldb_dn *dn;
 	struct gp_object **gpo;
 	unsigned int i; /* same as in struct ldb_result */
+	const char **attrs;
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
@@ -202,7 +222,16 @@ NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret)
 
 	DEBUG(10, ("Searching for policies in DN: %s\n", ldb_dn_get_linearized(dn)));
 
-	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_ONELEVEL, NULL, "(objectClass=groupPolicyContainer)");
+	attrs = talloc_array(mem_ctx, const char *, 7);
+	attrs[0] = "nTSecurityDescriptor";
+	attrs[1] = "versionNumber";
+	attrs[2] = "flags";
+	attrs[3] = "name";
+	attrs[4] = "displayName";
+	attrs[5] = "gPCFileSysPath";
+	attrs[6] = NULL;
+
+	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_ONELEVEL, attrs, "(objectClass=groupPolicyContainer)");
 	if (rv != LDB_SUCCESS) {
 		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
 		talloc_free(mem_ctx);
@@ -227,7 +256,7 @@ NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *name, struct gp_object **ret)
+NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct gp_object **ret)
 {
 	struct ldb_result *result;
 	struct ldb_dn *dn;
@@ -235,27 +264,30 @@ NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *name, struct gp_
 	int rv;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
+	const char **attrs;
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
 
-	/* Create full ldb dn of the policies base object */
-	dn = ldb_get_default_basedn(gp_ctx->ldb_ctx);
-	rv = ldb_dn_add_child(dn, ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, "CN=Policies,CN=System"));
-	if (!rv) {
-		DEBUG(0, ("Can't append subtree to DN\n"));
-		talloc_free(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	/* Create an ldb dn struct for the dn string */
+	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
+
+	attrs = talloc_array(mem_ctx, const char *, 7);
+	attrs[0] = "nTSecurityDescriptor";
+	attrs[1] = "versionNumber";
+	attrs[2] = "flags";
+	attrs[3] = "name";
+	attrs[4] = "displayName";
+	attrs[5] = "gPCFileSysPath";
+	attrs[6] = NULL;
 
 	rv = ldb_search(gp_ctx->ldb_ctx,
-	                mem_ctx,
-	                &result,
-	                dn,
-	                LDB_SCOPE_ONELEVEL,
-	                NULL,
-	                "(&(objectClass=groupPolicyContainer)(name=%s))",
-	                name);
+			mem_ctx,
+			&result,
+			dn,
+			LDB_SCOPE_BASE,
+			attrs,
+			"objectClass=groupPolicyContainer");
 	if (rv != LDB_SUCCESS) {
 		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
 		talloc_free(mem_ctx);
@@ -264,7 +296,7 @@ NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *name, struct gp_
 
 	/* We expect exactly one record */
 	if (result->count != 1) {
-		DEBUG(0, ("Could not find GPC with name %s\n", name));
+		DEBUG(0, ("Could not find GPC with dn %s\n", dn_str));
 		talloc_free(mem_ctx);
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -290,6 +322,7 @@ static NTSTATUS parse_gplink (TALLOC_CTX *mem_ctx, const char *gplink_str, struc
 	char *buf, *end;
 
 	gplinks = talloc_array(mem_ctx, struct gp_link *, 1);
+	gplinks[0] = NULL;
 
 	/* Assuming every gPLink starts with "[LDAP://" */
 	start = 8;
@@ -299,19 +332,20 @@ static NTSTATUS parse_gplink (TALLOC_CTX *mem_ctx, const char *gplink_str, struc
 			gplinks = talloc_realloc(mem_ctx, gplinks, struct gp_link *, idx+2);
 			gplinks[idx] = talloc(mem_ctx, struct gp_link);
 			gplinks[idx]->dn = talloc_strndup(mem_ctx,
-			                                gplink_str + start,
-			                                pos - start);
+			                                  gplink_str + start,
+			                                  pos - start);
 
 			for (start = pos + 1; gplink_str[pos] != ']'; pos++);
 
-			buf = talloc_strndup(mem_ctx, gplink_str + start, pos - start);
-
+			buf = talloc_strndup(gplinks, gplink_str + start, pos - start);
 			gplinks[idx]->options = (uint32_t) strtoll(buf, &end, 0);
+			talloc_free(buf);
 
 			/* Set the last entry in the array to be NULL */
 			gplinks[idx + 1] = NULL;
 
-			/* Increment the array index, the string position, and the start reference */
+			/* Increment the array index, the string position past
+			   the next "[LDAP://", and set the start reference */
 			idx++;
 			pos += 9;
 			start = pos;
@@ -341,7 +375,7 @@ NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp
 
 	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_BASE, NULL, "(objectclass=*)");
 	if (rv != LDB_SUCCESS) {
-		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv), ldb_errstring(gp_ctx->ldb_ctx)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -364,10 +398,171 @@ NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp
 
 	status = parse_gplink(gp_ctx, gplink_str, &gplinks);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to parse gPLinks\n"));
+		DEBUG(0, ("Failed to parse gPLink\n"));
 		return status;
 	}
 
+	talloc_free(mem_ctx);
+
 	*ret = gplinks;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, const char ***ret)
+{
+	TALLOC_CTX *mem_ctx;
+	const char **gpos;
+	struct ldb_result *result;
+	const char *sid;
+	struct ldb_dn *dn;
+	struct ldb_message_element *element;
+	int inherit;
+	const char *attrs[] = { "objectClass", NULL };
+	int rv;
+	NTSTATUS status;
+	unsigned int count = 0;
+	unsigned int i;
+	enum {
+		ACCOUNT_TYPE_USER = 0,
+		ACCOUNT_TYPE_MACHINE = 1
+	} account_type;
+
+	/* Create a forked memory context, as a base for everything here */
+	mem_ctx = talloc_new(gp_ctx);
+
+	sid = dom_sid_string(mem_ctx, token->user_sid);
+
+	/* Find the user DN and objectclass via the sid from the security token */
+	rv = ldb_search(gp_ctx->ldb_ctx,
+			mem_ctx,
+			&result,
+			ldb_get_default_basedn(gp_ctx->ldb_ctx),
+			LDB_SCOPE_SUBTREE,
+			attrs,
+			"(&(objectclass=user)(objectSid=%s))", sid);
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),
+				ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	if (result->count != 1) {
+		DEBUG(0, ("Could not find user with sid %s.\n", sid));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	DEBUG(10,("Found DN for this user: %s\n", ldb_dn_get_linearized(result->msgs[0]->dn)));
+
+	element = ldb_msg_find_element(result->msgs[0], "objectClass");
+
+	/* We need to know if this account is a user or machine. */
+	account_type = ACCOUNT_TYPE_USER;
+	for (i = 0; i < element->num_values; i++) {
+		if (strcmp((char *)element->values[i].data, "computer") == 0) {
+			account_type = ACCOUNT_TYPE_MACHINE;
+			DEBUG(10, ("This user is a machine\n"));
+		}
+	}
+
+	gpos = talloc_array(gp_ctx, const char *, 1);
+	gpos[0] = NULL;
+
+	/* Walk through the containers until we hit the root */
+	inherit = 1;
+	dn = ldb_dn_get_parent(mem_ctx, result->msgs[0]->dn);
+	while (ldb_dn_compare_base(ldb_get_default_basedn(gp_ctx->ldb_ctx), dn) == 0) {
+		const char *gpo_attrs[] = { "gPLink", "gPOptions", NULL };
+		struct gp_link **gplinks;
+		enum gpo_inheritance gpoptions;
+
+		DEBUG(10, ("Getting gPLinks for DN: %s\n", ldb_dn_get_linearized(dn)));
+
+		/* Get the gPLink and gPOptions attributes from the container */
+		rv = ldb_search(gp_ctx->ldb_ctx,
+				mem_ctx,
+				&result,
+				dn,
+				LDB_SCOPE_BASE,
+				gpo_attrs,
+				"objectclass=*");
+		if (rv != LDB_SUCCESS) {
+			DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),
+					ldb_errstring(gp_ctx->ldb_ctx)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		/* Parse the gPLink attribute, put it into a nice struct array */
+		status = parse_gplink(mem_ctx, ldb_msg_find_attr_as_string(result->msgs[0], "gPLink", ""), &gplinks);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to parse gPLink\n"));
+			talloc_free(mem_ctx);
+			return status;
+		}
+
+		/* Check all group policy links on this container */
+		for (i = 0; gplinks[i] != NULL; i++) {
+			struct gp_object *gpo;
+			uint32_t access_granted;
+
+			/* If inheritance was blocked at a higher level and this
+			 * gplink is not enforced, it should not be applied */
+			if (!inherit && !(gplinks[i]->options & GPLINK_OPT_ENFORCE))
+				continue;
+
+			/* Don't apply disabled links */
+			if (gplinks[i]->options & GPLINK_OPT_DISABLE)
+				continue;
+
+			/* Get GPO information */
+			status = gp_get_gpo_info(gp_ctx, gplinks[i]->dn, &gpo);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("Failed to get gpo information for %s\n", gplinks[i]->dn));
+				talloc_free(mem_ctx);
+				return status;
+			}
+
+			/* If the account does not have read access, this GPO does not apply
+			 * to this account */
+			status = sec_access_check(gpo->security_descriptor,
+					token,
+					(SEC_STD_READ_CONTROL | SEC_ADS_LIST | SEC_ADS_READ_PROP),
+					&access_granted);
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
+			}
+
+			/* If the account is a user and the GPO has user disabled flag, or
+			 * a machine and the GPO has machine disabled flag, this GPO does
+			 * not apply to this account */
+			if ((account_type == ACCOUNT_TYPE_USER &&
+					(gpo->flags & GPO_FLAG_USER_DISABLE)) ||
+					(account_type == ACCOUNT_TYPE_MACHINE &&
+					(gpo->flags & GPO_FLAG_MACHINE_DISABLE))) {
+				continue;
+			}
+
+			/* Add the GPO to the list */
+			gpos = talloc_realloc(gp_ctx, gpos, const char *, count+2);
+			gpos[count] = talloc_strdup(gp_ctx, gplinks[i]->dn);
+			gpos[count+1] = NULL;
+			count++;
+
+			/* Clean up */
+			talloc_free(gpo);
+		}
+
+		/* If inheritance is blocked, then we should only add enforced gPLinks
+		 * higher up */
+		gpoptions = ldb_msg_find_attr_as_uint(result->msgs[0], "gPOptions", 0);
+		if (gpoptions == GPO_BLOCK_INHERITANCE) {
+			inherit = 0;
+		}
+		dn = ldb_dn_get_parent(mem_ctx, dn);
+	}
+
+	talloc_free(mem_ctx);
+
+	*ret = gpos;
 	return NT_STATUS_OK;
 }

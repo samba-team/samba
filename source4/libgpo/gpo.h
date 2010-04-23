@@ -29,6 +29,10 @@
 #define GPO_FLAG_USER_DISABLE		(1 << 0)
 #define GPO_FLAG_MACHINE_DISABLE	(1 << 1)
 
+enum gpo_inheritance {
+	GPO_INHERIT = 0,
+	GPO_BLOCK_INHERITANCE = 1,
+};
 
 struct gp_context {
 	struct ldb_context *ldb_ctx;
@@ -47,13 +51,6 @@ struct gp_object {
 	struct security_descriptor *security_descriptor;
 };
 
-struct gp_hierarchy_object {
-	enum {
-		GPO_INHERIT = 0,
-		GPO_BLOCK_INHERITANCE = 1,
-	} inheritance;
-	struct gp_link **gplinks;
-};
 
 struct gp_link {
 	uint32_t options;
@@ -72,6 +69,8 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret);
 NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *name, struct gp_object **ret);
 NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp_link ***ret);
+NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, const char ***ret);
+
 
 NTSTATUS gp_get_gplink_options(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
 NTSTATUS gp_get_gpo_flags(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
