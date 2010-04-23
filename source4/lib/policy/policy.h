@@ -57,9 +57,11 @@ struct gp_link {
 	const char *dn;
 };
 
+#if 0 /* Not used yet */
 NTSTATUS gp_fetch_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 NTSTATUS gp_apply_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 NTSTATUS gp_check_refresh_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
+#endif
 
 NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
@@ -67,12 +69,18 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
 				struct gp_context **gp_ctx);
 NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret);
-NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *name, struct gp_object **ret);
 NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp_link ***ret);
 NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, const char ***ret);
+
+NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct gp_object **ret);
+NTSTATUS gp_set_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct gp_object *gpo);
+NTSTATUS gp_del_gpo(struct gp_context *gp_ctx, const char *dn_str);
 
 
 NTSTATUS gp_get_gplink_options(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
 NTSTATUS gp_get_gpo_flags(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
+
+NTSTATUS gp_add_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink);
+NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char *gp_dn);
 
 #endif

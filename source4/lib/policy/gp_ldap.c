@@ -51,59 +51,33 @@ static const struct gpo_stringmap gpo_inheritance [] = {
 	{ NULL, 0 }
 };
 
+
 static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct gp_object **ret)
 {
-	unsigned int i;
 	struct gp_object *gpo = talloc(mem_ctx, struct gp_object);
 	enum ndr_err_code ndr_err;
+	const DATA_BLOB *data;
 
 	gpo->dn = talloc_steal(mem_ctx, ldb_dn_get_linearized(msg->dn));
 
 	DEBUG(9, ("Parsing GPO LDAP data for %s\n", gpo->dn));
-	for (i = 0; i < msg->num_elements; i++) {
-		struct ldb_message_element *element = &msg->elements[i];
 
-		if (strcmp(element->name, "displayName") == 0) {
-			SMB_ASSERT(element->num_values > 0);
-			gpo->display_name = talloc_strdup(gpo, (char *)element->values[0].data);
-			DEBUG(10, ("Found displayname: %s\n", gpo->display_name));
-		}
-		if (strcmp(element->name, "name") == 0) {
-			SMB_ASSERT(element->num_values > 0);
-			gpo->name = talloc_strdup(gpo, (char *)element->values[0].data);
-			DEBUG(10, ("Found name: %s\n", gpo->name));
-		}
-		if (strcmp(element->name, "flags") == 0) {
-			char *end;
-			SMB_ASSERT(element->num_values > 0);
-			gpo->flags = (uint32_t) strtoll((char *)element->values[0].data, &end, 0);
-			SMB_ASSERT(*end == 0);
-			DEBUG(10, ("Found flags: %d\n", gpo->flags));
-		}
-		if (strcmp(element->name, "versionNumber") == 0) {
-			char *end;
-			SMB_ASSERT(element->num_values > 0);
-			gpo->version = (uint32_t) strtoll((char *)element->values[0].data, &end, 0);
-			SMB_ASSERT(*end == 0);
-			DEBUG(10, ("Found version: %d\n", gpo->version));
-		}
-		if (strcmp(element->name, "gPCFileSysPath") == 0) {
-			SMB_ASSERT(element->num_values > 0);
-			gpo->file_sys_path = talloc_strdup(gpo, (char *)element->values[0].data);
-			DEBUG(10, ("Found file system path: %s\n", gpo->file_sys_path));
-		}
-		if (strcmp(element->name, "nTSecurityDescriptor") == 0) {
-			gpo->security_descriptor = talloc(mem_ctx, struct security_descriptor);
-			ndr_err = ndr_pull_struct_blob(&element->values[0],
-					mem_ctx,
-					NULL,
-					gpo->security_descriptor,
-					(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return ndr_map_error2ntstatus(ndr_err);
-			}
-			DEBUG(10, ("Found security descriptor.\n"));
-		}
+	gpo->display_name = talloc_steal(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", ""));
+	gpo->name = talloc_steal(mem_ctx, ldb_msg_find_attr_as_string(msg, "name", ""));
+	gpo->flags = ldb_msg_find_attr_as_uint(msg, "name", 0);
+	gpo->version = ldb_msg_find_attr_as_uint(msg, "version", 0);
+	gpo->file_sys_path = talloc_steal(mem_ctx, ldb_msg_find_attr_as_string(msg, "gPCFileSysPath", ""));
+
+	/* Pull the security descriptor through the NDR library */
+	data = ldb_msg_find_ldb_val(msg, "nTSecurityDescriptor");
+	gpo->security_descriptor = talloc(mem_ctx, struct security_descriptor);
+	ndr_err = ndr_pull_struct_blob(data,
+			mem_ctx,
+			NULL,
+			gpo->security_descriptor,
+			(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*ret = gpo;
@@ -357,7 +331,7 @@ static NTSTATUS parse_gplink (TALLOC_CTX *mem_ctx, const char *gplink_str, struc
 }
 
 
-NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp_link ***ret)
+NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *dn_str, struct gp_link ***ret)
 {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *dn;
@@ -371,7 +345,7 @@ NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
 
-	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, req_dn);
+	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
 
 	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_BASE, NULL, "(objectclass=*)");
 	if (rv != LDB_SUCCESS) {
@@ -564,5 +538,65 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 	talloc_free(mem_ctx);
 
 	*ret = gpos;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_add_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink)
+{
+	TALLOC_CTX *mem_ctx;
+	struct ldb_result *result;
+	struct ldb_dn *dn;
+	struct ldb_message *msg;
+	const char *attrs[] = { "gPLink", NULL };
+	const char *gplink_str;
+	int rv;
+
+	/* Create a forked memory context, as a base for everything here */
+	mem_ctx = talloc_new(gp_ctx);
+
+	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
+
+	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_BASE, attrs, "(objectclass=*)");
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv), ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (result->count != 1) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	gplink_str = ldb_msg_find_attr_as_string(result->msgs[0], "gPLink", "");
+
+	if (strstr(gplink_str, gplink->dn) != NULL) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+
+	/* Prepend the new GPO link to the string. This list is backwards in priority. */
+	gplink_str = talloc_asprintf(mem_ctx, "[LDAP://%s;%d]%s", gplink->dn, gplink->options, gplink_str);
+
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = dn;
+
+	rv = ldb_msg_add_string(msg, "gPLink", gplink_str);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add string failed: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_modify(gp_ctx->ldb_ctx, msg);
+	if (rv != 0) {
+		DEBUG(0, ("LDB modify failed: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
