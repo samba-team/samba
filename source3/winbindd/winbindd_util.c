@@ -429,7 +429,7 @@ static void rescan_forest_root_trusts( void )
 						&cache_methods,
 						&dom_list[i].sid );
 			if (d != NULL) {
-				setup_domain_child(d, &d->child);
+				setup_domain_child(d);
 			}
 		}
 
@@ -501,7 +501,7 @@ static void rescan_forest_trusts( void )
 							&cache_methods,
 							&dom_list[i].sid );
 				if (d != NULL) {
-					setup_domain_child(d, &d->child);
+					setup_domain_child(d);
 				}
 			}
 
