@@ -17,12 +17,21 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "lib/replace/replace.h"
+#include "libcli/util/ntstatus.h"
+#include "libcli/util/werror.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "nsswitch/libwbclient/wbc_async.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
 #include "lib/util/util_net.h"
+#include "lib/util/charset/charset.h"
+#include "libcli/auth/libcli_auth.h"
+#include "source4/param/param.h"
+#include "lib/util/util.h"
+#include "lib/crypto/arcfour.h"
 
 #define WBC_ERROR_EQUAL(x,y) (x == y)
 
@@ -577,17 +586,78 @@ static bool test_wbc_authenticate_user(struct torture_context *tctx)
 static bool test_wbc_change_password(struct torture_context *tctx)
 {
 	wbcErr ret;
+	const char *oldpass = getenv("PASSWORD");
+	const char *newpass = "Koo8irei";
 
-	ret = wbcChangeUserPassword(getenv("USERNAME"), getenv("PASSWORD"),
-				    "passW0rd");
+	struct samr_CryptPassword new_nt_password;
+	struct samr_CryptPassword new_lm_password;
+	struct samr_Password old_nt_hash_enc;
+	struct samr_Password old_lanman_hash_enc;
+
+	uint8_t old_nt_hash[16];
+	uint8_t old_lanman_hash[16];
+	uint8_t new_nt_hash[16];
+	uint8_t new_lanman_hash[16];
+
+	struct wbcChangePasswordParams params;
+
+	ZERO_STRUCT(params);
+
+	E_md4hash(oldpass, old_nt_hash);
+	E_md4hash(newpass, new_nt_hash);
+
+	if (lp_client_lanman_auth(tctx->lp_ctx) &&
+	    E_deshash(newpass, new_lanman_hash) &&
+	    E_deshash(oldpass, old_lanman_hash)) {
+
+		/* E_deshash returns false for 'long' passwords (> 14
+		   DOS chars).  This allows us to match Win2k, which
+		   does not store a LM hash for these passwords (which
+		   would reduce the effective password length to 14) */
+
+		encode_pw_buffer(new_lm_password.data, newpass, STR_UNICODE);
+		arcfour_crypt(new_lm_password.data, old_nt_hash, 516);
+		E_old_pw_hash(new_nt_hash, old_lanman_hash,
+			      old_lanman_hash_enc.hash);
+
+		params.old_password.response.old_lm_hash_enc_length =
+			sizeof(old_lanman_hash_enc.hash);
+		params.old_password.response.old_lm_hash_enc_data =
+			old_lanman_hash_enc.hash;
+		params.new_password.response.lm_length =
+			sizeof(new_lm_password.data);
+		params.new_password.response.lm_data =
+			new_lm_password.data;
+	} else {
+		ZERO_STRUCT(new_lm_password);
+		ZERO_STRUCT(old_lanman_hash_enc);
+	}
+
+	encode_pw_buffer(new_nt_password.data, newpass, STR_UNICODE);
+
+	arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
+
+	params.old_password.response.old_nt_hash_enc_length =
+		sizeof(old_nt_hash_enc.hash);
+	params.old_password.response.old_nt_hash_enc_data =
+		old_nt_hash_enc.hash;
+	params.new_password.response.nt_length = sizeof(new_nt_password.data);
+	params.new_password.response.nt_data = new_nt_password.data;
+
+	params.level = WBC_CHANGE_PASSWORD_LEVEL_RESPONSE;
+	params.account_name = getenv("USERNAME");
+	params.domain_name = "SAMBA-TEST";
+
+	ret = wbcChangeUserPasswordEx(&params, NULL, NULL, NULL);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcChangeUserPassword failed");
 
-	if (!test_wbc_authenticate_user_int(tctx, "passW0rd")) {
+	if (!test_wbc_authenticate_user_int(tctx, "Koo8irei")) {
 		return false;
 	}
 
-	ret = wbcChangeUserPassword(getenv("USERNAME"), "passW0rd",
+	ret = wbcChangeUserPassword(getenv("USERNAME"), "Koo8irei",
 				    getenv("PASSWORD"));
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcChangeUserPassword failed");
