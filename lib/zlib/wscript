@@ -10,6 +10,9 @@ def configure(conf):
                     #error "ZLIB_VERNUM < 0x1230"
                     #endif
                     ''',
+                    headers='zlib.h',
+                    local_include=False,
+                    msg='Checking for ZLIB_VERNUM >= 0x1230',
                     define='HAVE_ZLIB')
 
 def build(bld):
