@@ -7519,11 +7519,13 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 	struct spoolss_AddPrinterDriverEx a;
 
 	switch (r->in.info_ctr->level) {
-	case 6:
-	case 8:
-		return WERR_UNKNOWN_LEVEL;
-	default:
+	case 2:
+	case 3:
+	case 4:
+	case 5:
 		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	a.in.servername		= r->in.servername;
