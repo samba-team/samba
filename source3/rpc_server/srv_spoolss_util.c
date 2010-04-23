@@ -1675,6 +1675,17 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (info2_mask & SPOOLSS_PRINTER_INFO_DRIVERNAME) {
+		result = winreg_printer_write_sz(tmp_ctx,
+						 winreg_pipe,
+						 &key_hnd,
+						 "Printer Driver",
+						 info2->drivername);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
 	if (info2_mask & SPOOLSS_PRINTER_INFO_LOCATION) {
 		result = winreg_printer_write_sz(tmp_ctx,
 						 winreg_pipe,
@@ -1997,6 +2008,12 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 					      v,
 					      "Parameters",
 					      &info2->parameters);
+		CHECK_ERROR(result);
+
+		result = winreg_enumval_to_sz(info2,
+					      v,
+					      "Printer Driver",
+					      &info2->drivername);
 		CHECK_ERROR(result);
 
 		result = winreg_enumval_to_dword(info2,
