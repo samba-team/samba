@@ -7328,6 +7328,10 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 		fillup_printserver_info(tctx, p, d),
 		"failed to fillup printserver info");
 
+	if (!directory_exist(d->local.driver_directory)) {
+		torture_skip(tctx, "Skipping Printer Driver test as no local driver is available");
+	}
+
 	torture_assert(tctx,
 		upload_printer_driver(tctx, dcerpc_server_name(p), d),
 		"failed to upload printer driver");
