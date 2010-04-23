@@ -1665,6 +1665,10 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 
 NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 {
+	if (domain->internal) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
 	if (domain->initialized && !domain->online) {
 		/* We check for online status elsewhere. */
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
