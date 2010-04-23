@@ -7417,6 +7417,10 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 	 * i.e. only copy files that are newer than existing ones
 	 */
 
+	if (r->in.flags == 0) {
+		return WERR_INVALID_PARAM;
+	}
+
 	if (r->in.flags != APD_COPY_NEW_FILES) {
 		return WERR_ACCESS_DENIED;
 	}
