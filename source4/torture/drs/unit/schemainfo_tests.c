@@ -344,29 +344,6 @@ static bool test_dsdb_module_schema_info_update(struct torture_context *tctx,
 	return true;
 }
 
-/*
- * Tests dsdb_schema_info_create()
- */
-static bool test_dsdb_schema_info_create(struct torture_context *tctx,
-					 struct drsut_schemainfo_data *priv)
-{
-	WERROR werr;
-	struct dsdb_schema_info *schema_info = NULL;
-
-	werr = dsdb_schema_info_create(priv->ldb, true, priv, &schema_info);
-	torture_assert_werr_ok(tctx, werr, "dsdb_schema_info_create() failed");
-
-	torture_assert(tctx, schema_info, "schema_info is NULL after dsdb_schema_info_create()");
-	torture_assert_int_equal(tctx, schema_info->revision, 1, "Invalid schemaInfo revision");
-	torture_assert(tctx,
-		       GUID_equal(&schema_info->invocation_id, &priv->schema_info->invocation_id),
-		       "Invalid invocationId returned");
-
-	talloc_free(schema_info);
-
-	return true;
-}
-
 
 /**
  * Reset schemaInfo record to know value
@@ -574,8 +551,6 @@ struct torture_tcase * torture_drs_unit_schemainfo(struct torture_suite *suite)
 				      (pfn_run)test_dsdb_blob_from_schema_info);
 	torture_tcase_add_simple_test(tc, "dsdb_module_schema_info_blob read|write",
 				      (pfn_run)test_dsdb_module_schema_info_blob_rw);
-	torture_tcase_add_simple_test(tc, "dsdb_schema_info_create",
-				      (pfn_run)test_dsdb_schema_info_create);
 	torture_tcase_add_simple_test(tc, "dsdb_module_schema_info_update",
 				      (pfn_run)test_dsdb_module_schema_info_update);
 

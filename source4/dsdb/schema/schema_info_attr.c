@@ -357,41 +357,6 @@ static WERROR dsdb_module_schema_info_write(struct ldb_module *ldb_module,
 
 
 /**
- * Creates new dsdb_schema_info object using
- * invocationId from supplied ldb
- * @param check_invocation_id Error out if invocationId is not yet set
- */
-WERROR dsdb_schema_info_create(struct ldb_context *ldb, bool check_invocation_id,
-			       TALLOC_CTX *mem_ctx, struct dsdb_schema_info **_schema_info)
-{
-	const struct GUID *invocation_id;
-	struct dsdb_schema_info *schema_info;
-
-	/* try to determine invocationId from ldb */
-	invocation_id = samdb_ntds_invocation_id(ldb);
-	if (check_invocation_id && !invocation_id) {
-		return WERR_INTERNAL_DB_CORRUPTION;
-	}
-
-	schema_info = talloc(mem_ctx, struct dsdb_schema_info);
-	if (!schema_info) {
-		return WERR_NOMEM;
-	}
-
-	schema_info->revision = 1;
-	if (invocation_id) {
-		schema_info->invocation_id = *invocation_id;
-	} else {
-		schema_info->invocation_id = GUID_zero();
-	}
-
-	*_schema_info = schema_info;
-
-	return WERR_OK;
-}
-
-
-/**
  * Increments schemaInfo revision and save it to DB
  * setting our invocationID in the process
  * NOTE: this function should be called in a transaction
