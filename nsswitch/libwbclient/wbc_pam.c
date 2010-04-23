@@ -865,35 +865,35 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 			sizeof(request.data.chng_pswd_auth_crap.domain) - 1);
 
 		if (params->new_password.response.nt_data) {
+			request.data.chng_pswd_auth_crap.new_nt_pswd_len =
+				params->new_password.response.nt_length;
 			memcpy(request.data.chng_pswd_auth_crap.new_nt_pswd,
 			       params->new_password.response.nt_data,
 			       request.data.chng_pswd_auth_crap.new_nt_pswd_len);
-			request.data.chng_pswd_auth_crap.new_nt_pswd_len =
-				params->new_password.response.nt_length;
 		}
 
 		if (params->new_password.response.lm_data) {
+			request.data.chng_pswd_auth_crap.new_lm_pswd_len =
+				params->new_password.response.lm_length;
 			memcpy(request.data.chng_pswd_auth_crap.new_lm_pswd,
 			       params->new_password.response.lm_data,
 			       request.data.chng_pswd_auth_crap.new_lm_pswd_len);
-			request.data.chng_pswd_auth_crap.new_lm_pswd_len =
-				params->new_password.response.lm_length;
 		}
 
 		if (params->old_password.response.old_nt_hash_enc_data) {
+			request.data.chng_pswd_auth_crap.old_nt_hash_enc_len =
+				params->old_password.response.old_nt_hash_enc_length;
 			memcpy(request.data.chng_pswd_auth_crap.old_nt_hash_enc,
 			       params->old_password.response.old_nt_hash_enc_data,
 			       request.data.chng_pswd_auth_crap.old_nt_hash_enc_len);
-			request.data.chng_pswd_auth_crap.old_nt_hash_enc_len =
-				params->old_password.response.old_nt_hash_enc_length;
 		}
 
 		if (params->old_password.response.old_lm_hash_enc_data) {
+			request.data.chng_pswd_auth_crap.old_lm_hash_enc_len =
+				params->old_password.response.old_lm_hash_enc_length;
 			memcpy(request.data.chng_pswd_auth_crap.old_lm_hash_enc,
 			       params->old_password.response.old_lm_hash_enc_data,
 			       request.data.chng_pswd_auth_crap.old_lm_hash_enc_len);
-			request.data.chng_pswd_auth_crap.old_lm_hash_enc_len =
-				params->old_password.response.old_lm_hash_enc_length;
 		}
 
 		break;
