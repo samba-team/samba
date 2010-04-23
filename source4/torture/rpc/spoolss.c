@@ -7307,6 +7307,18 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
+		if (torture_setting_bool(tctx, "samba3", false)) {
+			switch (levels[i]) {
+			case 2:
+			case 4:
+			case 8:
+				torture_comment(tctx, "skipping level %d against samba\n", levels[i]);
+				continue;
+			default:
+				break;
+			}
+		}
+
 		torture_comment(tctx,
 			"Testing PrinterDriver%s '%s' add & delete level %d\n",
 				d->ex ? "Ex" : "", info8.driver_name, levels[i]);
@@ -7319,6 +7331,19 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 	info8.config_file	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.config_file);
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		if (torture_setting_bool(tctx, "samba3", false)) {
+			switch (levels[i]) {
+			case 2:
+			case 4:
+			case 8:
+				torture_comment(tctx, "skipping level %d against samba\n", levels[i]);
+				continue;
+			default:
+				break;
+			}
+		}
+
 
 		torture_comment(tctx,
 			"Testing PrinterDriver%s '%s' add & delete level %d (full unc paths)\n",
