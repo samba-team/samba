@@ -532,28 +532,28 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 		const char *driver_name_ret;
 		switch (level) {
 		case 1:
-			driver_name_ret = info->info1.driver_name;
+			driver_name_ret = info[i].info1.driver_name;
 			break;
 		case 2:
-			driver_name_ret = info->info2.driver_name;
+			driver_name_ret = info[i].info2.driver_name;
 			break;
 		case 3:
-			driver_name_ret = info->info3.driver_name;
+			driver_name_ret = info[i].info3.driver_name;
 			break;
 		case 4:
-			driver_name_ret = info->info4.driver_name;
+			driver_name_ret = info[i].info4.driver_name;
 			break;
 		case 5:
-			driver_name_ret = info->info5.driver_name;
+			driver_name_ret = info[i].info5.driver_name;
 			break;
 		case 6:
-			driver_name_ret = info->info6.driver_name;
+			driver_name_ret = info[i].info6.driver_name;
 			break;
 		case 7:
-			driver_name_ret = info->info7.driver_name;
+			driver_name_ret = info[i].info7.driver_name;
 			break;
 		case 8:
-			driver_name_ret = info->info8.driver_name;
+			driver_name_ret = info[i].info8.driver_name;
 			break;
 		default:
 			break;
