@@ -10,9 +10,9 @@ bld.SAMBA_MODULE('net_drs',
 
 
 bld.SAMBA_BINARY('net',
-	source='net.c net_password.c net_join.c net_vampire.c',
+	source='net.c net_password.c net_join.c net_vampire.c net_gpo.c',
 	autoproto='net_proto.h',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-NET popt POPT_SAMBA POPT_CREDENTIALS net_drs',
+	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-NET popt POPT_SAMBA POPT_CREDENTIALS net_drs policy',
         needs_python=True
 	)
 

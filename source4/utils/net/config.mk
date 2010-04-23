@@ -33,7 +33,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
-		LIBGPO \
+		policy \
 		net_drs
 # End BINARY net
 #################################
