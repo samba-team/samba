@@ -6886,13 +6886,14 @@ static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
 
 static bool test_DeletePrinterDriver_exp(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
+					 const char *server,
 					 const char *driver,
 					 const char *environment,
 					 WERROR expected_result)
 {
 	struct spoolss_DeletePrinterDriver r;
 
-	r.in.server = NULL;
+	r.in.server = server;
 	r.in.architecture = environment;
 	r.in.driver = driver;
 
@@ -6909,6 +6910,7 @@ static bool test_DeletePrinterDriver_exp(struct torture_context *tctx,
 
 static bool test_DeletePrinterDriverEx_exp(struct torture_context *tctx,
 					   struct dcerpc_binding_handle *b,
+					   const char *server,
 					   const char *driver,
 					   const char *environment,
 					   uint32_t delete_flags,
@@ -6917,7 +6919,7 @@ static bool test_DeletePrinterDriverEx_exp(struct torture_context *tctx,
 {
 	struct spoolss_DeletePrinterDriverEx r;
 
-	r.in.server = NULL;
+	r.in.server = server;
 	r.in.architecture = environment;
 	r.in.driver = driver;
 	r.in.delete_flags = delete_flags;
@@ -6936,23 +6938,24 @@ static bool test_DeletePrinterDriverEx_exp(struct torture_context *tctx,
 
 static bool test_DeletePrinterDriver(struct torture_context *tctx,
 				     struct dcerpc_binding_handle *b,
+				     const char *server_name,
 				     const char *driver,
 				     const char *environment)
 {
 	torture_assert(tctx,
-		test_DeletePrinterDriver_exp(tctx, b, driver, "FOOBAR", WERR_INVALID_ENVIRONMENT),
+		test_DeletePrinterDriver_exp(tctx, b, server_name, driver, "FOOBAR", WERR_INVALID_ENVIRONMENT),
 		"failed to delete driver");
 
 	torture_assert(tctx,
-		test_DeletePrinterDriver_exp(tctx, b, driver, environment, WERR_OK),
+		test_DeletePrinterDriver_exp(tctx, b, server_name, driver, environment, WERR_OK),
 		"failed to delete driver");
 
-	if (test_EnumPrinterDrivers_findone(tctx, b, NULL, environment, 1, driver)) {
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name, environment, 1, driver)) {
 		torture_fail(tctx, "deleted driver still enumerated");
 	}
 
 	torture_assert(tctx,
-		test_DeletePrinterDriver_exp(tctx, b, driver, environment, WERR_UNKNOWN_PRINTER_DRIVER),
+		test_DeletePrinterDriver_exp(tctx, b, server_name, driver, environment, WERR_UNKNOWN_PRINTER_DRIVER),
 		"2nd delete failed");
 
 	return true;
@@ -6960,25 +6963,26 @@ static bool test_DeletePrinterDriver(struct torture_context *tctx,
 
 static bool test_DeletePrinterDriverEx(struct torture_context *tctx,
 				       struct dcerpc_binding_handle *b,
+				       const char *server_name,
 				       const char *driver,
 				       const char *environment,
 				       uint32_t delete_flags,
 				       uint32_t version)
 {
 	torture_assert(tctx,
-		test_DeletePrinterDriverEx_exp(tctx, b, driver, "FOOBAR", delete_flags, version, WERR_INVALID_ENVIRONMENT),
+		test_DeletePrinterDriverEx_exp(tctx, b, server_name, driver, "FOOBAR", delete_flags, version, WERR_INVALID_ENVIRONMENT),
 		"failed to delete driver");
 
 	torture_assert(tctx,
-		test_DeletePrinterDriverEx_exp(tctx, b, driver, environment, delete_flags, version, WERR_OK),
+		test_DeletePrinterDriverEx_exp(tctx, b, server_name, driver, environment, delete_flags, version, WERR_OK),
 		"failed to delete driver");
 
-	if (test_EnumPrinterDrivers_findone(tctx, b, NULL, environment, 1, driver)) {
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name, environment, 1, driver)) {
 		torture_fail(tctx, "deleted driver still enumerated");
 	}
 
 	torture_assert(tctx,
-		test_DeletePrinterDriverEx_exp(tctx, b, driver, environment, delete_flags, version, WERR_UNKNOWN_PRINTER_DRIVER),
+		test_DeletePrinterDriverEx_exp(tctx, b, server_name, driver, environment, delete_flags, version, WERR_UNKNOWN_PRINTER_DRIVER),
 		"2nd delete failed");
 
 	return true;
@@ -7034,9 +7038,9 @@ static bool test_PrinterDriver_args(struct torture_context *tctx,
 	}
 
 	if (ex) {
-		return test_DeletePrinterDriverEx(tctx, b, r->driver_name, r->architecture, delete_flags, r->version);
+		return test_DeletePrinterDriverEx(tctx, b, server_name, r->driver_name, r->architecture, delete_flags, r->version);
 	} else {
-		return test_DeletePrinterDriver(tctx, b, r->driver_name, r->architecture);
+		return test_DeletePrinterDriver(tctx, b, server_name, r->driver_name, r->architecture);
 	}
 }
 
