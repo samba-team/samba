@@ -1605,7 +1605,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 ****************************************************************************/
 
 #define strip_driver_path(_mem_ctx, _element) do { \
-	if ((_p = strrchr((_element), '\\')) != NULL) { \
+	if (_element && ((_p = strrchr((_element), '\\')) != NULL)) { \
 		(_element) = talloc_asprintf((_mem_ctx), "%s", _p+1); \
 		W_ERROR_HAVE_NO_MEMORY((_element)); \
 	} \
@@ -1626,6 +1626,10 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	WERROR err;
 	char *_p;
 
+	if (!*driver_path || !*data_file || !*config_file) {
+		return WERR_INVALID_PARAM;
+	}
+
 	/* clean up the driver name.
 	 * we can get .\driver.dll
 	 * or worse c:\windows\system\driver.dll !
@@ -1635,7 +1639,9 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	strip_driver_path(mem_ctx, *driver_path);
 	strip_driver_path(mem_ctx, *data_file);
 	strip_driver_path(mem_ctx, *config_file);
-	strip_driver_path(mem_ctx, *help_file);
+	if (help_file) {
+		strip_driver_path(mem_ctx, *help_file);
+	}
 
 	if (dependent_files && dependent_files->string) {
 		for (i=0; dependent_files->string[i]; i++) {
