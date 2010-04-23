@@ -186,6 +186,39 @@ bool drsut_schemainfo_new(struct torture_context *tctx, struct dsdb_schema_info 
 
 
 /*
+ * Tests dsdb_schema_info_new() and dsdb_schema_info_blob_new()
+ */
+static bool test_dsdb_schema_info_new(struct torture_context *tctx,
+				      struct drsut_schemainfo_data *priv)
+{
+	WERROR werr;
+	DATA_BLOB ndr_blob;
+	DATA_BLOB ndr_blob_expected;
+	struct dsdb_schema_info *schi;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(priv);
+	torture_assert(tctx, mem_ctx, "Not enough memory!");
+	ndr_blob_expected = strhex_to_data_blob(mem_ctx, SCHEMA_INFO_INIT_STR);
+	torture_assert(tctx, ndr_blob_expected.data, "Not enough memory!");
+
+	werr = dsdb_schema_info_new(mem_ctx, &schi);
+	torture_assert_werr_ok(tctx, werr, "dsdb_schema_info_new() failed");
+	torture_assert_int_equal(tctx, schi->revision, 0,
+				 "dsdb_schema_info_new() creates schemaInfo with invalid revision");
+	torture_assert(tctx, GUID_all_zero(&schi->invocation_id),
+			"dsdb_schema_info_new() creates schemaInfo with not ZERO GUID");
+
+	werr = dsdb_schema_info_blob_new(mem_ctx, &ndr_blob);
+	torture_assert_werr_ok(tctx, werr, "dsdb_schema_info_blob_new() failed");
+	torture_assert_data_blob_equal(tctx, ndr_blob, ndr_blob_expected,
+				       "dsdb_schema_info_blob_new() returned invalid blob");
+
+	talloc_free(mem_ctx);
+	return true;
+}
+
+/*
  * Tests dsdb_schema_info_from_blob()
  */
 static bool test_dsdb_schema_info_from_blob(struct torture_context *tctx,
@@ -536,6 +569,8 @@ struct torture_tcase * torture_drs_unit_schemainfo(struct torture_suite *suite)
 
 	tc->description = talloc_strdup(tc, "Unit tests for DRSUAPI::schemaInfo implementation");
 
+	torture_tcase_add_simple_test(tc, "dsdb_schema_info_new",
+				      (pfn_run)test_dsdb_schema_info_new);
 	torture_tcase_add_simple_test(tc, "dsdb_schema_info_from_blob",
 				      (pfn_run)test_dsdb_schema_info_from_blob);
 	torture_tcase_add_simple_test(tc, "dsdb_blob_from_schema_info",
