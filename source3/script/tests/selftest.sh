@@ -182,6 +182,12 @@ fi
 chmod 777 $SHRDIR
 
 ##
+## Create driver share dirs
+##
+mkdir $SHRDIR/W32X86
+mkdir $SHRDIR/x64
+
+##
 ## Create a read-only directory.
 ##
 RO_SHRDIR=`echo $SHRDIR | sed -e 's:/[^/]*$::'`
@@ -362,6 +368,8 @@ cat >$SERVERCONFFILE<<EOF
 	copy = print1
 [print4]
 	copy = print1
+[print$]
+	copy = tmp
 EOF
 
 ##
