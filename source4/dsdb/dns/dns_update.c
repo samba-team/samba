@@ -93,8 +93,10 @@ static void dnsupdate_rndc_done(struct tevent_req *subreq)
 static void dnsupdate_rebuild(struct dnsupdate_service *service)
 {
 	int ret;
+	size_t size;
 	struct ldb_result *res;
-	const char *tmp_path, *path;
+	const char *tmp_path, *path, *path_static;
+	char *static_policies;
 	int fd;
 	unsigned int i;
 	const char *attrs[] = { "sAMAccountName", NULL };
@@ -119,12 +121,19 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 		path = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
 	}
 
+	path_static = lp_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "extra_static_grant_rules");
+	if (path_static == NULL) {
+		path_static = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
+	}
+
 	tmp_path = talloc_asprintf(tmp_ctx, "%s.tmp", path);
-	if (path == NULL || tmp_path == NULL) {
-		DEBUG(0,(__location__ ": Unable to get paths"));
+	if (path == NULL || tmp_path == NULL || path_static == NULL ) {
+		DEBUG(0,(__location__ ": Unable to get paths\n"));
 		talloc_free(tmp_ctx);
 		return;
 	}
+
+	static_policies = file_load(path_static, &size, 0, tmp_ctx);
 
 	unlink(tmp_path);
 	fd = open(tmp_path, O_CREAT|O_TRUNC|O_WRONLY, 0444);
@@ -136,6 +145,11 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 
 	dprintf(fd, "/* this file is auto-generated - do not edit */\n");
 	dprintf(fd, "update-policy {\n");
+	if( static_policies != NULL ) {
+		dprintf(fd, "/* Start of static entries */\n");
+		dprintf(fd, "%s\n",static_policies);
+		dprintf(fd, "/* End of static entries */\n");
+	}
 	dprintf(fd, "\tgrant %s ms-self * A AAAA;\n", realm);
 	dprintf(fd, "\tgrant administrator@%s wildcard * A AAAA SRV CNAME TXT;\n", realm);
 
