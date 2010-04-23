@@ -22,6 +22,14 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 
+struct smbd_smb2_notify_state {
+	struct smbd_smb2_request *smb2req;
+	struct smb_request *smbreq;
+	struct tevent_immediate *im;
+	NTSTATUS status;
+	DATA_BLOB out_output_buffer;
+};
+
 static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct smbd_smb2_request *smb2req,
@@ -109,8 +117,11 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 	NTSTATUS error; /* transport error */
 
 	if (req->cancelled) {
+		struct smbd_smb2_notify_state *state = tevent_req_data(subreq,
+					       struct smbd_smb2_notify_state);
 		const uint8_t *inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
+
 		DEBUG(10,("smbd_smb2_request_notify_done: cancelled mid %llu\n",
 			(unsigned long long)mid ));
 		error = smbd_smb2_request_error(req, NT_STATUS_CANCELLED);
@@ -119,7 +130,7 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 				nt_errstr(error));
 			return;
 		}
-		TALLOC_FREE(subreq);
+		TALLOC_FREE(state->im);
 		return;
 	}
 
@@ -167,14 +178,6 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 		return;
 	}
 }
-
-struct smbd_smb2_notify_state {
-	struct smbd_smb2_request *smb2req;
-	struct smb_request *smbreq;
-	struct tevent_immediate *im;
-	NTSTATUS status;
-	DATA_BLOB out_output_buffer;
-};
 
 static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 				   NTSTATUS error_code,
