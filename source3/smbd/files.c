@@ -589,10 +589,18 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 	} else {
 		to->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
 	}
-	to->print_file = from->print_file;
 	to->modified = from->modified;
 	to->is_directory = from->is_directory;
 	to->aio_write_behind = from->aio_write_behind;
+
+	if (from->print_file) {
+		to->print_file = talloc(to, struct print_file_data);
+		if (!to->print_file) return NT_STATUS_NO_MEMORY;
+		to->print_file->rap_jobid = from->print_file->rap_jobid;
+	} else {
+		to->print_file = NULL;
+	}
+
 	return fsp_set_smb_fname(to, from->fsp_name);
 }
 

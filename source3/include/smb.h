@@ -411,13 +411,16 @@ struct notify_change_buf {
 	struct notify_change_request *requests;
 };
 
+struct print_file_data {
+	uint16 rap_jobid;
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
 	struct fd_handle *fh;
 	unsigned int num_smb_operations;
-	uint16 rap_print_jobid;
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
@@ -446,7 +449,6 @@ typedef struct files_struct {
 	bool can_lock;
 	bool can_read;
 	bool can_write;
-	bool print_file;
 	bool modified;
 	bool is_directory;
 	bool aio_write_behind;
@@ -472,6 +474,10 @@ typedef struct files_struct {
 	struct byte_range_lock *brlock_rec;
 
 	struct dptr_struct *dptr;
+
+	/* if not NULL, means this is a print file */
+	struct print_file_data *print_file;
+
 } files_struct;
 
 #include "ntquotas.h"

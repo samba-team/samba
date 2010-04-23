@@ -313,7 +313,7 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ?
 			True : False;
 	}
-	fsp->print_file = False;
+	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
@@ -1627,7 +1627,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 */
 	fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
-	fsp->print_file = False;
+	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;

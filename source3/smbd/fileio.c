@@ -293,9 +293,10 @@ ssize_t write_file(struct smb_request *req,
 	if (fsp->print_file) {
 		uint32 jobid;
 
-		if (!rap_to_pjobid(fsp->rap_print_jobid, NULL, &jobid)) {
-			DEBUG(3,("write_file: Unable to map RAP jobid %u to jobid.\n",
-						(unsigned int)fsp->rap_print_jobid ));
+		if (!rap_to_pjobid(fsp->print_file->rap_jobid, NULL, &jobid)) {
+			DEBUG(3, ("write_file: "
+                                  "Unable to map RAP jobid %u to jobid.\n",
+				  (unsigned int)fsp->print_file->rap_jobid));
 			errno = EBADF;
 			return -1;
 		}

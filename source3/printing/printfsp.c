@@ -29,6 +29,7 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			const char *fname,
 			uint16_t current_vuid, files_struct *fsp)
 {
+	const char *svcname = lp_const_servicename(SNUM(conn));
 	int jobid;
 	fstring name;
 	NTSTATUS status;
@@ -49,23 +50,29 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 		return status;
 	}
 
+	fsp->print_file = talloc(fsp, struct print_file_data);
+	if (!fsp->print_file) {
+		status = map_nt_error_from_unix(ENOMEM);
+		return status;
+	}
+
 	/* Convert to RAP id. */
-	fsp->rap_print_jobid = pjobid_to_rap(lp_const_servicename(SNUM(conn)), jobid);
-	if (fsp->rap_print_jobid == 0) {
+	fsp->print_file->rap_jobid = pjobid_to_rap(svcname, jobid);
+	if (fsp->print_file->rap_jobid == 0) {
 		/* We need to delete the entry in the tdb. */
-		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
+		pjob_delete(svcname, jobid);
 		return NT_STATUS_ACCESS_DENIED;	/* No errno around here */
 	}
 
 	status = create_synthetic_smb_fname(fsp,
-	    print_job_fname(lp_const_servicename(SNUM(conn)), jobid), NULL,
+	    print_job_fname(svcname, jobid), NULL,
 	    NULL, &fsp->fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
+		pjob_delete(svcname, jobid);
 		return status;
 	}
 	/* setup a full fsp */
-	fsp->fh->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
+	fsp->fh->fd = print_job_fd(svcname, jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_vuid;
 	fsp->fh->pos = -1;
@@ -73,7 +80,6 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	fsp->can_read = False;
 	fsp->access_mask = FILE_GENERIC_WRITE;
 	fsp->can_write = True;
-	fsp->print_file = True;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
@@ -106,9 +112,9 @@ void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 		TALLOC_FREE(fsp->fsp_name);
 	}
 
-	if (!rap_to_pjobid(fsp->rap_print_jobid, NULL, &jobid)) {
+	if (!rap_to_pjobid(fsp->print_file->rap_jobid, NULL, &jobid)) {
 		DEBUG(3,("print_fsp_end: Unable to convert RAP jobid %u to print jobid.\n",
-			(unsigned int)fsp->rap_print_jobid ));
+			(unsigned int)fsp->print_file->rap_jobid ));
 		return;
 	}
 

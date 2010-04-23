@@ -924,7 +924,12 @@ void reply_ioctl(struct smb_request *req)
 				END_PROFILE(SMBioctl);
 				return;
 			}
-			SSVAL(p,0,fsp->rap_print_jobid);             /* Job number */
+			/* Job number */
+			if (fsp->print_file) {
+				SSVAL(p, 0, fsp->print_file->rap_jobid);
+			} else {
+				SSVAL(p, 0, 0);
+			}
 			srvstr_push((char *)req->outbuf, req->flags2, p+2,
 				    global_myname(), 15,
 				    STR_TERMINATE|STR_ASCII);

@@ -8150,7 +8150,12 @@ static void call_trans2ioctl(connection_struct *conn,
 		/* NOTE - THIS IS ASCII ONLY AT THE MOMENT - NOT SURE IF OS/2
 			CAN ACCEPT THIS IN UNICODE. JRA. */
 
-		SSVAL(pdata,0,fsp->rap_print_jobid);                     /* Job number */
+		/* Job number */
+		if (fsp->print_file) {
+			SSVAL(pdata, 0, fsp->print_file->rap_jobid);
+		} else {
+			SSVAL(pdata, 0, 0);
+		}
 		srvstr_push(pdata, req->flags2, pdata + 2,
 			    global_myname(), 15,
 			    STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
