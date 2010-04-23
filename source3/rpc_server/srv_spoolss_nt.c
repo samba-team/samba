@@ -7370,11 +7370,11 @@ WERROR _spoolss_AddPrinter(pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_AddPrinterDriver
+ _spoolss_AddPrinterDriverEx
 ****************************************************************/
 
-WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
-				 struct spoolss_AddPrinterDriver *r)
+WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
+				   struct spoolss_AddPrinterDriverEx *r)
 {
 	WERROR err = WERR_OK;
 	char *driver_name = NULL;
@@ -7392,6 +7392,18 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 			return WERR_INVALID_PARAM;
 	}
 
+	/*
+	 * we only support the semantics of AddPrinterDriver()
+	 * i.e. only copy files that are newer than existing ones
+	 */
+
+	if (r->in.flags == 0) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (r->in.flags != APD_COPY_NEW_FILES) {
+		return WERR_ACCESS_DENIED;
+	}
 
 	/* FIXME */
 	if (r->in.info_ctr->level != 3 && r->in.info_ctr->level != 6) {
@@ -7498,31 +7510,27 @@ done:
 }
 
 /****************************************************************
- _spoolss_AddPrinterDriverEx
+ _spoolss_AddPrinterDriver
 ****************************************************************/
 
-WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
-				   struct spoolss_AddPrinterDriverEx *r)
+WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
+				 struct spoolss_AddPrinterDriver *r)
 {
-	struct spoolss_AddPrinterDriver a;
+	struct spoolss_AddPrinterDriverEx a;
 
-	/*
-	 * we only support the semantics of AddPrinterDriver()
-	 * i.e. only copy files that are newer than existing ones
-	 */
-
-	if (r->in.flags == 0) {
-		return WERR_INVALID_PARAM;
-	}
-
-	if (r->in.flags != APD_COPY_NEW_FILES) {
-		return WERR_ACCESS_DENIED;
+	switch (r->in.info_ctr->level) {
+	case 6:
+	case 8:
+		return WERR_UNKNOWN_LEVEL;
+	default:
+		break;
 	}
 
 	a.in.servername		= r->in.servername;
 	a.in.info_ctr		= r->in.info_ctr;
+	a.in.flags		= APD_COPY_NEW_FILES;
 
-	return _spoolss_AddPrinterDriver(p, &a);
+	return _spoolss_AddPrinterDriverEx(p, &a);
 }
 
 /****************************************************************************
