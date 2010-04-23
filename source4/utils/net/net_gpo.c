@@ -26,7 +26,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "param/param.h"
-#include "libgpo/gpo.h"
+#include "lib/policy/policy.h"
 
 static int net_gpo_list_all_usage(struct net_context *ctx, int argc, const char **argv)
 {

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('policy',
-	source='gpo_ldap.c',
+	source='gp_ldap.c',
 	pc_files='policy.pc',
 	public_deps='LIBLDB LIBSAMBA-NET',
-	public_headers='gpo.h',
+	public_headers='policy.h',
 	vnum='0.0.1'
 	)
