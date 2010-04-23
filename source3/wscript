@@ -8,8 +8,8 @@ from optparse import SUPPRESS_HELP
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 import build.charset
-from samba_utils import *
-from samba3 import *
+import samba_utils
+import samba3
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
@@ -46,6 +46,8 @@ def set_options(opt):
 
 
 def configure(conf):
+    from samba_utils import TO_LIST
+
     conf.define('PACKAGE_NAME', 'Samba')
     conf.define('PACKAGE_STRING', 'Samba 3')
     conf.define('PACKAGE_TARNAME', 'samba')
