@@ -2185,6 +2185,21 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n",
 		  (unsigned long)state->pid, domain, user));
 
+	if (strequal(domain, get_global_sam_name())) {
+		enum samPwdChangeReason reject_reason;
+
+		result = pass_oem_change(
+			user,
+			state->request->data.chng_pswd_auth_crap.new_lm_pswd,
+			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc,
+			state->request->data.chng_pswd_auth_crap.new_nt_pswd,
+			state->request->data.chng_pswd_auth_crap.old_nt_hash_enc,
+			&reject_reason);
+		DEBUG(10, ("pass_oem_change returned %s\n",
+			   nt_errstr(result)));
+		goto done;
+	}
+
 	/* Change password */
 	new_nt_password = data_blob_const(
 		state->request->data.chng_pswd_auth_crap.new_nt_pswd,
