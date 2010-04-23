@@ -418,6 +418,12 @@ sub provision($$$$$$)
 	my $logdir="$prefix_abs/logs";
 	push(@dirs,$logdir);
 
+	my $driver32dir="$shrdir/W32X86";
+	push(@dirs,$driver32dir);
+
+	my $driver64dir="$shrdir/x64";
+	push(@dirs,$driver64dir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -575,6 +581,8 @@ sub provision($$$$$$)
 	copy = print1
 [print4]
 	copy = print1
+[print\$]
+	copy = tmp
 	";
 	close(CONF);
 
