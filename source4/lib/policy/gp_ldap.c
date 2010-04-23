@@ -541,7 +541,7 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gp_add_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink)
+NTSTATUS gp_set_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink)
 {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_result *result;
@@ -550,6 +550,7 @@ NTSTATUS gp_add_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_
 	const char *attrs[] = { "gPLink", NULL };
 	const char *gplink_str;
 	int rv;
+	char *start;
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
@@ -570,14 +571,22 @@ NTSTATUS gp_add_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_
 
 	gplink_str = ldb_msg_find_attr_as_string(result->msgs[0], "gPLink", "");
 
-	if (strstr(gplink_str, gplink->dn) != NULL) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+	/* If this GPO link already exists, alter the options, else add it */
+	if ((start = strcasestr(gplink_str, gplink->dn)) != NULL) {
+		start += strlen(gplink->dn);
+		*start = '\0';
+		start++;
+		while (*start != ']' && *start != '\0') {
+			start++;
+		}
+		gplink_str = talloc_asprintf(mem_ctx, "%s;%d%s\n", gplink_str, gplink->options, start);
+
+	} else {
+		/* Prepend the new GPO link to the string. This list is backwards in priority. */
+		gplink_str = talloc_asprintf(mem_ctx, "[LDAP://%s;%d]%s", gplink->dn, gplink->options, gplink_str);
 	}
 
 
-	/* Prepend the new GPO link to the string. This list is backwards in priority. */
-	gplink_str = talloc_asprintf(mem_ctx, "[LDAP://%s;%d]%s", gplink->dn, gplink->options, gplink_str);
 
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = dn;

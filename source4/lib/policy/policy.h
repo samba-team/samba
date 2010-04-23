@@ -80,7 +80,7 @@ NTSTATUS gp_del_gpo(struct gp_context *gp_ctx, const char *dn_str);
 NTSTATUS gp_get_gplink_options(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
 NTSTATUS gp_get_gpo_flags(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
 
-NTSTATUS gp_add_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink);
+NTSTATUS gp_set_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink);
 NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char *gp_dn);
 
 #endif
