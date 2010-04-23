@@ -33,10 +33,10 @@
 
 /**
  * schemaInfo to init ldb context with
- *   Rev:  01
- *   GUID: 071c82fd-45c7-4351-a3db-51f75a630a7f
+ *   Rev:  0
+ *   GUID: 00000000-0000-0000-0000-000000000000
  */
-#define SCHEMA_INFO_INIT_STR		"FF0000000100000000000000000000000000000000"
+#define SCHEMA_INFO_INIT_STR		"FF0000000000000000000000000000000000000000"
 
 /**
  * Default schema_info string to be used for testing
@@ -66,6 +66,13 @@ static const struct {
 	bool 		test_both_ways;
 } _schemainfo_test_data[] = {
 	{
+		.schema_info_str = "FF0000000000000000000000000000000000000000",
+		.revision = 0,
+		.guid_str = "00000000-0000-0000-0000-000000000000",
+		.werr_expected = WERR_OK,
+		.test_both_ways = true
+	},
+	{
 		.schema_info_str = "FF00000001FD821C07C7455143A3DB51F75A630A7F",
 		.revision = 1,
 		.guid_str = "071c82fd-45c7-4351-a3db-51f75a630a7f",
@@ -79,18 +86,6 @@ static const struct {
 		.werr_expected = WERR_OK,
 		.test_both_ways = true
 	},
-#if 0
-	/* removed until kamen can take a look - revision 0 is sent by
-	 * w2k8r2, and we need to accept it, possibly only when the
-	 * other fields are zero */
-	{ /* revision > 0 */
-		.schema_info_str = "FF00000000FD821C07C7455143A3DB51F75A630A7F",
-		.revision = 0,
-		.guid_str = "071c82fd-45c7-4351-a3db-51f75a630a7f",
-		.werr_expected = WERR_INVALID_PARAMETER,
-		.test_both_ways = true
-	},
-#endif
 	{ /* len == 21 */
 		.schema_info_str = "FF00000001FD821C07C7455143A3DB51F75A630A7F00",
 		.revision = 1,
@@ -332,10 +327,6 @@ static bool test_dsdb_module_schema_info_update(struct torture_context *tctx,
 
 	werr = dsdb_schema_info_from_blob(&blob, priv, &schema_info);
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_info_from_blob() failed");
-
-	/* decrement revision to be able to compare
-	 * against default schemaInfo later */
-	schema_info->revision--;
 
 	/* check against default schema_info */
 	torture_assert_schema_info_equal(tctx, schema_info, priv->schema_info,

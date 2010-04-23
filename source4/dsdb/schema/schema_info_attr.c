@@ -135,10 +135,6 @@ WERROR dsdb_blob_from_schema_info(const struct dsdb_schema_info *schema_info,
 	enum ndr_err_code ndr_err;
 	struct schemaInfoBlob schema_info_blob;
 
-	if (schema_info->revision < 1) {
-		return WERR_INVALID_PARAMETER;
-	}
-
 	schema_info_blob.marker		= 0xFF;
 	schema_info_blob.revision	= schema_info->revision;
 	schema_info_blob.invocation_id  = schema_info->invocation_id;
@@ -209,7 +205,7 @@ WERROR dsdb_module_schema_info_blob_read(struct ldb_module *ldb_module,
 }
 
 /**
- * Pepares ldb_msg to be used for updating schemaInfo value in DB
+ * Prepares ldb_msg to be used for updating schemaInfo value in DB
  */
 static WERROR _dsdb_schema_info_write_prepare(struct ldb_context *ldb,
 					      DATA_BLOB *schema_info_blob,
