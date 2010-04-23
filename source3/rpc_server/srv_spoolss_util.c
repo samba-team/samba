@@ -1700,13 +1700,17 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
 	}
 
-	keyname = talloc_asprintf(tmp_ctx,
-				  "%s\\%s",
-				  path,
-				  key);
-	if (keyname == NULL) {
-		result = WERR_NOMEM;
-		goto done;
+	if (key == NULL || key[0] == '\0') {
+		keyname = path;
+	} else {
+		keyname = talloc_asprintf(tmp_ctx,
+					  "%s\\%s",
+					  path,
+					  key);
+		if (keyname == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 	}
 
 	result = winreg_printer_delete_subkeys(tmp_ctx,
