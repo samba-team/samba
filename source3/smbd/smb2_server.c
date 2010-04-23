@@ -713,7 +713,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	}
 
 	reqhdr = (uint8_t *)req->out.vector[i].iov_base;
-	flags = IVAL(reqhdr, SMB2_HDR_FLAGS);
+	flags = (IVAL(reqhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
 	message_id = BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
 	async_id = message_id; /* keep it simple for now... */
 
