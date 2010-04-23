@@ -947,7 +947,8 @@ static NTSTATUS check_oem_password(const char *user,
 			 */
 			E_old_pw_hash(new_nt_hash, nt_pw, verifier);
 			if (memcmp(verifier, old_nt_hash_encrypted, 16)) {
-				DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
+				DEBUG(0, ("check_oem_password: old nt "
+					  "password doesn't match.\n"));
 				return NT_STATUS_WRONG_PASSWORD;
 			}
 
