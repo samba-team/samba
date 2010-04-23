@@ -3136,7 +3136,7 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 		break;
 	default:
 		errcode = NERR_notsupported;
-		break;
+		goto out;
 	}
 
 	status = rpccli_spoolss_SetJob(cli, mem_ctx,
