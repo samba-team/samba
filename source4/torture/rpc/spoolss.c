@@ -7116,6 +7116,10 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 	const char *local_name = talloc_asprintf(tctx, "%s/%s", d->local.driver_directory, file_name);
 	const char *remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, file_name);
 
+	if (!file_name) {
+		return true;
+	}
+
 	torture_comment(tctx, "Uploading %s to %s\n", local_name, remote_name);
 
 	fnum = smbcli_open(cli->tree, remote_name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
@@ -7202,6 +7206,7 @@ static bool upload_printer_driver(struct torture_context *tctx,
 {
 	struct smbcli_state *cli;
 	const char *share_name = driver_directory_share(tctx, d->remote.driver_directory);
+	int i;
 
 	torture_assert(tctx,
 		connect_printer_driver_share(tctx, server_name, share_name, &cli),
@@ -7219,6 +7224,16 @@ static bool upload_printer_driver(struct torture_context *tctx,
 	torture_assert(tctx,
 		upload_printer_driver_file(tctx, cli, d, d->info8.config_file),
 		"failed to upload config_file");
+	torture_assert(tctx,
+		upload_printer_driver_file(tctx, cli, d, d->info8.help_file),
+		"failed to upload help_file");
+	if (d->info8.dependent_files) {
+		for (i=0; d->info8.dependent_files->string && d->info8.dependent_files->string[i] != NULL; i++) {
+			torture_assert(tctx,
+				upload_printer_driver_file(tctx, cli, d, d->info8.dependent_files->string[i]),
+				"failed to upload dependent_files");
+		}
+	}
 
 	talloc_free(cli);
 
@@ -7232,6 +7247,10 @@ static bool remove_printer_driver_file(struct torture_context *tctx,
 {
 	const char *remote_name;
 	const char *remote_dir =  driver_directory_dir(d->remote.driver_directory);
+
+	if (!file_name) {
+		return true;
+	}
 
 	remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, file_name);
 
@@ -7250,6 +7269,7 @@ static bool remove_printer_driver(struct torture_context *tctx,
 {
 	struct smbcli_state *cli;
 	const char *share_name = driver_directory_share(tctx, d->remote.driver_directory);
+	int i;
 
 	torture_assert(tctx,
 		connect_printer_driver_share(tctx, server_name, share_name, &cli),
@@ -7267,6 +7287,16 @@ static bool remove_printer_driver(struct torture_context *tctx,
 	torture_assert(tctx,
 		remove_printer_driver_file(tctx, cli, d, d->info8.config_file),
 		"failed to remove config_file");
+	torture_assert(tctx,
+		remove_printer_driver_file(tctx, cli, d, d->info8.help_file),
+		"failed to remove help_file");
+	if (d->info8.dependent_files) {
+		for (i=0; d->info8.dependent_files->string && d->info8.dependent_files->string[i] != NULL; i++) {
+			torture_assert(tctx,
+				remove_printer_driver_file(tctx, cli, d, d->info8.dependent_files->string[i]),
+				"failed to remove dependent_files");
+		}
+	}
 
 	talloc_free(cli);
 
