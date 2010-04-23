@@ -173,7 +173,12 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 	struct smbd_smb2_request **parent;
 	struct smbd_smb2_request *req;
 
+#if 0
+	/* Enable this to find subtle valgrind errors. */
+	mem_pool = talloc_init("smbd_smb2_request_allocate");
+#else
 	mem_pool = talloc_pool(mem_ctx, 8192);
+#endif
 	if (mem_pool == NULL) {
 		return NULL;
 	}
@@ -936,7 +941,7 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
+NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
 	int i = req->current_idx;
@@ -1164,10 +1169,6 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 }
 
-static void smbd_smb2_request_dispatch_compound(struct tevent_context *ctx,
-					struct tevent_immediate *im,
-					void *private_data);
-
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct tevent_req *subreq;
@@ -1203,7 +1204,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		}
 		tevent_schedule_immediate(im,
 					req->sconn->smb2.event_ctx,
-					smbd_smb2_request_dispatch_compound,
+					smbd_smb2_request_dispatch_immediate,
 					req);
 		return NT_STATUS_OK;
 	}
@@ -1227,7 +1228,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-static void smbd_smb2_request_dispatch_compound(struct tevent_context *ctx,
+void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 					struct tevent_immediate *im,
 					void *private_data)
 {
@@ -1239,7 +1240,7 @@ static void smbd_smb2_request_dispatch_compound(struct tevent_context *ctx,
 	TALLOC_FREE(im);
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("smbd_smb2_request_dispatch_compound: idx[%d] of %d vectors\n",
+		DEBUG(10,("smbd_smb2_request_dispatch_immediate: idx[%d] of %d vectors\n",
 			req->current_idx, req->in.vector_count));
 		print_req_vectors(req);
 	}

@@ -191,6 +191,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 				       in_name_string,
 				       in_context_blobs);
 	if (subreq == NULL) {
+		req->subreq = NULL;
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_create_done, req);
@@ -235,7 +236,6 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 				       &out_file_attributes,
 				       &out_file_id_volatile,
 				       &out_context_blobs);
-	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(req, status);
 		if (!NT_STATUS_IS_OK(error)) {
@@ -315,6 +315,10 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 
 struct smbd_smb2_create_state {
 	struct smbd_smb2_request *smb2req;
+	struct smb_request *smb1req;
+	struct timed_event *te;
+	struct timeval request_time;
+	DATA_BLOB private_data;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
 	NTTIME out_creation_time;
@@ -341,33 +345,45 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			const char *in_name,
 			struct smb2_create_blobs in_context_blobs)
 {
-	struct tevent_req *req;
-	struct smbd_smb2_create_state *state;
+	struct tevent_req *req = NULL;
+	struct smbd_smb2_create_state *state = NULL;
 	NTSTATUS status;
-	struct smb_request *smbreq;
-	files_struct *result;
+	struct smb_request *smb1req = NULL;
+	files_struct *result = NULL;
 	int info;
 	struct timespec write_time_ts;
 	struct smb2_create_blobs out_context_blobs;
 
 	ZERO_STRUCT(out_context_blobs);
 
-	req = tevent_req_create(mem_ctx, &state,
+	if (!smb2req->async) {
+		/* New create call. */
+		req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
-	if (req == NULL) {
-		return NULL;
+		if (req == NULL) {
+			return NULL;
+		}
+		state->smb2req = smb2req;
+		smb2req->subreq = req; /* So we can find this when going async. */
+
+		smb1req = smbd_smb2_fake_smb_request(smb2req);
+		if (tevent_req_nomem(smb1req, req)) {
+			return tevent_req_post(req, ev);
+		}
+		state->smb1req = smb1req;
+		DEBUG(10,("smbd_smb2_create: name[%s]\n",
+			in_name));
+	} else {
+		/* Re-entrant create call. */
+		req = smb2req->subreq;
+		state = tevent_req_data(req,
+				struct smbd_smb2_create_state);
+		smb1req = state->smb1req;
+		DEBUG(10,("smbd_smb2_create_send: reentrant for file %s\n",
+			in_name ));
 	}
-	state->smb2req = smb2req;
 
-	DEBUG(10,("smbd_smb2_create: name[%s]\n",
-		  in_name));
-
-	smbreq = smbd_smb2_fake_smb_request(smb2req);
-	if (tevent_req_nomem(smbreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	if (IS_IPC(smbreq->conn)) {
+	if (IS_IPC(smb1req->conn)) {
 		const char *pipe_name = in_name;
 
 		if (!lp_nt_pipe_support()) {
@@ -380,26 +396,26 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			pipe_name++;
 		}
 
-		status = open_np_file(smbreq, pipe_name, &result);
+		status = open_np_file(smb1req, pipe_name, &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
 		info = FILE_WAS_OPENED;
-	} else if (CAN_PRINT(smbreq->conn)) {
-		status = file_new(smbreq, smbreq->conn, &result);
+	} else if (CAN_PRINT(smb1req->conn)) {
+		status = file_new(smb1req, smb1req->conn, &result);
 		if(!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
 
-		status = print_fsp_open(smbreq,
-					smbreq->conn,
+		status = print_fsp_open(smb1req,
+					smb1req->conn,
 					in_name,
-					smbreq->vuid,
+					smb1req->vuid,
 					result);
 		if (!NT_STATUS_IS_OK(status)) {
-			file_free(smbreq, result);
+			file_free(smb1req, result);
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
@@ -589,8 +605,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		status = filename_convert(req,
-					  smbreq->conn,
-					  smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
+					  smb1req->conn,
+					  smb1req->flags2 & FLAGS2_DFS_PATHNAMES,
 					  fname,
 					  0,
 					  NULL,
@@ -600,8 +616,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		status = SMB_VFS_CREATE_FILE(smbreq->conn,
-					     smbreq,
+		status = SMB_VFS_CREATE_FILE(smb1req->conn,
+					     smb1req,
 					     0, /* root_dir_fid */
 					     smb_fname,
 					     in_desired_access,
@@ -617,8 +633,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     &result,
 					     &info);
 		if (!NT_STATUS_IS_OK(status)) {
+			if (open_was_deferred(smb1req->mid)) {
+				return req;
+			}
 			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
+			req = tevent_req_post(req, ev);
+			return req;
 		}
 
 		if (mxac) {
@@ -631,7 +651,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				uint32_t max_access_granted;
 				DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
-				status = smbd_check_open_rights(smbreq->conn,
+				status = smbd_check_open_rights(smb1req->conn,
 							result->fsp_name,
 							SEC_FLAG_MAXIMUM_ALLOWED,
 							&max_access_granted);
@@ -670,7 +690,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	smb2req->compat_chain_fsp = smbreq->chain_fsp;
+	smb2req->compat_chain_fsp = smb1req->chain_fsp;
 
 	state->out_oplock_level	= 0;
 	if ((in_create_disposition == FILE_SUPERSEDE)
@@ -690,14 +710,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	unix_timespec_to_nt_time(&state->out_creation_time,
-			get_create_timespec(smbreq->conn, result,
+			get_create_timespec(smb1req->conn, result,
 					result->fsp_name));
 	unix_timespec_to_nt_time(&state->out_last_access_time,
 			result->fsp_name->st.st_ex_atime);
 	unix_timespec_to_nt_time(&state->out_last_write_time,
 			result->fsp_name->st.st_ex_mtime);
 	unix_timespec_to_nt_time(&state->out_change_time,
-			get_change_timespec(smbreq->conn, result,
+			get_change_timespec(smb1req->conn, result,
 					result->fsp_name));
 	state->out_allocation_size =
 			result->fsp_name->st.st_ex_blksize *
@@ -752,4 +772,282 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
+}
+
+/*********************************************************
+ Code for dealing with deferred opens.
+*********************************************************/
+
+bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
+			struct timeval *p_request_time,
+			void **pp_state)
+{
+	struct smbd_smb2_create_state *state = NULL;
+	struct tevent_req *req = NULL;
+
+	if (!smb2req) {
+		return false;
+	}
+	if (!smb2req->async) {
+		return false;
+	}
+	req = smb2req->subreq;
+	if (!req) {
+		return false;
+	}
+	state = tevent_req_data(req, struct smbd_smb2_create_state);
+	if (!state) {
+		return false;
+	}
+	if (p_request_time) {
+		*p_request_time = state->request_time;
+	}
+	if (pp_state) {
+		*pp_state = (void *)state->private_data.data;
+	}
+	return true;
+}
+
+/*********************************************************
+ Re-process this call early - requested by message or
+ close.
+*********************************************************/
+
+static struct smbd_smb2_request *find_open_smb2req(uint64_t mid)
+{
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_smb2_request *smb2req;
+
+	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
+		uint8_t *reqhdr = (uint8_t *)smb2req->out.vector[smb2req->current_idx].iov_base;
+		uint64_t message_id = BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
+		if (message_id == mid) {
+			return smb2req;
+		}
+	}
+	return NULL;
+}
+
+bool open_was_deferred_smb2(uint64_t mid)
+{
+	struct smbd_smb2_create_state *state = NULL;
+	struct smbd_smb2_request *smb2req = find_open_smb2req(mid);
+
+	if (!smb2req) {
+		DEBUG(10,("open_was_deferred_smb2: mid %llu smb2req == NULL\n",
+			(unsigned long long)mid));
+		return false;
+	}
+	if (!smb2req->subreq) {
+		return false;
+	}
+	if (!tevent_req_is_in_progress(smb2req->subreq)) {
+		return false;
+	}
+	state = tevent_req_data(smb2req->subreq,
+			struct smbd_smb2_create_state);
+	if (!state) {
+		return false;
+	}
+	/* It's not in progress if there's no timeout event. */
+	if (!state->te) {
+		return false;
+	}
+
+	DEBUG(10,("open_was_deferred_smb2: mid = %llu\n",
+			(unsigned long long)mid));
+	
+	return true;
+}
+
+void remove_deferred_open_message_smb2(uint64_t mid)
+{
+	struct smbd_smb2_create_state *state = NULL;
+	struct smbd_smb2_request *smb2req = find_open_smb2req(mid);
+
+	if (!smb2req) {
+		DEBUG(10,("remove_deferred_open_message_smb2: "
+			"can't find mid %llu\n",
+			(unsigned long long)mid ));
+		return;
+	}
+	if (!smb2req->subreq) {
+		return;
+	}
+	if (!tevent_req_is_in_progress(smb2req->subreq)) {
+		return;
+	}
+	state = tevent_req_data(smb2req->subreq,
+			struct smbd_smb2_create_state);
+	if (!state) {
+		return;
+	}
+
+	DEBUG(10,("remove_deferred_open_message_smb2: "
+		"mid %llu\n",
+		(unsigned long long)mid ));
+
+	/* Ensure we don't have any outstanding timer event. */
+	TALLOC_FREE(state->te);
+}
+
+void schedule_deferred_open_message_smb2(uint64_t mid)
+{
+	struct tevent_immediate *im = NULL;
+	struct smbd_smb2_create_state *state = NULL;
+	struct smbd_smb2_request *smb2req = find_open_smb2req(mid);
+
+	if (!smb2req) {
+		DEBUG(10,("schedule_deferred_open_message_smb2: "
+			"can't find mid %llu\n",
+			(unsigned long long)mid ));
+		return;
+	}
+	if (!smb2req->subreq) {
+		return;
+	}
+	if (!tevent_req_is_in_progress(smb2req->subreq)) {
+		return;
+	}
+	state = tevent_req_data(smb2req->subreq,
+			struct smbd_smb2_create_state);
+	if (!state) {
+		return;
+	}
+	/* Ensure we don't have any outstanding timer event. */
+	TALLOC_FREE(state->te);
+
+	im = tevent_create_immediate(smb2req);
+	if (!im) {
+		smbd_server_connection_terminate(smb2req->sconn,
+			nt_errstr(NT_STATUS_NO_MEMORY));
+	}
+
+	DEBUG(10,("schedule_deferred_open_message_smb2: "
+		"re-processing mid %llu\n",
+		(unsigned long long)mid ));
+
+	tevent_schedule_immediate(im,
+			smb2req->sconn->smb2.event_ctx,
+			smbd_smb2_request_dispatch_immediate,
+			smb2req);
+}
+
+/*********************************************************
+ Re-process this call.
+*********************************************************/
+
+static void smb2_deferred_open_timer(struct event_context *ev,
+					struct timed_event *te,
+					struct timeval _tval,
+					void *private_data)
+{
+	NTSTATUS status;
+	struct smbd_smb2_create_state *state = NULL;
+	struct smbd_smb2_request *smb2req = talloc_get_type(private_data,
+						struct smbd_smb2_request);
+
+	DEBUG(10,("smb2_deferred_open_timer: [idx=%d], %s\n",
+		smb2req->current_idx,
+		tevent_req_default_print(smb2req->subreq, talloc_tos()) ));
+
+	state = tevent_req_data(smb2req->subreq,
+			struct smbd_smb2_create_state);
+	if (!state) {
+		return;
+	}
+	/*
+	 * Null this out, don't talloc_free. It will
+	 * be talloc_free'd by the tevent library when
+	 * this returns.
+	 */
+	state->te = NULL;
+
+	/*
+	 * This is subtle. We must null out the callback
+	 * before resheduling, else the first call to
+	 * tevent_req_nterror() causes the _receive()
+	 * function to be called, this causing tevent_req_post()
+	 * to crash.
+	 */
+	tevent_req_set_callback(smb2req->subreq, NULL, NULL);
+
+	status = smbd_smb2_request_dispatch(smb2req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_connection_terminate(smb2req->sconn,
+				nt_errstr(status));
+	}
+}
+
+bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
+                                struct timeval request_time,
+                                struct timeval timeout,
+                                char *private_data,
+                                size_t priv_len)
+{
+	struct tevent_req *req = NULL;
+	struct smbd_smb2_create_state *state = NULL;
+	struct timeval end_time;
+
+	if (!smb2req) {
+		return false;
+	}
+	req = smb2req->subreq;
+	if (!req) {
+		return false;
+	}
+	state = tevent_req_data(req, struct smbd_smb2_create_state);
+	if (!state) {
+		return false;
+	}
+	state->request_time = request_time;
+	state->private_data = data_blob_talloc(state, private_data,
+						priv_len);
+	if (!state->private_data.data) {
+		return false;
+	}
+#if 0
+	/* Boo - turns out this isn't what W2K8R2
+	   does. It actually sends the STATUS_PENDING
+	   message followed by the STATUS_SHARING_VIOLATION
+	   message. Surely this means that all open
+	   calls (even on directories) will potentially
+	   fail in a chain.... ? And I've seen directory
+	   opens as the start of a chain. JRA.
+	*/
+	/*
+	 * More subtlety. To match W2K8R2 don't
+	 * send a "gone async" message if it's simply
+	 * a STATUS_SHARING_VIOLATION (short) wait, not
+	 * an oplock break wait. We do this by prematurely
+	 * setting smb2req->async flag.
+	 */
+	if (timeout.tv_sec < 2) {
+		DEBUG(10,("push_deferred_open_message_smb2: "
+			"short timer wait (usec = %u). "
+			"Don't send async message.\n",
+			(unsigned int)timeout.tv_usec ));
+		smb2req->async = true;
+	}
+#endif
+
+	/* Re-schedule us to retry on timer expiry. */
+	end_time = timeval_sum(&request_time, &timeout);
+
+	DEBUG(10,("push_deferred_open_message_smb2: "
+		"timeout at %s\n",
+		timeval_string(talloc_tos(),
+				&end_time,
+				true) ));
+
+	state->te = event_add_timed(smb2req->sconn->smb2.event_ctx,
+				state,
+				end_time,
+				smb2_deferred_open_timer,
+				smb2req);
+        if (!state->te) {
+		return false;
+	}
+	return true;
 }

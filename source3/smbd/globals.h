@@ -318,6 +318,10 @@ NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_setinfo(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req);
+void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
+				struct tevent_immediate *im,
+				void *private_data);
 
 /* SMB1 -> SMB2 glue. */
 void send_break_message_smb2(files_struct *fsp, uint8_t level);
@@ -332,13 +336,14 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint64_t offset,
 				uint64_t count,
 				uint32_t blocking_pid);
-void remove_deferred_open_message_smb2(uint64_t mid);
-void schedule_deferred_open_message_smb2(uint64_t mid);
-bool open_was_deferred_smb2(uint64_t mid);
-bool get_deferred_open_message_state_smb2(uint64_t mid,
+/* From smbd/smb2_create.c */
+bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval *p_request_time,
 			void **pp_state);
-bool push_deferred_open_message_smb2(struct smb_request *req,
+bool open_was_deferred_smb2(uint64_t mid);
+void remove_deferred_open_message_smb2(uint64_t mid);
+void schedule_deferred_open_message_smb2(uint64_t mid);
+bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval request_time,
 			struct timeval timeout,
 			char *private_data,

@@ -726,19 +726,19 @@ static struct pending_message_list *get_deferred_open_message_smb(uint64_t mid)
  Get the state data queued by this mid.
 ****************************************************************************/
 
-bool get_deferred_open_message_state(uint64_t mid,
+bool get_deferred_open_message_state(struct smb_request *smbreq,
 				struct timeval *p_request_time,
 				void **pp_state)
 {
 	struct pending_message_list *pml;
 
 	if (smbd_server_conn->allow_smb2) {
-		return get_deferred_open_message_state_smb2(mid,
+		return get_deferred_open_message_state_smb2(smbreq->smb2req,
 					p_request_time,
 					pp_state);
 	}
 
-	pml = get_deferred_open_message_smb(mid);
+	pml = get_deferred_open_message_smb(smbreq->mid);
 	if (!pml) {
 		return false;
 	}
@@ -764,7 +764,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 	struct timeval end_time;
 
 	if (req->smb2req) {
-		return push_deferred_open_message_smb2(req,
+		return push_deferred_open_message_smb2(req->smb2req,
 						request_time,
 						timeout,
 						private_data,

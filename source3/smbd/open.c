@@ -1546,7 +1546,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (req) {
 		void *ptr;
-		if (get_deferred_open_message_state(req->mid,
+		if (get_deferred_open_message_state(req,
 				&request_time,
 				&ptr)) {
 

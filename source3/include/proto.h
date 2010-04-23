@@ -6812,7 +6812,7 @@ int srv_set_message(char *buf,
 void remove_deferred_open_message_smb(uint64_t mid);
 void schedule_deferred_open_message_smb(uint64_t mid);
 bool open_was_deferred(uint64_t mid);
-bool get_deferred_open_message_state(uint64_t mid,
+bool get_deferred_open_message_state(struct smb_request *smbreq,
 				struct timeval *p_request_time,
 				void **pp_state);
 bool push_deferred_open_message_smb(struct smb_request *req,
