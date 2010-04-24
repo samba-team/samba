@@ -439,6 +439,14 @@ if (ret != 0) {
 	const char *es = gai_strerror(ret);
 }
 freeaddrinfo(ai);
+{
+	int val = 1;
+	#ifdef HAVE_LINUX_IPV6_V6ONLY_26
+	#define IPV6_V6ONLY 26
+	#endif
+	ret = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY,
+			 (const void *)&val, sizeof(val));
+}
 		],[
 		libreplace_cv_HAVE_IPV6=yes
 		],[
