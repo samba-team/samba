@@ -375,6 +375,50 @@ if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
 fi
 fi
 
+dnl Some old Linux systems have broken header files and
+dnl miss the IPV6_V6ONLY define in netinet/in.h,
+dnl but have it in linux/in6.h.
+dnl We can't include both files so we just check if the value
+dnl if defined and do the replacement in system/network.h
+AC_CACHE_CHECK([for IPV6_V6ONLY support],libreplace_cv_HAVE_IPV6_V6ONLY,[
+	AC_TRY_COMPILE([
+#include <stdlib.h> /* for NULL */
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>
+#include <netinet/in.h>
+		],
+		[
+#ifndef IPV6_V6ONLY
+#error no IPV6_V6ONLY
+#endif
+		],[
+		libreplace_cv_HAVE_IPV6_V6ONLY=yes
+		],[
+		libreplace_cv_HAVE_IPV6_V6ONLY=no
+		])
+])
+if test x"$libreplace_cv_HAVE_IPV6_V6ONLY" != x"yes"; then
+   dnl test for IPV6_V6ONLY
+   AC_CACHE_CHECK([for IPV6_V6ONLY in linux/in6.h],libreplace_cv_HAVE_LINUX_IPV6_V6ONLY_26,[
+	AC_TRY_COMPILE([
+	#include <linux/in6.h>
+		],
+		[
+	#if (IPV6_V6ONLY != 26)
+	#error no linux IPV6_V6ONLY
+	#endif
+		],[
+		libreplace_cv_HAVE_LINUX_IPV6_V6ONLY_26=yes
+		],[
+		libreplace_cv_HAVE_LINUX_IPV6_V6ONLY_26=no
+		])
+	])
+	if test x"$libreplace_cv_HAVE_LINUX_IPV6_V6ONLY_26" = x"yes"; then
+		AC_DEFINE(HAVE_LINUX_IPV6_V6ONLY_26,1,[Whether the system has IPV6_V6ONLY in linux/in6.h])
+	fi
+fi
+
 dnl test for ipv6
 AC_CACHE_CHECK([for ipv6 support],libreplace_cv_HAVE_IPV6,[
 	AC_TRY_LINK([
