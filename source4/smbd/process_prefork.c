@@ -192,7 +192,7 @@ static void prefork_new_task(struct tevent_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void prefork_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
+static void prefork_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason)
 {
 	DEBUG(2,("prefork_terminate: reason[%s]\n",reason));
 }
