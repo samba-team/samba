@@ -260,7 +260,7 @@ static void dptr_close_internal(struct dptr_struct *dptr)
 	 * biased by one with respect to the bitmap.
 	 */
 
-	if(bitmap_query(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1) != true) {
+	if (!bitmap_query(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1)) {
 		DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
 			dptr->dnum ));
 	}
