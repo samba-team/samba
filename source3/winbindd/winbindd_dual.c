@@ -428,34 +428,6 @@ static void async_domain_request_done(struct tevent_req *req)
 	state->continuation(state->private_data_data, true);
 }
 
-static void recvfrom_child(void *private_data_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data_data, struct winbindd_cli_state);
-	enum winbindd_result result = state->response->result;
-
-	/* This is an optimization: The child has written directly to the
-	 * response buffer. The request itself is still in pending state,
-	 * state that in the result code. */
-
-	state->response->result = WINBINDD_PENDING;
-
-	if ((!success) || (result != WINBINDD_OK)) {
-		request_error(state);
-		return;
-	}
-
-	request_ok(state);
-}
-
-void sendto_domain(struct winbindd_cli_state *state,
-		   struct winbindd_domain *domain)
-{
-	async_domain_request(state->mem_ctx, domain,
-			     state->request, state->response,
-			     recvfrom_child, state);
-}
-
 static void child_process_request(struct winbindd_child *child,
 				  struct winbindd_cli_state *state)
 {
