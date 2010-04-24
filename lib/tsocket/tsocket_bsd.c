@@ -1206,7 +1206,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	bsds->fd = fd;
 	talloc_set_destructor(bsds, tdgram_bsd_destructor);
 
-#if defined(HAVE_IPV6) && defined(IPV6_V6ONLY)
+#ifdef HAVE_IPV6
 	if (do_ipv6only) {
 		int val = 1;
 
@@ -2037,7 +2037,7 @@ static struct tevent_req * tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-#if defined(HAVE_IPV6) && defined(IPV6_V6ONLY)
+#ifdef HAVE_IPV6
 	if (do_ipv6only) {
 		int val = 1;
 
