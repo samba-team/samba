@@ -99,6 +99,25 @@ def configure(conf):
                         'socket nsl', checklibc=True,
                         headers='sys/socket.h netinet/in.h arpa/inet.h netdb.h')
 
+    # Some old Linux systems have broken header files and
+    # miss the IPV6_V6ONLY define in netinet/in.h,
+    # but have it in linux/in6.h.
+    # We can't include both files so we just check if the value
+    # if defined and do the replacement in system/network.h
+    if not conf.CHECK_VARIABLE('IPV6_V6ONLY',
+                               headers='sys/socket.h netdb.h netinet/in.h'):
+        conf.CHECK_CODE('''
+                        #include <linux/in6.h>
+                        #if (IPV6_V6ONLY != 26)
+                        #error no IPV6_V6ONLY support on linux
+                        #endif
+                        int main(void) { return IPV6_V6ONLY; }
+                        ''',
+                        define='HAVE_LINUX_IPV6_V6ONLY_26',
+                        addmain=False,
+                        msg='Checking for IPV6_V6ONLY in linux/in6.h',
+                        local_include=False)
+
     conf.CHECK_CODE('''
                        struct sockaddr_storage sa_store;
                        struct addrinfo *ai = NULL;
