@@ -360,6 +360,13 @@ struct addrinfo {
 #define ifr_netmask ifr_addr
 #endif
 
+/* Some old Linux systems have broken header files */
+#ifdef HAVE_IPV6
+#ifdef HAVE_LINUX_IPV6_V6ONLY_26
+#define IPV6_V6ONLY 26
+#endif /* HAVE_LINUX_IPV6_V6ONLY_26 */
+#endif /* HAVE_IPV6 */
+
 #ifdef SOCKET_WRAPPER
 #ifndef SOCKET_WRAPPER_DISABLE
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
