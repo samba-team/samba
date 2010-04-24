@@ -72,8 +72,6 @@ static char winbind_separator(void)
 	sep = details->winbind_separator;
 	got_sep = true;
 
-	wbcFreeMemory(details);
-
 	if (!sep) {
 		d_fprintf(stderr, "winbind separator was NULL!\n");
 		return 0;
