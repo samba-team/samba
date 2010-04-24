@@ -345,18 +345,15 @@ def CHECK_CODE(conf, code, define,
     else:
         execute = 0
 
-    if addmain:
-        fragment='#include "__confdefs.h"\n%s\n int main(void) { %s; return 0; }\n' % (hdrs, code)
-    else:
-        fragment='#include "__confdefs.h"\n%s\n%s\n' % (hdrs, code)
+    defs = conf.get_config_header()
 
-    conf.write_config_header('__confdefs.h', top=True)
+    if addmain:
+        fragment='%s\n%s\n int main(void) { %s; return 0; }\n' % (defs, hdrs, code)
+    else:
+        fragment='%s\n%s\n%s\n' % (defs, hdrs, code)
 
     if msg is None:
         msg="Checking for %s" % define
-
-    # include the directory containing __confdefs.h
-    cflags += ' -I../../default'
 
     if local_include:
         cflags += ' -I%s' % conf.curdir
