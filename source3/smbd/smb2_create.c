@@ -22,6 +22,42 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 
+int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level)
+{
+	switch(in_oplock_level) {
+	case SMB2_OPLOCK_LEVEL_NONE:
+		return NO_OPLOCK;
+	case SMB2_OPLOCK_LEVEL_II:
+		return LEVEL_II_OPLOCK;
+	case SMB2_OPLOCK_LEVEL_EXCLUSIVE:
+		return EXCLUSIVE_OPLOCK;
+	case SMB2_OPLOCK_LEVEL_BATCH:
+		return BATCH_OPLOCK;
+	case SMB2_OPLOCK_LEVEL_LEASE:
+		DEBUG(2,("map_smb2_oplock_levels_to_samba: "
+			"LEASE_OPLOCK_REQUESTED\n"));
+		return NO_OPLOCK;
+	default:
+		DEBUG(2,("map_smb2_oplock_levels_to_samba: "
+			"unknown level %u\n",
+			(unsigned int)in_oplock_level));
+		return NO_OPLOCK;
+	}
+}
+
+uint8_t map_samba_oplock_levels_to_smb2(int oplock_type)
+{
+	if (BATCH_OPLOCK_TYPE(oplock_type)) {
+		return SMB2_OPLOCK_LEVEL_BATCH;
+	} else if (EXCLUSIVE_OPLOCK_TYPE(oplock_type)) {
+		return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+	} else if (LEVEL_II_OPLOCK_TYPE(oplock_type)) {
+		return SMB2_OPLOCK_LEVEL_II;
+	} else {
+		return SMB2_OPLOCK_LEVEL_NONE;
+	}
+}
+
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct smbd_smb2_request *smb2req,
@@ -636,6 +672,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
+		in_file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+
 		status = SMB_VFS_CREATE_FILE(smb1req->conn,
 					     smb1req,
 					     0, /* root_dir_fid */
@@ -645,7 +683,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     in_create_disposition,
 					     in_create_options,
 					     in_file_attributes,
-					     0, /* oplock_request */
+					     map_smb2_oplock_levels_to_samba(in_oplock_level),
 					     allocation_size,
 					     0, /* private_flags */
 					     sec_desc,
@@ -711,7 +749,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	smb2req->compat_chain_fsp = smb1req->chain_fsp;
 
-	state->out_oplock_level	= 0;
+	state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);
+
 	if ((in_create_disposition == FILE_SUPERSEDE)
 	    && (info == FILE_WAS_OVERWRITTEN)) {
 		state->out_create_action = FILE_WAS_SUPERSEDED;

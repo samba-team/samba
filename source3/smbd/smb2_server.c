@@ -49,7 +49,7 @@ static const char *smb2_names[] = {
 
 const char *smb2_opcode_name(uint16_t opcode)
 {
-	if (opcode >= 0x12) {
+	if (opcode > 0x12) {
 		return "Bad SMB2 opcode";
 	}
 	return smb2_names[opcode];
@@ -1427,7 +1427,6 @@ struct smbd_smb2_send_oplock_break_state {
 static void smbd_smb2_oplock_break_writev_done(struct tevent_req *subreq);
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
-				     uint64_t file_id_persistent,
 				     uint64_t file_id_volatile,
 				     uint8_t oplock_level)
 {
@@ -1468,7 +1467,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	SCVAL(body, 0x02, oplock_level);
 	SCVAL(body, 0x03, 0);		/* reserved */
 	SIVAL(body, 0x04, 0);		/* reserved */
-	SBVAL(body, 0x08, file_id_persistent);
+	SBVAL(body, 0x08, 0);		/* file_id_persistent */
 	SBVAL(body, 0x10, file_id_volatile);
 
 	subreq = tstream_writev_queue_send(state,

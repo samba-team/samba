@@ -288,7 +288,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn, __location__)
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
-				     uint64_t file_id_persistent,
 				     uint64_t file_id_volatile,
 				     uint8_t oplock_level);
 
@@ -324,7 +323,7 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 				void *private_data);
 
 /* SMB1 -> SMB2 glue. */
-void send_break_message_smb2(files_struct *fsp, uint8_t level);
+void send_break_message_smb2(files_struct *fsp, int level);
 bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				struct smb_request *req,
 				files_struct *fsp,
@@ -337,6 +336,8 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint64_t count,
 				uint32_t blocking_pid);
 /* From smbd/smb2_create.c */
+int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level);
+uint8_t map_samba_oplock_levels_to_smb2(int oplock_type);
 bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval *p_request_time,
 			void **pp_state);

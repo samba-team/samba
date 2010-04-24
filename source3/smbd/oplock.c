@@ -215,7 +215,7 @@ bool should_notify_deferred_opens()
 ****************************************************************************/
 
 static char *new_break_message_smb1(TALLOC_CTX *mem_ctx,
-				   files_struct *fsp, uint8 cmd)
+				   files_struct *fsp, int cmd)
 {
 	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
 
@@ -345,7 +345,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 
 	fsp->oplock_timeout =
-		event_add_timed(smbd_event_context(), NULL,
+		event_add_timed(smbd_event_context(), fsp,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
 				oplock_timeout_handler, fsp);
 
@@ -354,7 +354,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 }
 
-static void send_break_message_smb1(files_struct *fsp, uint8_t level)
+static void send_break_message_smb1(files_struct *fsp, int level)
 {
 	char *break_msg = new_break_message_smb1(talloc_tos(),
 					fsp,

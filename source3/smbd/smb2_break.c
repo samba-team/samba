@@ -56,6 +56,12 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 	}
 
 	in_oplock_level		= CVAL(inbody, 0x02);
+
+	if (in_oplock_level != SMB2_OPLOCK_LEVEL_NONE &&
+			in_oplock_level != SMB2_OPLOCK_LEVEL_II) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
 	/* 0x03 1 bytes reserved */
 	/* 0x04 4 bytes reserved */
 	in_file_id_persistent		= BVAL(inbody, 0x08);
@@ -123,7 +129,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 
 	SSVAL(outbody.data, 0x00, 0x18);	/* struct size */
 	SCVAL(outbody.data, 0x02,
-	      out_oplock_level);		/* oplock level */
+	      out_oplock_level);		/* SMB2 oplock level */
 	SCVAL(outbody.data, 0x03, 0);		/* reserved */
 	SIVAL(outbody.data, 0x04, 0);		/* reserved */
 	SBVAL(outbody.data, 0x08,
@@ -141,7 +147,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 
 struct smbd_smb2_oplock_break_state {
 	struct smbd_smb2_request *smb2req;
-	uint8_t out_oplock_level;
+	uint8_t out_oplock_level; /* SMB2 oplock level. */
 };
 
 static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
@@ -154,7 +160,10 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_oplock_break_state *state;
 	struct smb_request *smbreq;
 	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp;
+	files_struct *fsp = NULL;
+	int oplocklevel = map_smb2_oplock_levels_to_samba(in_oplock_level);
+	bool break_to_none = (oplocklevel == NO_OPLOCK);
+	bool result;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_oplock_break_state);
@@ -164,8 +173,10 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 	state->smb2req = smb2req;
 	state->out_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
 
-	DEBUG(10,("smbd_smb2_oplock_break_send: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
+	DEBUG(10,("smbd_smb2_oplock_break_send: file_id[0x%016llX] "
+		"samba level %d\n",
+		(unsigned long long)in_file_id_volatile,
+		oplocklevel));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
@@ -186,7 +197,31 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	DEBUG(5,("smbd_smb2_oplock_break_send: got SMB2 oplock break (%u) from client "
+		"for file %s fnum = %d\n",
+		(unsigned int)in_oplock_level,
+		fsp_str_dbg(fsp),
+		fsp->fnum ));
+
+	if ((fsp->sent_oplock_break == BREAK_TO_NONE_SENT) ||
+			(break_to_none)) {
+		result = remove_oplock(fsp);
+		state->out_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+	} else {
+		result = downgrade_oplock(fsp);
+		state->out_oplock_level = SMB2_OPLOCK_LEVEL_II;
+	}
+
+	if (!result) {
+		DEBUG(0, ("smbd_smb2_oplock_break_send: error in removing "
+			"oplock on file %s\n", fsp_str_dbg(fsp)));
+		/* Hmmm. Is this panic justified? */
+		smb_panic("internal tdb error");
+	}
+
+	reply_to_oplock_break_requests(fsp);
+
+	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
 
@@ -209,6 +244,27 @@ static NTSTATUS smbd_smb2_oplock_break_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-void send_break_message_smb2(files_struct *fsp, uint8_t level)
+/*********************************************************
+ Create and send an asynchronous
+ SMB2 OPLOCK_BREAK_NOTIFICATION.
+*********************************************************/
+
+void send_break_message_smb2(files_struct *fsp, int level)
 {
+	uint8_t smb2_oplock_level = map_samba_oplock_levels_to_smb2(level);
+	NTSTATUS status;
+
+	DEBUG(10,("send_break_message_smb2: sending oplock break "
+		"for file %s, fnum = %d, smb2 level %u\n",
+		fsp_str_dbg(fsp),
+		fsp->fnum,
+		(unsigned int)smb2_oplock_level ));
+		
+	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
+					(uint64_t)fsp->fnum,
+					smb2_oplock_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_connection_terminate(fsp->conn->sconn,
+				 nt_errstr(status));
+	}
 }
