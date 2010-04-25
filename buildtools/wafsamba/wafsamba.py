@@ -239,6 +239,7 @@ def SAMBA_BINARY(bld, binname, source,
     obj_target = binname + '.objlist'
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    source = unique_list(TO_LIST(source))
 
     # first create a target for building the object files for this binary
     # by separating in this way, we avoid recompiling the C files
@@ -325,6 +326,7 @@ def SAMBA_MODULE(bld, modname, source,
         return
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    source = unique_list(TO_LIST(source))
 
     # remember empty modules, so we can strip the dependencies
     if (source == '') or (source == []):
@@ -349,7 +351,7 @@ def SAMBA_MODULE(bld, modname, source,
         )
 
     if autoproto is not None:
-        bld.SAMBA_AUTOPROTO(autoproto, source + ' ' + autoproto_extra_source)
+        bld.SAMBA_AUTOPROTO(autoproto, source + TO_LIST(autoproto_extra_source))
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
@@ -395,6 +397,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         return
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    source = unique_list(TO_LIST(source))
 
     deps += ' ' + public_deps
 
@@ -427,7 +430,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     if heimdal_autoproto_private is not None:
         bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
     if autoproto is not None:
-        bld.SAMBA_AUTOPROTO(autoproto, source + ' ' + autoproto_extra_source)
+        bld.SAMBA_AUTOPROTO(autoproto, source + TO_LIST(autoproto_extra_source))
     if public_headers is not None:
         bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
     return t
