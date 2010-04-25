@@ -54,16 +54,12 @@ interface dfsblobs
 		[relative_short] nstring *DFS_alt_path;
 		[relative_short] nstring *netw_address;
 		/* As stated in MS DFSC 2.2.4.3.1 this array was guid but now MUST be 16 null bytes*/
-		uint8	service_site_guid[16];
 	} dfs_normal_referral;
 
 	typedef struct {
 		[relative_short] nstring *special_name;
 		uint16 nb_expanded_names;
-		[relative_short] [flag(STR_NOTERM|NDR_REMAINING)] string_array *expanded_names;
-		/*[relative_short] nstring_array expanded_names2;*/
-		/* As stated in MS DFSC 2.2.4.3.1 this array was guid but now MUST be 16 null bytes*/
-		uint8	service_site_guid[16];
+		[relative_short,subcontext(0),flag(STR_NOTERM|NDR_REMAINING)] string_array *expanded_names;
 	} dfs_domain_referral;
 
 	typedef [nodiscriminant] union {
@@ -72,12 +68,23 @@ interface dfsblobs
 		[default];
 	} dfs_referral;
 
+	typedef [nodiscriminant] union {
+		[case(16)] uint8 *value;
+		[default];
+	} dfs_padding;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16 size;
 		DFS_SERVER_TYPE server_type;
 		DFS_FLAGS_REFERRAL entry_flags;
 		uint32 ttl;
 		[switch_is(entry_flags & DFS_FLAG_REFERRAL_DOMAIN_RESP)] dfs_referral referrals;
+	} dfs_referral_v3_remaining;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16 size;
+		dfs_referral_v3_remaining data;
+		/* this is either 0 or 16 bytes */
+		[switch_is(size - 18)] dfs_padding service_site_guid;
 	} dfs_referral_v3;
 
 	typedef struct {
@@ -85,7 +92,7 @@ interface dfsblobs
 		DFS_SERVER_TYPE server_type;
 		DFS_FLAGS_REFERRAL entry_flags;
 		uint32 ttl;
-		dfs_normal_referral referrals;
+		dfs_normal_referral r1;
 	} dfs_referral_v4;
 
 	typedef [nodiscriminant] union {
@@ -104,13 +111,18 @@ interface dfsblobs
 	typedef [public] struct {
 		uint16	path_consumed;
 		uint16	nb_referrals;
-		uint32	header_flags;
+		DFS_HEADER_FLAG	header_flags;
 		dfs_referral_type referral_entries[nb_referrals];
 	} dfs_referral_resp;
 
-	[public] void dfs_GetDFSReferral(
-		[in]		uint16 max_referral_level,
-		[in]		nstring servername,
-		[out,ref]	dfs_referral_resp *resp
-		);
+	typedef [public] struct {
+		uint16 max_referral_level;
+		nstring servername;
+	} dfs_GetDFSReferral_in;
+
+       [public] void dfs_GetDFSReferral(
+               [in]            dfs_GetDFSReferral_in req,
+               [out,ref]       dfs_referral_resp *resp
+              );
+
 }
