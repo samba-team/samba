@@ -237,7 +237,6 @@ bool domain_is_forest_root(const struct winbindd_domain *domain)
 ********************************************************************/
 
 struct trustdom_state {
-	TALLOC_CTX *mem_ctx;
 	bool primary;
 	bool forest_root;
 	struct winbindd_response *response;
@@ -249,28 +248,24 @@ static void rescan_forest_trusts( void );
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
-	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct trustdom_state *state;
 
-	mem_ctx = talloc_init("add_trusted_domains");
-	if (mem_ctx == NULL) {
+	state = TALLOC_ZERO_P(NULL, struct trustdom_state);
+	if (state == NULL) {
 		DEBUG(0, ("talloc_init failed\n"));
 		return;
 	}
 
-	request = TALLOC_ZERO_P(mem_ctx, struct winbindd_request);
-	response = TALLOC_P(mem_ctx, struct winbindd_response);
-	state = TALLOC_P(mem_ctx, struct trustdom_state);
+	request = TALLOC_ZERO_P(state, struct winbindd_request);
+	response = TALLOC_P(state, struct winbindd_response);
 
-	if ((request == NULL) || (response == NULL) || (state == NULL)) {
+	if ((request == NULL) || (response == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(state);
 		return;
 	}
-
-	state->mem_ctx = mem_ctx;
 	state->response = response;
 
 	/* Flags used to know how to continue the forest trust search */
@@ -281,7 +276,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;
 
-	async_domain_request(mem_ctx, domain, request, response,
+	async_domain_request(state, domain, request, response,
 			     trustdom_recv, state);
 }
 
@@ -294,7 +289,7 @@ static void trustdom_recv(void *private_data, bool success)
 
 	if ((!success) || (response->result != WINBINDD_OK)) {
 		DEBUG(1, ("Could not receive trustdoms\n"));
-		talloc_destroy(state->mem_ctx);
+		TALLOC_FREE(state);
 		return;
 	}
 
@@ -384,7 +379,7 @@ static void trustdom_recv(void *private_data, bool success)
 		rescan_forest_trusts();
 	}
 
-	talloc_destroy(state->mem_ctx);
+	TALLOC_FREE(state);
 
 	return;
 }
