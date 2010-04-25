@@ -2,7 +2,6 @@
 
 bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
 	source='wbc_guid.c wbc_idmap.c wbclient.c wbc_pam.c wbc_pwd.c wbc_sid.c wbc_util.c',
-	public_deps='talloc'
 	)
 
 
