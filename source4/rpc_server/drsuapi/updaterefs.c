@@ -211,10 +211,10 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
 	if (security_level < SECURITY_ADMINISTRATOR) {
-		/* check that they are using an invocationId that they own */
-		ret = dsdb_validate_invocation_id(b_state->sam_ctx,
-						  &req->dest_dsa_guid,
-						  dce_call->conn->auth_state.session_info->security_token->user_sid);
+		/* check that they are using an DSA objectGUID that they own */
+		ret = dsdb_validate_dsa_guid(b_state->sam_ctx,
+		                             &req->dest_dsa_guid,
+		                             dce_call->conn->auth_state.session_info->security_token->user_sid);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Refusing DsReplicaUpdateRefs for sid %s with GUID %s\n",
 				 dom_sid_string(mem_ctx,
