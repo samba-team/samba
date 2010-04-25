@@ -238,51 +238,48 @@ bool domain_is_forest_root(const struct winbindd_domain *domain)
 
 struct trustdom_state {
 	struct winbindd_domain *domain;
-	struct winbindd_response *response;
+	struct winbindd_request request;
 };
 
-static void trustdom_recv(void *private_data, bool success);
+static void trustdom_list_done(struct tevent_req *req);
 static void rescan_forest_root_trusts( void );
 static void rescan_forest_trusts( void );
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
-	struct winbindd_request *request;
-	struct winbindd_response *response;
 	struct trustdom_state *state;
+	struct tevent_req *req;
 
 	state = TALLOC_ZERO_P(NULL, struct trustdom_state);
 	if (state == NULL) {
-		DEBUG(0, ("talloc_init failed\n"));
+		DEBUG(0, ("talloc failed\n"));
 		return;
 	}
+	state->domain = domain;
 
-	request = TALLOC_ZERO_P(state, struct winbindd_request);
-	response = TALLOC_P(state, struct winbindd_response);
+	state->request.length = sizeof(state->request);
+	state->request.cmd = WINBINDD_LIST_TRUSTDOM;
 
-	if ((request == NULL) || (response == NULL)) {
-		DEBUG(0, ("talloc failed\n"));
+	req = wb_domain_request_send(state, winbind_event_context(),
+				     domain, &state->request);
+	if (req == NULL) {
+		DEBUG(1, ("wb_domain_request_send failed\n"));
 		TALLOC_FREE(state);
 		return;
 	}
-	state->response = response;
-	state->domain = domain;
-
-	request->length = sizeof(*request);
-	request->cmd = WINBINDD_LIST_TRUSTDOM;
-
-	async_domain_request(state, domain, request, response,
-			     trustdom_recv, state);
+	tevent_req_set_callback(req, trustdom_list_done, state);
 }
 
-static void trustdom_recv(void *private_data, bool success)
+static void trustdom_list_done(struct tevent_req *req)
 {
-	struct trustdom_state *state =
-		talloc_get_type_abort(private_data, struct trustdom_state);
-	struct winbindd_response *response = state->response;
+	struct trustdom_state *state = tevent_req_callback_data(
+		req, struct trustdom_state);
+	struct winbindd_response *response;
+	int res, err;
 	char *p;
 
-	if ((!success) || (response->result != WINBINDD_OK)) {
+	res = wb_domain_request_recv(req, state, &response, &err);
+	if ((res == -1) || (response->result != WINBINDD_OK)) {
 		DEBUG(1, ("Could not receive trustdoms\n"));
 		TALLOC_FREE(state);
 		return;
