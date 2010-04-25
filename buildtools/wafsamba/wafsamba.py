@@ -123,7 +123,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     # remember empty libraries, so we can strip the dependencies
-    if (source == '') or (source == []):
+    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
         SET_TARGET_TYPE(bld, libname, 'EMPTY')
         return
 
@@ -329,7 +329,7 @@ def SAMBA_MODULE(bld, modname, source,
     source = unique_list(TO_LIST(source))
 
     # remember empty modules, so we can strip the dependencies
-    if (source == '') or (source == []):
+    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
         SET_TARGET_TYPE(bld, modname, 'EMPTY')
         return
 
@@ -389,7 +389,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         return
 
     # remember empty subsystems, so we can strip the dependencies
-    if (source == '') or (source == []):
+    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
         SET_TARGET_TYPE(bld, modname, 'EMPTY')
         return
 
