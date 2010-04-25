@@ -270,12 +270,6 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct winbindd_response **presponse, int *err);
 
-void async_domain_request(TALLOC_CTX *mem_ctx,
-			  struct winbindd_domain *domain,
-			  struct winbindd_request *request,
-			  struct winbindd_response *response,
-			  void (*continuation)(void *private_data_data, bool success),
-			  void *private_data_data);
 void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 		 const struct winbindd_child_dispatch_table *table,
 		 const char *logprefix,

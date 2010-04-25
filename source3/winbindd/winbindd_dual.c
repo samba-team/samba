@@ -367,67 +367,6 @@ int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-struct domain_request_state {
-	struct winbindd_domain *domain;
-	struct winbindd_request *request;
-	struct winbindd_response *response;
-	void (*continuation)(void *private_data_data, bool success);
-	void *private_data_data;
-};
-
-static void async_domain_request_done(struct tevent_req *req);
-
-void async_domain_request(TALLOC_CTX *mem_ctx,
-			  struct winbindd_domain *domain,
-			  struct winbindd_request *request,
-			  struct winbindd_response *response,
-			  void (*continuation)(void *private_data_data, bool success),
-			  void *private_data_data)
-{
-	struct tevent_req *subreq;
-	struct domain_request_state *state;
-
-	state = TALLOC_P(mem_ctx, struct domain_request_state);
-	if (state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		continuation(private_data_data, False);
-		return;
-	}
-
-	state->domain = domain;
-	state->request = request;
-	state->response = response;
-	state->continuation = continuation;
-	state->private_data_data = private_data_data;
-
-	subreq = wb_domain_request_send(state, winbind_event_context(),
-					domain, request);
-	if (subreq == NULL) {
-		DEBUG(5, ("wb_domain_request_send failed\n"));
-		continuation(private_data_data, false);
-		return;
-	}
-	tevent_req_set_callback(subreq, async_domain_request_done, state);
-}
-
-static void async_domain_request_done(struct tevent_req *req)
-{
-	struct domain_request_state *state = tevent_req_callback_data(
-		req, struct domain_request_state);
-	struct winbindd_response *response;
-	int ret, err;
-
-	ret = wb_domain_request_recv(req, state, &response, &err);
-	TALLOC_FREE(req);
-	if (ret == -1) {
-		DEBUG(5, ("wb_domain_request returned %s\n", strerror(err)));
-		state->continuation(state->private_data_data, false);
-		return;
-	}
-	*(state->response) = *response;
-	state->continuation(state->private_data_data, true);
-}
-
 static void child_process_request(struct winbindd_child *child,
 				  struct winbindd_cli_state *state)
 {
