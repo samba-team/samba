@@ -237,8 +237,7 @@ bool domain_is_forest_root(const struct winbindd_domain *domain)
 ********************************************************************/
 
 struct trustdom_state {
-	bool primary;
-	bool forest_root;
+	struct winbindd_domain *domain;
 	struct winbindd_response *response;
 };
 
@@ -267,11 +266,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 		return;
 	}
 	state->response = response;
-
-	/* Flags used to know how to continue the forest trust search */
-
-	state->primary = domain->primary;
-	state->forest_root = domain_is_forest_root(domain);
+	state->domain = domain;
 
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;
@@ -363,16 +358,16 @@ static void trustdom_recv(void *private_data, bool success)
 	       && !forest_root)
 	*/
 
-	if ( state->primary ) {
+	if (state->domain->primary) {
 		/* If this is our primary domain and we are not in the
 		   forest root, we have to scan the root trusts first */
 
-		if ( !state->forest_root )
+		if (!domain_is_forest_root(state->domain))
 			rescan_forest_root_trusts();
 		else
 			rescan_forest_trusts();
 
-	} else if ( state->forest_root ) {
+	} else if (domain_is_forest_root(state->domain)) {
 		/* Once we have done root forest trust search, we can
 		   go on to search the trusted forests */
 
