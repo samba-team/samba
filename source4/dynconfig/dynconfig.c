@@ -40,57 +40,53 @@
  * table?  There's kind of a chicken-and-egg situation there...
  **/
 
-/** Directory with generic binaries */
-_PUBLIC_ const char *dyn_BINDIR = BINDIR;
+#define DEFINE_DYN_CONFIG_PARAM(name) \
+const char *dyn_##name = name; \
+\
+ const char *get_dyn_##name(void) \
+{\
+	if (dyn_##name == NULL) {\
+		return name;\
+	}\
+	return dyn_##name;\
+}\
+\
+ const char *set_dyn_##name(const char *newpath) \
+{\
+	if (dyn_##name) {\
+		free(discard_const(dyn_##name));	\
+	}\
+	dyn_##name = strdup(newpath);\
+	return dyn_##name;\
+}\
+ bool is_default_dyn_##name(void) \
+{\
+	return (dyn_##name == NULL);\
+}
 
-/** Directory with root use binaries */
-_PUBLIC_ const char *dyn_SBINDIR = SBINDIR;
+/* these are in common with s3 */
+DEFINE_DYN_CONFIG_PARAM(SBINDIR)
+DEFINE_DYN_CONFIG_PARAM(BINDIR)
+DEFINE_DYN_CONFIG_PARAM(SWATDIR)
+DEFINE_DYN_CONFIG_PARAM(CONFIGFILE) /**< Location of smb.conf file. **/
+DEFINE_DYN_CONFIG_PARAM(LOGFILEBASE) /** Log file directory. **/
+DEFINE_DYN_CONFIG_PARAM(LMHOSTSFILE) /** Statically configured LanMan hosts. **/
+DEFINE_DYN_CONFIG_PARAM(CODEPAGEDIR)
+DEFINE_DYN_CONFIG_PARAM(LIBDIR)
+DEFINE_DYN_CONFIG_PARAM(MODULESDIR)
+DEFINE_DYN_CONFIG_PARAM(SHLIBEXT)
+DEFINE_DYN_CONFIG_PARAM(LOCKDIR)
+DEFINE_DYN_CONFIG_PARAM(STATEDIR) /** Persistent state files. Default LOCKDIR */
+DEFINE_DYN_CONFIG_PARAM(CACHEDIR) /** Temporary cache files. Default LOCKDIR */
+DEFINE_DYN_CONFIG_PARAM(PIDDIR)
+DEFINE_DYN_CONFIG_PARAM(NCALRPCDIR)
+DEFINE_DYN_CONFIG_PARAM(SMB_PASSWD_FILE)
+DEFINE_DYN_CONFIG_PARAM(PRIVATE_DIR)
 
-/**< Location of smb.conf file. **/
-_PUBLIC_ const char *dyn_CONFIGFILE = CONFIGFILE; 
-
-/** Log file directory. **/
-_PUBLIC_ const char *dyn_LOGFILEBASE = LOGFILEBASE; 
-
-/** Directory for local RPC (ncalrpc: transport) */
-_PUBLIC_ const char *dyn_NCALRPCDIR = NCALRPCDIR;
-
-/** Statically configured LanMan hosts. **/
-_PUBLIC_ const char *dyn_LMHOSTSFILE = LMHOSTSFILE; 
-
-/** Samba data directory. */
-_PUBLIC_ const char *dyn_DATADIR = DATADIR;
-
-_PUBLIC_ const char *dyn_MODULESDIR = MODULESDIR;
-
-/**
- * @brief Directory holding lock files.
- *
- * Not writable, but used to set a default in the parameter table.
- **/
-_PUBLIC_ const char *dyn_LOCKDIR = LOCKDIR;
-
-/** pid file directory */
-_PUBLIC_ const char *dyn_PIDDIR  = PIDDIR;
-
-/** Private data directory; holds ldb files and the like */
-_PUBLIC_ const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
-
-/** SWAT  directory */
-_PUBLIC_ const char *dyn_SWATDIR = SWATDIR;
-
-/** SETUP files (source files used by the provision) */
-_PUBLIC_ const char *dyn_SETUPDIR = SETUPDIR;
-
-/** Where to find the winbindd socket */
-_PUBLIC_ const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
-
-/** Where to find the winbindd privileged socket */
-_PUBLIC_ const char *dyn_WINBINDD_PRIVILEGED_SOCKET_DIR = WINBINDD_PRIVILEGED_SOCKET_DIR;
-
-/** Where to find the NTP signing daemon socket */
-_PUBLIC_ const char *dyn_NTP_SIGND_SOCKET_DIR = NTP_SIGND_SOCKET_DIR;
-
-/** Where to find python modules */
-_PUBLIC_ const char *dyn_PYTHONDIR = PYTHONDIR;
-
+/* these are not in s3 */
+DEFINE_DYN_CONFIG_PARAM(DATADIR)
+DEFINE_DYN_CONFIG_PARAM(SETUPDIR)
+DEFINE_DYN_CONFIG_PARAM(WINBINDD_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PARAM(WINBINDD_PRIVILEGED_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PARAM(NTP_SIGND_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PARAM(PYTHONDIR)

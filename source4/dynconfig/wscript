@@ -35,6 +35,11 @@ dyn_cflags = {
     'INCLUDEDIR'                     : '${PREFIX}/include',
     'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
     'SWATDIR'                        : '${DATADIR}/swat',
+    'CODEPAGEDIR'                    : '${LIBDIR}/samba',
+    'LIBDIR'                         : '${LIBDIR}',
+    'STATEDIR'                       : '${STATEDIR}',
+    'CACHEDIR'                       : '${LOCKDIR}',
+    'SMB_PASSWD_FILE'                : '${PRIVATEDIR}/smbpasswd',
     }
 
 # changes for when FHS is enabled
