@@ -757,10 +757,11 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 		       /* 8 */);
 	}
 
-	if (flags & WBFLAG_PAM_INFO3_TEXT) {
-		result = append_info3_as_txt(state->mem_ctx, state, info3);
+	if (flags & WBFLAG_PAM_UNIX_NAME) {
+		result = append_unix_username(state->mem_ctx, state, info3,
+					      name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
+			DEBUG(10,("Failed to append Unix Username: %s\n",
 				nt_errstr(result)));
 			return result;
 		}
@@ -777,11 +778,10 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 		}
 	}
 
-	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		result = append_unix_username(state->mem_ctx, state, info3,
-					      name_domain, name_user);
+	if (flags & WBFLAG_PAM_INFO3_TEXT) {
+		result = append_info3_as_txt(state->mem_ctx, state, info3);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10,("Failed to append Unix Username: %s\n",
+			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
 				nt_errstr(result)));
 			return result;
 		}
