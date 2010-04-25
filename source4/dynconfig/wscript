@@ -37,7 +37,7 @@ dyn_cflags = {
     'SWATDIR'                        : '${DATADIR}/swat',
     'CODEPAGEDIR'                    : '${LIBDIR}/samba',
     'LIBDIR'                         : '${LIBDIR}',
-    'STATEDIR'                       : '${STATEDIR}',
+    'STATEDIR'                       : '${LOCALSTATEDIR}',
     'CACHEDIR'                       : '${LOCKDIR}',
     'SMB_PASSWD_FILE'                : '${PRIVATEDIR}/smbpasswd',
     }
