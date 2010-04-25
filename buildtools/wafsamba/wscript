@@ -21,7 +21,7 @@ def set_options(opt):
 
     opt.tool_options('gnu_dirs')
 
-    gr = opt.add_option_group('library handling options')
+    gr = opt.option_group('library handling options')
 
     gr.add_option('--bundled-libraries',
                    help=("comma separated list of bundled libraries. May include !LIBNAME to disable bundling a library. Can be 'NONE' or 'ALL' [auto]"),
