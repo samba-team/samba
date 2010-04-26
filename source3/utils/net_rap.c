@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../librpc/gen_ndr/rap.h"
 
 /* The following messages were for error checking that is not properly
    reported at the moment.  Which should be reinstated? */
@@ -226,7 +227,7 @@ static int rap_share_add(struct net_context *c, int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 
-	RAP_SHARE_INFO_2 sinfo;
+	struct rap_share_info_2 sinfo;
 	char *p;
 	char *sharename;
 
@@ -812,7 +813,7 @@ static int rap_user_add(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	RAP_USER_INFO_1 userinfo;
+	struct rap_user_info_1 userinfo;
 
 	if (argc == 0 || c->display_usage) {
                 return net_rap_user_usage(c, argc, argv);
@@ -956,7 +957,7 @@ static int rap_group_add(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
-	RAP_GROUP_INFO_1 grinfo;
+	struct rap_group_info_1 grinfo;
 
 	if (argc == 0 || c->display_usage) {
                 return net_rap_group_usage(c, argc, argv);

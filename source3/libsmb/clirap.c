@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/rap.h"
 
 /****************************************************************************
  Call a remote api

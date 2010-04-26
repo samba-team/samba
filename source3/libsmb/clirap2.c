@@ -76,6 +76,7 @@
 /*****************************************************/
 
 #include "includes.h"
+#include "../librpc/gen_ndr/rap.h"
 
 #define WORDSIZE 2
 #define DWORDSIZE 4
@@ -284,7 +285,7 @@ int cli_NetGroupDelete(struct cli_state *cli, const char *group_name)
  call a NetGroupAdd - add user group to remote server
 ****************************************************************************/
 
-int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 *grinfo)
+int cli_NetGroupAdd(struct cli_state *cli, struct rap_group_info_1 *grinfo)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -830,7 +831,7 @@ int cli_NetUserDelete(struct cli_state *cli, const char * user_name )
  Call a NetUserAdd - add user to remote server.
 ****************************************************************************/
 
-int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
+int cli_NetUserAdd(struct cli_state *cli, struct rap_user_info_1 * userinfo )
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -1333,7 +1334,7 @@ int cli_NetFileEnum(struct cli_state *cli, const char * user,
  Call a NetShareAdd - share/export directory on remote server.
 ****************************************************************************/
 
-int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo )
+int cli_NetShareAdd(struct cli_state *cli, struct rap_share_info_2 * sinfo )
 {
 	char *rparam = NULL;
 	char *rdata = NULL;

@@ -2850,9 +2850,12 @@ bool cli_qfileinfo_test(struct cli_state *cli, uint16_t fnum, int level, char **
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name);
 
 /* The following definitions come from libsmb/clirap2.c  */
+struct rap_group_info_1;
+struct rap_user_info_1;
+struct rap_share_info_2;
 
 int cli_NetGroupDelete(struct cli_state *cli, const char *group_name);
-int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 *grinfo);
+int cli_NetGroupAdd(struct cli_state *cli, struct rap_group_info_1 *grinfo);
 int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char *, void *), void *state);
 int cli_RNetGroupEnum0(struct cli_state *cli,
 		       void (*fn)(const char *, void *),
@@ -2862,7 +2865,7 @@ int cli_NetGroupAddUser(struct cli_state * cli, const char *group_name, const ch
 int cli_NetGroupGetUsers(struct cli_state * cli, const char *group_name, void (*fn)(const char *, void *), void *state );
 int cli_NetUserGetGroups(struct cli_state * cli, const char *user_name, void (*fn)(const char *, void *), void *state );
 int cli_NetUserDelete(struct cli_state *cli, const char * user_name );
-int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo );
+int cli_NetUserAdd(struct cli_state *cli, struct rap_user_info_1 * userinfo );
 int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char *, const char *, const char *, void *), void *state);
 int cli_RNetUserEnum0(struct cli_state *cli,
 		      void (*fn)(const char *, void *),
@@ -2873,7 +2876,7 @@ int cli_NetFileEnum(struct cli_state *cli, const char * user,
 		    const char * base_path,
 		    void (*fn)(const char *, const char *, uint16, uint16,
 			       uint32));
-int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo );
+int cli_NetShareAdd(struct cli_state *cli, struct rap_share_info_2 * sinfo );
 int cli_NetShareDelete(struct cli_state *cli, const char * share_name );
 bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_name);
 bool cli_get_server_domain(struct cli_state *cli);

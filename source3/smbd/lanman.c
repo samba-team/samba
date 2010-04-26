@@ -31,6 +31,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
+#include "../librpc/gen_ndr/rap.h"
 #include "../lib/util/binsearch.h"
 
 #ifdef CHECK_TYPES
