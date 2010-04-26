@@ -291,13 +291,13 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 		switch(r->in.level) {
 		case 0:
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-					      (uint8_t *)r->out.info[i].info0.share_name, 13));
+						r->out.info[i].info0.share_name, 13));
 			break;
 		case 1:
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-					      (uint8_t *)r->out.info[i].info1.share_name, 13));
+						r->out.info[i].info1.share_name, 13));
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-					      (uint8_t *)&r->out.info[i].info1.reserved1, 1));
+					        &r->out.info[i].info1.reserved1, 1));
 			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
 					       NDR_SCALARS, &r->out.info[i].info1.share_type));
 			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
@@ -387,11 +387,11 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 		switch(r->in.level) {
 		case 0:
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-					      (uint8_t *)r->out.info[i].info0.name, 16));
+						r->out.info[i].info0.name, 16));
 			break;
 		case 1:
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-					      (uint8_t *)r->out.info[i].info1.name, 16));
+						r->out.info[i].info1.name, 16));
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      &r->out.info[i].info1.version_major, 1));
 			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
@@ -482,11 +482,11 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	switch(r->in.level) {
 	case 0:
 		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-				      (uint8_t *)r->out.info.info0.name, 16));
+					r->out.info.info0.name, 16));
 		break;
 	case 1:
 		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
-				      (uint8_t *)r->out.info.info1.name, 16));
+					r->out.info.info1.name, 16));
 		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 				      &r->out.info.info1.version_major, 1));
 		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
