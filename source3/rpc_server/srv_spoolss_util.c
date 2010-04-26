@@ -4026,6 +4026,9 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
 
+	*num_drivers = 0;
+	*drivers_p = NULL;
+
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
@@ -4049,6 +4052,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("winreg_get_driver_list: "
 			  "Could not open key (%s,%u): %s\n",
 			  architecture, version, win_errstr(result)));
+		result = WERR_OK;
 		goto done;
 	}
 
