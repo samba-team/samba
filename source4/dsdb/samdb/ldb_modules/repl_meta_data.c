@@ -2875,7 +2875,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			}
 
 			if (rmd->ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) {
-				DEBUG(1,("Discarding older DRS attribute update to %s on %s from %s\n",
+				DEBUG(3,("Discarding older DRS attribute update to %s on %s from %s\n",
 					 msg->elements[i-removed_attrs].name,
 					 ldb_dn_get_linearized(msg->dn),
 					 GUID_string(ar, &rmd->ctr.ctr1.array[i].originating_invocation_id)));
@@ -3743,7 +3743,7 @@ linked_attributes[0]:
 					    la->meta_data.version,
 					    change_time,
 					    la->meta_data.originating_change_time)) {
-			DEBUG(1,("Discarding older DRS linked attribute update to %s on %s from %s\n",
+			DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
 				 old_el->name, ldb_dn_get_linearized(msg->dn),
 				 GUID_string(tmp_ctx, &la->meta_data.originating_invocation_id)));
 			talloc_free(tmp_ctx);
