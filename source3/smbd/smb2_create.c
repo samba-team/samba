@@ -877,7 +877,16 @@ static struct smbd_smb2_request *find_open_smb2req(uint64_t mid)
 	struct smbd_smb2_request *smb2req;
 
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
-		uint64_t message_id = get_mid_from_smb2req(smb2req);
+		uint64_t message_id;
+		if (smb2req->subreq == NULL) {
+			/* This message has been processed. */
+			continue;
+		}
+		if (!tevent_req_is_in_progress(smb2req->subreq)) {
+			/* This message has been processed. */
+			continue;
+		}
+		message_id = get_mid_from_smb2req(smb2req);
 		if (message_id == mid) {
 			return smb2req;
 		}
