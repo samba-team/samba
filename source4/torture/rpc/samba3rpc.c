@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
-#include "libcli/rap/rap.h"
+#include "../librpc/gen_ndr/rap.h"
 #include "torture/util.h"
 #include "torture/rap/proto.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"

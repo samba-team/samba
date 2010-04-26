@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "param/share.h"
-#include "libcli/rap/rap.h"
+#include "../librpc/gen_ndr/rap.h"
 #include "libcli/raw/interfaces.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/common/common.h"

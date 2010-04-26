@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/interfaces.h"
-#include "libcli/rap/rap.h"
+#include "../librpc/gen_ndr/rap.h"
 #include "events/events.h"
 #include "ntvfs/ipc/proto.h"
 #include "librpc/ndr/libndr.h"
