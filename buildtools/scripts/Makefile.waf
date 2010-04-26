@@ -45,9 +45,7 @@ ctags:
 	$(WAF) ctags
 
 configure: autogen-waf.sh BUILDTOOLS/scripts/configure.waf
-	@echo "please run ./autogen-waf.sh to regenerate $@"
-	@-false
+	./autogen-waf.sh
 
 Makefile: autogen-waf.sh configure BUILDTOOLS/scripts/Makefile.waf
-	@echo "please run ./autogen-waf.sh to regenerate $@"
-	@false
+	./autogen-waf.sh
