@@ -1283,47 +1283,72 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 			    struct server_id server_id,
 			    DATA_BLOB *data)
 {
-	fstring drivername;
+	TALLOC_CTX *tmp_ctx;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2;
+	NTSTATUS status;
+	WERROR result;
+	const char *drivername;
 	int snum;
 	int n_services = lp_numservices();
 	size_t len;
 
-	len = MIN(data->length,sizeof(drivername)-1);
-	strncpy(drivername, (const char *)data->data, len);
+	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) return;
 
-	DEBUG(10,("do_drv_upgrade_printer: Got message for new driver [%s]\n", drivername ));
+	status = make_server_info_system(tmp_ctx, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("do_drv_upgrade_printer: "
+			  "Could not create system server_info\n"));
+		goto done;
+	}
+
+	len = MIN(data->length,sizeof(drivername)-1);
+	drivername = talloc_strndup(tmp_ctx, (const char *)data->data, len);
+	if (!drivername) {
+		DEBUG(0, ("do_drv_upgrade_printer: Out of memoery ?!\n"));
+		goto done;
+	}
+
+	DEBUG(10, ("do_drv_upgrade_printer: "
+		   "Got message for new driver [%s]\n", drivername));
 
 	/* Iterate the printer list */
 
-	for (snum=0; snum<n_services; snum++)
-	{
-		if (lp_snum_ok(snum) && lp_print_ok(snum) )
-		{
-			WERROR result;
-			NT_PRINTER_INFO_LEVEL *printer = NULL;
+	for (snum = 0; snum < n_services; snum++) {
+		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
+			continue;
+		}
 
-			result = get_a_printer(NULL, &printer, 2, lp_const_servicename(snum));
-			if (!W_ERROR_IS_OK(result))
-				continue;
+		result = winreg_get_printer(tmp_ctx, server_info, NULL,
+					    lp_const_servicename(snum),
+					    &pinfo2);
 
-			if (printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername))
-			{
-				DEBUG(6,("Updating printer [%s]\n", printer->info_2->printername));
+		if (!W_ERROR_IS_OK(result)) {
+			continue;
+		}
 
-				/* all we care about currently is the change_id */
+		if (strcmp(drivername, pinfo2->drivername) != 0) {
+			continue;
+		}
 
-				result = mod_a_printer(printer, 2);
-				if (!W_ERROR_IS_OK(result)) {
-					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n",
-						win_errstr(result)));
-				}
-			}
+		DEBUG(6,("Updating printer [%s]\n", pinfo2->printername));
 
-			free_a_printer(&printer, 2);
+		/* all we care about currently is the change_id */
+		result = winreg_printer_update_changeid(tmp_ctx,
+							server_info,
+							pinfo2->printername);
+
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(3, ("do_drv_upgrade_printer: "
+				  "Failed to update changeid [%s]\n",
+				  win_errstr(result)));
 		}
 	}
 
 	/* all done */
+done:
+	talloc_free(tmp_ctx);
 }
 
 /********************************************************************
