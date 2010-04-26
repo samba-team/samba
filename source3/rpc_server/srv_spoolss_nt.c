@@ -3353,19 +3353,20 @@ done:
  ********************************************************************/
 
 static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct auth_serversupplied_info *server_info,
+				      struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo0 *r,
 				      int snum)
 {
 	int count;
 	counter_printer_0 *session_counter;
-	time_t setuptime;
+	struct timeval setuptime;
 	print_status_struct status;
 
-	r->printername		= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	r->printername		= talloc_strdup(mem_ctx, info2->printername);
 	W_ERROR_HAVE_NO_MEMORY(r->printername);
 
-	r->servername		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	r->servername		= talloc_strdup(mem_ctx, info2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->servername);
 
 	count = print_queue_length(snum, &status);
@@ -3393,9 +3394,8 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->total_jobs			= 0;
 	r->total_bytes			= 0;
 
-	setuptime = (time_t)ntprinter->info_2->setuptime;
-
-	init_systemtime(&r->time, gmtime(&setuptime));
+	get_startup_time(&setuptime);
+	init_systemtime(&r->time, gmtime(&setuptime.tv_sec));
 
 	/* JFM:
 	 * the global_counter should be stored in a TDB as it's common to all the clients
@@ -3416,7 +3416,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->number_of_processors		= 0x1;
 	r->processor_type		= PROCESSOR_INTEL_PENTIUM; /* 586 Pentium ? */
 	r->high_part_total_bytes	= 0x0;
-	r->change_id			= ntprinter->info_2->changeid; /* ChangeID in milliseconds*/
+	winreg_printer_get_changeid(mem_ctx, server_info, info2->sharename, &r->change_id); /* ChangeID in milliseconds*/
 	r->last_error			= WERR_OK;
 	r->status			= nt_printq_status(status.status);
 	r->enumerate_network_printers	= 0x0;
@@ -3467,7 +3467,7 @@ done:
 ********************************************************************/
 
 static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      uint32_t flags,
 				      struct spoolss_PrinterInfo1 *r,
 				      int snum)
@@ -3475,19 +3475,19 @@ static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
 	r->flags		= flags;
 
 	r->description		= talloc_asprintf(mem_ctx, "%s,%s,%s",
-						  ntprinter->info_2->printername,
-						  ntprinter->info_2->drivername,
-						  ntprinter->info_2->location);
+						  info2->printername,
+						  info2->drivername,
+						  info2->location);
 	W_ERROR_HAVE_NO_MEMORY(r->description);
 
-	if (*ntprinter->info_2->comment == '\0') {
+	if (info2->comment == NULL || info2->comment[0] == '\0') {
 		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
 	} else {
-		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment); /* saved comment */
+		r->comment	= talloc_strdup(mem_ctx, info2->comment); /* saved comment */
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->comment);
 
-	r->name			= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	r->name			= talloc_strdup(mem_ctx, info2->printername);
 	W_ERROR_HAVE_NO_MEMORY(r->name);
 
 	return WERR_OK;
@@ -3499,67 +3499,66 @@ static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo2 *r,
 				      int snum)
 {
 	int count;
-
 	print_status_struct status;
 
 	count = print_queue_length(snum, &status);
 
-	r->servername		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	r->servername		= talloc_strdup(mem_ctx, info2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->servername);
-	r->printername		= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	r->printername		= talloc_strdup(mem_ctx, info2->printername);
 	W_ERROR_HAVE_NO_MEMORY(r->printername);
 	r->sharename		= talloc_strdup(mem_ctx, lp_servicename(snum));
 	W_ERROR_HAVE_NO_MEMORY(r->sharename);
-	r->portname		= talloc_strdup(mem_ctx, ntprinter->info_2->portname);
+	r->portname		= talloc_strdup(mem_ctx, info2->portname);
 	W_ERROR_HAVE_NO_MEMORY(r->portname);
-	r->drivername		= talloc_strdup(mem_ctx, ntprinter->info_2->drivername);
+	r->drivername		= talloc_strdup(mem_ctx, info2->drivername);
 	W_ERROR_HAVE_NO_MEMORY(r->drivername);
 
-	if (*ntprinter->info_2->comment == '\0') {
+	if (info2->comment[0] == '\0') {
 		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
 	} else {
-		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment);
+		r->comment	= talloc_strdup(mem_ctx, info2->comment);
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->comment);
 
-	r->location		= talloc_strdup(mem_ctx, ntprinter->info_2->location);
+	r->location		= talloc_strdup(mem_ctx, info2->location);
 	W_ERROR_HAVE_NO_MEMORY(r->location);
-	r->sepfile		= talloc_strdup(mem_ctx, ntprinter->info_2->sepfile);
+	r->sepfile		= talloc_strdup(mem_ctx, info2->sepfile);
 	W_ERROR_HAVE_NO_MEMORY(r->sepfile);
-	r->printprocessor	= talloc_strdup(mem_ctx, ntprinter->info_2->printprocessor);
+	r->printprocessor	= talloc_strdup(mem_ctx, info2->printprocessor);
 	W_ERROR_HAVE_NO_MEMORY(r->printprocessor);
-	r->datatype		= talloc_strdup(mem_ctx, ntprinter->info_2->datatype);
+	r->datatype		= talloc_strdup(mem_ctx, info2->datatype);
 	W_ERROR_HAVE_NO_MEMORY(r->datatype);
-	r->parameters		= talloc_strdup(mem_ctx, ntprinter->info_2->parameters);
+	r->parameters		= talloc_strdup(mem_ctx, info2->parameters);
 	W_ERROR_HAVE_NO_MEMORY(r->parameters);
 
-	r->attributes		= ntprinter->info_2->attributes;
+	r->attributes		= info2->attributes;
 
-	r->priority		= ntprinter->info_2->priority;
-	r->defaultpriority	= ntprinter->info_2->default_priority;
-	r->starttime		= ntprinter->info_2->starttime;
-	r->untiltime		= ntprinter->info_2->untiltime;
+	r->priority		= info2->priority;
+	r->defaultpriority	= info2->defaultpriority;
+	r->starttime		= info2->starttime;
+	r->untiltime		= info2->untiltime;
 	r->status		= nt_printq_status(status.status);
 	r->cjobs		= count;
-	r->averageppm		= ntprinter->info_2->averageppm;
+	r->averageppm		= info2->averageppm;
 
-	r->devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
+	copy_devicemode(mem_ctx, info2->devmode, &r->devmode);
 	if (!r->devmode) {
 		DEBUG(8,("Returning NULL Devicemode!\n"));
 	}
 
-	r->secdesc		= NULL;
+	r->secdesc = NULL;
 
-	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
+	if (info2->secdesc != NULL) {
 		/* don't use talloc_steal() here unless you do a deep steal of all
 		   the SEC_DESC members */
 
-		r->secdesc	= dup_sec_desc(mem_ctx, ntprinter->info_2->secdesc_buf->sd);
+		r->secdesc	= dup_sec_desc(mem_ctx, info2->secdesc);
 	}
 
 	return WERR_OK;
@@ -3571,18 +3570,17 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info3(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo3 *r,
 				      int snum)
 {
 	/* These are the components of the SD we are returning. */
 
-	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
+	if (info2->secdesc != NULL) {
 		/* don't use talloc_steal() here unless you do a deep steal of all
 		   the SEC_DESC members */
 
-		r->secdesc = dup_sec_desc(mem_ctx,
-					  ntprinter->info_2->secdesc_buf->sd);
+		r->secdesc = dup_sec_desc(mem_ctx, info2->secdesc);
 		W_ERROR_HAVE_NO_MEMORY(r->secdesc);
 	}
 
@@ -3595,16 +3593,16 @@ static WERROR construct_printer_info3(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info4(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo4 *r,
 				      int snum)
 {
-	r->printername	= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	r->printername	= talloc_strdup(mem_ctx, info2->printername);
 	W_ERROR_HAVE_NO_MEMORY(r->printername);
-	r->servername	= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	r->servername	= talloc_strdup(mem_ctx, info2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->servername);
 
-	r->attributes	= ntprinter->info_2->attributes;
+	r->attributes	= info2->attributes;
 
 	return WERR_OK;
 }
@@ -3615,19 +3613,18 @@ static WERROR construct_printer_info4(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info5(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo5 *r,
 				      int snum)
 {
-	r->printername	= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	r->printername	= talloc_strdup(mem_ctx, info2->printername);
 	W_ERROR_HAVE_NO_MEMORY(r->printername);
-	r->portname	= talloc_strdup(mem_ctx, ntprinter->info_2->portname);
+	r->portname	= talloc_strdup(mem_ctx, info2->portname);
 	W_ERROR_HAVE_NO_MEMORY(r->portname);
 
-	r->attributes	= ntprinter->info_2->attributes;
+	r->attributes	= info2->attributes;
 
 	/* these two are not used by NT+ according to MSDN */
-
 	r->device_not_selected_timeout		= 0x0;  /* have seen 0x3a98 */
 	r->transmission_retry_timeout		= 0x0;  /* have seen 0xafc8 */
 
@@ -3640,7 +3637,7 @@ static WERROR construct_printer_info5(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo6 *r,
 				      int snum)
 {
@@ -3684,11 +3681,11 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info8(TALLOC_CTX *mem_ctx,
-				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_DeviceModeInfo *r,
 				      int snum)
 {
-	r->devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
+	copy_devicemode(mem_ctx, info2->devmode, &r->devmode);
 	if (!r->devmode) {
 		DEBUG(8,("Returning NULL Devicemode!\n"));
 	}
@@ -3710,6 +3707,7 @@ static bool snum_is_shared_printer(int snum)
 ********************************************************************/
 
 static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
+					   struct auth_serversupplied_info *server_info,
 					   uint32_t level,
 					   uint32_t flags,
 					   union spoolss_PrinterInfo **info_p,
@@ -3726,14 +3724,25 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 
 	for (snum = 0; snum < n_services; snum++) {
 
-		NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+		const char *printer;
+		struct spoolss_PrinterInfo2 *info2;
 
 		if (!snum_is_shared_printer(snum)) {
 			continue;
 		}
 
+		printer = lp_const_servicename(snum);
+
 		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n",
-			lp_servicename(snum), snum));
+			printer, snum));
+
+		result = winreg_create_printer(mem_ctx,
+					       server_info,
+					       NULL,
+					       printer);
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
 
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    union spoolss_PrinterInfo,
@@ -3743,41 +3752,39 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		result = get_a_printer(NULL, &ntprinter, 2,
-				       lp_const_servicename(snum));
+		result = winreg_get_printer(mem_ctx, server_info,
+					    NULL, printer, &info2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
 		}
 
 		switch (level) {
 		case 0:
-			result = construct_printer_info0(info, ntprinter,
+			result = construct_printer_info0(info, server_info, info2,
 							 &info[count].info0, snum);
 			break;
 		case 1:
-			result = construct_printer_info1(info, ntprinter, flags,
+			result = construct_printer_info1(info, info2, flags,
 							 &info[count].info1, snum);
 			break;
 		case 2:
-			result = construct_printer_info2(info, ntprinter,
+			result = construct_printer_info2(info, info2,
 							 &info[count].info2, snum);
 			break;
 		case 4:
-			result = construct_printer_info4(info, ntprinter,
+			result = construct_printer_info4(info, info2,
 							 &info[count].info4, snum);
 			break;
 		case 5:
-			result = construct_printer_info5(info, ntprinter,
+			result = construct_printer_info5(info, info2,
 							 &info[count].info5, snum);
 			break;
 
 		default:
 			result = WERR_UNKNOWN_LEVEL;
-			free_a_printer(&ntprinter, 2);
 			goto out;
 		}
 
-		free_a_printer(&ntprinter, 2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
 		}
@@ -3804,6 +3811,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  uint32_t flags,
 				  const char *servername,
 				  union spoolss_PrinterInfo **info,
@@ -3811,7 +3819,7 @@ static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_0\n"));
 
-	return enum_all_printers_info_level(mem_ctx, 0, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info, 0, flags, info, count);
 }
 
 
@@ -3819,13 +3827,14 @@ static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
+				       struct auth_serversupplied_info *server_info,
 				       uint32_t flags,
 				       union spoolss_PrinterInfo **info,
 				       uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_1\n"));
 
-	return enum_all_printers_info_level(mem_ctx, 1, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info, 1, flags, info, count);
 }
 
 /********************************************************************
@@ -3833,12 +3842,13 @@ static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 *********************************************************************/
 
 static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
+					     struct auth_serversupplied_info *server_info,
 					     union spoolss_PrinterInfo **info,
 					     uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_1_local\n"));
 
-	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_ICON8, info, count);
+	return enum_all_printers_info_1(mem_ctx, server_info, PRINTER_ENUM_ICON8, info, count);
 }
 
 /********************************************************************
@@ -3846,6 +3856,7 @@ static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
 *********************************************************************/
 
 static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
+					    struct auth_serversupplied_info *server_info,
 					    const char *name,
 					    union spoolss_PrinterInfo **info,
 					    uint32_t *count)
@@ -3862,7 +3873,7 @@ static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_NAME;
 	}
 
-	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_ICON8, info, count);
+	return enum_all_printers_info_1(mem_ctx, server_info, PRINTER_ENUM_ICON8, info, count);
 }
 
 /********************************************************************
@@ -3870,6 +3881,7 @@ static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
 *********************************************************************/
 
 static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
+					       struct auth_serversupplied_info *server_info,
 					       const char *name,
 					       union spoolss_PrinterInfo **info,
 					       uint32_t *count)
@@ -3894,7 +3906,7 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
 		 return WERR_CAN_NOT_COMPLETE;
 	}
 
-	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_NAME, info, count);
+	return enum_all_printers_info_1(mem_ctx, server_info, PRINTER_ENUM_NAME, info, count);
 }
 
 /********************************************************************
@@ -3904,12 +3916,13 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
+				       struct auth_serversupplied_info *server_info,
 				       union spoolss_PrinterInfo **info,
 				       uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_2\n"));
 
-	return enum_all_printers_info_level(mem_ctx, 2, 0, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info, 2, 0, info, count);
 }
 
 /********************************************************************
@@ -3917,6 +3930,7 @@ static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  uint32_t flags,
 				  const char *name,
 				  union spoolss_PrinterInfo **info,
@@ -3925,15 +3939,15 @@ static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
 	/* Not all the flags are equals */
 
 	if (flags & PRINTER_ENUM_LOCAL) {
-		return enum_all_printers_info_1_local(mem_ctx, info, count);
+		return enum_all_printers_info_1_local(mem_ctx, server_info, info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
-		return enum_all_printers_info_1_name(mem_ctx, name, info, count);
+		return enum_all_printers_info_1_name(mem_ctx, server_info, name, info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NETWORK) {
-		return enum_all_printers_info_1_network(mem_ctx, name, info, count);
+		return enum_all_printers_info_1_network(mem_ctx, server_info, name, info, count);
 	}
 
 	return WERR_OK; /* NT4sp5 does that */
@@ -3944,13 +3958,14 @@ static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  uint32_t flags,
 				  const char *servername,
 				  union spoolss_PrinterInfo **info,
 				  uint32_t *count)
 {
 	if (flags & PRINTER_ENUM_LOCAL) {
-		return enum_all_printers_info_2(mem_ctx, info, count);
+		return enum_all_printers_info_2(mem_ctx, server_info, info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
@@ -3958,7 +3973,7 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 			return WERR_INVALID_NAME;
 		}
 
-		return enum_all_printers_info_2(mem_ctx, info, count);
+		return enum_all_printers_info_2(mem_ctx, server_info, info, count);
 	}
 
 	if (flags & PRINTER_ENUM_REMOTE) {
@@ -3973,6 +3988,7 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  uint32_t flags,
 				  const char *servername,
 				  union spoolss_PrinterInfo **info,
@@ -3980,7 +3996,7 @@ static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_4\n"));
 
-	return enum_all_printers_info_level(mem_ctx, 4, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info, 4, flags, info, count);
 }
 
 
@@ -3989,6 +4005,7 @@ static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
 				  uint32_t flags,
 				  const char *servername,
 				  union spoolss_PrinterInfo **info,
@@ -3996,7 +4013,7 @@ static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_5\n"));
 
-	return enum_all_printers_info_level(mem_ctx, 5, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info, 5, flags, info, count);
 }
 
 /****************************************************************
@@ -4041,23 +4058,28 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 
 	switch (r->in.level) {
 	case 0:
-		result = enumprinters_level0(p->mem_ctx, r->in.flags, name,
+		result = enumprinters_level0(p->mem_ctx, p->server_info,
+					     r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 1:
-		result = enumprinters_level1(p->mem_ctx, r->in.flags, name,
+		result = enumprinters_level1(p->mem_ctx, p->server_info,
+					     r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 2:
-		result = enumprinters_level2(p->mem_ctx, r->in.flags, name,
+		result = enumprinters_level2(p->mem_ctx, p->server_info,
+					     r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 4:
-		result = enumprinters_level4(p->mem_ctx, r->in.flags, name,
+		result = enumprinters_level4(p->mem_ctx, p->server_info,
+					     r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 5:
-		result = enumprinters_level5(p->mem_ctx, r->in.flags, name,
+		result = enumprinters_level5(p->mem_ctx, p->server_info,
+					     r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	default:
@@ -4086,9 +4108,9 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 			   struct spoolss_GetPrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	struct spoolss_PrinterInfo2 *info2 = NULL;
 	WERROR result = WERR_OK;
-
+	const char *servername = NULL;
 	int snum;
 
 	/* that's an [in out] buffer */
@@ -4103,40 +4125,48 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = get_a_printer(Printer, &ntprinter, 2,
-			       lp_const_servicename(snum));
+	if (Printer != NULL || Printer->servername != NULL) {
+		servername = Printer->servername;
+	}
+
+	result = winreg_get_printer(p->mem_ctx,
+				    p->server_info,
+				    servername,
+				    lp_const_servicename(snum),
+				    &info2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
 
 	switch (r->in.level) {
 	case 0:
-		result = construct_printer_info0(p->mem_ctx, ntprinter,
+		result = construct_printer_info0(p->mem_ctx, p->server_info,
+						 info2,
 						 &r->out.info->info0, snum);
 		break;
 	case 1:
-		result = construct_printer_info1(p->mem_ctx, ntprinter,
+		result = construct_printer_info1(p->mem_ctx, info2,
 						 PRINTER_ENUM_ICON8,
 						 &r->out.info->info1, snum);
 		break;
 	case 2:
-		result = construct_printer_info2(p->mem_ctx, ntprinter,
+		result = construct_printer_info2(p->mem_ctx, info2,
 						 &r->out.info->info2, snum);
 		break;
 	case 3:
-		result = construct_printer_info3(p->mem_ctx, ntprinter,
+		result = construct_printer_info3(p->mem_ctx, info2,
 						 &r->out.info->info3, snum);
 		break;
 	case 4:
-		result = construct_printer_info4(p->mem_ctx, ntprinter,
+		result = construct_printer_info4(p->mem_ctx, info2,
 						 &r->out.info->info4, snum);
 		break;
 	case 5:
-		result = construct_printer_info5(p->mem_ctx, ntprinter,
+		result = construct_printer_info5(p->mem_ctx, info2,
 						 &r->out.info->info5, snum);
 		break;
 	case 6:
-		result = construct_printer_info6(p->mem_ctx, ntprinter,
+		result = construct_printer_info6(p->mem_ctx, info2,
 						 &r->out.info->info6, snum);
 		break;
 	case 7:
@@ -4144,7 +4174,7 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 						 &r->out.info->info7, snum);
 		break;
 	case 8:
-		result = construct_printer_info8(p->mem_ctx, ntprinter,
+		result = construct_printer_info8(p->mem_ctx, info2,
 						 &r->out.info->info8, snum);
 		break;
 	default:
@@ -4152,9 +4182,9 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 		break;
 	}
 
-	free_a_printer(&ntprinter, 2);
-
 	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("_spoolss_GetPrinter: failed to construct printer info level %d - %s\n",
+			  r->in.level, win_errstr(result)));
 		TALLOC_FREE(r->out.info);
 		return result;
 	}
@@ -5445,6 +5475,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	struct spoolss_SetPrinterInfo2 *printer = info_ctr->info.info2;
 	struct spoolss_PrinterInfo2 *old_printer;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	const char *servername = NULL;
 	int snum;
 	WERROR result;
 	DATA_BLOB buffer;
@@ -5464,9 +5495,13 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		goto done;
 	}
 
+	if (Printer != NULL || Printer->servername != NULL) {
+		servername = Printer->servername;
+	}
+
 	result = winreg_get_printer(p->mem_ctx,
 				    p->server_info,
-				    NULL,
+				    servername,
 				    lp_const_servicename(snum),
 				    &old_printer);
 	if (!W_ERROR_IS_OK(result)) {
