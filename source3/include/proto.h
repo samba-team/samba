@@ -4795,6 +4795,9 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type);
 bool print_time_access_check(struct auth_serversupplied_info *server_info,
 			     const char *servicename);
+void nt_printer_remove(TALLOC_CTX *mem_ctx,
+			struct auth_serversupplied_info *server_info,
+			const char *printer);
 
 /* The following definitions come from printing/pcap.c  */
 

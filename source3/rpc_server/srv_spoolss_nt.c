@@ -336,6 +336,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const c
 static WERROR delete_printer_handle(pipes_struct *p, struct policy_handle *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	WERROR result;
 
 	if (!Printer) {
 		DEBUG(2,("delete_printer_handle: Invalid handle (%s:%u:%u)\n",
@@ -358,7 +359,9 @@ static WERROR delete_printer_handle(pipes_struct *p, struct policy_handle *hnd)
 	/* this does not need a become root since the access check has been
 	   done on the handle already */
 
-	if (del_a_printer( Printer->sharename ) != 0) {
+	result = winreg_delete_printer_key(p->mem_ctx, p->server_info,
+					   Printer->sharename, "");
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->sharename));
 		return WERR_BADFID;
 	}

@@ -2114,38 +2114,6 @@ static int pack_values(NT_PRINTER_DATA *data, uint8 *buf, int buflen)
 
 
 /****************************************************************************
- Delete a printer - this just deletes the printer info file, any open
- handles are not affected.
-****************************************************************************/
-
-uint32 del_a_printer(const char *sharename)
-{
-	TDB_DATA kbuf;
-	char *printdb_path = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
-
-	kbuf = make_printer_tdbkey(ctx, sharename);
-	tdb_delete(tdb_printers, kbuf);
-
-	kbuf= make_printers_secdesc_tdbkey(ctx, sharename);
-	tdb_delete(tdb_printers, kbuf);
-
-	close_all_print_db();
-
-	if (geteuid() == sec_initial_uid()) {
-		if (asprintf(&printdb_path, "%s%s.tdb",
-				cache_path("printing/"),
-				sharename) < 0) {
-			return (uint32)-1;
-		}
-		unlink(printdb_path);
-		SAFE_FREE(printdb_path);
-	}
-
-	return 0;
-}
-
-/****************************************************************************
 ****************************************************************************/
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
@@ -5238,4 +5206,15 @@ bool print_time_access_check(struct auth_serversupplied_info *server_info,
 	return ok;
 }
 
+void nt_printer_remove(TALLOC_CTX *mem_ctx,
+			struct auth_serversupplied_info *server_info,
+			const char *printer)
+{
+	WERROR result;
 
+	result = winreg_delete_printer_key(mem_ctx, server_info, printer, "");
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",
+			  printer));
+	}
+}
