@@ -154,7 +154,20 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 		/* This needs to be 'static' to ensure it does not move, and is not on the stack */
 		static const char *no_attrs[] = { NULL };
 		unsigned int instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
-		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD) ||
+		    (instanceType & INSTANCE_TYPE_UNINSTANT)) {
+			return ldb_next_request(module, req);
+		}
+
+		if (instanceType & INSTANCE_TYPE_UNINSTANT) {
+			DEBUG(0,(__location__ ": Skipping uninstantiated partition %s\n",
+				 ldb_dn_get_linearized(req->op.add.message->dn)));
+			return ldb_next_request(module, req);
+		}
+
+		if (ldb_msg_find_attr_as_bool(req->op.add.message, "isDeleted", false)) {
+			DEBUG(0,(__location__ ": Skipping deleted partition %s\n",
+				 ldb_dn_get_linearized(req->op.add.message->dn)));
 			return ldb_next_request(module, req);		
 		}
 
