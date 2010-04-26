@@ -4017,11 +4017,12 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 			      const char *architecture,
 			      uint32_t version,
 			      uint32_t *num_drivers,
-			      const char ***drivers)
+			      const char ***drivers_p)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
+	const char **drivers;
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
 
@@ -4055,13 +4056,15 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 					 winreg_pipe,
 					 &key_hnd,
 					 num_drivers,
-					 drivers);
+					 &drivers);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_get_driver_list: "
 			  "Could not enumerate drivers for (%s,%u): %s\n",
 			  architecture, version, win_errstr(result)));
 		goto done;
 	}
+
+	*drivers_p = talloc_steal(mem_ctx, drivers);
 
 	result = WERR_OK;
 done:
