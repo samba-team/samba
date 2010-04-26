@@ -114,6 +114,11 @@ NTSTATUS wb_cmd_getdcname_recv(struct composite_context *c,
 	struct cmd_getdcname_state *state =
 		talloc_get_type(c->private_data, struct cmd_getdcname_state);
 	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN)) {
+		/* special case: queried DC is PDC */
+		state->g.out.dcname = &state->g.in.logon_server;
+		status = NT_STATUS_OK;
+	}
 	if (NT_STATUS_IS_OK(status)) {
 		const char *p = *(state->g.out.dcname);
 		if (*p == '\\') p += 1;
