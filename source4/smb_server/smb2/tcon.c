@@ -304,9 +304,11 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		goto failed;
 	}
 
-	status = ntvfs_set_addr_callbacks(tcon->ntvfs, smbsrv_get_my_addr, smbsrv_get_peer_addr, req->smb_conn);
+	status = ntvfs_set_addresses(tcon->ntvfs,
+				     req->smb_conn->connection->local_address,
+				     req->smb_conn->connection->remote_address);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the addr callbacks!\n"));
+		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the address!\n"));
 		goto failed;
 	}
 
