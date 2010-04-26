@@ -171,6 +171,7 @@ void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
 
 		rf->result_last_attempt = WERR_NOMEM;
 		rf->consecutive_sync_failures++;
+		s->ops.current = NULL;
 
 		DEBUG(1,("dreplsrv_op_pull_source(%s/%s) failures[%u]\n",
 			win_errstr(rf->result_last_attempt),
