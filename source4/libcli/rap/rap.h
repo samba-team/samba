@@ -278,20 +278,20 @@
 #define RAP_WDASDSetInfo2			318
 #define MAX_API					318
 
-struct rap_shareenum_info_0 {
-	char name[13];
+struct rap_share_info_0 {
+	char share_name[13];
 };
 
-struct rap_shareenum_info_1 {
-	char name[13];
-	char pad;
-	uint16_t type;
+struct rap_share_info_1 {
+	char share_name[13];
+	char reserved1;
+	uint16_t share_type;
 	char *comment;
 };
 
-union rap_shareenum_info {
-	struct rap_shareenum_info_0 info0;
-	struct rap_shareenum_info_1 info1;
+union rap_share_info {
+	struct rap_share_info_0 info0;
+	struct rap_share_info_1 info1;
 };
 
 struct rap_NetShareEnum {
@@ -305,7 +305,7 @@ struct rap_NetShareEnum {
 		uint16_t convert;
 		uint16_t count;
 		uint16_t available;
-		union rap_shareenum_info *info;
+		union rap_share_info *info;
 	} out;
 };
 

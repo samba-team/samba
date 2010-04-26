@@ -291,17 +291,17 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 		switch(r.in.level) {
 		case 0:
 			NDR_GOTO(ndr_push_bytes(call->ndr_push_data,
-					      (const uint8_t *)r.out.info[i].info0.name,
-					      sizeof(r.out.info[i].info0.name)));
+					      (const uint8_t *)r.out.info[i].info0.share_name,
+					      sizeof(r.out.info[i].info0.share_name)));
 			break;
 		case 1:
 			NDR_GOTO(ndr_push_bytes(call->ndr_push_data,
-					      (const uint8_t *)r.out.info[i].info1.name,
-					      sizeof(r.out.info[i].info1.name)));
+					      (const uint8_t *)r.out.info[i].info1.share_name,
+					      sizeof(r.out.info[i].info1.share_name)));
 			NDR_GOTO(ndr_push_uint8(call->ndr_push_data,
-					      NDR_SCALARS, r.out.info[i].info1.pad));
+					      NDR_SCALARS, r.out.info[i].info1.reserved1));
 			NDR_GOTO(ndr_push_uint16(call->ndr_push_data,
-					       NDR_SCALARS, r.out.info[i].info1.type));
+					       NDR_SCALARS, r.out.info[i].info1.share_type));
 
 			RAP_GOTO(rap_push_string(call->ndr_push_data,
 					       call->heap,

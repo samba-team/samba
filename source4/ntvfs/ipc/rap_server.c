@@ -58,18 +58,18 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 
 	r->out.available = count;
 	r->out.info = talloc_array(mem_ctx,
-				   union rap_shareenum_info, r->out.available);
+				   union rap_share_info, r->out.available);
 
 	for (i = 0, j = 0; i < r->out.available; i++) {
 		if (!NT_STATUS_IS_OK(share_get_config(mem_ctx, sctx, snames[i], &scfg))) {
 			DEBUG(3, ("WARNING: Service [%s] disappeared after enumeration!\n", snames[i]));
 			continue;
 		}
-		strncpy(r->out.info[j].info1.name,
+		strncpy(r->out.info[j].info1.share_name,
 			snames[i],
-			sizeof(r->out.info[0].info1.name));
-		r->out.info[i].info1.pad = 0;
-		r->out.info[i].info1.type = dcesrv_common_get_share_type(mem_ctx, NULL, scfg);
+			sizeof(r->out.info[0].info1.share_name));
+		r->out.info[i].info1.reserved1 = 0;
+		r->out.info[i].info1.share_type = dcesrv_common_get_share_type(mem_ctx, NULL, scfg);
 		r->out.info[i].info1.comment = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_COMMENT, ""));
 		talloc_free(scfg);
 		j++;
