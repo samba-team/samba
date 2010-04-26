@@ -23,18 +23,6 @@
 #include "rpc_server/dcerpc_server.h"
 #include "param/param.h"
 
-struct socket_address *srvsvc_get_my_addr(void *p, TALLOC_CTX *mem_ctx)
-{
-	struct dcesrv_connection *conn = talloc_get_type(p, struct dcesrv_connection);
-	return dcesrv_connection_get_my_addr(conn, mem_ctx);
-}
-
-struct socket_address *srvsvc_get_peer_addr(void *p, TALLOC_CTX *mem_ctx)
-{
-	struct dcesrv_connection *conn = talloc_get_type(p, struct dcesrv_connection);
-	return dcesrv_connection_get_peer_addr(conn, mem_ctx);
-}
-
 struct srvsvc_ntvfs_ctx {
 	struct ntvfs_context *ntvfs;
 };
@@ -58,6 +46,8 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	struct share_config *scfg;
 	const char *sharetype;
 	union smb_tcon tcon;
+	const struct tsocket_address *local_address;
+	const struct tsocket_address *remote_address;
 
 	status = share_get_context_by_name(mem_ctx, lp_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -111,7 +101,9 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	/*
 	 * NOTE: we only set the addr callbacks as we're not interesseted in oplocks or in getting file handles
 	 */
-	status = ntvfs_set_addr_callbacks(c->ntvfs, srvsvc_get_my_addr, srvsvc_get_peer_addr, dce_call->conn);
+	local_address = dcesrv_connection_get_local_address(dce_call->conn);
+	remote_address = dcesrv_connection_get_remote_address(dce_call->conn);
+	status = ntvfs_set_addresses(c->ntvfs, local_address, remote_address);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("srvsvc_create_ntvfs_context: NTVFS failed to set the addr callbacks!\n"));
 		return status;
