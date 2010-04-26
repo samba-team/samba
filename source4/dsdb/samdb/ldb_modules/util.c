@@ -826,3 +826,15 @@ int dsdb_recyclebin_enabled(struct ldb_module *module, bool *enabled)
 	talloc_free(partitions_dn);
 	return LDB_SUCCESS;
 }
+
+bool is_attr_in_list(const char * const * attrs, const char *attr)
+{
+	unsigned int i;
+
+	for (i = 0; attrs[i]; i++) {
+		if (ldb_attr_cmp(attrs[i], attr) == 0)
+			return true;
+	}
+
+	return false;
+}

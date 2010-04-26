@@ -40,24 +40,13 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
+#include "util.h"
 
 struct extended_dn_out_private {
 	bool dereference;
 	bool normalise;
 	struct dsdb_openldap_dereference_control *dereference_control;
 };
-
-static bool is_attr_in_list(const char * const * attrs, const char *attr)
-{
-	unsigned int i;
-
-	for (i = 0; attrs[i]; i++) {
-		if (ldb_attr_cmp(attrs[i], attr) == 0)
-			return true;
-	}
-
-	return false;
-}
 
 static char **copy_attrs(void *mem_ctx, const char * const * attrs)
 {

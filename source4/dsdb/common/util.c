@@ -41,6 +41,7 @@
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
 #include "lib/socket/socket.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -3751,4 +3752,31 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
+}
+
+const char *rodc_fas_list[] = {"ms-PKI-DPAPIMasterKeys",
+			       "ms-PKI-AccountCredentials",
+			       "ms-PKI-RoamingTimeStamp",
+			       "ms-FVE-KeyPackage",
+			       "ms-FVE-RecoveryGuid",
+			       "ms-FVE-RecoveryInformation",
+			       "ms-FVE-RecoveryPassword",
+			       "ms-FVE-VolumeGuid",
+			       "ms-TPM-OwnerInformation",
+			       NULL};
+/*
+  check if the attribute belongs to the RODC filtered attribute set
+*/
+bool dsdb_attr_in_rodc_fas(uint32_t replica_flags, const struct dsdb_attribute *sa)
+{
+	int rodc_filtered_flags = SEARCH_FLAG_RODC_ATTRIBUTE | SEARCH_FLAG_CONFIDENTIAL;
+	bool drs_write_replica = ((replica_flags & DRSUAPI_DRS_WRIT_REP) == 0);
+
+	if (drs_write_replica && (sa->searchFlags & rodc_filtered_flags)) {
+		return true;
+	}
+	if (drs_write_replica && is_attr_in_list(rodc_fas_list, sa->cn)) {
+		return true;
+	}
+	return false;
 }
