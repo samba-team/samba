@@ -33,7 +33,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "cldap_server/cldap_server.h"
-#include "lib/socket/socket.h"
+#include "lib/tsocket/tsocket.h"
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -1525,7 +1525,8 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	struct ldb_context *sam_ctx;
 	struct netr_DsRGetDCNameInfo *info;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	struct socket_address *addr;
+	const struct tsocket_address *remote_address;
+	char *addr = NULL;
 	const char *server_site_name;
 	char *guid_str;
 	struct netlogon_samlogon_response response;
@@ -1539,8 +1540,11 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 		return WERR_DS_UNAVAILABLE;
 	}
 
-	addr = dce_call->conn->transport.get_peer_addr(dce_call->conn, mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(addr);
+	remote_address = dcesrv_connection_get_remote_address(dce_call->conn);
+	if (tsocket_address_is_inet(remote_address, "ip")) {
+		addr = tsocket_address_inet_addr_string(remote_address, mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(addr);
+	}
 
 	/* "server_unc" is ignored by w2k3 */
 
@@ -1562,7 +1566,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 						 r->in.domain_name,
 						 NULL, guid_str,
 						 r->in.client_account,
-						 r->in.mask, addr->addr,
+						 r->in.mask, addr,
 						 NETLOGON_NT_VERSION_5EX_WITH_IP,
 						 lp_ctx, &response);
 	if (!NT_STATUS_IS_OK(status)) {
