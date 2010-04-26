@@ -171,38 +171,6 @@ static NTSTATUS dreplsrv_op_notify_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-static void dreplsrv_notify_del_repsTo(struct dreplsrv_notify_operation *op)
-{
-	uint32_t count;
-	struct repsFromToBlob *reps;
-	WERROR werr;
-	struct dreplsrv_service *s = op->service;
-	uint32_t i;
-
-	werr = dsdb_loadreps(s->samdb, op, op->source_dsa->partition->dn, "repsTo", &reps, &count);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,(__location__ ": Failed to load repsTo for %s\n",
-			 ldb_dn_get_linearized(op->source_dsa->partition->dn)));
-		return;
-	}
-
-	for (i=0; i<count; i++) {
-		if (GUID_compare(&reps[i].ctr.ctr1.source_dsa_obj_guid, 
-				 &op->source_dsa->repsFrom1->source_dsa_obj_guid) == 0) {
-			memmove(&reps[i], &reps[i+1],
-				sizeof(reps[i])*(count-(i+1)));
-			count--;
-		}
-	}
-
-	werr = dsdb_savereps(s->samdb, op, op->source_dsa->partition->dn, "repsTo", reps, count);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,(__location__ ": Failed to save repsTo for %s\n",
-			 ldb_dn_get_linearized(op->source_dsa->partition->dn)));
-		return;
-	}
-}
-
 /*
   called when a notify operation has completed
  */
@@ -225,9 +193,6 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 		DEBUG(2,("dreplsrv_notify: DsReplicaSync OK for %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name));
 		op->source_dsa->notify_uSN = op->uSN;
-		/* delete the repsTo for this replication partner in the
-		   partition, as we have successfully told him to sync */
-		dreplsrv_notify_del_repsTo(op);
 	}
 
 	talloc_free(op);
@@ -265,6 +230,9 @@ void dreplsrv_notify_run_ops(struct dreplsrv_service *s)
 		return;
 	}
 	tevent_req_set_callback(subreq, dreplsrv_notify_op_callback, op);
+	DEBUG(4,("started DsReplicaSync for %s to %s\n",
+		 ldb_dn_get_linearized(op->source_dsa->partition->dn),
+		 op->source_dsa->repsFrom1->other_info->dns_name));
 }
 
 
@@ -335,9 +303,6 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 	int ret;
 
 	werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps, &count);
-	if (count == 0) {
-		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsFrom", &reps, &count);
-	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed to load repsTo for %s\n",
 			 ldb_dn_get_linearized(p->dn)));
@@ -359,22 +324,23 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 		if (sdsa->notify_uSN < uSNHighest) {
 			/* we need to tell this partner to replicate
 			   with us */
+			bool is_urgent = sdsa->notify_uSN < uSNUrgent;
 
 			/* check if urgent replication is needed */
-			if (sdsa->notify_uSN < uSNUrgent) {
-				werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
-									uSNHighest, true);
-			} else {
-				werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
-									uSNHighest, false);
-			}
-
+			werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
+							     uSNHighest, is_urgent);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,(__location__ ": Failed to setup notify to %s for %s\n",
 					 reps[i].ctr.ctr1.other_info->dns_name,
 					 ldb_dn_get_linearized(p->dn)));
 				return werr;
 			}
+			DEBUG(4,("queued DsReplicaSync for %s to %s (urgent=%s) uSN=%llu:%llu\n",
+				 ldb_dn_get_linearized(p->dn),
+				 reps[i].ctr.ctr1.other_info->dns_name,
+				 is_urgent?"true":"false",
+				 (unsigned long long)sdsa->notify_uSN,
+				 (unsigned long long)uSNHighest));
 		}
 	}
 
