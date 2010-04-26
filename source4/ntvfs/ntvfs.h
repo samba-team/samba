@@ -209,9 +209,6 @@ struct ntvfs_context {
 	} oplock;
 
 	struct {
-		void *private_data;
-		struct socket_address *(*get_my_addr)(void *private_data, TALLOC_CTX *mem_ctx);
-		struct socket_address *(*get_peer_addr)(void *private_data, TALLOC_CTX *mem_ctx);
 		const struct tsocket_address *local_address;
 		const struct tsocket_address *remote_address;
 	} client;

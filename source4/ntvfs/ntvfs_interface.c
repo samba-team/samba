@@ -711,32 +711,3 @@ NTSTATUS ntvfs_send_oplock_break(struct ntvfs_module_context *ntvfs,
 	return ntvfs->ctx->oplock.handler(ntvfs->ctx->oplock.private_data, handle, level);
 }
 
-/* client connection callback */
-NTSTATUS ntvfs_set_addr_callbacks(struct ntvfs_context *ntvfs,
-					   struct socket_address *(*my_addr)(void *private_data, TALLOC_CTX *mem_ctx),
-					   struct socket_address *(*peer_addr)(void *private_data, TALLOC_CTX *mem_ctx),
-					   void *private_data)
-{
-	ntvfs->client.get_peer_addr	= my_addr;
-	ntvfs->client.get_my_addr	= peer_addr;
-	ntvfs->client.private_data	= private_data;
-	return NT_STATUS_OK;
-}
-
-struct socket_address *ntvfs_get_my_addr(struct ntvfs_module_context *ntvfs, TALLOC_CTX *mem_ctx)
-{
-	if (!ntvfs->ctx->client.get_my_addr) {
-		return NULL;
-	}
-
-	return ntvfs->ctx->client.get_my_addr(ntvfs->ctx->client.private_data, mem_ctx);
-}
-
-struct socket_address *ntvfs_get_peer_addr(struct ntvfs_module_context *ntvfs, TALLOC_CTX *mem_ctx)
-{
-	if (!ntvfs->ctx->client.get_peer_addr) {
-		return NULL;
-	}
-
-	return ntvfs->ctx->client.get_peer_addr(ntvfs->ctx->client.private_data, mem_ctx);
-}
