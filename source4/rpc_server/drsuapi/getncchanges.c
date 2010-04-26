@@ -1005,9 +1005,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* the client can us to call UpdateRefs on its behalf to
 	   re-establish monitoring of the NC */
-	if ((req8->replica_flags & DRSUAPI_DRS_ADD_REF) && 
+	if ((req8->replica_flags & (DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_REF_GCSPN)) &&
 	    !GUID_all_zero(&req8->destination_dsa_guid)) {
 		struct drsuapi_DsReplicaUpdateRefsRequest1 ureq;
+		DEBUG(3,("UpdateRefs on getncchanges for %s\n",
+			 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
 		ureq.naming_context = ncRoot;
 		ureq.dest_dsa_dns_name = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
 							 GUID_string(mem_ctx, &req8->destination_dsa_guid),
