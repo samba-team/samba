@@ -165,6 +165,7 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 	struct named_pipe_auth_rep pipe_reply;
 	struct auth_context *auth_context;
 	NTSTATUS status;
+	int ret;
 
 	call = talloc(pipe_conn, struct named_pipe_call);
 	if (call == NULL) {
@@ -337,6 +338,43 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 		pipe_reply.info.info3.device_state = 0xff | 0x0400 | 0x0100;
 		pipe_reply.info.info3.allocation_size = 4096;
 
+		if (pipe_request.info.info3.server_addr == NULL) {
+			pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
+			DEBUG(2, ("Missing server address\n"));
+			goto reply;
+		}
+		if (pipe_request.info.info3.client_addr == NULL) {
+			pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
+			DEBUG(2, ("Missing client address\n"));
+			goto reply;
+		}
+
+		ret = tsocket_address_inet_from_strings(conn, "ip",
+							pipe_request.info.info3.server_addr,
+							pipe_request.info.info3.server_port,
+							&conn->local_address);
+		if (ret != 0) {
+			DEBUG(2, ("Invalid server address[%s] port[%u] - %s\n",
+				pipe_request.info.info3.server_addr,
+				pipe_request.info.info3.server_port,
+				strerror(errno)));
+			pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
+			goto reply;
+		}
+
+		ret = tsocket_address_inet_from_strings(conn, "ip",
+							pipe_request.info.info3.client_addr,
+							pipe_request.info.info3.client_port,
+							&conn->remote_address);
+		if (ret != 0) {
+			DEBUG(2, ("Invalid client address[%s] port[%u] - %s\n",
+				pipe_request.info.info3.client_addr,
+				pipe_request.info.info3.client_port,
+				strerror(errno)));
+			pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
+			goto reply;
+		}
+
 		if (pipe_request.info.info3.sam_info3 == NULL) {
 			/*
 			 * anon connection, we don't create a session info
@@ -384,7 +422,6 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 			OM_uint32 minor_status;
 			gss_buffer_desc cred_token;
 			gss_cred_id_t cred_handle;
-			int ret;
 			const char *error_string;
 
 			DEBUG(10, ("named_pipe_auth: delegated credentials supplied by client\n"));
