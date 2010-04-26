@@ -106,8 +106,8 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 
 	/* update the repsFrom on all partitions */
 	for (p=s->partitions; p; p=p->next) {
-		struct repsFromToBlob *old_reps;
-		uint32_t old_count;
+		struct repsFromToBlob *old_reps, *reps_to;
+		uint32_t old_count, to_count;
 		WERROR werr;
 		uint32_t i;
 		bool modified = false;
@@ -146,6 +146,34 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 			werr = dsdb_savereps(s->samdb, mem_ctx, p->dn, "repsFrom", old_reps, old_count);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,(__location__ ": Failed to save repsFrom to %s - %s\n", 
+					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+		}
+
+		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps_to, &to_count);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Failed to load repsTo from %s - %s\n",
+				 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		modified = false;
+		/* add any new ones */
+		for (i=0; i<old_count; i++) {
+			if (!reps_in_list(&old_reps[i], reps_to, to_count)) {
+				reps_to = talloc_realloc(mem_ctx, reps_to, struct repsFromToBlob, to_count+1);
+				NT_STATUS_HAVE_NO_MEMORY(reps_to);
+				reps_to[to_count] = old_reps[i];
+				to_count++;
+				modified = true;
+			}
+		}
+
+		if (modified) {
+			werr = dsdb_savereps(s->samdb, mem_ctx, p->dn, "repsTo", reps_to, to_count);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,(__location__ ": Failed to save repsTo to %s - %s\n",
 					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
