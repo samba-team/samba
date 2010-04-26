@@ -530,6 +530,8 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	*/
 	if (state->op->extended_op == DRSUAPI_EXOP_NONE) {
 		dreplsrv_update_refs_trigger(req);
+	} else {
+		tevent_req_done(req);
 	}
 }
 
