@@ -218,8 +218,6 @@ struct dcesrv_connection {
 	struct {
 		void *private_data;
 		void (*report_output_data)(struct dcesrv_connection *);
-		struct socket_address *(*get_my_addr)(struct dcesrv_connection *, TALLOC_CTX *mem_ctx);
-		struct socket_address *(*get_peer_addr)(struct dcesrv_connection *, TALLOC_CTX *mem_ctx);
 	} transport;
 
 	struct tstream_context *stream;

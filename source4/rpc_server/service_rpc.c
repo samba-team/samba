@@ -370,8 +370,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	dcesrv_conn->transport.private_data		= srv_conn;
 	dcesrv_conn->transport.report_output_data	= dcesrv_sock_report_output_data;
-	dcesrv_conn->transport.get_my_addr		= dcesrv_sock_get_my_addr;
-	dcesrv_conn->transport.get_peer_addr		= dcesrv_sock_get_peer_addr;
 
 	TALLOC_FREE(srv_conn->event.fde);
 
