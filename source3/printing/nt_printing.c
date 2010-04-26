@@ -2660,14 +2660,19 @@ static void map_single_multi_sz_into_ctr(struct regval_ctr *ctr, const char *val
 }
 
 /****************************************************************************
- * Map the NT_PRINTER_INFO_LEVEL_2 data into DsSpooler keys for publishing.
+ * Map spoolss_PrinterInfo2 data into DsSpooler keys for publishing.
  *
- * @param info2 NT_PRINTER_INFO_LEVEL_2 describing printer - gets modified
- * @return bool indicating success or failure
+ * @param mem_ctx  allocation context
+ * @param info2    spoolss_PrinterInfo2 describing printer
+ * @param pdata    the talloced printer data
+ * @return bool    indicating success or failure
  ***************************************************************************/
 
-static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
+static bool map_nt_printer_info2_to_dsspooler(TALLOC_CTX *mem_ctx,
+					      struct spoolss_PrinterInfo2 *info2,
+					      NT_PRINTER_DATA **pdata)
 {
+	NT_PRINTER_DATA *data;
 	struct regval_ctr *ctr = NULL;
 	fstring longname;
 	const char *dnssuffix;
@@ -2675,9 +2680,12 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
         const char *ascii_str;
 	int i;
 
-	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
-		i = add_new_printer_key(info2->data, SPOOL_DSSPOOLER_KEY);
-	ctr = info2->data->keys[i].values;
+	data = talloc_zero(mem_ctx, NT_PRINTER_DATA);
+	if (!data) return false;
+
+	/* init data */
+	i = add_new_printer_key(data, SPOOL_DSSPOOLER_KEY);
+	ctr = data->keys[i].values;
 
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTERNAME, info2->sharename);
 	map_sz_into_ctr(ctr, SPOOL_REG_SHORTSERVERNAME, global_myname());
@@ -2696,6 +2704,7 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	map_sz_into_ctr(ctr, SPOOL_REG_SERVERNAME, longname);
 
 	if (asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename) == -1) {
+		talloc_free(data);
 		return false;
 	}
 	map_sz_into_ctr(ctr, SPOOL_REG_UNCNAME, allocated_string);
@@ -2730,34 +2739,65 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	}
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTSPOOLING, ascii_str);
 
-	return True;
+	*pdata = data;
+	return true;
 }
 
 /*****************************************************************
  ****************************************************************/
 
-static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
-			       struct GUID guid)
+static void store_printer_guid(const char *printer, struct GUID guid)
 {
-	int i;
-	struct regval_ctr *ctr=NULL;
+	TALLOC_CTX *tmp_ctx;
+	struct auth_serversupplied_info *server_info = NULL;
+	const char *guid_str;
+	DATA_BLOB blob;
+	NTSTATUS status;
+	WERROR result;
 
-	/* find the DsSpooler key */
-	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
-		i = add_new_printer_key(info2->data, SPOOL_DSSPOOLER_KEY);
-	ctr = info2->data->keys[i].values;
+	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) {
+		DEBUG(0, ("store_printer_guid: Out of memory?!\n"));
+		return;
+	}
 
-	regval_ctr_delvalue(ctr, "objectGUID");
+	status = make_server_info_system(tmp_ctx, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("store_printer_guid: "
+			  "Could not create system server_info\n"));
+		goto done;
+	}
+
+	guid_str = GUID_string(tmp_ctx, &guid);
+	if (!guid_str) {
+		DEBUG(0, ("store_printer_guid: Out of memory?!\n"));
+		goto done;
+	}
 
 	/* We used to store this as a REG_BINARY but that causes
 	   Vista to whine */
 
-	regval_ctr_addvalue_sz(ctr, "objectGUID",
-			       GUID_string(talloc_tos(), &guid));
+	if (!push_reg_sz(tmp_ctx, &blob, guid_str)) {
+		DEBUG(0, ("store_printer_guid: "
+			  "Could not marshall string %s for objectGUID\n",
+			  guid_str));
+		goto done;
+	}
+
+	result = winreg_set_printer_dataex(tmp_ctx, server_info, printer,
+					   SPOOL_DSSPOOLER_KEY, "objectGUID",
+					   REG_SZ, blob.data, blob.length);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("store_printer_guid: "
+			  "Failed to store GUID for printer %s\n", printer));
+	}
+
+done:
+	talloc_free(tmp_ctx);
 }
 
 static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
-                                     NT_PRINTER_INFO_LEVEL *printer)
+				     struct spoolss_PrinterInfo2 *pinfo2)
 {
 	ADS_STATUS ads_rc;
 	LDAPMessage *res;
@@ -2769,6 +2809,8 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	struct GUID guid;
 	WERROR win_rc = WERR_OK;
 	size_t converted_size;
+	NT_PRINTER_DATA *pdata;
+	const char *printer = pinfo2->sharename;
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
@@ -2776,7 +2818,12 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		return WERR_NOMEM;
 	}
 
-	DEBUG(5, ("publishing printer %s\n", printer->info_2->printername));
+	DEBUG(5, ("publishing printer %s\n", printer));
+
+	if (!map_nt_printer_info2_to_dsspooler(ctx, pinfo2, &pdata)) {
+		TALLOC_FREE(ctx);
+		return WERR_SERVER_UNAVAILABLE;
+	}
 
 	/* figure out where to publish */
 	ads_find_machine_acct(ads, &res, global_myname());
@@ -2819,7 +2866,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		TALLOC_FREE(ctx);
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	sharename_escaped = escape_rdn_val_string_alloc(printer->info_2->sharename);
+	sharename_escaped = escape_rdn_val_string_alloc(printer);
 	if (!sharename_escaped) {
 		SAFE_FREE(srv_cn_escaped);
 		TALLOC_FREE(ctx);
@@ -2839,9 +2886,8 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		return WERR_NOMEM;
 	}
 
-	get_local_printer_publishing_data(ctx, &mods, printer->info_2->data);
-	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME,
-	            printer->info_2->sharename);
+	get_local_printer_publishing_data(ctx, &mods, pdata);
+	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, printer);
 
 	/* publish it */
 	ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
@@ -2853,16 +2899,17 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
 	}
 
-	if (!ADS_ERR_OK(ads_rc))
-		DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, ads_errstr(ads_rc)));
+	if (!ADS_ERR_OK(ads_rc)) {
+		DEBUG(3, ("error publishing %s: %s\n",
+			  printer, ads_errstr(ads_rc)));
+	}
 
 	/* retreive the guid and store it locally */
 	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
 		ZERO_STRUCT(guid);
 		ads_pull_guid(ads, res, &guid);
 		ads_msgfree(ads, res);
-		store_printer_guid(printer->info_2, guid);
-		win_rc = mod_a_printer(printer, 2);
+		store_printer_guid(printer, guid);
 	}
 	TALLOC_FREE(ctx);
 
@@ -2870,17 +2917,17 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 }
 
 static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
-                                       NT_PRINTER_INFO_LEVEL *printer)
+                                       const char *printer)
 {
 	ADS_STATUS ads_rc;
 	LDAPMessage *res = NULL;
 	char *prt_dn = NULL;
 
-	DEBUG(5, ("unpublishing printer %s\n", printer->info_2->printername));
+	DEBUG(5, ("unpublishing printer %s\n", printer));
 
 	/* remove the printer from the directory */
 	ads_rc = ads_find_printer_on_server(ads, &res,
-			    printer->info_2->sharename, global_myname());
+					    printer, global_myname());
 
 	if (ADS_ERR_OK(ads_rc) && res && ads_count_replies(ads, res)) {
 		prt_dn = ads_get_dn(ads, talloc_tos(), res);
@@ -2901,45 +2948,53 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 /****************************************************************************
  * Publish a printer in the directory
  *
- * @param snum describing printer service
+ * @param mem_ctx      memory context
+ * @param server_info  server_info to access winreg pipe
+ * @param pinfo2       printer information
+ * @param action       publish/unpublish action
  * @return WERROR indicating status of publishing
  ***************************************************************************/
 
-WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
+WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  struct spoolss_PrinterInfo2 *pinfo2,
+			  int action)
 {
+	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_ATTRIBUTES;
+	struct spoolss_SetPrinterInfo2 *sinfo2;
 	ADS_STATUS ads_rc;
 	ADS_STRUCT *ads = NULL;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	WERROR win_rc;
 
-	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(win_rc))
-		goto done;
+	sinfo2 = talloc_zero(mem_ctx, struct spoolss_SetPrinterInfo2);
+	if (!sinfo2) {
+		return WERR_NOMEM;
+	}
 
 	switch (action) {
 	case DSPRINT_PUBLISH:
 	case DSPRINT_UPDATE:
-		/* set the DsSpooler info and attributes */
-		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2))) {
-			win_rc = WERR_NOMEM;
-			goto done;
-		}
-
-		printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
+		pinfo2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
 	case DSPRINT_UNPUBLISH:
-		printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
+		pinfo2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
 	default:
 		win_rc = WERR_NOT_SUPPORTED;
 		goto done;
 	}
 
-	win_rc = mod_a_printer(printer, 2);
+	sinfo2->attributes = pinfo2->attributes;
+
+	win_rc = winreg_update_printer(mem_ctx, server_info,
+					pinfo2->sharename, info2_mask,
+					sinfo2, NULL, NULL);
 	if (!W_ERROR_IS_OK(win_rc)) {
 		DEBUG(3, ("err %d saving data\n", W_ERROR_V(win_rc)));
 		goto done;
 	}
+
+	TALLOC_FREE(sinfo2);
 
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
@@ -2963,15 +3018,14 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 	switch (action) {
 	case DSPRINT_PUBLISH:
 	case DSPRINT_UPDATE:
-		win_rc = nt_printer_publish_ads(ads, printer);
+		win_rc = nt_printer_publish_ads(ads, pinfo2);
 		break;
 	case DSPRINT_UNPUBLISH:
-		win_rc = nt_printer_unpublish_ads(ads, printer);
+		win_rc = nt_printer_unpublish_ads(ads, pinfo2->sharename);
 		break;
 	}
 
 done:
-	free_a_printer(&printer, 2);
 	ads_destroy(&ads);
 	return win_rc;
 }
@@ -2982,7 +3036,14 @@ WERROR check_published_printers(void)
 	ADS_STRUCT *ads = NULL;
 	int snum;
 	int n_services = lp_numservices();
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2;
+	NTSTATUS status;
+	WERROR result;
+
+	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) return WERR_NOMEM;
 
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
@@ -2998,86 +3059,118 @@ WERROR check_published_printers(void)
 	ads_rc = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
-		ads_destroy(&ads);
-		ads_kdestroy("MEMORY:prtpub_cache");
-		return WERR_ACCESS_DENIED;
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}
+
+	status = make_server_info_system(tmp_ctx, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("check_published_printers: "
+			  "Could not create system server_info\n"));
+		result = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	for (snum = 0; snum < n_services; snum++) {
-		if (!(lp_snum_ok(snum) && lp_print_ok(snum)))
+		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
 			continue;
+		}
 
-		if (W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2,
-		                                lp_servicename(snum))) &&
-		    (printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED))
-			nt_printer_publish_ads(ads, printer);
+		result = winreg_get_printer(tmp_ctx, server_info, NULL,
+					    lp_servicename(snum), &pinfo2);
+		if (!W_ERROR_IS_OK(result)) {
+			continue;
+		}
 
-		free_a_printer(&printer, 2);
+		if (pinfo2->attributes & PRINTER_ATTRIBUTE_PUBLISHED) {
+			nt_printer_publish_ads(ads, pinfo2);
+		}
+
+		TALLOC_FREE(pinfo2);
 	}
 
+	result = WERR_OK;
+done:
 	ads_destroy(&ads);
 	ads_kdestroy("MEMORY:prtpub_cache");
-	return WERR_OK;
+	talloc_free(tmp_ctx);
+	return result;
 }
 
-bool is_printer_published(Printer_entry *print_hnd, int snum,
-			  struct GUID *guid)
+bool is_printer_published(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  char *servername, char *printer, struct GUID *guid,
+			  struct spoolss_PrinterInfo2 **info2)
 {
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	struct regval_ctr *ctr;
-	struct regval_blob *guid_val;
-	WERROR win_rc;
-	int i;
-	bool ret = False;
-	DATA_BLOB blob;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	enum winreg_Type type;
+	uint8_t *data;
+	uint32_t data_size;
+	WERROR result;
+	NTSTATUS status;
 
-	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
+	result = winreg_get_printer(mem_ctx, server_info,
+				    servername, printer, &pinfo2);
+	if (!W_ERROR_IS_OK(result)) {
+		return false;
+	}
 
-	if (!W_ERROR_IS_OK(win_rc) ||
-	    !(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED) ||
-	    ((i = lookup_printerkey(printer->info_2->data, SPOOL_DSSPOOLER_KEY)) < 0) ||
-	    !(ctr = printer->info_2->data->keys[i].values) ||
-	    !(guid_val = regval_ctr_getvalue(ctr, "objectGUID")))
-	{
-		free_a_printer(&printer, 2);
-		return False;
+	if (!(pinfo2->attributes & PRINTER_ATTRIBUTE_PUBLISHED)) {
+		TALLOC_FREE(pinfo2);
+		return false;
+	}
+
+	if (!guid) {
+		goto done;
 	}
 
 	/* fetching printer guids really ought to be a separate function. */
 
-	if ( guid ) {
-		char *guid_str;
-
-		/* We used to store the guid as REG_BINARY, then swapped
-		   to REG_SZ for Vista compatibility so check for both */
-
-		switch ( regval_type(guid_val) ){
-		case REG_SZ:
-			blob = data_blob_const(regval_data_p(guid_val),
-					       regval_size(guid_val));
-			pull_reg_sz(talloc_tos(), &blob, (const char **)&guid_str);
-			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
-			talloc_free(guid_str);
-			break;
-		case REG_BINARY:
-			if ( regval_size(guid_val) != sizeof(struct GUID) ) {
-				ret = False;
-				break;
-			}
-			memcpy(guid, regval_data_p(guid_val), sizeof(struct GUID));
-			break;
-		default:
-			DEBUG(0,("is_printer_published: GUID value stored as "
-				 "invaluid type (%d)\n", regval_type(guid_val) ));
-			break;
-		}
+	result = winreg_get_printer_dataex(mem_ctx, server_info, printer,
+					   SPOOL_DSSPOOLER_KEY, "objectGUID",
+					   &type, &data, &data_size);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(pinfo2);
+		return false;
 	}
 
-	free_a_printer(&printer, 2);
-	return ret;
+	/* We used to store the guid as REG_BINARY, then swapped
+	   to REG_SZ for Vista compatibility so check for both */
+
+	switch (type) {
+	case REG_SZ:
+		status = GUID_from_string((char *)data, guid);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(pinfo2);
+			return false;
+		}
+		break;
+
+	case REG_BINARY:
+		if (data_size != sizeof(struct GUID)) {
+			TALLOC_FREE(pinfo2);
+			return false;
+		}
+		memcpy(guid, data, sizeof(struct GUID));
+		break;
+	default:
+		DEBUG(0,("is_printer_published: GUID value stored as "
+			 "invaluid type (%d)\n", type));
+		break;
+	}
+
+done:
+	if (info2) {
+		*info2 = talloc_move(mem_ctx, &pinfo2);
+	}
+	talloc_free(pinfo2);
+	return true;
 }
 #else
-WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
+WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  struct spoolss_PrinterInfo2 *pinfo2,
+			  int action)
 {
 	return WERR_OK;
 }
@@ -3087,8 +3180,10 @@ WERROR check_published_printers(void)
 	return WERR_OK;
 }
 
-bool is_printer_published(Printer_entry *print_hnd, int snum,
-			  struct GUID *guid)
+bool is_printer_published(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  char *servername, char *printer, struct GUID *guid,
+			  struct spoolss_PrinterInfo2 **info2)
 {
 	return False;
 }

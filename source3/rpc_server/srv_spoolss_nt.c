@@ -3706,9 +3706,19 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo7 *r,
 				      int snum)
 {
+	struct auth_serversupplied_info *server_info;
 	struct GUID guid;
+	NTSTATUS status;
 
-	if (is_printer_published(print_hnd, snum, &guid)) {
+	status = make_server_info_system(mem_ctx, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("construct_printer_info7: "
+			  "Could not create system server_info\n"));
+		return WERR_NOMEM;
+	}
+
+	if (is_printer_published(mem_ctx, server_info, print_hnd->servername,
+				 lp_servicename(snum), &guid, NULL)) {
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
 		r->action = DSPRINT_PUBLISH;
 	} else {
@@ -3717,6 +3727,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->guid);
 
+	TALLOC_FREE(server_info);
 	return WERR_OK;
 }
 
@@ -5746,6 +5757,8 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p,
 					   struct spoolss_SetPrinterInfo7 *info7)
 {
 #ifdef HAVE_ADS
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	WERROR result;
 	int snum;
 	Printer_entry *Printer;
 
@@ -5763,8 +5776,16 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p,
 	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
-	nt_printer_publish(Printer, snum, info7->action);
+	result = winreg_get_printer(p->mem_ctx, p->server_info,
+				    Printer->servername,
+				    lp_servicename(snum), &pinfo2);
+	if (!W_ERROR_IS_OK(result)) {
+		return WERR_BADFID;
+	}
 
+	nt_printer_publish(pinfo2, p->server_info, pinfo2, info7->action);
+
+	TALLOC_FREE(pinfo2);
 	return WERR_OK;
 #else
 	return WERR_UNKNOWN_LEVEL;

@@ -30,15 +30,28 @@
 **************************************************************************/
 void reload_printers(void)
 {
+	struct auth_serversupplied_info *server_info = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int snum;
 	int n_services = lp_numservices();
 	int pnum = lp_servicenumber(PRINTERS_NAME);
 	const char *pname;
+	NTSTATUS status;
+	bool skip = false;
 
 	pcap_cache_reload();
 
+	status = make_server_info_system(talloc_tos(), &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("reload_printers: "
+			  "Could not create system server_info\n"));
+		/* can't remove stale printers before we
+		 * are fully initilized */
+		skip = true;
+	}
+
 	/* remove stale printers */
-	for (snum = 0; snum < n_services; snum++) {
+	for (snum = 0; skip == false && snum < n_services; snum++) {
 		/* avoid removing PRINTERS_NAME or non-autoloaded printers */
 		if (snum == pnum || !(lp_snum_ok(snum) && lp_print_ok(snum) &&
 		                      lp_autoloaded(snum)))
@@ -48,14 +61,22 @@ void reload_printers(void)
 		if (!pcap_printername_ok(pname)) {
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
-			if (is_printer_published(NULL, snum, NULL))
-				nt_printer_publish(NULL, snum, DSPRINT_UNPUBLISH);
+			if (is_printer_published(server_info, server_info,
+						 NULL, lp_servicename(snum),
+						 NULL, &pinfo2)) {
+				nt_printer_publish(server_info,
+						   server_info, pinfo2,
+						   DSPRINT_UNPUBLISH);
+				TALLOC_FREE(pinfo2);
+			}
 			del_a_printer(pname);
 			lp_killservice(snum);
 		}
 	}
 
 	load_printers();
+
+	TALLOC_FREE(server_info);
 }
 
 /****************************************************************************

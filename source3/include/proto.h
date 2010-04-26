@@ -4753,14 +4753,15 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name );
 int delete_printer_key( NT_PRINTER_DATA *data, const char *name );
 int lookup_printerkey( NT_PRINTER_DATA *data, const char *name );
 int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys );
-WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action);
+WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  struct spoolss_PrinterInfo2 *pinfo2,
+			  int action);
 WERROR check_published_printers(void);
-bool is_printer_published(Printer_entry *print_hnd, int snum, 
-			  struct GUID *guid);
-WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action);
-WERROR check_published_printers(void);
-bool is_printer_published(Printer_entry *print_hnd, int snum, 
-			  struct GUID *guid);
+bool is_printer_published(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  char *servername, char *printer, struct GUID *guid,
+			  struct spoolss_PrinterInfo2 **info2);
 WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key );
 WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value, 
