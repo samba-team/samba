@@ -4811,11 +4811,15 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 						  const char *architecture,
 						  uint32_t version)
 {
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	struct spoolss_DriverInfo8 *driver;
 	WERROR result;
 
-	result = get_a_printer(NULL, &printer, 2, lp_const_servicename(snum));
+	result = winreg_get_printer(mem_ctx,
+				    server_info,
+				    servername,
+				    lp_const_servicename(snum),
+				    &pinfo2);
 
 	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
 		win_errstr(result)));
@@ -4825,8 +4829,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_get_driver(mem_ctx, server_info, architecture,
-				   printer->info_2->drivername,
-				   version, &driver);
+				   pinfo2->drivername, version, &driver);
 
 	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
 		win_errstr(result)));
@@ -4837,19 +4840,19 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		 */
 
 		if (version < 3) {
-			free_a_printer(&printer, 2);
+			talloc_free(pinfo2);
 			return WERR_UNKNOWN_PRINTER_DRIVER;
 		}
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
 		result = winreg_get_driver(mem_ctx, server_info, architecture,
-					   printer->info_2->drivername,
+					   pinfo2->drivername,
 					   version, &driver);
 		DEBUG(8,("construct_printer_driver_level: status: %s\n",
 			win_errstr(result)));
 		if (!W_ERROR_IS_OK(result)) {
-			free_a_printer(&printer, 2);
+			talloc_free(pinfo2);
 			return WERR_UNKNOWN_PRINTER_DRIVER;
 		}
 	}
@@ -4886,7 +4889,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	free_a_printer(&printer, 2);
+	talloc_free(pinfo2);
 	talloc_free(driver);
 
 	return result;
