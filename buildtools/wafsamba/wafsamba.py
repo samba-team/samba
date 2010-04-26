@@ -161,7 +161,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
-    if target_type == 'PYTHON':
+    if target_type == 'PYTHON' or realname:
         bundled_name = libname
     else:
         bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
@@ -196,6 +196,9 @@ def SAMBA_LIBRARY(bld, libname, source,
         abi_file        = abi_file,
         abi_match       = abi_match
         )
+
+    if realname and not link_name:
+        link_name = 'shared/%s' % realname
 
     if link_name:
         t.link_name = link_name

@@ -87,7 +87,10 @@ def install_library(self):
     if self.samba_realname:
         install_name = self.samba_realname
         install_link = None
-        inst_name    = t.target + '.so'
+        if getattr(self, 'samba_type', None) == 'PYTHON':
+            inst_name    = '%s.so' % t.target
+        else:
+            inst_name    = 'lib%s.so' % t.target
     elif self.vnum:
         vnum_base    = self.vnum.split('.')[0]
         install_name = 'lib%s.so.%s' % (self.target, self.vnum)
