@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "ntvfs/ntvfs.h"
+#include "lib/tsocket/tsocket.h"
 
 /* connect/disconnect */
 NTSTATUS ntvfs_connect(struct ntvfs_request *req, union smb_tcon *tcon)
@@ -664,6 +665,30 @@ NTSTATUS ntvfs_next_exit(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	return ntvfs->next->ops->exit(ntvfs->next, req);
+}
+
+/* client connection callback */
+NTSTATUS ntvfs_set_addresses(struct ntvfs_context *ntvfs,
+			     const struct tsocket_address *local_address,
+			     const struct tsocket_address *remote_address)
+{
+	ntvfs->client.local_address = tsocket_address_copy(local_address, ntvfs);
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->client.local_address);
+
+	ntvfs->client.remote_address = tsocket_address_copy(remote_address, ntvfs);
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->client.remote_address);
+
+	return NT_STATUS_OK;
+}
+
+const struct tsocket_address *ntvfs_get_local_address(struct ntvfs_module_context *ntvfs)
+{
+	return ntvfs->ctx->client.local_address;
+}
+
+const struct tsocket_address *ntvfs_get_remote_address(struct ntvfs_module_context *ntvfs)
+{
+	return ntvfs->ctx->client.remote_address;
 }
 
 /* oplock helpers */
