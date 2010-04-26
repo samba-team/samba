@@ -4197,8 +4197,9 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 {
 	int snum;
 	int n_services = lp_numservices();
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	bool in_use = False;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	WERROR result;
 
 	if (!r) {
 		return false;
@@ -4209,16 +4210,21 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 	/* loop through the printers.tdb and check for the drivername */
 
 	for (snum=0; snum<n_services && !in_use; snum++) {
-		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
+		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
 			continue;
+		}
 
-		if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename(snum))) )
-			continue;
+		result = winreg_get_printer(mem_ctx, server_info, NULL,
+					    lp_servicename(snum), &pinfo2);
+		if (!W_ERROR_IS_OK(result)) {
+			continue; /* skip */
+		}
 
-		if (strequal(r->driver_name, printer->info_2->drivername))
+		if (strequal(r->driver_name, pinfo2->drivername)) {
 			in_use = True;
+		}
 
-		free_a_printer( &printer, 2 );
+		TALLOC_FREE(pinfo2);
 	}
 
 	DEBUG(10,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
