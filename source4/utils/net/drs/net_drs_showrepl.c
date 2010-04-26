@@ -358,10 +358,10 @@ static bool net_drs_showrepl_print_connection_objects(struct net_drs_context *dr
 	struct ldb_message **conn_msgs;
 	struct ldb_dn *dn;
 	uint32_t options;
-	struct GUID guid;
 	const char *dc_dns_name;
 	TALLOC_CTX *mem_ctx;
 	const char *conn_attr[] = {
+			"name",
 			"enabledConnection",
 			"fromServer",
 			"mS-DS-ReplicatesNCReason",
@@ -403,8 +403,8 @@ static bool net_drs_showrepl_print_connection_objects(struct net_drs_context *dr
 		struct ldb_message *conn_msg = conn_msgs[i];
 
 		d_printf("Connection --\n");
-		guid = samdb_result_guid(conn_msg, "name");
-		d_printf("\tConnection name : %s\n", GUID_string(mem_ctx, &guid));
+		d_printf("\tConnection name : %s\n",
+			 samdb_result_string(conn_msg, "name", NULL));
 		d_printf("\tEnabled         : %s\n",
 			 samdb_result_string(conn_msg, "enabledConnection", "TRUE"));
 		d_printf("\tServer DNS name : %s\n", dc_dns_name);
