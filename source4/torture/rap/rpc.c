@@ -65,7 +65,7 @@ static bool test_rpc_netservergetinfo(struct torture_context *tctx,
 
 	server_name = talloc_strndup(tctx, info.info101->server_name, 16);
 
-	torture_assert_str_equal(tctx, r.out.info.info0.name, server_name, "server name");
+	torture_assert_str_equal(tctx, (const char *)r.out.info.info0.name, server_name, "server name");
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
 		torture_skip(tctx, "skipping netservergetinfo level 1 against samba3");
@@ -79,7 +79,7 @@ static bool test_rpc_netservergetinfo(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r.out.status, 0,
 		"rap_netservergetinfo level 1 failed");
 
-	torture_assert_str_equal(tctx, r.out.info.info1.name, server_name, "server name");
+	torture_assert_str_equal(tctx, (const char *)r.out.info.info1.name, server_name, "server name");
 	torture_assert_int_equal(tctx, r.out.info.info1.version_major, info.info101->version_major, "version major");
 	torture_assert_int_equal(tctx, r.out.info.info1.version_minor, info.info101->version_minor, "version minor");
 	torture_assert_int_equal(tctx, r.out.info.info1.servertype, info.info101->server_type, "server_type");

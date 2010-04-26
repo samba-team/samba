@@ -65,7 +65,7 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 			DEBUG(3, ("WARNING: Service [%s] disappeared after enumeration!\n", snames[i]));
 			continue;
 		}
-		strncpy(r->out.info[j].info1.share_name,
+		strncpy((char *)r->out.info[j].info1.share_name,
 			snames[i],
 			sizeof(r->out.info[0].info1.share_name));
 		r->out.info[i].info1.reserved1 = 0;

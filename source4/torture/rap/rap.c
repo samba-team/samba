@@ -161,7 +161,7 @@ static void rap_cli_expect_format(struct rap_call *call, const char *format)
 }
 
 static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
-				uint16_t convert, char **dest)
+				uint16_t convert, const char **dest)
 {
 	uint16_t string_offset;
 	uint16_t ignore;
@@ -183,7 +183,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 		return NT_STATUS_INVALID_PARAMETER;
 
 	*dest = talloc_zero_array(mem_ctx, char, len+1);
-	pull_string(*dest, p, len+1, len, STR_ASCII);
+	pull_string((char *)*dest, p, len+1, len, STR_ASCII);
 
 	return NT_STATUS_OK;
 }
