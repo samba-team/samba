@@ -693,7 +693,8 @@ ssize_t drain_socket(int sockfd, size_t count);
 /* The following definitions come from lib/secdesc.c  */
 
 uint32_t get_sec_info(const SEC_DESC *sd);
-SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
+SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb);
+SEC_DESC_BUF *sec_desc_merge_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
 SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,

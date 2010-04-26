@@ -402,7 +402,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 	}
 
-	if ( !(sd_store = sec_desc_merge( ctx, sd_new, sd_orig )) ) {
+	if ( !(sd_store = sec_desc_merge_buf( ctx, sd_new, sd_orig )) ) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to update sec_desc for %s\n", key.dptr ));
 		return 0;
 	}

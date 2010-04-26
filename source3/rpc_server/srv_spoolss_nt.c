@@ -5465,7 +5465,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		}
 	}
 
-	new_secdesc_ctr = sec_desc_merge(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
+	new_secdesc_ctr = sec_desc_merge_buf(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
 	if (!new_secdesc_ctr) {
 		result = WERR_NOMEM;
 		goto done;

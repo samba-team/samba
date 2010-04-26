@@ -63,7 +63,7 @@ uint32_t get_sec_info(const SEC_DESC *sd)
  security descriptor new_sec.
 ********************************************************************/
 
-SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
+SEC_DESC_BUF *sec_desc_merge_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
 {
 	DOM_SID *owner_sid, *group_sid;
 	SEC_DESC_BUF *return_sdb;
@@ -106,6 +106,47 @@ SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BU
 	return_sdb = make_sec_desc_buf(ctx, secdesc_size, psd);
 
 	return(return_sdb);
+}
+
+SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb)
+{
+	DOM_SID *owner_sid, *group_sid;
+	SEC_ACL *dacl, *sacl;
+	SEC_DESC *psd = NULL;
+	uint16 secdesc_type;
+	size_t secdesc_size;
+
+	/* Copy over owner and group sids.  There seems to be no flag for
+	   this so just check the pointer values. */
+
+	owner_sid = new_sdb->owner_sid ? new_sdb->owner_sid :
+		old_sdb->owner_sid;
+
+	group_sid = new_sdb->group_sid ? new_sdb->group_sid :
+		old_sdb->group_sid;
+
+	secdesc_type = new_sdb->type;
+
+	/* Ignore changes to the system ACL.  This has the effect of making
+	   changes through the security tab audit button not sticking.
+	   Perhaps in future Samba could implement these settings somehow. */
+
+	sacl = NULL;
+	secdesc_type &= ~SEC_DESC_SACL_PRESENT;
+
+	/* Copy across discretionary ACL */
+
+	if (secdesc_type & SEC_DESC_DACL_PRESENT) {
+		dacl = new_sdb->dacl;
+	} else {
+		dacl = old_sdb->dacl;
+	}
+
+	/* Create new security descriptor from bits */
+	psd = make_sec_desc(ctx, new_sdb->revision, secdesc_type,
+			    owner_sid, group_sid, sacl, dacl, &secdesc_size);
+
+	return psd;
 }
 
 /*******************************************************************
