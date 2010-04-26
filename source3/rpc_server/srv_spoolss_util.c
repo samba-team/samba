@@ -1362,6 +1362,7 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
 
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,
+			     const char *servername,
 			     const char *sharename)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1876,6 +1877,7 @@ done:
 
 WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  const char *servername,
 			  const char *printer,
 			  struct spoolss_PrinterInfo2 **pinfo2)
 {
@@ -1936,12 +1938,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	info2->servername = talloc_asprintf(info2, "\\\\%s", global_myname());
-	if (info2->servername == NULL) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-
+	info2->servername     = EMPTY_STRING;
 	info2->printername    = EMPTY_STRING;
 	info2->sharename      = EMPTY_STRING;
 	info2->portname       = EMPTY_STRING;
@@ -1953,6 +1950,14 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	info2->datatype       = EMPTY_STRING;
 	info2->parameters     = EMPTY_STRING;
 
+	if (servername != NULL && servername[0] != '\0') {
+		info2->servername = talloc_asprintf(info2, "\\\\%s", servername);
+		if (info2->servername == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+	}
+
 	for (i = 0; i < num_values; i++) {
 		v = &enum_values[i];
 
@@ -1960,6 +1965,15 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 					      v,
 					      "Name",
 					      &info2->printername);
+		if (W_ERROR_IS_OK(result) && info2->servername[0] != '\0') {
+			char *p = talloc_asprintf(info2, "%s\\%s",
+						  info2->servername,
+						  info2->printername);
+			if (p == NULL) {
+				result = WERR_NOMEM;
+			}
+			info2->printername = p;
+		}
 		CHECK_ERROR(result);
 
 		result = winreg_enumval_to_sz(info2,
