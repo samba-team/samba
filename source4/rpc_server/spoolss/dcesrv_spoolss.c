@@ -24,7 +24,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "ntptr/ntptr.h"
-#include "lib/socket/socket.h"
+#include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
@@ -148,7 +148,8 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 					const char *server_name)
 {
 	bool ret;
-	struct socket_address *myaddr;
+	const struct tsocket_address *local_address;
+	char *myaddr;
 	const char **aliases;
 	const char *dnsdomain;
 	unsigned int i;
@@ -201,10 +202,12 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 		if (ret) return WERR_OK;
 	}
 
-	myaddr = dcesrv_connection_get_my_addr(dce_call->conn, mem_ctx);
+	local_address = dcesrv_connection_get_local_address(dce_call->conn);
+
+	myaddr = tsocket_address_inet_addr_string(local_address, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(myaddr);
 
-	ret = strequal(myaddr->addr, server_name);
+	ret = strequal(myaddr, server_name);
 	talloc_free(myaddr);
 	if (ret) return WERR_OK;
 
