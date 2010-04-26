@@ -4162,6 +4162,30 @@ do {\
 		"sd unequal");\
 } while(0);
 
+#define test_multi_sz(wname, iname) \
+do {\
+	DATA_BLOB blob;\
+	const char **array;\
+	enum winreg_Type w_type;\
+	uint32_t w_size;\
+	uint32_t w_length;\
+	uint8_t *w_data;\
+	int i;\
+	torture_assert(tctx,\
+		test_winreg_QueryValue(tctx, winreg_handle, &key_handle, wname,\
+				       &w_type, &w_size, &w_length, &w_data),\
+		"failed to query winreg");\
+	torture_assert_int_equal(tctx, w_type, REG_MULTI_SZ, "unexpected type");\
+	blob = data_blob(w_data, w_size);\
+	torture_assert(tctx, \
+		pull_reg_multi_sz(tctx, lp_iconv_convenience(tctx->lp_ctx), &blob, &array),\
+		"failed to pull multi sz");\
+	for (i=0; array[i] != NULL; i++) {\
+		torture_assert_str_equal(tctx, array[i], iname[i],\
+			talloc_asprintf(tctx, "%s - %s mismatch", #wname, iname[i]));\
+	}\
+} while(0);
+
 
 	if (!test_winreg_symbolic_link(tctx, winreg_handle, hive_handle,
 				       TOP_LEVEL_CONTROL_PRINTERS_KEY,
@@ -4243,6 +4267,21 @@ static const char *strip_path(const char *path)
 	return path;
 }
 
+static const char **strip_paths(const char **path_array)
+{
+	int i;
+
+	if (path_array == NULL) {
+		return NULL;
+	}
+
+	for (i=0; path_array[i] != NULL; i++) {
+		path_array[i] = strip_path(path_array[i]);
+	}
+
+	return path_array;
+}
+
 static const char *driver_winreg_date(TALLOC_CTX *mem_ctx, NTTIME nt)
 {
 	time_t t;
@@ -4313,7 +4352,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	data_file	= strip_path(info.info8.data_file);
 	config_file	= strip_path(info.info8.config_file);
 	help_file	= strip_path(info.info8.help_file);
-/*	dependent_files = strip_paths(info.info8.dependent_files); */
+	dependent_files = strip_paths(info.info8.dependent_files);
 
 	driver_date		= driver_winreg_date(tctx, info.info8.driver_date);
 	inbox_driver_date	= driver_winreg_date(tctx, info.info8.min_inbox_driver_ver_date);
@@ -4338,12 +4377,10 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	test_sz("Print Processor",		info.info8.print_processor);
 	test_sz("Provider",			info.info8.provider);
 	test_sz("VendorSetup",			info.info8.vendor_setup);
-#if 0
 	test_multi_sz("ColorProfiles",		info.info8.color_profiles);
 	test_multi_sz("Dependent Files",	dependent_files);
 	test_multi_sz("CoreDependencies",	info.info8.core_driver_dependencies);
 	test_multi_sz("Previous Names",		info.info8.previous_names);
-#endif
 /*	test_dword("Attributes",		?); */
 	test_dword("PrinterDriverAttributes",	info.info8.printer_driver_attributes);
 	test_dword("Version",			info.info8.version);
@@ -4359,7 +4396,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	data_file	= strip_path(info.info6.data_file);
 	config_file	= strip_path(info.info6.config_file);
 	help_file	= strip_path(info.info6.help_file);
-/*	dependent_files = strip_paths(info.info6.dependent_files); */
+	dependent_files = strip_paths(info.info6.dependent_files);
 
 	driver_date		= driver_winreg_date(tctx, info.info6.driver_date);
 
@@ -4377,10 +4414,8 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	test_sz("Monitor",			info.info6.monitor_name);
 	test_sz("OEM URL",			info.info6.manufacturer_url);
 	test_sz("Provider",			info.info6.provider);
-#if 0
 	test_multi_sz("Dependent Files",	dependent_files);
 	test_multi_sz("Previous Names",		info.info6.previous_names);
-#endif
 /*	test_dword("Attributes",		?); */
 	test_dword("Version",			info.info6.version);
 /*	test_dword("TempDir",			?); */
