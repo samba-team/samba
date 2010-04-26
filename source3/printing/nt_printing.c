@@ -5238,13 +5238,4 @@ bool print_time_access_check(struct auth_serversupplied_info *server_info,
 	return ok;
 }
 
-/****************************************************************************
- Fill in the servername sent in the _spoolss_open_printer_ex() call
-****************************************************************************/
-
-char* get_server_name( Printer_entry *printer )
-{
-	return printer->servername;
-}
-
 

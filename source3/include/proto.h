@@ -4795,7 +4795,6 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type);
 bool print_time_access_check(struct auth_serversupplied_info *server_info,
 			     const char *servicename);
-char* get_server_name( Printer_entry *printer );
 
 /* The following definitions come from printing/pcap.c  */
 

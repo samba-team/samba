@@ -4937,7 +4937,6 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 	Printer_entry *printer;
 	WERROR result;
 
-	const char *servername;
 	int snum;
 
 	/* that's an [in out] buffer */
@@ -4957,15 +4956,13 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 	*r->out.server_major_version = 0;
 	*r->out.server_minor_version = 0;
 
-	servername = get_server_name(printer);
-
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
 	}
 
 	result = construct_printer_driver_info_level(p->mem_ctx, p->server_info,
 						     r->in.level, r->out.info,
-						     snum, servername,
+						     snum, printer->servername,
 						     r->in.architecture,
 						     r->in.client_major_version);
 	if (!W_ERROR_IS_OK(result)) {
