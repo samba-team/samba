@@ -321,7 +321,7 @@ int cli_NetGroupAdd(struct cli_state *cli, struct rap_group_info_1 *grinfo)
 	PUTWORD(p, 0); /* reserved word 0 */
 
 	p = data;
-	PUTSTRINGF(p, grinfo->group_name, RAP_GROUPNAME_LEN);
+	PUTSTRINGF(p, (const char *)grinfo->group_name, RAP_GROUPNAME_LEN);
 	PUTBYTE(p, 0); /* pad byte 0 */
 	PUTSTRINGP(p, grinfo->comment, data, soffset);
 
@@ -864,16 +864,16 @@ int cli_NetUserAdd(struct cli_state *cli, struct rap_user_info_1 * userinfo )
 	PUTWORD(p, 1); /* info level */
 	PUTWORD(p, 0); /* pwencrypt */
 	if(userinfo->passwrd)
-		PUTWORD(p,MIN(strlen(userinfo->passwrd), RAP_UPASSWD_LEN));
+		PUTWORD(p,MIN(strlen((const char *)userinfo->passwrd), RAP_UPASSWD_LEN));
 	else
 		PUTWORD(p, 0); /* password length */
 
 	p = data;
 	memset(data, '\0', soffset);
 
-	PUTSTRINGF(p, userinfo->user_name, RAP_USERNAME_LEN);
+	PUTSTRINGF(p, (const char *)userinfo->user_name, RAP_USERNAME_LEN);
 	PUTBYTE(p, 0); /* pad byte 0 */
-	PUTSTRINGF(p, userinfo->passwrd, RAP_UPASSWD_LEN);
+	PUTSTRINGF(p, (const char *)userinfo->passwrd, RAP_UPASSWD_LEN);
 	PUTDWORD(p, 0); /* pw age - n.a. on user add */
 	PUTWORD(p, userinfo->priv);
 	PUTSTRINGP(p, userinfo->home_dir, data, soffset);
@@ -1366,7 +1366,7 @@ int cli_NetShareAdd(struct cli_state *cli, struct rap_share_info_2 * sinfo )
 	PUTWORD(p, 0); /* reserved word 0 */
 
 	p = data;
-	PUTSTRINGF(p, sinfo->share_name, RAP_SHARENAME_LEN);
+	PUTSTRINGF(p, (const char *)sinfo->share_name, RAP_SHARENAME_LEN);
 	PUTBYTE(p, 0); /* pad byte 0 */
 
 	PUTWORD(p, sinfo->share_type);
@@ -1375,7 +1375,7 @@ int cli_NetShareAdd(struct cli_state *cli, struct rap_share_info_2 * sinfo )
 	PUTWORD(p, sinfo->maximum_users);
 	PUTWORD(p, sinfo->active_users);
 	PUTSTRINGP(p, sinfo->path, data, soffset);
-	PUTSTRINGF(p, sinfo->password, RAP_SPASSWD_LEN);
+	PUTSTRINGF(p, (const char *)sinfo->password, RAP_SPASSWD_LEN);
 	SCVAL(p,-1,0x0A); /* required 0x0A at end of password */
 
 	if (cli_api(cli,

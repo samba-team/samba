@@ -246,7 +246,7 @@ static int rap_share_add(struct net_context *c, int argc, const char **argv)
 		return net_rap_share_usage(c, argc, argv);
 	}
 	*p = 0;
-	strlcpy(sinfo.share_name, sharename, sizeof(sinfo.share_name));
+	strlcpy((char *)sinfo.share_name, sharename, sizeof(sinfo.share_name));
 	sinfo.reserved1 = '\0';
 	sinfo.share_type = 0;
 	sinfo.comment = smb_xstrdup(c->opt_comment);
@@ -822,7 +822,7 @@ static int rap_user_add(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
-	safe_strcpy(userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
+	safe_strcpy((char *)userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
 	if (c->opt_flags == -1)
                 c->opt_flags = 0x21;
 
@@ -967,7 +967,7 @@ static int rap_group_add(struct net_context *c, int argc, const char **argv)
                 return -1;
 
 	/* BB check for length 21 or smaller explicitly ? BB */
-	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name)-1);
+	safe_strcpy((char *)grinfo.group_name, argv[0], sizeof(grinfo.group_name)-1);
 	grinfo.reserved1 = '\0';
 	grinfo.comment = smb_xstrdup(c->opt_comment ? c->opt_comment : "");
 
