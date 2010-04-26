@@ -4792,7 +4792,8 @@ void map_printer_permissions(struct security_descriptor *sd);
 void map_job_permissions(struct security_descriptor *sd);
 bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type);
-bool print_time_access_check(const char *servicename);
+bool print_time_access_check(struct auth_serversupplied_info *server_info,
+			     const char *servicename);
 char* get_server_name( Printer_entry *printer );
 
 /* The following definitions come from printing/pcap.c  */

@@ -5101,30 +5101,38 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
-bool print_time_access_check(const char *servicename)
+bool print_time_access_check(struct auth_serversupplied_info *server_info,
+			     const char *servicename)
 {
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	WERROR result;
 	bool ok = False;
 	time_t now = time(NULL);
 	struct tm *t;
 	uint32 mins;
 
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
+	result = winreg_get_printer(NULL, server_info,
+				    NULL, servicename, &pinfo2);
+	if (!W_ERROR_IS_OK(result)) {
 		return False;
+	}
 
-	if (printer->info_2->starttime == 0 && printer->info_2->untiltime == 0)
+	if (pinfo2->starttime == 0 && pinfo2->untiltime == 0) {
 		ok = True;
+	}
 
 	t = gmtime(&now);
 	mins = (uint32)t->tm_hour*60 + (uint32)t->tm_min;
 
-	if (mins >= printer->info_2->starttime && mins <= printer->info_2->untiltime)
+	if (mins >= pinfo2->starttime && mins <= pinfo2->untiltime) {
 		ok = True;
+	}
 
-	free_a_printer(&printer, 2);
+	TALLOC_FREE(pinfo2);
 
-	if (!ok)
+	if (!ok) {
 		errno = EACCES;
+	}
 
 	return ok;
 }
