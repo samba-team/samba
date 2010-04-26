@@ -52,12 +52,55 @@ static bool reps_in_list(struct repsFromToBlob *r, struct repsFromToBlob *reps, 
 	return false;
 }
 
+/*
+  make sure we only add repsFrom entries for DCs who are masters for
+  the partition
+ */
+static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
+			   struct ldb_result *res)
+{
+	struct repsFromTo1 *r1;
+	r1 = &r->ctr.ctr1;
+	struct GUID invocation_id = r1->source_dsa_invocation_id;
+	int i, j;
+
+	for (i=0; i<res->count; i++) {
+		struct ldb_message *msg = res->msgs[i];
+		struct ldb_message_element *el;
+		struct ldb_dn *dn;
+
+		struct GUID id2 = samdb_result_guid(msg, "invocationID");
+		if (!GUID_equal(&invocation_id, &id2)) {
+			continue;
+		}
+
+		el = ldb_msg_find_element(msg, "hasMasterNCs");
+		if (!el || el->num_values == 0) {
+			continue;
+		}
+		for (j=0; j<el->num_values; j++) {
+			dn = ldb_dn_from_ldb_val(p, p->service->samdb, &el->values[j]);
+			if (!ldb_dn_validate(dn)) {
+				talloc_free(dn);
+				continue;
+			}
+			if (ldb_dn_compare(dn, p->dn) == 0) {
+				talloc_free(dn);
+				return true;
+			}
+			talloc_free(dn);
+		}
+	}
+	return false;
+}
+
 
 /*
  * add any missing repsFrom structures to our partitions
  */
 static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
-				    struct repsFromToBlob *reps, uint32_t count)
+				    struct repsFromToBlob *reps, uint32_t count,
+				    struct ldb_result *res)
 {
 	struct kccsrv_partition *p;
 
@@ -78,7 +121,8 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 
 		/* add any new ones */
 		for (i=0; i<count; i++) {
-			if (!reps_in_list(&reps[i], old_reps, old_count)) {
+			if (!reps_in_list(&reps[i], old_reps, old_count) &&
+			    check_MasterNC(p, &reps[i], res)) {
 				old_reps = talloc_realloc(mem_ctx, old_reps, struct repsFromToBlob, old_count+1);
 				NT_STATUS_HAVE_NO_MEMORY(old_reps);
 				old_reps[old_count] = reps[i];
@@ -89,7 +133,8 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 
 		/* remove any stale ones */
 		for (i=0; i<old_count; i++) {
-			if (!reps_in_list(&old_reps[i], reps, count)) {
+			if (!reps_in_list(&old_reps[i], reps, count) ||
+			    !check_MasterNC(p, &old_reps[i], res)) {
 				memmove(&old_reps[i], &old_reps[i+1], (old_count-(i+1))*sizeof(old_reps[0]));
 				old_count--;
 				i--;
@@ -121,7 +166,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	struct ldb_result *res;
 	unsigned int i;
 	int ret;
-	const char *attrs[] = { "objectGUID", "invocationID", NULL };
+	const char *attrs[] = { "objectGUID", "invocationID", "hasMasterNCs", NULL };
 	struct repsFromToBlob *reps = NULL;
 	uint32_t count = 0;
 	struct kcc_connection_list *ntds_conn, *dsa_conn;
@@ -181,7 +226,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 
 	kccsrv_apply_connections(s, ntds_conn, dsa_conn);
 
-	return kccsrv_add_repsFrom(s, mem_ctx, reps, count);
+	return kccsrv_add_repsFrom(s, mem_ctx, reps, count, res);
 }
 
 
