@@ -731,6 +731,57 @@ static int rpc_user_rename(struct net_context *c, int argc, const char **argv)
 }
 
 /**
+ * Set a user's primary group
+ *
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
+ *
+ * @return A shell status integer (0 for success).
+ **/
+
+static int rpc_user_setprimarygroup(struct net_context *c, int argc,
+				    const char **argv)
+{
+	NET_API_STATUS status;
+	uint8_t *buffer;
+	struct GROUP_INFO_2 *g2;
+	struct USER_INFO_1051 u1051;
+	uint32_t parm_err = 0;
+
+	if (argc != 2 || c->display_usage) {
+		rpc_user_usage(c, argc, argv);
+		return 0;
+	}
+
+	status = NetGroupGetInfo(c->opt_host, argv[1], 2, &buffer);
+	if (status) {
+		d_fprintf(stderr, _("Failed to find group name %s -- %s\n"),
+			  argv[1],
+			  libnetapi_get_error_string(c->netapi_ctx, status));
+		return status;
+	}
+	g2 = (struct GROUP_INFO_2 *)buffer;
+
+	u1051.usri1051_primary_group_id = g2->grpi2_group_id;
+
+	NetApiBufferFree(buffer);
+
+	status = NetUserSetInfo(c->opt_host, argv[0], 1051,
+				(uint8_t *)&u1051, &parm_err);
+	if (status) {
+		d_fprintf(stderr,
+			  _("Failed to set user's primary group %s to %s - "
+			    "%s\n"), argv[0], argv[1],
+			  libnetapi_get_error_string(c->netapi_ctx, status));
+	} else {
+		d_printf(_("Set primary group of user %s to %s\n"), argv[0],
+			 argv[1]);
+	}
+	return status;
+}
+
+/**
  * Delete a user from a remote RPC server.
  *
  * @param argc  Standard main() style argc.
@@ -977,6 +1028,14 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 			N_("Rename specified user"),
 			N_("net rpc user rename\n"
 			   "    Rename specified user")
+		},
+		{
+			"setprimarygroup",
+			rpc_user_setprimarygroup,
+			NET_TRANSPORT_RPC,
+			"Set a user's primary group",
+			"net rpc user setprimarygroup\n"
+			"    Set a user's primary group"
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
