@@ -1139,6 +1139,16 @@ static int dcesrv_call_dequeue(struct dcesrv_call_state *call)
 	return 0;
 }
 
+_PUBLIC_ const struct tsocket_address *dcesrv_connection_get_local_address(struct dcesrv_connection *conn)
+{
+	return conn->local_address;
+}
+
+_PUBLIC_ const struct tsocket_address *dcesrv_connection_get_remote_address(struct dcesrv_connection *conn)
+{
+	return conn->remote_address;
+}
+
 /*
   process some input to a dcerpc endpoint server.
 */

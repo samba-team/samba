@@ -403,6 +403,9 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 		return;
 	}
 
+	dcesrv_conn->local_address = srv_conn->local_address;
+	dcesrv_conn->remote_address = srv_conn->remote_address;
+
 	srv_conn->private_data = dcesrv_conn;
 
 	irpc_add_name(srv_conn->msg_ctx, "rpc_server");

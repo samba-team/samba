@@ -224,6 +224,9 @@ struct dcesrv_connection {
 
 	struct tstream_context *stream;
 	struct tevent_queue *send_queue;
+
+	const struct tsocket_address *local_address;
+	const struct tsocket_address *remote_address;
 };
 
 
@@ -334,6 +337,8 @@ struct dcesrv_handle *dcesrv_handle_fetch(
 struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx);
 
 struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx);
+const struct tsocket_address *dcesrv_connection_get_local_address(struct dcesrv_connection *conn);
+const struct tsocket_address *dcesrv_connection_get_remote_address(struct dcesrv_connection *conn);
 
 NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p, DATA_BLOB *session_key);
 
