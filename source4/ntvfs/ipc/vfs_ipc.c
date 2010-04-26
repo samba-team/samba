@@ -251,9 +251,7 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	struct tevent_req *subreq;
 	const char *fname;
 	const char *directory;
-	struct socket_address *client_sa;
 	struct tsocket_address *client_addr;
-	struct socket_address *server_sa;
 	struct tsocket_address *server_addr;
 	int ret;
 	DATA_BLOB delegated_creds = data_blob_null;
@@ -316,33 +314,8 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 						   &state->info3);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	client_sa = ntvfs_get_peer_addr(ntvfs, state);
-	if (!client_sa) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	server_sa = ntvfs_get_my_addr(ntvfs, state);
-	if (!server_sa) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	ret = tsocket_address_inet_from_strings(state, "ip",
-						client_sa->addr,
-						client_sa->port,
-						&client_addr);
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		return status;
-	}
-
-	ret = tsocket_address_inet_from_strings(state, "ip",
-						server_sa->addr,
-						server_sa->port,
-						&server_addr);
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		return status;
-	}
+	client_addr = ntvfs_get_local_address(ipriv->ntvfs);
+	server_addr = ntvfs_get_remote_address(ipriv->ntvfs);
 
 	if (req->session_info->credentials) {
 		struct gssapi_creds_container *gcc;
