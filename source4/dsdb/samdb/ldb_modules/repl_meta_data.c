@@ -213,10 +213,9 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	 */
 	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &bl->target_guid, &target_dn);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "Failed to find target DN for linked attribute with GUID %s\n",
-				       GUID_string(bl, &bl->target_guid));
-		talloc_free(tmp_ctx);
-		return ret;
+		DEBUG(2,(__location__ ": WARNING: Failed to find target DN for linked attribute with GUID %s\n",
+			 GUID_string(bl, &bl->target_guid)));
+		return LDB_SUCCESS;
 	}
 
 	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &bl->forward_guid, &source_dn);
@@ -3720,10 +3719,9 @@ linked_attributes[0]:
 	   old DN value */
 	ret = dsdb_module_dn_by_guid(module, dsdb_dn, &guid, &dsdb_dn->dn);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, __location__ ": Failed to re-resolve GUID %s",
-				       GUID_string(tmp_ctx, &guid));
-		talloc_free(tmp_ctx);
-		return ret;
+		DEBUG(2,(__location__ ": WARNING: Failed to re-resolve GUID %s - using %s",
+			 GUID_string(tmp_ctx, &guid),
+			 ldb_dn_get_linearized(dsdb_dn->dn)));
 	}
 
 	/* see if this link already exists */
