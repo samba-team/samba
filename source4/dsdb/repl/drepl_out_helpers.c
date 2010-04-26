@@ -527,7 +527,9 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	   we join the domain, but they quickly expire.  We do it here
 	   so we can use the already established DRSUAPI pipe
 	*/
-	dreplsrv_update_refs_trigger(req);
+	if (state->op->extended_op == DRSUAPI_EXOP_NONE) {
+		dreplsrv_update_refs_trigger(req);
+	}
 }
 
 static void dreplsrv_update_refs_done(struct tevent_req *subreq);
