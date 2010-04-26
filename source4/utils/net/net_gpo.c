@@ -134,8 +134,8 @@ static int net_gpo_get_gpo(struct net_context *ctx, int argc, const char **argv)
 
 static int net_gpo_link_get_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo linkget <dn> [options]\n");
-	d_printf("For a list of available options, please type net gpo linkget --help\n");
+	d_printf("Syntax: net gpo getlink <dn> [options]\n");
+	d_printf("For a list of available options, please type net gpo getlink --help\n");
 	return 0;
 }
 
@@ -274,8 +274,8 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 
 static int net_gpo_link_set_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo linkset <container> <gpo> ['disable'] ['enforce'] [options]\n");
-	d_printf("For a list of available options, please type net gpo linkset --help\n");
+	d_printf("Syntax: net gpo setlink <container> <gpo> ['disable'] ['enforce'] [options]\n");
+	d_printf("For a list of available options, please type net gpo setlink --help\n");
 	return 0;
 }
 
@@ -324,8 +324,8 @@ static int net_gpo_link_set(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_link_del_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo linkdel <container> <gpo> [options]\n");
-	d_printf("For a list of available options, please type net gpo linkdel --help\n");
+	d_printf("Syntax: net gpo dellink <container> <gpo> [options]\n");
+	d_printf("For a list of available options, please type net gpo dellink --help\n");
 	return 0;
 }
 
@@ -358,12 +358,96 @@ static int net_gpo_link_del(struct net_context *ctx, int argc, const char **argv
 	return 0;
 }
 
+static int net_gpo_inheritance_get_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo getinheritance <container> [options]\n");
+	d_printf("For a list of available options, please type net gpo getinheritance --help\n");
+	return 0;
+}
+
+static int net_gpo_inheritance_get(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	enum gpo_inheritance inheritance;
+	NTSTATUS status;
+
+	if (argc != 1) {
+		return net_gpo_inheritance_get_usage(ctx, argc, argv);
+	}
+
+	status = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+
+	status = gp_get_inheritance(gp_ctx, argv[0], &inheritance);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set GPO link on container: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+
+	if (inheritance == GPO_BLOCK_INHERITANCE) {
+		d_printf("container has GPO_BLOCK_INHERITANCE\n");
+	} else {
+		d_printf("container has GPO_INHERIT\n");
+	}
+
+	talloc_free(gp_ctx);
+	return 0;
+}
+
+static int net_gpo_inheritance_set_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo setinheritance <container> <\"block\"|\"inherit\"> [options]\n");
+	d_printf("For a list of available options, please type net gpo setinheritance --help\n");
+	return 0;
+}
+
+static int net_gpo_inheritance_set(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	enum gpo_inheritance inheritance;
+	NTSTATUS status;
+
+	if (argc != 2) {
+		return net_gpo_inheritance_set_usage(ctx, argc, argv);
+	}
+
+	if (strcmp(argv[1], "inherit") == 0) {
+		inheritance = GPO_INHERIT;
+	} else if (strcmp(argv[1], "block") == 0) {
+		inheritance = GPO_BLOCK_INHERITANCE;
+	} else {
+		return net_gpo_inheritance_set_usage(ctx, argc, argv);
+	}
+
+	status = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+
+	status = gp_set_inheritance(gp_ctx, argv[0], inheritance);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set GPO link on container: %s\n", get_friendly_nt_error_msg(status)));
+		return 1;
+	}
+
+	/* Display current links */
+	net_gpo_inheritance_get(ctx, 1, argv);
+
+	return 0;
+}
+
 static const struct net_functable net_gpo_functable[] = {
 	{ "listall", "List all GPO's on a DC\n", net_gpo_list_all, net_gpo_list_all_usage },
 	{ "getgpo", "List specificied GPO\n", net_gpo_get_gpo, net_gpo_get_gpo_usage },
-	{ "linkget", "List gPLink of container\n", net_gpo_link_get, net_gpo_link_get_usage },
-	{ "linkset", "Link a GPO to a container\n", net_gpo_link_set, net_gpo_link_set_usage },
-	{ "linkdel", "Delete GPO link from a container\n", net_gpo_link_del, net_gpo_link_del_usage },
+	{ "getlink", "List gPLink of container\n", net_gpo_link_get, net_gpo_link_get_usage },
+	{ "setlink", "Link a GPO to a container\n", net_gpo_link_set, net_gpo_link_set_usage },
+	{ "dellink", "Delete GPO link from a container\n", net_gpo_link_del, net_gpo_link_del_usage },
+	{ "getinheritance", "Get inheritance flag from a container\n", net_gpo_inheritance_get, net_gpo_inheritance_get_usage },
+	{ "setinheritance", "Set inheritance flag on a container\n", net_gpo_inheritance_set, net_gpo_inheritance_set_usage },
 	{ "list", "List all GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
 /*	{ "apply", "Apply GPO to container\n", net_gpo_apply, net_gpo_usage }, */
 //	{ "refresh", "List all GPO's for machine/user and download them\n", net_gpo_refresh, net_gpo_refresh_usage },

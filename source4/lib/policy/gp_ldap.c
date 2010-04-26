@@ -677,3 +677,64 @@ NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
+
+NTSTATUS gp_get_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance *inheritance)
+{
+	TALLOC_CTX *mem_ctx;
+	struct ldb_result *result;
+	struct ldb_dn *dn;
+	const char *attrs[] = { "gPOptions", NULL };
+	int rv;
+
+	/* Create a forked memory context, as a base for everything here */
+	mem_ctx = talloc_new(gp_ctx);
+
+	dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
+
+	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_BASE, attrs, "(objectclass=*)");
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv), ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (result->count != 1) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	*inheritance = ldb_msg_find_attr_as_uint(result->msgs[0], "gPOptions", 0);
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance inheritance)
+{
+	char *inheritance_string;
+	struct ldb_message *msg;
+	int rv;
+
+	msg = ldb_msg_new(gp_ctx);
+	msg->dn = ldb_dn_new(msg, gp_ctx->ldb_ctx, dn_str);
+
+	inheritance_string = talloc_asprintf(msg, "%d", inheritance);
+
+	rv = ldb_msg_add_string(msg, "gPOptions", inheritance_string);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add string failed: %s\n", ldb_strerror(rv)));
+		talloc_free(msg);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_modify(gp_ctx->ldb_ctx, msg);
+	if (rv != 0) {
+		DEBUG(0, ("LDB modify failed: %s\n", ldb_strerror(rv)));
+		talloc_free(msg);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(msg);
+	return NT_STATUS_OK;
+}

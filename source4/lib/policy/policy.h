@@ -29,6 +29,8 @@
 #define GPO_FLAG_USER_DISABLE		(1 << 0)
 #define GPO_FLAG_MACHINE_DISABLE	(1 << 1)
 
+struct security_token;
+
 enum gpo_inheritance {
 	GPO_INHERIT = 0,
 	GPO_BLOCK_INHERITANCE = 1,
@@ -82,5 +84,7 @@ NTSTATUS gp_get_gpo_flags(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret
 
 NTSTATUS gp_set_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_link *gplink);
 NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char *gp_dn);
+NTSTATUS gp_get_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance *inheritance);
+NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance inheritance);
 
 #endif
