@@ -1713,8 +1713,6 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
 
 	result = delete_printer_handle(p, r->in.handle);
 
-	update_c_setprinter(false);
-
 	return result;
 }
 
@@ -3428,7 +3426,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->last_error			= WERR_OK;
 	r->status			= nt_printq_status(status.status);
 	r->enumerate_network_printers	= 0x0;
-	r->c_setprinter			= get_c_setprinter(); /* monotonically increasing sum of delta printer counts */
+	r->c_setprinter			= 0x0;
 	r->processor_architecture	= 0x0;
 	r->processor_level		= 0x6; 		/* 6  ???*/
 	r->ref_ic			= 0;
@@ -6980,8 +6978,6 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 		ZERO_STRUCTP(handle);
 		return WERR_ACCESS_DENIED;
 	}
-
-	update_c_setprinter(false);
 
 	return WERR_OK;
 }

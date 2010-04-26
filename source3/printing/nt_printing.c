@@ -605,8 +605,6 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 		}
 	}
 
-	update_c_setprinter(True);
-
 	/*
 	 * register callback to handle updating printers as new
 	 * drivers are installed
