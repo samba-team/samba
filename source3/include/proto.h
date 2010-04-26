@@ -5139,8 +5139,6 @@ void reset_all_printerdata(struct messaging_context *msg,
 WERROR set_printer_dataex(NT_PRINTER_INFO_LEVEL *printer,
 			  const char *key, const char *value,
 			  uint32_t type, uint8_t *data, int real_len);
-struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
-					      const char *servicename);
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 		      struct spoolss_SetPrinterInfo2 *info2);
 

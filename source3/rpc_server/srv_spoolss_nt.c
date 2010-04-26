@@ -3455,36 +3455,6 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 }
 
 
-/****************************************************************************
- Create a spoolss_DeviceMode struct. Returns talloced memory.
-****************************************************************************/
-
-struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
-					      const char *servicename)
-{
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	struct spoolss_DeviceMode *devmode = NULL;
-
-	DEBUG(7,("construct_dev_mode\n"));
-
-	DEBUGADD(8,("getting printer characteristics\n"));
-
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
-		return NULL;
-
-	if (!printer->info_2->devmode) {
-		DEBUG(5, ("BONG! There was no device mode!\n"));
-		goto done;
-	}
-
-        devmode = talloc_steal(mem_ctx, printer->info_2->devmode);
-
-done:
-	free_a_printer(&printer,2);
-
-	return devmode;
-}
-
 /********************************************************************
  * construct_printer_info1
  * fill a spoolss_PrinterInfo1 struct
@@ -6062,6 +6032,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 			      union spoolss_JobInfo **info_p,
 			      uint32_t *count)
 {
+	struct spoolss_DeviceMode *devmode;
 	union spoolss_JobInfo *info;
 	int i;
 	WERROR result = WERR_OK;
@@ -6073,11 +6044,17 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<*count; i++) {
 
-		struct spoolss_DeviceMode *devmode;
-
-		devmode = construct_dev_mode(info, lp_const_servicename(snum));
-		if (!devmode) {
-			result = WERR_NOMEM;
+		if (!pinfo2->devmode) {
+			result = spoolss_create_default_devmode(info,
+							pinfo2->printername,
+							&devmode);
+		} else {
+			result = copy_devicemode(info,
+						 pinfo2->devmode,
+						 &devmode);
+		}
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(3, ("Can't proceed w/o a devmode!"));
 			goto out;
 		}
 
@@ -8107,6 +8084,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	int i = 0;
 	bool found = false;
 	struct spoolss_DeviceMode *devmode;
+	WERROR result;
 
 	for (i=0; i<count; i++) {
 		if (queue[i].job == (int)jobid) {
@@ -8129,8 +8107,13 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 
 	devmode = print_job_devmode(lp_const_servicename(snum), jobid);
 	if (!devmode) {
-		devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
-		W_ERROR_HAVE_NO_MEMORY(devmode);
+		result = spoolss_create_default_devmode(mem_ctx,
+						pinfo2->printername,
+						&devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(3, ("Can't proceed w/o a devmode!"));
+			return result;
+		}
 	}
 
 	return fill_job_info2(mem_ctx,
