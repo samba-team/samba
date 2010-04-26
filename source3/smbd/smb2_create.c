@@ -981,6 +981,15 @@ void schedule_deferred_open_message_smb2(uint64_t mid)
 	/* Ensure we don't have any outstanding timer event. */
 	TALLOC_FREE(state->te);
 
+	/*
+	 * This is subtle. We must null out the callback
+	 * before resheduling, else the first call to
+	 * tevent_req_nterror() causes the _receive()
+	 * function to be called, this causing tevent_req_post()
+	 * to crash.
+	 */
+	tevent_req_set_callback(smb2req->subreq, NULL, NULL);
+
 	im = tevent_create_immediate(smb2req);
 	if (!im) {
 		smbd_server_connection_terminate(smb2req->sconn,
