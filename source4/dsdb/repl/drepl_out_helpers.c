@@ -272,7 +272,8 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 	struct tevent_req *subreq;
 
-	if ((rf1->replica_flags & DRSUAPI_DRS_WRIT_REP) == 0) {
+	if ((rf1->replica_flags & DRSUAPI_DRS_WRIT_REP) == 0 &&
+	    state->op->extended_op == DRSUAPI_EXOP_NONE) {
 		return;
 	}
 
