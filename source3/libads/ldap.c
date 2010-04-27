@@ -265,7 +265,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 		ads->config.client_site_name =
 			SMB_STRDUP(cldap_reply.client_site);
 	}
-	ads->server.workgroup          = SMB_STRDUP(cldap_reply.domain);
+	ads->server.workgroup          = SMB_STRDUP(cldap_reply.domain_name);
 
 	ads->ldap.port = gc ? LDAP_GC_PORT : LDAP_PORT;
 	if (!interpret_string_addr(&ads->ldap.ss, srv, 0)) {
@@ -277,7 +277,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 	}
 
 	/* Store our site name. */
-	sitename_store( cldap_reply.domain, cldap_reply.client_site);
+	sitename_store( cldap_reply.domain_name, cldap_reply.client_site);
 	sitename_store( cldap_reply.dns_domain, cldap_reply.client_site);
 
 	ret = true;
