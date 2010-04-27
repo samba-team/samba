@@ -1,0 +1,27 @@
+# this is a list of servicePrincipalName entries
+# that we need to add on our account. It is processed by
+# the samba_spnupdate script
+
+ldap/${HOSTNAME}/${DNSDOMAIN}
+ldap/${HOSTNAME}
+ldap/${NETBIOSNAME}
+ldap/${HOSTNAME}/${WORKGROUP}
+ldap/${NTDSGUID}._msdcs.${DNSDOMAIN}
+ldap/${NETBIOSNAME}/${WORKGROUP}
+E3514235-4B06-11D1-AB04-00C04FC2DCD2/${NTDSGUID}/${DNSDOMAIN}
+HOST/${HOSTNAME}/${DNSDOMAIN}
+HOST/${HOSTNAME}
+HOST/${NETBIOSNAME}
+HOST/${HOSTNAME}/${WORKGROUP}
+HOST/${NETBIOSNAME}/${WORKGROUP}
+RestrictedKrbHost/${NETBIOSNAME}
+RestrictedKrbHost/${HOSTNAME}
+GC/${HOSTNAME}/${DNSDOMAIN}
+DNS/${HOSTNAME}
+
+# these are not supported yet
+# Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/${HOSTNAME}
+# TERMSRV/${HOSTNAME}
+# TERMSRV/${NETBIOSNAME}
+# ldap/${HOSTNAME}/DomainDnsZones.${DNSDOMAIN}
+# ldap/${HOSTNAME}/ForestDnsZones.${DNSDOMAIN}
