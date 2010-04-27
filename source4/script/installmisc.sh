@@ -80,6 +80,7 @@ cp setup/provision.smb.conf.dc $SETUPDIR || exit 1
 cp setup/provision.smb.conf.member $SETUPDIR || exit 1
 cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
 cp setup/dns_update_list $SETUPDIR || exit 1
+cp setup/spn_update_list $SETUPDIR || exit 1
 
 echo "Installing external python libraries"
 mkdir -p $DESTDIR$PYTHONDIR || exit 1
