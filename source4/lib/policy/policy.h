@@ -20,7 +20,7 @@
 
 #ifndef __GPO_H__
 #define __GPO_H__
-
+#include "libcli/libcli.h"
 
 #define GPLINK_OPT_DISABLE		(1 << 0)
 #define GPLINK_OPT_ENFORCE		(1 << 1)
@@ -41,6 +41,8 @@ struct gp_context {
 	struct loadparm_context *lp_ctx;
 	struct cli_credentials *credentials;
 	struct tevent_context *ev_ctx;
+	struct smbcli_state *cli;
+	struct nbt_dc_name active_dc;
 };
 
 struct gp_object {
@@ -70,6 +72,8 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 				struct cli_credentials *creds,
 				struct tevent_context *ev_ctx,
 				struct gp_context **gp_ctx);
+
+/* LDAP functions */
 NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret);
 NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp_link ***ret);
 NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, const char ***ret);
@@ -86,5 +90,8 @@ NTSTATUS gp_set_gplink(struct gp_context *gp_ctx, const char *dn_str, struct gp_
 NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char *gp_dn);
 NTSTATUS gp_get_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance *inheritance);
 NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance inheritance);
+
+/* File system functions */
+NTSTATUS gp_fetch_gpo (struct gp_context *gp_ctx, struct gp_object *gpo, const char **path);
 
 #endif

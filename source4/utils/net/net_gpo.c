@@ -440,6 +440,35 @@ static int net_gpo_inheritance_set(struct net_context *ctx, int argc, const char
 	return 0;
 }
 
+static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	struct gp_object *gpo;
+	const char *path;
+	NTSTATUS rv;
+
+	rv = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+
+	rv = gp_get_gpo_info(gp_ctx, argv[0], &gpo);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to get GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+
+	rv = gp_fetch_gpo(gp_ctx, gpo, &path);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to fetch GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+	d_printf("%s\n", path);
+
+	return 0;
+}
+
 static const struct net_functable net_gpo_functable[] = {
 	{ "listall", "List all GPO's on a DC\n", net_gpo_list_all, net_gpo_list_all_usage },
 	{ "getgpo", "List specificied GPO\n", net_gpo_get_gpo, net_gpo_get_gpo_usage },
@@ -449,6 +478,7 @@ static const struct net_functable net_gpo_functable[] = {
 	{ "getinheritance", "Get inheritance flag from a container\n", net_gpo_inheritance_get, net_gpo_inheritance_get_usage },
 	{ "setinheritance", "Set inheritance flag on a container\n", net_gpo_inheritance_set, net_gpo_inheritance_set_usage },
 	{ "list", "List all GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
+	{ "fetch", "Download a GPO\n", net_gpo_fetch, net_gpo_usage },
 /*	{ "apply", "Apply GPO to container\n", net_gpo_apply, net_gpo_usage }, */
 //	{ "refresh", "List all GPO's for machine/user and download them\n", net_gpo_refresh, net_gpo_refresh_usage },
 	{ NULL, NULL }
