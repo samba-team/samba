@@ -453,6 +453,15 @@ WERROR reg_create_key(TALLOC_CTX *mem_ctx,
 
 /* Utility functions */
 const char *str_regtype(int type);
+bool push_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		 DATA_BLOB *blob, const char *s);
+bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		       DATA_BLOB *blob, const char **a);
+bool pull_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		 const DATA_BLOB *blob, const char **s);
+bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+		       const DATA_BLOB *blob, const char ***a);
+int regtype_by_string(const char *str);
 char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t type, const DATA_BLOB data);
 char *reg_val_description(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const char *name,
 			  uint32_t type, const DATA_BLOB data);

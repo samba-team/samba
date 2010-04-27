@@ -30,7 +30,8 @@ registry_SOVERSION = 0
 
 registry_OBJ_FILES = $(addprefix $(libregistrysrcdir)/, interface.o util.o samba.o \
 					patchfile_dotreg.o patchfile_preg.o patchfile.o regf.o \
-					hive.o local.o ldb.o dir.o rpc.o)
+					hive.o local.o ldb.o dir.o rpc.o) \
+					../libcli/registry/util_reg.o
 
 PUBLIC_HEADERS += $(libregistrysrcdir)/registry.h
 

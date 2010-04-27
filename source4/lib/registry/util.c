@@ -21,43 +21,6 @@
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
 
-/**
- * @file
- * @brief Registry utility functions
- */
-
-static const struct {
-	uint32_t id;
-	const char *name;
-} reg_value_types[] = {
-	{ REG_NONE, "REG_NONE" },
-	{ REG_SZ, "REG_SZ" },
-	{ REG_EXPAND_SZ, "REG_EXPAND_SZ" },
-	{ REG_BINARY, "REG_BINARY" },
-	{ REG_DWORD, "REG_DWORD" },
-	{ REG_DWORD_BIG_ENDIAN, "REG_DWORD_BIG_ENDIAN" },
-	{ REG_LINK, "REG_LINK" },
-	{ REG_MULTI_SZ, "REG_MULTI_SZ" },
-	{ REG_RESOURCE_LIST, "REG_RESOURCE_LIST" },
-	{ REG_FULL_RESOURCE_DESCRIPTOR, "REG_FULL_RESOURCE_DESCRIPTOR" },
-	{ REG_RESOURCE_REQUIREMENTS_LIST, "REG_RESOURCE_REQUIREMENTS_LIST" },
-	{ REG_QWORD, "REG_QWORD" },
-
-	{ 0, NULL }
-};
-
-/** Return string description of registry value type */
-_PUBLIC_ const char *str_regtype(int type)
-{
-	unsigned int i;
-	for (i = 0; reg_value_types[i].name; i++) {
-		if (reg_value_types[i].id == type)
-			return reg_value_types[i].name;
-	}
-
-	return "Unknown";
-}
-
 _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, 
 				   struct smb_iconv_convenience *iconv_convenience,
 				   uint32_t type,
@@ -126,16 +89,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 				const char *data_str, uint32_t *type,
 				DATA_BLOB *data)
 {
-	unsigned int i;
-	*type = -1;
-
-	/* Find the correct type */
-	for (i = 0; reg_value_types[i].name; i++) {
-		if (!strcmp(reg_value_types[i].name, type_str)) {
-			*type = reg_value_types[i].id;
-			break;
-		}
-	}
+	*type = regtype_by_string(type_str);
 
 	if (*type == -1)
 		return false;
