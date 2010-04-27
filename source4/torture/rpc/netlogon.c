@@ -2479,11 +2479,11 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 	addrs[2].buffer[0] = AF_UNIX;
 
 	addrs[3].size = 10;
-	addrs[3].buffer[0] = AF_FILE;
+	addrs[3].buffer[0] = 250;
 	addrs[4].size = 10;
-	addrs[4].buffer[0] = AF_AX25;
+	addrs[4].buffer[0] = 251;
 	addrs[5].size = 10;
-	addrs[5].buffer[0] = AF_IPX;
+	addrs[5].buffer[0] = 252;
 
 	status = dcerpc_netr_DsRAddressToSitenamesW_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "failed");
@@ -2632,11 +2632,11 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	addrs[2].buffer[0] = AF_UNIX;
 
 	addrs[3].size = 10;
-	addrs[3].buffer[0] = AF_FILE;
+	addrs[3].buffer[0] = 250;
 	addrs[4].size = 10;
-	addrs[4].buffer[0] = AF_AX25;
+	addrs[4].buffer[0] = 251;
 	addrs[5].size = 10;
-	addrs[5].buffer[0] = AF_IPX;
+	addrs[5].buffer[0] = 252;
 
 	status = dcerpc_netr_DsRAddressToSitenamesExW_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "failed");
