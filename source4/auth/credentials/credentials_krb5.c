@@ -423,7 +423,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		} else {
 			ret = EINVAL;
 		}
-		(*error_string) = error_message(ENOMEM);
+		(*error_string) = talloc_asprintf(cred, "gss_krb5_import_cred failed: %s", error_message(ret));
 		return ret;
 	}
 
@@ -455,7 +455,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 			} else {
 				ret = EINVAL;
 			}
-			(*error_string) = error_message(ENOMEM);
+			(*error_string) = talloc_asprintf(cred, "gss_krb5_set_allowable_enctypes failed: %s", error_message(ret));
 			return ret;
 		}
 	}
@@ -471,7 +471,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		} else {
 			ret = EINVAL;
 		}
-		(*error_string) = error_message(ENOMEM);
+		(*error_string) = talloc_asprintf(cred, "gss_set_cred_option failed: %s", error_message(ret));
 		return ret;
 	}
 
