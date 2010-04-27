@@ -16,5 +16,5 @@ sudo rndc reconfig
 REALM="$(echo $DNSDOMAIN | tr '[a-z]' '[A-Z]')"
 
 sudo $GDB bin/net vampire $DNSDOMAIN -Uadministrator%$pass -s $PREFIX/etc/smb.conf --option=realm=$REALM --option="ads:dc function level=4" --option="ads:min function level=0" -d2 "$@" || exit 1
-PRIVATEDIR=$PREFIX/private sudo -E scripting/bin/setup_dns.sh $machine $DNSDOMAIN $machine_ip || exit 1
-sudo rndc flush
+# PRIVATEDIR=$PREFIX/private sudo -E scripting/bin/setup_dns.sh $machine $DNSDOMAIN $machine_ip || exit 1
+#sudo rndc flush
