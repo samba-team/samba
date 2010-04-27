@@ -133,24 +133,6 @@ static void dcesrv_sock_reply_done(struct tevent_req *subreq)
 	}
 }
 
-static struct socket_address *dcesrv_sock_get_my_addr(struct dcesrv_connection *dcesrv_conn, TALLOC_CTX *mem_ctx)
-{
-	struct stream_connection *srv_conn;
-	srv_conn = talloc_get_type(dcesrv_conn->transport.private_data,
-				   struct stream_connection);
-
-	return socket_get_my_addr(srv_conn->socket, mem_ctx);
-}
-
-static struct socket_address *dcesrv_sock_get_peer_addr(struct dcesrv_connection *dcesrv_conn, TALLOC_CTX *mem_ctx)
-{
-	struct stream_connection *srv_conn;
-	srv_conn = talloc_get_type(dcesrv_conn->transport.private_data,
-				   struct stream_connection);
-
-	return socket_get_peer_addr(srv_conn->socket, mem_ctx);
-}
-
 struct dcerpc_read_ncacn_packet_state {
 	struct {
 		struct smb_iconv_convenience *smb_iconv_c;
