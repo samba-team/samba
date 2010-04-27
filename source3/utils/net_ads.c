@@ -103,7 +103,7 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 	printf(_("Domain:\t\t\t%s\n"), reply.dns_domain);
 	printf(_("Domain Controller:\t%s\n"), reply.pdc_dns_name);
 
-	printf(_("Pre-Win2k Domain:\t%s\n"), reply.domain);
+	printf(_("Pre-Win2k Domain:\t%s\n"), reply.domain_name);
 	printf(_("Pre-Win2k Hostname:\t%s\n"), reply.pdc_name);
 
 	if (*reply.user_name) printf(_("User name:\t%s\n"), reply.user_name);
@@ -401,7 +401,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf(_("Workgroup: %s\n"), reply.domain);
+	d_printf(_("Workgroup: %s\n"), reply.domain_name);
 
 	ads_destroy(&ads);
 
