@@ -4445,7 +4445,7 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 					rpc_spoolss_dispatch, conn->server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("api_RDosPrintJobDel: could not connect to spoolss: %s\n",
+		DEBUG(0,("api_WPrintJobEnumerate: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
