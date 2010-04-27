@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/socket/socket.h"
+#include "lib/tsocket/tsocket.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "libcli/wrepl/winsrepl.h"
@@ -429,12 +429,23 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 	}
 
 	if (!call->wreplconn->partner) {
-		struct socket_address *partner_ip = socket_get_peer_addr(call->wreplconn->conn->socket, call);
+		struct tsocket_address *peer_addr = call->wreplconn->conn->remote_address;
+		char *peer_ip;
 
-		call->wreplconn->partner = wreplsrv_find_partner(call->wreplconn->service, partner_ip->addr);
+		if (!tsocket_address_is_inet(peer_addr, "ipv4")) {
+			DEBUG(0,("wreplsrv_in_replication: non ipv4 peer addr '%s'\n",
+				tsocket_address_string(peer_addr, call)));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		peer_ip = tsocket_address_inet_addr_string(peer_addr, call);
+		if (peer_ip == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		call->wreplconn->partner = wreplsrv_find_partner(call->wreplconn->service, peer_ip);
 		if (!call->wreplconn->partner) {
-			DEBUG(1,("Failing WINS replication from non-partner %s\n",
-				 partner_ip ? partner_ip->addr : NULL));
+			DEBUG(1,("Failing WINS replication from non-partner %s\n", peer_ip));
 			return wreplsrv_in_stop_assoc_ctx(call);
 		}
 	}
