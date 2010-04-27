@@ -213,6 +213,8 @@ struct dreplsrv_service {
 		bool in_progress;
 		struct dreplsrv_partition_source_dsa *rid_manager_source_dsa;
 	} ridalloc;
+
+	bool syncall_workaround;
 };
 
 #include "dsdb/repl/drepl_out_helpers.h"

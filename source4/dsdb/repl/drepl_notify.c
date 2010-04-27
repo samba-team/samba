@@ -120,12 +120,20 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 		DRSUAPI_DRS_ASYNC_OP |
 		DRSUAPI_DRS_UPDATE_NOTIFICATION |
 		DRSUAPI_DRS_WRIT_REP;
+	if (state->op->service->syncall_workaround) {
+		DEBUG(3,("sending DsReplicaSync with SYNC_ALL workaround\n"));
+		r->in.req->req1.options |= DRSUAPI_DRS_SYNC_ALL;
+	}
 
 	if (state->op->is_urgent) {
 		r->in.req->req1.options |= DRSUAPI_DRS_SYNC_URGENT;
 	}
 
 	state->ndr_struct_ptr = r;
+
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaSync, r);
+	}
 
 	subreq = dcerpc_drsuapi_DsReplicaSync_r_send(state,
 						     state->ev,
@@ -185,10 +193,17 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 	status = dreplsrv_op_notify_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s\n",
+		WERROR werr;
+		werr = ntstatus_to_werror(status);
+
+		DEBUG(0,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name,
 			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
-			 nt_errstr(status)));
+			 nt_errstr(status), win_errstr(werr)));
+		if (W_ERROR_EQUAL(werr, WERR_DS_DRA_NO_REPLICA)) {
+			DEBUG(0,("Enabling SYNC_ALL workaround\n"));
+			op->service->syncall_workaround = true;
+		}
 	} else {
 		DEBUG(2,("dreplsrv_notify: DsReplicaSync OK for %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name));
