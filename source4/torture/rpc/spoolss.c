@@ -3182,6 +3182,10 @@ static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 
 	for (i=0; i < num_jobs; i++) {
 		union spoolss_JobInfo ginfo;
+		const char *document_name;
+		const char *new_document_name = "any_other_docname";
+		struct spoolss_JobInfoContainer ctr;
+		struct spoolss_SetJobInfo1 info1;
 
 		torture_assert_int_equal(tctx, info[i].info1.job_id, job_ids[i], "job id mismatch");
 
@@ -3190,6 +3194,39 @@ static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 			"failed to call test_GetJob");
 
 		torture_assert_int_equal(tctx, ginfo.info1.job_id, info[i].info1.job_id, "job id mismatch");
+
+		document_name = ginfo.info1.document_name;
+
+		info1.job_id		= ginfo.info1.job_id;
+		info1.printer_name	= ginfo.info1.printer_name;
+		info1.server_name	= ginfo.info1.server_name;
+		info1.user_name		= ginfo.info1.user_name;
+		info1.document_name	= new_document_name;
+		info1.data_type		= ginfo.info1.data_type;
+		info1.text_status	= ginfo.info1.text_status;
+		info1.status		= ginfo.info1.status;
+		info1.priority		= ginfo.info1.priority;
+		info1.position		= ginfo.info1.position;
+		info1.total_pages	= ginfo.info1.total_pages;
+		info1.pages_printed	= ginfo.info1.pages_printed;
+		info1.submitted		= ginfo.info1.submitted;
+
+		ctr.level = 1;
+		ctr.info.info1 = &info1;
+
+		torture_assert(tctx,
+			test_SetJob(tctx, b, handle, info[i].info1.job_id, &ctr, 0),
+			"failed to call test_SetJob level 1");
+
+		torture_assert(tctx,
+			test_GetJob_args(tctx, b, handle, info[i].info1.job_id, 1, &ginfo),
+			"failed to call test_GetJob");
+
+		if (strequal(ginfo.info1.document_name, document_name)) {
+			torture_warning(tctx,
+				talloc_asprintf(tctx, "document_name did *NOT* change from '%s' to '%s'\n",
+					document_name, new_document_name));
+		}
 	}
 
 	for (i=0; i < num_jobs; i++) {
