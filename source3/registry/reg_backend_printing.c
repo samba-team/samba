@@ -906,6 +906,7 @@ static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 	regval_ctr_addvalue_sz(values, "Help File", filename);
 
 	regval_ctr_addvalue_sz(values, "Datatype", r->default_datatype);
+	regval_ctr_addvalue_sz(values, "Monitor", r->monitor_name);
 
 	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&r->version,
 		sizeof(r->version) );
