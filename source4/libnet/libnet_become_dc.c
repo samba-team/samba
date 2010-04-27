@@ -822,6 +822,10 @@ static void becomeDC_recv_cldap(struct tevent_req *req)
 
 	s->dest_dsa.site_name		= s->cldap.netlogon.client_site;
 
+	DEBUG(0,("CLDAP response: forest=%s dns=%s netbios=%s server_site=%s  client_site=%s\n",
+		 s->forest.dns_name, s->domain.dns_name, s->domain.netbios_name,
+		 s->source_dsa.site_name, s->dest_dsa.site_name));
+
 	becomeDC_connect_ldap1(s);
 }
 
