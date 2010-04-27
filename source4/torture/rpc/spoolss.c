@@ -2954,7 +2954,9 @@ static bool test_GetJob(struct torture_context *tctx,
 
 static bool test_SetJob(struct torture_context *tctx,
 			struct dcerpc_binding_handle *b,
-			struct policy_handle *handle, uint32_t job_id,
+			struct policy_handle *handle,
+			uint32_t job_id,
+			struct spoolss_JobInfoContainer *ctr,
 			enum spoolss_JobControl command)
 {
 	NTSTATUS status;
@@ -2962,7 +2964,7 @@ static bool test_SetJob(struct torture_context *tctx,
 
 	r.in.handle	= handle;
 	r.in.job_id	= job_id;
-	r.in.ctr	= NULL;
+	r.in.ctr	= ctr;
 	r.in.command	= command;
 
 	switch (command) {
@@ -3191,10 +3193,10 @@ static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 	}
 
 	for (i=0; i < num_jobs; i++) {
-		if (!test_SetJob(tctx, b, handle, info[i].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE)) {
+		if (!test_SetJob(tctx, b, handle, info[i].info1.job_id, NULL, SPOOLSS_JOB_CONTROL_PAUSE)) {
 			torture_warning(tctx, "failed to pause printjob\n");
 		}
-		if (!test_SetJob(tctx, b, handle, info[i].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME)) {
+		if (!test_SetJob(tctx, b, handle, info[i].info1.job_id, NULL, SPOOLSS_JOB_CONTROL_RESUME)) {
 			torture_warning(tctx, "failed to resume printjob\n");
 		}
 	}
@@ -3220,7 +3222,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	ret &= test_DoPrintTest_check_jobs(tctx, b, handle, num_jobs, job_ids);
 
 	for (i=0; i < num_jobs; i++) {
-		ret &= test_SetJob(tctx, b, handle, job_ids[i], SPOOLSS_JOB_CONTROL_DELETE);
+		ret &= test_SetJob(tctx, b, handle, job_ids[i], NULL, SPOOLSS_JOB_CONTROL_DELETE);
 	}
 
 	return ret;
