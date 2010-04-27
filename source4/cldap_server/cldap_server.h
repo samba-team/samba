@@ -43,6 +43,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
                                          const char *src_address,
                                          uint32_t version,
                                          struct loadparm_context *lp_ctx,
-                                         struct netlogon_samlogon_response *netlogon);
+                                         struct netlogon_samlogon_response *netlogon,
+					 bool fill_on_blank_request);
 
 #include "cldap_server/proto.h"

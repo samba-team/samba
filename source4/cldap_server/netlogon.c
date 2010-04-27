@@ -51,7 +51,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 const char *src_address,
 					 uint32_t version,
 					 struct loadparm_context *lp_ctx,
-					 struct netlogon_samlogon_response *netlogon)
+					 struct netlogon_samlogon_response *netlogon,
+					 bool fill_on_blank_request)
 {
 	const char *dom_attrs[] = {"objectGUID", NULL};
 	const char *none_attrs[] = {NULL};
@@ -170,8 +171,24 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 	}
 
-	if (dom_res == NULL) {
-		DEBUG(2,("Unable to get domain informations if no parameter of the list [long domainname, short domainname, GUID, SID] was specified!\n"));
+	if (dom_res == NULL && fill_on_blank_request) {
+		/* blank inputs gives our domain - tested against
+		   w2k8r2. Without this ADUC on Win7 won't start */
+		domain_dn = ldb_get_default_basedn(sam_ctx);
+		ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
+				 domain_dn, LDB_SCOPE_BASE, dom_attrs,
+				 "objectClass=domain");
+		if (ret != LDB_SUCCESS) {
+			DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n",
+				 lp_dnsdomain(lp_ctx),
+				 ldb_dn_get_linearized(domain_dn),
+				 ldb_errstring(sam_ctx)));
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		}
+	}
+
+        if (dom_res == NULL) {
+		DEBUG(2,(__location__ ": Unable to get domain informations with no inputs\n"));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
@@ -437,7 +454,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx, domain, NULL, NULL, domain_guid,
 						 user, acct_control,
 						 tsocket_address_inet_addr_string(src, tmp_ctx),
-						 version, cldapd->task->lp_ctx, &netlogon);
+						 version, cldapd->task->lp_ctx, &netlogon, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

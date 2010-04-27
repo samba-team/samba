@@ -2271,6 +2271,15 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	struct netr_DsRGetDCNameInfo *info = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 with no inputs\n");
+	ZERO_STRUCT(r.in);
+	r.in.flags		= DS_RETURN_DNS_NAME;
+	r.out.info		= &info;
+
+	status = dcerpc_netr_DsRGetDCNameEx2_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
+	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
+
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;

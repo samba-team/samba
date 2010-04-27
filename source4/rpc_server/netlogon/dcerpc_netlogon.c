@@ -1568,7 +1568,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 						 r->in.client_account,
 						 r->in.mask, addr,
 						 NETLOGON_NT_VERSION_5EX_WITH_IP,
-						 lp_ctx, &response);
+						 lp_ctx, &response, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
