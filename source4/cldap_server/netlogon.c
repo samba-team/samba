@@ -310,17 +310,15 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		} else {
 			netlogon->data.nt5_ex.command      = LOGON_SAM_LOGON_USER_UNKNOWN_EX;
 		}
-		netlogon->data.nt5_ex.server_type  = server_type;
+		netlogon->data.nt5_ex.pdc_name     = pdc_name;
+		netlogon->data.nt5_ex.user_name    = user;
+		netlogon->data.nt5_ex.domain       = flatname;
 		netlogon->data.nt5_ex.domain_uuid  = domain_uuid;
 		netlogon->data.nt5_ex.forest       = forest_domain;
 		netlogon->data.nt5_ex.dns_domain   = dns_domain;
 		netlogon->data.nt5_ex.pdc_dns_name = pdc_dns_name;
-		netlogon->data.nt5_ex.domain       = flatname;
-		netlogon->data.nt5_ex.pdc_name     = lp_netbios_name(lp_ctx);
-		netlogon->data.nt5_ex.user_name    = user;
 		netlogon->data.nt5_ex.server_site  = server_site;
 		netlogon->data.nt5_ex.client_site  = client_site;
-
 		if (version & NETLOGON_NT_VERSION_5EX_WITH_IP) {
 			/* Clearly this needs to be fixed up for IPv6 */
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
@@ -328,6 +326,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			netlogon->data.nt5_ex.sockaddr.pdc_ip       = pdc_ip;
 			netlogon->data.nt5_ex.sockaddr.remaining = data_blob_talloc_zero(mem_ctx, 8);
 		}
+		netlogon->data.nt5_ex.server_type  = server_type;
 		netlogon->data.nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5EX|extra_flags;
 		netlogon->data.nt5_ex.lmnt_token   = 0xFFFF;
 		netlogon->data.nt5_ex.lm20_token   = 0xFFFF;
