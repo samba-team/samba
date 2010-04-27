@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 O755 = 493
-bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate',
+bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate bin/samba_spnupdate',
                   chmod=O755, python_fixup=True, flat=True)
 
 
