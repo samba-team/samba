@@ -6872,14 +6872,17 @@ static bool test_AddPrinterDriver_args_level_3(struct torture_context *tctx,
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo3 info3;
 
-	ZERO_STRUCT(info3);
-
 	info3.driver_name	= r->driver_name;
 	info3.version		= r->version;
 	info3.architecture	= r->architecture;
 	info3.driver_path	= r->driver_path;
 	info3.data_file		= r->data_file;
 	info3.config_file	= r->config_file;
+	info3.help_file		= r->help_file;
+	info3.monitor_name	= r->monitor_name;
+	info3.default_datatype	= r->default_datatype;
+	info3._ndr_size_dependent_files = r->_ndr_size_dependent_files;
+	info3.dependent_files	= r->dependent_files;
 
 	info_ctr.level = 3;
 	info_ctr.info.info3 = &info3;
@@ -6911,14 +6914,19 @@ static bool test_AddPrinterDriver_args_level_4(struct torture_context *tctx,
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo4 info4;
 
-	ZERO_STRUCT(info4);
-
-	info4.driver_name	= r->driver_name;
 	info4.version		= r->version;
+	info4.driver_name	= r->driver_name;
 	info4.architecture	= r->architecture;
 	info4.driver_path	= r->driver_path;
 	info4.data_file		= r->data_file;
 	info4.config_file	= r->config_file;
+	info4.help_file		= r->help_file;
+	info4.monitor_name	= r->monitor_name;
+	info4.default_datatype	= r->default_datatype;
+	info4._ndr_size_dependent_files = r->_ndr_size_dependent_files;
+	info4.dependent_files	= r->dependent_files;
+	info4._ndr_size_previous_names = r->_ndr_size_previous_names;
+	info4.previous_names = r->previous_names;
 
 	info_ctr.level = 4;
 	info_ctr.info.info4 = &info4;
@@ -6950,14 +6958,25 @@ static bool test_AddPrinterDriver_args_level_6(struct torture_context *tctx,
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo6 info6;
 
-	ZERO_STRUCT(info6);
-
-	info6.driver_name	= r->driver_name;
 	info6.version		= r->version;
+	info6.driver_name	= r->driver_name;
 	info6.architecture	= r->architecture;
 	info6.driver_path	= r->driver_path;
 	info6.data_file		= r->data_file;
 	info6.config_file	= r->config_file;
+	info6.help_file		= r->help_file;
+	info6.monitor_name	= r->monitor_name;
+	info6.default_datatype	= r->default_datatype;
+	info6._ndr_size_dependent_files = r->_ndr_size_dependent_files;
+	info6.dependent_files	= r->dependent_files;
+	info6._ndr_size_previous_names = r->_ndr_size_previous_names;
+	info6.previous_names	= r->previous_names;
+	info6.driver_date	= r->driver_date;
+	info6.driver_version	= r->driver_version;
+	info6.manufacturer_name	= r->manufacturer_name;
+	info6.manufacturer_url	= r->manufacturer_url;
+	info6.hardware_id	= r->hardware_id;
+	info6.provider		= r->provider;
 
 	info_ctr.level = 6;
 	info_ctr.info.info6 = &info6;
@@ -6993,19 +7012,9 @@ static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
 					       bool ex)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
-	struct spoolss_AddDriverInfo8 info8;
-
-	ZERO_STRUCT(info8);
-
-	info8.driver_name	= r->driver_name;
-	info8.version		= r->version;
-	info8.architecture	= r->architecture;
-	info8.driver_path	= r->driver_path;
-	info8.data_file		= r->data_file;
-	info8.config_file	= r->config_file;
 
 	info_ctr.level = 8;
-	info_ctr.info.info8 = &info8;
+	info_ctr.info.info8 = r;
 
 	if (ex) {
 		torture_assert(tctx,
