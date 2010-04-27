@@ -86,7 +86,7 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 		mkdir(full_local_path, 0755);
 
 		/* If the relative path is empty, then avoid the extra backslash */
-		if (state->cur_rel_path[0] != '\0') {
+		if (state->cur_rel_path[0] == '\0') {
 			rel_path = info->name;
 		} else {
 			rel_path = talloc_asprintf(state, "%s\\%s", state->cur_rel_path, info->name);
