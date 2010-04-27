@@ -150,7 +150,7 @@ def check_dns_name(d):
         
         for line in dns_file:
             line = line.strip()
-            if line[0] == "#":
+            if line == '' or line[0] == "#":
                 continue
             if line.lower() == str(d).lower():
                 return True
@@ -253,15 +253,12 @@ update_list = []
 dns_list = []
 
 # read each line, and check that the DNS name exists
-line = file.readline()
-while line:
-    line = line.rstrip().lstrip()
-    if line[0] == "#":
-        line = file.readline()
+for line in file:
+    line = line.strip()
+    if line == '' or line[0] == "#":
         continue
     d = parse_dns_line(line, sub_vars)
     dns_list.append(d)
-    line = file.readline()
 
 # now expand the entries, if any are A record with ip set to $IP
 # then replace with multiple entries, one for each interface IP
