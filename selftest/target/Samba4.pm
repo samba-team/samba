@@ -586,6 +586,7 @@ sub provision_raw_step1($$)
 	lanman auth = Yes
 	rndc command = true
         dns update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file}
+        spn update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_spnupdate
         resolv:host file = $ctx->{dns_host_file}
 ";
 
