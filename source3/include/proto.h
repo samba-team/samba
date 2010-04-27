@@ -5205,8 +5205,10 @@ pipes_struct *get_first_internal_pipe(void);
 pipes_struct *get_next_internal_pipe(pipes_struct *p);
 
 bool fsp_is_np(struct files_struct *fsp);
+struct tsocket_address;
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
-		 const char *client_address,
+		 const struct tsocket_address *local_address,
+		 const struct tsocket_address *remote_address,
 		 struct auth_serversupplied_info *server_info,
 		 struct fake_file_handle **phandle);
 bool np_read_in_progress(struct fake_file_handle *handle);
