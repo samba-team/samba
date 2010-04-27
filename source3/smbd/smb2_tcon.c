@@ -208,7 +208,13 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	tcon->compat_conn = talloc_move(tcon, &compat_conn);
 	tcon->compat_conn->cnum = tcon->tid;
 
-	*out_share_type = 0x01;
+	if (IS_PRINT(tcon->compat_conn)) {
+		*out_share_type = 0x03;
+	} else if (IS_IPC(tcon->compat_conn)) {
+		*out_share_type = 0x02;
+	} else {
+		*out_share_type = 0x01;
+	}
 	*out_share_flags = SMB2_SHAREFLAG_ALL;
 	*out_capabilities = 0;
 	*out_maximal_access = FILE_GENERIC_ALL;
