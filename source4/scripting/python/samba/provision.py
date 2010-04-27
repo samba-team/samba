@@ -293,6 +293,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
     paths.dns = os.path.join(paths.private_dir, "dns", dnsdomain + ".zone")
     paths.dns_update_list = os.path.join(paths.private_dir, "dns_update_list")
+    paths.spn_update_list = os.path.join(paths.private_dir, "spn_update_list")
     paths.namedconf = os.path.join(paths.private_dir, "named.conf")
     paths.namedconf_update = os.path.join(paths.private_dir, "named.conf.update")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
@@ -1556,6 +1557,9 @@ def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
     # the substitution is done at runtime by samba_dnsupdate
     setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
 
+    # and the SPN update list
+    setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
+
     if paths.bind_gid is not None:
         try:
             os.chown(dns_dir, -1, paths.bind_gid)
@@ -1575,7 +1579,7 @@ def create_dns_update_list(lp, message, paths, setup_path):
     # note that we use no variable substitution on this file
     # the substitution is done at runtime by samba_dnsupdate
     setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
-
+    setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
 
 def create_named_conf(paths, setup_path, realm, dnsdomain,
                       private_dir):
