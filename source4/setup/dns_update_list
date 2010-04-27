@@ -3,8 +3,8 @@ A                                                        ${HOSTNAME} $IP
 CNAME ${NTDSGUID}._msdcs.${DNSDOMAIN}                    ${HOSTNAME}
 SRV _kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN} ${HOSTNAME} 88
 SRV _ldap._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}     ${HOSTNAME} 389
-SRV _kerberos._tcp.dc.dc._msdcs.${DNSDOMAIN}             ${HOSTNAME} 88
-SRV _ldap._tcp.dc.dc._msdcs.${DNSDOMAIN}                 ${HOSTNAME} 389
+SRV _kerberos._tcp.dc._msdcs.${DNSDOMAIN}                ${HOSTNAME} 88
+SRV _ldap._tcp.dc._msdcs.${DNSDOMAIN}                    ${HOSTNAME} 389
 SRV _ldap._tcp.${DOMAINGUID}.domains._msdcs.${DNSDOMAIN} ${HOSTNAME} 389
 SRV _ldap._tcp.${SITE}._sites.gc._msdcs.${DNSDOMAIN}     ${HOSTNAME} 3268
 SRV _ldap._tcp.gc._msdcs.${DNSDOMAIN}                    ${HOSTNAME} 3268
