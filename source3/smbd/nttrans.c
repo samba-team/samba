@@ -1770,6 +1770,75 @@ static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 
 /****************************************************************************
  Reply to query a security descriptor.
+ Callable from SMB2 and SMB2.
+ If it returns NT_STATUS_BUFFER_TOO_SMALL, pdata_size is initialized with
+ the required size.
+****************************************************************************/
+
+NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
+					TALLOC_CTX *mem_ctx,
+					files_struct *fsp,
+					uint32_t security_info_wanted,
+					uint32_t max_data_count,
+					uint8_t **ppmarshalled_sd,
+					size_t *psd_size)
+{
+	NTSTATUS status;
+	SEC_DESC *psd = NULL;
+
+	/*
+	 * Get the permissions to return.
+	 */
+
+	if (!lp_nt_acl_support(SNUM(conn))) {
+		status = get_null_nt_acl(mem_ctx, &psd);
+	} else {
+		status = SMB_VFS_FGET_NT_ACL(
+			fsp, security_info_wanted, &psd);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* If the SACL/DACL is NULL, but was requested, we mark that it is
+	 * present in the reply to match Windows behavior */
+	if (psd->sacl == NULL &&
+	    security_info_wanted & SACL_SECURITY_INFORMATION)
+		psd->type |= SEC_DESC_SACL_PRESENT;
+	if (psd->dacl == NULL &&
+	    security_info_wanted & DACL_SECURITY_INFORMATION)
+		psd->type |= SEC_DESC_DACL_PRESENT;
+
+	*psd_size = ndr_size_security_descriptor(psd, NULL, 0);
+
+	DEBUG(3,("smbd_do_query_security_desc: sd_size = %lu.\n",
+		(unsigned long)*psd_size));
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("smbd_do_query_security_desc for file %s\n",
+			  fsp_str_dbg(fsp)));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
+	if (max_data_count < *psd_size) {
+		TALLOC_FREE(psd);
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	status = marshall_sec_desc(mem_ctx, psd,
+				   ppmarshalled_sd, psd_size);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(psd);
+		return status;
+	}
+
+	TALLOC_FREE(psd);
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ SMB1 reply to query a security descriptor.
 ****************************************************************************/
 
 static void call_nt_transact_query_security_desc(connection_struct *conn,
@@ -1784,12 +1853,11 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 {
 	char *params = *ppparams;
 	char *data = *ppdata;
-	SEC_DESC *psd = NULL;
-	size_t sd_size;
+	size_t sd_size = 0;
 	uint32 security_info_wanted;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
-	DATA_BLOB blob;
+	uint8_t *marshalled_sd = NULL;
 
         if(parameter_count < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -1818,46 +1886,38 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	 * Get the permissions to return.
 	 */
 
-	if (!lp_nt_acl_support(SNUM(conn))) {
-		status = get_null_nt_acl(talloc_tos(), &psd);
-	} else {
-		status = SMB_VFS_FGET_NT_ACL(
-			fsp, security_info_wanted, &psd);
-	}
+	status = smbd_do_query_security_desc(conn,
+					talloc_tos(),
+					fsp,
+					security_info_wanted,
+					max_data_count,
+					&marshalled_sd,
+					&sd_size);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+		SIVAL(params,0,(uint32_t)sd_size);
+		send_nt_replies(conn, req, NT_STATUS_BUFFER_TOO_SMALL,
+			params, 4, NULL, 0);
+		return;
+        }
+
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
 	}
 
-	/* If the SACL/DACL is NULL, but was requested, we mark that it is
-	 * present in the reply to match Windows behavior */
-	if (psd->sacl == NULL &&
-	    security_info_wanted & SACL_SECURITY_INFORMATION)
-		psd->type |= SEC_DESC_SACL_PRESENT;
-	if (psd->dacl == NULL &&
-	    security_info_wanted & DACL_SECURITY_INFORMATION)
-		psd->type |= SEC_DESC_DACL_PRESENT;
+	SMB_ASSERT(sd_size > 0);
 
-	sd_size = ndr_size_security_descriptor(psd, NULL, 0);
-
-	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
-
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n",
-			  fsp_str_dbg(fsp)));
-		NDR_PRINT_DEBUG(security_descriptor, psd);
-	}
-
-	SIVAL(params,0,(uint32)sd_size);
+	SIVAL(params,0,(uint32_t)sd_size);
 
 	if (max_data_count < sd_size) {
 		send_nt_replies(conn, req, NT_STATUS_BUFFER_TOO_SMALL,
-				params, 4, *ppdata, 0);
+				params, 4, NULL, 0);
 		return;
 	}
 
 	/*
-	 * Allocate the data we will point this at.
+	 * Allocate the data we will return.
 	 */
 
 	data = nttrans_realloc(ppdata, sd_size);
@@ -1866,16 +1926,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	status = marshall_sec_desc(talloc_tos(), psd,
-				   &blob.data, &blob.length);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		return;
-	}
-
-	SMB_ASSERT(sd_size == blob.length);
-	memcpy(data, blob.data, sd_size);
+	memcpy(data, marshalled_sd, sd_size);
 
 	send_nt_replies(conn, req, NT_STATUS_OK, params, 4, data, (int)sd_size);
 
