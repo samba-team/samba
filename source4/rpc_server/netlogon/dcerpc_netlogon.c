@@ -1019,6 +1019,12 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	if (strcasecmp(r->in.domainname, lp_workgroup(lp_ctx)) == 0) {
+		/* well we asked for a DC of our own domain */
+		if (samdb_is_pdc(sam_ctx)) {
+			/* we are the PDC of the specified domain */
+			return WERR_NO_SUCH_DOMAIN;
+		}
+
 		*r->out.dcname = talloc_asprintf(mem_ctx, "\\%s",
 						lp_netbios_name(lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(*r->out.dcname);
