@@ -55,6 +55,7 @@ struct dnsupdate_service {
 		uint32_t interval;
 		struct tevent_timer *te;
 		struct tevent_req *subreq;
+		struct tevent_req *spnreq;
 		NTSTATUS status;
 	} nameupdate;
 };
@@ -251,12 +252,42 @@ static void dnsupdate_nameupdate_done(struct tevent_req *subreq)
 	}
 }
 
+
+/*
+  called when spn update script has finished
+ */
+static void dnsupdate_spnupdate_done(struct tevent_req *subreq)
+{
+	struct dnsupdate_service *service = tevent_req_callback_data(subreq,
+					    struct dnsupdate_service);
+	int ret;
+	int sys_errno;
+
+	service->nameupdate.spnreq = NULL;
+
+	ret = samba_runcmd_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		service->nameupdate.status = map_nt_error_from_unix(sys_errno);
+	} else {
+		service->nameupdate.status = NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(service->nameupdate.status)) {
+		DEBUG(0,(__location__ ": Failed SPN update - %s\n",
+			 nt_errstr(service->nameupdate.status)));
+	} else {
+		DEBUG(3,("Completed SPN update check OK\n"));
+	}
+}
+
 /*
   called every 'dnsupdate:name interval' seconds
  */
 static void dnsupdate_check_names(struct dnsupdate_service *service)
 {
 	const char * const *dns_update_command = lp_dns_update_command(service->task->lp_ctx);
+	const char * const *spn_update_command = lp_spn_update_command(service->task->lp_ctx);
 
 	/* kill any existing child */
 	TALLOC_FREE(service->nameupdate.subreq);
@@ -274,6 +305,21 @@ static void dnsupdate_check_names(struct dnsupdate_service *service)
 	}
 	tevent_req_set_callback(service->nameupdate.subreq,
 				dnsupdate_nameupdate_done,
+				service);
+
+	DEBUG(3,("Calling SPN name update script\n"));
+	service->nameupdate.spnreq = samba_runcmd_send(service,
+						       service->task->event_ctx,
+						       timeval_current_ofs(10, 0),
+						       2, 0,
+						       spn_update_command,
+						       NULL);
+	if (service->nameupdate.spnreq == NULL) {
+		DEBUG(0,(__location__ ": samba_runcmd_send() failed with no memory\n"));
+		return;
+	}
+	tevent_req_set_callback(service->nameupdate.spnreq,
+				dnsupdate_spnupdate_done,
 				service);
 }
 
