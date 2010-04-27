@@ -6605,14 +6605,25 @@ struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 
 	t = talloc_zero(mem_ctx, struct torture_printer_context);
 
-	t->driver.info8.version		= SPOOLSS_DRIVER_VERSION_200X;
-	t->driver.info8.driver_name	= TORTURE_DRIVER;
-	t->driver.info8.architecture	= "Windows NT x86";
-	t->driver.info8.driver_path	= "pscript5.dll";
-	t->driver.info8.data_file	= "cups6.ppd";
-	t->driver.info8.config_file	= "cupsui6.dll";
-	t->driver.local.environment	= "Windows NT x86";
-	t->driver.local.driver_directory= "/usr/share/cups/drivers/i386";
+	t->driver.info8.version			= SPOOLSS_DRIVER_VERSION_200X;
+	t->driver.info8.driver_name		= TORTURE_DRIVER;
+	t->driver.info8.driver_path		= "pscript5.dll";
+	t->driver.info8.data_file		= "cups6.ppd";
+	t->driver.info8.config_file		= "ps5ui.dll";
+	t->driver.info8.help_file		= "pscript.hlp";
+	t->driver.info8.default_datatype	= "RAW";
+	t->driver.info8.dependent_files		= talloc_zero(t, struct spoolss_StringArray);
+	t->driver.info8.dependent_files->string = talloc_zero_array(t, const char *, 8 + 1);
+	t->driver.info8.dependent_files->string[0] = "pscript5.dll";
+	t->driver.info8.dependent_files->string[1] = "cups6.ppd";
+	t->driver.info8.dependent_files->string[2] = "ps5ui.dll";
+	t->driver.info8.dependent_files->string[3] = "pscript.hlp";
+	t->driver.info8.dependent_files->string[4] = "pscript.ntf";
+	t->driver.info8.dependent_files->string[5] = "cups6.ini";
+	t->driver.info8.dependent_files->string[6] = "cupsps6.dll";
+	t->driver.info8.dependent_files->string[7] = "cupsui6.dll";
+
+	t->driver.local.driver_directory= "/usr/share/cups/drivers";
 
 	t->info2.drivername		= "Microsoft XPS Document Writer";
 	t->info2.portname		= "LPT1:";
