@@ -26,6 +26,7 @@
 #include "../lib/util/dlinklist.h"
 #include "../lib/util/data_blob.h"
 #include "lib/tls/tls.h"
+#include "lib/tsocket/tsocket.h"
 
 typedef struct {
 	PyObject_HEAD
@@ -320,18 +321,23 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 {
 	PyObject *py_environ, *result, *item, *iter;
 	PyObject *request_handler = (PyObject *)wdata->private_data;
-	struct socket_address *socket_address;
-
+	struct tsocket_address *my_address = web->conn->local_address;
+	const char *addr = "0.0.0.0";
+	uint16_t port = 0;
 	web_request_Object *py_web = PyObject_New(web_request_Object, &web_request_Type);
 	py_web->web = web;
 
-	socket_address = socket_get_my_addr(web->conn->socket, web);
+	if (tsocket_address_is_inet(my_address, "ip")) {
+		addr = tsocket_address_inet_addr_string(my_address, wdata);
+		port = tsocket_address_inet_port(my_address);
+	}
+
 	py_environ = create_environ(tls_enabled(web->conn->socket),
 				    web->input.content_length, 
 				    web->input.headers, 
 				    web->input.post_request?"POST":"GET",
-				    socket_address->addr,
-				    socket_address->port, 
+				    addr,
+				    port,
 				    Py_InputHttpStream(web),
 				    web->input.url
 				    );
