@@ -388,7 +388,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	const char *host = NULL;
 	const char *user = NULL;
 	const char *domain_guid = NULL;
-	const char *domain_sid = NULL;
+	struct dom_sid *domain_sid = NULL;
 	int acct_control = -1;
 	int version = -1;
 	struct netlogon_samlogon_response netlogon;
@@ -420,9 +420,20 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 			}
 		}
 		if (strcasecmp(t->u.equality.attr, "DomainSid") == 0) {
-			domain_sid = talloc_strndup(tmp_ctx, 
-						    (const char *)t->u.equality.value.data,
-						    t->u.equality.value.length);
+			enum ndr_err_code ndr_err;
+
+			domain_sid = talloc(tmp_ctx, struct dom_sid);
+			if (domain_sid == NULL) {
+				goto failed;
+			}
+			ndr_err = ndr_pull_struct_blob(&t->u.equality.value,
+						       domain_sid, NULL,
+						       domain_sid,
+						       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				talloc_free(domain_sid);
+				goto failed;
+			}
 		}
 		if (strcasecmp(t->u.equality.attr, "User") == 0) {
 			user = talloc_strndup(tmp_ctx, 
@@ -439,7 +450,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		}
 	}
 
-	if (domain_guid == NULL && domain == NULL) {
+	if ((domain == NULL) && (domain_guid == NULL) && (domain_sid == NULL)) {
 		domain = lp_dnsdomain(cldapd->task->lp_ctx);
 	}
 
@@ -450,10 +461,13 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	DEBUG(5,("cldap netlogon query domain=%s host=%s user=%s version=%d guid=%s\n",
 		 domain, host, user, version, domain_guid));
 
-	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx, domain, NULL, NULL, domain_guid,
+	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx,
+						 domain, NULL, domain_sid,
+						 domain_guid,
 						 user, acct_control,
 						 tsocket_address_inet_addr_string(src, tmp_ctx),
-						 version, cldapd->task->lp_ctx, &netlogon, false);
+						 version, cldapd->task->lp_ctx,
+						 &netlogon, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
