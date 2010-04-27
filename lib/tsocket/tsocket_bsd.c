@@ -503,6 +503,23 @@ int tsocket_address_inet_set_port(struct tsocket_address *addr,
 	return 0;
 }
 
+bool tsocket_address_is_unix(const struct tsocket_address *addr)
+{
+	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
+					   struct tsocket_address_bsd);
+
+	if (!bsda) {
+		return false;
+	}
+
+	switch (bsda->u.sa.sa_family) {
+	case AF_UNIX:
+		return true;
+	}
+
+	return false;
+}
+
 int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 				    const char *path,
 				    struct tsocket_address **_addr,

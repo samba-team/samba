@@ -575,6 +575,16 @@ uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
 int tsocket_address_inet_set_port(struct tsocket_address *addr,
 				  uint16_t port);
 
+/**
+ * @brief Find out if the tsocket_address represents an unix domain endpoint.
+ *
+ * @param[in]  addr     The tsocket_address pointer
+ *
+ * @return              true if addr represents an unix domain endpoint,
+ *                      otherwise false.
+ */
+bool tsocket_address_is_unix(const struct tsocket_address *addr);
+
 #ifdef DOXYGEN
 /**
  * @brief Create a tsocket_address for a unix domain endpoint addresses.
@@ -586,6 +596,8 @@ int tsocket_address_inet_set_port(struct tsocket_address *addr,
  * @param[in]  _addr    The tsocket_address pointer to store the information.
  *
  * @return              0 on success, -1 on error with errno set.
+ *
+ * @see tsocket_address_is_unix()
  */
 int tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 				   const char *path,
