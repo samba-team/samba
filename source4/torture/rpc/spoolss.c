@@ -4365,6 +4365,10 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 		test_winreg_OpenKey(tctx, winreg_handle, hive_handle, driver_key, &key_handle),
 		"failed to open driver key");
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		goto try_level3;
+	}
+
 	torture_assert(tctx,
 		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, 3, 0, &info, &result),
 		"failed to get driver info level 8");
@@ -4444,6 +4448,30 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 /*	test_dword("Attributes",		?); */
 	test_dword("Version",			info.info6.version);
 /*	test_dword("TempDir",			?); */
+
+ try_level3:
+
+	torture_assert(tctx,
+		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 3, 3, 0, &info, &result),
+		"failed to get driver info level 3");
+
+	driver_path	= strip_path(info.info3.driver_path);
+	data_file	= strip_path(info.info3.data_file);
+	config_file	= strip_path(info.info3.config_file);
+	help_file	= strip_path(info.info3.help_file);
+	dependent_files = strip_paths(info.info3.dependent_files);
+
+	test_sz("Configuration File",		config_file);
+	test_sz("Data File",			data_file);
+	test_sz("Datatype",			info.info3.default_datatype);
+	test_sz("Driver",			driver_path);
+	test_sz("Help File",			help_file);
+	test_sz("Monitor",			info.info3.monitor_name);
+	test_multi_sz("Dependent Files",	dependent_files);
+/*	test_dword("Attributes",		?); */
+	test_dword("Version",			info.info3.version);
+/*	test_dword("TempDir",			?); */
+
 
 	torture_assert(tctx,
 		test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
