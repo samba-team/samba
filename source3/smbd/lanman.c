@@ -574,6 +574,15 @@ static int printq_status(int v)
 	return RAP_QUEUE_STATUS_ERROR;
 }
 
+static int printq_spoolss_status(int v)
+{
+	if (v == PRINTER_STATUS_OK)
+		return 0;
+	if (v & PRINTER_STATUS_PAUSED)
+		return RAP_QUEUE_STATUS_PAUSED;
+	return RAP_QUEUE_STATUS_ERROR;
+}
+
 static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 			       struct pack_desc *desc,
 			       print_queue_struct *queue, int n)
@@ -734,28 +743,12 @@ static bool get_driver_name(int snum, char **pp_drivername)
  Respond to the DosPrintQInfo command with a level of 52
  This is used to get printer driver information for Win9x clients
  ********************************************************************/
-static void fill_printq_info_52(connection_struct *conn, int snum, 
-				struct pack_desc* desc,	int count )
+static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
+				struct pack_desc* desc,	int count,
+				const char *printer_name)
 {
 	int 				i;
 	fstring 			location;
-	struct spoolss_DriverInfo8 *driver = NULL;
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-
-	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
-		DEBUG(3,("fill_printq_info_52: Failed to lookup printer [%s]\n", 
-			lp_servicename(snum)));
-		goto err;
-	}
-
-	if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, printer->info_2->drivername,
-		"Windows 4.0", 0)) )
-	{
-		DEBUG(3,("fill_printq_info_52: Failed to lookup driver [%s]\n", 
-			printer->info_2->drivername));
-		goto err;
-	}
-
 	trim_string((char *)driver->driver_path, "\\print$\\WIN40\\0\\", 0);
 	trim_string((char *)driver->data_file, "\\print$\\WIN40\\0\\", 0);
 	trim_string((char *)driver->help_file, "\\print$\\WIN40\\0\\", 0);
@@ -795,40 +788,32 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 		DEBUG(3,("fill_printq_info_52: file count specified by client [%d] != number of dependent files [%i]\n",
 			count, i));
 
-	DEBUG(3,("fill_printq_info on <%s> gave %d entries\n", SERVICE(snum),i));
+	DEBUG(3,("fill_printq_info on <%s> gave %d entries\n", printer_name, i));
 
         desc->errcode=NERR_Success;
-	goto done;
 
-err:
-	DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
-	desc->errcode=NERR_notsupported;
-
-done:
-	if ( printer )
-		free_a_printer( &printer, 2 );
-
-	free_a_printer_driver(driver);
 }
 
 
-static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
+static void fill_printq_info(int uLevel,
  			     struct pack_desc* desc,
- 			     int count, print_queue_struct* queue,
- 			     print_status_struct* status)
+			     int count,
+			     union spoolss_JobInfo *job_info,
+			     struct spoolss_DriverInfo3 *driver_info,
+			     struct spoolss_PrinterInfo2 *printer_info)
 {
 	switch (uLevel) {
 	case 1:
 	case 2:
-		PACKS(desc,"B13",SERVICE(snum));
+		PACKS(desc,"B13", printer_info->printername);
 		break;
 	case 3:
 	case 4:
 	case 5:
-		PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
+		PACKS(desc,"z", printer_info->printername);
 		break;
 	case 51:
-		PACKI(desc,"K",printq_status(status->status));
+		PACKI(desc,"K", printq_spoolss_status(printer_info->status));
 		break;
 	}
 
@@ -839,25 +824,19 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKI(desc,"W",0);		/* until time */
 		PACKS(desc,"z","");		/* pSepFile */
 		PACKS(desc,"z","lpd");	/* pPrProc */
-		PACKS(desc,"z",SERVICE(snum)); /* pDestinations */
+		PACKS(desc,"z", printer_info->printername); /* pDestinations */
 		PACKS(desc,"z","");		/* pParms */
-		if (snum < 0) {
+		if (printer_info->printername == NULL) {
 			PACKS(desc,"z","UNKNOWN PRINTER");
 			PACKI(desc,"W",LPSTAT_ERROR);
-		}
-		else if (!status || !status->message[0]) {
-			PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
-			PACKI(desc,"W",LPSTAT_OK); /* status */
 		} else {
-			PACKS(desc,"z",status->message);
-			PACKI(desc,"W",printq_status(status->status)); /* status */
+			PACKS(desc,"z", printer_info->comment);
+			PACKI(desc,"W", printq_spoolss_status(printer_info->status)); /* status */
 		}
 		PACKI(desc,(uLevel == 1 ? "W" : "N"),count);
 	}
 
 	if (uLevel == 3 || uLevel == 4) {
-		char *drivername = NULL;
-
 		PACKI(desc,"W",5);		/* uPriority */
 		PACKI(desc,"W",0);		/* uStarttime */
 		PACKI(desc,"W",0);		/* uUntiltime */
@@ -868,62 +847,32 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
 		/* "don't ask" that it's done this way to fix corrupted
 		   Win9X/ME printer comments. */
-		if (!status) {
-			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
-		} else {
-			PACKI(desc,"W",printq_status(status->status)); /* fsStatus */
-		}
+		PACKI(desc,"W", printq_spoolss_status(printer_info->status)); /* fsStatus */
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
-		PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
-		get_driver_name(snum,&drivername);
-		if (!drivername) {
-			return;
-		}
-		PACKS(desc,"z",drivername);		/* pszDriverName */
+		PACKS(desc,"z", printer_info->printername); /* pszPrinters */
+		PACKS(desc,"z", printer_info->drivername);		/* pszDriverName */
 		PackDriverData(desc);	/* pDriverData */
 	}
 
 	if (uLevel == 2 || uLevel == 4) {
 		int i;
-		for (i=0;i<count;i++)
-			fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
+		for (i = 0; i < count; i++) {
+			fill_spoolss_printjob_info(uLevel == 2 ? 1 : 2, desc, &job_info[i].info2, i);
+		}
 	}
 
 	if (uLevel==52)
-		fill_printq_info_52( conn, snum, desc, count );
+		fill_printq_info_52(driver_info, desc, count, printer_info->printername);
 }
 
 /* This function returns the number of files for a given driver */
-static int get_printerdrivernumber(int snum)
+static int get_printerdrivernumber(const struct spoolss_DriverInfo3 *driver)
 {
 	int 				result = 0;
-	struct spoolss_DriverInfo8 *driver;
-	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
-
-	ZERO_STRUCT(driver);
-
-	if ( !W_ERROR_IS_OK(get_a_printer( NULL, &printer, 2, lp_servicename(snum))) ) {
-		DEBUG(3,("get_printerdrivernumber: Failed to lookup printer [%s]\n", 
-			lp_servicename(snum)));
-		goto done;
-	}
-
-	if (!W_ERROR_IS_OK(get_a_printer_driver(talloc_tos(), &driver, printer->info_2->drivername,
-		"Windows 4.0", 0)) )
-	{
-		DEBUG(3,("get_printerdrivernumber: Failed to lookup driver [%s]\n", 
-			printer->info_2->drivername));
-		goto done;
-	}
 
 	/* count the number of files */
 	while (driver->dependent_files && *driver->dependent_files[result])
 		result++;
- done:
-	if ( printer )
-		free_a_printer( &printer, 2 );
-
-	free_a_printer_driver(driver);
 
 	return result;
 }
@@ -940,18 +889,24 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	char *p = skip_string(param,tpscnt,str2);
 	char *QueueName = p;
 	unsigned int uLevel;
-	int count=0;
-	int snum;
+	uint32_t count = 0;
 	char *str3;
 	struct pack_desc desc;
-	print_queue_struct *queue=NULL;
-	print_status_struct status;
 	char* tmpdata=NULL;
+
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	union spoolss_DriverInfo driver_info;
+	union spoolss_JobInfo *job_info;
+	union spoolss_PrinterInfo printer_info;
 
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
-	memset((char *)&status,'\0',sizeof(status));
 	memset((char *)&desc,'\0',sizeof(desc));
 
 	p = skip_string(param,tpscnt,p);
@@ -989,21 +944,78 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 		return(True);
 	}
 
-	snum = find_service(QueueName);
-	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
-		return False;
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_DosPrintQGetInfo: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    QueueName,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
+	}
 
 	if (uLevel==52) {
-		count = get_printerdrivernumber(snum);
+		uint32_t server_major_version;
+		uint32_t server_minor_version;
+
+		werr = rpccli_spoolss_getprinterdriver2(cli, mem_ctx,
+							&handle,
+							"Windows 4.0",
+							3, /* level */
+							0,
+							0, /* version */
+							0,
+							&driver_info,
+							&server_major_version,
+							&server_minor_version);
+		if (!W_ERROR_IS_OK(werr)) {
+			desc.errcode = W_ERROR_V(werr);
+			goto out;
+		}
+
+		count = get_printerdrivernumber(&driver_info.info3);
 		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
 	} else {
-		count = print_queue_status(snum, &queue,&status);
+		uint32_t num_jobs;
+		werr = rpccli_spoolss_enumjobs(cli, mem_ctx,
+					       &handle,
+					       0, /* firstjob */
+					       0xff, /* numjobs */
+					       2, /* level */
+					       0, /* offered */
+					       &num_jobs,
+					       &job_info);
+		if (!W_ERROR_IS_OK(werr)) {
+			desc.errcode = W_ERROR_V(werr);
+			goto out;
+		}
+
+		count = num_jobs;
 	}
 
 	if (mdrcnt > 0) {
 		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
-			SAFE_FREE(queue);
 			return False;
 		}
 		desc.base = *rdata;
@@ -1019,7 +1031,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 
 	if (init_package(&desc,1,count)) {
 		desc.subcount = count;
-		fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+		fill_printq_info(uLevel,&desc,count, job_info, &driver_info.info3, &printer_info.info2);
 	}
 
 	*rdata_len = desc.usedlen;
@@ -1032,11 +1044,15 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	if (!mdrcnt && lp_disable_spoolss())
 		desc.errcode = ERRbuftoosmall;
 
+ out:
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	}
+
 	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
-		SAFE_FREE(queue);
 		SAFE_FREE(tmpdata);
 		return False;
 	}
@@ -1046,7 +1062,6 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 
 	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
-	SAFE_FREE(queue);
 	SAFE_FREE(tmpdata);
 
 	return(True);
@@ -1068,13 +1083,18 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	char *p = skip_string(param,tpscnt,output_format1);
 	unsigned int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	char *output_format2 = get_safe_str_ptr(param,tpscnt,p,4);
-	int services = lp_numservices();
-	int i, n;
+	int i;
 	struct pack_desc desc;
-	print_queue_struct **queue = NULL;
-	print_status_struct *status = NULL;
 	int *subcntarr = NULL;
 	int queuecnt = 0, subcnt = 0, succnt = 0;
+
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	uint32_t num_printers;
+	union spoolss_PrinterInfo *printer_info;
 
 	if (!param_format || !output_format1 || !p) {
 		return False;
@@ -1105,35 +1125,33 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 		return(True);
 	}
 
-	for (i = 0; i < services; i++) {
-		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-			queuecnt++;
-		}
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_DosPrintQEnum: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
 
-	if((queue = SMB_MALLOC_ARRAY(print_queue_struct*, queuecnt)) == NULL) {
-		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
-		goto err;
+	werr = rpccli_spoolss_enumprinters(cli, mem_ctx,
+					   PRINTER_ENUM_LOCAL,
+					   cli->srv_name_slash,
+					   2,
+					   0,
+					   &num_printers,
+					   &printer_info);
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
 	}
-	memset(queue,0,queuecnt*sizeof(print_queue_struct*));
-	if((status = SMB_MALLOC_ARRAY(print_status_struct,queuecnt)) == NULL) {
-		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
-		goto err;
-	}
-	memset(status,0,queuecnt*sizeof(print_status_struct));
+
+	queuecnt = num_printers;
+
 	if((subcntarr = SMB_MALLOC_ARRAY(int,queuecnt)) == NULL) {
 		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
 		goto err;
-	}
-
-	subcnt = 0;
-	n = 0;
-	for (i = 0; i < services; i++) {
-		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-			subcntarr[n] = print_queue_status(i, &queue[n],&status[n]);
-			subcnt += subcntarr[n];
-			n++;
-		}
 	}
 
 	if (mdrcnt > 0) {
@@ -1145,22 +1163,83 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 
-	if (init_package(&desc,queuecnt,subcnt)) {
-		n = 0;
-		succnt = 0;
-		for (i = 0; i < services; i++) {
-			if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-				fill_printq_info(conn,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
-				n++;
-				if (desc.errcode == NERR_Success) {
-					succnt = n;
-				}
+	subcnt = 0;
+	for (i = 0; i < num_printers; i++) {
+
+		uint32_t num_jobs;
+		struct policy_handle handle;
+		union spoolss_DriverInfo driver_info;
+		union spoolss_JobInfo *job_info;
+
+		ZERO_STRUCT(handle);
+		ZERO_STRUCT(devmode_ctr);
+
+		status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+						    printer_info[i].info2.printername,
+						    NULL,
+						    devmode_ctr,
+						    SEC_FLAG_MAXIMUM_ALLOWED,
+						    &handle,
+						    &werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+			goto out;
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			desc.errcode = W_ERROR_V(werr);
+			goto out;
+		}
+
+		werr = rpccli_spoolss_enumjobs(cli, mem_ctx,
+					       &handle,
+					       0, /* firstjob */
+					       0xff, /* numjobs */
+					       2, /* level */
+					       0, /* offered */
+					       &num_jobs,
+					       &job_info);
+		if (!W_ERROR_IS_OK(werr)) {
+			desc.errcode = W_ERROR_V(werr);
+			goto out;
+		}
+
+		if (uLevel==52) {
+			uint32_t server_major_version;
+			uint32_t server_minor_version;
+
+			werr = rpccli_spoolss_getprinterdriver2(cli, mem_ctx,
+								&handle,
+								"Windows 4.0",
+								3, /* level */
+								0,
+								0, /* version */
+								0,
+								&driver_info,
+								&server_major_version,
+								&server_minor_version);
+			if (!W_ERROR_IS_OK(werr)) {
+				desc.errcode = W_ERROR_V(werr);
+				goto out;
 			}
+		}
+
+		subcntarr[i] = num_jobs;
+		subcnt += subcntarr[i];
+
+		if (init_package(&desc,queuecnt,subcnt)) {
+			fill_printq_info(uLevel,&desc,subcntarr[i], job_info, &driver_info.info3, &printer_info[i].info2);
+			if (desc.errcode == NERR_Success) {
+				succnt = i;
+			}
+		}
+
+		if (is_valid_policy_hnd(&handle)) {
+			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 		}
 	}
 
 	SAFE_FREE(subcntarr);
-
+ out:
 	*rdata_len = desc.usedlen;
 	*rparam_len = 8;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
@@ -1172,27 +1251,11 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	SSVAL(*rparam,4,succnt);
 	SSVAL(*rparam,6,queuecnt);
 
-	for (i = 0; i < queuecnt; i++) {
-		if (queue) {
-			SAFE_FREE(queue[i]);
-		}
-	}
-
-	SAFE_FREE(queue);
-	SAFE_FREE(status);
-
 	return True;
 
   err:
 
 	SAFE_FREE(subcntarr);
-	for (i = 0; i < queuecnt; i++) {
-		if (queue) {
-			SAFE_FREE(queue[i]);
-		}
-	}
-	SAFE_FREE(queue);
-	SAFE_FREE(status);
 
 	return False;
 }
