@@ -24,22 +24,6 @@
 #include "smbd/service_stream.h"
 #include "ntvfs/ntvfs.h"
 
-struct socket_address *smbsrv_get_my_addr(void *p, TALLOC_CTX *mem_ctx)
-{
-	struct smbsrv_connection *smb_conn = talloc_get_type(p,
-					     struct smbsrv_connection);
-
-	return socket_get_my_addr(smb_conn->connection->socket, mem_ctx);
-}
-
-struct socket_address *smbsrv_get_peer_addr(void *p, TALLOC_CTX *mem_ctx)
-{
-	struct smbsrv_connection *smb_conn = talloc_get_type(p,
-					     struct smbsrv_connection);
-
-	return socket_get_peer_addr(smb_conn->connection->socket, mem_ctx);
-}
-
 /****************************************************************************
 init the tcon structures
 ****************************************************************************/
