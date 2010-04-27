@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
+#include "../libcli/named_pipe_auth/npa_tstream.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -956,40 +957,30 @@ bool fsp_is_np(struct files_struct *fsp)
 }
 
 struct np_proxy_state {
+	uint16_t file_type;
+	uint16_t device_state;
+	uint64_t allocation_size;
+	struct tstream_context *npipe;
 	struct tevent_queue *read_queue;
 	struct tevent_queue *write_queue;
-	int fd;
-
-	uint8_t *msg;
-	size_t sent;
 };
 
-static int np_proxy_state_destructor(struct np_proxy_state *state)
-{
-	if (state->fd != -1) {
-		close(state->fd);
-	}
-	return 0;
-}
-
 static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-						       const char *pipe_name,
-						       struct auth_serversupplied_info *server_info)
+				const char *pipe_name,
+				const struct tsocket_address *local_address,
+				const struct tsocket_address *remote_address,
+				struct auth_serversupplied_info *server_info)
 {
 	struct np_proxy_state *result;
-	struct sockaddr_un addr;
-	char *socket_path;
+	char *socket_np_dir;
 	const char *socket_dir;
-
-	DATA_BLOB req_blob;
+	struct tevent_context *ev;
+	struct tevent_req *subreq;
 	struct netr_SamInfo3 *info3;
-	struct named_pipe_auth_req req;
-	DATA_BLOB rep_blob;
-	uint8 rep_buf[20];
-	struct named_pipe_auth_rep rep;
-	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	ssize_t written;
+	bool ok;
+	int ret;
+	int sys_errno;
 
 	result = talloc(mem_ctx, struct np_proxy_state);
 	if (result == NULL) {
@@ -997,15 +988,23 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result->fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (result->fd == -1) {
-		DEBUG(10, ("socket(2) failed: %s\n", strerror(errno)));
+	result->read_queue = tevent_queue_create(result, "np_read");
+	if (result->read_queue == NULL) {
+		DEBUG(0, ("tevent_queue_create failed\n"));
 		goto fail;
 	}
-	talloc_set_destructor(result, np_proxy_state_destructor);
 
-	ZERO_STRUCT(addr);
-	addr.sun_family = AF_UNIX;
+	result->write_queue = tevent_queue_create(result, "np_write");
+	if (result->write_queue == NULL) {
+		DEBUG(0, ("tevent_queue_create failed\n"));
+		goto fail;
+	}
+
+	ev = s3_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		DEBUG(0, ("s3_tevent_context_init failed\n"));
+		goto fail;
+	}
 
 	socket_dir = lp_parm_const_string(
 		GLOBAL_SECTION_SNUM, "external_rpc_pipe", "socket_dir",
@@ -1014,24 +1013,11 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("externan_rpc_pipe:socket_dir not set\n"));
 		goto fail;
 	}
-
-	socket_path = talloc_asprintf(talloc_tos(), "%s/np/%s",
-				      socket_dir, pipe_name);
-	if (socket_path == NULL) {
+	socket_np_dir = talloc_asprintf(talloc_tos(), "%s/np", socket_dir);
+	if (socket_np_dir == NULL) {
 		DEBUG(0, ("talloc_asprintf failed\n"));
 		goto fail;
 	}
-	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
-	TALLOC_FREE(socket_path);
-
-	become_root();
-	if (sys_connect(result->fd, (struct sockaddr *)&addr) == -1) {
-		unbecome_root();
-		DEBUG(0, ("connect(%s) failed: %s\n", addr.sun_path,
-			  strerror(errno)));
-		goto fail;
-	}
-	unbecome_root();
 
 	info3 = talloc_zero(talloc_tos(), struct netr_SamInfo3);
 	if (info3 == NULL) {
@@ -1047,80 +1033,40 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	req.level = 1;
-	req.info.info1 = *info3;
-
-	ndr_err = ndr_push_struct_blob(&req_blob, talloc_tos(), &req,
-		(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(10, ("ndr_push_named_pipe_auth_req failed: %s\n",
-			   ndr_errstr(ndr_err)));
+	become_root();
+	subreq = tstream_npa_connect_send(talloc_tos(), ev,
+					  socket_np_dir,
+					  pipe_name,
+					  remote_address, /* client_addr */
+					  NULL, /* client_name */
+					  local_address, /* server_addr */
+					  NULL, /* server_name */
+					  info3,
+					  server_info->user_session_key,
+					  data_blob_null /* delegated_creds */);
+	if (subreq == NULL) {
+		unbecome_root();
+		DEBUG(0, ("tstream_npa_connect_send failed\n"));
 		goto fail;
 	}
-
-	DEBUG(10, ("named_pipe_auth_req(client)[%u]\n", (uint32_t)req_blob.length));
-	dump_data(10, req_blob.data, req_blob.length);
-
-	written = write_data(result->fd, (char *)req_blob.data,
-			     req_blob.length);
-	if (written == -1) {
-		DEBUG(3, ("Could not write auth req data to RPC server\n"));
+	ok = tevent_req_poll(subreq, ev);
+	unbecome_root();
+	if (!ok) {
+		DEBUG(0, ("tevent_req_poll failed for tstream_npa_connect: %s\n",
+			  strerror(errno)));
 		goto fail;
+
 	}
-
-	status = read_data(result->fd, (char *)rep_buf, sizeof(rep_buf));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Could not read auth result\n"));
-		goto fail;
-	}
-
-	rep_blob = data_blob_const(rep_buf, sizeof(rep_buf));
-
-	DEBUG(10,("name_pipe_auth_rep(client)[%u]\n", (uint32_t)rep_blob.length));
-	dump_data(10, rep_blob.data, rep_blob.length);
-
-	ndr_err = ndr_pull_struct_blob(&rep_blob, talloc_tos(), &rep,
-		(ndr_pull_flags_fn_t)ndr_pull_named_pipe_auth_rep);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_pull_named_pipe_auth_rep failed: %s\n",
-			  ndr_errstr(ndr_err)));
-		goto fail;
-	}
-
-	if (rep.length != 16) {
-		DEBUG(0, ("req invalid length: %u != 16\n",
-			  rep.length));
-		goto fail;
-	}
-
-	if (strcmp(NAMED_PIPE_AUTH_MAGIC, rep.magic) != 0) {
-		DEBUG(0, ("req invalid magic: %s != %s\n",
-			  rep.magic, NAMED_PIPE_AUTH_MAGIC));
-		goto fail;
-	}
-
-	if (!NT_STATUS_IS_OK(rep.status)) {
-		DEBUG(0, ("req failed: %s\n",
-			  nt_errstr(rep.status)));
-		goto fail;
-	}
-
-	if (rep.level != 1) {
-		DEBUG(0, ("req invalid level: %u != 1\n",
-			  rep.level));
-		goto fail;
-	}
-
-	result->msg = NULL;
-
-	result->read_queue = tevent_queue_create(result, "np_read");
-	if (result->read_queue == NULL) {
-		goto fail;
-	}
-	result->write_queue = tevent_queue_create(result, "np_write");
-	if (result->write_queue == NULL) {
+	ret = tstream_npa_connect_recv(subreq, &sys_errno,
+				       result,
+				       &result->npipe,
+				       &result->file_type,
+				       &result->device_state,
+				       &result->allocation_size);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		DEBUG(0, ("tstream_npa_connect_recv failed: %s\n",
+			  strerror(sys_errno)));
 		goto fail;
 	}
 
@@ -1150,7 +1096,10 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	if ((proxy_list != NULL) && str_list_check_ci(proxy_list, name)) {
 		struct np_proxy_state *p;
 
-		p = make_external_rpc_pipe_p(handle, name, server_info);
+		p = make_external_rpc_pipe_p(handle, name,
+					     local_address,
+					     remote_address,
+					     server_info);
 
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
 		handle->private_data = p;
@@ -1267,8 +1216,10 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		state->iov.iov_base = CONST_DISCARD(void *, data);
 		state->iov.iov_len = len;
 
-		subreq = writev_send(state, ev, p->write_queue, p->fd,
-				     false, &state->iov, 1);
+		subreq = tstream_writev_queue_send(state, ev,
+						   p->npipe,
+						   p->write_queue,
+						   &state->iov, 1);
 		if (subreq == NULL) {
 			goto fail;
 		}
@@ -1298,7 +1249,7 @@ static void np_write_done(struct tevent_req *subreq)
 	ssize_t received;
 	int err;
 
-	received = writev_recv(subreq, &err);
+	received = tstream_writev_queue_recv(subreq, &err);
 	if (received < 0) {
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
@@ -1320,38 +1271,90 @@ NTSTATUS np_write_recv(struct tevent_req *req, ssize_t *pnwritten)
 	return NT_STATUS_OK;
 }
 
-static ssize_t rpc_frag_more_fn(uint8_t *buf, size_t buflen, void *priv)
-{
-	prs_struct hdr_prs;
-	struct rpc_hdr_info hdr;
-	bool ret;
+struct np_ipc_readv_next_vector_state {
+	uint8_t *buf;
+	size_t len;
+	off_t ofs;
+	size_t remaining;
+};
 
-	if (buflen > RPC_HEADER_LEN) {
+static void np_ipc_readv_next_vector_init(struct np_ipc_readv_next_vector_state *s,
+					  uint8_t *buf, size_t len)
+{
+	ZERO_STRUCTP(s);
+
+	s->buf = buf;
+	s->len = MIN(len, UINT16_MAX);
+}
+
+static int np_ipc_readv_next_vector(struct tstream_context *stream,
+				    void *private_data,
+				    TALLOC_CTX *mem_ctx,
+				    struct iovec **_vector,
+				    size_t *count)
+{
+	struct np_ipc_readv_next_vector_state *state =
+		(struct np_ipc_readv_next_vector_state *)private_data;
+	struct iovec *vector;
+	ssize_t pending;
+	size_t wanted;
+
+	if (state->ofs == state->len) {
+		*_vector = NULL;
+		*count = 0;
 		return 0;
 	}
-	prs_init_empty(&hdr_prs, talloc_tos(), UNMARSHALL);
-	prs_give_memory(&hdr_prs, (char *)buf, RPC_HEADER_LEN, false);
-	ret = smb_io_rpc_hdr("", &hdr, &hdr_prs, 0);
-	prs_mem_free(&hdr_prs);
 
-	if (!ret) {
+	pending = tstream_pending_bytes(stream);
+	if (pending == -1) {
 		return -1;
 	}
 
-	return (hdr.frag_len - RPC_HEADER_LEN);
+	if (pending == 0 && state->ofs != 0) {
+		/* return a short read */
+		*_vector = NULL;
+		*count = 0;
+		return 0;
+	}
+
+	if (pending == 0) {
+		/* we want at least one byte and recheck again */
+		wanted = 1;
+	} else {
+		size_t missing = state->len - state->ofs;
+		if (pending > missing) {
+			/* there's more available */
+			state->remaining = pending - missing;
+			wanted = missing;
+		} else {
+			/* read what we can get and recheck in the next cycle */
+			wanted = pending;
+		}
+	}
+
+	vector = talloc_array(mem_ctx, struct iovec, 1);
+	if (!vector) {
+		return -1;
+	}
+
+	vector[0].iov_base = state->buf + state->ofs;
+	vector[0].iov_len = wanted;
+
+	state->ofs += wanted;
+
+	*_vector = vector;
+	*count = 1;
+	return 0;
 }
 
 struct np_read_state {
-	struct event_context *ev;
 	struct np_proxy_state *p;
-	uint8_t *data;
-	size_t len;
+	struct np_ipc_readv_next_vector_state next_vector;
 
 	size_t nread;
 	bool is_data_outstanding;
 };
 
-static void np_read_trigger(struct tevent_req *req, void *private_data);
 static void np_read_done(struct tevent_req *subreq);
 
 struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
@@ -1382,36 +1385,21 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
 		struct np_proxy_state *p = talloc_get_type_abort(
 			handle->private_data, struct np_proxy_state);
+		struct tevent_req *subreq;
 
-		if (p->msg != NULL) {
-			size_t thistime;
+		np_ipc_readv_next_vector_init(&state->next_vector,
+					      data, len);
 
-			thistime = MIN(talloc_get_size(p->msg) - p->sent,
-				       len);
+		subreq = tstream_readv_pdu_queue_send(state,
+						      ev,
+						      p->npipe,
+						      p->read_queue,
+						      np_ipc_readv_next_vector,
+						      &state->next_vector);
+		if (subreq == NULL) {
 
-			memcpy(data, p->msg+p->sent, thistime);
-			state->nread = thistime;
-			p->sent += thistime;
-
-			if (p->sent < talloc_get_size(p->msg)) {
-				state->is_data_outstanding = true;
-			} else {
-				state->is_data_outstanding = false;
-				TALLOC_FREE(p->msg);
-			}
-			status = NT_STATUS_OK;
-			goto post_status;
 		}
-
-		state->ev = ev;
-		state->p = p;
-		state->data = data;
-		state->len = len;
-
-		if (!tevent_queue_add(p->read_queue, ev, req, np_read_trigger,
-				      NULL)) {
-			goto fail;
-		}
+		tevent_req_set_callback(subreq, np_read_done, req);
 		return req;
 	}
 
@@ -1423,23 +1411,6 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		tevent_req_nterror(req, status);
 	}
 	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
-}
-
-static void np_read_trigger(struct tevent_req *req, void *private_data)
-{
-	struct np_read_state *state = tevent_req_data(
-		req, struct np_read_state);
-	struct tevent_req *subreq;
-
-	subreq = read_packet_send(state, state->ev, state->p->fd,
-				  RPC_HEADER_LEN, rpc_frag_more_fn, NULL);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, np_read_done, req);
 }
 
 static void np_read_done(struct tevent_req *subreq)
@@ -1448,29 +1419,18 @@ static void np_read_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct np_read_state *state = tevent_req_data(
 		req, struct np_read_state);
-	ssize_t received;
-	size_t thistime;
+	ssize_t ret;
 	int err;
 
-	received = read_packet_recv(subreq, state->p, &state->p->msg, &err);
+	ret = tstream_readv_pdu_queue_recv(subreq, &err);
 	TALLOC_FREE(subreq);
-	if (received == -1) {
+	if (ret == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
 
-	thistime = MIN(received, state->len);
-
-	memcpy(state->data, state->p->msg, thistime);
-	state->p->sent = thistime;
-	state->nread = thistime;
-
-	if (state->p->sent < received) {
-		state->is_data_outstanding = true;
-	} else {
-		TALLOC_FREE(state->p->msg);
-		state->is_data_outstanding = false;
-	}
+	state->nread = ret;
+	state->is_data_outstanding = (state->next_vector.remaining > 0);
 
 	tevent_req_done(req);
 	return;
