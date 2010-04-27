@@ -1,3 +1,5 @@
+# this is a list of DNS entries which will be put into DNS using
+# dynamic DNS update. It is processed by the samba_dnsupdate script
 A                                                        ${DNSDOMAIN} $IP
 A                                                        ${HOSTNAME} $IP
 CNAME ${NTDSGUID}._msdcs.${DNSDOMAIN}                    ${HOSTNAME}
