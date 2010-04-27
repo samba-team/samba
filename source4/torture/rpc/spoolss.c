@@ -6661,6 +6661,29 @@ static const char *get_driver_from_info(struct spoolss_AddDriverInfoCtr *info_ct
 	}
 }
 
+static const char *get_environment_from_info(struct spoolss_AddDriverInfoCtr *info_ctr)
+{
+	if (info_ctr == NULL) {
+		return NULL;
+	}
+
+	switch (info_ctr->level) {
+	case 2:
+		return info_ctr->info.info2->architecture;
+	case 3:
+		return info_ctr->info.info3->architecture;
+	case 4:
+		return info_ctr->info.info4->architecture;
+	case 6:
+		return info_ctr->info.info6->architecture;
+	case 8:
+		return info_ctr->info.info8->architecture;
+	default:
+		return NULL;
+	}
+}
+
+
 static bool test_AddPrinterDriver_exp(struct torture_context *tctx,
 				      struct dcerpc_binding_handle *b,
 				      const char *servername,
@@ -6669,12 +6692,13 @@ static bool test_AddPrinterDriver_exp(struct torture_context *tctx,
 {
 	struct spoolss_AddPrinterDriver r;
 	const char *drivername = get_driver_from_info(info_ctr);
+	const char *environment = get_environment_from_info(info_ctr);
 
 	r.in.servername = servername;
 	r.in.info_ctr = info_ctr;
 
-	torture_comment(tctx, "Testing AddPrinterDriver(%s) level %d\n",
-		drivername, info_ctr->level);
+	torture_comment(tctx, "Testing AddPrinterDriver(%s) level: %d, environment: '%s'\n",
+		drivername, info_ctr->level, environment);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_spoolss_AddPrinterDriver_r(b, tctx, &r),
@@ -6695,13 +6719,14 @@ static bool test_AddPrinterDriverEx_exp(struct torture_context *tctx,
 {
 	struct spoolss_AddPrinterDriverEx r;
 	const char *drivername = get_driver_from_info(info_ctr);
+	const char *environment = get_environment_from_info(info_ctr);
 
 	r.in.servername = servername;
 	r.in.info_ctr = info_ctr;
 	r.in.flags = flags;
 
-	torture_comment(tctx, "Testing AddPrinterDriverEx(%s) level %d\n",
-		drivername, info_ctr->level);
+	torture_comment(tctx, "Testing AddPrinterDriverEx(%s) level: %d, environment: '%s'\n",
+		drivername, info_ctr->level, environment);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_spoolss_AddPrinterDriverEx_r(b, tctx, &r),
