@@ -1609,6 +1609,14 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	unsigned int i;
 	int cnt, ret;
 
+	/*
+	 * if we don't have a client ip e.g. ncalrpc
+	 * the server site is the client site
+	 */
+	if (ip_address == NULL) {
+		return samdb_server_site_name(ldb, mem_ctx);
+	}
+
 	sites_container_dn = samdb_sites_dn(ldb, mem_ctx);
 	if (sites_container_dn == NULL) {
 		return NULL;
