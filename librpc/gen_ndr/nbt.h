@@ -473,9 +473,9 @@ struct NETLOGON_SAM_LOGON_REQUEST {
 
 struct NETLOGON_SAM_LOGON_RESPONSE_NT40 {
 	enum netlogon_command command;
-	const char * server;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
@@ -506,7 +506,7 @@ struct NETLOGON_SAM_LOGON_RESPONSE_EX {
 	const char * forest;
 	const char * dns_domain;
 	const char * pdc_dns_name;
-	const char * domain;
+	const char * domain_name;
 	const char * pdc_name;
 	const char * user_name;
 	const char * server_site;

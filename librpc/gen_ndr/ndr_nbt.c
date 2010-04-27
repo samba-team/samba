@@ -1753,7 +1753,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_
 			{
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->server));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->pdc_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
@@ -1765,7 +1765,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_
 			{
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_name));
 				ndr->flags = _flags_save_string;
 			}
 			NDR_CHECK(ndr_push_netlogon_nt_version_flags(ndr, NDR_SCALARS, r->nt_version));
@@ -1791,7 +1791,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_
 			{
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->server));
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->pdc_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
@@ -1803,7 +1803,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_
 			{
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain));
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_name));
 				ndr->flags = _flags_save_string;
 			}
 			NDR_CHECK(ndr_pull_netlogon_nt_version_flags(ndr, NDR_SCALARS, &r->nt_version));
@@ -1826,9 +1826,9 @@ _PUBLIC_ void ndr_print_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_print *ndr, 
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
 		ndr_print_netlogon_command(ndr, "command", r->command);
-		ndr_print_string(ndr, "server", r->server);
+		ndr_print_string(ndr, "pdc_name", r->pdc_name);
 		ndr_print_string(ndr, "user_name", r->user_name);
-		ndr_print_string(ndr, "domain", r->domain);
+		ndr_print_string(ndr, "domain_name", r->domain_name);
 		ndr_print_netlogon_nt_version_flags(ndr, "nt_version", r->nt_version);
 		ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 		ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
@@ -1967,7 +1967,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX(struct ndr_pu
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->forest));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->dns_domain));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_dns_name));
-			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->domain));
+			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->domain_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
@@ -2006,7 +2006,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX(struct ndr_pu
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->forest));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->dns_domain));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_dns_name));
-			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->domain));
+			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->domain_name));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_name));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));
@@ -2045,7 +2045,7 @@ _PUBLIC_ void ndr_print_NETLOGON_SAM_LOGON_RESPONSE_EX(struct ndr_print *ndr, co
 		ndr_print_nbt_string(ndr, "forest", r->forest);
 		ndr_print_nbt_string(ndr, "dns_domain", r->dns_domain);
 		ndr_print_nbt_string(ndr, "pdc_dns_name", r->pdc_dns_name);
-		ndr_print_nbt_string(ndr, "domain", r->domain);
+		ndr_print_nbt_string(ndr, "domain_name", r->domain_name);
 		ndr_print_nbt_string(ndr, "pdc_name", r->pdc_name);
 		ndr_print_nbt_string(ndr, "user_name", r->user_name);
 		ndr_print_nbt_string(ndr, "server_site", r->server_site);

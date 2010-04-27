@@ -85,12 +85,12 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 		goto done;
 	}
 
-	p = netlogon.data.samlogon.data.nt4.server;
+	p = netlogon.data.samlogon.data.nt4.pdc_name;
 
 	DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
 		   "domain: %s\n", p,
 		   netlogon.data.samlogon.data.nt4.user_name,
-		   netlogon.data.samlogon.data.nt4.domain));
+		   netlogon.data.samlogon.data.nt4.domain_name));
 
 	if (*p == '\\') p += 1;
 	if (*p == '\\') p += 1;

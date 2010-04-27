@@ -312,7 +312,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 		netlogon->data.nt5_ex.pdc_name     = pdc_name;
 		netlogon->data.nt5_ex.user_name    = user;
-		netlogon->data.nt5_ex.domain       = flatname;
+		netlogon->data.nt5_ex.domain_name  = flatname;
 		netlogon->data.nt5_ex.domain_uuid  = domain_uuid;
 		netlogon->data.nt5_ex.forest       = forest_domain;
 		netlogon->data.nt5_ex.dns_domain   = dns_domain;
@@ -361,9 +361,9 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		} else {
 			netlogon->data.nt4.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
 		}
-		netlogon->data.nt4.server      = pdc_name;
+		netlogon->data.nt4.pdc_name    = pdc_name;
 		netlogon->data.nt4.user_name   = user;
-		netlogon->data.nt4.domain      = flatname;
+		netlogon->data.nt4.domain_name = flatname;
 		netlogon->data.nt4.nt_version  = NETLOGON_NT_VERSION_1;
 		netlogon->data.nt4.lmnt_token  = 0xFFFF;
 		netlogon->data.nt4.lm20_token  = 0xFFFF;

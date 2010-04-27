@@ -196,13 +196,13 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	if (r->domain) {
-		status = dsgetdcname_cache_store(mem_ctx, r->domain, &blob);
+	if (r->domain_name) {
+		status = dsgetdcname_cache_store(mem_ctx, r->domain_name, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 		if (r->client_site) {
-			sitename_store(r->domain, r->client_site);
+			sitename_store(r->domain_name, r->client_site);
 		}
 	}
 	if (r->dns_domain) {
@@ -786,7 +786,7 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 
 	map_dc_and_domain_names(flags,
 				r->pdc_name,
-				r->domain,
+				r->domain_name,
 				r->pdc_dns_name,
 				r->dns_domain,
 				&dc_flags,
@@ -1002,9 +1002,9 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			nt_version = NETLOGON_NT_VERSION_1;
 
 			logon1.nt_version = nt_version;
-			logon1.server = tmp_dc_name;
-			logon1.domain = talloc_strdup_upper(mem_ctx, domain_name);
-			NT_STATUS_HAVE_NO_MEMORY(logon1.domain);
+			logon1.pdc_name = tmp_dc_name;
+			logon1.domain_name = talloc_strdup_upper(mem_ctx, domain_name);
+			NT_STATUS_HAVE_NO_MEMORY(logon1.domain_name);
 
 			r->data.nt4 = logon1;
 			r->ntver = nt_version;

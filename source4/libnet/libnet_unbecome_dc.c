@@ -307,7 +307,7 @@ static void unbecomeDC_recv_cldap(struct tevent_req *req)
 	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
-	s->domain.netbios_name		= s->cldap.netlogon.domain;
+	s->domain.netbios_name		= s->cldap.netlogon.domain_name;
 	s->domain.guid			= s->cldap.netlogon.domain_uuid;
 
 	s->source_dsa.dns_name		= s->cldap.netlogon.pdc_dns_name;

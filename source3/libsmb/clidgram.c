@@ -279,7 +279,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	/* do we still need this ? */
 	*nt_version = r.ntver;
 
-	returned_domain = r.data.nt5_ex.domain;
+	returned_domain = r.data.nt5_ex.domain_name;
 	returned_dc = r.data.nt5_ex.pdc_name;
 
 	if (!strequal(returned_domain, domain_name)) {

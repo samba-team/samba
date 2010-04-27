@@ -152,7 +152,7 @@ void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response)
 		response_5_ex.command = response->data.nt5.command;
 		response_5_ex.pdc_name = response->data.nt5.pdc_name;
 		response_5_ex.user_name = response->data.nt5.user_name;
-		response_5_ex.domain = response->data.nt5.domain_name;
+		response_5_ex.domain_name = response->data.nt5.domain_name;
 		response_5_ex.domain_uuid = response->data.nt5.domain_uuid;
 		response_5_ex.forest = response->data.nt5.forest;
 		response_5_ex.dns_domain = response->data.nt5.dns_domain;
@@ -169,9 +169,9 @@ void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response)
 	case NETLOGON_NT_VERSION_1:
 		ZERO_STRUCT(response_5_ex);
 		response_5_ex.command = response->data.nt4.command;
-		response_5_ex.pdc_name = response->data.nt4.server;
+		response_5_ex.pdc_name = response->data.nt4.pdc_name;
 		response_5_ex.user_name = response->data.nt4.user_name;
-		response_5_ex.domain = response->data.nt4.domain;
+		response_5_ex.domain_name = response->data.nt4.domain_name;
 		response_5_ex.nt_version = response->data.nt4.nt_version;
 		response_5_ex.lmnt_token = response->data.nt4.lmnt_token;
 		response_5_ex.lm20_token = response->data.nt4.lm20_token;

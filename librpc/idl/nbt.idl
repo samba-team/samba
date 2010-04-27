@@ -415,9 +415,9 @@ interface nbt
 
 	typedef [flag(NDR_NOALIGN),public] struct {
 		netlogon_command command;
-		nstring              server;
+		nstring              pdc_name;
 		nstring              user_name;
-		nstring              domain;
+		nstring              domain_name;
 		netlogon_nt_version_flags               nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
@@ -451,7 +451,7 @@ interface nbt
 		nbt_string           forest;
 		nbt_string           dns_domain;
 		nbt_string           pdc_dns_name;
-		nbt_string           domain;
+		nbt_string           domain_name;
 		nbt_string           pdc_name;
 		nbt_string           user_name;
 		nbt_string           server_site;

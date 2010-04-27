@@ -131,7 +131,7 @@ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->forest));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->dns_domain));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_dns_name));
-			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->domain));
+			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->domain_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
@@ -177,7 +177,7 @@ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->forest));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->dns_domain));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_dns_name));
-			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->domain));
+			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->domain_name));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_name));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
 			NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));

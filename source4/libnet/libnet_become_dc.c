@@ -811,7 +811,7 @@ static void becomeDC_recv_cldap(struct tevent_req *req)
 	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
-	s->domain.netbios_name		= s->cldap.netlogon.domain;
+	s->domain.netbios_name		= s->cldap.netlogon.domain_name;
 	s->domain.guid			= s->cldap.netlogon.domain_uuid;
 
 	s->forest.dns_name		= s->cldap.netlogon.forest;

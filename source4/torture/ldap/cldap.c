@@ -188,7 +188,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain, n1.data.nt5_ex.domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain_name, n1.data.nt5_ex.domain_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.pdc_name, n1.data.nt5_ex.pdc_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.server_site, n1.data.nt5_ex.server_site);
@@ -201,7 +201,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain, n1.data.nt5_ex.domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain_name, n1.data.nt5_ex.domain_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.pdc_name, n1.data.nt5_ex.pdc_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.server_site, n1.data.nt5_ex.server_site);
@@ -220,7 +220,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain, n1.data.nt5_ex.domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain_name, n1.data.nt5_ex.domain_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.pdc_name, n1.data.nt5_ex.pdc_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.server_site, n1.data.nt5_ex.server_site);
@@ -233,7 +233,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain, n1.data.nt5_ex.domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain_name, n1.data.nt5_ex.domain_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.pdc_name, n1.data.nt5_ex.pdc_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.server_site, n1.data.nt5_ex.server_site);
@@ -247,7 +247,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain, n1.data.nt5_ex.domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain_name, n1.data.nt5_ex.domain_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.pdc_name, n1.data.nt5_ex.pdc_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.server_site, n1.data.nt5_ex.server_site);
@@ -259,7 +259,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.forest, n1.data.nt5_ex.dns_domain);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.dns_domain, n1.data.nt5_ex.dns_domain);
-	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain, n1.data.nt5_ex.domain);
+	CHECK_STRING(search.out.netlogon.data.nt5_ex.domain_name, n1.data.nt5_ex.domain_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.pdc_name, n1.data.nt5_ex.pdc_name);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.server_site, n1.data.nt5_ex.server_site);
