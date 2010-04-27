@@ -504,7 +504,6 @@ static void ipc_readv_next_vector_init(struct ipc_readv_next_vector_state *s,
 
 	s->buf = buf;
 	s->len = MIN(len, UINT16_MAX);
-	//DEBUG(0,("readv_next_vector_init[%u 0x%04X]\n", s->len, s->len));
 }
 
 static int ipc_readv_next_vector(struct tstream_context *stream,
@@ -522,8 +521,6 @@ static int ipc_readv_next_vector(struct tstream_context *stream,
 	if (state->ofs == state->len) {
 		*_vector = NULL;
 		*count = 0;
-//		DEBUG(0,("readv_next_vector done ofs[%u 0x%04X]\n",
-//			state->ofs, state->ofs));
 		return 0;
 	}
 
@@ -536,8 +533,6 @@ static int ipc_readv_next_vector(struct tstream_context *stream,
 		/* return a short read */
 		*_vector = NULL;
 		*count = 0;
-//		DEBUG(0,("readv_next_vector short read ofs[%u 0x%04X]\n",
-//			state->ofs, state->ofs));
 		return 0;
 	}
 
