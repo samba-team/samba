@@ -936,6 +936,11 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	return ctr->num_groups;
 }
 
+void construct_info_data(struct spoolss_Notify *info_data,
+			 enum spoolss_NotifyType type,
+			 uint16_t field,
+			 int id);
+
 /***********************************************************************
  Send a change notication message on all handles which have a call
  back registered
@@ -2575,7 +2580,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
  * fill a notify_info_data with the servername
  ********************************************************************/
 
-void spoolss_notify_server_name(int snum,
+static void spoolss_notify_server_name(int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
@@ -2588,7 +2593,7 @@ void spoolss_notify_server_name(int snum,
  * fill a notify_info_data with the printername (not including the servername).
  ********************************************************************/
 
-void spoolss_notify_printer_name(int snum,
+static void spoolss_notify_printer_name(int snum,
 					struct spoolss_Notify *data,
 					print_queue_struct *queue,
 					NT_PRINTER_INFO_LEVEL *printer,
@@ -2610,7 +2615,7 @@ void spoolss_notify_printer_name(int snum,
  * fill a notify_info_data with the servicename
  ********************************************************************/
 
-void spoolss_notify_share_name(int snum,
+static void spoolss_notify_share_name(int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
@@ -2623,7 +2628,7 @@ void spoolss_notify_share_name(int snum,
  * fill a notify_info_data with the port name
  ********************************************************************/
 
-void spoolss_notify_port_name(int snum,
+static void spoolss_notify_port_name(int snum,
 				     struct spoolss_Notify *data,
 				     print_queue_struct *queue,
 				     NT_PRINTER_INFO_LEVEL *printer,
@@ -2637,7 +2642,7 @@ void spoolss_notify_port_name(int snum,
  * but it doesn't exist, have to see what to do
  ********************************************************************/
 
-void spoolss_notify_driver_name(int snum,
+static void spoolss_notify_driver_name(int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
@@ -2650,7 +2655,7 @@ void spoolss_notify_driver_name(int snum,
  * fill a notify_info_data with the comment
  ********************************************************************/
 
-void spoolss_notify_comment(int snum,
+static void spoolss_notify_comment(int snum,
 				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
@@ -2672,7 +2677,7 @@ void spoolss_notify_comment(int snum,
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
 
-void spoolss_notify_location(int snum,
+static void spoolss_notify_location(int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
@@ -2700,7 +2705,7 @@ static void spoolss_notify_devmode(int snum,
  * fill a notify_info_data with the separator file name
  ********************************************************************/
 
-void spoolss_notify_sepfile(int snum,
+static void spoolss_notify_sepfile(int snum,
 				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
@@ -2714,7 +2719,7 @@ void spoolss_notify_sepfile(int snum,
  * jfm:xxxx return always winprint to indicate we don't do anything to it
  ********************************************************************/
 
-void spoolss_notify_print_processor(int snum,
+static void spoolss_notify_print_processor(int snum,
 					   struct spoolss_Notify *data,
 					   print_queue_struct *queue,
 					   NT_PRINTER_INFO_LEVEL *printer,
@@ -2728,7 +2733,7 @@ void spoolss_notify_print_processor(int snum,
  * jfm:xxxx send an empty string
  ********************************************************************/
 
-void spoolss_notify_parameters(int snum,
+static void spoolss_notify_parameters(int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
@@ -2742,7 +2747,7 @@ void spoolss_notify_parameters(int snum,
  * jfm:xxxx always send RAW as data type
  ********************************************************************/
 
-void spoolss_notify_datatype(int snum,
+static void spoolss_notify_datatype(int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
@@ -2773,7 +2778,7 @@ static void spoolss_notify_security_desc(int snum,
  * jfm:xxxx a samba printer is always shared
  ********************************************************************/
 
-void spoolss_notify_attributes(int snum,
+static void spoolss_notify_attributes(int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
@@ -2854,7 +2859,7 @@ static void spoolss_notify_status(int snum,
  * fill a notify_info_data with the number of jobs queued
  ********************************************************************/
 
-void spoolss_notify_cjobs(int snum,
+static void spoolss_notify_cjobs(int snum,
 				 struct spoolss_Notify *data,
 				 print_queue_struct *queue,
 				 NT_PRINTER_INFO_LEVEL *printer,
