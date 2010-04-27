@@ -4417,7 +4417,6 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	}
 
 	memset((char *)&desc,'\0',sizeof(desc));
-	memset((char *)&status,'\0',sizeof(status));
 
 	p = skip_string(param,tpscnt,p);
 	if (!p) {
