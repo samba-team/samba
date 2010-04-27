@@ -712,6 +712,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		}
 	}
 
+	/* Don't return an intermediate packet on a pipe read/write. */
+	if (req->tcon && req->tcon->compat_conn && IS_IPC(req->tcon->compat_conn)) {
+		return NT_STATUS_OK;
+	}
+
 	reqhdr = (uint8_t *)req->out.vector[i].iov_base;
 	flags = (IVAL(reqhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
 	message_id = BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
